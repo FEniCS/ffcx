@@ -143,10 +143,10 @@ class TestRealExamples(unittest.TestCase):
             if be[0][0] == br[0]:
                 if be[0][1] != br[1].expand():
 #                        print "\np: ", repr(p)
-                        print("\nbe: ", repr(be[0][1]))
-                        print("\nbr: ", repr(br[1].expand()))
-                        print("\nbe: ", be[0][1])
-                        print("\nbr: ", br[1].expand())
+                        print "\nbe: ", repr(be[0][1])
+                        print "\nbr: ", repr(br[1].expand())
+                        print "\nbe: ", be[0][1]
+                        print "\nbr: ", br[1].expand()
                         error("here1")
 
 if __name__ == "__main__":

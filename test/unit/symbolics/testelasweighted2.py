@@ -118,8 +118,8 @@ class TestElasWeighted2(unittest.TestCase):
         opt_code = optimise_code(expr, ip_consts, geo_consts, trans_set)
 #        print "ElasWeighted2, optimise_code(): ", time.time() - start
 
-        G = [eval(str(list(geo_consts.items())[0][0]))]
-        I = [eval(str(list(ip_consts.items())[0][0]))]
+        G = [eval(str(geo_consts.items()[0][0]))]
+        I = [eval(str(ip_consts.items()[0][0]))]
         self.assertAlmostEqual(eval(str(expr)), eval(str(opt_code)))
 
 if __name__ == "__main__":

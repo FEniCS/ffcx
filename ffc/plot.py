@@ -170,7 +170,7 @@ def render(models, title, num_moments, is3d, rotate):
         def end_round(self):
             for event in self.events:
                 if event[0] == QUIT:
-                    print("Closing plot, bye bye")
+                    print "Closing plot, bye bye"
                     sys.exit(0)
 
     # Main loop
@@ -295,7 +295,7 @@ def Arrow(scene, x, n, center=False):
 
     # Center arrow
     if center:
-        print("Centering!")
+        print "Centering!"
         x -= 0.5*(L + l)*n
 
     # Create cylinder and cone
@@ -613,7 +613,7 @@ def create_dof_models(element):
         if dof_type == "PointEval":
 
             # Point evaluation, just get point
-            points = list(L.keys())
+            points = L.keys()
             if not len(points) == 1:
                 error("Strange dof, single point expected.")
             x = points[0]
@@ -624,7 +624,7 @@ def create_dof_models(element):
         elif dof_type == "PointDeriv":
 
             # Evaluation of derivatives at point
-            points = list(L.keys())
+            points = L.keys()
             if not len(points) == 1:
                 error("Strange dof, single point expected.")
             x = points[0]
@@ -635,7 +635,7 @@ def create_dof_models(element):
         elif dof_type == "PointSecondDeriv":
 
             # Evaluation of derivatives at point
-            points = list(L.keys())
+            points = L.keys()
             if not len(points) == 1:
                 error("Strange dof, single point expected.")
             x = points[0]
@@ -646,7 +646,7 @@ def create_dof_models(element):
         elif dof_type in directional:
 
             # Normal evaluation, get point and normal
-            points = list(L.keys())
+            points = L.keys()
             if not len(points) == 1:
                 error("Strange dof, single point expected.")
             x = points[0]
@@ -659,7 +659,7 @@ def create_dof_models(element):
         elif dof_type == "PointNormalDeriv":
 
             # Evaluation of derivatives at point
-            points = list(L.keys())
+            points = L.keys()
             if not len(points) == 1:
                 error("Strange dof, single point expected.")
             x = points[0]

@@ -280,18 +280,18 @@ class TransformedMonomial:
             # Extract basis function index and coefficients
             if isinstance(f.function, Argument):
                 vindex = MonomialIndex(index_type=MonomialIndex.PRIMARY,
-                                       index_range=list(range(sdim)),
+                                       index_range=range(sdim),
                                        index_id=f.function.count())
 
             elif isinstance(f.function, Coefficient):
-                vindex = MonomialIndex(index_range=list(range(sdim)))
+                vindex = MonomialIndex(index_range=range(sdim))
                 coefficient = MonomialCoefficient(vindex, f.function.count())
                 self.coefficients.append(coefficient)
 
             # Extract components
             components = self._extract_components(f, index_map, vdim)
             if len(components) > 1:
-                raise MonomialException("Can only handle rank 0 or rank 1 tensors.")
+                raise MonomialException, "Can only handle rank 0 or rank 1 tensors."
 
             # Handle non-affine mappings (Piola)
             if len(components) > 0:
@@ -306,7 +306,7 @@ class TransformedMonomial:
                     fiat_sub_element = create_element(ufl_sub_element)
                     mappings.extend(fiat_sub_element.mapping())
                 if not all_equal(mappings):
-                    raise MonomialException("Mappings differ: " + str(mappings))
+                    raise MonomialException, ("Mappings differ: " + str(mappings))
                 mapping = mappings[0]
 
                 # Get component index and sub element
@@ -322,14 +322,14 @@ class TransformedMonomial:
                 if mapping == "contravariant piola":
                     # phi(x) = (det J)^{-1} J Phi(X)
                     index0 = component
-                    index1 = MonomialIndex(index_range=list(range(gdim))) + offset
+                    index1 = MonomialIndex(index_range=range(gdim)) + offset
                     transform = MonomialTransform(index0, index1, MonomialTransform.J, f.restriction, offset)
                     self.transforms.append(transform)
                     self.determinant.power -= 1
                     components[0] = index1
                 elif mapping == "covariant piola":
                     # phi(x) = J^{-T} Phi(X)
-                    index0 = MonomialIndex(index_range=list(range(gdim))) + offset
+                    index0 = MonomialIndex(index_range=range(gdim)) + offset
                     index1 = component
                     transform = MonomialTransform(index0, index1, MonomialTransform.JINV, f.restriction, offset)
                     self.transforms.append(transform)
@@ -338,7 +338,7 @@ class TransformedMonomial:
             # Extract derivatives / transforms
             derivatives = []
             for d in f.derivatives:
-                index0 = MonomialIndex(index_range=list(range(gdim)))
+                index0 = MonomialIndex(index_range=range(gdim))
                 if d in index_map:
                     index1 = index_map[d]
                 elif isinstance(d, FixedIndex):
@@ -346,7 +346,7 @@ class TransformedMonomial:
                                            index_range=[int(d)],
                                            index_id=int(d))
                 else:
-                    index1 = MonomialIndex(index_range=list(range(gdim)))
+                    index1 = MonomialIndex(index_range=range(gdim))
                 index_map[d] = index1
                 transform = MonomialTransform(index0, index1, MonomialTransform.JINV, f.restriction, 0)
                 self.transforms.append(transform)
@@ -409,7 +409,7 @@ class TransformedMonomial:
                                       index_range=[comp],
                                       index_id=None)
             else:
-                index = MonomialIndex(index_range=list(range(vdim))) # meg: What kind of index should this be?
+                index = MonomialIndex(index_range=range(vdim)) # meg: What kind of index should this be?
             index_map[c] = index
             components.append(index)
         return components

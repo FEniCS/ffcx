@@ -260,9 +260,9 @@ class Sum(Expr):
                 sym_groups[v] = v
 
         # Loop groups and add to new variable list.
-        for k,v in sym_groups.items():
+        for k,v in sym_groups.iteritems():
             new_variables.append(v)
-        for k,v in prod_groups.items():
+        for k,v in prod_groups.iteritems():
             new_variables.append(v)
 #        for k,v in frac_groups.iteritems():
 #            new_variables.append(v)
@@ -298,11 +298,11 @@ class Sum(Expr):
             # Get the occurrences.
             d = var.get_var_occurrences()
             # Delete those variables in d0 that are not in d.
-            for k, v in list(d0.items()):
+            for k, v in d0.items():
                 if not k in d:
                     del d0[k]
             # Set the number of occurrences equal to the smallest number.
-            for k, v in d.items():
+            for k, v in d.iteritems():
                 if k in d0:
                     d0[k] = min(d0[k], v)
         return d0
@@ -343,7 +343,7 @@ class Sum(Expr):
 
             # Get dictonary of occurrences and add the variable and the number
             # of occurrences to common dictionary.
-            for k, v in var.get_var_occurrences().items():
+            for k, v in var.get_var_occurrences().iteritems():
                 if k in common_vars:
                     common_vars[k].append((v, var))
                 else:
@@ -352,7 +352,7 @@ class Sum(Expr):
         # Determine the maximum reduction for each variable
         # sorted as: {(x*x*y, x*y*z, 2*y):[2, [y]]}.
         terms_reductions = {}
-        for k, v in common_vars.items():
+        for k, v in common_vars.iteritems():
             # If the number of expressions that can be reduced is only one
             # there is nothing to be done.
             if len(v) > 1:
@@ -395,11 +395,11 @@ class Sum(Expr):
 
         if terms_reductions:
             # Invert dictionary of terms.
-            reductions_terms = dict([((v[0], tuple(v[1])), k) for k, v in terms_reductions.items()])
+            reductions_terms = dict([((v[0], tuple(v[1])), k) for k, v in terms_reductions.iteritems()])
 
             # Create a sorted list of those variables that give the highest
             # reduction.
-            sorted_reduc_var = [k for k, v in reductions_terms.items()]
+            sorted_reduc_var = [k for k, v in reductions_terms.iteritems()]
             sorted_reduc_var.sort(lambda x, y: cmp(x[0], y[0]))
             sorted_reduc_var.reverse()
 
@@ -419,7 +419,7 @@ class Sum(Expr):
             # Reduce each set of terms with appropriate variables.
             all_reduced_terms = []
             reduced_expressions = []
-            for reduc_var, terms in reduction_vars.items():
+            for reduc_var, terms in reduction_vars.iteritems():
 
                 # Add current terms to list of all variables that have been reduced.
                 all_reduced_terms += list(terms)
@@ -490,7 +490,7 @@ class Sum(Expr):
 
         # Create the return value.
         returns = []
-        for f, r in found.items():
+        for f, r in found.iteritems():
             if len(r) > 1:
                 # Use expand to group expressions.
                 r = create_sum(r).expand()
@@ -502,7 +502,7 @@ class Sum(Expr):
 def overlap(l, d):
     "Check if a member in list l is in the value (list) of dictionary d."
     for m in l:
-        for k, v in d.items():
+        for k, v in d.iteritems():
             if m in v:
                 return True
     return False
@@ -528,7 +528,7 @@ def group_fractions(expr):
         return expr
 
     # Loop all fractions and create new ones using an appropriate numerator.
-    for k, v in fracs.items():
+    for k, v in fracs.iteritems():
         if v[0] > 1:
             # TODO: Is it possible to avoid expanding the Sum?
             # I think we have to because x/a + 2*x/a -> 3*x/a.

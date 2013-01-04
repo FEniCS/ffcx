@@ -28,7 +28,6 @@ from expr import Expr
 
 # FFC common modules
 from ffc.common.log import error
-from functools import reduce
 
 #import psyco
 #psyco.full()

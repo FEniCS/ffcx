@@ -65,7 +65,7 @@ def run_command(command):
     if logfile is None:
         logfile = open("../../error.log", "w")
     logfile.write(output + "\n")
-    print(output)
+    print output
     return False
 
 def log_error(message):
@@ -213,10 +213,10 @@ def build_programs(bench):
         boost_is_found = True
 
     if not boost_is_found:
-        raise OSError("""The Boost library was not found.
+        raise OSError, """The Boost library was not found.
 If Boost is installed in a nonstandard location,
 set the environment variable BOOST_DIR.
-""")
+"""
 
     ufc_cflags += " -I%s -L%s" % (boost_inc_dir, boost_lib_dir)
 

@@ -37,18 +37,18 @@ from ufl.objects import dx
 from ufl.algorithms import as_form, preprocess, FormData
 
 # FFC modules
-from .log import log
-from .log import info
-from .log import warning
-from .log import debug
-from .log import error
-from .log import set_level
-from .log import set_prefix
-from .log import INFO
-from .parameters import default_parameters
-from .mixedelement import MixedElement
-from .compiler import compile_form
-from .jitobject import JITObject
+from log import log
+from log import info
+from log import warning
+from log import debug
+from log import error
+from log import set_level
+from log import set_prefix
+from log import INFO
+from parameters import default_parameters
+from mixedelement import MixedElement
+from compiler import compile_form
+from jitobject import JITObject
 
 # Special Options for JIT-compilation
 FFC_PARAMETERS_JIT = default_parameters()

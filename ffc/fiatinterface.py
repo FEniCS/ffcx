@@ -243,7 +243,7 @@ def _indices(element, domain, dim=0):
         indices = []
         for dim in range(domain.topological_dimension() + 1):
             entities = entity_dofs[dim]
-            for (entity, index) in entities.items():
+            for (entity, index) in entities.iteritems():
                 indices += index
         return indices
 
@@ -252,8 +252,8 @@ def _indices(element, domain, dim=0):
     elif isinstance(domain, ufl.Measure):
         indices = []
         entity_dofs = element.entity_dofs()
-        for dim, entities in list(entity_dofs.items()):
-            for entity, index in list(entities.items()):
+        for dim, entities in entity_dofs.items():
+            for entity, index in entities.items():
                 indices += index
         return indices
 

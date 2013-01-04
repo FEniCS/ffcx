@@ -6,4 +6,4 @@ function:
   compile_with_error_control  - Compile forms and generate error control forms
 
 """
-from .errorcontrol import compile_with_error_control
+from errorcontrol import compile_with_error_control

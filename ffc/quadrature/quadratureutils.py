@@ -63,7 +63,7 @@ def flatten_psi_tables(tables):
         elem_dict = tables[point]
         element_map[point] = {}
         # Loop all elements and get all their tables.
-        for elem in sorted(list(elem_dict.keys()), key=lambda x: str(x)):
+        for elem in sorted(elem_dict.keys(), key=lambda x: str(x)):
             facet_tables = elem_dict[elem]
             element_map[point][elem] = counter
             for facet in sorted(facet_tables.keys()):
@@ -325,7 +325,7 @@ def create_permutations(expr):
     # Format keys and values to lists and tuples.
     if len(expr) == 1:
         new = {}
-        for key, val in list(expr[0].items()):
+        for key, val in expr[0].items():
             if key == ():
                 pass
             elif not isinstance(key[0], tuple):
@@ -339,14 +339,14 @@ def create_permutations(expr):
     # TODO: there could be a cleverer way of changing types of keys and vals.
     if len(expr) == 2:
         new = {}
-        for key0, val0 in list(expr[0].items()):
+        for key0, val0 in expr[0].items():
             if isinstance(key0[0], tuple):
                 key0 = list(key0)
             if not isinstance(key0, list):
                 key0 = [key0]
             if not isinstance(val0, list):
                 val0 = [val0]
-            for key1, val1 in list(expr[1].items()):
+            for key1, val1 in expr[1].items():
                 if key1 == ():
                     key1 = []
                 elif isinstance(key1[0], tuple):

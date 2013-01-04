@@ -62,7 +62,7 @@ def insert_labels(directory, filenames):
 
         label = "\n.. _%s_package:\n\n" % "_".join(name.split(".")[:-1])
         modded_text = label + text
-        print("Adding label to %s" % filename)
+        print "Adding label to %s" % filename
         file = open(filename, "w")
         file.write(modded_text)
         file.close()
@@ -72,7 +72,7 @@ def generate_index_file(output_dir, version):
     text = index_template % version
     filename = os.path.join(output_dir, "index.rst")
 
-    print("Writing documentation index file to %s" % filename)
+    print "Writing documentation index file to %s" % filename
     file = open(filename, "w")
     file.write(text)
     file.close()
@@ -87,7 +87,7 @@ def main(input_dir, version):
 if __name__ == '__main__':
 
     if len(sys.argv) != 3:
-        print("Usage: python generate_index.py input_directory version")
+        print "Usage: python generate_index.py input_directory version"
         exit()
 
     main(sys.argv[1], sys.argv[2])

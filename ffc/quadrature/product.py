@@ -25,12 +25,11 @@ from ffc.log import error
 from ffc.cpp import format
 
 # FFC quadrature modules.
-from .symbolics import create_float
-from .symbolics import create_product
-from .symbolics import create_sum
-from .symbolics import create_fraction
-from .expr import Expr
-from functools import reduce
+from symbolics import create_float
+from symbolics import create_product
+from symbolics import create_sum
+from symbolics import create_fraction
+from expr import Expr
 
 #class Product(object):
 class Product(Expr):
@@ -405,8 +404,8 @@ class Product(Expr):
         return [(found, remains)]
 
 # FFC quadrature modules.
-from .floatvalue import FloatValue
-from .symbol     import Symbol
-from .sumobj    import Sum
-from .fraction   import Fraction
+from floatvalue import FloatValue
+from symbol     import Symbol
+from sumobj    import Sum
+from fraction   import Fraction
 

@@ -27,7 +27,7 @@ import numpy
 from FIAT.functional import PointEvaluation
 
 # FFC modules.
-from .log import error, info_red
+from log import error, info_red
 
 # Default quadrature element degree
 default_quadrature_degree = 1
@@ -112,8 +112,8 @@ class QuadratureElement:
 
         # Check that incoming points are equal to the quadrature points.
         if len(points) != len(self._points) or abs(numpy.array(points) - self._points).max() > 1e-12:
-            print("\npoints:\n", numpy.array(points))
-            print("\nquad points:\n", self._points)
+            print "\npoints:\n", numpy.array(points)
+            print "\nquad points:\n", self._points
             error("Points must be equal to coordinates of quadrature points")
 
         # Return the identity matrix of size len(self._points) in a
@@ -129,7 +129,7 @@ def _create_entity_dofs(cell, num_dofs):
         entity_dofs[dim] = {}
         for entity in sorted( top[dim] ):
             entity_dofs[dim][entity]=[]
-    entity_dofs[dim][0] = list(range(num_dofs))
+    entity_dofs[dim][0] = range(num_dofs)
     return entity_dofs
 
 # FFC modules to avoid circular import

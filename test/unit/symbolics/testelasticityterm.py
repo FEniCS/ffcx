@@ -76,7 +76,7 @@ class TestElasticityTerm(unittest.TestCase):
         opt_code = optimise_code(expr, ip_consts, geo_consts, trans_set)
 #        print "ElasticityTerm, optimise_code(): ", time.time() - start
 
-        G = [eval(str(list(geo_consts.items())[0][0]))]
+        G = [eval(str(geo_consts.items()[0][0]))]
         self.assertAlmostEqual(eval(str(expr)), eval(str(opt_code)))
 
 if __name__ == "__main__":

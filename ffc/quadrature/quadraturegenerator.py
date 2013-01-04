@@ -34,7 +34,7 @@ from ffc.log import info, debug, ffc_assert
 from ffc.cpp import format, remove_unused
 
 # Utility and optimisation functions for quadraturegenerator.
-from .symbolics import generate_aux_constants
+from symbolics import generate_aux_constants
 
 # Error issued for quadrature version of tabulate_tensor
 tabulate_tensor_quadrature_error = """\
@@ -265,7 +265,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters):
         if conditionals:
             ip_code += [f_decl(f_double, f_C(len(conditionals)))]
             # Sort conditionals (need to in case of nested conditionals).
-            reversed_conds = dict([(n, (o, e)) for e, (t, o, n) in list(conditionals.items())])
+            reversed_conds = dict([(n, (o, e)) for e, (t, o, n) in conditionals.items()])
             for num in range(len(conditionals)):
                 name = format["conditional"](num)
                 ops, expr = reversed_conds[num]
@@ -324,7 +324,7 @@ def _generate_functions(functions, sets):
 
     # Sort functions after loop ranges.
     function_list = {}
-    for key, val in list(functions.items()):
+    for key, val in functions.items():
         if val[1] in function_list:
             function_list[val[1]].append(key)
         else:
@@ -332,7 +332,7 @@ def _generate_functions(functions, sets):
 
     total_ops = 0
     # Loop ranges and get list of functions.
-    for loop_range, list_of_functions in list(function_list.items()):
+    for loop_range, list_of_functions in function_list.items():
         function_expr = {}
         function_numbers = []
         # Loop functions.
@@ -387,7 +387,7 @@ def _generate_integral_code(points, terms, sets, optimise_parameters):
     used_weights, used_psi_tables, used_nzcs, trans_set = sets
 
     # Loop terms and create code.
-    for loop, (data, entry_vals) in list(terms.items()):
+    for loop, (data, entry_vals) in terms.items():
         # If we don't have any entry values, there's no need to generate the
         # loop.
         if not entry_vals:
@@ -425,7 +425,7 @@ def _generate_integral_code(points, terms, sets, optimise_parameters):
             loops[loop][1] += [entry_ops_comment, entry_code]
 
     # Write all the loops of basis functions.
-    for loop, ops_lines in list(loops.items()):
+    for loop, ops_lines in loops.items():
         ops, lines = ops_lines
         prim_ops = functools.reduce(lambda i, j: i*j, [ops] + [l[2] for l in loop])
         # Add number of operations for current loop to total count.
@@ -532,13 +532,13 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
     # Get list of non zero columns, if we ignore ones, ignore columns with one component.
     if optimise_parameters["ignore ones"]:
         nzcs = []
-        for key, val in list(inv_name_map.items()):
+        for key, val in inv_name_map.items():
             # Check if we have a table of ones or if number of non-zero columns
             # is larger than one.
             if val[1] and len(val[1][1]) > 1 or not val[3]:
                 nzcs.append(val[1])
     else:
-        nzcs = [val[1] for key, val in list(inv_name_map.items())\
+        nzcs = [val[1] for key, val in inv_name_map.items()\
                                         if val[1]]
 
     # TODO: Do we get arrays that are not unique?

@@ -56,7 +56,7 @@ def debug_dict(d, title=""):
     info("")
     begin(title)
     info("")
-    for (key, value) in d.items():
+    for (key, value) in d.iteritems():
         info(key)
         info("-"*len(key))
         info(str(value))

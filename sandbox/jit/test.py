@@ -17,4 +17,4 @@ a = dot(grad(v), grad(u))*dx
 
 compiled_form = jit(a, language="dolfin")
 
-print(compiled_form.rank(), compiled_form.num_coefficients())
+print compiled_form.rank(), compiled_form.num_coefficients()

@@ -25,13 +25,13 @@ from ffc.log import error
 from ffc.cpp import format
 
 # FFC quadrature modules.
-from .symbolics import CONST
+from symbolics import CONST
 #from symbolics import format
-from .symbolics import create_float
-from .symbolics import create_product
-from .symbolics import create_sum
-from .symbolics import create_fraction
-from .expr import Expr
+from symbolics import create_float
+from symbolics import create_product
+from symbolics import create_sum
+from symbolics import create_fraction
+from expr import Expr
 
 class FloatValue(Expr):
     def __init__(self, value):
@@ -152,8 +152,8 @@ class FloatValue(Expr):
         return create_fraction(self, other)
 
 # FFC quadrature modules.
-from .symbol     import Symbol
-from .product    import Product
-from .sumobj    import Sum
-from .fraction   import Fraction
+from symbol     import Symbol
+from product    import Product
+from sumobj    import Sum
+from fraction   import Fraction
 

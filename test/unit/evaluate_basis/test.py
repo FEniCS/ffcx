@@ -23,7 +23,7 @@ values tabulated by FIAT and to reference values computed by an older version of
 # Last changed: 2010-02-01
 
 import unittest
-from .test_against_fiat import main as fiat_main
+from test_against_fiat import main as fiat_main
 from ffc.log import CRITICAL, INFO
 
 class EvaluateBasisTests(unittest.TestCase):

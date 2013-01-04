@@ -21,7 +21,7 @@
 # Last changed: 2010-01-21
 
 # FFC quadrature modules.
-from .symbolics import create_float
+from symbolics import create_float
 
 class Expr(object):
     __slots__ = ("val", "t", "_prec", "_repr", "_hash")

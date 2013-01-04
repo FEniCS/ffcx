@@ -40,8 +40,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'The FEniCS Project'
-copyright = '2011, FFC Core'
+project = u'The FEniCS Project'
+copyright = u'2011, FFC Core'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -183,8 +183,8 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'FFC.tex', 'FFC Documentation',
-   'FFC Core', 'manual'),
+  ('index', 'FFC.tex', u'FFC Documentation',
+   u'FFC Core', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -213,8 +213,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'ffc', 'FFC Documentation',
-     ['FFC Core'], 1)
+    ('index', 'ffc', u'FFC Documentation',
+     [u'FFC Core'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -227,7 +227,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'FFC', 'FFC Documentation', 'FFC Core',
+  ('index', 'FFC', u'FFC Documentation', u'FFC Core',
    'FFC', 'One line description of project.', 'Miscellaneous'),
 ]
 
@@ -244,10 +244,10 @@ texinfo_documents = [
 # -- Options for Epub output ---------------------------------------------------
 
 # Bibliographic Dublin Core info.
-epub_title = 'FFC'
-epub_author = 'FFC Core'
-epub_publisher = 'FFC Core'
-epub_copyright = '2011, FFC Core'
+epub_title = u'FFC'
+epub_author = u'FFC Core'
+epub_publisher = u'FFC Core'
+epub_copyright = u'2011, FFC Core'
 
 # The language of the text. It defaults to the language option
 # or en if the language is not set.

@@ -57,7 +57,7 @@ class RestrictedElement:
     def tabulate(self, order, points):
         result = self._element.tabulate(order, points)
         extracted = {}
-        for (dtuple, values) in result.items():
+        for (dtuple, values) in result.iteritems():
             extracted[dtuple] = numpy.array([values[i] for i in self._indices])
         return extracted
 
@@ -79,9 +79,9 @@ def _extract_entity_dofs(element, indices):
     # FIXME: Readability counts
     entity_dofs = element.entity_dofs()
     dofs = {}
-    for (dim, entities) in entity_dofs.items():
+    for (dim, entities) in entity_dofs.iteritems():
         dofs[dim] = {}
-        for (entity, all_dofs) in entities.items():
+        for (entity, all_dofs) in entities.iteritems():
             dofs[dim][entity] = []
             for index in all_dofs:
                 if index in indices:

@@ -44,10 +44,10 @@ from ffc.log import info, debug, error, ffc_assert
 from ffc.cpp import format
 
 # Utility and optimisation functions for quadraturegenerator.
-from .quadraturetransformerbase import QuadratureTransformerBase
-from .quadratureutils import create_permutations
-from .reduce_operations import operation_count
-from .symbolics import IP
+from quadraturetransformerbase import QuadratureTransformerBase
+from quadratureutils import create_permutations
+from reduce_operations import operation_count
+from symbolics import IP
 
 class QuadratureTransformer(QuadratureTransformerBase):
     "Transform UFL representation to quadrature code."
@@ -77,14 +77,14 @@ class QuadratureTransformer(QuadratureTransformerBase):
         for op in operands:
             # If entries does already exist we can add the code, otherwise just
             # dump them in the element tensor.
-            for key, val in list(op.items()):
+            for key, val in op.items():
                 if key in code:
                     code[key].append(val)
                 else:
                     code[key] = [val]
 
         # Add sums and group if necessary.
-        for key, val in list(code.items()):
+        for key, val in code.items():
 
             # Exclude all zero valued terms from sum
             value = [v for v in val if not v is None]
@@ -102,7 +102,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
                 # Add a product for each term that has duplicate code
                 expressions = []
-                for expr, num_occur in list(duplications.items()):
+                for expr, num_occur in duplications.items():
                     if num_occur > 1:
                         # Pre-multiply expression with number of occurrences
                         expressions.append(f_mult([f_float(num_occur), expr]))
@@ -139,9 +139,9 @@ class QuadratureTransformer(QuadratureTransformerBase):
             # If we get an empty dict, something was zero and so is the product.
             if not op:
                 return {}
-            if len(op) > 1 or (op and list(op.keys())[0] != ()):
+            if len(op) > 1 or (op and op.keys()[0] != ()):
                 permute.append(op)
-            elif op and list(op.keys())[0] == ():
+            elif op and op.keys()[0] == ():
                 not_permute.append(op[()])
 
         # Create permutations.
@@ -153,7 +153,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # Create code.
         code ={}
         if permutations:
-            for key, val in list(permutations.items()):
+            for key, val in permutations.items():
                 # Sort key in order to create a unique key.
                 l = list(key)
                 l.sort()
@@ -170,7 +170,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                         zero = True
                         break
                     elif not v:
-                        print("v: '%s'" % repr(v))
+                        print "v: '%s'" % repr(v)
                         error("should not happen")
                     elif v == "1":
                         pass
@@ -193,7 +193,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     code[()] = None
                     return code
                 elif not v:
-                    print("v: '%s'" % repr(v))
+                    print "v: '%s'" % repr(v)
                     error("should not happen")
                 elif v == "1":
                     pass
@@ -228,7 +228,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         denominator = denominator_code[()]
         ffc_assert(denominator is not None, "Division by zero!")
 
-        for key, val in list(numerator_code.items()):
+        for key, val in numerator_code.items():
             # If numerator is None the fraction is also None
             if val is None:
                 code[key] = None
@@ -288,7 +288,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # Get condition expression and do safety checks.
         # Might be a bit too strict?
         cond, = operands
-        ffc_assert(len(cond) == 1 and list(cond.keys())[0] == (),\
+        ffc_assert(len(cond) == 1 and cond.keys()[0] == (),\
             "Condition for NotCondition should only be one function: " + repr(cond))
         return {(): format["not"](cond[()])}
 
@@ -297,9 +297,9 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # Get LHS and RHS expressions and do safety checks.
         # Might be a bit too strict?
         lhs, rhs = operands
-        ffc_assert(len(lhs) == 1 and list(lhs.keys())[0] == (),\
+        ffc_assert(len(lhs) == 1 and lhs.keys()[0] == (),\
             "LHS of Condition should only be one function: " + repr(lhs))
-        ffc_assert(len(rhs) == 1 and list(rhs.keys())[0] == (),\
+        ffc_assert(len(rhs) == 1 and rhs.keys()[0] == (),\
             "RHS of Condition should only be one function: " + repr(rhs))
 
         # Map names from UFL to cpp.py.
@@ -322,11 +322,11 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         # Get condition and return values; and do safety check.
         cond, true, false = operands
-        ffc_assert(len(cond) == 1 and list(cond.keys())[0] == (),\
+        ffc_assert(len(cond) == 1 and cond.keys()[0] == (),\
             "Condtion should only be one function: " + repr(cond))
-        ffc_assert(len(true) == 1 and list(true.keys())[0] == (),\
+        ffc_assert(len(true) == 1 and true.keys()[0] == (),\
             "True value of Condtional should only be one function: " + repr(true))
-        ffc_assert(len(false) == 1 and list(false.keys())[0] == (),\
+        ffc_assert(len(false) == 1 and false.keys()[0] == (),\
             "False value of Condtional should only be one function: " + repr(false))
 
         # Get values and test for None
@@ -483,7 +483,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                         code[mapping] = [self.__apply_transform(basis, derivatives, multi)]
 
         # Add sums and group if necessary.
-        for key, val in list(code.items()):
+        for key, val in code.items():
             if len(val) > 1:
                 code[key] = f_group(f_add(val))
             elif val:
@@ -605,7 +605,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # Use format function on value of operand.
         new_operand = {}
         operand = operands[0]
-        for key, val in list(operand.items()):
+        for key, val in operand.items():
             new_operand[key] = format_function(val)
         return new_operand
 
@@ -651,6 +651,6 @@ class QuadratureTransformer(QuadratureTransformerBase):
         used_points = set([self.points])
         value = format["mul"]([val, weight, f_scale_factor])
         ops = self._count_operations(value)
-        used_psi_tables = set([v for k, v in list(self.psi_tables_map.items())])
+        used_psi_tables = set([v for k, v in self.psi_tables_map.items()])
 
         return (value, ops, [trans_set, used_points, used_psi_tables])

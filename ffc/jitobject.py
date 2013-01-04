@@ -28,7 +28,7 @@ from instant import get_swig_version
 import ufl
 
 # FFC modules.
-from .constants import FFC_VERSION
+from constants import FFC_VERSION
 
 class JITObject:
     """This class is a wrapper for a compiled object in the context of

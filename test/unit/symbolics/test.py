@@ -27,29 +27,29 @@ import unittest
 from ffc.quadrature.symbolics import *
 
 # Import tests
-from .testfloat import TestFloat
-from .testsymbol import TestSymbol
-from .testproduct import TestProduct
-from .testsum import TestSum
-from .testfraction import TestFraction
-from .testfloatoperators import TestFloatOperators
-from .testsymboloperators import TestSymbolOperators
-from .testproductoperators import TestProductOperators
-from .testsumoperators import TestSumOperators
-from .testfractionoperators import TestFractionOperators
-from .testmixedsymbols import TestMixedSymbols
-from .testexpandoperations import TestExpandOperations
-from .testreducevartype import TestReduceVarType
-from .testreduceoperations import TestReduceOperations
-from .testnotfinished import TestNotFinished
-from .testdgelastodyn import TestDGElastoDyn
-from .testreducegip import TestReduceGIP
-from .testpoisson import TestPoisson
-from .testelasticity2d import TestElasticity2D
-from .testelasticityterm import TestElasticityTerm
-from .testelasweighted import TestElasWeighted
-from .testelasweighted2 import TestElasWeighted2
-from .testrealexamples import TestRealExamples
+from testfloat import TestFloat
+from testsymbol import TestSymbol
+from testproduct import TestProduct
+from testsum import TestSum
+from testfraction import TestFraction
+from testfloatoperators import TestFloatOperators
+from testsymboloperators import TestSymbolOperators
+from testproductoperators import TestProductOperators
+from testsumoperators import TestSumOperators
+from testfractionoperators import TestFractionOperators
+from testmixedsymbols import TestMixedSymbols
+from testexpandoperations import TestExpandOperations
+from testreducevartype import TestReduceVarType
+from testreduceoperations import TestReduceOperations
+from testnotfinished import TestNotFinished
+from testdgelastodyn import TestDGElastoDyn
+from testreducegip import TestReduceGIP
+from testpoisson import TestPoisson
+from testelasticity2d import TestElasticity2D
+from testelasticityterm import TestElasticityTerm
+from testelasweighted import TestElasWeighted
+from testelasweighted2 import TestElasWeighted2
+from testrealexamples import TestRealExamples
 
 class TestSingle(unittest.TestCase):
 
