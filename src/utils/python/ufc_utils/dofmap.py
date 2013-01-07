@@ -1,7 +1,7 @@
-# Code generation format strings for UFC (Unified Form-assembly Code) v. 2.0.5.
+# Code generation format strings for UFC (Unified Form-assembly Code) v. 2.1.0.
 # This code is released into the public domain.
 #
-# The FEniCS Project (http://www.fenicsproject.org/) 2006-2011.
+# The FEniCS Project (http://www.fenicsproject.org/) 2006-2013.
 
 dofmap_combined = """\
 /// This class defines the interface for a local-to-global mapping of
