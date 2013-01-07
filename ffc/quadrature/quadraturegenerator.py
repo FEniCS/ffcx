@@ -23,6 +23,7 @@
 # Last changed: 2011-11-28
 
 # Python modules.
+import functools
 import numpy
 
 # UFL modules.
@@ -180,7 +181,7 @@ def _tabulate_tensor(ir, parameters):
     if prim_idims == []:
         common += [f_assign(f_A(f_int(0)), f_float(0))]
     else:
-        dim = reduce(lambda v,u: v*u, prim_idims)
+        dim = functools.reduce(lambda v,u: v*u, prim_idims)
         common += f_loop([f_assign(f_A(f_r), f_float(0))], [(f_r, 0, dim)])
 
     # Create the constant geometry declarations (only generated if simplify expressions are enabled).
@@ -428,7 +429,7 @@ def _generate_integral_code(points, terms, sets, optimise_parameters):
     # Write all the loops of basis functions.
     for loop, ops_lines in loops.items():
         ops, lines = ops_lines
-        prim_ops = reduce(lambda i, j: i*j, [ops] + [l[2] for l in loop])
+        prim_ops = functools.reduce(lambda i, j: i*j, [ops] + [l[2] for l in loop])
         # Add number of operations for current loop to total count.
         num_ops += prim_ops
         code += ["", f_comment("Number of operations for primary indices: %d" % prim_ops)]

@@ -502,7 +502,7 @@ def _compute_basisvalues(data, dof_data):
         code += [f_assign(f_component(f_basisvalue, 0), f_float(1.0))]
 
         def _idx2d(p, q):
-            return (p+q)*(p+q+1)/2 + q
+            return (p + q)*(p + q + 1)//2 + q
 
         # Only continue if the embedded degree is larger than zero.
         if embedded_degree > 0:

@@ -156,7 +156,7 @@ def _generate_comment(parameters):
 def _generate_additional_includes(codes):
     s = set()
     for code in codes:
-        if code.has_key("additional_includes_set"):
+        if "additional_includes_set" in code:
             s.update(code["additional_includes_set"])
     if s:
         return "\n".join(list(s)) + "\n"

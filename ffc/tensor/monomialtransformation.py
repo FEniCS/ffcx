@@ -407,7 +407,7 @@ class TransformedMonomial:
                 i.index_type = MonomialIndex.EXTERNAL
                 i.index_id   = _next_external_index()
             else:
-                error("Summation index does not appear exactly twice: " + str(i))
+                raise Exception("Summation index does not appear exactly twice: %s" % str(i))
 
     def extract_unique_indices(self, index_type=None):
         "Return all unique indices for monomial w.r.t. type and id (not range)."

@@ -224,9 +224,6 @@ def _compute_form_ir(form_data, form_id, element_numbers):
     # Store id
     ir = {"id": form_id}
 
-    #print "check 2", element_numbers
-    #print [element_numbers[e] for e in form_data.elements]
-
     # Compute common data
     ir["classname"] = "FooForm"
     ir["members"] = not_implemented
