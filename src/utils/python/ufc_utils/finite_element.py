@@ -35,37 +35,37 @@ public:
   }
 
   /// Return the topological dimension of the cell shape
-  virtual unsigned int topological_dimension() const
+  virtual std::size_t topological_dimension() const
   {
 %(topological_dimension)s
   }
 
   /// Return the geometric dimension of the cell shape
-  virtual unsigned int geometric_dimension() const
+  virtual std::size_t geometric_dimension() const
   {
 %(geometric_dimension)s
   }
 
   /// Return the dimension of the finite element function space
-  virtual unsigned int space_dimension() const
+  virtual std::size_t space_dimension() const
   {
 %(space_dimension)s
   }
 
   /// Return the rank of the value space
-  virtual unsigned int value_rank() const
+  virtual std::size_t value_rank() const
   {
 %(value_rank)s
   }
 
   /// Return the dimension of the value space for axis i
-  virtual unsigned int value_dimension(unsigned int i) const
+  virtual std::size_t value_dimension(std::size_t i) const
   {
 %(value_dimension)s
   }
 
   /// Evaluate basis function i at given point in cell
-  virtual void evaluate_basis(unsigned int i,
+  virtual void evaluate_basis(std::size_t i,
                               double* values,
                               const double* coordinates,
                               const ufc::cell& c) const
@@ -82,8 +82,8 @@ public:
   }
 
   /// Evaluate order n derivatives of basis function i at given point in cell
-  virtual void evaluate_basis_derivatives(unsigned int i,
-                                          unsigned int n,
+  virtual void evaluate_basis_derivatives(std::size_t i,
+                                          std::size_t n,
                                           double* values,
                                           const double* coordinates,
                                           const ufc::cell& c) const
@@ -92,7 +92,7 @@ public:
   }
 
   /// Evaluate order n derivatives of all basis functions at given point in cell
-  virtual void evaluate_basis_derivatives_all(unsigned int n,
+  virtual void evaluate_basis_derivatives_all(std::size_t n,
                                               double* values,
                                               const double* coordinates,
                                               const ufc::cell& c) const
@@ -101,7 +101,7 @@ public:
   }
 
   /// Evaluate linear functional for dof i on the function f
-  virtual double evaluate_dof(unsigned int i,
+  virtual double evaluate_dof(std::size_t i,
                               const ufc::function& f,
                               const ufc::cell& c) const
   {
@@ -141,13 +141,13 @@ public:
   }
 
   /// Return the number of sub elements (for a mixed element)
-  virtual unsigned int num_sub_elements() const
+  virtual std::size_t num_sub_elements() const
   {
 %(num_sub_elements)s
   }
 
   /// Create a new finite element for sub element i (for a mixed element)
-  virtual ufc::finite_element* create_sub_element(unsigned int i) const
+  virtual ufc::finite_element* create_sub_element(std::size_t i) const
   {
 %(create_sub_element)s
   }
@@ -181,22 +181,22 @@ public:
   virtual ufc::shape cell_shape() const;
 
   /// Return the topological dimension of the cell shape
-  virtual unsigned int topological_dimension() const;
+  virtual std::size_t topological_dimension() const;
 
   /// Return the geometric dimension of the cell shape
-  virtual unsigned int geometric_dimension() const;
+  virtual std::size_t geometric_dimension() const;
 
   /// Return the dimension of the finite element function space
-  virtual unsigned int space_dimension() const;
+  virtual std::size_t space_dimension() const;
 
   /// Return the rank of the value space
-  virtual unsigned int value_rank() const;
+  virtual std::size_t value_rank() const;
 
   /// Return the dimension of the value space for axis i
-  virtual unsigned int value_dimension(unsigned int i) const;
+  virtual std::size_t value_dimension(std::size_t i) const;
 
   /// Evaluate basis function i at given point in cell
-  virtual void evaluate_basis(unsigned int i,
+  virtual void evaluate_basis(std::size_t i,
                               double* values,
                               const double* coordinates,
                               const ufc::cell& c) const;
@@ -207,20 +207,20 @@ public:
                                   const ufc::cell& c) const;
 
   /// Evaluate order n derivatives of basis function i at given point in cell
-  virtual void evaluate_basis_derivatives(unsigned int i,
-                                          unsigned int n,
+  virtual void evaluate_basis_derivatives(std::size_t i,
+                                          std::size_t n,
                                           double* values,
                                           const double* coordinates,
                                           const ufc::cell& c) const;
 
   /// Evaluate order n derivatives of all basis functions at given point in cell
-  virtual void evaluate_basis_derivatives_all(unsigned int n,
+  virtual void evaluate_basis_derivatives_all(std::size_t n,
                                               double* values,
                                               const double* coordinates,
                                               const ufc::cell& c) const;
 
   /// Evaluate linear functional for dof i on the function f
-  virtual double evaluate_dof(unsigned int i,
+  virtual double evaluate_dof(std::size_t i,
                               const ufc::function& f,
                               const ufc::cell& c) const;
 
@@ -245,10 +245,10 @@ public:
                                      const ufc::cell& c) const;
 
   /// Return the number of sub elements (for a mixed element)
-  virtual unsigned int num_sub_elements() const;
+  virtual std::size_t num_sub_elements() const;
 
   /// Create a new finite element for sub element i (for a mixed element)
-  virtual ufc::finite_element* create_sub_element(unsigned int i) const;
+  virtual ufc::finite_element* create_sub_element(std::size_t i) const;
 
   /// Create a new class instance
   virtual ufc::finite_element* create() const;
@@ -283,37 +283,37 @@ ufc::shape %(classname)s::cell_shape() const
 }
 
 /// Return the topological dimension of the cell shape
-unsigned int %(classname)s::topological_dimension() const
+std::size_t %(classname)s::topological_dimension() const
 {
 %(topological_dimension)s
 }
 
 /// Return the geometric dimension of the cell shape
-unsigned int %(classname)s::geometric_dimension() const
+std::size_t %(classname)s::geometric_dimension() const
 {
 %(geometric_dimension)s
 }
 
 /// Return the dimension of the finite element function space
-unsigned int %(classname)s::space_dimension() const
+std::size_t %(classname)s::space_dimension() const
 {
 %(space_dimension)s
 }
 
 /// Return the rank of the value space
-unsigned int %(classname)s::value_rank() const
+std::size_t %(classname)s::value_rank() const
 {
 %(value_rank)s
 }
 
 /// Return the dimension of the value space for axis i
-unsigned int %(classname)s::value_dimension(unsigned int i) const
+std::size_t %(classname)s::value_dimension(std::size_t i) const
 {
 %(value_dimension)s
 }
 
 /// Evaluate basis function i at given point in cell
-void %(classname)s::evaluate_basis(unsigned int i,
+void %(classname)s::evaluate_basis(std::size_t i,
                                    double* values,
                                    const double* coordinates,
                                    const ufc::cell& c) const
@@ -330,8 +330,8 @@ void %(classname)s::evaluate_basis_all(double* values,
 }
 
 /// Evaluate order n derivatives of basis function i at given point in cell
-void %(classname)s::evaluate_basis_derivatives(unsigned int i,
-                                               unsigned int n,
+void %(classname)s::evaluate_basis_derivatives(std::size_t i,
+                                               std::size_t n,
                                                double* values,
                                                const double* coordinates,
                                                const ufc::cell& c) const
@@ -340,7 +340,7 @@ void %(classname)s::evaluate_basis_derivatives(unsigned int i,
 }
 
 /// Evaluate order n derivatives of all basis functions at given point in cell
-void %(classname)s::evaluate_basis_derivatives_all(unsigned int n,
+void %(classname)s::evaluate_basis_derivatives_all(std::size_t n,
                                                    double* values,
                                                    const double* coordinates,
                                                    const ufc::cell& c) const
@@ -349,7 +349,7 @@ void %(classname)s::evaluate_basis_derivatives_all(unsigned int n,
 }
 
 /// Evaluate linear functional for dof i on the function f
-double %(classname)s::evaluate_dof(unsigned int i,
+double %(classname)s::evaluate_dof(std::size_t i,
                                    const ufc::function& f,
                                    const ufc::cell& c) const
 {
@@ -389,13 +389,13 @@ void %(classname)s::map_to_reference_cell(double* xhat,
 }
 
 /// Return the number of sub elements (for a mixed element)
-unsigned int %(classname)s::num_sub_elements() const
+std::size_t %(classname)s::num_sub_elements() const
 {
 %(num_sub_elements)s
 }
 
 /// Create a new finite element for sub element i (for a mixed element)
-ufc::finite_element* %(classname)s::create_sub_element(unsigned int i) const
+ufc::finite_element* %(classname)s::create_sub_element(std::size_t i) const
 {
 %(create_sub_element)s
 }

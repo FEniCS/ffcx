@@ -42,61 +42,61 @@ public:
   }
 
   /// Return the rank of the global tensor (r)
-  virtual unsigned int rank() const
+  virtual std::size_t rank() const
   {
 %(rank)s
   }
 
   /// Return the number of coefficients (n)
-  virtual unsigned int num_coefficients() const
+  virtual std::size_t num_coefficients() const
   {
 %(num_coefficients)s
   }
 
   /// Return the number of cell domains
-  virtual unsigned int num_cell_domains() const
+  virtual std::size_t num_cell_domains() const
   {
 %(num_cell_domains)s
   }
 
   /// Return the number of exterior facet domains
-  virtual unsigned int num_exterior_facet_domains() const
+  virtual std::size_t num_exterior_facet_domains() const
   {
 %(num_exterior_facet_domains)s
   }
 
   /// Return the number of interior facet domains
-  virtual unsigned int num_interior_facet_domains() const
+  virtual std::size_t num_interior_facet_domains() const
   {
 %(num_interior_facet_domains)s
   }
 
   /// Create a new finite element for argument function i
-  virtual ufc::finite_element* create_finite_element(unsigned int i) const
+  virtual ufc::finite_element* create_finite_element(std::size_t i) const
   {
 %(create_finite_element)s
   }
 
   /// Create a new dofmap for argument function i
-  virtual ufc::dofmap* create_dofmap(unsigned int i) const
+  virtual ufc::dofmap* create_dofmap(std::size_t i) const
   {
 %(create_dofmap)s
   }
 
   /// Create a new cell integral on sub domain i
-  virtual ufc::cell_integral* create_cell_integral(unsigned int i) const
+  virtual ufc::cell_integral* create_cell_integral(std::size_t i) const
   {
 %(create_cell_integral)s
   }
 
   /// Create a new exterior facet integral on sub domain i
-  virtual ufc::exterior_facet_integral* create_exterior_facet_integral(unsigned int i) const
+  virtual ufc::exterior_facet_integral* create_exterior_facet_integral(std::size_t i) const
   {
 %(create_exterior_facet_integral)s
   }
 
   /// Create a new interior facet integral on sub domain i
-  virtual ufc::interior_facet_integral* create_interior_facet_integral(unsigned int i) const
+  virtual ufc::interior_facet_integral* create_interior_facet_integral(std::size_t i) const
   {
 %(create_interior_facet_integral)s
   }
@@ -134,34 +134,34 @@ public:
   virtual const char* signature() const;
 
   /// Return the rank of the global tensor (r)
-  virtual unsigned int rank() const;
+  virtual std::size_t rank() const;
 
   /// Return the number of coefficients (n)
-  virtual unsigned int num_coefficients() const;
+  virtual std::size_t num_coefficients() const;
 
   /// Return the number of cell domains
-  virtual unsigned int num_cell_domains() const;
+  virtual std::size_t num_cell_domains() const;
 
   /// Return the number of exterior facet domains
-  virtual unsigned int num_exterior_facet_domains() const;
+  virtual std::size_t num_exterior_facet_domains() const;
 
   /// Return the number of interior facet domains
-  virtual unsigned int num_interior_facet_domains() const;
+  virtual std::size_t num_interior_facet_domains() const;
 
   /// Create a new finite element for argument function i
-  virtual ufc::finite_element* create_finite_element(unsigned int i) const;
+  virtual ufc::finite_element* create_finite_element(std::size_t i) const;
 
   /// Create a new dofmap for argument function i
-  virtual ufc::dofmap* create_dofmap(unsigned int i) const;
+  virtual ufc::dofmap* create_dofmap(std::size_t i) const;
 
   /// Create a new cell integral on sub domain i
-  virtual ufc::cell_integral* create_cell_integral(unsigned int i) const;
+  virtual ufc::cell_integral* create_cell_integral(std::size_t i) const;
 
   /// Create a new exterior facet integral on sub domain i
-  virtual ufc::exterior_facet_integral* create_exterior_facet_integral(unsigned int i) const;
+  virtual ufc::exterior_facet_integral* create_exterior_facet_integral(std::size_t i) const;
 
   /// Create a new interior facet integral on sub domain i
-  virtual ufc::interior_facet_integral* create_interior_facet_integral(unsigned int i) const;
+  virtual ufc::interior_facet_integral* create_interior_facet_integral(std::size_t i) const;
 
 };
 """
@@ -186,61 +186,61 @@ const char* %(classname)s::signature() const
 }
 
 /// Return the rank of the global tensor (r)
-unsigned int %(classname)s::rank() const
+std::size_t %(classname)s::rank() const
 {
 %(rank)s
 }
 
 /// Return the number of coefficients (n)
-unsigned int %(classname)s::num_coefficients() const
+std::size_t %(classname)s::num_coefficients() const
 {
 %(num_coefficients)s
 }
 
 /// Return the number of cell domains
-unsigned int %(classname)s::num_cell_domains() const
+std::size_t %(classname)s::num_cell_domains() const
 {
 %(num_cell_domains)s
 }
 
 /// Return the number of exterior facet domains
-unsigned int %(classname)s::num_exterior_facet_domains() const
+std::size_t %(classname)s::num_exterior_facet_domains() const
 {
 %(num_exterior_facet_domains)s
 }
 
 /// Return the number of interior facet domains
-unsigned int %(classname)s::num_interior_facet_domains() const
+std::size_t %(classname)s::num_interior_facet_domains() const
 {
 %(num_interior_facet_domains)s
 }
 
 /// Create a new finite element for argument function i
-ufc::finite_element* %(classname)s::create_finite_element(unsigned int i) const
+ufc::finite_element* %(classname)s::create_finite_element(std::size_t i) const
 {
 %(create_finite_element)s
 }
 
 /// Create a new dofmap for argument function i
-ufc::dofmap* %(classname)s::create_dofmap(unsigned int i) const
+ufc::dofmap* %(classname)s::create_dofmap(std::size_t i) const
 {
 %(create_dofmap)s
 }
 
 /// Create a new cell integral on sub domain i
-ufc::cell_integral* %(classname)s::create_cell_integral(unsigned int i) const
+ufc::cell_integral* %(classname)s::create_cell_integral(std::size_t i) const
 {
 %(create_cell_integral)s
 }
 
 /// Create a new exterior facet integral on sub domain i
-ufc::exterior_facet_integral* %(classname)s::create_exterior_facet_integral(unsigned int i) const
+ufc::exterior_facet_integral* %(classname)s::create_exterior_facet_integral(std::size_t i) const
 {
 %(create_exterior_facet_integral)s
 }
 
 /// Create a new interior facet integral on sub domain i
-ufc::interior_facet_integral* %(classname)s::create_interior_facet_integral(unsigned int i) const
+ufc::interior_facet_integral* %(classname)s::create_interior_facet_integral(std::size_t i) const
 {
 %(create_interior_facet_integral)s
 }
