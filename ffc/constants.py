@@ -1,4 +1,4 @@
-# Copyright (C) 2005-2011 Anders Logg
+# Copyright (C) 2005-2013 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -18,7 +18,7 @@
 # Modified by Kristian B. Oelgaard 2009
 #
 # First added:  2005-05-20
-# Last changed: 2011-12-07
+# Last changed: 2013-01-07
 
-FFC_VERSION = "1.0.0+"
-UFC_VERSION = "2.0.5"
+FFC_VERSION = "1.1.0"
+UFC_VERSION = "2.1.0"
