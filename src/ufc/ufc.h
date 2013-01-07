@@ -332,6 +332,7 @@ namespace ufc
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
                                  const cell& c,
+                                 unsigned int facet,
                                  unsigned int num_quadrature_points,
                                  const double * const * quadrature_points,
                                  const double* quadrature_weights) const = 0;
@@ -364,7 +365,10 @@ namespace ufc
     /// using the specified reference cell quadrature points/weights
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
-                                 const cell& c,
+                                 const cell& c0,
+                                 const cell& c1,
+                                 unsigned int facet0,
+                                 unsigned int facet1,
                                  unsigned int num_quadrature_points,
                                  const double * const * quadrature_points,
                                  const double* quadrature_weights) const = 0;
