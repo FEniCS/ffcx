@@ -1,3 +1,4 @@
+ - New feature: Add general support for m-dimensional cells in n-dimensional space (n >= m, n, m = 1, 2, 3)
 1.1.0
  - Fix bug for Conditionals related to DG constant Coefficients. Bug #1082048.
  - Fix bug for Conditionals, precedence rules for And and Or. Bug #1075149.
