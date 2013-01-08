@@ -30,7 +30,7 @@ public:
   }
 
   /// Return true iff mesh entities of topological dimension d are needed
-  virtual bool needs_mesh_entities(unsigned int d) const
+  virtual bool needs_mesh_entities(std::size_t d) const
   {
 %(needs_mesh_entities)s
   }
@@ -55,49 +55,49 @@ public:
   }
 
   /// Return the topological dimension of the associated cell shape
-  virtual unsigned int topological_dimension() const
+  virtual std::size_t topological_dimension() const
   {
 %(topological_dimension)s
   }
 
   /// Return the geometric dimension of the associated cell shape
-  virtual unsigned int geometric_dimension() const
+  virtual std::size_t geometric_dimension() const
   {
 %(geometric_dimension)s
   }
 
   /// Return the dimension of the global finite element function space
-  virtual unsigned int global_dimension() const
+  virtual std::size_t global_dimension() const
   {
 %(global_dimension)s
   }
 
   /// Return the dimension of the local finite element function space for a cell
-  virtual unsigned int local_dimension(const ufc::cell& c) const
+  virtual std::size_t local_dimension(const ufc::cell& c) const
   {
 %(local_dimension)s
   }
 
   /// Return the maximum dimension of the local finite element function space
-  virtual unsigned int max_local_dimension() const
+  virtual std::size_t max_local_dimension() const
   {
 %(max_local_dimension)s
   }
 
   /// Return the number of dofs on each cell facet
-  virtual unsigned int num_facet_dofs() const
+  virtual std::size_t num_facet_dofs() const
   {
 %(num_facet_dofs)s
   }
 
   /// Return the number of dofs associated with each cell entity of dimension d
-  virtual unsigned int num_entity_dofs(unsigned int d) const
+  virtual std::size_t num_entity_dofs(std::size_t d) const
   {
 %(num_entity_dofs)s
   }
 
   /// Tabulate the local-to-global mapping of dofs on a cell
-  virtual void tabulate_dofs(unsigned int* dofs,
+  virtual void tabulate_dofs(std::size_t* dofs,
                              const ufc::mesh& m,
                              const ufc::cell& c) const
   {
@@ -105,15 +105,15 @@ public:
   }
 
   /// Tabulate the local-to-local mapping from facet dofs to cell dofs
-  virtual void tabulate_facet_dofs(unsigned int* dofs,
-                                   unsigned int facet) const
+  virtual void tabulate_facet_dofs(std::size_t* dofs,
+                                   std::size_t facet) const
   {
 %(tabulate_facet_dofs)s
   }
 
   /// Tabulate the local-to-local mapping of dofs on entity (d, i)
-  virtual void tabulate_entity_dofs(unsigned int* dofs,
-                                    unsigned int d, unsigned int i) const
+  virtual void tabulate_entity_dofs(std::size_t* dofs,
+                                    std::size_t d, std::size_t i) const
   {
 %(tabulate_entity_dofs)s
   }
@@ -126,13 +126,13 @@ public:
   }
 
   /// Return the number of sub dofmaps (for a mixed element)
-  virtual unsigned int num_sub_dofmaps() const
+  virtual std::size_t num_sub_dofmaps() const
   {
 %(num_sub_dofmaps)s
   }
 
   /// Create a new dofmap for sub dofmap i (for a mixed element)
-  virtual ufc::dofmap* create_sub_dofmap(unsigned int i) const
+  virtual ufc::dofmap* create_sub_dofmap(std::size_t i) const
   {
 %(create_sub_dofmap)s
   }
@@ -164,7 +164,7 @@ public:
   virtual const char* signature() const;
 
   /// Return true iff mesh entities of topological dimension d are needed
-  virtual bool needs_mesh_entities(unsigned int d) const;
+  virtual bool needs_mesh_entities(std::size_t d) const;
 
   /// Initialize dofmap for mesh (return true iff init_cell() is needed)
   virtual bool init_mesh(const ufc::mesh& m);
@@ -177,48 +177,48 @@ public:
   virtual void init_cell_finalize();
 
   /// Return the topological dimension of the associated cell shape
-  virtual unsigned int topological_dimension() const;
+  virtual std::size_t topological_dimension() const;
 
   /// Return the geometric dimension of the associated cell shape
-  virtual unsigned int geometric_dimension() const;
+  virtual std::size_t geometric_dimension() const;
 
   /// Return the dimension of the global finite element function space
-  virtual unsigned int global_dimension() const;
+  virtual std::size_t global_dimension() const;
 
   /// Return the dimension of the local finite element function space for a cell
-  virtual unsigned int local_dimension(const ufc::cell& c) const;
+  virtual std::size_t local_dimension(const ufc::cell& c) const;
 
   /// Return the maximum dimension of the local finite element function space
-  virtual unsigned int max_local_dimension() const;
+  virtual std::size_t max_local_dimension() const;
 
   /// Return the number of dofs on each cell facet
-  virtual unsigned int num_facet_dofs() const;
+  virtual std::size_t num_facet_dofs() const;
 
   /// Return the number of dofs associated with each cell entity of dimension d
-  virtual unsigned int num_entity_dofs(unsigned int d) const;
+  virtual std::size_t num_entity_dofs(std::size_t d) const;
 
   /// Tabulate the local-to-global mapping of dofs on a cell
-  virtual void tabulate_dofs(unsigned int* dofs,
+  virtual void tabulate_dofs(std::size_t* dofs,
                              const ufc::mesh& m,
                              const ufc::cell& c) const;
 
   /// Tabulate the local-to-local mapping from facet dofs to cell dofs
-  virtual void tabulate_facet_dofs(unsigned int* dofs,
-                                   unsigned int facet) const;
+  virtual void tabulate_facet_dofs(std::size_t* dofs,
+                                   std::size_t facet) const;
 
   /// Tabulate the local-to-local mapping of dofs on entity (d, i)
-  virtual void tabulate_entity_dofs(unsigned int* dofs,
-                                    unsigned int d, unsigned int i) const;
+  virtual void tabulate_entity_dofs(std::size_t* dofs,
+                                    std::size_t d, std::size_t i) const;
 
   /// Tabulate the coordinates of all dofs on a cell
   virtual void tabulate_coordinates(double** coordinates,
                                     const ufc::cell& c) const;
 
   /// Return the number of sub dofmaps (for a mixed element)
-  virtual unsigned int num_sub_dofmaps() const;
+  virtual std::size_t num_sub_dofmaps() const;
 
   /// Create a new dofmap for sub dofmap i (for a mixed element)
-  virtual ufc::dofmap* create_sub_dofmap(unsigned int i) const;
+  virtual ufc::dofmap* create_sub_dofmap(std::size_t i) const;
 
   /// Create a new class instance
   virtual ufc::dofmap* create() const;
@@ -246,7 +246,7 @@ const char* %(classname)s::signature() const
 }
 
 /// Return true iff mesh entities of topological dimension d are needed
-bool %(classname)s::needs_mesh_entities(unsigned int d) const
+bool %(classname)s::needs_mesh_entities(std::size_t d) const
 {
 %(needs_mesh_entities)s
 }
@@ -271,49 +271,49 @@ void %(classname)s::init_cell_finalize()
 }
 
 /// Return the topological dimension of the associated cell shape
-unsigned int %(classname)s::topological_dimension() const
+std::size_t %(classname)s::topological_dimension() const
 {
 %(topological_dimension)s
 }
 
 /// Return the geometric dimension of the associated cell shape
-unsigned int %(classname)s::geometric_dimension() const
+std::size_t %(classname)s::geometric_dimension() const
 {
 %(geometric_dimension)s
 }
 
 /// Return the dimension of the global finite element function space
-unsigned int %(classname)s::global_dimension() const
+std::size_t %(classname)s::global_dimension() const
 {
 %(global_dimension)s
 }
 
 /// Return the dimension of the local finite element function space for a cell
-unsigned int %(classname)s::local_dimension(const ufc::cell& c) const
+std::size_t %(classname)s::local_dimension(const ufc::cell& c) const
 {
 %(local_dimension)s
 }
 
 /// Return the maximum dimension of the local finite element function space
-unsigned int %(classname)s::max_local_dimension() const
+std::size_t %(classname)s::max_local_dimension() const
 {
 %(max_local_dimension)s
 }
 
 /// Return the number of dofs on each cell facet
-unsigned int %(classname)s::num_facet_dofs() const
+std::size_t %(classname)s::num_facet_dofs() const
 {
 %(num_facet_dofs)s
 }
 
 /// Return the number of dofs associated with each cell entity of dimension d
-unsigned int %(classname)s::num_entity_dofs(unsigned int d) const
+std::size_t %(classname)s::num_entity_dofs(std::size_t d) const
 {
 %(num_entity_dofs)s
 }
 
 /// Tabulate the local-to-global mapping of dofs on a cell
-void %(classname)s::tabulate_dofs(unsigned int* dofs,
+void %(classname)s::tabulate_dofs(std::size_t* dofs,
                                   const ufc::mesh& m,
                                   const ufc::cell& c) const
 {
@@ -321,15 +321,15 @@ void %(classname)s::tabulate_dofs(unsigned int* dofs,
 }
 
 /// Tabulate the local-to-local mapping from facet dofs to cell dofs
-void %(classname)s::tabulate_facet_dofs(unsigned int* dofs,
-                                        unsigned int facet) const
+void %(classname)s::tabulate_facet_dofs(std::size_t* dofs,
+                                        std::size_t facet) const
 {
 %(tabulate_facet_dofs)s
 }
 
 /// Tabulate the local-to-local mapping of dofs on entity (d, i)
-void %(classname)s::tabulate_entity_dofs(unsigned int* dofs,
-                                  unsigned int d, unsigned int i) const
+void %(classname)s::tabulate_entity_dofs(std::size_t* dofs,
+                                  std::size_t d, std::size_t i) const
 {
 %(tabulate_entity_dofs)s
 }
@@ -342,13 +342,13 @@ void %(classname)s::tabulate_coordinates(double** coordinates,
 }
 
 /// Return the number of sub dofmaps (for a mixed element)
-unsigned int %(classname)s::num_sub_dofmaps() const
+std::size_t %(classname)s::num_sub_dofmaps() const
 {
 %(num_sub_dofmaps)s
 }
 
 /// Create a new dofmap for sub dofmap i (for a mixed element)
-ufc::dofmap* %(classname)s::create_sub_dofmap(unsigned int i) const
+ufc::dofmap* %(classname)s::create_sub_dofmap(std::size_t i) const
 {
 %(create_sub_dofmap)s
 }

@@ -34,11 +34,11 @@ double toc()
 // Adaptive timing: make sure we run for at least TMIN to get reliable results
 double time_tabulate_tensor(ufc::cell_integral& integral, double *A, const double * const * w, const ufc::cell & c)
 {
-  unsigned int M = MMIN;
+  std::size_t M = MMIN;
   while ( true )
   {
     tic();
-    for (unsigned int i = 0; i < M; i++)
+    for (std::size_t i = 0; i < M; i++)
     {
       integral.tabulate_tensor(A, w, c);
     }
@@ -53,13 +53,13 @@ double time_tabulate_tensor(ufc::cell_integral& integral, double *A, const doubl
 }
 
 // Adaptive timing: make sure we run for at least TMIN to get reliable results
-double time_tabulate_tensor(ufc::exterior_facet_integral& integral, double *A, const double * const * w, const ufc::cell & c, unsigned int facet)
+double time_tabulate_tensor(ufc::exterior_facet_integral& integral, double *A, const double * const * w, const ufc::cell & c, std::size_t facet)
 {
-  unsigned int M = MMIN;
+  std::size_t M = MMIN;
   while ( true )
   {
     tic();
-    for (unsigned int i = 0; i < M; i++)
+    for (std::size_t i = 0; i < M; i++)
     {
       integral.tabulate_tensor(A, w, c, facet);
     }
@@ -103,7 +103,7 @@ vector< vector<double> > benchmark(const ufc::form & form, bool print_tensor)
     // benchmark all exterior facet integrals
     for(unsigned i = 0; i < form.num_exterior_facet_domains(); i++)
     {
-        unsigned int facet = 0; // TODO: would it be interesting to time all facets?
+        std::size_t facet = 0; // TODO: would it be interesting to time all facets?
         exterior_facet_times[i] = time_tabulate_tensor(*data.exterior_facet_domains[i], data.A, data.w, c, facet);
 
         if(print_tensor)
@@ -118,7 +118,7 @@ vector< vector<double> > benchmark(const ufc::form & form, bool print_tensor)
     /* // TODO: If somebody needs this, please implement it! Need two cells, and larger A.
     for(unsigned i = 0; i < form.num_interior_facet_domains(); i++)
     {
-        unsigned int facet = 0; // TODO: would it be interesting to time all facets?
+        std::size_t facet = 0; // TODO: would it be interesting to time all facets?
         interior_facet_times[i] = time_tabulate_tensor(*data.interior_facet_domains[i], data.A, data.w, c, facet);
 
         if(print_tensor)
