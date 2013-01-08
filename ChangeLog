@@ -1,4 +1,6 @@
-1.1.0
+1.1.x [2013-??-??]
+ - 
+1.1.0 [2013-01-07]
  - Fix bug for Conditionals related to DG constant Coefficients. Bug #1082048.
  - Fix bug for Conditionals, precedence rules for And and Or. Bug #1075149.
  - Changed data structure from list to deque when pop(0) operation is needed, speeding up split_expression operation considerable
