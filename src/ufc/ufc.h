@@ -1,4 +1,4 @@
-// This is UFC (Unified Form-assembly Code) v. 2.1.0.
+// This is UFC (Unified Form-assembly Code) v. 2.1.0+.
 // This code is released into the public domain.
 //
 // The FEniCS Project (http://www.fenicsproject.org/) 2006-2013.
@@ -12,7 +12,7 @@
 
 #include <stdexcept>
 
-const char UFC_VERSION[] = "2.1.0";
+const char UFC_VERSION[] = "2.1.0+";
 
 namespace ufc
 {
