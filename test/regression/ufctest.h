@@ -94,47 +94,6 @@ void print_array(std::string name, unsigned int n, value_type* values, int i=-1,
   std::cout << std::endl;
 }
 
-// Class for creating a "random" ufc::mesh object
-class test_mesh : public ufc::mesh
-{
-public:
-
-  test_mesh(ufc::shape cell_shape)
-  {
-    // Store dimensions
-    switch (cell_shape)
-    {
-    case ufc::interval:
-      topological_dimension = 1;
-      geometric_dimension = 1;
-      break;
-    case ufc::triangle:
-      topological_dimension = 2;
-      geometric_dimension = 2;
-      break;
-    case ufc::tetrahedron:
-      topological_dimension = 3;
-      geometric_dimension = 3;
-      break;
-    default:
-      throw std::runtime_error("Unhandled cell shape.");
-    }
-
-    // Set some random sizes
-    num_entities = new std::size_t[4];
-    num_entities[0] = 10001;
-    num_entities[1] = 10002;
-    num_entities[2] = 10003;
-    num_entities[3] = 10004;
-  }
-
-  ~test_mesh()
-  {
-    delete [] num_entities;
-  }
-
-};
-
 // Class for creating "random" ufc::cell objects
 class test_cell : public ufc::cell
 {
@@ -358,7 +317,12 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape)
   std::cout << "---------------" << std::endl;
 
   // Prepare arguments
-  test_mesh m(cell_shape);
+  std::vector<std::size_t> num_entities(4);
+  num_entities[0] = 10001;
+  num_entities[1] = 10002;
+  num_entities[2] = 10003;
+  num_entities[3] = 10004;
+
   test_cell c(cell_shape, dofmap.geometric_dimension());
   std::size_t n = dofmap.max_local_dimension();
   std::size_t* dofs = new std::size_t[n];
@@ -377,17 +341,8 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape)
   for (std::size_t d = 0; d <= c.topological_dimension; d++)
     print_scalar("needs_mesh_entities", dofmap.needs_mesh_entities(d), d);
 
-  // init_mesh
-  print_scalar("init_mesh", dofmap.init_mesh(m));
-
-  // init_cell not tested (not used by FFC)
-  print_scalar("init_cell", 0);
-
-  // init_cell_finalize (not used by FFC)
-  print_scalar("init_cell_finalize", 0);
-
   // global_dimension
-  print_scalar("global_dimension", dofmap.global_dimension());
+  print_scalar("global_dimension", dofmap.global_dimension(num_entities));
 
   // local_dimension
   print_scalar("local_dimension", dofmap.local_dimension(c));
@@ -406,7 +361,7 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape)
     print_scalar("num_entity_dofs", dofmap.num_entity_dofs(d), d);
 
   // tabulate_dofs
-  dofmap.tabulate_dofs(dofs, m, c);
+  dofmap.tabulate_dofs(dofs, num_entities, c);
   print_array("tabulate_dofs", dofmap.local_dimension(c), dofs);
 
   // tabulate_facet_dofs
