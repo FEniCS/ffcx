@@ -1,6 +1,6 @@
 "This module defines rules and algorithms for generating C++ code."
 
-# Copyright (C) 2009-2011 Anders Logg
+# Copyright (C) 2009-2013 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -21,7 +21,7 @@
 # Modified by Marie E. Rognes 2010
 #
 # First added:  2009-12-16
-# Last changed: 2011-11-28
+# Last changed: 2013-01-08
 
 # Python modules
 import re, numpy, platform
@@ -118,7 +118,7 @@ format.update({
 # Geometry related variable names (from code snippets).
 format.update({
     "entity index":     "c.entity_indices",
-    "num entities":     "m.num_entities",
+    "num entities":     "num_global_entities",
     "cell":             lambda s: "ufc::%s" % s,
     "J":                lambda i, j: "J_%d%d" % (i, j),
     "inv(J)":           lambda i, j: "K_%d%d" % (i, j),

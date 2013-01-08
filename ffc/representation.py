@@ -12,7 +12,7 @@ function "foo", one should only need to use the data stored
 in the intermediate representation under the key "foo".
 """
 
-# Copyright (C) 2009-2010 Anders Logg
+# Copyright (C) 2009-2013 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -33,7 +33,7 @@ in the intermediate representation under the key "foo".
 # Modified by Kristian B. Oelgaard 2010
 #
 # First added:  2009-12-16
-# Last changed: 2010-04-12
+# Last changed: 2013-01-08
 
 # Python modules
 from itertools import chain
@@ -137,12 +137,9 @@ def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
     # Compute data for each function
     ir["signature"] = "FFC dofmap for " + repr(ufl_element)
     ir["needs_mesh_entities"] = _needs_mesh_entities(element)
-    ir["init_mesh"] = _init_mesh(element)
-    ir["init_cell"] = None
-    ir["init_cell_finalize"] = None
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
-    ir["global_dimension"] = None
+    ir["global_dimension"] = _global_dimension(element)
     ir["local_dimension"] = element.space_dimension()
     ir["max_local_dimension"] = element.space_dimension()
     ir["num_facet_dofs"] = len(facet_dofs[0])
@@ -158,7 +155,8 @@ def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
 
     return ir
 
-def _init_mesh(element):
+def _global_dimension(element):
+    "Compute intermediate representation for global_dimension."
 
     if not isinstance(element, MixedElement):
         if isinstance(element, SpaceOfReals):
@@ -176,8 +174,8 @@ def _init_mesh(element):
     element = MixedElement(elements)
     return (_num_dofs_per_entity(element), num_reals)
 
-
 def _needs_mesh_entities(element):
+    "Compute intermediate representation for needs_mesh_entities."
 
     # Note: The dof map for Real elements does not depend on the mesh
 
@@ -188,7 +186,7 @@ def _needs_mesh_entities(element):
         return [d > 0 for d in num_dofs_per_entity]
 
 def _compute_integral_ir(form_data, form_id, parameters, common_cell=None):
-    "Compute intermediate represention of form integrals."
+    "Compute intermediate represention for form integrals."
 
     irs = []
 

@@ -6,7 +6,7 @@ This module implements the generation of C++ code for the body of each
 UFC function from an (optimized) intermediate representation (OIR).
 """
 
-# Copyright (C) 2009 Anders Logg
+# Copyright (C) 2009-2013 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -23,10 +23,10 @@ UFC function from an (optimized) intermediate representation (OIR).
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Mehdi Nikbakht, 2010
+# Modified by Mehdi Nikbakht 2010
 #
 # First added:  2009-12-16
-# Last changed: 2011-11-28
+# Last changed: 2013-01-08
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -36,7 +36,8 @@ from ffc.cpp import set_exception_handling
 
 # FFC code generation modules
 from ffc.evaluatebasis import _evaluate_basis, _evaluate_basis_all
-from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives, _evaluate_basis_derivatives_all
+from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives
+from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives_all
 from ffc.evaluatedof import evaluate_dof_and_dofs, affine_weights
 from ffc.interpolatevertexvalues import interpolate_vertex_values
 
@@ -152,19 +153,16 @@ def _generate_dofmap_code(ir, prefix, parameters):
     # Generate code
     code = {}
     code["classname"] = classname(prefix, ir["id"])
-    code["members"] = "\nprivate:\n\n  " + declare("unsigned int", "_global_dimension")
-    code["constructor"] = assign("_global_dimension", f_int(0))
+    code["members"] = ""
+    code["constructor"] = do_nothing
     code["constructor_arguments"] = ""
     code["initializer_list"] = ""
     code["destructor"] = do_nothing
     code["signature"] = ret('"%s"' % ir["signature"])
     code["needs_mesh_entities"] = _needs_mesh_entities(ir["needs_mesh_entities"])
-    code["init_mesh"] = _init_mesh(ir["init_mesh"])
-    code["init_cell"] = do_nothing
-    code["init_cell_finalize"] = do_nothing
     code["topological_dimension"] = ret(ir["topological_dimension"])
     code["geometric_dimension"] = ret(ir["geometric_dimension"])
-    code["global_dimension"] = ret("_global_dimension")
+    code["global_dimension"] = _global_dimension(ir["global_dimension"])
     code["local_dimension"] = ret(ir["local_dimension"])
     code["max_local_dimension"] = ret(ir["max_local_dimension"])
     code["num_facet_dofs"] = ret(ir["num_facet_dofs"])
@@ -264,8 +262,8 @@ def _needs_mesh_entities(ir):
 
     return format["switch"](dimension, [ret(boolean(c)) for c in ir], ret(boolean(False)))
 
-def _init_mesh(ir):
-    """Generate code for init_mesh. ir[0] is a list of num dofs per
+def _global_dimension(ir):
+    """Generate code for global_dimension. ir[0] is a list of num dofs per
     entity."""
 
     num_dofs = ir[0]
@@ -282,8 +280,8 @@ def _init_mesh(ir):
         except:
             pass
 
-    code = "\n".join([format["assign"](format["member global dimension"], dimension),
-                      format["return"](format["bool"](False))])
+    code = format["return"](dimension)
+
     return code
 
 def _tabulate_facet_dofs(ir):
