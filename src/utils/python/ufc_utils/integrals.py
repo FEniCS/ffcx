@@ -148,7 +148,6 @@ public:
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
                                const ufc::cell& c,
-                               std::size_t facet,
                                std::size_t num_quadrature_points,
                                const double * const * quadrature_points,
                                const double* quadrature_weights) const
@@ -219,7 +218,6 @@ void %(classname)s::tabulate_tensor(double* A,
 void %(classname)s::tabulate_tensor(double* A,
                      const double * const * w,
                      const ufc::cell& c,
-                     std::size_t facet,
                      std::size_t num_quadrature_points,
                      const double * const * quadrature_points,
                      const double* quadrature_weights) const
@@ -264,10 +262,7 @@ public:
   /// using the specified reference cell quadrature points/weights
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
-                               const ufc::cell& c0,
-                               const ufc::cell& c1,
-                               std::size_t facet0,
-                               std::size_t facet1,
+                               const ufc::cell& c,
                                std::size_t num_quadrature_points,
                                const double * const * quadrature_points,
                                const double* quadrature_weights) const
@@ -341,10 +336,7 @@ void %(classname)s::tabulate_tensor(double* A,
 /// using the specified reference cell quadrature points/weights
 void %(classname)s::tabulate_tensor(double* A,
                      const double * const * w,
-                     const ufc::cell& c0,
-                     const ufc::cell& c1,
-                     std::size_t facet0,
-                     std::size_t facet1,
+                     const ufc::cell& c,
                      std::size_t num_quadrature_points,
                      const double * const * quadrature_points,
                      const double* quadrature_weights) const
