@@ -48,8 +48,8 @@ public:
   }
 
   /// Return the dimension of the global finite element function space
-  virtual std::size_t global_dimension(const std::vector<std::size_t> &
-                                       num_mesh_entities) const
+  virtual std::size_t global_dimension(const std::vector<std::size_t>&
+                                       num_global_entities) const
   {
 %(global_dimension)s
   }
@@ -80,7 +80,7 @@ public:
 
   /// Tabulate the local-to-global mapping of dofs on a cell
   virtual void tabulate_dofs(std::size_t* dofs,
-                             const std::vector<std::size_t> & num_mesh_entities,
+                             const std::vector<std::size_t>& num_global_entities,
                              const ufc::cell& c) const
   {
 %(tabulate_dofs)s
@@ -155,8 +155,8 @@ public:
   virtual std::size_t geometric_dimension() const;
 
   /// Return the dimension of the global finite element function space
-  virtual std::size_t global_dimension(const std::vector<std::size_t> &
-                                       num_mesh_entities) const;
+  virtual std::size_t global_dimension(const std::vector<std::size_t>&
+                                       num_global_entities) const;
 
   /// Return the dimension of the local finite element function space for a cell
   virtual std::size_t local_dimension(const ufc::cell& c) const;
@@ -172,7 +172,7 @@ public:
 
   /// Tabulate the local-to-global mapping of dofs on a cell
   virtual void tabulate_dofs(std::size_t* dofs,
-                             const std::vector<std::size_t> & num_mesh_entities,
+                             const std::vector<std::size_t>& num_global_entities,
                              const ufc::cell& c) const;
 
   /// Tabulate the local-to-local mapping from facet dofs to cell dofs
@@ -237,8 +237,8 @@ std::size_t %(classname)s::geometric_dimension() const
 }
 
 /// Return the dimension of the global finite element function space
-std::size_t %(classname)s::global_dimension(const std::vector<std::size_t> &
-                                            num_mesh_entities) const
+std::size_t %(classname)s::global_dimension(const std::vector<std::size_t>&
+                                            num_global_entities) const
 {
 %(global_dimension)s
 }
@@ -269,7 +269,7 @@ std::size_t %(classname)s::num_entity_dofs(std::size_t d) const
 
 /// Tabulate the local-to-global mapping of dofs on a cell
 void %(classname)s::tabulate_dofs(std::size_t* dofs,
-                                  const std::vector<std::size_t> & num_mesh_entities,
+                                  const std::vector<std::size_t>& num_global_entities,
                                   const ufc::cell& c) const
 {
 %(tabulate_dofs)s

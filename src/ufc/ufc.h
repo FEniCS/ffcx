@@ -204,7 +204,7 @@ namespace ufc
     virtual std::size_t geometric_dimension() const = 0;
 
     /// Return the dimension of the global finite element function space
-    virtual std::size_t global_dimension(const std::vector<std::size_t> &
+    virtual std::size_t global_dimension(const std::vector<std::size_t>&
                                          num_global_mesh_entities) const = 0;
 
     /// Return the dimension of the local finite element function space for a cell
@@ -221,7 +221,7 @@ namespace ufc
 
     /// Tabulate the local-to-global mapping of dofs on a cell
     virtual void tabulate_dofs(std::size_t* dofs,
-                               const std::vector<std::size_t> & num_global_entities,
+                               const std::vector<std::size_t>& num_global_entities,
                                const cell& c) const = 0;
 
     /// Tabulate the local-to-local mapping from facet dofs to cell dofs
