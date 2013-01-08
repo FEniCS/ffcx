@@ -610,6 +610,7 @@ void test_form(ufc::form& form, bool bench)
   std::cout << "Testing form" << std::endl;
   std::cout << "------------" << std::endl;
 
+
   // Compute size of tensors
   int tensor_size = 1;
   int macro_tensor_size = 1;
@@ -640,6 +641,7 @@ void test_form(ufc::form& form, bool bench)
   // Get cell shape
   ufc::finite_element* element = form.create_finite_element(0);
   ufc::shape cell_shape = element->cell_shape();
+  std::size_t gdim = element->geometric_dimension();
   delete element;
   element = 0;
 
