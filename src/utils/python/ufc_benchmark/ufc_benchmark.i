@@ -16,11 +16,11 @@
 %template(vector_vector_double)             std::vector< std::vector<double> >;
 %typedef std::vector< std::vector<double> > vector_vector_double;
 
-%template(vector_uint) std::vector< unsigned int >;
-%typedef std::vector< unsigned int > vector_uint;
+%template(vector_std_t) std::vector< std::size_t >;
+%typedef std::vector< std::size_t > vector_size_t;
 
-%template(vector_vector_uint) std::vector< std::vector< unsigned int > >;
-%typedef std::vector< std::vector< unsigned int > > vector_vector_uint;
+%template(vector_vector_size_t) std::vector< std::vector< std::size_t > >;
+%typedef std::vector< std::vector< std::size_t > > vector_vector_size_t;
 
 // ------------------------ UFC stuff
 
@@ -52,7 +52,7 @@ boost::shared_ptr<ufc::form> form_ptr(ufc::form * form) { return boost::shared_p
 def benchmark_forms(forms, print_tensors):
     import gc
     gc.collect()
-    
+
     times = []
     for f in forms:
         res = benchmark(f, print_tensors)

@@ -37,7 +37,7 @@ public:
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
                                const ufc::cell& c,
-                               unsigned int num_quadrature_points,
+                               std::size_t num_quadrature_points,
                                const double * const * quadrature_points,
                                const double* quadrature_weights) const
   {
@@ -72,7 +72,7 @@ public:
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
                                const ufc::cell& c,
-                               unsigned int num_quadrature_points,
+                               std::size_t num_quadrature_points,
                                const double * const * quadrature_points,
                                const double* quadrature_weights) const;
 
@@ -105,7 +105,7 @@ void %(classname)s::tabulate_tensor(double* A,
 void %(classname)s::tabulate_tensor(double* A,
                      const double * const * w,
                      const ufc::cell& c,
-                     unsigned int num_quadrature_points,
+                     std::size_t num_quadrature_points,
                      const double * const * quadrature_points,
                      const double* quadrature_weights) const
 {
@@ -138,7 +138,7 @@ public:
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
                                const ufc::cell& c,
-                               unsigned int facet) const
+                               std::size_t facet) const
   {
 %(tabulate_tensor)s
   }
@@ -148,7 +148,7 @@ public:
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
                                const ufc::cell& c,
-                               unsigned int num_quadrature_points,
+                               std::size_t num_quadrature_points,
                                const double * const * quadrature_points,
                                const double* quadrature_weights) const
   {
@@ -177,14 +177,14 @@ public:
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
                                const ufc::cell& c,
-                               unsigned int facet) const;
+                               std::size_t facet) const;
 
   /// Tabulate the tensor for the contribution from a local exterior facet
   /// using the specified reference cell quadrature points/weights
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
                                const ufc::cell& c,
-                               unsigned int num_quadrature_points,
+                               std::size_t num_quadrature_points,
                                const double * const * quadrature_points,
                                const double* quadrature_weights) const;
 
@@ -208,7 +208,7 @@ exterior_facet_integral_implementation = """\
 void %(classname)s::tabulate_tensor(double* A,
                                     const double * const * w,
                                     const ufc::cell& c,
-                                    unsigned int facet) const
+                                    std::size_t facet) const
 {
 %(tabulate_tensor)s
 }
@@ -218,7 +218,7 @@ void %(classname)s::tabulate_tensor(double* A,
 void %(classname)s::tabulate_tensor(double* A,
                      const double * const * w,
                      const ufc::cell& c,
-                     unsigned int num_quadrature_points,
+                     std::size_t num_quadrature_points,
                      const double * const * quadrature_points,
                      const double* quadrature_weights) const
 {
@@ -252,8 +252,8 @@ public:
                                const double * const * w,
                                const ufc::cell& c0,
                                const ufc::cell& c1,
-                               unsigned int facet0,
-                               unsigned int facet1) const
+                               std::size_t facet0,
+                               std::size_t facet1) const
   {
 %(tabulate_tensor)s
   }
@@ -263,7 +263,7 @@ public:
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
                                const ufc::cell& c,
-                               unsigned int num_quadrature_points,
+                               std::size_t num_quadrature_points,
                                const double * const * quadrature_points,
                                const double* quadrature_weights) const
   {
@@ -293,15 +293,15 @@ public:
                                const double * const * w,
                                const ufc::cell& c0,
                                const ufc::cell& c1,
-                               unsigned int facet0,
-                               unsigned int facet1) const;
+                               std::size_t facet0,
+                               std::size_t facet1) const;
 
   /// Tabulate the tensor for the contribution from a local interior facet
   /// using the specified reference cell quadrature points/weights
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
                                const ufc::cell& c,
-                               unsigned int num_quadrature_points,
+                               std::size_t num_quadrature_points,
                                const double * const * quadrature_points,
                                const double* quadrature_weights) const;
 
@@ -326,8 +326,8 @@ void %(classname)s::tabulate_tensor(double* A,
                                     const double * const * w,
                                     const ufc::cell& c0,
                                     const ufc::cell& c1,
-                                    unsigned int facet0,
-                                    unsigned int facet1) const
+                                    std::size_t facet0,
+                                    std::size_t facet1) const
 {
 %(tabulate_tensor)s
 }
@@ -337,7 +337,7 @@ void %(classname)s::tabulate_tensor(double* A,
 void %(classname)s::tabulate_tensor(double* A,
                      const double * const * w,
                      const ufc::cell& c,
-                     unsigned int num_quadrature_points,
+                     std::size_t num_quadrature_points,
                      const double * const * quadrature_points,
                      const double* quadrature_weights) const
 {

@@ -7,6 +7,7 @@
 #define __UFC_REFERENCE_CELL_H
 
 #include "ufc.h"
+#include <cstddef>
 #include <stdexcept>
 
 namespace ufc
@@ -42,11 +43,11 @@ namespace ufc
             geometric_dimension = topological_dimension;
 
             // Fill global indices like we had a single-cell mesh.
-            entity_indices = new unsigned int*[topological_dimension+1];
-            for(unsigned int i = 0; i <= topological_dimension; i++)
+            entity_indices = new std::size_t*[topological_dimension+1];
+            for(std::size_t i = 0; i <= topological_dimension; i++)
             {
-                entity_indices[i] = new unsigned int[num_entities[i]];
-                for(unsigned int j = 0; j < num_entities[i]; j++)
+                entity_indices[i] = new std::size_t[num_entities[i]];
+                for(std::size_t j = 0; j < num_entities[i]; j++)
                 {
                     entity_indices[i][j] = j;
                 }
@@ -54,10 +55,10 @@ namespace ufc
 
             // Allocate an empty array of vertex coordinates.
             coordinates = new double*[num_entities[0]];
-            for(unsigned int i = 0; i < num_entities[0]; i++)
+            for(std::size_t i = 0; i < num_entities[0]; i++)
             {
                 coordinates[i] = new double[geometric_dimension];
-                for(unsigned int j = 0; j < geometric_dimension; j++)
+                for(std::size_t j = 0; j < geometric_dimension; j++)
                 {
                     coordinates[i][j] = 0.0;
                 }
@@ -153,13 +154,13 @@ namespace ufc
         /// Destructor
         virtual ~reference_cell()
         {
-            for(unsigned int i = 0; i <= topological_dimension; i++)
+            for(std::size_t i = 0; i <= topological_dimension; i++)
             {
                 delete [] entity_indices[i];
             }
             delete [] entity_indices;
 
-            for(unsigned int i = 0; i < num_entities[0]; i++)
+            for(std::size_t i = 0; i < num_entities[0]; i++)
             {
                 delete [] coordinates[i];
             }
@@ -167,7 +168,7 @@ namespace ufc
         }
 
         /// The number of entities of a particular dimension
-        unsigned int num_entities[4];
+        std::size_t num_entities[4];
 
     };
 
@@ -177,32 +178,32 @@ namespace ufc
     public:
 
         /// Constructor
-        Cell(unsigned int top, unsigned int geo, std::vector< std::vector<double> > coords, std::vector< unsigned int> num_ents): ufc::cell(), num_entities(num_ents)
+        Cell(std::size_t top, std::size_t geo, std::vector< std::vector<double> > coords, std::vector< std::size_t> num_ents): ufc::cell(), num_entities(num_ents)
         {
             topological_dimension = top;
             geometric_dimension   = geo;
             num_entities[0] = coords.size();
 
             // Fill global indices
-//            entity_indices = new unsigned int*[topological_dimension+1];
-//            for(unsigned int i = 0; i <= topological_dimension; i++)
+//            entity_indices = new std::size_t*[topological_dimension+1];
+//            for(std::size_t i = 0; i <= topological_dimension; i++)
 //            {
-//                entity_indices[i] = new unsigned int[num_entities[i]];
-//                for(unsigned int j = 0; j < num_entities[i]; j++)
+//                entity_indices[i] = new std::size_t[num_entities[i]];
+//                for(std::size_t j = 0; j < num_entities[i]; j++)
 //                {
 //                    entity_indices[i][j] = j;
 //                }
 //            }
 
-            for(unsigned int i = 0; i < num_ents.size(); i++)
+            for(std::size_t i = 0; i < num_ents.size(); i++)
               num_entities[i] = num_ents[i];
 
             // Allocate an empty array of vertex coordinates.
             coordinates = new double*[coords.size()];
-            for(unsigned int i = 0; i < coords.size(); i++)
+            for(std::size_t i = 0; i < coords.size(); i++)
             {
                 coordinates[i] = new double[geometric_dimension];
-                for(unsigned int j = 0; j < geometric_dimension; j++)
+                for(std::size_t j = 0; j < geometric_dimension; j++)
                 {
                     coordinates[i][j] = coords[i][j];
                 }
@@ -213,13 +214,13 @@ namespace ufc
         /// Destructor
         virtual ~Cell()
         {
-//            for(unsigned int i = 0; i <= topological_dimension; i++)
+//            for(std::size_t i = 0; i <= topological_dimension; i++)
 //            {
 //                delete [] entity_indices[i];
 //            }
 //            delete [] entity_indices;
 
-            for(unsigned int i = 0; i < num_entities[0]; i++)
+            for(std::size_t i = 0; i < num_entities[0]; i++)
             {
                 delete [] coordinates[i];
             }
@@ -227,7 +228,7 @@ namespace ufc
         }
 
         /// The number of entities of a particular dimension
-        std::vector<unsigned int> num_entities;
+        std::vector<std::size_t> num_entities;
     };
 
 
@@ -244,8 +245,8 @@ namespace ufc
             geometric_dimension   = c.geometric_dimension;
 
             // Set global number of entities of each topological dimension to that of a single cell.
-            num_entities = new unsigned int[topological_dimension+1];
-            for(unsigned int i = 0; i <= topological_dimension; i++)
+            num_entities = new std::size_t[topological_dimension+1];
+            for(std::size_t i = 0; i <= topological_dimension; i++)
             {
                 num_entities[i] = c.num_entities[i];
             }
@@ -268,14 +269,14 @@ namespace ufc
     public:
 
         /// Constructor
-        Mesh(unsigned int top, unsigned int geo, std::vector<unsigned int> ents)//: ufc::mesh()
+        Mesh(std::size_t top, std::size_t geo, std::vector<std::size_t> ents)//: ufc::mesh()
         {
             topological_dimension = top;
             geometric_dimension   = geo;
 
             // Set global number of entities of each topological dimension to that of a single cell.
-            num_entities = new unsigned int[topological_dimension+1];
-            for(unsigned int i = 0; i <= topological_dimension; i++)
+            num_entities = new std::size_t[topological_dimension+1];
+            for(std::size_t i = 0; i <= topological_dimension; i++)
             {
                 num_entities[i] = ents[i];
             }
@@ -291,4 +292,3 @@ namespace ufc
 }
 
 #endif
-

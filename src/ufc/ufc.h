@@ -10,6 +10,7 @@
 #define UFC_VERSION_MINOR 1
 #define UFC_VERSION_MAINTENANCE 0
 
+#include <cstddef>
 #include <stdexcept>
 
 const char UFC_VERSION[] = "2.1.0+";
@@ -33,13 +34,13 @@ namespace ufc
     virtual ~mesh() {}
 
     /// Topological dimension of the mesh
-    unsigned int topological_dimension;
+    std::size_t topological_dimension;
 
     /// Geometric dimension of the mesh
-    unsigned int geometric_dimension;
+    std::size_t geometric_dimension;
 
     /// Array of the global number of entities of each topological dimension
-    unsigned int* num_entities;
+    std::size_t* num_entities;
 
   };
 
@@ -62,19 +63,19 @@ namespace ufc
     shape cell_shape;
 
     /// Topological dimension of the mesh
-    unsigned int topological_dimension;
+    std::size_t topological_dimension;
 
     /// Geometric dimension of the mesh
-    unsigned int geometric_dimension;
+    std::size_t geometric_dimension;
 
     /// Array of global indices for the mesh entities of the cell
-    unsigned int** entity_indices;
+    std::size_t** entity_indices;
 
     /// Array of coordinates for the vertices of the cell
     double** coordinates;
 
     /// Cell index (short-cut for entity_indices[topological_dimension][0])
-    unsigned int index;
+    std::size_t index;
 
     /// Local facet index
     int local_facet;
@@ -125,22 +126,22 @@ namespace ufc
     virtual shape cell_shape() const = 0;
 
     /// Return the topological dimension of the cell shape
-    virtual unsigned int topological_dimension() const = 0;
+    virtual std::size_t topological_dimension() const = 0;
 
     /// Return the geometric dimension of the cell shape
-    virtual unsigned int geometric_dimension() const = 0;
+    virtual std::size_t geometric_dimension() const = 0;
 
     /// Return the dimension of the finite element function space
-    virtual unsigned int space_dimension() const = 0;
+    virtual std::size_t space_dimension() const = 0;
 
     /// Return the rank of the value space
-    virtual unsigned int value_rank() const = 0;
+    virtual std::size_t value_rank() const = 0;
 
     /// Return the dimension of the value space for axis i
-    virtual unsigned int value_dimension(unsigned int i) const = 0;
+    virtual std::size_t value_dimension(std::size_t i) const = 0;
 
     /// Evaluate basis function i at given point in cell
-    virtual void evaluate_basis(unsigned int i,
+    virtual void evaluate_basis(std::size_t i,
                                 double* values,
                                 const double* coordinates,
                                 const cell& c) const = 0;
@@ -151,20 +152,20 @@ namespace ufc
                                     const cell& c) const = 0;
 
     /// Evaluate order n derivatives of basis function i at given point in cell
-    virtual void evaluate_basis_derivatives(unsigned int i,
-                                            unsigned int n,
+    virtual void evaluate_basis_derivatives(std::size_t i,
+                                            std::size_t n,
                                             double* values,
                                             const double* coordinates,
                                             const cell& c) const = 0;
 
     /// Evaluate order n derivatives of all basis functions at given point in cell
-    virtual void evaluate_basis_derivatives_all(unsigned int n,
+    virtual void evaluate_basis_derivatives_all(std::size_t n,
                                                 double* values,
                                                 const double* coordinates,
                                                 const cell& c) const = 0;
 
     /// Evaluate linear functional for dof i on the function f
-    virtual double evaluate_dof(unsigned int i,
+    virtual double evaluate_dof(std::size_t i,
                                 const function& f,
                                 const cell& c) const = 0;
 
@@ -189,10 +190,10 @@ namespace ufc
                                        const cell& c) const = 0;
 
     /// Return the number of sub elements (for a mixed element)
-    virtual unsigned int num_sub_elements() const = 0;
+    virtual std::size_t num_sub_elements() const = 0;
 
     /// Create a new finite element for sub element i (for a mixed element)
-    virtual finite_element* create_sub_element(unsigned int i) const = 0;
+    virtual finite_element* create_sub_element(std::size_t i) const = 0;
 
     /// Create a new class instance
     virtual finite_element* create() const = 0;
@@ -216,7 +217,7 @@ namespace ufc
     virtual const char* signature() const = 0;
 
     /// Return true iff mesh entities of topological dimension d are needed
-    virtual bool needs_mesh_entities(unsigned int d) const = 0;
+    virtual bool needs_mesh_entities(std::size_t d) const = 0;
 
     /// Initialize dofmap for mesh (return true iff init_cell() is needed)
     virtual bool init_mesh(const mesh& mesh) = 0;
@@ -229,48 +230,48 @@ namespace ufc
     virtual void init_cell_finalize() = 0;
 
     /// Return the topological dimension of the associated cell shape
-    virtual unsigned int topological_dimension() const = 0;
+    virtual std::size_t topological_dimension() const = 0;
 
     /// Return the geometric dimension of the associated cell shape
-    virtual unsigned int geometric_dimension() const = 0;
+    virtual std::size_t geometric_dimension() const = 0;
 
     /// Return the dimension of the global finite element function space
-    virtual unsigned int global_dimension() const = 0;
+    virtual std::size_t global_dimension() const = 0;
 
     /// Return the dimension of the local finite element function space for a cell
-    virtual unsigned int local_dimension(const cell& c) const = 0;
+    virtual std::size_t local_dimension(const cell& c) const = 0;
 
     /// Return the maximum dimension of the local finite element function space
-    virtual unsigned int max_local_dimension() const = 0;
+    virtual std::size_t max_local_dimension() const = 0;
 
     /// Return the number of dofs on each cell facet
-    virtual unsigned int num_facet_dofs() const = 0;
+    virtual std::size_t num_facet_dofs() const = 0;
 
     /// Return the number of dofs associated with each cell entity of dimension d
-    virtual unsigned int num_entity_dofs(unsigned int d) const = 0;
+    virtual std::size_t num_entity_dofs(std::size_t d) const = 0;
 
     /// Tabulate the local-to-global mapping of dofs on a cell
-    virtual void tabulate_dofs(unsigned int* dofs,
+    virtual void tabulate_dofs(std::size_t* dofs,
                                const mesh& m,
                                const cell& c) const = 0;
 
     /// Tabulate the local-to-local mapping from facet dofs to cell dofs
-    virtual void tabulate_facet_dofs(unsigned int* dofs,
-                                     unsigned int facet) const = 0;
+    virtual void tabulate_facet_dofs(std::size_t* dofs,
+                                     std::size_t facet) const = 0;
 
     /// Tabulate the local-to-local mapping of dofs on entity (d, i)
-    virtual void tabulate_entity_dofs(unsigned int* dofs,
-                                      unsigned int d, unsigned int i) const = 0;
+    virtual void tabulate_entity_dofs(std::size_t* dofs,
+                                      std::size_t d, std::size_t i) const = 0;
 
     /// Tabulate the coordinates of all dofs on a cell
     virtual void tabulate_coordinates(double** coordinates,
                                       const cell& c) const = 0;
 
     /// Return the number of sub dofmaps (for a mixed element)
-    virtual unsigned int num_sub_dofmaps() const = 0;
+    virtual std::size_t num_sub_dofmaps() const = 0;
 
     /// Create a new dofmap for sub dofmap i (for a mixed element)
-    virtual dofmap* create_sub_dofmap(unsigned int i) const = 0;
+    virtual dofmap* create_sub_dofmap(std::size_t i) const = 0;
 
     /// Create a new class instance
     virtual dofmap* create() const = 0;
@@ -301,7 +302,7 @@ namespace ufc
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
                                  const cell& c,
-                                 unsigned int num_quadrature_points,
+                                 std::size_t num_quadrature_points,
                                  const double * const * quadrature_points,
                                  const double* quadrature_weights) const = 0;
 
@@ -325,14 +326,14 @@ namespace ufc
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
                                  const cell& c,
-                                 unsigned int facet) const = 0;
+                                 std::size_t facet) const = 0;
 
     /// Tabulate the tensor for the contribution from a local exterior facet
     /// using the specified reference cell quadrature points/weights
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
                                  const cell& c,
-                                 unsigned int num_quadrature_points,
+                                 std::size_t num_quadrature_points,
                                  const double * const * quadrature_points,
                                  const double* quadrature_weights) const = 0;
 
@@ -357,15 +358,15 @@ namespace ufc
                                  const double * const * w,
                                  const cell& c0,
                                  const cell& c1,
-                                 unsigned int facet0,
-                                 unsigned int facet1) const = 0;
+                                 std::size_t facet0,
+                                 std::size_t facet1) const = 0;
 
     /// Tabulate the tensor for the contribution from a local interior facet
     /// using the specified reference cell quadrature points/weights
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
                                  const cell& c,
-                                 unsigned int num_quadrature_points,
+                                 std::size_t num_quadrature_points,
                                  const double * const * quadrature_points,
                                  const double* quadrature_weights) const = 0;
 
@@ -400,36 +401,36 @@ namespace ufc
     virtual const char* signature() const = 0;
 
     /// Return the rank of the global tensor (r)
-    virtual unsigned int rank() const = 0;
+    virtual std::size_t rank() const = 0;
 
     /// Return the number of coefficients (n)
-    virtual unsigned int num_coefficients() const = 0;
+    virtual std::size_t num_coefficients() const = 0;
 
     /// Return the number of cell domains
-    virtual unsigned int num_cell_domains() const = 0;
+    virtual std::size_t num_cell_domains() const = 0;
 
     /// Return the number of exterior facet domains
-    virtual unsigned int num_exterior_facet_domains() const = 0;
+    virtual std::size_t num_exterior_facet_domains() const = 0;
 
     /// Return the number of interior facet domains
-    virtual unsigned int num_interior_facet_domains() const = 0;
+    virtual std::size_t num_interior_facet_domains() const = 0;
 
     /// Create a new finite element for argument function i
-    virtual finite_element* create_finite_element(unsigned int i) const = 0;
+    virtual finite_element* create_finite_element(std::size_t i) const = 0;
 
     /// Create a new dofmap for argument function i
-    virtual dofmap* create_dofmap(unsigned int i) const = 0;
+    virtual dofmap* create_dofmap(std::size_t i) const = 0;
 
     /// Create a new cell integral on sub domain i
-    virtual cell_integral* create_cell_integral(unsigned int i) const = 0;
+    virtual cell_integral* create_cell_integral(std::size_t i) const = 0;
 
     /// Create a new exterior facet integral on sub domain i
     virtual exterior_facet_integral*
-    create_exterior_facet_integral(unsigned int i) const = 0;
+    create_exterior_facet_integral(std::size_t i) const = 0;
 
     /// Create a new interior facet integral on sub domain i
     virtual interior_facet_integral*
-    create_interior_facet_integral(unsigned int i) const = 0;
+    create_interior_facet_integral(std::size_t i) const = 0;
 
   };
 
