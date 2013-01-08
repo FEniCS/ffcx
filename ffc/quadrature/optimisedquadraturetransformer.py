@@ -356,7 +356,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         if transformation == "affine":
             # Loop derivatives and get multi indices.
             for multi in multiindices:
-                deriv = [multi.count(i) for i in range(self.geo_dim)]
+                deriv = [multi.count(i) for i in range(self.top_dim)]
                 if not any(deriv):
                     deriv = []
 
@@ -373,10 +373,10 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         else:
             # Loop derivatives and get multi indices.
             for multi in multiindices:
-                deriv = [multi.count(i) for i in range(self.geo_dim)]
+                deriv = [multi.count(i) for i in range(self.top_dim)]
                 if not any(deriv):
                     deriv = []
-                for c in range(self.geo_dim):
+                for c in range(self.top_dim):
                     # Call function to create mapping and basis name.
                     mapping, basis = self._create_mapping_basis(c + local_offset, deriv, ufl_argument, ffc_element)
 
@@ -420,7 +420,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         if transformation == "affine":
             # Loop derivatives and get multi indices.
             for multi in multiindices:
-                deriv = [multi.count(i) for i in range(self.geo_dim)]
+                deriv = [multi.count(i) for i in range(self.top_dim)]
                 if not any(deriv):
                     deriv = []
                 # Call other function to create function name.
@@ -435,10 +435,10 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         else:
             # Loop derivatives and get multi indices.
             for multi in multiindices:
-                deriv = [multi.count(i) for i in range(self.geo_dim)]
+                deriv = [multi.count(i) for i in range(self.top_dim)]
                 if not any(deriv):
                     deriv = []
-                for c in range(self.geo_dim):
+                for c in range(self.top_dim):
                     function_name = self._create_function_name(c + local_offset, deriv, quad_element, ufl_function, ffc_element)
 
                     # Multiply basis by appropriate transform.

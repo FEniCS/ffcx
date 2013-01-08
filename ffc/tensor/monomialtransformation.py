@@ -31,8 +31,9 @@ from ufl.permutation import build_component_numbering
 
 # FFC modules
 from ffc.log import info, error, ffc_assert
-from ffc.utils import all_equal
 from ffc.fiatinterface import create_element
+from ffc.utils import all_equal
+from ffc.representationutils import transform_component
 
 # FFC tensor representation modules
 from ffc.tensor.monomialextraction import MonomialForm
@@ -260,14 +261,20 @@ class TransformedMonomial:
         # Iterate over factors
         for f in monomial.factors:
 
-            # FIXME: Can't handle tensor-valued elements: vdim = shape[0]
-
             # Create FIAT element
             ufl_element = f.element()
             fiat_element = create_element(f.element())
 
+            # Note nifty aspect here: when gdim != tdim, it might be
+            # (in particular, is for H(div)/H(curl), that the value
+            # dimension is different for the physical and reference
+            # elements.
+
             # Get number of components
+            # FIXME: Can't handle tensor-valued elements: vdim = shape[0]
             shape = ufl_element.value_shape()
+            assert(len(shape) <= 1), \
+                "MonomialTransformation does not handle tensor-valued elements"
             if len(shape) == 0:
                 vdim = 1
             else:
@@ -276,6 +283,7 @@ class TransformedMonomial:
             # Extract dimensions
             sdim = fiat_element.space_dimension()
             gdim = ufl_element.cell().geometric_dimension()
+            tdim = ufl_element.cell().topological_dimension()
 
             # Extract basis function index and coefficients
             if isinstance(f.function, Argument):
@@ -290,6 +298,7 @@ class TransformedMonomial:
 
             # Extract components
             components = self._extract_components(f, index_map, vdim)
+
             if len(components) > 1:
                 raise MonomialException, "Can only handle rank 0 or rank 1 tensors."
 
@@ -309,7 +318,7 @@ class TransformedMonomial:
                     raise MonomialException, ("Mappings differ: " + str(mappings))
                 mapping = mappings[0]
 
-                # Get component index and sub element
+                # Get component index relative to its sub element and its sub element
                 (component_index, sub_element) = ufl_element.extract_component(component.index_range[0])
 
                 # Get offset
@@ -318,27 +327,42 @@ class TransformedMonomial:
                 else:
                     offset = component.index_range[0] - component_index[0]
 
+                # MER: Need to handle mappings in special ways if gdim
+                # != tdim and some Piolas are present. This could
+                # probably be merged with the offset code above, but I
+                # was not able to wrap my head around the offsets
+                # always referring to component.index_range[0].
+                if (gdim != tdim):
+                    assert len(component.index_range) == 1, \
+                        "Component transform not implemented for this case. Please request this feature."
+                    component, offset = transform_component(component.index_range[0], offset, f.element())
+                    component = MonomialIndex(index_type=MonomialIndex.FIXED,
+                                              index_range=[component], index_id=None)
+                    components = [component, ]
+
                 # Add transforms where appropriate
                 if mapping == "contravariant piola":
                     # phi(x) = (det J)^{-1} J Phi(X)
                     index0 = component
-                    index1 = MonomialIndex(index_range=range(gdim)) + offset
-                    transform = MonomialTransform(index0, index1, MonomialTransform.J, f.restriction, offset)
+                    index1 = MonomialIndex(index_range=range(tdim)) + offset
+                    transform = MonomialTransform(index0, index1, MonomialTransform.J,
+                                                  f.restriction, offset)
                     self.transforms.append(transform)
                     self.determinant.power -= 1
                     components[0] = index1
                 elif mapping == "covariant piola":
                     # phi(x) = J^{-T} Phi(X)
-                    index0 = MonomialIndex(index_range=range(gdim)) + offset
+                    index0 = MonomialIndex(index_range=range(tdim)) + offset
                     index1 = component
-                    transform = MonomialTransform(index0, index1, MonomialTransform.JINV, f.restriction, offset)
+                    transform = MonomialTransform(index0, index1, MonomialTransform.JINV,
+                                                  f.restriction, offset)
                     self.transforms.append(transform)
                     components[0] = index0
 
             # Extract derivatives / transforms
             derivatives = []
             for d in f.derivatives:
-                index0 = MonomialIndex(index_range=range(gdim))
+                index0 = MonomialIndex(index_range=range(tdim))
                 if d in index_map:
                     index1 = index_map[d]
                 elif isinstance(d, FixedIndex):
@@ -349,6 +373,7 @@ class TransformedMonomial:
                     index1 = MonomialIndex(index_range=range(gdim))
                 index_map[d] = index1
                 transform = MonomialTransform(index0, index1, MonomialTransform.JINV, f.restriction, 0)
+
                 self.transforms.append(transform)
                 derivatives.append(index0)
 
@@ -409,7 +434,7 @@ class TransformedMonomial:
                                       index_range=[comp],
                                       index_id=None)
             else:
-                index = MonomialIndex(index_range=range(vdim)) # meg: What kind of index should this be?
+                index = MonomialIndex(index_range=range(vdim))
             index_map[c] = index
             components.append(index)
         return components
@@ -474,3 +499,5 @@ def _reset_indices():
     _current_secondary_index = 0
     _current_internal_index = 0
     _current_external_index = 0
+
+

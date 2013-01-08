@@ -276,7 +276,7 @@ def main(debug_level):
         os.mkdir("tmp")
     os.chdir("tmp")
 
-    # Create list of all elements that has to be tested.
+    # Create list of all elements that have to be tested.
     elements = []
     for element in single_elements:
         for shape in element["shapes"]:

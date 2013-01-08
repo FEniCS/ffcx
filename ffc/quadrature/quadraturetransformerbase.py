@@ -1,4 +1,5 @@
-"QuadratureTransformerBase, a common class for quadrature transformers to translate UFL expressions."
+"""QuadratureTransformerBase, a common class for quadrature
+transformers to translate UFL expressions."""
 
 # Copyright (C) 2009-2011 Kristian B. Oelgaard
 #
@@ -42,6 +43,7 @@ from ffc.cpp import format
 
 # FFC tensor modules.
 from ffc.tensor.multiindex import MultiIndex as FFCMultiIndex
+from ffc.representationutils import transform_component
 
 # Utility and optimisation functions for quadraturegenerator.
 from quadratureutils import create_psi_tables
@@ -56,6 +58,7 @@ class QuadratureTransformerBase(Transformer):
                  psi_tables,
                  quad_weights,
                  geo_dim,
+                 top_dim,
                  optimise_parameters):
 
         Transformer.__init__(self)
@@ -74,6 +77,7 @@ class QuadratureTransformerBase(Transformer):
         self.functions = {}
         self.function_count = 0
         self.geo_dim = geo_dim
+        self.top_dim = top_dim
         self.points = 0
         self.facet0 = None
         self.facet1 = None
@@ -507,7 +511,8 @@ class QuadratureTransformerBase(Transformer):
     def indexed(self, o):
         #print("\n\nVisiting Indexed:" + repr(o))
 
-        # Get indexed expression and index, map index to current value and update components
+        # Get indexed expression and index, map index to current value
+        # and update components
         indexed_expr, index = o.operands()
         self._components.push(self.visit(index))
 
@@ -753,6 +758,7 @@ class QuadratureTransformerBase(Transformer):
                 for i, s in enumerate(sets):
                     new_terms[loop][0][i].update(s)
                 new_terms[loop][1].append((entry, value, ops))
+
         return new_terms
 
     def _create_loop_entry(self, key, f_nzc):
@@ -845,7 +851,8 @@ class QuadratureTransformerBase(Transformer):
         # Get relevant sub element and mapping.
         sub_element = create_element(local_elem)
 
-        # Assuming that mappings for all basisfunctions are equal (they should be).
+        # Assuming that mappings for all basisfunctions are equal
+        # (they should be).
         transformation = sub_element.mapping()[0]
 
         # Handle tensor elements.
@@ -863,14 +870,19 @@ class QuadratureTransformerBase(Transformer):
             comp_map, comp_num = build_component_numbering(ufl_element.value_shape(), ufl_element.symmetry())
             component = comp_map[component]
 
+        # Map physical components into reference components
+        component, dummy = transform_component(component, 0, ufl_element)
+
         # Compute the local offset (needed for non-affine mappings).
         local_offset = 0
         if component:
             local_offset = component - local_comp
 
         # Generate FFC multi index for derivatives.
-        multiindices = FFCMultiIndex([range(self.geo_dim)]*len(derivatives)).indices
+        multiindices = FFCMultiIndex([range(self.top_dim)]*len(derivatives)).indices
 
+        #print "in create_auxiliary"
+        #print "component = ", component
         return (component, local_comp, local_offset, ffc_element, quad_element, transformation, multiindices)
 
     def _create_mapping_basis(self, component, deriv, ufl_argument, ffc_element):
@@ -913,7 +925,6 @@ class QuadratureTransformerBase(Transformer):
         if self.restriction == "+" or self.restriction == "-":
             space_dim *= 2
 
-        # Generate psi name and map to correct values.
         name = generate_psi_name(element_counter, facet, component, deriv)
         name, non_zeros, zeros, ones = self.name_map[name]
         loop_index_range = shape(self.unique_tables[name])[1]

@@ -76,10 +76,12 @@ def _tabulate_tensor(ir, parameters):
     opt_par     = ir["optimise_parameters"]
     domain_type = ir["domain_type"]
     geo_dim     = ir["geometric_dimension"]
+    top_dim     = ir["topological_dimension"]
     num_facets  = ir["num_facets"]
     prim_idims  = ir["prim_idims"]
     integrals   = ir["trans_integrals"]
     geo_consts  = ir["geo_consts"]
+    oriented    = ir["needs_oriented"]
 
     # Create sets of used variables.
     used_weights    = set()
@@ -102,8 +104,7 @@ def _tabulate_tensor(ir, parameters):
         operations.append([num_ops])
 
         # Get Jacobian snippet.
-        # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
-        jacobi_code = format["jacobian and inverse"](geo_dim)
+        jacobi_code = format["jacobian and inverse"](geo_dim, top_dim, oriented=oriented)
         jacobi_code += "\n\n" + format["scale factor snippet"]
 
     elif domain_type == "exterior_facet":
@@ -122,10 +123,11 @@ def _tabulate_tensor(ir, parameters):
         tensor_code = f_switch(f_facet(None), cases)
 
         # Get Jacobian snippet.
-        # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
-        jacobi_code = format["jacobian and inverse"](geo_dim)
-        jacobi_code += "\n\n" + format["facet determinant"](geo_dim)
-        jacobi_code += "\n\n" + format["generate normal"](geo_dim, domain_type)
+        jacobi_code = format["jacobian and inverse"](geo_dim, top_dim,
+                                                     oriented=oriented)
+        jacobi_code += "\n\n" + format["facet determinant"](geo_dim, top_dim)
+        jacobi_code += "\n\n" + format["generate normal"](geo_dim, top_dim,
+                                                          domain_type)
 
     elif domain_type == "interior_facet":
         # Modify the dimensions of the primary indices because we have a macro element
@@ -148,20 +150,20 @@ def _tabulate_tensor(ir, parameters):
         tensor_code = f_switch(f_facet("+"), [f_switch(f_facet("-"), cases[i]) for i in range(len(cases))])
 
         # Get Jacobian snippet.
-        # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
-        jacobi_code  = format["jacobian and inverse"](geo_dim, "+")
+        jacobi_code  = format["jacobian and inverse"](geo_dim, top_dim, r="+", oriented=oriented)
         jacobi_code += "\n\n"
-        jacobi_code += format["jacobian and inverse"](geo_dim, "-")
+        jacobi_code += format["jacobian and inverse"](geo_dim, top_dim, r="-", oriented=oriented)
         jacobi_code += "\n\n"
-        jacobi_code += format["facet determinant"](geo_dim, "+")
-        jacobi_code += "\n\n" + format["generate normal"](geo_dim, domain_type)
+        jacobi_code += format["facet determinant"](geo_dim, top_dim, r="+")
+        jacobi_code += "\n\n" + format["generate normal"](geo_dim, top_dim,
+                                                          domain_type)
     else:
         error("Unhandled integral type: " + str(integral_type))
 
     # Add common (for cell, exterior and interior) geo code.
-    jacobi_code += "\n\n" + format["generate cell volume"](geo_dim, domain_type)
-    jacobi_code += "\n\n" + format["generate circumradius"](geo_dim, domain_type)
-    jacobi_code += "\n\n" + format["generate facet area"](geo_dim)
+    jacobi_code += "\n\n" + format["generate cell volume"](geo_dim, top_dim, domain_type)
+    jacobi_code += "\n\n" + format["generate circumradius"](geo_dim, top_dim, domain_type)
+    jacobi_code += "\n\n" + format["generate facet area"](geo_dim, top_dim)
 
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.

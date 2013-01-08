@@ -18,7 +18,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Kristian B. Oelgaard 2010-2011
-# Modified by Marie Rognes 2007-2010
+# Modified by Marie Rognes 2007-2012
 # Modified by Peter Brune 2009
 #
 # First added:  2007-02-28
@@ -34,7 +34,8 @@ __all__ = ["comment_ufc", "comment_dolfin", "header_h", "header_c", "footer",
            "scale_factor", "combinations_snippet",
            "normal_direction",
            "facet_normal", "ip_coordinates", "cell_volume", "circumradius",
-           "facet_area"]
+           "facet_area",
+           "orientation_snippet"]
 
 comment_ufc = """\
 // This code conforms with the UFC specification version %(ufc_version)s
@@ -87,6 +88,16 @@ const double J%(restriction)s_01 = x%(restriction)s[2][0] - x%(restriction)s[0][
 const double J%(restriction)s_10 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
 const double J%(restriction)s_11 = x%(restriction)s[2][1] - x%(restriction)s[0][1];"""
 
+# Geometric dimension 2, topological dimension 1
+_jacobian_2D_1D = """\
+// Extract vertex coordinates
+const double * const * x%(restriction)s = c%(restriction)s.coordinates;
+
+// Compute Jacobian of affine map from reference cell
+const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
+const double J%(restriction)s_10 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
+"""
+
 _jacobian_3D = """\
 // Extract vertex coordinates
 const double * const * x%(restriction)s = c%(restriction)s.coordinates;
@@ -102,13 +113,35 @@ const double J%(restriction)s_20 = x%(restriction)s[1][2] - x%(restriction)s[0][
 const double J%(restriction)s_21 = x%(restriction)s[2][2] - x%(restriction)s[0][2];
 const double J%(restriction)s_22 = x%(restriction)s[3][2] - x%(restriction)s[0][2];"""
 
+# Geometric dimension 3, topological dimension 2
+_jacobian_3D_2D = """\
+// Extract vertex coordinates
+const double * const * x%(restriction)s = c%(restriction)s.coordinates;
 
-# Code snippets for computing the inverse Jacobian. Assumes that
-# Jacobian is already initialized
+// Compute Jacobian of affine map from reference cell
+const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
+const double J%(restriction)s_01 = x%(restriction)s[2][0] - x%(restriction)s[0][0];
+const double J%(restriction)s_10 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
+const double J%(restriction)s_11 = x%(restriction)s[2][1] - x%(restriction)s[0][1];
+const double J%(restriction)s_20 = x%(restriction)s[1][2] - x%(restriction)s[0][2];
+const double J%(restriction)s_21 = x%(restriction)s[2][2] - x%(restriction)s[0][2];"""
+
+# Geometric dimension 3, topological dimension 1
+_jacobian_3D_1D = """\
+// Extract vertex coordinates
+const double * const * x%(restriction)s = c%(restriction)s.coordinates;
+
+// Compute Jacobian of affine map from reference cell
+const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
+const double J%(restriction)s_10 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
+const double J%(restriction)s_20 = x%(restriction)s[1][2] - x%(restriction)s[0][2];"""
+
+# Code snippets for computing the inverse Jacobian. These assume that
+# the Jacobian is initialized already
 _inverse_jacobian_1D = """\
 
 // Compute determinant of Jacobian
-const double detJ%(restriction)s =  J%(restriction)s_00;
+const double detJ%(restriction)s = J%(restriction)s_00;
 
 // Compute inverse of Jacobian
 const double K%(restriction)s_00 =  1.0 / detJ%(restriction)s;"""
@@ -116,13 +149,23 @@ const double K%(restriction)s_00 =  1.0 / detJ%(restriction)s;"""
 _inverse_jacobian_2D = """\
 
 // Compute determinant of Jacobian
-double detJ%(restriction)s = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
+const double detJ%(restriction)s = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
 
 // Compute inverse of Jacobian
 const double K%(restriction)s_00 =  J%(restriction)s_11 / detJ%(restriction)s;
 const double K%(restriction)s_01 = -J%(restriction)s_01 / detJ%(restriction)s;
 const double K%(restriction)s_10 = -J%(restriction)s_10 / detJ%(restriction)s;
 const double K%(restriction)s_11 =  J%(restriction)s_00 / detJ%(restriction)s;"""
+
+_inverse_jacobian_2D_1D = """\
+
+// Compute pseudodeterminant of Jacobian
+const double detJ2%(restriction)s = J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10;
+const double detJ%(restriction)s = std::sqrt(detJ2%(restriction)s);
+
+// Compute pseudoinverse of Jacobian
+const double K%(restriction)s_00 = J%(restriction)s_00 / detJ2%(restriction)s;
+const double K%(restriction)s_01 = J%(restriction)s_10 / detJ2%(restriction)s;"""
 
 _inverse_jacobian_3D = """\
 
@@ -138,7 +181,7 @@ const double d%(restriction)s_21 = J%(restriction)s_02*J%(restriction)s_10 - J%(
 const double d%(restriction)s_22 = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
 
 // Compute determinant of Jacobian
-double detJ%(restriction)s = J%(restriction)s_00*d%(restriction)s_00 + J%(restriction)s_10*d%(restriction)s_10 + J%(restriction)s_20*d%(restriction)s_20;
+const double detJ%(restriction)s = J%(restriction)s_00*d%(restriction)s_00 + J%(restriction)s_10*d%(restriction)s_10 + J%(restriction)s_20*d%(restriction)s_20;
 
 // Compute inverse of Jacobian
 const double K%(restriction)s_00 = d%(restriction)s_00 / detJ%(restriction)s;
@@ -150,6 +193,52 @@ const double K%(restriction)s_12 = d%(restriction)s_21 / detJ%(restriction)s;
 const double K%(restriction)s_20 = d%(restriction)s_02 / detJ%(restriction)s;
 const double K%(restriction)s_21 = d%(restriction)s_12 / detJ%(restriction)s;
 const double K%(restriction)s_22 = d%(restriction)s_22 / detJ%(restriction)s;"""
+
+_inverse_jacobian_3D_2D = """\
+
+// Compute pseudodeterminant of Jacobian
+const double d%(restriction)s_0 = J_10*J_21 - J_20*J_11;
+const double d%(restriction)s_1 = - (J_00*J_21 - J_20*J_01);
+const double d%(restriction)s_2 = J_00*J_11 - J_10*J_01;
+
+const double detJ2%(restriction)s = d%(restriction)s_0*d%(restriction)s_0 + d%(restriction)s_1*d%(restriction)s_1 + d%(restriction)s_2*d%(restriction)s_2;
+double detJ%(restriction)s = std::sqrt(detJ2%(restriction)s);
+
+// Compute some common factors for the pseudoinverse
+const double n%(restriction)s_1 = J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10 + J%(restriction)s_20*J%(restriction)s_20;
+const double n%(restriction)s_2 = J%(restriction)s_01*J%(restriction)s_01 + J%(restriction)s_11*J%(restriction)s_11 + J%(restriction)s_21*J%(restriction)s_21;
+const double m%(restriction)s  = J%(restriction)s_00*J%(restriction)s_01 + J%(restriction)s_10*J%(restriction)s_11 + J%(restriction)s_20*J%(restriction)s_21;
+const double den%(restriction)s = n%(restriction)s_1*n%(restriction)s_2 - m%(restriction)s*m%(restriction)s;
+
+// Compute pseudoinverse of Jacobian
+const double K%(restriction)s_00 =  (J%(restriction)s_00*n%(restriction)s_2 - J%(restriction)s_01*m%(restriction)s)/den%(restriction)s;
+const double K%(restriction)s_01 =  (J%(restriction)s_10*n%(restriction)s_2 - J%(restriction)s_11*m%(restriction)s)/den%(restriction)s;
+const double K%(restriction)s_02 =  (J%(restriction)s_20*n%(restriction)s_2 - J%(restriction)s_21*m%(restriction)s)/den%(restriction)s;
+const double K%(restriction)s_10 = (-J%(restriction)s_00*m%(restriction)s + J%(restriction)s_01*n%(restriction)s_1)/den%(restriction)s;
+const double K%(restriction)s_11 = (-J%(restriction)s_10*m%(restriction)s + J%(restriction)s_11*n%(restriction)s_1)/den%(restriction)s;
+const double K%(restriction)s_12 = (-J%(restriction)s_20*m%(restriction)s + J%(restriction)s_21*n%(restriction)s_1)/den%(restriction)s;
+"""
+
+orientation_snippet = """
+// Extract orientation
+const int orientation_marker = c.orientation;
+if (orientation_marker == -1)
+  throw std::runtime_error("cell orientation must be defined (not -1)");
+// (If orientation_marker == 1 = down, multiply detJ by -1)
+else if (orientation_marker == 1)
+  detJ%(restriction)s *= -1;
+"""
+
+_inverse_jacobian_3D_1D = """\
+
+// Compute pseudodeterminant of Jacobian
+const double detJ2%(restriction)s = J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10 + J%(restriction)s_20*J%(restriction)s_20;
+const double detJ%(restriction)s = std::sqrt(detJ2%(restriction)s);
+
+// Compute pseudoinverse of Jacobian
+const double K%(restriction)s_00 = J%(restriction)s_00 / detJ2%(restriction)s;
+const double K%(restriction)s_01 = J%(restriction)s_10 / detJ2%(restriction)s;
+const double K%(restriction)s_02 = J%(restriction)s_20 / detJ2%(restriction)s;"""
 
 evaluate_f = "f.evaluate(vals, y, c);"
 
@@ -172,6 +261,10 @@ const double dx0 = x%(restriction)s[v1][0] - x%(restriction)s[v0][0];
 const double dx1 = x%(restriction)s[v1][1] - x%(restriction)s[v0][1];
 const double det = std::sqrt(dx0*dx0 + dx1*dx1);"""
 
+_facet_determinant_2D_1D = """\
+// Facet determinant 1D in 2D (vertex)
+const double det = 1.0;"""
+
 _facet_determinant_3D = """\
 // Get vertices on face
 static unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
@@ -188,6 +281,23 @@ const double a2 = (x%(restriction)s[v0][0]*x%(restriction)s[v1][1] + x%(restrict
 
 const double det = std::sqrt(a0*a0 + a1*a1 + a2*a2);"""
 
+_facet_determinant_3D_2D = """\
+// Facet determinant 2D in 3D (edge)
+// Get vertices on edge
+static unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
+const unsigned int v0 = edge_vertices[facet%(restriction)s][0];
+const unsigned int v1 = edge_vertices[facet%(restriction)s][1];
+
+// Compute scale factor (length of edge scaled by length of reference interval)
+const double dx0 = x%(restriction)s[v1][0] - x%(restriction)s[v0][0];
+const double dx1 = x%(restriction)s[v1][1] - x%(restriction)s[v0][1];
+const double dx2 = x%(restriction)s[v1][2] - x%(restriction)s[v0][2];
+const double det = std::sqrt(dx0*dx0 + dx1*dx1 + dx2*dx2);"""
+
+_facet_determinant_3D_1D = """\
+// Facet determinant 1D in 3D (vertex)
+const double det = 1.0;"""
+
 _normal_direction_1D = """\
 const bool direction = facet%(restriction)s == 0 ? x%(restriction)s[0][0] > x%(restriction)s[1][0] : x%(restriction)s[1][0] > x%(restriction)s[0][0];"""
 
@@ -196,6 +306,12 @@ const bool direction = dx1*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0
 
 _normal_direction_3D = """\
 const bool direction = a0*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) + a1*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1])  + a2*(x%(restriction)s[%(facet)s][2] - x%(restriction)s[v0][2]) < 0;"""
+
+# MER: Coding all up in _facet_normal_ND_M_D for now; these are
+# therefore empty.
+_normal_direction_2D_1D = ""
+_normal_direction_3D_2D = ""
+_normal_direction_3D_1D = ""
 
 _facet_normal_1D = """
 // Facet normals are 1.0 or -1.0:   (-1.0) <-- X------X --> (1.0)
@@ -206,35 +322,123 @@ _facet_normal_2D = """\
 const double n%(restriction)s0 = %(direction)sdirection ? dx1 / det : -dx1 / det;
 const double n%(restriction)s1 = %(direction)sdirection ? -dx0 / det : dx0 / det;"""
 
-_facet_normal_3D = """\
-// Compute facet normals from the facet scale factor constants
+_facet_normal_2D_1D = """
+// Compute facet normal
+double n%(restriction)s0 = 0.0;
+double n%(restriction)s1 = 0.0;
+if (facet%(restriction)s == 0)
+{
+  n%(restriction)s0 = x%(restriction)s[0][0] - x%(restriction)s[1][0];
+  n%(restriction)s1 = x%(restriction)s[0][1] - x%(restriction)s[1][1];
+} else {
+  n%(restriction)s0 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
+  n%(restriction)s1 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
+}
+const double n%(restriction)s_length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1);
+n%(restriction)s0 /= n%(restriction)s_length;
+n%(restriction)s1 /= n%(restriction)s_length;
+"""
+
+_facet_normal_3D = """
 const double n%(restriction)s0 = %(direction)sdirection ? a0 / det : -a0 / det;
 const double n%(restriction)s1 = %(direction)sdirection ? a1 / det : -a1 / det;
 const double n%(restriction)s2 = %(direction)sdirection ? a2 / det : -a2 / det;"""
 
+_facet_normal_3D_2D = """
+// Compute facet normal for triangles in 3D
+const unsigned int vertex%(restriction)s0 = facet%(restriction)s;
+
+// Get coordinates corresponding the vertex opposite this
+// static unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
+const unsigned int vertex%(restriction)s1 = edge_vertices[facet%(restriction)s][0];
+const unsigned int vertex%(restriction)s2 = edge_vertices[facet%(restriction)s][1];
+
+// Define vectors n = (p2 - p0) and t = normalized (p2 - p1)
+double n%(restriction)s0 = x%(restriction)s[vertex%(restriction)s2][0] - x%(restriction)s[vertex%(restriction)s0][0];
+double n%(restriction)s1 = x%(restriction)s[vertex%(restriction)s2][1] - x%(restriction)s[vertex%(restriction)s0][1];
+double n%(restriction)s2 = x%(restriction)s[vertex%(restriction)s2][2] - x%(restriction)s[vertex%(restriction)s0][2];
+
+double t%(restriction)s0 = x%(restriction)s[vertex%(restriction)s2][0] - x%(restriction)s[vertex%(restriction)s1][0];
+double t%(restriction)s1 = x%(restriction)s[vertex%(restriction)s2][1] - x%(restriction)s[vertex%(restriction)s1][1];
+double t%(restriction)s2 = x%(restriction)s[vertex%(restriction)s2][2] - x%(restriction)s[vertex%(restriction)s1][2];
+const double t%(restriction)s_length = std::sqrt(t%(restriction)s0*t%(restriction)s0 + t%(restriction)s1*t%(restriction)s1 + t%(restriction)s2*t%(restriction)s2);
+t%(restriction)s0 /= t%(restriction)s_length;
+t%(restriction)s1 /= t%(restriction)s_length;
+t%(restriction)s2 /= t%(restriction)s_length;
+
+// Subtract, the projection of (p2  - p0) onto (p2 - p1), from (p2 - p0)
+const double ndott%(restriction)s = t%(restriction)s0*n%(restriction)s0 + t%(restriction)s1*n%(restriction)s1 + t%(restriction)s2*n%(restriction)s2;
+n%(restriction)s0 -= ndott%(restriction)s*t%(restriction)s0;
+n%(restriction)s1 -= ndott%(restriction)s*t%(restriction)s1;
+n%(restriction)s2 -= ndott%(restriction)s*t%(restriction)s2;
+const double n%(restriction)s_length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1 + n%(restriction)s2*n%(restriction)s2);
+
+// Normalize
+n%(restriction)s0 /= n%(restriction)s_length;
+n%(restriction)s1 /= n%(restriction)s_length;
+n%(restriction)s2 /= n%(restriction)s_length;
+"""
+
+_facet_normal_3D_1D = """
+// Compute facet normal
+double n%(restriction)s0 = 0.0;
+double n%(restriction)s1 = 0.0;
+double n%(restriction)s2 = 0.0;
+if (facet%(restriction)s == 0)
+{
+  n%(restriction)s0 = x%(restriction)s[0][0] - x%(restriction)s[1][0];
+  n%(restriction)s1 = x%(restriction)s[0][1] - x%(restriction)s[1][1];
+  n%(restriction)s1 = x%(restriction)s[0][2] - x%(restriction)s[1][2];
+} else {
+  n%(restriction)s0 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
+  n%(restriction)s1 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
+  n%(restriction)s1 = x%(restriction)s[1][2] - x%(restriction)s[0][2];
+}
+const double n%(restriction)s_length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1 + n%(restriction)s2*n%(restriction)s2);
+n%(restriction)s0 /= n%(restriction)s_length;
+n%(restriction)s1 /= n%(restriction)s_length;
+n%(restriction)s2 /= n%(restriction)s_length;
+"""
+
 _cell_volume_1D = """\
-// Cell Volume.
+// Cell volume.
 const double volume%(restriction)s = std::abs(detJ%(restriction)s);"""
 
 _cell_volume_2D = """\
-// Cell Volume.
+// Cell volume.
 const double volume%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
 
+_cell_volume_2D_1D = """\
+// Cell volume of interval in 2D
+const double volume%(restriction)s = std::abs(detJ%(restriction)s);"""
+
 _cell_volume_3D = """\
-// Cell Volume.
+// Cell volume.
 const double volume%(restriction)s = std::abs(detJ%(restriction)s)/6.0;"""
 
+_cell_volume_3D_1D = """\
+// Cell volume of interval in 3D
+const double volume%(restriction)s = std::abs(detJ%(restriction)s);"""
+
+_cell_volume_3D_2D = """\
+// Cell volume of triangle in 3D
+const double volume%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
+
 _circumradius_1D = """\
-// Compute circumradius, in 1D it is equal to the cell volume.
+// Compute circumradius; in 1D it is equal to the cell volume.
 const double circumradius%(restriction)s = std::abs(detJ%(restriction)s);"""
 
 _circumradius_2D = """\
-// Compute circumradius, assuming triangle is embedded in 2D.
+// Compute circumradius of triangle in 2D.
 const double v1v2%(restriction)s  = std::sqrt( (x%(restriction)s[2][0] - x%(restriction)s[1][0])*(x%(restriction)s[2][0] - x%(restriction)s[1][0]) + (x%(restriction)s[2][1] - x%(restriction)s[1][1])*(x%(restriction)s[2][1] - x%(restriction)s[1][1]) );
 const double v0v2%(restriction)s  = std::sqrt( J%(restriction)s_11*J%(restriction)s_11 + J%(restriction)s_01*J%(restriction)s_01 );
 const double v0v1%(restriction)s  = std::sqrt( J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10 );
 
 const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);"""
+
+_circumradius_2D_1D = """\
+// Compute circumradius of interval in 3D (same as volume)
+const double circumradius%(restriction)s = std::abs(detJ%(restriction)s);"""
 
 _circumradius_3D = """\
 // Compute circumradius.
@@ -252,6 +456,18 @@ const  double area%(restriction)s = std::sqrt(s%(restriction)s*(s%(restriction)s
 
 const double circumradius%(restriction)s = area%(restriction)s / ( 6.0*volume%(restriction)s );"""
 
+_circumradius_3D_1D = """\
+// Compute circumradius of interval in 3D (same as volume)
+const double circumradius%(restriction)s = std::abs(detJ%(restriction)s);"""
+
+_circumradius_3D_2D = """\
+// Compute circumradius of triangle in 3D
+const double v1v2%(restriction)s  = std::sqrt( (x%(restriction)s[2][0] - x%(restriction)s[1][0])*(x%(restriction)s[2][0] - x%(restriction)s[1][0]) + (x%(restriction)s[2][1] - x%(restriction)s[1][1])*(x%(restriction)s[2][1] - x%(restriction)s[1][1]) + (x%(restriction)s[2][2] - x%(restriction)s[1][2])*(x%(restriction)s[2][2] - x%(restriction)s[1][2]));
+const double v0v2%(restriction)s  = std::sqrt( J%(restriction)s_11*J%(restriction)s_11 + J%(restriction)s_01*J%(restriction)s_01 + J%(restriction)s_21*J%(restriction)s_21);
+const double v0v1%(restriction)s  = std::sqrt( J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10 + J%(restriction)s_20*J%(restriction)s_20);
+
+const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);"""
+
 _facet_area_1D = """\
 // Facet Area (FIXME: Should this be 0.0?).
 const double facet_area = 1.0;"""
@@ -260,9 +476,21 @@ _facet_area_2D = """\
 // Facet Area.
 const double facet_area = det;"""
 
+_facet_area_2D_1D = """\
+// Facet Area.
+const double facet_area = 1.0;"""
+
 _facet_area_3D = """\
 // Facet Area (divide by two because 'det' is scaled by area of reference triangle).
 const double facet_area = det/2.0;"""
+
+_facet_area_3D_1D = """\
+// Facet Area.
+const double facet_area = 1.0;"""
+
+_facet_area_3D_2D = """\
+// Facet Area.
+const double facet_area = det;"""
 
 evaluate_basis_dofmap = """\
 unsigned int element = 0;
@@ -299,7 +527,7 @@ for (unsigned int row = 1; row < %(num_derivatives)s; row++)
   {
     for (unsigned int col = %(n)s-1; col+1 > 0; col--)
     {
-      if (%(combinations)s[row][col] + 1 > %(topological_dimension-1)s)
+      if (%(combinations)s[row][col] + 1 > %(dimension-1)s)
         %(combinations)s[row][col] = 0;
       else
       {
@@ -310,85 +538,45 @@ for (unsigned int row = 1; row < %(num_derivatives)s; row++)
   }
 }"""
 
-_transform_interval_snippet = """\
+def _transform_snippet(tdim, gdim):
+
+    if tdim == gdim:
+        _t = ""
+        _g = ""
+    else:
+        _t = "_t"
+        _g = "_g"
+
+    # Matricize K_ij -> {K_ij}
+    matrix = "{{" + "}, {".join([", ".join(["K_%d%d"% (t, g)
+                                            for g in range(gdim)])
+                                 for t in range(tdim)]) + "}};\n\n"
+    snippet = """\
 // Compute inverse of Jacobian
-const double %(K)s[1][1] =  {{K_00}};
+const double %%(K)s[%d][%d] = %s""" % (tdim, gdim, matrix)
 
-// Declare transformation matrix
+    snippet +="""// Declare transformation matrix
 // Declare pointer to two dimensional array and initialise
-double **%(transform)s = new double *[%(num_derivatives)s];
+double **%%(transform)s = new double *[%%(num_derivatives)s%(g)s];
 
-for (unsigned int j = 0; j < %(num_derivatives)s; j++)
+for (unsigned int j = 0; j < %%(num_derivatives)s%(g)s; j++)
 {
-  %(transform)s[j] = new double [%(num_derivatives)s];
-  for (unsigned int k = 0; k < %(num_derivatives)s; k++)
-    %(transform)s[j][k] = 1;
+  %%(transform)s[j] = new double [%%(num_derivatives)s%(t)s];
+  for (unsigned int k = 0; k < %%(num_derivatives)s%(t)s; k++)
+    %%(transform)s[j][k] = 1;
 }
 
 // Construct transformation matrix
-for (unsigned int row = 0; row < %(num_derivatives)s; row++)
+for (unsigned int row = 0; row < %%(num_derivatives)s%(g)s; row++)
 {
-  for (unsigned int col = 0; col < %(num_derivatives)s; col++)
+  for (unsigned int col = 0; col < %%(num_derivatives)s%(t)s; col++)
   {
-    for (unsigned int k = 0; k < %(n)s; k++)
-      %(transform)s[row][col] *= %(K)s[%(combinations)s[col][k]][%(combinations)s[row][k]];
+    for (unsigned int k = 0; k < %%(n)s; k++)
+      %%(transform)s[row][col] *= %%(K)s[%%(combinations)s%(t)s[col][k]][%%(combinations)s%(g)s[row][k]];
   }
-}"""
+}""" % {"t":_t, "g":_g}
 
-_transform_triangle_snippet = """\
-// Compute inverse of Jacobian
-const double %(K)s[2][2] = \
-{{K_00, K_01},\
- {K_10, K_11}};
-
-// Declare transformation matrix
-// Declare pointer to two dimensional array and initialise
-double **%(transform)s = new double *[%(num_derivatives)s];
-
-for (unsigned int j = 0; j < %(num_derivatives)s; j++)
-{
-  %(transform)s[j] = new double [%(num_derivatives)s];
-  for (unsigned int k = 0; k < %(num_derivatives)s; k++)
-    %(transform)s[j][k] = 1;
-}
-
-// Construct transformation matrix
-for (unsigned int row = 0; row < %(num_derivatives)s; row++)
-{
-  for (unsigned int col = 0; col < %(num_derivatives)s; col++)
-  {
-    for (unsigned int k = 0; k < %(n)s; k++)
-      %(transform)s[row][col] *= %(K)s[%(combinations)s[col][k]][%(combinations)s[row][k]];
-  }
-}"""
-
-_transform_tetrahedron_snippet = """\
-// Compute inverse of Jacobian
-const double %(K)s[3][3] = \
-{{K_00, K_01, K_02},\
- {K_10, K_11, K_12},\
- {K_20, K_21, K_22}};
-
-// Declare transformation matrix
-// Declare pointer to two dimensional array and initialise
-double **%(transform)s = new double *[%(num_derivatives)s];
-
-for (unsigned int j = 0; j < %(num_derivatives)s; j++)
-{
-  %(transform)s[j] = new double [%(num_derivatives)s];
-  for (unsigned int k = 0; k < %(num_derivatives)s; k++)
-    %(transform)s[j][k] = 1;
-}
-
-// Construct transformation matrix
-for (unsigned int row = 0; row < %(num_derivatives)s; row++)
-{
-  for (unsigned int col = 0; col < %(num_derivatives)s; col++)
-  {
-    for (unsigned int k = 0; k < %(n)s; k++)
-      %(transform)s[row][col] *= %(K)s[%(combinations)s[col][k]][%(combinations)s[row][k]];
-  }
-}"""
+    return snippet
 
 # Codesnippets used in evaluate_dof
 _map_onto_physical_1D = """\
@@ -409,6 +597,15 @@ const double w2 = X_%(i)d[%(j)s][1];
 y[0] = w0*x[0][0] + w1*x[1][0] + w2*x[2][0];
 y[1] = w0*x[0][1] + w1*x[1][1] + w2*x[2][1];"""
 
+_map_onto_physical_2D_1D = """\
+// Evaluate basis functions for affine mapping
+const double w0 = 1.0 - X_%(i)d[%(j)s][0];
+const double w1 = X_%(i)d[%(j)s][0];
+
+// Compute affine mapping y = F(X)
+y[0] = w0*x[0][0] + w1*x[1][0];
+y[1] = w0*x[0][1] + w1*x[1][1];"""
+
 _map_onto_physical_3D = """\
 // Evaluate basis functions for affine mapping
 const double w0 = 1.0 - X_%(i)d[%(j)s][0] - X_%(i)d[%(j)s][1] - X_%(i)d[%(j)s][2];
@@ -420,6 +617,28 @@ const double w3 = X_%(i)d[%(j)s][2];
 y[0] = w0*x[0][0] + w1*x[1][0] + w2*x[2][0] + w3*x[3][0];
 y[1] = w0*x[0][1] + w1*x[1][1] + w2*x[2][1] + w3*x[3][1];
 y[2] = w0*x[0][2] + w1*x[1][2] + w2*x[2][2] + w3*x[3][2];"""
+
+_map_onto_physical_3D_1D = """\
+// Evaluate basis functions for affine mapping
+const double w0 = 1.0 - X_%(i)d[%(j)s][0];
+const double w1 = X_%(i)d[%(j)s][0];
+
+// Compute affine mapping y = F(X)
+y[0] = w0*x[0][0] + w1*x[1][0];
+y[1] = w0*x[0][1] + w1*x[1][1];
+y[2] = w0*x[0][2] + w1*x[1][2];"""
+
+_map_onto_physical_3D_2D = """\
+// Evaluate basis functions for affine mapping
+const double w0 = 1.0 - X_%(i)d[%(j)s][0] - X_%(i)d[%(j)s][1];
+const double w1 = X_%(i)d[%(j)s][0];
+const double w2 = X_%(i)d[%(j)s][1];
+
+// Compute affine mapping y = F(X)
+y[0] = w0*x[0][0] + w1*x[1][0] + w2*x[2][0];
+y[1] = w0*x[0][1] + w1*x[1][1] + w2*x[2][1];
+y[2] = w0*x[0][2] + w1*x[1][2] + w2*x[2][2];
+"""
 
 _ip_coordinates_1D = """\
 X%(num_ip)d[0] = %(name)s[%(ip)s][0]*x%(restriction)s[0][0] + \
@@ -447,6 +666,14 @@ _map_coordinates_FIAT_interval = """\
 // Get coordinates and map to the reference (FIAT) element
 double X = (2.0*coordinates[0] - x[0][0] - x[1][0]) / J_00;"""
 
+_map_coordinates_FIAT_interval_in_2D = """\
+// Get coordinates and map to the reference (FIAT) element
+double X = 2*(std::sqrt(std::pow(coordinates[0]-x[0][0], 2) + std::pow(coordinates[1]-x[0][1], 2))/ detJ) - 1.0;"""
+
+_map_coordinates_FIAT_interval_in_3D = """\
+// Get coordinates and map to the reference (FIAT) element
+double X = 2*(std::sqrt(std::pow(coordinates[0]-x[0][0], 2) + std::pow(coordinates[1]-x[0][1], 2) + std::pow(coordinates[2]-x[0][2], 2))/ detJ) - 1.0;"""
+
 _map_coordinates_FIAT_triangle = """\
 // Compute constants
 const double C0 = x[1][0] + x[2][0];
@@ -455,6 +682,16 @@ const double C1 = x[1][1] + x[2][1];
 // Get coordinates and map to the reference (FIAT) element
 double X = (J_01*(C1 - 2.0*coordinates[1]) + J_11*(2.0*coordinates[0] - C0)) / detJ;
 double Y = (J_00*(2.0*coordinates[1] - C1) + J_10*(C0 - 2.0*coordinates[0])) / detJ;"""
+
+_map_coordinates_FIAT_triangle_in_3D = """\
+const double b0 = x[0][0];
+const double b1 = x[0][1];
+const double b2 = x[0][2];
+
+// P_FFC = J^dag (p - b), P_FIAT = 2*P_FFC - (1, 1)
+double X = 2*(K_00*(coordinates[0] - b0) + K_01*(coordinates[1] - b1) + K_02*(coordinates[2] - b2)) - 1.0;
+double Y = 2*(K_10*(coordinates[0] - b0) + K_11*(coordinates[1] - b1) + K_12*(coordinates[2] - b2)) - 1.0;
+"""
 
 _map_coordinates_FIAT_tetrahedron = """\
 // Compute constants
@@ -468,52 +705,69 @@ double Y = (d_01*(2.0*coordinates[0] - C0) + d_11*(2.0*coordinates[1] - C1) + d_
 double Z = (d_02*(2.0*coordinates[0] - C0) + d_12*(2.0*coordinates[1] - C1) + d_22*(2.0*coordinates[2] - C2)) / detJ;
 """
 
+# Mappings to code snippets used by format These dictionaries accept
+# as keys: first the geometric dimension, and second the topological
+# dimension
+jacobian = {1: {1:_jacobian_1D},
+            2: {2:_jacobian_2D, 1:_jacobian_2D_1D},
+            3: {3:_jacobian_3D, 2:_jacobian_3D_2D, 1:_jacobian_3D_1D}}
 
-# Mappings to code snippets used by format
+inverse_jacobian = {1: {1:_inverse_jacobian_1D},
+                    2: {2:_inverse_jacobian_2D, 1:_inverse_jacobian_2D_1D},
+                    3: {3:_inverse_jacobian_3D, 2:_inverse_jacobian_3D_2D,
+                        1:_inverse_jacobian_3D_1D}}
 
-jacobian = {1: _jacobian_1D, 2: _jacobian_2D, 3: _jacobian_3D}
+facet_determinant = {1: {1: _facet_determinant_1D},
+                     2: {2: _facet_determinant_2D, 1: _facet_determinant_2D_1D},
+                     3: {3: _facet_determinant_3D, 2: _facet_determinant_3D_2D,
+                         1: _facet_determinant_3D_1D}}
 
-inverse_jacobian = {1: _inverse_jacobian_1D,
-                    2: _inverse_jacobian_2D,
-                    3: _inverse_jacobian_3D}
+# Geometry related snippets
+map_onto_physical = {1: {1: _map_onto_physical_1D},
+                     2: {2: _map_onto_physical_2D, 1: _map_onto_physical_2D_1D},
+                     3: {3: _map_onto_physical_3D, 2: _map_onto_physical_3D_2D,
+                         1: _map_onto_physical_3D_1D}}
 
-facet_determinant = {1: _facet_determinant_1D,
-                     2: _facet_determinant_2D,
-                     3: _facet_determinant_3D}
+fiat_coordinate_map = {"interval": {1:_map_coordinates_FIAT_interval,
+                                    2:_map_coordinates_FIAT_interval_in_2D,
+                                    3:_map_coordinates_FIAT_interval_in_3D},
+                       "triangle": {2:_map_coordinates_FIAT_triangle,
+                                    3: _map_coordinates_FIAT_triangle_in_3D},
+                       "tetrahedron": {3:_map_coordinates_FIAT_tetrahedron}}
 
-map_onto_physical = {1: _map_onto_physical_1D,
-                     2: _map_onto_physical_2D,
-                     3: _map_onto_physical_3D}
-
-fiat_coordinate_map = {"interval": _map_coordinates_FIAT_interval,
-                       "triangle": _map_coordinates_FIAT_triangle,
-                       "tetrahedron": _map_coordinates_FIAT_tetrahedron}
-
-transform_snippet = {"interval": _transform_interval_snippet,
-                     "triangle": _transform_triangle_snippet,
-                     "tetrahedron": _transform_tetrahedron_snippet}
-
-normal_direction = {1: _normal_direction_1D,
-                    2: _normal_direction_2D,
-                    3: _normal_direction_3D}
-
-facet_normal = {1: _facet_normal_1D,
-                2: _facet_normal_2D,
-                3: _facet_normal_3D}
+transform_snippet = {"interval": {1: _transform_snippet(1, 1),
+                                  2: _transform_snippet(1, 2),
+                                  3: _transform_snippet(1, 3)},
+                     "triangle": {2: _transform_snippet(2, 2),
+                                  3: _transform_snippet(2, 3)},
+                     "tetrahedron": {3: _transform_snippet(3, 3)}}
 
 ip_coordinates = {1: (3, _ip_coordinates_1D),
                   2: (10, _ip_coordinates_2D),
                   3: (21, _ip_coordinates_3D)}
 
-cell_volume = {1: _cell_volume_1D,
-               2: _cell_volume_2D,
-               3: _cell_volume_3D}
+normal_direction = {1: {1: _normal_direction_1D},
+                    2: {2: _normal_direction_2D, 1: _normal_direction_2D_1D},
+                    3: {3: _normal_direction_3D, 2: _normal_direction_3D_2D,
+                        1: _normal_direction_3D_1D}}
 
-circumradius = {1: _circumradius_1D,
-                2: _circumradius_2D,
-                3: _circumradius_3D}
+facet_normal = {1: {1: _facet_normal_1D},
+                2: {2: _facet_normal_2D, 1: _facet_normal_2D_1D},
+                3: {3: _facet_normal_3D, 2: _facet_normal_3D_2D,
+                    1: _facet_normal_3D_1D}}
 
-facet_area = {1: _facet_area_1D,
-              2: _facet_area_2D,
-              3: _facet_area_3D}
+cell_volume = {1: {1: _cell_volume_1D},
+               2: {2: _cell_volume_2D, 1: _cell_volume_2D_1D},
+               3: {3: _cell_volume_3D, 2: _cell_volume_3D_2D,
+                   1: _cell_volume_3D_1D}}
+
+circumradius = {1: {1: _circumradius_1D},
+                2: {2: _circumradius_2D, 1: _circumradius_2D_1D},
+                3: {3: _circumradius_3D, 2: _circumradius_3D_2D,
+                    1: _circumradius_3D_1D}}
+
+facet_area = {1: {1: _facet_area_1D},
+              2: {2: _facet_area_2D, 1: _facet_area_2D_1D},
+              3: {3: _facet_area_3D, 2: _facet_area_3D_2D,
+                  1: _facet_area_3D_1D}}
 

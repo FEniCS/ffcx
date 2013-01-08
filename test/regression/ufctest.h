@@ -16,7 +16,7 @@
 // along with FFC. If not, see <http://www.gnu.org/licenses/>.
 //
 // First added:  2010-01-24
-// Last changed: 2011-07-04
+// Last changed: 2013-01-08
 //
 // Functions for calling generated UFC functions with "random" (but
 // fixed) data and print the output to screen. Useful for running
@@ -140,7 +140,7 @@ class test_cell : public ufc::cell
 {
 public:
 
-  test_cell(ufc::shape cell_shape, int offset=0)
+  test_cell(ufc::shape cell_shape, int gdim=0, int offset=0)
   {
     // Store cell shape
     this->cell_shape = cell_shape;
@@ -150,19 +150,31 @@ public:
     {
     case ufc::interval:
       topological_dimension = 1;
-      geometric_dimension = 1;
+      if (gdim == 0)
+        geometric_dimension = 1;
+      else
+        geometric_dimension = gdim;
       break;
     case ufc::triangle:
       topological_dimension = 2;
-      geometric_dimension = 2;
+      if (gdim == 0)
+        geometric_dimension = 2;
+      else
+        geometric_dimension = gdim;
       break;
     case ufc::tetrahedron:
       topological_dimension = 3;
-      geometric_dimension = 3;
+      if (gdim == 0)
+        geometric_dimension = 3;
+      else
+        geometric_dimension = gdim;
       break;
     default:
       throw std::runtime_error("Unhandled cell shape.");
     }
+
+    // Set orientation (random, but must be set)
+    this->orientation = 1;
 
     // Generate some "random" entity indices
     entity_indices = new std::size_t * [4];
@@ -228,7 +240,7 @@ void test_finite_element(ufc::finite_element& element)
   std::cout << "----------------------" << std::endl;
 
   // Prepare arguments
-  test_cell c(element.cell_shape());
+  test_cell c(element.cell_shape(), element.geometric_dimension());
   std::size_t value_size = 1;
   for (std::size_t i = 0; i < element.value_rank(); i++)
     value_size *= element.value_dimension(i);
@@ -347,7 +359,7 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape)
 
   // Prepare arguments
   test_mesh m(cell_shape);
-  test_cell c(cell_shape);
+  test_cell c(cell_shape, dofmap.geometric_dimension());
   std::size_t n = dofmap.max_local_dimension();
   std::size_t* dofs = new std::size_t[n];
   for (std::size_t i = 0; i < n; i++)
@@ -444,6 +456,7 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape)
 // Function for testing ufc::cell_integral objects
 void test_cell_integral(ufc::cell_integral& integral,
                         ufc::shape cell_shape,
+                        std::size_t gdim,
                         std::size_t tensor_size,
                         double** w,
                         bool bench)
@@ -453,7 +466,7 @@ void test_cell_integral(ufc::cell_integral& integral,
   std::cout << "---------------------" << std::endl;
 
   // Prepare arguments
-  test_cell c(cell_shape);
+  test_cell c(cell_shape, gdim);
   double* A = new double[tensor_size];
   for(std::size_t i = 0; i < tensor_size; i++)
     A[i] = 0.0;
@@ -488,6 +501,7 @@ void test_cell_integral(ufc::cell_integral& integral,
 // Function for testing ufc::exterior_facet_integral objects
 void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
                                   ufc::shape cell_shape,
+                                  std::size_t gdim,
                                   std::size_t tensor_size,
                                   double** w,
                                   bool bench)
@@ -497,7 +511,7 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
   std::cout << "-------------------------------" << std::endl;
 
   // Prepare arguments
-  test_cell c(cell_shape);
+  test_cell c(cell_shape, gdim);
   std::size_t num_facets = c.topological_dimension + 1;
   double* A = new double[tensor_size];
 
@@ -538,6 +552,7 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
 // Function for testing ufc::interior_facet_integral objects
 void test_interior_facet_integral(ufc::interior_facet_integral& integral,
                                   ufc::shape cell_shape,
+                                  std::size_t gdim,
                                   std::size_t macro_tensor_size,
                                   double** w,
                                   bool bench)
@@ -547,8 +562,8 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
   std::cout << "-------------------------------" << std::endl;
 
   // Prepare arguments
-  test_cell c0(cell_shape, 0);
-  test_cell c1(cell_shape, 1);
+  test_cell c0(cell_shape, gdim, 0);
+  test_cell c1(cell_shape, gdim, 1);
   std::size_t num_facets = c0.topological_dimension + 1;
   double* A = new double[macro_tensor_size];
 
@@ -595,6 +610,7 @@ void test_form(ufc::form& form, bool bench)
   std::cout << "Testing form" << std::endl;
   std::cout << "------------" << std::endl;
 
+
   // Compute size of tensors
   int tensor_size = 1;
   int macro_tensor_size = 1;
@@ -625,6 +641,7 @@ void test_form(ufc::form& form, bool bench)
   // Get cell shape
   ufc::finite_element* element = form.create_finite_element(0);
   ufc::shape cell_shape = element->cell_shape();
+  std::size_t gdim = element->geometric_dimension();
   delete element;
   element = 0;
 
@@ -667,7 +684,8 @@ void test_form(ufc::form& form, bool bench)
   {
     ufc::cell_integral* integral = form.create_cell_integral(i);
     if (integral)
-      test_cell_integral(*integral, cell_shape, tensor_size, w, bench);
+      test_cell_integral(*integral, cell_shape, gdim,
+                         tensor_size, w, bench);
     delete integral;
   }
 
@@ -676,7 +694,8 @@ void test_form(ufc::form& form, bool bench)
   {
     ufc::exterior_facet_integral* integral = form.create_exterior_facet_integral(i);
     if (integral)
-      test_exterior_facet_integral(*integral, cell_shape, tensor_size, w, bench);
+      test_exterior_facet_integral(*integral, cell_shape, gdim,
+                                   tensor_size, w, bench);
     delete integral;
   }
 
@@ -685,7 +704,8 @@ void test_form(ufc::form& form, bool bench)
   {
     ufc::interior_facet_integral* integral = form.create_interior_facet_integral(i);
     if (integral)
-      test_interior_facet_integral(*integral, cell_shape, macro_tensor_size, w, bench);
+      test_interior_facet_integral(*integral, cell_shape, gdim,
+                                   macro_tensor_size, w, bench);
     delete integral;
   }
 

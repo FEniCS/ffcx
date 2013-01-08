@@ -33,6 +33,7 @@ from ffc.fiatinterface import map_facet_points
 from ffc.quadrature.quadraturetransformer import QuadratureTransformer
 from ffc.quadrature.optimisedquadraturetransformer import QuadratureTransformerOpt
 from ffc.quadrature_schemes import create_quadrature
+from ffc.representationutils import needs_oriented_jacobian
 
 def compute_integral_ir(domain_type,
                         domain_id,
@@ -53,7 +54,9 @@ def compute_integral_ir(domain_type,
           "domain_id":            domain_id,
           "form_id":              form_id,
           "geometric_dimension":  form_data.geometric_dimension,
+          "topological_dimension":form_data.topological_dimension,
           "num_facets":           num_facets,
+          "needs_oriented":       needs_oriented_jacobian(form_data),
           "geo_consts":           {}}
 
     # Sort integrals and tabulate basis.
@@ -113,11 +116,13 @@ def compute_integral_ir(domain_type,
         transformer = QuadratureTransformerOpt(psi_tables,
                                                quad_weights,
                                                form_data.geometric_dimension,
+                                               form_data.topological_dimension,
                                                optimise_parameters)
     else:
         transformer = QuadratureTransformer(psi_tables,
                                             quad_weights,
                                             form_data.geometric_dimension,
+                                            form_data.topological_dimension,
                                             optimise_parameters)
 
     # Add tables for weights, name_map and basis values.

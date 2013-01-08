@@ -46,9 +46,11 @@ def interpolate_vertex_values(ir):
 
     # Add code for Jacobian if necessary
     code = []
-    dim = ir["cell_dim"]
+    gdim = ir["geometric_dimension"]
+    tdim = ir["topological_dimension"]
     if ir["needs_jacobian"]:
-        code.append(format["jacobian and inverse"](dim))
+        code.append(format["jacobian and inverse"](gdim, tdim,
+                                                   oriented=ir["needs_oriented"]))
 
     # Compute total value dimension for (mixed) element
     total_dim = sum(data["value_size"] for data in ir["element_data"])
@@ -59,7 +61,8 @@ def interpolate_vertex_values(ir):
     for data in ir["element_data"]:
         # Add vertex interpolation for this element
         code.append(format["comment"]("Evaluate function and change variables"))
-        code.append(_interpolate_vertex_values_element(data, dim, total_dim,
+        code.append(_interpolate_vertex_values_element(data, gdim, tdim,
+                                                       total_dim,
                                                        value_offset,
                                                        space_offset))
 
@@ -74,7 +77,7 @@ def interpolate_vertex_values(ir):
     return clean_code
 
 
-def _interpolate_vertex_values_element(data, dim, total_value_size,
+def _interpolate_vertex_values_element(data, gdim, tdim, total_value_size,
                                        value_offset=0, space_offset=0):
 
     # Extract vertex values for all basis functions
@@ -85,7 +88,8 @@ def _interpolate_vertex_values_element(data, dim, total_value_size,
 
     # Map basis values according to element mapping. Assumes single
     # mapping for each (non-mixed) element
-    change_of_variables = _change_variables(data["mapping"], dim, space_dim)
+    change_of_variables = _change_variables(data["mapping"], gdim, tdim,
+                                            space_dim)
 
     # Create code for each value dimension:
     code = []
@@ -112,21 +116,23 @@ def _interpolate_vertex_values_element(data, dim, total_value_size,
     return "\n".join(code)
 
 
-def _change_variables(mapping, dim, space_dim):
+def _change_variables(mapping, gdim, tdim, space_dim):
     """
 
     How to map a field G from the reference domain to a physical
     domain: For the converse approach -- see evaluatedof.py
 
-    Let g be a field defined on the reference domain domain T_0 with
-    reference coordinates X. Let T be a a physical domain with
-    coordinates x. Assume that F: T_0 -> T such that
+    Let g be a field defined on the reference domain domain T_0 (of
+    dimension tdim) with reference coordinates X. Let T be a a
+    physical domain (of dimension gdim) with coordinates x. Assume
+    that F: T_0 -> T such that
 
       x = F(X)
 
     Let J be the Jacobian of F, i.e J = dx/dX and let K denote the
-    inverse of the Jacobian K = J^{-1}. Then we (currently) have the
-    following three types of mappings:
+    (pseudo)-inverse of the Jacobian K = J^{-1}. Note that J is gdim x
+    tdim, and conversely K is tdim x gdim.  Then we (currently) have
+    the following three types of mappings:
 
     'affine' mapping for G:
 
@@ -146,12 +152,12 @@ def _change_variables(mapping, dim, space_dim):
     if mapping is "affine":
         change_of_variables = lambda G, i: G[i]
     elif mapping == "contravariant piola":
-        change_of_variables = lambda G, i: [multiply([invdetJ, inner([J(i, j) for j in range(dim)],
-                                                                     [G[j][index] for j in range(dim)])])
+        change_of_variables = lambda G, i: [multiply([invdetJ, inner([J(i, j) for j in range(tdim)],
+                                                                     [G[j][index] for j in range(tdim)])])
                                             for index in range(space_dim)]
     elif mapping == "covariant piola":
-        change_of_variables = lambda G, i: [inner([Jinv(j, i) for j in range(dim)],
-                                                  [G[j][index] for j in range(dim)])
+        change_of_variables = lambda G, i: [inner([Jinv(j, i) for j in range(tdim)],
+                                                  [G[j][index] for j in range(tdim)])
                                             for index in range(space_dim)]
     else:
         raise Exception, "No such mapping: %s accepted" % mapping

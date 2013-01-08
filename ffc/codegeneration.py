@@ -375,21 +375,23 @@ def _tabulate_coordinates(ir):
     coordinates =   format["argument coordinates"]
 
     # Extract coordinates and cell dimension
-    cell_dim = len(ir[0])
+    gdim = ir["gdim"]
+    tdim = ir["tdim"]
+    #cell_dim = len(ir[0])
 
     # Aid mapping points from reference to physical element
-    coefficients = affine_weights(cell_dim)
+    coefficients = affine_weights(tdim)
 
     # Start with code for coordinates for vertices of cell
     code = [format["cell coordinates"]]
 
     # Generate code for each point and each component
-    for (i, coordinate) in enumerate(ir):
+    for (i, coordinate) in enumerate(ir["points"]):
 
         w = coefficients(coordinate)
-        for j in range(cell_dim):
+        for j in range(gdim):
             # Compute physical coordinate
-            coords = [component(f_x(), (k, j)) for k in range(cell_dim + 1)]
+            coords = [component(f_x(), (k, j)) for k in range(tdim + 1)]
             value = inner_product(w, coords)
 
             # Assign coordinate

@@ -179,8 +179,8 @@ format.update({
     "local dof":                "dof",
     "basisvalues":              "basisvalues",
     "coefficients":             lambda i: "coefficients%d" %(i),
-    "num derivatives":          "num_derivatives",
-    "derivative combinations":  "combinations",
+    "num derivatives":          lambda t_or_g :"num_derivatives" + t_or_g,
+    "derivative combinations":  lambda t_or_g :"combinations" + t_or_g,
     "transform matrix":         "transform",
     "transform Jinv":           "Jinv",
     "dmats":                    lambda i: "dmats%s" %(i),
@@ -228,18 +228,20 @@ format.update({
 
 # Code snippets
 from codesnippets import *
+
 format.update({
     "cell coordinates":     cell_coordinates,
-    "jacobian":             lambda n, r="": jacobian[n] % {"restriction": r},
-    "inverse jacobian":     lambda n, r="": inverse_jacobian[n] % {"restriction": r},
-    "jacobian and inverse": lambda n, r=None: format["jacobian"](n, choose_map[r]) +\
-                            "\n" + format["inverse jacobian"](n, choose_map[r]),
-    "facet determinant":    lambda n, r=None: facet_determinant[n] % {"restriction": choose_map[r]},
-    "fiat coordinate map":  lambda n: fiat_coordinate_map[n],
-    "generate normal":      lambda d, i: _generate_normal(d, i),
-    "generate cell volume": lambda d, i: _generate_cell_volume(d, i),
-    "generate circumradius": lambda d, i: _generate_circumradius(d, i),
-    "generate facet area":  lambda d: facet_area[d],
+    "jacobian":             lambda gdim, tdim, r="": jacobian[gdim][tdim] % {"restriction": r},
+    "inverse jacobian":     lambda gdim, tdim, r="", oriented=False: inverse_jacobian[gdim][tdim] % {"restriction": r}  + format["orientation"](oriented, gdim, tdim, r),
+    "jacobian and inverse": lambda gdim, tdim=None, r=None, oriented=False: (format["jacobian"](gdim, tdim, choose_map[r]) + \
+                                                                                 "\n" + format["inverse jacobian"](gdim, tdim, choose_map[r], oriented)),
+    "orientation":          lambda oriented, gdim, tdim, r="": orientation_snippet % {"restriction": r} if (oriented and gdim != tdim) else "",
+    "facet determinant":    lambda gdim, tdim, r=None: facet_determinant[gdim][tdim] % {"restriction": choose_map[r]},
+    "fiat coordinate map":  lambda cell, gdim: fiat_coordinate_map[cell][gdim],
+    "generate normal":      lambda gdim, tdim, i: _generate_normal(gdim, tdim, i),
+    "generate cell volume": lambda gdim, tdim, i: _generate_cell_volume(gdim, tdim, i),
+    "generate circumradius": lambda gdim, tdim, i: _generate_circumradius(gdim, tdim, i),
+    "generate facet area":  lambda gdim, tdim: facet_area[gdim][tdim],
     "generate ip coordinates":  lambda g, num_ip, name, ip, r=None: (ip_coordinates[g][0], ip_coordinates[g][1] % \
                                 {"restriction": choose_map[r], "ip": ip, "name": name, "num_ip": num_ip}),
     "scale factor snippet": scale_factor,
@@ -529,44 +531,16 @@ def _generate_psi_name(counter, facet, component, derivatives):
 
     return name
 
-def _generate_jacobian(cell_dimension, integral_type):
-    "Generate code for computing jacobian"
-
-    # Choose space dimension
-    if cell_dimension == 1:
-        jacobian = jacobian_1D
-        facet_determinant = facet_determinant_1D
-    elif cell_dimension == 2:
-        jacobian = jacobian_2D
-        facet_determinant = facet_determinant_2D
-    else:
-        jacobian = jacobian_3D
-        facet_determinant = facet_determinant_3D
-
-    # Check if we need to compute more than one Jacobian
-    if integral_type == "cell":
-        code  = jacobian % {"restriction":  ""}
-        code += "\n\n"
-        code += scale_factor
-    elif integral_type == "exterior facet":
-        code  = jacobian % {"restriction":  ""}
-        code += "\n\n"
-        code += facet_determinant % {"restriction": "", "facet" : "facet"}
-    elif integral_type == "interior facet":
-        code  = jacobian % {"restriction": choose_map["+"]}
-        code += "\n\n"
-        code += jacobian % {"restriction": choose_map["-"]}
-        code += "\n\n"
-        code += facet_determinant % {"restriction": choose_map["+"], "facet": "facet0"}
-
-    return code
-
-def _generate_normal(geometric_dimension, domain_type, reference_normal=False):
+def _generate_normal(geometric_dimension, topological_dimension, domain_type,
+                     reference_normal=False):
     "Generate code for computing normal"
 
     # Choose snippets
-    direction = normal_direction[geometric_dimension]
-    normal = facet_normal[geometric_dimension]
+    direction = normal_direction[geometric_dimension][topological_dimension]
+
+    assert (facet_normal[geometric_dimension].has_key(topological_dimension)),\
+        "Facet normal not yet implemented for this gdim/tdim combo"
+    normal = facet_normal[geometric_dimension][topological_dimension]
 
     # Choose restrictions
     if domain_type == "exterior_facet":
@@ -580,11 +554,11 @@ def _generate_normal(geometric_dimension, domain_type, reference_normal=False):
         error("Unsupported domain_type: %s" % str(domain_type))
     return code
 
-def _generate_cell_volume(geometric_dimension, domain_type):
+def _generate_cell_volume(gdim, tdim, domain_type):
     "Generate code for computing cell volume."
 
     # Choose snippets
-    volume = cell_volume[geometric_dimension]
+    volume = cell_volume[gdim][tdim]
 
     # Choose restrictions
     if domain_type in ("cell", "exterior_facet"):
@@ -596,11 +570,11 @@ def _generate_cell_volume(geometric_dimension, domain_type):
         error("Unsupported domain_type: %s" % str(domain_type))
     return code
 
-def _generate_circumradius(geometric_dimension, domain_type):
+def _generate_circumradius(gdim, tdim, domain_type):
     "Generate code for computing a cell's circumradius."
 
     # Choose snippets
-    radius = circumradius[geometric_dimension]
+    radius = circumradius[gdim][tdim]
 
     # Choose restrictions
     if domain_type in ("cell", "exterior_facet"):

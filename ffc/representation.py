@@ -110,8 +110,8 @@ def _compute_element_ir(ufl_element, element_id, element_numbers):
     ir["space_dimension"] = element.space_dimension()
     ir["value_rank"] = len(ufl_element.value_shape())
     ir["value_dimension"] = ufl_element.value_shape()
-    ir["evaluate_basis"] = _evaluate_basis(element, cell)
-    ir["evaluate_dof"] = _evaluate_dof(element, cell)
+    ir["evaluate_basis"] = _evaluate_basis(ufl_element, element, cell)
+    ir["evaluate_dof"] = _evaluate_dof(ufl_element, element, cell)
     ir["interpolate_vertex_values"] = _interpolate_vertex_values(element, cell)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = _create_sub_foo(ufl_element, element_numbers)
@@ -150,7 +150,7 @@ def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
     ir["tabulate_dofs"] = _tabulate_dofs(element, cell)
     ir["tabulate_facet_dofs"] = facet_dofs
     ir["tabulate_entity_dofs"] = (element.entity_dofs(), num_dofs_per_entity)
-    ir["tabulate_coordinates"] = _tabulate_coordinates(element)
+    ir["tabulate_coordinates"] = _tabulate_coordinates(ufl_element, element)
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
     ir["create_sub_dofmap"] = _create_sub_foo(ufl_element, element_numbers)
 
@@ -247,42 +247,81 @@ def _compute_form_ir(form_data, form_id, element_numbers):
 
 # FIXME: Move to FiniteElement/MixedElement
 def _value_size(element):
-    "Compute value size of element."
+    """Compute value size of element, aka the number of components.
+
+    The value size of a scalar field is 1, the value size of a vector
+    field (is the number of components), the value size of a higher
+    dimensional tensor field is the product of the value_shape of the
+    field. Recall that all mixed elements are flattened.
+    """
     shape = element.value_shape()
     if shape == ():
         return 1
-    else:
-        # FIXME: KBO: Is this correct? Shouldn't it be sum() instead?
-        return product(shape)
+    return product(shape)
 
-def _generate_offsets(element, offset=0):
-
-    "Generate offsets: i.e value offset for each basis function."
-
+def _generate_reference_offsets(element, offset=0):
+    """Generate offsets: i.e value offset for each basis function
+    relative to a reference element representation."""
     offsets = []
-
     if isinstance(element, MixedElement):
         for e in element.elements():
-            offsets += _generate_offsets(e, offset)
+            offsets += _generate_reference_offsets(e, offset)
             offset += _value_size(e)
-
     elif isinstance(element, EnrichedElement):
         for e in element.elements():
-            offsets += _generate_offsets(e, offset)
-
+            offsets += _generate_reference_offsets(e, offset)
     else:
         offsets = [offset]*element.space_dimension()
-
     return offsets
 
-def _evaluate_dof(element, cell):
+def _generate_physical_offsets(ufl_element, offset=0):
+    """Generate offsets: i.e value offset for each basis function
+    relative to a physical element representation."""
+    offsets = []
+
+    # Refer to reference if gdim == tdim. This is a hack to support
+    # more stuff (in particular restricted elements)
+    gdim = ufl_element.cell().geometric_dimension()
+    tdim = ufl_element.cell().topological_dimension()
+    if (gdim == tdim):
+        return _generate_reference_offsets(create_element(ufl_element))
+
+    if isinstance(ufl_element, ufl.MixedElement):
+        for e in ufl_element.sub_elements():
+            offsets += _generate_physical_offsets(e, offset)
+            offset += _value_size(e)
+    elif isinstance(ufl_element, ufl.EnrichedElement):
+        for e in ufl_element._elements:
+            offsets += _generate_physical_offsets(e, offset)
+    elif isinstance(ufl_element, ufl.FiniteElement):
+        element = create_element(ufl_element)
+        offsets = [offset]*element.space_dimension()
+    else:
+        raise NotImplementedError, \
+            "This element combination is not implemented"
+    return offsets
+
+def _evaluate_dof(ufl_element, element, cell):
     "Compute intermediate representation of evaluate_dof."
 
+    # With regard to reference_value_size vs physical_value_size: Note
+    # that 'element' is the FFC/FIAT representation of the finite
+    # element, while 'ufl_element' is the UFL representation. In
+    # particular, UFL only knows about physical dimensions, so the
+    # value shape of the 'ufl_element' (which is used to compute the
+    # _value_size) will be correspond to the value size in physical
+    # space. FIAT however only knows about the reference element, and
+    # so the FIAT value shape of the 'element' will be the reference
+    # value size. This of course only matters for elements that have
+    # different physical and reference value shapes and sizes.
+
     return {"mappings": element.mapping(),
-            "value_size": _value_size(element),
-            "cell_dimension": cell.geometric_dimension(),
+            "reference_value_size": _value_size(element),
+            "physical_value_size": _value_size(ufl_element),
+            "geometric_dimension": cell.geometric_dimension(),
+            "topological_dimension": cell.topological_dimension(),
             "dofs": [L.pt_dict for L in element.dual_basis()],
-            "offsets": _generate_offsets(element)}
+            "physical_offsets": _generate_physical_offsets(ufl_element)}
 
 def _extract_elements(element):
 
@@ -294,24 +333,29 @@ def _extract_elements(element):
         new_elements.append(element)
     return new_elements
 
-def _num_components(element):
-    """Compute the number of components of element, like _value_size, but
-    does not support tensor elements."""
-    shape = element.value_shape()
-    if shape == ():
-        return 1
-    elif len(shape) == 1:
-        return shape[0]
-    else:
-        error("Tensor valued elements are not supported yet: %d " % shape)
+# def _num_components(element):
+#     """Compute the number of components of element, like _value_size, but
+#     does not support tensor elements."""
+#     shape = element.value_shape()
+#     if shape == ():
+#         return 1
+#     elif len(shape) == 1:
+#         return shape[0]
+#     else:
+#         error("Tensor valued elements are not supported yet: %d " % shape)
 
-def _evaluate_basis(element, cell):
+def _evaluate_basis(ufl_element, element, cell):
     "Compute intermediate representation for evaluate_basis."
 
     # Handle Mixed and EnrichedElements by extracting 'sub' elements.
     elements = _extract_elements(element)
-    offsets = _generate_offsets(element)
+    offsets = _generate_reference_offsets(element) # Must check?
     mappings = element.mapping()
+
+    # This function is evidently not implemented for TensorElements
+    for e in elements:
+        if len(e.value_shape()) > 1:
+            return "Function not supported/implemented for TensorElements."
 
     # Handle QuadratureElement, not supported because the basis is only defined
     # at the dof coordinates where the value is 1, so not very interesting.
@@ -320,19 +364,22 @@ def _evaluate_basis(element, cell):
             return "Function not supported/implemented for QuadratureElement."
 
     # Initialise data with 'global' values.
-    data = {
-          "value_size" : sum(element.value_shape() or (1,)),
-          "cell_domain" : cell.domain(),
-          "topological_dimension" : cell.topological_dimension(),
-          "geometric_dimension" : cell.geometric_dimension(),
-          "space_dimension" : element.space_dimension()
-          }
+    data = {"reference_value_size": _value_size(element),
+            "physical_value_size": _value_size(ufl_element),
+            "cell_domain" : cell.domain(),
+            "topological_dimension" : cell.topological_dimension(),
+            "geometric_dimension" : cell.geometric_dimension(),
+            "space_dimension" : element.space_dimension(),
+            "needs_oriented": needs_oriented_jacobian(element)
+            }
+
+
     # Loop element and space dimensions to generate dof data.
     dof = 0
     dof_data = []
     for e in elements:
         for i in range(e.space_dimension()):
-            num_components = _num_components(e)
+            num_components = _value_size(e)
             coefficients = []
             coeffs = e.get_coeffs()
 
@@ -361,11 +408,17 @@ def _evaluate_basis(element, cell):
 
     return data
 
-def _tabulate_coordinates(element):
+def _tabulate_coordinates(ufl_element, element):
     "Compute intermediate representation of tabulate_coordinates."
+
     if uses_integral_moments(element):
-        return None
-    return [L.pt_dict.keys()[0] for L in element.dual_basis()]
+        return {}
+
+    data = {}
+    data["tdim"] = ufl_element.cell().topological_dimension()
+    data["gdim"] = ufl_element.cell().geometric_dimension()
+    data["points"] = [L.pt_dict.keys()[0] for L in element.dual_basis()]
+    return data
 
 def _tabulate_dofs(element, cell):
     "Compute intermediate representation of tabulate_dofs."
@@ -404,7 +457,7 @@ def _tabulate_facet_dofs(element, cell):
     "Compute intermediate representation of tabulate_facet_dofs."
 
     # Compute incidences
-    incidence = __compute_incidence(cell.geometric_dimension())
+    incidence = __compute_incidence(cell.topological_dimension())
 
     # Get topological dimension
     D = max([pair[0][0] for pair in incidence])
@@ -439,11 +492,13 @@ def _interpolate_vertex_values(element, cell):
             return "Function is not supported/implemented for QuadratureElement."
 
     ir = {}
-    ir["cell_dim"] = cell.geometric_dimension()
+    ir["geometric_dimension"] = cell.geometric_dimension()
+    ir["topological_dimension"] = cell.topological_dimension()
 
     # Check whether computing the Jacobian is necessary
     mappings = element.mapping()
     ir["needs_jacobian"] = any("piola" in m for m in mappings)
+    ir["needs_oriented"] = needs_oriented_jacobian(element)
 
     # Get vertices of reference cell
     cell = reference_cell(cell.domain())
@@ -511,7 +566,8 @@ def __compute_incidence(D):
     return incidence
 
 def __compute_sub_simplices(D, d):
-    "Compute vertices for all sub simplices of dimension d (code taken from Exterior)"
+    """Compute vertices for all sub simplices of dimension d (code
+    taken from Exterior)."""
 
     # Number of vertices
     num_vertices = D + 1
@@ -539,7 +595,13 @@ def __compute_sub_simplices(D, d):
     return sub_simplices
 
 def uses_integral_moments(element):
+    "True if element uses integral moments for its degrees of freedom."
 
     integrals = set(["IntegralMoment", "FrobeniusIntegralMoment"])
     tags = set([L.get_type_tag() for L in element.dual_basis()])
     return len(integrals & tags) > 0
+
+def needs_oriented_jacobian(element):
+    # Check whether this element needs an oriented jacobian (only
+    # contravariant piolas seem to need it)
+    return ("contravariant piola" in element.mapping())

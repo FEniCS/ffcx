@@ -35,6 +35,7 @@ from ufl.classes import Form, Measure, Integral
 
 # FFC modules
 from ffc.log import info, error
+from ffc.representationutils import needs_oriented_jacobian
 
 # FFC tensor representation modules
 from ffc.tensor.monomialextraction import extract_monomial_form
@@ -68,8 +69,10 @@ def compute_integral_ir(domain_type,
           "domain_id": domain_id,
           "form_id": form_id,
           "geometric_dimension": form_data.geometric_dimension,
+          "topological_dimension": form_data.topological_dimension,
           "num_facets": form_data.num_facets,
-          "rank": form_data.rank}
+          "rank": form_data.rank,
+          "needs_oriented": needs_oriented_jacobian(form_data)}
 
     # Compute representation of cell tensor
     num_facets = form_data.num_facets
