@@ -21,29 +21,6 @@ namespace ufc
   /// Valid cell shapes
   enum shape {interval, triangle, quadrilateral, tetrahedron, hexahedron};
 
-  /// This class defines the data structure for a finite element mesh.
-
-  class mesh
-  {
-  public:
-
-    /// Constructor
-    mesh(): topological_dimension(0), geometric_dimension(0), num_entities(0) {}
-
-    /// Destructor
-    virtual ~mesh() {}
-
-    /// Topological dimension of the mesh
-    std::size_t topological_dimension;
-
-    /// Geometric dimension of the mesh
-    std::size_t geometric_dimension;
-
-    /// Array of the global number of entities of each topological dimension
-    std::size_t* num_entities;
-
-  };
-
   /// This class defines the data structure for a cell in a mesh.
 
   class cell
@@ -219,16 +196,6 @@ namespace ufc
     /// Return true iff mesh entities of topological dimension d are needed
     virtual bool needs_mesh_entities(std::size_t d) const = 0;
 
-    /// Initialize dofmap for mesh (return true iff init_cell() is needed)
-    virtual bool init_mesh(const mesh& mesh) = 0;
-
-    /// Initialize dofmap for given cell
-    virtual void init_cell(const mesh& m,
-                           const cell& c) = 0;
-
-    /// Finish initialization of dofmap for cells
-    virtual void init_cell_finalize() = 0;
-
     /// Return the topological dimension of the associated cell shape
     virtual std::size_t topological_dimension() const = 0;
 
@@ -236,7 +203,8 @@ namespace ufc
     virtual std::size_t geometric_dimension() const = 0;
 
     /// Return the dimension of the global finite element function space
-    virtual std::size_t global_dimension() const = 0;
+    virtual std::size_t global_dimension(const std::vector<std::size_t> &
+                                         num_mesh_entities) const = 0;
 
     /// Return the dimension of the local finite element function space for a cell
     virtual std::size_t local_dimension(const cell& c) const = 0;
@@ -252,7 +220,7 @@ namespace ufc
 
     /// Tabulate the local-to-global mapping of dofs on a cell
     virtual void tabulate_dofs(std::size_t* dofs,
-                               const mesh& m,
+                               const std::vector<std::size_t> & num_mesh_entities,
                                const cell& c) const = 0;
 
     /// Tabulate the local-to-local mapping from facet dofs to cell dofs
