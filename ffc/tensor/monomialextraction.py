@@ -325,9 +325,40 @@ class MonomialTransformer(ReuseTransformer):
         s.apply_tensor(indices)
         return s
 
-    def spatial_derivative(self, o, s, indices):
+    def old_spatial_derivative(self, o, s, indices):
         s = MonomialSum(s)
         s.apply_derivative(indices)
+        return s
+
+    def grad(self, o, s):
+        # The representation
+        #   o = Grad(s)
+        # is equivalent to
+        #   o = as_tensor(s[ii].dx(i), ii+(i,))
+
+        # In UFL representation types:
+        #ind = indices(o.rank())
+        #si = Indexed(s, ind[:-1])
+        #sd = SpatialDerivative(si, ind[-1])
+        #o = ComponentTensor(sd, ind)
+
+        from ufl import indices
+        ind = list(indices(o.rank()))
+
+        # We could reuse other handlers like this:
+        #si = self.indexed(None, s, list(ind[:-1]))
+        #sd = self.old_spatial_derivative(si, [ind[-1]])
+        #return self.component_tensor(None, sd, ind)
+
+        # Or implement directly like this:
+        si = MonomialSum(s)
+        si.apply_indices(list(ind[:-1]))
+
+        sd = MonomialSum(si)
+        sd.apply_derivative([ind[-1]])
+
+        s = MonomialSum(sd)
+        s.apply_tensor(ind)
         return s
 
     def positive_restricted(self, o, s):
