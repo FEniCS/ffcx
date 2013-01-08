@@ -1,6 +1,6 @@
 "Extraction of monomial representations of UFL forms."
 
-# Copyright (C) 2008-2009 Anders Logg
+# Copyright (C) 2008-2013 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -17,11 +17,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Martin Alnes, 2008
+# Modified by Martin Alnaes, 2008, 2013
 # Modified by Kristian B. Oelgaard
 #
 # First added:  2008-08-01
-# Last changed: 2010-01-25
+# Last changed: 2013-01-08
 
 # UFL modules
 from ufl.classes import Form, Argument, Coefficient, ScalarValue, IntValue

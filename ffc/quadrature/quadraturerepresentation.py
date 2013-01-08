@@ -23,7 +23,7 @@
 # Last changed: 2010-05-18
 
 # UFL modules
-from ufl.classes import Form, Integral, SpatialDerivative
+from ufl.classes import Form, Integral, Grad
 from ufl.algorithms import extract_unique_elements, extract_type, extract_elements, propagate_restrictions
 
 # FFC modules
@@ -225,16 +225,17 @@ def _tabulate_basis(sorted_integrals, domain_type, num_facets, common_cell=None)
         # Initialise dictionary of elements and the number of derivatives.
         num_derivatives = dict([(e, 0) for e in elements])
         # Extract the derivatives from the integral.
-        derivatives = set(extract_type(integral, SpatialDerivative))
+        derivatives = set(extract_type(integral, Grad))
 
         # Loop derivatives and extract multiple derivatives.
         for d in list(derivatives):
-            num_deriv = len(extract_type(d, SpatialDerivative))
+            num_deriv = len(extract_type(d, Grad))
 
-            # TODO: Safety check, SpatialDerivative only has one operand,
+            # TODO: Safety check, Grad only has one operand,
             # and there should be only one element?!
             elem = extract_elements(d.operands()[0])
-            ffc_assert(len(elem) == 1, "SpatialDerivative has more than one element: " + repr(elem))
+            ffc_assert(len(elem) == 1,
+                       "Grad has more than one element: " + repr(elem))
             elem = elem[0]
             # Set the number of derivatives to the highest value
             # encountered so far.
@@ -310,4 +311,3 @@ def _transform_integrals(transformer, integrals, domain_type):
         transformed_integrals.append((point, terms, transformer.functions, \
                                       {}, transformer.coordinate, transformer.conditionals))
     return transformed_integrals
-
