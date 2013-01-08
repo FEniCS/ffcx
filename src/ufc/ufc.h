@@ -10,6 +10,7 @@
 #define UFC_VERSION_MINOR 1
 #define UFC_VERSION_MAINTENANCE 0
 
+#include <vector>
 #include <cstddef>
 #include <stdexcept>
 
