@@ -72,9 +72,6 @@ namespace ufc
   {
   public:
 
-    /// Constructor
-    function() {}
-
     /// Destructor
     virtual ~function() {}
 
@@ -90,9 +87,6 @@ namespace ufc
   class finite_element
   {
   public:
-
-    /// Constructor
-    finite_element() {}
 
     /// Destructor
     virtual ~finite_element() {}
@@ -185,9 +179,6 @@ namespace ufc
   {
   public:
 
-    /// Constructor
-    dofmap() {}
-
     /// Destructor
     virtual ~dofmap() {}
 
@@ -255,9 +246,6 @@ namespace ufc
   {
   public:
 
-    /// Constructor
-    cell_integral() {}
-
     /// Destructor
     virtual ~cell_integral() {}
 
@@ -284,9 +272,6 @@ namespace ufc
   class exterior_facet_integral
   {
   public:
-
-    /// Constructor
-    exterior_facet_integral() {}
 
     /// Destructor
     virtual ~exterior_facet_integral() {}
@@ -315,9 +300,6 @@ namespace ufc
   class interior_facet_integral
   {
   public:
-
-    /// Constructor
-    interior_facet_integral() {}
 
     /// Destructor
     virtual ~interior_facet_integral() {}
@@ -359,9 +341,6 @@ namespace ufc
   class form
   {
   public:
-
-    /// Constructor
-    form() {}
 
     /// Destructor
     virtual ~form() {}
