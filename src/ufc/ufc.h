@@ -14,6 +14,8 @@
 #include <cstddef>
 #include <stdexcept>
 
+#include <ufc_geometry.h>
+
 const char UFC_VERSION[] = "2.1.0+";
 
 namespace ufc
