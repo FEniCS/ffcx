@@ -22,6 +22,32 @@ namespace ufc
   /// Valid cell shapes
   enum shape {interval, triangle, quadrilateral, tetrahedron, hexahedron};
 
+  /// This class defines the interface for cell topology data.
+  class cell_topology
+  {
+  public:
+
+    /// Destructor
+    virtual ~cell_topology() {}
+
+    /// Return global entity indices for topological dimension d
+    virtual const std::vector<std::size_t>& entity_indices(std::size_t d) const;
+
+  };
+
+  /// This class defines the interface for cell geometry data.
+  class cell_geometry
+  {
+  public:
+
+    /// Destructor
+    virtual ~cell_geometry() {}
+
+    /// Return vertex coordinates as a flattened array
+    virtual const std::vector<double>& vertex_coordinates(std::vector<double> x) const;
+
+  };
+
   /// This class defines the data structure for a cell in a mesh.
 
   class cell
