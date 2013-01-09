@@ -36,19 +36,18 @@ from ffc.mixedelement import MixedElement
 from ffc.restrictedelement import RestrictedElement
 from ffc.enrichedelement import EnrichedElement, SpaceOfReals
 
-# Dictionary mapping from domain (cell) to dimension
+# Dictionary mapping from cellname to dimension
 from ufl.geometry import cellname2dim
 
 # Number of facets associated with each cell name
-# (martinal: moved this here from ufl in case you want it)
-#cellname2num_facets = {"cell1D": None,
-#                       "cell2D": None,
-#                       "cell3D": None,
-#                       "interval": 2,
-#                       "triangle": 3,
-#                       "tetrahedron": 4,
-#                       "quadrilateral": 4,
-#                       "hexahedron": 6}
+cellname2num_facets = {"cell1D": None,
+                       "cell2D": None,
+                       "cell3D": None,
+                       "interval": 2,
+                       "triangle": 3,
+                       "tetrahedron": 4,
+                       "quadrilateral": 4,
+                       "hexahedron": 6}
 
 # Mapping from dimension to number of mesh sub-entities. (In principle,
 # cellname2num_facets contains the same information, but
@@ -120,7 +119,7 @@ def _create_fiat_element(ufl_element):
         return FFCQuadratureElement(ufl_element)
 
     # Create FIAT cell
-    fiat_cell = reference_cell(cell.domain())
+    fiat_cell = reference_cell(cell.cellname())
 
     # Handle Bubble element as RestrictedElement of P_{k} to interior
     if family == "Bubble":

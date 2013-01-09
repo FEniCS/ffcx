@@ -92,9 +92,9 @@ def _init_quadrature(arguments, domain_type, quadrature_degree, common_cell):
     # Get shape (check first factor, should be the same for all)
     try:
         if common_cell is None:
-            cell_shape = arguments[0].element.cell().domain()
+            cell_shape = arguments[0].element.cell().cellname()
         else:
-            cell_shape = common_cell.domain()
+            cell_shape = common_cell.cellname()
     except:
         error("Missing cell definition in form.")
     facet_shape = cellname2facetname[cell_shape]

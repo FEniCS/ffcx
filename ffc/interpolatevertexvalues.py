@@ -122,7 +122,7 @@ def _change_variables(mapping, gdim, tdim, space_dim):
     How to map a field G from the reference domain to a physical
     domain: For the converse approach -- see evaluatedof.py
 
-    Let g be a field defined on the reference domain domain T_0 (of
+    Let g be a field defined on the reference domain T_0 (of
     dimension tdim) with reference coordinates X. Let T be a a
     physical domain (of dimension gdim) with coordinates x. Assume
     that F: T_0 -> T such that

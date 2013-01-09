@@ -30,6 +30,7 @@ from ufl.algorithms import extract_unique_elements, extract_type, extract_elemen
 from ffc.log import ffc_assert, info, error
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import map_facet_points
+from ffc.fiatinterface import cellname2num_facets
 from ffc.quadrature.quadraturetransformer import QuadratureTransformer
 from ffc.quadrature.optimisedquadraturetransformer import QuadratureTransformerOpt
 from ffc.quadrature_schemes import create_quadrature
@@ -48,7 +49,7 @@ def compute_integral_ir(domain_type,
     info("Computing quadrature representation")
 
     # Initialise representation
-    num_facets = form_data.num_facets
+    num_facets = cellname2num_facets[form_data.cell.cellname()]
     ir = {"representation":       "quadrature",
           "domain_type":          domain_type,
           "domain_id":            domain_id,
@@ -64,7 +65,7 @@ def compute_integral_ir(domain_type,
     integrals_dict, psi_tables, quad_weights = \
         _tabulate_basis(sorted_integrals,
                         domain_type,
-                        form_data.num_facets,
+                        num_facets,
                         common_cell)
 
     # Create dimensions of primary indices, needed to reset the argument 'A'
@@ -184,20 +185,20 @@ def _tabulate_basis(sorted_integrals, domain_type, num_facets, common_cell=None)
         # Create a list of equivalent FIAT elements (with same ordering of elements).
         fiat_elements = [create_element(e) for e in elements]
 
-        # Get cell and facet domains.
+        # Get cell and facet cellnames.
         if common_cell is None:
             cell = integral.integrand().cell()
         else:
             cell = common_cell
-        cell_domain = cell.domain()
-        facet_domain = cell.facet_domain()
+        cellname = cell.cellname()
+        facet_cellname = cell.facet_cellname()
 
         # Make quadrature rule and get points and weights.
         # FIXME: Make create_quadrature() take a rule argument.
         if domain_type == "cell":
-            (points, weights) = create_quadrature(cell_domain, degree, rule)
+            (points, weights) = create_quadrature(cellname, degree, rule)
         elif domain_type == "exterior_facet" or domain_type == "interior_facet":
-            (points, weights) = create_quadrature(facet_domain, degree, rule)
+            (points, weights) = create_quadrature(facet_cellname, degree, rule)
         else:
             error("Unknown integral type: " + str(domain_type))
 
@@ -310,4 +311,3 @@ def _transform_integrals(transformer, integrals, domain_type):
         transformed_integrals.append((point, terms, transformer.functions, \
                                       {}, transformer.coordinate, transformer.conditionals))
     return transformed_integrals
-

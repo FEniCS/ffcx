@@ -50,16 +50,16 @@ class QuadratureElement:
 
         # Create quadrature (only interested in points)
         # TODO: KBO: What should we do about quadrature functions that live on ds, dS?
-        # Get cell and facet domains.
-        cell_domain = ufl_element.cell().domain()
-        facet_domain = ufl_element.cell().facet_domain()
-        points, weights = create_quadrature(cell_domain, degree, self._quad_scheme)
+        # Get cell and facet names.
+        cellname = ufl_element.cell().cellname()
+        #facet_cellname = ufl_element.cell().facet_cellname()
+        points, weights = create_quadrature(cellname, degree, self._quad_scheme)
 
         # Save the quadrature points
         self._points = points
 
         # Create entity dofs.
-        ufc_cell = reference_cell(ufl_element.cell().domain())
+        ufc_cell = reference_cell(ufl_element.cell().cellname())
         self._entity_dofs = _create_entity_dofs(ufc_cell, len(points))
 
         # The dual is a simply the PointEvaluation at the quadrature points

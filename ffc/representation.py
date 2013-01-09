@@ -45,6 +45,7 @@ import ufl
 from ffc.utils import compute_permutations, product
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
 from ffc.fiatinterface import create_element, entities_per_dim, reference_cell
+from ffc.fiatinterface import cellname2num_facets
 from ffc.mixedelement import MixedElement
 from ffc.enrichedelement import EnrichedElement, SpaceOfReals
 from ffc.quadratureelement import QuadratureElement
@@ -104,7 +105,7 @@ def _compute_element_ir(ufl_element, element_id, element_numbers):
 
     # Compute data for each function
     ir["signature"] = repr(ufl_element)
-    ir["cell_shape"] = cell.domain()
+    ir["cell_shape"] = cell.cellname()
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
     ir["space_dimension"] = element.space_dimension()
@@ -364,7 +365,7 @@ def _evaluate_basis(ufl_element, element, cell):
     # Initialise data with 'global' values.
     data = {"reference_value_size": _value_size(element),
             "physical_value_size": _value_size(ufl_element),
-            "cell_domain" : cell.domain(),
+            "cellname" : cell.cellname(),
             "topological_dimension" : cell.topological_dimension(),
             "geometric_dimension" : cell.geometric_dimension(),
             "space_dimension" : element.space_dimension(),
@@ -461,10 +462,10 @@ def _tabulate_facet_dofs(element, cell):
     D = max([pair[0][0] for pair in incidence])
 
     # Get the number of facets
-    num_facets = cell.num_facets()
+    num_facets = cellname2num_facets[cell.cellname()]
 
     # Find out which entities are incident to each facet
-    incident = num_facets*[[]]
+    incident = num_facets*[None]
     for facet in range(num_facets):
         incident[facet] = [pair[1] for pair in incidence if incidence[pair] == True and pair[0] == (D - 1, facet)]
 
@@ -499,7 +500,7 @@ def _interpolate_vertex_values(element, cell):
     ir["needs_oriented"] = needs_oriented_jacobian(element)
 
     # Get vertices of reference cell
-    cell = reference_cell(cell.domain())
+    cell = reference_cell(cell.cellname())
     vertices = cell.get_vertices()
 
     # Compute data for each constituent element
