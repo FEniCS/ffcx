@@ -43,8 +43,8 @@ namespace ufc
     /// Destructor
     virtual ~cell_geometry() {}
 
-    /// Return vector of vertex coordinate arrays
-    virtual const std::vector<double*>& vertex_coordinates() const;
+    /// Return array of coordinates for vertex i
+    virtual const double* vertex_coordinates(std::size_t i) const;
 
   };
 
@@ -279,6 +279,12 @@ namespace ufc
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
                                  const cell& c) const = 0;
+
+    // FIXME: New experimental version
+    /// Tabulate the tensor for the contribution from a local cell
+    virtual void tabulate_tensor_new(double* A,
+                                     const double * const * w,
+                                     const cell_geometry& c) const {}
 
     /// Tabulate the tensor for the contribution from a local cell
     /// using the specified reference cell quadrature points/weights
