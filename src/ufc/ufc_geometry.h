@@ -34,9 +34,9 @@ inline double compute_matrix_determinant_22(const std::vector<double>& A)
 
 //--- Computation of matrix inverses ---
 
-void compute_matrix_inverse_22(std::vector<double>& B,
-                               const std::vector<double>& A,
-                               double det)
+inline void compute_matrix_inverse_22(std::vector<double>& B,
+                                      const std::vector<double>& A,
+                                      double det)
 {
   B[0] =  A[3] / det;
   B[1] = -A[1] / det;
