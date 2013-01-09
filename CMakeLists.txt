@@ -91,7 +91,7 @@ set(UFC_CMAKE_CONFIG_DIR "share/ufc")
 #------------------------------------------------------------------------------
 # Install ufc.h
 
-set(UFC_H src/ufc/ufc.h)
+set(UFC_H src/ufc/ufc.h src/ufc/ufc_geometry.h)
 install(FILES ${UFC_H} DESTINATION ${UFC_INCLUDE_DIR} COMPONENT Development)
 
 #------------------------------------------------------------------------------

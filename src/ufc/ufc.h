@@ -33,7 +33,7 @@ namespace ufc
     virtual ~cell_topology() {}
 
     /// Return array of global entity indices for topological dimension d
-    virtual const std::size_t* entity_indices(std::size_t d) const;
+    //virtual const std::size_t* entity_indices(std::size_t d) const;
 
   };
 
@@ -45,8 +45,10 @@ namespace ufc
     /// Destructor
     virtual ~cell_geometry() {}
 
-    /// Return array of coordinates for vertex i
-    virtual const double* vertex_coordinates(std::size_t i) const;
+    /// Get vertex coordinates
+    //virtual void get_vertex_coordinates(const double* x[]) const;
+
+    //virtual std::vector<std::vector<double> >& void vertex_coordinates() const;
 
   };
 

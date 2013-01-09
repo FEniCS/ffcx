@@ -1,22 +1,47 @@
 // This file provides utility functions for computing geometric quantities.
 // This code is released into the public domain.
 //
-// The FEniCS Project (http://www.fenicsproject.org/) 2006-2013.
+// The FEniCS Project (http://www.fenicsproject.org/) 2013.
 
 #ifndef __UFC_GEOMETRY_H
 #define __UFC_GEOMETRY_H
 
-/// Compute Jacobian of mapping from UFC reference triangle to given triangle
-void compute_jacobian_triangle(double& J_00, double& J_01,
-                               double& J_10, double& J_11,
-                               const double* x_0,
-                               const double* x_1,
-                               const double* x_2)
+/// A note regarding data structures. All matrices are represented as
+/// row-major flattened arrays and stored as std::vector. Benchmarks
+/// indicate that with optimization (-O1 and up), std::vector is just
+/// as fast as raw C++ arrays. Benchmarks also indicate that flattened
+/// arrays are approximately twice as fast as nested arrays.
+
+///--- Computation of Jacobian matrices ---
+
+/// Compute Jacobian for 2D triangle
+inline void compute_jacobian_2d(std::vector<double>& J,
+                                const std::vector<double>& x)
 {
-  J_00 = x_1[0] - x_0[0];
-  J_01 = x_2[0] - x_0[0];
-  J_10 = x_1[1] - x_0[1];
-  J_11 = x_2[1] - x_0[1];
+  J[0] = x[2] - x[0];
+  J[1] = x[4] - x[0];
+  J[2] = x[3] - x[1];
+  J[3] = x[5] - x[1];
+}
+
+//--- Computation of determinants ---
+
+/// Compute determinant of 2 x 2 matrix
+inline double compute_matrix_determinant_22(const std::vector<double>& A)
+{
+  return A[0]*A[3] - A[1]*A[2];
+}
+
+//--- Computation of matrix inverses ---
+
+void compute_matrix_inverse_22(std::vector<double>& B,
+                               const std::vector<double>& A,
+                               double det)
+{
+  B[0] =  A[3] / det;
+  B[1] = -A[1] / det;
+  B[2] = -A[2] / det;
+  B[3] =  A[0] / det;
 }
 
 #endif
