@@ -37,10 +37,21 @@ from ffc.restrictedelement import RestrictedElement
 from ffc.enrichedelement import EnrichedElement, SpaceOfReals
 
 # Dictionary mapping from domain (cell) to dimension
-from ufl.geometry import domain2dim
+from ufl.geometry import cellname2dim
+
+# Number of facets associated with each cell name
+# (martinal: moved this here from ufl in case you want it)
+#cellname2num_facets = {"cell1D": None,
+#                       "cell2D": None,
+#                       "cell3D": None,
+#                       "interval": 2,
+#                       "triangle": 3,
+#                       "tetrahedron": 4,
+#                       "quadrilateral": 4,
+#                       "hexahedron": 6}
 
 # Mapping from dimension to number of mesh sub-entities. (In principle,
-# ufl.geometry.domain2num_facets contains the same information, but
+# cellname2num_facets contains the same information, but
 # with string keys.)
 entities_per_dim = {1: [2, 1], 2: [3, 3, 1], 3: [4, 6, 4, 1]}
 
@@ -51,7 +62,7 @@ def reference_cell(dim):
     if isinstance(dim, int):
         return FIAT.ufc_simplex(dim)
     else:
-        return FIAT.ufc_simplex(domain2dim[dim])
+        return FIAT.ufc_simplex(cellname2dim[dim])
 
 def create_element(ufl_element):
 
@@ -139,7 +150,7 @@ def create_quadrature(shape, num_points):
     if isinstance(shape, int) and shape == 0:
         return ([()], array([1.0,]))
 
-    if shape in domain2dim and domain2dim[shape] == 0:
+    if shape in cellname2dim and cellname2dim[shape] == 0:
         return ([()], array([1.0,]))
 
     quad_rule = FIAT.make_quadrature(reference_cell(shape), num_points)
@@ -259,4 +270,3 @@ def _indices(element, domain, dim=0):
 
     else:
         error("Restriction to domain: %s, is not supported." % repr(domain))
-

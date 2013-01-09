@@ -33,7 +33,7 @@ import time
 
 # UFL modules
 from ufl.classes import Measure
-from ufl.geometry import domain2facet
+from ufl.geometry import cellname2facetname
 
 # FFC modules
 from ffc.log import info, debug, error
@@ -97,7 +97,7 @@ def _init_quadrature(arguments, domain_type, quadrature_degree, common_cell):
             cell_shape = common_cell.domain()
     except:
         error("Missing cell definition in form.")
-    facet_shape = domain2facet[cell_shape]
+    facet_shape = cellname2facetname[cell_shape]
 
     # Create quadrature rule and get points and weights
     if domain_type == Measure.CELL:
