@@ -27,7 +27,7 @@ public:
   /// Tabulate the tensor for the contribution from a local cell
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
-                               const std::vector<double>& x) const
+                               const ufc::cell& c) const
   {
 %(tabulate_tensor)s
   }
@@ -65,7 +65,7 @@ public:
   /// Tabulate the tensor for the contribution from a local cell
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
-                               const std::vector<double>& x) const;
+                               const ufc::cell& c) const;
 
   /// Tabulate the tensor for the contribution from a local cell
   /// using the specified reference cell quadrature points/weights
@@ -95,7 +95,7 @@ cell_integral_implementation = """\
 /// Tabulate the tensor for the contribution from a local cell
 void %(classname)s::tabulate_tensor(double* A,
                                     const double * const * w,
-                                    const std::vector<double>& x) const
+                                    const ufc::cell& c) const
 {
 %(tabulate_tensor)s
 }
