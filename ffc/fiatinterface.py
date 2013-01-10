@@ -202,7 +202,7 @@ def _extract_elements(ufl_element, domain=None):
     # Handle restricted elements since they might be mixed elements too.
     if isinstance(ufl_element, ufl.RestrictedElement):
         base_element = ufl_element.element()
-        restriction = ufl_element.domain_restriction()
+        restriction = ufl_element.cell_restriction()
         return _extract_elements(base_element, restriction)
 
     if domain:
@@ -219,7 +219,7 @@ def _create_restricted_element(ufl_element):
         error("create_restricted_element expects an ufl.RestrictedElement")
 
     base_element = ufl_element.element()
-    domain = ufl_element.domain_restriction()
+    domain = ufl_element.cell_restriction()
 
     # If simple element -> create RestrictedElement from fiat_element
     if isinstance(base_element, ufl.FiniteElement):
@@ -259,13 +259,13 @@ def _indices(element, domain, dim=0):
 
     # Just extract all indices to make handling in RestrictedElement
     # uniform.
-    elif isinstance(domain, ufl.Measure):
-        indices = []
-        entity_dofs = element.entity_dofs()
-        for dim, entities in entity_dofs.items():
-            for entity, index in entities.items():
-                indices += index
-        return indices
+    #elif isinstance(domain, ufl.Measure):
+    #    indices = []
+    #    entity_dofs = element.entity_dofs()
+    #    for dim, entities in entity_dofs.items():
+    #        for entity, index in entities.items():
+    #            indices += index
+    #    return indices
 
     else:
         error("Restriction to domain: %s, is not supported." % repr(domain))

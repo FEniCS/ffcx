@@ -368,8 +368,8 @@ def _auto_select_representation(integral, elements):
 
     # Use quadrature representation if any elements are restricted to
     # UFL.Measure. This is used when integrals are computed over discontinuities.
-    if len([e for e in sub_elements if isinstance(e.domain_restriction(), Measure)]):
-        return "quadrature"
+    #if len([e for e in sub_elements if isinstance(e.cell_restriction(), Measure)]):
+    #    return "quadrature"
 
     # Estimate cost of tensor representation
     tensor_cost = estimate_cost(integral)
