@@ -230,14 +230,6 @@ class QuadratureTransformerBase(Transformer):
         print "\n\nVisiting GeometricQuantity:", repr(o)
         error("This type of GeometricQuantity is not supported (yet).")
 
-    def lifting_result(self, o):
-        print "\n\nVisiting LiftingResult:", repr(o)
-        error("LiftingResult (and children) is not supported (yet).")
-
-    def terminal_operator(self, o):
-        print "\n\nVisiting TerminalOperator:", repr(o)
-        error("TerminalOperator (LiftingOperator and LiftingFunction) is not supported (yet).")
-
     def math_function(self, o):
         print "\n\nVisiting MathFunction:", repr(o)
         error("This MathFunction is not supported (yet).")
