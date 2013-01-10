@@ -256,15 +256,6 @@ namespace ufc
                                  const double * const * w,
                                  const std::vector<double>& x) const = 0;
 
-    /// Tabulate the tensor for the contribution from a local cell
-    /// using the specified reference cell quadrature points/weights
-    virtual void tabulate_tensor(double* A,
-                                 const double * const * w,
-                                 const cell& c,
-                                 std::size_t num_quadrature_points,
-                                 const double * const * quadrature_points,
-                                 const double* quadrature_weights) const = 0;
-
   };
 
   /// This class defines the interface for the tabulation of the
@@ -281,17 +272,8 @@ namespace ufc
     /// Tabulate the tensor for the contribution from a local exterior facet
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
-                                 const cell& c,
+                                 const std::vector<double>& x,
                                  std::size_t facet) const = 0;
-
-    /// Tabulate the tensor for the contribution from a local exterior facet
-    /// using the specified reference cell quadrature points/weights
-    virtual void tabulate_tensor(double* A,
-                                 const double * const * w,
-                                 const cell& c,
-                                 std::size_t num_quadrature_points,
-                                 const double * const * quadrature_points,
-                                 const double* quadrature_weights) const = 0;
 
   };
 
@@ -309,19 +291,10 @@ namespace ufc
     /// Tabulate the tensor for the contribution from a local interior facet
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
-                                 const cell& c0,
-                                 const cell& c1,
+                                 const std::vector<double>& x_0,
+                                 const std::vector<double>& x_1,
                                  std::size_t facet0,
                                  std::size_t facet1) const = 0;
-
-    /// Tabulate the tensor for the contribution from a local interior facet
-    /// using the specified reference cell quadrature points/weights
-    virtual void tabulate_tensor(double* A,
-                                 const double * const * w,
-                                 const cell& c,
-                                 std::size_t num_quadrature_points,
-                                 const double * const * quadrature_points,
-                                 const double* quadrature_weights) const = 0;
 
   };
 
