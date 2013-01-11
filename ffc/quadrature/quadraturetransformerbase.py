@@ -177,10 +177,6 @@ class QuadratureTransformerBase(Transformer):
         print "\n\nVisiting Form: ", repr(o)
         error("The transformer only work on a Form integrand, not the Form itself!!")
 
-    def space(self, o):
-        print "\n\nVisiting Space: ", repr(o)
-        error("A Space should not be present in the integrand.")
-
     def cell(self, o):
         print "\n\nVisiting Cell: ", repr(o)
         error("A Cell should not be present in the integrand.")

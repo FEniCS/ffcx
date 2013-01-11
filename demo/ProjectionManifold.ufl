@@ -20,8 +20,8 @@
 #
 # Compile this form with FFC: ffc ProjectionManifold.ufl
 
-# Define interval embedded in 2D:
-domain = Cell("triangle", Space(3))
+# Define interval embedded in 3D:
+domain = Cell("triangle", geometric_dimension=3)
 
 # Define element over this domain
 V = FiniteElement("RT", domain, 1)
