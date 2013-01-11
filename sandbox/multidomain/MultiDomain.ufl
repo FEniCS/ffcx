@@ -21,11 +21,8 @@
 
 D = Domain(triangle, name='Universe')
 
-left = DomainGroup(D, (D[0],), name='left')
-right = DomainGroup(D, (D[1],), name='right')
-
-#left = DomainGroup(D, (0,), name='left')
-#right = DomainGroup(D, (1,), name='right')
+left = Region(D, (0,), name='left')
+right = Region(D, (1,), name='right')
 
 V1 = FiniteElement("CG", left, 1)
 V2 = FiniteElement("CG", right, 2)
