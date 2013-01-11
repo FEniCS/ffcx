@@ -86,7 +86,13 @@ def jit_form(form, parameters=None, common_cell=None):
     set_level(parameters["log_level"])
     set_prefix(parameters["log_prefix"])
 
+
     # Compute form metadata and extract preprocessed form
+
+    # MER: NB: This leads to multiple calls to preprocess cf MSA's
+    # efficiency comments. (Another call happens in the analyze stage
+    # of compile_form.) Is the preprocessed form really really needed
+    # right here?
     form_data = form.compute_form_data(common_cell=common_cell)
     preprocessed_form = form_data.preprocessed_form
 
