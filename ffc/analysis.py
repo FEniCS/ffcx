@@ -297,7 +297,7 @@ def _compute_element_mapping(form, common_cell):
     elements = extract_sub_elements(elements)
 
     # Get cell and degree
-    common_cell = extract_common_cell(form, common_cell)
+    common_cell = extract_common_cell(form, common_cell) # FIXME: extract_top_domain(s) instead?
     common_degree = _auto_select_degree(elements)
 
     # Compute element map
@@ -308,11 +308,13 @@ def _compute_element_mapping(form, common_cell):
         reconstruct = False
 
         # Set cell
-        cell = element.cell()
+        domain = element.domain()
+        cell = domain.cell()
         if cell.is_undefined():
             info("Adjusting element cell from %s to %s." % \
                      (istr(cell), str(common_cell)))
             cell = common_cell
+            domain = ufl.domains.as_domain(cell) # FIXME
             reconstruct = True
 
         # Set degree
@@ -325,7 +327,7 @@ def _compute_element_mapping(form, common_cell):
 
         # Reconstruct element and add to map
         if reconstruct:
-            element_mapping[element] = element.reconstruct(cell=cell,
+            element_mapping[element] = element.reconstruct(domain=domain,
                                                            degree=degree)
 
     return element_mapping
