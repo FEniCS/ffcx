@@ -32,6 +32,7 @@ form representation type.
 # UFL modules
 from ufl.common import istr, tstr
 from ufl.integral import Measure
+from ufl.domains import as_domain
 from ufl.finiteelement import MixedElement, EnrichedElement
 from ufl.algorithms import estimate_total_polynomial_degree
 from ufl.algorithms import sort_elements
@@ -299,7 +300,7 @@ def _compute_element_mapping(form, common_cell):
     # Get cell and degree
     # FIXME: implement extract_common_top_domain(s) instead of this
     common_cell = extract_common_cell(form, common_cell)
-    common_domain = ufl.domains.as_domain(common_cell) # FIXME: 
+    common_domain = as_domain(common_cell) # FIXME: 
     common_degree = _auto_select_degree(elements)
 
     # Compute element map
