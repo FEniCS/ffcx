@@ -1,7 +1,7 @@
 """QuadratureTransformerBase, a common class for quadrature
 transformers to translate UFL expressions."""
 
-# Copyright (C) 2009-2011 Kristian B. Oelgaard
+# Copyright (C) 2009-2013 Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -18,8 +18,10 @@ transformers to translate UFL expressions."""
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
+# Modified by Martin Alnaes, 2013
+#
 # First added:  2009-10-13
-# Last changed: 2011-10-20
+# Last changed: 2013-01-08
 
 # Python modules.
 from itertools import izip
@@ -167,7 +169,7 @@ class QuadratureTransformerBase(Transformer):
 
     def derivative(self, o, *operands):
         print "\n\nVisiting Derivative: ", repr(o)
-        error("All derivatives apart from SpatialDerivative should have been expanded!!")
+        error("All derivatives apart from Grad should have been expanded!!")
 
     def finite_element_base(self, o, *operands):
         print "\n\nVisiting FiniteElementBase: ", repr(o)
@@ -347,26 +349,31 @@ class QuadratureTransformerBase(Transformer):
         return self._format_scalar_value(None)
 
     # -------------------------------------------------------------------------
-    # SpatialDerivative (differentiation.py).
+    # Grad (differentiation.py).
     # -------------------------------------------------------------------------
-    def spatial_derivative(self, o):
-        #print("\n\nVisiting SpatialDerivative: " + repr(o))
+    def grad(self, o):
+        #print("\n\nVisiting Grad: " + repr(o))
 
-        # Get expression and index
-        derivative_expr, index = o.operands()
+        # Get expression
+        derivative_expr, = o.operands()
 
-        # Get direction of derivative and check that we only get one return index
-        der = self.visit(index)
-        ffc_assert(len(der) == 1, "SpatialDerivative: expected only one direction index. " + repr(der))
+        # Get components
+        components = self.component()
+
+        # Get direction of derivative
+        der = components[-1]
+        subcomp = components[:-1]
 
         # Add direction to list of derivatives
-        self._derivatives.append(der[0])
+        self._components.push(subcomp)
+        self._derivatives.append(der)
 
         # Visit children to generate the derivative code.
         code = self.visit(derivative_expr)
 
         # Remove the direction from list of derivatives
         self._derivatives.pop()
+        self._components.pop()
         return code
 
     # -------------------------------------------------------------------------

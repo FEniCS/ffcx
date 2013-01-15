@@ -1,6 +1,6 @@
 "Extraction of monomial representations of UFL forms."
 
-# Copyright (C) 2008-2009 Anders Logg
+# Copyright (C) 2008-2013 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -17,11 +17,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Martin Alnes, 2008
+# Modified by Martin Alnaes, 2008, 2013
 # Modified by Kristian B. Oelgaard
 #
 # First added:  2008-08-01
-# Last changed: 2010-01-25
+# Last changed: 2013-01-08
 
 # UFL modules
 from ufl.classes import Form, Argument, Coefficient, ScalarValue, IntValue
@@ -325,9 +325,40 @@ class MonomialTransformer(ReuseTransformer):
         s.apply_tensor(indices)
         return s
 
-    def spatial_derivative(self, o, s, indices):
+    def old_spatial_derivative(self, o, s, indices):
         s = MonomialSum(s)
         s.apply_derivative(indices)
+        return s
+
+    def grad(self, o, s):
+        # The representation
+        #   o = Grad(s)
+        # is equivalent to
+        #   o = as_tensor(s[ii].dx(i), ii+(i,))
+
+        # In UFL representation types:
+        #ind = indices(o.rank())
+        #si = Indexed(s, ind[:-1])
+        #sd = SpatialDerivative(si, ind[-1])
+        #o = ComponentTensor(sd, ind)
+
+        from ufl import indices
+        ind = list(indices(o.rank()))
+
+        # We could reuse other handlers like this:
+        #si = self.indexed(None, s, list(ind[:-1]))
+        #sd = self.old_spatial_derivative(si, [ind[-1]])
+        #return self.component_tensor(None, sd, ind)
+
+        # Or implement directly like this:
+        si = MonomialSum(s)
+        si.apply_indices(list(ind[:-1]))
+
+        sd = MonomialSum(si)
+        sd.apply_derivative([ind[-1]])
+
+        s = MonomialSum(sd)
+        s.apply_tensor(ind)
         return s
 
     def positive_restricted(self, o, s):
