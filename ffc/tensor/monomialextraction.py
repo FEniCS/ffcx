@@ -333,8 +333,10 @@ class MonomialTransformer(ReuseTransformer):
     def grad(self, o, s):
         # The representation
         #   o = Grad(s)
-        # is equivalent to
+        # is equivalent to (in nD, n>1)
         #   o = as_tensor(s[ii].dx(i), ii+(i,))
+        # or in 1D just:
+        #   o = as_tensor(s[ii].dx(0), ii)
 
         # In UFL representation types:
         #ind = indices(o.rank())
@@ -342,8 +344,14 @@ class MonomialTransformer(ReuseTransformer):
         #sd = SpatialDerivative(si, ind[-1])
         #o = ComponentTensor(sd, ind)
 
+        # Make some unique utility indices
         from ufl import indices
-        ind = list(indices(o.rank()))
+        on = o.rank()
+        ind = list(indices(on))
+
+        # Get underlying expression to take gradient of
+        f, = o.operands()
+        fn = f.rank()
 
         # We could reuse other handlers like this:
         #si = self.indexed(None, s, list(ind[:-1]))
@@ -351,14 +359,29 @@ class MonomialTransformer(ReuseTransformer):
         #return self.component_tensor(None, sd, ind)
 
         # Or implement directly like this:
-        si = MonomialSum(s)
-        si.apply_indices(list(ind[:-1]))
+        if on == fn + 1:
+            s = MonomialSum(s)
+            s.apply_indices(list(ind[:-1]))
 
-        sd = MonomialSum(si)
-        sd.apply_derivative([ind[-1]])
+            s = MonomialSum(s)
+            s.apply_derivative([ind[-1]])
 
-        s = MonomialSum(sd)
-        s.apply_tensor(ind)
+            s = MonomialSum(s)
+            s.apply_tensor(ind)
+        elif on == fn:
+            # 1D
+            if ind:
+                s = MonomialSum(s)
+                s.apply_indices(list(ind))
+
+            s = MonomialSum(s)
+            s.apply_derivative([0])
+
+            if ind:
+                s = MonomialSum(s)
+                s.apply_tensor(ind)
+        else:
+            ffc_error("")
         return s
 
     def positive_restricted(self, o, s):
