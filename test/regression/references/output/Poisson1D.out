@@ -1,0 +1,198 @@
+
+Testing form
+------------
+0_num_coefficients = 0
+1_num_cell_domains = 1
+2_num_exterior_facet_domains = 0
+3_num_interior_facet_domains = 0
+
+Testing finite_element
+----------------------
+4_cell_shape = 0
+5_space_dimension = 2
+6_value_rank = 0
+7_evaluate_basis:_0 = -1.640350875600072
+8_evaluate_basis:_1 = 2.64035087392204
+9_evaluate_basis_all = -1.640350875600072 2.64035087392204
+10_evaluate_basis_derivatives_0_0 = -1.640350875600072
+11_evaluate_basis_derivatives_0_1 = 2.923976592087365
+12_evaluate_basis_derivatives_0_2 = 0
+13_evaluate_basis_derivatives_1_0 = 2.64035087392204
+14_evaluate_basis_derivatives_1_1 = -2.923976592087365
+15_evaluate_basis_derivatives_1_2 = 0
+16_evaluate_basis_derivatives_all_0 = -1.640350875600072 2.64035087392204
+17_evaluate_basis_derivatives_all_1 = 2.923976592087365 -2.923976592087365
+18_evaluate_basis_derivatives_all_2 = 0 0
+19_evaluate_dof_0 = 0.903
+20_evaluate_dof_1 = 0.5610000000000001
+21_evaluate_dofs = 0.903 0.5610000000000001
+22_interpolate_vertex_values = 0.903 0.5610000000000001
+23_num_sub_elements = 0
+
+Testing finite_element
+----------------------
+24_cell_shape = 0
+25_space_dimension = 2
+26_value_rank = 0
+27_evaluate_basis:_0 = -1.640350875600072
+28_evaluate_basis:_1 = 2.64035087392204
+29_evaluate_basis_all = -1.640350875600072 2.64035087392204
+30_evaluate_basis_derivatives_0_0 = -1.640350875600072
+31_evaluate_basis_derivatives_0_1 = 2.923976592087365
+32_evaluate_basis_derivatives_0_2 = 0
+33_evaluate_basis_derivatives_1_0 = 2.64035087392204
+34_evaluate_basis_derivatives_1_1 = -2.923976592087365
+35_evaluate_basis_derivatives_1_2 = 0
+36_evaluate_basis_derivatives_all_0 = -1.640350875600072 2.64035087392204
+37_evaluate_basis_derivatives_all_1 = 2.923976592087365 -2.923976592087365
+38_evaluate_basis_derivatives_all_2 = 0 0
+39_evaluate_dof_0 = 0.903
+40_evaluate_dof_1 = 0.5610000000000001
+41_evaluate_dofs = 0.903 0.5610000000000001
+42_interpolate_vertex_values = 0.903 0.5610000000000001
+43_num_sub_elements = 0
+
+Testing dofmap
+---------------
+44_needs_mesh_entities_0 = 1
+45_needs_mesh_entities_1 = 0
+46_global_dimension = 10001
+47_local_dimension = 2
+48_max_local_dimension = 2
+49_geometric_dimension = 1
+50_num_facet_dofs = 1
+51_num_entity_dofs_0 = 1
+52_num_entity_dofs_1 = 0
+53_tabulate_dofs = 0 0
+54_tabulate_facet_dofs_0 = 0
+55_tabulate_facet_dofs_1 = 1
+56_tabulate_entity_dofs_0_0 = 0
+57_tabulate_entity_dofs_0_1 = 1
+58_tabulate_entity_dofs_1_0 =
+59_tabulate_coordinates_0 = 0.903
+60_tabulate_coordinates_1 = 0.5610000000000001
+61_num_sub_dofmaps = 0
+
+Testing dofmap
+---------------
+62_needs_mesh_entities_0 = 1
+63_needs_mesh_entities_1 = 0
+64_global_dimension = 10001
+65_local_dimension = 2
+66_max_local_dimension = 2
+67_geometric_dimension = 1
+68_num_facet_dofs = 1
+69_num_entity_dofs_0 = 1
+70_num_entity_dofs_1 = 0
+71_tabulate_dofs = 0 0
+72_tabulate_facet_dofs_0 = 0
+73_tabulate_facet_dofs_1 = 1
+74_tabulate_entity_dofs_0_0 = 0
+75_tabulate_entity_dofs_0_1 = 1
+76_tabulate_entity_dofs_1_0 =
+77_tabulate_coordinates_0 = 0.903
+78_tabulate_coordinates_1 = 0.5610000000000001
+79_num_sub_dofmaps = 0
+
+Testing cell_integral
+---------------------
+80_tabulate_tensor = 2.923976608187134 -2.923976608187134 -2.923976608187134 2.923976608187134
+
+Testing form
+------------
+81_num_coefficients = 1
+82_num_cell_domains = 1
+83_num_exterior_facet_domains = 0
+84_num_interior_facet_domains = 0
+
+Testing finite_element
+----------------------
+85_cell_shape = 0
+86_space_dimension = 2
+87_value_rank = 0
+88_evaluate_basis:_0 = -1.640350875600072
+89_evaluate_basis:_1 = 2.64035087392204
+90_evaluate_basis_all = -1.640350875600072 2.64035087392204
+91_evaluate_basis_derivatives_0_0 = -1.640350875600072
+92_evaluate_basis_derivatives_0_1 = 2.923976592087365
+93_evaluate_basis_derivatives_0_2 = 0
+94_evaluate_basis_derivatives_1_0 = 2.64035087392204
+95_evaluate_basis_derivatives_1_1 = -2.923976592087365
+96_evaluate_basis_derivatives_1_2 = 0
+97_evaluate_basis_derivatives_all_0 = -1.640350875600072 2.64035087392204
+98_evaluate_basis_derivatives_all_1 = 2.923976592087365 -2.923976592087365
+99_evaluate_basis_derivatives_all_2 = 0 0
+100_evaluate_dof_0 = 0.903
+101_evaluate_dof_1 = 0.5610000000000001
+102_evaluate_dofs = 0.903 0.5610000000000001
+103_interpolate_vertex_values = 0.903 0.5610000000000001
+104_num_sub_elements = 0
+
+Testing finite_element
+----------------------
+105_cell_shape = 0
+106_space_dimension = 2
+107_value_rank = 0
+108_evaluate_basis:_0 = -1.640350875600072
+109_evaluate_basis:_1 = 2.64035087392204
+110_evaluate_basis_all = -1.640350875600072 2.64035087392204
+111_evaluate_basis_derivatives_0_0 = -1.640350875600072
+112_evaluate_basis_derivatives_0_1 = 2.923976592087365
+113_evaluate_basis_derivatives_0_2 = 0
+114_evaluate_basis_derivatives_1_0 = 2.64035087392204
+115_evaluate_basis_derivatives_1_1 = -2.923976592087365
+116_evaluate_basis_derivatives_1_2 = 0
+117_evaluate_basis_derivatives_all_0 = -1.640350875600072 2.64035087392204
+118_evaluate_basis_derivatives_all_1 = 2.923976592087365 -2.923976592087365
+119_evaluate_basis_derivatives_all_2 = 0 0
+120_evaluate_dof_0 = 0.903
+121_evaluate_dof_1 = 0.5610000000000001
+122_evaluate_dofs = 0.903 0.5610000000000001
+123_interpolate_vertex_values = 0.903 0.5610000000000001
+124_num_sub_elements = 0
+
+Testing dofmap
+---------------
+125_needs_mesh_entities_0 = 1
+126_needs_mesh_entities_1 = 0
+127_global_dimension = 10001
+128_local_dimension = 2
+129_max_local_dimension = 2
+130_geometric_dimension = 1
+131_num_facet_dofs = 1
+132_num_entity_dofs_0 = 1
+133_num_entity_dofs_1 = 0
+134_tabulate_dofs = 0 0
+135_tabulate_facet_dofs_0 = 0
+136_tabulate_facet_dofs_1 = 1
+137_tabulate_entity_dofs_0_0 = 0
+138_tabulate_entity_dofs_0_1 = 1
+139_tabulate_entity_dofs_1_0 =
+140_tabulate_coordinates_0 = 0.903
+141_tabulate_coordinates_1 = 0.5610000000000001
+142_num_sub_dofmaps = 0
+
+Testing dofmap
+---------------
+143_needs_mesh_entities_0 = 1
+144_needs_mesh_entities_1 = 0
+145_global_dimension = 10001
+146_local_dimension = 2
+147_max_local_dimension = 2
+148_geometric_dimension = 1
+149_num_facet_dofs = 1
+150_num_entity_dofs_0 = 1
+151_num_entity_dofs_1 = 0
+152_tabulate_dofs = 0 0
+153_tabulate_facet_dofs_0 = 0
+154_tabulate_facet_dofs_1 = 1
+155_tabulate_entity_dofs_0_0 = 0
+156_tabulate_entity_dofs_0_1 = 1
+157_tabulate_entity_dofs_1_0 =
+158_tabulate_coordinates_0 = 0.903
+159_tabulate_coordinates_1 = 0.5610000000000001
+160_num_sub_dofmaps = 0
+
+Testing cell_integral
+---------------------
+161_tabulate_tensor = 0.022800000114 0.028499999886
