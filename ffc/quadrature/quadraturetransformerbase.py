@@ -360,12 +360,21 @@ class QuadratureTransformerBase(Transformer):
         # Get components
         components = self.component()
 
+        en = derivative_expr.rank()
+        cn = len(components)
+        ffc_assert(o.rank() == cn, "Expecting rank of grad expression to match components length.")
+
         # Get direction of derivative
-        der = components[-1]
-        subcomp = components[:-1]
+        if cn == en+1:
+            der = components[en]
+            self._components.push(components[:en])
+        elif cn == en:
+            # This happens in 1D, sligtly messy result of defining grad(f) == f.dx(0)
+            der = 0
+        else:
+            ffc_error("Unexpected rank %d and component length %d in grad expression." % (en, cn))
 
         # Add direction to list of derivatives
-        self._components.push(subcomp)
         self._derivatives.append(der)
 
         # Visit children to generate the derivative code.
@@ -373,7 +382,8 @@ class QuadratureTransformerBase(Transformer):
 
         # Remove the direction from list of derivatives
         self._derivatives.pop()
-        self._components.pop()
+        if cn == en+1:
+            self._components.pop()
         return code
 
     # -------------------------------------------------------------------------
