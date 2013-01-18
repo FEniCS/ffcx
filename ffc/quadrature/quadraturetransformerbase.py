@@ -493,16 +493,11 @@ class QuadratureTransformerBase(Transformer):
         components = self.component()
 
         # Safety checks.
-        ffc_assert(not operands, "Didn't expect any operands for FacetNormal: " + repr(operands))
+        ffc_assert(not operands, "Didn't expect any operands for spatial_coordinate: " + repr(operands))
 
-        if components == (): # 1D case
-            ffc_assert(o.cell().geometric_dimension() == 1,
-                       "Expecting component when not in 1D.")
-            c = 0
-        else:
-            ffc_assert(len(components) == 1,
-                       " expects 1 component index: " + repr(components))
-            c, = components
+        ffc_assert(len(components) == 1,
+                   " expects 1 component index: " + repr(components))
+        c, = components
 
         # Generate the appropriate coordinate and update tables.
         coordinate = format["ip coordinates"](self.points, c)

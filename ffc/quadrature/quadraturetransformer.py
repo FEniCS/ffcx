@@ -359,22 +359,15 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         # Safety check.
         ffc_assert(not operands, "Didn't expect any operands for FacetNormal: " + repr(operands))
+        ffc_assert(len(components) == 1, "FacetNormal expects 1 component index: " + repr(components))
 
         # Handle 1D as a special case.
         # FIXME: KBO: This has to change for mD elements in R^n : m < n
-        if self.geo_dim == 1:
-            # Safety check.
-            ffc_assert(len(components) == 0, "FacetNormal in 1D does not expect a component index: " + repr(components))
+        if self.geo_dim == 1: # FIXME: MSA UFL uses shape (1,) now, can we remove the special case here then?
             normal_component = format["normal component"](self.restriction, "")
-            self.trans_set.add(normal_component)
         else:
-
-            # Safety check.
-            ffc_assert(len(components) == 1, "FacetNormal expects 1 component index: " + repr(components))
-
-            # We get one component.
             normal_component = format["normal component"](self.restriction, components[0])
-            self.trans_set.add(normal_component)
+        self.trans_set.add(normal_component)
 
         return {():normal_component}
 
