@@ -33,7 +33,9 @@ option(UFC_ENABLE_PYTHON "Enable Python extensions." ON)
 # Run tests to find required packages
 
 find_package(PythonInterp QUIET)
-find_package(PythonLibs QUIET)
+
+# Find Python library corresponding to Python interpreter
+find_package(PythonLibs ${PYTHON_VERSION_STRING} EXACT QUIET)
 
 # Find SWIG
 find_package(SWIG QUIET)
