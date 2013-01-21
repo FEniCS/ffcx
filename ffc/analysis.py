@@ -128,7 +128,7 @@ def _get_nested_elements(element):
     return set(nested_elements)
 
 def _analyze_form(form, object_names, parameters, common_cell=None):
-    "Analyze form, returning preprocessed form."
+    "Analyze form, returning form data."
 
     # Check that form is not empty
     ffc_assert(len(form.integrals()),
