@@ -400,16 +400,13 @@ namespace ufc
     virtual std::size_t num_interior_facet_domains() const = 0;
 
     /// Return wether form has any cell integrals
-    virtual bool has_cell_integrals() const// = 0; // TODO: Implement these in FFC and make required here
-    { return this->num_cell_domains() > 0; }
+    virtual bool has_cell_integrals() const = 0;
 
     /// Return wether form has any exterior facet integrals
-    virtual bool has_exterior_facet_integrals() const// = 0;
-    { return this->num_exterior_facet_domains() > 0; }
+    virtual bool has_exterior_facet_integrals() const = 0;
 
     /// Return wether form has any interior facet integrals
-    virtual bool has_interior_facet_integrals() const// = 0;
-    { return this->num_interior_facet_domains() > 0; }
+      virtual bool has_interior_facet_integrals() const = 0;
 
     /// Create a new finite element for argument function i
     virtual finite_element* create_finite_element(std::size_t i) const = 0;
@@ -429,18 +426,15 @@ namespace ufc
     create_interior_facet_integral(std::size_t i) const = 0;
 
     /// Create a new cell integral on everywhere else
-    virtual cell_integral* create_default_cell_integral() const// = 0; // TODO: Implement these in FFC and make required here
-    { return 0; }
+    virtual cell_integral* create_default_cell_integral() const = 0;
 
     /// Create a new exterior facet integral on everywhere else
     virtual exterior_facet_integral*
-    create_default_exterior_facet_integral() const// = 0;
-    { return 0; }
+    create_default_exterior_facet_integral() const = 0;
 
     /// Create a new interior facet integral on everywhere else
     virtual interior_facet_integral*
-    create_default_interior_facet_integral() const// = 0;
-    { return 0; }
+    create_default_interior_facet_integral() const = 0;
 
   };
 
