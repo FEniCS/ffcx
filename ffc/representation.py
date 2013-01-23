@@ -234,11 +234,17 @@ def _compute_form_ir(form_data, form_id, element_numbers):
     ir["num_cell_domains"] = form_data.num_cell_domains
     ir["num_exterior_facet_domains"] = form_data.num_exterior_facet_domains
     ir["num_interior_facet_domains"] = form_data.num_interior_facet_domains
+    ir["has_cell_integrals"] = form_data.num_cell_domains > 0 # FIXME: True also if we have a default integral
+    ir["has_exterior_facet_integrals"] = form_data.num_exterior_facet_domains > 0  # FIXME: True also if we have a default integral
+    ir["has_interior_facet_integrals"] = form_data.num_interior_facet_domains > 0  # FIXME: True also if we have a default integral
     ir["create_finite_element"] = [element_numbers[e] for e in form_data.elements]
     ir["create_dofmap"] = [element_numbers[e] for e in form_data.elements]
     ir["create_cell_integral"] = _create_foo_integral("cell", form_data)
     ir["create_exterior_facet_integral"] = _create_foo_integral("exterior_facet", form_data)
     ir["create_interior_facet_integral"] = _create_foo_integral("interior_facet", form_data)
+    ir["create_default_cell_integral"] = _create_default_foo_integral("cell", form_data)
+    ir["create_default_exterior_facet_integral"] = _create_default_foo_integral("exterior_facet", form_data)
+    ir["create_default_interior_facet_integral"] = _create_default_foo_integral("interior_facet", form_data)
 
     return ir
 
@@ -521,9 +527,22 @@ def _create_foo_integral(domain_type, form_data):
     return [domain_id for (_domain_type, domain_id, integrals, metadata) in
            form_data.integral_data if _domain_type == domain_type]
 
+def _has_foo_integrals(domain_type, form_data):
+    "Compute intermediate representation of has_foo_integrals."
+    v = (form_data.num_domains[domain_type] > 0
+         or _create_default_foo_integral(domain_type, form_data))
+    return bool(v)
+
+def _create_default_foo_integral(domain_type, form_data):
+    "Compute intermediate representation of create_default_foo_integral."
+    return False # FIXME: Get from form data somehow, e.g.: form_data.has_default_integral[domain_type]
+
 #--- Utility functions ---
 
 # FIXME: KBO: This could go somewhere else, like in UFL?
+#        MSA: There is probably something related in ufl somewhere,
+#        but I don't understand quite what this does.
+#        In particular it does not cover sub-sub-elements? Is that a bug?
 # Also look at function naming, use single '_' for utility functions.
 def all_elements(element):
 
