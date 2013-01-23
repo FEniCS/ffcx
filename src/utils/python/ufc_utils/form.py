@@ -269,19 +269,19 @@ std::size_t %(classname)s::num_interior_facet_domains() const
 }
 
 /// Return whether the form has any cell integrals
-virtual bool %(classname)s::has_cell_integrals() const
+bool %(classname)s::has_cell_integrals() const
 {
 %(has_cell_integrals)s
 }
 
 /// Return whether the form has any exterior facet integrals
-virtual bool %(classname)s::has_exterior_facet_integrals() const
+bool %(classname)s::has_exterior_facet_integrals() const
 {
 %(has_exterior_facet_integrals)s
 }
 
 /// Return whether the form has any interior facet integrals
-virtual bool %(classname)s::has_interior_facet_integrals() const
+bool %(classname)s::has_interior_facet_integrals() const
 {
 %(has_interior_facet_integrals)s
 }
