@@ -359,6 +359,27 @@ namespace ufc
 
   };
 
+  /// This class defines the interface for the tabulation of
+  /// an expression evaluated at exactly one point.
+
+  class point_integral
+  {
+  public:
+
+    /// Constructor
+    point_integral() {}
+
+    /// Destructor
+    virtual ~point_integral() {}
+
+    /// Tabulate the tensor for the contribution from the point
+    virtual void tabulate_tensor(double* A,
+                                 const double * const * w,
+                                 const cell& c,
+                                 const double * x) const = 0;
+
+  };
+
   /// This class defines the interface for the assembly of the global
   /// tensor corresponding to a form with r + n arguments, that is, a
   /// mapping
@@ -399,14 +420,20 @@ namespace ufc
     /// Return the number of interior facet domains
     virtual std::size_t num_interior_facet_domains() const = 0;
 
-    /// Return wether form has any cell integrals
+    /// Return the number of point domains
+    virtual std::size_t num_point_domains() const = 0;
+
+    /// Return whether form has any cell integrals
     virtual bool has_cell_integrals() const = 0;
 
-    /// Return wether form has any exterior facet integrals
+    /// Return whether form has any exterior facet integrals
     virtual bool has_exterior_facet_integrals() const = 0;
 
-    /// Return wether form has any interior facet integrals
-      virtual bool has_interior_facet_integrals() const = 0;
+    /// Return whether form has any interior facet integrals
+    virtual bool has_interior_facet_integrals() const = 0;
+
+    /// Return whether form has any point integrals
+    virtual bool has_point_integrals() const = 0;
 
     /// Create a new finite element for argument function i
     virtual finite_element* create_finite_element(std::size_t i) const = 0;
@@ -425,6 +452,9 @@ namespace ufc
     virtual interior_facet_integral*
     create_interior_facet_integral(std::size_t i) const = 0;
 
+    /// Create a new point integral on sub domain i
+    virtual point_integral* create_point_integral(std::size_t i) const = 0;
+
     /// Create a new cell integral on everywhere else
     virtual cell_integral* create_default_cell_integral() const = 0;
 
@@ -435,6 +465,9 @@ namespace ufc
     /// Create a new interior facet integral on everywhere else
     virtual interior_facet_integral*
     create_default_interior_facet_integral() const = 0;
+
+    /// Create a new point integral on everywhere else
+    virtual point_integral* create_default_point_integral() const = 0;
 
   };
 
