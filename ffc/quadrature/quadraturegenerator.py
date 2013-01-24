@@ -17,10 +17,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Mehdi Nikbakht, 2010
+# Modified by Mehdi Nikbakht 2010
+# Modified by Anders Logg 2013
 #
 # First added:  2009-01-07
-# Last changed: 2011-11-28
+# Last changed: 2013-01-10
 
 # Python modules.
 import functools
@@ -75,8 +76,8 @@ def _tabulate_tensor(ir, parameters):
     # Get data.
     opt_par     = ir["optimise_parameters"]
     domain_type = ir["domain_type"]
-    geo_dim     = ir["geometric_dimension"]
-    top_dim     = ir["topological_dimension"]
+    gdim        = ir["geometric_dimension"]
+    tdim        = ir["topological_dimension"]
     num_facets  = ir["num_facets"]
     prim_idims  = ir["prim_idims"]
     integrals   = ir["trans_integrals"]
@@ -103,9 +104,15 @@ def _tabulate_tensor(ir, parameters):
         # Set operations equal to num_ops (for printing info on operations).
         operations.append([num_ops])
 
-        # Get Jacobian snippet.
-        jacobi_code = format["jacobian and inverse"](geo_dim, top_dim, oriented=oriented)
-        jacobi_code += "\n\n" + format["scale factor snippet"]
+        # Generate code for basic geometric quantities
+        jacobi_code  = ""
+        jacobi_code += format["compute_jacobian"](tdim, gdim)
+        jacobi_code += "\n"
+        jacobi_code += format["compute_jacobian_inverse"](tdim, gdim)
+        if oriented:
+            j_code += format["compute_orientation"]
+        jacobi_code += "\n"
+        jacobi_code += format["scale factor snippet"]
 
     elif domain_type == "exterior_facet":
         cases = [None for i in range(num_facets)]
@@ -123,10 +130,10 @@ def _tabulate_tensor(ir, parameters):
         tensor_code = f_switch(f_facet(None), cases)
 
         # Get Jacobian snippet.
-        jacobi_code = format["jacobian and inverse"](geo_dim, top_dim,
+        jacobi_code = format["jacobian and inverse"](tdim, gdim,
                                                      oriented=oriented)
-        jacobi_code += "\n\n" + format["facet determinant"](geo_dim, top_dim)
-        jacobi_code += "\n\n" + format["generate normal"](geo_dim, top_dim,
+        jacobi_code += "\n\n" + format["facet determinant"](tdim, gdim)
+        jacobi_code += "\n\n" + format["generate normal"](tdim, gdim,
                                                           domain_type)
 
     elif domain_type == "interior_facet":
@@ -150,20 +157,20 @@ def _tabulate_tensor(ir, parameters):
         tensor_code = f_switch(f_facet("+"), [f_switch(f_facet("-"), cases[i]) for i in range(len(cases))])
 
         # Get Jacobian snippet.
-        jacobi_code  = format["jacobian and inverse"](geo_dim, top_dim, r="+", oriented=oriented)
+        jacobi_code  = format["jacobian and inverse"](tdim, gdim, r="+", oriented=oriented)
         jacobi_code += "\n\n"
-        jacobi_code += format["jacobian and inverse"](geo_dim, top_dim, r="-", oriented=oriented)
+        jacobi_code += format["jacobian and inverse"](tdim, gdim, r="-", oriented=oriented)
         jacobi_code += "\n\n"
-        jacobi_code += format["facet determinant"](geo_dim, top_dim, r="+")
-        jacobi_code += "\n\n" + format["generate normal"](geo_dim, top_dim,
+        jacobi_code += format["facet determinant"](tdim, gdim, r="+")
+        jacobi_code += "\n\n" + format["generate normal"](tdim, gdim,
                                                           domain_type)
     else:
         error("Unhandled integral type: " + str(integral_type))
 
     # Add common (for cell, exterior and interior) geo code.
-    jacobi_code += "\n\n" + format["generate cell volume"](geo_dim, top_dim, domain_type)
-    jacobi_code += "\n\n" + format["generate circumradius"](geo_dim, top_dim, domain_type)
-    jacobi_code += "\n\n" + format["generate facet area"](geo_dim, top_dim)
+    jacobi_code += "\n\n" + format["generate cell volume"](tdim, gdim, domain_type)
+    jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, domain_type)
+    jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
 
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.
@@ -243,10 +250,10 @@ def _generate_element_tensor(integrals, sets, optimise_parameters):
 
         # Generate code to compute coordinates if used.
         if coordinate:
-            name, geo_dim, ip, r = coordinate
+            name, gdim, ip, r = coordinate
             element_code += ["", f_comment("Declare array to hold physical coordinate of quadrature point.")]
-            element_code += [f_decl(f_double, f_X(points, geo_dim))]
-            ops, coord_code = f_ip_coords(geo_dim, points, name, ip, r)
+            element_code += [f_decl(f_double, f_X(points, gdim))]
+            ops, coord_code = f_ip_coords(gdim, points, name, ip, r)
             ip_code += ["", f_comment("Compute physical coordinate of quadrature point, operations: %d." % ops)]
             ip_code += [coord_code]
             num_ops += ops

@@ -17,11 +17,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Peter Brune, 2009
-# Modified by Anders Logg, 2009
+# Modified by Peter Brune 2009
+# Modified by Anders Logg 2009, 2013
 #
 # First added:  2009-02-09
-# Last changed: 2011-11-22
+# Last changed: 2013-01-10
 
 # Python modules.
 from numpy import shape
@@ -362,7 +362,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         # Handle 1D as a special case.
         # FIXME: KBO: This has to change for mD elements in R^n : m < n
-        if self.geo_dim == 1:
+        if self.gdim == 1:
             # Safety check.
             ffc_assert(len(components) == 0, "FacetNormal in 1D does not expect a component index: " + repr(components))
             normal_component = format["normal component"](self.restriction, "")
@@ -415,7 +415,8 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
 
     def create_argument(self, ufl_argument, derivatives, component, local_comp,
-                  local_offset, ffc_element, transformation, multiindices):
+                        local_offset, ffc_element, transformation, multiindices,
+                        tdim, gdim):
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Prefetch formats to speed up code generation.
@@ -426,12 +427,16 @@ class QuadratureTransformer(QuadratureTransformerBase):
         f_detJ          = format["det(J)"]
         f_inv           = format["inverse"]
 
+        # Figure out dimension of Jacobian
+        m = tdim + 1
+        n = gdim
+
         code = {}
         # Handle affine mappings.
         if transformation == "affine":
             # Loop derivatives and get multi indices.
             for multi in multiindices:
-                deriv = [multi.count(i) for i in range(self.top_dim)]
+                deriv = [multi.count(i) for i in range(self.tdim)]
                 if not any(deriv):
                     deriv = []
                 # Call function to create mapping and basis name.
@@ -445,18 +450,18 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
                 # Add transformation if needed.
                 if mapping in code:
-                    code[mapping].append(self.__apply_transform(basis, derivatives, multi))
+                    code[mapping].append(self.__apply_transform(basis, derivatives, multi, m, n))
                 else:
-                    code[mapping] = [self.__apply_transform(basis, derivatives, multi)]
+                    code[mapping] = [self.__apply_transform(basis, derivatives, multi, m, n)]
 
         # Handle non-affine mappings.
         else:
             # Loop derivatives and get multi indices.
             for multi in multiindices:
-                deriv = [multi.count(i) for i in range(self.top_dim)]
+                deriv = [multi.count(i) for i in range(self.tdim)]
                 if not any(deriv):
                     deriv = []
-                for c in range(self.top_dim):
+                for c in range(self.tdim):
                     # Call function to create mapping and basis name.
                     mapping, basis = self._create_mapping_basis(c + local_offset, deriv, ufl_argument, ffc_element)
                     if basis is None:
@@ -466,7 +471,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
                     # Multiply basis by appropriate transform.
                     if transformation == "covariant piola":
-                        dxdX = f_transform("JINV", c, local_comp, self.restriction)
+                        dxdX = f_transform("JINV", c, local_comp, m, n, self.restriction)
                         self.trans_set.add(dxdX)
                         basis = f_mult([dxdX, basis])
                     elif transformation == "contravariant piola":
@@ -497,7 +502,8 @@ class QuadratureTransformer(QuadratureTransformerBase):
         return code
 
     def create_function(self, ufl_function, derivatives, component, local_comp,
-                  local_offset, ffc_element, quad_element, transformation, multiindices):
+                        local_offset, ffc_element, quad_element,
+                        transformation, multiindices, tdim, gdim):
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Prefetch formats to speed up code generation.
@@ -506,12 +512,16 @@ class QuadratureTransformer(QuadratureTransformerBase):
         f_detJ          = format["det(J)"]
         f_inv           = format["inverse"]
 
+        # Figure out dimension of Jacobian
+        m = tdim + 1
+        n = gdim
+
         code = []
         # Handle affine mappings.
         if transformation == "affine":
             # Loop derivatives and get multi indices.
             for multi in multiindices:
-                deriv = [multi.count(i) for i in range(self.top_dim)]
+                deriv = [multi.count(i) for i in range(self.tdim)]
                 if not any(deriv):
                     deriv = []
                 # Call other function to create function name.
@@ -520,16 +530,16 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     continue
 
                 # Add transformation if needed.
-                code.append(self.__apply_transform(function_name, derivatives, multi))
+                code.append(self.__apply_transform(function_name, derivatives, multi, m, n))
 
         # Handle non-affine mappings.
         else:
             # Loop derivatives and get multi indices.
             for multi in multiindices:
-                deriv = [multi.count(i) for i in range(self.top_dim)]
+                deriv = [multi.count(i) for i in range(self.tdim)]
                 if not any(deriv):
                     deriv = []
-                for c in range(self.top_dim):
+                for c in range(self.tdim):
                     function_name = self._create_function_name(c + local_offset, deriv, quad_element, ufl_function, ffc_element)
                     if function_name is None:
                         continue
@@ -549,7 +559,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                         error("Transformation is not supported: ", repr(transformation))
 
                     # Add transformation if needed.
-                    code.append(self.__apply_transform(function_name, derivatives, multi))
+                    code.append(self.__apply_transform(function_name, derivatives, multi, m, n))
 
         if not code:
             return None
@@ -563,7 +573,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     # Helper functions for Argument and Coefficient
     # -------------------------------------------------------------------------
-    def __apply_transform(self, function, derivatives, multi):
+    def __apply_transform(self, function, derivatives, multi, m, n):
         "Apply transformation (from derivatives) to basis or function."
         f_mult          = format["multiply"]
         f_transform     = format["transform"]
@@ -572,7 +582,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         transforms = []
         for i, direction in enumerate(derivatives):
             ref = multi[i]
-            t = f_transform("JINV", ref, direction, self.restriction)
+            t = f_transform("JINV", ref, direction, m, n, self.restriction)
             self.trans_set.add(t)
             transforms.append(t)
 

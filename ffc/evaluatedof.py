@@ -42,8 +42,9 @@ FIAT (functional.pt_dict) in the intermediate representation stage.
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Kristian B. Oelgaard 2010-2011
+# Modified by Anders Logg 2013
 #
-# Last changed: 2011-11-28
+# Last changed: 2013-01-10
 
 from ffc.cpp import format, remove_unused
 from ffc.utils import pick_first
@@ -134,9 +135,8 @@ def _required_declarations(ir):
                                   for m in ir["mappings"]])
     needs_jacobian = any(["covariant piola" in m for m in ir["mappings"]])
 
-    # Add cell coordinates only if sufficient
+    # Check if Jacobians are needed
     if not (needs_jacobian or needs_inverse_jacobian):
-        code.append(format["cell coordinates"])
         return "\n".join(code)
 
     # Otherwise declare intermediate result variable

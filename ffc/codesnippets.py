@@ -27,8 +27,9 @@
 # Code snippets
 
 __all__ = ["comment_ufc", "comment_dolfin", "header_h", "header_c", "footer",
-           "cell_coordinates", "jacobian", "inverse_jacobian",
-           "evaluate_f",
+           "compute_jacobian", "compute_jacobian_inverse"]
+
+__old__ = ["evaluate_f",
            "facet_determinant", "map_onto_physical",
            "fiat_coordinate_map", "transform_snippet",
            "scale_factor", "combinations_snippet",
@@ -36,6 +37,8 @@ __all__ = ["comment_ufc", "comment_dolfin", "header_h", "header_c", "footer",
            "facet_normal", "ip_coordinates", "cell_volume", "circumradius",
            "facet_area",
            "orientation_snippet"]
+
+__all__ += __old__
 
 comment_ufc = """\
 // This code conforms with the UFC specification version %(ufc_version)s
@@ -49,6 +52,8 @@ comment_dolfin = """\
 // This code was generated with the option '-l dolfin' and
 // contains DOLFIN-specific wrappers that depend on DOLFIN.
 """
+
+# Code snippets for headers and footers
 
 header_h = """\
 #ifndef __%(prefix_upper)s_H
@@ -68,156 +73,111 @@ footer = """\
 #endif
 """
 
-cell_coordinates = "const double * const * x = c.coordinates;\n"
+# Code snippets for computing Jacobians
 
-# Code snippets for computing Jacobian
-_jacobian_1D = """\
-// Extract vertex coordinates
-const double * const * x%(restriction)s = c%(restriction)s.coordinates;
-
-// Compute Jacobian of affine map from reference cell
-const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];"""
-
-_jacobian_2D = """\
-// Extract vertex coordinates
-const double * const * x%(restriction)s = c%(restriction)s.coordinates;
-
-// Compute Jacobian of affine map from reference cell
-const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
-const double J%(restriction)s_01 = x%(restriction)s[2][0] - x%(restriction)s[0][0];
-const double J%(restriction)s_10 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
-const double J%(restriction)s_11 = x%(restriction)s[2][1] - x%(restriction)s[0][1];"""
-
-# Geometric dimension 2, topological dimension 1
-_jacobian_2D_1D = """\
-// Extract vertex coordinates
-const double * const * x%(restriction)s = c%(restriction)s.coordinates;
-
-// Compute Jacobian of affine map from reference cell
-const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
-const double J%(restriction)s_10 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
+_compute_jacobian_interval_1d = """\
+// Compute Jacobian
+double J[1];
+compute_jacobian_interval_1d(J, &x%(restriction)s[0]);
 """
 
-_jacobian_3D = """\
-// Extract vertex coordinates
-const double * const * x%(restriction)s = c%(restriction)s.coordinates;
-
-// Compute Jacobian of affine map from reference cell
-const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
-const double J%(restriction)s_01 = x%(restriction)s[2][0] - x%(restriction)s[0][0];
-const double J%(restriction)s_02 = x%(restriction)s[3][0] - x%(restriction)s[0][0];
-const double J%(restriction)s_10 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
-const double J%(restriction)s_11 = x%(restriction)s[2][1] - x%(restriction)s[0][1];
-const double J%(restriction)s_12 = x%(restriction)s[3][1] - x%(restriction)s[0][1];
-const double J%(restriction)s_20 = x%(restriction)s[1][2] - x%(restriction)s[0][2];
-const double J%(restriction)s_21 = x%(restriction)s[2][2] - x%(restriction)s[0][2];
-const double J%(restriction)s_22 = x%(restriction)s[3][2] - x%(restriction)s[0][2];"""
-
-# Geometric dimension 3, topological dimension 2
-_jacobian_3D_2D = """\
-// Extract vertex coordinates
-const double * const * x%(restriction)s = c%(restriction)s.coordinates;
-
-// Compute Jacobian of affine map from reference cell
-const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
-const double J%(restriction)s_01 = x%(restriction)s[2][0] - x%(restriction)s[0][0];
-const double J%(restriction)s_10 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
-const double J%(restriction)s_11 = x%(restriction)s[2][1] - x%(restriction)s[0][1];
-const double J%(restriction)s_20 = x%(restriction)s[1][2] - x%(restriction)s[0][2];
-const double J%(restriction)s_21 = x%(restriction)s[2][2] - x%(restriction)s[0][2];"""
-
-# Geometric dimension 3, topological dimension 1
-_jacobian_3D_1D = """\
-// Extract vertex coordinates
-const double * const * x%(restriction)s = c%(restriction)s.coordinates;
-
-// Compute Jacobian of affine map from reference cell
-const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
-const double J%(restriction)s_10 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
-const double J%(restriction)s_20 = x%(restriction)s[1][2] - x%(restriction)s[0][2];"""
-
-# Code snippets for computing the inverse Jacobian. These assume that
-# the Jacobian is initialized already
-_inverse_jacobian_1D = """\
-
-// Compute determinant of Jacobian
-const double detJ%(restriction)s = J%(restriction)s_00;
-
-// Compute inverse of Jacobian
-const double K%(restriction)s_00 =  1.0 / detJ%(restriction)s;"""
-
-_inverse_jacobian_2D = """\
-
-// Compute determinant of Jacobian
-const double detJ%(restriction)s = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
-
-// Compute inverse of Jacobian
-const double K%(restriction)s_00 =  J%(restriction)s_11 / detJ%(restriction)s;
-const double K%(restriction)s_01 = -J%(restriction)s_01 / detJ%(restriction)s;
-const double K%(restriction)s_10 = -J%(restriction)s_10 / detJ%(restriction)s;
-const double K%(restriction)s_11 =  J%(restriction)s_00 / detJ%(restriction)s;"""
-
-_inverse_jacobian_2D_1D = """\
-
-// Compute pseudodeterminant of Jacobian
-const double detJ2%(restriction)s = J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10;
-const double detJ%(restriction)s = std::sqrt(detJ2%(restriction)s);
-
-// Compute pseudoinverse of Jacobian
-const double K%(restriction)s_00 = J%(restriction)s_00 / detJ2%(restriction)s;
-const double K%(restriction)s_01 = J%(restriction)s_10 / detJ2%(restriction)s;"""
-
-_inverse_jacobian_3D = """\
-
-// Compute sub determinants
-const double d%(restriction)s_00 = J%(restriction)s_11*J%(restriction)s_22 - J%(restriction)s_12*J%(restriction)s_21;
-const double d%(restriction)s_01 = J%(restriction)s_12*J%(restriction)s_20 - J%(restriction)s_10*J%(restriction)s_22;
-const double d%(restriction)s_02 = J%(restriction)s_10*J%(restriction)s_21 - J%(restriction)s_11*J%(restriction)s_20;
-const double d%(restriction)s_10 = J%(restriction)s_02*J%(restriction)s_21 - J%(restriction)s_01*J%(restriction)s_22;
-const double d%(restriction)s_11 = J%(restriction)s_00*J%(restriction)s_22 - J%(restriction)s_02*J%(restriction)s_20;
-const double d%(restriction)s_12 = J%(restriction)s_01*J%(restriction)s_20 - J%(restriction)s_00*J%(restriction)s_21;
-const double d%(restriction)s_20 = J%(restriction)s_01*J%(restriction)s_12 - J%(restriction)s_02*J%(restriction)s_11;
-const double d%(restriction)s_21 = J%(restriction)s_02*J%(restriction)s_10 - J%(restriction)s_00*J%(restriction)s_12;
-const double d%(restriction)s_22 = J%(restriction)s_00*J%(restriction)s_11 - J%(restriction)s_01*J%(restriction)s_10;
-
-// Compute determinant of Jacobian
-const double detJ%(restriction)s = J%(restriction)s_00*d%(restriction)s_00 + J%(restriction)s_10*d%(restriction)s_10 + J%(restriction)s_20*d%(restriction)s_20;
-
-// Compute inverse of Jacobian
-const double K%(restriction)s_00 = d%(restriction)s_00 / detJ%(restriction)s;
-const double K%(restriction)s_01 = d%(restriction)s_10 / detJ%(restriction)s;
-const double K%(restriction)s_02 = d%(restriction)s_20 / detJ%(restriction)s;
-const double K%(restriction)s_10 = d%(restriction)s_01 / detJ%(restriction)s;
-const double K%(restriction)s_11 = d%(restriction)s_11 / detJ%(restriction)s;
-const double K%(restriction)s_12 = d%(restriction)s_21 / detJ%(restriction)s;
-const double K%(restriction)s_20 = d%(restriction)s_02 / detJ%(restriction)s;
-const double K%(restriction)s_21 = d%(restriction)s_12 / detJ%(restriction)s;
-const double K%(restriction)s_22 = d%(restriction)s_22 / detJ%(restriction)s;"""
-
-_inverse_jacobian_3D_2D = """\
-
-// Compute pseudodeterminant of Jacobian
-const double d%(restriction)s_0 = J_10*J_21 - J_20*J_11;
-const double d%(restriction)s_1 = - (J_00*J_21 - J_20*J_01);
-const double d%(restriction)s_2 = J_00*J_11 - J_10*J_01;
-
-const double detJ2%(restriction)s = d%(restriction)s_0*d%(restriction)s_0 + d%(restriction)s_1*d%(restriction)s_1 + d%(restriction)s_2*d%(restriction)s_2;
-double detJ%(restriction)s = std::sqrt(detJ2%(restriction)s);
-
-// Compute some common factors for the pseudoinverse
-const double n%(restriction)s_1 = J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10 + J%(restriction)s_20*J%(restriction)s_20;
-const double n%(restriction)s_2 = J%(restriction)s_01*J%(restriction)s_01 + J%(restriction)s_11*J%(restriction)s_11 + J%(restriction)s_21*J%(restriction)s_21;
-const double m%(restriction)s  = J%(restriction)s_00*J%(restriction)s_01 + J%(restriction)s_10*J%(restriction)s_11 + J%(restriction)s_20*J%(restriction)s_21;
-const double den%(restriction)s = n%(restriction)s_1*n%(restriction)s_2 - m%(restriction)s*m%(restriction)s;
-
-// Compute pseudoinverse of Jacobian
-const double K%(restriction)s_00 =  (J%(restriction)s_00*n%(restriction)s_2 - J%(restriction)s_01*m%(restriction)s)/den%(restriction)s;
-const double K%(restriction)s_01 =  (J%(restriction)s_10*n%(restriction)s_2 - J%(restriction)s_11*m%(restriction)s)/den%(restriction)s;
-const double K%(restriction)s_02 =  (J%(restriction)s_20*n%(restriction)s_2 - J%(restriction)s_21*m%(restriction)s)/den%(restriction)s;
-const double K%(restriction)s_10 = (-J%(restriction)s_00*m%(restriction)s + J%(restriction)s_01*n%(restriction)s_1)/den%(restriction)s;
-const double K%(restriction)s_11 = (-J%(restriction)s_10*m%(restriction)s + J%(restriction)s_11*n%(restriction)s_1)/den%(restriction)s;
-const double K%(restriction)s_12 = (-J%(restriction)s_20*m%(restriction)s + J%(restriction)s_21*n%(restriction)s_1)/den%(restriction)s;
+_compute_jacobian_interval_2d = """\
+// Compute Jacobian
+double J[2];
+compute_jacobian_interval_2d(J, &x%(restriction)s[0]);
 """
+
+_compute_jacobian_interval_3d = """\
+// Compute Jacobian
+double J[3];
+compute_jacobian_interval_3d(J, &x%(restriction)s[0]);
+"""
+
+_compute_jacobian_triangle_2d = """\
+// Compute Jacobian
+double J[4];
+compute_jacobian_triangle_2d(J, &x%(restriction)s[0]);
+"""
+
+_compute_jacobian_triangle_3d = """\
+// Compute Jacobian
+double J[6];
+compute_jacobian_triangle_3d(J, &x%(restriction)s[0]);
+"""
+
+_compute_jacobian_tetrahedron_3d = """\
+// Compute Jacobian
+double J[9];
+compute_jacobian_triangle_3d(J, x%(restriction)s);
+"""
+
+compute_jacobian = {1: {1: _compute_jacobian_interval_1d,
+                        2: _compute_jacobian_interval_2d,
+                        3: _compute_jacobian_interval_3d},
+                    2: {2: _compute_jacobian_triangle_2d,
+                        3: _compute_jacobian_triangle_3d},
+                    3: {3: _compute_jacobian_tetrahedron_3d}}
+
+# Code snippets for computing Jacobian inverses
+
+_compute_jacobian_inverse_interval_1d = """\
+// Compute Jacobian inverse and determinant
+double K[1];
+double det;
+compute_jacobian_inverse_interval_1d(K, det, J);
+"""
+
+_compute_jacobian_inverse_interval_2d = """\
+// Compute Jacobian inverse and determinant
+double K[2];
+double det;
+compute_jacobian_inverse_interval_2d(K, det, J);
+"""
+
+_compute_jacobian_inverse_interval_3d = """\
+// Compute Jacobian inverse and determinant
+double K[3];
+double det;
+compute_jacobian_inverse_interval_3d(K, det, J);
+"""
+
+_compute_jacobian_inverse_triangle_2d = """\
+// Compute Jacobian inverse and determinant
+double K[4];
+double det;
+compute_jacobian_inverse_triangle_2d(K, det, J);
+"""
+
+_compute_jacobian_inverse_triangle_3d = """\
+// Compute Jacobian inverse and determinant
+double K[6];
+double det;
+compute_jacobian_inverse_triangle_3d(K, det, J);
+"""
+
+_compute_jacobian_inverse_tetrahedron_3d = """\
+// Compute Jacobian inverse and determinant
+double K[9];
+double det;
+compute_jacobian_inverse_tetrahedron_3d(K, det, J);
+"""
+
+compute_jacobian_inverse = {1: {1: _compute_jacobian_inverse_interval_1d,
+                                2: _compute_jacobian_inverse_interval_2d,
+                                3: _compute_jacobian_inverse_interval_3d},
+                            2: {2: _compute_jacobian_inverse_triangle_2d,
+                                3: _compute_jacobian_inverse_triangle_3d},
+                            3: {3: _compute_jacobian_inverse_tetrahedron_3d}}
+
+# Code snippet for scale factor
+scale_factor = """\
+// Set scale factor
+det = std::abs(det);"""
+
+
+
+
+# FIXME: Old stuff that should be removed below
 
 orientation_snippet = """
 // Extract orientation
@@ -229,22 +189,7 @@ else if (orientation_marker == 1)
   detJ%(restriction)s *= -1;
 """
 
-_inverse_jacobian_3D_1D = """\
-
-// Compute pseudodeterminant of Jacobian
-const double detJ2%(restriction)s = J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10 + J%(restriction)s_20*J%(restriction)s_20;
-const double detJ%(restriction)s = std::sqrt(detJ2%(restriction)s);
-
-// Compute pseudoinverse of Jacobian
-const double K%(restriction)s_00 = J%(restriction)s_00 / detJ2%(restriction)s;
-const double K%(restriction)s_01 = J%(restriction)s_10 / detJ2%(restriction)s;
-const double K%(restriction)s_02 = J%(restriction)s_20 / detJ2%(restriction)s;"""
-
 evaluate_f = "f.evaluate(vals, y, c);"
-
-scale_factor = """\
-// Set scale factor
-const double det = std::abs(detJ);"""
 
 _facet_determinant_1D = """\
 // Facet determinant 1D (vertex)
@@ -708,14 +653,6 @@ double Z = (d_02*(2.0*coordinates[0] - C0) + d_12*(2.0*coordinates[1] - C1) + d_
 # Mappings to code snippets used by format These dictionaries accept
 # as keys: first the geometric dimension, and second the topological
 # dimension
-jacobian = {1: {1:_jacobian_1D},
-            2: {2:_jacobian_2D, 1:_jacobian_2D_1D},
-            3: {3:_jacobian_3D, 2:_jacobian_3D_2D, 1:_jacobian_3D_1D}}
-
-inverse_jacobian = {1: {1:_inverse_jacobian_1D},
-                    2: {2:_inverse_jacobian_2D, 1:_inverse_jacobian_2D_1D},
-                    3: {3:_inverse_jacobian_3D, 2:_inverse_jacobian_3D_2D,
-                        1:_inverse_jacobian_3D_1D}}
 
 facet_determinant = {1: {1: _facet_determinant_1D},
                      2: {2: _facet_determinant_2D, 1: _facet_determinant_2D_1D},

@@ -380,10 +380,8 @@ def _tabulate_coordinates(ir):
     # Aid mapping points from reference to physical element
     coefficients = affine_weights(tdim)
 
-    # Start with code for coordinates for vertices of cell
-    code = [format["cell coordinates"]]
-
     # Generate code for each point and each component
+    code = []
     for (i, coordinate) in enumerate(ir["points"]):
 
         w = coefficients(coordinate)

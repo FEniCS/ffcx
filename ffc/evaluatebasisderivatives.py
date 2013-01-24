@@ -19,8 +19,10 @@ representation of the code found in FIAT_NEW."""
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
+# Modified by Anders Logg 2013
+#
 # First added:  2007-04-16
-# Last changed: 2011-02-21
+# Last changed: 2013-01-10
 
 # Python modules
 import math
@@ -143,8 +145,10 @@ def _evaluate_basis_derivatives(data):
 
     # Get code snippets for Jacobian, inverse of Jacobian and mapping of
     # coordinates from physical element to the FIAT reference element.
-    code += [format["jacobian and inverse"](gdim, tdim,
-                                            oriented=data["needs_oriented"])]
+    code += [format["compute_jacobian"](tdim, gdim)]
+    code += [format["compute_jacobian_inverse"](tdim, gdim)]
+    if data["needs_oriented"]:
+        code += [format["compute_orientation"]]
     code += ["", format["fiat coordinate map"](element_cell_domain, gdim)]
 
     # Compute number of derivatives that has to be computed, and

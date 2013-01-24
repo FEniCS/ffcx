@@ -71,10 +71,10 @@ def _tabulate_tensor(ir, parameters):
     # Extract data from intermediate representation
     AK = ir["AK"]
     domain_type = ir["domain_type"]
-    gdim = ir["geometric_dimension"]
     tdim = ir["topological_dimension"]
-    num_facets = ir["num_facets"]
+    gdim = ir["geometric_dimension"]
     oriented = ir["needs_oriented"]
+    num_facets = ir["num_facets"]
 
     # Check integral type and generate code
     if domain_type == "cell":
@@ -83,11 +83,17 @@ def _tabulate_tensor(ir, parameters):
         t_code = _generate_tensor_contraction(AK, parameters, g_set)
 
         # Generate code for geometry tensors
-        g_code = _generate_geometry_tensors(AK, j_set, g_set)
+        g_code = _generate_geometry_tensors(AK, j_set, g_set, tdim, gdim)
 
-        # Generate code for Jacobian and its inverse
-        j_code = format["jacobian and inverse"](gdim, tdim, oriented=oriented)
-        j_code += "\n\n" + format["scale factor snippet"]
+        # Generate code for basic geometric quantities
+        j_code  = ""
+        j_code += format["compute_jacobian"](tdim, gdim)
+        j_code += "\n"
+        j_code += format["compute_jacobian_inverse"](tdim, gdim)
+        if oriented:
+            j_code += format["compute_orientation"]
+        j_code += "\n"
+        j_code += format["scale factor snippet"]
 
     elif domain_type == "exterior_facet":
 
@@ -101,8 +107,14 @@ def _tabulate_tensor(ir, parameters):
         g_code = _generate_geometry_tensors(AK[0], j_set, g_set)
 
         # Generate code for Jacobian
-        j_code = format["jacobian and inverse"](gdim, tdim, oriented=oriented)
-        j_code += "\n\n" + format["facet determinant"](gdim, tdim)
+        j_code = ""
+        j_code += format["compute_jacobian"](tdim, gdim)
+        j_code += "\n"
+        j_code += format["compute_jacobian_inverse"](tdim, gdim)
+        if oriented:
+            j_code += format["compute_orientation"]
+        j_code += "\n"
+        j_code += format["facet determinant"](tdim, gdim)
 
     elif domain_type == "interior_facet":
 
@@ -117,11 +129,16 @@ def _tabulate_tensor(ir, parameters):
         g_code = _generate_geometry_tensors(AK[0][0], j_set, g_set)
 
         # Generate code for Jacobian
-        j_code  = format["jacobian and inverse"](gdim, tdim, r="+",
-                                                 oriented=oriented)
-        j_code += format["jacobian and inverse"](gdim, tdim, r="-",
-                                                 oriented=oriented)
-        j_code += "\n\n" + format["facet determinant"](gdim, tdim, r="+")
+        j_code = ""
+        j_code += format["compute_jacobian"](tdim, gdim, r="+")
+        j_code += "\n"
+        j_code += format["compute_jacobian"](tdim, gdim, r="-")
+        j_code += "\n"
+        j_code += format["compute_jacobian_inverse"](tdim, gdim, r="+")
+        j_code += "\n"
+        j_code += format["compute_jacobian_inverse"](tdim, gdim, r="-")
+        j_code += "\n"
+        j_code += format["facet determinant"](tdim, gdim, r="+")
 
     else:
         error("Unhandled integral type: " + str(domain_type))
@@ -309,7 +326,7 @@ def _generate_tensor_contraction_optimized(terms, parameters, g_set):
 
     return "\n".join(lines)
 
-def _generate_geometry_tensors(terms, j_set, g_set):
+def _generate_geometry_tensors(terms, j_set, g_set, tdim, gdim):
     "Generate code for computation of geometry tensors."
 
     # Prefetch formats to speed up code generation
@@ -340,7 +357,8 @@ def _generate_geometry_tensors(terms, j_set, g_set):
             if not format["geometry tensor"](i, a) in g_set: continue
 
             # Compute factorized values
-            values = [_generate_entry(GK, a, offset + j, j_set) for (j, GK) in enumerate(GKs)]
+            values = [_generate_entry(GK, a, offset + j, j_set, tdim, gdim) \
+                          for (j, GK) in enumerate(GKs)]
 
             # Sum factorized values
             name = format_geometry_tensor(i, a)
@@ -363,7 +381,7 @@ def _generate_geometry_tensors(terms, j_set, g_set):
 
     return "\n".join(lines)
 
-def _generate_entry(GK, a, i, j_set):
+def _generate_entry(GK, a, i, j_set, tdim, gdim):
     "Generate code for the value of a GK entry."
 
     # Prefetch formats to speed up code generation
@@ -372,10 +390,12 @@ def _generate_entry(GK, a, i, j_set):
     multiply = format["multiply"]
 
     # Compute product of factors outside sum
-    factors = _extract_factors(GK, a, None, j_set, index_type=MonomialIndex.SECONDARY)
+    factors = _extract_factors(GK, a, None, j_set, tdim, gdim,
+                              MonomialIndex.SECONDARY)
 
     # Compute sum of products of factors inside sum
-    terms = [multiply(_extract_factors(GK, a, b, j_set, index_type=MonomialIndex.EXTERNAL))
+    terms = [multiply(_extract_factors(GK, a, b, j_set, tdim, gdim,
+                                       MonomialIndex.EXTERNAL))
              for b in GK.external_multi_index.indices]
 
     # Compute product
@@ -402,15 +422,19 @@ def _multiply_value_by_det(value, det, is_sum, j_set):
         v = [value]
     return format["multiply"](d + [format["scale factor"]] + v)
 
-def _extract_factors(GK, a, b, j_set, index_type):
+def _extract_factors(GK, a, b, j_set, tdim, gdim, index_type):
     "Extract factors of given index type in GK entry."
 
     # Prefetch formats to speed up code generation
     coefficient = format["coefficient"]
-    transform   = format["transform"]
+    transform = format["transform"]
 
     # List of factors
     factors = []
+
+    # Figure out dimension of Jacobian
+    m = tdim + 1
+    n = gdim
 
     # Compute product of coefficients
     for c in GK.coefficients:
@@ -431,6 +455,7 @@ def _extract_factors(GK, a, b, j_set, index_type):
             factors.append(transform(t.transform_type,
                                      t.index0(secondary=a, external=b),
                                      t.index1(secondary=a, external=b),
+                                     m, n,
                                      t.restriction))
             j_set.add(factors[-1])
 

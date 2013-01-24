@@ -20,9 +20,10 @@ the code found in FIAT."""
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2007-04-04
-# Last changed: 2011-02-21
+# Last changed: 2013-01-10
 #
-# Modified by Marie E. Rognes, 2011
+# Modified by Marie E. Rognes 2011
+# Modified by Anders Logg 2013
 #
 # MER: The original module generated code that was more or less a C++
 # representation of the code found in FIAT. I've modified this (for 2
@@ -147,8 +148,10 @@ def _evaluate_basis(data):
 
     # Get code snippets for Jacobian, Inverse of Jacobian and mapping of
     # coordinates from physical element to the FIAT reference element.
-    code += [format["jacobian and inverse"](gdim, tdim,
-                                            oriented=data["needs_oriented"])]
+    code += [format["compute_jacobian"](tdim, gdim)]
+    code += [format["compute_jacobian_inverse"](tdim, gdim)]
+    if data["needs_oriented"]:
+        code += [format["compute_orientation"]]
     code += ["", format["fiat coordinate map"](element_cell_domain, gdim)]
 
     # Get value shape and reset values. This should also work for TensorElement,
