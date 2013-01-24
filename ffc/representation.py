@@ -192,21 +192,21 @@ def _compute_integral_ir(form_data, form_id, parameters, common_cell=None):
     irs = []
 
     # Iterate over integrals
-    for (domain_type, domain_id, integrals, metadata) in form_data.integral_data:
+    for ida in form_data.integral_data:
 
         # Select representation
-        if metadata["representation"] == "quadrature":
+        if ida.metadata["representation"] == "quadrature":
             r = quadrature
-        elif metadata["representation"] == "tensor":
+        elif ida.metadata["representation"] == "tensor":
             r = tensor
         else:
-            error("Unknown representation: " + str(metadata["representation"]))
+            error("Unknown representation: " + str(ida.metadata["representation"]))
 
         # Compute representation
-        ir = r.compute_integral_ir(domain_type,
-                                   domain_id,
-                                   integrals,
-                                   metadata,
+        ir = r.compute_integral_ir(ida.domain_type,
+                                   ida.domain_id,
+                                   ida.integrals,
+                                   ida.metadata,
                                    form_data,
                                    form_id,
                                    parameters,
@@ -231,9 +231,9 @@ def _compute_form_ir(form_data, form_id, element_numbers):
     ir["signature"] = form_data.preprocessed_form.signature()
     ir["rank"] = form_data.rank
     ir["num_coefficients"] = form_data.num_coefficients
-    ir["num_cell_domains"] = form_data.num_domains["cell"]
-    ir["num_exterior_facet_domains"] = form_data.num_domains["exterior_facet"]
-    ir["num_interior_facet_domains"] = form_data.num_domains["interior_facet"]
+    ir["num_cell_domains"] = form_data.num_sub_domains.get("cell",0)
+    ir["num_exterior_facet_domains"] = form_data.num_sub_domains.get("exterior_facet",0)
+    ir["num_interior_facet_domains"] = form_data.num_sub_domains.get("interior_facet",0)
     ir["has_cell_integrals"] = _has_foo_integrals("cell", form_data)
     ir["has_exterior_facet_integrals"] = _has_foo_integrals("exterior_facet", form_data)
     ir["has_interior_facet_integrals"] = _has_foo_integrals("interior_facet", form_data)
@@ -524,12 +524,12 @@ def _create_sub_foo(ufl_element, element_numbers):
 
 def _create_foo_integral(domain_type, form_data):
     "Compute intermediate representation of create_foo_integral."
-    return [domain_id for (_domain_type, domain_id, integrals, metadata) in
-           form_data.integral_data if _domain_type == domain_type]
+    return [ida.domain_id for ida in
+           form_data.integral_data if ida.domain_type == domain_type]
 
 def _has_foo_integrals(domain_type, form_data):
     "Compute intermediate representation of has_foo_integrals."
-    v = (form_data.num_domains[domain_type] > 0
+    v = (form_data.num_sub_domains.get(domain_type,0) > 0
          or _create_default_foo_integral(domain_type, form_data))
     return bool(v)
 
