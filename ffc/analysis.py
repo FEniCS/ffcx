@@ -155,11 +155,11 @@ def _attach_integral_metadata(form_data, parameters):
 
     # Iterate over integral collections
     quad_schemes = []
-    for (domain_type, domain_id, integrals, metadata) in form_data.integral_data:
+    for ida in form_data.integral_data:
 
         # Iterate over integrals
         integral_metadatas = []
-        for integral in integrals:
+        for integral in ida.integrals:
 
             # Get metadata for integral
             integral_metadata = integral.measure().metadata() or {}
@@ -223,8 +223,8 @@ def _attach_integral_metadata(form_data, parameters):
             integral_metadatas.append(integral_metadata)
 
         # Extract common metadata for integral collection
-        if len(integrals) == 1:
-            metadata.update(integral_metadatas[0])
+        if len(ida.integrals) == 1:
+            ida.metadata.update(integral_metadatas[0])
         else:
 
             # Check that representation is the same
@@ -255,9 +255,9 @@ def _attach_integral_metadata(form_data, parameters):
                 qr = quadrature_rules[0]
 
             # Update common metadata
-            metadata["representation"] = r
-            metadata["quadrature_degree"] = qd
-            metadata["quadrature_rule"] = qr
+            ida.metadata["representation"] = r
+            ida.metadata["quadrature_degree"] = qd
+            ida.metadata["quadrature_rule"] = qr
 
     # Update scheme for QuadratureElements
     if not all_equal(quad_schemes):
