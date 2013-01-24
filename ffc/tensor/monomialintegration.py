@@ -50,7 +50,8 @@ def integrate(monomial,
               domain_type,
               facet0, facet1,
               quadrature_degree,
-              common_cell):
+              cellname,
+              facet_cellname):
     """Compute the reference tensor for a given monomial term of a
     multilinear form"""
 
@@ -63,7 +64,8 @@ def integrate(monomial,
     (points, weights) = _init_quadrature(monomial.arguments,
                                          domain_type,
                                          quadrature_degree,
-                                         common_cell)
+                                         cellname,
+                                         facet_cellname)
 
     # Initialize quadrature table for basis functions
     table = _init_table(monomial.arguments,
@@ -86,24 +88,13 @@ def integrate(monomial,
 
     return A0
 
-def _init_quadrature(arguments, domain_type, quadrature_degree, common_cell):
+def _init_quadrature(arguments, domain_type, quadrature_degree, cellname, facet_cellname):
     "Initialize quadrature for given monomial."
-
-    # Get shape (check first factor, should be the same for all)
-    try:
-        if common_cell is None:
-            cell_shape = arguments[0].element.cell().cellname()
-        else:
-            cell_shape = common_cell.cellname()
-    except:
-        error("Missing cell definition in form.")
-    facet_shape = cellname2facetname[cell_shape]
-
     # Create quadrature rule and get points and weights
     if domain_type == Measure.CELL:
-        (points, weights) = create_quadrature(cell_shape, quadrature_degree)
+        (points, weights) = create_quadrature(cellname, quadrature_degree)
     else:
-        (points, weights) = create_quadrature(facet_shape, quadrature_degree)
+        (points, weights) = create_quadrature(facet_cellname, quadrature_degree)
 
     return (points, weights)
 

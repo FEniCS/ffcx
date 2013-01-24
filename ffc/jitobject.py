@@ -37,14 +37,13 @@ class JITObject:
     single instance of an application (at runtime). The signature is
     persistent and may be used for caching modules on disk."""
 
-    def __init__(self, form, parameters, common_cell):
+    def __init__(self, form, parameters):
         "Create JITObject for given form and parameters"
         assert(isinstance(form, ufl.Form))
 
         # Store data
         self.form = form
         self.parameters = parameters
-        self.common_cell = common_cell
         self._hash = None
         self._signature = None
 
@@ -78,7 +77,7 @@ class JITObject:
         parameters_signature = _parameters_signature(self.parameters)
         ffc_signature = str(FFC_VERSION)
         swig_signature = str(get_swig_version())
-        cell_signature = str(self.common_cell)
+        cell_signature = str(self.form.form_data().cell)
 
         # Build common signature
         signatures = [form_signature,

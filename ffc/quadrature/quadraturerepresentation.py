@@ -42,14 +42,17 @@ def compute_integral_ir(domain_type,
                         metadata,
                         form_data,
                         form_id,
-                        parameters,
-                        common_cell=None):
+                        parameters):
     "Compute intermediate represention of integral."
 
     info("Computing quadrature representation")
 
+    # Get some cell properties
+    cellname = form_data.cell.cellname()
+    facet_cellname = form_data.cell.facet_cellname()
+    num_facets = cellname2num_facets[cellname]
+
     # Initialise representation
-    num_facets = cellname2num_facets[form_data.cell.cellname()]
     ir = {"representation":       "quadrature",
           "domain_type":          domain_type,
           "domain_id":            domain_id,
@@ -66,7 +69,8 @@ def compute_integral_ir(domain_type,
         _tabulate_basis(sorted_integrals,
                         domain_type,
                         num_facets,
-                        common_cell)
+                        cellname,
+                        facet_cellname)
 
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.
@@ -163,7 +167,7 @@ def compute_integral_ir(domain_type,
 
     return ir
 
-def _tabulate_basis(sorted_integrals, domain_type, num_facets, common_cell=None):
+def _tabulate_basis(sorted_integrals, domain_type, num_facets, cellname, facet_cellname):
     "Tabulate the basisfunctions and derivatives."
 
     # Initialise return values.
@@ -184,14 +188,6 @@ def _tabulate_basis(sorted_integrals, domain_type, num_facets, common_cell=None)
 
         # Create a list of equivalent FIAT elements (with same ordering of elements).
         fiat_elements = [create_element(e) for e in elements]
-
-        # Get cell and facet cellnames.
-        if common_cell is None:
-            cell = integral.integrand().cell()
-        else:
-            cell = common_cell
-        cellname = cell.cellname()
-        facet_cellname = cell.facet_cellname()
 
         # Make quadrature rule and get points and weights.
         # FIXME: Make create_quadrature() take a rule argument.

@@ -57,7 +57,7 @@ from ffc import tensor
 
 not_implemented = None
 
-def compute_ir(analysis, parameters, common_cell=None):
+def compute_ir(analysis, parameters):
     "Compute intermediate representation."
 
     begin("Compiler stage 2: Computing intermediate representation")
@@ -80,7 +80,7 @@ def compute_ir(analysis, parameters, common_cell=None):
 
     # Compute and flatten representation of integrals
     info("Computing representation of integrals")
-    irs = [_compute_integral_ir(fd, i, parameters, common_cell) \
+    irs = [_compute_integral_ir(fd, i, parameters) \
                for (i, fd) in enumerate(form_datas)]
     ir_integrals = [ir for ir in chain(*irs) if not ir is None]
 
@@ -186,7 +186,7 @@ def _needs_mesh_entities(element):
     else:
         return [d > 0 for d in num_dofs_per_entity]
 
-def _compute_integral_ir(form_data, form_id, parameters, common_cell=None):
+def _compute_integral_ir(form_data, form_id, parameters):
     "Compute intermediate represention for form integrals."
 
     irs = []
@@ -209,8 +209,7 @@ def _compute_integral_ir(form_data, form_id, parameters, common_cell=None):
                                    metadata,
                                    form_data,
                                    form_id,
-                                   parameters,
-                                   common_cell)
+                                   parameters)
 
         # Append representation
         irs.append(ir)

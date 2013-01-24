@@ -33,8 +33,10 @@ import ufc_utils
 
 # UFL modules
 from ufl.classes import Form, FiniteElementBase, TestFunction
+from ufl.domains import as_domain
 from ufl.objects import dx
-from ufl.algorithms import as_form, preprocess, FormData
+from ufl.algorithms import as_form, extract_common_cell, extract_elements, extract_sub_elements
+from ufl.common import istr, tstr
 
 # FFC modules
 from log import log
@@ -49,6 +51,7 @@ from parameters import default_parameters
 from mixedelement import MixedElement
 from compiler import compile_form
 from jitobject import JITObject
+from ffc.quadratureelement import default_quadrature_degree
 
 # Special Options for JIT-compilation
 FFC_PARAMETERS_JIT = default_parameters()
@@ -72,6 +75,67 @@ def jit(ufl_object, parameters=None, common_cell=None):
     else:
         return jit_form(ufl_object, parameters, common_cell)
 
+def _auto_select_degree(elements):
+    """
+    Automatically select degree for all elements of the form in cases
+    where this has not been specified by the user. This feature is
+    used by DOLFIN to allow the specification of Expressions with
+    undefined degrees.
+    """
+
+    # Extract common degree
+    common_degree = max([e.degree() for e in elements] or [None])
+    if common_degree is None:
+        common_degree = default_quadrature_degree
+
+    # Degree must be at least 1 (to work with Lagrange elements)
+    common_degree = max(1, common_degree)
+
+    return common_degree
+
+def _compute_element_mapping(form, common_cell):
+    "Compute element mapping for element replacement"
+
+    # Extract all elements
+    elements = extract_elements(form)
+    elements = extract_sub_elements(elements)
+
+    # Get cell and degree
+    # FIXME: implement extract_common_top_domain(s) instead of this
+    common_cell = extract_common_cell(form, common_cell)
+    common_domain = as_domain(common_cell) # FIXME:
+    common_degree = _auto_select_degree(elements)
+
+    # Compute element map
+    element_mapping = {}
+    for element in elements:
+
+        # Flag for whether element needs to be reconstructed
+        reconstruct = False
+
+        # Set cell
+        domain = element.domain()
+        if domain is None:
+            info("Adjusting missing element domain to %s." % \
+                     (common_domain,))
+            domain = common_domain
+            reconstruct = True
+
+        # Set degree
+        degree = element.degree()
+        if degree is None:
+            info("Adjusting element degree from %s to %d" % \
+                     (istr(degree), common_degree))
+            degree = common_degree
+            reconstruct = True
+
+        # Reconstruct element and add to map
+        if reconstruct:
+            element_mapping[element] = element.reconstruct(domain=domain,
+                                                           degree=degree)
+
+    return element_mapping
+
 def jit_form(form, parameters=None, common_cell=None):
     "Just-in-time compile the given form."
 
@@ -90,18 +154,11 @@ def jit_form(form, parameters=None, common_cell=None):
     element_mapping = _compute_element_mapping(form, common_cell)
 
     # Compute form metadata and extract preprocessed form
-
-    # MER: NB: This leads to multiple calls to preprocess cf MSA's
-    # efficiency comments. (Another call happens in the analyze stage
-    # of compile_form.) Is the preprocessed form really really needed
-    # right here?
-    form_data = form.compute_form_data(object_names={},
-                                       common_cell=common_cell,
+    form_data = form.compute_form_data(common_cell=common_cell,
                                        element_mapping=element_mapping)
-    preprocessed_form = form_data.preprocessed_form
 
     # Wrap input
-    jit_object = JITObject(form, parameters, common_cell)
+    jit_object = JITObject(form, parameters)
 
     # Set prefix for generated code
     prefix = "ffc_form_" + jit_object.signature()
@@ -134,10 +191,9 @@ def jit_form(form, parameters=None, common_cell=None):
             "Calling FFC just-in-time (JIT) compiler, this may take some time.")
 
         # Generate code
-        compile_form(preprocessed_form,
+        compile_form(form,
                      prefix=prefix,
-                     parameters=parameters,
-                     common_cell=common_cell)
+                     parameters=parameters)
 
         # Build module using Instant (through UFC)
         debug("Compiling and linking Python extension module, this may take some time.")

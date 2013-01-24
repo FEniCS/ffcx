@@ -31,14 +31,10 @@ form representation type.
 
 # UFL modules
 from ufl.common import istr, tstr
-from ufl.integral import Measure
-from ufl.domains import as_domain
+#from ufl.integral import Measure
 from ufl.finiteelement import MixedElement, EnrichedElement
 from ufl.algorithms import estimate_total_polynomial_degree
 from ufl.algorithms import sort_elements
-from ufl.algorithms import compute_form_arities
-from ufl.algorithms import extract_elements, extract_sub_elements
-from ufl.algorithms import extract_common_cell
 
 # FFC modules
 from ffc.log import log, info, begin, end, warning, debug, error, ffc_assert, warning_blue
@@ -47,7 +43,7 @@ from ffc.quadratureelement import default_quadrature_degree
 from ffc.utils import all_equal
 from ffc.tensor import estimate_cost
 
-def analyze_forms(forms, object_names, parameters, common_cell=None):
+def analyze_forms(forms, object_names, parameters):
     """
     Analyze form(s), returning
 
@@ -61,8 +57,7 @@ def analyze_forms(forms, object_names, parameters, common_cell=None):
     # Analyze forms
     form_datas = tuple(_analyze_form(form,
                                      object_names,
-                                     parameters,
-                                     common_cell) for form in forms)
+                                     parameters) for form in forms)
 
     # Extract unique elements accross all forms
     unique_elements = []
@@ -127,37 +122,32 @@ def _get_nested_elements(element):
         nested_elements += _get_nested_elements(e)
     return set(nested_elements)
 
-def _analyze_form(form, object_names, parameters, common_cell=None):
+def _analyze_form(form, object_names, parameters):
     "Analyze form, returning form data."
 
     # Check that form is not empty
     ffc_assert(len(form.integrals()),
                "Form (%s) seems to be zero: cannot compile it." % str(form))
 
-    # Compute element mapping for element replacement
-    element_mapping = _compute_element_mapping(form, common_cell)
-
     # Compute form metadata
-    form_data = form.compute_form_data(object_names=object_names,
-                                       common_cell=common_cell,
-                                       element_mapping=element_mapping)
+    form_data = form.form_data()
+    if form_data is None:
+        form_data = form.compute_form_data(object_names=object_names)
 
     info("")
     info(str(form_data))
 
-    # Extract preprocessed form
-    preprocessed_form = form_data.preprocessed_form
-
-    # Check that all terms in form have same arity
-    ffc_assert(len(compute_form_arities(preprocessed_form)) == 1,
+    # Check that all terms in form have same arity # FIXME: Move to ufl preprocess
+    from ufl.algorithms import compute_form_arities
+    ffc_assert(len(compute_form_arities(form_data.preprocessed_form)) == 1,
                "All terms in form must have same rank.")
 
     # Attach integral meta data
-    _attach_integral_metadata(form_data, common_cell, parameters)
+    _attach_integral_metadata(form_data, parameters)
 
     return form_data
 
-def _attach_integral_metadata(form_data, common_cell, parameters):
+def _attach_integral_metadata(form_data, parameters):
     "Attach integral metadata"
 
     # Recognized metadata keys
@@ -290,67 +280,6 @@ def _get_sub_elements(element):
             sub_elements += _get_sub_elements(e)
     return sub_elements
 
-def _compute_element_mapping(form, common_cell):
-    "Compute element mapping for element replacement"
-
-    # Extract all elements
-    elements = extract_elements(form)
-    elements = extract_sub_elements(elements)
-
-    # Get cell and degree
-    # FIXME: implement extract_common_top_domain(s) instead of this
-    common_cell = extract_common_cell(form, common_cell)
-    common_domain = as_domain(common_cell) # FIXME: 
-    common_degree = _auto_select_degree(elements)
-
-    # Compute element map
-    element_mapping = {}
-    for element in elements:
-
-        # Flag for whether element needs to be reconstructed
-        reconstruct = False
-
-        # Set cell
-        domain = element.domain()
-        if domain is None:
-            info("Adjusting missing element domain to %s." % \
-                     (common_domain,))
-            domain = common_domain
-            reconstruct = True
-
-        # Set degree
-        degree = element.degree()
-        if degree is None:
-            info("Adjusting element degree from %s to %d" % \
-                     (istr(degree), common_degree))
-            degree = common_degree
-            reconstruct = True
-
-        # Reconstruct element and add to map
-        if reconstruct:
-            element_mapping[element] = element.reconstruct(domain=domain,
-                                                           degree=degree)
-
-    return element_mapping
-
-def _auto_select_degree(elements):
-    """
-    Automatically select degree for all elements of the form in cases
-    where this has not been specified by the user. This feature is
-    used by DOLFIN to allow the specification of Expressions with
-    undefined degrees.
-    """
-
-    # Extract common degree
-    common_degree = max([e.degree() for e in elements] or [None])
-    if common_degree is None:
-        common_degree = default_quadrature_degree
-
-    # Degree must be at least 1 (to work with Lagrange elements)
-    common_degree = max(1, common_degree)
-
-    return common_degree
-
 def _auto_select_representation(integral, elements):
     """
     Automatically select a suitable representation for integral.
@@ -415,4 +344,3 @@ def _check_quadrature_degree(degree, top_dim):
     if num_points >= 100:
         warning_blue("WARNING: The number of integration points for each cell will be: %d" % num_points)
         warning_blue("         Consider using the option 'quadrature_degree' to reduce the number of points")
-
