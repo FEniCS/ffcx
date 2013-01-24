@@ -37,13 +37,12 @@ class JITObject:
     single instance of an application (at runtime). The signature is
     persistent and may be used for caching modules on disk."""
 
-    def __init__(self, form, preprocessed_form, parameters, common_cell):
+    def __init__(self, form, parameters, common_cell):
         "Create JITObject for given form and parameters"
         assert(isinstance(form, ufl.Form))
 
         # Store data
         self.form = form
-        self.preprocessed_form = preprocessed_form
         self.parameters = parameters
         self.common_cell = common_cell
         self._hash = None
@@ -72,8 +71,8 @@ class JITObject:
         if not self._signature is None:
             return self._signature
 
-        # Compute form signature based on form stored in formdata
-        form_signature = self.preprocessed_form.signature()
+        # Get signature from assumed precomputed form_data
+        form_signature = self.form.form_data().signature
 
         # Compute other relevant signatures
         parameters_signature = _parameters_signature(self.parameters)

@@ -86,6 +86,8 @@ def jit_form(form, parameters=None, common_cell=None):
     set_level(parameters["log_level"])
     set_prefix(parameters["log_prefix"])
 
+    # Compute element mapping for element replacement
+    element_mapping = _compute_element_mapping(form, common_cell)
 
     # Compute form metadata and extract preprocessed form
 
@@ -93,11 +95,13 @@ def jit_form(form, parameters=None, common_cell=None):
     # efficiency comments. (Another call happens in the analyze stage
     # of compile_form.) Is the preprocessed form really really needed
     # right here?
-    form_data = form.compute_form_data(common_cell=common_cell)
+    form_data = form.compute_form_data(object_names={},
+                                       common_cell=common_cell,
+                                       element_mapping=element_mapping)
     preprocessed_form = form_data.preprocessed_form
 
     # Wrap input
-    jit_object = JITObject(form, preprocessed_form, parameters, common_cell)
+    jit_object = JITObject(form, parameters, common_cell)
 
     # Set prefix for generated code
     prefix = "ffc_form_" + jit_object.signature()
