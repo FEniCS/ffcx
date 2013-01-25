@@ -2,7 +2,7 @@
 Testing form
 ------------
 0_num_coefficients = 1
-1_num_cell_domains = 1
+1_num_cell_domains = 0
 2_num_exterior_facet_domains = 0
 3_num_interior_facet_domains = 0
 
@@ -79,7 +79,3 @@ Testing dofmap
 69_tabulate_coordinates_2 = 0.987 0.783 0.191
 70_tabulate_coordinates_3 = 0.123 0.5610000000000001 0.667
 71_num_sub_dofmaps = 0
-
-Testing cell_integral
----------------------
-72_tabulate_tensor = 0.01390665493588534
