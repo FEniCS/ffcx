@@ -30,6 +30,16 @@ import ufl
 # FFC modules.
 from constants import FFC_VERSION
 
+# UFC modules.
+import ufc_utils
+
+# Compute signature of all ufc headers combined
+ufc_signature = sha1(''.join(getattr(ufc_utils, header)
+                             for header in
+                             (k for k in vars(ufc_utils).keys()
+                              if k.endswith("_header")))
+                              ).hexdigest()
+
 class JITObject:
     """This class is a wrapper for a compiled object in the context of
     specific compiler parameters. A JITObject is identified either by its
@@ -84,7 +94,8 @@ class JITObject:
                       parameters_signature,
                       ffc_signature,
                       swig_signature,
-                      cell_signature]
+                      cell_signature,
+                      ufc_signature]
         string = ";".join(signatures)
         self._signature = sha1(string).hexdigest()
 
