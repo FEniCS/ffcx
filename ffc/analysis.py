@@ -191,6 +191,8 @@ def _attach_integral_metadata(form_data, parameters):
 
             # Automatic selection of representation
             if r == "auto":
+                # TODO: This doesn't really need the measure except for code redesign
+                #       reasons, pass integrand instead to reduce dependencies:
                 r = _auto_select_representation(integral,
                                                 form_data.unique_sub_elements)
                 info("representation:    auto --> %s" % r)
@@ -200,7 +202,7 @@ def _attach_integral_metadata(form_data, parameters):
 
             # Automatic selection of quadrature degree
             if qd == "auto":
-                qd = _auto_select_quadrature_degree(integral,
+                qd = _auto_select_quadrature_degree(integral.integrand(),
                                                     r,
                                                     form_data.unique_sub_elements)
                 info("quadrature_degree: auto --> %d" % qd)
@@ -318,8 +320,8 @@ def _auto_select_representation(integral, elements):
     else:
         return "quadrature"
 
-def _auto_select_quadrature_degree(integral, representation, elements):
-    "Automatically select a suitable quadrature degree for integral."
+def _auto_select_quadrature_degree(integrand, representation, elements):
+    "Automatically select a suitable quadrature degree for integrand."
 
     # Use maximum quadrature element degree if any for quadrature representation
     if representation == "quadrature":
@@ -333,7 +335,7 @@ def _auto_select_quadrature_degree(integral, representation, elements):
             return quadrature_degrees[0]
 
     # Otherwise estimate total degree of integrand
-    q = estimate_total_polynomial_degree(integral, default_quadrature_degree)
+    q = estimate_total_polynomial_degree(integrand, default_quadrature_degree)
     debug("Selecting quadrature degree based on total polynomial degree of integrand: " + str(q))
 
     return q
