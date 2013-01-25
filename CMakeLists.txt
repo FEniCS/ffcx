@@ -83,9 +83,13 @@ endif (PYTHONINTERP_FOUND)
 # Target names and installation directories
 
 # Set UFC install sub-directories
-set(UFC_LIB_DIR "lib")
+if (LIB_INSTALL_DIR)
+  set(UFC_LIB_DIR "${LIB_INSTALL_DIR}")
+else()
+  set(UFC_LIB_DIR "lib")
+endif()
 set(UFC_INCLUDE_DIR "include")
-set(UFC_PKGCONFIG_DIR "lib/pkgconfig")
+set(UFC_PKGCONFIG_DIR "${UFC_LIB_DIR}/pkgconfig")
 set(UFC_SHARE_DIR "share")
 set(UFC_MAN_DIR "share/man")
 set(UFC_CMAKE_CONFIG_DIR "share/ufc")
