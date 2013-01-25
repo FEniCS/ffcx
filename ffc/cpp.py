@@ -264,13 +264,13 @@ format.update({
     "classname dofmap":  lambda prefix, i: "%s_dofmap_%d" % (prefix.lower(), i),
 
     "classname cell_integral":  lambda prefix, form_id, sub_domain:\
-               "%s_cell_integral_%d_%d" % (prefix.lower(), form_id, sub_domain),
+               "%s_cell_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
 
     "classname exterior_facet_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_exterior_facet_integral_%d_%d" % (prefix.lower(), form_id, sub_domain),
+              "%s_exterior_facet_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
 
     "classname interior_facet_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_interior_facet_integral_%d_%d" % (prefix.lower(), form_id, sub_domain),
+              "%s_interior_facet_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
 
     "classname form": lambda prefix, i: "%s_form_%d" % (prefix.lower(), i)
 })

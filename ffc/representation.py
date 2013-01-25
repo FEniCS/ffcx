@@ -40,6 +40,7 @@ from itertools import chain
 
 # Import UFL
 import ufl
+from ufl.classes import Measure
 
 # FFC modules
 from ffc.utils import compute_permutations, product
@@ -523,18 +524,21 @@ def _create_sub_foo(ufl_element, element_numbers):
 
 def _create_foo_integral(domain_type, form_data):
     "Compute intermediate representation of create_foo_integral."
-    return [ida.domain_id for ida in
-           form_data.integral_data if ida.domain_type == domain_type]
+    return [ida.domain_id for ida in form_data.integral_data
+           if ida.domain_type == domain_type and isinstance(ida.domain_id, int)]
 
 def _has_foo_integrals(domain_type, form_data):
     "Compute intermediate representation of has_foo_integrals."
     v = (form_data.num_sub_domains.get(domain_type,0) > 0
-         or _create_default_foo_integral(domain_type, form_data))
+         or _create_default_foo_integral(domain_type, form_data) is not None)
     return bool(v)
 
 def _create_default_foo_integral(domain_type, form_data):
     "Compute intermediate representation of create_default_foo_integral."
-    return False # FIXME: Get from form data somehow, e.g.: form_data.has_default_integral[domain_type]
+    ida = [ida for ida in form_data.integral_data
+           if ida.domain_id == Measure.DOMAIN_ID_OTHERWISE and ida.domain_type == domain_type]
+    ffc_assert(len(ida) in (0,1), "Expecting at most one default integral of each type.")
+    return ida[0].domain_id if ida else None
 
 #--- Utility functions ---
 
