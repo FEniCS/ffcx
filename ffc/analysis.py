@@ -7,7 +7,7 @@ forms, including automatic selection of elements, degrees and
 form representation type.
 """
 
-# Copyright (C) 2007-2010 Anders Logg and Kristian B. Oelgaard
+# Copyright (C) 2007-2013 Anders Logg and Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -25,9 +25,10 @@ form representation type.
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Marie E. Rognes, 2010
+# Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-05
-# Last changed: 2011-05-02
+# Last changed: 2013-01-25
 
 # UFL modules
 from ufl.common import istr, tstr

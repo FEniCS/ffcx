@@ -31,9 +31,10 @@ in the intermediate representation under the key "foo".
 #
 # Modified by Marie E. Rognes 2010
 # Modified by Kristian B. Oelgaard 2010
+# Modified by Martin Alnaes, 2013
 #
 # First added:  2009-12-16
-# Last changed: 2013-01-08
+# Last changed: 2013-01-25
 
 # Python modules
 from itertools import chain

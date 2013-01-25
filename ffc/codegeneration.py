@@ -24,9 +24,10 @@ UFC function from an (optimized) intermediate representation (OIR).
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Mehdi Nikbakht 2010
+# Modified by Martin Alnaes, 2013
 #
 # First added:  2009-12-16
-# Last changed: 2013-01-08
+# Last changed: 2013-01-25
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
