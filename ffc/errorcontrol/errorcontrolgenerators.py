@@ -153,7 +153,7 @@ class ErrorControlGenerator:
         # Define forms defining linear variational problem for cell
         # residual
         v_T = self._b_T*v
-        a_R_T = inner(v_T, R_T)*dx
+        a_R_T = inner(v_T, R_T)*dx()
         L_R_T = replace(self.weak_residual, {v_h: v_T})
 
         return (a_R_T, L_R_T)
@@ -174,10 +174,10 @@ class ErrorControlGenerator:
         # Define forms defining linear variational problem for facet
         # residual
         v_e = self._b_e*v
-        a_R_dT = ((inner(v_e('+'), R_e('+')) + inner(v_e('-'), R_e('-')))*dS
-                  + inner(v_e, R_e)*ds)
+        a_R_dT = ((inner(v_e('+'), R_e('+')) + inner(v_e('-'), R_e('-')))*dS()
+                  + inner(v_e, R_e)*ds())
         L_R_dT = (replace(self.weak_residual, {v_h: v_e})
-                  - inner(v_e, self._R_T)*dx)
+                  - inner(v_e, self._R_T)*dx())
 
         return (a_R_dT, L_R_dT)
 
@@ -201,10 +201,10 @@ class ErrorControlGenerator:
 
         # Define linear form for computing error indicators
         v = self.module.TestFunction(self._DG0)
-        eta_T = (v*inner(R_T, z - z_h)*dx
+        eta_T = (v*inner(R_T, z - z_h)*dx()
                  + avg(v)*(inner(R_dT('+'), (z - z_h)('+'))
-                           + inner(R_dT('-'), (z - z_h)('-')))*dS
-                 + v*inner(R_dT, z - z_h)*ds)
+                           + inner(R_dT('-'), (z - z_h)('-')))*dS()
+                 + v*inner(R_dT, z - z_h)*ds())
 
         return eta_T
 
