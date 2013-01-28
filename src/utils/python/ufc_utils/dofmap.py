@@ -13,7 +13,7 @@ public:
 
   /// Constructor
   %(classname)s(%(constructor_arguments)s) : ufc::dofmap()%(initializer_list)s
-  {
+
 %(constructor)s
   }
 
@@ -101,8 +101,8 @@ public:
   }
 
   /// Tabulate the coordinates of all dofs on a cell
-  virtual void tabulate_coordinates(double** coordinates,
-                                    const ufc::cell& c) const
+  virtual void tabulate_coordinates(double** dof_coordinates,
+                                    const double* vertex_coordinates) const
   {
 %(tabulate_coordinates)s
   }
@@ -185,7 +185,7 @@ public:
 
   /// Tabulate the coordinates of all dofs on a cell
   virtual void tabulate_coordinates(double** coordinates,
-                                    const ufc::cell& c) const;
+                                    const double* vertex_coordinates) const;
 
   /// Return the number of sub dofmaps (for a mixed element)
   virtual std::size_t num_sub_dofmaps() const;
@@ -290,8 +290,8 @@ void %(classname)s::tabulate_entity_dofs(std::size_t* dofs,
 }
 
 /// Tabulate the coordinates of all dofs on a cell
-void %(classname)s::tabulate_coordinates(double** coordinates,
-                                         const ufc::cell& c) const
+void %(classname)s::tabulate_coordinates(double** dof_coordinates,
+                                         const double* vertex_coordinates) const
 {
 %(tabulate_coordinates)s
 }

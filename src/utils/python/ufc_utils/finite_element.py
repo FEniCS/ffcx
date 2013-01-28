@@ -64,38 +64,38 @@ public:
 %(value_dimension)s
   }
 
-  /// Evaluate basis function i at given point in cell
+  /// Evaluate basis function i at given point x in cell
   virtual void evaluate_basis(std::size_t i,
                               double* values,
-                              const double* coordinates,
-                              const ufc::cell& c) const
+                              const double* x,
+                              const double* vertex_coordinates) const
   {
 %(evaluate_basis)s
   }
 
-  /// Evaluate all basis functions at given point in cell
+  /// Evaluate all basis functions at given point x in cell
   virtual void evaluate_basis_all(double* values,
-                                  const double* coordinates,
-                                  const ufc::cell& c) const
+                                  const double* x,
+                                  const double* vertex_coordinates) const
   {
 %(evaluate_basis_all)s
   }
 
-  /// Evaluate order n derivatives of basis function i at given point in cell
+  /// Evaluate order n derivatives of basis function i at given point x in cell
   virtual void evaluate_basis_derivatives(std::size_t i,
                                           std::size_t n,
                                           double* values,
-                                          const double* coordinates,
-                                          const ufc::cell& c) const
+                                          const double* x,
+                                          const double* vertex_coordinates) const
   {
 %(evaluate_basis_derivatives)s
   }
 
-  /// Evaluate order n derivatives of all basis functions at given point in cell
+  /// Evaluate order n derivatives of all basis functions at given point x in cell
   virtual void evaluate_basis_derivatives_all(std::size_t n,
                                               double* values,
-                                              const double* coordinates,
-                                              const ufc::cell& c) const
+                                              const double* x,
+                                              const double* vertex_coordinates) const
   {
 %(evaluate_basis_derivatives_all)s
   }
@@ -103,6 +103,7 @@ public:
   /// Evaluate linear functional for dof i on the function f
   virtual double evaluate_dof(std::size_t i,
                               const ufc::function& f,
+                              const double* vertex_coordinates,
                               const ufc::cell& c) const
   {
 %(evaluate_dof)s
@@ -111,6 +112,7 @@ public:
   /// Evaluate linear functionals for all dofs on the function f
   virtual void evaluate_dofs(double* values,
                              const ufc::function& f,
+                             const double* vertex_coordinates,
                              const ufc::cell& c) const
   {
 %(evaluate_dofs)s
@@ -195,38 +197,40 @@ public:
   /// Return the dimension of the value space for axis i
   virtual std::size_t value_dimension(std::size_t i) const;
 
-  /// Evaluate basis function i at given point in cell
+  /// Evaluate basis function i at given point x in cell
   virtual void evaluate_basis(std::size_t i,
                               double* values,
-                              const double* coordinates,
-                              const ufc::cell& c) const;
+                              const double* x,
+                              const double* vertex_coordinates) const;
 
-  /// Evaluate all basis functions at given point in cell
+  /// Evaluate all basis functions at given point x in cell
   virtual void evaluate_basis_all(double* values,
-                                  const double* coordinates,
-                                  const ufc::cell& c) const;
+                                  const double* x,
+                                  const double* vertex_coordinates) const;
 
-  /// Evaluate order n derivatives of basis function i at given point in cell
+  /// Evaluate order n derivatives of basis function i at given point x in cell
   virtual void evaluate_basis_derivatives(std::size_t i,
                                           std::size_t n,
                                           double* values,
-                                          const double* coordinates,
-                                          const ufc::cell& c) const;
+                                          const double* x,
+                                          const double* vertex_coordinates) const;
 
-  /// Evaluate order n derivatives of all basis functions at given point in cell
+  /// Evaluate order n derivatives of all basis functions at given point x in cell
   virtual void evaluate_basis_derivatives_all(std::size_t n,
                                               double* values,
-                                              const double* coordinates,
-                                              const ufc::cell& c) const;
+                                              const double* x,
+                                              const double* vertex_coordinates) const;
 
   /// Evaluate linear functional for dof i on the function f
   virtual double evaluate_dof(std::size_t i,
                               const ufc::function& f,
+                              const double* vertex_coordinates,
                               const ufc::cell& c) const;
 
   /// Evaluate linear functionals for all dofs on the function f
   virtual void evaluate_dofs(double* values,
                              const ufc::function& f,
+                             const double* vertex_coordinates,
                              const ufc::cell& c) const;
 
   /// Interpolate vertex values from dof values
@@ -312,38 +316,38 @@ std::size_t %(classname)s::value_dimension(std::size_t i) const
 %(value_dimension)s
 }
 
-/// Evaluate basis function i at given point in cell
+/// Evaluate basis function i at given point x in cell
 void %(classname)s::evaluate_basis(std::size_t i,
                                    double* values,
-                                   const double* coordinates,
-                                   const ufc::cell& c) const
+                                   const double* x,
+                                   const double* vertex_coordinates) const
 {
 %(evaluate_basis)s
 }
 
-/// Evaluate all basis functions at given point in cell
+/// Evaluate all basis functions at given point x in cell
 void %(classname)s::evaluate_basis_all(double* values,
-                                       const double* coordinates,
-                                       const ufc::cell& c) const
+                                       const double* x,
+                                       const double* vertex_coordinates) const
 {
 %(evaluate_basis_all)s
 }
 
-/// Evaluate order n derivatives of basis function i at given point in cell
+/// Evaluate order n derivatives of basis function i at given point x in cell
 void %(classname)s::evaluate_basis_derivatives(std::size_t i,
                                                std::size_t n,
                                                double* values,
-                                               const double* coordinates,
-                                               const ufc::cell& c) const
+                                               const double* x,
+                                               const double* vertex_coordinates) const
 {
 %(evaluate_basis_derivatives)s
 }
 
-/// Evaluate order n derivatives of all basis functions at given point in cell
+/// Evaluate order n derivatives of all basis functions at given point x in cell
 void %(classname)s::evaluate_basis_derivatives_all(std::size_t n,
                                                    double* values,
-                                                   const double* coordinates,
-                                                   const ufc::cell& c) const
+                                                   const double* x,
+                                                   const double* vertex_coordinates) const
 {
 %(evaluate_basis_derivatives_all)s
 }
@@ -351,6 +355,7 @@ void %(classname)s::evaluate_basis_derivatives_all(std::size_t n,
 /// Evaluate linear functional for dof i on the function f
 double %(classname)s::evaluate_dof(std::size_t i,
                                    const ufc::function& f,
+                                   const double* vertex_coordinates,
                                    const ufc::cell& c) const
 {
 %(evaluate_dof)s
@@ -359,6 +364,7 @@ double %(classname)s::evaluate_dof(std::size_t i,
 /// Evaluate linear functionals for all dofs on the function f
 void %(classname)s::evaluate_dofs(double* values,
                                   const ufc::function& f,
+                                  const double* vertex_coordinates,
                                   const ufc::cell& c) const
 {
 %(evaluate_dofs)s

@@ -54,6 +54,9 @@ namespace ufc
     /// Array of coordinates for the vertices of the cell
     double** coordinates;
 
+    // FIXME: Temporary until we remove UFCCell
+    double* vertex_coordinates;
+
     /// Cell index (short-cut for entity_indices[topological_dimension][0])
     std::size_t index;
 
@@ -114,38 +117,42 @@ namespace ufc
     /// Return the dimension of the value space for axis i
     virtual std::size_t value_dimension(std::size_t i) const = 0;
 
-    /// Evaluate basis function i at given point in cell
+    /// Evaluate basis function i at given point x in cell
     virtual void evaluate_basis(std::size_t i,
                                 double* values,
-                                const double* coordinates,
-                                const cell& c) const = 0;
+                                const double* x,
+                                const double* vertex_coordinates) const = 0;
 
-    /// Evaluate all basis functions at given point in cell
+    /// Evaluate all basis functions at given point x in cell
     virtual void evaluate_basis_all(double* values,
-                                    const double* coordinates,
-                                    const cell& c) const = 0;
+                                    const double* x,
+                                    const double* vertex_coordinates) const = 0;
 
-    /// Evaluate order n derivatives of basis function i at given point in cell
+    /// Evaluate order n derivatives of basis function i at given point x in cell
     virtual void evaluate_basis_derivatives(std::size_t i,
                                             std::size_t n,
                                             double* values,
-                                            const double* coordinates,
-                                            const cell& c) const = 0;
+                                            const double* x,
+                                            const double* vertex_coordinates) const = 0;
 
-    /// Evaluate order n derivatives of all basis functions at given point in cell
+    /// Evaluate order n derivatives of all basis functions at given point x in cell
     virtual void evaluate_basis_derivatives_all(std::size_t n,
                                                 double* values,
-                                                const double* coordinates,
-                                                const cell& c) const = 0;
+                                                const double* x,
+                                                const double* vertex_coordinates) const = 0;
+
+    // FIXME: cell argument only included here so we can pass it to the eval function...
 
     /// Evaluate linear functional for dof i on the function f
     virtual double evaluate_dof(std::size_t i,
                                 const function& f,
+                                const double* vertex_coordinates,
                                 const cell& c) const = 0;
 
     /// Evaluate linear functionals for all dofs on the function f
     virtual void evaluate_dofs(double* values,
                                const function& f,
+                               const double* vertex_coordinates,
                                const cell& c) const = 0;
 
     /// Interpolate vertex values from dof values
@@ -226,8 +233,8 @@ namespace ufc
                                       std::size_t d, std::size_t i) const = 0;
 
     /// Tabulate the coordinates of all dofs on a cell
-    virtual void tabulate_coordinates(double** coordinates,
-                                      const cell& c) const = 0;
+    virtual void tabulate_coordinates(double** dof_coordinates,
+                                      const double* vertex_coordinates) const = 0;
 
     /// Return the number of sub dofmaps (for a mixed element)
     virtual std::size_t num_sub_dofmaps() const = 0;
@@ -254,7 +261,7 @@ namespace ufc
     /// Tabulate the tensor for the contribution from a local cell
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
-                                 const std::vector<double>& x) const = 0;
+                                 const double* vertex_coordinates) const = 0;
 
   };
 
@@ -272,7 +279,7 @@ namespace ufc
     /// Tabulate the tensor for the contribution from a local exterior facet
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
-                                 const std::vector<double>& x,
+                                 const double* vertex_coordinates,
                                  std::size_t facet) const = 0;
 
   };
@@ -291,8 +298,8 @@ namespace ufc
     /// Tabulate the tensor for the contribution from a local interior facet
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
-                                 const std::vector<double>& x_0,
-                                 const std::vector<double>& x_1,
+                                 const double* vertex_coordinates_0,
+                                 const double* vertex_coordinates_1,
                                  std::size_t facet0,
                                  std::size_t facet1) const = 0;
 
