@@ -55,7 +55,7 @@ namespace ufc
     double** coordinates;
 
     // FIXME: Temporary until we remove UFCCell
-    double* vertex_coordinates;
+    std::vector<double> vertex_coordinates;
 
     /// Cell index (short-cut for entity_indices[topological_dimension][0])
     std::size_t index;
