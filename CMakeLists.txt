@@ -84,15 +84,13 @@ endif (PYTHONINTERP_FOUND)
 
 # Set UFC install sub-directories
 if (LIB_INSTALL_DIR)
-  set(UFC_LIB_DIR "${LIB_INSTALL_DIR}")
+  set(UFC_LIB_DIR "${LIB_INSTALL_DIR}" CACHE PATH "Library installation directory.")
 else()
-  set(UFC_LIB_DIR "lib")
+  set(UFC_LIB_DIR "lib" CACHE PATH "Library installation directory.")
 endif()
-set(UFC_INCLUDE_DIR "include")
-set(UFC_PKGCONFIG_DIR "${UFC_LIB_DIR}/pkgconfig")
-set(UFC_SHARE_DIR "share")
-set(UFC_MAN_DIR "share/man")
-set(UFC_CMAKE_CONFIG_DIR "share/ufc")
+set(UFC_INCLUDE_DIR "include" CACHE PATH "C/C++ header installation directory.")
+set(UFC_PKGCONFIG_DIR "${UFC_LIB_DIR}/pkgconfig" CACHE PATH "pkg-config file installation directory.")
+set(UFC_CMAKE_CONFIG_DIR "share/ufc" CACHE PATH "CMake configuration file directory.")
 
 #------------------------------------------------------------------------------
 # Install ufc.h
