@@ -163,7 +163,7 @@ def _attach_integral_metadata(form_data, parameters):
         for integral in ida.integrals:
 
             # Get metadata for integral
-            integral_metadata = integral.measure().metadata() or {}
+            integral_metadata = integral.compiler_data() or {}
             for key in metadata_keys:
                 if not key in integral_metadata:
                     integral_metadata[key] = parameters[key]
