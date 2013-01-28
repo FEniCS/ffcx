@@ -44,6 +44,7 @@ FIAT (functional.pt_dict) in the intermediate representation stage.
 # Modified by Kristian B. Oelgaard 2010-2011
 # Modified by Anders Logg 2013
 #
+# First added:  2009-xx-yy
 # Last changed: 2013-01-10
 
 from ffc.cpp import format, remove_unused
@@ -70,7 +71,7 @@ f_double =  format["float declaration"]
 f_vals =    format["dof vals"]
 f_result =  format["dof result"]
 f_y =       format["dof physical coordinates"]
-f_x =       format["coordinates"]
+f_x =       format["vertex_coordinates"]
 f_int =     format["int declaration"]
 f_X =       format["dof X"]
 f_D =       format["dof D"]
@@ -124,11 +125,12 @@ def _required_declarations(ir):
     tdim = ir["topological_dimension"]
 
     # Declare variable for storing the result and physical coordinates
-    code.append(comment("Declare variables for result of evaluation."))
+    code.append(comment("Declare variables for result of evaluation"))
     code.append(declare(f_double, component(f_vals, ir["physical_value_size"])))
     code.append("")
-    code.append(comment("Declare variable for physical coordinates."))
+    code.append(comment("Declare variable for physical coordinates"))
     code.append(declare(f_double, component(f_y, gdim)))
+    code.append("")
 
     # Check whether Jacobians are necessary.
     needs_inverse_jacobian = any(["contravariant piola" in m
@@ -144,10 +146,12 @@ def _required_declarations(ir):
 
     # Add sufficient Jacobian information. Note: same criterion for
     # needing inverse Jacobian as for needing oriented Jacobian
+    code.append(format["compute_jacobian"](tdim, gdim))
     if needs_inverse_jacobian:
-        code.append(format["jacobian and inverse"](gdim, tdim, oriented=True))
-    else:
-        code.append(format["jacobian"](gdim, tdim))
+        code.append("")
+        code.append(format["compute_jacobian_inverse"](tdim, gdim))
+        code.append("")
+        code.append(format["orientation"](tdim, gdim))
 
     return "\n".join(code)
 
@@ -170,7 +174,7 @@ def _generate_body(i, dof, mapping, gdim, tdim, offset=0, result=f_result):
     # Map point onto physical element: y = F_K(x)
     code = []
     for j in range(gdim):
-        y = inner(w, [component(f_x(), (k, j)) for k in range(tdim + 1)])
+        y = inner(w, [component(f_x(), (k*gdim + j,)) for k in range(tdim + 1)])
         code.append(assign(component(f_y, j), y))
 
     # Evaluate function at physical point
@@ -223,7 +227,7 @@ def _generate_multiple_points_body(i, dof, mapping, gdim, tdim,
     code += [declare(f_double, component(f_copy(i), tdim))]
 
     # Add loop over points
-    code += [comment("Loop over points.")]
+    code += [comment("Loop over points")]
 
     # Map the points from the reference onto the physical element
     #assert(gdim == tdim), \
@@ -231,17 +235,17 @@ def _generate_multiple_points_body(i, dof, mapping, gdim, tdim,
     lines_r = [map_onto_physical[gdim][tdim] % {"i": i, "j": f_r}]
 
     # Evaluate function at physical point
-    lines_r.append(comment("Evaluate function at physical point."))
+    lines_r.append(comment("Evaluate function at physical point"))
     lines_r.append(format["evaluate function"])
 
     # Map function values to the reference element
-    lines_r.append(comment("Map function to reference element."))
+    lines_r.append(comment("Map function to reference element"))
     F = _change_variables(mapping, gdim, tdim, offset)
     lines_r += [assign(component(f_copy(i), k), F_k)
                 for (k, F_k) in enumerate(F)]
 
     # Add loop over directional components
-    lines_r.append(comment("Loop over directions."))
+    lines_r.append(comment("Loop over directions"))
     value = multiply([component(f_copy(i),
                                 component(f_D(i), (f_r, f_s))),
                       component(f_W(i), (f_r, f_s))])
@@ -258,7 +262,6 @@ def _generate_multiple_points_body(i, dof, mapping, gdim, tdim,
 
     code = "\n".join(code)
     return code
-
 
 def _change_variables(mapping, gdim, tdim, offset):
     """Generate code for mapping function values according to
@@ -295,6 +298,10 @@ def _change_variables(mapping, gdim, tdim, offset):
     # meg: Various mappings must be handled both here and in
     # interpolate_vertex_values. Could this be abstracted out?
 
+    # Figure out dimension of Jacobian
+    m = tdim + 1
+    n = gdim
+
     if mapping == "affine":
         return [component(f_vals, offset)]
 
@@ -303,7 +310,7 @@ def _change_variables(mapping, gdim, tdim, offset):
         # contravariant piola
         values = []
         for i in range(tdim):
-            inv_jacobian_row = [Jinv(i, j) for j in range(gdim)]
+            inv_jacobian_row = [Jinv(i, j, m, n) for j in range(gdim)]
             components = [component(f_vals, j + offset) for j in range(gdim)]
             values += [multiply([detJ, inner(inv_jacobian_row, components)])]
         return values
@@ -313,7 +320,7 @@ def _change_variables(mapping, gdim, tdim, offset):
         # covariant piola
         values = []
         for i in range(tdim):
-            jacobian_column = [J(j, i) for j in range(gdim)]
+            jacobian_column = [J(j, i, m, n) for j in range(gdim)]
             components = [component(f_vals, j + offset) for j in range(gdim)]
             values += [inner(jacobian_column, components)]
         return values
@@ -331,6 +338,3 @@ def affine_weights(dim):
         return lambda x: (1.0 - x[0] - x[1], x[0], x[1])
     elif dim == 3:
         return lambda x: (1.0 - x[0] - x[1] - x[2], x[0], x[1], x[2])
-
-
-

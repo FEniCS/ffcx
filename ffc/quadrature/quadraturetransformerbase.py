@@ -407,7 +407,6 @@ class QuadratureTransformerBase(Transformer):
         component, local_comp, local_offset, ffc_element, quad_element, \
         transformation, multiindices = self._get_auxiliary_variables(o, components, derivatives)
 
-
         # Create code for function and add empty tuple to cache dict.
         function_code = {(): self.create_function(o, derivatives, component,
                               local_comp, local_offset, ffc_element, quad_element,

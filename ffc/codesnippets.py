@@ -78,37 +78,37 @@ footer = """\
 _compute_jacobian_interval_1d = """\
 // Compute Jacobian
 double J[1];
-compute_jacobian_interval_1d(J, &x%(restriction)s[0]);
+compute_jacobian_interval_1d(J, vertex_coordinates%(restriction)s);
 """
 
 _compute_jacobian_interval_2d = """\
 // Compute Jacobian
 double J[2];
-compute_jacobian_interval_2d(J, &x%(restriction)s[0]);
+compute_jacobian_interval_2d(J, vertex_coordinates%(restriction)s);
 """
 
 _compute_jacobian_interval_3d = """\
 // Compute Jacobian
 double J[3];
-compute_jacobian_interval_3d(J, &x%(restriction)s[0]);
+compute_jacobian_interval_3d(J, vertex_coordinates%(restriction)s);
 """
 
 _compute_jacobian_triangle_2d = """\
 // Compute Jacobian
 double J[4];
-compute_jacobian_triangle_2d(J, &x%(restriction)s[0]);
+compute_jacobian_triangle_2d(J, vertex_coordinates%(restriction)s);
 """
 
 _compute_jacobian_triangle_3d = """\
 // Compute Jacobian
 double J[6];
-compute_jacobian_triangle_3d(J, &x%(restriction)s[0]);
+compute_jacobian_triangle_3d(J, vertex_coordinates%(restriction)s);
 """
 
 _compute_jacobian_tetrahedron_3d = """\
 // Compute Jacobian
 double J[9];
-compute_jacobian_triangle_3d(J, x%(restriction)s);
+compute_jacobian_triangle_3d(J, vertex_coordinates%(restriction)s);
 """
 
 compute_jacobian = {1: {1: _compute_jacobian_interval_1d,
@@ -123,43 +123,43 @@ compute_jacobian = {1: {1: _compute_jacobian_interval_1d,
 _compute_jacobian_inverse_interval_1d = """\
 // Compute Jacobian inverse and determinant
 double K[1];
-double det;
-compute_jacobian_inverse_interval_1d(K, det, J);
+double detJ;
+compute_jacobian_inverse_interval_1d(K, detJ, J);
 """
 
 _compute_jacobian_inverse_interval_2d = """\
 // Compute Jacobian inverse and determinant
 double K[2];
-double det;
-compute_jacobian_inverse_interval_2d(K, det, J);
+double detJ;
+compute_jacobian_inverse_interval_2d(K, detJ, J);
 """
 
 _compute_jacobian_inverse_interval_3d = """\
 // Compute Jacobian inverse and determinant
 double K[3];
-double det;
-compute_jacobian_inverse_interval_3d(K, det, J);
+double detJ;
+compute_jacobian_inverse_interval_3d(K, detJ, J);
 """
 
 _compute_jacobian_inverse_triangle_2d = """\
 // Compute Jacobian inverse and determinant
 double K[4];
-double det;
-compute_jacobian_inverse_triangle_2d(K, det, J);
+double detJ;
+compute_jacobian_inverse_triangle_2d(K, detJ, J);
 """
 
 _compute_jacobian_inverse_triangle_3d = """\
 // Compute Jacobian inverse and determinant
 double K[6];
-double det;
-compute_jacobian_inverse_triangle_3d(K, det, J);
+double detJ;
+compute_jacobian_inverse_triangle_3d(K, detJ, J);
 """
 
 _compute_jacobian_inverse_tetrahedron_3d = """\
 // Compute Jacobian inverse and determinant
 double K[9];
-double det;
-compute_jacobian_inverse_tetrahedron_3d(K, det, J);
+double detJ;
+compute_jacobian_inverse_tetrahedron_3d(K, detJ, J);
 """
 
 compute_jacobian_inverse = {1: {1: _compute_jacobian_inverse_interval_1d,
@@ -172,9 +172,7 @@ compute_jacobian_inverse = {1: {1: _compute_jacobian_inverse_interval_1d,
 # Code snippet for scale factor
 scale_factor = """\
 // Set scale factor
-det = std::abs(det);"""
-
-
+const double det = std::abs(detJ);"""
 
 
 # FIXME: Old stuff that should be removed below
@@ -184,7 +182,7 @@ orientation_snippet = """
 const int orientation_marker = c.orientation;
 if (orientation_marker == -1)
   throw std::runtime_error("cell orientation must be defined (not -1)");
-// (If orientation_marker == 1 = down, multiply detJ by -1)
+// (If orientation_marker == 1 = down, multiply det(J) by -1)
 else if (orientation_marker == 1)
   detJ%(restriction)s *= -1;
 """
@@ -202,8 +200,8 @@ const unsigned int v0 = edge_vertices[facet%(restriction)s][0];
 const unsigned int v1 = edge_vertices[facet%(restriction)s][1];
 
 // Compute scale factor (length of edge scaled by length of reference interval)
-const double dx0 = x%(restriction)s[v1][0] - x%(restriction)s[v0][0];
-const double dx1 = x%(restriction)s[v1][1] - x%(restriction)s[v0][1];
+const double dx0 = vertex_coordinates%(restriction)s[2*v1 + 0] - vertex_coordinates%(restriction)s[2*v0 + 0];
+const double dx1 = vertex_coordinates%(restriction)s[2*v1 + 1] - vertex_coordinates%(restriction)s[2*v0 + 1];
 const double det = std::sqrt(dx0*dx0 + dx1*dx1);"""
 
 _facet_determinant_2D_1D = """\
@@ -218,11 +216,26 @@ const unsigned int v1 = face_vertices[facet%(restriction)s][1];
 const unsigned int v2 = face_vertices[facet%(restriction)s][2];
 
 // Compute scale factor (area of face scaled by area of reference triangle)
-const double a0 = (x%(restriction)s[v0][1]*x%(restriction)s[v1][2] + x%(restriction)s[v0][2]*x%(restriction)s[v2][1] + x%(restriction)s[v1][1]*x%(restriction)s[v2][2]) - (x%(restriction)s[v2][1]*x%(restriction)s[v1][2] + x%(restriction)s[v2][2]*x%(restriction)s[v0][1] + x%(restriction)s[v1][1]*x%(restriction)s[v0][2]);
+const double a0 = (vertex_coordinates%(restriction)s[3*v0 + 1]*vertex_coordinates%(restriction)s[3*v1 + 2]  +
+                   vertex_coordinates%(restriction)s[3*v0 + 2]*vertex_coordinates%(restriction)s[3*v2 + 1]  +
+                   vertex_coordinates%(restriction)s[3*v1 + 1]*vertex_coordinates%(restriction)s[3*v2 + 2]) -
+                  (vertex_coordinates%(restriction)s[3*v2 + 1]*vertex_coordinates%(restriction)s[3*v1 + 2]  +
+                   vertex_coordinates%(restriction)s[3*v2 + 2]*vertex_coordinates%(restriction)s[3*v0 + 1]  +
+                   vertex_coordinates%(restriction)s[3*v1 + 1]*vertex_coordinates%(restriction)s[3*v0 + 2]);
 
-const double a1 = (x%(restriction)s[v0][2]*x%(restriction)s[v1][0] + x%(restriction)s[v0][0]*x%(restriction)s[v2][2] + x%(restriction)s[v1][2]*x%(restriction)s[v2][0]) - (x%(restriction)s[v2][2]*x%(restriction)s[v1][0] + x%(restriction)s[v2][0]*x%(restriction)s[v0][2] + x%(restriction)s[v1][2]*x%(restriction)s[v0][0]);
+const double a1 = (vertex_coordinates%(restriction)s[3*v0 + 2]*vertex_coordinates%(restriction)s[3*v1 + 0]  +
+                   vertex_coordinates%(restriction)s[3*v0 + 0]*vertex_coordinates%(restriction)s[3*v2 + 2]  +
+                   vertex_coordinates%(restriction)s[3*v1 + 2]*vertex_coordinates%(restriction)s[3*v2 + 0]) -
+                  (vertex_coordinates%(restriction)s[3*v2 + 2]*vertex_coordinates%(restriction)s[3*v1 + 0]  +
+                   vertex_coordinates%(restriction)s[3*v2 + 0]*vertex_coordinates%(restriction)s[3*v0 + 2]  +
+                   vertex_coordinates%(restriction)s[3*v1 + 2]*vertex_coordinates%(restriction)s[3*v0 + 0]);
 
-const double a2 = (x%(restriction)s[v0][0]*x%(restriction)s[v1][1] + x%(restriction)s[v0][1]*x%(restriction)s[v2][0] + x%(restriction)s[v1][0]*x%(restriction)s[v2][1]) - (x%(restriction)s[v2][0]*x%(restriction)s[v1][1] + x%(restriction)s[v2][1]*x%(restriction)s[v0][0] + x%(restriction)s[v1][0]*x%(restriction)s[v0][1]);
+const double a2 = (vertex_coordinates%(restriction)s[3*v0 + 0]*vertex_coordinates%(restriction)s[3*v1 + 1]  +
+                   vertex_coordinates%(restriction)s[3*v0 + 1]*vertex_coordinates%(restriction)s[3*v2 + 0]  +
+                   vertex_coordinates%(restriction)s[3*v1 + 0]*vertex_coordinates%(restriction)s[3*v2 + 1]) -
+                  (vertex_coordinates%(restriction)s[3*v2 + 0]*vertex_coordinates%(restriction)s[3*v1 + 1]  +
+                   vertex_coordinates%(restriction)s[3*v2 + 1]*vertex_coordinates%(restriction)s[3*v0 + 0]  +
+                   vertex_coordinates%(restriction)s[3*v1 + 0]*vertex_coordinates%(restriction)s[3*v0 + 1]);
 
 const double det = std::sqrt(a0*a0 + a1*a1 + a2*a2);"""
 
@@ -234,9 +247,9 @@ const unsigned int v0 = edge_vertices[facet%(restriction)s][0];
 const unsigned int v1 = edge_vertices[facet%(restriction)s][1];
 
 // Compute scale factor (length of edge scaled by length of reference interval)
-const double dx0 = x%(restriction)s[v1][0] - x%(restriction)s[v0][0];
-const double dx1 = x%(restriction)s[v1][1] - x%(restriction)s[v0][1];
-const double dx2 = x%(restriction)s[v1][2] - x%(restriction)s[v0][2];
+const double dx0 = vertex_coordinates%(restriction)s[3*v1 + 0] - vertex_coordinates%(restriction)s[3*v0 + 0];
+const double dx1 = vertex_coordinates%(restriction)s[3*v1 + 1] - vertex_coordinates%(restriction)s[3*v0 + 1];
+const double dx2 = vertex_coordinates%(restriction)s[3*v1 + 2] - vertex_coordinates%(restriction)s[3*v0 + 2];
 const double det = std::sqrt(dx0*dx0 + dx1*dx1 + dx2*dx2);"""
 
 _facet_determinant_3D_1D = """\
@@ -244,13 +257,13 @@ _facet_determinant_3D_1D = """\
 const double det = 1.0;"""
 
 _normal_direction_1D = """\
-const bool direction = facet%(restriction)s == 0 ? x%(restriction)s[0][0] > x%(restriction)s[1][0] : x%(restriction)s[1][0] > x%(restriction)s[0][0];"""
+const bool direction = facet%(restriction)s == 0 ? vertex_coordinates%(restriction)s[0][0] > vertex_coordinates%(restriction)s[1][0] : vertex_coordinates%(restriction)s[1][0] > vertex_coordinates%(restriction)s[0][0];"""
 
 _normal_direction_2D = """\
-const bool direction = dx1*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) - dx0*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1]) < 0;"""
+const bool direction = dx1*(vertex_coordinates%(restriction)s[%(facet)s][0] - vertex_coordinates%(restriction)s[v0][0]) - dx0*(vertex_coordinates%(restriction)s[%(facet)s][1] - vertex_coordinates%(restriction)s[v0][1]) < 0;"""
 
 _normal_direction_3D = """\
-const bool direction = a0*(x%(restriction)s[%(facet)s][0] - x%(restriction)s[v0][0]) + a1*(x%(restriction)s[%(facet)s][1] - x%(restriction)s[v0][1])  + a2*(x%(restriction)s[%(facet)s][2] - x%(restriction)s[v0][2]) < 0;"""
+const bool direction = a0*(vertex_coordinates%(restriction)s[%(facet)s][0] - vertex_coordinates%(restriction)s[v0][0]) + a1*(vertex_coordinates%(restriction)s[%(facet)s][1] - vertex_coordinates%(restriction)s[v0][1])  + a2*(vertex_coordinates%(restriction)s[%(facet)s][2] - vertex_coordinates%(restriction)s[v0][2]) < 0;"""
 
 # MER: Coding all up in _facet_normal_ND_M_D for now; these are
 # therefore empty.
@@ -493,7 +506,7 @@ def _transform_snippet(tdim, gdim):
         _g = "_g"
 
     # Matricize K_ij -> {K_ij}
-    matrix = "{{" + "}, {".join([", ".join(["K_%d%d"% (t, g)
+    matrix = "{{" + "}, {".join([", ".join(["K[%d]" % (t*gdim + g)
                                             for g in range(gdim)])
                                  for t in range(tdim)]) + "}};\n\n"
     snippet = """\
@@ -609,61 +622,83 @@ X%(num_ip)d[2] = %(name)s[%(ip)s][0]*x%(restriction)s[0][2] + \
 # Codesnippets used in evaluatebasis[|derivatives]
 _map_coordinates_FIAT_interval = """\
 // Get coordinates and map to the reference (FIAT) element
-double X = (2.0*coordinates[0] - x[0][0] - x[1][0]) / J_00;"""
+double X = (2.0*x[0] - vertex_coordinates[0] - vertex_coordinates[1]) / J[0];"""
 
 _map_coordinates_FIAT_interval_in_2D = """\
 // Get coordinates and map to the reference (FIAT) element
-double X = 2*(std::sqrt(std::pow(coordinates[0]-x[0][0], 2) + std::pow(coordinates[1]-x[0][1], 2))/ detJ) - 1.0;"""
+double X = 2*(std::sqrt(std::pow(x[0] - vertex_coordinates[0], 2) +
+                        std::pow(x[1] - vertex_coordinates[1], 2)) / detJ) - 1.0;"""
 
 _map_coordinates_FIAT_interval_in_3D = """\
 // Get coordinates and map to the reference (FIAT) element
-double X = 2*(std::sqrt(std::pow(coordinates[0]-x[0][0], 2) + std::pow(coordinates[1]-x[0][1], 2) + std::pow(coordinates[2]-x[0][2], 2))/ detJ) - 1.0;"""
+double X = 2*(std::sqrt(std::pow(x[0] - vertex_coordinates[0], 2) +
+                        std::pow(x[1] - vertex_coordinates[1], 2) +
+                        std::pow(x[2] - vertex_coordinates[2], 2))/ detJ) - 1.0;"""
 
 _map_coordinates_FIAT_triangle = """\
 // Compute constants
-const double C0 = x[1][0] + x[2][0];
-const double C1 = x[1][1] + x[2][1];
+const double C0 = vertex_coordinates[2] + vertex_coordinates[4];
+const double C1 = vertex_coordinates[3] + vertex_coordinates[5];
 
 // Get coordinates and map to the reference (FIAT) element
-double X = (J_01*(C1 - 2.0*coordinates[1]) + J_11*(2.0*coordinates[0] - C0)) / detJ;
-double Y = (J_00*(2.0*coordinates[1] - C1) + J_10*(C0 - 2.0*coordinates[0])) / detJ;"""
+double X = (J[1]*(C1 - 2.0*x[1]) + J[3]*(2.0*x[0] - C0)) / detJ;
+double Y = (J[0]*(2.0*x[1] - C1) + J[2]*(C0 - 2.0*x[0])) / detJ;"""
 
 _map_coordinates_FIAT_triangle_in_3D = """\
-const double b0 = x[0][0];
-const double b1 = x[0][1];
-const double b2 = x[0][2];
+const double b0 = vertex_coordinates[0];
+const double b1 = vertex_coordinates[1];
+const double b2 = vertex_coordinates[2];
 
 // P_FFC = J^dag (p - b), P_FIAT = 2*P_FFC - (1, 1)
-double X = 2*(K_00*(coordinates[0] - b0) + K_01*(coordinates[1] - b1) + K_02*(coordinates[2] - b2)) - 1.0;
-double Y = 2*(K_10*(coordinates[0] - b0) + K_11*(coordinates[1] - b1) + K_12*(coordinates[2] - b2)) - 1.0;
+double X = 2*(K_[0]*(x[0] - b0) + K_[1]*(x[1] - b1) + K_[2]*(x[2] - b2)) - 1.0;
+double Y = 2*(K_[3]*(x[0] - b0) + K_[4]*(x[1] - b1) + K_[5]*(x[2] - b2)) - 1.0;
 """
 
 _map_coordinates_FIAT_tetrahedron = """\
 // Compute constants
-const double C0 = x[3][0] + x[2][0] + x[1][0] - x[0][0];
-const double C1 = x[3][1] + x[2][1] + x[1][1] - x[0][1];
-const double C2 = x[3][2] + x[2][2] + x[1][2] - x[0][2];
+const double C0 = vertex_coordinates[9]  + vertex_coordinates[6] +
+                  vertex_coordinates[3]  - vertex_coordinates[0];
+const double C1 = vertex_coordinates[10] + vertex_coordinates[7] +
+                  vertex_coordinates[4]  - vertex_coordinates[1];
+const double C2 = vertex_coordinates[11] + vertex_coordinates[8] +
+                  vertex_coordinates[5]  - vertex_coordinates[2];
+
+
+// Compute subdeterminants
+const double d_00 = J[4]*J[8] - J[5]*J[7];
+const double d_01 = J[5]*J[6] - J[3]*J[8];
+const double d_02 = J[3]*J[7] - J[4]*J[6];
+const double d_10 = J[2]*J[7] - J[1]*J[8];
+const double d_11 = J[0]*J[8] - J[2]*J[6];
+const double d_12 = J[1]*J[6] - J[0]*J[7];
+const double d_20 = J[1]*J[5] - J[2]*J[4];
+const double d_21 = J[2]*J[3] - J[0]*J[5];
+const double d_22 = J[0]*J[4] - J[1]*J[3];
 
 // Get coordinates and map to the reference (FIAT) element
-double X = (d_00*(2.0*coordinates[0] - C0) + d_10*(2.0*coordinates[1] - C1) + d_20*(2.0*coordinates[2] - C2)) / detJ;
-double Y = (d_01*(2.0*coordinates[0] - C0) + d_11*(2.0*coordinates[1] - C1) + d_21*(2.0*coordinates[2] - C2)) / detJ;
-double Z = (d_02*(2.0*coordinates[0] - C0) + d_12*(2.0*coordinates[1] - C1) + d_22*(2.0*coordinates[2] - C2)) / detJ;
+double X = (d_00*(2.0*x[0] - C0) + d_10*(2.0*x[1] - C1) + d_20*(2.0*x[2] - C2)) / detJ;
+double Y = (d_01*(2.0*x[0] - C0) + d_11*(2.0*x[1] - C1) + d_21*(2.0*x[2] - C2)) / detJ;
+double Z = (d_02*(2.0*x[0] - C0) + d_12*(2.0*x[1] - C1) + d_22*(2.0*x[2] - C2)) / detJ;
 """
 
 # Mappings to code snippets used by format These dictionaries accept
-# as keys: first the geometric dimension, and second the topological
+# as keys: first the topological dimension, and second the geometric
 # dimension
 
-facet_determinant = {1: {1: _facet_determinant_1D},
-                     2: {2: _facet_determinant_2D, 1: _facet_determinant_2D_1D},
-                     3: {3: _facet_determinant_3D, 2: _facet_determinant_3D_2D,
-                         1: _facet_determinant_3D_1D}}
+facet_determinant = {1: {1: _facet_determinant_1D,
+                         2: _facet_determinant_2D_1D,
+                         3: _facet_determinant_3D_1D},
+                     2: {2: _facet_determinant_2D,
+                         3: _facet_determinant_3D_2D},
+                     3: {3: _facet_determinant_3D}}
 
 # Geometry related snippets
-map_onto_physical = {1: {1: _map_onto_physical_1D},
-                     2: {2: _map_onto_physical_2D, 1: _map_onto_physical_2D_1D},
-                     3: {3: _map_onto_physical_3D, 2: _map_onto_physical_3D_2D,
-                         1: _map_onto_physical_3D_1D}}
+map_onto_physical = {1: {1: _map_onto_physical_1D,
+                         1: _map_onto_physical_2D_1D,
+                         1: _map_onto_physical_3D_1D},
+                     2: {2: _map_onto_physical_2D,
+                         2: _map_onto_physical_3D_2D},
+                     3: {3: _map_onto_physical_3D}}
 
 fiat_coordinate_map = {"interval": {1:_map_coordinates_FIAT_interval,
                                     2:_map_coordinates_FIAT_interval_in_2D,
@@ -707,4 +742,3 @@ facet_area = {1: {1: _facet_area_1D},
               2: {2: _facet_area_2D, 1: _facet_area_2D_1D},
               3: {3: _facet_area_3D, 2: _facet_area_3D_2D,
                   1: _facet_area_3D_1D}}
-

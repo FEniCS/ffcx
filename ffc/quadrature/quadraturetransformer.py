@@ -431,7 +431,9 @@ class QuadratureTransformer(QuadratureTransformerBase):
         m = tdim + 1
         n = gdim
 
+        # Reset code
         code = {}
+
         # Handle affine mappings.
         if transformation == "affine":
             # Loop derivatives and get multi indices.

@@ -91,7 +91,7 @@ def _tabulate_tensor(ir, parameters):
         j_code += "\n"
         j_code += format["compute_jacobian_inverse"](tdim, gdim)
         if oriented:
-            j_code += format["compute_orientation"]
+            j_code += format["orientation"](tdim, gdim)
         j_code += "\n"
         j_code += format["scale factor snippet"]
 
@@ -104,7 +104,7 @@ def _tabulate_tensor(ir, parameters):
         t_code = switch(format["facet"](None), cases)
 
         # Generate code for geometry tensors
-        g_code = _generate_geometry_tensors(AK[0], j_set, g_set)
+        g_code = _generate_geometry_tensors(AK[0], j_set, g_set, tdim, gdim)
 
         # Generate code for Jacobian
         j_code = ""
@@ -112,7 +112,7 @@ def _tabulate_tensor(ir, parameters):
         j_code += "\n"
         j_code += format["compute_jacobian_inverse"](tdim, gdim)
         if oriented:
-            j_code += format["compute_orientation"]
+            j_code += format["orientation"](tdim, gdim)
         j_code += "\n"
         j_code += format["facet determinant"](tdim, gdim)
 
@@ -126,19 +126,16 @@ def _tabulate_tensor(ir, parameters):
         t_code = switch(format["facet"]("+"), [switch(format["facet"]("-"), cases[i]) for i in range(len(cases))])
 
         # Generate code for geometry tensors
-        g_code = _generate_geometry_tensors(AK[0][0], j_set, g_set)
+        g_code = _generate_geometry_tensors(AK[0][0], j_set, g_set, tdim, gdim)
 
         # Generate code for Jacobian
         j_code = ""
-        j_code += format["compute_jacobian"](tdim, gdim, r="+")
-        j_code += "\n"
-        j_code += format["compute_jacobian"](tdim, gdim, r="-")
-        j_code += "\n"
-        j_code += format["compute_jacobian_inverse"](tdim, gdim, r="+")
-        j_code += "\n"
-        j_code += format["compute_jacobian_inverse"](tdim, gdim, r="-")
-        j_code += "\n"
-        j_code += format["facet determinant"](tdim, gdim, r="+")
+        for _r in ["+", "-"]:
+            j_code += format["compute_jacobian"](tdim, gdim, r=_r)
+            j_code += "\n"
+            j_code += format["compute_jacobian_inverse"](tdim, gdim, r=_r)
+            j_code += "\n"
+            j_code += format["facet determinant"](tdim, gdim, r=_r)
 
     else:
         error("Unhandled integral type: " + str(domain_type))

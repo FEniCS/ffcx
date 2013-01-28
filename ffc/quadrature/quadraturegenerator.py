@@ -129,12 +129,16 @@ def _tabulate_tensor(ir, parameters):
         # Generate tensor code for all cases using a switch.
         tensor_code = f_switch(f_facet(None), cases)
 
-        # Get Jacobian snippet.
-        jacobi_code = format["jacobian and inverse"](tdim, gdim,
-                                                     oriented=oriented)
+        # Generate code for basic geometric quantities
+        jacobi_code  = ""
+        jacobi_code += format["compute_jacobian"](tdim, gdim)
+        jacobi_code += "\n"
+        jacobi_code += format["compute_jacobian_inverse"](tdim, gdim)
+        if oriented:
+            j_code += format["compute_orientation"]
+        jacobi_code += "\n"
         jacobi_code += "\n\n" + format["facet determinant"](tdim, gdim)
-        jacobi_code += "\n\n" + format["generate normal"](tdim, gdim,
-                                                          domain_type)
+        jacobi_code += "\n\n" + format["generate normal"](tdim, gdim, domain_type)
 
     elif domain_type == "interior_facet":
         # Modify the dimensions of the primary indices because we have a macro element
@@ -156,14 +160,19 @@ def _tabulate_tensor(ir, parameters):
         # Generate tensor code for all cases using a switch.
         tensor_code = f_switch(f_facet("+"), [f_switch(f_facet("-"), cases[i]) for i in range(len(cases))])
 
-        # Get Jacobian snippet.
-        jacobi_code  = format["jacobian and inverse"](tdim, gdim, r="+", oriented=oriented)
-        jacobi_code += "\n\n"
-        jacobi_code += format["jacobian and inverse"](tdim, gdim, r="-", oriented=oriented)
-        jacobi_code += "\n\n"
-        jacobi_code += format["facet determinant"](tdim, gdim, r="+")
-        jacobi_code += "\n\n" + format["generate normal"](tdim, gdim,
-                                                          domain_type)
+
+        # Generate code for basic geometric quantities
+        jacobi_code  = ""
+        for _r in ["+", "-"]:
+            jacobi_code += format["compute_jacobian"](tdim, gdim, r=_r)
+            jacobi_code += "\n"
+            jacobi_code += format["compute_jacobian_inverse"](tdim, gdim, r=_r)
+            if oriented:
+                j_code += format["compute_orientation"]
+            jacobi_code += "\n"
+            jacobi_code += "\n\n" + format["facet determinant"](tdim, gdim, r=_r)
+            jacobi_code += "\n\n" + format["generate normal"](tdim, gdim, domain_type)
+
     else:
         error("Unhandled integral type: " + str(integral_type))
 
@@ -217,17 +226,16 @@ def _generate_element_tensor(integrals, sets, optimise_parameters):
     "Construct quadrature code for element tensors."
 
     # Prefetch formats to speed up code generation.
-    f_comment = format["comment"]
-    f_ip      = format["integration points"]
-    f_I       = format["ip constant"]
-    f_loop    = format["generate loop"]
-    f_ip_coords  = format["generate ip coordinates"]
-    f_coords     =  format["coordinates"]
-    f_double  = format["float declaration"]
-    f_decl    = format["declaration"]
-    f_X       = format["ip coordinates"]
-    f_C       = format["conditional"]
-
+    f_comment   = format["comment"]
+    f_ip        = format["integration points"]
+    f_I         = format["ip constant"]
+    f_loop      = format["generate loop"]
+    f_ip_coords = format["generate ip coordinates"]
+    f_coords    =  format["vertex_coordinates"]
+    f_double    = format["float declaration"]
+    f_decl      = format["declaration"]
+    f_X         = format["ip coordinates"]
+    f_C         = format["conditional"]
 
     # Initialise return values.
     element_code     = []
