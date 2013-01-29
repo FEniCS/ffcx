@@ -331,7 +331,9 @@ if (facet%(restriction)s == 0)
 {
   n%(restriction)s0 = x%(restriction)s[0][0] - x%(restriction)s[1][0];
   n%(restriction)s1 = x%(restriction)s[0][1] - x%(restriction)s[1][1];
-} else {
+} 
+else 
+{
   n%(restriction)s0 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
   n%(restriction)s1 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
 }
@@ -390,7 +392,9 @@ if (facet%(restriction)s == 0)
   n%(restriction)s0 = x%(restriction)s[0][0] - x%(restriction)s[1][0];
   n%(restriction)s1 = x%(restriction)s[0][1] - x%(restriction)s[1][1];
   n%(restriction)s1 = x%(restriction)s[0][2] - x%(restriction)s[1][2];
-} else {
+} 
+else 
+{
   n%(restriction)s0 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
   n%(restriction)s1 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
   n%(restriction)s1 = x%(restriction)s[1][2] - x%(restriction)s[0][2];
@@ -426,8 +430,8 @@ _cell_volume_3D_2D = """\
 const double volume%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
 
 _circumradius_1D = """\
-// Compute circumradius; in 1D it is equal to the cell volume.
-const double circumradius%(restriction)s = std::abs(detJ%(restriction)s);"""
+// Compute circumradius; in 1D it is equal to half the cell length.
+const double circumradius%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
 
 _circumradius_2D = """\
 // Compute circumradius of triangle in 2D.
@@ -438,8 +442,8 @@ const double v0v1%(restriction)s  = std::sqrt( J%(restriction)s_00*J%(restrictio
 const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);"""
 
 _circumradius_2D_1D = """\
-// Compute circumradius of interval in 3D (same as volume)
-const double circumradius%(restriction)s = std::abs(detJ%(restriction)s);"""
+// Compute circumradius of interval in 3D (1/2 volume)
+const double circumradius%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
 
 _circumradius_3D = """\
 // Compute circumradius.
@@ -458,8 +462,8 @@ const  double area%(restriction)s = std::sqrt(s%(restriction)s*(s%(restriction)s
 const double circumradius%(restriction)s = area%(restriction)s / ( 6.0*volume%(restriction)s );"""
 
 _circumradius_3D_1D = """\
-// Compute circumradius of interval in 3D (same as volume)
-const double circumradius%(restriction)s = std::abs(detJ%(restriction)s);"""
+// Compute circumradius of interval in 3D (1/2 volume)
+const double circumradius%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
 
 _circumradius_3D_2D = """\
 // Compute circumradius of triangle in 3D
