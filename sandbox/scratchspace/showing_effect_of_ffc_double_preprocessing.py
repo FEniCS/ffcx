@@ -1,6 +1,6 @@
 from dolfin import *
 
-mesh = UnitSquare(10,10)
+mesh = UnitSquareMesh(10,10)
 
 e = Expression(("x[0]","x[1]"))
 print "original degree", e.ufl_element().degree()
