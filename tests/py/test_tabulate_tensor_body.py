@@ -55,7 +55,7 @@ class test_tabulate_tensor_body(CodegenTestCase):
         """
         cell = interval
 
-        x = cell.x
+        x = cell.x[0]
         expr = x
         integral = expr*dP
 
@@ -90,7 +90,7 @@ class test_tabulate_tensor_body(CodegenTestCase):
         ASSERT_EQ(A[0], 0.15*1.2*(2.0+3.0));
         """
         cell = interval
-        x = cell.x
+        x = cell.x[0]
 
         V = VectorElement("DG", cell, 0, dim=2)
         w0 = Constant(cell, count=0)
@@ -128,11 +128,11 @@ class test_tabulate_tensor_body(CodegenTestCase):
         ASSERT_EQ(A[0], 0.03*2);
         """
         cell = interval
-        x = cell.x
-        J = cell.J
-        Jinv = cell.Jinv
+        x = cell.x[0]
+        J = cell.J[0,0]
+        Jinv = cell.Jinv[0,0]
         detJ = cell.detJ
-        xi = cell.xi
+        xi = cell.xi[0]
         T = cell.volume
 
         expr = 3*T
