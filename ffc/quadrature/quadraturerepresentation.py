@@ -274,7 +274,7 @@ def _sort_integrals(integrals, metadata, form_data):
         # Get default degree and rule.
         degree = metadata["quadrature_degree"]
         rule  = metadata["quadrature_rule"]
-        integral_metadata = integral.measure().metadata()
+        integral_metadata = integral.compiler_data()
         # Override if specified in integral metadata
         if not integral_metadata is None:
             if "quadrature_degree" in integral_metadata:
