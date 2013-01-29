@@ -71,6 +71,12 @@ public:
 %(num_interior_facet_domains)s
   }
 
+  /// Return the number of point domains
+  virtual std::size_t num_point_domains() const
+  {
+%(num_point_domains)s
+  }
+
   /// Return whether the form has any cell integrals
   virtual bool has_cell_integrals() const
   {
@@ -87,6 +93,12 @@ public:
   virtual bool has_interior_facet_integrals() const
   {
 %(has_interior_facet_integrals)s
+  }
+
+  /// Return whether the form has any point integrals
+  virtual bool has_point_integrals() const
+  {
+%(has_point_integrals)s
   }
 
   /// Create a new finite element for argument function i
@@ -119,6 +131,12 @@ public:
 %(create_interior_facet_integral)s
   }
 
+  /// Create a new point integral on sub domain i
+  virtual ufc::point_integral* create_point_integral(std::size_t i) const
+  {
+%(create_point_integral)s
+  }
+
   /// Create a new cell integral on everywhere else
   virtual ufc::cell_integral* create_default_cell_integral() const
   {
@@ -135,6 +153,12 @@ public:
   virtual ufc::interior_facet_integral* create_default_interior_facet_integral() const
   {
 %(create_default_interior_facet_integral)s
+  }
+
+  /// Create a new point integral on everywhere else
+  virtual ufc::point_integral* create_default_point_integral() const
+  {
+%(create_default_point_integral)s
   }
 
 };
@@ -184,6 +208,9 @@ public:
   /// Return the number of interior facet domains
   virtual std::size_t num_interior_facet_domains() const;
 
+  /// Return the number of point domains
+  virtual std::size_t num_point_domains() const;
+
   /// Return whether the form has any cell integrals
   virtual bool has_cell_integrals() const;
 
@@ -192,6 +219,9 @@ public:
 
   /// Return whether the form has any interior facet integrals
   virtual bool has_interior_facet_integrals() const;
+
+  /// Return whether the form has any point integrals
+  virtual bool has_point_integrals() const;
 
   /// Create a new finite element for argument function i
   virtual ufc::finite_element* create_finite_element(std::size_t i) const;
@@ -208,6 +238,9 @@ public:
   /// Create a new interior facet integral on sub domain i
   virtual ufc::interior_facet_integral* create_interior_facet_integral(std::size_t i) const;
 
+  /// Create a new point integral on sub domain i
+  virtual ufc::point_integral* create_point_integral(std::size_t i) const;
+
   /// Create a new cell integral on everywhere else
   virtual ufc::cell_integral* create_default_cell_integral() const;
 
@@ -216,6 +249,9 @@ public:
 
   /// Create a new interior facet integral on everywhere else
   virtual ufc::interior_facet_integral* create_default_interior_facet_integral() const;
+
+  /// Create a new point integral on everywhere else
+  virtual ufc::point_integral* create_default_point_integral() const;
 };
 """
 
@@ -268,6 +304,12 @@ std::size_t %(classname)s::num_interior_facet_domains() const
 %(num_interior_facet_domains)s
 }
 
+/// Return the number of point domains
+std::size_t %(classname)s::num_point_domains() const
+{
+%(num_point_domains)s
+}
+
 /// Return whether the form has any cell integrals
 bool %(classname)s::has_cell_integrals() const
 {
@@ -284,6 +326,12 @@ bool %(classname)s::has_exterior_facet_integrals() const
 bool %(classname)s::has_interior_facet_integrals() const
 {
 %(has_interior_facet_integrals)s
+}
+
+/// Return whether the form has any point integrals
+bool %(classname)s::has_point_integrals() const
+{
+%(has_point_integrals)s
 }
 
 /// Create a new finite element for argument function i
@@ -316,6 +364,12 @@ ufc::interior_facet_integral* %(classname)s::create_interior_facet_integral(std:
 %(create_interior_facet_integral)s
 }
 
+/// Create a new point integral on sub domain i
+ufc::point_integral* %(classname)s::create_point_integral(std::size_t i) const
+{
+%(create_point_integral)s
+}
+
 /// Create a new cell integral on everywhere else
 ufc::cell_integral* %(classname)s::create_default_cell_integral() const
 {
@@ -332,6 +386,12 @@ ufc::exterior_facet_integral* %(classname)s::create_default_exterior_facet_integ
 ufc::interior_facet_integral* %(classname)s::create_default_interior_facet_integral() const
 {
 %(create_default_interior_facet_integral)s
+}
+
+/// Create a new point integral on everywhere else
+ufc::point_integral* %(classname)s::create_default_point_integral() const
+{
+%(create_default_point_integral)s
 }
 
 """

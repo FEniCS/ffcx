@@ -344,3 +344,81 @@ void %(classname)s::tabulate_tensor(double* A,
 %(tabulate_tensor_quadrature)s
 }
 """
+
+point_integral_combined = """\
+/// This class defines the interface for the tabulation of
+/// an expression evaluated at exactly one point.
+
+class %(classname)s: public ufc::point_integral
+{%(members)s
+public:
+
+  /// Constructor
+  %(classname)s(%(constructor_arguments)s) : ufc::point_integral()%(initializer_list)s
+  {
+%(constructor)s
+  }
+
+  /// Destructor
+  virtual ~%(classname)s()
+  {
+%(destructor)s
+  }
+
+  /// Tabulate the tensor for the contribution from the point
+  virtual void tabulate_tensor(double* A,
+                               const double * const * w,
+                               const ufc::cell& c,
+                               const double * x) const
+  {
+%(tabulate_tensor)s
+  }
+
+};
+"""
+
+point_integral_header = """\
+/// This class defines the interface for the tabulation of
+/// an expression evaluated at exactly one point.
+
+class %(classname)s: public ufc::point_integral
+{%(members)s
+public:
+
+  /// Constructor
+  %(classname)s(%(constructor_arguments)s);
+
+  /// Destructor
+  virtual ~%(classname)s();
+
+  /// Tabulate the tensor for the contribution from the point
+  virtual void tabulate_tensor(double* A,
+                               const double * const * w,
+                               const ufc::cell& c,
+                               const double * x) const;
+
+};
+"""
+
+point_integral_implementation = """\
+/// Constructor
+%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::point_integral()%(initializer_list)s
+{
+%(constructor)s
+}
+
+/// Destructor
+%(classname)s::~%(classname)s()
+{
+%(destructor)s
+}
+
+/// Tabulate the tensor for the contribution from the point
+void %(classname)s::tabulate_tensor(double* A,
+                                    const double * const * w,
+                                    const ufc::cell& c,
+                                    const double * x) const
+{
+%(tabulate_tensor)s
+}
+"""
