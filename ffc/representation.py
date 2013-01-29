@@ -195,20 +195,21 @@ def _compute_integral_ir(form_data, form_id, parameters):
 
     # Iterate over integrals
     for ida in form_data.integral_data:
+        common_metadata = ida.metadata # TODO: Is it possible to detach this from IntegralData? It's a bit strange from the ufl side.
 
         # Select representation
-        if ida.metadata["representation"] == "quadrature":
+        if common_metadata["representation"] == "quadrature":
             r = quadrature
-        elif ida.metadata["representation"] == "tensor":
+        elif common_metadata["representation"] == "tensor":
             r = tensor
         else:
-            error("Unknown representation: " + str(ida.metadata["representation"]))
+            error("Unknown representation: " + str(common_metadata["representation"]))
 
         # Compute representation
         ir = r.compute_integral_ir(ida.domain_type,
                                    ida.domain_id,
                                    ida.integrals,
-                                   ida.metadata,
+                                   common_metadata,
                                    form_data,
                                    form_id,
                                    parameters)
@@ -539,7 +540,7 @@ def _create_default_foo_integral(domain_type, form_data):
     ida = [ida for ida in form_data.integral_data
            if ida.domain_id == Measure.DOMAIN_ID_OTHERWISE and ida.domain_type == domain_type]
     ffc_assert(len(ida) in (0,1), "Expecting at most one default integral of each type.")
-    return ida[0].domain_id if ida else None
+    return Measure.DOMAIN_ID_OTHERWISE if ida else None
 
 #--- Utility functions ---
 

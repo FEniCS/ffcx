@@ -157,6 +157,7 @@ def _attach_integral_metadata(form_data, parameters):
     # Iterate over integral collections
     quad_schemes = []
     for ida in form_data.integral_data:
+        common_metadata = ida.metadata # TODO: Is it possible to detach this from IntegralData? It's a bit strange from the ufl side.
 
         # Iterate over integrals
         integral_metadatas = []
@@ -227,7 +228,7 @@ def _attach_integral_metadata(form_data, parameters):
 
         # Extract common metadata for integral collection
         if len(ida.integrals) == 1:
-            ida.metadata.update(integral_metadatas[0])
+            common_metadata.update(integral_metadatas[0])
         else:
 
             # Check that representation is the same
@@ -258,9 +259,9 @@ def _attach_integral_metadata(form_data, parameters):
                 qr = quadrature_rules[0]
 
             # Update common metadata
-            ida.metadata["representation"] = r
-            ida.metadata["quadrature_degree"] = qd
-            ida.metadata["quadrature_rule"] = qr
+            common_metadata["representation"] = r
+            common_metadata["quadrature_degree"] = qd
+            common_metadata["quadrature_rule"] = qr
 
     # Update scheme for QuadratureElements
     if not all_equal(quad_schemes):
