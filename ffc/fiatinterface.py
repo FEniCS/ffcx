@@ -1,4 +1,4 @@
-# Copyright (C) 2009-2010 Kristian B. Oelgaard and Anders Logg
+# Copyright (C) 2009-2013 Kristian B. Oelgaard and Anders Logg
 #
 # This file is part of FFC.
 #
@@ -17,9 +17,10 @@
 #
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009-2010.
+# Modified by Martin Alnaes, 2013
 #
 # First added:  2009-03-06
-# Last changed: 2011-01-13
+# Last changed: 2013-01-25
 
 # Python modules
 from numpy import array

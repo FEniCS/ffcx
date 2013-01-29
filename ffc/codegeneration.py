@@ -24,9 +24,10 @@ UFC function from an (optimized) intermediate representation (OIR).
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Mehdi Nikbakht 2010
+# Modified by Martin Alnaes, 2013
 #
 # First added:  2009-12-16
-# Last changed: 2013-01-08
+# Last changed: 2013-01-25
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -475,13 +476,13 @@ def _has_foo_integrals(ir, domain_type):
 def _create_default_foo_integral(ir, integral_type, prefix):
     "Generate code for create_default_<foo>_integral."
     ret = format["return"]
-    has_default = ir["create_default_" + integral_type + "_integral"]
-    if not has_default:
+    postfix = ir["create_default_" + integral_type + "_integral"]
+    if postfix is None:
         return ret(0)
     else:
         create = format["create foo"]
         class_name = integral_type + "_integral_" + str(ir["id"])
-        name = "%s_%s_default" % (prefix.lower(), class_name,)
+        name = "%s_%s_%s" % (prefix.lower(), class_name, postfix)
         return ret(create(name))
 
 def _postprocess_code(code, parameters):

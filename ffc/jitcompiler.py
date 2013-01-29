@@ -1,7 +1,7 @@
 """This module provides a just-in-time (JIT) form compiler.
 It uses Instant to wrap the generated code into a Python module."""
 
-# Copyright (C) 2007-2009 Anders Logg
+# Copyright (C) 2007-2013 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -22,9 +22,10 @@ It uses Instant to wrap the generated code into a Python module."""
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Joachim Haga, 2011.
+# Modified by Martin Alnaes, 2013
 #
 # First added:  2007-07-20
-# Last changed: 2011-04-26
+# Last changed: 2013-01-25
 
 # Python modules
 import os, sys

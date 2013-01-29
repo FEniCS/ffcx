@@ -250,8 +250,8 @@ class MonomialForm:
     def __init__(self):
         self.integrals = []
 
-    def append(self, integral, measure):
-        self.integrals.append((integral, measure))
+    def append(self, integrand, measure):
+        self.integrals.append((integrand, measure))
 
     def __len__(self):
         return len(self.integrals)

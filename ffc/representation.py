@@ -31,15 +31,17 @@ in the intermediate representation under the key "foo".
 #
 # Modified by Marie E. Rognes 2010
 # Modified by Kristian B. Oelgaard 2010
+# Modified by Martin Alnaes, 2013
 #
 # First added:  2009-12-16
-# Last changed: 2013-01-08
+# Last changed: 2013-01-25
 
 # Python modules
 from itertools import chain
 
 # Import UFL
 import ufl
+from ufl.classes import Measure
 
 # FFC modules
 from ffc.utils import compute_permutations, product
@@ -192,21 +194,22 @@ def _compute_integral_ir(form_data, form_id, parameters):
     irs = []
 
     # Iterate over integrals
-    for (domain_type, domain_id, integrals, metadata) in form_data.integral_data:
+    for ida in form_data.integral_data:
+        common_metadata = ida.metadata # TODO: Is it possible to detach this from IntegralData? It's a bit strange from the ufl side.
 
         # Select representation
-        if metadata["representation"] == "quadrature":
+        if common_metadata["representation"] == "quadrature":
             r = quadrature
-        elif metadata["representation"] == "tensor":
+        elif common_metadata["representation"] == "tensor":
             r = tensor
         else:
-            error("Unknown representation: " + str(metadata["representation"]))
+            error("Unknown representation: " + str(common_metadata["representation"]))
 
         # Compute representation
-        ir = r.compute_integral_ir(domain_type,
-                                   domain_id,
-                                   integrals,
-                                   metadata,
+        ir = r.compute_integral_ir(ida.domain_type,
+                                   ida.domain_id,
+                                   ida.integrals,
+                                   common_metadata,
                                    form_data,
                                    form_id,
                                    parameters)
@@ -230,12 +233,12 @@ def _compute_form_ir(form_data, form_id, element_numbers):
     ir["signature"] = form_data.preprocessed_form.signature()
     ir["rank"] = form_data.rank
     ir["num_coefficients"] = form_data.num_coefficients
-    ir["num_cell_domains"] = form_data.num_cell_domains
-    ir["num_exterior_facet_domains"] = form_data.num_exterior_facet_domains
-    ir["num_interior_facet_domains"] = form_data.num_interior_facet_domains
-    ir["has_cell_integrals"] = form_data.num_cell_domains > 0 # FIXME: True also if we have a default integral
-    ir["has_exterior_facet_integrals"] = form_data.num_exterior_facet_domains > 0  # FIXME: True also if we have a default integral
-    ir["has_interior_facet_integrals"] = form_data.num_interior_facet_domains > 0  # FIXME: True also if we have a default integral
+    ir["num_cell_domains"] = form_data.num_sub_domains.get("cell",0)
+    ir["num_exterior_facet_domains"] = form_data.num_sub_domains.get("exterior_facet",0)
+    ir["num_interior_facet_domains"] = form_data.num_sub_domains.get("interior_facet",0)
+    ir["has_cell_integrals"] = _has_foo_integrals("cell", form_data)
+    ir["has_exterior_facet_integrals"] = _has_foo_integrals("exterior_facet", form_data)
+    ir["has_interior_facet_integrals"] = _has_foo_integrals("interior_facet", form_data)
     ir["create_finite_element"] = [element_numbers[e] for e in form_data.elements]
     ir["create_dofmap"] = [element_numbers[e] for e in form_data.elements]
     ir["create_cell_integral"] = _create_foo_integral("cell", form_data)
@@ -523,18 +526,21 @@ def _create_sub_foo(ufl_element, element_numbers):
 
 def _create_foo_integral(domain_type, form_data):
     "Compute intermediate representation of create_foo_integral."
-    return [domain_id for (_domain_type, domain_id, integrals, metadata) in
-           form_data.integral_data if _domain_type == domain_type]
+    return [ida.domain_id for ida in form_data.integral_data
+           if ida.domain_type == domain_type and isinstance(ida.domain_id, int)]
 
 def _has_foo_integrals(domain_type, form_data):
     "Compute intermediate representation of has_foo_integrals."
-    v = (form_data.num_domains[domain_type] > 0
-         or _create_default_foo_integral(domain_type, form_data))
+    v = (form_data.num_sub_domains.get(domain_type,0) > 0
+         or _create_default_foo_integral(domain_type, form_data) is not None)
     return bool(v)
 
 def _create_default_foo_integral(domain_type, form_data):
     "Compute intermediate representation of create_default_foo_integral."
-    return False # FIXME: Get from form data somehow, e.g.: form_data.has_default_integral[domain_type]
+    ida = [ida for ida in form_data.integral_data
+           if ida.domain_id == Measure.DOMAIN_ID_OTHERWISE and ida.domain_type == domain_type]
+    ffc_assert(len(ida) in (0,1), "Expecting at most one default integral of each type.")
+    return Measure.DOMAIN_ID_OTHERWISE if ida else None
 
 #--- Utility functions ---
 
