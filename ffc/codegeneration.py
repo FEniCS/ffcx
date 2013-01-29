@@ -46,9 +46,12 @@ from ffc import quadrature
 from ffc import tensor
 
 # Errors issued for non-implemented functions
-def _not_implemented(function_name):
-    exception = format["exception"]
-    return exception("%s not yet implemented." % function_name)
+def _not_implemented(function_name, return_null=False):
+    body = format["exception"]("%s not yet implemented." % function_name)
+    if return_null:
+        body += "\n" + format["return"](0)
+    return body
+
 
 def generate_code(ir, prefix, parameters):
     "Generate code from intermediate representation."
@@ -237,11 +240,11 @@ def _generate_form_code(ir, prefix, parameters):
     code["create_cell_integral"] = _create_foo_integral(ir, "cell", prefix)
     code["create_exterior_facet_integral"] = _create_foo_integral(ir, "exterior_facet", prefix)
     code["create_interior_facet_integral"] = _create_foo_integral(ir, "interior_facet", prefix)
-    code["create_point_integral"] = _not_implemented("create_point_integral")
+    code["create_point_integral"] = _not_implemented("create_point_integral", return_null=True)
     code["create_default_cell_integral"] = _create_default_foo_integral(ir, "cell", prefix)
     code["create_default_exterior_facet_integral"] = _create_default_foo_integral(ir, "exterior_facet", prefix)
     code["create_default_interior_facet_integral"] = _create_default_foo_integral(ir, "interior_facet", prefix)
-    code["create_default_point_integral"] = _not_implemented("create_default_point_integral")
+    code["create_default_point_integral"] = _not_implemented("create_default_point_integral", return_null=True)
 
     # Postprocess code
     _postprocess_code(code, parameters)
