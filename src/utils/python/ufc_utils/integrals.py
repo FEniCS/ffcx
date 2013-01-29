@@ -365,14 +365,24 @@ public:
 %(destructor)s
   }
 
-  /// Tabulate the tensor for the contribution from the point
+  /// Tabulate the tensor for the contribution from the local vertex
+  virtual void tabulate_tensor(double* A,
+                               const double * const * w,
+                               const cell& c,
+                               std::size_t vertex) const
+  {
+%(tabulate_tensor)s
+  }
+
+  /// Tabulate the tensor for the contribution from a point x
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
                                const ufc::cell& c,
                                const double * x) const
   {
-%(tabulate_tensor)s
+%(tabulate_tensor_quadrature)s
   }
+
 
 };
 """
@@ -391,7 +401,13 @@ public:
   /// Destructor
   virtual ~%(classname)s();
 
-  /// Tabulate the tensor for the contribution from the point
+  /// Tabulate the tensor for the contribution from the local vertex
+  virtual void tabulate_tensor(double* A,
+                               const double * const * w,
+                               const cell& c,
+                               std::size_t vertex) const;
+
+  /// Tabulate the tensor for the contribution from a point x
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
                                const ufc::cell& c,
@@ -413,12 +429,22 @@ point_integral_implementation = """\
 %(destructor)s
 }
 
-/// Tabulate the tensor for the contribution from the point
+/// Tabulate the tensor for the contribution from the local vertex
+void %(classname)s::tabulate_tensor(double* A,
+                                    const double * const * w,
+                                    const cell& c,
+                                    std::size_t vertex) const
+{
+%(tabulate_tensor)s
+}
+
+/// Tabulate the tensor for the contribution from a point x
 void %(classname)s::tabulate_tensor(double* A,
                                     const double * const * w,
                                     const ufc::cell& c,
                                     const double * x) const
 {
-%(tabulate_tensor)s
+%(tabulate_tensor_quadrature)s
 }
+
 """

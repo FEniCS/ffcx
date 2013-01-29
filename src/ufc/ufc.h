@@ -372,7 +372,13 @@ namespace ufc
     /// Destructor
     virtual ~point_integral() {}
 
-    /// Tabulate the tensor for the contribution from the point
+    /// Tabulate the tensor for the contribution from the local vertex
+    virtual void tabulate_tensor(double* A,
+                                 const double * const * w,
+                                 const cell& c,
+                                 std::size_t vertex) const = 0;
+
+    /// Tabulate the tensor for the contribution from a point x
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
                                  const cell& c,
