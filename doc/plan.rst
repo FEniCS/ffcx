@@ -48,20 +48,34 @@ uflacs compile_dolfin <files>
 -----------------------------
 TODO: Compile expressions into DOLFIN C++ code.
 
-uflacs compile_pdelab <files>
------------------------------
-TODO: Compile forms into PDELAB/DUNE C++ code.
-
 
 Backlog
 =======
 
-Make a usable compiler
-----------------------
+Testing
+-------
 
-- Generate fully usable dolfin Expressions and test with PyDOLFIN
+- Use cmake to get ufc paths in test framework
 
-- Generate forms from sfc with uflacs generic compiler and test with PyDOLFIN
+- Use cmake to get dolfin paths in test framework and link with dolfin for testing Expression etc?
+
+- Make test framework for compiled code more robust w.r.t. code changes and rerunning
+
+Make a usable ufl-to-C++ compiler
+---------------------------------
+
+- Generate code following ufc conventions for all geometric ufl quantities
+
+- Generate dolfin Expressions and test with dolfin
+
+- Generate functionals from ffc and test with dolfin
+
+- Generate linear forms from ffc
+
+- Generate bilinear forms from ffc
+
+- Generate n-linear forms from ffc
+
 
 Improve compiler algorithms
 ---------------------------
@@ -101,25 +115,20 @@ Improve register allocation algorithm
 
 - Allow reuse of registers within partitions.
 
-Testing
--------
-
-- Make a faster test framework for compiled code not using swig,
-  to simplify and speed up generate-compile-build-run-test cycle
-
 Plugins
 -------
 
 Potential plugins, probably won't implement all these.
 
-- Implement an itk compiler plugin
-
 - Implement a vtk compiler plugin
+
+- Implement an itk compiler plugin
 
 - Implement a vmtk compiler plugin
 
-- Implement a dune compiler plugin
-
 - Implement a diffpack compiler plugin
 
+- Implement a dune/pdelab compiler plugin
+
 - Implement a deal.II compiler plugin
+
