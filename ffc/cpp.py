@@ -148,6 +148,7 @@ format.update({
     "argument values":            "values",
     "argument coordinates":       "coordinates",
     "facet":                      lambda r: "facet%s" % choose_map[r],
+    "vertex":                     "vertex",
     "argument axis":              "i",
     "argument dimension":         "d",
     "argument entity":            "i",

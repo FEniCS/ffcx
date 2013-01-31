@@ -17,8 +17,10 @@
 #
 # Compile this form with FFC: ffc PointMeasure.ufl
 
-element = FiniteElement("CG", triangle, 1)
+element = FiniteElement("CG", tetrahedron, 1)
 
 v = TestFunction(element)
+f = Coefficient(element)
 
-a = v*dP
+#a = f*v*dP(0)
+a = v*dP(0)

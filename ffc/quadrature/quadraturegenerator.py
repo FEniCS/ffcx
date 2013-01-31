@@ -174,7 +174,7 @@ def _tabulate_tensor(ir, parameters):
             operations.append([i, ops])
 
         # Generate tensor code for all cases using a switch.
-        tensor_code = f_switch(f_facet(None), cases)
+        tensor_code = f_switch(format["vertex"], cases)
 
         # Get Jacobian snippet.
         jacobi_code = format["jacobian and inverse"](geo_dim, top_dim,
