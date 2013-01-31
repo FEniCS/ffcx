@@ -34,7 +34,7 @@ from ufl.common import StackDict, Stack
 from ufl.permutation import build_component_numbering
 
 # UFL Algorithms.
-from ufl.algorithms import propagate_restrictions, Transformer, tree_format
+from ufl.algorithms import Transformer, tree_format
 from ufl.algorithms import strip_variables
 
 # FFC modules.
