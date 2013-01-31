@@ -1000,7 +1000,8 @@ class QuadratureTransformerBase(Transformer):
         offset = {"+": "", "-": str(ffc_element.space_dimension()), None: ""}[self.restriction]
 
         # Create basis name and map to correct basis and get info.
-        psi_name = generate_psi_name(element_counter, facet, component, deriv)
+        psi_name = generate_psi_name(element_counter, facet, component, deriv,
+                                     self.vertex)
         psi_name, non_zeros, zeros, ones = self.name_map[psi_name]
 
         # If all basis are zero we just return None.
