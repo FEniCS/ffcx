@@ -20,6 +20,8 @@
 # First added:  2007-03-16
 # Last changed: 2010-05-18
 
+# Hacked by Marie E. Rognes, 2013.
+
 # Python modules.
 import numpy
 
@@ -27,7 +29,7 @@ import numpy
 from ffc.log import debug, error, ffc_assert
 from ffc.cpp import format
 
-def create_psi_tables(tables, parameters, vertex=False):
+def create_psi_tables(tables, parameters, vertex=None):
     "Create names and maps for tables and non-zero entries if appropriate."
 
     debug("\nQG-utils, psi_tables:\n" + str(tables))
