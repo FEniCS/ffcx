@@ -340,7 +340,7 @@ def _transform_integrals(transformer, integrals, domain_type):
         integrand = integral.integrand()
         if domain_type == "interior_facet":
             integrand = propagate_restrictions(integrand)
-        terms = transformer.generate_terms(integrand)
+        terms = transformer.generate_terms(integrand, domain_type)
         transformed_integrals.append((point, terms, transformer.functions, \
                                       {}, transformer.coordinate, transformer.conditionals))
     return transformed_integrals

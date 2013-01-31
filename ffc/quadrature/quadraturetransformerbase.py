@@ -733,7 +733,7 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     # Generate terms for representation.
     # -------------------------------------------------------------------------
-    def generate_terms(self, integrand):
+    def generate_terms(self, integrand, domain_type):
         "Generate terms for code generation."
         #print integrand
         #print tree_format(integrand, 0, False)
@@ -750,7 +750,7 @@ class QuadratureTransformerBase(Transformer):
             if val is None:
                 continue
             # Create data.
-            value, ops, sets = self._create_entry_data(val)
+            value, ops, sets = self._create_entry_data(val, domain_type)
             # Extract nzc columns if any and add to sets.
             used_nzcs = set([int(k[1].split(f_nzc)[1].split("[")[0]) for k in key if f_nzc in k[1]])
             sets.append(used_nzcs)

@@ -16,10 +16,10 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2010-02-08
-# Last changed: 2011-01-11
+# Last changed: 2013-01-31
 
 # FFC modules
-from ffc.log import info
+from ffc.log import info, error
 from ffc.cpp import format
 from ffc.quadrature.symbolics import optimise_code, BASIS, IP, GEO, CONST
 from ffc.quadrature.symbolics import create_product, create_sum, create_symbol, create_fraction
