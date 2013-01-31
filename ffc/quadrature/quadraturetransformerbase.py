@@ -933,8 +933,6 @@ class QuadratureTransformerBase(Transformer):
 
         name = generate_psi_name(element_counter, facet, component, deriv,
                                  self.vertex)
-        print "name = ", name
-        print "self.name_map = ", self.name_map
         name, non_zeros, zeros, ones = self.name_map[name]
         loop_index_range = shape(self.unique_tables[name])[1]
 

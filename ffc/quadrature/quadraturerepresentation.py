@@ -169,6 +169,7 @@ def compute_integral_ir(domain_type,
             terms[i] = _transform_integrals(transformer, integrals_dict,
                                             domain_type)
         ir["trans_integrals"] = terms
+        ir["unique_tables"] = transformer.unique_tables
     else:
         error("Unhandled domain type: " + str(domain_type))
 
