@@ -83,15 +83,18 @@ class QuadratureTransformerBase(Transformer):
         self.points = 0
         self.facet0 = None
         self.facet1 = None
+        self.vertex = None
         self.restriction = None
         self.coordinate = None
         self.conditionals = {}
         self.additional_includes_set = set()
+        self.__psi_tables = psi_tables
 
         # Stacks.
         self._derivatives = []
         self._index2value = StackDict()
         self._components = Stack()
+
         self.element_map, self.name_map, self.unique_tables =\
               create_psi_tables(psi_tables, self.optimise_parameters)
 
@@ -104,13 +107,16 @@ class QuadratureTransformerBase(Transformer):
         self.facet1 = facet1
         self.coordinate = None
         self.conditionals = {}
-#        # Reset functions and count everytime we generate a new case of facets.
-#        self.functions = {}
-#        self.function_count = 0
 
-#        # Reset cache
-#        self.argument_cache = {}
-#        self.function_cache = {}
+    def update_vertex(self, vertex):
+        self.vertex = vertex
+        self.coordinate = None
+        self.conditionals = {}
+
+        # MER: This is a hack in case you are in doubt.
+        self.element_map, self.name_map, self.unique_tables =\
+              create_psi_tables(self.__psi_tables, self.optimise_parameters,
+                                self.vertex)
 
     def update_points(self, points):
         self.points = points
@@ -925,7 +931,10 @@ class QuadratureTransformerBase(Transformer):
         if self.restriction == "+" or self.restriction == "-":
             space_dim *= 2
 
-        name = generate_psi_name(element_counter, facet, component, deriv)
+        name = generate_psi_name(element_counter, facet, component, deriv,
+                                 self.vertex)
+        print "name = ", name
+        print "self.name_map = ", self.name_map
         name, non_zeros, zeros, ones = self.name_map[name]
         loop_index_range = shape(self.unique_tables[name])[1]
 

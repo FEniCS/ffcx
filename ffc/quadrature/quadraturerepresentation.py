@@ -22,6 +22,8 @@
 # First added:  2009-01-07
 # Last changed: 2010-05-18
 
+import numpy
+
 # UFL modules
 from ufl.classes import Form, Integral, Grad
 from ufl.algorithms import extract_unique_elements, extract_type, extract_elements, propagate_restrictions
@@ -29,8 +31,8 @@ from ufl.algorithms import extract_unique_elements, extract_type, extract_elemen
 # FFC modules
 from ffc.log import ffc_assert, info, error
 from ffc.fiatinterface import create_element
-from ffc.fiatinterface import map_facet_points
-from ffc.fiatinterface import cellname2num_facets
+from ffc.fiatinterface import map_facet_points, reference_cell_vertices
+from ffc.fiatinterface import cellname2num_facets, entities_per_dim
 from ffc.quadrature.quadraturetransformer import QuadratureTransformer
 from ffc.quadrature.optimisedquadraturetransformer import QuadratureTransformerOpt
 from ffc.quadrature_schemes import create_quadrature
@@ -48,9 +50,10 @@ def compute_integral_ir(domain_type,
     info("Computing quadrature representation")
 
     # Get some cell properties
-    cellname = form_data.cell.cellname()
-    facet_cellname = form_data.cell.facet_cellname()
+    cell = form_data.cell
+    cellname = cell.cellname()
     num_facets = cellname2num_facets[cellname]
+    num_vertices = entities_per_dim[cell.topological_dimension()][0]
 
     # Initialise representation
     ir = {"representation":       "quadrature",
@@ -60,17 +63,14 @@ def compute_integral_ir(domain_type,
           "geometric_dimension":  form_data.geometric_dimension,
           "topological_dimension":form_data.topological_dimension,
           "num_facets":           num_facets,
+          "num_vertices":         num_vertices,
           "needs_oriented":       needs_oriented_jacobian(form_data),
           "geo_consts":           {}}
 
     # Sort integrals and tabulate basis.
     sorted_integrals = _sort_integrals(integrals, metadata, form_data)
     integrals_dict, psi_tables, quad_weights = \
-        _tabulate_basis(sorted_integrals,
-                        domain_type,
-                        num_facets,
-                        cellname,
-                        facet_cellname)
+        _tabulate_basis(sorted_integrals, domain_type, cell)
 
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.
@@ -158,6 +158,17 @@ def compute_integral_ir(domain_type,
                 transformer.update_facets(i, j)
                 terms[i][j] = _transform_integrals(transformer, integrals_dict, domain_type)
         ir["trans_integrals"] = terms
+
+    elif domain_type == "point":
+        # Compute transformed integrals.
+        terms = [None for i in range(num_vertices)]
+        for i in range(num_vertices):
+            info("Transforming point integral (%d)" % i)
+            transformer.update_facets(None, None)
+            transformer.update_vertex(i)
+            terms[i] = _transform_integrals(transformer, integrals_dict,
+                                            domain_type)
+        ir["trans_integrals"] = terms
     else:
         error("Unhandled domain type: " + str(domain_type))
 
@@ -167,13 +178,24 @@ def compute_integral_ir(domain_type,
 
     return ir
 
-def _tabulate_basis(sorted_integrals, domain_type, num_facets, cellname, facet_cellname):
+def _tabulate_basis(sorted_integrals, domain_type, cell):
     "Tabulate the basisfunctions and derivatives."
+
+    # MER: Note to newbies: this code assumes that each integral in
+    # the dictionary of sorted_integrals that enters here, has a
+    # unique number of quadrature points ...
 
     # Initialise return values.
     quadrature_weights = {}
     psi_tables = {}
     integrals = {}
+
+    # Exztract some cell info
+    gdim = cell.geometric_dimension()
+    cellname = cell.cellname()
+    facet_cellname = cell.facet_cellname()
+    num_facets = cellname2num_facets[cellname]
+    num_vertices = entities_per_dim[cell.topological_dimension()][0]
 
     # Loop the quadrature points and tabulate the basis values.
     for pr, integral in sorted_integrals.iteritems():
@@ -186,7 +208,8 @@ def _tabulate_basis(sorted_integrals, domain_type, num_facets, cellname, facet_c
         # Get all unique elements in integral.
         elements = extract_unique_elements(integral)
 
-        # Create a list of equivalent FIAT elements (with same ordering of elements).
+        # Create a list of equivalent FIAT elements (with same
+        # ordering of elements).
         fiat_elements = [create_element(e) for e in elements]
 
         # Make quadrature rule and get points and weights.
@@ -195,6 +218,8 @@ def _tabulate_basis(sorted_integrals, domain_type, num_facets, cellname, facet_c
             (points, weights) = create_quadrature(cellname, degree, rule)
         elif domain_type == "exterior_facet" or domain_type == "interior_facet":
             (points, weights) = create_quadrature(facet_cellname, degree, rule)
+        elif domain_type == "point":
+            (points, weights) = ([()], numpy.array([1.0,])) # Will be fixed
         else:
             error("Unknown integral type: " + str(domain_type))
 
@@ -248,11 +273,22 @@ def _tabulate_basis(sorted_integrals, domain_type, num_facets, cellname, facet_c
             if domain_type == "cell":
                 psi_tables[len_weights][elements[i]] =\
                 {None: element.tabulate(deriv_order, points)}
-            elif domain_type == "exterior_facet" or domain_type == "interior_facet":
+            elif (domain_type == "exterior_facet"
+                  or domain_type == "interior_facet"):
                 psi_tables[len_weights][elements[i]] = {}
                 for facet in range(num_facets):
-                    psi_tables[len_weights][elements[i]][facet] =\
-                        element.tabulate(deriv_order, map_facet_points(points, facet))
+                    psi_tables[len_weights][elements[i]][facet] = \
+                        element.tabulate(deriv_order,
+                                         map_facet_points(points, facet))
+
+            elif domain_type == "point":
+                psi_tables[len_weights][elements[i]] = {}
+                for vertex in range(num_vertices):
+                    points = (reference_cell_vertices(cellname)[vertex],)
+
+                    psi_tables[len_weights][elements[i]][vertex] =\
+                        element.tabulate(deriv_order, points)
+
             else:
                 error("Unknown domain_type: %s" % domain_type)
 

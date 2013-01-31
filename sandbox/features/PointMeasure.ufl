@@ -17,7 +17,7 @@
 #
 # Compile this form with FFC: ffc PointMeasure.ufl
 
-element = FiniteElement("Lagrange", triangle, 1)
+element = FiniteElement("CG", triangle, 1)
 
 v = TestFunction(element)
 

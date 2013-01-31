@@ -210,7 +210,7 @@ format.update({
     "function value":     lambda i: "F%d" % i,
     "nonzero columns":    lambda i: "nzc%d" % i,
     "weight":             lambda i: "W%d" % (i),
-    "psi name":           lambda c, f, co, d: _generate_psi_name(c,f,co,d),
+    "psi name":           lambda c, f, co, d, v=None: _generate_psi_name(c,f,co,d, v),
     # both
     "free indices":       ["r","s","t","u"],
     "matrix index":       lambda i, j, range_j: _matrix_index(i, str(j), str(range_j))
@@ -272,6 +272,9 @@ format.update({
 
     "classname interior_facet_integral":  lambda prefix, form_id, sub_domain:\
               "%s_interior_facet_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
+
+    "classname point_integral":  lambda prefix, form_id, sub_domain:\
+              "%s_point_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
 
     "classname form": lambda prefix, i: "%s_form_%d" % (prefix.lower(), i)
 })
@@ -507,7 +510,7 @@ def _matrix_index(i, j, range_j):
         access = format["add"]([irj, j])
     return access
 
-def _generate_psi_name(counter, facet, component, derivatives):
+def _generate_psi_name(counter, facet, component, derivatives, vertex=None):
     """Generate a name for the psi table of the form:
     FE#_f#_C#_D###, where '#' will be an integer value.
 
@@ -520,11 +523,15 @@ def _generate_psi_name(counter, facet, component, derivatives):
           tensor valued functions)
 
     D   - is the number of derivatives in each spatial direction if any. If the
-          element is defined in 3D, then D012 means d^3(*)/dydz^2."""
+          element is defined in 3D, then D012 means d^3(*)/dydz^2
+
+    f   - denotes vertices if applicable, range(num_vertices)."""
 
     name = "FE%d" % counter
     if not facet is None:
         name += "_f%d" % facet
+    if not vertex is None:
+        name += "_v%d" % vertex
     if component != () and component != []:
         name += "_C%d" % component
     if any(derivatives):
@@ -562,7 +569,7 @@ def _generate_cell_volume(gdim, tdim, domain_type):
     volume = cell_volume[gdim][tdim]
 
     # Choose restrictions
-    if domain_type in ("cell", "exterior_facet"):
+    if domain_type in ("cell", "exterior_facet", "point"):
         code = volume % {"restriction": ""}
     elif domain_type == "interior_facet":
         code = volume % {"restriction": choose_map["+"]}
@@ -578,7 +585,7 @@ def _generate_circumradius(gdim, tdim, domain_type):
     radius = circumradius[gdim][tdim]
 
     # Choose restrictions
-    if domain_type in ("cell", "exterior_facet"):
+    if domain_type in ("cell", "exterior_facet", "point"):
         code = radius % {"restriction": ""}
     elif domain_type == "interior_facet":
         code = radius % {"restriction": choose_map["+"]}

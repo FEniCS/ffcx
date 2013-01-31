@@ -27,13 +27,13 @@ import numpy
 from ffc.log import debug, error, ffc_assert
 from ffc.cpp import format
 
-def create_psi_tables(tables, parameters):
+def create_psi_tables(tables, parameters, vertex=False):
     "Create names and maps for tables and non-zero entries if appropriate."
 
     debug("\nQG-utils, psi_tables:\n" + str(tables))
     # Create element map {points:{element:number,},}
     # and a plain dictionary {name:values,}.
-    element_map, flat_tables = flatten_psi_tables(tables)
+    element_map, flat_tables = flatten_psi_tables(tables, vertex)
     debug("\nQG-utils, psi_tables, flat_tables:\n" + str(flat_tables))
 
     # Reduce tables such that we only have those tables left with unique values
@@ -45,7 +45,7 @@ def create_psi_tables(tables, parameters):
 
     return (element_map, name_map, unique_tables)
 
-def flatten_psi_tables(tables):
+def flatten_psi_tables(tables, vertex=None):
     """Create a 'flat' dictionary of tables with unique names and a name
     map that maps number of quadrature points and element name to a unique
     element number. returns:
@@ -80,7 +80,10 @@ def flatten_psi_tables(tables):
                             ffc_assert(len(numpy.shape(psi_table)) == 2 and numpy.shape(psi_table)[1] == point, \
                                         "Something is wrong with this table: " + str(psi_table))
                             # Generate the table name.
-                            name = generate_psi_name(counter, facet, num_comp, derivs)
+                            if vertex is not None:
+                                name = generate_psi_name(counter, None, num_comp, derivs, facet)
+                            else:
+                                name = generate_psi_name(counter, facet, num_comp, derivs)
                             ffc_assert(name not in flat_tables, \
                                         "Table name is not unique, something is wrong: " + name + str(flat_tables))
                             # Take transpose such that we get (ip_number, basis_number)
@@ -95,7 +98,10 @@ def flatten_psi_tables(tables):
                         ffc_assert(len(numpy.shape(psi_table)) == 2 and numpy.shape(psi_table)[1] == point, \
                                     "Something is wrong with this table: " + str(psi_table))
                         # Generate the table name.
-                        name = generate_psi_name(counter, facet, (), derivs)
+                        if vertex is not None:
+                            name = generate_psi_name(counter, None, (), derivs, facet)
+                        else:
+                            name = generate_psi_name(counter, facet, (), derivs)
                         ffc_assert(name not in flat_tables, \
                                     "Table name is not unique, something is wrong: " + name + str(flat_tables))
                         flat_tables[name] = numpy.transpose(psi_table)
