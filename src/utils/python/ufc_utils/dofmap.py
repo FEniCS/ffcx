@@ -13,7 +13,7 @@ public:
 
   /// Constructor
   %(classname)s(%(constructor_arguments)s) : ufc::dofmap()%(initializer_list)s
-
+  {
 %(constructor)s
   }
 
