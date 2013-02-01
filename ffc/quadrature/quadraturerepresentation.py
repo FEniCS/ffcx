@@ -26,7 +26,7 @@ import numpy
 
 # UFL modules
 from ufl.classes import Form, Integral, Grad
-from ufl.algorithms import extract_unique_elements, extract_type, extract_elements, propagate_restrictions
+from ufl.algorithms import extract_unique_elements, extract_type, extract_elements
 
 # FFC modules
 from ffc.log import ffc_assert, info, error
@@ -338,10 +338,7 @@ def _transform_integrals(transformer, integrals, domain_type):
     transformed_integrals = []
     for point, integral in integrals.items():
         transformer.update_points(point)
-        integrand = integral.integrand()
-        if domain_type == "interior_facet":
-            integrand = propagate_restrictions(integrand)
-        terms = transformer.generate_terms(integrand, domain_type)
-        transformed_integrals.append((point, terms, transformer.functions, \
+        terms = transformer.generate_terms(integral.integrand(), domain_type)
+        transformed_integrals.append((point, terms, transformer.functions,
                                       {}, transformer.coordinate, transformer.conditionals))
     return transformed_integrals
