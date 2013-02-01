@@ -16,7 +16,7 @@
 // along with FFC. If not, see <http://www.gnu.org/licenses/>.
 //
 // First added:  2010-01-24
-// Last changed: 2013-01-08
+// Last changed: 2013-02-01
 //
 // Functions for calling generated UFC functions with "random" (but
 // fixed) data and print the output to screen. Useful for running
@@ -552,6 +552,57 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
         break;
       }
     }
+  }
+
+  // Cleanup
+  delete [] A;
+}
+
+// Function for testing ufc::point_integral objects
+void test_point_integral(ufc::point_integral& integral,
+                         ufc::shape cell_shape,
+                         std::size_t gdim,
+                         std::size_t tensor_size,
+                         double** w,
+                         bool bench)
+{
+  std::cout << std::endl;
+  std::cout << "Testing point_integral" << std::endl;
+  std::cout << "----------------------" << std::endl;
+
+  // Prepare arguments
+  test_cell c(cell_shape, gdim);
+  std::size_t num_vertices = c.topological_dimension + 1;
+  double* A = new double[tensor_size];
+
+  // Call tabulate_tensor for each vertex
+  for (std::size_t vertex = 0; vertex < num_vertices; vertex++)
+  {
+    for(std::size_t i = 0; i < tensor_size; i++)
+      A[i] = 0.0;
+
+    integral.tabulate_tensor(A, w, c, vertex);
+    print_array("tabulate_tensor", tensor_size, A, vertex);
+  }
+
+  // Benchmark tabulate tensor
+  if (bench)
+  {
+    for (std::size_t num_reps = initial_num_reps;; num_reps *= 2)
+    {
+      double t0 = time();
+      for (std::size_t i = 0; i < num_reps; i++)
+        integral.tabulate_tensor(A, w, c, 0);
+      double dt = time() - t0;
+      if (dt > minimum_timing)
+      {
+        dt /= static_cast<double>(num_reps);
+        std::cout << "timing required " << num_reps << " iterations" << std::endl;
+        std::cout << "bench point_integral::tabulate_tensor: " << dt << std::endl;
+        break;
+      }
+    }
+
   }
 
   // Cleanup
