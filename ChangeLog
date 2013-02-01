@@ -1,4 +1,6 @@
 2.x.x [2013-??-??]
+ - Use CMake to configure JIT compilation of forms
+ - Generate UseUFC.cmake during configuration
  - Remove init_mesh(), init_cell(), init_mesh_finalize()
  - Remove ufc::mesh and add a vector of num_mesh_entities to global_dimension() and tabulate_dofs().
 2.1.0 [2013-01-07]
