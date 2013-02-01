@@ -378,11 +378,12 @@ namespace ufc
                                  const cell& c,
                                  std::size_t vertex) const = 0;
 
-    /// Tabulate the tensor for the contribution from a point x
+    /// Tabulate the tensor for the contributions from a set of points
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
                                  const cell& c,
-                                 const double * x) const = 0;
+                                 std::size_t num_points,
+                                 const double * const * points) const = 0;
 
   };
 

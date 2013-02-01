@@ -374,11 +374,12 @@ public:
 %(tabulate_tensor)s
   }
 
-  /// Tabulate the tensor for the contribution from a point x
+  /// Tabulate the tensor for the contributions from a set of points
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
                                const ufc::cell& c,
-                               const double * x) const
+                               std::size_t num_points,
+                               const double * const * points) const
   {
 %(tabulate_tensor_quadrature)s
   }
@@ -407,11 +408,12 @@ public:
                                const ufc::cell& c,
                                std::size_t vertex) const;
 
-  /// Tabulate the tensor for the contribution from a point x
+  /// Tabulate the tensor for the contributions from a set of points
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
                                const ufc::cell& c,
-                               const double * x) const;
+                               std::size_t num_points,
+                               const double * const * points) const;
 
 };
 """
@@ -438,11 +440,12 @@ void %(classname)s::tabulate_tensor(double* A,
 %(tabulate_tensor)s
 }
 
-/// Tabulate the tensor for the contribution from a point x
+/// Tabulate the tensor for the contributions from a set of points
 void %(classname)s::tabulate_tensor(double* A,
                                     const double * const * w,
                                     const ufc::cell& c,
-                                    const double * x) const
+                                    std::size_t num_points,
+                                    const double * const * points) const
 {
 %(tabulate_tensor_quadrature)s
 }
