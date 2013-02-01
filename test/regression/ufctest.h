@@ -646,6 +646,7 @@ void test_form(ufc::form& form, bool bench)
   // create_cell_integral
   {
     ufc::cell_integral* integral = form.create_default_cell_integral();
+    print_scalar("default_cell_integral", (bool)integral);
     if (integral)
       test_cell_integral(*integral, cell_shape, gdim,
                          tensor_size, w, bench);
@@ -663,6 +664,7 @@ void test_form(ufc::form& form, bool bench)
   // create_exterior_facet_integral
   {
     ufc::exterior_facet_integral* integral = form.create_default_exterior_facet_integral();
+    print_scalar("default_exterior_facet_integral", (bool)integral);
     if (integral)
       test_exterior_facet_integral(*integral, cell_shape, gdim,
                                    tensor_size, w, bench);
@@ -680,6 +682,7 @@ void test_form(ufc::form& form, bool bench)
   // create_interior_facet_integral
   {
     ufc::interior_facet_integral* integral = form.create_default_interior_facet_integral();
+    print_scalar("default_interior_facet_integral", (bool)integral);
     if (integral)
       test_interior_facet_integral(*integral, cell_shape, gdim,
                                    macro_tensor_size, w, bench);

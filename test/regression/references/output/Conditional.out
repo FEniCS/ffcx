@@ -128,7 +128,10 @@ Testing dofmap
 112_tabulate_entity_dofs_2_0 = 0
 113_tabulate_coordinates_0 = 0.8169999918299999 0.63033332703
 114_num_sub_dofmaps = 0
+115_default_cell_integral = 1
 
 Testing cell_integral
 ---------------------
-115_tabulate_tensor = 0 0 0 0.003115800031157999 0.003115800031157999 0.003115800031157999
+116_tabulate_tensor = 0 0 0 0.003115800031157999 0.003115800031157999 0.003115800031157999
+117_default_exterior_facet_integral = 0
+118_default_interior_facet_integral = 0

@@ -82,7 +82,10 @@ Testing dofmap
 72_tabulate_coordinates_2 = 0.987 0.783 0.191
 73_tabulate_coordinates_3 = 0.123 0.5610000000000001 0.667
 74_num_sub_dofmaps = 0
+75_default_cell_integral = 1
 
 Testing cell_integral
 ---------------------
-75_tabulate_tensor = 0.01390665493588534
+76_tabulate_tensor = 0.01390665493588534
+77_default_exterior_facet_integral = 0
+78_default_interior_facet_integral = 0
