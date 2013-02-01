@@ -368,7 +368,7 @@ public:
   /// Tabulate the tensor for the contribution from the local vertex
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
-                               const cell& c,
+                               const ufc::cell& c,
                                std::size_t vertex) const
   {
 %(tabulate_tensor)s
@@ -404,7 +404,7 @@ public:
   /// Tabulate the tensor for the contribution from the local vertex
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
-                               const cell& c,
+                               const ufc::cell& c,
                                std::size_t vertex) const;
 
   /// Tabulate the tensor for the contribution from a point x
@@ -432,7 +432,7 @@ point_integral_implementation = """\
 /// Tabulate the tensor for the contribution from the local vertex
 void %(classname)s::tabulate_tensor(double* A,
                                     const double * const * w,
-                                    const cell& c,
+                                    const ufc::cell& c,
                                     std::size_t vertex) const
 {
 %(tabulate_tensor)s
