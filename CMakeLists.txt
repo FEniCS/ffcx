@@ -202,6 +202,15 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/UFCConfigVersion.cmake
   )
 
 #------------------------------------------------------------------------------
+# Generate UseUFC.cmake file
+
+configure_file(${UFC_CMAKE_DIR}/UseUFC.cmake.in UseUFC.cmake @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/UseUFC.cmake
+  DESTINATION ${UFC_CMAKE_CONFIG_DIR}
+  COMPONENT Development
+  )
+
+#------------------------------------------------------------------------------
 # Generate pkg-config config file (ufc-1.pc)
 
 configure_file(${UFC_CMAKE_DIR}/ufc-1.pc.in ufc-1.pc @ONLY)
