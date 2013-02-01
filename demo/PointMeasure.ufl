@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
+# This demo illustrates how to use a point measure: dP
+#
 # Compile this form with FFC: ffc PointMeasure.ufl
 
 element = FiniteElement("CG", triangle, 1)
@@ -25,5 +27,5 @@ v = TestFunction(element)
 g = Coefficient(element)
 f = Coefficient(V)
 
-a = u*v*dP + g*u*v*dP(1) + u*v*dx
+a = u*v*dP + g*g*u*v*dP(1) + u*v*dx
 L = f*v*dP
