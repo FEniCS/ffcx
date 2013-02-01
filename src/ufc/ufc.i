@@ -25,6 +25,7 @@
 %shared_ptr(ufc::form)
 %shared_ptr(ufc::exterior_facet_integral)
 %shared_ptr(ufc::interior_facet_integral)
+%shared_ptr(ufc::point_integral)
 
 %include <exception.i>
 
