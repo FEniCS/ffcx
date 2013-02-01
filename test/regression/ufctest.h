@@ -609,6 +609,15 @@ void test_form(ufc::form& form, bool bench)
   // num_coefficients
   print_scalar("num_coefficients", form.num_coefficients());
 
+  // has_cell_integrals
+  print_scalar("has_cell_integrals", form.has_cell_integrals());
+
+  // has_exterior_facet_integrals
+  print_scalar("has_exterior_facet_integrals", form.has_exterior_facet_integrals());
+
+  // has_interior_facet_integrals
+  print_scalar("has_interior_facet_integrals", form.has_interior_facet_integrals());
+
   // num_cell_domains
   print_scalar("num_cell_domains", form.num_cell_domains());
 
@@ -635,6 +644,13 @@ void test_form(ufc::form& form, bool bench)
   }
 
   // create_cell_integral
+  {
+    ufc::cell_integral* integral = form.create_default_cell_integral();
+    if (integral)
+      test_cell_integral(*integral, cell_shape, gdim,
+                         tensor_size, w, bench);
+    delete integral;
+  }
   for (std::size_t i = 0; i < form.num_cell_domains(); i++)
   {
     ufc::cell_integral* integral = form.create_cell_integral(i);
@@ -645,6 +661,13 @@ void test_form(ufc::form& form, bool bench)
   }
 
   // create_exterior_facet_integral
+  {
+    ufc::exterior_facet_integral* integral = form.create_default_exterior_facet_integral();
+    if (integral)
+      test_exterior_facet_integral(*integral, cell_shape, gdim,
+                                   tensor_size, w, bench);
+    delete integral;
+  }
   for (std::size_t i = 0; i < form.num_exterior_facet_domains(); i++)
   {
     ufc::exterior_facet_integral* integral = form.create_exterior_facet_integral(i);
@@ -655,6 +678,13 @@ void test_form(ufc::form& form, bool bench)
   }
 
   // create_interior_facet_integral
+  {
+    ufc::interior_facet_integral* integral = form.create_default_interior_facet_integral();
+    if (integral)
+      test_interior_facet_integral(*integral, cell_shape, gdim,
+                                   macro_tensor_size, w, bench);
+    delete integral;
+  }
   for (std::size_t i = 0; i < form.num_interior_facet_domains(); i++)
   {
     ufc::interior_facet_integral* integral = form.create_interior_facet_integral(i);
