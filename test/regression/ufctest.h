@@ -669,6 +669,9 @@ void test_form(ufc::form& form, bool bench)
   // has_interior_facet_integrals
   print_scalar("has_interior_facet_integrals", form.has_interior_facet_integrals());
 
+  // has_point_integrals
+  print_scalar("has_point_integrals", form.has_point_integrals());
+
   // num_cell_domains
   print_scalar("num_cell_domains", form.num_cell_domains());
 
@@ -752,12 +755,18 @@ void test_form(ufc::form& form, bool bench)
   }
 
   // create_point_integral
+  {
+    ufc::point_integral* integral = form.create_default_point_integral();
+    print_scalar("default_point_integral", (bool)integral);
+    if (integral)
+      test_point_integral(*integral, cell_shape, gdim, tensor_size, w, bench);
+    delete integral;
+  }
   for (std::size_t i = 0; i < form.num_point_domains(); i++)
   {
     ufc::point_integral* integral = form.create_point_integral(i);
     if (integral)
-      test_point_integral(*integral, cell_shape, gdim,
-                          macro_tensor_size, w, bench);
+      test_point_integral(*integral, cell_shape, gdim, tensor_size, w, bench);
     delete integral;
   }
 
