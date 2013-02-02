@@ -158,7 +158,6 @@ def compute_integral_ir(domain_type,
                 transformer.update_facets(i, j)
                 terms[i][j] = _transform_integrals(transformer, integrals_dict, domain_type)
         ir["trans_integrals"] = terms
-
     elif domain_type == "point":
         # Compute transformed integrals.
         terms = [None for i in range(num_vertices)]
@@ -170,6 +169,7 @@ def compute_integral_ir(domain_type,
                                             domain_type)
         ir["trans_integrals"] = terms
         ir["unique_tables"] = transformer.unique_tables
+        ir["name_map"] = transformer.name_map
     else:
         error("Unhandled domain type: " + str(domain_type))
 
