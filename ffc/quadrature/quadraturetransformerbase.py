@@ -19,9 +19,10 @@ transformers to translate UFL expressions."""
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Martin Alnaes, 2013
+# Modified by Garth N. Wells, 2013
 #
 # First added:  2009-10-13
-# Last changed: 2013-01-08
+# Last changed: 2013-02-02
 
 # Python modules.
 from itertools import izip
@@ -53,7 +54,6 @@ from symbolics import generate_aux_constants
 from symbolics import BASIS, IP, GEO, CONST
 
 class QuadratureTransformerBase(Transformer):
-#class QuadratureTransformerBase(ReuseTransformer):
     "Transform UFL representation to quadrature code."
 
     def __init__(self,
@@ -104,13 +104,13 @@ class QuadratureTransformerBase(Transformer):
         self.facet1 = facet1
         self.coordinate = None
         self.conditionals = {}
-#        # Reset functions and count everytime we generate a new case of facets.
-#        self.functions = {}
-#        self.function_count = 0
+        ## Reset functions and count everytime we generate a new case of facets.
+        #self.functions = {}
+        #self.function_count = 0
 
-#        # Reset cache
-#        self.argument_cache = {}
-#        self.function_cache = {}
+        ## Reset cache
+        #self.argument_cache = {}
+        #self.function_cache = {}
 
     def update_points(self, points):
         self.points = points
@@ -301,7 +301,7 @@ class QuadratureTransformerBase(Transformer):
         basis = self.argument_cache.get((o, components, derivatives, self.restriction), None)
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
         if basis is not None and not self.optimise_parameters["optimisation"]:
-#        if basis is not None:
+        #if basis is not None:
             return basis
 
         # Get auxiliary variables to generate basis
@@ -403,7 +403,7 @@ class QuadratureTransformerBase(Transformer):
         function_code = self.function_cache.get((o, components, derivatives, self.restriction), None)
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
         if function_code is not None and not self.optimise_parameters["optimisation"]:
-#        if function_code is not None:
+        #if function_code is not None:
             return function_code
 
         # Get auxiliary variables to generate function
@@ -607,26 +607,26 @@ class QuadratureTransformerBase(Transformer):
 
     def bessel_i(self, o, *operands):
         #print("\n\nVisiting Bessel_I: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-#        self.additional_includes_set.add("#include <tr1/cmath>")
-        self.additional_includes_set.add("#include <boost/math/tr1.hpp>")
+        #self.additional_includes_set.add("#include <tr1/cmath>")
+        self.additional_includes_set.add("#include <boost/math/special_functions.hpp>")
         return self._bessel_function(operands, format["bessel_i"])
 
     def bessel_j(self, o, *operands):
         #print("\n\nVisiting Bessel_J: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-#        self.additional_includes_set.add("#include <tr1/cmath>")
-        self.additional_includes_set.add("#include <boost/math/tr1.hpp>")
+        #self.additional_includes_set.add("#include <tr1/cmath>")
+        self.additional_includes_set.add("#include <boost/math/special_functions.hpp>")
         return self._bessel_function(operands, format["bessel_j"])
 
     def bessel_k(self, o, *operands):
         #print("\n\nVisiting Bessel_K: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-#        self.additional_includes_set.add("#include <tr1/cmath>")
-        self.additional_includes_set.add("#include <boost/math/tr1.hpp>")
+        #self.additional_includes_set.add("#include <tr1/cmath>")
+        self.additional_includes_set.add("#include <boost/math/special_functions.hpp>")
         return self._bessel_function(operands, format["bessel_k"])
 
     def bessel_y(self, o, *operands):
         #print("\n\nVisiting Bessel_Y: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-#        self.additional_includes_set.add("#include <tr1/cmath>")
-        self.additional_includes_set.add("#include <boost/math/tr1.hpp>")
+        #self.additional_includes_set.add("#include <tr1/cmath>")
+        self.additional_includes_set.add("#include <boost/math/special_functions.hpp>")
         return self._bessel_function(operands, format["bessel_y"])
 
     # -------------------------------------------------------------------------
