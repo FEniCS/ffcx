@@ -1108,6 +1108,8 @@ class QuadratureTransformerBase(Transformer):
         if not self.facet0 is None:
             points = map_facet_points(points, self.facet0)
             name = f_FEA(num_ip, self.facet0)
+        elif self.vertex is not None:
+            error("Spatial coordinates (x) not implemented for point measure (dP)")
         else:
             name = f_FEA(num_ip, 0)
 
