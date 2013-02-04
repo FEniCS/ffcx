@@ -70,7 +70,7 @@ def compute_integral_ir(domain_type,
     # Sort integrals and tabulate basis.
     sorted_integrals = _sort_integrals(integrals, metadata, form_data)
     integrals_dict, psi_tables, quad_weights = \
-        _tabulate_basis(sorted_integrals, domain_type, cell)
+        _tabulate_basis(sorted_integrals, domain_type, form_data)
 
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.
@@ -142,38 +142,35 @@ def compute_integral_ir(domain_type,
         # Compute transformed integrals.
         info("Transforming cell integral")
         transformer.update_facets(None, None)
-        ir["trans_integrals"] = _transform_integrals(transformer, integrals_dict, domain_type)
+        terms = _transform_integrals(transformer, integrals_dict, domain_type)
     elif domain_type == "exterior_facet":
         # Compute transformed integrals.
-        terms = [None for i in range(num_facets)]
+        terms = [None]*num_facets
         for i in range(num_facets):
             info("Transforming exterior facet integral %d" % i)
             transformer.update_facets(i, None)
             terms[i] = _transform_integrals(transformer, integrals_dict, domain_type)
-        ir["trans_integrals"] = terms
     elif domain_type == "interior_facet":
         # Compute transformed integrals.
-        terms = [[None for j in range(num_facets)] for i in range(num_facets)]
+        terms = [[None]*num_facets for i in range(num_facets)]
         for i in range(num_facets):
             for j in range(num_facets):
                 info("Transforming interior facet integral (%d, %d)" % (i, j))
                 transformer.update_facets(i, j)
                 terms[i][j] = _transform_integrals(transformer, integrals_dict, domain_type)
-        ir["trans_integrals"] = terms
     elif domain_type == "point":
         # Compute transformed integrals.
-        terms = [None for i in range(num_vertices)]
+        terms = [None]*num_vertices
         for i in range(num_vertices):
             info("Transforming point integral (%d)" % i)
             transformer.update_facets(None, None)
             transformer.update_vertex(i)
-            terms[i] = _transform_integrals(transformer, integrals_dict,
-                                            domain_type)
-        ir["trans_integrals"] = terms
+            terms[i] = _transform_integrals(transformer, integrals_dict, domain_type)
         ir["unique_tables"] = transformer.unique_tables
         ir["name_map"] = transformer.name_map
     else:
         error("Unhandled domain type: " + str(domain_type))
+    ir["trans_integrals"] = terms
 
     # Save tables map, to extract table names for optimisation option -O.
     ir["psi_tables_map"] = transformer.psi_tables_map
@@ -181,7 +178,7 @@ def compute_integral_ir(domain_type,
 
     return ir
 
-def _tabulate_basis(sorted_integrals, domain_type, cell):
+def _tabulate_basis(sorted_integrals, domain_type, form_data):
     "Tabulate the basisfunctions and derivatives."
 
     # MER: Note to newbies: this code assumes that each integral in
@@ -193,7 +190,8 @@ def _tabulate_basis(sorted_integrals, domain_type, cell):
     psi_tables = {}
     integrals = {}
 
-    # Exztract some cell info
+    # Extract some cell info
+    cell = form_data.cell
     gdim = cell.geometric_dimension()
     cellname = cell.cellname()
     facet_cellname = cell.facet_cellname()
@@ -209,7 +207,7 @@ def _tabulate_basis(sorted_integrals, domain_type, cell):
         degree, rule = pr
 
         # Get all unique elements in integral.
-        elements = extract_unique_elements(integral)
+        elements = [form_data.element_replace_map.get(e,e) for e in extract_unique_elements(integral)]
 
         # Create a list of equivalent FIAT elements (with same
         # ordering of elements).
@@ -261,7 +259,7 @@ def _tabulate_basis(sorted_integrals, domain_type, cell):
             elem = extract_elements(d.operands()[0])
             ffc_assert(len(elem) == 1,
                        "Grad has more than one element: " + repr(elem))
-            elem = elem[0]
+            elem = form_data.element_replace_map.get(elem[0],elem[0])
             # Set the number of derivatives to the highest value
             # encountered so far.
             num_derivatives[elem] = max(num_derivatives[elem], num_deriv)
