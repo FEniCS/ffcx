@@ -75,8 +75,8 @@ def compute_integral_ir(domain_type,
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.
     prim_idims = []
-    for argument in form_data.arguments:
-        element = create_element(argument.element())
+    for ufl_element in form_data.argument_elements:
+        element = create_element(ufl_element)
         prim_idims.append(element.space_dimension())
     ir["prim_idims"] = prim_idims
 
