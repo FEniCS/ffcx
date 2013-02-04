@@ -436,7 +436,7 @@ class QuadratureTransformerBase(Transformer):
             component += 1
 
         # Let child class create constant symbol
-        coefficient = format["coefficient"](o.count(), component)
+        coefficient = format["coefficient"](o.count(), component) # FIXME COUNT
         return self._create_symbol(coefficient, CONST)
 
     def vector_constant(self, o, *operands):
@@ -457,7 +457,7 @@ class QuadratureTransformerBase(Transformer):
             component += o.shape()[0]
 
         # Let child class create constant symbol
-        coefficient = format["coefficient"](o.count(), component)
+        coefficient = format["coefficient"](o.count(), component) # FIXME COUNT
         return self._create_symbol(coefficient, CONST)
 
     def tensor_constant(self, o, *operands):
@@ -479,7 +479,7 @@ class QuadratureTransformerBase(Transformer):
             component += product(o.shape())
 
         # Let child class create constant symbol
-        coefficient = format["coefficient"](o.count(), component)
+        coefficient = format["coefficient"](o.count(), component) # FIXME COUNT
         return self._create_symbol(coefficient, CONST)
 
     # -------------------------------------------------------------------------
@@ -893,7 +893,7 @@ class QuadratureTransformerBase(Transformer):
         generate_psi_name = format["psi name"]
 
         # Only support test and trial functions.
-        # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.
+        # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1. # FIXME COUNT
         indices = {-2: format["first free index"],
                    -1: format["second free index"],
                     0: format["first free index"],
@@ -908,7 +908,7 @@ class QuadratureTransformerBase(Transformer):
 
         # Get element counter and loop index.
         element_counter = self.element_map[self.points][ufl_argument.element()]
-        loop_index = indices[ufl_argument.count()]
+        loop_index = indices[ufl_argument.count()] # FIXME COUNT
 
         # Create basis access, we never need to map the entry in the basis table
         # since we will either loop the entire space dimension or the non-zeros.
@@ -962,7 +962,7 @@ class QuadratureTransformerBase(Transformer):
         # Example dx and ds: (0, j, 3, 3)
         # Example dS: (0, (j + 3), 3, 6), 6=2*space_dim
         # Example dS optimised: (0, (nz2[j] + 3), 2, 6), 6=2*space_dim
-        mapping = ((ufl_argument.count(), basis_map, loop_index_range, space_dim),)
+        mapping = ((ufl_argument.count(), basis_map, loop_index_range, space_dim),) # FIXME COUNT
 
         return (mapping, basis)
 
@@ -1056,7 +1056,7 @@ class QuadratureTransformerBase(Transformer):
         except:
             pass
 
-        coefficient = format["coefficient"](str(ufl_function.count()), coefficient_access)
+        coefficient = format["coefficient"](str(ufl_function.count()), coefficient_access) # FIXME COUNT
         function_expr = self._create_symbol(coefficient, ACCESS)[()]
         if basis_name:
             function_expr = self._create_product([self._create_symbol(basis_name, ACCESS)[()], self._create_symbol(coefficient, ACCESS)[()]])
