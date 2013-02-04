@@ -49,6 +49,9 @@ def extract_monomial_form(integrals):
 
         # Get measure and integrand
         measure = integral.measure()
+        if measure.domain_type() == "point":
+            raise MonomialException("Point integrals are not supported by tensor representation.")
+
         integrand = integral.integrand()
 
         # Extract monomial representation if possible

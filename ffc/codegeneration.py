@@ -241,11 +241,11 @@ def _generate_form_code(ir, prefix, parameters):
     code["create_cell_integral"] = _create_foo_integral(ir, "cell", prefix)
     code["create_exterior_facet_integral"] = _create_foo_integral(ir, "exterior_facet", prefix)
     code["create_interior_facet_integral"] = _create_foo_integral(ir, "interior_facet", prefix)
-    code["create_point_integral"] = _not_implemented("create_point_integral", return_null=True)
+    code["create_point_integral"] = _create_foo_integral(ir, "point", prefix)
     code["create_default_cell_integral"] = _create_default_foo_integral(ir, "cell", prefix)
     code["create_default_exterior_facet_integral"] = _create_default_foo_integral(ir, "exterior_facet", prefix)
     code["create_default_interior_facet_integral"] = _create_default_foo_integral(ir, "interior_facet", prefix)
-    code["create_default_point_integral"] = _not_implemented("create_default_point_integral", return_null=True)
+    code["create_default_point_integral"] = _create_default_foo_integral(ir, "point", prefix)
 
     # Postprocess code
     _postprocess_code(code, parameters)

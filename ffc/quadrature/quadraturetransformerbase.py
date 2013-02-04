@@ -83,15 +83,18 @@ class QuadratureTransformerBase(Transformer):
         self.points = 0
         self.facet0 = None
         self.facet1 = None
+        self.vertex = None
         self.restriction = None
         self.coordinate = None
         self.conditionals = {}
         self.additional_includes_set = set()
+        self.__psi_tables = psi_tables
 
         # Stacks.
         self._derivatives = []
         self._index2value = StackDict()
         self._components = Stack()
+
         self.element_map, self.name_map, self.unique_tables =\
               create_psi_tables(psi_tables, self.optimise_parameters)
 
@@ -104,13 +107,16 @@ class QuadratureTransformerBase(Transformer):
         self.facet1 = facet1
         self.coordinate = None
         self.conditionals = {}
-        ## Reset functions and count everytime we generate a new case of facets.
-        #self.functions = {}
-        #self.function_count = 0
 
-        ## Reset cache
-        #self.argument_cache = {}
-        #self.function_cache = {}
+    def update_vertex(self, vertex):
+        self.vertex = vertex
+        self.coordinate = None
+        self.conditionals = {}
+
+        # MER: This is a hack in case you are in doubt.
+        self.element_map, self.name_map, self.unique_tables =\
+              create_psi_tables(self.__psi_tables, self.optimise_parameters,
+                                self.vertex)
 
     def update_points(self, points):
         self.points = points
@@ -727,7 +733,7 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     # Generate terms for representation.
     # -------------------------------------------------------------------------
-    def generate_terms(self, integrand):
+    def generate_terms(self, integrand, domain_type):
         "Generate terms for code generation."
         #print integrand
         #print tree_format(integrand, 0, False)
@@ -744,7 +750,7 @@ class QuadratureTransformerBase(Transformer):
             if val is None:
                 continue
             # Create data.
-            value, ops, sets = self._create_entry_data(val)
+            value, ops, sets = self._create_entry_data(val, domain_type)
             # Extract nzc columns if any and add to sets.
             used_nzcs = set([int(k[1].split(f_nzc)[1].split("[")[0]) for k in key if f_nzc in k[1]])
             sets.append(used_nzcs)
@@ -925,7 +931,8 @@ class QuadratureTransformerBase(Transformer):
         if self.restriction == "+" or self.restriction == "-":
             space_dim *= 2
 
-        name = generate_psi_name(element_counter, facet, component, deriv)
+        name = generate_psi_name(element_counter, facet, component, deriv,
+                                 self.vertex)
         name, non_zeros, zeros, ones = self.name_map[name]
         loop_index_range = shape(self.unique_tables[name])[1]
 
@@ -993,7 +1000,8 @@ class QuadratureTransformerBase(Transformer):
         offset = {"+": "", "-": str(ffc_element.space_dimension()), None: ""}[self.restriction]
 
         # Create basis name and map to correct basis and get info.
-        psi_name = generate_psi_name(element_counter, facet, component, deriv)
+        psi_name = generate_psi_name(element_counter, facet, component, deriv,
+                                     self.vertex)
         psi_name, non_zeros, zeros, ones = self.name_map[psi_name]
 
         # If all basis are zero we just return None.
@@ -1100,6 +1108,8 @@ class QuadratureTransformerBase(Transformer):
         if not self.facet0 is None:
             points = map_facet_points(points, self.facet0)
             name = f_FEA(num_ip, self.facet0)
+        elif self.vertex is not None:
+            error("Spatial coordinates (x) not implemented for point measure (dP)")
         else:
             name = f_FEA(num_ip, 0)
 

@@ -632,19 +632,24 @@ class QuadratureTransformer(QuadratureTransformerBase):
     def _count_operations(self, expression):
         return operation_count(expression, format)
 
-    def _create_entry_data(self, val):
+    def _create_entry_data(self, val, domain_type):
         # Multiply value by weight and determinant
         # Create weight and scale factor.
         weight = format["weight"](self.points)
         if self.points > 1:
             weight += format["component"]("", format["integration points"])
-        f_scale_factor = format["scale factor"]
 
         # Update sets of used variables.
-        trans_set = set([f_scale_factor])
+        if domain_type == "point":
+            trans_set = set()
+            value = format["mul"]([val, weight])
+        else:
+            f_scale_factor = format["scale factor"]
+            trans_set = set([f_scale_factor])
+            value = format["mul"]([val, weight, f_scale_factor])
+
         trans_set.update(self.trans_set)
         used_points = set([self.points])
-        value = format["mul"]([val, weight, f_scale_factor])
         ops = self._count_operations(value)
         used_psi_tables = set([v for k, v in self.psi_tables_map.items()])
 

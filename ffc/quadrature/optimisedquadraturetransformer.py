@@ -529,7 +529,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     def _count_operations(self, expression):
         return expression.ops()
 
-    def _create_entry_data(self, val):
+    def _create_entry_data(self, val, domain_type):
 #        zero = False
         # Multiply value by weight and determinant
         ACCESS = GEO
@@ -538,18 +538,25 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             weight += format["component"]("", format["integration points"])
             ACCESS = IP
         weight = self._create_symbol(weight, ACCESS)[()]
-        f_scale_factor = format["scale factor"]
+
 
         # Create value.
-        value = create_product([val, weight, create_symbol(f_scale_factor, GEO)])
+        if domain_type == "point":
+            trans_set = set()
+            value = create_product([val, weight])
+        else:
+            f_scale_factor = format["scale factor"]
+            trans_set = set([f_scale_factor])
+            value = create_product([val, weight,
+                                    create_symbol(f_scale_factor, GEO)])
 
         # Update sets of used variables (if they will not be used because of
         # optimisations later, they will be reset).
-        trans_set = set([f_scale_factor])
         trans_set.update(map(lambda x: str(x), value.get_unique_vars(GEO)))
         used_points = set([self.points])
         ops = self._count_operations(value)
-        used_psi_tables = set([self.psi_tables_map[b] for b in value.get_unique_vars(BASIS)])
+        used_psi_tables = set([self.psi_tables_map[b]
+                               for b in value.get_unique_vars(BASIS)])
 
         return (value, ops, [trans_set, used_points, used_psi_tables])
 
