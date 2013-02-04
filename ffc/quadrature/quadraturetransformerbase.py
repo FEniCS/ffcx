@@ -171,30 +171,6 @@ class QuadratureTransformerBase(Transformer):
         print "\n\nVisiting Derivative: ", repr(o)
         error("All derivatives apart from Grad should have been expanded!!")
 
-    def finite_element_base(self, o, *operands):
-        print "\n\nVisiting FiniteElementBase: ", repr(o)
-        error("FiniteElements must be member of a Argument or Coefficient!!")
-
-    def form(self, o, *operands):
-        print "\n\nVisiting Form: ", repr(o)
-        error("The transformer only work on a Form integrand, not the Form itself!!")
-
-    def cell(self, o):
-        print "\n\nVisiting Cell: ", repr(o)
-        error("A Cell should not be present in the integrand.")
-
-    def index_base(self, o):
-        print "\n\nVisiting IndexBase: ", repr(o)
-        error("Indices should not be floating around freely in the integrand!!")
-
-    def integral(self, o):
-        print "\n\nVisiting Integral: ", repr(o)
-        error("Integral should not be present in the integrand!!")
-
-    def measure(self, o):
-        print "\n\nVisiting Measure: ", repr(o)
-        error("Measure should not be present in the integrand!!")
-
     def compound_tensor_operator(self, o):
         print "\n\nVisiting CompoundTensorOperator: ", repr(o)
         error("CompoundTensorOperator should have been expanded.")

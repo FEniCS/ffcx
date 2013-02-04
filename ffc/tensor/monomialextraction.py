@@ -375,9 +375,6 @@ class MonomialTransformer(ReuseTransformer):
         indices = [index for index in multi_index]
         return indices
 
-    def index(self, o):
-        raise MonomialException("Not expecting to see an Index terminal.")
-
     def argument(self, v):
         s = MonomialSum(v) # FIXME COUNT apply function mapping here
         return s
