@@ -33,7 +33,7 @@ from ffc.log import info, debug, ffc_assert
 # Cache for computed integrand representations
 _cache = {}
 
-def extract_monomial_form(integrals):
+def extract_monomial_form(integrals, function_replace_map):
     """
     Extract monomial representation of form (if possible). When
     successful, the form is represented as a sum of products of scalar
@@ -52,12 +52,12 @@ def extract_monomial_form(integrals):
         integrand = integral.integrand()
 
         # Extract monomial representation if possible
-        integrand = extract_monomial_integrand(integrand)
+        integrand = extract_monomial_integrand(integrand, function_replace_map)
         monomial_form.append(integrand, measure)
 
     return monomial_form
 
-def extract_monomial_integrand(integrand):
+def extract_monomial_integrand(integrand, function_replace_map):
     "Extract monomial integrand (if possible)."
 
     # Check cache
@@ -69,7 +69,7 @@ def extract_monomial_integrand(integrand):
     integrand = purge_list_tensors(integrand)
 
     # Apply monomial transformer
-    monomial_integrand = apply_transformer(integrand, MonomialTransformer())
+    monomial_integrand = apply_transformer(integrand, MonomialTransformer(function_replace_map))
 
     # Store in cache
     _cache[integrand] = monomial_integrand
@@ -278,8 +278,9 @@ class MonomialTransformer(ReuseTransformer):
     monomial form represented as a MonomialSum from a UFL integral.
     """
 
-    def __init__(self):
+    def __init__(self, function_replace_map=None):
         ReuseTransformer.__init__(self)
+        self._function_replace_map = function_replace_map or {}
 
     def expr(self, o, *ops):
         raise MonomialException("No handler defined for expression %s." % o._uflclass.__name__)
@@ -377,11 +378,11 @@ class MonomialTransformer(ReuseTransformer):
         return indices
 
     def argument(self, v):
-        s = MonomialSum(v) # FIXME COUNT apply function mapping here
+        s = MonomialSum(self._function_replace_map.get(v,v))
         return s
 
     def coefficient(self, v):
-        s = MonomialSum(v) # FIXME COUNT apply function mapping here
+        s = MonomialSum(self._function_replace_map.get(v,v))
         return s
 
     def scalar_value(self, x):

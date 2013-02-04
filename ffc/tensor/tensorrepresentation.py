@@ -58,7 +58,7 @@ def compute_integral_ir(domain_type,
     info("Computing tensor representation")
 
     # Extract monomial representation
-    monomial_form = extract_monomial_form(integrals)
+    monomial_form = extract_monomial_form(integrals, form_data.function_replace_map)
 
     # Transform monomial form to reference element
     transform_monomial_form(monomial_form)
