@@ -25,16 +25,18 @@ from ffc.log import debug
 from ffc.tensor.monomialextraction import extract_monomial_form
 from ffc.tensor.monomialtransformation import transform_monomial_form
 
-def estimate_cost(integral):
+def estimate_cost(integral, function_replace_map):
     """
     Estimate cost of tensor representation for integrand. The cost is
     computed as the sum of the number of coefficients and derivatives,
     if the integrand can be represented as a monomial, and -1 if not.
     """
 
+    # TODO: Implement this to take integrand instead of integral? May allow simplification inn caller code.
+
     # Extract monomial integrand
     try:
-        monomial_form = extract_monomial_form([integral])
+        monomial_form = extract_monomial_form([integral], function_replace_map)
         transform_monomial_form(monomial_form)
     except Exception, exception:
         debug("Monomial extraction failed: " + str(exception))

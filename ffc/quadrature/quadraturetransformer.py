@@ -351,19 +351,18 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     # FacetNormal, CellVolume, Circumradius, FacetArea (geometry.py).
     # -------------------------------------------------------------------------
-    def facet_normal(self, o,  *operands):
+    def facet_normal(self, o):
         #print("Visiting FacetNormal:")
 
         # Get the component
         components = self.component()
 
         # Safety check.
-        ffc_assert(not operands, "Didn't expect any operands for FacetNormal: " + repr(operands))
         ffc_assert(len(components) == 1, "FacetNormal expects 1 component index: " + repr(components))
 
         # Handle 1D as a special case.
         # FIXME: KBO: This has to change for mD elements in R^n : m < n
-        if self.geo_dim == 1: # FIXME: MSA UFL uses shape (1,) now, can we remove the special case here then?
+        if self.geo_dim == 1: # FIXME: MSA: UFL uses shape (1,) now, can we remove the special case here then?
             normal_component = format["normal component"](self.restriction, "")
         else:
             normal_component = format["normal component"](self.restriction, components[0])
@@ -371,30 +370,21 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         return {():normal_component}
 
-    def cell_volume(self, o,  *operands):
-        # Safety check.
-        ffc_assert(not operands, "Didn't expect any operands for CellVolume: " + repr(operands))
-
+    def cell_volume(self, o):
         # FIXME: KBO: This has to change for higher order elements
         volume = format["cell volume"](self.restriction)
         self.trans_set.add(volume)
 
         return {():volume}
 
-    def circumradius(self, o,  *operands):
-        # Safety check.
-        ffc_assert(not operands, "Didn't expect any operands for Circumradius: " + repr(operands))
-
+    def circumradius(self, o):
         # FIXME: KBO: This has to change for higher order elements
         circumradius = format["circumradius"](self.restriction)
         self.trans_set.add(circumradius)
 
         return {():circumradius}
 
-    def facet_area(self, o,  *operands):
-        # Safety check.
-        ffc_assert(not operands, "Didn't expect any operands for FacetArea: " + repr(operands))
-
+    def facet_area(self, o):
         # FIXME: KBO: This has to change for higher order elements
         # NOTE: Omitting restriction because the area of a facet is the same
         # on both sides.

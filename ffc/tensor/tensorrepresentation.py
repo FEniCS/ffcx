@@ -58,15 +58,16 @@ def compute_integral_ir(domain_type,
     info("Computing tensor representation")
 
     # Extract monomial representation
-    monomial_form = extract_monomial_form(integrals)
+    monomial_form = extract_monomial_form(integrals, form_data.function_replace_map)
 
     # Transform monomial form to reference element
     transform_monomial_form(monomial_form)
 
     # Get some cell properties
-    cellname = form_data.cell.cellname()
-    facet_cellname = form_data.cell.facet_cellname()
-    num_facets = cellname2num_facets[form_data.cell.cellname()]
+    cell = form_data.cell
+    cellname = cell.cellname()
+    facet_cellname = cell.facet_cellname()
+    num_facets = cellname2num_facets[cellname]
 
     # Initialize representation
     ir = {"representation": "tensor",

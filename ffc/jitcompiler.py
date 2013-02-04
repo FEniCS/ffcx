@@ -156,7 +156,8 @@ def jit_form(form, parameters=None, common_cell=None):
 
     # Compute form metadata and extract preprocessed form
     form_data = form.compute_form_data(common_cell=common_cell,
-                                       element_mapping=element_mapping)
+                                       element_mapping=element_mapping,
+                                       replace_functions=False)
 
     # Wrap input
     jit_object = JITObject(form, parameters)

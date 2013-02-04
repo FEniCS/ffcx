@@ -133,7 +133,7 @@ def _analyze_form(form, object_names, parameters):
     # Compute form metadata
     form_data = form.form_data()
     if form_data is None:
-        form_data = form.compute_form_data(object_names=object_names)
+        form_data = form.compute_form_data(object_names=object_names, replace_functions=False)
 
     info("")
     info(str(form_data))
@@ -188,9 +188,12 @@ def _attach_integral_metadata(form_data, parameters):
             # Automatic selection of representation
             if r == "auto":
                 # TODO: This doesn't really need the measure except for code redesign
-                #       reasons, pass integrand instead to reduce dependencies:
+                #       reasons, pass integrand instead to reduce dependencies.
+                #       Not sure if function_replace_map is really needed either,
+                #       just passing it to be on the safe side.
                 r = _auto_select_representation(integral,
-                                                form_data.unique_sub_elements)
+                                                form_data.unique_sub_elements,
+                                                form_data.function_replace_map)
                 info("representation:    auto --> %s" % r)
                 integral_metadata["representation"] = r
             else:
@@ -279,7 +282,7 @@ def _get_sub_elements(element):
             sub_elements += _get_sub_elements(e)
     return sub_elements
 
-def _auto_select_representation(integral, elements):
+def _auto_select_representation(integral, elements, function_replace_map):
     """
     Automatically select a suitable representation for integral.
     Note that the selection is made for each integral, not for
@@ -303,7 +306,7 @@ def _auto_select_representation(integral, elements):
     #    return "quadrature"
 
     # Estimate cost of tensor representation
-    tensor_cost = estimate_cost(integral)
+    tensor_cost = estimate_cost(integral, function_replace_map)
     debug("Estimated cost of tensor representation: " + str(tensor_cost))
 
     # Use quadrature if tensor representation is not possible
