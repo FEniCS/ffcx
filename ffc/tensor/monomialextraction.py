@@ -330,6 +330,7 @@ class MonomialTransformer(ReuseTransformer):
         #   o = Grad(s)
         # is equivalent to
         #   o = as_tensor(s[ii].dx(i), ii+(i,))
+        # with ii a tuple of free indices and i a single free index.
 
         # Make some unique utility indices
         from ufl import indices
