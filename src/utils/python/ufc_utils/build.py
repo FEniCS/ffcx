@@ -81,6 +81,7 @@ def extract_declarations(h_files):
 %shared_ptr(ufc::form)
 %shared_ptr(ufc::exterior_facet_integral)
 %shared_ptr(ufc::interior_facet_integral)
+%shared_ptr(ufc::point_integral)
 
 // Import types from ufc
 %import(module="ufc") "ufc.h"

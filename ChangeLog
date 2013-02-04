@@ -1,4 +1,5 @@
 2.x.x [2013-??-??]
+ - Add new class ufc::point_integral
  - Use CMake to configure JIT compilation of forms
  - Generate UseUFC.cmake during configuration
  - Remove init_mesh(), init_cell(), init_mesh_finalize()
