@@ -110,7 +110,7 @@ class MonomialFactor:
         return self.function.element()
 
     def count(self):
-        return self.function.count() # FIXME COUNT
+        return self.function.count()
 
     def apply_derivative(self, indices):
         self.derivatives += indices
