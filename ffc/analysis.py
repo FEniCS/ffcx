@@ -138,11 +138,6 @@ def _analyze_form(form, object_names, parameters):
     info("")
     info(str(form_data))
 
-    # Check that all terms in form have same arity # FIXME: Move to ufl preprocess
-    from ufl.algorithms import compute_form_arities
-    ffc_assert(len(compute_form_arities(form_data.preprocessed_form)) == 1,
-               "All terms in form must have same rank.")
-
     # Attach integral meta data
     _attach_integral_metadata(form_data, parameters)
 
