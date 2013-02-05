@@ -133,7 +133,7 @@ def _analyze_form(form, object_names, parameters):
     # Compute form metadata
     form_data = form.form_data()
     if form_data is None:
-        form_data = form.compute_form_data(object_names=object_names, replace_functions=False)
+        form_data = form.compute_form_data(object_names=object_names)
 
     info("")
     info(str(form_data))
