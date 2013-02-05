@@ -320,7 +320,7 @@ def _sort_integrals(integrals, metadata, form_data):
                 rule = integral_metadata["quadrature_rule"]
 
         # Create form and add to dictionary according to degree and rule.
-        form = Form([Integral(integral.integrand(), integral.measure().reconstruct(metadata={}))])
+        form = Form([integral.reconstruct(compiler_data={})])
         if not (degree, rule) in sorted_integrals:
             sorted_integrals[(degree, rule)] = form
         else:
