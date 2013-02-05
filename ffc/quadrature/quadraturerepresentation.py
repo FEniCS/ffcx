@@ -299,7 +299,16 @@ def _sort_integrals(integrals, metadata, form_data):
     """Sort integrals according to the number of quadrature points needed per axis.
     Only consider those integrals defined on the given domain."""
 
-    sorted_integrals = {}
+    # Get domain type and id
+    if integrals:
+        domain_type = integrals[0].domain_type()
+        domain_id = integrals[0].domain_id()
+        ffc_assert(all(domain_type == itg.domain_type() for itg in integrals),
+                   "Expecting only integrals on the same subdomain.")
+        ffc_assert(all(domain_id == itg.domain_id() for itg in integrals),
+                   "Expecting only integrals on the same subdomain.")
+
+    sorted_integrands = {}
     # TODO: We might want to take into account that a form like
     # a = f*g*h*v*u*dx(0, quadrature_order=4) + f*v*u*dx(0, quadrature_order=2),
     # although it involves two integrals of different order, will most
@@ -311,26 +320,25 @@ def _sort_integrals(integrals, metadata, form_data):
         # Get default degree and rule.
         degree = metadata["quadrature_degree"]
         rule  = metadata["quadrature_rule"]
-        integral_metadata = integral.compiler_data()
+
         # Override if specified in integral metadata
-        if not integral_metadata is None:
-            if "quadrature_degree" in integral_metadata:
-                degree = integral_metadata["quadrature_degree"]
-            if "quadrature_rule" in integral_metadata:
-                rule = integral_metadata["quadrature_rule"]
+        integral_compiler_data = integral.compiler_data()
+        if not integral_compiler_data is None:
+            if "quadrature_degree" in integral_compiler_data:
+                degree = integral_compiler_data["quadrature_degree"]
+            if "quadrature_rule" in integral_compiler_data:
+                rule = integral_compiler_data["quadrature_rule"]
 
-        # Create form and add to dictionary according to degree and rule.
-        form = Form([integral.reconstruct(compiler_data={})])
-        if not (degree, rule) in sorted_integrals:
-            sorted_integrals[(degree, rule)] = form
+        # Add integrand to dictionary according to degree and rule.
+        if not (degree, rule) in sorted_integrands:
+            sorted_integrands[(degree, rule)] = integral.integrand()
         else:
-            sorted_integrals[(degree, rule)] += form
-    # Extract integrals form forms.
-    for key, val in sorted_integrals.items():
-        if len(val.integrals()) != 1:
-            error("Only expected one integral over one subdomain: %s" % repr(val))
-        sorted_integrals[key] = val.integrals()[0]
+            sorted_integrands[(degree, rule)] += integral.integrand()
 
+    # Create integrals from accumulated integrands.
+    sorted_integrals = {}
+    for key, integrand in sorted_integrands.items():
+        sorted_integrals[key] = Integral(integrand, domain_type, domain_id, {}, None)
     return sorted_integrals
 
 def _transform_integrals(transformer, integrals, domain_type):
