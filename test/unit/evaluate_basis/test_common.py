@@ -16,12 +16,13 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2010-01-29
-# Last changed: 2010-02-02
+# Last changed: 2013-01-31
 
 from ffc.log import info, info_red, info_blue, info_green, debug
 from instant.output import get_status_output
 import numpy
 import os
+import sys
 
 tol = 1e-14
 crit_tol = 1e-8
@@ -127,11 +128,17 @@ def compile_gcc_code(ufl_element, code, gcc_fail, log_file):
 
     # Compile g++ code
     c = "g++ %s -Wall -Werror -o evaluate_basis evaluate_basis.cpp" % ufc_cflags
+    f = open("compile.sh", "w")
+    f.write("c" + "\n")
+    f.close()
     error, output = get_status_output(c)
     if error:
         info_red("GCC compilation failed.")
         log_error("element: %s,\n%s\n" % (str(ufl_element), output), log_file)
         gcc_fail.append(str(ufl_element))
+        if error and ("-f" in sys.argv or "--failfast" in sys.argv):
+            print "FAIL"
+            exit(1)
         return error
 
 def run_code(ufl_element, deriv_order, run_fail, log_file):
