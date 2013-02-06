@@ -1,4 +1,4 @@
-# Copyright (C) 2009-2010 Kristian B. Oelgaard and Anders Logg
+# Copyright (C) 2009-2013 Kristian B. Oelgaard and Anders Logg
 #
 # This file is part of FFC.
 #
@@ -17,9 +17,10 @@
 #
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009-2010.
+# Modified by Martin Alnaes, 2013
 #
 # First added:  2009-03-06
-# Last changed: 2011-01-13
+# Last changed: 2013-01-25
 
 # Python modules
 from numpy import array
@@ -36,11 +37,21 @@ from ffc.mixedelement import MixedElement
 from ffc.restrictedelement import RestrictedElement
 from ffc.enrichedelement import EnrichedElement, SpaceOfReals
 
-# Dictionary mapping from domain (cell) to dimension
-from ufl.geometry import domain2dim
+# Dictionary mapping from cellname to dimension
+from ufl.geometry import cellname2dim
+
+# Number of facets associated with each cell name
+cellname2num_facets = {"cell1D": None,
+                       "cell2D": None,
+                       "cell3D": None,
+                       "interval": 2,
+                       "triangle": 3,
+                       "tetrahedron": 4,
+                       "quadrilateral": 4,
+                       "hexahedron": 6}
 
 # Mapping from dimension to number of mesh sub-entities. (In principle,
-# ufl.geometry.domain2num_facets contains the same information, but
+# cellname2num_facets contains the same information, but
 # with string keys.)
 entities_per_dim = {1: [2, 1], 2: [3, 3, 1], 3: [4, 6, 4, 1]}
 
@@ -51,7 +62,12 @@ def reference_cell(dim):
     if isinstance(dim, int):
         return FIAT.ufc_simplex(dim)
     else:
-        return FIAT.ufc_simplex(domain2dim[dim])
+        return FIAT.ufc_simplex(cellname2dim[dim])
+
+def reference_cell_vertices(dim):
+    "Return dict of coordinates of reference cell vertices for this 'dim'."
+    cell = reference_cell(dim)
+    return cell.get_vertices()
 
 def create_element(ufl_element):
 
@@ -109,7 +125,7 @@ def _create_fiat_element(ufl_element):
         return FFCQuadratureElement(ufl_element)
 
     # Create FIAT cell
-    fiat_cell = reference_cell(cell.domain())
+    fiat_cell = reference_cell(cell.cellname())
 
     # Handle Bubble element as RestrictedElement of P_{k} to interior
     if family == "Bubble":
@@ -139,7 +155,7 @@ def create_quadrature(shape, num_points):
     if isinstance(shape, int) and shape == 0:
         return ([()], array([1.0,]))
 
-    if shape in domain2dim and domain2dim[shape] == 0:
+    if shape in cellname2dim and cellname2dim[shape] == 0:
         return ([()], array([1.0,]))
 
     quad_rule = FIAT.make_quadrature(reference_cell(shape), num_points)
@@ -154,24 +170,33 @@ def map_facet_points(points, facet):
     tetrahedron.
     """
 
-    # Special case, don't need to map coordinates on vertices
+    # Extract the geometric dimension of the points we want to map
     dim = len(points[0]) + 1
+
+    # Special case, don't need to map coordinates on vertices
     if dim == 1:
         return [[(0.0,), (1.0,)][facet]]
 
-    # Vertex coordinates
-    vertex_coordinates = \
-        {1: ((0.,), (1.,)),
-         2: ((0., 0.), (1., 0.), (0., 1.)),
-         3: ((0., 0., 0.), (1., 0., 0.),(0., 1., 0.), (0., 0., 1))}
+    # Get the FIAT reference cell for this dimension
+    fiat_cell = reference_cell(dim)
+
+    # Extract vertex coordinates from cell and map of facet index to
+    # indicent vertex indices
+    vertex_coordinates = fiat_cell.get_vertices()
+    facet_vertices = fiat_cell.get_topology()[dim-1]
+
+    #vertex_coordinates = \
+    #    {1: ((0.,), (1.,)),
+    #     2: ((0., 0.), (1., 0.), (0., 1.)),
+    #     3: ((0., 0., 0.), (1., 0., 0.),(0., 1., 0.), (0., 0., 1))}
 
     # Facet vertices
-    facet_vertices = \
-        {2: ((1, 2), (0, 2), (0, 1)),
-         3: ((1, 2, 3), (0, 2, 3), (0, 1, 3), (0, 1, 2))}
+    #facet_vertices = \
+    #    {2: ((1, 2), (0, 2), (0, 1)),
+    #     3: ((1, 2, 3), (0, 2, 3), (0, 1, 3), (0, 1, 2))}
 
-    # Compute coordinates and map
-    coordinates = [vertex_coordinates[dim][v] for v in facet_vertices[dim][facet]]
+    # Compute coordinates and map the points
+    coordinates = [vertex_coordinates[v] for v in facet_vertices[facet]]
     new_points = []
     for point in points:
         w = (1.0 - sum(point),) + tuple(point)
@@ -192,7 +217,7 @@ def _extract_elements(ufl_element, domain=None):
     # Handle restricted elements since they might be mixed elements too.
     if isinstance(ufl_element, ufl.RestrictedElement):
         base_element = ufl_element.element()
-        restriction = ufl_element.domain_restriction()
+        restriction = ufl_element.cell_restriction()
         return _extract_elements(base_element, restriction)
 
     if domain:
@@ -209,7 +234,7 @@ def _create_restricted_element(ufl_element):
         error("create_restricted_element expects an ufl.RestrictedElement")
 
     base_element = ufl_element.element()
-    domain = ufl_element.domain_restriction()
+    domain = ufl_element.cell_restriction()
 
     # If simple element -> create RestrictedElement from fiat_element
     if isinstance(base_element, ufl.FiniteElement):
@@ -249,14 +274,13 @@ def _indices(element, domain, dim=0):
 
     # Just extract all indices to make handling in RestrictedElement
     # uniform.
-    elif isinstance(domain, ufl.Measure):
-        indices = []
-        entity_dofs = element.entity_dofs()
-        for dim, entities in entity_dofs.items():
-            for entity, index in entities.items():
-                indices += index
-        return indices
+    #elif isinstance(domain, ufl.Measure):
+    #    indices = []
+    #    entity_dofs = element.entity_dofs()
+    #    for dim, entities in entity_dofs.items():
+    #        for entity, index in entities.items():
+    #            indices += index
+    #    return indices
 
     else:
         error("Restriction to domain: %s, is not supported." % repr(domain))
-

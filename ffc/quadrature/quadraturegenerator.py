@@ -79,6 +79,7 @@ def _tabulate_tensor(ir, parameters):
     gdim        = ir["geometric_dimension"]
     tdim        = ir["topological_dimension"]
     num_facets  = ir["num_facets"]
+    num_vertices= ir["num_vertices"]
     prim_idims  = ir["prim_idims"]
     integrals   = ir["trans_integrals"]
     geo_consts  = ir["geo_consts"]
@@ -160,7 +161,6 @@ def _tabulate_tensor(ir, parameters):
         # Generate tensor code for all cases using a switch.
         tensor_code = f_switch(f_facet("+"), [f_switch(f_facet("-"), cases[i]) for i in range(len(cases))])
 
-
         # Generate code for basic geometric quantities
         jacobi_code  = ""
         for _r in ["+", "-"]:
@@ -173,7 +173,29 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += "\n\n" + format["facet determinant"](tdim, gdim, r=_r)
             jacobi_code += "\n\n" + format["generate normal"](tdim, gdim, domain_type)
 
-    else:
+    elif domain_type == "point":
+        cases = [None for i in range(num_vertices)]
+        for i in range(num_vertices):
+            # Update treansformer with vertices and generate case code +
+            # set of used geometry terms.
+            c, mem_code, ops = _generate_element_tensor(integrals[i],
+                                                        sets, opt_par)
+            case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
+            case += c
+            cases[i] = "\n".join(case)
+
+            # Save number of operations (for printing info on operations).
+            operations.append([i, ops])
+
+        # Generate tensor code for all cases using a switch.
+        tensor_code = f_switch(format["vertex"], cases)
+
+        # Get Jacobian snippet.
+        jacobi_code = format["jacobian and inverse"](geo_dim, top_dim,
+                                                     oriented=oriented)
+        jacobi_code += "\n\n" + format["facet determinant"](geo_dim, top_dim)
+   
+	else:
         error("Unhandled integral type: " + str(integral_type))
 
     # Add common (for cell, exterior and interior) geo code.
@@ -215,7 +237,8 @@ def _tabulate_tensor(ir, parameters):
     # Print info on operation count.
     message = {"cell":           "Cell, number of operations to compute tensor: %d",
                "exterior_facet": "Exterior facet %d, number of operations to compute tensor: %d",
-               "interior_facet": "Interior facets (%d, %d), number of operations to compute tensor: %d"}
+               "interior_facet": "Interior facets (%d, %d), number of operations to compute tensor: %d",
+               "point": "Point %d, number of operations to compute tensor: %d"}
     for ops in operations:
         # Add geo ops count to integral ops count for writing info.
         ops[-1] += geo_ops
@@ -226,16 +249,17 @@ def _generate_element_tensor(integrals, sets, optimise_parameters):
     "Construct quadrature code for element tensors."
 
     # Prefetch formats to speed up code generation.
-    f_comment   = format["comment"]
-    f_ip        = format["integration points"]
-    f_I         = format["ip constant"]
-    f_loop      = format["generate loop"]
-    f_ip_coords = format["generate ip coordinates"]
-    f_coords    =  format["vertex_coordinates"]
-    f_double    = format["float declaration"]
-    f_decl      = format["declaration"]
-    f_X         = format["ip coordinates"]
-    f_C         = format["conditional"]
+    f_comment    = format["comment"]
+    f_ip         = format["integration points"]
+    f_I          = format["ip constant"]
+    f_loop       = format["generate loop"]
+    f_ip_coords  = format["generate ip coordinates"]
+    f_coords     =  format["coordinates"]
+    f_double     = format["float declaration"]
+    f_decl       = format["declaration"]
+    f_X          = format["ip coordinates"]
+    f_C          = format["conditional"]
+
 
     # Initialise return values.
     element_code     = []
@@ -487,8 +511,8 @@ def _tabulate_weights(quadrature_weights):
         # Tabulate the quadrature points (uncomment for different parameters).
         # 1) Tabulate the points as: p0, p1, p2, with p0 = (x0, y0, z0) etc.
         # Use f_float to format the value (enable variable precision).
-        formatted_points = [f_group(f_sep.join([f_float(val)\
-                            for val in point])) for point in points]
+        formatted_points = [f_group(f_sep.join([f_float(val) for val in point]))
+                            for point in points]
 
         # Create comment.
         comment = "Quadrature points on the UFC reference element: " \

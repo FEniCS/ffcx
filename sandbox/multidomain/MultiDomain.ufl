@@ -1,4 +1,4 @@
-# Copyright (C) 2012 Marie E. Rognes and David Ham
+# Copyright (C) 2013 Marie E. Rognes
 #
 # This file is part of FFC.
 #
@@ -15,20 +15,21 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# This demo illustrates use of finite element spaces defined over
-# simplicies embedded in higher dimensions
+# Simple test form for finite elements defined over (multiple) domains
 #
-# Compile this form with FFC: ffc ProjectionManifold.ufl
+# Compile this form with FFC: ffc MultiDomain.ufl
 
-# Define interval embedded in 3D:
-domain = Cell("triangle", geometric_dimension=3)
+D = Domain(triangle, name='Universe')
 
-# Define element over this domain
-V = FiniteElement("RT", domain, 1)
-Q = FiniteElement("DG", domain, 0)
-element = V*Q
+left = Region(D, (0,), name='left')
+right = Region(D, (1,), name='right')
 
-(u, p) = TrialFunctions(element)
-(v, q) = TestFunctions(element)
+V1 = FiniteElement("CG", left, 1)
+V2 = FiniteElement("CG", right, 2)
 
-a = (inner(u, v) + div(u)*q + div(v)*p)*dx
+W = V1*V2
+
+(u1, u2) = TrialFunctions(W)
+(v1, v2) = TestFunctions(W)
+
+a = u1*v1*dx(0) + u2*v2*dx(1)

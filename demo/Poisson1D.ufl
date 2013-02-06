@@ -1,4 +1,4 @@
-# Copyright (C) 2012 Marie E. Rognes and David Ham
+# Copyright (C) 2004-2007 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -15,20 +15,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# This demo illustrates use of finite element spaces defined over
-# simplicies embedded in higher dimensions
+# The bilinear form a(u, v) and linear form L(v) for
+# Poisson's equation.
 #
-# Compile this form with FFC: ffc ProjectionManifold.ufl
+# Compile this form with FFC: ffc Poisson.ufl
 
-# Define interval embedded in 3D:
-domain = Cell("triangle", geometric_dimension=3)
+element = FiniteElement("Lagrange", interval, 1)
 
-# Define element over this domain
-V = FiniteElement("RT", domain, 1)
-Q = FiniteElement("DG", domain, 0)
-element = V*Q
+u = TrialFunction(element)
+v = TestFunction(element)
+f = Coefficient(element)
 
-(u, p) = TrialFunctions(element)
-(v, q) = TestFunctions(element)
-
-a = (inner(u, v) + div(u)*q + div(v)*p)*dx
+a = inner(grad(u), grad(v))*dx
+L = f*v*dx

@@ -1,6 +1,6 @@
-interval_2D = "Cell('interval', Space(2))"
-interval_3D = "Cell('interval', Space(3))"
-triangle_3D = "Cell('triangle', Space(3))"
+interval_2D = "Cell('interval', geometric_dimension=2)"
+interval_3D = "Cell('interval', geometric_dimension=3)"
+triangle_3D = "Cell('triangle', geometric_dimension=3)"
 
 elements = ["FiniteElement('N1curl', triangle, 2)",
             "MixedElement([FiniteElement('Lagrange', triangle, 3), \

@@ -1,4 +1,4 @@
-# Copyright (C) 2008 Anders Logg
+# Copyright (C) 2008-2013 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -15,8 +15,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
+# Modified by Martin Alnaes, 2013
+#
 # First added:  2008-09-04
-# Last changed: 2011-05-12
+# Last changed: 2013-01-25
 
 # Python modules.
 from hashlib import sha1
@@ -30,6 +32,16 @@ import ufl
 # FFC modules.
 from constants import FFC_VERSION
 
+# UFC modules.
+import ufc_utils
+
+# Compute signature of all ufc headers combined
+ufc_signature = sha1(''.join(getattr(ufc_utils, header)
+                             for header in
+                             (k for k in vars(ufc_utils).keys()
+                              if k.endswith("_header")))
+                              ).hexdigest()
+
 class JITObject:
     """This class is a wrapper for a compiled object in the context of
     specific compiler parameters. A JITObject is identified either by its
@@ -37,15 +49,13 @@ class JITObject:
     single instance of an application (at runtime). The signature is
     persistent and may be used for caching modules on disk."""
 
-    def __init__(self, form, preprocessed_form, parameters, common_cell):
+    def __init__(self, form, parameters):
         "Create JITObject for given form and parameters"
         assert(isinstance(form, ufl.Form))
 
         # Store data
         self.form = form
-        self.preprocessed_form = preprocessed_form
         self.parameters = parameters
-        self.common_cell = common_cell
         self._hash = None
         self._signature = None
 
@@ -72,21 +82,22 @@ class JITObject:
         if not self._signature is None:
             return self._signature
 
-        # Compute form signature based on form stored in formdata
-        form_signature = self.preprocessed_form.signature()
+        # Get signature from assumed precomputed form_data
+        form_signature = self.form.form_data().signature
 
         # Compute other relevant signatures
         parameters_signature = _parameters_signature(self.parameters)
         ffc_signature = str(FFC_VERSION)
         swig_signature = str(get_swig_version())
-        cell_signature = str(self.common_cell)
+        cell_signature = str(self.form.form_data().cell)
 
         # Build common signature
         signatures = [form_signature,
                       parameters_signature,
                       ffc_signature,
                       swig_signature,
-                      cell_signature]
+                      cell_signature,
+                      ufc_signature]
         string = ";".join(signatures)
         self._signature = sha1(string).hexdigest()
 

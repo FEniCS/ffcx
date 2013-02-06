@@ -89,7 +89,7 @@ The compiler stages are implemented by the following functions:
   format_code       (stage 5)
 """
 
-# Copyright (C) 2007-2010 Anders Logg
+# Copyright (C) 2007-2013 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -109,9 +109,10 @@ The compiler stages are implemented by the following functions:
 # Modified by Kristian B. Oelgaard, 2010.
 # Modified by Dag Lindbo, 2008.
 # Modified by Garth N. Wells, 2009.
+# Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-05
-# Last changed: 2010-01-24
+# Last changed: 2013-01-25
 
 __all__ = ["compile_form", "compile_element"]
 
@@ -131,7 +132,7 @@ from ffc.formatting import format_code
 from ffc.wrappers import generate_wrapper_code
 
 def compile_form(forms, object_names={}, prefix="Form",\
-                 parameters=default_parameters(), common_cell=None):
+                 parameters=default_parameters()):
     """This function generates UFC code for a given UFL form or list
     of UFL forms."""
 
@@ -147,12 +148,12 @@ def compile_form(forms, object_names={}, prefix="Form",\
 
     # Stage 1: analysis
     cpu_time = time()
-    analysis = analyze_forms(forms, object_names, parameters, common_cell)
+    analysis = analyze_forms(forms, object_names, parameters)
     _print_timing(1, time() - cpu_time)
 
     # Stage 2: intermediate representation
     cpu_time = time()
-    ir = compute_ir(analysis, parameters, common_cell)
+    ir = compute_ir(analysis, parameters)
     _print_timing(2, time() - cpu_time)
 
     # Stage 3: optimization

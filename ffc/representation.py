@@ -31,20 +31,23 @@ in the intermediate representation under the key "foo".
 #
 # Modified by Marie E. Rognes 2010
 # Modified by Kristian B. Oelgaard 2010
+# Modified by Martin Alnaes, 2013
 #
 # First added:  2009-12-16
-# Last changed: 2013-01-08
+# Last changed: 2013-01-25
 
 # Python modules
 from itertools import chain
 
 # Import UFL
 import ufl
+from ufl.classes import Measure
 
 # FFC modules
 from ffc.utils import compute_permutations, product
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
 from ffc.fiatinterface import create_element, entities_per_dim, reference_cell
+from ffc.fiatinterface import cellname2num_facets
 from ffc.mixedelement import MixedElement
 from ffc.enrichedelement import EnrichedElement, SpaceOfReals
 from ffc.quadratureelement import QuadratureElement
@@ -56,7 +59,7 @@ from ffc import tensor
 
 not_implemented = None
 
-def compute_ir(analysis, parameters, common_cell=None):
+def compute_ir(analysis, parameters):
     "Compute intermediate representation."
 
     begin("Compiler stage 2: Computing intermediate representation")
@@ -79,7 +82,7 @@ def compute_ir(analysis, parameters, common_cell=None):
 
     # Compute and flatten representation of integrals
     info("Computing representation of integrals")
-    irs = [_compute_integral_ir(fd, i, parameters, common_cell) \
+    irs = [_compute_integral_ir(fd, i, parameters) \
                for (i, fd) in enumerate(form_datas)]
     ir_integrals = [ir for ir in chain(*irs) if not ir is None]
 
@@ -104,7 +107,7 @@ def _compute_element_ir(ufl_element, element_id, element_numbers):
 
     # Compute data for each function
     ir["signature"] = repr(ufl_element)
-    ir["cell_shape"] = cell.domain()
+    ir["cell_shape"] = cell.cellname()
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
     ir["space_dimension"] = element.space_dimension()
@@ -185,31 +188,31 @@ def _needs_mesh_entities(element):
     else:
         return [d > 0 for d in num_dofs_per_entity]
 
-def _compute_integral_ir(form_data, form_id, parameters, common_cell=None):
+def _compute_integral_ir(form_data, form_id, parameters):
     "Compute intermediate represention for form integrals."
 
     irs = []
 
     # Iterate over integrals
-    for (domain_type, domain_id, integrals, metadata) in form_data.integral_data:
+    for ida in form_data.integral_data:
+        common_metadata = ida.metadata # TODO: Is it possible to detach this from IntegralData? It's a bit strange from the ufl side.
 
         # Select representation
-        if metadata["representation"] == "quadrature":
+        if common_metadata["representation"] == "quadrature":
             r = quadrature
-        elif metadata["representation"] == "tensor":
+        elif common_metadata["representation"] == "tensor":
             r = tensor
         else:
-            error("Unknown representation: " + str(metadata["representation"]))
+            error("Unknown representation: " + str(common_metadata["representation"]))
 
         # Compute representation
-        ir = r.compute_integral_ir(domain_type,
-                                   domain_id,
-                                   integrals,
-                                   metadata,
+        ir = r.compute_integral_ir(ida.domain_type,
+                                   ida.domain_id,
+                                   ida.integrals,
+                                   common_metadata,
                                    form_data,
                                    form_id,
-                                   parameters,
-                                   common_cell)
+                                   parameters)
 
         # Append representation
         irs.append(ir)
@@ -227,17 +230,27 @@ def _compute_form_ir(form_data, form_id, element_numbers):
     ir["members"] = not_implemented
     ir["constructor"] = not_implemented
     ir["destructor"] = not_implemented
-    ir["signature"] = form_data.preprocessed_form.signature()
+    ir["signature"] = form_data.signature
     ir["rank"] = form_data.rank
     ir["num_coefficients"] = form_data.num_coefficients
-    ir["num_cell_domains"] = form_data.num_cell_domains
-    ir["num_exterior_facet_domains"] = form_data.num_exterior_facet_domains
-    ir["num_interior_facet_domains"] = form_data.num_interior_facet_domains
+    ir["num_cell_domains"] = form_data.num_sub_domains.get("cell",0)
+    ir["num_exterior_facet_domains"] = form_data.num_sub_domains.get("exterior_facet",0)
+    ir["num_interior_facet_domains"] = form_data.num_sub_domains.get("interior_facet",0)
+    ir["num_point_domains"] = form_data.num_sub_domains.get("point",0)
+    ir["has_cell_integrals"] = _has_foo_integrals("cell", form_data)
+    ir["has_exterior_facet_integrals"] = _has_foo_integrals("exterior_facet", form_data)
+    ir["has_interior_facet_integrals"] = _has_foo_integrals("interior_facet", form_data)
+    ir["has_point_integrals"] = _has_foo_integrals("point", form_data)
     ir["create_finite_element"] = [element_numbers[e] for e in form_data.elements]
     ir["create_dofmap"] = [element_numbers[e] for e in form_data.elements]
     ir["create_cell_integral"] = _create_foo_integral("cell", form_data)
     ir["create_exterior_facet_integral"] = _create_foo_integral("exterior_facet", form_data)
     ir["create_interior_facet_integral"] = _create_foo_integral("interior_facet", form_data)
+    ir["create_point_integral"] = _create_foo_integral("point", form_data)
+    ir["create_default_cell_integral"] = _create_default_foo_integral("cell", form_data)
+    ir["create_default_exterior_facet_integral"] = _create_default_foo_integral("exterior_facet", form_data)
+    ir["create_default_interior_facet_integral"] = _create_default_foo_integral("interior_facet", form_data)
+    ir["create_default_point_integral"] = _create_default_foo_integral("point", form_data)
 
     return ir
 
@@ -364,7 +377,7 @@ def _evaluate_basis(ufl_element, element, cell):
     # Initialise data with 'global' values.
     data = {"reference_value_size": _value_size(element),
             "physical_value_size": _value_size(ufl_element),
-            "cell_domain" : cell.domain(),
+            "cellname" : cell.cellname(),
             "topological_dimension" : cell.topological_dimension(),
             "geometric_dimension" : cell.geometric_dimension(),
             "space_dimension" : element.space_dimension(),
@@ -461,10 +474,10 @@ def _tabulate_facet_dofs(element, cell):
     D = max([pair[0][0] for pair in incidence])
 
     # Get the number of facets
-    num_facets = cell.num_facets()
+    num_facets = cellname2num_facets[cell.cellname()]
 
     # Find out which entities are incident to each facet
-    incident = num_facets*[[]]
+    incident = num_facets*[None]
     for facet in range(num_facets):
         incident[facet] = [pair[1] for pair in incidence if incidence[pair] == True and pair[0] == (D - 1, facet)]
 
@@ -499,7 +512,7 @@ def _interpolate_vertex_values(element, cell):
     ir["needs_oriented"] = needs_oriented_jacobian(element)
 
     # Get vertices of reference cell
-    cell = reference_cell(cell.domain())
+    cell = reference_cell(cell.cellname())
     vertices = cell.get_vertices()
 
     # Compute data for each constituent element
@@ -517,12 +530,28 @@ def _create_sub_foo(ufl_element, element_numbers):
 
 def _create_foo_integral(domain_type, form_data):
     "Compute intermediate representation of create_foo_integral."
-    return [domain_id for (_domain_type, domain_id, integrals, metadata) in
-           form_data.integral_data if _domain_type == domain_type]
+    return [ida.domain_id for ida in form_data.integral_data
+           if ida.domain_type == domain_type and isinstance(ida.domain_id, int)]
+
+def _has_foo_integrals(domain_type, form_data):
+    "Compute intermediate representation of has_foo_integrals."
+    v = (form_data.num_sub_domains.get(domain_type,0) > 0
+         or _create_default_foo_integral(domain_type, form_data) is not None)
+    return bool(v)
+
+def _create_default_foo_integral(domain_type, form_data):
+    "Compute intermediate representation of create_default_foo_integral."
+    ida = [ida for ida in form_data.integral_data
+           if ida.domain_id == Measure.DOMAIN_ID_OTHERWISE and ida.domain_type == domain_type]
+    ffc_assert(len(ida) in (0,1), "Expecting at most one default integral of each type.")
+    return Measure.DOMAIN_ID_OTHERWISE if ida else None
 
 #--- Utility functions ---
 
 # FIXME: KBO: This could go somewhere else, like in UFL?
+#        MSA: There is probably something related in ufl somewhere,
+#        but I don't understand quite what this does.
+#        In particular it does not cover sub-sub-elements? Is that a bug?
 # Also look at function naming, use single '_' for utility functions.
 def all_elements(element):
 

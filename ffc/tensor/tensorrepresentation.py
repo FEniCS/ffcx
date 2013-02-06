@@ -36,6 +36,7 @@ from ufl.classes import Form, Measure, Integral
 # FFC modules
 from ffc.log import info, error
 from ffc.representationutils import needs_oriented_jacobian
+from ffc.fiatinterface import cellname2num_facets
 
 # FFC tensor representation modules
 from ffc.tensor.monomialextraction import extract_monomial_form
@@ -51,17 +52,22 @@ def compute_integral_ir(domain_type,
                         metadata,
                         form_data,
                         form_id,
-                        parameters,
-                        common_cell=None):
+                        parameters):
     "Compute intermediate represention of integral."
 
     info("Computing tensor representation")
 
     # Extract monomial representation
-    monomial_form = extract_monomial_form(integrals)
+    monomial_form = extract_monomial_form(integrals, form_data.function_replace_map)
 
     # Transform monomial form to reference element
     transform_monomial_form(monomial_form)
+
+    # Get some cell properties
+    cell = form_data.cell
+    cellname = cell.cellname()
+    facet_cellname = cell.facet_cellname()
+    num_facets = cellname2num_facets[cellname]
 
     # Initialize representation
     ir = {"representation": "tensor",
@@ -70,12 +76,11 @@ def compute_integral_ir(domain_type,
           "form_id": form_id,
           "geometric_dimension": form_data.geometric_dimension,
           "topological_dimension": form_data.topological_dimension,
-          "num_facets": form_data.num_facets,
+          "num_facets": num_facets,
           "rank": form_data.rank,
           "needs_oriented": needs_oriented_jacobian(form_data)}
 
     # Compute representation of cell tensor
-    num_facets = form_data.num_facets
     quadrature_degree = metadata["quadrature_degree"]
     if domain_type == "cell":
 
@@ -84,7 +89,8 @@ def compute_integral_ir(domain_type,
                                   None, None,
                                   domain_type,
                                   quadrature_degree,
-                                  common_cell)
+                                  cellname,
+                                  facet_cellname)
 
     elif domain_type == "exterior_facet":
 
@@ -95,7 +101,8 @@ def compute_integral_ir(domain_type,
                                       i, None,
                                       domain_type,
                                       quadrature_degree,
-                                      common_cell)
+                                      cellname,
+                                      facet_cellname)
         ir["AK"] = terms
 
     elif domain_type == "interior_facet":
@@ -108,7 +115,8 @@ def compute_integral_ir(domain_type,
                                              i, j,
                                              domain_type,
                                              quadrature_degree,
-                                             common_cell)
+                                             cellname,
+                                             facet_cellname)
                 reorder_entries(terms[i][j])
         ir["AK"] = terms
 
@@ -121,7 +129,8 @@ def _compute_terms(monomial_form,
                    facet0, facet1,
                    domain_type,
                    quadrature_degree,
-                   common_cell):
+                   cellname,
+                   facet_cellname):
     "Compute list of tensor contraction terms for monomial form."
 
     # Compute terms
@@ -136,7 +145,8 @@ def _compute_terms(monomial_form,
                                  domain_type,
                                  facet0, facet1,
                                  quadrature_degree,
-                                 common_cell)
+                                 cellname,
+                                 facet_cellname)
 
             # Compute geometry tensor
             GK = GeometryTensor(monomial)

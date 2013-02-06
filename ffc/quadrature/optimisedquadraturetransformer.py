@@ -283,22 +283,16 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Safety check.
         ffc_assert(not operands, "Didn't expect any operands for FacetNormal: " + repr(operands))
+        ffc_assert(len(components) == 1,
+                   "FacetNormal expects 1 component index: " + repr(components))
 
         # Handle 1D as a special case.
         # FIXME: KBO: This has to change for mD elements in R^n : m < n
-        if self.gdim == 1:
-            # Safety check.
-            ffc_assert(len(components) == 0, "FacetNormal in 1D does not expect a component index: " + repr(components))
+        if self.gdim == 1: # FIXME: MSA UFL uses shape (1,) now, can we remove the special case here then?
             normal_component = format["normal component"](self.restriction, "")
-            self.trans_set.add(normal_component)
         else:
-
-            # Safety check.
-            ffc_assert(len(components) == 1, "FacetNormal expects 1 component index: " + repr(components))
-
-            # We get one component.
             normal_component = format["normal component"](self.restriction, components[0])
-            self.trans_set.add(normal_component)
+        self.trans_set.add(normal_component)
 
         return {(): create_symbol(normal_component, GEO)}
 
@@ -343,8 +337,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
 
     def create_argument(self, ufl_argument, derivatives, component, local_comp,
-                  local_offset, ffc_element, transformation, multiindices,
-                  tdim, gdim):
+                        local_offset, ffc_element, transformation, multiindices,
+                        tdim, gdim):
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Prefetch formats to speed up code generation.
@@ -413,8 +407,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         return code
 
     def create_function(self, ufl_function, derivatives, component, local_comp,
-                  local_offset, ffc_element, quad_element, transformation, multiindices,
-                  tdim, gdim):
+                       local_offset, ffc_element, quad_element, transformation, multiindices,
+                       tdim, gdim):
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Prefetch formats to speed up code generation.
@@ -547,7 +541,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     def _count_operations(self, expression):
         return expression.ops()
 
-    def _create_entry_data(self, val):
+    def _create_entry_data(self, val, domain_type):
 #        zero = False
         # Multiply value by weight and determinant
         ACCESS = GEO
@@ -556,18 +550,24 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             weight += format["component"]("", format["integration points"])
             ACCESS = IP
         weight = self._create_symbol(weight, ACCESS)[()]
-        f_scale_factor = format["scale factor"]
 
         # Create value.
-        value = create_product([val, weight, create_symbol(f_scale_factor, GEO)])
+        if domain_type == "point":
+            trans_set = set()
+            value = create_product([val, weight])
+        else:
+            f_scale_factor = format["scale factor"]
+            trans_set = set([f_scale_factor])
+            value = create_product([val, weight,
+                                    create_symbol(f_scale_factor, GEO)])
 
         # Update sets of used variables (if they will not be used because of
         # optimisations later, they will be reset).
-        trans_set = set([f_scale_factor])
         trans_set.update(map(lambda x: str(x), value.get_unique_vars(GEO)))
         used_points = set([self.points])
         ops = self._count_operations(value)
-        used_psi_tables = set([self.psi_tables_map[b] for b in value.get_unique_vars(BASIS)])
+        used_psi_tables = set([self.psi_tables_map[b]
+                               for b in value.get_unique_vars(BASIS)])
 
         return (value, ops, [trans_set, used_points, used_psi_tables])
 

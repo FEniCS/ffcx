@@ -7,7 +7,7 @@ forms, including automatic selection of elements, degrees and
 form representation type.
 """
 
-# Copyright (C) 2007-2010 Anders Logg and Kristian B. Oelgaard
+# Copyright (C) 2007-2013 Anders Logg and Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -25,19 +25,17 @@ form representation type.
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Marie E. Rognes, 2010
+# Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-05
-# Last changed: 2011-05-02
+# Last changed: 2013-01-25
 
 # UFL modules
 from ufl.common import istr, tstr
-from ufl.integral import Measure
+#from ufl.integral import Measure
 from ufl.finiteelement import MixedElement, EnrichedElement
 from ufl.algorithms import estimate_total_polynomial_degree
 from ufl.algorithms import sort_elements
-from ufl.algorithms import compute_form_arities
-from ufl.algorithms import extract_elements, extract_sub_elements
-from ufl.algorithms import extract_common_cell
 
 # FFC modules
 from ffc.log import log, info, begin, end, warning, debug, error, ffc_assert, warning_blue
@@ -46,7 +44,7 @@ from ffc.quadratureelement import default_quadrature_degree
 from ffc.utils import all_equal
 from ffc.tensor import estimate_cost
 
-def analyze_forms(forms, object_names, parameters, common_cell=None):
+def analyze_forms(forms, object_names, parameters):
     """
     Analyze form(s), returning
 
@@ -60,8 +58,7 @@ def analyze_forms(forms, object_names, parameters, common_cell=None):
     # Analyze forms
     form_datas = tuple(_analyze_form(form,
                                      object_names,
-                                     parameters,
-                                     common_cell) for form in forms)
+                                     parameters) for form in forms)
 
     # Extract unique elements accross all forms
     unique_elements = []
@@ -126,37 +123,27 @@ def _get_nested_elements(element):
         nested_elements += _get_nested_elements(e)
     return set(nested_elements)
 
-def _analyze_form(form, object_names, parameters, common_cell=None):
-    "Analyze form, returning preprocessed form."
+def _analyze_form(form, object_names, parameters):
+    "Analyze form, returning form data."
 
     # Check that form is not empty
     ffc_assert(len(form.integrals()),
                "Form (%s) seems to be zero: cannot compile it." % str(form))
 
-    # Compute element mapping for element replacement
-    element_mapping = _compute_element_mapping(form, common_cell)
-
     # Compute form metadata
-    form_data = form.compute_form_data(object_names=object_names,
-                                       common_cell=common_cell,
-                                       element_mapping=element_mapping)
+    form_data = form.form_data()
+    if form_data is None:
+        form_data = form.compute_form_data(object_names=object_names)
 
     info("")
     info(str(form_data))
 
-    # Extract preprocessed form
-    preprocessed_form = form_data.preprocessed_form
-
-    # Check that all terms in form have same arity
-    ffc_assert(len(compute_form_arities(preprocessed_form)) == 1,
-               "All terms in form must have same rank.")
-
     # Attach integral meta data
-    _attach_integral_metadata(form_data, common_cell, parameters)
+    _attach_integral_metadata(form_data, parameters)
 
     return form_data
 
-def _attach_integral_metadata(form_data, common_cell, parameters):
+def _attach_integral_metadata(form_data, parameters):
     "Attach integral metadata"
 
     # Recognized metadata keys
@@ -164,14 +151,15 @@ def _attach_integral_metadata(form_data, common_cell, parameters):
 
     # Iterate over integral collections
     quad_schemes = []
-    for (domain_type, domain_id, integrals, metadata) in form_data.integral_data:
+    for ida in form_data.integral_data:
+        common_metadata = ida.metadata # TODO: Is it possible to detach this from IntegralData? It's a bit strange from the ufl side.
 
         # Iterate over integrals
         integral_metadatas = []
-        for integral in integrals:
+        for integral in ida.integrals:
 
             # Get metadata for integral
-            integral_metadata = integral.measure().metadata() or {}
+            integral_metadata = integral.compiler_data() or {}
             for key in metadata_keys:
                 if not key in integral_metadata:
                     integral_metadata[key] = parameters[key]
@@ -199,8 +187,13 @@ def _attach_integral_metadata(form_data, common_cell, parameters):
 
             # Automatic selection of representation
             if r == "auto":
+                # TODO: This doesn't really need the measure except for code redesign
+                #       reasons, pass integrand instead to reduce dependencies.
+                #       Not sure if function_replace_map is really needed either,
+                #       just passing it to be on the safe side.
                 r = _auto_select_representation(integral,
-                                                form_data.unique_sub_elements)
+                                                form_data.unique_sub_elements,
+                                                form_data.function_replace_map)
                 info("representation:    auto --> %s" % r)
                 integral_metadata["representation"] = r
             else:
@@ -208,7 +201,7 @@ def _attach_integral_metadata(form_data, common_cell, parameters):
 
             # Automatic selection of quadrature degree
             if qd == "auto":
-                qd = _auto_select_quadrature_degree(integral,
+                qd = _auto_select_quadrature_degree(integral.integrand(),
                                                     r,
                                                     form_data.unique_sub_elements)
                 info("quadrature_degree: auto --> %d" % qd)
@@ -232,8 +225,8 @@ def _attach_integral_metadata(form_data, common_cell, parameters):
             integral_metadatas.append(integral_metadata)
 
         # Extract common metadata for integral collection
-        if len(integrals) == 1:
-            metadata.update(integral_metadatas[0])
+        if len(ida.integrals) == 1:
+            common_metadata.update(integral_metadatas[0])
         else:
 
             # Check that representation is the same
@@ -264,9 +257,9 @@ def _attach_integral_metadata(form_data, common_cell, parameters):
                 qr = quadrature_rules[0]
 
             # Update common metadata
-            metadata["representation"] = r
-            metadata["quadrature_degree"] = qd
-            metadata["quadrature_rule"] = qr
+            common_metadata["representation"] = r
+            common_metadata["quadrature_degree"] = qd
+            common_metadata["quadrature_rule"] = qr
 
     # Update scheme for QuadratureElements
     if not all_equal(quad_schemes):
@@ -289,66 +282,7 @@ def _get_sub_elements(element):
             sub_elements += _get_sub_elements(e)
     return sub_elements
 
-def _compute_element_mapping(form, common_cell):
-    "Compute element mapping for element replacement"
-
-    # Extract all elements
-    elements = extract_elements(form)
-    elements = extract_sub_elements(elements)
-
-    # Get cell and degree
-    common_cell = extract_common_cell(form, common_cell)
-    common_degree = _auto_select_degree(elements)
-
-    # Compute element map
-    element_mapping = {}
-    for element in elements:
-
-        # Flag for whether element needs to be reconstructed
-        reconstruct = False
-
-        # Set cell
-        cell = element.cell()
-        if cell.is_undefined():
-            info("Adjusting element cell from %s to %s." % \
-                     (istr(cell), str(common_cell)))
-            cell = common_cell
-            reconstruct = True
-
-        # Set degree
-        degree = element.degree()
-        if degree is None:
-            info("Adjusting element degree from %s to %d" % \
-                     (istr(degree), common_degree))
-            degree = common_degree
-            reconstruct = True
-
-        # Reconstruct element and add to map
-        if reconstruct:
-            element_mapping[element] = element.reconstruct(cell=cell,
-                                                           degree=degree)
-
-    return element_mapping
-
-def _auto_select_degree(elements):
-    """
-    Automatically select degree for all elements of the form in cases
-    where this has not been specified by the user. This feature is
-    used by DOLFIN to allow the specification of Expressions with
-    undefined degrees.
-    """
-
-    # Extract common degree
-    common_degree = max([e.degree() for e in elements] or [None])
-    if common_degree is None:
-        common_degree = default_quadrature_degree
-
-    # Degree must be at least 1 (to work with Lagrange elements)
-    common_degree = max(1, common_degree)
-
-    return common_degree
-
-def _auto_select_representation(integral, elements):
+def _auto_select_representation(integral, elements, function_replace_map):
     """
     Automatically select a suitable representation for integral.
     Note that the selection is made for each integral, not for
@@ -368,11 +302,11 @@ def _auto_select_representation(integral, elements):
 
     # Use quadrature representation if any elements are restricted to
     # UFL.Measure. This is used when integrals are computed over discontinuities.
-    if len([e for e in sub_elements if isinstance(e.domain_restriction(), Measure)]):
-        return "quadrature"
+    #if len([e for e in sub_elements if isinstance(e.cell_restriction(), Measure)]):
+    #    return "quadrature"
 
     # Estimate cost of tensor representation
-    tensor_cost = estimate_cost(integral)
+    tensor_cost = estimate_cost(integral, function_replace_map)
     debug("Estimated cost of tensor representation: " + str(tensor_cost))
 
     # Use quadrature if tensor representation is not possible
@@ -385,8 +319,8 @@ def _auto_select_representation(integral, elements):
     else:
         return "quadrature"
 
-def _auto_select_quadrature_degree(integral, representation, elements):
-    "Automatically select a suitable quadrature degree for integral."
+def _auto_select_quadrature_degree(integrand, representation, elements):
+    "Automatically select a suitable quadrature degree for integrand."
 
     # Use maximum quadrature element degree if any for quadrature representation
     if representation == "quadrature":
@@ -400,7 +334,7 @@ def _auto_select_quadrature_degree(integral, representation, elements):
             return quadrature_degrees[0]
 
     # Otherwise estimate total degree of integrand
-    q = estimate_total_polynomial_degree(integral, default_quadrature_degree)
+    q = estimate_total_polynomial_degree(integrand, default_quadrature_degree)
     debug("Selecting quadrature degree based on total polynomial degree of integrand: " + str(q))
 
     return q
@@ -412,4 +346,3 @@ def _check_quadrature_degree(degree, top_dim):
     if num_points >= 100:
         warning_blue("WARNING: The number of integration points for each cell will be: %d" % num_points)
         warning_blue("         Consider using the option 'quadrature_degree' to reduce the number of points")
-

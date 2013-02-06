@@ -1,7 +1,7 @@
 """QuadratureTransformerBase, a common class for quadrature
 transformers to translate UFL expressions."""
 
-# Copyright (C) 2009-2011 Kristian B. Oelgaard
+# Copyright (C) 2009-2013 Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -18,8 +18,11 @@ transformers to translate UFL expressions."""
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
+# Modified by Martin Alnaes, 2013
+# Modified by Garth N. Wells, 2013
+#
 # First added:  2009-10-13
-# Last changed: 2011-10-20
+# Last changed: 2013-02-02
 
 # Python modules.
 from itertools import izip
@@ -32,7 +35,7 @@ from ufl.common import StackDict, Stack
 from ufl.permutation import build_component_numbering
 
 # UFL Algorithms.
-from ufl.algorithms import propagate_restrictions, Transformer, tree_format
+from ufl.algorithms import Transformer, tree_format
 from ufl.algorithms import strip_variables
 
 # FFC modules.
@@ -51,7 +54,6 @@ from symbolics import generate_aux_constants
 from symbolics import BASIS, IP, GEO, CONST
 
 class QuadratureTransformerBase(Transformer):
-#class QuadratureTransformerBase(ReuseTransformer):
     "Transform UFL representation to quadrature code."
 
     def __init__(self,
@@ -59,12 +61,15 @@ class QuadratureTransformerBase(Transformer):
                  quad_weights,
                  gdim,
                  tdim,
+                 function_replace_map,
                  optimise_parameters):
 
         Transformer.__init__(self)
 
         # Save optimise_parameters, weights and fiat_elements_map.
         self.optimise_parameters = optimise_parameters
+
+        self._function_replace_map = function_replace_map
 
         # Create containers and variables.
         self.used_psi_tables = set()
@@ -81,15 +86,18 @@ class QuadratureTransformerBase(Transformer):
         self.points = 0
         self.facet0 = None
         self.facet1 = None
+        self.vertex = None
         self.restriction = None
         self.coordinate = None
         self.conditionals = {}
         self.additional_includes_set = set()
+        self.__psi_tables = psi_tables
 
         # Stacks.
         self._derivatives = []
         self._index2value = StackDict()
         self._components = Stack()
+
         self.element_map, self.name_map, self.unique_tables =\
               create_psi_tables(psi_tables, self.optimise_parameters)
 
@@ -102,13 +110,16 @@ class QuadratureTransformerBase(Transformer):
         self.facet1 = facet1
         self.coordinate = None
         self.conditionals = {}
-#        # Reset functions and count everytime we generate a new case of facets.
-#        self.functions = {}
-#        self.function_count = 0
 
-#        # Reset cache
-#        self.argument_cache = {}
-#        self.function_cache = {}
+    def update_vertex(self, vertex):
+        self.vertex = vertex
+        self.coordinate = None
+        self.conditionals = {}
+
+        # MER: This is a hack in case you are in doubt.
+        self.element_map, self.name_map, self.unique_tables =\
+              create_psi_tables(self.__psi_tables, self.optimise_parameters,
+                                self.vertex)
 
     def update_points(self, points):
         self.points = points
@@ -167,35 +178,7 @@ class QuadratureTransformerBase(Transformer):
 
     def derivative(self, o, *operands):
         print "\n\nVisiting Derivative: ", repr(o)
-        error("All derivatives apart from SpatialDerivative should have been expanded!!")
-
-    def finite_element_base(self, o, *operands):
-        print "\n\nVisiting FiniteElementBase: ", repr(o)
-        error("FiniteElements must be member of a Argument or Coefficient!!")
-
-    def form(self, o, *operands):
-        print "\n\nVisiting Form: ", repr(o)
-        error("The transformer only work on a Form integrand, not the Form itself!!")
-
-    def space(self, o):
-        print "\n\nVisiting Space: ", repr(o)
-        error("A Space should not be present in the integrand.")
-
-    def cell(self, o):
-        print "\n\nVisiting Cell: ", repr(o)
-        error("A Cell should not be present in the integrand.")
-
-    def index_base(self, o):
-        print "\n\nVisiting IndexBase: ", repr(o)
-        error("Indices should not be floating around freely in the integrand!!")
-
-    def integral(self, o):
-        print "\n\nVisiting Integral: ", repr(o)
-        error("Integral should not be present in the integrand!!")
-
-    def measure(self, o):
-        print "\n\nVisiting Measure: ", repr(o)
-        error("Measure should not be present in the integrand!!")
+        error("All derivatives apart from Grad should have been expanded!!")
 
     def compound_tensor_operator(self, o):
         print "\n\nVisiting CompoundTensorOperator: ", repr(o)
@@ -229,14 +212,6 @@ class QuadratureTransformerBase(Transformer):
     def geometric_quantity(self, o):
         print "\n\nVisiting GeometricQuantity:", repr(o)
         error("This type of GeometricQuantity is not supported (yet).")
-
-    def lifting_result(self, o):
-        print "\n\nVisiting LiftingResult:", repr(o)
-        error("LiftingResult (and children) is not supported (yet).")
-
-    def terminal_operator(self, o):
-        print "\n\nVisiting TerminalOperator:", repr(o)
-        error("TerminalOperator (LiftingOperator and LiftingFunction) is not supported (yet).")
 
     def math_function(self, o):
         print "\n\nVisiting MathFunction:", repr(o)
@@ -279,15 +254,15 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     # FacetNormal, CellVolume, Circumradius (geometry.py).
     # -------------------------------------------------------------------------
-    def facet_normal(self, o,  *operands):
+    def facet_normal(self, o):
         print "\n\nVisiting FacetNormal: ", repr(o)
         error("This object should be implemented by the child class.")
 
-    def cell_volume(self, o,  *operands):
+    def cell_volume(self, o):
         print "\n\nVisiting CellVolume: ", repr(o)
         error("This object should be implemented by the child class.")
 
-    def circumradius(self, o,  *operands):
+    def circumradius(self, o):
         print "\n\nVisiting Circumeradius: ", repr(o)
         error("This object should be implemented by the child class.")
 
@@ -297,11 +272,11 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     # Argument (basisfunction.py).
     # -------------------------------------------------------------------------
-    def argument(self, o, *operands):
+    def argument(self, o):
         #print("\nVisiting Argument:" + repr(o))
 
-        # Just checking that we don't get any operands.
-        ffc_assert(not operands, "Didn't expect any operands for Argument: " + repr(operands))
+        # Map o to object with proper element and numbering
+        o = self._function_replace_map[o]
 
         # Create aux. info.
         components = self.component()
@@ -311,7 +286,7 @@ class QuadratureTransformerBase(Transformer):
         basis = self.argument_cache.get((o, components, derivatives, self.restriction), None)
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
         if basis is not None and not self.optimise_parameters["optimisation"]:
-#        if basis is not None:
+        #if basis is not None:
             return basis
 
         # Get auxiliary variables to generate basis
@@ -335,62 +310,69 @@ class QuadratureTransformerBase(Transformer):
         #print "\n\nVisiting Identity: ", repr(o)
 
         # Get components
-        components = self.component()
-
-        # Safety checks.
-        ffc_assert(not o.operands(), "Didn't expect any operands for Identity: " + repr(o.operands()))
-        ffc_assert(len(components) == 2, "Identity expect exactly two component indices: " + repr(components))
+        i, j = self.component()
 
         # Only return a value if i==j
-        if components[0] == components[1]:
+        if i == j:
             return self._format_scalar_value(1.0)
-        return self._format_scalar_value(None)
+        else:
+            return self._format_scalar_value(None)
 
-    def scalar_value(self, o, *operands):
+    def scalar_value(self, o):
         "ScalarValue covers IntValue and FloatValue"
         #print "\n\nVisiting ScalarValue: ", repr(o)
-
-        # FIXME: Might be needed because it can be IndexAnnotated?
-        ffc_assert(not operands, "Did not expect any operands for ScalarValue: " + repr((o, operands)))
         return self._format_scalar_value(o.value())
 
-    def zero(self, o, *operands):
+    def zero(self, o):
         #print "\n\nVisiting Zero:", repr(o)
-        # FIXME: Might be needed because it can be IndexAnnotated?
-        ffc_assert(not operands, "Did not expect any operands for Zero: " + repr((o, operands)))
         return self._format_scalar_value(None)
 
     # -------------------------------------------------------------------------
-    # SpatialDerivative (differentiation.py).
+    # Grad (differentiation.py).
     # -------------------------------------------------------------------------
-    def spatial_derivative(self, o):
-        #print("\n\nVisiting SpatialDerivative: " + repr(o))
+    def grad(self, o):
+        #print("\n\nVisiting Grad: " + repr(o))
 
-        # Get expression and index
-        derivative_expr, index = o.operands()
+        # Get expression
+        derivative_expr, = o.operands()
 
-        # Get direction of derivative and check that we only get one return index
-        der = self.visit(index)
-        ffc_assert(len(der) == 1, "SpatialDerivative: expected only one direction index. " + repr(der))
+        # Get components
+        components = self.component()
+
+        en = derivative_expr.rank()
+        cn = len(components)
+        ffc_assert(o.rank() == cn, "Expecting rank of grad expression to match components length.")
+
+        # Get direction of derivative
+        if cn == en+1:
+            der = components[en]
+            self._components.push(components[:en])
+        elif cn == en:
+            # This happens in 1D, sligtly messy result of defining grad(f) == f.dx(0)
+            der = 0
+        else:
+            ffc_error("Unexpected rank %d and component length %d in grad expression." % (en, cn))
 
         # Add direction to list of derivatives
-        self._derivatives.append(der[0])
+        self._derivatives.append(der)
 
         # Visit children to generate the derivative code.
         code = self.visit(derivative_expr)
 
         # Remove the direction from list of derivatives
         self._derivatives.pop()
+        if cn == en+1:
+            self._components.pop()
         return code
 
     # -------------------------------------------------------------------------
     # Coefficient and Constants (function.py).
     # -------------------------------------------------------------------------
-    def coefficient(self, o, *operands):
+    def coefficient(self, o):
         #print("\nVisiting Coefficient: " + repr(o))
 
-        # Safety check.
-        ffc_assert(not operands, "Didn't expect any operands for Coefficient: " + repr(operands))
+        # Map o to object with proper element and numbering
+        o = self._function_replace_map[o]
 
         # Create aux. info.
         components = self.component()
@@ -400,7 +382,7 @@ class QuadratureTransformerBase(Transformer):
         function_code = self.function_cache.get((o, components, derivatives, self.restriction), None)
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
         if function_code is not None and not self.optimise_parameters["optimisation"]:
-#        if function_code is not None:
+        #if function_code is not None:
             return function_code
 
         # Get auxiliary variables to generate function
@@ -416,11 +398,13 @@ class QuadratureTransformerBase(Transformer):
 
         return function_code
 
-    def constant(self, o, *operands):
+    def constant(self, o):
         #print("\n\nVisiting Constant: " + repr(o))
 
+        # Map o to object with proper element and numbering
+        o = self._function_replace_map[o]
+
         # Safety checks.
-        ffc_assert(not operands, "Didn't expect any operands for Constant: " + repr(operands))
         ffc_assert(len(self.component()) == 0, "Constant does not expect component indices: " + repr(self._components))
         ffc_assert(o.shape() == (), "Constant should not have a value shape: " + repr(o.shape()))
 
@@ -435,14 +419,16 @@ class QuadratureTransformerBase(Transformer):
         coefficient = format["coefficient"](o.count(), component)
         return self._create_symbol(coefficient, CONST)
 
-    def vector_constant(self, o, *operands):
+    def vector_constant(self, o):
         #print("\n\nVisiting VectorConstant: " + repr(o))
+
+        # Map o to object with proper element and numbering
+        o = self._function_replace_map[o]
 
         # Get the component
         components = self.component()
 
         # Safety checks.
-        ffc_assert(not operands, "Didn't expect any operands for VectorConstant: " + repr(operands))
         ffc_assert(len(components) == 1, "VectorConstant expects 1 component index: " + repr(components))
 
         # We get one component.
@@ -456,14 +442,16 @@ class QuadratureTransformerBase(Transformer):
         coefficient = format["coefficient"](o.count(), component)
         return self._create_symbol(coefficient, CONST)
 
-    def tensor_constant(self, o, *operands):
+    def tensor_constant(self, o):
         #print("\n\nVisiting TensorConstant: " + repr(o))
+
+        # Map o to object with proper element and numbering
+        o = self._function_replace_map[o]
 
         # Get the components
         components = self.component()
 
         # Safety checks.
-        ffc_assert(not operands, "Didn't expect any operands for TensorConstant: " + repr(operands))
         ffc_assert(len(components) == len(o.shape()), \
                    "The number of components '%s' must be equal to the number of shapes '%s' for TensorConstant." % (repr(components), repr(o.shape())))
 
@@ -489,16 +477,11 @@ class QuadratureTransformerBase(Transformer):
         components = self.component()
 
         # Safety checks.
-        ffc_assert(not operands, "Didn't expect any operands for FacetNormal: " + repr(operands))
+        ffc_assert(not operands, "Didn't expect any operands for spatial_coordinate: " + repr(operands))
 
-        if components == (): # 1D case
-            ffc_assert(o.cell().geometric_dimension() == 1,
-                       "Expecting component when not in 1D.")
-            c = 0
-        else:
-            ffc_assert(len(components) == 1,
-                       " expects 1 component index: " + repr(components))
-            c, = components
+        ffc_assert(len(components) == 1,
+                   " expects 1 component index: " + repr(components))
+        c, = components
 
         # Generate the appropriate coordinate and update tables.
         coordinate = format["ip coordinates"](self.points, c)
@@ -608,26 +591,26 @@ class QuadratureTransformerBase(Transformer):
 
     def bessel_i(self, o, *operands):
         #print("\n\nVisiting Bessel_I: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-#        self.additional_includes_set.add("#include <tr1/cmath>")
-        self.additional_includes_set.add("#include <boost/math/tr1.hpp>")
+        #self.additional_includes_set.add("#include <tr1/cmath>")
+        self.additional_includes_set.add("#include <boost/math/special_functions.hpp>")
         return self._bessel_function(operands, format["bessel_i"])
 
     def bessel_j(self, o, *operands):
         #print("\n\nVisiting Bessel_J: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-#        self.additional_includes_set.add("#include <tr1/cmath>")
-        self.additional_includes_set.add("#include <boost/math/tr1.hpp>")
+        #self.additional_includes_set.add("#include <tr1/cmath>")
+        self.additional_includes_set.add("#include <boost/math/special_functions.hpp>")
         return self._bessel_function(operands, format["bessel_j"])
 
     def bessel_k(self, o, *operands):
         #print("\n\nVisiting Bessel_K: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-#        self.additional_includes_set.add("#include <tr1/cmath>")
-        self.additional_includes_set.add("#include <boost/math/tr1.hpp>")
+        #self.additional_includes_set.add("#include <tr1/cmath>")
+        self.additional_includes_set.add("#include <boost/math/special_functions.hpp>")
         return self._bessel_function(operands, format["bessel_k"])
 
     def bessel_y(self, o, *operands):
         #print("\n\nVisiting Bessel_Y: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-#        self.additional_includes_set.add("#include <tr1/cmath>")
-        self.additional_includes_set.add("#include <boost/math/tr1.hpp>")
+        #self.additional_includes_set.add("#include <tr1/cmath>")
+        self.additional_includes_set.add("#include <boost/math/special_functions.hpp>")
         return self._bessel_function(operands, format["bessel_y"])
 
     # -------------------------------------------------------------------------
@@ -728,7 +711,7 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     # Generate terms for representation.
     # -------------------------------------------------------------------------
-    def generate_terms(self, integrand):
+    def generate_terms(self, integrand, domain_type):
         "Generate terms for code generation."
         #print integrand
         #print tree_format(integrand, 0, False)
@@ -745,7 +728,7 @@ class QuadratureTransformerBase(Transformer):
             if val is None:
                 continue
             # Create data.
-            value, ops, sets = self._create_entry_data(val)
+            value, ops, sets = self._create_entry_data(val, domain_type)
             # Extract nzc columns if any and add to sets.
             used_nzcs = set([int(k[1].split(f_nzc)[1].split("[")[0]) for k in key if f_nzc in k[1]])
             sets.append(used_nzcs)
@@ -894,10 +877,9 @@ class QuadratureTransformerBase(Transformer):
         generate_psi_name = format["psi name"]
 
         # Only support test and trial functions.
-        # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.
-        indices = {-2: format["first free index"],
-                   -1: format["second free index"],
-                    0: format["first free index"],
+        #indices = {-2: format["first free index"],
+        #           -1: format["second free index"],
+        indices = { 0: format["first free index"],
                     1: format["second free index"]}
 
         # Check that we have a basis function.
@@ -926,7 +908,8 @@ class QuadratureTransformerBase(Transformer):
         if self.restriction == "+" or self.restriction == "-":
             space_dim *= 2
 
-        name = generate_psi_name(element_counter, facet, component, deriv)
+        name = generate_psi_name(element_counter, facet, component, deriv,
+                                 self.vertex)
         name, non_zeros, zeros, ones = self.name_map[name]
         loop_index_range = shape(self.unique_tables[name])[1]
 
@@ -994,7 +977,8 @@ class QuadratureTransformerBase(Transformer):
         offset = {"+": "", "-": str(ffc_element.space_dimension()), None: ""}[self.restriction]
 
         # Create basis name and map to correct basis and get info.
-        psi_name = generate_psi_name(element_counter, facet, component, deriv)
+        psi_name = generate_psi_name(element_counter, facet, component, deriv,
+                                     self.vertex)
         psi_name, non_zeros, zeros, ones = self.name_map[psi_name]
 
         # If all basis are zero we just return None.
@@ -1060,7 +1044,8 @@ class QuadratureTransformerBase(Transformer):
         coefficient = format["coefficient"](str(ufl_function.count()), coefficient_access)
         function_expr = self._create_symbol(coefficient, ACCESS)[()]
         if basis_name:
-            function_expr = self._create_product([self._create_symbol(basis_name, ACCESS)[()], self._create_symbol(coefficient, ACCESS)[()]])
+            function_expr = self._create_product([self._create_symbol(basis_name, ACCESS)[()],
+                                                  self._create_symbol(coefficient, ACCESS)[()]])
 
         # If we have a quadrature element (or if basis was deleted) we don't need the basis.
         if quad_element or not basis_name:
@@ -1101,6 +1086,8 @@ class QuadratureTransformerBase(Transformer):
         if not self.facet0 is None:
             points = map_facet_points(points, self.facet0)
             name = f_FEA(num_ip, self.facet0)
+        elif self.vertex is not None:
+            error("Spatial coordinates (x) not implemented for point measure (dP)")
         else:
             name = f_FEA(num_ip, 0)
 

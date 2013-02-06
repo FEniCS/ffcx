@@ -1,6 +1,6 @@
 "Extraction of monomial representations of UFL forms."
 
-# Copyright (C) 2008-2009 Anders Logg
+# Copyright (C) 2008-2013 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -17,11 +17,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Martin Alnes, 2008
+# Modified by Martin Alnaes, 2008, 2013
 # Modified by Kristian B. Oelgaard
 #
 # First added:  2008-08-01
-# Last changed: 2010-01-25
+# Last changed: 2013-01-08
 
 # UFL modules
 from ufl.classes import Form, Argument, Coefficient, ScalarValue, IntValue
@@ -33,7 +33,7 @@ from ffc.log import info, debug, ffc_assert
 # Cache for computed integrand representations
 _cache = {}
 
-def extract_monomial_form(integrals):
+def extract_monomial_form(integrals, function_replace_map):
     """
     Extract monomial representation of form (if possible). When
     successful, the form is represented as a sum of products of scalar
@@ -49,15 +49,18 @@ def extract_monomial_form(integrals):
 
         # Get measure and integrand
         measure = integral.measure()
+        if measure.domain_type() == "point":
+            raise MonomialException("Point integrals are not supported by tensor representation.")
+
         integrand = integral.integrand()
 
         # Extract monomial representation if possible
-        integrand = extract_monomial_integrand(integrand)
+        integrand = extract_monomial_integrand(integrand, function_replace_map)
         monomial_form.append(integrand, measure)
 
     return monomial_form
 
-def extract_monomial_integrand(integrand):
+def extract_monomial_integrand(integrand, function_replace_map):
     "Extract monomial integrand (if possible)."
 
     # Check cache
@@ -69,7 +72,7 @@ def extract_monomial_integrand(integrand):
     integrand = purge_list_tensors(integrand)
 
     # Apply monomial transformer
-    monomial_integrand = apply_transformer(integrand, MonomialTransformer())
+    monomial_integrand = apply_transformer(integrand, MonomialTransformer(function_replace_map))
 
     # Store in cache
     _cache[integrand] = monomial_integrand
@@ -250,8 +253,8 @@ class MonomialForm:
     def __init__(self):
         self.integrals = []
 
-    def append(self, integral, measure):
-        self.integrals.append((integral, measure))
+    def append(self, integrand, measure):
+        self.integrals.append((integrand, measure))
 
     def __len__(self):
         return len(self.integrals)
@@ -278,14 +281,15 @@ class MonomialTransformer(ReuseTransformer):
     monomial form represented as a MonomialSum from a UFL integral.
     """
 
-    def __init__(self):
+    def __init__(self, function_replace_map=None):
         ReuseTransformer.__init__(self)
+        self._function_replace_map = function_replace_map or {}
 
     def expr(self, o, *ops):
-        raise MonomialException, ("No handler defined for expression %s." % o._uflclass.__name__)
+        raise MonomialException("No handler defined for expression %s." % o._uflclass.__name__)
 
     def terminal(self, o):
-        raise MonomialException, ("No handler defined for terminal %s." % o._uflclass.__name__)
+        raise MonomialException("No handler defined for terminal %s." % o._uflclass.__name__)
 
     def variable(self, o):
         return self.visit(o.expression())
@@ -297,8 +301,8 @@ class MonomialTransformer(ReuseTransformer):
         # Handle division by scalars as multiplication by inverse
         denominator = o.operands()[1]
         if not isinstance(denominator, ScalarValue):
-            raise MonomialException, ("No handler defined for expression %s."
-                                      % o._uflclass.__name__)
+            raise MonomialException("No handler defined for expression %s."
+                                    % o._uflclass.__name__)
         inverse = self.scalar_value(ScalarValue(1.0/denominator.value()))
         numerator = self.visit(o.operands()[0])
 
@@ -325,9 +329,32 @@ class MonomialTransformer(ReuseTransformer):
         s.apply_tensor(indices)
         return s
 
-    def spatial_derivative(self, o, s, indices):
+    def grad(self, o, s):
+        # The representation
+        #   o = Grad(s)
+        # is equivalent to
+        #   o = as_tensor(s[ii].dx(i), ii+(i,))
+        # with ii a tuple of free indices and i a single free index.
+
+        # Make some unique utility indices
+        from ufl import indices
+        on = o.rank()
+        ind = list(indices(on))
+
+        # Get underlying expression to take gradient of
+        f, = o.operands()
+        fn = f.rank()
+
+        ffc_assert(on == fn + 1, "Assuming grad always adds one axis.")
+
         s = MonomialSum(s)
-        s.apply_derivative(indices)
+        s.apply_indices(list(ind[:-1]))
+
+        s = MonomialSum(s)
+        s.apply_derivative([ind[-1]])
+
+        s = MonomialSum(s)
+        s.apply_tensor(ind)
         return s
 
     def positive_restricted(self, o, s):
@@ -341,7 +368,7 @@ class MonomialTransformer(ReuseTransformer):
     def power(self, o, s, ignored_exponent_expressed_as_sum):
         (expr, exponent) = o.operands()
         if not isinstance(exponent, IntValue):
-            raise MonomialException, "Cannot handle non-integer exponents."
+            raise MonomialException("Cannot handle non-integer exponents.")
         p = MonomialSum(Monomial())
         for i in range(int(exponent)):
             p = p * s
@@ -353,15 +380,12 @@ class MonomialTransformer(ReuseTransformer):
         indices = [index for index in multi_index]
         return indices
 
-    def index(self, o):
-        raise MonomialException, "Not expecting to see an Index terminal."
-
     def argument(self, v):
-        s = MonomialSum(v)
+        s = MonomialSum(self._function_replace_map.get(v,v))
         return s
 
     def coefficient(self, v):
-        s = MonomialSum(v)
+        s = MonomialSum(self._function_replace_map.get(v,v))
         return s
 
     def scalar_value(self, x):
@@ -373,7 +397,7 @@ def _replace_indices(indices, old_indices, new_indices):
 
     # Old and new indices must match
     if not len(old_indices) == len(new_indices):
-        raise MonomialException, "Unable to replace indices, mismatching index dimensions."
+        raise MonomialException("Unable to replace indices, mismatching index dimensions.")
 
     # Build index map
     index_map = {}

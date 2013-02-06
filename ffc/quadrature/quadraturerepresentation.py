@@ -22,14 +22,18 @@
 # First added:  2009-01-07
 # Last changed: 2010-05-18
 
+import numpy
+
 # UFL modules
-from ufl.classes import Form, Integral, SpatialDerivative
-from ufl.algorithms import extract_unique_elements, extract_type, extract_elements, propagate_restrictions
+from ufl.classes import Form, Integral, Grad
+from ufl.algorithms import extract_unique_elements, extract_type, extract_elements
+from ufl.sorting import sorted_expr_sum
 
 # FFC modules
 from ffc.log import ffc_assert, info, error
 from ffc.fiatinterface import create_element
-from ffc.fiatinterface import map_facet_points
+from ffc.fiatinterface import map_facet_points, reference_cell_vertices
+from ffc.fiatinterface import cellname2num_facets, entities_per_dim
 from ffc.quadrature.quadraturetransformer import QuadratureTransformer
 from ffc.quadrature.optimisedquadraturetransformer import QuadratureTransformerOpt
 from ffc.quadrature_schemes import create_quadrature
@@ -41,14 +45,18 @@ def compute_integral_ir(domain_type,
                         metadata,
                         form_data,
                         form_id,
-                        parameters,
-                        common_cell=None):
+                        parameters):
     "Compute intermediate represention of integral."
 
     info("Computing quadrature representation")
 
+    # Get some cell properties
+    cell = form_data.cell
+    cellname = cell.cellname()
+    num_facets = cellname2num_facets[cellname]
+    num_vertices = entities_per_dim[cell.topological_dimension()][0]
+
     # Initialise representation
-    num_facets = form_data.num_facets
     ir = {"representation":       "quadrature",
           "domain_type":          domain_type,
           "domain_id":            domain_id,
@@ -56,22 +64,20 @@ def compute_integral_ir(domain_type,
           "geometric_dimension":  form_data.geometric_dimension,
           "topological_dimension":form_data.topological_dimension,
           "num_facets":           num_facets,
+          "num_vertices":         num_vertices,
           "needs_oriented":       needs_oriented_jacobian(form_data),
           "geo_consts":           {}}
 
     # Sort integrals and tabulate basis.
     sorted_integrals = _sort_integrals(integrals, metadata, form_data)
     integrals_dict, psi_tables, quad_weights = \
-        _tabulate_basis(sorted_integrals,
-                        domain_type,
-                        form_data.num_facets,
-                        common_cell)
+        _tabulate_basis(sorted_integrals, domain_type, form_data)
 
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.
     prim_idims = []
-    for argument in form_data.arguments:
-        element = create_element(argument.element())
+    for ufl_element in form_data.argument_elements:
+        element = create_element(ufl_element)
         prim_idims.append(element.space_dimension())
     ir["prim_idims"] = prim_idims
 
@@ -117,12 +123,14 @@ def compute_integral_ir(domain_type,
                                                quad_weights,
                                                form_data.geometric_dimension,
                                                form_data.topological_dimension,
+                                               form_data.function_replace_map,
                                                optimise_parameters)
     else:
         transformer = QuadratureTransformer(psi_tables,
                                             quad_weights,
                                             form_data.geometric_dimension,
                                             form_data.topological_dimension,
+                                            form_data.function_replace_map,
                                             optimise_parameters)
 
     # Add tables for weights, name_map and basis values.
@@ -135,26 +143,35 @@ def compute_integral_ir(domain_type,
         # Compute transformed integrals.
         info("Transforming cell integral")
         transformer.update_facets(None, None)
-        ir["trans_integrals"] = _transform_integrals(transformer, integrals_dict, domain_type)
+        terms = _transform_integrals(transformer, integrals_dict, domain_type)
     elif domain_type == "exterior_facet":
         # Compute transformed integrals.
-        terms = [None for i in range(num_facets)]
+        terms = [None]*num_facets
         for i in range(num_facets):
             info("Transforming exterior facet integral %d" % i)
             transformer.update_facets(i, None)
             terms[i] = _transform_integrals(transformer, integrals_dict, domain_type)
-        ir["trans_integrals"] = terms
     elif domain_type == "interior_facet":
         # Compute transformed integrals.
-        terms = [[None for j in range(num_facets)] for i in range(num_facets)]
+        terms = [[None]*num_facets for i in range(num_facets)]
         for i in range(num_facets):
             for j in range(num_facets):
                 info("Transforming interior facet integral (%d, %d)" % (i, j))
                 transformer.update_facets(i, j)
                 terms[i][j] = _transform_integrals(transformer, integrals_dict, domain_type)
-        ir["trans_integrals"] = terms
+    elif domain_type == "point":
+        # Compute transformed integrals.
+        terms = [None]*num_vertices
+        for i in range(num_vertices):
+            info("Transforming point integral (%d)" % i)
+            transformer.update_facets(None, None)
+            transformer.update_vertex(i)
+            terms[i] = _transform_integrals(transformer, integrals_dict, domain_type)
+        ir["unique_tables"] = transformer.unique_tables
+        ir["name_map"] = transformer.name_map
     else:
         error("Unhandled domain type: " + str(domain_type))
+    ir["trans_integrals"] = terms
 
     # Save tables map, to extract table names for optimisation option -O.
     ir["psi_tables_map"] = transformer.psi_tables_map
@@ -162,13 +179,25 @@ def compute_integral_ir(domain_type,
 
     return ir
 
-def _tabulate_basis(sorted_integrals, domain_type, num_facets, common_cell=None):
+def _tabulate_basis(sorted_integrals, domain_type, form_data):
     "Tabulate the basisfunctions and derivatives."
+
+    # MER: Note to newbies: this code assumes that each integral in
+    # the dictionary of sorted_integrals that enters here, has a
+    # unique number of quadrature points ...
 
     # Initialise return values.
     quadrature_weights = {}
     psi_tables = {}
     integrals = {}
+
+    # Extract some cell info
+    cell = form_data.cell
+    gdim = cell.geometric_dimension()
+    cellname = cell.cellname()
+    facet_cellname = cell.facet_cellname()
+    num_facets = cellname2num_facets[cellname]
+    num_vertices = entities_per_dim[cell.topological_dimension()][0]
 
     # Loop the quadrature points and tabulate the basis values.
     for pr, integral in sorted_integrals.iteritems():
@@ -179,25 +208,20 @@ def _tabulate_basis(sorted_integrals, domain_type, num_facets, common_cell=None)
         degree, rule = pr
 
         # Get all unique elements in integral.
-        elements = extract_unique_elements(integral)
+        elements = [form_data.element_replace_map.get(e,e) for e in extract_unique_elements(integral)]
 
-        # Create a list of equivalent FIAT elements (with same ordering of elements).
+        # Create a list of equivalent FIAT elements (with same
+        # ordering of elements).
         fiat_elements = [create_element(e) for e in elements]
-
-        # Get cell and facet domains.
-        if common_cell is None:
-            cell = integral.integrand().cell()
-        else:
-            cell = common_cell
-        cell_domain = cell.domain()
-        facet_domain = cell.facet_domain()
 
         # Make quadrature rule and get points and weights.
         # FIXME: Make create_quadrature() take a rule argument.
         if domain_type == "cell":
-            (points, weights) = create_quadrature(cell_domain, degree, rule)
+            (points, weights) = create_quadrature(cellname, degree, rule)
         elif domain_type == "exterior_facet" or domain_type == "interior_facet":
-            (points, weights) = create_quadrature(facet_domain, degree, rule)
+            (points, weights) = create_quadrature(facet_cellname, degree, rule)
+        elif domain_type == "point":
+            (points, weights) = ([()], numpy.array([1.0,])) # Will be fixed
         else:
             error("Unknown integral type: " + str(domain_type))
 
@@ -225,17 +249,18 @@ def _tabulate_basis(sorted_integrals, domain_type, num_facets, common_cell=None)
         # Initialise dictionary of elements and the number of derivatives.
         num_derivatives = dict([(e, 0) for e in elements])
         # Extract the derivatives from the integral.
-        derivatives = set(extract_type(integral, SpatialDerivative))
+        derivatives = set(extract_type(integral, Grad))
 
         # Loop derivatives and extract multiple derivatives.
         for d in list(derivatives):
-            num_deriv = len(extract_type(d, SpatialDerivative))
+            num_deriv = len(extract_type(d, Grad))
 
-            # TODO: Safety check, SpatialDerivative only has one operand,
+            # TODO: Safety check, Grad only has one operand,
             # and there should be only one element?!
             elem = extract_elements(d.operands()[0])
-            ffc_assert(len(elem) == 1, "SpatialDerivative has more than one element: " + repr(elem))
-            elem = elem[0]
+            ffc_assert(len(elem) == 1,
+                       "Grad has more than one element: " + repr(elem))
+            elem = form_data.element_replace_map.get(elem[0],elem[0])
             # Set the number of derivatives to the highest value
             # encountered so far.
             num_derivatives[elem] = max(num_derivatives[elem], num_deriv)
@@ -250,11 +275,22 @@ def _tabulate_basis(sorted_integrals, domain_type, num_facets, common_cell=None)
             if domain_type == "cell":
                 psi_tables[len_weights][elements[i]] =\
                 {None: element.tabulate(deriv_order, points)}
-            elif domain_type == "exterior_facet" or domain_type == "interior_facet":
+            elif (domain_type == "exterior_facet"
+                  or domain_type == "interior_facet"):
                 psi_tables[len_weights][elements[i]] = {}
                 for facet in range(num_facets):
-                    psi_tables[len_weights][elements[i]][facet] =\
-                        element.tabulate(deriv_order, map_facet_points(points, facet))
+                    psi_tables[len_weights][elements[i]][facet] = \
+                        element.tabulate(deriv_order,
+                                         map_facet_points(points, facet))
+
+            elif domain_type == "point":
+                psi_tables[len_weights][elements[i]] = {}
+                for vertex in range(num_vertices):
+                    points = (reference_cell_vertices(cellname)[vertex],)
+
+                    psi_tables[len_weights][elements[i]][vertex] =\
+                        element.tabulate(deriv_order, points)
+
             else:
                 error("Unknown domain_type: %s" % domain_type)
 
@@ -264,7 +300,16 @@ def _sort_integrals(integrals, metadata, form_data):
     """Sort integrals according to the number of quadrature points needed per axis.
     Only consider those integrals defined on the given domain."""
 
-    sorted_integrals = {}
+    # Get domain type and id
+    if integrals:
+        domain_type = integrals[0].domain_type()
+        domain_id = integrals[0].domain_id()
+        ffc_assert(all(domain_type == itg.domain_type() for itg in integrals),
+                   "Expecting only integrals on the same subdomain.")
+        ffc_assert(all(domain_id == itg.domain_id() for itg in integrals),
+                   "Expecting only integrals on the same subdomain.")
+
+    sorted_integrands = {}
     # TODO: We might want to take into account that a form like
     # a = f*g*h*v*u*dx(0, quadrature_order=4) + f*v*u*dx(0, quadrature_order=2),
     # although it involves two integrals of different order, will most
@@ -276,26 +321,27 @@ def _sort_integrals(integrals, metadata, form_data):
         # Get default degree and rule.
         degree = metadata["quadrature_degree"]
         rule  = metadata["quadrature_rule"]
-        integral_metadata = integral.measure().metadata()
+
         # Override if specified in integral metadata
-        if not integral_metadata is None:
-            if "quadrature_degree" in integral_metadata:
-                degree = integral_metadata["quadrature_degree"]
-            if "quadrature_rule" in integral_metadata:
-                rule = integral_metadata["quadrature_rule"]
+        integral_compiler_data = integral.compiler_data()
+        if not integral_compiler_data is None:
+            if "quadrature_degree" in integral_compiler_data:
+                degree = integral_compiler_data["quadrature_degree"]
+            if "quadrature_rule" in integral_compiler_data:
+                rule = integral_compiler_data["quadrature_rule"]
 
-        # Create form and add to dictionary according to degree and rule.
-        form = Form([Integral(integral.integrand(), integral.measure().reconstruct(metadata={}))])
-        if not (degree, rule) in sorted_integrals:
-            sorted_integrals[(degree, rule)] = form
+        # Add integrand to dictionary according to degree and rule.
+        if not (degree, rule) in sorted_integrands:
+            sorted_integrands[(degree, rule)] = [integral.integrand()]
         else:
-            sorted_integrals[(degree, rule)] += form
-    # Extract integrals form forms.
-    for key, val in sorted_integrals.items():
-        if len(val.integrals()) != 1:
-            error("Only expected one integral over one subdomain: %s" % repr(val))
-        sorted_integrals[key] = val.integrals()[0]
+            sorted_integrands[(degree, rule)] += [integral.integrand()]
 
+    # Create integrals from accumulated integrands.
+    sorted_integrals = {}
+    for key, integrands in sorted_integrands.items():
+        # Summing integrands in a canonical ordering defined by UFL
+        integrand = sorted_expr_sum(integrands)
+        sorted_integrals[key] = Integral(integrand, domain_type, domain_id, {}, None)
     return sorted_integrals
 
 def _transform_integrals(transformer, integrals, domain_type):
@@ -303,11 +349,7 @@ def _transform_integrals(transformer, integrals, domain_type):
     transformed_integrals = []
     for point, integral in integrals.items():
         transformer.update_points(point)
-        integrand = integral.integrand()
-        if domain_type == "interior_facet":
-            integrand = propagate_restrictions(integrand)
-        terms = transformer.generate_terms(integrand)
-        transformed_integrals.append((point, terms, transformer.functions, \
+        terms = transformer.generate_terms(integral.integrand(), domain_type)
+        transformed_integrals.append((point, terms, transformer.functions,
                                       {}, transformer.coordinate, transformer.conditionals))
     return transformed_integrals
-

@@ -351,57 +351,40 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     # FacetNormal, CellVolume, Circumradius, FacetArea (geometry.py).
     # -------------------------------------------------------------------------
-    def facet_normal(self, o,  *operands):
+    def facet_normal(self, o):
         #print("Visiting FacetNormal:")
 
         # Get the component
         components = self.component()
 
         # Safety check.
-        ffc_assert(not operands, "Didn't expect any operands for FacetNormal: " + repr(operands))
+        ffc_assert(len(components) == 1, "FacetNormal expects 1 component index: " + repr(components))
 
         # Handle 1D as a special case.
         # FIXME: KBO: This has to change for mD elements in R^n : m < n
-        if self.gdim == 1:
-            # Safety check.
-            ffc_assert(len(components) == 0, "FacetNormal in 1D does not expect a component index: " + repr(components))
+        if self.g_dim == 1: # FIXME: MSA: UFL uses shape (1,) now, can we remove the special case here then?
             normal_component = format["normal component"](self.restriction, "")
-            self.trans_set.add(normal_component)
         else:
-
-            # Safety check.
-            ffc_assert(len(components) == 1, "FacetNormal expects 1 component index: " + repr(components))
-
-            # We get one component.
             normal_component = format["normal component"](self.restriction, components[0])
-            self.trans_set.add(normal_component)
+        self.trans_set.add(normal_component)
 
         return {():normal_component}
 
-    def cell_volume(self, o,  *operands):
-        # Safety check.
-        ffc_assert(not operands, "Didn't expect any operands for CellVolume: " + repr(operands))
-
+    def cell_volume(self, o):
         # FIXME: KBO: This has to change for higher order elements
         volume = format["cell volume"](self.restriction)
         self.trans_set.add(volume)
 
         return {():volume}
 
-    def circumradius(self, o,  *operands):
-        # Safety check.
-        ffc_assert(not operands, "Didn't expect any operands for Circumradius: " + repr(operands))
-
+    def circumradius(self, o):
         # FIXME: KBO: This has to change for higher order elements
         circumradius = format["circumradius"](self.restriction)
         self.trans_set.add(circumradius)
 
         return {():circumradius}
 
-    def facet_area(self, o,  *operands):
-        # Safety check.
-        ffc_assert(not operands, "Didn't expect any operands for FacetArea: " + repr(operands))
-
+    def facet_area(self, o):
         # FIXME: KBO: This has to change for higher order elements
         # NOTE: Omitting restriction because the area of a facet is the same
         # on both sides.
@@ -517,8 +500,10 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # Figure out dimension of Jacobian
         m = tdim + 1
         n = gdim
-
+	
+		# Reset code
         code = []
+
         # Handle affine mappings.
         if transformation == "affine":
             # Loop derivatives and get multi indices.
@@ -651,19 +636,24 @@ class QuadratureTransformer(QuadratureTransformerBase):
     def _count_operations(self, expression):
         return operation_count(expression, format)
 
-    def _create_entry_data(self, val):
+    def _create_entry_data(self, val, domain_type):
         # Multiply value by weight and determinant
         # Create weight and scale factor.
         weight = format["weight"](self.points)
         if self.points > 1:
             weight += format["component"]("", format["integration points"])
-        f_scale_factor = format["scale factor"]
 
         # Update sets of used variables.
-        trans_set = set([f_scale_factor])
+        if domain_type == "point":
+            trans_set = set()
+            value = format["mul"]([val, weight])
+        else:
+            f_scale_factor = format["scale factor"]
+            trans_set = set([f_scale_factor])
+            value = format["mul"]([val, weight, f_scale_factor])
+
         trans_set.update(self.trans_set)
         used_points = set([self.points])
-        value = format["mul"]([val, weight, f_scale_factor])
         ops = self._count_operations(value)
         used_psi_tables = set([v for k, v in self.psi_tables_map.items()])
 

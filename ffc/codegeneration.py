@@ -24,9 +24,10 @@ UFC function from an (optimized) intermediate representation (OIR).
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Mehdi Nikbakht 2010
+# Modified by Martin Alnaes, 2013
 #
 # First added:  2009-12-16
-# Last changed: 2013-01-08
+# Last changed: 2013-01-25
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -46,8 +47,12 @@ from ffc import quadrature
 from ffc import tensor
 
 # Errors issued for non-implemented functions
-map_from_reference_cell = "map_from_reference_cell not yet implemented (introduced in UFC 2.0)."
-map_to_reference_cell = "map_to_reference_cell not yet implemented (introduced in UFC 2.0)."
+def _not_implemented(function_name, return_null=False):
+    body = format["exception"]("%s not yet implemented." % function_name)
+    if return_null:
+        body += "\n" + format["return"](0)
+    return body
+
 
 def generate_code(ir, prefix, parameters):
     "Generate code from intermediate representation."
@@ -95,7 +100,6 @@ def _generate_element_code(ir, prefix, parameters):
     classname  = format["classname finite_element"]
     do_nothing = format["do nothing"]
     create     = format["create foo"]
-    exception  = format["exception"]
 
     # Codes generated together
     (evaluate_dof_code, evaluate_dofs_code) = evaluate_dof_and_dofs(ir["evaluate_dof"])
@@ -122,8 +126,8 @@ def _generate_element_code(ir, prefix, parameters):
     code["evaluate_dof"] = evaluate_dof_code
     code["evaluate_dofs"] = evaluate_dofs_code
     code["interpolate_vertex_values"] = interpolate_vertex_values(ir["interpolate_vertex_values"])
-    code["map_from_reference_cell"] = exception(map_from_reference_cell)
-    code["map_to_reference_cell"] = exception(map_to_reference_cell)
+    code["map_from_reference_cell"] = _not_implemented("map_from_reference_cell")
+    code["map_to_reference_cell"] = _not_implemented("map_to_reference_cell")
     code["num_sub_elements"] = ret(ir["num_sub_elements"])
     code["create_sub_element"] = _create_foo(prefix, "finite_element", ir["create_sub_element"])
     code["create"] = ret(create(code["classname"]))
@@ -227,11 +231,21 @@ def _generate_form_code(ir, prefix, parameters):
     code["num_cell_domains"] = ret(ir["num_cell_domains"])
     code["num_exterior_facet_domains"] = ret(ir["num_exterior_facet_domains"])
     code["num_interior_facet_domains"] = ret(ir["num_interior_facet_domains"])
+    code["num_point_domains"] = ret(ir["num_point_domains"])
+    code["has_cell_integrals"] = _has_foo_integrals(ir, "cell")
+    code["has_exterior_facet_integrals"] = _has_foo_integrals(ir, "exterior_facet")
+    code["has_interior_facet_integrals"] = _has_foo_integrals(ir, "interior_facet")
+    code["has_point_integrals"] = _has_foo_integrals(ir, "point")
     code["create_finite_element"] = _create_foo(prefix, "finite_element", ir["create_finite_element"])
     code["create_dofmap"] = _create_foo(prefix, "dofmap", ir["create_dofmap"])
     code["create_cell_integral"] = _create_foo_integral(ir, "cell", prefix)
     code["create_exterior_facet_integral"] = _create_foo_integral(ir, "exterior_facet", prefix)
     code["create_interior_facet_integral"] = _create_foo_integral(ir, "interior_facet", prefix)
+    code["create_point_integral"] = _create_foo_integral(ir, "point", prefix)
+    code["create_default_cell_integral"] = _create_default_foo_integral(ir, "cell", prefix)
+    code["create_default_exterior_facet_integral"] = _create_default_foo_integral(ir, "exterior_facet", prefix)
+    code["create_default_interior_facet_integral"] = _create_default_foo_integral(ir, "interior_facet", prefix)
+    code["create_default_point_integral"] = _create_default_foo_integral(ir, "point", prefix)
 
     # Postprocess code
     _postprocess_code(code, parameters)
@@ -457,6 +471,24 @@ def _create_foo_integral(ir, integral_type, prefix):
     class_name = integral_type + "_integral_" + str(ir["id"])
     postfix = ir["create_" + integral_type + "_integral"]
     return _create_foo(prefix, class_name, postfix, numbers=postfix)
+
+def _has_foo_integrals(ir, domain_type):
+    ret = format["return"]
+    b = format["bool"]
+    i = ir["has_%s_integrals" % domain_type]
+    return ret(b(i))
+
+def _create_default_foo_integral(ir, integral_type, prefix):
+    "Generate code for create_default_<foo>_integral."
+    ret = format["return"]
+    postfix = ir["create_default_" + integral_type + "_integral"]
+    if postfix is None:
+        return ret(0)
+    else:
+        create = format["create foo"]
+        class_name = integral_type + "_integral_" + str(ir["id"])
+        name = "%s_%s_%s" % (prefix.lower(), class_name, postfix)
+        return ret(create(name))
 
 def _postprocess_code(code, parameters):
     "Postprocess generated code."

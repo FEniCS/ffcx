@@ -116,7 +116,7 @@ def get_data(ufl_element):
         deriv_order = element.degree()
 
     # Get coordinates of the reference cell.
-    ref_coords = reference_cell(ufl_element.cell().domain()).get_vertices()
+    ref_coords = reference_cell(ufl_element.cell().cellname()).get_vertices()
 
     # Get the locations of the fiat element dofs.
     elem_points =  [L.pt_dict.keys()[0] for L in element.dual_basis()]

@@ -80,9 +80,9 @@ def plot(element, rotate=True):
 
         # Create title
         if element.degree() is not None:
-            title = "%s of degree %d on a %s" % (element.family(), element.degree(), element.cell().domain())
+            title = "%s of degree %d on a %s" % (element.family(), element.degree(), element.cell().cellname())
         else:
-            title = "%s on a %s" % (element.family(), element.cell().domain())
+            title = "%s on a %s" % (element.family(), element.cell().cellname())
 
         # Render plot window
         render([cell] + dofs, title, num_moments, is3d, rotate)
@@ -513,13 +513,13 @@ def DirectionalDerivative(x, n):
 
     return model
 
-def IntegralMoment(domain, num_moments, x=None):
+def IntegralMoment(cellname, num_moments, x=None):
     "Return model for integral moment for given element."
 
     info("Plotting dof: integral moment")
 
     # Set position
-    if x is None and domain == "triangle":
+    if x is None and cellname == "triangle":
         a = 1.0 / (2 + sqrt(2)) # this was a fun exercise
         x = (a, a, 0.0)
     elif x is None:
@@ -568,14 +568,14 @@ def create_cell_model(element):
     color = element_colors[family]
     color = (color[0], color[1], color[2], 0.7)
 
-    # Create model based on domain type
-    domain = element.cell().domain()
-    if domain == "triangle":
+    # Create model based on cell type
+    cellname = element.cell().cellname()
+    if cellname == "triangle":
         return UnitTriangle(color), False
-    elif domain == "tetrahedron":
+    elif cellname == "tetrahedron":
         return UnitTetrahedron(color), True
 
-    error("Unable to plot element, unhandled cell type: %s" % str(domain))
+    error("Unable to plot element, unhandled cell type: %s" % str(cellname))
 
 def create_dof_models(element):
     "Create Soya3D models for dofs."
@@ -671,7 +671,7 @@ def create_dof_models(element):
         elif dof_type in ("FrobeniusIntegralMoment", "IntegralMoment", "ComponentPointEval"):
 
             # Generate model
-            models.append(IntegralMoment(element.cell().domain(), num_moments))
+            models.append(IntegralMoment(element.cell().cellname(), num_moments))
 
             # Count the number of integral moments
             num_moments += 1
@@ -735,7 +735,7 @@ def to3d(x):
 def arnold_winther_dofs(element):
     "Special fix for Arnold-Winther elements until Rob fixes in FIAT."
 
-    if not element.cell().domain() == "triangle":
+    if not element.cell().cellname() == "triangle":
         error("Unable to plot element, only know how to plot Mardal-Tai-Winther on triangles.")
 
     return [("PointEval",        {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
@@ -769,7 +769,7 @@ def argyris_dofs(element):
     if not element.degree() == 5:
         error("Unable to plot element, only know how to plot quintic Argyris elements.")
 
-    if not element.cell().domain() == "triangle":
+    if not element.cell().cellname() == "triangle":
         error("Unable to plot element, only know how to plot Argyris on triangles.")
 
     return [("PointEval",        {(0.0, 0.0): [ (1.0, ()) ]}),
@@ -829,7 +829,7 @@ def hermite_dofs(element):
                ("PointEval",  {(1.0/3, 0.0,   1.0/3): [ (1.0, ()) ]}),
                ("PointEval",  {(1.0/3, 1.0/3, 0.0):   [ (1.0, ()) ]})]
 
-    if element.cell().domain() == "triangle":
+    if element.cell().cellname() == "triangle":
         return dofs_2d
     else:
         return dofs_3d
@@ -837,7 +837,7 @@ def hermite_dofs(element):
 def mardal_tai_winther_dofs(element):
     "Special fix for Mardal-Tai-Winther elements until Rob fixes in FIAT."
 
-    if not element.cell().domain() == "triangle":
+    if not element.cell().cellname() == "triangle":
         error("Unable to plot element, only know how to plot Mardal-Tai-Winther on triangles.")
 
     return [("PointScaledNormalEval", {(1.0/3, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
@@ -853,7 +853,7 @@ def mardal_tai_winther_dofs(element):
 def morley_dofs(element):
     "Special fix for Morley elements until Rob fixes in FIAT."
 
-    if not element.cell().domain() == "triangle":
+    if not element.cell().cellname() == "triangle":
         error("Unable to plot element, only know how to plot Morley on triangles.")
 
     return [("PointEval",        {(0.0, 0.0): [ (1.0, ()) ]}),

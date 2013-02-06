@@ -19,9 +19,10 @@
 #
 # Modified by Kristian B. Oelgaard 2011
 # Modified by Marie E. Rognes 2010
+# Modified by Martin Alnaes 2013
 #
 # First added:  2009-12-16
-# Last changed: 2013-01-10
+# Last changed: 2013-01-25
 
 # Python modules
 import re, numpy, platform
@@ -97,11 +98,11 @@ format.update({
     "acos":           lambda v: "std::acos(%s)" % str(v),
     "asin":           lambda v: "std::asin(%s)" % str(v),
     "atan":           lambda v: "std::atan(%s)" % str(v),
-    "erf":            lambda v:  "erf(%s)" % str(v),
-    "bessel_i":       lambda v, n:  "boost::math::tr1::cyl_bessel_i(%s, %s)" % (str(n), str(v)),
-    "bessel_j":       lambda v, n:  "boost::math::tr1::cyl_bessel_j(%s, %s)" % (str(n), str(v)),
-    "bessel_k":       lambda v, n:  "boost::math::tr1::cyl_bessel_k(%s, %s)" % (str(n), str(v)),
-    "bessel_y":       lambda v, n:  "boost::math::tr1::cyl_neumann(%s, %s)" % (str(n), str(v)),
+    "erf":            lambda v: "erf(%s)" % str(v),
+    "bessel_i":       lambda v, n: "boost::math::cyl_bessel_i(%s, %s)" % (str(n), str(v)),
+    "bessel_j":       lambda v, n: "boost::math::cyl_bessel_j(%s, %s)" % (str(n), str(v)),
+    "bessel_k":       lambda v, n: "boost::math::cyl_bessel_k(%s, %s)" % (str(n), str(v)),
+    "bessel_y":       lambda v, n: "boost::math::cyl_neumann(%s, %s)" % (str(n), str(v)),
     "absolute value": lambda v: "std::abs(%s)" % str(v),
     "sqrt":           lambda v: "std::sqrt(%s)" % str(v),
     "addition":       lambda v: _add(v),
@@ -149,6 +150,7 @@ format.update({
     "argument values":            "values",
     "argument coordinates":       "dof_coordinates",
     "facet":                      lambda r: "facet%s" % _choose_map[r],
+    "vertex":                     "vertex",
     "argument axis":              "i",
     "argument dimension":         "d",
     "argument entity":            "i",
@@ -211,7 +213,7 @@ format.update({
     "function value":     lambda i: "F%d" % i,
     "nonzero columns":    lambda i: "nzc%d" % i,
     "weight":             lambda i: "W%d" % (i),
-    "psi name":           lambda c, f, co, d: _generate_psi_name(c,f,co,d),
+    "psi name":           lambda c, f, co, d, v=None: _generate_psi_name(c, f, co, d, v),
     # both
     "free indices":       ["r","s","t","u"],
     "matrix index":       lambda i, j, range_j: _matrix_index(i, str(j), str(range_j))
@@ -237,24 +239,24 @@ format.update({
     "compute_jacobian_inverse": lambda tdim, gdim, r="": \
                                 compute_jacobian_inverse[tdim][gdim] % {"restriction": r},
     "orientation":              lambda tdim, gdim, r="": orientation_snippet % {"restriction": r} if tdim != gdim else "",
-    "facet determinant":       lambda tdim, gdim, r=None: facet_determinant[tdim][gdim] % {"restriction": _choose_map[r]},
-    "fiat coordinate map":     lambda cell, gdim: fiat_coordinate_map[cell][gdim],
-    "generate normal":         lambda tdim, gdim, i: _generate_normal(tdim, gdim, i),
-    "generate cell volume":    lambda tdim, gdim, i: _generate_cell_volume(tdim, gdim, i),
-    "generate circumradius":   lambda tdim, gdim, i: _generate_circumradius(tdim, gdim, i),
-    "generate facet area":     lambda tdim, gdim: facet_area[tdim][gdim],
-    "generate ip coordinates": lambda g, num_ip, name, ip, r=None: (ip_coordinates[g][0], ip_coordinates[g][1] % \
-                               {"restriction": _choose_map[r], "ip": ip, "name": name, "num_ip": num_ip}),
-    "scale factor snippet": scale_factor,
-    "map onto physical":    map_onto_physical,
-    "combinations":         combinations_snippet,
-    "transform snippet":    transform_snippet,
-    "evaluate function":    evaluate_f,
-    "ufc comment":          comment_ufc,
-    "dolfin comment":       comment_dolfin,
-    "header_h":             header_h,
-    "header_c":             header_c,
-    "footer":               footer
+    "facet determinant":        lambda tdim, gdim, r=None: facet_determinant[tdim][gdim] % {"restriction": _choose_map[r]},
+    "fiat coordinate map":      lambda cell, gdim: fiat_coordinate_map[cell][gdim],
+    "generate normal":          lambda tdim, gdim, i: _generate_normal(tdim, gdim, i),
+    "generate cell volume":     lambda tdim, gdim, i: _generate_cell_volume(tdim, gdim, i),
+    "generate circumradius":    lambda tdim, gdim, i: _generate_circumradius(tdim, gdim, i),
+    "generate facet area":      lambda tdim, gdim: facet_area[tdim][gdim],
+    "generate ip coordinates":  lambda g, num_ip, name, ip, r=None: (ip_coordinates[g][0], ip_coordinates[g][1] % \
+                                {"restriction": _choose_map[r], "ip": ip, "name": name, "num_ip": num_ip}),
+    "scale factor snippet":    scale_factor,
+    "map onto physical":       map_onto_physical,
+    "combinations":            combinations_snippet,
+    "transform snippet":       transform_snippet,
+    "evaluate function":       evaluate_f,
+    "ufc comment":             comment_ufc,
+    "dolfin comment":          comment_dolfin,
+    "header_h":                header_h,
+    "header_c":                header_c,
+    "footer":                  footer
 })
 
 # Class names
@@ -265,13 +267,16 @@ format.update({
     "classname dofmap":  lambda prefix, i: "%s_dofmap_%d" % (prefix.lower(), i),
 
     "classname cell_integral":  lambda prefix, form_id, sub_domain:\
-               "%s_cell_integral_%d_%d" % (prefix.lower(), form_id, sub_domain),
+               "%s_cell_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
 
     "classname exterior_facet_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_exterior_facet_integral_%d_%d" % (prefix.lower(), form_id, sub_domain),
+              "%s_exterior_facet_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
 
     "classname interior_facet_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_interior_facet_integral_%d_%d" % (prefix.lower(), form_id, sub_domain),
+              "%s_interior_facet_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
+
+    "classname point_integral":  lambda prefix, form_id, sub_domain:\
+              "%s_point_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
 
     "classname form": lambda prefix, i: "%s_form_%d" % (prefix.lower(), i)
 })
@@ -508,7 +513,7 @@ def _matrix_index(i, j, range_j):
         access = format["add"]([irj, j])
     return access
 
-def _generate_psi_name(counter, facet, component, derivatives):
+def _generate_psi_name(counter, facet, component, derivatives, vertex=None):
     """Generate a name for the psi table of the form:
     FE#_f#_C#_D###, where '#' will be an integer value.
 
@@ -521,11 +526,15 @@ def _generate_psi_name(counter, facet, component, derivatives):
           tensor valued functions)
 
     D   - is the number of derivatives in each spatial direction if any. If the
-          element is defined in 3D, then D012 means d^3(*)/dydz^2."""
+          element is defined in 3D, then D012 means d^3(*)/dydz^2
+
+    f   - denotes vertices if applicable, range(num_vertices)."""
 
     name = "FE%d" % counter
     if not facet is None:
         name += "_f%d" % facet
+    if not vertex is None:
+        name += "_v%d" % vertex
     if component != () and component != []:
         name += "_C%d" % component
     if any(derivatives):
@@ -578,7 +587,7 @@ def _generate_circumradius(tdim, gdim, domain_type):
     radius = circumradius[tdim][gdim]
 
     # Choose restrictions
-    if domain_type in ("cell", "exterior_facet"):
+    if domain_type in ("cell", "exterior_facet", "point"):
         code = radius % {"restriction": ""}
     elif domain_type == "interior_facet":
         code = radius % {"restriction": _choose_map["+"]}

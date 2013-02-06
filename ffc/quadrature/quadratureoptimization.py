@@ -16,10 +16,12 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2010-02-08
-# Last changed: 2011-01-11
+# Last changed: 2013-02-01
+#
+# Modified by Marie E. Rognes, 2013
 
 # FFC modules
-from ffc.log import info
+from ffc.log import info, error
 from ffc.cpp import format
 from ffc.quadrature.symbolics import optimise_code, BASIS, IP, GEO, CONST
 from ffc.quadrature.symbolics import create_product, create_sum, create_symbol, create_fraction
@@ -35,6 +37,7 @@ def optimize_integral_ir(ir, parameters):
         integrals  =  ir["trans_integrals"]
         domain_type = ir["domain_type"]
         num_facets =  ir["num_facets"]
+        num_vertices =  ir["num_vertices"]
         geo_consts =  ir["geo_consts"]
         psi_tables_map =  ir["psi_tables_map"]
         if domain_type == "cell":
@@ -58,6 +61,13 @@ def optimize_integral_ir(ir, parameters):
                         _precompute_expressions(integrals[i][j], geo_consts,parameters["optimisation"])
                     else:
                         _simplify_expression(integrals[i][j], geo_consts, psi_tables_map)
+        elif domain_type == "point":
+            for i in range(num_vertices):
+                info("Optimising expressions for poin integral %d" % i)
+                if parameters["optimisation"] in ("precompute_ip_const", "precompute_basis_const"):
+                    _precompute_expressions(integrals[i], geo_consts, parameters["optimisation"])
+                else:
+                    _simplify_expression(integrals[i], geo_consts, psi_tables_map)
         else:
             error("Unhandled domain type: " + str(domain_type))
 

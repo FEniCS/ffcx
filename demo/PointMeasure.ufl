@@ -1,4 +1,4 @@
-# Copyright (C) 2012 Marie E. Rognes and David Ham
+# Copyright (C) 2013 Marie E. Rognes
 #
 # This file is part of FFC.
 #
@@ -15,20 +15,17 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# This demo illustrates use of finite element spaces defined over
-# simplicies embedded in higher dimensions
+# This demo illustrates how to use a point measure: dP
 #
-# Compile this form with FFC: ffc ProjectionManifold.ufl
+# Compile this form with FFC: ffc PointMeasure.ufl
 
-# Define interval embedded in 3D:
-domain = Cell("triangle", geometric_dimension=3)
+element = FiniteElement("CG", triangle, 1)
+V = FiniteElement("CG", triangle, 2)
 
-# Define element over this domain
-V = FiniteElement("RT", domain, 1)
-Q = FiniteElement("DG", domain, 0)
-element = V*Q
+u = TrialFunction(element)
+v = TestFunction(element)
+g = Coefficient(element)
+f = Coefficient(V)
 
-(u, p) = TrialFunctions(element)
-(v, q) = TestFunctions(element)
-
-a = (inner(u, v) + div(u)*q + div(v)*p)*dx
+a = u*v*dP + g*g*u*v*dP(1) + u*v*dx
+L = f*v*dP

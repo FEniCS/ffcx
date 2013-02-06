@@ -263,7 +263,7 @@ class TransformedMonomial:
 
             # Create FIAT element
             ufl_element = f.element()
-            fiat_element = create_element(f.element())
+            fiat_element = create_element(ufl_element)
 
             # Note nifty aspect here: when gdim != tdim, it might be
             # (in particular, is for H(div)/H(curl), that the value
@@ -289,11 +289,11 @@ class TransformedMonomial:
             if isinstance(f.function, Argument):
                 vindex = MonomialIndex(index_type=MonomialIndex.PRIMARY,
                                        index_range=range(sdim),
-                                       index_id=f.function.count())
+                                       index_id=f.count())
 
             elif isinstance(f.function, Coefficient):
                 vindex = MonomialIndex(index_range=range(sdim))
-                coefficient = MonomialCoefficient(vindex, f.function.count())
+                coefficient = MonomialCoefficient(vindex, f.count())
                 self.coefficients.append(coefficient)
 
             # Extract components
@@ -335,7 +335,7 @@ class TransformedMonomial:
                 if (gdim != tdim):
                     assert len(component.index_range) == 1, \
                         "Component transform not implemented for this case. Please request this feature."
-                    component, offset = transform_component(component.index_range[0], offset, f.element())
+                    component, offset = transform_component(component.index_range[0], offset, ufl_element)
                     component = MonomialIndex(index_type=MonomialIndex.FIXED,
                                               index_range=[component], index_id=None)
                     components = [component, ]
@@ -428,7 +428,7 @@ class TransformedMonomial:
                 # KBO: Is this the right place to add, and do we only have
                 # scalar components in the tensor representation at this stage
                 # in the representation?
-                comp_map, comp_num = build_component_numbering(f.function.element().value_shape(), f.function.element().symmetry())
+                comp_map, comp_num = build_component_numbering(f.element().value_shape(), f.element().symmetry())
                 comp = comp_map[(int(c),)]
                 index = MonomialIndex(index_type=MonomialIndex.FIXED,
                                       index_range=[comp],
@@ -499,5 +499,3 @@ def _reset_indices():
     _current_secondary_index = 0
     _current_internal_index = 0
     _current_external_index = 0
-
-
