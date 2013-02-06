@@ -16,7 +16,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2010-01-29
-# Last changed: 2013-01-31
+# Last changed: 2013-02-06
 
 from ffc.log import info, info_red, info_blue, info_green, debug
 from instant.output import get_status_output
@@ -129,7 +129,7 @@ def compile_gcc_code(ufl_element, code, gcc_fail, log_file):
     # Compile g++ code
     c = "g++ %s -Wall -Werror -o evaluate_basis evaluate_basis.cpp" % ufc_cflags
     f = open("compile.sh", "w")
-    f.write("c" + "\n")
+    f.write(c + "\n")
     f.close()
     error, output = get_status_output(c)
     if error:
