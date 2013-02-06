@@ -27,7 +27,11 @@ public:
   /// Tabulate the tensor for the contribution from a local cell
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
+<<<<<<< TREE
                                const double* vertex_coordinates) const
+=======
+                               const ufc::cell& c) const
+>>>>>>> MERGE-SOURCE
   {
 %(tabulate_tensor)s
   }
@@ -53,7 +57,20 @@ public:
   /// Tabulate the tensor for the contribution from a local cell
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
+<<<<<<< TREE
                                const double* vertex_coordinates) const;
+=======
+                               const ufc::cell& c) const;
+
+  /// Tabulate the tensor for the contribution from a local cell
+  /// using the specified reference cell quadrature points/weights
+  virtual void tabulate_tensor(double* A,
+                               const double * const * w,
+                               const ufc::cell& c,
+                               std::size_t num_quadrature_points,
+                               const double * const * quadrature_points,
+                               const double* quadrature_weights) const;
+>>>>>>> MERGE-SOURCE
 
 };
 """
@@ -74,7 +91,11 @@ cell_integral_implementation = """\
 /// Tabulate the tensor for the contribution from a local cell
 void %(classname)s::tabulate_tensor(double* A,
                                     const double * const * w,
+<<<<<<< TREE
                                     const double* vertex_coordinates) const
+=======
+                                    const ufc::cell& c) const
+>>>>>>> MERGE-SOURCE
 {
 %(tabulate_tensor)s
 }
@@ -244,4 +265,111 @@ void %(classname)s::tabulate_tensor(double* A,
 {
 %(tabulate_tensor)s
 }
+"""
+
+point_integral_combined = """\
+/// This class defines the interface for the tabulation of
+/// an expression evaluated at exactly one point.
+
+class %(classname)s: public ufc::point_integral
+{%(members)s
+public:
+
+  /// Constructor
+  %(classname)s(%(constructor_arguments)s) : ufc::point_integral()%(initializer_list)s
+  {
+%(constructor)s
+  }
+
+  /// Destructor
+  virtual ~%(classname)s()
+  {
+%(destructor)s
+  }
+
+  /// Tabulate the tensor for the contribution from the local vertex
+  virtual void tabulate_tensor(double* A,
+                               const double * const * w,
+                               const ufc::cell& c,
+                               std::size_t vertex) const
+  {
+%(tabulate_tensor)s
+  }
+
+  /// Tabulate the tensor for the contributions from a set of points
+  virtual void tabulate_tensor(double* A,
+                               const double * const * w,
+                               const ufc::cell& c,
+                               std::size_t num_points,
+                               const double * const * points) const
+  {
+%(tabulate_tensor_quadrature)s
+  }
+
+
+};
+"""
+
+point_integral_header = """\
+/// This class defines the interface for the tabulation of
+/// an expression evaluated at exactly one point.
+
+class %(classname)s: public ufc::point_integral
+{%(members)s
+public:
+
+  /// Constructor
+  %(classname)s(%(constructor_arguments)s);
+
+  /// Destructor
+  virtual ~%(classname)s();
+
+  /// Tabulate the tensor for the contribution from the local vertex
+  virtual void tabulate_tensor(double* A,
+                               const double * const * w,
+                               const ufc::cell& c,
+                               std::size_t vertex) const;
+
+  /// Tabulate the tensor for the contributions from a set of points
+  virtual void tabulate_tensor(double* A,
+                               const double * const * w,
+                               const ufc::cell& c,
+                               std::size_t num_points,
+                               const double * const * points) const;
+
+};
+"""
+
+point_integral_implementation = """\
+/// Constructor
+%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::point_integral()%(initializer_list)s
+{
+%(constructor)s
+}
+
+/// Destructor
+%(classname)s::~%(classname)s()
+{
+%(destructor)s
+}
+
+/// Tabulate the tensor for the contribution from the local vertex
+void %(classname)s::tabulate_tensor(double* A,
+                                    const double * const * w,
+                                    const ufc::cell& c,
+                                    std::size_t vertex) const
+{
+%(tabulate_tensor)s
+}
+
+/// Tabulate the tensor for the contributions from a set of points
+void %(classname)s::tabulate_tensor(double* A,
+                                    const double * const * w,
+                                    const ufc::cell& c,
+                                    std::size_t num_points,
+                                    const double * const * points) const
+{
+%(tabulate_tensor_quadrature)s
+}
+
 """

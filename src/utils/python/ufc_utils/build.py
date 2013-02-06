@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake@simula.no)"
-__date__ = "2009-03-06 -- 2012-05-09"
+__date__ = "2009-03-06 -- 2013-02-01"
 __license__  = "This code is released into the public domain"
 
 __all__ = ['build_ufc_module']
@@ -55,107 +55,13 @@ def build_ufc_module(h_files, source_directory="", system_headers=None, \
     # Get the swig interface file declarations
     declarations = extract_declarations(h_files2)
 
-    # Check system requirements
-    (cpp_path, swig_include_dirs, library_dirs, libraries) = \
-               configure_instant(swig_binary, swig_path)
-
     # Call instant and return module
     return instant.build_module(wrap_headers            = h_files,
                                 source_directory        = source_directory,
                                 additional_declarations = declarations,
                                 system_headers          = system_headers,
-                                include_dirs            = cpp_path,
-                                library_dirs            = library_dirs,
-                                libraries               = libraries,
-                                swigargs                = ['-c++', '-I.','-O'],
-                                swig_include_dirs       = swig_include_dirs,
+                                cmake_packages          = ["UFC"],
                                 **kwargs)
-
-def configure_instant(swig_binary="swig", swig_path=""):
-    "Check system requirements"
-
-    # Get include directory for ufc.h (might be better way to do this?)
-    (path, dummy, dummy, dummy) = instant.header_and_libs_from_pkgconfig("ufc-1")
-    if len(path) == 0: path = [(os.sep).join(sysconfig.get_python_inc().\
-                                    split(os.sep)[:-2]) + os.sep + "include"]
-
-    # Register the paths
-    cpp_path, swig_include_dirs = [path[0]], [path[0]]
-
-    # Check for swig installation
-    if not instant.check_and_set_swig_binary(swig_binary, swig_path):
-        raise OSError("Could not find swig installation. Pass an existing "\
-              "swig binary or install SWIG version 1.3.35 or higher.\n")
-
-    # Check swig version for shared_ptr
-    if not instant.check_swig_version("1.3.35"):
-        raise OSError("Your current swig version is %s, it needs to be "\
-              "1.3.35 or higher.\n" % instant.get_swig_version())
-
-    # Check if UFC is importable and what version of swig was used to
-    # create the UFC extension module
-    try:
-        import ufc
-    except:
-        raise OSError("Please install the python extenstion module of UFC on your system.\n")
-
-    # Check that the form compiler will use the same swig version
-    # that UFC was compiled with
-    if not instant.check_swig_version(ufc.__swigversion__, same=True):
-        raise OSError("""The python extension module of UFC was not compiled with the present version of swig.
-Install swig version %s or recompiled UFC with present swig
-""" % ufc.__swigversion__)
-
-    # Set a default swig command and boost include directory
-    boost_include_dir = []
-
-    # Check for boost installation
-    # Set a default directory for the boost installation
-    if sys.platform == "darwin":
-        # Use MacPorts as default
-        default = os.path.join(os.path.sep, "opt", "local")
-    else:
-        default = os.path.join(os.path.sep, "usr")
-
-    # If BOOST_DIR is not set use default directory
-    boost_dir = os.getenv("BOOST_DIR", default)
-    boost_is_found = False
-    for inc_dir in ["", "include"]:
-        if os.path.isfile(os.path.join(boost_dir, inc_dir, "boost", "version.hpp")):
-            boost_include_dir = [os.path.join(boost_dir, inc_dir)]
-            boost_is_found = True
-            break
-
-    if not boost_is_found:
-        raise OSError("""The Boost headers was not found.
-If Boost is installed in a nonstandard location,
-set the environment variable BOOST_DIR.
-""")
-
-    # Add the boost_include_dir
-    cpp_path += boost_include_dir
-
-    # Check for boost_math library
-    # FIXME: This is a hack and should be done properly, probably using
-    # FIXME: cmake --find-packages
-    # If BOOST_DIR is not set use default directory
-    boost_dir = os.getenv("BOOST_DIR", default)
-    boost_math_is_found = False
-    for lib_dir in ["", "lib64", "lib"]:
-        for math_lib in ["-mt", ""]:
-            if glob.glob(os.path.join(boost_dir, lib_dir, \
-                                      "libboost_math_tr1%s*"%math_lib)):
-                boost_library_dir = [os.path.join(boost_dir, lib_dir)]
-                boost_math_is_found = True
-                boost_library = ["boost_math_tr1%s"%math_lib]
-                break
-
-    if not boost_math_is_found:
-        raise OSError("""The Boost math library was not found.
-If Boost math library is installed in a nonstandard location,
-set the environment variable BOOST_DIR.
-""")
-    return cpp_path, swig_include_dirs, boost_library_dir, boost_library
 
 def extract_declarations(h_files):
     "Extract information for shared_ptr"
@@ -175,6 +81,7 @@ def extract_declarations(h_files):
 %shared_ptr(ufc::form)
 %shared_ptr(ufc::exterior_facet_integral)
 %shared_ptr(ufc::interior_facet_integral)
+%shared_ptr(ufc::point_integral)
 
 // Import types from ufc
 %import(module="ufc") "ufc.h"

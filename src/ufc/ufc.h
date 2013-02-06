@@ -24,6 +24,34 @@ namespace ufc
   /// Valid cell shapes
   enum shape {interval, triangle, quadrilateral, tetrahedron, hexahedron};
 
+  /// This class defines the interface for cell topology data.
+  class cell_topology
+  {
+  public:
+
+    /// Destructor
+    virtual ~cell_topology() {}
+
+    /// Return array of global entity indices for topological dimension d
+    //virtual const std::size_t* entity_indices(std::size_t d) const;
+
+  };
+
+  /// This class defines the interface for cell geometry data.
+  class cell_geometry
+  {
+  public:
+
+    /// Destructor
+    virtual ~cell_geometry() {}
+
+    /// Get vertex coordinates
+    //virtual void get_vertex_coordinates(const double* x[]) const;
+
+    //virtual std::vector<std::vector<double> >& void vertex_coordinates() const;
+
+  };
+
   /// This class defines the data structure for a cell in a mesh.
 
   class cell
@@ -263,6 +291,12 @@ namespace ufc
                                  const double * const * w,
                                  const double* vertex_coordinates) const = 0;
 
+    // FIXME: New experimental version
+    /// Tabulate the tensor for the contribution from a local cell
+    virtual void tabulate_tensor_new(double* A,
+                                     const double * const * w,
+                                     const cell_geometry& c) const {}
+
   };
 
   /// This class defines the interface for the tabulation of the
@@ -302,6 +336,34 @@ namespace ufc
                                  const double* vertex_coordinates_1,
                                  std::size_t facet0,
                                  std::size_t facet1) const = 0;
+
+  };
+
+  /// This class defines the interface for the tabulation of
+  /// an expression evaluated at exactly one point.
+
+  class point_integral
+  {
+  public:
+
+    /// Constructor
+    point_integral() {}
+
+    /// Destructor
+    virtual ~point_integral() {}
+
+    /// Tabulate the tensor for the contribution from the local vertex
+    virtual void tabulate_tensor(double* A,
+                                 const double * const * w,
+                                 const cell& c,
+                                 std::size_t vertex) const = 0;
+
+    /// Tabulate the tensor for the contributions from a set of points
+    virtual void tabulate_tensor(double* A,
+                                 const double * const * w,
+                                 const cell& c,
+                                 std::size_t num_points,
+                                 const double * const * points) const = 0;
 
   };
 
@@ -345,6 +407,21 @@ namespace ufc
     /// Return the number of interior facet domains
     virtual std::size_t num_interior_facet_domains() const = 0;
 
+    /// Return the number of point domains
+    virtual std::size_t num_point_domains() const = 0;
+
+    /// Return whether form has any cell integrals
+    virtual bool has_cell_integrals() const = 0;
+
+    /// Return whether form has any exterior facet integrals
+    virtual bool has_exterior_facet_integrals() const = 0;
+
+    /// Return whether form has any interior facet integrals
+    virtual bool has_interior_facet_integrals() const = 0;
+
+    /// Return whether form has any point integrals
+    virtual bool has_point_integrals() const = 0;
+
     /// Create a new finite element for argument function i
     virtual finite_element* create_finite_element(std::size_t i) const = 0;
 
@@ -361,6 +438,23 @@ namespace ufc
     /// Create a new interior facet integral on sub domain i
     virtual interior_facet_integral*
     create_interior_facet_integral(std::size_t i) const = 0;
+
+    /// Create a new point integral on sub domain i
+    virtual point_integral* create_point_integral(std::size_t i) const = 0;
+
+    /// Create a new cell integral on everywhere else
+    virtual cell_integral* create_default_cell_integral() const = 0;
+
+    /// Create a new exterior facet integral on everywhere else
+    virtual exterior_facet_integral*
+    create_default_exterior_facet_integral() const = 0;
+
+    /// Create a new interior facet integral on everywhere else
+    virtual interior_facet_integral*
+    create_default_interior_facet_integral() const = 0;
+
+    /// Create a new point integral on everywhere else
+    virtual point_integral* create_default_point_integral() const = 0;
 
   };
 
