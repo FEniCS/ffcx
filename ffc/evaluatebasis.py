@@ -151,7 +151,7 @@ def _evaluate_basis(data):
     code += [format["compute_jacobian_inverse"](tdim, gdim)]
     if data["needs_oriented"]:
         code += [format["orientation"](tdim, gdim)]
-    code += ["", format["fiat coordinate map"](element_cell_name, gdim)]
+    code += ["", format["fiat coordinate map"](element_cellname, gdim)]
 
     # Get value shape and reset values. This should also work for TensorElement,
     # scalar are empty tuples, therefore (1,) in which case value_shape = 1.

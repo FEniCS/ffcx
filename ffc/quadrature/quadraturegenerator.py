@@ -194,8 +194,8 @@ def _tabulate_tensor(ir, parameters):
         jacobi_code = format["jacobian and inverse"](geo_dim, top_dim,
                                                      oriented=oriented)
         jacobi_code += "\n\n" + format["facet determinant"](geo_dim, top_dim)
-   
-	else:
+
+    else:
         error("Unhandled integral type: " + str(integral_type))
 
     # Add common (for cell, exterior and interior) geo code.
