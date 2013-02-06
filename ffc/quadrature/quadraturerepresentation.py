@@ -27,6 +27,7 @@ import numpy
 # UFL modules
 from ufl.classes import Form, Integral, Grad
 from ufl.algorithms import extract_unique_elements, extract_type, extract_elements
+from ufl.sorting import sorted_expr_sum
 
 # FFC modules
 from ffc.log import ffc_assert, info, error
@@ -331,13 +332,15 @@ def _sort_integrals(integrals, metadata, form_data):
 
         # Add integrand to dictionary according to degree and rule.
         if not (degree, rule) in sorted_integrands:
-            sorted_integrands[(degree, rule)] = integral.integrand()
+            sorted_integrands[(degree, rule)] = [integral.integrand()]
         else:
-            sorted_integrands[(degree, rule)] += integral.integrand()
+            sorted_integrands[(degree, rule)] += [integral.integrand()]
 
     # Create integrals from accumulated integrands.
     sorted_integrals = {}
-    for key, integrand in sorted_integrands.items():
+    for key, integrands in sorted_integrands.items():
+        # Summing integrands in a canonical ordering defined by UFL
+        integrand = sorted_expr_sum(integrands)
         sorted_integrals[key] = Integral(integrand, domain_type, domain_id, {}, None)
     return sorted_integrals
 
