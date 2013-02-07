@@ -30,9 +30,11 @@ class test_geometry_snippets(CodegenTestCase):
     def test_computation_of_geometry_mapping_on_interval(self):
         """
         PRE:
-        mock_interval c;
-        c.coordinates[0][0] = 0.2;
-        c.coordinates[1][0] = 0.1;
+        mock_cell mc;
+        mc.fill_reference_interval_1d();
+        double * vertex_coordinates = mc.vertex_coordinates;
+        vertex_coordinates[0*mc.geometric_dimension + 0] = 0.2;
+        vertex_coordinates[1*mc.geometric_dimension + 0] = 0.1;
 
         POST:
         ASSERT_EQ(0.2, v0[0]);
@@ -56,9 +58,11 @@ class test_geometry_snippets(CodegenTestCase):
     def test_computation_of_geometry_mapping_on_restricted_interval(self):
         """
         PRE:
-        mock_interval cr;
-        cr.coordinates[0][0] = 0.2;
-        cr.coordinates[1][0] = 0.1;
+        mock_cell mc;
+        mc.fill_reference_interval_1d();
+        double * vertex_coordinatesr = mc.vertex_coordinates;
+        vertex_coordinatesr[0*mc.geometric_dimension + 0] = 0.2;
+        vertex_coordinatesr[1*mc.geometric_dimension + 0] = 0.1;
 
         POST:
         ASSERT_EQ(0.2, v0r[0]);
@@ -83,9 +87,11 @@ class test_geometry_snippets(CodegenTestCase):
     def test_mapping_from_xi_to_x_on_interval(self):
         """
         PRE:
-        mock_interval c;
-        c.coordinates[0][0] = 0.2;
-        c.coordinates[1][0] = 0.1;
+        mock_cell mc;
+        mc.fill_reference_interval_1d();
+        double * vertex_coordinates = mc.vertex_coordinates;
+        vertex_coordinates[0*mc.geometric_dimension + 0] = 0.2;
+        vertex_coordinates[1*mc.geometric_dimension + 0] = 0.1;
         double xi[1] = { 0.5 };
 
         POST:
@@ -102,9 +108,11 @@ class test_geometry_snippets(CodegenTestCase):
     def test_mapping_from_x_to_xi_on_interval(self):
         """
         PRE:
-        mock_interval c;
-        c.coordinates[0][0] = 0.2;
-        c.coordinates[1][0] = 0.1;
+        mock_cell mc;
+        mc.fill_reference_interval_1d();
+        double * vertex_coordinates = mc.vertex_coordinates;
+        vertex_coordinates[0*mc.geometric_dimension + 0] = 0.2;
+        vertex_coordinates[1*mc.geometric_dimension + 0] = 0.1;
         double x[1] = { 0.15 };
 
         POST:

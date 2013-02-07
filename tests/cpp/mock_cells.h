@@ -12,191 +12,190 @@ namespace uflacs
 {
     struct mock_cell
     {
-        mock_cell(ufc::shape cell_shape, size_t geometric_dimension,
-                  size_t topological_dimension, size_t num_vertices):
-          cell_shape(cell_shape),
-          geometric_dimension(geometric_dimension),
-          topological_dimension(topological_dimension),
-          num_vertices(num_vertices),
-          local_facet(0)
-        {
-          for (int i=0; i<12; ++i)
-            for (int j=0; j<3; ++j)
-              coordinates[i][j] = 0.0;
-        }
+        // These coordinates is all that generated code should care about
+        double vertex_coordinates[8*3];
 
-        ufc::shape cell_shape;
+        // Dimensions needed for generic cell transformations
         size_t geometric_dimension;
         size_t topological_dimension;
-        size_t num_vertices; // not part of ufc::cell but needed for cell mapping code
-        int local_facet;
-        double coordinates[12][3];
-    };
+        size_t num_vertices;
 
-    struct mock_interval: public mock_cell
-    {
-        mock_interval():
-            mock_cell(ufc::interval, 1, 1, 2)
+        // Constructor just clears everything to zero
+        mock_cell()
         {
-            // Fill in coordinates for reference cell
-            coordinates[0][0] = 0.0;
-            coordinates[1][0] = 1.0;
+            init_dimensions(0,0,0);
         }
-    };
 
-    struct mock_triangle: public mock_cell
-    {
-        mock_triangle():
-            mock_cell(ufc::triangle, 2, 2, 3)
+        // Utility initialization function
+        void init_dimensions(size_t geometric_dimension, size_t topological_dimension, size_t num_vertices)
         {
-            // Fill in coordinates for reference cell
-            coordinates[0][0] = 0.0;
-            coordinates[0][1] = 0.0;
-
-            coordinates[1][0] = 1.0;
-            coordinates[1][1] = 0.0;
-
-            coordinates[2][0] = 0.0;
-            coordinates[2][1] = 1.0;
+            geometric_dimension = geometric_dimension;
+            topological_dimension = topological_dimension;
+            num_vertices = num_vertices;
+            for (int i=0; i<sizeof(vertex_coordinates)/sizeof(vertex_coordinates[0]); ++i)
+                vertex_coordinates[i] = 0.0;
         }
-    };
 
-    struct mock_tetrahedron: public mock_cell
-    {
-        mock_tetrahedron():
-            mock_cell(ufc::tetrahedron, 3, 3, 4)
+        void fill_reference_interval_1d()
         {
-            // Fill in coordinates for reference cell
-            coordinates[0][0] = 0.0;
-            coordinates[0][1] = 0.0;
-            coordinates[0][2] = 0.0;
+            init_dimensions(1, 1, 2);
 
-            coordinates[1][0] = 1.0;
-            coordinates[1][1] = 0.0;
-            coordinates[1][2] = 0.0;
-
-            coordinates[2][0] = 0.0;
-            coordinates[2][1] = 1.0;
-            coordinates[2][2] = 0.0;
-
-            coordinates[3][0] = 0.0;
-            coordinates[3][1] = 0.0;
-            coordinates[3][2] = 1.0;
+            // Fill in vertex_coordinates for reference cell
+            vertex_coordinates[0*geometric_dimension + 0] = 0.0;
+            vertex_coordinates[1*geometric_dimension + 0] = 1.0;
         }
-    };
 
-    struct mock_quadrilateral: public mock_cell
-    {
-        mock_quadrilateral():
-            mock_cell(ufc::quadrilateral, 2, 2, 4)
+        void fill_reference_triangle_2d()
         {
-            // Fill in coordinates for reference cell
-            coordinates[0][0] = 0.0;
-            coordinates[0][1] = 0.0;
+            init_dimensions(2, 2, 3);
 
-            coordinates[1][0] = 1.0;
-            coordinates[1][1] = 0.0;
+            // Fill in vertex_coordinates for reference cell
+            vertex_coordinates[0*geometric_dimension + 0] = 0.0;
+            vertex_coordinates[0*geometric_dimension + 1] = 0.0;
 
-            coordinates[2][0] = 1.0;
-            coordinates[2][1] = 1.0;
+            vertex_coordinates[1*geometric_dimension + 0] = 1.0;
+            vertex_coordinates[1*geometric_dimension + 1] = 0.0;
 
-            coordinates[3][0] = 0.0;
-            coordinates[3][1] = 1.0;
+            vertex_coordinates[2*geometric_dimension + 0] = 0.0;
+            vertex_coordinates[2*geometric_dimension + 1] = 1.0;
         }
-    };
 
-    struct mock_hexahedron: public mock_cell
-    {
-        mock_hexahedron():
-            mock_cell(ufc::hexahedron, 3, 3, 8)
+        void fill_reference_tetrahedron_3d()
         {
-            // Fill in coordinates for reference cell
-            coordinates[0][0] = 0.0;
-            coordinates[0][1] = 0.0;
-            coordinates[0][2] = 0.0;
+            init_dimensions(3, 3, 4);
 
-            coordinates[1][0] = 1.0;
-            coordinates[1][1] = 0.0;
-            coordinates[1][2] = 0.0;
+            // Fill in vertex_coordinates for reference cell
+            vertex_coordinates[0*geometric_dimension + 0] = 0.0;
+            vertex_coordinates[0*geometric_dimension + 1] = 0.0;
+            vertex_coordinates[0*geometric_dimension + 2] = 0.0;
 
-            coordinates[2][0] = 1.0;
-            coordinates[2][1] = 1.0;
-            coordinates[2][2] = 0.0;
+            vertex_coordinates[1*geometric_dimension + 0] = 1.0;
+            vertex_coordinates[1*geometric_dimension + 1] = 0.0;
+            vertex_coordinates[1*geometric_dimension + 2] = 0.0;
 
-            coordinates[3][0] = 0.0;
-            coordinates[3][1] = 1.0;
-            coordinates[3][2] = 0.0;
+            vertex_coordinates[2*geometric_dimension + 0] = 0.0;
+            vertex_coordinates[2*geometric_dimension + 1] = 1.0;
+            vertex_coordinates[2*geometric_dimension + 2] = 0.0;
 
-            coordinates[4][0] = 0.0;
-            coordinates[4][1] = 0.0;
-            coordinates[4][2] = 1.0;
-
-            coordinates[5][0] = 1.0;
-            coordinates[5][1] = 0.0;
-            coordinates[5][2] = 1.0;
-
-            coordinates[6][0] = 1.0;
-            coordinates[6][1] = 1.0;
-            coordinates[6][2] = 1.0;
-
-            coordinates[7][0] = 0.0;
-            coordinates[7][1] = 1.0;
-            coordinates[7][2] = 1.0;
+            vertex_coordinates[3*geometric_dimension + 0] = 0.0;
+            vertex_coordinates[3*geometric_dimension + 1] = 0.0;
+            vertex_coordinates[3*geometric_dimension + 2] = 1.0;
         }
-    };
 
-    void scale_cell(mock_cell & c, double factor)
-    {
-        for (size_t i=0; i<c.num_vertices; ++i)
+        void fill_reference_quadrilateral_2d()
         {
-            for (size_t j=0; j<c.geometric_dimension; ++j)
+            init_dimensions(2, 2, 4);
+
+            // Fill in vertex_coordinates for reference cell
+            vertex_coordinates[0*geometric_dimension + 0] = 0.0;
+            vertex_coordinates[0*geometric_dimension + 1] = 0.0;
+
+            vertex_coordinates[1*geometric_dimension + 0] = 1.0;
+            vertex_coordinates[1*geometric_dimension + 1] = 0.0;
+
+            vertex_coordinates[2*geometric_dimension + 0] = 1.0;
+            vertex_coordinates[2*geometric_dimension + 1] = 1.0;
+
+            vertex_coordinates[3*geometric_dimension + 0] = 0.0;
+            vertex_coordinates[3*geometric_dimension + 1] = 1.0;
+        }
+
+        void fill_reference_hexahedron_3d()
+        {
+            init_dimensions(3, 3, 8);
+
+            // Fill in vertex_coordinates for reference cell
+            vertex_coordinates[0*geometric_dimension + 0] = 0.0;
+            vertex_coordinates[0*geometric_dimension + 1] = 0.0;
+            vertex_coordinates[0*geometric_dimension + 2] = 0.0;
+
+            vertex_coordinates[1*geometric_dimension + 0] = 1.0;
+            vertex_coordinates[1*geometric_dimension + 1] = 0.0;
+            vertex_coordinates[1*geometric_dimension + 2] = 0.0;
+
+            vertex_coordinates[2*geometric_dimension + 0] = 1.0;
+            vertex_coordinates[2*geometric_dimension + 1] = 1.0;
+            vertex_coordinates[2*geometric_dimension + 2] = 0.0;
+
+            vertex_coordinates[3*geometric_dimension + 0] = 0.0;
+            vertex_coordinates[3*geometric_dimension + 1] = 1.0;
+            vertex_coordinates[3*geometric_dimension + 2] = 0.0;
+
+            vertex_coordinates[4*geometric_dimension + 0] = 0.0;
+            vertex_coordinates[4*geometric_dimension + 1] = 0.0;
+            vertex_coordinates[4*geometric_dimension + 2] = 1.0;
+
+            vertex_coordinates[5*geometric_dimension + 0] = 1.0;
+            vertex_coordinates[5*geometric_dimension + 1] = 0.0;
+            vertex_coordinates[5*geometric_dimension + 2] = 1.0;
+
+            vertex_coordinates[6*geometric_dimension + 0] = 1.0;
+            vertex_coordinates[6*geometric_dimension + 1] = 1.0;
+            vertex_coordinates[6*geometric_dimension + 2] = 1.0;
+
+            vertex_coordinates[7*geometric_dimension + 0] = 0.0;
+            vertex_coordinates[7*geometric_dimension + 1] = 1.0;
+            vertex_coordinates[7*geometric_dimension + 2] = 1.0;
+        }
+
+        // Scale cell coordinates
+        void scale(double factor)
+        {
+            for (size_t i=0; i<num_vertices; ++i)
             {
-                c.coordinates[i][j] *= factor;
-            }
-        }
-    }
-
-    void scale_cell(mock_cell & c, const double * factors)
-    {
-        for (size_t i=0; i<c.num_vertices; ++i)
-        {
-            for (size_t j=0; j<c.geometric_dimension; ++j)
-            {
-                c.coordinates[i][j] *= factors[j];
-            }
-        }
-    }
-
-    void translate_cell(mock_cell & c, const double * x)
-    {
-        for (size_t i=0; i<c.num_vertices; ++i)
-        {
-            for (size_t j=0; j<c.geometric_dimension; ++j)
-            {
-                c.coordinates[i][j] += x[j];
-            }
-        }
-    }
-
-    void map_cell(mock_cell & c, const double * G, const double * x0)
-    {
-        for (size_t i=0; i<c.num_vertices; ++i)
-        {
-            double result[3];
-            for (size_t j=0; j<c.geometric_dimension; ++j)
-            {
-                result[j] = x0[j];
-                for (size_t k=0; k<c.geometric_dimension; ++k)
+                for (size_t j=0; j<geometric_dimension; ++j)
                 {
-                     result[j] += G[c.geometric_dimension*j + k] * c.coordinates[i][k];
+                    vertex_coordinates[i*geometric_dimension + j] *= factor;
                 }
             }
-            for (size_t j=0; j<c.geometric_dimension; ++j)
+        }
+ 
+        // Scale cell coordinates differently in each geometric dimension
+        void scale(const double * factors)
+        {
+            for (size_t i=0; i<num_vertices; ++i)
             {
-                c.coordinates[i][j] = result[j];
+                for (size_t j=0; j<geometric_dimension; ++j)
+                {
+                    vertex_coordinates[i*geometric_dimension + j] *= factors[j];
+                }
             }
         }
-    }
+
+        // Translate cell coordinates
+        void translate(const double * x)
+        {
+            for (size_t i=0; i<num_vertices; ++i)
+            {
+                for (size_t j=0; j<geometric_dimension; ++j)
+                {
+                    vertex_coordinates[i*geometric_dimension + j] += x[j];
+                }
+            }
+        }
+ 
+        // Apply affine mapping to cell coordinates
+        void affine_map(const double * A, const double * x0)
+        {
+            for (size_t i=0; i<num_vertices; ++i)
+            {
+                double result[3];
+                for (size_t j=0; j<geometric_dimension; ++j)
+                {
+                    result[j] = x0[j];
+                    for (size_t k=0; k<geometric_dimension; ++k)
+                    {
+                         result[j] += A[geometric_dimension*j + k] * vertex_coordinates[i*geometric_dimension + k];
+                    }
+                }
+                for (size_t j=0; j<geometric_dimension; ++j)
+                {
+                    vertex_coordinates[i*geometric_dimension + j] = result[j];
+                }
+            }
+        }
+    };
+
 }
 
 #endif
