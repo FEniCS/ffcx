@@ -121,7 +121,7 @@ public:
   /// Interpolate vertex values from dof values
   virtual void interpolate_vertex_values(double* vertex_values,
                                          const double* dof_values,
-                                         const ufc::cell& c) const
+                                         const double* vertex_coordinates) const
   {
 %(interpolate_vertex_values)s
   }
@@ -236,7 +236,7 @@ public:
   /// Interpolate vertex values from dof values
   virtual void interpolate_vertex_values(double* vertex_values,
                                          const double* dof_values,
-                                         const ufc::cell& c) const;
+                                         const double* vertex_coordinates) const;
 
   /// Map coordinate xhat from reference cell to coordinate x in cell
   virtual void map_from_reference_cell(double* x,
@@ -373,7 +373,7 @@ void %(classname)s::evaluate_dofs(double* values,
 /// Interpolate vertex values from dof values
 void %(classname)s::interpolate_vertex_values(double* vertex_values,
                                               const double* dof_values,
-                                              const ufc::cell& c) const
+                                              const double* vertex_coordinates) const
 {
 %(interpolate_vertex_values)s
 }

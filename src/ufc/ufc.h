@@ -186,7 +186,7 @@ namespace ufc
     /// Interpolate vertex values from dof values
     virtual void interpolate_vertex_values(double* vertex_values,
                                            const double* dof_values,
-                                           const cell& c) const = 0;
+                                           const double* vertex_coordinates) const = 0;
 
     /// Map coordinate xhat from reference cell to coordinate x in cell
     virtual void map_from_reference_cell(double* x,
