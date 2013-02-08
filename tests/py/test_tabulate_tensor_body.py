@@ -81,7 +81,7 @@ class test_tabulate_tensor_body(CodegenTestCase):
 
         PRE:
         mock_cell mc;
-        mc.fill_reference_interval_1d();
+        mc.fill_reference_interval(1);
         double * vertex_coordinates = mc.vertex_coordinates;
         double A[1] = { 0.0 };
         double x[1] = { 1.2 };
@@ -117,7 +117,7 @@ class test_tabulate_tensor_body(CodegenTestCase):
                            { 2.0, 3.0 } };
 
         mock_cell mc;
-        mc.fill_reference_interval_1d();
+        mc.fill_reference_interval(1);
         double * vertex_coordinates = mc.vertex_coordinates;
         vertex_coordinates[0*mc.geometric_dimension + 0] = 0.1;
         vertex_coordinates[1*mc.geometric_dimension + 0] = 0.2;
@@ -153,7 +153,7 @@ class test_tabulate_tensor_body(CodegenTestCase):
         memset(A, 0, sizeof(A));
 
         mock_cell mc;
-        mc.fill_reference_interval_1d();
+        mc.fill_reference_interval(1);
         double * vertex_coordinates = mc.vertex_coordinates;
         vertex_coordinates[0*mc.geometric_dimension + 0] = 0.2;
         vertex_coordinates[1*mc.geometric_dimension + 0] = 0.1;
@@ -197,7 +197,7 @@ class test_tabulate_tensor_body(CodegenTestCase):
         double w[1][2] = { { 2.0, 3.0 } };
 
         mock_cell mc;
-        mc.fill_reference_interval_1d();
+        mc.fill_reference_interval(1);
         double * vertex_coordinates = mc.vertex_coordinates;
         vertex_coordinates[0*mc.geometric_dimension + 0] = 0.1;
         vertex_coordinates[1*mc.geometric_dimension + 0] = 0.2;
@@ -230,8 +230,8 @@ class test_tabulate_tensor_body(CodegenTestCase):
 
         mock_cell mc0;
         mock_cell mc1;
-        mc0.fill_reference_interval_1d();
-        mc1.fill_reference_interval_1d();
+        mc0.fill_reference_interval(1);
+        mc1.fill_reference_interval(1);
         double * vertex_coordinates0 = mc0.vertex_coordinates;
         vertex_coordinates0[0*mc0.geometric_dimension + 0] = 0.1;
         vertex_coordinates0[1*mc0.geometric_dimension + 0] = 0.2;

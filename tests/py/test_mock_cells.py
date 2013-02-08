@@ -25,7 +25,7 @@ class test_mock_cells(CodegenTestCase):
         """
         PRE:
         mock_cell mc;
-        mc.fill_reference_interval_1d();
+        mc.fill_reference_interval(1);
         double * vertex_coordinates = mc.vertex_coordinates;
 
         POST:
@@ -41,7 +41,7 @@ class test_mock_cells(CodegenTestCase):
         """
         PRE:
         mock_cell mc;
-        mc.fill_reference_triangle_2d();
+        mc.fill_reference_triangle(2);
         double * vertex_coordinates = mc.vertex_coordinates;
 
         POST:
@@ -62,7 +62,7 @@ class test_mock_cells(CodegenTestCase):
         """
         PRE:
         mock_cell mc;
-        mc.fill_reference_tetrahedron_3d();
+        mc.fill_reference_tetrahedron(3);
         double * vertex_coordinates = mc.vertex_coordinates;
 
         POST:
@@ -89,7 +89,7 @@ class test_mock_cells(CodegenTestCase):
         """
         PRE:
         mock_cell mc;
-        mc.fill_reference_quadrilateral_2d();
+        mc.fill_reference_quadrilateral(2);
         double * vertex_coordinates = mc.vertex_coordinates;
 
         POST:
@@ -114,7 +114,7 @@ class test_mock_cells(CodegenTestCase):
         """
         PRE:
         mock_cell mc;
-        mc.fill_reference_hexahedron_3d();
+        mc.fill_reference_hexahedron(3);
         double * vertex_coordinates = mc.vertex_coordinates;
 
         POST:

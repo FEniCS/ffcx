@@ -12,8 +12,8 @@ namespace uflacs
 {
     struct mock_cell
     {
-        // These coordinates is all that generated code should care about
-        double vertex_coordinates[8*3];
+        // These coordinates are all that generated code should care about, the rest is to support the tests
+        double vertex_coordinates[8*3]; // Worst case hexahedron: 8 vertices in 3d
 
         // Dimensions needed for generic cell transformations
         size_t geometric_dimension;
@@ -36,18 +36,18 @@ namespace uflacs
                 vertex_coordinates[i] = 0.0;
         }
 
-        void fill_reference_interval_1d()
+        void fill_reference_interval(size_t geometric_dimension)
         {
-            init_dimensions(1, 1, 2);
+            init_dimensions(geometric_dimension, 1, 2);
 
             // Fill in vertex_coordinates for reference cell
             vertex_coordinates[0*geometric_dimension + 0] = 0.0;
             vertex_coordinates[1*geometric_dimension + 0] = 1.0;
         }
 
-        void fill_reference_triangle_2d()
+        void fill_reference_triangle(size_t geometric_dimension)
         {
-            init_dimensions(2, 2, 3);
+            init_dimensions(geometric_dimension, 2, 3);
 
             // Fill in vertex_coordinates for reference cell
             vertex_coordinates[0*geometric_dimension + 0] = 0.0;
@@ -60,9 +60,9 @@ namespace uflacs
             vertex_coordinates[2*geometric_dimension + 1] = 1.0;
         }
 
-        void fill_reference_tetrahedron_3d()
+        void fill_reference_tetrahedron(size_t geometric_dimension)
         {
-            init_dimensions(3, 3, 4);
+            init_dimensions(geometric_dimension, 3, 4);
 
             // Fill in vertex_coordinates for reference cell
             vertex_coordinates[0*geometric_dimension + 0] = 0.0;
@@ -82,9 +82,9 @@ namespace uflacs
             vertex_coordinates[3*geometric_dimension + 2] = 1.0;
         }
 
-        void fill_reference_quadrilateral_2d()
+        void fill_reference_quadrilateral(size_t geometric_dimension)
         {
-            init_dimensions(2, 2, 4);
+            init_dimensions(geometric_dimension, 2, 4);
 
             // Fill in vertex_coordinates for reference cell
             vertex_coordinates[0*geometric_dimension + 0] = 0.0;
@@ -100,9 +100,9 @@ namespace uflacs
             vertex_coordinates[3*geometric_dimension + 1] = 1.0;
         }
 
-        void fill_reference_hexahedron_3d()
+        void fill_reference_hexahedron(size_t geometric_dimension)
         {
-            init_dimensions(3, 3, 8);
+            init_dimensions(geometric_dimension, 3, 8);
 
             // Fill in vertex_coordinates for reference cell
             vertex_coordinates[0*geometric_dimension + 0] = 0.0;
@@ -149,7 +149,7 @@ namespace uflacs
                 }
             }
         }
- 
+
         // Scale cell coordinates differently in each geometric dimension
         void scale(const double * factors)
         {
@@ -173,7 +173,7 @@ namespace uflacs
                 }
             }
         }
- 
+
         // Apply affine mapping to cell coordinates
         void affine_map(const double * A, const double * x0)
         {

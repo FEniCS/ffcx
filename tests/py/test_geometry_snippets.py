@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from codegentestcase import CodegenTestCase, unittest
 
+import ufl
 from uflacs.geometry import (
     IntervalGeometryCG,
     TriangleGeometryCG,
@@ -9,8 +10,21 @@ from uflacs.geometry import (
     HexahedronGeometryCG,
     )
 
+def generate_jacobian_snippets(cell, restriction):
+    decl = 'double J%s[%d*%d];' % (restriction, cell.geometric_dimension(), cell.topological_dimension())
+    comp = 'compute_jacobian_%s_%dd(J%s, vertex_coordinates%s);' % (
+        cell.cellname(), cell.geometric_dimension(), restriction, restriction)
+    return [decl, comp]
+
+def generate_jacobian_inverse_snippets(cell, restriction):
+    decl = ['double det%s;' % restriction,
+            'double K%s[%d*%d];' % (restriction, cell.geometric_dimension(), cell.topological_dimension())]
+    comp = 'compute_jacobian_inverse_%s_%dd(K%s, det%s, vertex_coordinates%s);' % (
+        cell.cellname(), cell.geometric_dimension(), restriction, restriction, restriction)
+    return decl + [comp]
+
 class test_geometry_snippets(CodegenTestCase):
-    '''Geometry snippets based on ufc cell.
+    '''Geometry snippets based on ufc_geometry.h.
 
     TODO: Fill in the blanks!
 
@@ -19,19 +33,201 @@ class test_geometry_snippets(CodegenTestCase):
     Unit tests of generated geometry snippet code.
     */
     #include <iostream>
-    #include <ufc.h>
+    //#include <ufc.h>
     using std::cout;
     using std::endl;
 
     #include "mock_cells.h"
+    #include "common/ufc_geometry.h"
     using namespace uflacs;
     '''
+
+    def test_compute_jacobian_interval_1d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_interval(1);
+        double * vertex_coordinates = mc.vertex_coordinates;
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('interval', 1)
+        snippets = generate_jacobian_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    def test_compute_jacobian_interval_2d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_interval(2);
+        double * vertex_coordinates = mc.vertex_coordinates;
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('interval', 2)
+        snippets = generate_jacobian_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    def test_compute_jacobian_interval_3d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_interval(3);
+        double * vertex_coordinates = mc.vertex_coordinates;
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('interval', 3)
+        snippets = generate_jacobian_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    def test_compute_jacobian_triangle_2d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_triangle(2);
+        double * vertex_coordinates = mc.vertex_coordinates;
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('triangle', 2)
+        snippets = generate_jacobian_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    def test_compute_jacobian_triangle_3d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_triangle(3);
+        double * vertex_coordinates = mc.vertex_coordinates;
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('triangle', 3)
+        snippets = generate_jacobian_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    def test_compute_jacobian_tetrahedron_3d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_tetrahedron(3);
+        double * vertex_coordinates = mc.vertex_coordinates;
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('tetrahedron', 3)
+        snippets = generate_jacobian_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    def test_compute_jacobian_inverse_interval_1d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_interval(1);
+        double * vertex_coordinates = mc.vertex_coordinates;
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('interval', 1)
+        snippets = generate_jacobian_inverse_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    def test_compute_jacobian_inverse_interval_2d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_interval(2);
+        double * vertex_coordinates = mc.vertex_coordinates;
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('interval', 2)
+        snippets = generate_jacobian_inverse_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    def test_compute_jacobian_inverse_interval_3d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_interval(3);
+        double * vertex_coordinates = mc.vertex_coordinates;
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('interval', 3)
+        snippets = generate_jacobian_inverse_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    def test_compute_jacobian_inverse_triangle_2d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_triangle(2);
+        double * vertex_coordinates = mc.vertex_coordinates;
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('triangle', 2)
+        snippets = generate_jacobian_inverse_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    def test_compute_jacobian_inverse_triangle_3d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_triangle(3);
+        double * vertex_coordinates = mc.vertex_coordinates;
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('triangle', 3)
+        snippets = generate_jacobian_inverse_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    def test_compute_jacobian_inverse_tetrahedron_3d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_tetrahedron(3);
+        double * vertex_coordinates = mc.vertex_coordinates;
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('tetrahedron', 3)
+        snippets = generate_jacobian_inverse_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
 
     def test_computation_of_geometry_mapping_on_interval(self):
         """
         PRE:
         mock_cell mc;
-        mc.fill_reference_interval_1d();
+        mc.fill_reference_interval(1);
         double * vertex_coordinates = mc.vertex_coordinates;
         vertex_coordinates[0*mc.geometric_dimension + 0] = 0.2;
         vertex_coordinates[1*mc.geometric_dimension + 0] = 0.1;
@@ -59,7 +255,7 @@ class test_geometry_snippets(CodegenTestCase):
         """
         PRE:
         mock_cell mc;
-        mc.fill_reference_interval_1d();
+        mc.fill_reference_interval(1);
         double * vertex_coordinatesr = mc.vertex_coordinates;
         vertex_coordinatesr[0*mc.geometric_dimension + 0] = 0.2;
         vertex_coordinatesr[1*mc.geometric_dimension + 0] = 0.1;
@@ -88,7 +284,7 @@ class test_geometry_snippets(CodegenTestCase):
         """
         PRE:
         mock_cell mc;
-        mc.fill_reference_interval_1d();
+        mc.fill_reference_interval(1);
         double * vertex_coordinates = mc.vertex_coordinates;
         vertex_coordinates[0*mc.geometric_dimension + 0] = 0.2;
         vertex_coordinates[1*mc.geometric_dimension + 0] = 0.1;
@@ -109,7 +305,7 @@ class test_geometry_snippets(CodegenTestCase):
         """
         PRE:
         mock_cell mc;
-        mc.fill_reference_interval_1d();
+        mc.fill_reference_interval(1);
         double * vertex_coordinates = mc.vertex_coordinates;
         vertex_coordinates[0*mc.geometric_dimension + 0] = 0.2;
         vertex_coordinates[1*mc.geometric_dimension + 0] = 0.1;
