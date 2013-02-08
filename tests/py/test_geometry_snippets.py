@@ -435,11 +435,13 @@ class test_geometry_snippets(CodegenTestCase):
         PRE:
         mock_cell mc;
         mc.fill_reference_interval(1);
+        mc.scale(0.3); mc.translate(0.1);
+
         double * vertex_coordinates = mc.vertex_coordinates;
         double x[1] = { 0.2 };
 
         POST:
-        ASSERT_DOUBLE_EQ(1, 1); // FIXME
+        ASSERT_DOUBLE_EQ(1.0/0.3*(0.2-0.1), xi[0]);
         """
         cell = ufl.Cell('interval', 1)
         snippets = generate_jacobian_snippets(cell, '')
@@ -453,11 +455,13 @@ class test_geometry_snippets(CodegenTestCase):
         PRE:
         mock_cell mc;
         mc.fill_reference_interval(2);
+        mc.scale(0.3); mc.translate(0.1, 0.4);
+
         double * vertex_coordinates = mc.vertex_coordinates;
         double x[2] = { 0.2, 0.6 };
 
         POST:
-        ASSERT_DOUBLE_EQ(1, 1); // FIXME
+        ASSERT_DOUBLE_EQ(1.0/0.3*(0.2-0.1), xi[0]);
         """
         cell = ufl.Cell('interval', 2)
         snippets = generate_jacobian_snippets(cell, '')
@@ -471,11 +475,13 @@ class test_geometry_snippets(CodegenTestCase):
         PRE:
         mock_cell mc;
         mc.fill_reference_interval(3);
+        mc.scale(0.3); mc.translate(0.1, 0.4, 0.5);
+
         double * vertex_coordinates = mc.vertex_coordinates;
         double x[3] = { 0.2, 0.6, 0.9 };
 
         POST:
-        ASSERT_DOUBLE_EQ(1, 1); // FIXME
+        ASSERT_DOUBLE_EQ(1.0/0.3*(0.2-0.1), xi[0]);
         """
         cell = ufl.Cell('interval', 3)
         snippets = generate_jacobian_snippets(cell, '')
@@ -489,11 +495,14 @@ class test_geometry_snippets(CodegenTestCase):
         PRE:
         mock_cell mc;
         mc.fill_reference_triangle(2);
+        mc.scale(0.3); mc.translate(0.1, 0.4);
+
         double * vertex_coordinates = mc.vertex_coordinates;
         double x[2] = { 0.2, 0.6 };
 
         POST:
-        ASSERT_DOUBLE_EQ(1, 1); // FIXME
+        ASSERT_DOUBLE_EQ(1.0/0.3*(0.2-0.1), xi[0]);
+        ASSERT_DOUBLE_EQ(1.0/0.3*(0.6-0.4), xi[1]);
         """
         cell = ufl.Cell('triangle', 2)
         snippets = generate_jacobian_snippets(cell, '')
@@ -507,11 +516,19 @@ class test_geometry_snippets(CodegenTestCase):
         PRE:
         mock_cell mc;
         mc.fill_reference_triangle(3);
+        mc.scale(0.3); mc.translate(0.1, 0.4, 0.5);
+
         double * vertex_coordinates = mc.vertex_coordinates;
         double x[3] = { 0.2, 0.6, 0.9 };
 
         POST:
-        ASSERT_DOUBLE_EQ(1, 1); // FIXME
+        disp("vc", vertex_coordinates, mc.num_vertices, mc.geometric_dimension);
+        disp("J", J, mc.geometric_dimension, mc.topological_dimension);
+        disp("K", K, mc.topological_dimension, mc.geometric_dimension);
+        disp("x", x, 1, mc.geometric_dimension);
+        disp("xi", xi, 1, mc.topological_dimension);
+        ASSERT_DOUBLE_EQ(1.0/0.3*(0.2-0.1), xi[0]);
+        ASSERT_DOUBLE_EQ(1.0/0.3*(0.6-0.4), xi[1]);
         """
         cell = ufl.Cell('triangle', 3)
         snippets = generate_jacobian_snippets(cell, '')
@@ -525,11 +542,15 @@ class test_geometry_snippets(CodegenTestCase):
         PRE:
         mock_cell mc;
         mc.fill_reference_tetrahedron(3);
+        mc.scale(0.3); mc.translate(0.1, 0.4, 0.5);
+
         double * vertex_coordinates = mc.vertex_coordinates;
         double x[3] = { 0.2, 0.6, 0.9 };
 
         POST:
-        ASSERT_DOUBLE_EQ(1, 1); // FIXME
+        ASSERT_DOUBLE_EQ(1.0/0.3*(0.2-0.1), xi[0]);
+        ASSERT_DOUBLE_EQ(1.0/0.3*(0.6-0.4), xi[1]);
+        ASSERT_DOUBLE_EQ(1.0/0.3*(0.9-0.5), xi[2]);
         """
         cell = ufl.Cell('tetrahedron', 3)
         snippets = generate_jacobian_snippets(cell, '')
