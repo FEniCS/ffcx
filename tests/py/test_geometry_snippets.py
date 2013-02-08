@@ -98,6 +98,21 @@ class test_geometry_snippets(CodegenTestCase):
     using std::cout;
     using std::endl;
 
+    // Utility function for debugging values in tests
+    // disp("x", x, 1, mc.geometric_dimension);
+    void disp(const char * name, const double * values, std::size_t m, std::size_t n)
+    {
+        cout << name << ":" << endl;
+        for (std::size_t i = 0; i < m; ++i)
+        {
+            for (std::size_t j = 0; j < n; ++j)
+            {
+                cout << values[i*n+j] << " ";
+            }
+            cout << endl;
+        }
+    }
+
     #include "mock_cells.h"
     #include "common/ufc_geometry.h"
     using namespace uflacs;
@@ -382,25 +397,14 @@ class test_geometry_snippets(CodegenTestCase):
         double xi[2] = { 0.2, 0.6 };
 
         POST:
-        cout << endl
-             << "J:" << endl
-             << J[0] << " " << J[1] << endl
-             << J[2] << " " << J[3] << endl
-             << J[4] << " " << J[5] << endl
-             << "xi:" << endl
-             << xi[0] << " " << xi[1] << endl
-             << "vc:" << endl
-             << vertex_coordinates[0] << " " << vertex_coordinates[1] << " " << vertex_coordinates[2] << endl
-             << endl;
         ASSERT_DOUBLE_EQ(0.2*0.3+0.1, x[0]);
         ASSERT_DOUBLE_EQ(0.6*0.3+0.4, x[1]);
-        ASSERT_DOUBLE_EQ(0.5, x[3]);
+        ASSERT_DOUBLE_EQ(0.5, x[2]);
         """
         cell = ufl.Cell('triangle', 3)
         snippets = generate_jacobian_snippets(cell, '')
         snippets += generate_x_from_xi_snippets(cell, '')
         code = '\n'.join(snippets)
-        print code
         self.emit_test(code)
 
     def test_compute_x_from_xi_tetrahedron_3d(self):
@@ -414,19 +418,9 @@ class test_geometry_snippets(CodegenTestCase):
         double xi[3] = { 0.2, 0.6, 0.9 };
 
         POST:
-        cout << endl
-             << "J:" << endl
-             << J[0] << " " << J[1] << " " << J[2] << endl
-             << J[3] << " " << J[4] << " " << J[5] << endl
-             << J[6] << " " << J[7] << " " << J[8] << endl
-             << "xi:" << endl
-             << xi[0] << " " << xi[1] << " " << xi[2] << endl
-             << "vc:" << endl
-             << vertex_coordinates[0] << " " << vertex_coordinates[1] << " " << vertex_coordinates[2] << endl
-             << endl;
         ASSERT_DOUBLE_EQ(0.2*0.3+0.1, x[0]);
         ASSERT_DOUBLE_EQ(0.6*0.3+0.4, x[1]);
-        ASSERT_DOUBLE_EQ(0.9*0.3+0.5, x[3]);
+        ASSERT_DOUBLE_EQ(0.9*0.3+0.5, x[2]);
         """
         cell = ufl.Cell('tetrahedron', 3)
         snippets = generate_jacobian_snippets(cell, '')
