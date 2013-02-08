@@ -24,7 +24,7 @@ from uflacs.backends.cpp2.compiler import compile_expression
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
                                  const double* vertex_coordinates_0,
-                                 const double* vertex_coordinates_1,
+                                 const double* vertex_coordinates_1, // FIXME: Change in UFC to vertex_coordinates0 consistent with facet0
                                  std::size_t facet0,
                                  std::size_t facet1) const = 0;
 
@@ -72,16 +72,19 @@ class test_tabulate_tensor_body(CodegenTestCase):
         return code
 
     def test_interval_tabten_x_given(self):
-        """Test code generation of body of the ufc function:
+        """Test code generation of body of the (imaginary) ufc function:
 
         void tabulate_tensor(
             double* A,
             const double * const * w,
-            const double * vertex_coordinates) const;
+            const double * vertex_coordinates,
+            const double * x // Not actually in ufc signature
+            ) const;
 
         PRE:
         mock_cell mc;
         mc.fill_reference_interval(1);
+
         double * vertex_coordinates = mc.vertex_coordinates;
         double A[1] = { 0.0 };
         double x[1] = { 1.2 };
@@ -99,29 +102,30 @@ class test_tabulate_tensor_body(CodegenTestCase):
         self.emit_test(code)
 
     def test_interval_tabten_dg0_given(self):
-        """Test code generation of body of the ufc function:
+        """Test code generation of body of the (imaginary) ufc function:
 
         void tabulate_tensor(
             double* A,
             const double * const * w,
-            const cell& c,
-            const double * x) const;
+            const double * vertex_coordinates,
+            const double * x // Not actually in ufc signature
+            ) const;
 
         with mock values for DG0/Real coefficients in w[][].
 
         PRE:
+        mock_cell mc;
+        mc.fill_reference_interval(1);
+        mc.vertex_coordinates[0*mc.geometric_dimension + 0] = 0.1;
+        mc.vertex_coordinates[1*mc.geometric_dimension + 0] = 0.2;
+
         double A[1];
         memset(A, 0, sizeof(A));
 
         double w[2][2] = { { 1.2, 0.0 }, // second value here is unused
                            { 2.0, 3.0 } };
 
-        mock_cell mc;
-        mc.fill_reference_interval(1);
         double * vertex_coordinates = mc.vertex_coordinates;
-        vertex_coordinates[0*mc.geometric_dimension + 0] = 0.1;
-        vertex_coordinates[1*mc.geometric_dimension + 0] = 0.2;
-
         double x[1] = { 0.15 };
 
         POST:
@@ -146,17 +150,18 @@ class test_tabulate_tensor_body(CodegenTestCase):
         void tabulate_tensor(
             double* A,
             const double * const * w,
-            const cell& c) const;
+            const double * vertex_coordinates
+            ) const;
 
         PRE:
-        double A[1];
-        memset(A, 0, sizeof(A));
-
         mock_cell mc;
         mc.fill_reference_interval(1);
+        mc.vertex_coordinates[0*mc.geometric_dimension + 0] = 0.2;
+        mc.vertex_coordinates[1*mc.geometric_dimension + 0] = 0.1;
+
         double * vertex_coordinates = mc.vertex_coordinates;
-        vertex_coordinates[0*mc.geometric_dimension + 0] = 0.2;
-        vertex_coordinates[1*mc.geometric_dimension + 0] = 0.1;
+        double A[1];
+        memset(A, 0, sizeof(A));
 
         POST:
         ASSERT_EQ(J[0], -0.1);
@@ -187,20 +192,21 @@ class test_tabulate_tensor_body(CodegenTestCase):
         void tabulate_tensor(
             double* A,
             const double * const * w,
-            const cell& c,
+            const double * vertex_coordinates,
             unsigned int facet) const;
 
         PRE:
+        mock_cell mc;
+        mc.fill_reference_interval(1);
+        mc.vertex_coordinates[0*mc.geometric_dimension + 0] = 0.1;
+        mc.vertex_coordinates[1*mc.geometric_dimension + 0] = 0.2;
+
         double A[1];
         memset(A, 0, sizeof(A));
 
         double w[1][2] = { { 2.0, 3.0 } };
 
-        mock_cell mc;
-        mc.fill_reference_interval(1);
         double * vertex_coordinates = mc.vertex_coordinates;
-        vertex_coordinates[0*mc.geometric_dimension + 0] = 0.1;
-        vertex_coordinates[1*mc.geometric_dimension + 0] = 0.2;
 
         unsigned int facet = 0;
 
@@ -216,28 +222,30 @@ class test_tabulate_tensor_body(CodegenTestCase):
         void tabulate_tensor(
             double* A,
             const double * const * w,
-            const cell& c0,
-            const cell& c1,
+            const double * vertex_coordinates0,
+            const double * vertex_coordinates1,
             unsigned int facet0,
             unsigned int facet1) const;
 
         PRE:
+        mock_cell mc0;
+        mc0.fill_reference_interval(1);
+        mc0.vertex_coordinates[0*mc0.geometric_dimension + 0] = 0.1;
+        mc0.vertex_coordinates[1*mc0.geometric_dimension + 0] = 0.2;
+
+        mock_cell mc1;
+        mc1.fill_reference_interval(1);
+        mc1.vertex_coordinates[0*mc1.geometric_dimension + 0] = 0.2;
+        mc1.vertex_coordinates[1*mc1.geometric_dimension + 0] = 0.3;
+
         double A[2];
         memset(A, 0, sizeof(A));
 
         double w[1][4] = { { 2.0, 3.0,
                              4.0, 5.0 } };
 
-        mock_cell mc0;
-        mock_cell mc1;
-        mc0.fill_reference_interval(1);
-        mc1.fill_reference_interval(1);
         double * vertex_coordinates0 = mc0.vertex_coordinates;
-        vertex_coordinates0[0*mc0.geometric_dimension + 0] = 0.1;
-        vertex_coordinates0[1*mc0.geometric_dimension + 0] = 0.2;
         double * vertex_coordinates1 = mc1.vertex_coordinates;
-        vertex_coordinates1[0*mc1.geometric_dimension + 0] = 0.2;
-        vertex_coordinates1[1*mc1.geometric_dimension + 0] = 0.3;
 
         unsigned int facet0 = 1;
         unsigned int facet1 = 0;
