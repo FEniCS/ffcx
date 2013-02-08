@@ -72,13 +72,14 @@ class test_tabulate_tensor_body(CodegenTestCase):
         return code
 
     def test_interval_tabten_x_given(self):
-        """Test code generation of body of the (imaginary) ufc function:
+        """Test code generation of body of the ufc function:
 
         void tabulate_tensor(
             double* A,
             const double * const * w,
             const double * vertex_coordinates,
-            const double * x // Not actually in ufc signature
+            std::size_t num_points,
+            const double * const * points
             ) const;
 
         PRE:
@@ -87,7 +88,11 @@ class test_tabulate_tensor_body(CodegenTestCase):
 
         double * vertex_coordinates = mc.vertex_coordinates;
         double A[1] = { 0.0 };
-        double x[1] = { 1.2 };
+        std::size_t num_points = 1;
+        double points[1] = { 1.2 };
+
+        // "Fetching" a point
+        double * x = points;
 
         POST:
         ASSERT_EQ(A[0], 1.2);
@@ -102,13 +107,14 @@ class test_tabulate_tensor_body(CodegenTestCase):
         self.emit_test(code)
 
     def test_interval_tabten_dg0_given(self):
-        """Test code generation of body of the (imaginary) ufc function:
+        """Test code generation of body of the ufc function:
 
         void tabulate_tensor(
             double* A,
             const double * const * w,
             const double * vertex_coordinates,
-            const double * x // Not actually in ufc signature
+            std::size_t num_points,
+            const double * const * points
             ) const;
 
         with mock values for DG0/Real coefficients in w[][].
@@ -126,7 +132,11 @@ class test_tabulate_tensor_body(CodegenTestCase):
                            { 2.0, 3.0 } };
 
         double * vertex_coordinates = mc.vertex_coordinates;
-        double x[1] = { 0.15 };
+        std::size_t num_points = 1;
+        double points[1] = { 0.15 };
+
+        // "Fetching" a point
+        double * x = points;
 
         POST:
         ASSERT_EQ(A[0], 0.15*1.2*(2.0+3.0));
