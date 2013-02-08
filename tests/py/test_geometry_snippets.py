@@ -501,10 +501,10 @@ class test_geometry_snippets(CodegenTestCase):
         PRE:
         mock_cell mc;
         mc.fill_reference_interval(1);
+        mc.scale(-0.1);
+        mc.translate(0.2);
+
         double * vertex_coordinates = mc.vertex_coordinates;
-        cout << mc.geometric_dimension << endl;
-        vertex_coordinates[0*mc.geometric_dimension + 0] = 0.2;
-        vertex_coordinates[1*mc.geometric_dimension + 0] = 0.1;
 
         POST:
         ASSERT_EQ(0.2, v0[0]);
@@ -530,9 +530,10 @@ class test_geometry_snippets(CodegenTestCase):
         PRE:
         mock_cell mc;
         mc.fill_reference_interval(1);
+        mc.scale(-0.1);
+        mc.translate(0.2);
+
         double * vertex_coordinatesr = mc.vertex_coordinates;
-        vertex_coordinatesr[0*mc.geometric_dimension + 0] = 0.2;
-        vertex_coordinatesr[1*mc.geometric_dimension + 0] = 0.1;
 
         POST:
         ASSERT_EQ(0.2, v0r[0]);
@@ -559,9 +560,10 @@ class test_geometry_snippets(CodegenTestCase):
         PRE:
         mock_cell mc;
         mc.fill_reference_interval(1);
+        mc.scale(-0.1);
+        mc.translate(0.2);
+
         double * vertex_coordinates = mc.vertex_coordinates;
-        vertex_coordinates[0*mc.geometric_dimension + 0] = 0.2;
-        vertex_coordinates[1*mc.geometric_dimension + 0] = 0.1;
         double xi[1] = { 0.5 };
 
         POST:
@@ -580,9 +582,10 @@ class test_geometry_snippets(CodegenTestCase):
         PRE:
         mock_cell mc;
         mc.fill_reference_interval(1);
+        mc.scale(-0.1);
+        mc.translate(0.2);
+
         double * vertex_coordinates = mc.vertex_coordinates;
-        vertex_coordinates[0*mc.geometric_dimension + 0] = 0.2;
-        vertex_coordinates[1*mc.geometric_dimension + 0] = 0.1;
         double x[1] = { 0.15 };
 
         POST:

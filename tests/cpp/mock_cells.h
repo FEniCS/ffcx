@@ -163,6 +163,24 @@ namespace uflacs
         }
 
         // Translate cell coordinates
+        void translate(double x)
+        {
+            assert(geometric_dimension == 1);
+            double t[3] = { x, 0.0, 0.0 };
+            translate(t);
+        }
+        void translate(double x, double y)
+        {
+            assert(geometric_dimension == 2);
+            double t[3] = { x, y, 0.0 };
+            translate(t);
+        }
+        void translate(double x, double y, double z)
+        {
+            assert(geometric_dimension == 3);
+            double t[3] = { x, y, z };
+            translate(t);
+        }
         void translate(const double * x)
         {
             for (size_t i=0; i<num_vertices; ++i)
