@@ -27,11 +27,7 @@ public:
   /// Tabulate the tensor for the contribution from a local cell
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
-<<<<<<< TREE
                                const double* vertex_coordinates) const
-=======
-                               const ufc::cell& c) const
->>>>>>> MERGE-SOURCE
   {
 %(tabulate_tensor)s
   }
@@ -57,20 +53,7 @@ public:
   /// Tabulate the tensor for the contribution from a local cell
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
-<<<<<<< TREE
                                const double* vertex_coordinates) const;
-=======
-                               const ufc::cell& c) const;
-
-  /// Tabulate the tensor for the contribution from a local cell
-  /// using the specified reference cell quadrature points/weights
-  virtual void tabulate_tensor(double* A,
-                               const double * const * w,
-                               const ufc::cell& c,
-                               std::size_t num_quadrature_points,
-                               const double * const * quadrature_points,
-                               const double* quadrature_weights) const;
->>>>>>> MERGE-SOURCE
 
 };
 """
@@ -91,11 +74,7 @@ cell_integral_implementation = """\
 /// Tabulate the tensor for the contribution from a local cell
 void %(classname)s::tabulate_tensor(double* A,
                                     const double * const * w,
-<<<<<<< TREE
                                     const double* vertex_coordinates) const
-=======
-                                    const ufc::cell& c) const
->>>>>>> MERGE-SOURCE
 {
 %(tabulate_tensor)s
 }
