@@ -229,6 +229,7 @@ class test_geometry_snippets(CodegenTestCase):
         mock_cell mc;
         mc.fill_reference_interval(1);
         double * vertex_coordinates = mc.vertex_coordinates;
+        cout << mc.geometric_dimension << endl;
         vertex_coordinates[0*mc.geometric_dimension + 0] = 0.2;
         vertex_coordinates[1*mc.geometric_dimension + 0] = 0.1;
 

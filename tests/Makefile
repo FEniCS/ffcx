@@ -25,7 +25,7 @@ TEST_GC=$(addprefix ${GENDIR}/gc_,${TEST_SRC_BASE})
 TEST_MAINS=$(addsuffix .cpp, $(addprefix ${GENDIR}/main_,${TEST_PROG}))
 
 UFCINCDIR=`pkg-config ufc-1 --cflags`
-CXXFLAGS=-I${GTEST_DIR}/include -I${GENDIR} -I${CPPDIR} ${UFCINCDIR}
+CXXFLAGS=-g -O0 -I${GTEST_DIR}/include -I${GENDIR} -I${CPPDIR} ${UFCINCDIR}
 LIBDIRS=-L${GTEST_DIR}/lib
 LIBS=-lgtest -lpthread
 
@@ -87,4 +87,3 @@ clean:
 purge: clean
 	${RM} -f ${TEST_PROG} ${TESTAPP}
 	${RM} -f `find -name \*.py~`
-

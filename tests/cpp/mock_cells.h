@@ -29,9 +29,9 @@ namespace uflacs
         // Utility initialization function
         void init_dimensions(size_t geometric_dimension, size_t topological_dimension, size_t num_vertices)
         {
-            geometric_dimension = geometric_dimension;
-            topological_dimension = topological_dimension;
-            num_vertices = num_vertices;
+            this->geometric_dimension = geometric_dimension;
+            this->topological_dimension = topological_dimension;
+            this->num_vertices = num_vertices;
             for (int i=0; i<sizeof(vertex_coordinates)/sizeof(vertex_coordinates[0]); ++i)
                 vertex_coordinates[i] = 0.0;
         }
