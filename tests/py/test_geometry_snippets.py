@@ -182,6 +182,8 @@ class test_geometry_snippets(CodegenTestCase):
         code = '\n'.join(snippets)
         self.emit_test(code)
 
+    # ...............................................................
+
     def test_compute_jacobian_inverse_interval_1d(self):
         """
         PRE:
@@ -275,6 +277,220 @@ class test_geometry_snippets(CodegenTestCase):
         cell = ufl.Cell('tetrahedron', 3)
         snippets = generate_jacobian_snippets(cell, '')
         snippets += generate_jacobian_inverse_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    # ...............................................................
+
+    def test_compute_x_from_xi_interval_1d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_interval(1);
+        double * vertex_coordinates = mc.vertex_coordinates;
+        double xi[1] = { 0.5 };
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('interval', 1)
+        snippets = generate_jacobian_snippets(cell, '')
+        snippets += generate_x_from_xi_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    def test_compute_x_from_xi_interval_2d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_interval(2);
+        double * vertex_coordinates = mc.vertex_coordinates;
+        double xi[1] = { 0.5 };
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('interval', 2)
+        snippets = generate_jacobian_snippets(cell, '')
+        snippets += generate_x_from_xi_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    def test_compute_x_from_xi_interval_3d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_interval(3);
+        double * vertex_coordinates = mc.vertex_coordinates;
+        double xi[1] = { 0.2 };
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('interval', 3)
+        snippets = generate_jacobian_snippets(cell, '')
+        snippets += generate_x_from_xi_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    def test_compute_x_from_xi_triangle_2d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_triangle(2);
+        double * vertex_coordinates = mc.vertex_coordinates;
+        double xi[2] = { 0.2, 0.6 };
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('triangle', 2)
+        snippets = generate_jacobian_snippets(cell, '')
+        snippets += generate_x_from_xi_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    def test_compute_x_from_xi_triangle_3d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_triangle(3);
+        double * vertex_coordinates = mc.vertex_coordinates;
+        double xi[2] = { 0.2, 0.6 };
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('triangle', 3)
+        snippets = generate_jacobian_snippets(cell, '')
+        snippets += generate_x_from_xi_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    def test_compute_x_from_xi_tetrahedron_3d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_tetrahedron(3);
+        double * vertex_coordinates = mc.vertex_coordinates;
+        double xi[3] = { 0.2, 0.6, 0.9 };
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('tetrahedron', 3)
+        snippets = generate_jacobian_snippets(cell, '')
+        snippets += generate_x_from_xi_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    # ...............................................................
+
+    def test_compute_xi_from_x_interval_1d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_interval(1);
+        double * vertex_coordinates = mc.vertex_coordinates;
+        double x[1] = { 0.2 };
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('interval', 1)
+        snippets = generate_jacobian_snippets(cell, '')
+        snippets += generate_jacobian_inverse_snippets(cell, '')
+        snippets += generate_xi_from_x_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    def test_compute_xi_from_x_interval_2d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_interval(2);
+        double * vertex_coordinates = mc.vertex_coordinates;
+        double x[2] = { 0.2, 0.6 };
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('interval', 2)
+        snippets = generate_jacobian_snippets(cell, '')
+        snippets += generate_jacobian_inverse_snippets(cell, '')
+        snippets += generate_xi_from_x_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    def test_compute_xi_from_x_interval_3d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_interval(3);
+        double * vertex_coordinates = mc.vertex_coordinates;
+        double x[3] = { 0.2, 0.6, 0.9 };
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('interval', 3)
+        snippets = generate_jacobian_snippets(cell, '')
+        snippets += generate_jacobian_inverse_snippets(cell, '')
+        snippets += generate_xi_from_x_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    def test_compute_xi_from_x_triangle_2d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_triangle(2);
+        double * vertex_coordinates = mc.vertex_coordinates;
+        double x[2] = { 0.2, 0.6 };
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('triangle', 2)
+        snippets = generate_jacobian_snippets(cell, '')
+        snippets += generate_jacobian_inverse_snippets(cell, '')
+        snippets += generate_xi_from_x_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    def test_compute_xi_from_x_triangle_3d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_triangle(3);
+        double * vertex_coordinates = mc.vertex_coordinates;
+        double x[3] = { 0.2, 0.6, 0.9 };
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('triangle', 3)
+        snippets = generate_jacobian_snippets(cell, '')
+        snippets += generate_jacobian_inverse_snippets(cell, '')
+        snippets += generate_xi_from_x_snippets(cell, '')
+        code = '\n'.join(snippets)
+        self.emit_test(code)
+
+    def test_compute_xi_from_x_tetrahedron_3d(self):
+        """
+        PRE:
+        mock_cell mc;
+        mc.fill_reference_tetrahedron(3);
+        double * vertex_coordinates = mc.vertex_coordinates;
+        double x[3] = { 0.2, 0.6, 0.9 };
+
+        POST:
+        ASSERT_EQ(1, 1); // FIXME
+        """
+        cell = ufl.Cell('tetrahedron', 3)
+        snippets = generate_jacobian_snippets(cell, '')
+        snippets += generate_jacobian_inverse_snippets(cell, '')
+        snippets += generate_xi_from_x_snippets(cell, '')
         code = '\n'.join(snippets)
         self.emit_test(code)
 
