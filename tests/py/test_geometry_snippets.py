@@ -81,7 +81,7 @@ def generate_xi_from_x_snippets(cell, restriction):
     name_x = "x%s" % restriction
     name_y = "vertex_coordinates%s" % restriction
     name_z = "xi%s" % restriction
-    return generate_z_Axmy_snippets(name_z, name_A, name_x, name_y, gd, td)
+    return generate_z_Axmy_snippets(name_z, name_A, name_x, name_y, td, gd)
 
 
 class test_geometry_snippets(CodegenTestCase):
