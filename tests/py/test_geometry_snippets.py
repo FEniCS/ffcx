@@ -10,6 +10,12 @@ from uflacs.geometry import (
     HexahedronGeometryCG,
     )
 
+dependencies = {
+ 'J': ('vertex_coordinates',),
+ 'detJ': ('J',),
+ 'K': ('J','detJ',),
+}
+
 def generate_jacobian_snippets(cell, restriction):
     decl = 'double J%s[%d*%d];' % (restriction, cell.geometric_dimension(), cell.topological_dimension())
     comp = 'compute_jacobian_%s_%dd(J%s, vertex_coordinates%s);' % (
@@ -19,9 +25,53 @@ def generate_jacobian_snippets(cell, restriction):
 def generate_jacobian_inverse_snippets(cell, restriction):
     decl = ['double det%s;' % restriction,
             'double K%s[%d*%d];' % (restriction, cell.geometric_dimension(), cell.topological_dimension())]
-    comp = 'compute_jacobian_inverse_%s_%dd(K%s, det%s, vertex_coordinates%s);' % (
+    comp = 'compute_jacobian_inverse_%s_%dd(K%s, det%s, J%s);' % (
         cell.cellname(), cell.geometric_dimension(), restriction, restriction, restriction)
     return decl + [comp]
+
+def generate_array_definition_snippets(name, expressions, d):
+    "Generate combined definition and declaration of name[] = expressions[] dimension d."
+    decl = ['double %s[%d] = {' % (name, d)]
+    decl += [e+',' for e in expressions[:-1]]
+    decl += [expressions[-1]]
+    decl += ['    };']
+    return decl
+
+def generate_z_Axpy_snippets(name_z, name_A, name_x, name_y, zd, xd):
+    fmt_A = { (i,j): '%s[%d*%d+%d]' % (name_A, i, xd, j) for i in xrange(zd) for j in xrange(xd) }
+    fmt_x = ['%s[%d]' % (name_x, j) for j in xrange(xd)]
+    fmt_y = ['%s[%d]' % (name_y, i) for i in xrange(zd)]
+    fmt_Ax = [' + '.join('%s * %s' % (fmt_A[(i,j)], fmt_x[j]) for j in xrange(xd)) for i in xrange(zd)]
+    fmt_z = ['%s + %s' % (fmt_Ax[i], fmt_y[i]) for i in xrange(zd)]
+    return generate_array_definition_snippets(name_z, fmt_z, zd)
+
+def generate_z_Axmy_snippets(name_z, name_A, name_x, name_y, zd, xd):
+    "Generate combined definition and declaration of z = A (x - y) with dimensions zd,xd."
+    fmt_A = { (i,j): '%s[%d*%d+%d]' % (name_A, i, xd, j) for i in xrange(zd) for j in xrange(xd) }
+    fmt_xmy = ['(%s[%d] - %s[%d])' % (name_x, j, name_y, j) for j in xrange(xd)]
+    fmt_z = [' + '.join('%s * %s' % (fmt_A[(i,j)], fmt_xmy[j]) for j in xrange(xd)) for i in xrange(zd)]
+    return generate_array_definition_snippets(name_z, fmt_z, zd)
+
+def generate_x_from_xi_snippets(cell, restriction):
+    "Generate combined definition and declaration of x = J xi + v."
+    gd = cell.geometric_dimension()
+    td = cell.topological_dimension()
+    name_A = "J%s" % restriction
+    name_x = "xi%s" % restriction
+    name_y = "vertex_coordinates%s" % restriction
+    name_z = "x%s" % restriction
+    return generate_z_Axpy_snippets(name_z, name_A, name_x, name_y, gd, td)
+
+def generate_xi_from_x_snippets(cell, restriction):
+    "Generate combined definition and declaration of xi = K (x - v)."
+    gd = cell.geometric_dimension()
+    td = cell.topological_dimension()
+    name_A = "K%s" % restriction
+    name_x = "x%s" % restriction
+    name_y = "vertex_coordinates%s" % restriction
+    name_z = "xi%s" % restriction
+    return generate_z_Axmy_snippets(name_z, name_A, name_x, name_y, gd, td)
+
 
 class test_geometry_snippets(CodegenTestCase):
     '''Geometry snippets based on ufc_geometry.h.
@@ -143,7 +193,8 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_EQ(1, 1); // FIXME
         """
         cell = ufl.Cell('interval', 1)
-        snippets = generate_jacobian_inverse_snippets(cell, '')
+        snippets = generate_jacobian_snippets(cell, '')
+        snippets += generate_jacobian_inverse_snippets(cell, '')
         code = '\n'.join(snippets)
         self.emit_test(code)
 
@@ -158,7 +209,8 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_EQ(1, 1); // FIXME
         """
         cell = ufl.Cell('interval', 2)
-        snippets = generate_jacobian_inverse_snippets(cell, '')
+        snippets = generate_jacobian_snippets(cell, '')
+        snippets += generate_jacobian_inverse_snippets(cell, '')
         code = '\n'.join(snippets)
         self.emit_test(code)
 
@@ -173,7 +225,8 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_EQ(1, 1); // FIXME
         """
         cell = ufl.Cell('interval', 3)
-        snippets = generate_jacobian_inverse_snippets(cell, '')
+        snippets = generate_jacobian_snippets(cell, '')
+        snippets += generate_jacobian_inverse_snippets(cell, '')
         code = '\n'.join(snippets)
         self.emit_test(code)
 
@@ -188,7 +241,8 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_EQ(1, 1); // FIXME
         """
         cell = ufl.Cell('triangle', 2)
-        snippets = generate_jacobian_inverse_snippets(cell, '')
+        snippets = generate_jacobian_snippets(cell, '')
+        snippets += generate_jacobian_inverse_snippets(cell, '')
         code = '\n'.join(snippets)
         self.emit_test(code)
 
@@ -203,7 +257,8 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_EQ(1, 1); // FIXME
         """
         cell = ufl.Cell('triangle', 3)
-        snippets = generate_jacobian_inverse_snippets(cell, '')
+        snippets = generate_jacobian_snippets(cell, '')
+        snippets += generate_jacobian_inverse_snippets(cell, '')
         code = '\n'.join(snippets)
         self.emit_test(code)
 
@@ -218,10 +273,12 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_EQ(1, 1); // FIXME
         """
         cell = ufl.Cell('tetrahedron', 3)
-        snippets = generate_jacobian_inverse_snippets(cell, '')
+        snippets = generate_jacobian_snippets(cell, '')
+        snippets += generate_jacobian_inverse_snippets(cell, '')
         code = '\n'.join(snippets)
         self.emit_test(code)
 
+    # ...............................................................
 
     def test_computation_of_geometry_mapping_on_interval(self):
         """
