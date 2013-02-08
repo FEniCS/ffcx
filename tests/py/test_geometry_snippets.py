@@ -414,6 +414,16 @@ class test_geometry_snippets(CodegenTestCase):
         double xi[3] = { 0.2, 0.6, 0.9 };
 
         POST:
+        cout << endl
+             << "J:" << endl
+             << J[0] << " " << J[1] << " " << J[2] << endl
+             << J[3] << " " << J[4] << " " << J[5] << endl
+             << J[6] << " " << J[7] << " " << J[8] << endl
+             << "xi:" << endl
+             << xi[0] << " " << xi[1] << " " << xi[2] << endl
+             << "vc:" << endl
+             << vertex_coordinates[0] << " " << vertex_coordinates[1] << " " << vertex_coordinates[2] << endl
+             << endl;
         ASSERT_DOUBLE_EQ(0.2*0.3+0.1, x[0]);
         ASSERT_DOUBLE_EQ(0.6*0.3+0.4, x[1]);
         ASSERT_DOUBLE_EQ(0.9*0.3+0.5, x[3]);
