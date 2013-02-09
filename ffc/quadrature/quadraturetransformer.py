@@ -362,7 +362,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         # Handle 1D as a special case.
         # FIXME: KBO: This has to change for mD elements in R^n : m < n
-        if self.g_dim == 1: # FIXME: MSA: UFL uses shape (1,) now, can we remove the special case here then?
+        if self.gdim == 1: # FIXME: MSA: UFL uses shape (1,) now, can we remove the special case here then?
             normal_component = format["normal component"](self.restriction, "")
         else:
             normal_component = format["normal component"](self.restriction, components[0])
@@ -470,9 +470,9 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
                     # Add transformation if needed.
                     if mapping in code:
-                        code[mapping].append(self.__apply_transform(basis, derivatives, multi))
+                        code[mapping].append(self.__apply_transform(basis, derivatives, multi, m, n))
                     else:
-                        code[mapping] = [self.__apply_transform(basis, derivatives, multi)]
+                        code[mapping] = [self.__apply_transform(basis, derivatives, multi, m, n)]
 
         # Add sums and group if necessary.
         for key, val in code.items():
@@ -500,7 +500,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # Figure out dimension of Jacobian
         m = tdim + 1
         n = gdim
-	
+
 		# Reset code
         code = []
 

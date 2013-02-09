@@ -190,18 +190,24 @@ def _tabulate_tensor(ir, parameters):
         # Generate tensor code for all cases using a switch.
         tensor_code = f_switch(format["vertex"], cases)
 
-        # Get Jacobian snippet.
-        jacobi_code = format["jacobian and inverse"](geo_dim, top_dim,
-                                                     oriented=oriented)
-        jacobi_code += "\n\n" + format["facet determinant"](geo_dim, top_dim)
+        # Generate code for basic geometric quantities
+        jacobi_code  = ""
+        jacobi_code += format["compute_jacobian"](tdim, gdim)
+        jacobi_code += "\n"
+        jacobi_code += format["compute_jacobian_inverse"](tdim, gdim)
+        if oriented:
+            j_code += format["compute_orientation"]
+        jacobi_code += "\n"
+        jacobi_code += "\n\n" + format["facet determinant"](tdim, gdim)
 
     else:
         error("Unhandled integral type: " + str(integral_type))
 
     # Add common (for cell, exterior and interior) geo code.
-    jacobi_code += "\n\n" + format["generate cell volume"](tdim, gdim, domain_type)
-    jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, domain_type)
-    jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
+    if domain_type != "point":
+        jacobi_code += "\n\n" + format["generate cell volume"](tdim, gdim, domain_type)
+        jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, domain_type)
+        jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
 
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.
