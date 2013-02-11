@@ -195,8 +195,8 @@ format.update({
                                 % (i, format["argument basis num"], format["argument basis num"], j),
     "dereference pointer":      lambda n: "*%s" % n,
     "reference variable":       lambda n: "&%s" % n,
-    "call basis":               lambda i, s: "evaluate_basis(%s, %s, x, vertex_coordinates);" % (i, s),
-    "call basis_derivatives":   lambda i, s: "evaluate_basis_derivatives(%s, n, %s, x, vertex_coordinates);" % (i, s),
+    "call basis":               lambda i, s: "evaluate_basis(%s, %s, x, vertex_coordinates, c);" % (i, s),
+    "call basis_derivatives":   lambda i, s: "evaluate_basis_derivatives(%s, n, %s, x, vertex_coordinates, c);" % (i, s),
 
     # quadrature code generators
     "integration points": "ip",

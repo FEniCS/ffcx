@@ -655,8 +655,8 @@ const double b1 = vertex_coordinates[1];
 const double b2 = vertex_coordinates[2];
 
 // P_FFC = J^dag (p - b), P_FIAT = 2*P_FFC - (1, 1)
-double X = 2*(K_[0]*(x[0] - b0) + K_[1]*(x[1] - b1) + K_[2]*(x[2] - b2)) - 1.0;
-double Y = 2*(K_[3]*(x[0] - b0) + K_[4]*(x[1] - b1) + K_[5]*(x[2] - b2)) - 1.0;
+double X = 2*(K[0]*(x[0] - b0) + K[1]*(x[1] - b1) + K[2]*(x[2] - b2)) - 1.0;
+double Y = 2*(K[3]*(x[0] - b0) + K[4]*(x[1] - b1) + K[5]*(x[2] - b2)) - 1.0;
 """
 
 _map_coordinates_FIAT_tetrahedron = """\

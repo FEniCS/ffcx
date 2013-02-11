@@ -91,7 +91,9 @@ def _evaluate_basis_all(data):
     if physical_value_size == 1:
         code += [f_decl(f_double, f_dof_vals, f_float(0.0))]
     else:
-        code += [f_decl(f_double, f_component(f_dof_vals, physical_value_size), f_tensor([0.0]*physical_value_size))]
+        code += [f_decl(f_double,
+                        f_component(f_dof_vals, physical_value_size),
+                        f_tensor([0.0]*physical_value_size))]
 
     # Create loop over dofs that calls evaluate_basis for a single dof and
     # inserts the values into the global array.
