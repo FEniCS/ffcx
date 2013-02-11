@@ -149,25 +149,29 @@ namespace ufc
     virtual void evaluate_basis(std::size_t i,
                                 double* values,
                                 const double* x,
-                                const double* vertex_coordinates) const = 0;
+                                const double* vertex_coordinates,
+                                const cell& c) const = 0;
 
     /// Evaluate all basis functions at given point x in cell
     virtual void evaluate_basis_all(double* values,
                                     const double* x,
-                                    const double* vertex_coordinates) const = 0;
+                                    const double* vertex_coordinates,
+                                    const cell& c) const = 0;
 
     /// Evaluate order n derivatives of basis function i at given point x in cell
     virtual void evaluate_basis_derivatives(std::size_t i,
                                             std::size_t n,
                                             double* values,
                                             const double* x,
-                                            const double* vertex_coordinates) const = 0;
+                                            const double* vertex_coordinates,
+                                            const cell& c) const = 0;
 
     /// Evaluate order n derivatives of all basis functions at given point x in cell
     virtual void evaluate_basis_derivatives_all(std::size_t n,
                                                 double* values,
                                                 const double* x,
-                                                const double* vertex_coordinates) const = 0;
+                                                const double* vertex_coordinates,
+                                                const cell& c) const = 0;
 
     // FIXME: cell argument only included here so we can pass it to the eval function...
 
@@ -186,7 +190,8 @@ namespace ufc
     /// Interpolate vertex values from dof values
     virtual void interpolate_vertex_values(double* vertex_values,
                                            const double* dof_values,
-                                           const double* vertex_coordinates) const = 0;
+                                           const double* vertex_coordinates,
+                                           const cell& c) const = 0;
 
     /// Map coordinate xhat from reference cell to coordinate x in cell
     virtual void map_from_reference_cell(double* x,
