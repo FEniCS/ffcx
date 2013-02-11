@@ -16,7 +16,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2009-12-16
-# Last changed: 2013-02-10
+# Last changed: 2013-02-11
 
 from ffc.representationutils import initialize_integral_ir, initialize_integral_code
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
@@ -34,14 +34,13 @@ def compute_integral_ir(itg_data,
     ir = initialize_integral_ir("uflacs", itg_data, form_data, form_id)
 
     # TODO: Call upon ffc to build element tabules or other intermediate representation and add to ir
-    #ffc_data = ...
+    ffc_data = None
 
-    # TODO: Call upon flacs to build graphs and ssa or other intermediate representation and add to ir
-    #import uflacs
-    uir = {} #uflacs.backends.ffc.compute_integral_ir(itg_data, form_data, ffc_data, parameters)
+    # Call upon flacs to build graphs and ssa or other intermediate representation and add to ir
+    from uflacs.backends.ffc import compute_uflacs_integral_ir
+    uir = compute_uflacs_integral_ir(ffc_data, itg_data, form_data, parameters)
     ir.update(uir)
 
-    # FIXME: Return something minimal that will pass through ffc
     return ir
 
 def optimize_integral_ir(ir, parameters):
@@ -49,9 +48,11 @@ def optimize_integral_ir(ir, parameters):
 
     info("Optimizing uflacs representation")
 
-    # TODO: Call upon uflacs to optimize ssa representation prior to code generation. Should be possible to skip this step.
+    # Call upon uflacs to optimize ssa representation prior to code generation. Should be possible to skip this step.
+    from uflacs.backends.ffc import optimize_integral_ir
+    oir = optimize_integral_ir(ir, parameters)
 
-    return ir
+    return oir
 
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
@@ -61,12 +62,9 @@ def generate_integral_code(ir, prefix, parameters):
     # Generate code
     code = initialize_integral_code(ir, prefix, parameters)
 
-    code["tabulate_tensor"] = format["do nothing"]
-    code["tabulate_tensor_quadrature"] = format["do nothing"]
+    # Call upon uflacs to render graphs into code
+    from uflacs.backends.ffc import generate_tabulate_tensor_code
+    code["tabulate_tensor"] = generate_tabulate_tensor_code(ir, parameters)
 
-    # TODO: Call upon uflacs to render graphs into code
-    #import uflacs
-    #code["tabulate_tensor"] = uflacs.backends.ffc.generate_integral_code(ir, parameters)
-
-    # FIXME: Return something minimal that will pass through ffc
+    code["tabulate_tensor_quadrature"] = format["do nothing"] # TODO: Remove
     return code
