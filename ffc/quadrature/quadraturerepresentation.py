@@ -1,6 +1,6 @@
 "Quadrature representation class for UFL"
 
-# Copyright (C) 2009-2010 Kristian B. Oelgaard
+# Copyright (C) 2009-2013 Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -18,9 +18,10 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Anders Logg, 2009.
+# Modified by Martin Alnaes, 2013
 #
 # First added:  2009-01-07
-# Last changed: 2010-05-18
+# Last changed: 2013-02-10
 
 import numpy
 
@@ -37,12 +38,9 @@ from ffc.fiatinterface import cellname2num_facets, entities_per_dim
 from ffc.quadrature.quadraturetransformer import QuadratureTransformer
 from ffc.quadrature.optimisedquadraturetransformer import QuadratureTransformerOpt
 from ffc.quadrature_schemes import create_quadrature
-from ffc.representationutils import needs_oriented_jacobian
+from ffc.representationutils import initialize_integral_ir
 
-def compute_integral_ir(domain_type,
-                        domain_id,
-                        integrals,
-                        metadata,
+def compute_integral_ir(itg_data,
                         form_data,
                         form_id,
                         parameters):
@@ -57,21 +55,14 @@ def compute_integral_ir(domain_type,
     num_vertices = entities_per_dim[cell.topological_dimension()][0]
 
     # Initialise representation
-    ir = {"representation":       "quadrature",
-          "domain_type":          domain_type,
-          "domain_id":            domain_id,
-          "form_id":              form_id,
-          "geometric_dimension":  form_data.geometric_dimension,
-          "topological_dimension":form_data.topological_dimension,
-          "num_facets":           num_facets,
-          "num_vertices":         num_vertices,
-          "needs_oriented":       needs_oriented_jacobian(form_data),
-          "geo_consts":           {}}
+    ir = initialize_integral_ir("quadrature", itg_data, form_data, form_id)
+    ir["num_vertices"] = num_vertices
+    ir["geo_consts"] = {}
 
     # Sort integrals and tabulate basis.
-    sorted_integrals = _sort_integrals(integrals, metadata, form_data)
+    sorted_integrals = _sort_integrals(itg_data.integrals, itg_data.metadata, form_data)
     integrals_dict, psi_tables, quad_weights = \
-        _tabulate_basis(sorted_integrals, domain_type, form_data)
+        _tabulate_basis(sorted_integrals, itg_data.domain_type, form_data)
 
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.
@@ -139,38 +130,38 @@ def compute_integral_ir(domain_type,
     ir["unique_tables"] = transformer.unique_tables
 
     # Transform integrals.
-    if domain_type == "cell":
+    if itg_data.domain_type == "cell":
         # Compute transformed integrals.
         info("Transforming cell integral")
         transformer.update_facets(None, None)
-        terms = _transform_integrals(transformer, integrals_dict, domain_type)
-    elif domain_type == "exterior_facet":
+        terms = _transform_integrals(transformer, integrals_dict, itg_data.domain_type)
+    elif itg_data.domain_type == "exterior_facet":
         # Compute transformed integrals.
         terms = [None]*num_facets
         for i in range(num_facets):
             info("Transforming exterior facet integral %d" % i)
             transformer.update_facets(i, None)
-            terms[i] = _transform_integrals(transformer, integrals_dict, domain_type)
-    elif domain_type == "interior_facet":
+            terms[i] = _transform_integrals(transformer, integrals_dict, itg_data.domain_type)
+    elif itg_data.domain_type == "interior_facet":
         # Compute transformed integrals.
         terms = [[None]*num_facets for i in range(num_facets)]
         for i in range(num_facets):
             for j in range(num_facets):
                 info("Transforming interior facet integral (%d, %d)" % (i, j))
                 transformer.update_facets(i, j)
-                terms[i][j] = _transform_integrals(transformer, integrals_dict, domain_type)
-    elif domain_type == "point":
+                terms[i][j] = _transform_integrals(transformer, integrals_dict, itg_data.domain_type)
+    elif itg_data.domain_type == "point":
         # Compute transformed integrals.
         terms = [None]*num_vertices
         for i in range(num_vertices):
             info("Transforming point integral (%d)" % i)
             transformer.update_facets(None, None)
             transformer.update_vertex(i)
-            terms[i] = _transform_integrals(transformer, integrals_dict, domain_type)
+            terms[i] = _transform_integrals(transformer, integrals_dict, itg_data.domain_type)
         ir["unique_tables"] = transformer.unique_tables
         ir["name_map"] = transformer.name_map
     else:
-        error("Unhandled domain type: " + str(domain_type))
+        error("Unhandled domain type: " + str(itg_data.domain_type))
     ir["trans_integrals"] = terms
 
     # Save tables map, to extract table names for optimisation option -O.

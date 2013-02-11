@@ -34,7 +34,7 @@ in the intermediate representation under the key "foo".
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2009-12-16
-# Last changed: 2013-01-25
+# Last changed: 2013-02-10
 
 # Python modules
 from itertools import chain
@@ -53,9 +53,20 @@ from ffc.enrichedelement import EnrichedElement, SpaceOfReals
 from ffc.quadratureelement import QuadratureElement
 from ffc.cpp import set_float_formatting
 
-# FFC specialized representation modules
-from ffc import quadrature
-from ffc import tensor
+def pick_representation(representation):
+    "Return one of the specialized code generation modules from a representation string."
+    if representation == "quadrature":
+        from ffc import quadrature
+        r = quadrature
+    elif representation == "tensor":
+        from ffc import tensor
+        r = tensor
+    elif representation == "uflacs":
+        from ffc import uflacsrepr
+        r = uflacsrepr
+    else:
+        error("Unknown representation: %s" % str(representation))
+    return r
 
 not_implemented = None
 
@@ -194,22 +205,14 @@ def _compute_integral_ir(form_data, form_id, parameters):
     irs = []
 
     # Iterate over integrals
-    for ida in form_data.integral_data:
-        common_metadata = ida.metadata # TODO: Is it possible to detach this from IntegralData? It's a bit strange from the ufl side.
+    for itg_data in form_data.integral_data:
 
         # Select representation
-        if common_metadata["representation"] == "quadrature":
-            r = quadrature
-        elif common_metadata["representation"] == "tensor":
-            r = tensor
-        else:
-            error("Unknown representation: " + str(common_metadata["representation"]))
+        # TODO: Is it possible to detach this metadata from IntegralData? It's a bit strange from the ufl side.
+        r = pick_representation(itg_data.metadata["representation"])
 
         # Compute representation
-        ir = r.compute_integral_ir(ida.domain_type,
-                                   ida.domain_id,
-                                   ida.integrals,
-                                   common_metadata,
+        ir = r.compute_integral_ir(itg_data,
                                    form_data,
                                    form_id,
                                    parameters)
@@ -530,8 +533,8 @@ def _create_sub_foo(ufl_element, element_numbers):
 
 def _create_foo_integral(domain_type, form_data):
     "Compute intermediate representation of create_foo_integral."
-    return [ida.domain_id for ida in form_data.integral_data
-           if ida.domain_type == domain_type and isinstance(ida.domain_id, int)]
+    return [itg_data.domain_id for itg_data in form_data.integral_data
+           if itg_data.domain_type == domain_type and isinstance(itg_data.domain_id, int)]
 
 def _has_foo_integrals(domain_type, form_data):
     "Compute intermediate representation of has_foo_integrals."
@@ -541,10 +544,10 @@ def _has_foo_integrals(domain_type, form_data):
 
 def _create_default_foo_integral(domain_type, form_data):
     "Compute intermediate representation of create_default_foo_integral."
-    ida = [ida for ida in form_data.integral_data
-           if ida.domain_id == Measure.DOMAIN_ID_OTHERWISE and ida.domain_type == domain_type]
-    ffc_assert(len(ida) in (0,1), "Expecting at most one default integral of each type.")
-    return Measure.DOMAIN_ID_OTHERWISE if ida else None
+    itg_data = [itg_data for itg_data in form_data.integral_data
+           if itg_data.domain_id == Measure.DOMAIN_ID_OTHERWISE and itg_data.domain_type == domain_type]
+    ffc_assert(len(itg_data) in (0,1), "Expecting at most one default integral of each type.")
+    return Measure.DOMAIN_ID_OTHERWISE if itg_data else None
 
 #--- Utility functions ---
 

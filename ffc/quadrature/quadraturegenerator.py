@@ -1,6 +1,6 @@
 "Code generator for quadrature representation."
 
-# Copyright (C) 2009-2010 Kristian B. Oelgaard
+# Copyright (C) 2009-2013 Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -18,9 +18,10 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Mehdi Nikbakht, 2010
+# Modified by Martin Alnaes, 2013
 #
 # First added:  2009-01-07
-# Last changed: 2011-11-28
+# Last changed: 2013-02-10
 
 # Python modules.
 import functools
@@ -33,6 +34,8 @@ from ufl.algorithms.printing import tree_format
 from ffc.log import info, debug, ffc_assert
 from ffc.cpp import format, remove_unused
 
+from ffc.representationutils import initialize_integral_code
+
 # Utility and optimisation functions for quadraturegenerator.
 from symbolics import generate_aux_constants
 
@@ -42,19 +45,10 @@ Quadrature version of tabulate_tensor not yet implemented (introduced in UFC 2.0
 
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
-
-    # Generate code
-    code = {}
-    code["classname"] = format["classname " + ir["domain_type"] + "_integral"](prefix, ir["form_id"], ir["domain_id"])
-    code["members"] = ""
-    code["constructor"] = format["do nothing"]
-    code["constructor_arguments"] = ""
-    code["initializer_list"] = ""
-    code["destructor"] = format["do nothing"]
+    code = initialize_integral_code(ir, prefix, parameters)
     code["tabulate_tensor"] = _tabulate_tensor(ir, parameters)
-    code["tabulate_tensor_quadrature"] = format["exception"](tabulate_tensor_quadrature_error)
     code["additional_includes_set"] = ir["additional_includes_set"]
-
+    code["tabulate_tensor_quadrature"] = format["exception"](tabulate_tensor_quadrature_error) # FIXME: Remove
     return code
 
 def _tabulate_tensor(ir, parameters):
