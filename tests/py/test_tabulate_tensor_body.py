@@ -162,6 +162,11 @@ class test_tabulate_tensor_body(CodegenTestCase):
             const double * const * w,
             const double * vertex_coordinates
             ) const;
+        """
+        pass
+
+    def xtest_interval_geometry_expressions(self):
+        """Test code generation of geometry expressions on an interval.
 
         PRE:
         mock_cell mc;
@@ -174,26 +179,44 @@ class test_tabulate_tensor_body(CodegenTestCase):
         memset(A, 0, sizeof(A));
 
         POST:
+        // Check that geometric quantities are declared and computed correctly
+        ASSERT_EQ(x[0], TODO);
+        ASSERT_EQ(xi[0], TODO);
         ASSERT_EQ(J[0], -0.1);
-        ASSERT_EQ(Jinv[0], -10.0);
+        ASSERT_EQ(K[0], -10.0);
         ASSERT_EQ(detJ, -0.1);
         ASSERT_EQ(volume, 0.1);
-        ASSERT_EQ(D, 0.1);
+        ASSERT_EQ(circumradius, TODO);
 
-        ASSERT_EQ(A[0], 0.03*2);
+        // Check that geometric quantities have been placed in the output array
+        std::size_t gd = mc.geometric_dimension;
+        std::size_t td = mc.topological_dimension;
+        double * AA = A;
+        ASSERT_EQ(AA[0], x[0]); AA += gd;
+        ASSERT_EQ(AA[0], xi[0]); AA += td;
+        ASSERT_EQ(AA[0], J[0]); AA += gd * td;
+        ASSERT_EQ(AA[0], K[0]); AA += td * gd;
+        ASSERT_EQ(AA[0], detJ); AA += 1;
+        ASSERT_EQ(AA[0], volume); AA += 1;
+        ASSERT_EQ(AA[0], circumradius); AA += 1;
         """
         cell = interval
-        x = cell.x[0]
-        J = cell.J[0,0]
-        Jinv = cell.Jinv[0,0]
-        detJ = cell.detJ
-        xi = cell.xi[0]
-        T = cell.volume
 
-        expr = 3*T
+        gd = cell.geometric_dimension()
+        td = cell.topological_dimension()
 
-        integral = expr*dx
-        code = self.compile_tabulate_tensor_body(integral)
+        values = []
+        values.extend(cell.x[i] for i in range(gd))
+        values.extend(cell.xi[i] for i in range(td))
+        values.extend(cell.J[i,j] for i in range(gd) for i in range(td))
+        values.extend(cell.Jinv[i,j] for i in range(td) for i in range(gd))
+        values.append(cell.detJ)
+        values.append(cell.volume)
+        values.append(cell.circumradius)
+
+        expr = as_vector(values)
+
+        code = self.compile_expression(expr)
         self.emit_test(code)
 
     def test_tabulate_tensor_interval_facet(self):
