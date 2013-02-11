@@ -1,53 +1,97 @@
 Plan for test driven development of form compiler
 =================================================
 
+* Move expression code generation tests from site-packages/test_uflacs
+
 * Repeat for interval, triangle, tetrahedron, quadrilateral, hexahedron:
 
-    + Expression code generation tests (move tests from site-packages)
+    + Basic expressions of geometry point integral (x[] input)
 
-        - Compute expressions of x only, assuming x[] given
+        - Compute expression of x[] only
 
-    + Initial coefficients
+        - Compute ufl_cell.J -> J[]
 
-        - Handle piecewise constant coefficients (scalar and vector)
+        - Compute ufl_cell.detJ -> detJ
 
-    + Initial geometry computations
+        - Compute ufl_cell.Jinv -> K[]
 
-        - Compute J[], detJ, Jinv[]
+        - Compute ufl_cell.xi -> xi[] from x[], v0, K
 
-        - Compute x[] from xi[]
+    + Integration
 
-        - Compute xi[] from x[]
+        - Assume a quadrature rule (one midpoint just for testing)
 
-        - Compute integration scaling factor
+        - Generate quadrature loop, defining xi[]
 
-    + Form structure
+        - Compute x[] from cell_xi[]
 
-        - Compute functional of x assuming quadrature rule given
+        - Compute cell_xi[] from facet_xi[]
 
-        - Handle piecewise constant basis functions
+        - Compute x[] from facet_xi[]
 
-        - Handle non-constant basis functions
-
-        - Handle basis function gradients (with mapping applied)
-
-    + Secondary coefficients
-
-        - Handle non-constant coefficients
-
-        - Handle coefficient gradients (with mapping applied)
-
-        - Handle piecewise constant coefficients (tensor with symmetries)
-
-    + Secondary geometry computations
+        - Compute cell integration scaling factor (abs(detJ)?)
 
         - Compute facet integration scaling factor
 
-        - Compute n[]
+    + Coefficients
 
-        - Compute volume, etc.
+        - Get scalar piecewise constant coefficients
 
-* Integrate with sfc/ffc!
+        - Get vector piecewise constant coefficients
+
+        - Get tensor piecewise constant coefficients (with symmetries)
+
+        - Compute non-constant coefficients from dofs and basis functions
+
+        - Compute local coefficient gradients
+
+        - Compute mapped global coefficient gradients
+
+    + Secondary geometry computations
+
+        - Compute cell barycenter
+
+        - Compute cell volume
+
+        - Compute cell radius
+
+        - Compute cell normal n[]?
+
+        - Compute facet barycenter
+
+        - Compute facet area
+
+        - Compute facet radius
+
+        - Compute facet normal n[]
+
+    + Form structure
+
+        - Handle loop over test space
+
+        - Handle loops over test and trial space
+
+        - Compute piecewise constant basis functions
+
+        - Compute non-constant basis functions
+
+        - Compute basis function gradients (with mapping K applied)
+
+* Integrate with ffc:
+
+    + Add clean slate uflacs representation
+
+    + Make uflacs representation delegate to quadrature representation for elements etc.
+
+    + Make uflacs representation call uflacs to generate tabulate_tensor body
+
+        - point_integral
+
+        - cell_integral
+
+        - exterior_facet_integral
+
+        - interior_facet_integral
 
 * Saving optimization and tuning of algorithms for later when stuff works
 
