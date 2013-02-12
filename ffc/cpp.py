@@ -31,7 +31,7 @@ import re, numpy, platform
 from ffc.log import debug, error
 
 # Mapping of restrictions
-_choose_map = {None: "", "+": "0", "-": "1"}
+_choose_map = {None: "", "+": "_0", "-": "_1"}
 
 # FIXME: KBO: format is a builtin_function, i.e., we should use a different name.
 # Formatting rules
@@ -234,11 +234,11 @@ format.update({
 from codesnippets import *
 
 format.update({
-    "compute_jacobian":         lambda tdim, gdim, r="": \
-                                compute_jacobian[tdim][gdim] % {"restriction": r},
-    "compute_jacobian_inverse": lambda tdim, gdim, r="": \
-                                compute_jacobian_inverse[tdim][gdim] % {"restriction": r},
-    "orientation":              lambda tdim, gdim, r="": orientation_snippet % {"restriction": r} if tdim != gdim else "",
+    "compute_jacobian":         lambda tdim, gdim, r=None: \
+                                compute_jacobian[tdim][gdim] % {"restriction": _choose_map[r]},
+    "compute_jacobian_inverse": lambda tdim, gdim, r=None: \
+                                compute_jacobian_inverse[tdim][gdim] % {"restriction": _choose_map[r]},
+    "orientation":              lambda tdim, gdim, r=None: orientation_snippet % {"restriction": _choose_map[r]} if tdim != gdim else "",
     "facet determinant":        lambda tdim, gdim, r=None: facet_determinant[tdim][gdim] % {"restriction": _choose_map[r]},
     "fiat coordinate map":      lambda cell, gdim: fiat_coordinate_map[cell][gdim],
     "generate normal":          lambda tdim, gdim, i: _generate_normal(tdim, gdim, i),

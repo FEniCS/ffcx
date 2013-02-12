@@ -136,6 +136,9 @@ def _tabulate_tensor(ir, parameters):
             j_code += format["compute_jacobian_inverse"](tdim, gdim, r=_r)
             j_code += "\n"
             j_code += format["facet determinant"](tdim, gdim, r=_r)
+            j_code += "\n"
+
+        print j_code
 
     else:
         error("Unhandled integral type: " + str(domain_type))
