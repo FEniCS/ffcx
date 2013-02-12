@@ -33,7 +33,14 @@ LIBS=-lgtest -lpthread
 
 .SECONDARY:
 
+default: run_pytests
+
+#default: all
+
 all: run_testall
+
+run_pytests:
+	./runpytests.py
 
 run: ${TEST_RUN}
 
