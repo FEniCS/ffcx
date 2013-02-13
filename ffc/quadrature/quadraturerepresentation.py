@@ -140,7 +140,8 @@ def _parse_optimise_parameters(parameters):
 
 def _transform_integrals_by_type(ir, transformer, integrals_dict, domain_type, cell):
     num_facets = cellname_to_num_entities[cell.cellname()][-2]
-    num_vertices = cellname_to_num_entities[form_data.cell.cellname()][0]
+    num_vertices = cellname_to_num_entities[cell.cellname()][0]
+
     if domain_type == "cell":
         # Compute transformed integrals.
         info("Transforming cell integral")
@@ -209,27 +210,39 @@ def _find_element_derivatives(expr, elements, element_replace_map):
         num_derivatives[elem] = max(num_derivatives[elem], len(extract_type(d, Grad)))
     return num_derivatives
 
-def _tabulate_psi_table(domain_type, cell, element, deriv_order, points):
-    "Tabulate psi table for different integral types."
-    # TODO: Can we generalize this?
-    #for entity in range(cellname_to_num_entities[cell.cellname()][entity_dim]):
+def domain_to_entity_dim(domain_type, cell):
+    tdim = cell.topological_dimension()
     if domain_type == "cell":
-        psi_table = {None: element.tabulate(deriv_order, points)}
-    elif (domain_type == "exterior_facet"
-          or domain_type == "interior_facet"):
-        psi_table = {}
-        num_facets = cellname_to_num_entities[cell.cellname()][-2]
-        for facet in range(num_facets):
-            facet_points = map_facet_points(points, facet)
-            psi_table[facet] = element.tabulate(deriv_order, facet_points)
+        entity_dim = tdim
+    elif (domain_type == "exterior_facet" or domain_type == "interior_facet"):
+        entity_dim = tdim - 1
     elif domain_type == "point":
-        num_vertices = cellname_to_num_entities[form_data.cell.cellname()][0]
-        psi_table = {}
-        for vertex in range(num_vertices):
-            vertex_points = (reference_cell_vertices(cell.cellname())[vertex],)
-            psi_table[vertex] = element.tabulate(deriv_order, vertex_points)
+        entity_dim = 0
     else:
         error("Unknown domain_type: %s" % domain_type)
+    return entity_dim
+
+def _map_entity_points(cell, points, entity_dim, entity):
+    # Not sure if this is useful anywhere else than in _tabulate_psi_table!
+    tdim = cell.topological_dimension()
+    if entity_dim == tdim:
+        return points
+    elif entity_dim == tdim-1:
+        return map_facet_points(points, entity)
+    elif entity_dim == 0:
+        return (reference_cell_vertices(cell.cellname())[entity],)
+
+def _tabulate_psi_table(domain_type, cell, element, deriv_order, points):
+    "Tabulate psi table for different integral types."
+    # MSA: I attempted to generalize this function, could this way of
+    # handling domain types generically extend to other parts of the code?
+    entity_dim = domain_to_entity_dim(domain_type, cell)
+    num_entities = cellname_to_num_entities[cell.cellname()][entity_dim]
+    psi_table = {}
+    for entity in range(num_entities):
+        entity_points = _map_entity_points(cell, points, entity_dim, entity)
+        key = None if domain_type == "cell" else entity # TODO: Let 0 be valid and we may be able to generalize other places
+        psi_table[key] = element.tabulate(deriv_order, entity_points)
     return psi_table
 
 def _tabulate_basis(sorted_integrals, domain_type, form_data):

@@ -46,8 +46,7 @@ from ufl.classes import Measure
 # FFC modules
 from ffc.utils import compute_permutations, product
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
-from ffc.fiatinterface import create_element, entities_per_dim, reference_cell
-from ffc.fiatinterface import cellname2entities
+from ffc.fiatinterface import create_element, cellname_to_num_entities, reference_cell
 from ffc.mixedelement import MixedElement
 from ffc.enrichedelement import EnrichedElement, SpaceOfReals
 from ffc.quadratureelement import QuadratureElement
@@ -440,8 +439,8 @@ def _tabulate_dofs(element, cell):
     if isinstance(element, SpaceOfReals):
         return None
 
-    # Extract number of enties for each dimension for this cell
-    num_entities = entities_per_dim[cell.geometric_dimension()]
+    # Extract number of entities for each dimension for this cell
+    num_entities = cellname_to_num_entities[cell.cellname()]
 
     # Extract number of dofs per entity for each element
     elements = all_elements(element)
@@ -477,7 +476,7 @@ def _tabulate_facet_dofs(element, cell):
     D = max([pair[0][0] for pair in incidence])
 
     # Get the number of facets
-    num_facets = cellname2entities[cell.cellname()][-2]
+    num_facets = cellname_to_num_entities[cell.cellname()][-2]
 
     # Find out which entities are incident to each facet
     incident = num_facets*[None]
