@@ -176,7 +176,7 @@ def compute_integral_ir(itg_data,
 
     return ir
 
-def create_quadrature_points_and_weights(domain_type, cell, degree, rule):
+def _create_quadrature_points_and_weights(domain_type, cell, degree, rule):
     # FIXME: Make create_quadrature() take a rule argument.
     if domain_type == "cell":
         (points, weights) = create_quadrature(cell.cellname(), degree, rule)
@@ -188,7 +188,7 @@ def create_quadrature_points_and_weights(domain_type, cell, degree, rule):
         error("Unknown integral type: " + str(domain_type))
     return (points, weights)
 
-def find_element_derivatives(expr, elements, element_replace_map):
+def _find_element_derivatives(expr, elements, element_replace_map):
     "Find the highest derivatives of given elements in expression."
     # TODO: This is most likely not the best way to get the highest
     #       derivative of an element, but it works!
@@ -209,8 +209,8 @@ def find_element_derivatives(expr, elements, element_replace_map):
         num_derivatives[elem] = max(num_derivatives[elem], len(extract_type(d, Grad)))
     return num_derivatives
 
-def tabulate_psi_table(domain_type, cell, element, deriv_order, points):
-    # Tabulate psi table for different integral types
+def _tabulate_psi_table(domain_type, cell, element, deriv_order, points):
+    "Tabulate psi table for different integral types."
     if domain_type == "cell":
         psi_table = {None: element.tabulate(deriv_order, points)}
     elif (domain_type == "exterior_facet"
@@ -242,10 +242,6 @@ def _tabulate_basis(sorted_integrals, domain_type, form_data):
     psi_tables = {}
     integrals = {}
 
-    # Extract some cell info
-    cell = form_data.cell
-    gdim = cell.geometric_dimension()
-
     # Loop the quadrature points and tabulate the basis values.
     for pr, integral in sorted_integrals.iteritems():
 
@@ -262,7 +258,7 @@ def _tabulate_basis(sorted_integrals, domain_type, form_data):
         fiat_elements = [create_element(e) for e in elements]
 
         # Make quadrature rule and get points and weights.
-        (points, weights) = create_quadrature_points_and_weights(domain_type, cell, degree, rule)
+        (points, weights) = _create_quadrature_points_and_weights(domain_type, form_data.cell, degree, rule)
 
         # The TOTAL number of weights/points
         len_weights = len(weights)
@@ -285,13 +281,14 @@ def _tabulate_basis(sorted_integrals, domain_type, form_data):
         integrals[len_weights] = integral
 
         # Find the highest number of derivatives needed for each element
-        num_derivatives = find_element_derivatives(integral.integrand(), elements,
-                                                   form_data.element_replace_map)
+        num_derivatives = _find_element_derivatives(integral.integrand(), elements,
+                                                    form_data.element_replace_map)
 
         # Loop FIAT elements and tabulate basis as usual.
         for i, element in enumerate(fiat_elements):
             # Tabulate table of basis functions and derivatives in points
-            psi_table = tabulate_psi_table(domain_type, cell, element, num_derivatives[elements[i]], points)
+            psi_table = _tabulate_psi_table(domain_type, form_data.cell, element,
+                                        num_derivatives[elements[i]], points)
 
             # Insert table into dictionary based on UFL elements.
             psi_tables[len_weights][elements[i]] = psi_table
