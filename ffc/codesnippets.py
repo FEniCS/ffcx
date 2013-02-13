@@ -178,12 +178,11 @@ const double det = std::abs(detJ);"""
 # FIXME: Old stuff below that should be cleaned up or moved to ufc_geometry.h
 
 orientation_snippet = """
-// Extract orientation
-const int orientation_marker = c.orientation;
-if (orientation_marker == -1)
+// Check orientation
+if (cell_orientation == -1)
   throw std::runtime_error("cell orientation must be defined (not -1)");
-// (If orientation_marker == 1 = down, multiply det(J) by -1)
-else if (orientation_marker == 1)
+// (If cell_orientation == 1 = down, multiply det(J) by -1)
+else if (cell_orientation == 1)
   detJ%(restriction)s *= -1;
 """
 
@@ -262,15 +261,15 @@ const double det = 1.0;
 """
 
 _normal_direction_1D = """\
-const bool direction = facet%(restriction)s == 0 ? vertex_coordinates%(restriction)s[0][0] > vertex_coordinates%(restriction)s[1][0] : vertex_coordinates%(restriction)s[1][0] > vertex_coordinates%(restriction)s[0][0];
+const bool direction = facet%(restriction)s == 0 ? vertex_coordinates%(restriction)s[0] > vertex_coordinates%(restriction)s[1] : vertex_coordinates%(restriction)s[1] > vertex_coordinates%(restriction)s[0];
 """
 
 _normal_direction_2D = """\
-const bool direction = dx1*(vertex_coordinates%(restriction)s[%(facet)s][0] - vertex_coordinates%(restriction)s[v0][0]) - dx0*(vertex_coordinates%(restriction)s[%(facet)s][1] - vertex_coordinates%(restriction)s[v0][1]) < 0;
+const bool direction = dx1*(vertex_coordinates%(restriction)s[2*%(facet)s] - vertex_coordinates%(restriction)s[2*v0]) - dx0*(vertex_coordinates%(restriction)s[2*%(facet)s + 1] - vertex_coordinates%(restriction)s[2*v0 + 1]) < 0;
 """
 
 _normal_direction_3D = """\
-const bool direction = a0*(vertex_coordinates%(restriction)s[%(facet)s][0] - vertex_coordinates%(restriction)s[v0][0]) + a1*(vertex_coordinates%(restriction)s[%(facet)s][1] - vertex_coordinates%(restriction)s[v0][1])  + a2*(vertex_coordinates%(restriction)s[%(facet)s][2] - vertex_coordinates%(restriction)s[v0][2]) < 0;
+const bool direction = a0*(vertex_coordinates%(restriction)s[3*%(facet)s] - vertex_coordinates%(restriction)s[3*v0]) + a1*(vertex_coordinates%(restriction)s[3*%(facet)s + 1] - vertex_coordinates%(restriction)s[3*v0 + 1])  + a2*(vertex_coordinates%(restriction)s[3*%(facet)s + 2] - vertex_coordinates%(restriction)s[3*v0 + 2]) < 0;
 """
 
 # MER: Coding all up in _facet_normal_ND_M_D for now; these are
@@ -611,25 +610,25 @@ y[2] = w0*vertex_coordinates[2] + w1*vertex_coordinates[5] + w2*vertex_coordinat
 """
 
 _ip_coordinates_1D = """\
-X%(num_ip)d[0] = %(name)s[%(ip)s][0]*x%(restriction)s[0][0] + \
-%(name)s[%(ip)s][1]*x%(restriction)s[1][0];"""
+X%(num_ip)d[0] = %(name)s[%(ip)s][0]*vertex_coordinates%(restriction)s[0] + \
+%(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[0];"""
 
 _ip_coordinates_2D = """\
-X%(num_ip)d[0] = %(name)s[%(ip)s][0]*x%(restriction)s[0][0] + \
-%(name)s[%(ip)s][1]*x%(restriction)s[1][0] + %(name)s[%(ip)s][2]*x%(restriction)s[2][0];
-X%(num_ip)d[1] = %(name)s[%(ip)s][0]*x%(restriction)s[0][1] + \
-%(name)s[%(ip)s][1]*x%(restriction)s[1][1] + %(name)s[%(ip)s][2]*x%(restriction)s[2][1];"""
+X%(num_ip)d[0] = %(name)s[%(ip)s][0]*vertex_coordinates%(restriction)s[0] + \
+%(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[2] + %(name)s[%(ip)s][2]*vertex_coordinates%(restriction)s[4];
+X%(num_ip)d[1] = %(name)s[%(ip)s][0]*vertex_coordinates%(restriction)s[1] + \
+%(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[3] + %(name)s[%(ip)s][2]*vertex_coordinates%(restriction)s[5];"""
 
 _ip_coordinates_3D = """\
-X%(num_ip)d[0] = %(name)s[%(ip)s][0]*x%(restriction)s[0][0] + \
-%(name)s[%(ip)s][1]*x%(restriction)s[1][0] + %(name)s[%(ip)s][2]*x%(restriction)s[2][0] + \
-%(name)s[%(ip)s][3]*x%(restriction)s[3][0];
-X%(num_ip)d[1] = %(name)s[%(ip)s][0]*x%(restriction)s[0][1] + \
-%(name)s[%(ip)s][1]*x%(restriction)s[1][1] + %(name)s[%(ip)s][2]*x%(restriction)s[2][1] + \
-%(name)s[%(ip)s][3]*x%(restriction)s[3][1];
-X%(num_ip)d[2] = %(name)s[%(ip)s][0]*x%(restriction)s[0][2] + \
-%(name)s[%(ip)s][1]*x%(restriction)s[1][2] + %(name)s[%(ip)s][2]*x%(restriction)s[2][2] + \
-%(name)s[%(ip)s][3]*x%(restriction)s[3][2];"""
+X%(num_ip)d[0] = %(name)s[%(ip)s][0]*vertex_coordinates%(restriction)s[0] + \
+%(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[3] + %(name)s[%(ip)s][2]*vertex_coordinates%(restriction)s[6] + \
+%(name)s[%(ip)s][3]*vertex_coordinates%(restriction)s[9];
+X%(num_ip)d[1] = %(name)s[%(ip)s][0]*vertex_coordinates%(restriction)s[1] + \
+%(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[4] + %(name)s[%(ip)s][2]*vertex_coordinates%(restriction)s[7] + \
+%(name)s[%(ip)s][3]*vertex_coordinates%(restriction)s[10];
+X%(num_ip)d[2] = %(name)s[%(ip)s][0]*vertex_coordinates%(restriction)s[2] + \
+%(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[5] + %(name)s[%(ip)s][2]*vertex_coordinates%(restriction)s[8] + \
+%(name)s[%(ip)s][3]*vertex_coordinates%(restriction)s[11];"""
 
 # Codesnippets used in evaluatebasis[|derivatives]
 _map_coordinates_FIAT_interval = """\
@@ -726,27 +725,39 @@ ip_coordinates = {1: (3, _ip_coordinates_1D),
                   2: (10, _ip_coordinates_2D),
                   3: (21, _ip_coordinates_3D)}
 
-normal_direction = {1: {1: _normal_direction_1D},
-                    2: {2: _normal_direction_2D, 1: _normal_direction_2D_1D},
-                    3: {3: _normal_direction_3D, 2: _normal_direction_3D_2D,
-                        1: _normal_direction_3D_1D}}
+# FIXME: Rename as in compute_jacobian _compute_foo_<shape>_<n>d
 
-facet_normal = {1: {1: _facet_normal_1D},
-                2: {2: _facet_normal_2D, 1: _facet_normal_2D_1D},
-                3: {3: _facet_normal_3D, 2: _facet_normal_3D_2D,
-                    1: _facet_normal_3D_1D}}
+normal_direction = {1: {1: _normal_direction_1D,
+                        2: _normal_direction_2D_1D,
+                        3: _normal_direction_3D_1D},
+                    2: {2: _normal_direction_2D,
+                        3: _normal_direction_3D_2D},
+                    3: {3: _normal_direction_3D}}
 
-cell_volume = {1: {1: _cell_volume_1D},
-               2: {2: _cell_volume_2D, 1: _cell_volume_2D_1D},
-               3: {3: _cell_volume_3D, 2: _cell_volume_3D_2D,
-                   1: _cell_volume_3D_1D}}
+facet_normal = {1: {1: _facet_normal_1D,
+                    2: _facet_normal_2D_1D,
+                    3: _facet_normal_3D_1D},
+                2: {2: _facet_normal_2D,
+                    3: _facet_normal_3D_2D},
+                3: {3: _facet_normal_3D}}
 
-circumradius = {1: {1: _circumradius_1D},
-                2: {2: _circumradius_2D, 1: _circumradius_2D_1D},
-                3: {3: _circumradius_3D, 2: _circumradius_3D_2D,
-                    1: _circumradius_3D_1D}}
+cell_volume = {1: {1: _cell_volume_1D,
+                   2: _cell_volume_2D_1D,
+                   3: _cell_volume_3D_1D},
+               2: {2: _cell_volume_2D,
+                   3: _cell_volume_3D_2D},
+               3: {3: _cell_volume_3D}}
 
-facet_area = {1: {1: _facet_area_1D},
-              2: {2: _facet_area_2D, 1: _facet_area_2D_1D},
-              3: {3: _facet_area_3D, 2: _facet_area_3D_2D,
-                  1: _facet_area_3D_1D}}
+circumradius = {1: {1: _circumradius_1D,
+                    2: _circumradius_2D_1D,
+                    3: _circumradius_3D_1D},
+                2: {2: _circumradius_2D,
+                    3: _circumradius_3D_2D},
+                3: {3: _circumradius_3D}}
+
+facet_area = {1: {1: _facet_area_1D,
+                  2: _facet_area_2D_1D,
+                  3: _facet_area_3D_1D},
+              2: {2: _facet_area_2D,
+                  3: _facet_area_3D_2D},
+              3: {3: _facet_area_3D}}

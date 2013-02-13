@@ -16,7 +16,7 @@
 // along with FFC. If not, see <http://www.gnu.org/licenses/>.
 //
 // First added:  2010-01-24
-// Last changed: 2013-02-11
+// Last changed: 2013-02-13
 //
 // Functions for calling generated UFC functions with "random" (but
 // fixed) data and print the output to screen. Useful for running
@@ -260,12 +260,12 @@ void test_finite_element(ufc::finite_element& element)
   // evaluate_basis
   for (std::size_t i = 0; i < element.space_dimension(); i++)
   {
-    element.evaluate_basis(i, values, coordinates, &c.vertex_coordinates[0], c);
+    element.evaluate_basis(i, values, coordinates, &c.vertex_coordinates[0], 1);
     print_array("evaluate_basis:", value_size, values, i);
   }
 
   // evaluate_basis all
-  element.evaluate_basis_all(values, coordinates, &c.vertex_coordinates[0], c);
+  element.evaluate_basis_all(values, coordinates, &c.vertex_coordinates[0], 1);
   print_array("evaluate_basis_all", element.space_dimension()*value_size, values);
 
   // evaluate_basis_derivatives
@@ -281,7 +281,7 @@ void test_finite_element(ufc::finite_element& element)
                                          values,
                                          coordinates,
                                          &c.vertex_coordinates[0],
-                                         c);
+                                         1);
       print_array("evaluate_basis_derivatives", value_size*num_derivatives, values, i, n);
     }
   }
@@ -296,7 +296,7 @@ void test_finite_element(ufc::finite_element& element)
                                              values,
                                              coordinates,
                                              &c.vertex_coordinates[0],
-                                             c);
+                                             1);
     print_array("evaluate_basis_derivatives_all",
                 element.space_dimension()*value_size*num_derivatives,
                 values, n);
@@ -305,18 +305,19 @@ void test_finite_element(ufc::finite_element& element)
   // evaluate_dof
   for (std::size_t i = 0; i < element.space_dimension(); i++)
   {
-    dof_values[i] = element.evaluate_dof(i, f, &c.vertex_coordinates[0], c);
+    dof_values[i] = element.evaluate_dof(i, f, &c.vertex_coordinates[0], 1, c);
     print_scalar("evaluate_dof", dof_values[i], i);
   }
 
   // evaluate_dofs
-  element.evaluate_dofs(values, f, &c.vertex_coordinates[0], c);
+  element.evaluate_dofs(values, f, &c.vertex_coordinates[0], 1, c);
   print_array("evaluate_dofs", element.space_dimension(), values);
 
   // interpolate_vertex_values
   element.interpolate_vertex_values(vertex_values,
                                     dof_values,
                                     &c.vertex_coordinates[0],
+                                    1,
                                     c);
   print_array("interpolate_vertex_values",
               (c.topological_dimension + 1)*value_size,
@@ -458,7 +459,7 @@ void test_cell_integral(ufc::cell_integral& integral,
     A[i] = 0.0;
 
   // Call tabulate_tensor
-  integral.tabulate_tensor(A, w, &c.vertex_coordinates[0]);
+  integral.tabulate_tensor(A, w, &c.vertex_coordinates[0], c.orientation);
   print_array("tabulate_tensor", tensor_size, A);
 
   // Benchmark tabulate tensor
@@ -468,7 +469,7 @@ void test_cell_integral(ufc::cell_integral& integral,
     {
       double t0 = time();
       for (std::size_t i = 0; i < num_reps; i++)
-        integral.tabulate_tensor(A, w, &c.vertex_coordinates[0]);
+        integral.tabulate_tensor(A, w, &c.vertex_coordinates[0], c.orientation);
       double dt = time() - t0;
       if (dt > minimum_timing)
       {
@@ -621,7 +622,7 @@ void test_point_integral(ufc::point_integral& integral,
     for(std::size_t i = 0; i < tensor_size; i++)
       A[i] = 0.0;
 
-    integral.tabulate_tensor(A, w, c, vertex);
+    integral.tabulate_tensor(A, w, &c.vertex_coordinates[0], vertex);
     print_array("tabulate_tensor", tensor_size, A, vertex);
   }
 
@@ -632,7 +633,7 @@ void test_point_integral(ufc::point_integral& integral,
     {
       double t0 = time();
       for (std::size_t i = 0; i < num_reps; i++)
-        integral.tabulate_tensor(A, w, c, 0);
+        integral.tabulate_tensor(A, w, &c.vertex_coordinates[0], 0);
       double dt = time() - t0;
       if (dt > minimum_timing)
       {

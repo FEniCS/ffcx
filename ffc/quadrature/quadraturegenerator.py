@@ -111,7 +111,7 @@ def _tabulate_tensor(ir, parameters):
         jacobi_code += "\n"
         jacobi_code += format["compute_jacobian_inverse"](tdim, gdim)
         if oriented:
-            j_code += format["compute_orientation"]
+            jacobi_code += format["orientation"](tdim, gdim)
         jacobi_code += "\n"
         jacobi_code += format["scale factor snippet"]
 
@@ -136,7 +136,7 @@ def _tabulate_tensor(ir, parameters):
         jacobi_code += "\n"
         jacobi_code += format["compute_jacobian_inverse"](tdim, gdim)
         if oriented:
-            j_code += format["compute_orientation"]
+            jacobi_code += format["orientation"](tdim, gdim)
         jacobi_code += "\n"
         jacobi_code += "\n\n" + format["facet determinant"](tdim, gdim)
         jacobi_code += "\n\n" + format["generate normal"](tdim, gdim, domain_type)
@@ -168,10 +168,10 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += "\n"
             jacobi_code += format["compute_jacobian_inverse"](tdim, gdim, r=_r)
             if oriented:
-                j_code += format["compute_orientation"]
+                jacobi_code += format["orientation"](tdim, gdim)
             jacobi_code += "\n"
-            jacobi_code += "\n\n" + format["facet determinant"](tdim, gdim, r=_r)
-            jacobi_code += "\n\n" + format["generate normal"](tdim, gdim, domain_type)
+        jacobi_code += "\n\n" + format["facet determinant"](tdim, gdim, r="+")
+        jacobi_code += "\n\n" + format["generate normal"](tdim, gdim, domain_type)
 
     elif domain_type == "point":
         cases = [None for i in range(num_vertices)]
@@ -196,7 +196,7 @@ def _tabulate_tensor(ir, parameters):
         jacobi_code += "\n"
         jacobi_code += format["compute_jacobian_inverse"](tdim, gdim)
         if oriented:
-            j_code += format["compute_orientation"]
+            jacobi_code += format["orientation"](tdim, gdim)
         jacobi_code += "\n"
         jacobi_code += "\n\n" + format["facet determinant"](tdim, gdim)
 

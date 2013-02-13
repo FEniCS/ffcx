@@ -462,7 +462,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     elif transformation == "contravariant piola":
                         self.trans_set.add(f_detJ(self.restriction))
                         detJ = f_inv(f_detJ(self.restriction))
-                        dXdx = f_transform("J", local_comp, c, self.restriction)
+                        dXdx = f_transform("J", local_comp, c, m, n, self.restriction)
                         self.trans_set.add(dXdx)
                         basis = f_mult([detJ, dXdx, basis])
                     else:
