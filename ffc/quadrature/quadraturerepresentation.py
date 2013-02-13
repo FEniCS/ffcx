@@ -52,7 +52,7 @@ def compute_integral_ir(itg_data,
     cell = form_data.cell
     cellname = cell.cellname()
     num_facets = cellname2num_facets[cellname]
-    num_vertices = entities_per_dim[cell.topological_dimension()][0]
+    num_vertices = entities_per_dim[cell.topological_dimension()][0] # TODO: Only for simplices
 
     # Initialise representation
     ir = initialize_integral_ir("quadrature", itg_data, form_data, form_id)
@@ -64,6 +64,7 @@ def compute_integral_ir(itg_data,
     integrals_dict, psi_tables, quad_weights = \
         _tabulate_basis(sorted_integrals, itg_data.domain_type, form_data)
 
+    # FIXME: UFLACS get argument dimensions like this:
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.
     prim_idims = []
@@ -135,6 +136,7 @@ def compute_integral_ir(itg_data,
         info("Transforming cell integral")
         transformer.update_facets(None, None)
         terms = _transform_integrals(transformer, integrals_dict, itg_data.domain_type)
+
     elif itg_data.domain_type == "exterior_facet":
         # Compute transformed integrals.
         terms = [None]*num_facets
@@ -142,6 +144,7 @@ def compute_integral_ir(itg_data,
             info("Transforming exterior facet integral %d" % i)
             transformer.update_facets(i, None)
             terms[i] = _transform_integrals(transformer, integrals_dict, itg_data.domain_type)
+
     elif itg_data.domain_type == "interior_facet":
         # Compute transformed integrals.
         terms = [[None]*num_facets for i in range(num_facets)]
@@ -150,6 +153,7 @@ def compute_integral_ir(itg_data,
                 info("Transforming interior facet integral (%d, %d)" % (i, j))
                 transformer.update_facets(i, j)
                 terms[i][j] = _transform_integrals(transformer, integrals_dict, itg_data.domain_type)
+
     elif itg_data.domain_type == "point":
         # Compute transformed integrals.
         terms = [None]*num_vertices
@@ -160,8 +164,10 @@ def compute_integral_ir(itg_data,
             terms[i] = _transform_integrals(transformer, integrals_dict, itg_data.domain_type)
         ir["unique_tables"] = transformer.unique_tables
         ir["name_map"] = transformer.name_map
+
     else:
         error("Unhandled domain type: " + str(itg_data.domain_type))
+
     ir["trans_integrals"] = terms
 
     # Save tables map, to extract table names for optimisation option -O.
@@ -169,6 +175,60 @@ def compute_integral_ir(itg_data,
     ir["additional_includes_set"] = transformer.additional_includes_set
 
     return ir
+
+def create_quadrature_points_and_weights(domain_type, cell, degree, rule):
+    # FIXME: Make create_quadrature() take a rule argument.
+    if domain_type == "cell":
+        (points, weights) = create_quadrature(cell.cellname(), degree, rule)
+    elif domain_type == "exterior_facet" or domain_type == "interior_facet":
+        (points, weights) = create_quadrature(cell.facet_cellname(), degree, rule)
+    elif domain_type == "point":
+        (points, weights) = ([()], numpy.array([1.0,])) # TODO: Will be fixed
+    else:
+        error("Unknown integral type: " + str(domain_type))
+    return (points, weights)
+
+def find_element_derivatives(expr, elements, element_replace_map):
+    "Find the highest derivatives of given elements in expression."
+    # TODO: This is most likely not the best way to get the highest
+    #       derivative of an element, but it works!
+
+    # Initialise dictionary of elements and the number of derivatives.
+    num_derivatives = dict((e, 0) for e in elements)
+
+    # Extract the derivatives from the integral.
+    derivatives = set(extract_type(expr, Grad))
+
+    # Loop derivatives and extract multiple derivatives.
+    for d in list(derivatives):
+        # After UFL has evaluated derivatives, only one element
+        # can be found inside any single Grad expression
+        elem, = extract_elements(d.operands()[0])
+        elem = element_replace_map.get(elem,elem)
+        # Set the number of derivatives to the highest value encountered so far.
+        num_derivatives[elem] = max(num_derivatives[elem], len(extract_type(d, Grad)))
+    return num_derivatives
+
+def tabulate_psi_table(domain_type, cell, element, deriv_order, points):
+    # Tabulate psi table for different integral types
+    if domain_type == "cell":
+        psi_table = {None: element.tabulate(deriv_order, points)}
+    elif (domain_type == "exterior_facet"
+          or domain_type == "interior_facet"):
+        psi_table = {}
+        num_facets = cellname2num_facets[cell.cellname()]
+        for facet in range(num_facets):
+            facet_points = map_facet_points(points, facet)
+            psi_table[facet] = element.tabulate(deriv_order, facet_points)
+    elif domain_type == "point":
+        num_vertices = entities_per_dim[cell.topological_dimension()][0] # TODO: Only for simplices
+        psi_table = {}
+        for vertex in range(num_vertices):
+            vertex_points = (reference_cell_vertices(cell.cellname())[vertex],)
+            psi_table[vertex] = element.tabulate(deriv_order, vertex_points)
+    else:
+        error("Unknown domain_type: %s" % domain_type)
+    return psi_table
 
 def _tabulate_basis(sorted_integrals, domain_type, form_data):
     "Tabulate the basisfunctions and derivatives."
@@ -185,10 +245,6 @@ def _tabulate_basis(sorted_integrals, domain_type, form_data):
     # Extract some cell info
     cell = form_data.cell
     gdim = cell.geometric_dimension()
-    cellname = cell.cellname()
-    facet_cellname = cell.facet_cellname()
-    num_facets = cellname2num_facets[cellname]
-    num_vertices = entities_per_dim[cell.topological_dimension()][0]
 
     # Loop the quadrature points and tabulate the basis values.
     for pr, integral in sorted_integrals.iteritems():
@@ -206,84 +262,39 @@ def _tabulate_basis(sorted_integrals, domain_type, form_data):
         fiat_elements = [create_element(e) for e in elements]
 
         # Make quadrature rule and get points and weights.
-        # FIXME: Make create_quadrature() take a rule argument.
-        if domain_type == "cell":
-            (points, weights) = create_quadrature(cellname, degree, rule)
-        elif domain_type == "exterior_facet" or domain_type == "interior_facet":
-            (points, weights) = create_quadrature(facet_cellname, degree, rule)
-        elif domain_type == "point":
-            (points, weights) = ([()], numpy.array([1.0,])) # Will be fixed
-        else:
-            error("Unknown integral type: " + str(domain_type))
+        (points, weights) = create_quadrature_points_and_weights(domain_type, cell, degree, rule)
 
-        # Add points and rules to dictionary.
-        len_weights = len(weights) # The TOTAL number of weights/points
-        # TODO: This check should not be needed, remove later.
+        # The TOTAL number of weights/points
+        len_weights = len(weights)
+
+        # Assert that this is unique
         ffc_assert(len_weights not in quadrature_weights, \
                     "This number of points is already present in the weight table: " + repr(quadrature_weights))
+        ffc_assert(len_weights not in psi_tables, \
+                    "This number of points is already present in the psi table: " + repr(psi_tables))
+        ffc_assert(len_weights not in integrals, \
+                    "This number of points is already present in the integrals: " + repr(integrals))
+
+        # Add points and rules to dictionary.
         quadrature_weights[len_weights] = (weights, points)
 
         # Add the number of points to the psi tables dictionary.
-        # TODO: This check should not be needed, remove later.
-        ffc_assert(len_weights not in psi_tables, \
-                    "This number of points is already present in the psi table: " + repr(psi_tables))
         psi_tables[len_weights] = {}
 
         # Add the integral with the number of points as a key to the return integrals.
-        # TODO: This check should not be needed, remove later.
-        ffc_assert(len_weights not in integrals, \
-                    "This number of points is already present in the integrals: " + repr(integrals))
         integrals[len_weights] = integral
 
-        # TODO: This is most likely not the best way to get the highest
-        # derivative of an element.
-        # Initialise dictionary of elements and the number of derivatives.
-        num_derivatives = dict([(e, 0) for e in elements])
-        # Extract the derivatives from the integral.
-        derivatives = set(extract_type(integral, Grad))
-
-        # Loop derivatives and extract multiple derivatives.
-        for d in list(derivatives):
-            num_deriv = len(extract_type(d, Grad))
-
-            # TODO: Safety check, Grad only has one operand,
-            # and there should be only one element?!
-            elem = extract_elements(d.operands()[0])
-            ffc_assert(len(elem) == 1,
-                       "Grad has more than one element: " + repr(elem))
-            elem = form_data.element_replace_map.get(elem[0],elem[0])
-            # Set the number of derivatives to the highest value
-            # encountered so far.
-            num_derivatives[elem] = max(num_derivatives[elem], num_deriv)
+        # Find the highest number of derivatives needed for each element
+        num_derivatives = find_element_derivatives(integral.integrand(), elements,
+                                                   form_data.element_replace_map)
 
         # Loop FIAT elements and tabulate basis as usual.
         for i, element in enumerate(fiat_elements):
-            # Get order of derivatives.
-            deriv_order = num_derivatives[elements[i]]
+            # Tabulate table of basis functions and derivatives in points
+            psi_table = tabulate_psi_table(domain_type, cell, element, num_derivatives[elements[i]], points)
 
-            # Tabulate for different integral types and insert table into
-            # dictionary based on UFL elements.
-            if domain_type == "cell":
-                psi_tables[len_weights][elements[i]] =\
-                {None: element.tabulate(deriv_order, points)}
-            elif (domain_type == "exterior_facet"
-                  or domain_type == "interior_facet"):
-                psi_tables[len_weights][elements[i]] = {}
-                for facet in range(num_facets):
-                    psi_tables[len_weights][elements[i]][facet] = \
-                        element.tabulate(deriv_order,
-                                         map_facet_points(points, facet))
-
-            elif domain_type == "point":
-                psi_tables[len_weights][elements[i]] = {}
-                for vertex in range(num_vertices):
-                    points = (reference_cell_vertices(cellname)[vertex],)
-
-                    psi_tables[len_weights][elements[i]][vertex] =\
-                        element.tabulate(deriv_order, points)
-
-            else:
-                error("Unknown domain_type: %s" % domain_type)
+            # Insert table into dictionary based on UFL elements.
+            psi_tables[len_weights][elements[i]] = psi_table
 
     return (integrals, psi_tables, quadrature_weights)
 
