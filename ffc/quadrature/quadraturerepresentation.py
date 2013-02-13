@@ -73,11 +73,47 @@ def compute_integral_ir(itg_data,
         prim_idims.append(element.space_dimension())
     ir["prim_idims"] = prim_idims
 
-    # Create optimise parameters.
+    # Create and save the optisation parameters.
+    ir["optimise_parameters"] = _parse_optimise_parameters(parameters)
+
+    # Create transformer.
+    if ir["optimise_parameters"]["optimisation"]:
+        transformer = QuadratureTransformerOpt(psi_tables,
+                                               quad_weights,
+                                               form_data.geometric_dimension,
+                                               form_data.topological_dimension,
+                                               form_data.function_replace_map,
+                                               ir["optimise_parameters"])
+    else:
+        transformer = QuadratureTransformer(psi_tables,
+                                            quad_weights,
+                                            form_data.geometric_dimension,
+                                            form_data.topological_dimension,
+                                            form_data.function_replace_map,
+                                            ir["optimise_parameters"])
+
+    # Add tables for weights, name_map and basis values.
+    ir["quadrature_weights"]  = quad_weights
+    ir["name_map"] = transformer.name_map
+    ir["unique_tables"] = transformer.unique_tables
+
+    # Transform integrals.
+    ir["trans_integrals"] = _transform_integrals_by_type(ir, transformer, integrals_dict, itg_data.domain_type, cell)
+    if itg_data.domain_type == "point":
+        ir["unique_tables"] = transformer.unique_tables
+        ir["name_map"] = transformer.name_map
+
+    # Save tables map, to extract table names for optimisation option -O.
+    ir["psi_tables_map"] = transformer.psi_tables_map
+    ir["additional_includes_set"] = transformer.additional_includes_set
+
+    return ir
+
+def _parse_optimise_parameters(parameters):
     optimise_parameters = {"eliminate zeros":     False,
+                           "optimisation":        False,
                            "ignore ones":         False,
                            "remove zero terms":   False,
-                           "optimisation":        False,
                            "ignore zero tables":  False}
 
     if parameters["optimize"]:
@@ -106,75 +142,45 @@ def compute_integral_ir(itg_data,
                 optimise_parameters["eliminate zeros"] = True
                 optimise_parameters["optimisation"]    = "simplify_expressions"
 
-    # Save the optisation parameters.
-    ir["optimise_parameters"] = optimise_parameters
+    return optimise_parameters
 
-    # Create transformer.
-    if optimise_parameters["optimisation"]:
-        transformer = QuadratureTransformerOpt(psi_tables,
-                                               quad_weights,
-                                               form_data.geometric_dimension,
-                                               form_data.topological_dimension,
-                                               form_data.function_replace_map,
-                                               optimise_parameters)
-    else:
-        transformer = QuadratureTransformer(psi_tables,
-                                            quad_weights,
-                                            form_data.geometric_dimension,
-                                            form_data.topological_dimension,
-                                            form_data.function_replace_map,
-                                            optimise_parameters)
-
-    # Add tables for weights, name_map and basis values.
-    ir["quadrature_weights"]  = quad_weights
-    ir["name_map"] = transformer.name_map
-    ir["unique_tables"] = transformer.unique_tables
-
-    # Transform integrals.
-    if itg_data.domain_type == "cell":
+def _transform_integrals_by_type(ir, transformer, integrals_dict, domain_type, cell):
+    num_facets = cellname2num_facets[cell.cellname()]
+    num_vertices = entities_per_dim[cell.topological_dimension()][0] # TODO: Only for simplices
+    if domain_type == "cell":
         # Compute transformed integrals.
         info("Transforming cell integral")
         transformer.update_facets(None, None)
-        terms = _transform_integrals(transformer, integrals_dict, itg_data.domain_type)
+        terms = _transform_integrals(transformer, integrals_dict, domain_type)
 
-    elif itg_data.domain_type == "exterior_facet":
+    elif domain_type == "exterior_facet":
         # Compute transformed integrals.
         terms = [None]*num_facets
         for i in range(num_facets):
             info("Transforming exterior facet integral %d" % i)
             transformer.update_facets(i, None)
-            terms[i] = _transform_integrals(transformer, integrals_dict, itg_data.domain_type)
+            terms[i] = _transform_integrals(transformer, integrals_dict, domain_type)
 
-    elif itg_data.domain_type == "interior_facet":
+    elif domain_type == "interior_facet":
         # Compute transformed integrals.
         terms = [[None]*num_facets for i in range(num_facets)]
         for i in range(num_facets):
             for j in range(num_facets):
                 info("Transforming interior facet integral (%d, %d)" % (i, j))
                 transformer.update_facets(i, j)
-                terms[i][j] = _transform_integrals(transformer, integrals_dict, itg_data.domain_type)
+                terms[i][j] = _transform_integrals(transformer, integrals_dict, domain_type)
 
-    elif itg_data.domain_type == "point":
+    elif domain_type == "point":
         # Compute transformed integrals.
         terms = [None]*num_vertices
         for i in range(num_vertices):
             info("Transforming point integral (%d)" % i)
-            transformer.update_facets(None, None)
+            transformer.update_facets(None, None) # TODO: Once should be enough?
             transformer.update_vertex(i)
-            terms[i] = _transform_integrals(transformer, integrals_dict, itg_data.domain_type)
-        ir["unique_tables"] = transformer.unique_tables
-        ir["name_map"] = transformer.name_map
-
+            terms[i] = _transform_integrals(transformer, integrals_dict, domain_type)
     else:
-        error("Unhandled domain type: " + str(itg_data.domain_type))
-
-    ir["trans_integrals"] = terms
-
-    # Save tables map, to extract table names for optimisation option -O.
-    ir["psi_tables_map"] = transformer.psi_tables_map
-    ir["additional_includes_set"] = transformer.additional_includes_set
-
-    return ir
+        error("Unhandled domain type: " + str(domain_type))
+    return terms
 
 def _create_quadrature_points_and_weights(domain_type, cell, degree, rule):
     # FIXME: Make create_quadrature() take a rule argument.
