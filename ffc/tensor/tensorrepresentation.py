@@ -37,7 +37,7 @@ from ufl.classes import Form, Measure, Integral
 # FFC modules
 from ffc.log import info, error
 from ffc.representationutils import initialize_integral_ir
-from ffc.fiatinterface import cellname2num_facets
+from ffc.fiatinterface import cellname_to_num_entities
 
 # FFC tensor representation modules
 from ffc.tensor.monomialextraction import extract_monomial_form
@@ -65,7 +65,7 @@ def compute_integral_ir(itg_data,
     cell = form_data.cell
     cellname = cell.cellname()
     facet_cellname = cell.facet_cellname()
-    num_facets = cellname2num_facets[cellname]
+    num_facets = cellname_to_num_entities[cellname][-2]
 
     # Initialize representation
     ir = initialize_integral_ir("tensor", itg_data, form_data, form_id)

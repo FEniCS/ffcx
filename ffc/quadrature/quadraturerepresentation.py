@@ -34,7 +34,7 @@ from ufl.sorting import sorted_expr_sum
 from ffc.log import ffc_assert, info, error
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import map_facet_points, reference_cell_vertices
-from ffc.fiatinterface import cellname2num_facets, entities_per_dim
+from ffc.fiatinterface import cellname_to_num_entities
 from ffc.quadrature.quadraturetransformer import QuadratureTransformer
 from ffc.quadrature.optimisedquadraturetransformer import QuadratureTransformerOpt
 from ffc.quadrature_schemes import create_quadrature
@@ -48,15 +48,9 @@ def compute_integral_ir(itg_data,
 
     info("Computing quadrature representation")
 
-    # Get some cell properties
-    cell = form_data.cell
-    cellname = cell.cellname()
-    num_facets = cellname2num_facets[cellname]
-    num_vertices = entities_per_dim[cell.topological_dimension()][0] # TODO: Only for simplices
-
     # Initialise representation
     ir = initialize_integral_ir("quadrature", itg_data, form_data, form_id)
-    ir["num_vertices"] = num_vertices
+    ir["num_vertices"] = cellname_to_num_entities[form_data.cell.cellname()][0]
     ir["geo_consts"] = {}
 
     # Sort integrals and tabulate basis.
@@ -64,7 +58,6 @@ def compute_integral_ir(itg_data,
     integrals_dict, psi_tables, quad_weights = \
         _tabulate_basis(sorted_integrals, itg_data.domain_type, form_data)
 
-    # FIXME: UFLACS get argument dimensions like this:
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.
     prim_idims = []
@@ -98,7 +91,8 @@ def compute_integral_ir(itg_data,
     ir["unique_tables"] = transformer.unique_tables
 
     # Transform integrals.
-    ir["trans_integrals"] = _transform_integrals_by_type(ir, transformer, integrals_dict, itg_data.domain_type, cell)
+    ir["trans_integrals"] = _transform_integrals_by_type(ir, transformer, integrals_dict,
+                                                         itg_data.domain_type, form_data.cell)
     if itg_data.domain_type == "point":
         ir["unique_tables"] = transformer.unique_tables
         ir["name_map"] = transformer.name_map
@@ -145,8 +139,8 @@ def _parse_optimise_parameters(parameters):
     return optimise_parameters
 
 def _transform_integrals_by_type(ir, transformer, integrals_dict, domain_type, cell):
-    num_facets = cellname2num_facets[cell.cellname()]
-    num_vertices = entities_per_dim[cell.topological_dimension()][0] # TODO: Only for simplices
+    num_facets = cellname_to_num_entities[cell.cellname()][-2]
+    num_vertices = cellname_to_num_entities[form_data.cell.cellname()][0]
     if domain_type == "cell":
         # Compute transformed integrals.
         info("Transforming cell integral")
@@ -217,17 +211,19 @@ def _find_element_derivatives(expr, elements, element_replace_map):
 
 def _tabulate_psi_table(domain_type, cell, element, deriv_order, points):
     "Tabulate psi table for different integral types."
+    # TODO: Can we generalize this?
+    #for entity in range(cellname_to_num_entities[cell.cellname()][entity_dim]):
     if domain_type == "cell":
         psi_table = {None: element.tabulate(deriv_order, points)}
     elif (domain_type == "exterior_facet"
           or domain_type == "interior_facet"):
         psi_table = {}
-        num_facets = cellname2num_facets[cell.cellname()]
+        num_facets = cellname_to_num_entities[cell.cellname()][-2]
         for facet in range(num_facets):
             facet_points = map_facet_points(points, facet)
             psi_table[facet] = element.tabulate(deriv_order, facet_points)
     elif domain_type == "point":
-        num_vertices = entities_per_dim[cell.topological_dimension()][0] # TODO: Only for simplices
+        num_vertices = cellname_to_num_entities[form_data.cell.cellname()][0]
         psi_table = {}
         for vertex in range(num_vertices):
             vertex_points = (reference_cell_vertices(cell.cellname())[vertex],)

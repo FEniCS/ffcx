@@ -47,7 +47,7 @@ from ufl.classes import Measure
 from ffc.utils import compute_permutations, product
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
 from ffc.fiatinterface import create_element, entities_per_dim, reference_cell
-from ffc.fiatinterface import cellname2num_facets
+from ffc.fiatinterface import cellname2entities
 from ffc.mixedelement import MixedElement
 from ffc.enrichedelement import EnrichedElement, SpaceOfReals
 from ffc.quadratureelement import QuadratureElement
@@ -477,7 +477,7 @@ def _tabulate_facet_dofs(element, cell):
     D = max([pair[0][0] for pair in incidence])
 
     # Get the number of facets
-    num_facets = cellname2num_facets[cell.cellname()]
+    num_facets = cellname2entities[cell.cellname()][-2]
 
     # Find out which entities are incident to each facet
     incident = num_facets*[None]
