@@ -69,7 +69,7 @@ public:
                               double* values,
                               const double* x,
                               const double* vertex_coordinates,
-                              const ufc::cell& c) const
+                              int cell_orientation) const
   {
 %(evaluate_basis)s
   }
@@ -78,7 +78,7 @@ public:
   virtual void evaluate_basis_all(double* values,
                                   const double* x,
                                   const double* vertex_coordinates,
-                                  const ufc::cell& c) const
+                                  int cell_orientation) const
   {
 %(evaluate_basis_all)s
   }
@@ -89,7 +89,7 @@ public:
                                           double* values,
                                           const double* x,
                                           const double* vertex_coordinates,
-                                          const ufc::cell& c) const
+                                          int cell_orientation) const
   {
 %(evaluate_basis_derivatives)s
   }
@@ -99,7 +99,7 @@ public:
                                               double* values,
                                               const double* x,
                                               const double* vertex_coordinates,
-                                              const ufc::cell& c) const
+                                              int cell_orientation) const
   {
 %(evaluate_basis_derivatives_all)s
   }
@@ -108,6 +108,7 @@ public:
   virtual double evaluate_dof(std::size_t i,
                               const ufc::function& f,
                               const double* vertex_coordinates,
+                              int cell_orientation,
                               const ufc::cell& c) const
   {
 %(evaluate_dof)s
@@ -117,6 +118,7 @@ public:
   virtual void evaluate_dofs(double* values,
                              const ufc::function& f,
                              const double* vertex_coordinates,
+                             int cell_orientation,
                              const ufc::cell& c) const
   {
 %(evaluate_dofs)s
@@ -126,6 +128,7 @@ public:
   virtual void interpolate_vertex_values(double* vertex_values,
                                          const double* dof_values,
                                          const double* vertex_coordinates,
+                                         int cell_orientation,
                                          const ufc::cell& c) const
   {
 %(interpolate_vertex_values)s
@@ -207,13 +210,13 @@ public:
                               double* values,
                               const double* x,
                               const double* vertex_coordinates,
-                              const ufc::cell& c) const;
+                              int cell_orientation) const;
 
   /// Evaluate all basis functions at given point x in cell
   virtual void evaluate_basis_all(double* values,
                                   const double* x,
                                   const double* vertex_coordinates,
-                                  const ufc::cell& c) const;
+                                  int cell_orientation) const;
 
   /// Evaluate order n derivatives of basis function i at given point x in cell
   virtual void evaluate_basis_derivatives(std::size_t i,
@@ -221,31 +224,34 @@ public:
                                           double* values,
                                           const double* x,
                                           const double* vertex_coordinates,
-                                          const ufc::cell& c) const;
+                                          int cell_orientation) const;
 
   /// Evaluate order n derivatives of all basis functions at given point x in cell
   virtual void evaluate_basis_derivatives_all(std::size_t n,
                                               double* values,
                                               const double* x,
                                               const double* vertex_coordinates,
-                                              const ufc::cell& c) const;
+                                              int cell_orientation) const;
 
   /// Evaluate linear functional for dof i on the function f
   virtual double evaluate_dof(std::size_t i,
                               const ufc::function& f,
                               const double* vertex_coordinates,
+                              int cell_orientation,
                               const ufc::cell& c) const;
 
   /// Evaluate linear functionals for all dofs on the function f
   virtual void evaluate_dofs(double* values,
                              const ufc::function& f,
                              const double* vertex_coordinates,
+                             int cell_orientation,
                              const ufc::cell& c) const;
 
   /// Interpolate vertex values from dof values
   virtual void interpolate_vertex_values(double* vertex_values,
                                          const double* dof_values,
                                          const double* vertex_coordinates,
+                                         int cell_orientation,
                                          const ufc::cell& c) const;
 
   /// Map coordinate xhat from reference cell to coordinate x in cell
@@ -331,7 +337,7 @@ void %(classname)s::evaluate_basis(std::size_t i,
                                    double* values,
                                    const double* x,
                                    const double* vertex_coordinates,
-                                   const ufc::cell& c) const
+                                   int cell_orientation) const
 {
 %(evaluate_basis)s
 }
@@ -340,7 +346,7 @@ void %(classname)s::evaluate_basis(std::size_t i,
 void %(classname)s::evaluate_basis_all(double* values,
                                        const double* x,
                                        const double* vertex_coordinates,
-                                       const ufc::cell& c) const
+                                       int cell_orientation) const
 {
 %(evaluate_basis_all)s
 }
@@ -351,7 +357,7 @@ void %(classname)s::evaluate_basis_derivatives(std::size_t i,
                                                double* values,
                                                const double* x,
                                                const double* vertex_coordinates,
-                                               const ufc::cell& c) const
+                                               int cell_orientation) const
 {
 %(evaluate_basis_derivatives)s
 }
@@ -361,7 +367,7 @@ void %(classname)s::evaluate_basis_derivatives_all(std::size_t n,
                                                    double* values,
                                                    const double* x,
                                                    const double* vertex_coordinates,
-                                                   const ufc::cell& c) const
+                                                   int cell_orientation) const
 {
 %(evaluate_basis_derivatives_all)s
 }
@@ -370,6 +376,7 @@ void %(classname)s::evaluate_basis_derivatives_all(std::size_t n,
 double %(classname)s::evaluate_dof(std::size_t i,
                                    const ufc::function& f,
                                    const double* vertex_coordinates,
+                                   int cell_orientation,
                                    const ufc::cell& c) const
 {
 %(evaluate_dof)s
@@ -379,6 +386,7 @@ double %(classname)s::evaluate_dof(std::size_t i,
 void %(classname)s::evaluate_dofs(double* values,
                                   const ufc::function& f,
                                   const double* vertex_coordinates,
+                                  int cell_orientation,
                                   const ufc::cell& c) const
 {
 %(evaluate_dofs)s
@@ -388,6 +396,7 @@ void %(classname)s::evaluate_dofs(double* values,
 void %(classname)s::interpolate_vertex_values(double* vertex_values,
                                               const double* dof_values,
                                               const double* vertex_coordinates,
+                                              int cell_orientation,
                                               const ufc::cell& c) const
 {
 %(interpolate_vertex_values)s

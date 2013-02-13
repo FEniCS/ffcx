@@ -38,8 +38,8 @@ std::vector< std::vector<double> > tabulate_interior_facet_integral(const boost:
                                                                     std::vector< std::vector<double> > macro_w,
                                                                     ufc::cell& cell0,
                                                                     ufc::cell& cell1,
-                                                                    int facet0,
-                                                                    int facet1,
+                                                                    int facet_0,
+                                                                    int facet_1,
                                                                     int domain);
 
 #endif

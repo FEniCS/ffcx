@@ -314,7 +314,7 @@ std::vector< std::vector<double> > tabulate_exterior_facet_integral(const boost:
 }
 
 std::vector< std::vector<double> > tabulate_interior_facet_integral(const boost::shared_ptr<ufc::form> form, std::vector< std::vector<double> > macro_w,\
-                                                                    ufc::cell& cell0, ufc::cell& cell1, int facet0, int facet1, int domain)
+                                                                    ufc::cell& cell0, ufc::cell& cell1, int facet_0, int facet_1, int domain)
 {
   ufc::ufc_data data(*form);
 
@@ -332,7 +332,7 @@ std::vector< std::vector<double> > tabulate_interior_facet_integral(const boost:
   }
 
   // tabulate the tensor
-  data.interior_facet_integrals[domain]->tabulate_tensor(data.macro_A, data.macro_w, cell0, cell1, facet0, facet1);
+  data.interior_facet_integrals[domain]->tabulate_tensor(data.macro_A, data.macro_w, cell0, cell1, facet_0, facet_1);
 
   // copy element tensor to stl-structure for easy returning to python (should perhaps rather use numpy and some typemaps, but I'm lazy)
   vector< vector<double> > A;
