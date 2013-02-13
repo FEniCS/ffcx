@@ -58,6 +58,9 @@ def compute_integral_ir(itg_data,
     integrals_dict, psi_tables, quad_weights = \
         _tabulate_basis(sorted_integrals, itg_data.domain_type, form_data)
 
+    # Save tables for quadrature weights and points
+    ir["quadrature_weights"]  = quad_weights
+
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.
     prim_idims = []
@@ -85,17 +88,13 @@ def compute_integral_ir(itg_data,
                                             form_data.function_replace_map,
                                             ir["optimise_parameters"])
 
-    # Add tables for weights, name_map and basis values.
-    ir["quadrature_weights"]  = quad_weights
-    ir["name_map"] = transformer.name_map
-    ir["unique_tables"] = transformer.unique_tables
-
     # Transform integrals.
     ir["trans_integrals"] = _transform_integrals_by_type(ir, transformer, integrals_dict,
                                                          itg_data.domain_type, form_data.cell)
-    if itg_data.domain_type == "point":
-        ir["unique_tables"] = transformer.unique_tables
-        ir["name_map"] = transformer.name_map
+
+    # Save tables populated by transformer (MSA: These names could be less generic...)
+    ir["name_map"] = transformer.name_map
+    ir["unique_tables"] = transformer.unique_tables # Basis values?
 
     # Save tables map, to extract table names for optimisation option -O.
     ir["psi_tables_map"] = transformer.psi_tables_map

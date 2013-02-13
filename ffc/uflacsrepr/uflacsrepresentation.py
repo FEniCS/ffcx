@@ -33,8 +33,45 @@ def compute_integral_ir(itg_data,
     # Initialise representation
     ir = initialize_integral_ir("uflacs", itg_data, form_data, form_id)
 
+
+    # ------ Begin copy from quadraturerepresentation.py
+
+    from ffc.quadrature.quadraturerepresentation import _sort_integrals, _tabulate_basis, create_element
+
+    # Sort integrals and tabulate basis.
+    sorted_integrals = _sort_integrals(itg_data.integrals, itg_data.metadata, form_data)
+    integrals_dict, psi_tables, quad_weights = \
+        _tabulate_basis(sorted_integrals, itg_data.domain_type, form_data)
+
+    # Save tables for quadrature weights and points
+    ir["quadrature_weights"]  = quad_weights
+
+    # FIXME: UFLACS: Understand how psi_tables is passed into code
+    # FIXME: UFLACS: Understand how quad_weights is passed into code
+
+    # Create dimensions of primary indices, needed to reset the argument 'A'
+    # given to tabulate_tensor() by the assembler.
+    prim_idims = []
+    for ufl_element in form_data.argument_elements:
+        element = create_element(ufl_element)
+        prim_idims.append(element.space_dimension())
+    ir["prim_idims"] = prim_idims
+
+    if 0:
+        print
+        print prim_idims
+        print
+        print quad_weights
+        print
+        print psi_tables
+        print
+
+    # ------ End copy from quadraturerepresentation.py
+
+
     # TODO: Call upon ffc to build ir for element tables etc
     ffc_data = None
+
 
     # Delegate to flacs to build its intermediate representation and add to ir
     import uflacs.backends.ffc
