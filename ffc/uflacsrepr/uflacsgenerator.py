@@ -15,30 +15,27 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# First added:  2013-02-09
+# First added:  2013-02-12
 # Last changed: 2013-02-12
 
-from ffc.representationutils import initialize_integral_ir
+from ffc.representationutils import initialize_integral_code
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
 from ffc.cpp import format
 
-def compute_integral_ir(itg_data,
-                        form_data,
-                        form_id,
-                        parameters):
-    "Compute intermediate represention of integral."
+def generate_integral_code(ir, prefix, parameters):
+    "Generate code for integral from intermediate representation."
 
-    info("Computing uflacs representation")
+    info("Generating code from uflacs representation")
 
-    # Initialise representation
-    ir = initialize_integral_ir("uflacs", itg_data, form_data, form_id)
+    # Generate generic ffc code snippets
+    code = initialize_integral_code(ir, prefix, parameters)
 
-    # TODO: Call upon ffc to build ir for element tables etc
-    ffc_data = None
+    # TODO: Call upon ffc to generate code for element tables etc
+    #code["..."] = ...
 
-    # Delegate to flacs to build its intermediate representation and add to ir
+    # Delegate to uflacs to generate tabulate_tensor body
     import uflacs.backends.ffc
-    uir = uflacs.backends.ffc.compute_tabulate_tensor_ir(ffc_data, itg_data, form_data, parameters)
-    ir.update(uir)
+    code["tabulate_tensor"] = uflacs.backends.ffc.generate_tabulate_tensor_code(ir, parameters)
 
-    return ir
+    code["tabulate_tensor_quadrature"] = format["do nothing"] # TODO: Remove
+    return code

@@ -15,30 +15,19 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# First added:  2013-02-09
+# First added:  2009-12-16
 # Last changed: 2013-02-12
 
-from ffc.representationutils import initialize_integral_ir
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
 from ffc.cpp import format
 
-def compute_integral_ir(itg_data,
-                        form_data,
-                        form_id,
-                        parameters):
-    "Compute intermediate represention of integral."
+def optimize_integral_ir(ir, parameters):
+    "Compute optimized intermediate representation of integral."
 
-    info("Computing uflacs representation")
+    info("Optimizing uflacs representation")
 
-    # Initialise representation
-    ir = initialize_integral_ir("uflacs", itg_data, form_data, form_id)
-
-    # TODO: Call upon ffc to build ir for element tables etc
-    ffc_data = None
-
-    # Delegate to flacs to build its intermediate representation and add to ir
+    # Call upon uflacs to optimize ssa representation prior to code generation. Should be possible to skip this step.
     import uflacs.backends.ffc
-    uir = uflacs.backends.ffc.compute_tabulate_tensor_ir(ffc_data, itg_data, form_data, parameters)
-    ir.update(uir)
+    oir = uflacs.backends.ffc.optimize_tabulate_tensor_ir(ir, parameters)
 
-    return ir
+    return oir

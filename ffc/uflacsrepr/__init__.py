@@ -1,3 +1,3 @@
 from uflacsrepresentation import compute_integral_ir
-from uflacsrepresentation import optimize_integral_ir
-from uflacsrepresentation import generate_integral_code
+from uflacsoptimization import optimize_integral_ir
+from uflacsgenerator import generate_integral_code
