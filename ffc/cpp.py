@@ -513,20 +513,21 @@ def _matrix_index(i, j, range_j):
 
 def _generate_psi_name(counter, facet, component, derivatives, vertex=None):
     """Generate a name for the psi table of the form:
-    FE#_f#_C#_D###, where '#' will be an integer value.
+    FE#_f#_v#_C#_D###, where '#' will be an integer value.
 
     FE  - is a simple counter to distinguish the various bases, it will be
           assigned in an arbitrary fashion.
 
     f   - denotes facets if applicable, range(element.num_facets()).
 
+    v   - denotes vertices if applicable, range(num_vertices).
+
     C   - is the component number if any (this does not yet take into account
           tensor valued functions)
 
-    D   - is the number of derivatives in each spatial direction if any. If the
-          element is defined in 3D, then D012 means d^3(*)/dydz^2
-
-    f   - denotes vertices if applicable, range(num_vertices)."""
+    D   - is the number of derivatives in each spatial direction if any.
+          If the element is defined in 3D, then D012 means d^3(*)/dydz^2.
+    """
 
     name = "FE%d" % counter
     if not facet is None:
