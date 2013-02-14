@@ -4,9 +4,10 @@ import re
 import sys
 filenames = sys.argv[1:]
 
-tt = re.compile("^void .*::tabulate_tensor")
-bb = re.compile("{")
-be = re.compile("}")
+#tt = re.compile("^void (.*::)*tabulate_tensor")
+tt = re.compile("void .*tabulate_tensor")
+bb = re.compile("^[ ]*{")
+be = re.compile("^[ ]*}")
 db = re.compile("#ifdef SFCDEBUG")
 de = re.compile("#endif // SFCDEBUG")
 
