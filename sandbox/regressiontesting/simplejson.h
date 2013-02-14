@@ -1,12 +1,9 @@
-
-#include <vector>
-#include <list>
-#include <map>
+#ifndef SIMPLE_JSON_H__INCLUDED
+#define SIMPLE_JSON_H__INCLUDED
 
 #include <cassert>
 #include <string>
 #include <iostream>
-#include <fstream>
 
 /// A simplified json data model, including only hierarchial dicts of single values
 class SimpleJsonModel
@@ -105,45 +102,4 @@ void SimpleJsonModel::output_formatted(const char * value)
     out << '"' << value << '"';
 }
 
-
-int main(int argc, char* argv[])
-{
-    std::ofstream af("a.output");
-    SimpleJsonModel a(af);
-    a.begin();
-    a.begin("foo");
-    a("a", 1);
-    a("b", 2.3);
-    a.begin("bar");
-    a("a", 2);
-    a("b", 3.4);
-    a.end();
-    a.begin("only_a");
-    a("avaluei", 7);
-    a("avaluef", "3.14159");
-    a("avalues", "somename");
-    a.end();
-    a.end();
-    a.end();
- 
-    std::ofstream bf("b.output");
-    SimpleJsonModel b(bf);
-    b.begin();
-    b.begin("foo");
-    b("a", 1);
-    b("b", 2.3);
-    b.begin("bar");
-    b("a", 2);
-    b("b", 5.4);
-    b.end();
-    b.begin("only_b");
-    b("bvaluei", 7);
-    b("bvaluef", 3.14159);
-    std::string someothername("someothername");
-    b("bvalues", someothername);
-    b.end();
-    b.end();
-    b.end();
-
-    return 0;
-}
+#endif

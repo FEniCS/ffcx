@@ -1,1 +1,2 @@
-g++ main2.cpp && ./a.out && python test.py
+#!/bin/bash
+g++ example.cpp -o example && ./example && python test.py
