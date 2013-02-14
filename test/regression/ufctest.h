@@ -1,4 +1,4 @@
-// Copyright (C) 2010 Anders Logg
+// Copyright (C) 2010-2013 Anders Logg
 //
 // This file is part of FFC.
 //
@@ -15,8 +15,10 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with FFC. If not, see <http://www.gnu.org/licenses/>.
 //
+// Modified by Martin Alnaes, 2013
+//
 // First added:  2010-01-24
-// Last changed: 2013-02-01
+// Last changed: 2013-02-14
 //
 // Functions for calling generated UFC functions with "random" (but
 // fixed) data and print the output to screen. Useful for running

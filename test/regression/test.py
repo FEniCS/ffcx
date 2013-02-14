@@ -9,7 +9,7 @@ form files found in the 'bench' directory. To run benchmarks, use the
 option --bench.
 """
 
-# Copyright (C) 2010 Anders Logg, Kristian B. Oelgaard and Marie E. Rognes
+# Copyright (C) 2010-2013 Anders Logg, Kristian B. Oelgaard and Marie E. Rognes
 #
 # This file is part of FFC.
 #
@@ -26,8 +26,10 @@ option --bench.
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
+# Modified by Martin Alnaes, 2013
+#
 # First added:  2010-01-21
-# Last changed: 2011-11-28
+# Last changed: 2013-02-14
 
 # FIXME: Need to add many more test cases. Quite a few DOLFIN forms
 # failed after the FFC tests passed.
@@ -289,9 +291,14 @@ def validate_programs(reference_dir):
 
     # Iterate over all files
     for f in output_files:
+        fj = f.replace(".out", ".json")
 
         # Get generated output
         generated_output = open(f).read()
+        if os.path.exists(fj):
+            generated_json_output = open(fj).read()
+        else:
+            generated_json_output = "{}"
 
         # Get reference output
         reference_file = os.path.join(reference_dir, f)
@@ -300,6 +307,15 @@ def validate_programs(reference_dir):
         else:
             info_blue("Missing reference for %s" % reference_file)
             continue
+        reference_json_file = os.path.join(reference_dir, fj)
+        if os.path.isfile(reference_json_file):
+            reference_json_output = open(reference_file).read()
+        else:
+            reference_json_output = "{}"
+
+        # TODO: Compare json with reference json using recdiff
+        if generated_json_output != reference_json_output:
+            log_error("json files differ")
 
         # Compare with reference
         ok = True

@@ -1,4 +1,4 @@
-# Copyright (C) 2010 Anders Logg, Kristian B. Oelgaard and Marie E. Rognes
+# Copyright (C) 2010-2013 Anders Logg, Kristian B. Oelgaard and Marie E. Rognes
 #
 # This file is part of FFC.
 #
@@ -15,12 +15,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
+# Modified by Martin Alnaes, 2013
+#
 # First added:  2010-01-24
-# Last changed: 2011-07-08
+# Last changed: 2013-02-14
 
 _test_code = """\
 #include "../../ufctest.h"
 #include "%s.h"
+
+const char prefix[] = "%s";
 
 int main()
 {
@@ -41,11 +45,13 @@ def generate_test_code(header_file, bench):
 
     # Generate tests, either based on forms or elements
     if num_forms > 0:
-        tests = ["  %s_form_%d f%d; test_form(f%d, %d);" % (prefix.lower(), i, i, i, bench) for i in range(num_forms)]
+        tests = ["  %s_form_%d f%d; test_form(f%d, %d);" % (prefix.lower(), i, i, i, bench)
+                 for i in range(num_forms)]
     else:
-        tests = ["  %s_finite_element_%d e%d; test_finite_element(e%d);" % (prefix.lower(), i, i, i) for i in range(num_elements)]
+        tests = ["  %s_finite_element_%d e%d; test_finite_element(e%d);" % (prefix.lower(), i, i, i)
+                 for i in range(num_elements)]
 
     # Write file
     test_file = open(prefix + ".cpp", "w")
-    test_file.write(_test_code % (prefix, "\n".join(tests)))
+    test_file.write(_test_code % (prefix, prefix, "\n".join(tests)))
     test_file.close()
