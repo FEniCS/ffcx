@@ -21,6 +21,7 @@
 from ffc.representationutils import initialize_integral_ir
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
 from ffc.cpp import format
+import numpy
 
 def compute_integral_ir(itg_data,
                         form_data,
@@ -33,35 +34,60 @@ def compute_integral_ir(itg_data,
     # Initialise representation
     ir = initialize_integral_ir("uflacs", itg_data, form_data, form_id)
 
+    import ffc.quadrature.quadraturerepresentation as qr
+    import ffc.quadrature.quadratureutils as qu
 
-    # ------ Begin copy from quadraturerepresentation.py
-
-    from ffc.quadrature.quadraturerepresentation import _sort_integrals, _tabulate_basis, create_element
+    optimise_parameters = qr._parse_optimise_parameters(parameters)
 
     # Sort integrals and tabulate basis.
-    sorted_integrals = _sort_integrals(itg_data.integrals, itg_data.metadata, form_data)
+    sorted_integrals = qr._sort_integrals(itg_data.integrals, itg_data.metadata, form_data)
     integrals_dict, psi_tables, quad_weights = \
-        _tabulate_basis(sorted_integrals, itg_data.domain_type, form_data)
+        qr._tabulate_basis(sorted_integrals, itg_data.domain_type, form_data)
+    # TODO: Pass integrals_dict to uflacs, necessary for integral terms with different number of quadrature points
+    ffc_assert(len(integrals_dict) == 1, "Assuming a single quadrature rule per integral domain for now.")
 
     # Save tables for quadrature weights and points
     ir["quadrature_weights"]  = quad_weights
 
-    # FIXME: UFLACS: Understand how psi_tables is passed into code
-    # FIXME: UFLACS: Understand how quad_weights is passed into code
-
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.
-    ir["prim_idims"] = [create_element(ufl_element).space_dimension()
+    ir["prim_idims"] = [qr.create_element(ufl_element).space_dimension()
                         for ufl_element in form_data.argument_elements]
 
-    if 0:
-        print
-        print prim_idims
-        print
-        print quad_weights
-        print
-        print psi_tables
-        print
+    # FIXME: UFLACS: Understand how to use psi_tables
+    (element_map, name_map, unique_tables) = \
+        qu.create_psi_tables(psi_tables, optimise_parameters, vertex=None)
+
+    from ffc.cpp import _generate_psi_name
+    if 1:
+        from pprint import pprint
+        print '\n', '='*80, '\n'
+        for ip, ip_tables in psi_tables.items():
+            print '/'*25, 'ip:', ip
+            for element, element_tables in ip_tables.items():
+                print '_'*20, 'element:', str(element)
+                element_number = element_map[ip][element]
+                print 'element_number:', element_number
+                component = ()
+                for entity, entity_tables in element_tables.items():
+                    print '-'*15, 'entity:', entity
+                    for derivatives, values in entity_tables.items():
+                        print '.'*10, 'derivatives:', derivatives
+                        element_table_name = _generate_psi_name(element_number, entity, component, derivatives, vertex=None)
+                        print 'element_table_name:', element_table_name
+                        uvalues = unique_tables[element_table_name]
+                        diff = numpy.transpose(uvalues) - values # Why is one transposed of the other? Which index is then ip and which is dofs?
+                        pprint(values)
+                        pprint(uvalues)
+                        pprint(diff)
+                        print numpy.sum(diff*diff)
+        print '\n', '='*80, '\n', 'element_map:'
+        pprint(element_map)
+        print '\n', '='*80, '\n', 'name_map:'
+        pprint(name_map)
+        print '\n', '='*80, '\n', 'unique_tables:'
+        pprint(unique_tables)
+        print '\n', '='*80, '\n'
 
     # ------ End copy from quadraturerepresentation.py
 
