@@ -85,7 +85,7 @@ def _tabulate_tensor(ir, parameters):
     trans_set       = set()
     sets = [used_weights, used_psi_tables, used_nzcs, trans_set]
 
-    affine_tables = {}
+    affine_tables = {} # TODO: This is not populated anywhere, remove?
     quadrature_weights = ir["quadrature_weights"]
 
     operations = []
@@ -188,7 +188,7 @@ def _tabulate_tensor(ir, parameters):
     common += _tabulate_weights([quadrature_weights[p] for p in used_weights])
     name_map = ir["name_map"]
     tables = ir["unique_tables"]
-    tables.update(affine_tables)
+    tables.update(affine_tables) # TODO: This is not populated anywhere, remove?
     common += _tabulate_psis(tables, used_psi_tables, name_map, used_nzcs, opt_par)
 
     # Reset the element tensor (array 'A' given as argument to tabulate_tensor() by assembler)
@@ -606,4 +606,3 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
                         # Remove from list of columns.
                         new_nzcs.remove(inv_name_map[n][1])
     return code
-
