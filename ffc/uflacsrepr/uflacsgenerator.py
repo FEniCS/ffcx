@@ -16,7 +16,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2013-02-12
-# Last changed: 2013-02-12
+# Last changed: 2013-02-14
 
 from ffc.representationutils import initialize_integral_code
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
@@ -30,12 +30,16 @@ def generate_integral_code(ir, prefix, parameters):
     # Generate generic ffc code snippets
     code = initialize_integral_code(ir, prefix, parameters)
 
-    # TODO: Call upon ffc to generate code for element tables etc
-    #code["..."] = ...
+    # Reusing some functions from the quadrature representation code generation
+    import ffc.quadrature.quadraturegenerator as qr
+
+    # FIXME: Generate code for basis function tables
 
     # Delegate to uflacs to generate tabulate_tensor body
     import uflacs.backends.ffc
-    code["tabulate_tensor"] = uflacs.backends.ffc.generate_tabulate_tensor_code(ir, parameters)
+    ttcode = uflacs.backends.ffc.generate_tabulate_tensor_code(ir, parameters)
+
+    code["tabulate_tensor"] = ttcode
 
     code["tabulate_tensor_quadrature"] = format["do nothing"] # TODO: Remove
     return code
