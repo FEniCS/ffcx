@@ -58,17 +58,17 @@ def compute_integral_ir(itg_data,
     # ... Up to this point is equal to the quadrature representation, below are the different parts
 
 
-
-    # FIXME: UFLACS: Understand how to use psi_tables
+    # Create tables of basis functions evaluated at quadrature points
     (element_map, name_map, unique_tables) = \
         create_psi_tables(psi_tables, ir["optimise_parameters"], ir["entitytype"])
     ir["name_map"] = name_map
     ir["unique_tables"] = unique_tables
     ir["element_map"] = element_map
 
+
     # Testing code!
     from ffc.cpp import _generate_psi_name
-    if 1:
+    if 0:
         from pprint import pprint
         print '\n', '='*80, '\n'
         for ip, ip_tables in psi_tables.items():
