@@ -50,11 +50,11 @@ def compute_integral_ir(itg_data,
 
     # Initialise representation
     ir = initialize_integral_ir("quadrature", itg_data, form_data, form_id)
-    ir["num_vertices"] = cellname_to_num_entities[form_data.cell.cellname()][0]
-    ir["geo_consts"] = {}
 
-    # Sort integrals and tabulate basis.
+    # Sort integrals into a dict with number of integral points as key
     sorted_integrals = _sort_integrals(itg_data.integrals, itg_data.metadata, form_data)
+
+    # Tabulate quadrature points and basis function values in these points
     integrals_dict, psi_tables, quad_weights = \
         _tabulate_basis(sorted_integrals, itg_data.domain_type, form_data)
 
@@ -69,43 +69,33 @@ def compute_integral_ir(itg_data,
     # Create and save the optisation parameters.
     ir["optimise_parameters"] = _parse_optimise_parameters(parameters)
 
-    # Figure out type of entities to tabulate values in quadrature points over
-    if itg_data.domain_type == "cell":
-        entitytype = "cell"
-    elif "facet" in itg_data.domain_type:
-        entitytype = "facet"
-    elif itg_data.domain_type == "point":
-        entitytype = "vertex"
-
     # Create transformer.
     if ir["optimise_parameters"]["optimisation"]:
-        transformer = QuadratureTransformerOpt(psi_tables,
-                                               quad_weights,
-                                               form_data.geometric_dimension,
-                                               form_data.topological_dimension,
-                                               entitytype,
-                                               form_data.function_replace_map,
-                                               ir["optimise_parameters"])
+        QuadratureTransformerClass = QuadratureTransformerOpt
     else:
-        transformer = QuadratureTransformer(psi_tables,
-                                            quad_weights,
-                                            form_data.geometric_dimension,
-                                            form_data.topological_dimension,
-                                            entitytype,
-                                            form_data.function_replace_map,
-                                            ir["optimise_parameters"])
+        QuadratureTransformerClass = QuadratureTransformer
+    transformer = QuadratureTransformerClass(psi_tables,
+                                             quad_weights,
+                                             form_data.geometric_dimension,
+                                             form_data.topological_dimension,
+                                             ir["entitytype"],
+                                             form_data.function_replace_map,
+                                             ir["optimise_parameters"])
 
     # Transform integrals.
     ir["trans_integrals"] = _transform_integrals_by_type(ir, transformer, integrals_dict,
                                                          itg_data.domain_type, form_data.cell)
 
-    # Save tables populated by transformer (MSA: These names could be less generic...)
+    # Save tables populated by transformer
     ir["name_map"] = transformer.name_map
     ir["unique_tables"] = transformer.unique_tables # Basis values?
 
     # Save tables map, to extract table names for optimisation option -O.
     ir["psi_tables_map"] = transformer.psi_tables_map
     ir["additional_includes_set"] = transformer.additional_includes_set
+
+    # Insert empty data which will be populated if optimization is turned on
+    ir["geo_consts"] = {}
 
     return ir
 

@@ -97,6 +97,11 @@ def needs_oriented_jacobian(form_data):
 def initialize_integral_ir(representation, itg_data, form_data, form_id):
     """Initialize a representation dict with common information that is
     expected independently of which representation is chosen."""
+    entitytype = { "cell": "cell",
+                   "exterior_facet": "facet",
+                   "interior_facet": "facet",
+                   "point": "vertex",
+                   }[itg_data.domain_type]
     return { "representation":       representation,
              "domain_type":          itg_data.domain_type,
              "domain_id":            itg_data.domain_id,
@@ -104,7 +109,9 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
              "rank":                 form_data.rank,
              "geometric_dimension":  form_data.geometric_dimension,
              "topological_dimension":form_data.topological_dimension,
+             "entitytype":           entitytype,
              "num_facets":           cellname_to_num_entities[form_data.cell.cellname()][-2],
+             "num_vertices":         cellname_to_num_entities[form_data.cell.cellname()][0],
              "needs_oriented":       needs_oriented_jacobian(form_data),
            }
 

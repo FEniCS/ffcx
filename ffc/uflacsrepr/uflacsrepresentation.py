@@ -18,10 +18,13 @@
 # First added:  2013-02-09
 # Last changed: 2013-02-12
 
-from ffc.representationutils import initialize_integral_ir
+import numpy
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
 from ffc.cpp import format
-import numpy
+from ffc.fiatinterface import create_element
+from ffc.representationutils import initialize_integral_ir
+from ffc.quadrature.quadratureutils import create_psi_tables
+from ffc.quadrature.quadraturerepresentation import _parse_optimise_parameters, _sort_integrals, _tabulate_basis
 
 def compute_integral_ir(itg_data,
                         form_data,
@@ -34,30 +37,36 @@ def compute_integral_ir(itg_data,
     # Initialise representation
     ir = initialize_integral_ir("uflacs", itg_data, form_data, form_id)
 
-    import ffc.quadrature.quadraturerepresentation as qr
-    import ffc.quadrature.quadratureutils as qu
+    # Sort integrals into a dict with number of integral points as key
+    sorted_integrals = _sort_integrals(itg_data.integrals, itg_data.metadata, form_data)
 
-    optimise_parameters = qr._parse_optimise_parameters(parameters)
-
-    # Sort integrals and tabulate basis.
-    sorted_integrals = qr._sort_integrals(itg_data.integrals, itg_data.metadata, form_data)
+    # Tabulate quadrature points and basis function values in these points
     integrals_dict, psi_tables, quad_weights = \
-        qr._tabulate_basis(sorted_integrals, itg_data.domain_type, form_data)
-    # TODO: Pass integrals_dict to uflacs, necessary for integral terms with different number of quadrature points
-    ffc_assert(len(integrals_dict) == 1, "Assuming a single quadrature rule per integral domain for now.")
+        _tabulate_basis(sorted_integrals, itg_data.domain_type, form_data)
 
     # Save tables for quadrature weights and points
     ir["quadrature_weights"]  = quad_weights
 
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.
-    ir["prim_idims"] = [qr.create_element(ufl_element).space_dimension()
+    ir["prim_idims"] = [create_element(ufl_element).space_dimension()
                         for ufl_element in form_data.argument_elements]
+
+    # Create and save the optisation parameters.
+    ir["optimise_parameters"] = _parse_optimise_parameters(parameters)
+
+    # ... Up to this point is equal to the quadrature representation, below are the different parts
+
+
 
     # FIXME: UFLACS: Understand how to use psi_tables
     (element_map, name_map, unique_tables) = \
-        qu.create_psi_tables(psi_tables, optimise_parameters, vertex=None)
+        create_psi_tables(psi_tables, ir["optimise_parameters"], ir["entitytype"])
+    ir["name_map"] = name_map
+    ir["unique_tables"] = unique_tables
+    ir["element_map"] = element_map
 
+    # Testing code!
     from ffc.cpp import _generate_psi_name
     if 1:
         from pprint import pprint
@@ -73,7 +82,7 @@ def compute_integral_ir(itg_data,
                     print '-'*15, 'entity:', entity
                     for derivatives, values in entity_tables.items():
                         print '.'*10, 'derivatives:', derivatives
-                        element_table_name = _generate_psi_name(element_number, entity, component, derivatives, vertex=None)
+                        element_table_name = _generate_psi_name(element_number, ir["entitytype"], entity, component, derivatives)
                         print 'element_table_name:', element_table_name
                         uvalues = unique_tables[element_table_name]
                         diff = numpy.transpose(uvalues) - values # Why is one transposed of the other? Which index is then ip and which is dofs?
@@ -89,16 +98,14 @@ def compute_integral_ir(itg_data,
         pprint(unique_tables)
         print '\n', '='*80, '\n'
 
-    # ------ End copy from quadraturerepresentation.py
 
 
-    # TODO: Call upon ffc to build ir for element tables etc
-    ffc_data = None
-
+    # TODO: Pass integrals_dict to uflacs, necessary for integral terms with different number of quadrature points
+    ffc_assert(len(integrals_dict) == 1, "Assuming a single quadrature rule per integral domain for now.")
 
     # Delegate to flacs to build its intermediate representation and add to ir
     import uflacs.backends.ffc
-    uir = uflacs.backends.ffc.compute_tabulate_tensor_ir(ffc_data, itg_data, form_data, parameters)
+    uir = uflacs.backends.ffc.compute_tabulate_tensor_ir(None, itg_data, form_data, parameters)
     ir.update(uir)
 
     return ir
