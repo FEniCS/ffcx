@@ -69,12 +69,21 @@ def compute_integral_ir(itg_data,
     # Create and save the optisation parameters.
     ir["optimise_parameters"] = _parse_optimise_parameters(parameters)
 
+    # Figure out type of entities to tabulate values in quadrature points over
+    if itg_data.domain_type == "cell":
+        entitytype = "cell"
+    elif "facet" in itg_data.domain_type:
+        entitytype = "facet"
+    elif itg_data.domain_type == "point":
+        entitytype = "vertex"
+
     # Create transformer.
     if ir["optimise_parameters"]["optimisation"]:
         transformer = QuadratureTransformerOpt(psi_tables,
                                                quad_weights,
                                                form_data.geometric_dimension,
                                                form_data.topological_dimension,
+                                               entitytype,
                                                form_data.function_replace_map,
                                                ir["optimise_parameters"])
     else:
@@ -82,6 +91,7 @@ def compute_integral_ir(itg_data,
                                             quad_weights,
                                             form_data.geometric_dimension,
                                             form_data.topological_dimension,
+                                            entitytype,
                                             form_data.function_replace_map,
                                             ir["optimise_parameters"])
 
@@ -141,7 +151,7 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, domain_type, c
     if domain_type == "cell":
         # Compute transformed integrals.
         info("Transforming cell integral")
-        transformer.update_facets(None, None)
+        transformer.update_cell()
         terms = _transform_integrals(transformer, integrals_dict, domain_type)
 
     elif domain_type == "exterior_facet":
@@ -166,7 +176,6 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, domain_type, c
         terms = [None]*num_vertices
         for i in range(num_vertices):
             info("Transforming point integral (%d)" % i)
-            transformer.update_facets(None, None) # TODO: Once should be enough?
             transformer.update_vertex(i)
             terms[i] = _transform_integrals(transformer, integrals_dict, domain_type)
     else:

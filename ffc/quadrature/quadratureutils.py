@@ -29,13 +29,13 @@ import numpy
 from ffc.log import debug, error, ffc_assert
 from ffc.cpp import format
 
-def create_psi_tables(tables, parameters, vertex=None):
+def create_psi_tables(tables, parameters, entitytype):
     "Create names and maps for tables and non-zero entries if appropriate."
 
     debug("\nQG-utils, psi_tables:\n" + str(tables))
     # Create element map {points:{element:number,},}
     # and a plain dictionary {name:values,}.
-    element_map, flat_tables = flatten_psi_tables(tables, vertex)
+    element_map, flat_tables = flatten_psi_tables(tables, entitytype)
     debug("\nQG-utils, psi_tables, flat_tables:\n" + str(flat_tables))
 
     # Reduce tables such that we only have those tables left with unique values
@@ -47,7 +47,7 @@ def create_psi_tables(tables, parameters, vertex=None):
 
     return (element_map, name_map, unique_tables)
 
-def flatten_psi_tables(tables, vertex=None):
+def flatten_psi_tables(tables, entitytype):
     """Create a 'flat' dictionary of tables with unique names and a name
     map that maps number of quadrature points and element name to a unique
     element number. returns:
@@ -66,44 +66,30 @@ def flatten_psi_tables(tables, vertex=None):
         element_map[point] = {}
         # Loop all elements and get all their tables.
         for elem in sorted(elem_dict.keys(), key=lambda x: str(x)):
-            facet_tables = elem_dict[elem]
+            entity_tables = elem_dict[elem]
             element_map[point][elem] = counter
-            for facet in sorted(facet_tables.keys()):
-                elem_table = facet_tables[facet]
-                # If the element value rank != 0, we must loop the components.
-                # before the derivatives (that's the way the values are tabulated).
-                if len(elem.value_shape()) != 0:
-                    for derivs in sorted(elem_table.keys()):
+            for entity in sorted(entity_tables.keys()):
+                elem_table = entity_tables[entity]
+                for derivs in sorted(elem_table.keys()):
+                    if len(elem.value_shape()) != 0:
+                        # If the element value rank != 0, we must loop the components.
+                        # before the derivatives (that's the way the values are tabulated).
                         comp_table = elem_table[derivs]
                         transposed_table = numpy.transpose(comp_table, (1,0,2))
-                        for num_comp, psi_table in enumerate(transposed_table):
-                            # Verify shape of basis (can be omitted for speed
-                            # if needed I think).
-                            ffc_assert(len(numpy.shape(psi_table)) == 2 and numpy.shape(psi_table)[1] == point, \
-                                        "Something is wrong with this table: " + str(psi_table))
-                            # Generate the table name.
-                            if vertex is not None:
-                                name = generate_psi_name(counter, None, num_comp, derivs, facet)
-                            else:
-                                name = generate_psi_name(counter, facet, num_comp, derivs)
-                            ffc_assert(name not in flat_tables, \
-                                        "Table name is not unique, something is wrong: " + name + str(flat_tables))
-                            # Take transpose such that we get (ip_number, basis_number)
-                            # instead of (basis_number, ip_number).
-                            flat_tables[name] = numpy.transpose(psi_table)
-                # If we don't have any components.
-                else:
-                    for derivs in sorted(elem_table.keys()):
-                        psi_table = elem_table[derivs]
+                        enum_tables = list(enumerate(transposed_table))
+                    else:
+                        # If we don't have any components.
+                        enum_tables = [((), elem_table[derivs])]
+
+                    for num_comp, psi_table in enum_tables:
                         # Verify shape of basis (can be omitted for speed
                         # if needed I think).
                         ffc_assert(len(numpy.shape(psi_table)) == 2 and numpy.shape(psi_table)[1] == point, \
                                     "Something is wrong with this table: " + str(psi_table))
+
                         # Generate the table name.
-                        if vertex is not None:
-                            name = generate_psi_name(counter, None, (), derivs, facet)
-                        else:
-                            name = generate_psi_name(counter, facet, (), derivs)
+                        name = generate_psi_name(counter, entitytype, entity, num_comp, derivs)
+
                         ffc_assert(name not in flat_tables, \
                                     "Table name is not unique, something is wrong: " + name + str(flat_tables))
                         flat_tables[name] = numpy.transpose(psi_table)
