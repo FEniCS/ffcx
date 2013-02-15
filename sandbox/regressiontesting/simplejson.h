@@ -3,6 +3,8 @@
 
 #include <cassert>
 #include <string>
+#include <vector>
+#include <list>
 #include <iostream>
 
 /// A simplified json data model, including only hierarchial dicts of single values
@@ -29,13 +31,55 @@ public:
         begin();
     }
 
-    /// Set a named single variable entry
+    /// Set a named single value entry
     template<typename T>
-    void operator()(const std::string & name, T value)
+    void output_scalar(const std::string & name, T value)
     {
         begin_entry(name);
         output_formatted(value);
         out << ", " << std::endl;
+    }
+
+    /// Set a named vector valued entry
+    template<typename T>
+    void output_array(const std::string & name, typename std::vector<T> values)
+    {
+        begin_entry(name);
+        out << "[";
+        typename std::vector<T>::iterator i=values.begin();
+        if (i!=values.end())
+        {
+            output_formatted(*i);
+            ++i;
+        }
+        while (i!=values.end())
+        {
+            out << ", ";
+            output_formatted(*i);
+            ++i;
+        }
+        out << "], " << std::endl;
+    }
+
+    /// Set a named list valued entry
+    template<typename T>
+    void output_array(const std::string & name, typename std::list<T> values)
+    {
+        begin_entry(name);
+        out << "[";
+        typename std::list<T>::iterator i=values.begin();
+        if (i!=values.end())
+        {
+            output_formatted(*i);
+            ++i;
+        }
+        while (i!=values.end())
+        {
+            out << ", ";
+            output_formatted(*i);
+            ++i;
+        }
+        out << "], " << std::endl;
     }
 
     /// End current named or unnamed block

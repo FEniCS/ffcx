@@ -59,10 +59,14 @@ def print_recdiff(diff, epsilon=_default_recdiff_epsilon, indent=0, printer=_pri
              print_recdiff(diff[k], epsilon, indent+1, printer, key)
 
     elif isinstance(diff, list):
-        for d in diff:
-            print_recdiff(d, epsilon, indent+1, printer, prekey)
+        # Limiting this to lists of scalar values!
+        for i, d in enumerate(diff):
+            if isinstance(d, tuple):
+                data1, data2 = d
+                printer("%s%d: %s != %s" % ("  "*indent, i, data1, data2))   
 
     elif isinstance(diff, tuple):
+        assert len(diff) == 2
         data1, data2 = diff
         printer("%s%s != %s" % ("  "*indent, data1, data2))   
 
