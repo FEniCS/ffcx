@@ -32,6 +32,8 @@
 #include <ctime>
 #include <ufc.h>
 
+#include "printer.h"
+
 // How many derivatives to test
 const std::size_t max_derivative = 2;
 
@@ -45,84 +47,6 @@ double time()
   clock_t __toc_time = std::clock();
   return ((double) (__toc_time)) / CLOCKS_PER_SEC;
 }
-
-class Printer
-{
-protected:
-  // Output stream
-  std::ostream & os;
-
-  // Precision in output of floats
-  const std::size_t precision;
-  const double epsilon;
-
-  // Global counter for results
-  std::size_t counter;
-
-  // Function for printing a single value
-  template <class value_type>
-  void print_value(value_type value)
-  {
-    os.precision(precision);
-    if (std::abs(static_cast<double>(value)) < epsilon)
-      os << "0";
-    else
-      os << value;
-  }
-
-public:
-  Printer(std::ostream & os):
-    os(os),
-    precision(16),
-    epsilon(1e-16),
-    counter(0)
-  {}
-
-  // Function for beginning named result block
-  void begin(std::string name)
-  {
-    os << std::endl;
-    os << "Testing " << name << std::endl;
-    os << "----------------------" << std::endl;
-  }
-
-  // Function for ending named result block
-  void end()
-  {
-  }
-
-  // Function for printing scalar result
-  template <class value_type>
-  void print_scalar(std::string name, value_type value, int i=-1, int j=-1)
-  {
-    std::stringstream s;
-    s << counter++ << "_";
-    s << name;
-    if (i >= 0) s << "_" << i;
-    if (j >= 0) s << "_" << j;
-    os << s.str() << " = ";
-    print_value(value);
-    os << std::endl;
-  }
-
-  // Function for printing array result
-  template <class value_type>
-  void print_array(std::string name, unsigned int n, value_type* values, int i=-1, int j=-1)
-  {
-    std::stringstream s;
-    s << counter++ << "_";
-    s << name;
-    if (i >= 0) s << "_" << i;
-    if (j >= 0) s << "_" << j;
-    os << s.str() << " =";
-    for (std::size_t i = 0; i < n; i++)
-      {
-        os << " ";
-        print_value(values[i]);
-      }
-    os << std::endl;
-  }
-};
 
 // Class for creating "random" ufc::cell objects
 class test_cell : public ufc::cell
@@ -221,10 +145,19 @@ private:
 
 };
 
-// Function for testing ufc::element objects
-void test_finite_element(ufc::finite_element& element, Printer & printer)
+std::string format_name(std::string name, int i=-1, int j=-1)
 {
-  printer.begin("finite_element"); // TODO: Get name or id of some sort as input and pass on to name
+  std::stringstream s;
+  s << name;
+  if (i >= 0) s << "_" << i;
+  if (j >= 0) s << "_" << j;
+  return s.str();
+}
+
+// Function for testing ufc::element objects
+void test_finite_element(ufc::finite_element& element, int id, Printer & printer)
+{
+  printer.begin("finite_element"); // TODO: Add id
 
   // Prepare arguments
   test_cell c(element.cell_shape(), element.geometric_dimension());
@@ -326,7 +259,7 @@ void test_finite_element(ufc::finite_element& element, Printer & printer)
   for (std::size_t i = 0; i < element.num_sub_elements(); i++)
   {
     ufc::finite_element* sub_element = element.create_sub_element(i);
-    test_finite_element(*sub_element, printer);
+    test_finite_element(*sub_element, i, printer);
     delete sub_element;
   }
 
@@ -644,9 +577,9 @@ void test_point_integral(ufc::point_integral& integral,
 }
 
 // Function for testing ufc::form objects
-void test_form(ufc::form& form, bool bench, Printer & printer)
+void test_form(ufc::form& form, bool bench, int id, Printer & printer)
 {
-  printer.begin("form"); // TODO: Add name? Must be something more stable than signature.
+  printer.begin("form"); // TODO: Add id
 
   // Compute size of tensors
   int tensor_size = 1;
@@ -719,7 +652,7 @@ void test_form(ufc::form& form, bool bench, Printer & printer)
   for (std::size_t i = 0; i < form.rank() + form.num_coefficients(); i++)
   {
     ufc::finite_element* element = form.create_finite_element(i);
-    test_finite_element(*element, printer);
+    test_finite_element(*element, i, printer);
     delete element;
   }
 
