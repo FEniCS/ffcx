@@ -384,7 +384,7 @@ def validate_programs(reference_dir):
             generated_json_output = eval(generated_json_output)
         except Exception as e:
             info_red("Failed to evaluate json output for %s" % fj)
-            log_error(e)
+            log_error(str(e))
             generated_json_output = None
         json_diff = (None if generated_json_output is None else
                      recdiff(generated_json_output, reference_json_output, tolerance=output_tolerance))
