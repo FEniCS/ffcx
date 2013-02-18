@@ -1,6 +1,6 @@
 
 Testing form
-------------
+----------------------
 0_num_coefficients = 2
 1_has_cell_integrals = 1
 2_has_exterior_facet_integrals = 0
@@ -124,7 +124,7 @@ Testing finite_element
 108_num_sub_elements = 0
 
 Testing dofmap
----------------
+----------------------
 109_needs_mesh_entities_0 = 1
 110_needs_mesh_entities_1 = 0
 111_needs_mesh_entities_2 = 0
@@ -153,7 +153,7 @@ Testing dofmap
 134_num_sub_dofmaps = 0
 
 Testing dofmap
----------------
+----------------------
 135_needs_mesh_entities_0 = 1
 136_needs_mesh_entities_1 = 0
 137_needs_mesh_entities_2 = 0
@@ -182,7 +182,7 @@ Testing dofmap
 160_num_sub_dofmaps = 0
 
 Testing dofmap
----------------
+----------------------
 161_needs_mesh_entities_0 = 1
 162_needs_mesh_entities_1 = 0
 163_needs_mesh_entities_2 = 0
@@ -211,7 +211,7 @@ Testing dofmap
 186_num_sub_dofmaps = 0
 
 Testing dofmap
----------------
+----------------------
 187_needs_mesh_entities_0 = 1
 188_needs_mesh_entities_1 = 0
 189_needs_mesh_entities_2 = 0
@@ -241,7 +241,7 @@ Testing dofmap
 213_default_cell_integral = 1
 
 Testing cell_integral
----------------------
+----------------------
 214_tabulate_tensor = 0.1386506280888114 -0.03168506123409273 -0.1041454666584735 -0.03168506123409273 0.1549174651981213 -0.1196191505849194 -0.1041454666584735 -0.1196191505849194 0.2283472800951026
 215_default_exterior_facet_integral = 0
 216_default_interior_facet_integral = 0

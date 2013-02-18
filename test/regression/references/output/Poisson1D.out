@@ -1,6 +1,6 @@
 
 Testing form
-------------
+----------------------
 0_num_coefficients = 0
 1_has_cell_integrals = 1
 2_has_exterior_facet_integrals = 0
@@ -58,7 +58,7 @@ Testing finite_element
 48_num_sub_elements = 0
 
 Testing dofmap
----------------
+----------------------
 49_needs_mesh_entities_0 = 1
 50_needs_mesh_entities_1 = 0
 51_global_dimension = 10001
@@ -79,7 +79,7 @@ Testing dofmap
 66_num_sub_dofmaps = 0
 
 Testing dofmap
----------------
+----------------------
 67_needs_mesh_entities_0 = 1
 68_needs_mesh_entities_1 = 0
 69_global_dimension = 10001
@@ -101,14 +101,14 @@ Testing dofmap
 85_default_cell_integral = 1
 
 Testing cell_integral
----------------------
+----------------------
 86_tabulate_tensor = 2.923976608187134 -2.923976608187134 -2.923976608187134 2.923976608187134
 87_default_exterior_facet_integral = 0
 88_default_interior_facet_integral = 0
 89_default_point_integral = 0
 
 Testing form
-------------
+----------------------
 90_num_coefficients = 1
 91_has_cell_integrals = 1
 92_has_exterior_facet_integrals = 0
@@ -166,7 +166,7 @@ Testing finite_element
 138_num_sub_elements = 0
 
 Testing dofmap
----------------
+----------------------
 139_needs_mesh_entities_0 = 1
 140_needs_mesh_entities_1 = 0
 141_global_dimension = 10001
@@ -187,7 +187,7 @@ Testing dofmap
 156_num_sub_dofmaps = 0
 
 Testing dofmap
----------------
+----------------------
 157_needs_mesh_entities_0 = 1
 158_needs_mesh_entities_1 = 0
 159_global_dimension = 10001
@@ -209,7 +209,7 @@ Testing dofmap
 175_default_cell_integral = 1
 
 Testing cell_integral
----------------------
+----------------------
 176_tabulate_tensor = 0.022800000114 0.028499999886
 177_default_exterior_facet_integral = 0
 178_default_interior_facet_integral = 0
