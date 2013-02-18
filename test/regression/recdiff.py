@@ -80,10 +80,10 @@ def print_recdiff(diff, indent=0, printer=_print, prekey=""):
 
 
 # ---------- Unittest code
-from unittest import TestCase, main
+import unittest
 #from recdiff import recdiff, print_recdiff, DiffEqual, DiffMissing
 
-class RecDiffTestCase(TestCase):
+class RecDiffTestCase(unittest.TestCase):
     def assertEqual(self, a, b):
         if not (a == b):
             print a
@@ -151,6 +151,19 @@ class RecDiffTestCase(TestCase):
         self.assertEqual(actual_diff, expected_diff)
 
 
+def main(a, b):
+    print "Running diff on files %s and %s" % (a, b)
+    a = eval(open(a).read())
+    b = eval(open(b).read())
+    d = recdiff(a, b)   
+    print_recdiff(d)
+
 if __name__ == "__main__":
-    main()
+    import sys
+    args = sys.argv[1:]
+    if not args: # Hack to be able to use this as a script, TODO: do something nicer
+        print "No arguments, running tests."
+        unittest.main()
+    else:
+        main(*args)
 
