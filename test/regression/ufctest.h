@@ -49,6 +49,9 @@ double time()
 class Printer
 {
 protected:
+  // Output stream
+  std::ostream & os;
+
   // Precision in output of floats
   const std::size_t precision;
   const double epsilon;
@@ -60,15 +63,16 @@ protected:
   template <class value_type>
   void print_value(value_type value)
   {
-    std::cout.precision(precision);
+    os.precision(precision);
     if (std::abs(static_cast<double>(value)) < epsilon)
-      std::cout << "0";
+      os << "0";
     else
-      std::cout << value;
+      os << value;
   }
 
 public:
-  Printer():
+  Printer(std::ostream & os):
+    os(os),
     precision(16),
     epsilon(1e-16),
     counter(0)
@@ -77,9 +81,9 @@ public:
   // Function for beginning named result block
   void begin(std::string name)
   {
-    std::cout << std::endl;
-    std::cout << "Testing " << name << std::endl;
-    std::cout << "----------------------" << std::endl;
+    os << std::endl;
+    os << "Testing " << name << std::endl;
+    os << "----------------------" << std::endl;
   }
 
   // Function for ending named result block
@@ -96,9 +100,9 @@ public:
     s << name;
     if (i >= 0) s << "_" << i;
     if (j >= 0) s << "_" << j;
-    std::cout << s.str() << " = ";
+    os << s.str() << " = ";
     print_value(value);
-    std::cout << std::endl;
+    os << std::endl;
   }
 
   // Function for printing array result
@@ -110,13 +114,13 @@ public:
     s << name;
     if (i >= 0) s << "_" << i;
     if (j >= 0) s << "_" << j;
-    std::cout << s.str() << " =";
+    os << s.str() << " =";
     for (std::size_t i = 0; i < n; i++)
       {
-        std::cout << " ";
+        os << " ";
         print_value(values[i]);
       }
-    std::cout << std::endl;
+    os << std::endl;
   }
 };
 
@@ -642,7 +646,7 @@ void test_point_integral(ufc::point_integral& integral,
 // Function for testing ufc::form objects
 void test_form(ufc::form& form, bool bench, Printer & printer)
 {
-  printer.begin("form") // TODO: Add name? Must be something more stable than signature.
+  printer.begin("form"); // TODO: Add name? Must be something more stable than signature.
 
   // Compute size of tensors
   int tensor_size = 1;

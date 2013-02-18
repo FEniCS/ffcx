@@ -28,7 +28,7 @@ const char prefix[] = "%s";
 
 int main()
 {
-  Printer printer;
+  Printer printer(std::cout);
 
 %s
 
