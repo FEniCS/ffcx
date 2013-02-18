@@ -68,5 +68,12 @@ def print_recdiff(diff, epsilon=_default_recdiff_epsilon, indent=0, printer=_pri
     elif isinstance(diff, tuple):
         assert len(diff) == 2
         data1, data2 = diff
-        printer("%s%s != %s" % ("  "*indent, data1, data2))   
+        data1 = str(data1)
+        data2 = str(data2)
+        if len(data1) + len(data2) + 2*indent + 4 > 70:
+            printer("%s%s" % ("  "*indent, data1))
+            printer("%s!=" % ("  "*indent))
+            printer("%s%s" % ("  "*indent, data2))
+        else:
+            printer("%s%s != %s" % ("  "*indent, data1, data2))   
 

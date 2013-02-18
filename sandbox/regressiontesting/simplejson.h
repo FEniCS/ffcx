@@ -6,6 +6,7 @@
 #include <vector>
 #include <list>
 #include <iostream>
+#include <sstream>
 
 /// A simplified json data model, including only hierarchial dicts of single values
 class SimpleJsonModel
@@ -33,51 +34,91 @@ public:
 
     /// Set a named single value entry
     template<typename T>
-    void output_scalar(const std::string & name, T value)
+    void print_scalar(std::string name, T value, int i=-1, int j=-1)
     {
+        std::stringstream s;
+        s << name;
+        if (i >= 0) s << "_" << i;
+        if (j >= 0) s << "_" << j;
+        name = s.str();
+
         begin_entry(name);
-        output_formatted(value);
+        print_formatted(value);
         out << ", " << std::endl;
+    }
+
+    /// Set a named array valued entry
+    template<typename T>
+    void print_array(std::string name, int n, T * values, int i=-1, int j=-1)
+    {
+        std::stringstream s;
+        s << name;
+        if (i >= 0) s << "_" << i;
+        if (j >= 0) s << "_" << j;
+        name = s.str();
+
+        begin_entry(name);
+        out << "[";
+        if (n > 0)
+          print_formatted(values[0]);
+        for (int k=1; k<n; ++k)
+        {
+            out << ", ";
+            print_formatted(values[k]);
+        }
+        out << "], " << std::endl;
     }
 
     /// Set a named vector valued entry
     template<typename T>
-    void output_array(const std::string & name, typename std::vector<T> values)
+    void print_vector(std::string name, typename std::vector<T> values, int i=-1, int j=-1)
     {
+        std::stringstream s;
+        s << name;
+        if (i >= 0) s << "_" << i;
+        if (j >= 0) s << "_" << j;
+        name = s.str();
+
         begin_entry(name);
         out << "[";
-        typename std::vector<T>::iterator i=values.begin();
-        if (i!=values.end())
+        typename std::vector<T>::iterator k=values.begin();
+        if (k!=values.end())
         {
-            output_formatted(*i);
-            ++i;
+            print_formatted(*k);
+            ++k;
         }
-        while (i!=values.end())
+        while (k!=values.end())
         {
             out << ", ";
-            output_formatted(*i);
-            ++i;
+            print_formatted(*k);
+            ++k;
         }
         out << "], " << std::endl;
     }
 
     /// Set a named list valued entry
     template<typename T>
-    void output_array(const std::string & name, typename std::list<T> values)
+    void print_list(std::string name, typename std::list<T> values, int i=-1, int j=-1)
     {
+        std::stringstream s;
+        s << name;
+        if (i >= 0) s << "_" << i;
+        if (j >= 0) s << "_" << j;
+        name = s.str();
+
         begin_entry(name);
         out << "[";
-        typename std::list<T>::iterator i=values.begin();
-        if (i!=values.end())
+        typename std::list<T>::iterator k=values.begin();
+        if (k!=values.end())
         {
-            output_formatted(*i);
-            ++i;
+            print_formatted(*k);
+            ++k;
         }
-        while (i!=values.end())
+        while (k!=values.end())
         {
             out << ", ";
-            output_formatted(*i);
-            ++i;
+            print_formatted(*k);
+            ++k;
         }
         out << "], " << std::endl;
     }
@@ -115,7 +156,7 @@ protected:
 
     /// Format a value type properly
     template<typename T>
-    void output_formatted(T value);
+    void print_formatted(T value);
 
     /// Format '<indent>"foo": ' properly
     void begin_entry(const std::string & name)
@@ -127,21 +168,21 @@ protected:
 
 /// Fallback formatting for any value type
 template<typename T>
-void SimpleJsonModel::output_formatted(T value)
+void SimpleJsonModel::print_formatted(T value)
 {
     out << value;
 }
 
 /// Wrap strings in quotes
 template<>
-void SimpleJsonModel::output_formatted(std::string value)
+void SimpleJsonModel::print_formatted(std::string value)
 {
     out << '"' << value << '"';
 }
 
 /// Wrap strings in quotes
 template<>
-void SimpleJsonModel::output_formatted(const char * value)
+void SimpleJsonModel::print_formatted(const char * value)
 {
     out << '"' << value << '"';
 }
