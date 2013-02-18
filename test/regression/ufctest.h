@@ -56,55 +56,68 @@ protected:
   // Global counter for results
   std::size_t counter;
 
+  // Function for printing a single value
+  template <class value_type>
+  void print_value(value_type value)
+  {
+    std::cout.precision(precision);
+    if (std::abs(static_cast<double>(value)) < epsilon)
+      std::cout << "0";
+    else
+      std::cout << value;
+  }
+
 public:
   Printer():
-      precision(16),
-      epsilon(1e-16),
-      counter(0)
-    {}
+    precision(16),
+    epsilon(1e-16),
+    counter(0)
+  {}
 
-// Function for printing a single value
-template <class value_type>
-void print_value(value_type value)
-{
-  std::cout.precision(precision);
-  if (std::abs(static_cast<double>(value)) < epsilon)
-    std::cout << "0";
-  else
-    std::cout << value;
-}
-
-// Function for printing scalar result
-template <class value_type>
-void print_scalar(std::string name, value_type value, int i=-1, int j=-1)
-{
-  std::stringstream s;
-  s << counter++ << "_";
-  s << name;
-  if (i >= 0) s << "_" << i;
-  if (j >= 0) s << "_" << j;
-  std::cout << s.str() << " = ";
-  print_value(value);
-  std::cout << std::endl;
-}
-
-// Function for printing array result
-template <class value_type>
-void print_array(std::string name, unsigned int n, value_type* values, int i=-1, int j=-1)
-{
-  std::stringstream s;
-  s << counter++ << "_";
-  s << name;
-  if (i >= 0) s << "_" << i;
-  if (j >= 0) s << "_" << j;
-  std::cout << s.str() << " =";
-  for (std::size_t i = 0; i < n; i++)
+  // Function for beginning named result block
+  void begin(std::string name)
   {
-    std::cout << " ";
-    print_value(values[i]);
+    std::cout << std::endl;
+    std::cout << "Testing " << name << std::endl;
+    std::cout << "----------------------" << std::endl;
   }
-  std::cout << std::endl;
-}
+
+  // Function for ending named result block
+  void end()
+  {
+  }
+
+  // Function for printing scalar result
+  template <class value_type>
+  void print_scalar(std::string name, value_type value, int i=-1, int j=-1)
+  {
+    std::stringstream s;
+    s << counter++ << "_";
+    s << name;
+    if (i >= 0) s << "_" << i;
+    if (j >= 0) s << "_" << j;
+    std::cout << s.str() << " = ";
+    print_value(value);
+    std::cout << std::endl;
+  }
+
+  // Function for printing array result
+  template <class value_type>
+  void print_array(std::string name, unsigned int n, value_type* values, int i=-1, int j=-1)
+  {
+    std::stringstream s;
+    s << counter++ << "_";
+    s << name;
+    if (i >= 0) s << "_" << i;
+    if (j >= 0) s << "_" << j;
+    std::cout << s.str() << " =";
+    for (std::size_t i = 0; i < n; i++)
+      {
+        std::cout << " ";
+        print_value(values[i]);
+      }
+    std::cout << std::endl;
+  }
 };
 
 // Class for creating "random" ufc::cell objects
@@ -207,9 +220,7 @@ private:
 // Function for testing ufc::element objects
 void test_finite_element(ufc::finite_element& element, Printer & printer)
 {
-  std::cout << std::endl;
-  std::cout << "Testing finite_element" << std::endl;
-  std::cout << "----------------------" << std::endl;
+  printer.begin("finite_element"); // TODO: Get name or id of some sort as input and pass on to name
 
   // Prepare arguments
   test_cell c(element.cell_shape(), element.geometric_dimension());
@@ -320,14 +331,14 @@ void test_finite_element(ufc::finite_element& element, Printer & printer)
   delete [] dof_values;
   delete [] vertex_values;
   delete [] coordinates;
+
+  printer.end();
 }
 
 // Function for testing ufc::element objects
 void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, Printer & printer)
 {
-  std::cout << std::endl;
-  std::cout << "Testing dofmap" << std::endl;
-  std::cout << "---------------" << std::endl;
+  printer.begin("dofmap"); // TODO: Get name or id of some sort as input and pass on to name
 
   // Prepare arguments
   std::vector<std::size_t> num_entities(4);
@@ -419,6 +430,8 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, Printer & printer)
   for (std::size_t i = 0; i < n; i++)
     delete [] coordinates[i];
   delete [] coordinates;
+
+  printer.end();
 }
 
 // Function for testing ufc::cell_integral objects
@@ -430,9 +443,7 @@ void test_cell_integral(ufc::cell_integral& integral,
                         bool bench,
                         Printer & printer)
 {
-  std::cout << std::endl;
-  std::cout << "Testing cell_integral" << std::endl;
-  std::cout << "---------------------" << std::endl;
+  printer.begin("cell_integral"); // TODO: Get name or id of some sort as input and pass on to name
 
   // Prepare arguments
   test_cell c(cell_shape, gdim);
@@ -465,6 +476,8 @@ void test_cell_integral(ufc::cell_integral& integral,
 
   // Cleanup
   delete [] A;
+
+  printer.end();
 }
 
 // Function for testing ufc::exterior_facet_integral objects
@@ -476,9 +489,7 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
                                   bool bench,
                                   Printer & printer)
 {
-  std::cout << std::endl;
-  std::cout << "Testing exterior_facet_integral" << std::endl;
-  std::cout << "-------------------------------" << std::endl;
+  printer.begin("exterior_facet_integral"); // TODO: Get name or id of some sort as input and pass on to name
 
   // Prepare arguments
   test_cell c(cell_shape, gdim);
@@ -517,6 +528,8 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
 
   // Cleanup
   delete [] A;
+
+  printer.end();
 }
 
 // Function for testing ufc::interior_facet_integral objects
@@ -528,9 +541,7 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
                                   bool bench,
                                   Printer & printer)
 {
-  std::cout << std::endl;
-  std::cout << "Testing interior_facet_integral" << std::endl;
-  std::cout << "-------------------------------" << std::endl;
+  printer.begin("interior_facet_integral"); // TODO: Get name or id of some sort as input and pass on to name
 
   // Prepare arguments
   test_cell c0(cell_shape, gdim, 0);
@@ -572,6 +583,8 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
 
   // Cleanup
   delete [] A;
+
+  printer.end();
 }
 
 // Function for testing ufc::point_integral objects
@@ -583,9 +596,7 @@ void test_point_integral(ufc::point_integral& integral,
                          bool bench,
                          Printer & printer)
 {
-  std::cout << std::endl;
-  std::cout << "Testing point_integral" << std::endl;
-  std::cout << "----------------------" << std::endl;
+  printer.begin("point_integral"); // TODO: Get name or id of some sort as input and pass on to name
 
   // Prepare arguments
   test_cell c(cell_shape, gdim);
@@ -624,15 +635,14 @@ void test_point_integral(ufc::point_integral& integral,
 
   // Cleanup
   delete [] A;
+
+  printer.end();
 }
 
 // Function for testing ufc::form objects
 void test_form(ufc::form& form, bool bench, Printer & printer)
 {
-  std::cout << std::endl;
-  std::cout << "Testing form" << std::endl;
-  std::cout << "------------" << std::endl;
-
+  printer.begin("form") // TODO: Add name? Must be something more stable than signature.
 
   // Compute size of tensors
   int tensor_size = 1;
@@ -672,7 +682,7 @@ void test_form(ufc::form& form, bool bench, Printer & printer)
   //printer.print_scalar("signature", form.signature());
 
   // rank
-  //printer.print_scalar("rank", form.signature());
+  //printer.print_scalar("rank", form.rank());
 
   // num_coefficients
   printer.print_scalar("num_coefficients", form.num_coefficients());
@@ -791,4 +801,6 @@ void test_form(ufc::form& form, bool bench, Printer & printer)
   for (std::size_t i = 0; i < form.num_coefficients(); i++)
     delete [] w[i];
   delete [] w;
+
+  printer.end();
 }
