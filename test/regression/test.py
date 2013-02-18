@@ -378,9 +378,16 @@ def validate_programs(reference_dir):
 
         # Compare json with reference using recursive diff algorithm # TODO: Write to different error file?
         from recdiff import recdiff, print_recdiff, DiffEqual
-        generated_json_output = eval(generated_json_output)
+        # Assuming reference is well formed
         reference_json_output = eval(reference_json_output)
-        json_diff = recdiff(generated_json_output, reference_json_output, tolerance=output_tolerance)
+        try:
+            generated_json_output = eval(generated_json_output)
+        except Exception as e:
+            info_red("Failed to evaluate json output for %s" % fj)
+            log_error(e)
+            generated_json_output = None
+        json_diff = (None if generated_json_output is None else
+                     recdiff(generated_json_output, reference_json_output, tolerance=output_tolerance))
         json_ok = json_diff == DiffEqual
 
         # Check status
