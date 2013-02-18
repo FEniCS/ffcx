@@ -109,7 +109,7 @@ compute_jacobian_triangle_3d(J%(restriction)s, vertex_coordinates%(restriction)s
 _compute_jacobian_tetrahedron_3d = """\
 // Compute Jacobian
 double J%(restriction)s[9];
-compute_jacobian_triangle_3d(J%(restriction)s, vertex_coordinates%(restriction)s);
+compute_jacobian_tetrahedron_3d(J%(restriction)s, vertex_coordinates%(restriction)s);
 """
 
 compute_jacobian = {1: {1: _compute_jacobian_interval_1d,
