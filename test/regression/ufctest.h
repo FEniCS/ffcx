@@ -110,18 +110,39 @@ public:
 
     // Generate some "random" coordinates
     vertex_coordinates.resize(12);
-    vertex_coordinates[0]  = 0.903;
-    vertex_coordinates[1]  = 0.341;
-    vertex_coordinates[2]  = 0.457;
-    vertex_coordinates[3]  = 0.561;
-    vertex_coordinates[4]  = 0.767;
-    vertex_coordinates[5]  = 0.833;
-    vertex_coordinates[6]  = 0.987;
-    vertex_coordinates[7]  = 0.783;
-    vertex_coordinates[8]  = 0.191;
-    vertex_coordinates[9]  = 0.123;
-    vertex_coordinates[10] = 0.561;
-    vertex_coordinates[11] = 0.667;
+    if (gdim == 1)
+    {
+      vertex_coordinates[0]  = 0.903;
+      vertex_coordinates[1]  = 0.561;
+      vertex_coordinates[2]  = 0.987;
+      vertex_coordinates[3]  = 0.123;
+    }
+    else if (gdim == 2)
+    {
+      vertex_coordinates[0]  = 0.903;
+      vertex_coordinates[1]  = 0.341;
+      vertex_coordinates[2]  = 0.561;
+      vertex_coordinates[3]  = 0.767;
+      vertex_coordinates[4]  = 0.987;
+      vertex_coordinates[5]  = 0.783;
+      vertex_coordinates[6]  = 0.123;
+      vertex_coordinates[7] = 0.561;
+    }
+    else if (gdim == 3)
+    {
+      vertex_coordinates[0]  = 0.903;
+      vertex_coordinates[1]  = 0.341;
+      vertex_coordinates[2]  = 0.457;
+      vertex_coordinates[3]  = 0.561;
+      vertex_coordinates[4]  = 0.767;
+      vertex_coordinates[5]  = 0.833;
+      vertex_coordinates[6]  = 0.987;
+      vertex_coordinates[7]  = 0.783;
+      vertex_coordinates[8]  = 0.191;
+      vertex_coordinates[9]  = 0.123;
+      vertex_coordinates[10] = 0.561;
+      vertex_coordinates[11] = 0.667;
+    }
   }
 
   ~test_cell()
