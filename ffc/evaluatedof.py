@@ -298,10 +298,6 @@ def _change_variables(mapping, gdim, tdim, offset):
     # meg: Various mappings must be handled both here and in
     # interpolate_vertex_values. Could this be abstracted out?
 
-    # Figure out dimension of Jacobian
-    m = tdim + 1
-    n = gdim
-
     if mapping == "affine":
         return [component(f_vals, offset)]
 
@@ -310,7 +306,7 @@ def _change_variables(mapping, gdim, tdim, offset):
         # contravariant piola
         values = []
         for i in range(tdim):
-            inv_jacobian_row = [Jinv(i, j, m, n) for j in range(gdim)]
+            inv_jacobian_row = [Jinv(i, j, tdim, gdim) for j in range(gdim)]
             components = [component(f_vals, j + offset) for j in range(gdim)]
             values += [multiply([detJ, inner(inv_jacobian_row, components)])]
         return values
@@ -320,7 +316,7 @@ def _change_variables(mapping, gdim, tdim, offset):
         # covariant piola
         values = []
         for i in range(tdim):
-            jacobian_column = [J(j, i, m, n) for j in range(gdim)]
+            jacobian_column = [J(j, i, gdim, tdim) for j in range(gdim)]
             components = [component(f_vals, j + offset) for j in range(gdim)]
             values += [inner(jacobian_column, components)]
         return values
