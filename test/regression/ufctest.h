@@ -35,16 +35,9 @@
 // How many derivatives to test
 const std::size_t max_derivative = 2;
 
-// Precision in output of floats
-const std::size_t precision = 16;
-const double epsilon = 1e-16;
-
 // Parameters for adaptive timing
 const std::size_t initial_num_reps = 10;
 const double minimum_timing = 1.0;
-
-// Global counter for results
-std::size_t counter = 0;
 
 // Function for timing
 double time()
@@ -52,6 +45,23 @@ double time()
   clock_t __toc_time = std::clock();
   return ((double) (__toc_time)) / CLOCKS_PER_SEC;
 }
+
+class Printer
+{
+protected:
+  // Precision in output of floats
+  const std::size_t precision;
+  const double epsilon;
+
+  // Global counter for results
+  std::size_t counter;
+
+public:
+  Printer():
+      precision(16),
+      epsilon(1e-16),
+      counter(0)
+    {}
 
 // Function for printing a single value
 template <class value_type>
@@ -95,6 +105,7 @@ void print_array(std::string name, unsigned int n, value_type* values, int i=-1,
   }
   std::cout << std::endl;
 }
+};
 
 // Class for creating "random" ufc::cell objects
 class test_cell : public ufc::cell
@@ -194,7 +205,7 @@ private:
 };
 
 // Function for testing ufc::element objects
-void test_finite_element(ufc::finite_element& element)
+void test_finite_element(ufc::finite_element& element, Printer & printer)
 {
   std::cout << std::endl;
   std::cout << "Testing finite_element" << std::endl;
@@ -229,31 +240,31 @@ void test_finite_element(ufc::finite_element& element)
   test_function f(value_size);
 
   // signature
-  //print_scalar("signature", element.signature());
+  //printer.print_scalar("signature", element.signature());
 
   // cell_shape
-  print_scalar("cell_shape", element.cell_shape());
+  printer.print_scalar("cell_shape", element.cell_shape());
 
   // space_dimension
-  print_scalar("space_dimension", element.space_dimension());
+  printer.print_scalar("space_dimension", element.space_dimension());
 
   // value_rank
-  print_scalar("value_rank", element.value_rank());
+  printer.print_scalar("value_rank", element.value_rank());
 
   // value_dimension
   for (std::size_t i = 0; i < element.value_rank(); i++)
-    print_scalar("value_dimension", element.value_dimension(i), i);
+    printer.print_scalar("value_dimension", element.value_dimension(i), i);
 
   // evaluate_basis
   for (std::size_t i = 0; i < element.space_dimension(); i++)
   {
     element.evaluate_basis(i, values, coordinates, c);
-    print_array("evaluate_basis:", value_size, values, i);
+    printer.print_array("evaluate_basis:", value_size, values, i);
   }
 
   // evaluate_basis all
   element.evaluate_basis_all(values, coordinates, c);
-  print_array("evaluate_basis_all", element.space_dimension()*value_size, values);
+  printer.print_array("evaluate_basis_all", element.space_dimension()*value_size, values);
 
   // evaluate_basis_derivatives
   for (std::size_t i = 0; i < element.space_dimension(); i++)
@@ -264,7 +275,7 @@ void test_finite_element(ufc::finite_element& element)
       for (std::size_t j = 0; j < n; j++)
         num_derivatives *= c.geometric_dimension;
       element.evaluate_basis_derivatives(i, n, values, coordinates, c);
-      print_array("evaluate_basis_derivatives", value_size*num_derivatives, values, i, n);
+      printer.print_array("evaluate_basis_derivatives", value_size*num_derivatives, values, i, n);
     }
   }
 
@@ -275,32 +286,32 @@ void test_finite_element(ufc::finite_element& element)
       for (std::size_t j = 0; j < n; j++)
         num_derivatives *= c.geometric_dimension;
     element.evaluate_basis_derivatives_all(n, values, coordinates, c);
-    print_array("evaluate_basis_derivatives_all", element.space_dimension()*value_size*num_derivatives, values, n);
+    printer.print_array("evaluate_basis_derivatives_all", element.space_dimension()*value_size*num_derivatives, values, n);
   }
 
   // evaluate_dof
   for (std::size_t i = 0; i < element.space_dimension(); i++)
   {
     dof_values[i] = element.evaluate_dof(i, f, c);
-    print_scalar("evaluate_dof", dof_values[i], i);
+    printer.print_scalar("evaluate_dof", dof_values[i], i);
   }
 
   // evaluate_dofs
   element.evaluate_dofs(values, f, c);
-  print_array("evaluate_dofs", element.space_dimension(), values);
+  printer.print_array("evaluate_dofs", element.space_dimension(), values);
 
   // interpolate_vertex_values
   element.interpolate_vertex_values(vertex_values, dof_values, c);
-  print_array("interpolate_vertex_values", (c.topological_dimension + 1)*value_size, vertex_values);
+  printer.print_array("interpolate_vertex_values", (c.topological_dimension + 1)*value_size, vertex_values);
 
   // num_sub_dof_elements
-  print_scalar("num_sub_elements", element.num_sub_elements());
+  printer.print_scalar("num_sub_elements", element.num_sub_elements());
 
   // create_sub_element
   for (std::size_t i = 0; i < element.num_sub_elements(); i++)
   {
     ufc::finite_element* sub_element = element.create_sub_element(i);
-    test_finite_element(*sub_element);
+    test_finite_element(*sub_element, printer);
     delete sub_element;
   }
 
@@ -312,7 +323,7 @@ void test_finite_element(ufc::finite_element& element)
 }
 
 // Function for testing ufc::element objects
-void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape)
+void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, Printer & printer)
 {
   std::cout << std::endl;
   std::cout << "Testing dofmap" << std::endl;
@@ -337,40 +348,40 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape)
     coordinates[i] = new double[c.geometric_dimension];
 
   // signature
-  //print_scalar("signature", dofmap.signature());
+  //printer.print_scalar("signature", dofmap.signature());
 
   // needs_mesh_entities
   for (std::size_t d = 0; d <= c.topological_dimension; d++)
-    print_scalar("needs_mesh_entities", dofmap.needs_mesh_entities(d), d);
+    printer.print_scalar("needs_mesh_entities", dofmap.needs_mesh_entities(d), d);
 
   // global_dimension
-  print_scalar("global_dimension", dofmap.global_dimension(num_entities));
+  printer.print_scalar("global_dimension", dofmap.global_dimension(num_entities));
 
   // local_dimension
-  print_scalar("local_dimension", dofmap.local_dimension(c));
+  printer.print_scalar("local_dimension", dofmap.local_dimension(c));
 
   // max_local_dimension
-  print_scalar("max_local_dimension", dofmap.max_local_dimension());
+  printer.print_scalar("max_local_dimension", dofmap.max_local_dimension());
 
   // geometric_dimension
-  print_scalar("geometric_dimension", dofmap.geometric_dimension());
+  printer.print_scalar("geometric_dimension", dofmap.geometric_dimension());
 
   // num_facet_dofs
-  print_scalar("num_facet_dofs", dofmap.num_facet_dofs());
+  printer.print_scalar("num_facet_dofs", dofmap.num_facet_dofs());
 
   // num_entity_dofs
   for (std::size_t d = 0; d <= c.topological_dimension; d++)
-    print_scalar("num_entity_dofs", dofmap.num_entity_dofs(d), d);
+    printer.print_scalar("num_entity_dofs", dofmap.num_entity_dofs(d), d);
 
   // tabulate_dofs
   dofmap.tabulate_dofs(dofs, num_entities, c);
-  print_array("tabulate_dofs", dofmap.local_dimension(c), dofs);
+  printer.print_array("tabulate_dofs", dofmap.local_dimension(c), dofs);
 
   // tabulate_facet_dofs
   for (std::size_t facet = 0; facet < num_facets; facet++)
   {
     dofmap.tabulate_facet_dofs(dofs, facet);
-    print_array("tabulate_facet_dofs", dofmap.num_facet_dofs(), dofs, facet);
+    printer.print_array("tabulate_facet_dofs", dofmap.num_facet_dofs(), dofs, facet);
   }
 
   // tabulate_entity_dofs
@@ -383,23 +394,23 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape)
     for (std::size_t i = 0; i < num_entities[c.topological_dimension][d]; i++)
     {
       dofmap.tabulate_entity_dofs(dofs, d, i);
-      print_array("tabulate_entity_dofs", dofmap.num_entity_dofs(d), dofs, d, i);
+      printer.print_array("tabulate_entity_dofs", dofmap.num_entity_dofs(d), dofs, d, i);
     }
   }
 
   // tabulate_coordinates
   dofmap.tabulate_coordinates(coordinates, c);
   for (std::size_t i = 0; i < dofmap.local_dimension(c); i++)
-    print_array("tabulate_coordinates", c.geometric_dimension, coordinates[i], i);
+    printer.print_array("tabulate_coordinates", c.geometric_dimension, coordinates[i], i);
 
   // num_sub_dofmaps
-  print_scalar("num_sub_dofmaps", dofmap.num_sub_dofmaps());
+  printer.print_scalar("num_sub_dofmaps", dofmap.num_sub_dofmaps());
 
   // create_sub_dofmap
   for (std::size_t i = 0; i < dofmap.num_sub_dofmaps(); i++)
   {
     ufc::dofmap* sub_dofmap = dofmap.create_sub_dofmap(i);
-    test_dofmap(*sub_dofmap, cell_shape);
+    test_dofmap(*sub_dofmap, cell_shape, printer);
     delete sub_dofmap;
   }
 
@@ -416,7 +427,8 @@ void test_cell_integral(ufc::cell_integral& integral,
                         std::size_t gdim,
                         std::size_t tensor_size,
                         double** w,
-                        bool bench)
+                        bool bench,
+                        Printer & printer)
 {
   std::cout << std::endl;
   std::cout << "Testing cell_integral" << std::endl;
@@ -430,7 +442,7 @@ void test_cell_integral(ufc::cell_integral& integral,
 
   // Call tabulate_tensor
   integral.tabulate_tensor(A, w, c);
-  print_array("tabulate_tensor", tensor_size, A);
+  printer.print_array("tabulate_tensor", tensor_size, A);
 
   // Benchmark tabulate tensor
   if (bench)
@@ -461,7 +473,8 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
                                   std::size_t gdim,
                                   std::size_t tensor_size,
                                   double** w,
-                                  bool bench)
+                                  bool bench,
+                                  Printer & printer)
 {
   std::cout << std::endl;
   std::cout << "Testing exterior_facet_integral" << std::endl;
@@ -479,7 +492,7 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
       A[i] = 0.0;
 
     integral.tabulate_tensor(A, w, c, facet);
-    print_array("tabulate_tensor", tensor_size, A, facet);
+    printer.print_array("tabulate_tensor", tensor_size, A, facet);
   }
 
   // Benchmark tabulate tensor
@@ -512,7 +525,8 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
                                   std::size_t gdim,
                                   std::size_t macro_tensor_size,
                                   double** w,
-                                  bool bench)
+                                  bool bench,
+                                  Printer & printer)
 {
   std::cout << std::endl;
   std::cout << "Testing interior_facet_integral" << std::endl;
@@ -533,7 +547,7 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
         A[i] = 0.0;
 
       integral.tabulate_tensor(A, w, c0, c1, facet0, facet1);
-      print_array("tabulate_tensor", macro_tensor_size, A, facet0, facet1);
+      printer.print_array("tabulate_tensor", macro_tensor_size, A, facet0, facet1);
     }
   }
 
@@ -566,7 +580,8 @@ void test_point_integral(ufc::point_integral& integral,
                          std::size_t gdim,
                          std::size_t tensor_size,
                          double** w,
-                         bool bench)
+                         bool bench,
+                         Printer & printer)
 {
   std::cout << std::endl;
   std::cout << "Testing point_integral" << std::endl;
@@ -584,7 +599,7 @@ void test_point_integral(ufc::point_integral& integral,
       A[i] = 0.0;
 
     integral.tabulate_tensor(A, w, c, vertex);
-    print_array("tabulate_tensor", tensor_size, A, vertex);
+    printer.print_array("tabulate_tensor", tensor_size, A, vertex);
   }
 
   // Benchmark tabulate tensor
@@ -612,7 +627,7 @@ void test_point_integral(ufc::point_integral& integral,
 }
 
 // Function for testing ufc::form objects
-void test_form(ufc::form& form, bool bench)
+void test_form(ufc::form& form, bool bench, Printer & printer)
 {
   std::cout << std::endl;
   std::cout << "Testing form" << std::endl;
@@ -654,43 +669,43 @@ void test_form(ufc::form& form, bool bench)
   element = 0;
 
   // signature
-  //print_scalar("signature", form.signature());
+  //printer.print_scalar("signature", form.signature());
 
   // rank
-  //print_scalar("rank", form.signature());
+  //printer.print_scalar("rank", form.signature());
 
   // num_coefficients
-  print_scalar("num_coefficients", form.num_coefficients());
+  printer.print_scalar("num_coefficients", form.num_coefficients());
 
   // has_cell_integrals
-  print_scalar("has_cell_integrals", form.has_cell_integrals());
+  printer.print_scalar("has_cell_integrals", form.has_cell_integrals());
 
   // has_exterior_facet_integrals
-  print_scalar("has_exterior_facet_integrals", form.has_exterior_facet_integrals());
+  printer.print_scalar("has_exterior_facet_integrals", form.has_exterior_facet_integrals());
 
   // has_interior_facet_integrals
-  print_scalar("has_interior_facet_integrals", form.has_interior_facet_integrals());
+  printer.print_scalar("has_interior_facet_integrals", form.has_interior_facet_integrals());
 
   // has_point_integrals
-  print_scalar("has_point_integrals", form.has_point_integrals());
+  printer.print_scalar("has_point_integrals", form.has_point_integrals());
 
   // num_cell_domains
-  print_scalar("num_cell_domains", form.num_cell_domains());
+  printer.print_scalar("num_cell_domains", form.num_cell_domains());
 
   // num_exterior_facet_domains
-  print_scalar("num_exterior_facet_domains", form.num_exterior_facet_domains());
+  printer.print_scalar("num_exterior_facet_domains", form.num_exterior_facet_domains());
 
   // num_interior_facet_domains
-  print_scalar("num_interior_facet_domains", form.num_interior_facet_domains());
+  printer.print_scalar("num_interior_facet_domains", form.num_interior_facet_domains());
 
   // num_point_domains
-  print_scalar("num_point_domains", form.num_point_domains());
+  printer.print_scalar("num_point_domains", form.num_point_domains());
 
   // create_finite_element
   for (std::size_t i = 0; i < form.rank() + form.num_coefficients(); i++)
   {
     ufc::finite_element* element = form.create_finite_element(i);
-    test_finite_element(*element);
+    test_finite_element(*element, printer);
     delete element;
   }
 
@@ -698,17 +713,17 @@ void test_form(ufc::form& form, bool bench)
   for (std::size_t i = 0; i < form.rank() + form.num_coefficients(); i++)
   {
     ufc::dofmap* dofmap = form.create_dofmap(i);
-    test_dofmap(*dofmap, cell_shape);
+    test_dofmap(*dofmap, cell_shape, printer);
     delete dofmap;
   }
 
   // create_cell_integral
   {
     ufc::cell_integral* integral = form.create_default_cell_integral();
-    print_scalar("default_cell_integral", (bool)integral);
+    printer.print_scalar("default_cell_integral", (bool)integral);
     if (integral)
       test_cell_integral(*integral, cell_shape, gdim,
-                         tensor_size, w, bench);
+                         tensor_size, w, bench, printer);
     delete integral;
   }
   for (std::size_t i = 0; i < form.num_cell_domains(); i++)
@@ -716,17 +731,17 @@ void test_form(ufc::form& form, bool bench)
     ufc::cell_integral* integral = form.create_cell_integral(i);
     if (integral)
       test_cell_integral(*integral, cell_shape, gdim,
-                         tensor_size, w, bench);
+                         tensor_size, w, bench, printer);
     delete integral;
   }
 
   // create_exterior_facet_integral
   {
     ufc::exterior_facet_integral* integral = form.create_default_exterior_facet_integral();
-    print_scalar("default_exterior_facet_integral", (bool)integral);
+    printer.print_scalar("default_exterior_facet_integral", (bool)integral);
     if (integral)
       test_exterior_facet_integral(*integral, cell_shape, gdim,
-                                   tensor_size, w, bench);
+                                   tensor_size, w, bench, printer);
     delete integral;
   }
   for (std::size_t i = 0; i < form.num_exterior_facet_domains(); i++)
@@ -734,17 +749,17 @@ void test_form(ufc::form& form, bool bench)
     ufc::exterior_facet_integral* integral = form.create_exterior_facet_integral(i);
     if (integral)
       test_exterior_facet_integral(*integral, cell_shape, gdim,
-                                   tensor_size, w, bench);
+                                   tensor_size, w, bench, printer);
     delete integral;
   }
 
   // create_interior_facet_integral
   {
     ufc::interior_facet_integral* integral = form.create_default_interior_facet_integral();
-    print_scalar("default_interior_facet_integral", (bool)integral);
+    printer.print_scalar("default_interior_facet_integral", (bool)integral);
     if (integral)
       test_interior_facet_integral(*integral, cell_shape, gdim,
-                                   macro_tensor_size, w, bench);
+                                   macro_tensor_size, w, bench, printer);
     delete integral;
   }
   for (std::size_t i = 0; i < form.num_interior_facet_domains(); i++)
@@ -752,23 +767,23 @@ void test_form(ufc::form& form, bool bench)
     ufc::interior_facet_integral* integral = form.create_interior_facet_integral(i);
     if (integral)
       test_interior_facet_integral(*integral, cell_shape, gdim,
-                                   macro_tensor_size, w, bench);
+                                   macro_tensor_size, w, bench, printer);
     delete integral;
   }
 
   // create_point_integral
   {
     ufc::point_integral* integral = form.create_default_point_integral();
-    print_scalar("default_point_integral", (bool)integral);
+    printer.print_scalar("default_point_integral", (bool)integral);
     if (integral)
-      test_point_integral(*integral, cell_shape, gdim, tensor_size, w, bench);
+      test_point_integral(*integral, cell_shape, gdim, tensor_size, w, bench, printer);
     delete integral;
   }
   for (std::size_t i = 0; i < form.num_point_domains(); i++)
   {
     ufc::point_integral* integral = form.create_point_integral(i);
     if (integral)
-      test_point_integral(*integral, cell_shape, gdim, tensor_size, w, bench);
+      test_point_integral(*integral, cell_shape, gdim, tensor_size, w, bench, printer);
     delete integral;
   }
 

@@ -28,6 +28,8 @@ const char prefix[] = "%s";
 
 int main()
 {
+  Printer printer;
+
 %s
 
   return 0;
@@ -45,10 +47,10 @@ def generate_test_code(header_file, bench):
 
     # Generate tests, either based on forms or elements
     if num_forms > 0:
-        tests = ["  %s_form_%d f%d; test_form(f%d, %d);" % (prefix.lower(), i, i, i, bench)
+        tests = ["  %s_form_%d f%d; test_form(f%d, %d, printer);" % (prefix.lower(), i, i, i, bench)
                  for i in range(num_forms)]
     else:
-        tests = ["  %s_finite_element_%d e%d; test_finite_element(e%d);" % (prefix.lower(), i, i, i)
+        tests = ["  %s_finite_element_%d e%d; test_finite_element(e%d, printer);" % (prefix.lower(), i, i, i)
                  for i in range(num_elements)]
 
     # Write file
