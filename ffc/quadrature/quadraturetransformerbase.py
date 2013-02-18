@@ -59,8 +59,8 @@ class QuadratureTransformerBase(Transformer):
     def __init__(self,
                  psi_tables,
                  quad_weights,
-                 geo_dim,
-                 top_dim,
+                 gdim,
+                 tdim,
                  function_replace_map,
                  optimise_parameters):
 
@@ -81,8 +81,8 @@ class QuadratureTransformerBase(Transformer):
         self.trans_set = set()
         self.functions = {}
         self.function_count = 0
-        self.geo_dim = geo_dim
-        self.top_dim = top_dim
+        self.tdim = tdim
+        self.gdim = gdim
         self.points = 0
         self.facet0 = None
         self.facet1 = None
@@ -295,7 +295,9 @@ class QuadratureTransformerBase(Transformer):
 
         # Create mapping and code for basis function and add to dict.
         basis = self.create_argument(o, derivatives, component, local_comp,
-                  local_offset, ffc_element, transformation, multiindices)
+                                     local_offset, ffc_element,
+                                     transformation, multiindices,
+                                     self.tdim, self.gdim)
 
         self.argument_cache[(o, components, derivatives, self.restriction)] = basis
 
@@ -387,11 +389,10 @@ class QuadratureTransformerBase(Transformer):
         component, local_comp, local_offset, ffc_element, quad_element, \
         transformation, multiindices = self._get_auxiliary_variables(o, components, derivatives)
 
-
         # Create code for function and add empty tuple to cache dict.
         function_code = {(): self.create_function(o, derivatives, component,
                               local_comp, local_offset, ffc_element, quad_element,
-                              transformation, multiindices)}
+                              transformation, multiindices, self.tdim, self.gdim)}
 
         self.function_cache[(o, components, derivatives, self.restriction)] = function_code
 
@@ -862,7 +863,7 @@ class QuadratureTransformerBase(Transformer):
             local_offset = component - local_comp
 
         # Generate FFC multi index for derivatives.
-        multiindices = FFCMultiIndex([range(self.top_dim)]*len(derivatives)).indices
+        multiindices = FFCMultiIndex([range(self.tdim)]*len(derivatives)).indices
 
         #print "in create_auxiliary"
         #print "component = ", component
@@ -1102,7 +1103,7 @@ class QuadratureTransformerBase(Transformer):
                 ip = f_ip
             if self.facet1 is not None:
                 r = "+"
-            self.coordinate = [name, self.geo_dim, ip, r]
+            self.coordinate = [name, self.gdim, ip, r]
 
     # -------------------------------------------------------------------------
     # Helper functions for code_generation()

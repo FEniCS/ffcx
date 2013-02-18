@@ -49,8 +49,14 @@ def interpolate_vertex_values(ir):
     gdim = ir["geometric_dimension"]
     tdim = ir["topological_dimension"]
     if ir["needs_jacobian"]:
-        code.append(format["jacobian and inverse"](gdim, tdim,
-                                                   oriented=ir["needs_oriented"]))
+
+        # Generate code for basic geometric quantities
+        code.append(format["compute_jacobian"](tdim, gdim))
+        code.append("")
+        code.append(format["compute_jacobian_inverse"](tdim, gdim))
+        if ir["needs_oriented"]:
+            code.append("")
+            code.append(format["orientation"](tdim, gdim))
 
     # Compute total value dimension for (mixed) element
     total_dim = sum(data["value_size"] for data in ir["element_data"])
@@ -149,14 +155,18 @@ def _change_variables(mapping, gdim, tdim, space_dim):
       g(x) = K^T G(X)              i.e   g_i(x) = K^T_ij G_j(X) = K_ji G_j(X)
     """
 
+    # Figure out dimension of Jacobian
+    m = tdim + 1
+    n = gdim
+
     if mapping is "affine":
         change_of_variables = lambda G, i: G[i]
     elif mapping == "contravariant piola":
-        change_of_variables = lambda G, i: [multiply([invdetJ, inner([J(i, j) for j in range(tdim)],
+        change_of_variables = lambda G, i: [multiply([invdetJ, inner([J(i, j, m, n) for j in range(tdim)],
                                                                      [G[j][index] for j in range(tdim)])])
                                             for index in range(space_dim)]
     elif mapping == "covariant piola":
-        change_of_variables = lambda G, i: [inner([Jinv(j, i) for j in range(tdim)],
+        change_of_variables = lambda G, i: [inner([Jinv(j, i, m, n) for j in range(tdim)],
                                                   [G[j][index] for j in range(tdim)])
                                             for index in range(space_dim)]
     else:

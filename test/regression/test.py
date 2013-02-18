@@ -95,6 +95,7 @@ def generate_test_cases(bench, quicksample):
         form_directory = demo_directory
 
     form_files = [f for f in os.listdir(form_directory) if f.endswith(".ufl")]
+    #form_files = form_files[:1] # use for quick testing
     form_files.sort()
     if quicksample:
         form_files = form_files[:4] # Maybe pick a better selection
@@ -105,6 +106,9 @@ def generate_test_cases(bench, quicksample):
 
     # Generate form files for forms
     info("Generating form files for extra forms: Not implemented")
+
+    # FIXME: Testing
+    #return
 
     # Generate form files for elements
     if not bench:

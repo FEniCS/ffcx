@@ -16,7 +16,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2010-01-29
-# Last changed: 2010-04-12
+# Last changed: 2013-01-31
 
 from cppcode import evaluate_basis_code_fiat
 from ufl import FiniteElement, MixedElement
@@ -243,6 +243,8 @@ def get_ffc_values(ufl_element):
 def verify_element(num_elements, i, ufl_element):
     info("\nVerifying element %d of %d: %s" % (i, num_elements, str(ufl_element)))
     error = compile_element(ufl_element, ffc_fail, log_file)
+
+    # Return if test failed
     if error:
         return 1
 
@@ -282,11 +284,12 @@ def main(debug_level):
         for shape in element["shapes"]:
             for degree in element["degrees"]:
                 elements.append(FiniteElement(element["family"], shape, degree))
+
     # Add the mixed elements
     elements += mixed_elements
     num_elements = len(elements)
 
-    # Test all elements.
+    # Test all elements
     num_tests = 0
     msg = "Verifying evaluate_basis and evaluate_basis_derivatives for elements"
     info("\n" + msg + "\n" + len(msg)*"-")

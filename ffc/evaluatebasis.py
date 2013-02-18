@@ -20,9 +20,10 @@ the code found in FIAT."""
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2007-04-04
-# Last changed: 2011-02-21
+# Last changed: 2013-01-10
 #
-# Modified by Marie E. Rognes, 2011
+# Modified by Marie E. Rognes 2011
+# Modified by Anders Logg 2013
 #
 # MER: The original module generated code that was more or less a C++
 # representation of the code found in FIAT. I've modified this (for 2
@@ -90,11 +91,13 @@ def _evaluate_basis_all(data):
     if physical_value_size == 1:
         code += [f_decl(f_double, f_dof_vals, f_float(0.0))]
     else:
-        code += [f_decl(f_double, f_component(f_dof_vals, physical_value_size), f_tensor([0.0]*physical_value_size))]
+        code += [f_decl(f_double,
+                        f_component(f_dof_vals, physical_value_size),
+                        f_tensor([0.0]*physical_value_size))]
 
     # Create loop over dofs that calls evaluate_basis for a single dof and
     # inserts the values into the global array.
-    code += ["", f_comment("Loop dofs and call evaluate_basis.")]
+    code += ["", f_comment("Loop dofs and call evaluate_basis")]
     lines_r = []
     loop_vars_r = [(f_r, 0, space_dimension)]
 
@@ -114,7 +117,6 @@ def _evaluate_basis_all(data):
 
     # Generate code (no need to remove unused).
     return "\n".join(code)
-
 
 # From FIAT_NEW.polynomial_set.tabulate()
 def _evaluate_basis(data):
@@ -147,14 +149,16 @@ def _evaluate_basis(data):
 
     # Get code snippets for Jacobian, Inverse of Jacobian and mapping of
     # coordinates from physical element to the FIAT reference element.
-    code += [format["jacobian and inverse"](gdim, tdim,
-                                            oriented=data["needs_oriented"])]
+    code += [format["compute_jacobian"](tdim, gdim)]
+    code += [format["compute_jacobian_inverse"](tdim, gdim)]
+    if data["needs_oriented"]:
+        code += [format["orientation"](tdim, gdim)]
     code += ["", format["fiat coordinate map"](element_cellname, gdim)]
 
     # Get value shape and reset values. This should also work for TensorElement,
     # scalar are empty tuples, therefore (1,) in which case value_shape = 1.
     reference_value_size = data["reference_value_size"]
-    code += ["", f_comment("Reset values.")]
+    code += ["", f_comment("Reset values")]
     if reference_value_size == 1:
         # Reset values as a pointer.
         code += [f_assign(format["dereference pointer"](f_values), f_float(0.0))]
@@ -206,7 +210,7 @@ def _tabulate_coefficients(dof_data):
     coefficients = dof_data["coeffs"]
 
     # Initialise return code.
-    code = [f_comment("Table(s) of coefficients.")]
+    code = [f_comment("Table(s) of coefficients")]
 
     # Get number of members of the expansion set.
     num_mem = dof_data["num_expansion_members"]
@@ -247,8 +251,14 @@ def _compute_values(data, dof_data):
     f_trans         = format["transform"]
     f_inner         = format["inner product"]
 
+    # Figure out dimension of Jacobian
+    tdim = data["topological_dimension"]
+    gdim = data["geometric_dimension"]
+    m = tdim + 1
+    n = gdim
+
     # Initialise return code.
-    code = [f_comment("Compute value(s).")]
+    code = [f_comment("Compute value(s)")]
 
     # Get dof data.
     num_components = dof_data["num_components"]
@@ -280,17 +290,15 @@ def _compute_values(data, dof_data):
     if mapping == "affine":
         pass
     elif mapping == "contravariant piola":
-        code += ["", f_comment("Using contravariant Piola transform to map values back to the physical element.")]
+        code += ["", f_comment("Using contravariant Piola transform to map values back to the physical element")]
         # Get temporary values before mapping.
         code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))\
                   for i in range(num_components)]
         # Create names for inner product.
-        tdim = data["topological_dimension"]
-        gdim = data["geometric_dimension"]
         basis_col = [f_tmp_ref(j) for j in range(tdim)]
         for i in range(gdim):
             # Create Jacobian.
-            jacobian_row = [f_trans("J", i, j, None) for j in range(tdim)]
+            jacobian_row = [f_trans("J", i, j, m, n, None) for j in range(tdim)]
 
             # Create inner product and multiply by inverse of Jacobian.
             inner = f_group(f_inner(jacobian_row, basis_col))
@@ -298,7 +306,7 @@ def _compute_values(data, dof_data):
             name = f_component(f_values, i + offset)
             code += [f_assign(name, value)]
     elif mapping == "covariant piola":
-        code += ["", f_comment("Using covariant Piola transform to map values back to the physical element.")]
+        code += ["", f_comment("Using covariant Piola transform to map values back to the physical element")]
         # Get temporary values before mapping.
         code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))\
                   for i in range(num_components)]
@@ -308,7 +316,7 @@ def _compute_values(data, dof_data):
         basis_col = [f_tmp_ref(j) for j in range(tdim)]
         for i in range(gdim):
             # Create inverse of Jacobian.
-            inv_jacobian_column = [f_trans("JINV", j, i, None)
+            inv_jacobian_column = [f_trans("JINV", j, i, m, n, None)
                                    for j in range(tdim)]
 
             # Create inner product of basis values and inverse of Jacobian.
@@ -391,11 +399,11 @@ def _compute_basisvalues(data, dof_data):
     # Create zero array for basisvalues.
     # Get number of members of the expansion set.
     num_mem = dof_data["num_expansion_members"]
-    code += [f_comment("Array of basisvalues.")]
+    code += [f_comment("Array of basisvalues")]
     code += [f_decl(f_double, f_component(f_basisvalue, num_mem), f_tensor([0.0]*num_mem))]
 
     # Declare helper variables, will be removed if not used.
-    code += ["", f_comment("Declare helper variables.")]
+    code += ["", f_comment("Declare helper variables")]
     code += [f_decl(f_uint, idx0, int_0)]
     code += [f_decl(f_uint, idx1, int_0)]
     code += [f_decl(f_uint, idx2, int_0)]
@@ -403,7 +411,7 @@ def _compute_basisvalues(data, dof_data):
     code += [f_decl(f_double, str(bn), f_float(0))]
     code += [f_decl(f_double, str(cn), f_float(0))]
 
-    # Get the element cell name.
+    # Get the element cell name
     element_cellname = data["cellname"]
 
     def _jrc(a, b, n):
@@ -422,7 +430,7 @@ def _compute_basisvalues(data, dof_data):
         # FIAT_NEW code
         # for ii in range(result.shape[1]):
         #    result[0,ii] = 1.0 + xs[ii,0] - xs[ii,0]
-        code += ["", f_comment("Compute basisvalues.")]
+        code += ["", f_comment("Compute basisvalues")]
         code += [f_assign(f_component(f_basisvalue, 0), f_float(1.0))]
 
         # Only continue if the embedded degree is larger than zero.
@@ -494,7 +502,7 @@ def _compute_basisvalues(data, dof_data):
         code += [f_decl(f_double, str(f2), fac2)]
         code += [f_decl(f_double, str(f3), f2*f2)]
 
-        code += ["", f_comment("Compute basisvalues.")]
+        code += ["", f_comment("Compute basisvalues")]
         # The initial value basisvalue 0 is always 1.0.
         # FIAT_NEW code
         # for ii in range( results.shape[1] ):
@@ -615,7 +623,7 @@ def _compute_basisvalues(data, dof_data):
         code += [f_decl(f_double, str(f4), fac4)]
         code += [f_decl(f_double, str(f5), f4*f4)]
 
-        code += ["", f_comment("Compute basisvalues.")]
+        code += ["", f_comment("Compute basisvalues")]
         # The initial value basisvalue 0 is always 1.0.
         # FIAT_NEW code
         # for ii in range( results.shape[1] ):
@@ -746,6 +754,6 @@ def _compute_basisvalues(data, dof_data):
                         code += [myline]
 
     else:
-        error("Cannot compute basis values for shape: %d" % element_cellname)
+        error("Cannot compute basis values for shape: %d" % elemet_cell_domain)
 
     return code + [""]

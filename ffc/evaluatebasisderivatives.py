@@ -19,8 +19,10 @@ representation of the code found in FIAT_NEW."""
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
+# Modified by Anders Logg 2013
+#
 # First added:  2007-04-16
-# Last changed: 2011-02-21
+# Last changed: 2013-01-10
 
 # Python modules
 import math
@@ -143,8 +145,10 @@ def _evaluate_basis_derivatives(data):
 
     # Get code snippets for Jacobian, inverse of Jacobian and mapping of
     # coordinates from physical element to the FIAT reference element.
-    code += [format["jacobian and inverse"](gdim, tdim,
-                                            oriented=data["needs_oriented"])]
+    code += [format["compute_jacobian"](tdim, gdim)]
+    code += [format["compute_jacobian_inverse"](tdim, gdim)]
+    if data["needs_oriented"]:
+        code += [format["orientation"](tdim, gdim)]
     code += ["", format["fiat coordinate map"](element_cellname, gdim)]
 
     # Compute number of derivatives that has to be computed, and
@@ -471,7 +475,11 @@ def _compute_reference_derivatives(data, dof_data):
     tdim = data["topological_dimension"]
     gdim = data["geometric_dimension"]
 
-    if tdim==gdim:
+    # Figure out dimension of Jacobian
+    m = tdim + 1
+    n = gdim
+
+    if tdim == gdim:
         _t = ""
         _g = ""
     else:
@@ -561,7 +569,7 @@ def _compute_reference_derivatives(data, dof_data):
         basis_col = [f_tmp(j) for j in range(tdim)]
         for i in range(num_components_p):
             # Create Jacobian.
-            jacobian_row = [f_transform("J", i, j, None) for j in range(gdim)]
+            jacobian_row = [f_transform("J", i, j, m, n, None) for j in range(gdim)]
 
             # Create inner product and multiply by inverse of Jacobian.
             inner = [f_mul([jacobian_row[j], basis_col[j]]) for j in range(tdim)]
@@ -579,7 +587,7 @@ def _compute_reference_derivatives(data, dof_data):
         basis_col = [f_tmp(j) for j in range(tdim)]
         for i in range(num_components_p):
             # Create inverse of Jacobian.
-            inv_jacobian_column = [f_transform("JINV", j, i, None) for j in range(gdim)]
+            inv_jacobian_column = [f_transform("JINV", j, i, m, n, None) for j in range(gdim)]
 
             # Create inner product of basis values and inverse of Jacobian.
             inner = [f_mul([inv_jacobian_column[j], basis_col[j]]) for j in range(tdim)]

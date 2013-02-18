@@ -383,7 +383,7 @@ def _tabulate_coordinates(ir):
     component =     format["component"]
     precision =     format["float"]
     assign =        format["assign"]
-    f_x =           format["coordinates"]
+    f_x =           format["vertex_coordinates"]
     coordinates =   format["argument coordinates"]
 
     # Extract coordinates and cell dimension
@@ -394,16 +394,14 @@ def _tabulate_coordinates(ir):
     # Aid mapping points from reference to physical element
     coefficients = affine_weights(tdim)
 
-    # Start with code for coordinates for vertices of cell
-    code = [format["cell coordinates"]]
-
     # Generate code for each point and each component
+    code = []
     for (i, coordinate) in enumerate(ir["points"]):
 
         w = coefficients(coordinate)
         for j in range(gdim):
             # Compute physical coordinate
-            coords = [component(f_x(), (k, j)) for k in range(tdim + 1)]
+            coords = [component(f_x(), (k*gdim + j,)) for k in range(tdim + 1)]
             value = inner_product(w, coords)
 
             # Assign coordinate
