@@ -314,9 +314,13 @@ def validate_programs(reference_dir):
             #info_blue("Missing reference for %s" % reference_json_file)
             reference_json_output = "{}"
 
-        # TODO: Compare json with reference json using recdiff
-        if generated_json_output != reference_json_output:
-            pass #log_error("json files differ")
+        # Compare json with reference using recursive diff algorithm
+        from recdiff import recdiff, print_recdiff, DiffEqual
+        json_diff = recdiff(generated_json_output, reference_json_output)
+        if json_diff != DiffEqual:
+            log_error("Json output differs for %s, diff follows:"
+                      % os.path.join(*reference_json_file.split(os.path.sep)[-3:]))
+            print_recdiff(json_diff, printer=log_error)
 
         # Compare with reference
         ok = True

@@ -60,3 +60,4 @@ def generate_test_code(header_file, bench):
     test_file = open(prefix + ".cpp", "w")
     test_file.write(_test_code % (prefix, prefix, "\n".join(tests)))
     test_file.close()
+

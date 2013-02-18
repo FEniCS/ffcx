@@ -157,7 +157,7 @@ std::string format_name(std::string name, int i=-1, int j=-1)
 // Function for testing ufc::element objects
 void test_finite_element(ufc::finite_element& element, int id, Printer & printer)
 {
-  printer.begin("finite_element"); // TODO: Add id
+  printer.begin("finite_element", id);
 
   // Prepare arguments
   test_cell c(element.cell_shape(), element.geometric_dimension());
@@ -273,9 +273,9 @@ void test_finite_element(ufc::finite_element& element, int id, Printer & printer
 }
 
 // Function for testing ufc::element objects
-void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, Printer & printer)
+void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id, Printer & printer)
 {
-  printer.begin("dofmap"); // TODO: Get name or id of some sort as input and pass on to name
+  printer.begin("dofmap", id);
 
   // Prepare arguments
   std::vector<std::size_t> num_entities(4);
@@ -358,7 +358,7 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, Printer & printer)
   for (std::size_t i = 0; i < dofmap.num_sub_dofmaps(); i++)
   {
     ufc::dofmap* sub_dofmap = dofmap.create_sub_dofmap(i);
-    test_dofmap(*sub_dofmap, cell_shape, printer);
+    test_dofmap(*sub_dofmap, cell_shape, i, printer);
     delete sub_dofmap;
   }
 
@@ -378,9 +378,10 @@ void test_cell_integral(ufc::cell_integral& integral,
                         std::size_t tensor_size,
                         double** w,
                         bool bench,
+                        int id,
                         Printer & printer)
 {
-  printer.begin("cell_integral"); // TODO: Get name or id of some sort as input and pass on to name
+  printer.begin("cell_integral", id);
 
   // Prepare arguments
   test_cell c(cell_shape, gdim);
@@ -424,9 +425,10 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
                                   std::size_t tensor_size,
                                   double** w,
                                   bool bench,
+                                  int id,
                                   Printer & printer)
 {
-  printer.begin("exterior_facet_integral"); // TODO: Get name or id of some sort as input and pass on to name
+  printer.begin("exterior_facet_integral", id);
 
   // Prepare arguments
   test_cell c(cell_shape, gdim);
@@ -476,9 +478,10 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
                                   std::size_t macro_tensor_size,
                                   double** w,
                                   bool bench,
+                                  int id,
                                   Printer & printer)
 {
-  printer.begin("interior_facet_integral"); // TODO: Get name or id of some sort as input and pass on to name
+  printer.begin("interior_facet_integral", id);
 
   // Prepare arguments
   test_cell c0(cell_shape, gdim, 0);
@@ -531,9 +534,10 @@ void test_point_integral(ufc::point_integral& integral,
                          std::size_t tensor_size,
                          double** w,
                          bool bench,
+                         int id,
                          Printer & printer)
 {
-  printer.begin("point_integral"); // TODO: Get name or id of some sort as input and pass on to name
+  printer.begin("point_integral", id);
 
   // Prepare arguments
   test_cell c(cell_shape, gdim);
@@ -579,7 +583,7 @@ void test_point_integral(ufc::point_integral& integral,
 // Function for testing ufc::form objects
 void test_form(ufc::form& form, bool bench, int id, Printer & printer)
 {
-  printer.begin("form"); // TODO: Add id
+  printer.begin("form", id);
 
   // Compute size of tensors
   int tensor_size = 1;
@@ -660,7 +664,7 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
   for (std::size_t i = 0; i < form.rank() + form.num_coefficients(); i++)
   {
     ufc::dofmap* dofmap = form.create_dofmap(i);
-    test_dofmap(*dofmap, cell_shape, printer);
+    test_dofmap(*dofmap, cell_shape, i, printer);
     delete dofmap;
   }
 
@@ -670,7 +674,7 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
     printer.print_scalar("default_cell_integral", (bool)integral);
     if (integral)
       test_cell_integral(*integral, cell_shape, gdim,
-                         tensor_size, w, bench, printer);
+                         tensor_size, w, bench, -1, printer);
     delete integral;
   }
   for (std::size_t i = 0; i < form.num_cell_domains(); i++)
@@ -678,7 +682,7 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
     ufc::cell_integral* integral = form.create_cell_integral(i);
     if (integral)
       test_cell_integral(*integral, cell_shape, gdim,
-                         tensor_size, w, bench, printer);
+                         tensor_size, w, bench, i, printer);
     delete integral;
   }
 
@@ -688,7 +692,7 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
     printer.print_scalar("default_exterior_facet_integral", (bool)integral);
     if (integral)
       test_exterior_facet_integral(*integral, cell_shape, gdim,
-                                   tensor_size, w, bench, printer);
+                                   tensor_size, w, bench, -1, printer);
     delete integral;
   }
   for (std::size_t i = 0; i < form.num_exterior_facet_domains(); i++)
@@ -696,7 +700,7 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
     ufc::exterior_facet_integral* integral = form.create_exterior_facet_integral(i);
     if (integral)
       test_exterior_facet_integral(*integral, cell_shape, gdim,
-                                   tensor_size, w, bench, printer);
+                                   tensor_size, w, bench, i, printer);
     delete integral;
   }
 
@@ -706,7 +710,7 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
     printer.print_scalar("default_interior_facet_integral", (bool)integral);
     if (integral)
       test_interior_facet_integral(*integral, cell_shape, gdim,
-                                   macro_tensor_size, w, bench, printer);
+                                   macro_tensor_size, w, bench, -1, printer);
     delete integral;
   }
   for (std::size_t i = 0; i < form.num_interior_facet_domains(); i++)
@@ -714,7 +718,7 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
     ufc::interior_facet_integral* integral = form.create_interior_facet_integral(i);
     if (integral)
       test_interior_facet_integral(*integral, cell_shape, gdim,
-                                   macro_tensor_size, w, bench, printer);
+                                   macro_tensor_size, w, bench, i, printer);
     delete integral;
   }
 
@@ -723,14 +727,14 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
     ufc::point_integral* integral = form.create_default_point_integral();
     printer.print_scalar("default_point_integral", (bool)integral);
     if (integral)
-      test_point_integral(*integral, cell_shape, gdim, tensor_size, w, bench, printer);
+      test_point_integral(*integral, cell_shape, gdim, tensor_size, w, bench, -1, printer);
     delete integral;
   }
   for (std::size_t i = 0; i < form.num_point_domains(); i++)
   {
     ufc::point_integral* integral = form.create_point_integral(i);
     if (integral)
-      test_point_integral(*integral, cell_shape, gdim, tensor_size, w, bench, printer);
+      test_point_integral(*integral, cell_shape, gdim, tensor_size, w, bench, i, printer);
     delete integral;
   }
 

@@ -109,31 +109,6 @@ protected:
       json_os << "    ";
   }
 
-  /// Format a value type properly
-  template<typename T>
-  void json_print_value(T value);
-
-  /// Format '<indent>"foo": ' properly
-  void json_begin_entry(const std::string & name)
-    {
-      json_indent();
-      json_os << '"' << name << '"' << ": ";
-    }
-
-  /// Begin an unnamed block
-  void json_begin()
-  {
-    json_os << "{" << std::endl;
-    ++level;
-  }
-
-  /// Begin a named block entry
-  void json_begin(const std::string & name)
-  {
-    json_begin_entry(name);
-    json_begin();
-  }
-
   /// Format name with optional integers appended
   std::string json_format_name(std::string name, int i=-1, int j=-1)
   {
@@ -144,12 +119,37 @@ protected:
     return s.str();
   }
 
+  /// Format a value type properly
+  template<typename T>
+  void json_print_value(T value);
+
+  /// Format '<indent>"foo": ' properly
+  void json_begin_entry(std::string name, int i=-1, int j=-1)
+  {
+    name = json_format_name(name, i, j);
+    json_indent();
+    json_os << '"' << name << '"' << ": ";
+  }
+
+  /// Begin an unnamed block
+  void json_begin()
+  {
+    json_os << "{" << std::endl;
+    ++level;
+  }
+
+  /// Begin a named block entry
+  void json_begin(std::string name, int i=-1, int j=-1)
+  {
+    json_begin_entry(name, i, j);
+    json_begin();
+  }
+
   /// Set a named single value entry
   template<typename T>
   void json_print_scalar(std::string name, T value, int i=-1, int j=-1)
   {
-    name = json_format_name(name, i, j);
-    json_begin_entry(name);
+    json_begin_entry(name, i, j);
     json_print_value(value);
     json_os << ", " << std::endl;
   }
@@ -158,8 +158,7 @@ protected:
   template<typename T>
   void json_print_array(std::string name, int n, T * values, int i=-1, int j=-1)
   {
-    name = json_format_name(name, i, j);
-    json_begin_entry(name);
+    json_begin_entry(name, i, j);
     json_os << "[";
     if (n > 0)
       json_print_value(values[0]);
@@ -175,8 +174,7 @@ protected:
   template<typename T>
   void json_print_vector(std::string name, typename std::vector<T> values, int i=-1, int j=-1)
   {
-    name = json_format_name(name, i, j);
-    json_begin_entry(name);
+    json_begin_entry(name, i, j);
     json_os << "[";
     typename std::vector<T>::iterator k=values.begin();
     if (k!=values.end())
@@ -224,9 +222,9 @@ public:
   }
 
   // Function for beginning named result block
-  void begin(std::string name)
+  void begin(std::string name, int i=-1, int j=-1)
   {
-    json_begin(name);
+    json_begin(name, i, j);
     counted_begin(name);
   }
 
