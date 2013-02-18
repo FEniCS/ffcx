@@ -155,18 +155,14 @@ def _change_variables(mapping, gdim, tdim, space_dim):
       g(x) = K^T G(X)              i.e   g_i(x) = K^T_ij G_j(X) = K_ji G_j(X)
     """
 
-    # Figure out dimension of Jacobian
-    m = tdim + 1
-    n = gdim
-
     if mapping is "affine":
         change_of_variables = lambda G, i: G[i]
     elif mapping == "contravariant piola":
-        change_of_variables = lambda G, i: [multiply([invdetJ, inner([J(i, j, m, n) for j in range(tdim)],
+        change_of_variables = lambda G, i: [multiply([invdetJ, inner([J(i, j, gdim, tdim) for j in range(tdim)],
                                                                      [G[j][index] for j in range(tdim)])])
                                             for index in range(space_dim)]
     elif mapping == "covariant piola":
-        change_of_variables = lambda G, i: [inner([Jinv(j, i, m, n) for j in range(tdim)],
+        change_of_variables = lambda G, i: [inner([Jinv(j, i, tdim, gdim) for j in range(tdim)],
                                                   [G[j][index] for j in range(tdim)])
                                             for index in range(space_dim)]
     else:
