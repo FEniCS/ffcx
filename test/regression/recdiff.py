@@ -34,16 +34,17 @@ def recdiff_dict(data1, data2, tolerance=_default_recdiff_tolerance):
     return diff or DiffEqual
 
 def recdiff(data1, data2, tolerance=_default_recdiff_tolerance):
-    if type(data1) != type(data2):
+    if isinstance(data1, (float,int)) and isinstance(data2, (float,int)):
+        # This approach allows numbers formatted as ints and floats interchangably as long as the values are equal
+        diff = data1 - data2
+        return DiffEqual if abs(diff) < tolerance else (data1, data2)
+    elif type(data1) != type(data2):
         return (data1, data2)
     elif isinstance(data1, dict):
         return recdiff_dict(data1, data2, tolerance)
     elif isinstance(data1, list):
         diff = [recdiff(d1, d2, tolerance) for (d1,d2) in zip(data1, data2)]
         return DiffEqual if all(d is DiffEqual for d in diff) else diff
-    elif isinstance(data1, float):
-        diff = data1 - data2
-        return DiffEqual if abs(diff) < tolerance else (data1, data2)
     else:
         return DiffEqual if data1 == data2 else (data1, data2)
 

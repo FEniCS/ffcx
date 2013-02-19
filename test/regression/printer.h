@@ -39,7 +39,7 @@ protected:
   template <class value_type>
   void counted_print_value(value_type value)
   {
-    //os.setf(ios::fixed, ios::floatfield); // Not set yet to avoid changing references while I have other things to worry about
+    //os.setf(std::ios::scientific, std::ios::floatfield); // Not set yet to avoid changing references while I have other things to worry about
     os.precision(precision);
     if (std::abs(static_cast<double>(value)) < epsilon)
       os << "0";
@@ -271,7 +271,7 @@ void Printer::json_print_value(T value)
 template<>
 void Printer::json_print_value(double value)
 {
-  json_os.setf(std::ios::fixed, std::ios::floatfield);
+  json_os.setf(std::ios::scientific, std::ios::floatfield);
   json_os.precision(precision);
   if (std::abs(static_cast<double>(value)) < epsilon)
     json_os << "0.0";
