@@ -251,11 +251,8 @@ def _compute_values(data, dof_data):
     f_trans         = format["transform"]
     f_inner         = format["inner product"]
 
-    # Figure out dimension of Jacobian
     tdim = data["topological_dimension"]
     gdim = data["geometric_dimension"]
-    m = tdim + 1
-    n = gdim
 
     # Initialise return code.
     code = [f_comment("Compute value(s)")]
@@ -298,7 +295,7 @@ def _compute_values(data, dof_data):
         basis_col = [f_tmp_ref(j) for j in range(tdim)]
         for i in range(gdim):
             # Create Jacobian.
-            jacobian_row = [f_trans("J", i, j, m, n, None) for j in range(tdim)]
+            jacobian_row = [f_trans("J", i, j, gdim, tdim, None) for j in range(tdim)]
 
             # Create inner product and multiply by inverse of Jacobian.
             inner = f_group(f_inner(jacobian_row, basis_col))
@@ -316,8 +313,7 @@ def _compute_values(data, dof_data):
         basis_col = [f_tmp_ref(j) for j in range(tdim)]
         for i in range(gdim):
             # Create inverse of Jacobian.
-            inv_jacobian_column = [f_trans("JINV", j, i, m, n, None)
-                                   for j in range(tdim)]
+            inv_jacobian_column = [f_trans("JINV", j, i, tdim, gdim, None) for j in range(tdim)]
 
             # Create inner product of basis values and inverse of Jacobian.
             value = f_group(f_inner(inv_jacobian_column, basis_col))

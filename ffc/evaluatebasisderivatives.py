@@ -475,10 +475,6 @@ def _compute_reference_derivatives(data, dof_data):
     tdim = data["topological_dimension"]
     gdim = data["geometric_dimension"]
 
-    # Figure out dimension of Jacobian
-    m = tdim + 1
-    n = gdim
-
     if tdim == gdim:
         _t = ""
         _g = ""
@@ -569,7 +565,7 @@ def _compute_reference_derivatives(data, dof_data):
         basis_col = [f_tmp(j) for j in range(tdim)]
         for i in range(num_components_p):
             # Create Jacobian.
-            jacobian_row = [f_transform("J", i, j, m, n, None) for j in range(gdim)]
+            jacobian_row = [f_transform("J", i, j, gdim, tdim, None) for j in range(tdim)]
 
             # Create inner product and multiply by inverse of Jacobian.
             inner = [f_mul([jacobian_row[j], basis_col[j]]) for j in range(tdim)]
@@ -587,7 +583,7 @@ def _compute_reference_derivatives(data, dof_data):
         basis_col = [f_tmp(j) for j in range(tdim)]
         for i in range(num_components_p):
             # Create inverse of Jacobian.
-            inv_jacobian_column = [f_transform("JINV", j, i, m, n, None) for j in range(gdim)]
+            inv_jacobian_column = [f_transform("JINV", j, i, tdim, gdim, None) for j in range(tdim)]
 
             # Create inner product of basis values and inverse of Jacobian.
             inner = [f_mul([inv_jacobian_column[j], basis_col[j]]) for j in range(tdim)]
@@ -683,4 +679,3 @@ def _delete_pointers(data, dof_data):
     code += [f_del_array(format["transform matrix"], format["num derivatives"](_g))]
 
     return code
-
