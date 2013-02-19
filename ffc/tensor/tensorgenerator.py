@@ -432,10 +432,6 @@ def _extract_factors(GK, a, b, j_set, tdim, gdim, index_type):
     # List of factors
     factors = []
 
-    # Figure out dimension of Jacobian
-    m = tdim + 1
-    n = gdim
-
     # Compute product of coefficients
     for c in GK.coefficients:
         if c.index.index_type == index_type:
@@ -452,10 +448,18 @@ def _extract_factors(GK, a, b, j_set, tdim, gdim, index_type):
 
         # Add factor
         if include_index:
+            # FIXME: Dimensions of J and K are transposed, what is the right thing to fix this hack?
+            if t.transform_type == "J": #MonomialTransform.J:
+                dim0, dim1 = gdim, tdim
+            elif t.transform_type == "JINV": #MonomialTransform.JINV:
+                dim0, dim1 = tdim, gdim
+            else:
+                error("Unknown transform type, fix this hack.")
+
             factors.append(transform(t.transform_type,
                                      t.index0(secondary=a, external=b),
                                      t.index1(secondary=a, external=b),
-                                     m, n,
+                                     dim0, dim1,
                                      t.restriction))
             j_set.add(factors[-1])
 
