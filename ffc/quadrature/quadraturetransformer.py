@@ -410,10 +410,6 @@ class QuadratureTransformer(QuadratureTransformerBase):
         f_detJ          = format["det(J)"]
         f_inv           = format["inverse"]
 
-        # Figure out dimension of Jacobian
-        m = tdim + 1
-        n = gdim
-
         # Reset code
         code = {}
 
@@ -435,9 +431,9 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
                 # Add transformation if needed.
                 if mapping in code:
-                    code[mapping].append(self.__apply_transform(basis, derivatives, multi, m, n))
+                    code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
                 else:
-                    code[mapping] = [self.__apply_transform(basis, derivatives, multi, m, n)]
+                    code[mapping] = [self.__apply_transform(basis, derivatives, multi, tdim, gdim)]
 
         # Handle non-affine mappings.
         else:
@@ -456,13 +452,13 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
                     # Multiply basis by appropriate transform.
                     if transformation == "covariant piola":
-                        dxdX = f_transform("JINV", c, local_comp, m, n, self.restriction)
+                        dxdX = f_transform("JINV", c, local_comp, tdim, gdim, self.restriction)
                         self.trans_set.add(dxdX)
                         basis = f_mult([dxdX, basis])
                     elif transformation == "contravariant piola":
                         self.trans_set.add(f_detJ(self.restriction))
                         detJ = f_inv(f_detJ(self.restriction))
-                        dXdx = f_transform("J", local_comp, c, m, n, self.restriction)
+                        dXdx = f_transform("J", local_comp, c, gdim, tdim, self.restriction)
                         self.trans_set.add(dXdx)
                         basis = f_mult([detJ, dXdx, basis])
                     else:
@@ -470,9 +466,9 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
                     # Add transformation if needed.
                     if mapping in code:
-                        code[mapping].append(self.__apply_transform(basis, derivatives, multi, m, n))
+                        code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
                     else:
-                        code[mapping] = [self.__apply_transform(basis, derivatives, multi, m, n)]
+                        code[mapping] = [self.__apply_transform(basis, derivatives, multi, tdim, gdim)]
 
         # Add sums and group if necessary.
         for key, val in code.items():
@@ -497,11 +493,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         f_detJ          = format["det(J)"]
         f_inv           = format["inverse"]
 
-        # Figure out dimension of Jacobian
-        m = tdim + 1
-        n = gdim
-
-		# Reset code
+        # Reset code
         code = []
 
         # Handle affine mappings.
@@ -517,7 +509,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     continue
 
                 # Add transformation if needed.
-                code.append(self.__apply_transform(function_name, derivatives, multi, m, n))
+                code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
 
         # Handle non-affine mappings.
         else:
@@ -533,20 +525,20 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
                     # Multiply basis by appropriate transform.
                     if transformation == "covariant piola":
-                        dxdX = f_transform("JINV", c, local_comp, self.restriction)
+                        dxdX = f_transform("JINV", c, local_comp, tdim, gdim, self.restriction)
                         self.trans_set.add(dxdX)
                         function_name = f_mult([dxdX, function_name])
                     elif transformation == "contravariant piola":
                         self.trans_set.add(f_detJ(self.restriction))
                         detJ = f_inv(f_detJ(self.restriction))
-                        dXdx = f_transform("J", local_comp, c, self.restriction)
+                        dXdx = f_transform("J", local_comp, c, gdim, tdim, self.restriction)
                         self.trans_set.add(dXdx)
                         function_name = f_mult([detJ, dXdx, function_name])
                     else:
                         error("Transformation is not supported: ", repr(transformation))
 
                     # Add transformation if needed.
-                    code.append(self.__apply_transform(function_name, derivatives, multi, m, n))
+                    code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
 
         if not code:
             return None
@@ -560,7 +552,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     # Helper functions for Argument and Coefficient
     # -------------------------------------------------------------------------
-    def __apply_transform(self, function, derivatives, multi, m, n):
+    def __apply_transform(self, function, derivatives, multi, tdim, gdim):
         "Apply transformation (from derivatives) to basis or function."
         f_mult          = format["multiply"]
         f_transform     = format["transform"]
@@ -569,7 +561,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         transforms = []
         for i, direction in enumerate(derivatives):
             ref = multi[i]
-            t = f_transform("JINV", ref, direction, m, n, self.restriction)
+            t = f_transform("JINV", ref, direction, tdim, gdim, self.restriction)
             self.trans_set.add(t)
             transforms.append(t)
 
