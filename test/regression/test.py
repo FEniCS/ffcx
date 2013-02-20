@@ -128,6 +128,16 @@ def generate_code(args):
     form_files = [f for f in os.listdir(".") if f.endswith(".ufl")]
     form_files.sort()
 
+    # Hack to allow choosing single .ufl files from commandline
+    form_files2 = []
+    for a in args:
+        if a in form_files:
+            form_files2.append(a)
+    if form_files2:
+        form_files = form_files2
+        for f in form_files2:
+            args.remove(f)
+
     begin("Generating code (%d form files found)" % len(form_files))
 
     # Iterate over all files
