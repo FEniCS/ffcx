@@ -701,10 +701,10 @@ facet_determinant = {1: {1: _facet_determinant_1D,
 
 # Geometry related snippets
 map_onto_physical = {1: {1: _map_onto_physical_1D,
-                         1: _map_onto_physical_2D_1D,
-                         1: _map_onto_physical_3D_1D},
+                         2: _map_onto_physical_2D_1D,
+                         3: _map_onto_physical_3D_1D},
                      2: {2: _map_onto_physical_2D,
-                         2: _map_onto_physical_3D_2D},
+                         3: _map_onto_physical_3D_2D},
                      3: {3: _map_onto_physical_3D}}
 
 fiat_coordinate_map = {"interval": {1:_map_coordinates_FIAT_interval,
