@@ -232,7 +232,7 @@ def _generate_multiple_points_body(i, dof, mapping, gdim, tdim,
     # Map the points from the reference onto the physical element
     #assert(gdim == tdim), \
     #    "Integral moments not supported for manifolds (yet). Please fix"
-    lines_r = [map_onto_physical[gdim][tdim] % {"i": i, "j": f_r}]
+    lines_r = [map_onto_physical[tdim][gdim] % {"i": i, "j": f_r}]
 
     # Evaluate function at physical point
     lines_r.append(comment("Evaluate function at physical point"))
