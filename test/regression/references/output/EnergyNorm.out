@@ -88,7 +88,7 @@ Testing dofmap
 
 Testing cell_integral
 ----------------------
-78_tabulate_tensor = 0.01390665493588534
+78_tabulate_tensor = 0.01390665493588533
 79_default_exterior_facet_integral = 0
 80_default_interior_facet_integral = 0
 81_default_point_integral = 0
