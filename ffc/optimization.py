@@ -6,7 +6,7 @@ This module implements the optimization of an intermediate code
 representation.
 """
 
-# Copyright (C) 2009 Anders Logg
+# Copyright (C) 2009-2013 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -23,15 +23,14 @@ representation.
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
+# Modified by Martin Alnaes, 2013
+#
 # First added:  2009-12-22
-# Last changed: 2011-01-11
+# Last changed: 2013-02-10
 
 # FFC modules
 from ffc.log import info, begin, end
-
-# FFC specialized code generation modules
-from ffc import quadrature
-from ffc import tensor
+from ffc.representation import pick_representation
 
 def optimize_ir(ir, parameters):
     "Optimize intermediate form representation."
@@ -58,14 +57,9 @@ def _optimize_integral_ir(ir, parameters):
     "Compute optimized intermediate represention of integral."
 
     # Select representation
-    if ir["representation"] == "quadrature":
-        r = quadrature
-    elif ir["representation"] == "tensor":
-        r = tensor
-    else:
-        error("Unknown representation: %s" % ir["representation"])
+    r = pick_representation(ir["representation"])
 
     # Optimize representation
     oir = r.optimize_integral_ir(ir, parameters)
 
-    return ir
+    return oir

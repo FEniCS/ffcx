@@ -22,7 +22,7 @@ transformers to translate UFL expressions."""
 # Modified by Garth N. Wells, 2013
 #
 # First added:  2009-10-13
-# Last changed: 2013-02-02
+# Last changed: 2013-02-20
 
 # Python modules.
 from itertools import izip
@@ -61,6 +61,7 @@ class QuadratureTransformerBase(Transformer):
                  quad_weights,
                  gdim,
                  tdim,
+                 entitytype,
                  function_replace_map,
                  optimise_parameters):
 
@@ -83,6 +84,7 @@ class QuadratureTransformerBase(Transformer):
         self.function_count = 0
         self.tdim = tdim
         self.gdim = gdim
+        self.entitytype = entitytype
         self.points = 0
         self.facet0 = None
         self.facet1 = None
@@ -99,27 +101,35 @@ class QuadratureTransformerBase(Transformer):
         self._components = Stack()
 
         self.element_map, self.name_map, self.unique_tables =\
-              create_psi_tables(psi_tables, self.optimise_parameters)
+            create_psi_tables(psi_tables, self.optimise_parameters, self.entitytype)
 
         # Cache.
         self.argument_cache = {}
         self.function_cache = {}
 
+    def update_cell(self):
+        ffc_assert(self.entitytype == "cell", "Not expecting update_cell on a %s." % self.entitytype)
+        self.facet0 = None
+        self.facet1 = None
+        self.vertex = None
+        self.coordinate = None
+        self.conditionals = {}
+
     def update_facets(self, facet0, facet1):
+        ffc_assert(self.entitytype == "facet", "Not expecting update_facet on a %s." % self.entitytype)
         self.facet0 = facet0
         self.facet1 = facet1
+        self.vertex = None
         self.coordinate = None
         self.conditionals = {}
 
     def update_vertex(self, vertex):
+        ffc_assert(self.entitytype == "vertex", "Not expecting update_vertex on a %s." % self.entitytype)
+        self.facet0 = None
+        self.facet1 = None
         self.vertex = vertex
         self.coordinate = None
         self.conditionals = {}
-
-        # MER: This is a hack in case you are in doubt.
-        self.element_map, self.name_map, self.unique_tables =\
-              create_psi_tables(self.__psi_tables, self.optimise_parameters,
-                                self.vertex)
 
     def update_points(self, points):
         self.points = points
@@ -869,6 +879,18 @@ class QuadratureTransformerBase(Transformer):
         #print "component = ", component
         return (component, local_comp, local_offset, ffc_element, quad_element, transformation, multiindices)
 
+    def _get_current_entity(self):
+        if self.entitytype == "cell":
+            # If we add macro cell integration, I guess the 'current cell number' would go here?
+            return 0
+        elif self.entitytype == "facet":
+            # Handle restriction through facet.
+            return {"+": self.facet0, "-": self.facet1, None: self.facet0}[self.restriction]
+        elif self.entitytype == "vertex":
+            return self.vertex
+        else:
+            error("Unknown entity type %s." % self.entitytype)
+
     def _create_mapping_basis(self, component, deriv, ufl_argument, ffc_element):
         "Create basis name and mapping from given basis_info."
 
@@ -885,9 +907,6 @@ class QuadratureTransformerBase(Transformer):
         # Check that we have a basis function.
         ffc_assert(ufl_argument.count() in indices, \
                    "Currently, Argument index must be either -2, -1, 0 or 1: " + repr(ufl_argument))
-
-        # Handle restriction through facet.
-        facet = {"+": self.facet0, "-": self.facet1, None: self.facet0}[self.restriction]
 
         # Get element counter and loop index.
         element_counter = self.element_map[self.points][ufl_argument.element()]
@@ -908,8 +927,10 @@ class QuadratureTransformerBase(Transformer):
         if self.restriction == "+" or self.restriction == "-":
             space_dim *= 2
 
-        name = generate_psi_name(element_counter, facet, component, deriv,
-                                 self.vertex)
+        # Get current cell entity, with current restriction considered
+        entity = self._get_current_entity()
+
+        name = generate_psi_name(element_counter, self.entitytype, entity, component, deriv)
         name, non_zeros, zeros, ones = self.name_map[name]
         loop_index_range = shape(self.unique_tables[name])[1]
 
@@ -967,18 +988,17 @@ class QuadratureTransformerBase(Transformer):
             f_ip = "0"
         basis_access = format["component"]("", [f_ip, loop_index])
 
-        # Handle restriction through facet.
-        facet = {"+": self.facet0, "-": self.facet1, None: self.facet0}[self.restriction]
-
         # Get the element counter.
         element_counter = self.element_map[self.points][ufl_function.element()]
 
         # Offset by element space dimension in case of negative restriction.
         offset = {"+": "", "-": str(ffc_element.space_dimension()), None: ""}[self.restriction]
 
+        # Get current cell entity, with current restriction considered
+        entity = self._get_current_entity()
+
         # Create basis name and map to correct basis and get info.
-        psi_name = generate_psi_name(element_counter, facet, component, deriv,
-                                     self.vertex)
+        psi_name = generate_psi_name(element_counter, self.entitytype, entity, component, deriv)
         psi_name, non_zeros, zeros, ones = self.name_map[psi_name]
 
         # If all basis are zero we just return None.

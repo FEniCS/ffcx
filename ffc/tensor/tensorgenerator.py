@@ -1,6 +1,6 @@
 "Code generator for tensor representation"
 
-# Copyright (C) 2004-2010 Anders Logg
+# Copyright (C) 2004-2013 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -21,9 +21,10 @@
 # Modified by Marie Rognes, 2007
 # Modified by Garth N. Wells, 2009
 # Modified by Mehdi Nikbakht, 2010
+# Modified by Martin Alnaes, 2013
 #
 # First added:  2004-11-03
-# Last changed: 2011-02-21
+# Last changed: 2013-02-10
 
 # FFC modules
 from ffc.log import error
@@ -31,6 +32,7 @@ from ffc.cpp import format, remove_unused, count_ops
 
 # FFC tensor representation modules
 from ffc.tensor.monomialtransformation import MonomialIndex
+from ffc.representationutils import initialize_integral_code
 
 # Error issued for quadrature version of tabulate_tensor
 tabulate_tensor_quadrature_error = """\
@@ -38,23 +40,9 @@ Quadrature version of tabulate_tensor not available when using the FFC tensor re
 
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
-
-    # Prefetch formatting to speedup code generation
-    do_nothing = format["do nothing"]
-    classname = format["classname " + ir["domain_type"] + "_integral"]
-    exception = format["exception"]
-
-    # Generate code
-    code = {}
-    code["classname"] = classname(prefix, ir["form_id"], ir["domain_id"])
-    code["members"] = ""
-    code["constructor"] = do_nothing
-    code["constructor_arguments"] = ""
-    code["initializer_list"] = ""
-    code["destructor"] = do_nothing
+    code = initialize_integral_code(ir, prefix, parameters)
     code["tabulate_tensor"] = _tabulate_tensor(ir, parameters)
-    code["tabulate_tensor_quadrature"] = exception(tabulate_tensor_quadrature_error)
-
+    code["tabulate_tensor_quadrature"] = format["exception"](tabulate_tensor_quadrature_error) # FIXME: Remove
     return code
 
 def _tabulate_tensor(ir, parameters):

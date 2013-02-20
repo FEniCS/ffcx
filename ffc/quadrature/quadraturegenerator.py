@@ -1,6 +1,6 @@
 "Code generator for quadrature representation."
 
-# Copyright (C) 2009-2010 Kristian B. Oelgaard
+# Copyright (C) 2009-2013 Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -19,9 +19,10 @@
 #
 # Modified by Mehdi Nikbakht 2010
 # Modified by Anders Logg 2013
+# Modified by Martin Alnaes, 2013
 #
 # First added:  2009-01-07
-# Last changed: 2013-01-10
+# Last changed: 2013-02-20
 
 # Python modules.
 import functools
@@ -34,6 +35,8 @@ from ufl.algorithms.printing import tree_format
 from ffc.log import info, debug, ffc_assert
 from ffc.cpp import format, remove_unused
 
+from ffc.representationutils import initialize_integral_code
+
 # Utility and optimisation functions for quadraturegenerator.
 from symbolics import generate_aux_constants
 
@@ -43,19 +46,10 @@ Quadrature version of tabulate_tensor not yet implemented (introduced in UFC 2.0
 
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
-
-    # Generate code
-    code = {}
-    code["classname"] = format["classname " + ir["domain_type"] + "_integral"](prefix, ir["form_id"], ir["domain_id"])
-    code["members"] = ""
-    code["constructor"] = format["do nothing"]
-    code["constructor_arguments"] = ""
-    code["initializer_list"] = ""
-    code["destructor"] = format["do nothing"]
+    code = initialize_integral_code(ir, prefix, parameters)
     code["tabulate_tensor"] = _tabulate_tensor(ir, parameters)
-    code["tabulate_tensor_quadrature"] = format["exception"](tabulate_tensor_quadrature_error)
     code["additional_includes_set"] = ir["additional_includes_set"]
-
+    code["tabulate_tensor_quadrature"] = format["exception"](tabulate_tensor_quadrature_error) # FIXME: Remove
     return code
 
 def _tabulate_tensor(ir, parameters):
@@ -92,7 +86,7 @@ def _tabulate_tensor(ir, parameters):
     trans_set       = set()
     sets = [used_weights, used_psi_tables, used_nzcs, trans_set]
 
-    affine_tables = {}
+    affine_tables = {} # TODO: This is not populated anywhere, remove?
     quadrature_weights = ir["quadrature_weights"]
 
     operations = []
@@ -215,7 +209,7 @@ def _tabulate_tensor(ir, parameters):
     common += _tabulate_weights([quadrature_weights[p] for p in used_weights])
     name_map = ir["name_map"]
     tables = ir["unique_tables"]
-    tables.update(affine_tables)
+    tables.update(affine_tables) # TODO: This is not populated anywhere, remove?
     common += _tabulate_psis(tables, used_psi_tables, name_map, used_nzcs, opt_par)
 
     # Reset the element tensor (array 'A' given as argument to tabulate_tensor() by assembler)
@@ -633,4 +627,3 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
                         # Remove from list of columns.
                         new_nzcs.remove(inv_name_map[n][1])
     return code
-

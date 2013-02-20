@@ -172,8 +172,8 @@ def _attach_integral_metadata(form_data, parameters):
             r  = integral_metadata["representation"]
             qd = integral_metadata["quadrature_degree"]
             qr = integral_metadata["quadrature_rule"]
-            if not r in ("quadrature", "tensor", "auto"):
-                info("Valid choices are 'tensor', 'quadrature' or 'auto'.")
+            if not r in ("quadrature", "tensor", "uflacs", "auto"):
+                info("Valid choices are 'tensor', 'quadrature', 'uflacs', or 'auto'.")
                 error("Illegal choice of representation for integral: " + str(r))
             if not qd  == "auto":
                 qd = int(qd)
@@ -206,10 +206,9 @@ def _attach_integral_metadata(form_data, parameters):
                                                     form_data.unique_sub_elements)
                 info("quadrature_degree: auto --> %d" % qd)
                 integral_metadata["quadrature_degree"] = qd
-                _check_quadrature_degree(qd, form_data.topological_dimension)
             else:
                 info("quadrature_degree: %d" % qd)
-                _check_quadrature_degree(qd, form_data.topological_dimension)
+            _check_quadrature_degree(qd, form_data.topological_dimension)
 
             # Automatic selection of quadrature rule
             if qr == "auto":

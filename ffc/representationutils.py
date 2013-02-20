@@ -1,7 +1,31 @@
 """This module contains utility functions for some code shared between
 quadrature and tensor representation."""
 
+# Copyright (C) 2012-2013 Marie Rognes
+#
+# This file is part of FFC.
+#
+# FFC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# FFC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with FFC. If not, see <http://www.gnu.org/licenses/>.
+#
+# Modified by Martin Alnaes, 2013
+#
+# First added:  2013-01-08
+# Last changed: 2013-02-10
+
 from ffc.fiatinterface import create_element
+from ffc.fiatinterface import cellname_to_num_entities
+from ffc.cpp import format
 
 def transform_component(component, offset, ufl_element):
     """
@@ -69,3 +93,36 @@ def needs_oriented_jacobian(form_data):
         if "contravariant piola" in element.mapping():
             return True
     return False
+
+def initialize_integral_ir(representation, itg_data, form_data, form_id):
+    """Initialize a representation dict with common information that is
+    expected independently of which representation is chosen."""
+    entitytype = { "cell": "cell",
+                   "exterior_facet": "facet",
+                   "interior_facet": "facet",
+                   "point": "vertex",
+                   }[itg_data.domain_type]
+    return { "representation":       representation,
+             "domain_type":          itg_data.domain_type,
+             "domain_id":            itg_data.domain_id,
+             "form_id":              form_id,
+             "rank":                 form_data.rank,
+             "geometric_dimension":  form_data.geometric_dimension,
+             "topological_dimension":form_data.topological_dimension,
+             "entitytype":           entitytype,
+             "num_facets":           cellname_to_num_entities[form_data.cell.cellname()][-2],
+             "num_vertices":         cellname_to_num_entities[form_data.cell.cellname()][0],
+             "needs_oriented":       needs_oriented_jacobian(form_data),
+           }
+
+def initialize_integral_code(ir, prefix, parameters):
+    "Representation independent default initialization of code dict for integral from intermediate representation."
+    code = {}
+    code["classname"] = format["classname " + ir["domain_type"] + "_integral"](prefix, ir["form_id"], ir["domain_id"])
+    code["members"] = ""
+    code["constructor"] = format["do nothing"]
+    code["constructor_arguments"] = ""
+    code["initializer_list"] = ""
+    code["destructor"] = format["do nothing"]
+    #code["additional_includes_set"] = set() #ir["additional_includes_set"]
+    return code

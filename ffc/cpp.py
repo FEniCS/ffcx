@@ -213,7 +213,7 @@ format.update({
     "function value":     lambda i: "F%d" % i,
     "nonzero columns":    lambda i: "nzc%d" % i,
     "weight":             lambda i: "W%d" % (i),
-    "psi name":           lambda c, f, co, d, v=None: _generate_psi_name(c, f, co, d, v),
+    "psi name":           lambda c, et, e, co, d: _generate_psi_name(c, et, e, co, d),
     # both
     "free indices":       ["r","s","t","u"],
     "matrix index":       lambda i, j, range_j: _matrix_index(i, str(j), str(range_j))
@@ -513,32 +513,33 @@ def _matrix_index(i, j, range_j):
         access = format["add"]([irj, j])
     return access
 
-def _generate_psi_name(counter, facet, component, derivatives, vertex=None):
+def _generate_psi_name(counter, entitytype, entity, component, derivatives):
     """Generate a name for the psi table of the form:
-    FE#_f#_C#_D###, where '#' will be an integer value.
+    FE#_f#_v#_C#_D###, where '#' will be an integer value.
 
     FE  - is a simple counter to distinguish the various bases, it will be
           assigned in an arbitrary fashion.
 
     f   - denotes facets if applicable, range(element.num_facets()).
 
+    v   - denotes vertices if applicable, range(num_vertices).
+
     C   - is the component number if any (this does not yet take into account
           tensor valued functions)
 
-    D   - is the number of derivatives in each spatial direction if any. If the
-          element is defined in 3D, then D012 means d^3(*)/dydz^2
-
-    f   - denotes vertices if applicable, range(num_vertices)."""
+    D   - is the number of derivatives in each spatial direction if any.
+          If the element is defined in 3D, then D012 means d^3(*)/dydz^2.
+    """
 
     name = "FE%d" % counter
-    if not facet is None:
-        name += "_f%d" % facet
-    if not vertex is None:
-        name += "_v%d" % vertex
+    if entitytype == "facet":
+        name += "_f%d" % entity
+    elif entitytype == "vertex":
+        name += "_v%d" % entity
     if component != () and component != []:
         name += "_C%d" % component
     if any(derivatives):
-        name += "_D" + "".join([str(d) for d in derivatives])
+        name += "_D" + "".join(map(str,derivatives))
 
     return name
 
