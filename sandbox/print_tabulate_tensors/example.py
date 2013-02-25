@@ -34,11 +34,11 @@ forms = [a1, a2, a3]
 forms = [a3]
 
 #forms = [Constant(cell)*dx]
-forms = [u0*dx]
-#forms = [(u[0] + u[1])*dx]
+#forms = [u0*dx]
+forms = [(u[0] + u[1])*dx]
 
 #forms = [u0*vt*dx]
-forms = [u0*ut*vt*dx]
+#forms = [u0*ut*vt*dx]
 
 for form in forms:
     code = uffc.compile_tabulate_tensor_code(form, optimize=True)
