@@ -52,6 +52,10 @@ def compute_integral_ir(itg_data,
     ir["prim_idims"] = [create_element(ufl_element).space_dimension()
                         for ufl_element in form_data.argument_elements]
 
+    # Added for uflacs, not sure if this is the best way to get this:
+    ir["coeff_idims"] = [create_element(ufl_element).space_dimension()
+                         for ufl_element in form_data.coefficient_elements]
+
     # Create and save the optisation parameters.
     ir["optimise_parameters"] = _parse_optimise_parameters(parameters)
 
