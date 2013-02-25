@@ -81,7 +81,6 @@ class QuadratureTransformerBase(Transformer):
         self.ip_consts = {}
         self.trans_set = set()
         self.functions = {}
-        self.function_count = 0
         self.tdim = tdim
         self.gdim = gdim
         self.entitytype = entitytype
@@ -137,7 +136,6 @@ class QuadratureTransformerBase(Transformer):
         # Reset functions everytime we move to a new quadrature loop
         self.conditionals = {}
         self.functions = {}
-        self.function_count = 0
 
         # Reset cache
         self.argument_cache = {}
@@ -1073,19 +1071,14 @@ class QuadratureTransformerBase(Transformer):
         else:
             # Check if the expression to compute the function value is already in
             # the dictionary of used function. If not, generate a new name and add.
-            function_name = self._create_symbol(format["function value"](self.function_count), ACCESS)[()]
-            if not function_expr in self.functions:
-                function_name = self._create_symbol(format["function value"](self.function_count), ACCESS)[()]
-                data = (self.function_count, loop_index_range, self._count_operations(function_expr),\
+            data = self.functions.get(function_expr)
+            if data is None:
+                function_count = len(self.functions)
+                data = (function_count, loop_index_range,
+                        self._count_operations(function_expr),
                         psi_name, used_nzcs, ufl_function.element())
                 self.functions[function_expr] = data
-                # Increase count.
-                self.function_count += 1
-            else:
-                data = self.functions[function_expr]
-                function_name = self._create_symbol(format["function value"](data[0]), ACCESS)[()]
-                # Check just to make sure.
-                ffc_assert(data[1] == loop_index_range, "Index ranges does not match." + repr(data[1]) + repr(loop_index_range))
+            function_name = self._create_symbol(format["function value"](data[0]), ACCESS)[()]
         return function_name
 
     def _generate_affine_map(self):
