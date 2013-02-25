@@ -1,4 +1,6 @@
 
+default: run
+
 all: install run
 
 run:
@@ -6,4 +8,3 @@ run:
 
 install:
 	cd ../.. && ./dorsal_build
-
