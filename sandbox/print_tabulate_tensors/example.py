@@ -20,6 +20,9 @@ t = TensorConstant(cell)#, symmetry=True) # symmetry is not fully implemented in
 V0 = FiniteElement("CG", cell, 1)
 u0 = Coefficient(V0)
 
+vt = TestFunction(V0)
+ut = TrialFunction(V0)
+
 V = VectorElement("CG", cell, 1)
 u = Coefficient(V)
 
@@ -32,7 +35,10 @@ forms = [a3]
 
 #forms = [Constant(cell)*dx]
 forms = [u0*dx]
-forms = [(u[0] + u[1])*dx]
+#forms = [(u[0] + u[1])*dx]
+
+#forms = [u0*vt*dx]
+forms = [u0*ut*vt*dx]
 
 for form in forms:
     code = uffc.compile_tabulate_tensor_code(form, optimize=True)
