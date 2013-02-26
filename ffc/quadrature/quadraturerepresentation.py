@@ -173,7 +173,6 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, domain_type, c
     return terms
 
 def _create_quadrature_points_and_weights(domain_type, cell, degree, rule):
-    # FIXME: Make create_quadrature() take a rule argument.
     if domain_type == "cell":
         (points, weights) = create_quadrature(cell.cellname(), degree, rule)
     elif domain_type == "exterior_facet" or domain_type == "interior_facet":
@@ -236,7 +235,8 @@ def _tabulate_psi_table(domain_type, cell, element, deriv_order, points):
     psi_table = {}
     for entity in range(num_entities):
         entity_points = _map_entity_points(cell, points, entity_dim, entity)
-        key = None if domain_type == "cell" else entity # TODO: Let 0 be valid and we may be able to generalize other places
+        # TODO: Use 0 as key for cell and we may be able to generalize other places:
+        key = None if domain_type == "cell" else entity
         psi_table[key] = element.tabulate(deriv_order, entity_points)
     return psi_table
 
@@ -261,7 +261,8 @@ def _tabulate_basis(sorted_integrals, domain_type, form_data):
         degree, rule = pr
 
         # Get all unique elements in integral.
-        elements = [form_data.element_replace_map.get(e,e) for e in extract_unique_elements(integral)]
+        elements = [form_data.element_replace_map.get(e,e)
+                    for e in extract_unique_elements(integral)]
 
         # Create a list of equivalent FIAT elements (with same
         # ordering of elements).
@@ -359,6 +360,6 @@ def _transform_integrals(transformer, integrals, domain_type):
     for point, integral in integrals.items():
         transformer.update_points(point)
         terms = transformer.generate_terms(integral.integrand(), domain_type)
-        transformed_integrals.append((point, terms, transformer.functions,
+        transformed_integrals.append((point, terms, transformer.function_data,
                                       {}, transformer.coordinate, transformer.conditionals))
     return transformed_integrals

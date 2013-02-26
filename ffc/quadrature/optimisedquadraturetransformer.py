@@ -403,7 +403,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         return code
 
     def create_function(self, ufl_function, derivatives, component, local_comp,
-                       local_offset, ffc_element, quad_element, transformation, multiindices,
+                       local_offset, ffc_element, is_quad_element, transformation, multiindices,
                        tdim, gdim):
         "Create code for basis functions, and update relevant tables of used basis."
 
@@ -422,7 +422,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                 if not any(deriv):
                     deriv = []
                 # Call other function to create function name.
-                function_name = self._create_function_name(component, deriv, quad_element, ufl_function, ffc_element)
+                function_name = self._create_function_name(component, deriv, is_quad_element, ufl_function, ffc_element)
                 if not function_name:
                     continue
 
@@ -437,7 +437,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                 if not any(deriv):
                     deriv = []
                 for c in range(self.tdim):
-                    function_name = self._create_function_name(c + local_offset, deriv, quad_element, ufl_function, ffc_element)
+                    function_name = self._create_function_name(c + local_offset, deriv, is_quad_element, ufl_function, ffc_element)
 
                     # Multiply basis by appropriate transform.
                     if transformation == "covariant piola":
