@@ -55,7 +55,7 @@
 #  // Loop element space dimension and call evaluate_basis.
 #  for (unsigned int i = 0; i < element.space_dimension(); i++)
 #  {
-#    element.evaluate_basis(i, dof_values, coordinates, vertex_coordinates);
+#    element.evaluate_basis(i, dof_values, coordinates, vertex_coordinates, 0);
 #    // Print values
 #    for (unsigned int j = 0; j < N; j++)
 #      std::cout << dof_values[j] << " ";
@@ -128,7 +128,7 @@ int main(int argc, char* argv[])
       // Loop element space dimension and call evaluate_basis.
       for (unsigned int i = 0; i < element.space_dimension(); i++)
       {
-        element.evaluate_basis(i, dof_values, coordinates, vertex_coordinates);
+        element.evaluate_basis(i, dof_values, coordinates, vertex_coordinates, 0);
 
         // Print values
         for (unsigned int j = 0; j < num_dof_vals; j++)
@@ -150,7 +150,7 @@ int main(int argc, char* argv[])
       // Loop element space dimension and call evaluate_basis.
       for (unsigned int i = 0; i < element.space_dimension(); i++)
       {
-        element.evaluate_basis_derivatives(i, n, dof_values, coordinates, vertex_coordinates);
+        element.evaluate_basis_derivatives(i, n, dof_values, coordinates, vertex_coordinates, 0);
 
         // Print values
         for (unsigned int j = 0; j < num_dof_vals; j++)
@@ -163,4 +163,3 @@ int main(int argc, char* argv[])
   return 0;
 }
 """
-
