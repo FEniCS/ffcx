@@ -360,6 +360,6 @@ def _transform_integrals(transformer, integrals, domain_type):
     for point, integral in integrals.items():
         transformer.update_points(point)
         terms = transformer.generate_terms(integral.integrand(), domain_type)
-        transformed_integrals.append((point, terms, transformer.functions,
+        transformed_integrals.append((point, terms, transformer.function_data,
                                       {}, transformer.coordinate, transformer.conditionals))
     return transformed_integrals

@@ -483,7 +483,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         return code
 
     def create_function(self, ufl_function, derivatives, component, local_comp,
-                        local_offset, ffc_element, quad_element,
+                        local_offset, ffc_element, is_quad_element,
                         transformation, multiindices, tdim, gdim):
         "Create code for basis functions, and update relevant tables of used basis."
 
@@ -504,7 +504,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                 if not any(deriv):
                     deriv = []
                 # Call other function to create function name.
-                function_name = self._create_function_name(component, deriv, quad_element, ufl_function, ffc_element)
+                function_name = self._create_function_name(component, deriv, is_quad_element, ufl_function, ffc_element)
                 if function_name is None:
                     continue
 
@@ -519,7 +519,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                 if not any(deriv):
                     deriv = []
                 for c in range(self.tdim):
-                    function_name = self._create_function_name(c + local_offset, deriv, quad_element, ufl_function, ffc_element)
+                    function_name = self._create_function_name(c + local_offset, deriv, is_quad_element, ufl_function, ffc_element)
                     if function_name is None:
                         continue
 
@@ -552,7 +552,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     # Helper functions for Argument and Coefficient
     # -------------------------------------------------------------------------
-    def __apply_transform(self, function, derivatives, multi, tdim, gdim):
+    def __apply_transform(self, function, derivatives, multi, tdim, gdim): # XXX UFLACS REUSE
         "Apply transformation (from derivatives) to basis or function."
         f_mult          = format["multiply"]
         f_transform     = format["transform"]

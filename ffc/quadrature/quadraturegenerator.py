@@ -402,7 +402,7 @@ def _generate_functions(functions, sets):
 
         # Sort the functions according to name and create loop to compute the function values.
         lines = [f_iadd(f_F(n), function_expr[n]) for n in sorted(function_expr.keys())]
-        code += f_loop(lines, [(f_r, 0, loop_range)])
+        code += f_loop(lines, [(f_r, 0, loop_range)]) # TODO: If loop_range == 1, this loop may be unneccessary. Not sure if it's safe to just skip it.
 
     return code, total_ops
 
