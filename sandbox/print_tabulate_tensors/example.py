@@ -46,7 +46,7 @@ forms = [a3]
 
 #forms = [Constant(cell)*dx]
 #forms = [u0*dx]
-#forms = [u0.dx(0)*dx]
+forms = [(u0 + u0.dx(0) + u0.dx(1))*dx]
 #forms = [(u[0] + u[1])*dx]
 #forms = [(u[0] + u[3])*dx]
 
