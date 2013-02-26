@@ -15,7 +15,7 @@ K = cell.Jinv[0,0]
 
 c = Constant(cell)
 v = VectorConstant(cell)
-t = TensorConstant(cell)#, symmetry=True) # symmetry is not fully implemented in uflacs
+t = TensorConstant(cell, symmetry=True) # symmetry is not fully implemented in uflacs
 
 V0 = FiniteElement("CG", cell, 1)
 u0 = Coefficient(V0)
@@ -24,7 +24,7 @@ vt = TestFunction(V0)
 ut = TrialFunction(V0)
 
 T = TensorElement("CG", cell, 1)
-TS = TensorElement("CG", cell, 1)#, symmetry=True) FIXME
+TS = TensorElement("CG", cell, 1, symmetry=True) #FIXME
 V = VectorElement("CG", cell, 1, dim=4)
 RT = FiniteElement("RT", cell, 1)
 u = Coefficient(V)
@@ -33,7 +33,7 @@ uts = Coefficient(TS)
 
 a1 = (x*xi)*dx
 a2 = (detJ*J*K)*dx
-a3 = c * (v[0]*v[1]) * (t[0,1]*t[1,0]*t[1,1]) * dx
+a3 = c * (v[0]*v[1]) * ((t[0,1]*t[1,0])*(t[0,0]*t[1,1])) * dx
 
 forms = [a1, a2, a3]
 forms = [a3]
