@@ -23,8 +23,14 @@ u0 = Coefficient(V0)
 vt = TestFunction(V0)
 ut = TrialFunction(V0)
 
-V = VectorElement("CG", cell, 1)
+T = TensorElement("CG", cell, 1)
+TS = TensorElement("CG", cell, 1)#, symmetry=True) FIXME
+V = VectorElement("CG", cell, 1, dim=4)
 u = Coefficient(V)
+ut = Coefficient(T)
+uts = Coefficient(TS)
+
+ua, ub = Coefficients(V*V)
 
 a1 = (x*xi)*dx
 a2 = (detJ*J*K)*dx
@@ -36,9 +42,13 @@ forms = [a3]
 #forms = [Constant(cell)*dx]
 #forms = [u0*dx]
 forms = [(u[0] + u[1])*dx]
+forms = [(u[0] + u[3])*dx]
+forms = [(ua[0] + ub[3])*dx]
 
 #forms = [u0*vt*dx]
 #forms = [u0*ut*vt*dx]
+
+#forms = [(u[0] + (ut[0,0] + uts[0,0]) + (ut[1,1] + uts[1,1]))*dx] # FIXME
 
 for form in forms:
     code = uffc.compile_tabulate_tensor_code(form, optimize=True)
