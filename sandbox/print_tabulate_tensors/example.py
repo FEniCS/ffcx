@@ -25,6 +25,7 @@ ut = TrialFunction(V0)
 
 T = TensorElement("CG", cell, 1)
 TS = TensorElement("CG", cell, 1, symmetry=True) #FIXME
+t = Coefficient(TS)
 V = VectorElement("CG", cell, 1, dim=4)
 RT = FiniteElement("RT", cell, 1)
 u = Coefficient(V)
