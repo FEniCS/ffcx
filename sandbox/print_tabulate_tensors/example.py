@@ -34,7 +34,7 @@ uts = Coefficient(TS)
 
 a1 = (x*xi)*dx
 a2 = (detJ*J*K)*dx
-a3 = c * (v[0]*v[1]) * ((t[0,1]*t[1,0])*(t[0,0]*t[1,1])) * dx
+a3 = c * u0 * (v[0]*v[1]) * ((t[0,1]*t[1,0])*(t[0,0]*t[1,1])) * dx
 
 forms = [a1, a2, a3]
 forms = [a3]
