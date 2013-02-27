@@ -61,10 +61,12 @@ def compute_integral_ir(itg_data,
 
     # ... Up to this point is equal to the quadrature representation, below are the different parts
 
+    ir["optimise_parameters"]["eliminate zeros"] = False # HACK! FIXME figure out how to structure optimisation parameters for uflacs
+    eliminate_zeros = ir["optimise_parameters"]["eliminate zeros"]
 
     # Create tables of basis functions evaluated at quadrature points
     (element_map, name_map, unique_tables) = \
-        create_psi_tables(psi_tables, ir["optimise_parameters"], ir["entitytype"])
+        create_psi_tables(psi_tables, eliminate_zeros, ir["entitytype"])
     ir["name_map"] = name_map
     ir["unique_tables"] = unique_tables
     ir["element_map"] = element_map

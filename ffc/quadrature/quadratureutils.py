@@ -29,7 +29,7 @@ import numpy
 from ffc.log import debug, error, ffc_assert
 from ffc.cpp import format
 
-def create_psi_tables(tables, parameters, entitytype):
+def create_psi_tables(tables, eliminate_zeros, entitytype):
     "Create names and maps for tables and non-zero entries if appropriate."
 
     debug("\nQG-utils, psi_tables:\n" + str(tables))
@@ -40,7 +40,7 @@ def create_psi_tables(tables, parameters, entitytype):
 
     # Reduce tables such that we only have those tables left with unique values
     # Create a name map for those tables that are redundant.
-    name_map, unique_tables = unique_psi_tables(flat_tables, parameters)
+    name_map, unique_tables = unique_psi_tables(flat_tables, eliminate_zeros)
 
     debug("\nQG-utils, psi_tables, unique_tables:\n" + str(unique_tables))
     debug("\nQG-utils, psi_tables, name_map:\n" + str(name_map))
@@ -98,7 +98,7 @@ def flatten_psi_tables(tables, entitytype):
 
     return (element_map, flat_tables)
 
-def unique_psi_tables(tables, parameters):
+def unique_psi_tables(tables, eliminate_zeros):
     """Returns a name map and a dictionary of unique tables. The function checks
     if values in the tables are equal, if this is the case it creates a name
     mapping. It also create additional information (depending on which parameters
@@ -130,7 +130,7 @@ def unique_psi_tables(tables, parameters):
     # counter for non-zero column arrays.
     i = 0
     non_zero_columns = {}
-    if parameters["eliminate zeros"]:
+    if eliminate_zeros:
         for name in sorted(tables.keys()):
             # Get values.
             vals = tables[name]

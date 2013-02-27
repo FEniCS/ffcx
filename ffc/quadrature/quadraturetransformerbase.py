@@ -100,7 +100,7 @@ class QuadratureTransformerBase(Transformer):
         self._components = Stack()
 
         self.element_map, self.name_map, self.unique_tables =\
-            create_psi_tables(psi_tables, self.optimise_parameters, self.entitytype)
+            create_psi_tables(psi_tables, self.optimise_parameters["eliminate zeros"], self.entitytype)
 
         # Cache.
         self.argument_cache = {}
