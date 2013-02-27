@@ -91,7 +91,7 @@ a_w0 = (s0 + (v0[0]*v0[1]) + ((ts0[0,1]*ts0[1,0])*(ts0[0,0]*ts0[1,1])) + ((t0[0,
 a_w1 = (s1 + (v1[0]*v1[1]) + ((ts1[0,1]*ts1[1,0])*(ts1[0,0]*ts1[1,1])) + ((t1[0,1]*t1[1,0])*(t1[0,0]*t1[1,1]))) * dx
 forms += [a_w0, a_w1]
 
-# Mixed element forms
+# Mixed element coefficient access forms
 ums, umvs = Coefficients(S1*(V0*S1))
 a_m1 = ums*umvs[0]*umvs[1]*dx
 umva, umvb = Coefficients(V1*V2)
@@ -100,7 +100,7 @@ umvc, umrt = Coefficients(V1*RT1)
 a_m3 = (umvc[1] + umrt[0] + umrt[1])*dx
 forms += [a_m1, a_m2, a_m3]
 
-# Derivative access forms
+# Coefficient derivative access forms
 a_d0 = s1.dx(0)*dx
 a_d1 = s1.dx(1)*dx
 a_d2 = (s1 + s1.dx(0) + s1.dx(1))*dx
@@ -111,6 +111,12 @@ a_a0 = us0*dx
 a_a1 = (vv1[0] + vv1[1])*dx
 a_a2 = us2*(vts0[0,0] + vts0[0,1] + vts0[1,0] + vts0[1,1])*dx
 forms += [a_a0, a_a1, a_a2]
+
+# Argument derivative access forms
+a_da0 = us0.dx(0)*dx
+a_da1 = (vv1[0].dx(0) + vv1[1].dx(1))*dx
+a_da2 = us2.dx(1)*(vts1[0,0].dx(0) + vts1[0,1].dx(0) + vts1[1,0].dx(1) + vts1[1,1].dx(1))*dx
+forms += [a_da0, a_da1, a_da2]
 
 for form in forms:
     code = uffc.compile_tabulate_tensor_code(form, optimize=True)
