@@ -7,63 +7,111 @@ from ufl import *
 
 cell = triangle
 
-x = cell.x[0]
-xi = cell.xi[0]
-J = cell.J[0,0]
+x = cell.x
+xi = cell.xi
+J = cell.J
 detJ = cell.detJ
-K = cell.Jinv[0,0]
+K = cell.Jinv
 
-c = Constant(cell)
-v = VectorConstant(cell)
-#t = TensorConstant(cell, symmetry=True)
+S0 = FiniteElement("DG", cell, 0)
+S1 = FiniteElement("CG", cell, 1)
+S2 = FiniteElement("CG", cell, 2)
+V0 = VectorElement("DG", cell, 0)
+V1 = VectorElement("CG", cell, 1)
+V2 = VectorElement("CG", cell, 2)
+T0 = TensorElement("DG", cell, 0)
+T1 = TensorElement("CG", cell, 1)
+T2 = TensorElement("CG", cell, 2)
+TS0 = TensorElement("DG", cell, 0, symmetry=True)
+TS1 = TensorElement("CG", cell, 1, symmetry=True)
+TS2 = TensorElement("CG", cell, 2, symmetry=True)
 
-V0 = FiniteElement("CG", cell, 1)
-u0 = Coefficient(V0)
+RT1 = FiniteElement("RT", cell, 1)
+RT2 = FiniteElement("RT", cell, 2)
 
-#vt = TestFunction(V0)
-#ut = TrialFunction(V0)
+cs = Constant(cell)
+cv = VectorConstant(cell)
+ct = TensorConstant(cell)
+cts = TensorConstant(cell, symmetry=True)
 
-#T = TensorElement("CG", cell, 1)
-TS = TensorElement("CG", cell, 1, symmetry=True)
-t = Coefficient(TS)
-#V = VectorElement("CG", cell, 1, dim=4)
-#RT = FiniteElement("RT", cell, 1)
-#u = Coefficient(V)
-#ut = Coefficient(T)
-#uts = Coefficient(TS)
+s0 = Coefficient(S0)
+s1 = Coefficient(S1)
+s2 = Coefficient(S2)
+v0 = Coefficient(V0)
+v1 = Coefficient(V1)
+v2 = Coefficient(V2)
+t0 = Coefficient(T0)
+t1 = Coefficient(T1)
+t2 = Coefficient(T2)
+ts0 = Coefficient(TS0)
+ts1 = Coefficient(TS1)
+ts2 = Coefficient(TS2)
 
-#a1 = (x*xi)*dx
-#a2 = (detJ*J*K)*dx
-a3 = c * u0 * (v[0]*v[1]) * ((t[0,1]*t[1,0])*(t[0,0]*t[1,1])) * dx
+us0 = TrialFunction(S0)
+us1 = TrialFunction(S1)
+us2 = TrialFunction(S2)
+uv0 = TrialFunction(V0)
+uv1 = TrialFunction(V1)
+uv2 = TrialFunction(V2)
+ut0 = TrialFunction(T0)
+ut1 = TrialFunction(T1)
+ut2 = TrialFunction(T2)
+uts0 = TrialFunction(TS0)
+uts1 = TrialFunction(TS1)
+uts2 = TrialFunction(TS2)
 
-#forms = [a1, a2, a3]
-forms = [a3]
+vs0 = TestFunction(S0)
+vs1 = TestFunction(S1)
+vs2 = TestFunction(S2)
+vv0 = TestFunction(V0)
+vv1 = TestFunction(V1)
+vv2 = TestFunction(V2)
+vt0 = TestFunction(T0)
+vt1 = TestFunction(T1)
+vt2 = TestFunction(T2)
+vts0 = TestFunction(TS0)
+vts1 = TestFunction(TS1)
+vts2 = TestFunction(TS2)
 
-#S = FiniteElement("CG", cell, 1)
-#V = VectorElement("CG", cell, 1, dim=1)
-#us, uvs = Coefficients(S*(V*S))
-#forms = [us*uvs[0]*uvs[1]*dx]
+# Build list of forms
+forms = []
 
-#forms = [Constant(cell)*dx]
-#forms = [u0*dx]
-forms = [(u0 + u0.dx(0) + u0.dx(1))*dx]
-#forms = [(u[0] + u[1])*dx]
-#forms = [(u[0] + u[3])*dx]
+# Geometry forms:
+a_xi = (xi[0]*xi[1])*dx
+a_x = (x[0]*x[1])*dx
+a_J = (tr(J*K) / (3*detJ))*dx
+forms += [a_x, a_xi, a_J]
 
-#ua, ub = Coefficients(V*V)
-#forms = [(ua[0] + ub[3])*dx]
+# Constant access forms
+a_c = (cs + (cv[0]*cv[1]) + ((cts[0,1]*cts[1,0])*(cts[0,0]*cts[1,1])) + ((ct[0,1]*ct[1,0])*(ct[0,0]*ct[1,1]))) * dx
+forms += [a_c]
 
-#ua, ub = Coefficients(V*RT)
-#forms = [(ua[1] + ub[0] + ub[1])*dx]
+# Coefficient access forms
+a_w0 = (s0 + (v0[0]*v0[1]) + ((ts0[0,1]*ts0[1,0])*(ts0[0,0]*ts0[1,1])) + ((t0[0,1]*t0[1,0])*(t0[0,0]*t0[1,1]))) * dx
+a_w1 = (s1 + (v1[0]*v1[1]) + ((ts1[0,1]*ts1[1,0])*(ts1[0,0]*ts1[1,1])) + ((t1[0,1]*t1[1,0])*(t1[0,0]*t1[1,1]))) * dx
+forms += [a_w0, a_w1]
 
-#forms = [u0*vt*dx]
-#forms = [u0*ut*vt*dx]
+# Mixed element forms
+ums, umvs = Coefficients(S1*(V0*S1))
+a_m1 = ums*umvs[0]*umvs[1]*dx
+umva, umvb = Coefficients(V1*V2)
+a_m2 = (umva[0] + umvb[1])*dx
+umvc, umrt = Coefficients(V1*RT1)
+a_m3 = (umvc[1] + umrt[0] + umrt[1])*dx
+forms += [a_m1, a_m2, a_m3]
 
-#forms = [(u[0] + (ut[0,0] + uts[0,0]) + (ut[1,1] + uts[1,1]))*dx] # FIXME
+# Derivative access forms
+a_d0 = s1.dx(0)*dx
+a_d1 = s1.dx(1)*dx
+a_d2 = (s1 + s1.dx(0) + s1.dx(1))*dx
+forms += [a_d0, a_d1, a_d2]
 
 for form in forms:
     code = uffc.compile_tabulate_tensor_code(form, optimize=True)
     print
-    print '/'*60
+    print ('/'*40), str(form)
     print code
     print
+
+print "Done compiling %d example forms." % len(forms)
+
