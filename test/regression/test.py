@@ -58,6 +58,11 @@ ext_quad = [\
 "-r quadrature -O -fprecompute_basis_const -feliminate_zeros",
 ]
 
+# Extended uflacs tests (to be extended with optimisation parameters later)
+ext_uflacs = [\
+"-r uflacs",
+]
+
 def run_command(command):
     "Run command and collect errors in log file."
     (status, output) = get_status_output(command)
@@ -83,7 +88,7 @@ def clean_output(output_directory):
         shutil.rmtree(output_directory)
     os.mkdir(output_directory)
 
-def generate_test_cases(bench, quicksample):
+def generate_test_cases(bench):
     "Generate form files for all test cases."
 
     begin("Generating test cases")
@@ -97,8 +102,6 @@ def generate_test_cases(bench, quicksample):
     form_files = [f for f in os.listdir(form_directory) if f.endswith(".ufl")]
     #form_files = form_files[:1] # use for quick testing
     form_files.sort()
-    if quicksample:
-        form_files = form_files[:4] # Maybe pick a better selection
 
     for f in form_files:
         shutil.copy("%s/%s" % (form_directory, f), ".")
@@ -114,8 +117,6 @@ def generate_test_cases(bench, quicksample):
     if not bench:
         from elements import elements
         info("Generating form files for extra elements (%d elements)" % len(elements))
-        if quicksample:
-            elements = elements[:3] # Maybe pick a better selection
         for (i, element) in enumerate(elements):
             open("X_Element%d.ufl" % i, "w").write("element = %s" % element)
 
@@ -193,7 +194,7 @@ def validate_code(reference_dir):
 
     end()
 
-def build_programs(bench):
+def build_programs(bench, permissive):
     "Build test programs for all test cases."
 
     # Get a list of all files
@@ -243,20 +244,20 @@ set the environment variable BOOST_DIR.
     ufc_cflags += " -I%s -L%s" % (boost_inc_dir, boost_lib_dir)
 
     # Set compiler options
-    if bench > 0:
+    compiler_options = "%s -Wall" % ufc_cflags
+    if not permissive:
+        compiler_options += " -Werror"
+    if bench:
         info("Benchmarking activated")
         # Takes too long to build with -O2
-        #compiler_options = "%s -Wall -Werror -O2" % ufc_cflags
-        compiler_options = "%s -Wall -Werror" % ufc_cflags
-    else:
-        compiler_options = "%s -Wall -Werror -g" % ufc_cflags
+        #compiler_options += " -O2"
     info("Compiler options: %s" % compiler_options)
 
     # Iterate over all files
     for f in header_files:
 
         # Generate test code
-        filename = generate_test_code(f, bench)
+        filename = generate_test_code(f)
 
         # Compile test code
         prefix = f.split(".h")[0]
@@ -414,16 +415,23 @@ def validate_programs(reference_dir):
 def main(args):
     "Run all regression tests."
 
-    # Check command-line arguments
-    bench = "--bench" in args
-    fast = "--fast" in args
-    ext = "--ext_quad" in args
+    # Check command-line arguments TODO: Use getargs or something
     generate_only = "--generate-only" in args
-    quicksample = "--quick-sample" in args
+    fast = "--fast" in args
+    bench = "--bench" in args
+    use_ext_quad = "--ext_quad" in args
+    use_ext_uflacs = "--ext_uflacs" in args
+    permissive = "--permissive" in args
 
-    args = [arg for arg in args
-            if not arg in ("--bench", "--fast", "--ext_quad",
-                           "--generate-only", "--quick-sample")]
+    flags = (
+        "--generate-only",
+        "--fast",
+        "--bench",
+        "--ext_quad",
+        "--ext_uflacs",
+        "--permissive",
+        )
+    args = [arg for arg in args if not arg in flags]
 
     # Clean out old output directory
     output_directory = "output"
@@ -435,8 +443,10 @@ def main(args):
     test_cases = ["-r auto"]
     if (not bench and not fast):
         test_cases += ["-r quadrature", "-r quadrature -O"]
-        if ext:
+        if use_ext_quad:
             test_cases += ext_quad
+        if use_ext_uflacs:
+            test_cases += ext_uflacs
 
     for argument in test_cases:
 
@@ -448,7 +458,7 @@ def main(args):
         os.chdir(sub_directory)
 
         # Generate test cases
-        generate_test_cases(bench, quicksample)
+        generate_test_cases(bench)
 
         # Generate code
         generate_code(args + [argument])
@@ -468,10 +478,10 @@ def main(args):
         if fast or generate_only:
             info("Skipping program validation")
         elif bench:
-            build_programs(bench)
+            build_programs(bench, permissive)
             run_programs()
         else:
-            build_programs(bench)
+            build_programs(bench, permissive)
             run_programs()
             validate_programs(output_reference_dir)
 

@@ -25,8 +25,9 @@ _test_code = """\
 #include "%s.h"
 #include <fstream>
 
-int main()
+int main(int argc, char * argv[])
 {
+  bool bench = (argc > 1) && argv[1][0] == 'b';
   const char jsonfilename[] = "%s.json";
   std::ofstream jsonfile(jsonfilename);
   Printer printer(std::cout, jsonfile);
@@ -39,7 +40,7 @@ int main()
 }
 """
 
-def generate_test_code(header_file, bench):
+def generate_test_code(header_file):
     "Generate test code for given header file."
 
     # Count the number of forms and elements
@@ -50,7 +51,7 @@ def generate_test_code(header_file, bench):
 
     # Generate tests, either based on forms or elements
     if num_forms > 0:
-        tests = ['  %s_form_%d f%d; test_form(f%d, %d, %d, printer);' % (prefix.lower(), i, i, i, bench, i)
+        tests = ['  %s_form_%d f%d; test_form(f%d, bench, %d, printer);' % (prefix.lower(), i, i, i, i)
                  for i in range(num_forms)]
     else:
         tests = ['  %s_finite_element_%d e%d; test_finite_element(e%d, %d, printer);' % (prefix.lower(), i, i, i, i)
