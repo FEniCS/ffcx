@@ -399,9 +399,9 @@ const double circumradius%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
 
 _circumradius_2D = """\
 // Compute circumradius of triangle in 2D
-const double v1v2%(restriction)s  = std::sqrt( (x%(restriction)s[2][0] - x%(restriction)s[1][0])*(x%(restriction)s[2][0] - x%(restriction)s[1][0]) + (x%(restriction)s[2][1] - x%(restriction)s[1][1])*(x%(restriction)s[2][1] - x%(restriction)s[1][1]) );
-const double v0v2%(restriction)s  = std::sqrt( J%(restriction)s_11*J%(restriction)s_11 + J%(restriction)s_01*J%(restriction)s_01 );
-const double v0v1%(restriction)s  = std::sqrt( J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10 );
+const double v1v2%(restriction)s  = std::sqrt((vertex_coordinates%(restriction)s[4] - vertex_coordinates%(restriction)s[2])*(vertex_coordinates%(restriction)s[4] - vertex_coordinates%(restriction)s[2]) + (vertex_coordinates%(restriction)s[5] - vertex_coordinates%(restriction)s[3])*(vertex_coordinates%(restriction)s[5] - vertex_coordinates%(restriction)s[3]) );
+const double v0v2%(restriction)s  = std::sqrt(J%(restriction)s[3]*J%(restriction)s[3] + J%(restriction)s[1]*J%(restriction)s[1]);
+const double v0v1%(restriction)s  = std::sqrt(J%(restriction)s[0]*J%(restriction)s[0] + J%(restriction)s[1]*J%(restriction)s[1]);
 
 const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);"""
 
@@ -411,12 +411,12 @@ const double circumradius%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
 
 _circumradius_3D = """\
 // Compute circumradius
-const double v1v2%(restriction)s  = std::sqrt( (x%(restriction)s[2][0] - x%(restriction)s[1][0])*(x%(restriction)s[2][0] - x%(restriction)s[1][0]) + (x%(restriction)s[2][1] - x%(restriction)s[1][1])*(x%(restriction)s[2][1] - x%(restriction)s[1][1]) + (x%(restriction)s[2][2] - x%(restriction)s[1][2])*(x%(restriction)s[2][2] - x%(restriction)s[1][2]) );
-const double v0v2%(restriction)s  = std::sqrt(J%(restriction)s_01*J%(restriction)s_01 + J%(restriction)s_11*J%(restriction)s_11 + J%(restriction)s_21*J%(restriction)s_21);
-const double v0v1%(restriction)s  = std::sqrt(J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10 + J%(restriction)s_20*J%(restriction)s_20);
-const double v0v3%(restriction)s  = std::sqrt(J%(restriction)s_02*J%(restriction)s_02 + J%(restriction)s_12*J%(restriction)s_12 + J%(restriction)s_22*J%(restriction)s_22);
-const double v1v3%(restriction)s  = std::sqrt( (x%(restriction)s[3][0] - x%(restriction)s[1][0])*(x%(restriction)s[3][0] - x%(restriction)s[1][0]) + (x%(restriction)s[3][1] - x%(restriction)s[1][1])*(x%(restriction)s[3][1] - x%(restriction)s[1][1]) + (x%(restriction)s[3][2] - x%(restriction)s[1][2])*(x%(restriction)s[3][2] - x%(restriction)s[1][2]) );
-const double v2v3%(restriction)s  = std::sqrt( (x%(restriction)s[3][0] - x%(restriction)s[2][0])*(x%(restriction)s[3][0] - x%(restriction)s[2][0]) + (x%(restriction)s[3][1] - x%(restriction)s[2][1])*(x%(restriction)s[3][1] - x%(restriction)s[2][1]) + (x%(restriction)s[3][2] - x%(restriction)s[2][2])*(x%(restriction)s[3][2] - x%(restriction)s[2][2]) );
+const double v1v2%(restriction)s  = std::sqrt( (vertex_coordinates%(restriction)s[6] - vertex_coordinates%(restriction)s[3])*(vertex_coordinates%(restriction)s[6] - vertex_coordinates%(restriction)s[3]) + (vertex_coordinates%(restriction)s[7] - vertex_coordinates%(restriction)s[4])*(vertex_coordinates%(restriction)s[7] - vertex_coordinates%(restriction)s[4]) + (vertex_coordinates%(restriction)s[8] - vertex_coordinates%(restriction)s[5])*(vertex_coordinates%(restriction)s[8] - vertex_coordinates%(restriction)s[5]) );
+const double v0v2%(restriction)s  = std::sqrt(J%(restriction)s[1]*J%(restriction)s[1] + J%(restriction)s[4]*J%(restriction)s[4] + J%(restriction)s[7]*J%(restriction)s[7]);
+const double v0v1%(restriction)s  = std::sqrt(J%(restriction)s[0]*J%(restriction)s[0] + J%(restriction)s[3]*J%(restriction)s[3] + J%(restriction)s[6]*J%(restriction)s[6]);
+const double v0v3%(restriction)s  = std::sqrt(J%(restriction)s[2]*J%(restriction)s[2] + J%(restriction)s[5]*J%(restriction)s[5] + J%(restriction)s[8]*J%(restriction)s[8]);
+const double v1v3%(restriction)s  = std::sqrt( (vertex_coordinates%(restriction)s[9] - vertex_coordinates%(restriction)s[3])*(vertex_coordinates%(restriction)s[9] - vertex_coordinates%(restriction)s[3]) + (vertex_coordinates%(restriction)s[10] - vertex_coordinates%(restriction)s[4])*(vertex_coordinates%(restriction)s[10] - vertex_coordinates%(restriction)s[4]) + (vertex_coordinates%(restriction)s[11] - vertex_coordinates%(restriction)s[5])*(vertex_coordinates%(restriction)s[11] - vertex_coordinates%(restriction)s[5]) );
+const double v2v3%(restriction)s  = std::sqrt( (vertex_coordinates%(restriction)s[9] - vertex_coordinates%(restriction)s[6])*(vertex_coordinates%(restriction)s[9] - vertex_coordinates%(restriction)s[6]) + (vertex_coordinates%(restriction)s[10] - vertex_coordinates%(restriction)s[7])*(vertex_coordinates%(restriction)s[10] - vertex_coordinates%(restriction)s[7]) + (vertex_coordinates%(restriction)s[11] - vertex_coordinates%(restriction)s[8])*(vertex_coordinates%(restriction)s[11] - vertex_coordinates%(restriction)s[8]) );
 const  double la%(restriction)s   = v1v2%(restriction)s*v0v3%(restriction)s;
 const  double lb%(restriction)s   = v0v2%(restriction)s*v1v3%(restriction)s;
 const  double lc%(restriction)s   = v0v1%(restriction)s*v2v3%(restriction)s;
@@ -431,9 +431,9 @@ const double circumradius%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
 
 _circumradius_3D_2D = """\
 // Compute circumradius of triangle in 3D
-const double v1v2%(restriction)s  = std::sqrt( (x%(restriction)s[2][0] - x%(restriction)s[1][0])*(x%(restriction)s[2][0] - x%(restriction)s[1][0]) + (x%(restriction)s[2][1] - x%(restriction)s[1][1])*(x%(restriction)s[2][1] - x%(restriction)s[1][1]) + (x%(restriction)s[2][2] - x%(restriction)s[1][2])*(x%(restriction)s[2][2] - x%(restriction)s[1][2]));
-const double v0v2%(restriction)s  = std::sqrt( J%(restriction)s_11*J%(restriction)s_11 + J%(restriction)s_01*J%(restriction)s_01 + J%(restriction)s_21*J%(restriction)s_21);
-const double v0v1%(restriction)s  = std::sqrt( J%(restriction)s_00*J%(restriction)s_00 + J%(restriction)s_10*J%(restriction)s_10 + J%(restriction)s_20*J%(restriction)s_20);
+const double v1v2%(restriction)s  = std::sqrt( (vertex_coordinates%(restriction)s[6] - vertex_coordinates%(restriction)s[3])*(vertex_coordinates%(restriction)s[6] - vertex_coordinates%(restriction)s[3]) + (vertex_coordinates%(restriction)s[7] - vertex_coordinates%(restriction)s[4])*(vertex_coordinates%(restriction)s[7] - vertex_coordinates%(restriction)s[4]) + (vertex_coordinates%(restriction)s[8] - vertex_coordinates%(restriction)s[5])*(vertex_coordinates%(restriction)s[8] - vertex_coordinates%(restriction)s[5]));
+const double v0v2%(restriction)s  = std::sqrt( J%(restriction)s[4]*J%(restriction)s[4] + J%(restriction)s[1]*J%(restriction)s[1] + J%(restriction)s[7]*J%(restriction)s[7]);
+const double v0v1%(restriction)s  = std::sqrt( J%(restriction)s[0]*J%(restriction)s[0] + J%(restriction)s[3]*J%(restriction)s[3] + J%(restriction)s[6]*J%(restriction)s[6]);
 
 const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);"""
 
