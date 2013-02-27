@@ -106,6 +106,12 @@ a_d1 = s1.dx(1)*dx
 a_d2 = (s1 + s1.dx(0) + s1.dx(1))*dx
 forms += [a_d0, a_d1, a_d2]
 
+# Argument access forms
+a_a0 = us0*dx
+a_a1 = (vv1[0] + vv1[1])*dx
+a_a2 = us2*(vts0[0,0] + vts0[0,1] + vts0[1,0] + vts0[1,1])*dx
+forms += [a_a0, a_a1, a_a2]
+
 for form in forms:
     code = uffc.compile_tabulate_tensor_code(form, optimize=True)
     print
