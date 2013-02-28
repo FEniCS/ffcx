@@ -1,0 +1,38 @@
+Status of uflacs with regression tests:
+
+- These run but fail regression test:
+AlgebraOperators.json
+MathFunctions.json
+Mini.json
+MixedPoisson.json
+Optimization.json
+ReactionDiffusion.json
+StabilisedStokes.json
+VectorLaplaceGradCurl.json
+MathFunctions.json
+
+- These generate but fail to build:
+none
+
+- These have cell integrals but fail to generate:
+QuadratureElement.ufl
+ProjectionManifold.ufl
+PointMeasure.ufl
+Conditional.ufl
+
+- These need exterior facet integrals:
+AdaptivePoisson.ufl
+HyperElasticity.ufl
+NeumannProblem.ufl
+Normals.ufl
+SpatialCoordinates.ufl
+SubDomain.ufl
+
+- These need interior facet integrals:
+Biharmonic.ufl
+FacetIntegrals.ufl
+FacetRestrictionAD.ufl
+PoissonDG.ufl
+RestrictedElement.ufl
+SubDomains.ufl
+
