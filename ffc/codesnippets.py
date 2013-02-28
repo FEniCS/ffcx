@@ -637,14 +637,11 @@ double X = (2.0*x[0] - vertex_coordinates[0] - vertex_coordinates[1]) / J[0];"""
 
 _map_coordinates_FIAT_interval_in_2D = """\
 // Get coordinates and map to the reference (FIAT) element
-double X = 2*(std::sqrt(std::pow(x[0] - vertex_coordinates[0], 2) +
-                        std::pow(x[1] - vertex_coordinates[1], 2)) / detJ) - 1.0;"""
+double X = 2*(std::sqrt(std::pow(x[0] - vertex_coordinates[0], 2) + std::pow(x[1] - vertex_coordinates[1], 2)) / detJ) - 1.0;"""
 
 _map_coordinates_FIAT_interval_in_3D = """\
 // Get coordinates and map to the reference (FIAT) element
-double X = 2*(std::sqrt(std::pow(x[0] - vertex_coordinates[0], 2) +
-                        std::pow(x[1] - vertex_coordinates[1], 2) +
-                        std::pow(x[2] - vertex_coordinates[2], 2))/ detJ) - 1.0;"""
+double X = 2*(std::sqrt(std::pow(x[0] - vertex_coordinates[0], 2) + std::pow(x[1] - vertex_coordinates[1], 2) + std::pow(x[2] - vertex_coordinates[2], 2))/ detJ) - 1.0;"""
 
 _map_coordinates_FIAT_triangle = """\
 // Compute constants
