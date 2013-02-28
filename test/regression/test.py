@@ -279,8 +279,11 @@ set the environment variable BOOST_DIR.
 
     end()
 
-def run_programs():
+def run_programs(bench):
     "Run generated programs."
+
+    # This matches argument parsing in the generated main files
+    bench = 'b' if bench else ''
 
     # Get a list of all files
     test_programs = [f for f in os.listdir(".") if f.endswith(".bin")]
@@ -297,7 +300,7 @@ def run_programs():
             os.remove(prefix + ".out")
         except:
             pass
-        ok = run_command(".%s%s.bin > %s.out" % (os.path.sep, prefix, prefix))
+        ok = run_command(".%s%s.bin %s > %s.out" % (os.path.sep, prefix, bench, prefix))
 
         # Check status
         if ok:
@@ -485,10 +488,10 @@ def main(args):
             info("Skipping program validation")
         elif bench:
             build_programs(bench, permissive)
-            run_programs()
+            run_programs(bench)
         else:
             build_programs(bench, permissive)
-            run_programs()
+            run_programs(bench)
             validate_programs(output_reference_dir)
 
         # Go back up

@@ -27,13 +27,12 @@ _test_code = """\
 
 int main(int argc, char * argv[])
 {
-  bool bench = (argc > 1) && argv[1][0] == 'b';
   const char jsonfilename[] = "%s.json";
   std::ofstream jsonfile(jsonfilename);
   Printer printer(std::cout, jsonfile);
   printer.begin();
 
-%s
+%s%s
 
   printer.end();
   return 0;
@@ -51,14 +50,16 @@ def generate_test_code(header_file):
 
     # Generate tests, either based on forms or elements
     if num_forms > 0:
+        benchline = "  bool bench = (argc > 1) && argv[1][0] == 'b';\n"
         tests = ['  %s_form_%d f%d; test_form(f%d, bench, %d, printer);' % (prefix.lower(), i, i, i, i)
                  for i in range(num_forms)]
     else:
+        benchline = ""
         tests = ['  %s_finite_element_%d e%d; test_finite_element(e%d, %d, printer);' % (prefix.lower(), i, i, i, i)
                  for i in range(num_elements)]
 
     # Write file
     test_file = open(prefix + ".cpp", "w")
-    test_file.write(_test_code % (prefix, prefix, "\n".join(tests)))
+    test_file.write(_test_code % (prefix, prefix, benchline, "\n".join(tests)))
     test_file.close()
 
