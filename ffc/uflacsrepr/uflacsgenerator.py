@@ -20,7 +20,7 @@
 
 from ffc.representationutils import initialize_integral_code
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
-from ffc.cpp import format
+from ffc.cpp import format, indent
 
 from ffc.quadrature.quadraturegenerator import _tabulate_psis
 
@@ -39,10 +39,13 @@ def generate_integral_code(ir, prefix, parameters):
 
     # Delegate to uflacs to generate tabulate_tensor body
     import uflacs.backends.ffc
-    ttcode = uflacs.backends.ffc.generate_tabulate_tensor_code(ir, parameters)
+    ucode = uflacs.backends.ffc.generate_tabulate_tensor_code(ir, parameters)
 
-    # TODO: Indent psi_tables_code? Or pass psi_tables_code to uflacs for insertion there?
-    code["tabulate_tensor"] = '\n\n'.join(psi_tables_code + [ttcode])
+    # TODO: Pass psi_tables_code to uflacs for insertion there instead?
+    # TODO: Skip unused tables!
+    code["tabulate_tensor"] = '\n\n'.join(psi_tables_code + [ucode["using_statements"], ucode["tabulate_tensor"]])
+
+    code["additional_includes_set"] = ir.get("additional_includes_set",set()) | set(ucode["additional_includes_set"])
 
     code["tabulate_tensor_quadrature"] = format["do nothing"] # TODO: Remove
     return code
