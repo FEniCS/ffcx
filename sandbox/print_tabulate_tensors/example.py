@@ -118,6 +118,9 @@ a_da1 = (vv1[0].dx(0) + vv1[1].dx(1))*dx
 a_da2 = us2.dx(1)*(vts1[0,0].dx(0) + vts1[0,1].dx(0) + vts1[1,0].dx(1) + vts1[1,1].dx(1))*dx
 forms += [a_da0, a_da1, a_da2]
 
+# Debugging:
+forms += [Constant(triangle)*dx]
+
 for form in forms:
     code = uffc.compile_tabulate_tensor_code(form, optimize=True)
     print
