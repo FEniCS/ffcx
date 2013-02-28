@@ -141,11 +141,17 @@ def generate_code(args):
 
     begin("Generating code (%d form files found)" % len(form_files))
 
+    # TODO: Parse additional options from .ufl file? I.e. grep for some sort of tag like '#ffc: <flags>'.
+    special = {
+        "AdaptivePoisson.ufl": "-e",
+        }
+
     # Iterate over all files
     for f in form_files:
+        options = special.get(f, "")
 
-        cmd = ("ffc %s -f precision=8 -fconvert_exceptions_to_warnings %s"
-               % (" ".join(args), f))
+        cmd = ("ffc %s %s -f precision=8 -fconvert_exceptions_to_warnings %s"
+               % (options, " ".join(args), f))
 
         # Generate code
         ok = run_command(cmd)
