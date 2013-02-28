@@ -238,4 +238,3 @@ def _reduce_expression(expr, symbols, const_dict, f_name, use_expr_type=False):
         s = create_symbol(f_name(const_dict[new_sym]), sym_type)
         return [s]
     return symbols
-

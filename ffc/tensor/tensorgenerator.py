@@ -126,8 +126,6 @@ def _tabulate_tensor(ir, parameters):
         j_code += format["facet determinant"](tdim, gdim, r="+")
         j_code += "\n"
 
-        print j_code
-
     else:
         error("Unhandled integral type: " + str(domain_type))
 
