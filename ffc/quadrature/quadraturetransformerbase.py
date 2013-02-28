@@ -1041,10 +1041,9 @@ class QuadratureTransformerBase(Transformer):
         # Try to evaluate coefficient access ("3 + 2" --> "5").
         try:
             coefficient_access = str(eval(coefficient_access))
-            ACCESS = GEO
+            C_ACCESS = GEO
         except:
-            ACCESS = IP
-
+            C_ACCESS = IP
         # Format coefficient access
         coefficient = format["coefficient"](str(ufl_function.count()), coefficient_access)
 
@@ -1053,6 +1052,8 @@ class QuadratureTransformerBase(Transformer):
         if is_quad_element or (loop_index_range == 1 and ones and self.optimise_parameters["ignore ones"]):
             # If we only have ones or if we have a quadrature element we don't need the basis.
             function_symbol_name = coefficient
+            F_ACCESS = C_ACCESS
+
         else:
             # Add basis name to set of used tables and add matrix access.
             # TODO: We should first add this table if the function is used later
@@ -1066,10 +1067,17 @@ class QuadratureTransformerBase(Transformer):
             basis_index = "0" if loop_index_range == 1 else loop_index
             basis_access = format["component"]("", [f_ip, basis_index])
             basis_name = psi_name + basis_access
+            # Try to set access to the outermost possible loop
+            if f_ip == "0" and basis_access == "0":
+                B_ACCESS = GEO
+                F_ACCESS = C_ACCESS
+            else:
+                B_ACCESS = IP
+                F_ACCESS = IP
 
             # Format expression for function
-            function_expr = self._create_product([self._create_symbol(basis_name, ACCESS)[()],
-                                                  self._create_symbol(coefficient, ACCESS)[()]])
+            function_expr = self._create_product([self._create_symbol(basis_name, B_ACCESS)[()],
+                                                  self._create_symbol(coefficient, C_ACCESS)[()]])
 
             # Check if the expression to compute the function value is already in
             # the dictionary of used function. If not, generate a new name and add.
@@ -1082,7 +1090,9 @@ class QuadratureTransformerBase(Transformer):
                 self.function_data[function_expr] = data
             function_symbol_name = format["function value"](data[0])
 
-        return self._create_symbol(function_symbol_name, ACCESS)[()]
+        # TODO: This access stuff was changed subtly during my refactoring, the
+        # X_ACCESS vars is an attempt at making it right, make sure it is correct now!
+        return self._create_symbol(function_symbol_name, F_ACCESS)[()]
 
     def _generate_affine_map(self):
         """Generate psi table for affine map, used by spatial coordinate to map
