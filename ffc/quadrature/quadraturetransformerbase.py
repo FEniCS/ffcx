@@ -759,9 +759,7 @@ class QuadratureTransformerBase(Transformer):
 
     def _create_loop_entry(self, key, f_nzc):
 
-        # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.
-        indices = {-2: format["first free index"], -1: format["second free index"],
-                    0: format["first free index"],  1: format["second free index"]}
+        indices = {0: format["first free index"],  1: format["second free index"]}
 
         # Create appropriate entries.
         # FIXME: We only support rank 0, 1 and 2.
@@ -889,14 +887,12 @@ class QuadratureTransformerBase(Transformer):
         generate_psi_name = format["psi name"]
 
         # Only support test and trial functions.
-        #indices = {-2: format["first free index"],
-        #           -1: format["second free index"],
         indices = { 0: format["first free index"],
                     1: format["second free index"]}
 
         # Check that we have a basis function.
         ffc_assert(ufl_argument.count() in indices, \
-                   "Currently, Argument index must be either -2, -1, 0 or 1: " + repr(ufl_argument))
+                   "Currently, Argument index must be either 0 or 1: " + repr(ufl_argument))
 
         # Get element counter and loop index.
         element_counter = self.element_map[self.points][ufl_argument.element()]
