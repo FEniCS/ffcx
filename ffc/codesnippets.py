@@ -293,13 +293,13 @@ double n%(restriction)s0 = 0.0;
 double n%(restriction)s1 = 0.0;
 if (facet%(restriction)s == 0)
 {
-  n%(restriction)s0 = x%(restriction)s[0][0] - x%(restriction)s[1][0];
-  n%(restriction)s1 = x%(restriction)s[0][1] - x%(restriction)s[1][1];
+  n%(restriction)s0 = vertex_coordinates%(restriction)s[0] - vertex_coordinates%(restriction)s[2];
+  n%(restriction)s1 = vertex_coordinates%(restriction)s[1] - vertex_coordinates%(restriction)s[3];
 }
 else
 {
-  n%(restriction)s0 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
-  n%(restriction)s1 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
+  n%(restriction)s0 = vertex_coordinates%(restriction)s[2] - vertex_coordinates%(restriction)s[0];
+  n%(restriction)s1 = vertex_coordinates%(restriction)s[3] - vertex_coordinates%(restriction)s[1];
 }
 const double n%(restriction)s_length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1);
 n%(restriction)s0 /= n%(restriction)s_length;
@@ -321,13 +321,13 @@ const unsigned int vertex%(restriction)s1 = edge_vertices[facet%(restriction)s][
 const unsigned int vertex%(restriction)s2 = edge_vertices[facet%(restriction)s][1];
 
 // Define vectors n = (p2 - p0) and t = normalized (p2 - p1)
-double n%(restriction)s0 = x%(restriction)s[vertex%(restriction)s2][0] - x%(restriction)s[vertex%(restriction)s0][0];
-double n%(restriction)s1 = x%(restriction)s[vertex%(restriction)s2][1] - x%(restriction)s[vertex%(restriction)s0][1];
-double n%(restriction)s2 = x%(restriction)s[vertex%(restriction)s2][2] - x%(restriction)s[vertex%(restriction)s0][2];
+double n%(restriction)s0 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 0] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 0];
+double n%(restriction)s1 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 1] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 1];
+double n%(restriction)s2 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 2] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 2];
 
-double t%(restriction)s0 = x%(restriction)s[vertex%(restriction)s2][0] - x%(restriction)s[vertex%(restriction)s1][0];
-double t%(restriction)s1 = x%(restriction)s[vertex%(restriction)s2][1] - x%(restriction)s[vertex%(restriction)s1][1];
-double t%(restriction)s2 = x%(restriction)s[vertex%(restriction)s2][2] - x%(restriction)s[vertex%(restriction)s1][2];
+double t%(restriction)s0 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 0] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 0];
+double t%(restriction)s1 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 1] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 1];
+double t%(restriction)s2 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 2] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 2];
 const double t%(restriction)s_length = std::sqrt(t%(restriction)s0*t%(restriction)s0 + t%(restriction)s1*t%(restriction)s1 + t%(restriction)s2*t%(restriction)s2);
 t%(restriction)s0 /= t%(restriction)s_length;
 t%(restriction)s1 /= t%(restriction)s_length;
@@ -353,15 +353,15 @@ double n%(restriction)s1 = 0.0;
 double n%(restriction)s2 = 0.0;
 if (facet%(restriction)s == 0)
 {
-  n%(restriction)s0 = x%(restriction)s[0][0] - x%(restriction)s[1][0];
-  n%(restriction)s1 = x%(restriction)s[0][1] - x%(restriction)s[1][1];
-  n%(restriction)s1 = x%(restriction)s[0][2] - x%(restriction)s[1][2];
+  n%(restriction)s0 = vertex_coordinates%(restriction)s[0] - vertex_coordinates%(restriction)s[3];
+  n%(restriction)s1 = vertex_coordinates%(restriction)s[1] - vertex_coordinates%(restriction)s[4];
+  n%(restriction)s1 = vertex_coordinates%(restriction)s[2] - vertex_coordinates%(restriction)s[5];
 }
 else
 {
-  n%(restriction)s0 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
-  n%(restriction)s1 = x%(restriction)s[1][1] - x%(restriction)s[0][1];
-  n%(restriction)s1 = x%(restriction)s[1][2] - x%(restriction)s[0][2];
+  n%(restriction)s0 = vertex_coordinates%(restriction)s[3] - vertex_coordinates%(restriction)s[0];
+  n%(restriction)s1 = vertex_coordinates%(restriction)s[4] - vertex_coordinates%(restriction)s[1];
+  n%(restriction)s1 = vertex_coordinates%(restriction)s[5] - vertex_coordinates%(restriction)s[2];
 }
 const double n%(restriction)s_length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1 + n%(restriction)s2*n%(restriction)s2);
 n%(restriction)s0 /= n%(restriction)s_length;
