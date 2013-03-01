@@ -17,8 +17,8 @@
 /// 2. Flattened arrays are twice as fast as nested arrays, both for
 ///    std:vector and raw C++ arrays.
 ///
-/// 3. Defining an array by 'std::vector<double> x(n)' where n is a
-///    literal leads to dynamic allocatioin and results in significant
+/// 3. Defining an array by 'std::vector<double> x(n)', where n is a
+///    literal, leads to dynamic allocation and results in significant
 ///    slowdowns compared to the definition 'double x[n]'.
 ///
 /// The conclusion is that we should use flattened raw C++ arrays in
