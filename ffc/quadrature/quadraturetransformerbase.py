@@ -481,25 +481,21 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     # SpatialCoordinate (geometry.py).
     # -------------------------------------------------------------------------
-    def spatial_coordinate(self, o, *operands):
+    def spatial_coordinate(self, o):
         #print "\n\nVisiting SpatialCoordinate:", repr(o)
         #print "\n\nVisiting SpatialCoordinate:", repr(operands)
 
         # Get the component.
         components = self.component()
-
-        # Safety checks.
-        ffc_assert(not operands, "Didn't expect any operands for spatial_coordinate: " + repr(operands))
-
-        ffc_assert(len(components) == 1,
-                   " expects 1 component index: " + repr(components))
         c, = components
 
-        # Generate the appropriate coordinate and update tables.
-        coordinate = format["ip coordinates"](self.points, c)
-        self._generate_affine_map()
-
-        return self._create_symbol(coordinate, IP)
+        if self.vertex is not None:
+            error("Spatial coordinates (x) not implemented for point measure (dP)") # TODO: Implement this, should be just the point.
+        else:
+            # Generate the appropriate coordinate and update tables.
+            coordinate = format["ip coordinates"](self.points, c)
+            self._generate_affine_map()
+            return self._create_symbol(coordinate, IP)
 
     # -------------------------------------------------------------------------
     # Indexed (indexed.py).
@@ -1105,26 +1101,22 @@ class QuadratureTransformerBase(Transformer):
 
         num_ip = self.points
         w, points = self.quad_weights[num_ip]
-        if not self.facet0 is None:
+
+        if self.facet0 is not None:
             points = map_facet_points(points, self.facet0)
             name = f_FEA(num_ip, self.facet0)
         elif self.vertex is not None:
-            error("Spatial coordinates (x) not implemented for point measure (dP)")
+            error("Spatial coordinates (x) not implemented for point measure (dP)") # TODO: Implement this, should be just the point.
+            #name = f_FEA(num_ip, self.vertex)
         else:
             name = f_FEA(num_ip, 0)
 
         if name not in self.unique_tables:
-            vals = []
-            for p in points:
-                vals.append(affine_map[len(p)](p))
-            self.unique_tables[name] = array(vals)
+            self.unique_tables[name] = array([affine_map[len(p)](p) for p in points])
+
         if self.coordinate is None:
-            ip = 0
-            r = None
-            if num_ip > 1:
-                ip = f_ip
-            if self.facet1 is not None:
-                r = "+"
+            ip = f_ip if num_ip > 1 else 0
+            r = None if self.facet1 is None else "+"
             self.coordinate = [name, self.gdim, ip, r]
 
     # -------------------------------------------------------------------------
