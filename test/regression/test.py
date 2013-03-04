@@ -39,6 +39,7 @@ from numpy import array, shape, abs, max, isnan
 from ffc.log import begin, end, info, info_red, info_green, info_blue
 from ufctest import generate_test_code
 from instant.output import get_status_output
+import time
 
 # Parameters
 output_tolerance = 1.e-6
@@ -63,9 +64,14 @@ ext_uflacs = [\
 "-r uflacs",
 ]
 
+_command_timings = []
 def run_command(command):
     "Run command and collect errors in log file."
+    t1 = time.time()
     (status, output) = get_status_output(command)
+    t2 = time.time()
+    global _command_timings
+    _command_timings.append((command, t2-t1))
     if status == 0:
         return True
     global logfile
@@ -425,12 +431,13 @@ def main(args):
     "Run all regression tests."
 
     # Check command-line arguments TODO: Use getargs or something
-    generate_only = "--generate-only" in args
-    fast = "--fast" in args
-    bench = "--bench" in args
-    use_ext_quad = "--ext_quad" in args
+    generate_only  = "--generate-only" in args
+    fast           = "--fast" in args
+    bench          = "--bench" in args
+    use_ext_quad   = "--ext_quad" in args
     use_ext_uflacs = "--ext_uflacs" in args
-    permissive = "--permissive" in args
+    permissive     = "--permissive" in args
+    print_timing   = "--print-timing" in args
 
     flags = (
         "--generate-only",
@@ -439,6 +446,7 @@ def main(args):
         "--ext_quad",
         "--ext_uflacs",
         "--permissive",
+        "--print-timing",
         )
     args = [arg for arg in args if not arg in flags]
 
@@ -455,7 +463,7 @@ def main(args):
         if use_ext_quad:
             test_cases += ext_quad
         if use_ext_uflacs:
-            test_cases = ext_uflacs # NB! Replacing with uflacs here, for now.
+            test_cases += ext_uflacs # NB! Replacing with uflacs here, for now.
 
     for argument in test_cases:
 
@@ -500,6 +508,10 @@ def main(args):
         end()
 
     # Print results
+    if print_timing:
+        timings = '\n'.join("%10.2e s  %s" % (t, name) for (name, t) in _command_timings)
+        info_green("Timing of all commands executed:")
+        info(timings)
     if logfile is None:
         info_green("Regression tests OK")
         return 0
