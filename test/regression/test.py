@@ -39,6 +39,7 @@ from numpy import array, shape, abs, max, isnan
 from ffc.log import begin, end, info, info_red, info_green, info_blue
 from ufctest import generate_test_code
 from instant.output import get_status_output
+import time
 
 # Parameters
 output_tolerance = 1.e-6
@@ -63,9 +64,14 @@ ext_uflacs = [\
 "-r uflacs",
 ]
 
+_command_timings = []
 def run_command(command):
     "Run command and collect errors in log file."
+    t1 = time.time()
     (status, output) = get_status_output(command)
+    t2 = time.time()
+    global _command_timings
+    _command_timings.append((command, t2-t1))
     if status == 0:
         return True
     global logfile
@@ -88,7 +94,7 @@ def clean_output(output_directory):
         shutil.rmtree(output_directory)
     os.mkdir(output_directory)
 
-def generate_test_cases(bench):
+def generate_test_cases(bench, only_forms):
     "Generate form files for all test cases."
 
     begin("Generating test cases")
@@ -99,8 +105,10 @@ def generate_test_cases(bench):
     else:
         form_directory = demo_directory
 
+    # Make list of form files
     form_files = [f for f in os.listdir(form_directory) if f.endswith(".ufl")]
-    #form_files = form_files[:1] # use for quick testing
+    if only_forms:
+        form_files = [f for f in form_files if f in only_forms]
     form_files.sort()
 
     for f in form_files:
@@ -109,9 +117,6 @@ def generate_test_cases(bench):
 
     # Generate form files for forms
     info("Generating form files for extra forms: Not implemented")
-
-    # FIXME: Testing
-    #return
 
     # Generate form files for elements
     if not bench:
@@ -122,22 +127,14 @@ def generate_test_cases(bench):
 
     end()
 
-def generate_code(args):
+def generate_code(args, only_forms):
     "Generate code for all test cases."
 
     # Get a list of all files
     form_files = [f for f in os.listdir(".") if f.endswith(".ufl")]
+    if only_forms:
+        form_files = [f for f in form_files if f in only_forms]
     form_files.sort()
-
-    # Hack to allow choosing single .ufl files from commandline
-    form_files2 = []
-    for a in args:
-        if a in form_files:
-            form_files2.append(a)
-    if form_files2:
-        form_files = form_files2
-        for f in form_files2:
-            args.remove(f)
 
     begin("Generating code (%d form files found)" % len(form_files))
 
@@ -425,12 +422,13 @@ def main(args):
     "Run all regression tests."
 
     # Check command-line arguments TODO: Use getargs or something
-    generate_only = "--generate-only" in args
-    fast = "--fast" in args
-    bench = "--bench" in args
-    use_ext_quad = "--ext_quad" in args
+    generate_only  = "--generate-only" in args
+    fast           = "--fast" in args
+    bench          = "--bench" in args
+    use_ext_quad   = "--ext_quad" in args
     use_ext_uflacs = "--ext_uflacs" in args
-    permissive = "--permissive" in args
+    permissive     = "--permissive" in args
+    print_timing   = "--print-timing" in args
 
     flags = (
         "--generate-only",
@@ -439,8 +437,13 @@ def main(args):
         "--ext_quad",
         "--ext_uflacs",
         "--permissive",
+        "--print-timing",
         )
     args = [arg for arg in args if not arg in flags]
+
+    # Extract .ufl names from args
+    only_forms = set([arg for arg in args if arg.endswith(".ufl")])
+    args = [arg for arg in args if arg not in only_forms]
 
     # Clean out old output directory
     output_directory = "output"
@@ -450,12 +453,12 @@ def main(args):
     # Adjust which test cases (combinations of compile arguments) to
     # run here
     test_cases = ["-r auto"]
+    if use_ext_uflacs:
+        test_cases += ext_uflacs
     if (not bench and not fast):
         test_cases += ["-r quadrature", "-r quadrature -O"]
         if use_ext_quad:
             test_cases += ext_quad
-        if use_ext_uflacs:
-            test_cases = ext_uflacs # NB! Replacing with uflacs here, for now.
 
     for argument in test_cases:
 
@@ -467,10 +470,10 @@ def main(args):
         os.chdir(sub_directory)
 
         # Generate test cases
-        generate_test_cases(bench)
+        generate_test_cases(bench, only_forms)
 
         # Generate code
-        generate_code(args + [argument])
+        generate_code(args + [argument], only_forms)
 
         # Location of reference directories
         reference_directory =  os.path.abspath("../../references/")
@@ -500,6 +503,10 @@ def main(args):
         end()
 
     # Print results
+    if print_timing:
+        timings = '\n'.join("%10.2e s  %s" % (t, name) for (name, t) in _command_timings)
+        info_green("Timing of all commands executed:")
+        info(timings)
     if logfile is None:
         info_green("Regression tests OK")
         return 0
