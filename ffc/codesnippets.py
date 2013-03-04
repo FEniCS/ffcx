@@ -611,24 +611,27 @@ y[2] = w0*vertex_coordinates[2] + w1*vertex_coordinates[5] + w2*vertex_coordinat
 
 _ip_coordinates_1D = """\
 X%(num_ip)d[0] = %(name)s[%(ip)s][0]*vertex_coordinates%(restriction)s[0] + \
-%(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[0];"""
+                 %(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[1];"""
 
 _ip_coordinates_2D = """\
 X%(num_ip)d[0] = %(name)s[%(ip)s][0]*vertex_coordinates%(restriction)s[0] + \
-%(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[2] + %(name)s[%(ip)s][2]*vertex_coordinates%(restriction)s[4];
+                 %(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[2] + %(name)s[%(ip)s][2]*vertex_coordinates%(restriction)s[4];
 X%(num_ip)d[1] = %(name)s[%(ip)s][0]*vertex_coordinates%(restriction)s[1] + \
-%(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[3] + %(name)s[%(ip)s][2]*vertex_coordinates%(restriction)s[5];"""
+                 %(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[3] + %(name)s[%(ip)s][2]*vertex_coordinates%(restriction)s[5];"""
 
 _ip_coordinates_3D = """\
 X%(num_ip)d[0] = %(name)s[%(ip)s][0]*vertex_coordinates%(restriction)s[0] + \
-%(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[3] + %(name)s[%(ip)s][2]*vertex_coordinates%(restriction)s[6] + \
-%(name)s[%(ip)s][3]*vertex_coordinates%(restriction)s[9];
+                 %(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[3] + \
+                 %(name)s[%(ip)s][2]*vertex_coordinates%(restriction)s[6] + \
+                 %(name)s[%(ip)s][3]*vertex_coordinates%(restriction)s[9];
 X%(num_ip)d[1] = %(name)s[%(ip)s][0]*vertex_coordinates%(restriction)s[1] + \
-%(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[4] + %(name)s[%(ip)s][2]*vertex_coordinates%(restriction)s[7] + \
-%(name)s[%(ip)s][3]*vertex_coordinates%(restriction)s[10];
+                 %(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[4] + \
+                 %(name)s[%(ip)s][2]*vertex_coordinates%(restriction)s[7] + \
+                 %(name)s[%(ip)s][3]*vertex_coordinates%(restriction)s[10];
 X%(num_ip)d[2] = %(name)s[%(ip)s][0]*vertex_coordinates%(restriction)s[2] + \
-%(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[5] + %(name)s[%(ip)s][2]*vertex_coordinates%(restriction)s[8] + \
-%(name)s[%(ip)s][3]*vertex_coordinates%(restriction)s[11];"""
+                 %(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[5] + \
+                 %(name)s[%(ip)s][2]*vertex_coordinates%(restriction)s[8] + \
+                 %(name)s[%(ip)s][3]*vertex_coordinates%(restriction)s[11];"""
 
 # Codesnippets used in evaluatebasis[|derivatives]
 _map_coordinates_FIAT_interval = """\
