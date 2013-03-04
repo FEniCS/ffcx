@@ -1,4 +1,4 @@
-# Copyright (C) 2010 Kristian B. Oelgaard
+# Copyright (C) 2013 Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -15,10 +15,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# First added:  2010-02-08
-# Last changed: 2013-02-01
-#
 # Modified by Marie E. Rognes, 2013
+# Modified by Martin Alnaes, 2013
+#
+# First added:  2010-02-08
+# Last changed: 2013-02-10
 
 # FFC modules
 from ffc.log import info, error
@@ -237,4 +238,3 @@ def _reduce_expression(expr, symbols, const_dict, f_name, use_expr_type=False):
         s = create_symbol(f_name(const_dict[new_sym]), sym_type)
         return [s]
     return symbols
-

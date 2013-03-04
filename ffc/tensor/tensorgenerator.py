@@ -1,6 +1,6 @@
 "Code generator for tensor representation"
 
-# Copyright (C) 2004-2010 Anders Logg
+# Copyright (C) 2004-2013 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -21,9 +21,10 @@
 # Modified by Marie Rognes, 2007
 # Modified by Garth N. Wells, 2009
 # Modified by Mehdi Nikbakht, 2010
+# Modified by Martin Alnaes, 2013
 #
 # First added:  2004-11-03
-# Last changed: 2011-02-21
+# Last changed: 2013-02-10
 
 # FFC modules
 from ffc.log import error
@@ -31,30 +32,12 @@ from ffc.cpp import format, remove_unused, count_ops
 
 # FFC tensor representation modules
 from ffc.tensor.monomialtransformation import MonomialIndex
-
-# Error issued for quadrature version of tabulate_tensor
-tabulate_tensor_quadrature_error = """\
-Quadrature version of tabulate_tensor not available when using the FFC tensor representation."""
+from ffc.representationutils import initialize_integral_code
 
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
-
-    # Prefetch formatting to speedup code generation
-    do_nothing = format["do nothing"]
-    classname = format["classname " + ir["domain_type"] + "_integral"]
-    exception = format["exception"]
-
-    # Generate code
-    code = {}
-    code["classname"] = classname(prefix, ir["form_id"], ir["domain_id"])
-    code["members"] = ""
-    code["constructor"] = do_nothing
-    code["constructor_arguments"] = ""
-    code["initializer_list"] = ""
-    code["destructor"] = do_nothing
+    code = initialize_integral_code(ir, prefix, parameters)
     code["tabulate_tensor"] = _tabulate_tensor(ir, parameters)
-    code["tabulate_tensor_quadrature"] = exception(tabulate_tensor_quadrature_error)
-
     return code
 
 def _tabulate_tensor(ir, parameters):
@@ -71,10 +54,10 @@ def _tabulate_tensor(ir, parameters):
     # Extract data from intermediate representation
     AK = ir["AK"]
     domain_type = ir["domain_type"]
-    gdim = ir["geometric_dimension"]
     tdim = ir["topological_dimension"]
-    num_facets = ir["num_facets"]
+    gdim = ir["geometric_dimension"]
     oriented = ir["needs_oriented"]
+    num_facets = ir["num_facets"]
 
     # Check integral type and generate code
     if domain_type == "cell":
@@ -83,11 +66,17 @@ def _tabulate_tensor(ir, parameters):
         t_code = _generate_tensor_contraction(AK, parameters, g_set)
 
         # Generate code for geometry tensors
-        g_code = _generate_geometry_tensors(AK, j_set, g_set)
+        g_code = _generate_geometry_tensors(AK, j_set, g_set, tdim, gdim)
 
-        # Generate code for Jacobian and its inverse
-        j_code = format["jacobian and inverse"](gdim, tdim, oriented=oriented)
-        j_code += "\n\n" + format["scale factor snippet"]
+        # Generate code for basic geometric quantities
+        j_code  = ""
+        j_code += format["compute_jacobian"](tdim, gdim)
+        j_code += "\n"
+        j_code += format["compute_jacobian_inverse"](tdim, gdim)
+        if oriented:
+            j_code += format["orientation"](tdim, gdim)
+        j_code += "\n"
+        j_code += format["scale factor snippet"]
 
     elif domain_type == "exterior_facet":
 
@@ -98,11 +87,17 @@ def _tabulate_tensor(ir, parameters):
         t_code = switch(format["facet"](None), cases)
 
         # Generate code for geometry tensors
-        g_code = _generate_geometry_tensors(AK[0], j_set, g_set)
+        g_code = _generate_geometry_tensors(AK[0], j_set, g_set, tdim, gdim)
 
         # Generate code for Jacobian
-        j_code = format["jacobian and inverse"](gdim, tdim, oriented=oriented)
-        j_code += "\n\n" + format["facet determinant"](gdim, tdim)
+        j_code = ""
+        j_code += format["compute_jacobian"](tdim, gdim)
+        j_code += "\n"
+        j_code += format["compute_jacobian_inverse"](tdim, gdim)
+        if oriented:
+            j_code += format["orientation"](tdim, gdim)
+        j_code += "\n"
+        j_code += format["facet determinant"](tdim, gdim)
 
     elif domain_type == "interior_facet":
 
@@ -114,14 +109,17 @@ def _tabulate_tensor(ir, parameters):
         t_code = switch(format["facet"]("+"), [switch(format["facet"]("-"), cases[i]) for i in range(len(cases))])
 
         # Generate code for geometry tensors
-        g_code = _generate_geometry_tensors(AK[0][0], j_set, g_set)
+        g_code = _generate_geometry_tensors(AK[0][0], j_set, g_set, tdim, gdim)
 
         # Generate code for Jacobian
-        j_code  = format["jacobian and inverse"](gdim, tdim, r="+",
-                                                 oriented=oriented)
-        j_code += format["jacobian and inverse"](gdim, tdim, r="-",
-                                                 oriented=oriented)
-        j_code += "\n\n" + format["facet determinant"](gdim, tdim, r="+")
+        j_code = ""
+        for _r in ["+", "-"]:
+            j_code += format["compute_jacobian"](tdim, gdim, r=_r)
+            j_code += "\n"
+            j_code += format["compute_jacobian_inverse"](tdim, gdim, r=_r)
+            j_code += "\n"
+        j_code += format["facet determinant"](tdim, gdim, r="+")
+        j_code += "\n"
 
     else:
         error("Unhandled integral type: " + str(domain_type))
@@ -309,7 +307,7 @@ def _generate_tensor_contraction_optimized(terms, parameters, g_set):
 
     return "\n".join(lines)
 
-def _generate_geometry_tensors(terms, j_set, g_set):
+def _generate_geometry_tensors(terms, j_set, g_set, tdim, gdim):
     "Generate code for computation of geometry tensors."
 
     # Prefetch formats to speed up code generation
@@ -340,7 +338,8 @@ def _generate_geometry_tensors(terms, j_set, g_set):
             if not format["geometry tensor"](i, a) in g_set: continue
 
             # Compute factorized values
-            values = [_generate_entry(GK, a, offset + j, j_set) for (j, GK) in enumerate(GKs)]
+            values = [_generate_entry(GK, a, offset + j, j_set, tdim, gdim) \
+                          for (j, GK) in enumerate(GKs)]
 
             # Sum factorized values
             name = format_geometry_tensor(i, a)
@@ -363,7 +362,7 @@ def _generate_geometry_tensors(terms, j_set, g_set):
 
     return "\n".join(lines)
 
-def _generate_entry(GK, a, i, j_set):
+def _generate_entry(GK, a, i, j_set, tdim, gdim):
     "Generate code for the value of a GK entry."
 
     # Prefetch formats to speed up code generation
@@ -372,10 +371,12 @@ def _generate_entry(GK, a, i, j_set):
     multiply = format["multiply"]
 
     # Compute product of factors outside sum
-    factors = _extract_factors(GK, a, None, j_set, index_type=MonomialIndex.SECONDARY)
+    factors = _extract_factors(GK, a, None, j_set, tdim, gdim,
+                              MonomialIndex.SECONDARY)
 
     # Compute sum of products of factors inside sum
-    terms = [multiply(_extract_factors(GK, a, b, j_set, index_type=MonomialIndex.EXTERNAL))
+    terms = [multiply(_extract_factors(GK, a, b, j_set, tdim, gdim,
+                                       MonomialIndex.EXTERNAL))
              for b in GK.external_multi_index.indices]
 
     # Compute product
@@ -402,12 +403,12 @@ def _multiply_value_by_det(value, det, is_sum, j_set):
         v = [value]
     return format["multiply"](d + [format["scale factor"]] + v)
 
-def _extract_factors(GK, a, b, j_set, index_type):
+def _extract_factors(GK, a, b, j_set, tdim, gdim, index_type):
     "Extract factors of given index type in GK entry."
 
     # Prefetch formats to speed up code generation
     coefficient = format["coefficient"]
-    transform   = format["transform"]
+    transform = format["transform"]
 
     # List of factors
     factors = []
@@ -428,9 +429,18 @@ def _extract_factors(GK, a, b, j_set, index_type):
 
         # Add factor
         if include_index:
+            # FIXME: Dimensions of J and K are transposed, what is the right thing to fix this hack?
+            if t.transform_type == "J": #MonomialTransform.J:
+                dim0, dim1 = gdim, tdim
+            elif t.transform_type == "JINV": #MonomialTransform.JINV:
+                dim0, dim1 = tdim, gdim
+            else:
+                error("Unknown transform type, fix this hack.")
+
             factors.append(transform(t.transform_type,
                                      t.index0(secondary=a, external=b),
                                      t.index1(secondary=a, external=b),
+                                     dim0, dim1,
                                      t.restriction))
             j_set.add(factors[-1])
 

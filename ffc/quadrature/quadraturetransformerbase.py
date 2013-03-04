@@ -22,7 +22,7 @@ transformers to translate UFL expressions."""
 # Modified by Garth N. Wells, 2013
 #
 # First added:  2009-10-13
-# Last changed: 2013-02-02
+# Last changed: 2013-02-20
 
 # Python modules.
 from itertools import izip
@@ -59,8 +59,9 @@ class QuadratureTransformerBase(Transformer):
     def __init__(self,
                  psi_tables,
                  quad_weights,
-                 geo_dim,
-                 top_dim,
+                 gdim,
+                 tdim,
+                 entitytype,
                  function_replace_map,
                  optimise_parameters):
 
@@ -79,10 +80,10 @@ class QuadratureTransformerBase(Transformer):
         self.used_nzcs = set()
         self.ip_consts = {}
         self.trans_set = set()
-        self.functions = {}
-        self.function_count = 0
-        self.geo_dim = geo_dim
-        self.top_dim = top_dim
+        self.function_data = {}
+        self.tdim = tdim
+        self.gdim = gdim
+        self.entitytype = entitytype
         self.points = 0
         self.facet0 = None
         self.facet1 = None
@@ -99,35 +100,42 @@ class QuadratureTransformerBase(Transformer):
         self._components = Stack()
 
         self.element_map, self.name_map, self.unique_tables =\
-              create_psi_tables(psi_tables, self.optimise_parameters)
+            create_psi_tables(psi_tables, self.optimise_parameters["eliminate zeros"], self.entitytype)
 
         # Cache.
         self.argument_cache = {}
         self.function_cache = {}
 
+    def update_cell(self):
+        ffc_assert(self.entitytype == "cell", "Not expecting update_cell on a %s." % self.entitytype)
+        self.facet0 = None
+        self.facet1 = None
+        self.vertex = None
+        self.coordinate = None
+        self.conditionals = {}
+
     def update_facets(self, facet0, facet1):
+        ffc_assert(self.entitytype == "facet", "Not expecting update_facet on a %s." % self.entitytype)
         self.facet0 = facet0
         self.facet1 = facet1
+        self.vertex = None
         self.coordinate = None
         self.conditionals = {}
 
     def update_vertex(self, vertex):
+        ffc_assert(self.entitytype == "vertex", "Not expecting update_vertex on a %s." % self.entitytype)
+        self.facet0 = None
+        self.facet1 = None
         self.vertex = vertex
         self.coordinate = None
         self.conditionals = {}
-
-        # MER: This is a hack in case you are in doubt.
-        self.element_map, self.name_map, self.unique_tables =\
-              create_psi_tables(self.__psi_tables, self.optimise_parameters,
-                                self.vertex)
 
     def update_points(self, points):
         self.points = points
         self.coordinate = None
         # Reset functions everytime we move to a new quadrature loop
         self.conditionals = {}
-        self.functions = {}
-        self.function_count = 0
+        self.function_data = {}
 
         # Reset cache
         self.argument_cache = {}
@@ -290,12 +298,14 @@ class QuadratureTransformerBase(Transformer):
             return basis
 
         # Get auxiliary variables to generate basis
-        component, local_comp, local_offset, ffc_element, quad_element, \
-        transformation, multiindices = self._get_auxiliary_variables(o, components, derivatives)
+        (component, local_elem, local_comp, local_offset,
+         ffc_element, transformation, multiindices) = self._get_auxiliary_variables(o, components, derivatives)
 
         # Create mapping and code for basis function and add to dict.
         basis = self.create_argument(o, derivatives, component, local_comp,
-                  local_offset, ffc_element, transformation, multiindices)
+                                     local_offset, ffc_element,
+                                     transformation, multiindices,
+                                     self.tdim, self.gdim)
 
         self.argument_cache[(o, components, derivatives, self.restriction)] = basis
 
@@ -377,23 +387,26 @@ class QuadratureTransformerBase(Transformer):
         derivatives = self.derivatives()
 
         # Check if function is already in cache
-        function_code = self.function_cache.get((o, components, derivatives, self.restriction), None)
+        key = (o, components, derivatives, self.restriction)
+        function_code = self.function_cache.get(key)
+
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
-        if function_code is not None and not self.optimise_parameters["optimisation"]:
-        #if function_code is not None:
-            return function_code
+        if function_code is None or self.optimise_parameters["optimisation"]:
+            # Get auxiliary variables to generate function
+            (component, local_elem, local_comp, local_offset,
+             ffc_element, transformation, multiindices) = self._get_auxiliary_variables(o, components, derivatives)
 
-        # Get auxiliary variables to generate function
-        component, local_comp, local_offset, ffc_element, quad_element, \
-        transformation, multiindices = self._get_auxiliary_variables(o, components, derivatives)
+            # Check that we don't take derivatives of QuadratureElements.
+            is_quad_element = local_elem.family() == "Quadrature"
+            ffc_assert(not (derivatives and is_quad_element), \
+                       "Derivatives of Quadrature elements are not supported: " + repr(o))
 
+            # Create code for function and add empty tuple to cache dict.
+            function_code = {(): self.create_function(o, derivatives, component,
+                                                      local_comp, local_offset, ffc_element, is_quad_element,
+                                                      transformation, multiindices, self.tdim, self.gdim)}
 
-        # Create code for function and add empty tuple to cache dict.
-        function_code = {(): self.create_function(o, derivatives, component,
-                              local_comp, local_offset, ffc_element, quad_element,
-                              transformation, multiindices)}
-
-        self.function_cache[(o, components, derivatives, self.restriction)] = function_code
+            self.function_cache[key] = function_code
 
         return function_code
 
@@ -468,25 +481,21 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     # SpatialCoordinate (geometry.py).
     # -------------------------------------------------------------------------
-    def spatial_coordinate(self, o, *operands):
+    def spatial_coordinate(self, o):
         #print "\n\nVisiting SpatialCoordinate:", repr(o)
         #print "\n\nVisiting SpatialCoordinate:", repr(operands)
 
         # Get the component.
         components = self.component()
-
-        # Safety checks.
-        ffc_assert(not operands, "Didn't expect any operands for spatial_coordinate: " + repr(operands))
-
-        ffc_assert(len(components) == 1,
-                   " expects 1 component index: " + repr(components))
         c, = components
 
-        # Generate the appropriate coordinate and update tables.
-        coordinate = format["ip coordinates"](self.points, c)
-        self._generate_affine_map()
-
-        return self._create_symbol(coordinate, IP)
+        if self.vertex is not None:
+            error("Spatial coordinates (x) not implemented for point measure (dP)") # TODO: Implement this, should be just the point.
+        else:
+            # Generate the appropriate coordinate and update tables.
+            coordinate = format["ip coordinates"](self.points, c)
+            self._generate_affine_map()
+            return self._create_symbol(coordinate, IP)
 
     # -------------------------------------------------------------------------
     # Indexed (indexed.py).
@@ -746,9 +755,7 @@ class QuadratureTransformerBase(Transformer):
 
     def _create_loop_entry(self, key, f_nzc):
 
-        # TODO: Verify that test and trial functions will ALWAYS be rearranged to 0 and 1.
-        indices = {-2: format["first free index"], -1: format["second free index"],
-                    0: format["first free index"],  1: format["second free index"]}
+        indices = {0: format["first free index"],  1: format["second free index"]}
 
         # Create appropriate entries.
         # FIXME: We only support rank 0, 1 and 2.
@@ -820,53 +827,53 @@ class QuadratureTransformerBase(Transformer):
         # Get UFL element.
         ufl_element = ufl_function.element()
 
-        # Get local component (in case we have mixed elements).
+        # Get subelement and the relative (flattened) component (in case we have mixed elements).
         local_comp, local_elem = ufl_element.extract_component(component)
+        ffc_assert(len(local_comp) <= 1, "Assuming there are no tensor-valued basic elements.")
+        local_comp = local_comp[0] if local_comp else 0
 
-        # Check that we don't take derivatives of QuadratureElements.
-        quad_element = local_elem.family() == "Quadrature"
-        ffc_assert(not (derivatives and quad_element), \
-                   "Derivatives of Quadrature elements are not supported: " + repr(ufl_function))
+        # Check that component != not () since the UFL component map will turn
+        # it into 0, and () does not mean zeroth component in this context.
+        if len(component):
+            # Map component using component map from UFL. (TODO: inefficient use of this function)
+            comp_map, comp_num = build_component_numbering(ufl_element.value_shape(), ufl_element.symmetry())
+            component = comp_map[component]
+
+            # Map physical components into reference components
+            component, dummy = transform_component(component, 0, ufl_element)
+
+            # Compute the local offset (needed for non-affine mappings).
+            local_offset = component - local_comp
+        else:
+            # Compute the local offset (needed for non-affine mappings).
+            local_offset = 0
 
         # Create FFC element.
         ffc_element = create_element(ufl_element)
 
-        # Get relevant sub element and mapping.
-        sub_element = create_element(local_elem)
-
         # Assuming that mappings for all basisfunctions are equal
         # (they should be).
-        transformation = sub_element.mapping()[0]
-
-        # Handle tensor elements.
-        if len(local_comp) > 1:
-            local_comp = local_elem._sub_element_mapping[local_comp]
-        elif local_comp:
-            local_comp = local_comp[0]
-        else:
-            local_comp = 0
-
-        # Check that component != not () since the UFL component map will turn
-        # it into 0, and () does not mean zeroth component in this context.
-        if component != ():
-            # Map component using component map from UFL.
-            comp_map, comp_num = build_component_numbering(ufl_element.value_shape(), ufl_element.symmetry())
-            component = comp_map[component]
-
-        # Map physical components into reference components
-        component, dummy = transform_component(component, 0, ufl_element)
-
-        # Compute the local offset (needed for non-affine mappings).
-        local_offset = 0
-        if component:
-            local_offset = component - local_comp
+        ffc_sub_element = create_element(local_elem)
+        transformation = ffc_sub_element.mapping()[0]
 
         # Generate FFC multi index for derivatives.
-        multiindices = FFCMultiIndex([range(self.top_dim)]*len(derivatives)).indices
+        multiindices = FFCMultiIndex([range(self.tdim)]*len(derivatives)).indices
 
         #print "in create_auxiliary"
         #print "component = ", component
-        return (component, local_comp, local_offset, ffc_element, quad_element, transformation, multiindices)
+        return (component, local_elem, local_comp, local_offset, ffc_element, transformation, multiindices)
+
+    def _get_current_entity(self):
+        if self.entitytype == "cell":
+            # If we add macro cell integration, I guess the 'current cell number' would go here?
+            return 0
+        elif self.entitytype == "facet":
+            # Handle restriction through facet.
+            return {"+": self.facet0, "-": self.facet1, None: self.facet0}[self.restriction]
+        elif self.entitytype == "vertex":
+            return self.vertex
+        else:
+            error("Unknown entity type %s." % self.entitytype)
 
     def _create_mapping_basis(self, component, deriv, ufl_argument, ffc_element):
         "Create basis name and mapping from given basis_info."
@@ -876,17 +883,12 @@ class QuadratureTransformerBase(Transformer):
         generate_psi_name = format["psi name"]
 
         # Only support test and trial functions.
-        #indices = {-2: format["first free index"],
-        #           -1: format["second free index"],
         indices = { 0: format["first free index"],
                     1: format["second free index"]}
 
         # Check that we have a basis function.
         ffc_assert(ufl_argument.count() in indices, \
-                   "Currently, Argument index must be either -2, -1, 0 or 1: " + repr(ufl_argument))
-
-        # Handle restriction through facet.
-        facet = {"+": self.facet0, "-": self.facet1, None: self.facet0}[self.restriction]
+                   "Currently, Argument index must be either 0 or 1: " + repr(ufl_argument))
 
         # Get element counter and loop index.
         element_counter = self.element_map[self.points][ufl_argument.element()]
@@ -907,8 +909,10 @@ class QuadratureTransformerBase(Transformer):
         if self.restriction == "+" or self.restriction == "-":
             space_dim *= 2
 
-        name = generate_psi_name(element_counter, facet, component, deriv,
-                                 self.vertex)
+        # Get current cell entity, with current restriction considered
+        entity = self._get_current_entity()
+
+        name = generate_psi_name(element_counter, self.entitytype, entity, component, deriv)
         name, non_zeros, zeros, ones = self.name_map[name]
         loop_index_range = shape(self.unique_tables[name])[1]
 
@@ -949,35 +953,23 @@ class QuadratureTransformerBase(Transformer):
 
         return (mapping, basis)
 
-    def _create_function_name(self, component, deriv, quad_element, ufl_function, ffc_element):
+    def _create_function_name(self, component, deriv, is_quad_element, ufl_function, ffc_element):
 
         # Get string for integration points.
-        f_ip = format["integration points"]
-        generate_psi_name = format["psi name"]
-
-        # Pick first free index of secondary type
-        # (could use primary indices, but it's better to avoid confusion).
-        loop_index = format["free indices"][0]
-
-        # Create basis access, we never need to map the entry in the basis
-        # table since we will either loop the entire space dimension or the
-        # non-zeros.
-        if self.points == 1:
-            f_ip = "0"
-        basis_access = format["component"]("", [f_ip, loop_index])
-
-        # Handle restriction through facet.
-        facet = {"+": self.facet0, "-": self.facet1, None: self.facet0}[self.restriction]
+        f_ip = "0" if self.points == 1 else format["integration points"]
 
         # Get the element counter.
         element_counter = self.element_map[self.points][ufl_function.element()]
 
-        # Offset by element space dimension in case of negative restriction.
-        offset = {"+": "", "-": str(ffc_element.space_dimension()), None: ""}[self.restriction]
+        # Get current cell entity, with current restriction considered
+        entity = self._get_current_entity()
+
+        # Set to hold used nonzero columns
+        used_nzcs = set()
 
         # Create basis name and map to correct basis and get info.
-        psi_name = generate_psi_name(element_counter, facet, component, deriv,
-                                     self.vertex)
+        generate_psi_name = format["psi name"]
+        psi_name = generate_psi_name(element_counter, self.entitytype, entity, component, deriv)
         psi_name, non_zeros, zeros, ones = self.name_map[psi_name]
 
         # If all basis are zero we just return None.
@@ -986,27 +978,14 @@ class QuadratureTransformerBase(Transformer):
 
         # Get the index range of the loop index.
         loop_index_range = shape(self.unique_tables[psi_name])[1]
-
-        # Set default coefficient access.
-        coefficient_access = loop_index
-
-        # If the loop index range is one we can look up the first component
-        # in the coefficient array. If we only have ones we don't need the basis.
-        basis_name = psi_name
-        if self.optimise_parameters["ignore ones"] and loop_index_range == 1 and ones:
-            coefficient_access = "0"
-            basis_name = ""
-        elif not quad_element:
-            # Add basis name to set of used tables and add matrix access.
-            # TODO: We should first add this table if the function is used later
-            # in the expressions. If some term is multiplied by zero and it falls
-            # away there is no need to compute the function value
-            self.used_psi_tables.add(psi_name)
-            basis_name += basis_access
+        if loop_index_range > 1:
+            # Pick first free index of secondary type
+            # (could use primary indices, but it's better to avoid confusion).
+            loop_index = format["free indices"][0]
 
         # If we have a quadrature element we can use the ip number to look
         # up the value directly. Need to add offset in case of components.
-        if quad_element:
+        if is_quad_element:
             quad_offset = 0
             if component:
                 # FIXME: Should we add a member function elements() to FiniteElement?
@@ -1020,52 +999,92 @@ class QuadratureTransformerBase(Transformer):
             if quad_offset:
                 coefficient_access = format["add"]([f_ip, str(quad_offset)])
             else:
-                coefficient_access = f_ip
+                if non_zeros and f_ip == "0":
+                    # If we have non zero column mapping but only one value just pick it.
+                    # MSA: This should be an exact refactoring of the previous logic,
+                    #      but I'm not sure if these lines were originally intended
+                    #      here in the quad_element section, or what this even does:
+                    coefficient_access = str(non_zeros[1][0])
+                else:
+                    coefficient_access = f_ip
 
-        # If we have non zero column mapping but only one value just pick it.
-        used_nzcs = set()
-        if non_zeros and coefficient_access == "0":
-            coefficient_access = str(non_zeros[1][0])
-        elif non_zeros and not quad_element:
-            used_nzcs.add(non_zeros[0])
-            coefficient_access = format["component"](format["nonzero columns"](non_zeros[0]), coefficient_access)
+        elif non_zeros:
+            if loop_index_range == 1:
+                # If we have non zero column mapping but only one value just pick it.
+                coefficient_access = str(non_zeros[1][0])
+            else:
+                used_nzcs.add(non_zeros[0])
+                coefficient_access = format["component"](format["nonzero columns"](non_zeros[0]), loop_index)
+
+        elif loop_index_range == 1:
+            # If the loop index range is one we can look up the first component
+            # in the coefficient array.
+            coefficient_access = "0"
+
+        else:
+            # Or just set default coefficient access.
+            coefficient_access = loop_index
+
+        # Offset by element space dimension in case of negative restriction.
+        offset = {"+": "", "-": str(ffc_element.space_dimension()), None: ""}[self.restriction]
         if offset:
             coefficient_access = format["add"]([coefficient_access, offset])
 
         # Try to evaluate coefficient access ("3 + 2" --> "5").
-        ACCESS = IP
         try:
             coefficient_access = str(eval(coefficient_access))
-            ACCESS = GEO
+            C_ACCESS = GEO
         except:
-            pass
-
+            C_ACCESS = IP
+        # Format coefficient access
         coefficient = format["coefficient"](str(ufl_function.count()), coefficient_access)
-        function_expr = self._create_symbol(coefficient, ACCESS)[()]
-        if basis_name:
-            function_expr = self._create_product([self._create_symbol(basis_name, ACCESS)[()],
-                                                  self._create_symbol(coefficient, ACCESS)[()]])
 
-        # If we have a quadrature element (or if basis was deleted) we don't need the basis.
-        if quad_element or not basis_name:
-            function_name = self._create_symbol(coefficient, ACCESS)[()]
+        # Build and cache some function data only if we need the basis
+        # MSA: I don't understand the mix of loop index range check and ones check here, but that's how it was.
+        if is_quad_element or (loop_index_range == 1 and ones and self.optimise_parameters["ignore ones"]):
+            # If we only have ones or if we have a quadrature element we don't need the basis.
+            function_symbol_name = coefficient
+            F_ACCESS = C_ACCESS
+
         else:
+            # Add basis name to set of used tables and add matrix access.
+            # TODO: We should first add this table if the function is used later
+            # in the expressions. If some term is multiplied by zero and it falls
+            # away there is no need to compute the function value
+            self.used_psi_tables.add(psi_name)
+
+            # Create basis access, we never need to map the entry in the basis
+            # table since we will either loop the entire space dimension or the
+            # non-zeros.
+            basis_index = "0" if loop_index_range == 1 else loop_index
+            basis_access = format["component"]("", [f_ip, basis_index])
+            basis_name = psi_name + basis_access
+            # Try to set access to the outermost possible loop
+            if f_ip == "0" and basis_access == "0":
+                B_ACCESS = GEO
+                F_ACCESS = C_ACCESS
+            else:
+                B_ACCESS = IP
+                F_ACCESS = IP
+
+            # Format expression for function
+            function_expr = self._create_product([self._create_symbol(basis_name, B_ACCESS)[()],
+                                                  self._create_symbol(coefficient, C_ACCESS)[()]])
+
             # Check if the expression to compute the function value is already in
             # the dictionary of used function. If not, generate a new name and add.
-            function_name = self._create_symbol(format["function value"](self.function_count), ACCESS)[()]
-            if not function_expr in self.functions:
-                function_name = self._create_symbol(format["function value"](self.function_count), ACCESS)[()]
-                data = (self.function_count, loop_index_range, self._count_operations(function_expr),\
+            data = self.function_data.get(function_expr)
+            if data is None:
+                function_count = len(self.function_data)
+                data = (function_count, loop_index_range,
+                        self._count_operations(function_expr),
                         psi_name, used_nzcs, ufl_function.element())
-                self.functions[function_expr] = data
-                # Increase count.
-                self.function_count += 1
-            else:
-                data = self.functions[function_expr]
-                function_name = self._create_symbol(format["function value"](data[0]), ACCESS)[()]
-                # Check just to make sure.
-                ffc_assert(data[1] == loop_index_range, "Index ranges does not match." + repr(data[1]) + repr(loop_index_range))
-        return function_name
+                self.function_data[function_expr] = data
+            function_symbol_name = format["function value"](data[0])
+
+        # TODO: This access stuff was changed subtly during my refactoring, the
+        # X_ACCESS vars is an attempt at making it right, make sure it is correct now!
+        return self._create_symbol(function_symbol_name, F_ACCESS)[()]
 
     def _generate_affine_map(self):
         """Generate psi table for affine map, used by spatial coordinate to map
@@ -1082,27 +1101,23 @@ class QuadratureTransformerBase(Transformer):
 
         num_ip = self.points
         w, points = self.quad_weights[num_ip]
-        if not self.facet0 is None:
+
+        if self.facet0 is not None:
             points = map_facet_points(points, self.facet0)
             name = f_FEA(num_ip, self.facet0)
         elif self.vertex is not None:
-            error("Spatial coordinates (x) not implemented for point measure (dP)")
+            error("Spatial coordinates (x) not implemented for point measure (dP)") # TODO: Implement this, should be just the point.
+            #name = f_FEA(num_ip, self.vertex)
         else:
             name = f_FEA(num_ip, 0)
 
         if name not in self.unique_tables:
-            vals = []
-            for p in points:
-                vals.append(affine_map[len(p)](p))
-            self.unique_tables[name] = array(vals)
+            self.unique_tables[name] = array([affine_map[len(p)](p) for p in points])
+
         if self.coordinate is None:
-            ip = 0
-            r = None
-            if num_ip > 1:
-                ip = f_ip
-            if self.facet1 is not None:
-                r = "+"
-            self.coordinate = [name, self.geo_dim, ip, r]
+            ip = f_ip if num_ip > 1 else 0
+            r = None if self.facet1 is None else "+"
+            self.coordinate = [name, self.gdim, ip, r]
 
     # -------------------------------------------------------------------------
     # Helper functions for code_generation()

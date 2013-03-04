@@ -34,16 +34,17 @@ def recdiff_dict(data1, data2, tolerance=_default_recdiff_tolerance):
     return diff or DiffEqual
 
 def recdiff(data1, data2, tolerance=_default_recdiff_tolerance):
-    if type(data1) != type(data2):
+    if isinstance(data1, (float,int)) and isinstance(data2, (float,int)):
+        # This approach allows numbers formatted as ints and floats interchangably as long as the values are equal
+        diff = data1 - data2
+        return DiffEqual if abs(diff) < tolerance else (data1, data2)
+    elif type(data1) != type(data2):
         return (data1, data2)
     elif isinstance(data1, dict):
         return recdiff_dict(data1, data2, tolerance)
     elif isinstance(data1, list):
         diff = [recdiff(d1, d2, tolerance) for (d1,d2) in zip(data1, data2)]
         return DiffEqual if all(d is DiffEqual for d in diff) else diff
-    elif isinstance(data1, float):
-        diff = data1 - data2
-        return DiffEqual if abs(diff) < tolerance else (data1, data2)
     else:
         return DiffEqual if data1 == data2 else (data1, data2)
 
@@ -80,10 +81,10 @@ def print_recdiff(diff, indent=0, printer=_print, prekey=""):
 
 
 # ---------- Unittest code
-from unittest import TestCase, main
+import unittest
 #from recdiff import recdiff, print_recdiff, DiffEqual, DiffMissing
 
-class RecDiffTestCase(TestCase):
+class RecDiffTestCase(unittest.TestCase):
     def assertEqual(self, a, b):
         if not (a == b):
             print a
@@ -151,6 +152,19 @@ class RecDiffTestCase(TestCase):
         self.assertEqual(actual_diff, expected_diff)
 
 
+def main(a, b):
+    print "Running diff on files %s and %s" % (a, b)
+    a = eval(open(a).read())
+    b = eval(open(b).read())
+    d = recdiff(a, b)   
+    print_recdiff(d)
+
 if __name__ == "__main__":
-    main()
+    import sys
+    args = sys.argv[1:]
+    if not args: # Hack to be able to use this as a script, TODO: do something nicer
+        print "No arguments, running tests."
+        unittest.main()
+    else:
+        main(*args)
 

@@ -27,7 +27,7 @@ UFC function from an (optimized) intermediate representation (OIR).
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2009-12-16
-# Last changed: 2013-01-25
+# Last changed: 2013-02-10
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -42,9 +42,7 @@ from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives_all
 from ffc.evaluatedof import evaluate_dof_and_dofs, affine_weights
 from ffc.interpolatevertexvalues import interpolate_vertex_values
 
-# FFC specialized code generation modules
-from ffc import quadrature
-from ffc import tensor
+from ffc.representation import pick_representation
 
 # Errors issued for non-implemented functions
 def _not_implemented(function_name, return_null=False):
@@ -191,18 +189,14 @@ def _generate_integral_code(ir, prefix, parameters):
     if ir is None: return None
 
     # Select representation
-    if ir["representation"] == "quadrature":
-        r = quadrature
-    elif ir["representation"] == "tensor":
-        r = tensor
-    else:
-        error("Unknown representation: %s" % ir["representation"])
+    r = pick_representation(ir["representation"])
 
     # Generate code
     code = r.generate_integral_code(ir, prefix, parameters)
 
     # Indent code (unused variables should already be removed)
-    _indent_code(code)
+    if ir["representation"] != "uflacs": # FIXME: Remove this quick hack
+        _indent_code(code)
 
     return code
 
@@ -383,7 +377,7 @@ def _tabulate_coordinates(ir):
     component =     format["component"]
     precision =     format["float"]
     assign =        format["assign"]
-    f_x =           format["coordinates"]
+    f_x =           format["vertex_coordinates"]
     coordinates =   format["argument coordinates"]
 
     # Extract coordinates and cell dimension
@@ -394,16 +388,14 @@ def _tabulate_coordinates(ir):
     # Aid mapping points from reference to physical element
     coefficients = affine_weights(tdim)
 
-    # Start with code for coordinates for vertices of cell
-    code = [format["cell coordinates"]]
-
     # Generate code for each point and each component
+    code = []
     for (i, coordinate) in enumerate(ir["points"]):
 
         w = coefficients(coordinate)
         for j in range(gdim):
             # Compute physical coordinate
-            coords = [component(f_x(), (k, j)) for k in range(tdim + 1)]
+            coords = [component(f_x(), (k*gdim + j,)) for k in range(tdim + 1)]
             value = inner_product(w, coords)
 
             # Assign coordinate

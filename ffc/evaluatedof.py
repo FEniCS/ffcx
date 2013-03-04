@@ -42,8 +42,10 @@ FIAT (functional.pt_dict) in the intermediate representation stage.
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Kristian B. Oelgaard 2010-2011
+# Modified by Anders Logg 2013
 #
-# Last changed: 2011-11-28
+# First added:  2009-xx-yy
+# Last changed: 2013-01-10
 
 from ffc.cpp import format, remove_unused
 from ffc.utils import pick_first
@@ -69,7 +71,7 @@ f_double =  format["float declaration"]
 f_vals =    format["dof vals"]
 f_result =  format["dof result"]
 f_y =       format["dof physical coordinates"]
-f_x =       format["coordinates"]
+f_x =       format["vertex_coordinates"]
 f_int =     format["int declaration"]
 f_X =       format["dof X"]
 f_D =       format["dof D"]
@@ -123,20 +125,20 @@ def _required_declarations(ir):
     tdim = ir["topological_dimension"]
 
     # Declare variable for storing the result and physical coordinates
-    code.append(comment("Declare variables for result of evaluation."))
+    code.append(comment("Declare variables for result of evaluation"))
     code.append(declare(f_double, component(f_vals, ir["physical_value_size"])))
     code.append("")
-    code.append(comment("Declare variable for physical coordinates."))
+    code.append(comment("Declare variable for physical coordinates"))
     code.append(declare(f_double, component(f_y, gdim)))
+    code.append("")
 
     # Check whether Jacobians are necessary.
     needs_inverse_jacobian = any(["contravariant piola" in m
                                   for m in ir["mappings"]])
     needs_jacobian = any(["covariant piola" in m for m in ir["mappings"]])
 
-    # Add cell coordinates only if sufficient
+    # Check if Jacobians are needed
     if not (needs_jacobian or needs_inverse_jacobian):
-        code.append(format["cell coordinates"])
         return "\n".join(code)
 
     # Otherwise declare intermediate result variable
@@ -144,10 +146,12 @@ def _required_declarations(ir):
 
     # Add sufficient Jacobian information. Note: same criterion for
     # needing inverse Jacobian as for needing oriented Jacobian
+    code.append(format["compute_jacobian"](tdim, gdim))
     if needs_inverse_jacobian:
-        code.append(format["jacobian and inverse"](gdim, tdim, oriented=True))
-    else:
-        code.append(format["jacobian"](gdim, tdim))
+        code.append("")
+        code.append(format["compute_jacobian_inverse"](tdim, gdim))
+        code.append("")
+        code.append(format["orientation"](tdim, gdim))
 
     return "\n".join(code)
 
@@ -170,7 +174,7 @@ def _generate_body(i, dof, mapping, gdim, tdim, offset=0, result=f_result):
     # Map point onto physical element: y = F_K(x)
     code = []
     for j in range(gdim):
-        y = inner(w, [component(f_x(), (k, j)) for k in range(tdim + 1)])
+        y = inner(w, [component(f_x(), (k*gdim + j,)) for k in range(tdim + 1)])
         code.append(assign(component(f_y, j), y))
 
     # Evaluate function at physical point
@@ -223,25 +227,25 @@ def _generate_multiple_points_body(i, dof, mapping, gdim, tdim,
     code += [declare(f_double, component(f_copy(i), tdim))]
 
     # Add loop over points
-    code += [comment("Loop over points.")]
+    code += [comment("Loop over points")]
 
     # Map the points from the reference onto the physical element
     #assert(gdim == tdim), \
     #    "Integral moments not supported for manifolds (yet). Please fix"
-    lines_r = [map_onto_physical[gdim][tdim] % {"i": i, "j": f_r}]
+    lines_r = [map_onto_physical[tdim][gdim] % {"i": i, "j": f_r}]
 
     # Evaluate function at physical point
-    lines_r.append(comment("Evaluate function at physical point."))
+    lines_r.append(comment("Evaluate function at physical point"))
     lines_r.append(format["evaluate function"])
 
     # Map function values to the reference element
-    lines_r.append(comment("Map function to reference element."))
+    lines_r.append(comment("Map function to reference element"))
     F = _change_variables(mapping, gdim, tdim, offset)
     lines_r += [assign(component(f_copy(i), k), F_k)
                 for (k, F_k) in enumerate(F)]
 
     # Add loop over directional components
-    lines_r.append(comment("Loop over directions."))
+    lines_r.append(comment("Loop over directions"))
     value = multiply([component(f_copy(i),
                                 component(f_D(i), (f_r, f_s))),
                       component(f_W(i), (f_r, f_s))])
@@ -258,7 +262,6 @@ def _generate_multiple_points_body(i, dof, mapping, gdim, tdim,
 
     code = "\n".join(code)
     return code
-
 
 def _change_variables(mapping, gdim, tdim, offset):
     """Generate code for mapping function values according to
@@ -303,7 +306,7 @@ def _change_variables(mapping, gdim, tdim, offset):
         # contravariant piola
         values = []
         for i in range(tdim):
-            inv_jacobian_row = [Jinv(i, j) for j in range(gdim)]
+            inv_jacobian_row = [Jinv(i, j, tdim, gdim) for j in range(gdim)]
             components = [component(f_vals, j + offset) for j in range(gdim)]
             values += [multiply([detJ, inner(inv_jacobian_row, components)])]
         return values
@@ -313,7 +316,7 @@ def _change_variables(mapping, gdim, tdim, offset):
         # covariant piola
         values = []
         for i in range(tdim):
-            jacobian_column = [J(j, i) for j in range(gdim)]
+            jacobian_column = [J(j, i, gdim, tdim) for j in range(gdim)]
             components = [component(f_vals, j + offset) for j in range(gdim)]
             values += [inner(jacobian_column, components)]
         return values
@@ -331,6 +334,3 @@ def affine_weights(dim):
         return lambda x: (1.0 - x[0] - x[1], x[0], x[1])
     elif dim == 3:
         return lambda x: (1.0 - x[0] - x[1] - x[2], x[0], x[1], x[2])
-
-
-

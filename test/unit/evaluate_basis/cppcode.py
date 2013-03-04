@@ -39,23 +39,15 @@
 #  for (unsigned int i = 0; i < N; i++)
 #    dof_values[i] = 0.0;
 
-#  // Create cell and fill with some arbitrary data
-#  double cell_coordinates[8][3] = {{0.90, 0.34, 0.45},
-#                                   {0.56, 0.76, 0.83},
-#                                   {0.98, 0.78, 0.19},
-#                                   {0.12, 0.56, 0.66},
-#                                   {0.96, 0.78, 0.63},
-#                                   {0.11, 0.35, 0.49},
-#                                   {0.51, 0.88, 0.65},
-#                                   {0.98, 0.45, 0.01}};
-#  ufc::cell cell;
-#  cell.coordinates = new double * [8];
-#  for (int i = 0; i < 8; i++)
-#  {
-#    cell.coordinates[i] = new double[3];
-#    for (int j = 0; j < 3; j++)
-#      cell.coordinates[i][j] = cell_coordinates[i][j];
-#  }
+#  // Create vertex coordinates and fill with some arbitrary data
+#  double vertex_coordinates[24] = {0.90, 0.34, 0.45,
+#                                   0.56, 0.76, 0.83,
+#                                   0.98, 0.78, 0.19,
+#                                   0.12, 0.56, 0.66,
+#                                   0.96, 0.78, 0.63,
+#                                   0.11, 0.35, 0.49,
+#                                   0.51, 0.88, 0.65,
+#                                   0.98, 0.45, 0.01};
 
 #  // Random coordinates where we want to evaluate the basis functions
 #  double coordinates[3] = {0.32, 0.51, 0.05};
@@ -63,7 +55,7 @@
 #  // Loop element space dimension and call evaluate_basis.
 #  for (unsigned int i = 0; i < element.space_dimension(); i++)
 #  {
-#    element.evaluate_basis(i, dof_values, coordinates, cell);
+#    element.evaluate_basis(i, dof_values, coordinates, vertex_coordinates, 0);
 #    // Print values
 #    for (unsigned int j = 0; j < N; j++)
 #      std::cout << dof_values[j] << " ";
@@ -106,13 +98,12 @@ int main(int argc, char* argv[])
     dof_values[i] = 0.0;
 
   %(cell_ref_coords)s
-  ufc::cell cell;
-  cell.coordinates = new double * [%(num_coords)d];
+  double vertex_coordinates[%(num_coords)d*%(dim)d];
+  int k = 0;
   for (int i = 0; i < %(num_coords)d; i++)
   {
-    cell.coordinates[i] = new double[%(dim)d];
     for (int j = 0; j < %(dim)d; j++)
-      cell.coordinates[i][j] = cell_ref_coords[i][j];
+      vertex_coordinates[k++] = cell_ref_coords[i][j];
   }
 
   // Random points where we want to evaluate the basis functions
@@ -137,7 +128,7 @@ int main(int argc, char* argv[])
       // Loop element space dimension and call evaluate_basis.
       for (unsigned int i = 0; i < element.space_dimension(); i++)
       {
-        element.evaluate_basis(i, dof_values, coordinates, cell);
+        element.evaluate_basis(i, dof_values, coordinates, vertex_coordinates, 0);
 
         // Print values
         for (unsigned int j = 0; j < num_dof_vals; j++)
@@ -159,7 +150,7 @@ int main(int argc, char* argv[])
       // Loop element space dimension and call evaluate_basis.
       for (unsigned int i = 0; i < element.space_dimension(); i++)
       {
-        element.evaluate_basis_derivatives(i, n, dof_values, coordinates, cell);
+        element.evaluate_basis_derivatives(i, n, dof_values, coordinates, vertex_coordinates, 0);
 
         // Print values
         for (unsigned int j = 0; j < num_dof_vals; j++)
@@ -172,4 +163,3 @@ int main(int argc, char* argv[])
   return 0;
 }
 """
-

@@ -18,7 +18,7 @@
 // Modified by Martin Alnaes, 2013
 //
 // First added:  2010-01-24
-// Last changed: 2013-02-14
+// Last changed: 2013-02-18
 //
 // Functions for calling generated UFC functions with "random" (but
 // fixed) data and print the output to screen. Useful for running
@@ -98,7 +98,7 @@ public:
         entity_indices[i][j] = i*j + offset;
     }
 
-    // Generate some "random" coordinates
+    // Generate some "random" coordinates (old interface)
     double** x = new double * [4];
     for (std::size_t i = 0; i < 4; i++)
       x[i] = new double[3];
@@ -107,6 +107,42 @@ public:
     x[2][0] = 0.987; x[2][1] = 0.783; x[2][2] = 0.191;
     x[3][0] = 0.123; x[3][1] = 0.561; x[3][2] = 0.667;
     coordinates = x;
+
+    // Generate some "random" coordinates
+    vertex_coordinates.resize(12);
+    if (gdim == 1)
+    {
+      vertex_coordinates[0]  = 0.903;
+      vertex_coordinates[1]  = 0.561;
+      vertex_coordinates[2]  = 0.987;
+      vertex_coordinates[3]  = 0.123;
+    }
+    else if (gdim == 2)
+    {
+      vertex_coordinates[0]  = 0.903;
+      vertex_coordinates[1]  = 0.341;
+      vertex_coordinates[2]  = 0.561;
+      vertex_coordinates[3]  = 0.767;
+      vertex_coordinates[4]  = 0.987;
+      vertex_coordinates[5]  = 0.783;
+      vertex_coordinates[6]  = 0.123;
+      vertex_coordinates[7] = 0.561;
+    }
+    else if (gdim == 3)
+    {
+      vertex_coordinates[0]  = 0.903;
+      vertex_coordinates[1]  = 0.341;
+      vertex_coordinates[2]  = 0.457;
+      vertex_coordinates[3]  = 0.561;
+      vertex_coordinates[4]  = 0.767;
+      vertex_coordinates[5]  = 0.833;
+      vertex_coordinates[6]  = 0.987;
+      vertex_coordinates[7]  = 0.783;
+      vertex_coordinates[8]  = 0.191;
+      vertex_coordinates[9]  = 0.123;
+      vertex_coordinates[10] = 0.561;
+      vertex_coordinates[11] = 0.667;
+    }
   }
 
   ~test_cell()
@@ -206,12 +242,12 @@ void test_finite_element(ufc::finite_element& element, int id, Printer & printer
   // evaluate_basis
   for (std::size_t i = 0; i < element.space_dimension(); i++)
   {
-    element.evaluate_basis(i, values, coordinates, c);
+    element.evaluate_basis(i, values, coordinates, &c.vertex_coordinates[0], 1);
     printer.print_array("evaluate_basis:", value_size, values, i);
   }
 
   // evaluate_basis all
-  element.evaluate_basis_all(values, coordinates, c);
+  element.evaluate_basis_all(values, coordinates, &c.vertex_coordinates[0], 1);
   printer.print_array("evaluate_basis_all", element.space_dimension()*value_size, values);
 
   // evaluate_basis_derivatives
@@ -222,7 +258,12 @@ void test_finite_element(ufc::finite_element& element, int id, Printer & printer
       std::size_t num_derivatives = 1;
       for (std::size_t j = 0; j < n; j++)
         num_derivatives *= c.geometric_dimension;
-      element.evaluate_basis_derivatives(i, n, values, coordinates, c);
+      element.evaluate_basis_derivatives(i,
+                                         n,
+                                         values,
+                                         coordinates,
+                                         &c.vertex_coordinates[0],
+                                         1);
       printer.print_array("evaluate_basis_derivatives", value_size*num_derivatives, values, i, n);
     }
   }
@@ -231,26 +272,38 @@ void test_finite_element(ufc::finite_element& element, int id, Printer & printer
   for (std::size_t n = 0; n <= max_derivative; n++)
   {
     std::size_t num_derivatives = 1;
-      for (std::size_t j = 0; j < n; j++)
-        num_derivatives *= c.geometric_dimension;
-    element.evaluate_basis_derivatives_all(n, values, coordinates, c);
-    printer.print_array("evaluate_basis_derivatives_all", element.space_dimension()*value_size*num_derivatives, values, n);
+    for (std::size_t j = 0; j < n; j++)
+      num_derivatives *= c.geometric_dimension;
+    element.evaluate_basis_derivatives_all(n,
+                                           values,
+                                           coordinates,
+                                           &c.vertex_coordinates[0],
+                                           1);
+    printer.print_array("evaluate_basis_derivatives_all",
+                        element.space_dimension()*value_size*num_derivatives,
+                        values, n);
   }
 
   // evaluate_dof
   for (std::size_t i = 0; i < element.space_dimension(); i++)
   {
-    dof_values[i] = element.evaluate_dof(i, f, c);
+    dof_values[i] = element.evaluate_dof(i, f, &c.vertex_coordinates[0], 1, c);
     printer.print_scalar("evaluate_dof", dof_values[i], i);
   }
 
   // evaluate_dofs
-  element.evaluate_dofs(values, f, c);
+  element.evaluate_dofs(values, f, &c.vertex_coordinates[0], 1, c);
   printer.print_array("evaluate_dofs", element.space_dimension(), values);
 
   // interpolate_vertex_values
-  element.interpolate_vertex_values(vertex_values, dof_values, c);
-  printer.print_array("interpolate_vertex_values", (c.topological_dimension + 1)*value_size, vertex_values);
+  element.interpolate_vertex_values(vertex_values,
+                                    dof_values,
+                                    &c.vertex_coordinates[0],
+                                    1,
+                                    c);
+  printer.print_array("interpolate_vertex_values",
+                      (c.topological_dimension + 1)*value_size,
+                      vertex_values);
 
   // num_sub_dof_elements
   printer.print_scalar("num_sub_elements", element.num_sub_elements());
@@ -347,7 +400,7 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id, Printer & p
   }
 
   // tabulate_coordinates
-  dofmap.tabulate_coordinates(coordinates, c);
+  dofmap.tabulate_coordinates(coordinates, &c.vertex_coordinates[0]);
   for (std::size_t i = 0; i < dofmap.local_dimension(c); i++)
     printer.print_array("tabulate_coordinates", c.geometric_dimension, coordinates[i], i);
 
@@ -390,26 +443,30 @@ void test_cell_integral(ufc::cell_integral& integral,
     A[i] = 0.0;
 
   // Call tabulate_tensor
-  integral.tabulate_tensor(A, w, c);
+  integral.tabulate_tensor(A, w, &c.vertex_coordinates[0], c.orientation);
   printer.print_array("tabulate_tensor", tensor_size, A);
 
   // Benchmark tabulate tensor
   if (bench)
   {
+    printer.begin("timing");
     for (std::size_t num_reps = initial_num_reps;; num_reps *= 2)
     {
       double t0 = time();
       for (std::size_t i = 0; i < num_reps; i++)
-        integral.tabulate_tensor(A, w, c);
+        integral.tabulate_tensor(A, w, &c.vertex_coordinates[0], c.orientation);
       double dt = time() - t0;
       if (dt > minimum_timing)
       {
         dt /= static_cast<double>(num_reps);
-        std::cout << "timing required " << num_reps << " iterations" << std::endl;
-        std::cout << "bench cell_integral::tabulate_tensor: " << dt << std::endl;
+        //std::cout << "timing required " << num_reps << " iterations" << std::endl;
+        //std::cout << "bench cell_integral::tabulate_tensor: " << dt << std::endl;
+        printer.print_scalar("cell_integral_timing_iterations", num_reps);
+        printer.print_scalar("cell_integral_time", dt);
         break;
       }
     }
+    printer.end();
   }
 
   // Cleanup
@@ -441,28 +498,31 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
     for(std::size_t i = 0; i < tensor_size; i++)
       A[i] = 0.0;
 
-    integral.tabulate_tensor(A, w, c, facet);
+    integral.tabulate_tensor(A, w, &c.vertex_coordinates[0], facet);
     printer.print_array("tabulate_tensor", tensor_size, A, facet);
   }
 
   // Benchmark tabulate tensor
   if (bench)
   {
+    printer.begin("timing");
     for (std::size_t num_reps = initial_num_reps;; num_reps *= 2)
     {
       double t0 = time();
       for (std::size_t i = 0; i < num_reps; i++)
-        integral.tabulate_tensor(A, w, c, 0);
+        integral.tabulate_tensor(A, w, &c.vertex_coordinates[0], 0);
       double dt = time() - t0;
       if (dt > minimum_timing)
       {
         dt /= static_cast<double>(num_reps);
-        std::cout << "timing required " << num_reps << " iterations" << std::endl;
-        std::cout << "bench exterior_facet_integral::tabulate_tensor: " << dt << std::endl;
+        //std::cout << "timing required " << num_reps << " iterations" << std::endl;
+        //std::cout << "bench exterior_facet_integral::tabulate_tensor: " << dt << std::endl;
+        printer.print_scalar("exterior_facet_integral_timing_iterations", num_reps);
+        printer.print_scalar("exterior_facet_integral_time", dt);
         break;
       }
     }
-
+    printer.end();
   }
 
   // Cleanup
@@ -497,7 +557,11 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
       for(std::size_t i = 0; i < macro_tensor_size; i++)
         A[i] = 0.0;
 
-      integral.tabulate_tensor(A, w, c0, c1, facet0, facet1);
+      integral.tabulate_tensor(A,
+                               w,
+                               &c0.vertex_coordinates[0],
+                               &c1.vertex_coordinates[0],
+                               facet0, facet1);
       printer.print_array("tabulate_tensor", macro_tensor_size, A, facet0, facet1);
     }
   }
@@ -505,20 +569,29 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
   // Benchmark tabulate tensor
   if (bench)
   {
+    printer.begin("timing");
     for (std::size_t num_reps = initial_num_reps;; num_reps *= 2)
     {
       double t0 = time();
       for (std::size_t i = 0; i < num_reps; i++)
-        integral.tabulate_tensor(A, w, c0, c1, 0, 0);
+        integral.tabulate_tensor(A,
+                                 w,
+                                 &c0.vertex_coordinates[0],
+                                 &c1.vertex_coordinates[0],
+                                 0,
+                                 0);
       double dt = time() - t0;
       if (dt > minimum_timing)
       {
         dt /= static_cast<double>(num_reps);
-        std::cout << "timing required " << num_reps << " iterations" << std::endl;
-        std::cout << "bench interior_facet_integral::tabulate_tensor: " << dt << std::endl;
+        //std::cout << "timing required " << num_reps << " iterations" << std::endl;
+        //std::cout << "bench interior_facet_integral::tabulate_tensor: " << dt << std::endl;
+        printer.print_scalar("interior_facet_integral_timing_iterations", num_reps);
+        printer.print_scalar("interior_facet_integral_time", dt);
         break;
       }
     }
+    printer.end();
   }
 
   // Cleanup
@@ -550,28 +623,31 @@ void test_point_integral(ufc::point_integral& integral,
     for(std::size_t i = 0; i < tensor_size; i++)
       A[i] = 0.0;
 
-    integral.tabulate_tensor(A, w, c, vertex);
+    integral.tabulate_tensor(A, w, &c.vertex_coordinates[0], vertex);
     printer.print_array("tabulate_tensor", tensor_size, A, vertex);
   }
 
   // Benchmark tabulate tensor
   if (bench)
   {
+    printer.begin("timing");
     for (std::size_t num_reps = initial_num_reps;; num_reps *= 2)
     {
       double t0 = time();
       for (std::size_t i = 0; i < num_reps; i++)
-        integral.tabulate_tensor(A, w, c, 0);
+        integral.tabulate_tensor(A, w, &c.vertex_coordinates[0], 0);
       double dt = time() - t0;
       if (dt > minimum_timing)
       {
         dt /= static_cast<double>(num_reps);
-        std::cout << "timing required " << num_reps << " iterations" << std::endl;
-        std::cout << "bench point_integral::tabulate_tensor: " << dt << std::endl;
+        //std::cout << "timing required " << num_reps << " iterations" << std::endl;
+        //std::cout << "bench point_integral::tabulate_tensor: " << dt << std::endl;
+        printer.print_scalar("point_integral_timing_iterations", num_reps);
+        printer.print_scalar("point_integral_time", dt);
         break;
       }
     }
-
+    printer.end();
   }
 
   // Cleanup

@@ -256,7 +256,7 @@ class UFLErrorControlGenerator(ErrorControlGenerator):
 
         # Extract cell and geometric dimension
         cell = self._V.cell()
-        g_dim = cell.geometric_dimension()
+        gdim = cell.geometric_dimension()
 
         # Coefficient representing improved dual
         E = increase_order(Vhat)
@@ -264,7 +264,7 @@ class UFLErrorControlGenerator(ErrorControlGenerator):
         self.ec_names[id(self._Ez_h)] = "__improved_dual"
 
         # Coefficient representing cell bubble function
-        B = FiniteElement("B", cell, g_dim + 1)
+        B = FiniteElement("B", cell, gdim + 1)
         self._b_T = Coefficient(B)
         self.ec_names[id(self._b_T)] = "__cell_bubble"
 
@@ -273,7 +273,7 @@ class UFLErrorControlGenerator(ErrorControlGenerator):
         self.ec_names[id(self._R_T)] = "__cell_residual"
 
         # Coefficient representing cell cone function
-        C = FiniteElement("DG", cell, g_dim)
+        C = FiniteElement("DG", cell, gdim)
         self._b_e = Coefficient(C)
         self.ec_names[id(self._b_e)] = "__cell_cone"
 

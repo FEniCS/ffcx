@@ -19,7 +19,7 @@
 #
 # Modified by Kristian B. Oelgaard 2011
 # Modified by Marie E. Rognes 2010
-# Modified by Martin Alnaes, 2013
+# Modified by Martin Alnaes 2013
 #
 # First added:  2009-12-16
 # Last changed: 2013-01-25
@@ -30,10 +30,12 @@ import re, numpy, platform
 # FFC modules
 from ffc.log import debug, error
 
-# Formatting rules
+# Mapping of restrictions
+_choose_map = {None: "", "+": "_0", "-": "_1"}
+
 # FIXME: KBO: format is a builtin_function, i.e., we should use a different name.
+# Formatting rules
 format = {}
-choose_map = {None: "", "+": "0", "-": "1"}
 
 # Program flow
 format.update({
@@ -118,24 +120,24 @@ format.update({
 
 # Geometry related variable names (from code snippets).
 format.update({
-    "entity index":     "c.entity_indices",
-    "num entities":     "num_global_entities",
-    "cell":             lambda s: "ufc::%s" % s,
-    "J":                lambda i, j: "J_%d%d" % (i, j),
-    "inv(J)":           lambda i, j: "K_%d%d" % (i, j),
-    "det(J)":           lambda r=None: "detJ%s" % choose_map[r],
-    "cell volume":      lambda r=None: "volume%s" % choose_map[r],
-    "circumradius":     lambda r=None: "circumradius%s" % choose_map[r],
-    "facet area":       "facet_area",
-    "scale factor":     "det",
-    "transform":        lambda t, j, k, r: _transform(t, j, k, r),
-    "normal component": lambda r, j: "n%s%s" % (choose_map[r], j),
-    "x coordinate":     "X",
-    "y coordinate":     "Y",
-    "z coordinate":     "Z",
-    "ip coordinates":   lambda i, j: "X%d[%d]" % (i, j),
-    "affine map table": lambda i, j: "FEA%d_f%d" % (i, j),
-    "coordinates":      lambda r=None: "x%s" % choose_map[r]
+    "entity index":       "c.entity_indices",
+    "num entities":       "num_global_entities",
+    "cell":               lambda s: "ufc::%s" % s,
+    "J":                  lambda i, j, m, n: "J[%d]" % _flatten(i, j, m, n),
+    "inv(J)":             lambda i, j, m, n: "K[%d]" % _flatten(i, j, m, n),
+    "det(J)":             lambda r=None: "detJ%s" % _choose_map[r],
+    "cell volume":        lambda r=None: "volume%s" % _choose_map[r],
+    "circumradius":       lambda r=None: "circumradius%s" % _choose_map[r],
+    "facet area":         "facet_area",
+    "scale factor":       "det",
+    "transform":          lambda t, i, j, m, n, r: _transform(t, i, j, m, n, r),
+    "normal component":   lambda r, j: "n%s%s" % (_choose_map[r], j),
+    "x coordinate":       "X",
+    "y coordinate":       "Y",
+    "z coordinate":       "Z",
+    "ip coordinates":     lambda i, j: "X%d[%d]" % (i, j),
+    "affine map table":   lambda i, j: "FEA%d_f%d" % (i, j),
+    "vertex_coordinates": lambda r=None: "vertex_coordinates%s" % _choose_map[r]
 })
 
 # UFC function arguments and class members (names)
@@ -146,8 +148,8 @@ format.update({
     "argument basis num":         "i",
     "argument derivative order":  "n",
     "argument values":            "values",
-    "argument coordinates":       "coordinates",
-    "facet":                      lambda r: "facet%s" % choose_map[r],
+    "argument coordinates":       "dof_coordinates",
+    "facet":                      lambda r: "facet%s" % _choose_map[r],
     "vertex":                     "vertex",
     "argument axis":              "i",
     "argument dimension":         "d",
@@ -193,8 +195,8 @@ format.update({
                                 % (i, format["argument basis num"], format["argument basis num"], j),
     "dereference pointer":      lambda n: "*%s" % n,
     "reference variable":       lambda n: "&%s" % n,
-    "call basis":               lambda i, s: "evaluate_basis(%s, %s, coordinates, c);" % (i, s),
-    "call basis_derivatives":   lambda i, s: "evaluate_basis_derivatives(%s, n, %s, coordinates, c);" % (i, s),
+    "call basis":               lambda i, s: "evaluate_basis(%s, %s, x, vertex_coordinates, cell_orientation);" % (i, s),
+    "call basis_derivatives":   lambda i, s: "evaluate_basis_derivatives(%s, n, %s, x, vertex_coordinates, cell_orientation);" % (i, s),
 
     # quadrature code generators
     "integration points": "ip",
@@ -211,7 +213,7 @@ format.update({
     "function value":     lambda i: "F%d" % i,
     "nonzero columns":    lambda i: "nzc%d" % i,
     "weight":             lambda i: "W%d" % (i),
-    "psi name":           lambda c, f, co, d, v=None: _generate_psi_name(c, f, co, d, v),
+    "psi name":           lambda c, et, e, co, d: _generate_psi_name(c, et, e, co, d),
     # both
     "free indices":       ["r","s","t","u"],
     "matrix index":       lambda i, j, range_j: _matrix_index(i, str(j), str(range_j))
@@ -232,30 +234,29 @@ format.update({
 from codesnippets import *
 
 format.update({
-    "cell coordinates":     cell_coordinates,
-    "jacobian":             lambda gdim, tdim, r="": jacobian[gdim][tdim] % {"restriction": r},
-    "inverse jacobian":     lambda gdim, tdim, r="", oriented=False: inverse_jacobian[gdim][tdim] % {"restriction": r}  + format["orientation"](oriented, gdim, tdim, r),
-    "jacobian and inverse": lambda gdim, tdim=None, r=None, oriented=False: (format["jacobian"](gdim, tdim, choose_map[r]) + \
-                                                                                 "\n" + format["inverse jacobian"](gdim, tdim, choose_map[r], oriented)),
-    "orientation":          lambda oriented, gdim, tdim, r="": orientation_snippet % {"restriction": r} if (oriented and gdim != tdim) else "",
-    "facet determinant":    lambda gdim, tdim, r=None: facet_determinant[gdim][tdim] % {"restriction": choose_map[r]},
-    "fiat coordinate map":  lambda cell, gdim: fiat_coordinate_map[cell][gdim],
-    "generate normal":      lambda gdim, tdim, i: _generate_normal(gdim, tdim, i),
-    "generate cell volume": lambda gdim, tdim, i: _generate_cell_volume(gdim, tdim, i),
-    "generate circumradius": lambda gdim, tdim, i: _generate_circumradius(gdim, tdim, i),
-    "generate facet area":  lambda gdim, tdim: facet_area[gdim][tdim],
+    "compute_jacobian":         lambda tdim, gdim, r=None: \
+                                compute_jacobian[tdim][gdim] % {"restriction": _choose_map[r]},
+    "compute_jacobian_inverse": lambda tdim, gdim, r=None: \
+                                compute_jacobian_inverse[tdim][gdim] % {"restriction": _choose_map[r]},
+    "orientation":              lambda tdim, gdim, r=None: orientation_snippet % {"restriction": _choose_map[r]} if tdim != gdim else "",
+    "facet determinant":        lambda tdim, gdim, r=None: facet_determinant[tdim][gdim] % {"restriction": _choose_map[r]},
+    "fiat coordinate map":      lambda cell, gdim: fiat_coordinate_map[cell][gdim],
+    "generate normal":          lambda tdim, gdim, i: _generate_normal(tdim, gdim, i),
+    "generate cell volume":     lambda tdim, gdim, i: _generate_cell_volume(tdim, gdim, i),
+    "generate circumradius":    lambda tdim, gdim, i: _generate_circumradius(tdim, gdim, i),
+    "generate facet area":      lambda tdim, gdim: facet_area[tdim][gdim],
     "generate ip coordinates":  lambda g, num_ip, name, ip, r=None: (ip_coordinates[g][0], ip_coordinates[g][1] % \
-                                {"restriction": choose_map[r], "ip": ip, "name": name, "num_ip": num_ip}),
-    "scale factor snippet": scale_factor,
-    "map onto physical":    map_onto_physical,
-    "combinations":         combinations_snippet,
-    "transform snippet":    transform_snippet,
-    "evaluate function":    evaluate_f,
-    "ufc comment":          comment_ufc,
-    "dolfin comment":       comment_dolfin,
-    "header_h":             header_h,
-    "header_c":             header_c,
-    "footer":               footer
+                                {"restriction": _choose_map[r], "ip": ip, "name": name, "num_ip": num_ip}),
+    "scale factor snippet":    scale_factor,
+    "map onto physical":       map_onto_physical,
+    "combinations":            combinations_snippet,
+    "transform snippet":       transform_snippet,
+    "evaluate function":       evaluate_f,
+    "ufc comment":             comment_ufc,
+    "dolfin comment":          comment_dolfin,
+    "header_h":                header_h,
+    "header_c":                header_c,
+    "footer":                  footer
 })
 
 # Class names
@@ -280,7 +281,8 @@ format.update({
     "classname form": lambda prefix, i: "%s_form_%d" % (prefix.lower(), i)
 })
 
-# Helper functions for formatting.
+# Helper functions for formatting
+
 def _declaration(type, name, value=None):
     if value is None:
         return "%s %s;" % (type, name);
@@ -400,9 +402,9 @@ def _inner_product(v, w):
 
     return result
 
-def _transform(type, j, k, r):
-    map_name = {"J": "J", "JINV": "K"}[type] + choose_map[r]
-    return (map_name + "_%d%d") % (j, k)
+def _transform(type, i, j, m, n, r):
+    map_name = {"J": "J", "JINV": "K"}[type] + _choose_map[r]
+    return (map_name + "[%d]") % _flatten(i, j, m, n)
 
 # FIXME: Input to _generate_switch should be a list of tuples (i, case)
 def _generate_switch(variable, cases, default=None, numbers=None):
@@ -511,91 +513,95 @@ def _matrix_index(i, j, range_j):
         access = format["add"]([irj, j])
     return access
 
-def _generate_psi_name(counter, facet, component, derivatives, vertex=None):
+def _generate_psi_name(counter, entitytype, entity, component, derivatives):
     """Generate a name for the psi table of the form:
-    FE#_f#_C#_D###, where '#' will be an integer value.
+    FE#_f#_v#_C#_D###, where '#' will be an integer value.
 
     FE  - is a simple counter to distinguish the various bases, it will be
           assigned in an arbitrary fashion.
 
     f   - denotes facets if applicable, range(element.num_facets()).
 
+    v   - denotes vertices if applicable, range(num_vertices).
+
     C   - is the component number if any (this does not yet take into account
           tensor valued functions)
 
-    D   - is the number of derivatives in each spatial direction if any. If the
-          element is defined in 3D, then D012 means d^3(*)/dydz^2
-
-    f   - denotes vertices if applicable, range(num_vertices)."""
+    D   - is the number of derivatives in each spatial direction if any.
+          If the element is defined in 3D, then D012 means d^3(*)/dydz^2.
+    """
 
     name = "FE%d" % counter
-    if not facet is None:
-        name += "_f%d" % facet
-    if not vertex is None:
-        name += "_v%d" % vertex
+    if entitytype == "facet":
+        name += "_f%d" % entity
+    elif entitytype == "vertex":
+        name += "_v%d" % entity
     if component != () and component != []:
         name += "_C%d" % component
     if any(derivatives):
-        name += "_D" + "".join([str(d) for d in derivatives])
+        name += "_D" + "".join(map(str,derivatives))
 
     return name
 
-def _generate_normal(geometric_dimension, topological_dimension, domain_type,
-                     reference_normal=False):
+def _generate_normal(tdim, gdim, domain_type, reference_normal=False):
     "Generate code for computing normal"
 
     # Choose snippets
-    direction = normal_direction[geometric_dimension][topological_dimension]
+    direction = normal_direction[tdim][gdim]
 
-    assert (facet_normal[geometric_dimension].has_key(topological_dimension)),\
-        "Facet normal not yet implemented for this gdim/tdim combo"
-    normal = facet_normal[geometric_dimension][topological_dimension]
+    assert (facet_normal[tdim].has_key(gdim)),\
+        "Facet normal not yet implemented for this tdim/gdim combo"
+    normal = facet_normal[tdim][gdim]
 
     # Choose restrictions
     if domain_type == "exterior_facet":
         code = direction % {"restriction": "", "facet" : "facet"}
         code += normal % {"direction" : "", "restriction": ""}
     elif domain_type == "interior_facet":
-        code = direction % {"restriction": choose_map["+"], "facet": "facet0"}
-        code += normal % {"direction" : "", "restriction": choose_map["+"]}
-        code += normal % {"direction" : "!", "restriction": choose_map["-"]}
+        code = direction % {"restriction": _choose_map["+"], "facet": "facet_0"}
+        code += normal % {"direction" : "", "restriction": _choose_map["+"]}
+        code += normal % {"direction" : "!", "restriction": _choose_map["-"]}
     else:
         error("Unsupported domain_type: %s" % str(domain_type))
     return code
 
-def _generate_cell_volume(gdim, tdim, domain_type):
+def _generate_cell_volume(tdim, gdim, domain_type):
     "Generate code for computing cell volume."
 
     # Choose snippets
-    volume = cell_volume[gdim][tdim]
+    volume = cell_volume[tdim][gdim]
 
     # Choose restrictions
-    if domain_type in ("cell", "exterior_facet", "point"):
+    if domain_type in ("cell", "exterior_facet"):
         code = volume % {"restriction": ""}
     elif domain_type == "interior_facet":
-        code = volume % {"restriction": choose_map["+"]}
-        code += volume % {"restriction": choose_map["-"]}
+        code = volume % {"restriction": _choose_map["+"]}
+        code += volume % {"restriction": _choose_map["-"]}
     else:
         error("Unsupported domain_type: %s" % str(domain_type))
     return code
 
-def _generate_circumradius(gdim, tdim, domain_type):
+def _generate_circumradius(tdim, gdim, domain_type):
     "Generate code for computing a cell's circumradius."
 
     # Choose snippets
-    radius = circumradius[gdim][tdim]
+    radius = circumradius[tdim][gdim]
 
     # Choose restrictions
     if domain_type in ("cell", "exterior_facet", "point"):
         code = radius % {"restriction": ""}
     elif domain_type == "interior_facet":
-        code = radius % {"restriction": choose_map["+"]}
-        code += radius % {"restriction": choose_map["-"]}
+        code = radius % {"restriction": _choose_map["+"]}
+        code += radius % {"restriction": _choose_map["-"]}
     else:
         error("Unsupported domain_type: %s" % str(domain_type))
     return code
 
-# Functions.
+def _flatten(i, j, m, n):
+    return i*n + j
+
+# Other functions
+
 def indent(block, num_spaces):
     "Indent each row of the given string block with n spaces."
     indentation = " " * num_spaces

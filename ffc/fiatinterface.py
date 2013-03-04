@@ -40,20 +40,23 @@ from ffc.enrichedelement import EnrichedElement, SpaceOfReals
 # Dictionary mapping from cellname to dimension
 from ufl.geometry import cellname2dim
 
-# Number of facets associated with each cell name
-cellname2num_facets = {"cell1D": None,
-                       "cell2D": None,
-                       "cell3D": None,
-                       "interval": 2,
-                       "triangle": 3,
-                       "tetrahedron": 4,
-                       "quadrilateral": 4,
-                       "hexahedron": 6}
+# Number of entities associated with each cell name
+cellname_to_num_entities = {
+    "cell1D": None,
+    "cell2D": None,
+    "cell3D": None,
+    "interval": (2, 1),
+    "triangle": (3, 3, 1),
+    "tetrahedron": (4, 6, 4, 1),
+    "quadrilateral": (4, 4, 1),
+    "hexahedron": (8, 12, 6, 1),
+    }
 
 # Mapping from dimension to number of mesh sub-entities. (In principle,
-# cellname2num_facets contains the same information, but
-# with string keys.)
-entities_per_dim = {1: [2, 1], 2: [3, 3, 1], 3: [4, 6, 4, 1]}
+# cellname_to_num_entities contains the same information, but with string keys.)
+# DISABLED ON PURPOSE: It's better to use cell name instead of dimension
+#                      to stay generic w.r.t. future box elements.
+#entities_per_dim = {1: [2, 1], 2: [3, 3, 1], 3: [4, 6, 4, 1]}
 
 # Cache for computed elements
 _cache = {}
