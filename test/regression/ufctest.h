@@ -449,6 +449,7 @@ void test_cell_integral(ufc::cell_integral& integral,
   // Benchmark tabulate tensor
   if (bench)
   {
+    printer.begin("timing");
     for (std::size_t num_reps = initial_num_reps;; num_reps *= 2)
     {
       double t0 = time();
@@ -458,11 +459,14 @@ void test_cell_integral(ufc::cell_integral& integral,
       if (dt > minimum_timing)
       {
         dt /= static_cast<double>(num_reps);
-        std::cout << "timing required " << num_reps << " iterations" << std::endl;
-        std::cout << "bench cell_integral::tabulate_tensor: " << dt << std::endl;
+        //std::cout << "timing required " << num_reps << " iterations" << std::endl;
+        //std::cout << "bench cell_integral::tabulate_tensor: " << dt << std::endl;
+        printer.print_scalar("cell_integral_timing_iterations", num_reps);
+        printer.print_scalar("cell_integral_time", dt);
         break;
       }
     }
+    printer.end();
   }
 
   // Cleanup
@@ -501,6 +505,7 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
   // Benchmark tabulate tensor
   if (bench)
   {
+    printer.begin("timing");
     for (std::size_t num_reps = initial_num_reps;; num_reps *= 2)
     {
       double t0 = time();
@@ -510,12 +515,14 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
       if (dt > minimum_timing)
       {
         dt /= static_cast<double>(num_reps);
-        std::cout << "timing required " << num_reps << " iterations" << std::endl;
-        std::cout << "bench exterior_facet_integral::tabulate_tensor: " << dt << std::endl;
+        //std::cout << "timing required " << num_reps << " iterations" << std::endl;
+        //std::cout << "bench exterior_facet_integral::tabulate_tensor: " << dt << std::endl;
+        printer.print_scalar("exterior_facet_integral_timing_iterations", num_reps);
+        printer.print_scalar("exterior_facet_integral_time", dt);
         break;
       }
     }
-
+    printer.end();
   }
 
   // Cleanup
@@ -562,6 +569,7 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
   // Benchmark tabulate tensor
   if (bench)
   {
+    printer.begin("timing");
     for (std::size_t num_reps = initial_num_reps;; num_reps *= 2)
     {
       double t0 = time();
@@ -576,11 +584,14 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
       if (dt > minimum_timing)
       {
         dt /= static_cast<double>(num_reps);
-        std::cout << "timing required " << num_reps << " iterations" << std::endl;
-        std::cout << "bench interior_facet_integral::tabulate_tensor: " << dt << std::endl;
+        //std::cout << "timing required " << num_reps << " iterations" << std::endl;
+        //std::cout << "bench interior_facet_integral::tabulate_tensor: " << dt << std::endl;
+        printer.print_scalar("interior_facet_integral_timing_iterations", num_reps);
+        printer.print_scalar("interior_facet_integral_time", dt);
         break;
       }
     }
+    printer.end();
   }
 
   // Cleanup
@@ -619,6 +630,7 @@ void test_point_integral(ufc::point_integral& integral,
   // Benchmark tabulate tensor
   if (bench)
   {
+    printer.begin("timing");
     for (std::size_t num_reps = initial_num_reps;; num_reps *= 2)
     {
       double t0 = time();
@@ -628,12 +640,14 @@ void test_point_integral(ufc::point_integral& integral,
       if (dt > minimum_timing)
       {
         dt /= static_cast<double>(num_reps);
-        std::cout << "timing required " << num_reps << " iterations" << std::endl;
-        std::cout << "bench point_integral::tabulate_tensor: " << dt << std::endl;
+        //std::cout << "timing required " << num_reps << " iterations" << std::endl;
+        //std::cout << "bench point_integral::tabulate_tensor: " << dt << std::endl;
+        printer.print_scalar("point_integral_timing_iterations", num_reps);
+        printer.print_scalar("point_integral_time", dt);
         break;
       }
     }
-
+    printer.end();
   }
 
   // Cleanup

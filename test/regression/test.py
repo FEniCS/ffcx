@@ -94,7 +94,7 @@ def clean_output(output_directory):
         shutil.rmtree(output_directory)
     os.mkdir(output_directory)
 
-def generate_test_cases(bench):
+def generate_test_cases(bench, only_forms):
     "Generate form files for all test cases."
 
     begin("Generating test cases")
@@ -105,8 +105,10 @@ def generate_test_cases(bench):
     else:
         form_directory = demo_directory
 
+    # Make list of form files
     form_files = [f for f in os.listdir(form_directory) if f.endswith(".ufl")]
-    #form_files = form_files[:1] # use for quick testing
+    if only_forms:
+        form_files = [f for f in form_files if f in only_forms]
     form_files.sort()
 
     for f in form_files:
@@ -115,9 +117,6 @@ def generate_test_cases(bench):
 
     # Generate form files for forms
     info("Generating form files for extra forms: Not implemented")
-
-    # FIXME: Testing
-    #return
 
     # Generate form files for elements
     if not bench:
@@ -128,22 +127,14 @@ def generate_test_cases(bench):
 
     end()
 
-def generate_code(args):
+def generate_code(args, only_forms):
     "Generate code for all test cases."
 
     # Get a list of all files
     form_files = [f for f in os.listdir(".") if f.endswith(".ufl")]
+    if only_forms:
+        form_files = [f for f in form_files if f in only_forms]
     form_files.sort()
-
-    # Hack to allow choosing single .ufl files from commandline
-    form_files2 = []
-    for a in args:
-        if a in form_files:
-            form_files2.append(a)
-    if form_files2:
-        form_files = form_files2
-        for f in form_files2:
-            args.remove(f)
 
     begin("Generating code (%d form files found)" % len(form_files))
 
@@ -450,6 +441,10 @@ def main(args):
         )
     args = [arg for arg in args if not arg in flags]
 
+    # Extract .ufl names from args
+    only_forms = set([arg for arg in args if arg.endswith(".ufl")])
+    args = [arg for arg in args if arg not in only_forms]
+
     # Clean out old output directory
     output_directory = "output"
     clean_output(output_directory)
@@ -458,12 +453,12 @@ def main(args):
     # Adjust which test cases (combinations of compile arguments) to
     # run here
     test_cases = ["-r auto"]
+    if use_ext_uflacs:
+        test_cases += ext_uflacs
     if (not bench and not fast):
         test_cases += ["-r quadrature", "-r quadrature -O"]
         if use_ext_quad:
             test_cases += ext_quad
-        if use_ext_uflacs:
-            test_cases += ext_uflacs # NB! Replacing with uflacs here, for now.
 
     for argument in test_cases:
 
@@ -475,10 +470,10 @@ def main(args):
         os.chdir(sub_directory)
 
         # Generate test cases
-        generate_test_cases(bench)
+        generate_test_cases(bench, only_forms)
 
         # Generate code
-        generate_code(args + [argument])
+        generate_code(args + [argument], only_forms)
 
         # Location of reference directories
         reference_directory =  os.path.abspath("../../references/")
