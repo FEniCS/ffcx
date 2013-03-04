@@ -47,5 +47,4 @@ def generate_integral_code(ir, prefix, parameters):
 
     code["additional_includes_set"] = ir.get("additional_includes_set",set()) | set(ucode["additional_includes_set"])
 
-    code["tabulate_tensor_quadrature"] = format["do nothing"] # TODO: Remove
     return code

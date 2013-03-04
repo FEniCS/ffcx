@@ -34,15 +34,10 @@ from ffc.cpp import format, remove_unused, count_ops
 from ffc.tensor.monomialtransformation import MonomialIndex
 from ffc.representationutils import initialize_integral_code
 
-# Error issued for quadrature version of tabulate_tensor
-tabulate_tensor_quadrature_error = """\
-Quadrature version of tabulate_tensor not available when using the FFC tensor representation."""
-
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
     code = initialize_integral_code(ir, prefix, parameters)
     code["tabulate_tensor"] = _tabulate_tensor(ir, parameters)
-    code["tabulate_tensor_quadrature"] = format["exception"](tabulate_tensor_quadrature_error) # FIXME: Remove
     return code
 
 def _tabulate_tensor(ir, parameters):

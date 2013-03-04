@@ -40,16 +40,11 @@ from ffc.representationutils import initialize_integral_code
 # Utility and optimisation functions for quadraturegenerator.
 from symbolics import generate_aux_constants
 
-# Error issued for quadrature version of tabulate_tensor
-tabulate_tensor_quadrature_error = """\
-Quadrature version of tabulate_tensor not yet implemented (introduced in UFC 2.0)."""
-
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
     code = initialize_integral_code(ir, prefix, parameters)
     code["tabulate_tensor"] = _tabulate_tensor(ir, parameters)
     code["additional_includes_set"] = ir["additional_includes_set"]
-    code["tabulate_tensor_quadrature"] = format["exception"](tabulate_tensor_quadrature_error) # FIXME: Remove
     return code
 
 def _tabulate_tensor(ir, parameters):
