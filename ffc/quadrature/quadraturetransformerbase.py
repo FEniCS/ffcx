@@ -581,6 +581,18 @@ class QuadratureTransformerBase(Transformer):
         #print("\n\nVisiting Tan: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
         return self._math_function(operands, format["tan"])
 
+    def cosh(self, o, *operands):
+        #print("\n\nVisiting Cosh: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        return self._math_function(operands, format["cosh"])
+
+    def sinh(self, o, *operands):
+        #print("\n\nVisiting Sinh: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        return self._math_function(operands, format["sinh"])
+
+    def tanh(self, o, *operands):
+        #print("\n\nVisiting Tanh: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        return self._math_function(operands, format["tanh"])
+
     def acos(self, o, *operands):
         #print("\n\nVisiting Acos: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
         return self._math_function(operands, format["acos"])
