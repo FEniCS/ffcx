@@ -454,7 +454,8 @@ def main(args):
     # run here
     test_cases = ["-r auto"]
     if use_ext_uflacs:
-        test_cases += ext_uflacs
+        test_cases = ext_uflacs
+        test_cases += ["-r quadrature -O"]
     if (not bench and not fast):
         test_cases += ["-r quadrature", "-r quadrature -O"]
         if use_ext_quad:
