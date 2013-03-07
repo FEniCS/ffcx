@@ -16,13 +16,11 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2013-02-12
-# Last changed: 2013-02-14
+# Last changed: 2013-03-04
 
 from ffc.representationutils import initialize_integral_code
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
 from ffc.cpp import format, indent
-
-from ffc.quadrature.quadraturegenerator import _tabulate_psis
 
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
@@ -32,19 +30,9 @@ def generate_integral_code(ir, prefix, parameters):
     # Generate generic ffc code snippets
     code = initialize_integral_code(ir, prefix, parameters)
 
-    # Generate code for basis function tables
-    used_psi_tables = set(ir["unique_tables"].keys()) # TODO: Build this from required set in uflacs?
-    used_nzcs     = set() # TODO: Can this be empty until we decide to optimise?
-    psi_tables_code = _tabulate_psis(ir["unique_tables"], used_psi_tables, ir["name_map"], used_nzcs, ir["optimise_parameters"])
-
     # Delegate to uflacs to generate tabulate_tensor body
     import uflacs.backends.ffc
     ucode = uflacs.backends.ffc.generate_tabulate_tensor_code(ir, parameters)
-
-    # TODO: Pass psi_tables_code to uflacs for insertion there instead?
-    # TODO: Skip unused tables!
-    code["tabulate_tensor"] = '\n\n'.join(psi_tables_code + [ucode["using_statements"], ucode["tabulate_tensor"]])
-
+    code["tabulate_tensor"] = ucode["tabulate_tensor"]
     code["additional_includes_set"] = ir.get("additional_includes_set",set()) | set(ucode["additional_includes_set"])
-
     return code
