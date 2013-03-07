@@ -50,8 +50,8 @@ def create_psi_tables(tables, eliminate_zeros, entitytype):
 def flatten_psi_tables(tables, entitytype):
     """Create a 'flat' dictionary of tables with unique names and a name
     map that maps number of quadrature points and element name to a unique
-    element number. returns:
-    name_map    - {num_quad_points:{ufl_element:element_number,},}.
+    element number. Returns:
+    element_map    - {num_quad_points:{ufl_element:element_number,},}.
     flat_tables - {unique_table_name:values (ip,basis),}."""
 
     generate_psi_name = format["psi name"]
