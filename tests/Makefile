@@ -33,9 +33,9 @@ LIBS=-lgtest -lpthread
 
 .SECONDARY:
 
-default: run_pytests
+default: all
 
-#default: all
+#default: run_pytests
 
 all: run_testall
 

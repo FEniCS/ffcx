@@ -4,7 +4,7 @@ from codegentestcase import CodegenTestCase, unittest
 import ufl
 from ufl.common import product
 
-from uflacs.backends.cpp2.compiler import compile_expression
+from uflacs.backends.toy.toy_compiler import compile_expression
 
 class test_ufl_expression_compilation(CodegenTestCase):
     '''TODO: Fill in the blanks!

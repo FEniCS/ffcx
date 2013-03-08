@@ -2,6 +2,7 @@
 from codegentestcase import CodegenTestCase, unittest
 
 import ufl
+from uflacs.codeutils.format_code_structure import format_code_structure
 from uflacs.geometry.generate_geometry_snippets import (
     generate_array_definition_snippets,
     generate_z_Axpy_snippets,
@@ -49,7 +50,7 @@ class test_geometry_snippets(CodegenTestCase):
     }
 
     #include "mock_cells.h"
-    #include "common/ufc_geometry.h"
+    #include <ufc_geometry.h>
     using namespace uflacs;
     '''
 
@@ -65,7 +66,7 @@ class test_geometry_snippets(CodegenTestCase):
         """
         cell = ufl.Cell('interval', 1)
         snippets = generate_jacobian_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     def test_compute_jacobian_interval_2d(self):
@@ -80,7 +81,7 @@ class test_geometry_snippets(CodegenTestCase):
         """
         cell = ufl.Cell('interval', 2)
         snippets = generate_jacobian_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     def test_compute_jacobian_interval_3d(self):
@@ -95,7 +96,7 @@ class test_geometry_snippets(CodegenTestCase):
         """
         cell = ufl.Cell('interval', 3)
         snippets = generate_jacobian_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     def test_compute_jacobian_triangle_2d(self):
@@ -110,7 +111,7 @@ class test_geometry_snippets(CodegenTestCase):
         """
         cell = ufl.Cell('triangle', 2)
         snippets = generate_jacobian_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     def test_compute_jacobian_triangle_3d(self):
@@ -125,7 +126,7 @@ class test_geometry_snippets(CodegenTestCase):
         """
         cell = ufl.Cell('triangle', 3)
         snippets = generate_jacobian_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     def test_compute_jacobian_tetrahedron_3d(self):
@@ -140,7 +141,7 @@ class test_geometry_snippets(CodegenTestCase):
         """
         cell = ufl.Cell('tetrahedron', 3)
         snippets = generate_jacobian_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     # ...............................................................
@@ -158,7 +159,7 @@ class test_geometry_snippets(CodegenTestCase):
         cell = ufl.Cell('interval', 1)
         snippets = generate_jacobian_snippets(cell, '')
         snippets += generate_jacobian_inverse_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     def test_compute_jacobian_inverse_interval_2d(self):
@@ -174,7 +175,7 @@ class test_geometry_snippets(CodegenTestCase):
         cell = ufl.Cell('interval', 2)
         snippets = generate_jacobian_snippets(cell, '')
         snippets += generate_jacobian_inverse_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     def test_compute_jacobian_inverse_interval_3d(self):
@@ -190,7 +191,7 @@ class test_geometry_snippets(CodegenTestCase):
         cell = ufl.Cell('interval', 3)
         snippets = generate_jacobian_snippets(cell, '')
         snippets += generate_jacobian_inverse_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     def test_compute_jacobian_inverse_triangle_2d(self):
@@ -206,7 +207,7 @@ class test_geometry_snippets(CodegenTestCase):
         cell = ufl.Cell('triangle', 2)
         snippets = generate_jacobian_snippets(cell, '')
         snippets += generate_jacobian_inverse_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     def test_compute_jacobian_inverse_triangle_3d(self):
@@ -222,7 +223,7 @@ class test_geometry_snippets(CodegenTestCase):
         cell = ufl.Cell('triangle', 3)
         snippets = generate_jacobian_snippets(cell, '')
         snippets += generate_jacobian_inverse_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     def test_compute_jacobian_inverse_tetrahedron_3d(self):
@@ -238,7 +239,7 @@ class test_geometry_snippets(CodegenTestCase):
         cell = ufl.Cell('tetrahedron', 3)
         snippets = generate_jacobian_snippets(cell, '')
         snippets += generate_jacobian_inverse_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     # ...............................................................
@@ -258,7 +259,7 @@ class test_geometry_snippets(CodegenTestCase):
         cell = ufl.Cell('interval', 1)
         snippets = generate_jacobian_snippets(cell, '')
         snippets += generate_x_from_xi_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     def test_compute_x_from_xi_interval_2d(self):
@@ -277,7 +278,7 @@ class test_geometry_snippets(CodegenTestCase):
         cell = ufl.Cell('interval', 2)
         snippets = generate_jacobian_snippets(cell, '')
         snippets += generate_x_from_xi_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     def test_compute_x_from_xi_interval_3d(self):
@@ -298,7 +299,7 @@ class test_geometry_snippets(CodegenTestCase):
         cell = ufl.Cell('interval', 3)
         snippets = generate_jacobian_snippets(cell, '')
         snippets += generate_x_from_xi_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     def test_compute_x_from_xi_triangle_2d(self):
@@ -318,7 +319,7 @@ class test_geometry_snippets(CodegenTestCase):
         cell = ufl.Cell('triangle', 2)
         snippets = generate_jacobian_snippets(cell, '')
         snippets += generate_x_from_xi_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     def test_compute_x_from_xi_triangle_3d(self):
@@ -339,7 +340,7 @@ class test_geometry_snippets(CodegenTestCase):
         cell = ufl.Cell('triangle', 3)
         snippets = generate_jacobian_snippets(cell, '')
         snippets += generate_x_from_xi_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     def test_compute_x_from_xi_tetrahedron_3d(self):
@@ -360,7 +361,7 @@ class test_geometry_snippets(CodegenTestCase):
         cell = ufl.Cell('tetrahedron', 3)
         snippets = generate_jacobian_snippets(cell, '')
         snippets += generate_x_from_xi_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     # ...............................................................
@@ -382,7 +383,7 @@ class test_geometry_snippets(CodegenTestCase):
         snippets = generate_jacobian_snippets(cell, '')
         snippets += generate_jacobian_inverse_snippets(cell, '')
         snippets += generate_xi_from_x_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     def test_compute_xi_from_x_interval_2d(self):
@@ -402,7 +403,7 @@ class test_geometry_snippets(CodegenTestCase):
         snippets = generate_jacobian_snippets(cell, '')
         snippets += generate_jacobian_inverse_snippets(cell, '')
         snippets += generate_xi_from_x_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     def test_compute_xi_from_x_interval_3d(self):
@@ -422,7 +423,7 @@ class test_geometry_snippets(CodegenTestCase):
         snippets = generate_jacobian_snippets(cell, '')
         snippets += generate_jacobian_inverse_snippets(cell, '')
         snippets += generate_xi_from_x_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     def test_compute_xi_from_x_triangle_2d(self):
@@ -443,7 +444,7 @@ class test_geometry_snippets(CodegenTestCase):
         snippets = generate_jacobian_snippets(cell, '')
         snippets += generate_jacobian_inverse_snippets(cell, '')
         snippets += generate_xi_from_x_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     def test_compute_xi_from_x_triangle_3d(self):
@@ -464,7 +465,7 @@ class test_geometry_snippets(CodegenTestCase):
         snippets = generate_jacobian_snippets(cell, '')
         snippets += generate_jacobian_inverse_snippets(cell, '')
         snippets += generate_xi_from_x_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     def test_compute_xi_from_x_tetrahedron_3d(self):
@@ -486,7 +487,7 @@ class test_geometry_snippets(CodegenTestCase):
         snippets = generate_jacobian_snippets(cell, '')
         snippets += generate_jacobian_inverse_snippets(cell, '')
         snippets += generate_xi_from_x_snippets(cell, '')
-        code = '\n'.join(snippets)
+        code = format_code_structure(snippets)
         self.emit_test(code)
 
     # ...............................................................
