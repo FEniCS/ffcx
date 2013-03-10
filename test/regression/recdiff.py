@@ -36,8 +36,11 @@ def recdiff_dict(data1, data2, tolerance=_default_recdiff_tolerance):
 def recdiff(data1, data2, tolerance=_default_recdiff_tolerance):
     if isinstance(data1, (float,int)) and isinstance(data2, (float,int)):
         # This approach allows numbers formatted as ints and floats interchangably as long as the values are equal
-        diff = data1 - data2
-        return DiffEqual if abs(diff) < tolerance else (data1, data2)
+        # Using relative comparison, i.e. a tolerance of 1e-2 means one percent error is acceptable
+        delta = abs(data1 - data2)
+        avg = (abs(data1) + abs(data2)) / 2.0
+        eps = tolerance * avg
+        return DiffEqual if avg < 1e-14 or delta < eps else (data1, data2)
     elif type(data1) != type(data2):
         return (data1, data2)
     elif isinstance(data1, dict):
@@ -96,12 +99,16 @@ class RecDiffTestCase(unittest.TestCase):
 
     def test_recdiff_equal_items(self):
         self.assertDiffEqual(recdiff(1,1))
+        self.assertDiffEqual(recdiff(0,0))
+        self.assertDiffEqual(recdiff(0,1e-15))
         self.assertDiffEqual(recdiff(1.1,1.1+1e-7,tolerance=1e-6))
         self.assertDiffEqual(recdiff(1.1,1.1-1e-7,tolerance=1e-6))
         self.assertDiffEqual(recdiff("foo", "foo"))
 
     def test_recdiff_not_equal_items(self):
         self.assertEqual(recdiff(1,2), (1,2))
+        self.assertEqual(recdiff(0,0.0001), (0,0.0001))
+        self.assertEqual(recdiff(0,1e-13), (0,1e-13))
         self.assertEqual(recdiff(1.1,1.2+1e-7,tolerance=1e-6), (1.1,1.2+1e-7))
         self.assertEqual(recdiff(1.1,1.2-1e-7,tolerance=1e-6), (1.1,1.2-1e-7))
         self.assertEqual(recdiff("foo", "bar"), ("foo", "bar"))
