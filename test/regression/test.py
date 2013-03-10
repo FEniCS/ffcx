@@ -382,6 +382,9 @@ def validate_programs(reference_dir):
         # Get generated json output
         if os.path.exists(fj):
             generated_json_output = open(fj).read()
+            if "nan" in generated_json_output:
+                info_red("Found nan in generated json output, replacing with 999 to be able to parse as python dict.")
+                generated_json_output = generated_json_output.replace("nan", "999")
         else:
             generated_json_output = "{}"
 
