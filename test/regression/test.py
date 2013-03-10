@@ -456,13 +456,13 @@ def main(args):
     # Adjust which test cases (combinations of compile arguments) to
     # run here
     test_cases = ["-r auto"]
-    if use_ext_uflacs:
-        test_cases = ext_uflacs
-        test_cases += ["-r quadrature -O"]
     if (not bench and not fast):
         test_cases += ["-r quadrature", "-r quadrature -O"]
         if use_ext_quad:
             test_cases += ext_quad
+    if use_ext_uflacs:
+        test_cases = ext_uflacs
+        #test_cases += ["-r quadrature -O"]
 
     for argument in test_cases:
 
