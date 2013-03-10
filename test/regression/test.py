@@ -431,6 +431,7 @@ def main(args):
     use_ext_quad   = "--ext_quad" in args
     use_ext_uflacs = "--ext_uflacs" in args
     permissive     = "--permissive" in args
+    tolerant       = "--tolerant" in args
     print_timing   = "--print-timing" in args
 
     flags = (
@@ -440,6 +441,7 @@ def main(args):
         "--ext_quad",
         "--ext_uflacs",
         "--permissive",
+        "--tolerant",
         "--print-timing",
         )
     args = [arg for arg in args if not arg in flags]
@@ -447,6 +449,10 @@ def main(args):
     # Extract .ufl names from args
     only_forms = set([arg for arg in args if arg.endswith(".ufl")])
     args = [arg for arg in args if arg not in only_forms]
+
+    if tolerant:
+        global output_tolerance
+        output_tolerance = 1e-3
 
     # Clean out old output directory
     output_directory = "output"
