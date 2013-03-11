@@ -190,7 +190,7 @@ def validate_code(reference_dir):
         else:
             info_red("%s differs" % f)
             diff = "\n".join([line for line in difflib.unified_diff(reference_code.split("\n"), generated_code.split("\n"))])
-            s = ("Code differs for %s, diff follows"
+            s = ("Code differs for %s, diff follows (reference first, generated second)"
                  % os.path.join(*reference_file.split(os.path.sep)[-3:]))
             log_error("\n" + s + "\n" + len(s)*"-")
             log_error(diff)
@@ -334,7 +334,7 @@ def validate_programs(reference_dir):
         ok = True
         old = [line.split(" = ") for line in reference_output.split("\n") if " = " in line]
         new = dict([line.split(" = ") for line in generated_output.split("\n") if " = " in line])
-        header = ("Output differs for %s, diff follows"
+        header = ("Output differs for %s, diff follows (reference first, generated second)"
                   % os.path.join(*reference_file.split(os.path.sep)[-3:]))
         for (key, value) in old:
 
@@ -415,7 +415,7 @@ def validate_programs(reference_dir):
             info_green("%s OK" % fj)
         else:
             info_red("%s differs" % fj)
-            log_error("Json output differs for %s, diff follows:"
+            log_error("Json output differs for %s, diff follows (reference first, generated second)"
                       % os.path.join(*reference_json_file.split(os.path.sep)[-3:]))
             print_recdiff(json_diff, printer=log_error)
 
