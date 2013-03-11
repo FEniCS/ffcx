@@ -36,11 +36,17 @@ def recdiff_dict(data1, data2, tolerance=_default_recdiff_tolerance):
 def recdiff(data1, data2, tolerance=_default_recdiff_tolerance):
     if isinstance(data1, (float,int)) and isinstance(data2, (float,int)):
         # This approach allows numbers formatted as ints and floats interchangably as long as the values are equal
-        # Using relative comparison, i.e. a tolerance of 1e-2 means one percent error is acceptable
         delta = abs(data1 - data2)
         avg = (abs(data1) + abs(data2)) / 2.0
-        eps = tolerance * avg
-        same = avg < 1e-14 or delta < eps
+
+        if 0:
+            # Using relative comparison, i.e. a tolerance of 1e-2 means one percent error is acceptable
+            eps = tolerance * avg
+            same = avg < 1e-14 or delta < eps
+        else:
+            # Using absolute comparison, this is what the old .out comparison does
+            same = delta < tolerance
+
         return DiffEqual if same else (data1, data2)
     elif type(data1) != type(data2):
         return (data1, data2)
