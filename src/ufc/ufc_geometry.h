@@ -97,6 +97,7 @@ inline void compute_jacobian_inverse_interval_1d(double* K,
                                                  double& det,
                                                  const double* J)
 {
+  // TODO: Move computation of det to a separate function, det is often needed when K is not
   det = J[0];
   K[0] = 1.0 / det;
 }
@@ -106,6 +107,7 @@ inline void compute_jacobian_inverse_interval_2d(double* K,
                                                  double& det,
                                                  const double* J)
 {
+  // TODO: Move computation of det to a separate function, det is often needed when K is not
   const double det2 = J[0]*J[0] + J[1]*J[1];
   det = std::sqrt(det2);
 
@@ -118,6 +120,7 @@ inline void compute_jacobian_inverse_interval_3d(double* K,
                                                  double& det,
                                                  const double* J)
 {
+  // TODO: Move computation of det to a separate function, det is often needed when K is not
   const double det2 = J[0]*J[0] + J[1]*J[1] + J[2]*J[2];
   det = std::sqrt(det2);
 
@@ -131,6 +134,7 @@ inline void compute_jacobian_inverse_triangle_2d(double* K,
                                                  double& det,
                                                  const double* J)
 {
+  // TODO: Move computation of det to a separate function, det is often needed when K is not
   det = J[0]*J[3] - J[1]*J[2];
 
   K[0] =  J[3] / det;
@@ -144,6 +148,7 @@ inline void compute_jacobian_inverse_triangle_3d(double* K,
                                                  double& det,
                                                  const double* J)
 {
+  // TODO: Move computation of det to a separate function, det is often needed when K is not
   const double d_0 = J[2]*J[5] - J[4]*J[3];
   const double d_1 = J[4]*J[1] - J[0]*J[5];
   const double d_2 = J[0]*J[3] - J[2]*J[1];
@@ -170,6 +175,7 @@ inline void compute_jacobian_inverse_tetrahedron_3d(double* K,
                                                     double& det,
                                                     const double* J)
 {
+  // TODO: Move computation of det to a separate function, det is often needed when K is not
   const double d_00 = J[4]*J[8] - J[5]*J[7];
   const double d_01 = J[5]*J[6] - J[3]*J[8];
   const double d_02 = J[3]*J[7] - J[4]*J[6];
@@ -191,6 +197,108 @@ inline void compute_jacobian_inverse_tetrahedron_3d(double* K,
   K[6] = d_02 / det;
   K[7] = d_12 / det;
   K[8] = d_22 / det;
+}
+
+/// Compute facet scaling factor for interval embedded in R^1
+inline void compute_facet_scaling_factor_interval_1d(double & det,
+                                                     const double * vertex_coordinates,
+                                                     std::size_t facet)
+{
+  // Including this just for completeness...
+  det = 1.0;
+}
+
+/// Compute facet scaling factor for interval embedded in R^2
+inline void compute_facet_scaling_factor_interval_2d(double & det,
+                                                     const double * vertex_coordinates,
+                                                     std::size_t facet)
+{
+  // Including this just for completeness...
+  det = 1.0;
+}
+
+/// Compute facet scaling factor for interval embedded in R^3
+inline void compute_facet_scaling_factor_interval_3d(double & det,
+                                                     const double * vertex_coordinates,
+                                                     std::size_t facet)
+{
+  // Including this just for completeness...
+  det = 1.0;
+}
+
+/// Compute facet scaling factor for triangle embedded in R^2
+inline void compute_facet_scaling_factor_triangle_2d(double & det,
+                                                     const double * vertex_coordinates,
+                                                     std::size_t facet)
+{
+  // Get vertices on edge
+  static const unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
+  const unsigned int v0 = edge_vertices[facet][0];
+  const unsigned int v1 = edge_vertices[facet][1];
+
+  // TODO: Make computation of dx* a separate function, needed for other computations as well
+  // Compute scale factor (length of edge scaled by length of reference interval)
+  const double dx0 = vertex_coordinates[2*v1 + 0] - vertex_coordinates[2*v0 + 0];
+  const double dx1 = vertex_coordinates[2*v1 + 1] - vertex_coordinates[2*v0 + 1];
+
+  det = std::sqrt(dx0*dx0 + dx1*dx1);
+}
+
+/// Compute facet scaling factor for triangle embedded in R^3
+inline void compute_facet_scaling_factor_triangle_3d(double & det,
+                                                     const double * vertex_coordinates,
+                                                     std::size_t facet)
+{
+  // Facet determinant 2D in 3D (edge)
+  // Get vertices on edge
+  static const unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
+  const unsigned int v0 = edge_vertices[facet][0];
+  const unsigned int v1 = edge_vertices[facet][1];
+
+  // TODO: Make computation of dx* a separate function, needed for other computations as well
+  // Compute scale factor (length of edge scaled by length of reference interval)
+  const double dx0 = vertex_coordinates[3*v1 + 0] - vertex_coordinates[3*v0 + 0];
+  const double dx1 = vertex_coordinates[3*v1 + 1] - vertex_coordinates[3*v0 + 1];
+  const double dx2 = vertex_coordinates[3*v1 + 2] - vertex_coordinates[3*v0 + 2];
+
+  det = std::sqrt(dx0*dx0 + dx1*dx1 + dx2*dx2);
+}
+
+/// Compute facet scaling factor for tetrahedron embedded in R^3
+inline void compute_facet_scaling_factor_tetrahedron_3d(double & det,
+                                                        const double * vertex_coordinates,
+                                                        std::size_t facet)
+{
+  // Get vertices on face
+  static const unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
+  const unsigned int v0 = face_vertices[facet][0];
+  const unsigned int v1 = face_vertices[facet][1];
+  const unsigned int v2 = face_vertices[facet][2];
+
+  // TODO: Make computation of a* a separate function, needed for other computations as well
+  // Compute scale factor (area of face scaled by area of reference triangle)
+  const double a0 = (vertex_coordinates[3*v0 + 1]*vertex_coordinates[3*v1 + 2]  +
+                     vertex_coordinates[3*v0 + 2]*vertex_coordinates[3*v2 + 1]  +
+                     vertex_coordinates[3*v1 + 1]*vertex_coordinates[3*v2 + 2]) -
+                    (vertex_coordinates[3*v2 + 1]*vertex_coordinates[3*v1 + 2]  +
+                     vertex_coordinates[3*v2 + 2]*vertex_coordinates[3*v0 + 1]  +
+                     vertex_coordinates[3*v1 + 1]*vertex_coordinates[3*v0 + 2]);
+
+  const double a1 = (vertex_coordinates[3*v0 + 2]*vertex_coordinates[3*v1 + 0]  +
+                     vertex_coordinates[3*v0 + 0]*vertex_coordinates[3*v2 + 2]  +
+                     vertex_coordinates[3*v1 + 2]*vertex_coordinates[3*v2 + 0]) -
+                    (vertex_coordinates[3*v2 + 2]*vertex_coordinates[3*v1 + 0]  +
+                     vertex_coordinates[3*v2 + 0]*vertex_coordinates[3*v0 + 2]  +
+                     vertex_coordinates[3*v1 + 2]*vertex_coordinates[3*v0 + 0]);
+
+  const double a2 = (vertex_coordinates[3*v0 + 0]*vertex_coordinates[3*v1 + 1]  +
+                     vertex_coordinates[3*v0 + 1]*vertex_coordinates[3*v2 + 0]  +
+                     vertex_coordinates[3*v1 + 0]*vertex_coordinates[3*v2 + 1]) -
+                    (vertex_coordinates[3*v2 + 0]*vertex_coordinates[3*v1 + 1]  +
+                     vertex_coordinates[3*v2 + 1]*vertex_coordinates[3*v0 + 0]  +
+                     vertex_coordinates[3*v1 + 0]*vertex_coordinates[3*v0 + 1]);
+
+  det = std::sqrt(a0*a0 + a1*a1 + a2*a2);
 }
 
 #endif
