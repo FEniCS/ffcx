@@ -40,7 +40,8 @@ def recdiff(data1, data2, tolerance=_default_recdiff_tolerance):
         delta = abs(data1 - data2)
         avg = (abs(data1) + abs(data2)) / 2.0
         eps = tolerance * avg
-        return DiffEqual if avg < 1e-14 or delta < eps else (data1, data2)
+        same = avg < 1e-14 or delta < eps
+        return DiffEqual if same else (data1, data2)
     elif type(data1) != type(data2):
         return (data1, data2)
     elif isinstance(data1, dict):
@@ -68,7 +69,7 @@ def print_recdiff(diff, indent=0, printer=_print, prekey=""):
         for i, d in enumerate(diff):
             if isinstance(d, tuple):
                 data1, data2 = d
-                printer("%s%d: %s != %s" % ("  "*indent, i, data1, data2))   
+                printer("%s%d: %s != %s" % ("  "*indent, i, data1, data2))
 
     elif isinstance(diff, tuple):
         assert len(diff) == 2
@@ -80,7 +81,7 @@ def print_recdiff(diff, indent=0, printer=_print, prekey=""):
             printer("%s!=" % ("  "*indent))
             printer("%s%s" % ("  "*indent, data2))
         else:
-            printer("%s%s != %s" % ("  "*indent, data1, data2))   
+            printer("%s%s != %s" % ("  "*indent, data1, data2))
 
 
 # ---------- Unittest code
@@ -93,7 +94,7 @@ class RecDiffTestCase(unittest.TestCase):
             print a
             print b
             assert a == b
-    
+
     def assertDiffEqual(self, diff):
         self.assertEqual(diff, DiffEqual)
 
@@ -138,17 +139,17 @@ class RecDiffTestCase(unittest.TestCase):
             "has_default_cell_integral": 1,
             "cell_integrals": { 0: { "tabulate_tensor_input1": ["data"] } },
         }
- 
+
         form2 = eval("""{
             "num_coefficients": 2,
             "rank": 2,
             "has_default_cell_integral": 0,
             "cell_integrals": { 0: { "tabulate_tensor_input1": ["data2"] } },
         }""")
- 
+
         actual_diff = recdiff(form1, form2)
         if 0: print_recdiff(actual_diff)
- 
+
         expected_diff = {
             #"num_coefficients": DiffEqual,
             "num_arguments": (2,DiffMissing),
@@ -159,11 +160,11 @@ class RecDiffTestCase(unittest.TestCase):
         self.assertEqual(actual_diff, expected_diff)
 
 
-def main(a, b):
+def main(a, b, tolerance=_default_recdiff_tolerance):
     print "Running diff on files %s and %s" % (a, b)
     a = eval(open(a).read())
     b = eval(open(b).read())
-    d = recdiff(a, b)   
+    d = recdiff(a, b, float(tolerance))
     print_recdiff(d)
 
 if __name__ == "__main__":
@@ -174,4 +175,3 @@ if __name__ == "__main__":
         unittest.main()
     else:
         main(*args)
-
