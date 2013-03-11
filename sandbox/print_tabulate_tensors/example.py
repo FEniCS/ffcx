@@ -126,6 +126,7 @@ forms += [a_b1, a_b2]
 # Debugging:
 #forms += [Constant(triangle)*dx]
 #forms += [grad(s1)**2*dx]
+forms += [dot(grad(us1),grad(vs1))*dx]
 
 for form in forms:
     code = uffc.compile_tabulate_tensor_code(form, optimize=True)
