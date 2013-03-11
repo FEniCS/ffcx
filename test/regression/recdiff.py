@@ -14,7 +14,7 @@ class DiffMarkerType:
 DiffMissing = DiffMarkerType("<value missing>")
 DiffEqual = DiffMarkerType("<equal>")
 
-_default_recdiff_tolerance = 1e-8
+_default_recdiff_tolerance = 1e-6
 
 def recdiff_dict(data1, data2, tolerance=_default_recdiff_tolerance):
     keys1 = set(data1.keys())
