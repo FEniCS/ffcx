@@ -154,7 +154,6 @@ def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
     ir["geometric_dimension"] = cell.geometric_dimension()
     ir["global_dimension"] = _global_dimension(element)
     ir["local_dimension"] = element.space_dimension()
-    ir["max_local_dimension"] = element.space_dimension()
     ir["num_facet_dofs"] = len(facet_dofs[0])
     ir["num_entity_dofs"] = num_dofs_per_entity
     ir["tabulate_dofs"] = _tabulate_dofs(element, cell)

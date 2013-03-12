@@ -166,7 +166,6 @@ def _generate_dofmap_code(ir, prefix, parameters):
     code["geometric_dimension"] = ret(ir["geometric_dimension"])
     code["global_dimension"] = _global_dimension(ir["global_dimension"])
     code["local_dimension"] = ret(ir["local_dimension"])
-    code["max_local_dimension"] = ret(ir["max_local_dimension"])
     code["num_facet_dofs"] = ret(ir["num_facet_dofs"])
     code["num_entity_dofs"] = switch(f_d, [ret(num) for num in ir["num_entity_dofs"]], ret(f_int(0)))
     code["tabulate_dofs"] = _tabulate_dofs(ir["tabulate_dofs"])

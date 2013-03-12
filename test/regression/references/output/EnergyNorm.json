@@ -48,7 +48,6 @@
             "needs_mesh_entities_3": 0, 
             "global_dimension": 10001, 
             "local_dimension": 4, 
-            "max_local_dimension": 4, 
             "geometric_dimension": 3, 
             "num_facet_dofs": 3, 
             "num_entity_dofs_0": 1, 

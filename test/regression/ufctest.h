@@ -338,7 +338,7 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id, Printer & p
   num_entities[3] = 10004;
 
   test_cell c(cell_shape, dofmap.geometric_dimension());
-  std::size_t n = dofmap.max_local_dimension();
+  std::size_t n = dofmap.local_dimension();
   std::size_t* dofs = new std::size_t[n];
   for (std::size_t i = 0; i < n; i++)
     dofs[i] = 0;
@@ -359,10 +359,7 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id, Printer & p
   printer.print_scalar("global_dimension", dofmap.global_dimension(num_entities));
 
   // local_dimension
-  printer.print_scalar("local_dimension", dofmap.local_dimension(c));
-
-  // max_local_dimension
-  printer.print_scalar("max_local_dimension", dofmap.max_local_dimension());
+  printer.print_scalar("local_dimension", dofmap.local_dimension());
 
   // geometric_dimension
   printer.print_scalar("geometric_dimension", dofmap.geometric_dimension());
@@ -376,7 +373,7 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id, Printer & p
 
   // tabulate_dofs
   dofmap.tabulate_dofs(dofs, num_entities, c);
-  printer.print_array("tabulate_dofs", dofmap.local_dimension(c), dofs);
+  printer.print_array("tabulate_dofs", dofmap.local_dimension(), dofs);
 
   // tabulate_facet_dofs
   for (std::size_t facet = 0; facet < num_facets; facet++)
@@ -401,7 +398,7 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id, Printer & p
 
   // tabulate_coordinates
   dofmap.tabulate_coordinates(coordinates, &c.vertex_coordinates[0]);
-  for (std::size_t i = 0; i < dofmap.local_dimension(c); i++)
+  for (std::size_t i = 0; i < dofmap.local_dimension(); i++)
     printer.print_array("tabulate_coordinates", c.geometric_dimension, coordinates[i], i);
 
   // num_sub_dofmaps
