@@ -203,7 +203,8 @@ def _attach_integral_metadata(form_data, parameters):
             if qd == "auto":
                 qd = _auto_select_quadrature_degree(integral.integrand(),
                                                     r,
-                                                    form_data.unique_sub_elements)
+                                                    form_data.unique_sub_elements,
+                                                    form_data.element_replace_map)
                 info("quadrature_degree: auto --> %d" % qd)
                 integral_metadata["quadrature_degree"] = qd
             else:
@@ -318,22 +319,23 @@ def _auto_select_representation(integral, elements, function_replace_map):
     else:
         return "quadrature"
 
-def _auto_select_quadrature_degree(integrand, representation, elements):
+def _auto_select_quadrature_degree(integrand, representation, elements, element_replace_map):
     "Automatically select a suitable quadrature degree for integrand."
+    # TODO: Move this to form preprocessing, as part of integral_data?
 
-    # Use maximum quadrature element degree if any for quadrature representation
-    if representation == "quadrature":
-        quadrature_degrees = [e.degree() for e in elements if e.family() == "Quadrature"]
-        if quadrature_degrees:
-            debug("Found quadrature element(s) with the following degree(s): " + str(quadrature_degrees))
-            ffc_assert(min(quadrature_degrees) == max(quadrature_degrees), \
-                       "All QuadratureElements in an integrand must have the same degree: %s" \
-                       % str(quadrature_degrees))
-            debug("Selecting quadrature degree based on quadrature element: " + str(quadrature_degrees[0]))
-            return quadrature_degrees[0]
+    # Use quadrature element degree if any is found
+    quadrature_degrees = [e.degree() for e in elements if e.family() == "Quadrature"]
+    if quadrature_degrees:
+        debug("Found quadrature element(s) with the following degree(s): " + str(quadrature_degrees))
+        ffc_assert(min(quadrature_degrees) == max(quadrature_degrees), \
+                   "All QuadratureElements in an integrand must have the same degree: %s" \
+                   % str(quadrature_degrees))
+        debug("Selecting quadrature degree based on quadrature element: " + str(quadrature_degrees[0]))
+        ffc_assert(representation != "tensor", "Tensor representation does not support quadrature elements.")
+        return quadrature_degrees[0]
 
     # Otherwise estimate total degree of integrand
-    q = estimate_total_polynomial_degree(integrand, default_quadrature_degree)
+    q = estimate_total_polynomial_degree(integrand, default_quadrature_degree, element_replace_map)
     debug("Selecting quadrature degree based on total polynomial degree of integrand: " + str(q))
 
     return q
