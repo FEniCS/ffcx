@@ -107,10 +107,8 @@ vector = VectorElement("CG", cell, 1)
 tensor = TensorElement("CG", cell, 1)
 
 # Functions
-v  = Argument(vector)             # Test function
-du = Argument(vector)            # Incremental displacement
-#v  = TestFunction(vector)             # Test function
-#du = TrialFunction(vector)            # Incremental displacement
+v  = TestFunction(vector)             # Test function
+du = TrialFunction(vector)            # Incremental displacement
 u  = Coefficient(vector)              # Displacement from previous iteration
 S_iso_inf_p = Coefficient(tensor)
 S_vol_inf_p = Coefficient(tensor)
@@ -130,8 +128,8 @@ F = inner((I + grad(u))*S_n, grad(v))*dx
 J = derivative(F, u, du)
 
 forms = []
-#forms += [M]
-#forms += [F]
+forms += [M]
+forms += [F]
 forms += [J]
 
 #du2 = Coefficient(vector)

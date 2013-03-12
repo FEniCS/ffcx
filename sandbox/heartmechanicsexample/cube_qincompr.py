@@ -23,15 +23,20 @@ s0 = Constant((0.0, 1.0, 0.0))
 fx = Constant(0.1) # [N/cm^2]
 # material parameters
 mattype = "tr_isotropic"
-elptfix = True
+elptfix = False
 # form parameters
-ffc_options = \
+_ffc_options = \
 {
   "quadrature_degree" : 2,
   "optimize" : True,
   "eliminates_zeros" : True,
   "precompute_basis_const" : True,
   "cpp_optimize" : True
+}
+ffc_options = \
+{
+  "representation" : "uflacs",
+  "quadrature_degree" : 2,
 }
 # solver parameters
 solver_options = \
@@ -105,7 +110,8 @@ if __name__ == "__main__" :
   
   P = diff(Pi, F)
   
-  N = FacetNormal(mesh)
+  #N = FacetNormal(mesh)
+  N = Constant((1,0,0)) # FIXME
   X = SpatialCoordinate(W.cell())
   
   # internal stress
