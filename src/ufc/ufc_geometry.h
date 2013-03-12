@@ -101,14 +101,13 @@ inline void compute_jacobian_tetrahedron_3d(double* J,
   J[8] = vertex_coordinates[11] - vertex_coordinates[2];
 }
 
-//--- Computation of Jacobian inverses ---
+//--- Computation of Jacobian inverses --- // TODO: Remove this when ffc is updated to use the NEW ones below
 
 /// Compute Jacobian inverse K for interval embedded in R^1
 inline void compute_jacobian_inverse_interval_1d(double* K,
                                                  double& det,
                                                  const double* J)
 {
-  // TODO: Move computation of det to a separate function, det is often needed when K is not
   det = J[0];
   K[0] = 1.0 / det;
 }
@@ -118,7 +117,6 @@ inline void compute_jacobian_inverse_interval_2d(double* K,
                                                  double& det,
                                                  const double* J)
 {
-  // TODO: Move computation of det to a separate function, det is often needed when K is not
   const double det2 = J[0]*J[0] + J[1]*J[1];
   det = std::sqrt(det2);
 
@@ -145,7 +143,6 @@ inline void compute_jacobian_inverse_triangle_2d(double* K,
                                                  double& det,
                                                  const double* J)
 {
-  // TODO: Move computation of det to a separate function, det is often needed when K is not
   det = J[0]*J[3] - J[1]*J[2];
 
   K[0] =  J[3] / det;
@@ -159,7 +156,6 @@ inline void compute_jacobian_inverse_triangle_3d(double* K,
                                                  double& det,
                                                  const double* J)
 {
-  // TODO: Move computation of det to a separate function, det is often needed when K is not
   const double d_0 = J[2]*J[5] - J[4]*J[3];
   const double d_1 = J[4]*J[1] - J[0]*J[5];
   const double d_2 = J[0]*J[3] - J[2]*J[1];
@@ -186,7 +182,6 @@ inline void compute_jacobian_inverse_tetrahedron_3d(double* K,
                                                     double& det,
                                                     const double* J)
 {
-  // TODO: Move computation of det to a separate function, det is often needed when K is not
   const double d_00 = J[4]*J[8] - J[5]*J[7];
   const double d_01 = J[5]*J[6] - J[3]*J[8];
   const double d_02 = J[3]*J[7] - J[4]*J[6];
@@ -209,6 +204,150 @@ inline void compute_jacobian_inverse_tetrahedron_3d(double* K,
   K[7] = d_12 / det;
   K[8] = d_22 / det;
 }
+
+//--- NEW Computation of Jacobian (sub)determinants ---
+
+/// Compute Jacobian determinant for interval embedded in R^1
+inline void compute_jacobian_determinants_interval_1d(double & det,
+                                                      const double J[1])
+{
+  det = J[0];
+}
+
+/// Compute Jacobian (pseudo)determinant for interval embedded in R^2
+inline void compute_jacobian_determinants_interval_2d(double & det2,
+                                                      double & det,
+                                                      const double J[2])
+{
+  det2 = J[0]*J[0] + J[1]*J[1];
+  det = std::sqrt(det2);
+}
+
+/// Compute Jacobian (pseudo)determinant for interval embedded in R^3
+inline void compute_jacobian_determinants_interval_3d(double & det2,
+                                                      double & det,
+                                                      const double J[3])
+{
+  det2 = J[0]*J[0] + J[1]*J[1] + J[2]*J[2];
+  det = std::sqrt(det2);
+}
+
+/// Compute Jacobian determinant for triangle embedded in R^2
+inline void compute_jacobian_determinants_triangle_2d(double & det,
+                                                      const double J[4])
+{
+  det = J[0]*J[3] - J[1]*J[2];
+}
+
+/// Compute Jacobian (pseudo)determinant for triangle embedded in R^3
+inline void compute_jacobian_determinants_triangle_3d(double & den,
+                                                      double & det2,
+                                                      double & det,
+                                                      double c[3],
+                                                      const double J[6])
+{
+  const double d_0 = J[2]*J[5] - J[4]*J[3];
+  const double d_1 = J[4]*J[1] - J[0]*J[5];
+  const double d_2 = J[0]*J[3] - J[2]*J[1];
+
+  c[0] = J[0]*J[0] + J[2]*J[2] + J[4]*J[4];
+  c[1] = J[1]*J[1] + J[3]*J[3] + J[5]*J[5];
+  c[2] = J[0]*J[1] + J[2]*J[3] + J[4]*J[5];
+
+  den = c[0]*c[1] - c[2]*c[2];
+
+  det2 = d_0*d_0 + d_1*d_1 + d_2*d_2;
+  det = std::sqrt(det2);
+}
+
+/// Compute Jacobian inverse K for tetrahedron embedded in R^3
+inline void compute_jacobian_determinants_tetrahedron_3d(double & det,
+                                                         double d[9],
+                                                         const double J[9])
+{
+  d[0*3 + 0] = J[4]*J[8] - J[5]*J[7];
+  d[0*3 + 1] = J[5]*J[6] - J[3]*J[8];
+  d[0*3 + 2] = J[3]*J[7] - J[4]*J[6];
+  d[1*3 + 0] = J[2]*J[7] - J[1]*J[8];
+  d[1*3 + 1] = J[0]*J[8] - J[2]*J[6];
+  d[1*3 + 2] = J[1]*J[6] - J[0]*J[7];
+  d[2*3 + 0] = J[1]*J[5] - J[2]*J[4];
+  d[2*3 + 1] = J[2]*J[3] - J[0]*J[5];
+  d[2*3 + 2] = J[0]*J[4] - J[1]*J[3];
+
+  det = J[0]*d[0*3 + 0] + J[3]*d[1*3 + 0] + J[6]*d[2*3 + 0];
+}
+
+//--- NEW Computation of Jacobian inverses ---
+
+/// Compute Jacobian inverse K for interval embedded in R^1
+inline void new_compute_jacobian_inverse_interval_1d(double K[1],
+                                                     double det)
+{
+  K[0] = 1.0 / det;
+}
+
+/// Compute Jacobian (pseudo)inverse K for interval embedded in R^2
+inline void new_compute_jacobian_inverse_interval_2d(double K[2],
+                                                     double det2,
+                                                     const double J[2])
+{
+  K[0] = J[0] / det2;
+  K[1] = J[1] / det2;
+}
+
+/// Compute Jacobian (pseudo)inverse K for interval embedded in R^3
+inline void new_compute_jacobian_inverse_interval_3d(double K[3],
+                                                     double det2,
+                                                     const double J[3])
+{
+  K[0] = J[0] / det2;
+  K[1] = J[1] / det2;
+  K[2] = J[2] / det2;
+}
+
+/// Compute Jacobian inverse K for triangle embedded in R^2
+inline void new_compute_jacobian_inverse_triangle_2d(double K[4],
+                                                     double det,
+                                                     const double J[4])
+{
+  K[0] =  J[3] / det;
+  K[1] = -J[1] / det;
+  K[2] = -J[2] / det;
+  K[3] =  J[0] / det;
+}
+
+/// Compute Jacobian (pseudo)inverse K for triangle embedded in R^3
+inline void new_compute_jacobian_inverse_triangle_3d(double K[6],
+                                                     double den,
+                                                     const double c[3],
+                                                     const double J[6])
+{
+  K[0] = (J[0]*c[1] - J[1]*c[2]) / den;
+  K[1] = (J[2]*c[1] - J[3]*c[2]) / den;
+  K[2] = (J[4]*c[1] - J[5]*c[2]) / den;
+  K[3] = (J[1]*c[0] - J[0]*c[2]) / den;
+  K[4] = (J[3]*c[0] - J[2]*c[2]) / den;
+  K[5] = (J[5]*c[0] - J[4]*c[2]) / den;
+}
+
+/// Compute Jacobian inverse K for tetrahedron embedded in R^3
+inline void new_compute_jacobian_inverse_tetrahedron_3d(double K[9],
+                                                        double det,
+                                                        const double d[9])
+{
+  K[0] = d[0*3 + 0] / det;
+  K[1] = d[1*3 + 0] / det;
+  K[2] = d[2*3 + 0] / det;
+  K[3] = d[0*3 + 1] / det;
+  K[4] = d[1*3 + 1] / det;
+  K[5] = d[2*3 + 1] / det;
+  K[6] = d[0*3 + 2] / det;
+  K[7] = d[1*3 + 2] / det;
+  K[8] = d[2*3 + 2] / det;
+}
+
+// --- Computation of edge, face, facet scaling factors
 
 /// Compute facet scaling factor for interval embedded in R^1
 inline void compute_facet_scaling_factor_interval_1d(double & det,
