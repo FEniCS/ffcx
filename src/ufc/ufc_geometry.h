@@ -301,4 +301,153 @@ inline void compute_facet_scaling_factor_tetrahedron_3d(double & det,
   det = std::sqrt(a0*a0 + a1*a1 + a2*a2);
 }
 
+/// Compute facet direction for interval embedded in R^1
+inline void compute_facet_normal_direction_interval_1d(bool & direction,
+                                                       const double vertex_coordinates[2],
+                                                       std::size_t facet)
+{
+  direction = facet == 0 ? vertex_coordinates[0] > vertex_coordinates[1] : vertex_coordinates[1] > vertex_coordinates[0];
+}
+
+/// Compute facet direction for triangle embedded in R^2
+inline void compute_facet_normal_direction_triangle_2d(bool & direction,
+                                                       const double vertex_coordinates[6],
+                                                       const double dx[2],
+                                                       std::size_t v0,
+                                                       std::size_t facet)
+{
+  // FIXME: Need dx0, dx1, v0 exported from scaling factor code to use this
+  direction = dx[1]*(vertex_coordinates[2*facet    ] - vertex_coordinates[2*v0    ])
+            - dx[0]*(vertex_coordinates[2*facet + 1] - vertex_coordinates[2*v0 + 1])
+            < 0;
+}
+
+/// Compute facet direction for tetrahedron embedded in R^3
+inline void compute_facet_normal_direction_tetrahedron_3d(bool & direction,
+                                                          const double vertex_coordinates[9],
+                                                          const double a[3],
+                                                          std::size_t v0,
+                                                          std::size_t facet)
+{
+  // FIXME: Need a0, a1, a2, v0 exported from scaling factor code to use this
+  direction = a[0]*(vertex_coordinates[3*facet    ] - vertex_coordinates[3*v0    ])
+            + a[1]*(vertex_coordinates[3*facet + 1] - vertex_coordinates[3*v0 + 1])
+            + a[2]*(vertex_coordinates[3*facet + 2] - vertex_coordinates[3*v0 + 2])
+            < 0;
+}
+
+// TODO: Should signatures of compute_facet_normal_foo match? The snippets use different quantities.
+/// Compute facet normal for interval embedded in R^1
+inline void compute_facet_normal_interval_1d(double n[1],
+                                             bool direction)
+{
+  // Facet normals are 1.0 or -1.0:   (-1.0) <-- X------X --> (1.0)
+  n[0] = direction ? 1.0 : -1.0; // FIXME: Not considering facet? Got this from ffc codesnippets.
+}
+
+/// Compute facet normal for triangle embedded in R^2
+inline void compute_facet_normal_triangle_2d(double n[2],
+                                             const double dx[2],
+                                             const double det,
+                                             bool direction)
+{
+  // Compute facet normals from the facet scale factor constants
+  n[0] = direction ?  dx[1] / det : -dx[1] / det;
+  n[1] = direction ? -dx[0] / det :  dx[0] / det;
+}
+
+/// Compute facet normal for interval embedded in R^2
+inline void compute_facet_normal_interval_2d(double n[2],
+                                             const double vertex_coordinates[4],
+                                             std::size_t facet)
+{
+  if (facet == 0)
+  {
+    n[0] = vertex_coordinates[0] - vertex_coordinates[2];
+    n[1] = vertex_coordinates[1] - vertex_coordinates[3];
+  }
+  else
+  {
+    n[0] = vertex_coordinates[2] - vertex_coordinates[0];
+    n[1] = vertex_coordinates[3] - vertex_coordinates[1];
+  }
+  const double n_length = std::sqrt(n[0]*n[0] + n[1]*n[1]);
+  n[0] /= n_length;
+  n[1] /= n_length;
+}
+
+/// Compute facet normal for tetrahedron embedded in R^3
+inline void compute_facet_normal_tetrahedron_3d(double n[3],
+                                                const double a[3],
+                                                const double det,
+                                                bool direction)
+{
+  // Compute facet normals from the facet scale factor constants
+  n[0] = direction ? a[0] / det : -a[0] / det;
+  n[1] = direction ? a[1] / det : -a[1] / det;
+  n[2] = direction ? a[2] / det : -a[2] / det;
+}
+
+/// Compute facet normal for triangle embedded in R^3
+inline void compute_facet_normal_triangle_3d(double n[3],
+                                             const double vertex_coordinates[6],
+                                             std::size_t facet)
+{
+  // Compute facet normal for triangles in 3D
+  const unsigned int vertex0 = facet;
+
+  // Get coordinates corresponding the vertex opposite this
+  static const unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
+  const unsigned int vertex1 = edge_vertices[facet][0];
+  const unsigned int vertex2 = edge_vertices[facet][1];
+
+  // Define vectors n = (p2 - p0) and t = normalized (p2 - p1)
+  n[0] = vertex_coordinates[3*vertex2 + 0] - vertex_coordinates[3*vertex0 + 0];
+  n[1] = vertex_coordinates[3*vertex2 + 1] - vertex_coordinates[3*vertex0 + 1];
+  n[2] = vertex_coordinates[3*vertex2 + 2] - vertex_coordinates[3*vertex0 + 2];
+
+  double t0 = vertex_coordinates[3*vertex2 + 0] - vertex_coordinates[3*vertex1 + 0];
+  double t1 = vertex_coordinates[3*vertex2 + 1] - vertex_coordinates[3*vertex1 + 1];
+  double t2 = vertex_coordinates[3*vertex2 + 2] - vertex_coordinates[3*vertex1 + 2];
+  const double t_length = std::sqrt(t0*t0 + t1*t1 + t2*t2);
+  t0 /= t_length;
+  t1 /= t_length;
+  t2 /= t_length;
+
+  // Subtract, the projection of (p2  - p0) onto (p2 - p1), from (p2 - p0)
+  const double ndott = t0*n[0] + t1*n[1] + t2*n[2];
+  n[0] -= ndott*t0;
+  n[1] -= ndott*t1;
+  n[2] -= ndott*t2;
+  const double n_length = std::sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
+
+  // Normalize
+  n[0] /= n_length;
+  n[1] /= n_length;
+  n[2] /= n_length;
+}
+
+/// Compute facet normal for interval embedded in R^3
+inline void compute_facet_normal_interval_3d(double n[3],
+                                             const double vertex_coordinates[6],
+                                             std::size_t facet)
+{
+  if (facet == 0)
+  {
+    n[0] = vertex_coordinates[0] - vertex_coordinates[3];
+    n[1] = vertex_coordinates[1] - vertex_coordinates[4];
+    n[1] = vertex_coordinates[2] - vertex_coordinates[5];
+  }
+  else
+  {
+    n[0] = vertex_coordinates[3] - vertex_coordinates[0];
+    n[1] = vertex_coordinates[4] - vertex_coordinates[1];
+    n[1] = vertex_coordinates[5] - vertex_coordinates[2];
+  }
+  const double n_length = std::sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
+  n[0] /= n_length;
+  n[1] /= n_length;
+  n[2] /= n_length;
+}
+
 #endif
