@@ -189,6 +189,7 @@ def _find_element_derivatives(expr, elements, element_replace_map):
     #       derivative of an element, but it works!
 
     # Initialise dictionary of elements and the number of derivatives.
+    # (Note that elements are already mapped through the element_replace_map)
     num_derivatives = dict((e, 0) for e in elements)
 
     # Extract the derivatives from the integral.
@@ -199,7 +200,7 @@ def _find_element_derivatives(expr, elements, element_replace_map):
         # After UFL has evaluated derivatives, only one element
         # can be found inside any single Grad expression
         elem, = extract_elements(d.operands()[0])
-        elem = element_replace_map.get(elem,elem)
+        elem = element_replace_map[elem]
         # Set the number of derivatives to the highest value encountered so far.
         num_derivatives[elem] = max(num_derivatives[elem], len(extract_type(d, Grad)))
     return num_derivatives
@@ -261,7 +262,7 @@ def _tabulate_basis(sorted_integrals, domain_type, form_data):
         degree, rule = pr
 
         # Get all unique elements in integral.
-        elements = [form_data.element_replace_map.get(e,e)
+        elements = [form_data.element_replace_map[e]
                     for e in extract_unique_elements(integral)]
 
         # Create a list of equivalent FIAT elements (with same

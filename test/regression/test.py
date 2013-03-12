@@ -469,7 +469,7 @@ def main(args):
     if use_ext_quad:
         test_cases += ext_quad
     if use_ext_uflacs:
-        test_cases += ext_uflacs
+        test_cases = ext_uflacs
         #test_cases += ["-r quadrature -O"]
 
     for argument in test_cases:
