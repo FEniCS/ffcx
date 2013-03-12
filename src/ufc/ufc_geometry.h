@@ -41,23 +41,23 @@
 ///--- Computation of Jacobian matrices ---
 
 /// Compute Jacobian J for interval embedded in R^1
-inline void compute_jacobian_interval_1d(double* J,
-                                         const double* vertex_coordinates)
+inline void compute_jacobian_interval_1d(double J[1],
+                                         const double vertex_coordinates[2])
 {
   J[0] = vertex_coordinates[1] - vertex_coordinates[0];
 }
 
 /// Compute Jacobian J for interval embedded in R^2
-inline void compute_jacobian_interval_2d(double* J,
-                                         const double* vertex_coordinates)
+inline void compute_jacobian_interval_2d(double J[2],
+                                         const double vertex_coordinates[4])
 {
   J[0] = vertex_coordinates[2] - vertex_coordinates[0];
   J[1] = vertex_coordinates[3] - vertex_coordinates[1];
 }
 
 /// Compute Jacobian J for interval embedded in R^3
-inline void compute_jacobian_interval_3d(double* J,
-                                         const double* vertex_coordinates)
+inline void compute_jacobian_interval_3d(double J[3],
+                                         const double vertex_coordinates[6])
 {
   J[0] = vertex_coordinates[3] - vertex_coordinates[0];
   J[1] = vertex_coordinates[4] - vertex_coordinates[1];
@@ -65,8 +65,8 @@ inline void compute_jacobian_interval_3d(double* J,
 }
 
 /// Compute Jacobian J for triangle embedded in R^2
-inline void compute_jacobian_triangle_2d(double* J,
-                                         const double* vertex_coordinates)
+inline void compute_jacobian_triangle_2d(double J[4],
+                                         const double vertex_coordinates[6])
 {
   J[0] = vertex_coordinates[2] - vertex_coordinates[0];
   J[1] = vertex_coordinates[4] - vertex_coordinates[0];
@@ -75,8 +75,8 @@ inline void compute_jacobian_triangle_2d(double* J,
 }
 
 /// Compute Jacobian J for triangle embedded in R^3
-inline void compute_jacobian_triangle_3d(double* J,
-                                         const double* vertex_coordinates)
+inline void compute_jacobian_triangle_3d(double J[6],
+                                         const double vertex_coordinates[9])
 {
   J[0] = vertex_coordinates[3] - vertex_coordinates[0];
   J[1] = vertex_coordinates[6] - vertex_coordinates[0];
@@ -87,8 +87,8 @@ inline void compute_jacobian_triangle_3d(double* J,
 }
 
 /// Compute Jacobian J for tetrahedron embedded in R^3
-inline void compute_jacobian_tetrahedron_3d(double* J,
-                                            const double* vertex_coordinates)
+inline void compute_jacobian_tetrahedron_3d(double J[9],
+                                            const double vertex_coordinates[12])
 {
   J[0] = vertex_coordinates[3]  - vertex_coordinates[0];
   J[1] = vertex_coordinates[6]  - vertex_coordinates[0];
@@ -351,7 +351,7 @@ inline void new_compute_jacobian_inverse_tetrahedron_3d(double K[9],
 
 /// Compute facet scaling factor for interval embedded in R^1
 inline void compute_facet_scaling_factor_interval_1d(double & det,
-                                                     const double * vertex_coordinates,
+                                                     const double vertex_coordinates[2],
                                                      std::size_t facet)
 {
   // Including this just for completeness...
@@ -360,7 +360,7 @@ inline void compute_facet_scaling_factor_interval_1d(double & det,
 
 /// Compute facet scaling factor for interval embedded in R^2
 inline void compute_facet_scaling_factor_interval_2d(double & det,
-                                                     const double * vertex_coordinates,
+                                                     const double vertex_coordinates[4],
                                                      std::size_t facet)
 {
   // Including this just for completeness...
@@ -369,7 +369,7 @@ inline void compute_facet_scaling_factor_interval_2d(double & det,
 
 /// Compute facet scaling factor for interval embedded in R^3
 inline void compute_facet_scaling_factor_interval_3d(double & det,
-                                                     const double * vertex_coordinates,
+                                                     const double vertex_coordinates[6],
                                                      std::size_t facet)
 {
   // Including this just for completeness...
@@ -377,8 +377,8 @@ inline void compute_facet_scaling_factor_interval_3d(double & det,
 }
 
 /// Compute edge scaling factors for triangle embedded in R^2
-inline void compute_edge_scaling_factors_triangle_2d(double * dx,
-                                                     const double * vertex_coordinates,
+inline void compute_edge_scaling_factors_triangle_2d(double dx[2],
+                                                     const double vertex_coordinates[6],
                                                      std::size_t facet)
 {
   // Get vertices on edge
