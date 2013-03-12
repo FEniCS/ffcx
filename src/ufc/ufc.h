@@ -230,7 +230,8 @@ namespace ufc
     /// Return a string identifying the dofmap
     virtual const char* signature() const = 0;
 
-    /// Return true iff mesh entities of topological dimension d are needed
+    /// Return true iff mesh entities of topological dimension d are
+    /// needed
     virtual bool needs_mesh_entities(std::size_t d) const = 0;
 
     /// Return the topological dimension of the associated cell shape
@@ -243,16 +244,15 @@ namespace ufc
     virtual std::size_t global_dimension(const std::vector<std::size_t>&
                                          num_global_mesh_entities) const = 0;
 
-    /// Return the dimension of the local finite element function space for a cell
-    virtual std::size_t local_dimension(const cell& c) const = 0;
-
-    /// Return the maximum dimension of the local finite element function space
-    virtual std::size_t max_local_dimension() const = 0;
+    /// Return the dimension of the local finite element function space
+    /// for a cell
+    virtual std::size_t local_dimension() const = 0;
 
     /// Return the number of dofs on each cell facet
     virtual std::size_t num_facet_dofs() const = 0;
 
-    /// Return the number of dofs associated with each cell entity of dimension d
+    /// Return the number of dofs associated with each cell entity of
+    /// dimension d
     virtual std::size_t num_entity_dofs(std::size_t d) const = 0;
 
     /// Tabulate the local-to-global mapping of dofs on a cell

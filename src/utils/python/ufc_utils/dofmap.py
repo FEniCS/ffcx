@@ -55,15 +55,9 @@ public:
   }
 
   /// Return the dimension of the local finite element function space for a cell
-  virtual std::size_t local_dimension(const ufc::cell& c) const
+  virtual std::size_t local_dimension() const
   {
 %(local_dimension)s
-  }
-
-  /// Return the maximum dimension of the local finite element function space
-  virtual std::size_t max_local_dimension() const
-  {
-%(max_local_dimension)s
   }
 
   /// Return the number of dofs on each cell facet
@@ -159,10 +153,7 @@ public:
                                        num_global_entities) const;
 
   /// Return the dimension of the local finite element function space for a cell
-  virtual std::size_t local_dimension(const ufc::cell& c) const;
-
-  /// Return the maximum dimension of the local finite element function space
-  virtual std::size_t max_local_dimension() const;
+  virtual std::size_t local_dimension() const;
 
   /// Return the number of dofs on each cell facet
   virtual std::size_t num_facet_dofs() const;
@@ -244,15 +235,9 @@ std::size_t %(classname)s::global_dimension(const std::vector<std::size_t>&
 }
 
 /// Return the dimension of the local finite element function space for a cell
-std::size_t %(classname)s::local_dimension(const ufc::cell& c) const
+std::size_t %(classname)s::local_dimension() const
 {
 %(local_dimension)s
-}
-
-/// Return the maximum dimension of the local finite element function space
-std::size_t %(classname)s::max_local_dimension() const
-{
-%(max_local_dimension)s
 }
 
 /// Return the number of dofs on each cell facet
