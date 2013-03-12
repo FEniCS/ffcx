@@ -27,6 +27,17 @@
 /// created inside the generated functions (tabulate_tensor). Note
 /// that an std::vector x may also be passed as raw pointer by &x[0].
 
+// TODO: Should signatures of compute_<foo>_<cell>_<n>d match for each foo?
+//       On one hand the snippets use different quantities, on the other
+//       some consistency is nice to simplify the code generation.
+//       Currently only the arguments that are actually used are included.
+
+// TODO: Move entity index tables such as
+//       static const unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
+//       to some shared code?
+
+// TODO: Split this header into smaller files ufc_geometry_<cell>.h or ufc_geometry_<cell>_<n>d.h?
+
 ///--- Computation of Jacobian matrices ---
 
 /// Compute Jacobian J for interval embedded in R^1
@@ -226,8 +237,8 @@ inline void compute_facet_scaling_factor_interval_3d(double & det,
   det = 1.0;
 }
 
-/// Compute facet scaling factor for triangle embedded in R^2
-inline void compute_facet_scaling_factor_triangle_2d(double & det,
+/// Compute edge scaling factors for triangle embedded in R^2
+inline void compute_edge_scaling_factors_triangle_2d(double * dx,
                                                      const double * vertex_coordinates,
                                                      std::size_t facet)
 {
@@ -236,37 +247,44 @@ inline void compute_facet_scaling_factor_triangle_2d(double & det,
   const unsigned int v0 = edge_vertices[facet][0];
   const unsigned int v1 = edge_vertices[facet][1];
 
-  // TODO: Make computation of dx* a separate function, needed for other computations as well
   // Compute scale factor (length of edge scaled by length of reference interval)
-  const double dx0 = vertex_coordinates[2*v1 + 0] - vertex_coordinates[2*v0 + 0];
-  const double dx1 = vertex_coordinates[2*v1 + 1] - vertex_coordinates[2*v0 + 1];
+  dx[0] = vertex_coordinates[2*v1 + 0] - vertex_coordinates[2*v0 + 0];
+  dx[1] = vertex_coordinates[2*v1 + 1] - vertex_coordinates[2*v0 + 1];
+}
 
-  det = std::sqrt(dx0*dx0 + dx1*dx1);
+/// Compute facet scaling factor for triangle embedded in R^2
+inline void compute_facet_scaling_factor_triangle_2d(double & det,
+                                                     const double dx[2])
+{
+  det = std::sqrt(dx[0]*dx[0] + dx[1]*dx[1]);
+}
+
+/// Compute edge scaling factors for triangle embedded in R^3
+inline void compute_edge_scaling_factors_triangle_3d(double dx[3],
+                                                     const double vertex_coordinates[9],
+                                                     std::size_t facet)
+{
+  // Get vertices on edge
+  static const unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
+  const unsigned int v0 = edge_vertices[facet][0];
+  const unsigned int v1 = edge_vertices[facet][1];
+
+  // Compute scale factor (length of edge scaled by length of reference interval)
+  dx[0] = vertex_coordinates[3*v1 + 0] - vertex_coordinates[3*v0 + 0];
+  dx[1] = vertex_coordinates[3*v1 + 1] - vertex_coordinates[3*v0 + 1];
+  dx[2] = vertex_coordinates[3*v1 + 2] - vertex_coordinates[3*v0 + 2];
 }
 
 /// Compute facet scaling factor for triangle embedded in R^3
 inline void compute_facet_scaling_factor_triangle_3d(double & det,
-                                                     const double * vertex_coordinates,
-                                                     std::size_t facet)
+                                                     const double dx[3])
 {
-  // Facet determinant 2D in 3D (edge)
-  // Get vertices on edge
-  static const unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
-  const unsigned int v0 = edge_vertices[facet][0];
-  const unsigned int v1 = edge_vertices[facet][1];
-
-  // TODO: Make computation of dx* a separate function, needed for other computations as well
-  // Compute scale factor (length of edge scaled by length of reference interval)
-  const double dx0 = vertex_coordinates[3*v1 + 0] - vertex_coordinates[3*v0 + 0];
-  const double dx1 = vertex_coordinates[3*v1 + 1] - vertex_coordinates[3*v0 + 1];
-  const double dx2 = vertex_coordinates[3*v1 + 2] - vertex_coordinates[3*v0 + 2];
-
-  det = std::sqrt(dx0*dx0 + dx1*dx1 + dx2*dx2);
+  det = std::sqrt(dx[0]*dx[0] + dx[1]*dx[1] + dx[2]*dx[2]);
 }
 
-/// Compute facet scaling factor for tetrahedron embedded in R^3
-inline void compute_facet_scaling_factor_tetrahedron_3d(double & det,
-                                                        const double * vertex_coordinates,
+/// Compute face scaling factors for tetrahedron embedded in R^3
+inline void compute_face_scaling_factors_tetrahedron_3d(double a[3],
+                                                        const double vertex_coordinates[12],
                                                         std::size_t facet)
 {
   // Get vertices on face
@@ -275,30 +293,34 @@ inline void compute_facet_scaling_factor_tetrahedron_3d(double & det,
   const unsigned int v1 = face_vertices[facet][1];
   const unsigned int v2 = face_vertices[facet][2];
 
-  // TODO: Make computation of a* a separate function, needed for other computations as well
   // Compute scale factor (area of face scaled by area of reference triangle)
-  const double a0 = (vertex_coordinates[3*v0 + 1]*vertex_coordinates[3*v1 + 2]  +
-                     vertex_coordinates[3*v0 + 2]*vertex_coordinates[3*v2 + 1]  +
-                     vertex_coordinates[3*v1 + 1]*vertex_coordinates[3*v2 + 2]) -
-                    (vertex_coordinates[3*v2 + 1]*vertex_coordinates[3*v1 + 2]  +
-                     vertex_coordinates[3*v2 + 2]*vertex_coordinates[3*v0 + 1]  +
-                     vertex_coordinates[3*v1 + 1]*vertex_coordinates[3*v0 + 2]);
+  a[0] = (vertex_coordinates[3*v0 + 1]*vertex_coordinates[3*v1 + 2]  +
+          vertex_coordinates[3*v0 + 2]*vertex_coordinates[3*v2 + 1]  +
+          vertex_coordinates[3*v1 + 1]*vertex_coordinates[3*v2 + 2]) -
+         (vertex_coordinates[3*v2 + 1]*vertex_coordinates[3*v1 + 2]  +
+          vertex_coordinates[3*v2 + 2]*vertex_coordinates[3*v0 + 1]  +
+          vertex_coordinates[3*v1 + 1]*vertex_coordinates[3*v0 + 2]);
 
-  const double a1 = (vertex_coordinates[3*v0 + 2]*vertex_coordinates[3*v1 + 0]  +
-                     vertex_coordinates[3*v0 + 0]*vertex_coordinates[3*v2 + 2]  +
-                     vertex_coordinates[3*v1 + 2]*vertex_coordinates[3*v2 + 0]) -
-                    (vertex_coordinates[3*v2 + 2]*vertex_coordinates[3*v1 + 0]  +
-                     vertex_coordinates[3*v2 + 0]*vertex_coordinates[3*v0 + 2]  +
-                     vertex_coordinates[3*v1 + 2]*vertex_coordinates[3*v0 + 0]);
+  a[1] = (vertex_coordinates[3*v0 + 2]*vertex_coordinates[3*v1 + 0]  +
+          vertex_coordinates[3*v0 + 0]*vertex_coordinates[3*v2 + 2]  +
+          vertex_coordinates[3*v1 + 2]*vertex_coordinates[3*v2 + 0]) -
+         (vertex_coordinates[3*v2 + 2]*vertex_coordinates[3*v1 + 0]  +
+          vertex_coordinates[3*v2 + 0]*vertex_coordinates[3*v0 + 2]  +
+          vertex_coordinates[3*v1 + 2]*vertex_coordinates[3*v0 + 0]);
 
-  const double a2 = (vertex_coordinates[3*v0 + 0]*vertex_coordinates[3*v1 + 1]  +
-                     vertex_coordinates[3*v0 + 1]*vertex_coordinates[3*v2 + 0]  +
-                     vertex_coordinates[3*v1 + 0]*vertex_coordinates[3*v2 + 1]) -
-                    (vertex_coordinates[3*v2 + 0]*vertex_coordinates[3*v1 + 1]  +
-                     vertex_coordinates[3*v2 + 1]*vertex_coordinates[3*v0 + 0]  +
-                     vertex_coordinates[3*v1 + 0]*vertex_coordinates[3*v0 + 1]);
+  a[2] = (vertex_coordinates[3*v0 + 0]*vertex_coordinates[3*v1 + 1]  +
+          vertex_coordinates[3*v0 + 1]*vertex_coordinates[3*v2 + 0]  +
+          vertex_coordinates[3*v1 + 0]*vertex_coordinates[3*v2 + 1]) -
+         (vertex_coordinates[3*v2 + 0]*vertex_coordinates[3*v1 + 1]  +
+          vertex_coordinates[3*v2 + 1]*vertex_coordinates[3*v0 + 0]  +
+          vertex_coordinates[3*v1 + 0]*vertex_coordinates[3*v0 + 1]);
+}
 
-  det = std::sqrt(a0*a0 + a1*a1 + a2*a2);
+/// Compute facet scaling factor for tetrahedron embedded in R^3
+inline void compute_facet_scaling_factor_tetrahedron_3d(double & det,
+                                                        const double a[3])
+{
+  det = std::sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
 }
 
 /// Compute facet direction for interval embedded in R^1
@@ -313,10 +335,10 @@ inline void compute_facet_normal_direction_interval_1d(bool & direction,
 inline void compute_facet_normal_direction_triangle_2d(bool & direction,
                                                        const double vertex_coordinates[6],
                                                        const double dx[2],
-                                                       std::size_t v0,
                                                        std::size_t facet)
 {
-  // FIXME: Need dx0, dx1, v0 exported from scaling factor code to use this
+  static const unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
+  const unsigned int v0 = edge_vertices[facet][0];
   direction = dx[1]*(vertex_coordinates[2*facet    ] - vertex_coordinates[2*v0    ])
             - dx[0]*(vertex_coordinates[2*facet + 1] - vertex_coordinates[2*v0 + 1])
             < 0;
@@ -326,23 +348,22 @@ inline void compute_facet_normal_direction_triangle_2d(bool & direction,
 inline void compute_facet_normal_direction_tetrahedron_3d(bool & direction,
                                                           const double vertex_coordinates[9],
                                                           const double a[3],
-                                                          std::size_t v0,
                                                           std::size_t facet)
 {
-  // FIXME: Need a0, a1, a2, v0 exported from scaling factor code to use this
+  static const unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
+  const unsigned int v0 = face_vertices[facet][0];
   direction = a[0]*(vertex_coordinates[3*facet    ] - vertex_coordinates[3*v0    ])
             + a[1]*(vertex_coordinates[3*facet + 1] - vertex_coordinates[3*v0 + 1])
             + a[2]*(vertex_coordinates[3*facet + 2] - vertex_coordinates[3*v0 + 2])
             < 0;
 }
 
-// TODO: Should signatures of compute_facet_normal_foo match? The snippets use different quantities.
 /// Compute facet normal for interval embedded in R^1
 inline void compute_facet_normal_interval_1d(double n[1],
                                              bool direction)
 {
   // Facet normals are 1.0 or -1.0:   (-1.0) <-- X------X --> (1.0)
-  n[0] = direction ? 1.0 : -1.0; // FIXME: Not considering facet? Got this from ffc codesnippets.
+  n[0] = direction ? 1.0 : -1.0;
 }
 
 /// Compute facet normal for triangle embedded in R^2
