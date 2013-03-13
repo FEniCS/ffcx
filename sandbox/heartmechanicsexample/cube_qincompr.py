@@ -78,7 +78,7 @@ def create_mesh(L, N) :
 if __name__ == "__main__" :
   
   # geometry
-  mesh, bfun = create_mesh(1.0, 2)
+  mesh, bfun = create_mesh(1.0, 32)
   dGamma = Measure("ds")[bfun]
   
   # function space
@@ -110,8 +110,7 @@ if __name__ == "__main__" :
   
   P = diff(Pi, F)
   
-  #N = FacetNormal(mesh)
-  N = Constant((1,0,0)) # FIXME
+  N = FacetNormal(mesh)
   X = SpatialCoordinate(W.cell())
   
   # internal stress
