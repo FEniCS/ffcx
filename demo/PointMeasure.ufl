@@ -21,11 +21,15 @@
 
 element = FiniteElement("CG", triangle, 1)
 V = FiniteElement("CG", triangle, 2)
-
 u = TrialFunction(element)
 v = TestFunction(element)
 g = Coefficient(element)
 f = Coefficient(V)
-
 a = u*v*dP + g*g*u*v*dP(1) + u*v*dx
-L = f*v*dP
+
+element = FiniteElement("DG", tetrahedron, 1)
+V = FiniteElement("DG", tetrahedron, 2)
+v = TestFunction(element)
+f = Coefficient(V)
+L = v*f*dP
+
