@@ -30,7 +30,7 @@ import ufl
 import FIAT
 
 # FFC modules
-from ffc.log import debug, error
+from ffc.log import debug, error, ffc_assert
 from ffc.quadratureelement import QuadratureElement as FFCQuadratureElement
 
 from ffc.mixedelement import MixedElement
@@ -51,6 +51,19 @@ cellname_to_num_entities = {
     "quadrilateral": (4, 4, 1),
     "hexahedron": (8, 12, 6, 1),
     }
+
+# Element families supported by FFC
+supported_families = ("Brezzi-Douglas-Marini",
+                      "Brezzi-Douglas-Fortin-Marini",
+                      "Crouzeix-Raviart",
+                      "Discontinuous Lagrange",
+                      "Lagrange",
+                      "Nedelec 1st kind H(curl)",
+                      "Nedelec 2nd kind H(curl)",
+                      "Raviart-Thomas",
+                      "Real",
+                      "Bubble",
+                      "Quadrature")
 
 # Mapping from dimension to number of mesh sub-entities. (In principle,
 # cellname_to_num_entities contains the same information, but with string keys.)
@@ -115,6 +128,10 @@ def _create_fiat_element(ufl_element):
     family = ufl_element.family()
     cell = ufl_element.cell()
     degree = ufl_element.degree()
+
+    # Check that FFC supports this element
+    ffc_assert(family in supported_families,
+               "This element family (%s) is not supported by FFC." % family)
 
     # Handle the space of the constant
     if family == "Real":
@@ -287,3 +304,4 @@ def _indices(element, domain, dim=0):
 
     else:
         error("Restriction to domain: %s, is not supported." % repr(domain))
+
