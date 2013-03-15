@@ -3,8 +3,8 @@ from dolfin import *
 set_log_level(DEBUG)
 
 parameters["form_compiler"]["cpp_optimize"] = True
-parameters["form_compiler"]["representation"] = "uflacs"
-compiler_options = {"quadrature_degree": 2}
+#parameters["form_compiler"]["representation"] = "uflacs"
+compiler_options = {"representation": "uflacs", "quadrature_degree": 2}
 
 mesh = Mesh("lv_mesh.xml")
 bi = MeshFunction("uint", mesh, "lv_mesh_bi.xml")
@@ -139,7 +139,7 @@ P = R*P*R.T
 
 # Neumann condition
 N = FacetNormal(mesh)
-sigma = Constant(0.0)
+sigma = Constant(-0.02)
 Jg = det(F_glob)
 T = dot(Jg*sigma*inv(F_glob.T), N)
 ds = Measure("ds")[ff]
@@ -150,18 +150,54 @@ L = inner(P, grad(v))*dx - inner(T, v)*ds(1)
 # Jacobian
 a = derivative(L, u, du)
 
+import time
+for i in range(3):
+	tic()
+	A = assemble(a, form_compiler_parameters=compiler_options)
+	print 'TIME UF', toc()
+import time
+ap = inner(grad(du),grad(v))*dx
+for i in range(3):
+	tic()
+	A = assemble(ap, form_compiler_parameters=compiler_options)
+	print 'TIME UP', toc()
+import time
+ap = inner(grad(du),grad(v))*dx
+compiler_options["representation"] = "tensor"
+for i in range(3):
+	tic()
+	A = assemble(ap, form_compiler_parameters=compiler_options)
+	print 'TIME TP', toc()
+import time
+ap = inner(grad(du),grad(v))*dx
+compiler_options["representation"] = "quadrature"
+compiler_options["optimize"] = True
+for i in range(3):
+	tic()
+	A = assemble(ap, form_compiler_parameters=compiler_options)
+	print 'TIME QP', toc()
+crash
+
+
+
+
 problem = NonlinearVariationalProblem(L, u, bcs, J=a, form_compiler_parameters=compiler_options)
 solver = NonlinearVariationalSolver(problem)
 solver.parameters["newton_solver"]["maximum_iterations"] = 30
 
+ufile = File("u.pvd")
+ufile << u
+
 dt = 0.1
 def sigma_t(t):
-    return -3.0*sin(t)**2
+    return -3.0*(0.1+(sin(t)**2)**0.5)
 
 # Solve problem and plot solution
 for i in range(1,100):
-    print i
+    print '='*40, "Timestep: ", i
     sigma.assign(sigma_t(i*dt))
     solver.solve()
+    ufile << u
     plot(u, mode="displacement")
-interactive()
+#interactive()
+
