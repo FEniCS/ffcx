@@ -42,6 +42,7 @@ from instant.output import get_status_output
 import time
 
 # Parameters
+debug = False # TODO: Can make this a cmdline argument, and start crashing programs in debugger automatically?
 output_tolerance = 1.e-6
 demo_directory = "../../../../demo"
 bench_directory = "../../../../bench"
@@ -254,6 +255,9 @@ set the environment variable BOOST_DIR.
         info("Benchmarking activated")
         # Takes too long to build with -O2
         #compiler_options += " -O2"
+    if debug:
+        info("Debugging activated")
+        compiler_options += " -g -O0"
     info("Compiler options: %s" % compiler_options)
 
     # Iterate over all files
@@ -470,7 +474,7 @@ def main(args):
         test_cases += ext_quad
     if use_ext_uflacs:
         test_cases = ext_uflacs
-        #test_cases += ["-r quadrature -O"]
+        test_cases += ["-r quadrature -O"]
 
     for argument in test_cases:
 
