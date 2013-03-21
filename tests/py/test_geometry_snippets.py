@@ -67,7 +67,7 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(1, 1); // FIXME
         """
         cell = ufl.Cell('interval', 1)
-        r = ''
+        r = None
         snippets = generate_jacobian_snippets(cell, r)
         code = format_code_structure(snippets)
         self.emit_test(code)
@@ -83,7 +83,7 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(1, 1); // FIXME
         """
         cell = ufl.Cell('interval', 2)
-        r = ''
+        r = None
         snippets = generate_jacobian_snippets(cell, r)
         code = format_code_structure(snippets)
         self.emit_test(code)
@@ -99,7 +99,7 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(1, 1); // FIXME
         """
         cell = ufl.Cell('interval', 3)
-        r = ''
+        r = None
         snippets = generate_jacobian_snippets(cell, r)
         code = format_code_structure(snippets)
         self.emit_test(code)
@@ -115,7 +115,7 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(1, 1); // FIXME
         """
         cell = ufl.Cell('triangle', 2)
-        r = ''
+        r = None
         snippets = generate_jacobian_snippets(cell, r)
         code = format_code_structure(snippets)
         self.emit_test(code)
@@ -131,7 +131,7 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(1, 1); // FIXME
         """
         cell = ufl.Cell('triangle', 3)
-        r = ''
+        r = None
         snippets = generate_jacobian_snippets(cell, r)
         code = format_code_structure(snippets)
         self.emit_test(code)
@@ -147,7 +147,7 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(1, 1); // FIXME
         """
         cell = ufl.Cell('tetrahedron', 3)
-        r = ''
+        r = None
         snippets = generate_jacobian_snippets(cell, r)
         code = format_code_structure(snippets)
         self.emit_test(code)
@@ -165,10 +165,11 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(1, 1); // FIXME
         """
         cell = ufl.Cell('interval', 1)
-        r = ''
-        snippets = generate_jacobian_snippets(cell, r)
-        snippets += generate_jacobian_determinants_snippets(cell, r)
-        snippets += generate_jacobian_inverse_snippets(cell, r)
+        r = None
+        snippets = []
+        snippets.append( generate_jacobian_snippets(cell, r) )
+        snippets.append( generate_jacobian_determinants_snippets(cell, r) )
+        snippets.append( generate_jacobian_inverse_snippets(cell, r) )
         code = format_code_structure(snippets)
         self.emit_test(code)
 
@@ -183,10 +184,11 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(1, 1); // FIXME
         """
         cell = ufl.Cell('interval', 2)
-        r = ''
-        snippets = generate_jacobian_snippets(cell, r)
-        snippets += generate_jacobian_determinants_snippets(cell, r)
-        snippets += generate_jacobian_inverse_snippets(cell, r)
+        r = None
+        snippets = []
+        snippets.append( generate_jacobian_snippets(cell, r) )
+        snippets.append( generate_jacobian_determinants_snippets(cell, r) )
+        snippets.append( generate_jacobian_inverse_snippets(cell, r) )
         code = format_code_structure(snippets)
         self.emit_test(code)
 
@@ -201,10 +203,11 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(1, 1); // FIXME
         """
         cell = ufl.Cell('interval', 3)
-        r = ''
-        snippets = generate_jacobian_snippets(cell, r)
-        snippets += generate_jacobian_determinants_snippets(cell, r)
-        snippets += generate_jacobian_inverse_snippets(cell, r)
+        r = None
+        snippets = []
+        snippets.append( generate_jacobian_snippets(cell, r) )
+        snippets.append( generate_jacobian_determinants_snippets(cell, r) )
+        snippets.append( generate_jacobian_inverse_snippets(cell, r) )
         code = format_code_structure(snippets)
         self.emit_test(code)
 
@@ -219,10 +222,11 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(1, 1); // FIXME
         """
         cell = ufl.Cell('triangle', 2)
-        r = ''
-        snippets = generate_jacobian_snippets(cell, r)
-        snippets += generate_jacobian_determinants_snippets(cell, r)
-        snippets += generate_jacobian_inverse_snippets(cell, r)
+        r = None
+        snippets = []
+        snippets.append( generate_jacobian_snippets(cell, r) )
+        snippets.append( generate_jacobian_determinants_snippets(cell, r) )
+        snippets.append( generate_jacobian_inverse_snippets(cell, r) )
         code = format_code_structure(snippets)
         self.emit_test(code)
 
@@ -237,10 +241,11 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(1, 1); // FIXME
         """
         cell = ufl.Cell('triangle', 3)
-        r = ''
-        snippets = generate_jacobian_snippets(cell, r)
-        snippets += generate_jacobian_determinants_snippets(cell, r)
-        snippets += generate_jacobian_inverse_snippets(cell, r)
+        r = None
+        snippets = []
+        snippets.append( generate_jacobian_snippets(cell, r) )
+        snippets.append( generate_jacobian_determinants_snippets(cell, r) )
+        snippets.append( generate_jacobian_inverse_snippets(cell, r) )
         code = format_code_structure(snippets)
         self.emit_test(code)
 
@@ -255,10 +260,11 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(1, 1); // FIXME
         """
         cell = ufl.Cell('tetrahedron', 3)
-        r = ''
-        snippets = generate_jacobian_snippets(cell, r)
-        snippets += generate_jacobian_determinants_snippets(cell, r)
-        snippets += generate_jacobian_inverse_snippets(cell, r)
+        r = None
+        snippets = []
+        snippets.append( generate_jacobian_snippets(cell, r) )
+        snippets.append( generate_jacobian_determinants_snippets(cell, r) )
+        snippets.append( generate_jacobian_inverse_snippets(cell, r) )
         code = format_code_structure(snippets)
         self.emit_test(code)
 
@@ -277,9 +283,10 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(0.2*0.3+0.1, x[0]);
         """
         cell = ufl.Cell('interval', 1)
-        r = ''
-        snippets = generate_jacobian_snippets(cell, r)
-        snippets += generate_x_from_xi_snippets(cell, r)
+        r = None
+        snippets = []
+        snippets.append( generate_jacobian_snippets(cell, r) )
+        snippets.append( generate_x_from_xi_snippets(cell, r) )
         code = format_code_structure(snippets)
         self.emit_test(code)
 
@@ -297,9 +304,10 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(0.4, x[1]);
         """
         cell = ufl.Cell('interval', 2)
-        r = ''
-        snippets = generate_jacobian_snippets(cell, r)
-        snippets += generate_x_from_xi_snippets(cell, r)
+        r = None
+        snippets = []
+        snippets.append( generate_jacobian_snippets(cell, r) )
+        snippets.append( generate_x_from_xi_snippets(cell, r) )
         code = format_code_structure(snippets)
         self.emit_test(code)
 
@@ -319,9 +327,10 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(0.5, x[2]);
         """
         cell = ufl.Cell('interval', 3)
-        r = ''
-        snippets = generate_jacobian_snippets(cell, r)
-        snippets += generate_x_from_xi_snippets(cell, r)
+        r = None
+        snippets = []
+        snippets.append( generate_jacobian_snippets(cell, r) )
+        snippets.append( generate_x_from_xi_snippets(cell, r) )
         code = format_code_structure(snippets)
         self.emit_test(code)
 
@@ -340,9 +349,10 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(0.6*0.3+0.4, x[1]);
         """
         cell = ufl.Cell('triangle', 2)
-        r = ''
-        snippets = generate_jacobian_snippets(cell, r)
-        snippets += generate_x_from_xi_snippets(cell, r)
+        r = None
+        snippets = []
+        snippets.append( generate_jacobian_snippets(cell, r) )
+        snippets.append( generate_x_from_xi_snippets(cell, r) )
         code = format_code_structure(snippets)
         self.emit_test(code)
 
@@ -362,9 +372,10 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(0.5, x[2]);
         """
         cell = ufl.Cell('triangle', 3)
-        r = ''
-        snippets = generate_jacobian_snippets(cell, r)
-        snippets += generate_x_from_xi_snippets(cell, r)
+        r = None
+        snippets = []
+        snippets.append( generate_jacobian_snippets(cell, r) )
+        snippets.append( generate_x_from_xi_snippets(cell, r) )
         code = format_code_structure(snippets)
         self.emit_test(code)
 
@@ -384,9 +395,10 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(0.9*0.3+0.5, x[2]);
         """
         cell = ufl.Cell('tetrahedron', 3)
-        r = ''
-        snippets = generate_jacobian_snippets(cell, r)
-        snippets += generate_x_from_xi_snippets(cell, r)
+        r = None
+        snippets = []
+        snippets.append( generate_jacobian_snippets(cell, r) )
+        snippets.append( generate_x_from_xi_snippets(cell, r) )
         code = format_code_structure(snippets)
         self.emit_test(code)
 
@@ -406,11 +418,12 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(1.0/0.3*(0.2-0.1), xi[0]);
         """
         cell = ufl.Cell('interval', 1)
-        r = ''
-        snippets = generate_jacobian_snippets(cell, r)
-        snippets += generate_jacobian_determinants_snippets(cell, r)
-        snippets += generate_jacobian_inverse_snippets(cell, r)
-        snippets += generate_xi_from_x_snippets(cell, r)
+        r = None
+        snippets = []
+        snippets.append( generate_jacobian_snippets(cell, r) )
+        snippets.append( generate_jacobian_determinants_snippets(cell, r) )
+        snippets.append( generate_jacobian_inverse_snippets(cell, r) )
+        snippets.append( generate_xi_from_x_snippets(cell, r) )
         code = format_code_structure(snippets)
         self.emit_test(code)
 
@@ -428,11 +441,12 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(1.0/0.3*(0.2-0.1), xi[0]);
         """
         cell = ufl.Cell('interval', 2)
-        r = ''
-        snippets = generate_jacobian_snippets(cell, r)
-        snippets += generate_jacobian_determinants_snippets(cell, r)
-        snippets += generate_jacobian_inverse_snippets(cell, r)
-        snippets += generate_xi_from_x_snippets(cell, r)
+        r = None
+        snippets = []
+        snippets.append( generate_jacobian_snippets(cell, r) )
+        snippets.append( generate_jacobian_determinants_snippets(cell, r) )
+        snippets.append( generate_jacobian_inverse_snippets(cell, r) )
+        snippets.append( generate_xi_from_x_snippets(cell, r) )
         code = format_code_structure(snippets)
         self.emit_test(code)
 
@@ -450,11 +464,12 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(1.0/0.3*(0.2-0.1), xi[0]);
         """
         cell = ufl.Cell('interval', 3)
-        r = ''
-        snippets = generate_jacobian_snippets(cell, r)
-        snippets += generate_jacobian_determinants_snippets(cell, r)
-        snippets += generate_jacobian_inverse_snippets(cell, r)
-        snippets += generate_xi_from_x_snippets(cell, r)
+        r = None
+        snippets = []
+        snippets.append( generate_jacobian_snippets(cell, r) )
+        snippets.append( generate_jacobian_determinants_snippets(cell, r) )
+        snippets.append( generate_jacobian_inverse_snippets(cell, r) )
+        snippets.append( generate_xi_from_x_snippets(cell, r) )
         code = format_code_structure(snippets)
         self.emit_test(code)
 
@@ -473,11 +488,12 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(1.0/0.3*(0.6-0.4), xi[1]);
         """
         cell = ufl.Cell('triangle', 2)
-        r = ''
-        snippets = generate_jacobian_snippets(cell, r)
-        snippets += generate_jacobian_determinants_snippets(cell, r)
-        snippets += generate_jacobian_inverse_snippets(cell, r)
-        snippets += generate_xi_from_x_snippets(cell, r)
+        r = None
+        snippets = []
+        snippets.append( generate_jacobian_snippets(cell, r) )
+        snippets.append( generate_jacobian_determinants_snippets(cell, r) )
+        snippets.append( generate_jacobian_inverse_snippets(cell, r) )
+        snippets.append( generate_xi_from_x_snippets(cell, r) )
         code = format_code_structure(snippets)
         self.emit_test(code)
 
@@ -496,11 +512,12 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(1.0/0.3*(0.6-0.4), xi[1]);
         """
         cell = ufl.Cell('triangle', 3)
-        r = ''
-        snippets = generate_jacobian_snippets(cell, r)
-        snippets += generate_jacobian_determinants_snippets(cell, r)
-        snippets += generate_jacobian_inverse_snippets(cell, r)
-        snippets += generate_xi_from_x_snippets(cell, r)
+        r = None
+        snippets = []
+        snippets.append( generate_jacobian_snippets(cell, r) )
+        snippets.append( generate_jacobian_determinants_snippets(cell, r) )
+        snippets.append( generate_jacobian_inverse_snippets(cell, r) )
+        snippets.append( generate_xi_from_x_snippets(cell, r) )
         code = format_code_structure(snippets)
         self.emit_test(code)
 
@@ -520,11 +537,12 @@ class test_geometry_snippets(CodegenTestCase):
         ASSERT_DOUBLE_EQ(1.0/0.3*(0.9-0.5), xi[2]);
         """
         cell = ufl.Cell('tetrahedron', 3)
-        r = ''
-        snippets = generate_jacobian_snippets(cell, r)
-        snippets += generate_jacobian_determinants_snippets(cell, r)
-        snippets += generate_jacobian_inverse_snippets(cell, r)
-        snippets += generate_xi_from_x_snippets(cell, r)
+        r = None
+        snippets = []
+        snippets.append( generate_jacobian_snippets(cell, r) )
+        snippets.append( generate_jacobian_determinants_snippets(cell, r) )
+        snippets.append( generate_jacobian_inverse_snippets(cell, r) )
+        snippets.append( generate_xi_from_x_snippets(cell, r) )
         code = format_code_structure(snippets)
         self.emit_test(code)
 
