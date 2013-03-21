@@ -1,4 +1,4 @@
-# Copyright (C) 2010 Anders Logg
+# Copyright (C) 2010-2013 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -16,7 +16,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2010-01-18
-# Last changed: 2011-03-22
+# Last changed: 2013-03-21
 
 # Python modules
 from itertools import chain
@@ -25,6 +25,8 @@ from itertools import chain
 from ffc.log import begin, end, info, error
 from ffc.utils import all_equal
 from ffc.cpp import format
+from ffc.dolfin.wrappers import generate_dolfin_code
+from ffc.dolfin.capsules import UFCElementNames, UFCFormNames
 
 __all__ = ["generate_wrapper_code"]
 
@@ -36,12 +38,6 @@ def generate_wrapper_code(analysis, prefix, parameters):
     # Skip if wrappers not requested
     if not parameters["format"] == "dolfin":
         return None
-
-    # Check that we can import wrappers from dolfin
-    try:
-        import dolfin_utils.wrappers
-    except:
-        error("Unable to generate new DOLFIN wrappers, missing module dolfin_utils.wrappers.")
 
     # Return dolfin wrapper
     return _generate_dolfin_wrapper(analysis, prefix, parameters)
@@ -55,8 +51,8 @@ def _generate_dolfin_wrapper(analysis, prefix, parameters):
 
     # Generate code
     info("Generating wrapper code for DOLFIN")
-    from dolfin_utils.wrappers import generate_dolfin_code
-    code = generate_dolfin_code(prefix, "", capsules, common_space,
+    code = generate_dolfin_code(prefix, "",
+                                capsules, common_space,
                                 error_control=parameters["error_control"])
     code += "\n\n"
     end()
@@ -102,7 +98,6 @@ def _encapsule_form(prefix, form_data, i, element_map, superclassname=None):
     if superclassname is None:
         superclassname = "Form"
 
-    from dolfin_utils.wrappers import UFCFormNames
     form_names = UFCFormNames(form_data.name or "%d" % i,
                               form_data.coefficient_names,
                               format["classname form"](prefix, i),
@@ -118,5 +113,4 @@ def _encapsule_element(prefix, elements):
     args = ("0",
             [format["classname finite_element"](prefix, element_number)],
             [format["classname dofmap"](prefix, element_number)])
-    from dolfin_utils.wrappers import UFCElementNames
     return UFCElementNames(*args)

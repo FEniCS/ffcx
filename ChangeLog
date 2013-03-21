@@ -1,3 +1,4 @@
+ - Move DOLFIN wrappers here from DOLFIN
  - New feature: Add basic support for point integrals on vertices
  - New feature: Add general support for m-dimensional cells in n-dimensional space (n >= m, n, m = 1, 2, 3)
 1.1.0 [2013-01-07]
