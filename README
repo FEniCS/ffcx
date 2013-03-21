@@ -4,11 +4,13 @@ UFLACS - UFL Analyser and Compiler System
 Contact
 -------
 
-Launchpad site:
-  http://www.launchpad.net/uflacs/
+Bitbucket site:
+  http://www.bitbucket.org/martinal/uflacs/
 
 Authors:
   Martin Sandve Alnæs (martinal@simula.no)
+
+Contributors:
   Steffen Müthing (steffen.muething@ipvs.uni-stuttgart.de)
 
 
@@ -21,13 +23,14 @@ This project is released under the LGPL v3 licence.
 Testing
 -------
 
-To run unit tests, do
-  cd tests/
-  ./test.sh
-for output to screen, or
-  cd tests/
-  ./test.py
-for output to log files (for batch runs).
+To run unittests of generated C++ code you need the Google C++ Testing Framework:
+  https://code.google.com/p/googletest/
+
+To run unit tests with output to screen, do
+  cd tests/ && ./test.sh
+
+To run unit tests with output to log files (for batch runs), do
+  cd tests/ && ./test.py
 
 
 Installing
