@@ -1,6 +1,23 @@
 UFLACS - UFL Analyser and Compiler System
 =========================================
 
+Description
+-----------
+
+Uflacs, the UFL Analyser and Compiler System, is a collection of
+algorithms for processing symbolic UFL forms and expressions.
+The main feature is efficient translation of tensor intensive
+symbolic expressions into a low level expression representation and C++ code.
+
+
+Licencing
+---------
+
+Uflacs is Copyright (2011-2013) by Martin Sandve Alnæs.
+
+This version of uflacs is released under the LGPL v3 licence.
+
+
 Contact
 -------
 
@@ -14,30 +31,25 @@ Contributors:
   Steffen Müthing (steffen.muething@ipvs.uni-stuttgart.de)
 
 
-Licencing
----------
-
-This project is released under the LGPL v3 licence.
-
-
 Testing
 -------
 
 To run unittests of generated C++ code you need the Google C++ Testing Framework:
   https://code.google.com/p/googletest/
 
-To run unit tests with output to screen, do
+To run unit tests with output to screen:
   cd tests/ && ./test.sh
 
-To run unit tests with output to log files (for batch runs), do
+To run unit tests with output to log files (for batch runs):
   cd tests/ && ./test.py
 
 
 Installing
 ----------
 
-Install to default python location as root
+Either install to default python location as root:
   sudo python setup.py install
-or install to your own python path directory
+
+Or install to your own python path directory:
   python setup.py install --prefix=/path/to/my/own/site-packages
 
