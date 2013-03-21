@@ -59,7 +59,10 @@ test_%: ${GENDIR}/main_test_%.cpp ${GENDIR}/gc_test_%.h ${CPPDIR}/test_%.h ${COM
 ${CPPDIR}/test_%.h:
 	${PYTHON} ${SCRIPTSDIR}/init_test_header.py $@
 
-${GENDIR}/gc_test_%.h ${GENDIR}/main_test_%.cpp: ${PYDIR}/test_%.py ${PYDIR}/codegentestcase.py
+${GENDIR}:
+	mkdir -p ${GENDIR}
+
+${GENDIR}/gc_test_%.h ${GENDIR}/main_test_%.cpp: ${PYDIR}/test_%.py ${PYDIR}/codegentestcase.py ${GENDIR}
 	${PYTHON} ${PYDIR}/test_$*.py
 	${CP} ${GENTMP}/gc_test_$*.h ${GENDIR}/gc_test_$*.h
 	${CP} ${GENTMP}/main_test_$*.cpp ${GENDIR}/main_test_$*.cpp

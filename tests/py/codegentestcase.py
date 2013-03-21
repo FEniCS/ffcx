@@ -149,6 +149,10 @@ class CodegenTestCase(unittest.TestCase):
         self.gc_header_name = basename2gcname(self.base_name)
         self.main_src_name = "main_" + self.base_name + ".cpp"
 
+        # Create temp dir for generated code if missing
+        if not os.path.exists(self.gendir):
+            os.mkdir(self.gendir)
+
         self.visit()
 
     def visit(self):
