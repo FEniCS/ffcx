@@ -56,3 +56,4 @@ Either install to default python location as root:
 Or install to your own python path directory:
   python setup.py install --prefix=/path/to/my/own/site-packages
 
+
