@@ -20,5 +20,5 @@
 # First added:  2005-05-20
 # Last changed: 2013-01-08
 
-FFC_VERSION = "1.1.0+"
-UFC_VERSION = "2.1.0+"
+FFC_VERSION = "1.2.0"
+UFC_VERSION = "2.2.0"
