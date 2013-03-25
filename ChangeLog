@@ -1,6 +1,6 @@
-2.x.x [2013-??-??]
  - Remove dofmap::max_local_dimension()
  - Remove cell argument from dofmap::local_dimension()
+2.2.0 [2013-03-24]
  - Add new class ufc::point_integral
  - Use CMake to configure JIT compilation of forms
  - Generate UseUFC.cmake during configuration
