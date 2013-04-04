@@ -16,7 +16,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Garth N. Wells, 2009.
-# Modified by Marie Rognes, 2009-2010.
+# Modified by Marie Rognes, 2009-2013.
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2009-03-06
@@ -32,6 +32,8 @@ import FIAT
 # FFC modules
 from ffc.log import debug, error, ffc_assert
 from ffc.quadratureelement import QuadratureElement as FFCQuadratureElement
+from ffc.timeelements import LobattoElement as FFCLobattoElement
+from ffc.timeelements import RadauElement as FFCRadauElement
 
 from ffc.mixedelement import MixedElement
 from ffc.restrictedelement import RestrictedElement
@@ -58,8 +60,10 @@ supported_families = ("Brezzi-Douglas-Marini",
                       "Crouzeix-Raviart",
                       "Discontinuous Lagrange",
                       "Lagrange",
+                      "Lobatto",
                       "Nedelec 1st kind H(curl)",
                       "Nedelec 2nd kind H(curl)",
+                      "Radau",
                       "Raviart-Thomas",
                       "Real",
                       "Bubble",
@@ -138,6 +142,12 @@ def _create_fiat_element(ufl_element):
         dg0_element = ufl.FiniteElement("DG", cell, 0)
         constant = _create_fiat_element(dg0_element)
         return SpaceOfReals(constant)
+
+    # Handle the specialized time elements
+    if family == "Lobatto" :
+        return FFCLobattoElement(ufl_element.degree())
+    if family == "Radau" :
+        return FFCRadauElement(ufl_element.degree())
 
     # FIXME: AL: Should this really be here?
     # Handle QuadratureElement

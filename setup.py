@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import sys, platform
-from distutils.core import setup
+from distutils.core import setup, Extension
 from os import chdir
 from os.path import join, split
 
@@ -20,6 +20,13 @@ if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
         batch_files.append(batch_file)
     scripts.extend(batch_files)
 
+ext = Extension("ffc.time_elements_ext",
+                ["ffc/ext/time_elements_interface.cpp",
+                 "ffc/ext/time_elements.cpp",
+                 "ffc/ext/LobattoQuadrature.cpp",
+                 "ffc/ext/RadauQuadrature.cpp",
+                 "ffc/ext/Legendre.cpp"])
+
 setup(name = "FFC",
       version = "1.2.0",
       description = "The FEniCS Form Compiler",
@@ -32,5 +39,6 @@ setup(name = "FFC",
                   "ffc.dolfin"],
       package_dir={"ffc": "ffc"},
       scripts = scripts,
+      ext_modules = [ext],
       data_files = [(join("share", "man", "man1"),
                      [join("doc", "man", "man1", "ffc.1.gz")])])
