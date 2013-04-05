@@ -20,6 +20,8 @@
 
 
 #include <Python.h>
+
+#define  NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
 
 #include "time_elements.h"
@@ -29,10 +31,10 @@ static PyObject *compute_lobatto_interface(PyObject *dummy, PyObject *args)
   int degree;
 
   /* parse argument tuple */
-  if (!PyArg_ParseTuple(args, "i", &degree)) 
+  if (!PyArg_ParseTuple(args, "i", &degree))
   {
     return NULL; /* PyArg_ParseTuple has raised an exception */
-  } 
+  }
 
   npy_intp n = degree+1;
 
@@ -51,10 +53,10 @@ static PyObject *compute_radau_interface(PyObject *dummy, PyObject *args)
   int degree;
 
   /* parse argument tuple */
-  if (!PyArg_ParseTuple(args, "i", &degree)) 
+  if (!PyArg_ParseTuple(args, "i", &degree))
   {
     return NULL; /* PyArg_ParseTuple has raised an exception */
-  } 
+  }
 
   npy_intp n = degree+1;
 
@@ -73,11 +75,11 @@ static PyObject *compute_legendre_coeffs_interface(PyObject *dummy, PyObject *ar
   PyArrayObject *points_array;
 
   /* parse argument tuple */
-  if (!PyArg_ParseTuple(args, "O!", 
+  if (!PyArg_ParseTuple(args, "O!",
 			&PyArray_Type, &points_array))
   {
     return NULL; /* PyArg_ParseTuple has raised an exception */
-  } 
+  }
 
   const npy_intp num_points = PyArray_DIMS(points_array)[0];
   npy_intp dims[2] = { num_points, num_points };
@@ -101,8 +103,8 @@ static char compute_legendre_coeffs_doc[] = \
 
 static PyMethodDef time_elements_ext_methods[] = {
   {"compute_lobatto_points",
-   compute_lobatto_interface, 
-   METH_VARARGS,  
+   compute_lobatto_interface,
+   METH_VARARGS,
    compute_lobatto_doc},
   {"compute_radau_points",
    compute_radau_interface,
@@ -113,7 +115,7 @@ static PyMethodDef time_elements_ext_methods[] = {
    METH_VARARGS,
    compute_legendre_coeffs_doc},
 
-  {NULL, NULL}    
+  {NULL, NULL}
 };
 
 PyMODINIT_FUNC
