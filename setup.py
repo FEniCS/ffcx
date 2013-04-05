@@ -4,6 +4,7 @@ import sys, platform
 from distutils.core import setup, Extension
 from os import chdir
 from os.path import join, split
+import numpy
 
 scripts = [join("scripts", "ffc")]
 
@@ -25,7 +26,8 @@ ext = Extension("ffc.time_elements_ext",
                  "ffc/ext/time_elements.cpp",
                  "ffc/ext/LobattoQuadrature.cpp",
                  "ffc/ext/RadauQuadrature.cpp",
-                 "ffc/ext/Legendre.cpp"])
+                 "ffc/ext/Legendre.cpp"],
+                include_dirs=[numpy.get_include()])
 
 setup(name = "FFC",
       version = "1.2.0",
