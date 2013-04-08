@@ -1,0 +1,31 @@
+# Compiled source
+*.o
+*.Plo
+*.Po
+*.lo
+*.la
+*.a
+*.os
+*.pyc
+*.so
+*.pc
+*.pyd
+*.def
+*.dll
+*.exe
+*.dylib
+
+# CMake and Make files
+CMakeCache.txt
+CMakeFiles
+cmake_install.cmake
+cmake_uninstall.cmake
+Makefile
+install_manifest.txt
+
+# Temporaries
+*~
+
+# OS X files
+.DS_Store
+.DS_Store?
