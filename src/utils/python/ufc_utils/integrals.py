@@ -25,9 +25,9 @@ public:
   }
 
   /// Tabulate the tensor for the contribution from a local cell
-  virtual void tabulate_tensor(double* A,
-                               const double * const * w,
-                               const double* vertex_coordinates,
+  virtual void tabulate_tensor(double* %(restrict)s A,
+                               const double * const * %(restrict)s w,
+                               const double* %(restrict)s vertex_coordinates,
                                int cell_orientation) const
   {
 %(tabulate_tensor)s
@@ -52,9 +52,9 @@ public:
   virtual ~%(classname)s();
 
   /// Tabulate the tensor for the contribution from a local cell
-  virtual void tabulate_tensor(double* A,
-                               const double * const * w,
-                               const double* vertex_coordinates,
+  virtual void tabulate_tensor(double* %(restrict)s A,
+                               const double * const * %(restrict)s w,
+                               const double* %(restrict)s vertex_coordinates,
                                int cell_orientation) const;
 
 };
@@ -74,9 +74,9 @@ cell_integral_implementation = """\
 }
 
 /// Tabulate the tensor for the contribution from a local cell
-void %(classname)s::tabulate_tensor(double* A,
-                                    const double * const * w,
-                                    const double* vertex_coordinates,
+void %(classname)s::tabulate_tensor(double* %(restrict)s A,
+                                    const double * const * %(restrict)s w,
+                                    const double* %(restrict)s vertex_coordinates,
                                     int cell_orientation) const
 {
 %(tabulate_tensor)s
@@ -105,9 +105,9 @@ public:
   }
 
   /// Tabulate the tensor for the contribution from a local exterior facet
-  virtual void tabulate_tensor(double* A,
-                               const double * const * w,
-                               const double* vertex_coordinates,
+  virtual void tabulate_tensor(double* %(restrict)s A,
+                               const double * const * %(restrict)s w,
+                               const double* %(restrict)s vertex_coordinates,
                                std::size_t facet) const
   {
 %(tabulate_tensor)s
@@ -132,9 +132,9 @@ public:
   virtual ~%(classname)s();
 
   /// Tabulate the tensor for the contribution from a local exterior facet
-  virtual void tabulate_tensor(double* A,
-                               const double * const * w,
-                               const double* vertex_coordinates,
+  virtual void tabulate_tensor(double* %(restrict)s A,
+                               const double * const * %(restrict)s w,
+                               const double* %(restrict)s vertex_coordinates,
                                std::size_t facet) const;
 
 };
@@ -154,9 +154,9 @@ exterior_facet_integral_implementation = """\
 }
 
 /// Tabulate the tensor for the contribution from a local exterior facet
-void %(classname)s::tabulate_tensor(double* A,
-                                    const double * const * w,
-                                    const double* vertex_coordinates,
+void %(classname)s::tabulate_tensor(double* %(restrict)s A,
+                                    const double * const * %(restrict)s w,
+                                    const double* %(restrict)s vertex_coordinates,
                                     std::size_t facet) const
 {
 %(tabulate_tensor)s
@@ -185,10 +185,10 @@ public:
   }
 
   /// Tabulate the tensor for the contribution from a local interior facet
-  virtual void tabulate_tensor(double* A,
-                               const double * const * w,
-                               const double* vertex_coordinates_0,
-                               const double* vertex_coordinates_1,
+  virtual void tabulate_tensor(double* %(restrict)s A,
+                               const double * const * %(restrict)s w,
+                               const double* %(restrict)s vertex_coordinates_0,
+                               const double* %(restrict)s vertex_coordinates_1,
                                std::size_t facet_0,
                                std::size_t facet_1) const
   {
@@ -214,10 +214,10 @@ public:
   virtual ~%(classname)s();
 
   /// Tabulate the tensor for the contribution from a local interior facet
-  virtual void tabulate_tensor(double* A,
-                               const double * const * w,
-                               const double* vertex_coordinates_0,
-                               const double* vertex_coordinates_1,
+  virtual void tabulate_tensor(double* %(restrict)s A,
+                               const double * const * %(restrict)s w,
+                               const double* %(restrict)s vertex_coordinates_0,
+                               const double* %(restrict)s vertex_coordinates_1,
                                std::size_t facet_0,
                                std::size_t facet_1) const;
 
@@ -238,10 +238,10 @@ interior_facet_integral_implementation = """\
 }
 
 /// Tabulate the tensor for the contribution from a local interior facet
-void %(classname)s::tabulate_tensor(double* A,
-                                    const double * const * w,
-                                    const double* vertex_coordinates_0,
-                                    const double* vertex_coordinates_1,
+void %(classname)s::tabulate_tensor(double* %(restrict)s A,
+                                    const double * const * %(restrict)s w,
+                                    const double* %(restrict)s vertex_coordinates_0,
+                                    const double* %(restrict)s vertex_coordinates_1,
                                     std::size_t facet_0,
                                     std::size_t facet_1) const
 {
@@ -270,9 +270,9 @@ public:
   }
 
   /// Tabulate the tensor for the contribution from the local vertex
-  virtual void tabulate_tensor(double* A,
-                               const double * const * w,
-                               const double* vertex_coordinates,
+  virtual void tabulate_tensor(double* %(restrict)s A,
+                               const double * const * %(restrict)s w,
+                               const double* %(restrict)s vertex_coordinates,
                                std::size_t vertex) const
   {
 %(tabulate_tensor)s
@@ -296,9 +296,9 @@ public:
   virtual ~%(classname)s();
 
   /// Tabulate the tensor for the contribution from the local vertex
-  virtual void tabulate_tensor(double* A,
-                               const double * const * w,
-                               const double* vertex_coordinates,
+  virtual void tabulate_tensor(double* %(restrict)s A,
+                               const double * const * %(restrict)s w,
+                               const double* %(restrict)s vertex_coordinates,
                                std::size_t vertex) const;
 
 };
@@ -318,9 +318,9 @@ point_integral_implementation = """\
 }
 
 /// Tabulate the tensor for the contribution from the local vertex
-void %(classname)s::tabulate_tensor(double* A,
-                                    const double * const * w,
-                                    const double* vertex_coordinates,
+void %(classname)s::tabulate_tensor(double* %(restrict)s A,
+                                    const double * const * %(restrict)s w,
+                                    const double* %(restrict)s vertex_coordinates,
                                     std::size_t vertex) const
 {
 %(tabulate_tensor)s
