@@ -1,7 +1,8 @@
 # Top level CMakeLists.txt file for UFC
 
-# Require CMake 2.8.9 (CMake bug http://public.kitware.com/Bug/view.php?id=13216)
-cmake_minimum_required(VERSION 2.8.9)
+# Note that a bug in CMake < 2.8.9 might cause trouble finding Python, cf.
+# http://public.kitware.com/Bug/view.php?id=13216.
+cmake_minimum_required(VERSION 2.6)
 
 #------------------------------------------------------------------------------
 # Set project name and version number
