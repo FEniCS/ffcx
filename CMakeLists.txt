@@ -1,6 +1,7 @@
 # Top level CMakeLists.txt file for UFC
 
-# Require CMake 2.6
+# Note that a bug in CMake < 2.8.9 might cause trouble finding Python, cf.
+# http://public.kitware.com/Bug/view.php?id=13216.
 cmake_minimum_required(VERSION 2.6)
 
 #------------------------------------------------------------------------------
@@ -32,10 +33,14 @@ option(UFC_ENABLE_PYTHON "Enable Python extensions." ON)
 #------------------------------------------------------------------------------
 # Run tests to find required packages
 
-find_package(PythonInterp QUIET)
+find_package(PythonInterp 2 QUIET)
 
 # Find Python library corresponding to Python interpreter
-find_package(PythonLibs ${PYTHON_VERSION_STRING} EXACT QUIET)
+if (UFC_ENABLE_PYTHON)
+  find_package(PythonLibs ${PYTHON_VERSION_STRING} EXACT QUIET REQUIRED)
+else()
+  find_package(PythonLibs ${PYTHON_VERSION_STRING} EXACT QUIET)
+endif()
 
 # Find SWIG
 find_package(SWIG QUIET)
