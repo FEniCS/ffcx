@@ -33,8 +33,7 @@ option(UFC_ENABLE_PYTHON "Enable Python extensions." ON)
 #------------------------------------------------------------------------------
 # Run tests to find required packages
 
-set(PythonInterp_FIND_VERSION 2)
-find_package(PythonInterp QUIET)
+find_package(PythonInterp 2 QUIET)
 
 # Find Python library corresponding to Python interpreter
 if (UFC_ENABLE_PYTHON)
