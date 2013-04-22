@@ -29,7 +29,7 @@ option --bench.
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2010-01-21
-# Last changed: 2013-02-14
+# Last changed: 2013-04-22
 
 # FIXME: Need to add many more test cases. Quite a few DOLFIN forms
 # failed after the FFC tests passed.
@@ -496,7 +496,7 @@ def main(args):
         generate_code(args + [argument], only_forms)
 
         # Location of reference directories
-        reference_directory =  os.path.abspath("../../references/")
+        reference_directory =  os.path.abspath("../../ffc-reference-data/current/")
         code_reference_dir = os.path.join(reference_directory, sub_directory)
         output_reference_dir = os.path.join(reference_directory, "output")
 
