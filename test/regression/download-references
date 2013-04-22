@@ -1,0 +1,48 @@
+#!/bin/bash
+#
+# Copyright (C) 2013 Anders Logg
+#
+# This file is part of FFC.
+#
+# FFC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# FFC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with FFC. If not, see <http://www.gnu.org/licenses/>.
+#
+# First added:  2013-04-22
+# Last changed: 2013-04-22
+#
+# This script downloads the reference data for the FFC regression tests.
+
+# Parameters
+DATA_REPO="ssh://git@bitbucket.org/fenics-project/ffc-reference-data.git"
+DATA_DIR="ffc-reference-data"
+
+# Get latest tag and number
+LATEST_TAG=`git describe --tags --match ffc-reference-data-* | cut -d'-' -f1-4`
+echo "Latest reference data is $LATEST_TAG"
+
+# Get reference repository
+if [ ! -d $DATA_DIR ]; then
+    echo "Cloning reference data repository"
+    git clone $DATA_REPO
+else
+    echo "Found existing reference data repository, pulling new data"
+    (cd $DATA_DIR && git pull)
+fi
+
+# Make symbolic link to current references
+echo ""
+echo "Making symbolic link to current reference data:"
+echo ""
+echo "  $DATA_DIR/current --> $DATA_DIR/$LATEST_TAG"
+echo ""
+(cd $DATA_DIR && ln -sf $LATEST_TAG current)
