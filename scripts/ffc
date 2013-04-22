@@ -86,9 +86,9 @@ def main(argv):
     # Get command-line arguments
     try:
         opts, args = getopt.getopt(argv, \
-        "hVvsl:r:f:Oo:q:e", \
+        "hVvsl:r:f:Oo:q:eR:", \
         ["help", "version", "verbose", "silent", "language=", "representation=",
-         "optimize", "output-directory=", "quadrature-rule=", "error-control"])
+         "optimize", "output-directory=", "quadrature-rule=", "error-control", "restrict-keyword="])
     except getopt.GetoptError:
         info_usage()
         error("Illegal command-line arguments.")
@@ -137,6 +137,8 @@ def main(argv):
             parameters["output_dir"] = arg
         elif opt in ("-e", "--error-control"):
             parameters["error_control"] = True
+        elif opt in ("-R", "--restrict-keyword"):
+            parameters["restrict_keyword"] = arg
 
     # Set log_level again in case -d or -s was used on the command line
     set_level(parameters["log_level"])

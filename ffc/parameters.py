@@ -46,6 +46,7 @@ FFC_PARAMETERS = {
   "cpp_optimize":                   False,   # optimization for the JIT compiler
   "cpp_optimize_flags":             "-O2",   # optimization flags for the JIT compiler
   "optimize":                       False,   # optimise the code generation
+  "restrict_keyword":               "",      # compiler specific "__restrict" or "__restrict__" keyword
   "log_level":                      INFO,    # log level, displaying only
                                              # messages with level >= log_level
   "log_prefix":                     "",      # log prefix

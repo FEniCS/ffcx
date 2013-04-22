@@ -68,6 +68,9 @@ ext_uflacs = [\
 _command_timings = []
 def run_command(command):
     "Run command and collect errors in log file."
+    # Debugging:
+    #print "IN DIRECTORY:", os.path.abspath(os.curdir)
+    #print "RUNNING COMMAND:", command
     t1 = time.time()
     (status, output) = get_status_output(command)
     t2 = time.time()
@@ -255,6 +258,7 @@ set the environment variable BOOST_DIR.
         info("Benchmarking activated")
         # Takes too long to build with -O2
         #compiler_options += " -O2"
+        #compiler_options += " -O3 -fno-math-errno -march=native"
     if debug:
         info("Debugging activated")
         compiler_options += " -g -O0"
