@@ -27,9 +27,10 @@ option --bench.
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Martin Alnaes, 2013
+# Modified by Johannes Ring, 2013
 #
 # First added:  2010-01-21
-# Last changed: 2013-04-22
+# Last changed: 2013-04-23
 
 # FIXME: Need to add many more test cases. Quite a few DOLFIN forms
 # failed after the FFC tests passed.
@@ -459,6 +460,14 @@ def main(args):
     # Extract .ufl names from args
     only_forms = set([arg for arg in args if arg.endswith(".ufl")])
     args = [arg for arg in args if arg not in only_forms]
+
+    # Download reference data
+    failure, output = get_status_output("./download-references")
+    info(output)
+    if failure:
+        info_red("Download reference data failed")
+    else:
+        info_green("Download reference data ok")
 
     if tolerant:
         global output_tolerance
