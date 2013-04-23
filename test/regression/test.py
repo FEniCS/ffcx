@@ -463,7 +463,7 @@ def main(args):
 
     # Download reference data
     failure, output = get_status_output("./download-references")
-    info(output)
+    print output
     if failure:
         info_red("Download reference data failed")
     else:
