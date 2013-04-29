@@ -461,6 +461,7 @@ for (unsigned int j = 0; j < %d; j++)
     tmp += dofs_per_element[j];
 }"""
 
+# FIXME: This is dead slow because of all the new calls
 # Used in evaluate_basis_derivatives. For second order derivatives in 2D it will
 # generate the combinations: [(0, 0), (0, 1), (1, 0), (1, 1)] (i.e., xx, xy, yx, yy)
 # which will also be the ordering of derivatives in the return value.
