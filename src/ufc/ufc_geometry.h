@@ -680,11 +680,32 @@ inline void compute_circumradius_tetrahedron_3d(double & circumradius,
 
 ///--- Compute max facet edge lengths ---
 
+/// Compute min edge length in facet of tetrahedron embedded in R^3
+inline void compute_min_facet_edge_length_tetrahedron_3d(double & min_edge_length,
+                                                         unsigned int facet,
+                                                         const double vertex_coordinates[12])
+{
+  // TODO: Extract compute_facet_edge_lengths_tetrahedron_3d(), reuse between min/max functions
+  double edge_lengths_sqr[3];
+  for (unsigned int edge = 0; edge < 3; ++edge)
+  {
+    const unsigned int vertex0 = tetrahedron_facet_edge_vertices[facet][edge][0];
+    const unsigned int vertex1 = tetrahedron_facet_edge_vertices[facet][edge][1];
+    edge_lengths_sqr[edge] = (vertex_coordinates[3*vertex1 + 0] - vertex_coordinates[3*vertex0 + 0])*(vertex_coordinates[3*vertex1 + 0] - vertex_coordinates[3*vertex0 + 0])
+                           + (vertex_coordinates[3*vertex1 + 1] - vertex_coordinates[3*vertex0 + 1])*(vertex_coordinates[3*vertex1 + 1] - vertex_coordinates[3*vertex0 + 1])
+                           + (vertex_coordinates[3*vertex1 + 2] - vertex_coordinates[3*vertex0 + 2])*(vertex_coordinates[3*vertex1 + 2] - vertex_coordinates[3*vertex0 + 2]);
+  }
+  min_edge_length = std::sqrt(std::min(std::min(edge_lengths_sqr[1], edge_lengths_sqr[1]), edge_lengths_sqr[2]));
+}
+
+///--- Compute max facet edge lengths ---
+
 /// Compute max edge length in facet of tetrahedron embedded in R^3
 inline void compute_max_facet_edge_length_tetrahedron_3d(double & max_edge_length,
                                                          unsigned int facet,
                                                          const double vertex_coordinates[12])
 {
+  // TODO: Extract compute_facet_edge_lengths_tetrahedron_3d(), reuse between min/max functions
   double edge_lengths_sqr[3];
   for (unsigned int edge = 0; edge < 3; ++edge)
   {
