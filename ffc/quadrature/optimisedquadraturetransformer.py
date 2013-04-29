@@ -320,9 +320,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         return {():create_symbol(circumradius, GEO)}
 
-    def facet_area(self, o,  *operands):
-        # Safety check.
-        ffc_assert(not operands, "Didn't expect any operands for FacetArea: " + repr(operands))
+    def facet_area(self, o):
 
         # FIXME: KBO: This has to change for higher order elements
         # NOTE: Omitting restriction because the area of a facet is the same
@@ -334,8 +332,11 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         return {():create_symbol(area, GEO)}
 
-    def max_facet_edge_length(self, o,  *operands):
+    def max_facet_edge_length(self, o):
         # FIXME: this has no meaning for cell integrals. (Need check in FFC or UFL).
+
+        if self.tdim < 3:
+            return self.facet_area(o)
 
         edgelen = format["max facet edge length"](self.restriction)
         self.trans_set.add(edgelen)
