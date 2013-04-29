@@ -32,11 +32,18 @@
 //       some consistency is nice to simplify the code generation.
 //       Currently only the arguments that are actually used are included.
 
-// TODO: Move entity index tables such as
-//       static const unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
-//       to some shared code?
-
 // TODO: Split this header into smaller files ufc_geometry_<cell>.h or ufc_geometry_<cell>_<n>d.h?
+
+/// --- Local reference cell entity relations by UFC conventions ---
+static const unsigned int interval_facet_vertices[2][2] = {{0}, {1}};
+static const unsigned int triangle_facet_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
+static const unsigned int tetrahedron_facet_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
+static const unsigned int tetrahedron_facet_edge_vertices[4][3][2] = {
+  {{2, 3}, {1, 3}, {1, 2}},
+  {{2, 3}, {0, 3}, {0, 2}},
+  {{1, 3}, {0, 3}, {0, 1}},
+  {{1, 2}, {0, 2}, {0, 1}},
+  };
 
 ///--- Computation of Jacobian matrices ---
 
@@ -355,9 +362,8 @@ inline void compute_edge_scaling_factors_triangle_2d(double dx[2],
                                                      std::size_t facet)
 {
   // Get vertices on edge
-  static const unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
-  const unsigned int v0 = edge_vertices[facet][0];
-  const unsigned int v1 = edge_vertices[facet][1];
+  const unsigned int v0 = triangle_facet_vertices[facet][0];
+  const unsigned int v1 = triangle_facet_vertices[facet][1];
 
   // Compute scale factor (length of edge scaled by length of reference interval)
   dx[0] = vertex_coordinates[2*v1 + 0] - vertex_coordinates[2*v0 + 0];
@@ -377,9 +383,8 @@ inline void compute_edge_scaling_factors_triangle_3d(double dx[3],
                                                      std::size_t facet)
 {
   // Get vertices on edge
-  static const unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
-  const unsigned int v0 = edge_vertices[facet][0];
-  const unsigned int v1 = edge_vertices[facet][1];
+  const unsigned int v0 = triangle_facet_vertices[facet][0];
+  const unsigned int v1 = triangle_facet_vertices[facet][1];
 
   // Compute scale factor (length of edge scaled by length of reference interval)
   dx[0] = vertex_coordinates[3*v1 + 0] - vertex_coordinates[3*v0 + 0];
@@ -400,10 +405,9 @@ inline void compute_face_scaling_factors_tetrahedron_3d(double a[3],
                                                         std::size_t facet)
 {
   // Get vertices on face
-  static const unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
-  const unsigned int v0 = face_vertices[facet][0];
-  const unsigned int v1 = face_vertices[facet][1];
-  const unsigned int v2 = face_vertices[facet][2];
+  const unsigned int v0 = tetrahedron_facet_vertices[facet][0];
+  const unsigned int v1 = tetrahedron_facet_vertices[facet][1];
+  const unsigned int v2 = tetrahedron_facet_vertices[facet][2];
 
   // Compute scale factor (area of face scaled by area of reference triangle)
   a[0] = (vertex_coordinates[3*v0 + 1]*vertex_coordinates[3*v1 + 2]  +
@@ -453,8 +457,7 @@ inline void compute_facet_normal_direction_triangle_2d(bool & direction,
                                                        const double dx[2],
                                                        std::size_t facet)
 {
-  static const unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
-  const unsigned int v0 = edge_vertices[facet][0];
+  const unsigned int v0 = triangle_facet_vertices[facet][0];
   direction = dx[1]*(vertex_coordinates[2*facet    ] - vertex_coordinates[2*v0    ])
             - dx[0]*(vertex_coordinates[2*facet + 1] - vertex_coordinates[2*v0 + 1])
             < 0;
@@ -466,8 +469,7 @@ inline void compute_facet_normal_direction_tetrahedron_3d(bool & direction,
                                                           const double a[3],
                                                           std::size_t facet)
 {
-  static const unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
-  const unsigned int v0 = face_vertices[facet][0];
+  const unsigned int v0 = tetrahedron_facet_vertices[facet][0];
   direction = a[0]*(vertex_coordinates[3*facet    ] - vertex_coordinates[3*v0    ])
             + a[1]*(vertex_coordinates[3*facet + 1] - vertex_coordinates[3*v0 + 1])
             + a[2]*(vertex_coordinates[3*facet + 2] - vertex_coordinates[3*v0 + 2])
@@ -548,9 +550,8 @@ inline void compute_facet_normal_triangle_3d(double n[3],
   const unsigned int vertex0 = facet;
 
   // Get coordinates corresponding the vertex opposite this
-  static const unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
-  const unsigned int vertex1 = edge_vertices[facet][0];
-  const unsigned int vertex2 = edge_vertices[facet][1];
+  const unsigned int vertex1 = triangle_facet_vertices[facet][0];
+  const unsigned int vertex2 = triangle_facet_vertices[facet][1];
 
   // Define vectors n = (p2 - p0) and t = normalized (p2 - p1)
   n[0] = vertex_coordinates[3*vertex2 + 0] - vertex_coordinates[3*vertex0 + 0];
@@ -675,6 +676,25 @@ inline void compute_circumradius_tetrahedron_3d(double & circumradius,
   const  double area = std::sqrt(s*(s-la)*(s-lb)*(s-lc));
 
   circumradius = area / (6.0*volume);
+}
+
+///--- Compute max facet edge lengths ---
+
+/// Compute max edge length in facet of tetrahedron embedded in R^3
+inline void compute_max_facet_edge_length_tetrahedron_3d(double & max_edge_length,
+                                                         unsigned int facet,
+                                                         const double vertex_coordinates[12])
+{
+  double edge_lengths_sqr[3];
+  for (unsigned int edge = 0; edge < 3; ++edge)
+  {
+    const unsigned int vertex0 = tetrahedron_facet_edge_vertices[facet][edge][0];
+    const unsigned int vertex1 = tetrahedron_facet_edge_vertices[facet][edge][1];
+    edge_lengths_sqr[edge] = (vertex_coordinates[3*vertex1 + 0] - vertex_coordinates[3*vertex0 + 0])*(vertex_coordinates[3*vertex1 + 0] - vertex_coordinates[3*vertex0 + 0])
+                           + (vertex_coordinates[3*vertex1 + 1] - vertex_coordinates[3*vertex0 + 1])*(vertex_coordinates[3*vertex1 + 1] - vertex_coordinates[3*vertex0 + 1])
+                           + (vertex_coordinates[3*vertex1 + 2] - vertex_coordinates[3*vertex0 + 2])*(vertex_coordinates[3*vertex1 + 2] - vertex_coordinates[3*vertex0 + 2]);
+  }
+  max_edge_length = std::sqrt(std::max(std::max(edge_lengths_sqr[0], edge_lengths_sqr[1]), edge_lengths_sqr[2]));
 }
 
 #endif
