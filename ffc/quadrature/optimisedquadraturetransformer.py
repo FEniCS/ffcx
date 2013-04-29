@@ -332,6 +332,17 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         return {():create_symbol(area, GEO)}
 
+    def min_facet_edge_length(self, o):
+        # FIXME: this has no meaning for cell integrals. (Need check in FFC or UFL).
+
+        if self.tdim < 3:
+            return self.facet_area(o)
+
+        edgelen = format["min facet edge length"](self.restriction)
+        self.trans_set.add(edgelen)
+
+        return {():create_symbol(edgelen, GEO)}
+
     def max_facet_edge_length(self, o):
         # FIXME: this has no meaning for cell integrals. (Need check in FFC or UFL).
 

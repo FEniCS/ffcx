@@ -36,7 +36,7 @@ __old__ = ["evaluate_f",
            "scale_factor", "combinations_snippet",
            "normal_direction",
            "facet_normal", "ip_coordinates", "cell_volume", "circumradius",
-           "facet_area", "max_facet_edge_length",
+           "facet_area", "min_facet_edge_length", "max_facet_edge_length",
            "orientation_snippet"]
 
 __all__ += __old__
@@ -461,6 +461,12 @@ for (unsigned int j = 0; j < %d; j++)
     tmp += dofs_per_element[j];
 }"""
 
+_min_facet_edge_length_3D = """\
+// Min edge length of facet
+double min_facet_edge_length;
+compute_min_facet_edge_length_tetrahedron_3d(min_facet_edge_length, facet%(restriction)s, vertex_coordinates%(restriction)s);
+"""
+
 _max_facet_edge_length_3D = """\
 // Max edge length of facet
 double max_facet_edge_length;
@@ -754,9 +760,6 @@ facet_area = {1: {1: _facet_area_1D,
                   3: _facet_area_3D_2D},
               3: {3: _facet_area_3D}}
 
-max_facet_edge_length = {#1: {1: _max_facet_length_1D,
-                         #    2: _max_facet_length_2D_1D,
-                         #    3: _max_facet_length_3D_1D},
-                         #2: {2: _max_facet_length_2D,
-                         #    3: _max_facet_length_3D_2D},
-                         3: {3: _max_facet_edge_length_3D}}
+min_facet_edge_length = {3: {3: _min_facet_edge_length_3D}}
+
+max_facet_edge_length = {3: {3: _max_facet_edge_length_3D}}

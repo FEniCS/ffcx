@@ -131,6 +131,7 @@ def _tabulate_tensor(ir, parameters):
         jacobi_code += "\n\n" + format["generate normal"](tdim, gdim, domain_type)
         jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
         if tdim == 3:
+            jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim)
             jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim)
 
     elif domain_type == "interior_facet":
@@ -166,6 +167,7 @@ def _tabulate_tensor(ir, parameters):
         jacobi_code += "\n\n" + format["generate normal"](tdim, gdim, domain_type)
         jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
         if tdim == 3:
+            jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim, r="+")
             jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim, r="+")
 
     elif domain_type == "point":
