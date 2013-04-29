@@ -298,7 +298,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
     def cell_volume(self, o,  *operands):
         # Safety check.
-        ffc_assert(not operands, "Didn't expect any operands for FacetNormal: " + repr(operands))
+        ffc_assert(not operands, "Didn't expect any operands for CellVolume: " + repr(operands))
 
         # FIXME: KBO: This has to change for higher order elements
 #        detJ = format["det(J)"](self.restriction)
@@ -333,6 +333,14 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         self.trans_set.add(area)
 
         return {():create_symbol(area, GEO)}
+
+    def max_facet_edge_length(self, o,  *operands):
+        # FIXME: this has no meaning for cell integrals. (Need check in FFC or UFL).
+
+        edgelen = format["max facet edge length"](self.restriction)
+        self.trans_set.add(edgelen)
+
+        return {():create_symbol(edgelen, GEO)}
 
     # -------------------------------------------------------------------------
 

@@ -132,6 +132,7 @@ format.update({
     "cell volume":        lambda r=None: "volume%s" % _choose_map[r],
     "circumradius":       lambda r=None: "circumradius%s" % _choose_map[r],
     "facet area":         "facet_area",
+    "max facet edge length": lambda r: "max_facet_edge_length",
     "scale factor":       "det",
     "transform":          lambda t, i, j, m, n, r: _transform(t, i, j, m, n, r),
     "normal component":   lambda r, j: "n%s%s" % (_choose_map[r], j),
@@ -248,6 +249,7 @@ format.update({
     "generate cell volume":     lambda tdim, gdim, i: _generate_cell_volume(tdim, gdim, i),
     "generate circumradius":    lambda tdim, gdim, i: _generate_circumradius(tdim, gdim, i),
     "generate facet area":      lambda tdim, gdim: facet_area[tdim][gdim],
+    "generate max facet edge length": lambda tdim, gdim, r=None: max_facet_edge_length[tdim][gdim] % {"restriction": _choose_map[r]},
     "generate ip coordinates":  lambda g, num_ip, name, ip, r=None: (ip_coordinates[g][0], ip_coordinates[g][1] % \
                                 {"restriction": _choose_map[r], "ip": ip, "name": name, "num_ip": num_ip}),
     "scale factor snippet":    scale_factor,

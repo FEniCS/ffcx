@@ -36,7 +36,7 @@ __old__ = ["evaluate_f",
            "scale_factor", "combinations_snippet",
            "normal_direction",
            "facet_normal", "ip_coordinates", "cell_volume", "circumradius",
-           "facet_area",
+           "facet_area", "max_facet_edge_length",
            "orientation_snippet"]
 
 __all__ += __old__
@@ -461,6 +461,12 @@ for (unsigned int j = 0; j < %d; j++)
     tmp += dofs_per_element[j];
 }"""
 
+_max_facet_edge_length_3D = """\
+// Max edge length of facet
+double max_facet_edge_length;
+compute_max_facet_edge_length_tetrahedron_3d(max_facet_edge_length, facet%(restriction)s, vertex_coordinates%(restriction)s);
+"""
+
 # FIXME: This is dead slow because of all the new calls
 # Used in evaluate_basis_derivatives. For second order derivatives in 2D it will
 # generate the combinations: [(0, 0), (0, 1), (1, 0), (1, 1)] (i.e., xx, xy, yx, yy)
@@ -747,3 +753,10 @@ facet_area = {1: {1: _facet_area_1D,
               2: {2: _facet_area_2D,
                   3: _facet_area_3D_2D},
               3: {3: _facet_area_3D}}
+
+max_facet_edge_length = {#1: {1: _max_facet_length_1D,
+                         #    2: _max_facet_length_2D_1D,
+                         #    3: _max_facet_length_3D_1D},
+                         #2: {2: _max_facet_length_2D,
+                         #    3: _max_facet_length_3D_2D},
+                         3: {3: _max_facet_edge_length_3D}}

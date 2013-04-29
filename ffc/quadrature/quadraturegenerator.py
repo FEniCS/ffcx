@@ -129,6 +129,9 @@ def _tabulate_tensor(ir, parameters):
         jacobi_code += "\n"
         jacobi_code += "\n\n" + format["facet determinant"](tdim, gdim)
         jacobi_code += "\n\n" + format["generate normal"](tdim, gdim, domain_type)
+        jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
+        if tdim == 3:
+            jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim)
 
     elif domain_type == "interior_facet":
         # Modify the dimensions of the primary indices because we have a macro element
@@ -137,7 +140,7 @@ def _tabulate_tensor(ir, parameters):
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
         for i in range(num_facets):
             for j in range(num_facets):
-                # Update treansformer with facets and generate case code + set of used geometry terms.
+                # Update transformer with facets and generate case code + set of used geometry terms.
                 c, mem_code, ops = _generate_element_tensor(integrals[i][j], sets, \
                                                             opt_par)
                 case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
@@ -161,6 +164,9 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += "\n"
         jacobi_code += "\n\n" + format["facet determinant"](tdim, gdim, r="+")
         jacobi_code += "\n\n" + format["generate normal"](tdim, gdim, domain_type)
+        jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
+        if tdim == 3:
+            jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim, r="+")
 
     elif domain_type == "point":
         cases = [None for i in range(num_vertices)]
@@ -187,7 +193,7 @@ def _tabulate_tensor(ir, parameters):
         if oriented:
             jacobi_code += format["orientation"](tdim, gdim)
         jacobi_code += "\n"
-        jacobi_code += "\n\n" + format["facet determinant"](tdim, gdim)
+        jacobi_code += "\n\n" + format["facet determinant"](tdim, gdim) # FIXME: This is not defined in a point???
 
     else:
         error("Unhandled integral type: " + str(integral_type))
@@ -196,7 +202,6 @@ def _tabulate_tensor(ir, parameters):
     if domain_type != "point":
         jacobi_code += "\n\n" + format["generate cell volume"](tdim, gdim, domain_type)
         jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, domain_type)
-        jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
 
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.

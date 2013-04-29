@@ -395,6 +395,14 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         return {():area}
 
+    def max_facet_edge_length(self, o,  *operands):
+        # FIXME: this has no meaning for cell integrals. (Need check in FFC or UFL).
+
+        edgelen = format["max facet edge length"](self.restriction)
+        self.trans_set.add(edgelen)
+
+        return {():edgelen}
+
     # -------------------------------------------------------------------------
 
     def create_argument(self, ufl_argument, derivatives, component, local_comp,
