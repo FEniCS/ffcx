@@ -53,7 +53,8 @@ def transform_component(component, offset, ufl_element):
     if not special_case:
         return component, offset
 
-    # Extract reference and physical value dimensions
+    # Extract lists of reference and physical value dimensions by
+    # sub-element
     reference_value_dims = []
     physical_value_dims = []
     for sub_element in ufl_element.sub_elements():
@@ -67,13 +68,14 @@ def transform_component(component, offset, ufl_element):
                                      - (gdim - tdim)]
             physical_value_dims += [sub_element.value_shape()[0]]
 
-    # Figure out which sub-element number we are in:
+    # Figure out which sub-element number 'component' is in,
+    # 'sub_element_number' contains the result
     tot = physical_value_dims[0]
-    for (sub_element_number, i) in enumerate(physical_value_dims):
+    for sub_element_number in range(len(physical_value_dims)):
         if component < tot:
             break
         else:
-            tot += i
+            tot += physical_value_dims[sub_element_number+1]
 
     # Compute the new reference offset:
     reference_offset = sum(reference_value_dims[:sub_element_number])
