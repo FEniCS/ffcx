@@ -17,13 +17,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
+# Modified by Johannes Ring, 2013-04-23
+#
 # First added:  2013-04-22
-# Last changed: 2013-04-22
+# Last changed: 2013-04-23
 #
 # This script downloads the reference data for the FFC regression tests.
 
 # Parameters
-DATA_REPO="ssh://git@bitbucket.org/fenics-project/ffc-reference-data.git"
+DATA_REPO="https://bitbucket.org/fenics-project/ffc-reference-data.git"
 DATA_DIR="ffc-reference-data"
 
 # Get latest tag and number
