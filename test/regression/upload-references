@@ -69,6 +69,7 @@ echo "$NEW_TAG "`date` >> $LOG_FILE
 git tag $NEW_TAG
 git add $LOG_FILE
 git commit -m "Update reference data: $NEW_TAG"
+git push
 git push --tags
 
 # Tag and commit in data repository
@@ -76,6 +77,7 @@ cd $DATA_DIR
 git tag $NEW_TAG
 git add $NEW_TAG
 git commit -m "Update reference data: $NEW_TAG" | grep -v "create mode"
+git push
 git push --tags
 cd ..
 
