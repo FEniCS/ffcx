@@ -18,7 +18,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2013-04-22
-# Last changed: 2013-04-22
+# Last changed: 2013-04-30
 #
 # This script overwrites the reference data with the current output
 # and stores the new reference data as part of the FFC reference data
@@ -69,13 +69,14 @@ echo "$NEW_TAG "`date` >> $LOG_FILE
 git tag $NEW_TAG
 git add $LOG_FILE
 git commit -m "Update reference data: $NEW_TAG"
+git push --tags
 
 # Tag and commit in data repository
 cd $DATA_DIR
 git tag $NEW_TAG
 git add $NEW_TAG
 git commit -m "Update reference data: $NEW_TAG" | grep -v "create mode"
-git push
+git push --tags
 cd ..
 
 # Make symbolic link to current references
