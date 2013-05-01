@@ -33,7 +33,35 @@ option(UFC_ENABLE_PYTHON "Enable Python extensions." ON)
 #------------------------------------------------------------------------------
 # Run tests to find required packages
 
+# Find Python interpretter
 find_package(PythonInterp 2 QUIET)
+
+# Set variables to help find Python library that is compatible with interpretter
+if (PYTHONINTERP_FOUND)
+  # Get include path from Python interpretter
+  execute_process(COMMAND "${PYTHON_EXECUTABLE}" -c
+                          "import distutils.sysconfig, sys; sys.stdout.write(distutils.sysconfig.get_python_inc())"
+                    OUTPUT_VARIABLE _PYTHON_INCLUDE_PATH
+                    RESULT_VARIABLE _PYTHON_INCLUDE_RESULT)
+
+  # Get library path from interpretter
+  execute_process(COMMAND "${PYTHON_EXECUTABLE}" -c
+                          "import os, sys, inspect; sys.stdout.write(os.path.split(os.path.split(inspect.getfile(inspect))[0])[0])"
+                    OUTPUT_VARIABLE _PYTHON_LIB_PATH
+                    RESULT_VARIABLE _PYTHON_LIB_RESULT)
+
+  # Set include path, if returned by interpretter
+  if ("${_PYTHON_INCLUDE_RESULT}" STREQUAL "0")
+    message("Setting path")
+    set(PYTHON_INCLUDE_DIR ${_PYTHON_INCLUDE_PATH})
+  endif()
+
+  # Add a search path for Python library based on output from iterpretter
+  if ("${_PYTHON_LIB_RESULT}" STREQUAL "0")
+    set(CMAKE_LIBRARY_PATH ${_PYTHON_LIB_PATH})
+  endif()
+
+endif()
 
 # Find Python library corresponding to Python interpreter
 if (UFC_ENABLE_PYTHON)
