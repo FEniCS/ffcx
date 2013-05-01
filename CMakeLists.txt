@@ -18,9 +18,6 @@ if(COMMAND cmake_policy)
   cmake_policy(SET CMP0003 NEW)
 endif()
 
-# Set verbose output while testing CMake
-#set(CMAKE_VERBOSE_MAKEFILE 1)
-
 # Set location of our FindFoo.cmake modules
 set(UFC_CMAKE_DIR "${UFC_SOURCE_DIR}/cmake" CACHE INTERNAL "")
 set(CMAKE_MODULE_PATH "${UFC_CMAKE_DIR}/modules")
@@ -33,10 +30,11 @@ option(UFC_ENABLE_PYTHON "Enable Python extensions." ON)
 #------------------------------------------------------------------------------
 # Run tests to find required packages
 
-# Find Python interpretter
+# Find Python interpreter
 find_package(PythonInterp 2 QUIET)
 
-# Set variables to help find Python library that is compatible with interpretter
+# Set variables to help find Python library that is compatible with
+# interpreter
 if (PYTHONINTERP_FOUND)
   # Get include path from Python interpretter
   execute_process(COMMAND "${PYTHON_EXECUTABLE}" -c
@@ -44,19 +42,20 @@ if (PYTHONINTERP_FOUND)
                     OUTPUT_VARIABLE _PYTHON_INCLUDE_PATH
                     RESULT_VARIABLE _PYTHON_INCLUDE_RESULT)
 
-  # Get library path from interpretter
+  # Get library path from interpreter
   execute_process(COMMAND "${PYTHON_EXECUTABLE}" -c
                           "import os, sys, inspect; sys.stdout.write(os.path.split(os.path.split(inspect.getfile(inspect))[0])[0])"
                     OUTPUT_VARIABLE _PYTHON_LIB_PATH
                     RESULT_VARIABLE _PYTHON_LIB_RESULT)
 
-  # Set include path, if returned by interpretter
+  # Set include path, if returned by interpreter
   if ("${_PYTHON_INCLUDE_RESULT}" STREQUAL "0")
     message("Setting path")
     set(PYTHON_INCLUDE_DIR ${_PYTHON_INCLUDE_PATH})
   endif()
 
-  # Add a search path for Python library based on output from iterpretter
+  # Add a search path for Python library based on output from
+  # iterpreter
   if ("${_PYTHON_LIB_RESULT}" STREQUAL "0")
     set(CMAKE_LIBRARY_PATH ${_PYTHON_LIB_PATH})
   endif()
@@ -86,7 +85,8 @@ find_package(Boost 1.36 QUIET)
 if (PYTHONINTERP_FOUND)
 
   if (NOT DEFINED UFC_INSTALL_PYTHON_EXT_DIR)
-    # Get path for platform-dependent Python modules (since we install a binary libary)
+    # Get path for platform-dependent Python modules (since we install
+    # a binary libary)
     execute_process(
       COMMAND ${PYTHON_EXECUTABLE} -c "import sys, distutils.sysconfig; sys.stdout.write(distutils.sysconfig.get_python_lib(plat_specific=True, prefix='${CMAKE_INSTALL_PREFIX}'))"
       OUTPUT_VARIABLE UFC_INSTALL_PYTHON_EXT_DIR
