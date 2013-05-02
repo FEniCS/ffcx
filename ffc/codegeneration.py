@@ -491,7 +491,7 @@ def _postprocess_code(code, parameters):
 def _indent_code(code):
     "Indent code that should be indented."
     for key in code:
-        if not key in ("classname", "members", "constructor_arguments", "initializer_list", "additional_includes_set"):
+        if not key in ("classname", "members", "constructor_arguments", "initializer_list", "additional_includes_set", "restrict"):
             code[key] = indent(code[key], 4)
 
 def _remove_code(code, parameters):
