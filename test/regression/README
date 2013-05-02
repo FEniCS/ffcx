@@ -7,3 +7,5 @@ script upload-references:
   python test.py
   ./upload-references
 
+Note that you will be asked for your *Bitbucket* username and password
+when uploading the reference data.
