@@ -52,7 +52,6 @@ if (PYTHONINTERP_FOUND)
 
   # Set include path, if returned by interpretter
   if ("${_PYTHON_INCLUDE_RESULT}" STREQUAL "0")
-    message("Setting path")
     set(PYTHON_INCLUDE_DIR ${_PYTHON_INCLUDE_PATH})
   endif()
 
