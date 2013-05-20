@@ -69,7 +69,38 @@ def create_quadrature(shape, degree, scheme="default"):
         elif shape == "triangle":
             return _triangle_scheme(degree)
         else:
-          return _fiat_scheme(shape, degree)
+            return _fiat_scheme(shape, degree)
+    elif scheme == "vertex":
+        # The vertex scheme, i.e., averaging the function value in the vertices
+        # and multiplying with the simplex volume, is only of order 1 and
+        # inferior to other generic schemes in terms of error reduction.
+        # Equation systems generated with the vertex scheme have some
+        # properties that other schemes lack, e.g., the mass matrix is
+        # a simple diagonal matrix. This may be prescribed in certain cases.
+        #
+        if degree > 1:
+            from warnings import warn
+            warn(("Explicitly selected vertex quadrature (degree 1), "
+                 +"but requested degree is %d.") % degree)
+        if shape == "tetrahedron":
+            return (array([ [0.0, 0.0, 0.0],
+                            [1.0, 0.0, 0.0],
+                            [0.0, 1.0, 0.0],
+                            [0.0, 0.0, 1.0] ]),
+                    array([1.0/24.0, 1.0/24.0, 1.0/24.0, 1.0/24.0])
+                    )
+        elif shape == "triangle":
+            return (array([ [0.0, 0.0],
+                            [1.0, 0.0],
+                            [0.0, 1.0] ]),
+                    array([1.0/6.0, 1.0/6.0, 1.0/6.0])
+                    )
+        else:
+            # Trapezoidal rule.
+            return (array([ [0.0, 0.0],
+                            [0.0, 1.0] ]),
+                    array([1.0/2.0, 1.0/2.0])
+                    )
     elif scheme == "canonical":
         return _fiat_scheme(shape, degree)
     else:

@@ -181,8 +181,8 @@ def _attach_integral_metadata(form_data, parameters):
                     info("Valid choices are nonnegative integers or 'auto'.")
                     error("Illegal quadrature degree for integral: " + str(qd))
                 integral_metadata["quadrature_degree"] = qd
-            if not qr in ("default", "canonical", "auto"):
-                info("Valid choices are 'default', 'canonical' or 'auto'.")
+            if not qr in ("default", "canonical", "vertex", "auto"):
+                info("Valid choices are 'default', 'canonical', 'vertex', and 'auto'.")
                 error("Illegal choice of quadrature rule for integral: " + str(qr))
 
             # Automatic selection of representation
