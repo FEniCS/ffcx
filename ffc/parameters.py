@@ -43,7 +43,7 @@ FFC_PARAMETERS = {
   "cache_dir":                      "",      # cache dir used by Instant
   "output_dir":                     ".",     # output directory for generated
                                              # code
-  "cpp_optimize":                   False,   # optimization for the JIT compiler
+  "cpp_optimize":                   True,    # optimization for the JIT compiler
   "cpp_optimize_flags":             "-O2",   # optimization flags for the JIT compiler
   "optimize":                       False,   # optimise the code generation
   "restrict_keyword":               "",      # compiler specific "__restrict" or "__restrict__" keyword
