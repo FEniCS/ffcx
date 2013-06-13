@@ -160,7 +160,7 @@ def _create_fiat_element(ufl_element):
     # Handle Bubble element as RestrictedElement of P_{k} to interior
     if family == "Bubble":
         V = FIAT.supported_elements["Lagrange"](fiat_cell, degree)
-        dim = cell.geometric_dimension()
+        dim = cell.topological_dimension()
         return RestrictedElement(V, _indices(V, "interior", dim), None)
 
     # Check if finite element family is supported by FIAT
