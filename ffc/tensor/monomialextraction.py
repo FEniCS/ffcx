@@ -31,7 +31,7 @@ from ufl.algorithms import purge_list_tensors, apply_transformer, ReuseTransform
 from ffc.log import info, debug, ffc_assert
 
 # Cache for computed integrand representations
-_cache = {}
+#_cache = {}
 
 def extract_monomial_form(integrals, function_replace_map):
     """
@@ -64,9 +64,9 @@ def extract_monomial_integrand(integrand, function_replace_map):
     "Extract monomial integrand (if possible)."
 
     # Check cache
-    if integrand in _cache:
-        debug("Reusing monomial integrand from cache")
-        return _cache[integrand]
+    #if integrand in _cache:
+    #    debug("Reusing monomial integrand from cache")
+    #    return _cache[integrand]
 
     # Purge list tensors
     integrand = purge_list_tensors(integrand)
@@ -75,7 +75,7 @@ def extract_monomial_integrand(integrand, function_replace_map):
     monomial_integrand = apply_transformer(integrand, MonomialTransformer(function_replace_map))
 
     # Store in cache
-    _cache[integrand] = monomial_integrand
+    #_cache[integrand] = monomial_integrand
 
     return monomial_integrand
 
