@@ -20,7 +20,7 @@
 # Modified by Johannes Ring, 2013-04-23
 #
 # First added:  2013-04-22
-# Last changed: 2013-04-23
+# Last changed: 2013-06-24
 #
 # This script downloads the reference data for the FFC regression tests.
 
@@ -28,9 +28,18 @@
 DATA_REPO="https://bitbucket.org/fenics-project/ffc-reference-data.git"
 DATA_DIR="ffc-reference-data"
 
-# Get latest tag and number
-LATEST_TAG=`git describe --tags --match ffc-reference-data-* | cut -d'-' -f1-4`
-echo "Latest reference data is $LATEST_TAG"
+# Find first = latest reference data for current branch
+HEAD=`git rev-list --max-count 1 HEAD`
+echo "Looking for reference data ancestor of $HEAD"
+REVS=`git rev-list HEAD`
+REFS=`cd ffc-reference-data && ls | grep ffc-reference-data-`
+TAG=`python compute_tag.py $REVS $REFS`
+if [ "$TAG" = "none" ]; then
+    echo "Unable to find reference data ancestor"
+    exit 1
+else
+    echo "Found reference data: $TAG"
+fi
 
 # Get reference repository
 if [ ! -d $DATA_DIR ]; then
@@ -45,6 +54,7 @@ fi
 echo ""
 echo "Making symbolic link to current reference data:"
 echo ""
-echo "  $DATA_DIR/current --> $DATA_DIR/$LATEST_TAG"
+echo "       $DATA_DIR/current"
+echo "   --> $DATA_DIR/$TAG"
 echo ""
-(cd $DATA_DIR && ln -sf $LATEST_TAG current)
+(cd $DATA_DIR && rm -f current && ln -s $TAG current)

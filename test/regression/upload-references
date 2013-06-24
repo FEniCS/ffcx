@@ -18,7 +18,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2013-04-22
-# Last changed: 2013-04-30
+# Last changed: 2013-06-24
 #
 # This script overwrites the reference data with the current output
 # and stores the new reference data as part of the FFC reference data
@@ -37,12 +37,12 @@ if [ ! -d $OUTPUT_DIR ]; then
 fi
 
 # Get latest tag and number
-LATEST_TAG=`git describe --tags --match ffc-reference-data-* | cut -d'-' -f1-4`
-LATEST_NUM=`echo $LATEST_TAG | cut -d'-' -f4`
-echo "Latest reference data is $LATEST_TAG"
+#LATEST_TAG=`git describe --tags --match ffc-reference-data-* | cut -d'-' -f1-4`
+#LATEST_NUM=`echo $LATEST_TAG | cut -d'-' -f4`
+#echo "Latest reference data is $LATEST_TAG"
 
 # Compute new tag
-NEW_TAG=ffc-reference-data-`echo $LATEST_NUM | awk '{print $1 + 1}'`
+NEW_TAG=ffc-reference-data-`git rev-list --max-count=1 HEAD`
 echo "New reference data is $NEW_TAG"
 
 # Get reference repository
@@ -65,20 +65,11 @@ echo ""
 unset LANG
 echo "$NEW_TAG "`date` >> $LOG_FILE
 
-# Tag and commit in source repository
-git tag $NEW_TAG
-git add $LOG_FILE
-git commit -m "Update reference data: $NEW_TAG"
-git push
-git push --tags
-
-# Tag and commit in data repository
+# Commit data repository
 cd $DATA_DIR
-git tag $NEW_TAG
 git add $NEW_TAG
 git commit -m "Update reference data: $NEW_TAG" | grep -v "create mode"
 git push
-git push --tags
 cd ..
 
 # Make symbolic link to current references
