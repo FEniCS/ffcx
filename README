@@ -22,38 +22,48 @@ Contact
 -------
 
 Bitbucket site:
-  http://www.bitbucket.org/fenics-project/uflacs/
 
-Fenics project site:
-  http://www.fenicsproject.org/
+    http://www.bitbucket.org/fenics-project/uflacs/
+
+FEniCS Project site:
+
+    http://www.fenicsproject.org/
 
 Authors:
-  Martin Sandve Alnæs (martinal@simula.no)
+
+    Martin Sandve Alnæs (martinal@simula.no)
 
 Contributors:
-  Steffen Müthing (steffen.muething@ipvs.uni-stuttgart.de)
+
+    Steffen Müthing (steffen.muething@ipvs.uni-stuttgart.de)
 
 
 Testing
 -------
 
-To run unittests of generated C++ code you need the Google C++ Testing Framework:
-  https://code.google.com/p/googletest/
+To run unittests of generated C++ code you need the Google C++ Testing
+Framework:
 
-To run unit tests with output to screen:
-  cd tests/ && ./test.sh
+    https://code.google.com/p/googletest/
 
-To run unit tests with output to log files (for batch runs):
-  cd tests/ && ./test.py
+To run unit tests with output to screen::
+
+    cd tests/ && ./test.sh
+
+To run unit tests with output to log files (for batch runs)::
+
+    cd tests/ && ./test.py
 
 
 Installing
 ----------
 
-Either install to default python location as root:
-  sudo python setup.py install
+Either install to default python location as root::
 
-Or install to your own python path directory:
-  python setup.py install --prefix=/path/to/my/own/site-packages
+    sudo python setup.py install
+
+Or install to your own python path directory::
+
+    python setup.py install --prefix=/path/to/my/own/site-packages
 
 
