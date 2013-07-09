@@ -40,6 +40,7 @@ class ReferenceTensor:
                  domain_type,
                  facet0, facet1,
                  quadrature_order,
+                 quadrature_rule,
                  cellname,
                  facet_cellname):
         "Create reference tensor for given monomial."
@@ -49,6 +50,7 @@ class ReferenceTensor:
                             domain_type,
                             facet0, facet1,
                             quadrature_order,
+                            quadrature_rule,
                             cellname,
                             facet_cellname)
 

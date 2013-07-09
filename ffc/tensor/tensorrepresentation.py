@@ -73,6 +73,7 @@ def compute_integral_ir(itg_data,
 
     # Compute representation of cell tensor
     quadrature_degree = itg_data.metadata["quadrature_degree"]
+    quadrature_rule = itg_data.metadata["quadrature_rule"]
     if itg_data.domain_type == "cell":
 
         # Compute sum of tensor representations
@@ -80,6 +81,7 @@ def compute_integral_ir(itg_data,
                                   None, None,
                                   itg_data.domain_type,
                                   quadrature_degree,
+                                  quadrature_rule,
                                   cellname,
                                   facet_cellname)
 
@@ -92,6 +94,7 @@ def compute_integral_ir(itg_data,
                                       i, None,
                                       itg_data.domain_type,
                                       quadrature_degree,
+                                      quadrature_rule,
                                       cellname,
                                       facet_cellname)
         ir["AK"] = terms
@@ -106,6 +109,7 @@ def compute_integral_ir(itg_data,
                                              i, j,
                                              itg_data.domain_type,
                                              quadrature_degree,
+                                             quadrature_rule,
                                              cellname,
                                              facet_cellname)
                 reorder_entries(terms[i][j])
@@ -120,6 +124,7 @@ def _compute_terms(monomial_form,
                    facet0, facet1,
                    domain_type,
                    quadrature_degree,
+                   quadrature_rule,
                    cellname,
                    facet_cellname):
     "Compute list of tensor contraction terms for monomial form."
@@ -136,6 +141,7 @@ def _compute_terms(monomial_form,
                                  domain_type,
                                  facet0, facet1,
                                  quadrature_degree,
+                                 quadrature_rule,
                                  cellname,
                                  facet_cellname)
 

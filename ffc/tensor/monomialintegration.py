@@ -50,6 +50,7 @@ def integrate(monomial,
               domain_type,
               facet0, facet1,
               quadrature_degree,
+              quadrature_rule,
               cellname,
               facet_cellname):
     """Compute the reference tensor for a given monomial term of a
@@ -64,6 +65,7 @@ def integrate(monomial,
     (points, weights) = _init_quadrature(monomial.arguments,
                                          domain_type,
                                          quadrature_degree,
+                                         quadrature_rule,
                                          cellname,
                                          facet_cellname)
 
@@ -88,13 +90,13 @@ def integrate(monomial,
 
     return A0
 
-def _init_quadrature(arguments, domain_type, quadrature_degree, cellname, facet_cellname):
+def _init_quadrature(arguments, domain_type, quadrature_degree, quadrature_rule, cellname, facet_cellname):
     "Initialize quadrature for given monomial."
     # Create quadrature rule and get points and weights
     if domain_type == Measure.CELL:
-        (points, weights) = create_quadrature(cellname, quadrature_degree)
+        (points, weights) = create_quadrature(cellname, quadrature_degree, quadrature_rule)
     else:
-        (points, weights) = create_quadrature(facet_cellname, quadrature_degree)
+        (points, weights) = create_quadrature(facet_cellname, quadrature_degree, quadrature_rule)
 
     return (points, weights)
 
