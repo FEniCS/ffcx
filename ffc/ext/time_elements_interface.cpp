@@ -16,12 +16,11 @@
 // along with FFC.  If not, see <http://www.gnu.org/licenses/>.
 //
 // First added:  2012-08-20
-// Last changed: 2012-09-05
+// Last changed: 2013-07-11
 
 
 #include <Python.h>
 
-#define  NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
 
 #include "time_elements.h"

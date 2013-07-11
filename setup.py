@@ -2,6 +2,7 @@
 
 import sys, platform
 from distutils.core import setup, Extension
+from distutils.version import LooseVersion
 from os import chdir
 from os.path import join, split
 import numpy
@@ -21,13 +22,18 @@ if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
         batch_files.append(batch_file)
     scripts.extend(batch_files)
 
+ext_kwargs = dict(include_dirs=[numpy.get_include()])
+if LooseVersion(numpy.__version__) > LooseVersion("1.6.2"):
+    ext_kwargs["define_macros"] = [ ("NPY_NO_DEPRECATED_API", "NPY_%s_%s_API_VERSION" \
+                                     % tuple(numpy.__version__.split(".")[:-2]))]
+
 ext = Extension("ffc.time_elements_ext",
                 ["ffc/ext/time_elements_interface.cpp",
                  "ffc/ext/time_elements.cpp",
                  "ffc/ext/LobattoQuadrature.cpp",
                  "ffc/ext/RadauQuadrature.cpp",
                  "ffc/ext/Legendre.cpp"],
-                include_dirs=[numpy.get_include()])
+                **ext_kwargs)
 
 setup(name = "FFC",
       version = "1.2.0",
