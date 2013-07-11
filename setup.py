@@ -25,7 +25,7 @@ if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
 ext_kwargs = dict(include_dirs=[numpy.get_include()])
 if LooseVersion(numpy.__version__) > LooseVersion("1.6.2"):
     ext_kwargs["define_macros"] = [ ("NPY_NO_DEPRECATED_API", "NPY_%s_%s_API_VERSION" \
-                                     % tuple(numpy.__version__.split(".")[:-2]))]
+                                     % tuple(numpy.__version__.split(".")[:2]))]
 
 ext = Extension("ffc.time_elements_ext",
                 ["ffc/ext/time_elements_interface.cpp",
