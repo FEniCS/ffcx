@@ -28,6 +28,15 @@
 DATA_REPO="https://bitbucket.org/fenics-project/ffc-reference-data.git"
 DATA_DIR="ffc-reference-data"
 
+# Get reference repository
+if [ ! -d $DATA_DIR ]; then
+    echo "Cloning reference data repository"
+    git clone $DATA_REPO
+else
+    echo "Found existing reference data repository, pulling new data"
+    (cd $DATA_DIR && git pull)
+fi
+
 # Find first = latest reference data for current branch
 HEAD=`git rev-list --max-count 1 HEAD`
 echo "Looking for reference data ancestor of $HEAD"
@@ -39,15 +48,6 @@ if [ "$TAG" = "none" ]; then
     exit 1
 else
     echo "Found reference data: $TAG"
-fi
-
-# Get reference repository
-if [ ! -d $DATA_DIR ]; then
-    echo "Cloning reference data repository"
-    git clone $DATA_REPO
-else
-    echo "Found existing reference data repository, pulling new data"
-    (cd $DATA_DIR && git pull)
 fi
 
 # Make symbolic link to current references
