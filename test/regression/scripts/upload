@@ -69,5 +69,5 @@ cd ..
 
 # Commit data id
 echo $DATA_ID > $DATA_ID_FILE
-git commit $DATA_ID_FILE -m'Update reference data pointer to ${DATA_ID}.'
+git commit $DATA_ID_FILE -m"Update reference data pointer to ${DATA_ID}."
 
