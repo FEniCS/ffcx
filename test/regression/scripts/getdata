@@ -1,0 +1,9 @@
+#!/bin/bash
+source scripts/parameters
+
+# Take data id as argument
+DATA_ID=$1
+
+# Checkout data referenced by id
+(cd $DATA_DIR && git checkout -B auto $DATA_ID)
+

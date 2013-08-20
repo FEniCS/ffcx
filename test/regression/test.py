@@ -462,7 +462,7 @@ def main(args):
     args = [arg for arg in args if arg not in only_forms]
 
     # Download reference data
-    failure, output = get_status_output("./download-references")
+    failure, output = get_status_output("./scripts/download")
     print output
     if failure:
         info_red("Download reference data failed")
@@ -505,7 +505,7 @@ def main(args):
         generate_code(args + [argument], only_forms)
 
         # Location of reference directories
-        reference_directory =  os.path.abspath("../../ffc-reference-data/current/")
+        reference_directory =  os.path.abspath("../../ffc-reference-data/")
         code_reference_dir = os.path.join(reference_directory, sub_directory)
 
         # Note: We use the r_auto references for all test cases. This ensures

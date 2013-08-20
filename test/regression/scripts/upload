@@ -17,18 +17,17 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
+# Modified by Martin Sandve Alnaes, 2013-08-20
+#
 # First added:  2013-04-22
-# Last changed: 2013-06-24
+# Last changed: 2013-08-20
 #
 # This script overwrites the reference data with the current output
 # and stores the new reference data as part of the FFC reference data
 # repository.
 
 # Parameters
-LOG_FILE="ffc-reference-data.log"
-OUTPUT_DIR="output"
-DATA_REPO="ssh://git@bitbucket.org/fenics-project/ffc-reference-data.git"
-DATA_DIR="ffc-reference-data"
+source ./scripts/parameters
 
 # Check that we have any data
 if [ ! -d $OUTPUT_DIR ]; then
@@ -36,14 +35,8 @@ if [ ! -d $OUTPUT_DIR ]; then
     exit 1
 fi
 
-# Get latest tag and number
-#LATEST_TAG=`git describe --tags --match ffc-reference-data-* | cut -d'-' -f1-4`
-#LATEST_NUM=`echo $LATEST_TAG | cut -d'-' -f4`
-#echo "Latest reference data is $LATEST_TAG"
-
-# Compute new tag
-NEW_TAG=ffc-reference-data-`git rev-list --max-count=1 HEAD`
-echo "New reference data is $NEW_TAG"
+# Get current id for main repo (does not include dirty files!)
+REPO_ID=`git rev-list --max-count 1 HEAD`
 
 # Get reference repository
 if [ ! -d $DATA_DIR ]; then
@@ -51,31 +44,30 @@ if [ ! -d $DATA_DIR ]; then
     git clone $DATA_REPO
 else
     echo "Found existing reference data repository, pulling new data"
-    (cd $DATA_DIR && git pull)
+    (cd $DATA_DIR && git checkout master && git pull)
+    # FIXME: What if there is a merge happening here?
+fi
+
+# Check that we had success with getting reference repository
+if [ ! -d $DATA_DIR ]; then
+    echo "Can't clone reference data directory '$DATA_DIR'."
+    exit 1
 fi
 
 # Copy references
-DEST=$DATA_DIR/$NEW_TAG
-echo "Copying new reference data to $DEST"
-mkdir -p $DEST
-rsync -r  --exclude='*.bin' --exclude='*.cpp' $OUTPUT_DIR/ $DEST/
+echo "Copying new reference data to $DATA_DIR"
+rsync -r  --exclude='README.rst' --exclude='*.bin' --exclude='*.cpp' $OUTPUT_DIR/ $DATA_DIR
 echo ""
 
-# Store to logfile
-unset LANG
-echo "$NEW_TAG "`date` >> $LOG_FILE
-
-# Commit data repository
+# Commit and push data repository
 cd $DATA_DIR
-git add $NEW_TAG
-git commit -m "Update reference data: $NEW_TAG" | grep -v "create mode"
+git add *
+git commit -m "Update reference data, current project head is ${REPO_ID}." | grep -v "create mode"
+DATA_ID=`git rev-list --max-count 1 HEAD`
 git push
 cd ..
 
-# Make symbolic link to current references
-echo ""
-echo "Making symbolic link to current reference data:"
-echo ""
-echo "  $DATA_DIR/current --> $DATA_DIR/$NEW_TAG"
-echo ""
-(cd $DATA_DIR && ln -sf $NEW_TAG current)
+# Commit data id
+echo $DATA_ID > $DATA_ID_FILE
+git commit $DATA_ID_FILE -m'Update reference data pointer to ${DATA_ID}.'
+

@@ -18,15 +18,15 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Johannes Ring, 2013-04-23
+# Modified by Martin Sandve Alnaes, 2013-08-20
 #
 # First added:  2013-04-22
-# Last changed: 2013-06-24
+# Last changed: 2013-08-20
 #
 # This script downloads the reference data for the FFC regression tests.
 
 # Parameters
-DATA_REPO="https://bitbucket.org/fenics-project/ffc-reference-data.git"
-DATA_DIR="ffc-reference-data"
+source ./scripts/parameters
 
 # Get reference repository
 if [ ! -d $DATA_DIR ]; then
@@ -34,27 +34,12 @@ if [ ! -d $DATA_DIR ]; then
     git clone $DATA_REPO
 else
     echo "Found existing reference data repository, pulling new data"
-    (cd $DATA_DIR && git pull)
+    (cd $DATA_DIR && git checkout master && git pull)
 fi
 
-# Find first = latest reference data for current branch
-HEAD=`git rev-list --max-count 1 HEAD`
-echo "Looking for reference data ancestor of $HEAD"
-REVS=`git rev-list HEAD`
-REFS=`cd ffc-reference-data && ls | grep ffc-reference-data-`
-TAG=`python compute_tag.py $REVS $REFS`
-if [ "$TAG" = "none" ]; then
-    echo "Unable to find reference data ancestor"
-    exit 1
-else
-    echo "Found reference data: $TAG"
-fi
+# Get reference repository commit id
+DATA_ID=`cat $DATA_ID_FILE`
 
-# Make symbolic link to current references
-echo ""
-echo "Making symbolic link to current reference data:"
-echo ""
-echo "       $DATA_DIR/current"
-echo "   --> $DATA_DIR/$TAG"
-echo ""
-(cd $DATA_DIR && rm -f current && ln -s $TAG current)
+# Checkout data referenced by id file
+./scripts/getdata $DATA_ID
+
