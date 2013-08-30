@@ -26,17 +26,15 @@ transformers to translate UFL expressions."""
 
 # Python modules.
 from itertools import izip
-import time
 from numpy import shape, array
 
 # UFL Classes.
-from ufl.classes import MultiIndex, FixedIndex, Index
-from ufl.common import StackDict, Stack
+from ufl.classes import FixedIndex, Index
+from ufl.common import StackDict, Stack, product
 from ufl.permutation import build_component_numbering
 
 # UFL Algorithms.
-from ufl.algorithms import Transformer, tree_format
-from ufl.algorithms import strip_variables
+from ufl.algorithms import Transformer
 
 # FFC modules.
 from ffc.log import ffc_assert, error, info
@@ -50,7 +48,6 @@ from ffc.representationutils import transform_component
 
 # Utility and optimisation functions for quadraturegenerator.
 from quadratureutils import create_psi_tables
-from symbolics import generate_aux_constants
 from symbolics import BASIS, IP, GEO, CONST
 
 class QuadratureTransformerBase(Transformer):
@@ -89,10 +86,11 @@ class QuadratureTransformerBase(Transformer):
         self.facet1 = None
         self.vertex = None
         self.restriction = None
+        self.avg = None
         self.coordinate = None
         self.conditionals = {}
         self.additional_includes_set = set()
-        self.__psi_tables = psi_tables
+        self.__psi_tables = psi_tables # TODO: Unused? Remove?
 
         # Stacks.
         self._derivatives = []
@@ -168,12 +166,12 @@ class QuadratureTransformerBase(Transformer):
     # Nothing in expr.py is handled. Can only handle children of these clases.
     def expr(self, o):
         print "\n\nVisiting basic Expr:", repr(o), "with operands:"
-        error("This expression is not handled: ", repr(o))
+        error("This expression is not handled: " + repr(o))
 
     # Nothing in terminal.py is handled. Can only handle children of these clases.
     def terminal(self, o):
         print "\n\nVisiting basic Terminal:", repr(o), "with operands:"
-        error("This terminal is not handled: ", repr(o))
+        error("This terminal is not handled: " + repr(o))
 
     # -------------------------------------------------------------------------
     # Things which should not be here (after expansion etc.) from:
@@ -280,7 +278,7 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     # Argument (basisfunction.py).
     # -------------------------------------------------------------------------
-    def argument(self, o):
+    def _argument(self, o): # AVG FIXME: Use this version
         #print("\nVisiting Argument:" + repr(o))
 
         # Map o to object with proper element and numbering
@@ -291,6 +289,34 @@ class QuadratureTransformerBase(Transformer):
         derivatives = self.derivatives()
 
         # Check if basis is already in cache
+        key = (o, components, derivatives, self.restriction, self.avg)
+        basis = self.argument_cache.get(key, None)
+
+        # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
+        if basis is None or self.optimise_parameters["optimisation"]:
+            # Get auxiliary variables to generate basis
+            (component, local_elem, local_comp, local_offset,
+             ffc_element, transformation, multiindices) = self._get_auxiliary_variables(o, components, derivatives)
+
+            # Create mapping and code for basis function and add to dict.
+            basis = self.create_argument(o, derivatives, component, local_comp,
+                                         local_offset, ffc_element,
+                                         transformation, multiindices,
+                                         self.tdim, self.gdim, self.avg)
+            self.argument_cache[key] = basis
+
+        return basis
+
+    def argument(self, o): # AVG FIXME: Remove this version
+        #print("\nVisiting Argument:" + repr(o))
+
+        # Map o to object with proper element and numbering
+        o = self._function_replace_map[o]
+
+        # Create aux. info.
+        components = self.component()
+        derivatives = self.derivatives()
+         # Check if basis is already in cache
         basis = self.argument_cache.get((o, components, derivatives, self.restriction), None)
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
         if basis is not None and not self.optimise_parameters["optimisation"]:
@@ -359,7 +385,7 @@ class QuadratureTransformerBase(Transformer):
             # This happens in 1D, sligtly messy result of defining grad(f) == f.dx(0)
             der = 0
         else:
-            ffc_error("Unexpected rank %d and component length %d in grad expression." % (en, cn))
+            error("Unexpected rank %d and component length %d in grad expression." % (en, cn))
 
         # Add direction to list of derivatives
         self._derivatives.append(der)
@@ -387,7 +413,7 @@ class QuadratureTransformerBase(Transformer):
         derivatives = self.derivatives()
 
         # Check if function is already in cache
-        key = (o, components, derivatives, self.restriction)
+        key = (o, components, derivatives, self.restriction)#, self.avg) # AVG FIXME
         function_code = self.function_cache.get(key)
 
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
@@ -404,7 +430,7 @@ class QuadratureTransformerBase(Transformer):
             # Create code for function and add empty tuple to cache dict.
             function_code = {(): self.create_function(o, derivatives, component,
                                                       local_comp, local_offset, ffc_element, is_quad_element,
-                                                      transformation, multiindices, self.tdim, self.gdim)}
+                                                      transformation, multiindices, self.tdim, self.gdim)}#, self.avg)} # AVG FIXME
 
             self.function_cache[key] = function_code
 
@@ -666,6 +692,30 @@ class QuadratureTransformerBase(Transformer):
 
         return code
 
+    def cell_avg(self, o):
+        # Just get the first operand, there should only be one.
+        expr, = o.operands()
+
+        # Set average marker, visit operand and reset marker
+        ffc_assert(self.avg is None, "Not expecting nested averages.")
+        self.avg = "cell"
+        code = self.visit(expr)
+        self.avg = None
+
+        return code
+
+    def facet_avg(self, o):
+        # Just get the first operand, there should only be one.
+        expr, = o.operands()
+
+        # Set average marker, visit operand and reset marker
+        ffc_assert(self.avg is None, "Not expecting nested averages.")
+        self.avg = "facet"
+        code = self.visit(expr)
+        self.avg = None
+
+        return code
+
     # -------------------------------------------------------------------------
     # ComponentTensor (tensors.py).
     # -------------------------------------------------------------------------
@@ -887,11 +937,12 @@ class QuadratureTransformerBase(Transformer):
         else:
             error("Unknown entity type %s." % self.entitytype)
 
-    def _create_mapping_basis(self, component, deriv, ufl_argument, ffc_element):
+    #def _create_mapping_basis(self, component, deriv, avg, ufl_argument, ffc_element):
+    def _create_mapping_basis(self, component, deriv, ufl_argument, ffc_element): # AVG FIXME
         "Create basis name and mapping from given basis_info."
-
+        avg=None # AVG FIXME
         # Get string for integration points.
-        f_ip = format["integration points"]
+        f_ip = "0" if (avg or self.points == 1) else format["integration points"]
         generate_psi_name = format["psi name"]
 
         # Only support test and trial functions.
@@ -908,8 +959,6 @@ class QuadratureTransformerBase(Transformer):
 
         # Create basis access, we never need to map the entry in the basis table
         # since we will either loop the entire space dimension or the non-zeros.
-        if self.points == 1:
-            f_ip = "0"
         basis_access = format["component"]("", [f_ip, loop_index])
 
         # Offset element space dimension in case of negative restriction,
@@ -924,7 +973,7 @@ class QuadratureTransformerBase(Transformer):
         # Get current cell entity, with current restriction considered
         entity = self._get_current_entity()
 
-        name = generate_psi_name(element_counter, self.entitytype, entity, component, deriv)
+        name = generate_psi_name(element_counter, self.entitytype, entity, component, deriv, avg)
         name, non_zeros, zeros, ones = self.name_map[name]
         loop_index_range = shape(self.unique_tables[name])[1]
 
@@ -965,10 +1014,12 @@ class QuadratureTransformerBase(Transformer):
 
         return (mapping, basis)
 
-    def _create_function_name(self, component, deriv, is_quad_element, ufl_function, ffc_element):
+    #def _create_function_name(self, component, deriv, avg, is_quad_element, ufl_function, ffc_element):
+    def _create_function_name(self, component, deriv, is_quad_element, ufl_function, ffc_element): # AVG FIXME
+        avg = None # AVG FIXME
 
         # Get string for integration points.
-        f_ip = "0" if self.points == 1 else format["integration points"]
+        f_ip = "0" if (avg or self.points == 1) else format["integration points"]
 
         # Get the element counter.
         element_counter = self.element_map[self.points][ufl_function.element()]
@@ -981,7 +1032,7 @@ class QuadratureTransformerBase(Transformer):
 
         # Create basis name and map to correct basis and get info.
         generate_psi_name = format["psi name"]
-        psi_name = generate_psi_name(element_counter, self.entitytype, entity, component, deriv)
+        psi_name = generate_psi_name(element_counter, self.entitytype, entity, component, deriv, avg)
         psi_name, non_zeros, zeros, ones = self.name_map[psi_name]
 
         # If all basis are zero we just return None.
