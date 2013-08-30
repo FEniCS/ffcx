@@ -421,7 +421,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
     def create_argument(self, ufl_argument, derivatives, component, local_comp,
                         local_offset, ffc_element, transformation, multiindices,
-                        tdim, gdim):
+                        tdim, gdim, avg=None): # AVG FIXME: Remove default avg=None after final integration
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Prefetch formats to speed up code generation.
@@ -442,55 +442,52 @@ class QuadratureTransformer(QuadratureTransformerBase):
                 deriv = [multi.count(i) for i in range(self.tdim)]
                 if not any(deriv):
                     deriv = []
-                # Call function to create mapping and basis name.
 
+                # Create mapping and basis name.
                 #print "component = ", component
-                mapping, basis = self._create_mapping_basis(component, deriv, ufl_argument, ffc_element)
-                if basis is None:
-                    if not mapping in code:
-                        code[mapping] = []
-                    continue
-
-                # Add transformation if needed.
-                if mapping in code:
+                #mapping, basis = self._create_mapping_basis(component, deriv, avg, ufl_argument, ffc_element)
+                mapping, basis = self._create_mapping_basis(component, deriv, ufl_argument, ffc_element) # AVG FIXME: Pass avg here after integration
+                if not mapping in code:
+                    code[mapping] = []
+                    
+                if basis is not None:
+                    # Add transformation
                     code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
-                else:
-                    code[mapping] = [self.__apply_transform(basis, derivatives, multi, tdim, gdim)]
 
         # Handle non-affine mappings.
         else:
+            ffc_assert(avg is None, "Taking average is not supported for non-affine mappings.")
+
             # Loop derivatives and get multi indices.
             for multi in multiindices:
                 deriv = [multi.count(i) for i in range(self.tdim)]
                 if not any(deriv):
                     deriv = []
+
                 for c in range(self.tdim):
-                    # Call function to create mapping and basis name.
-                    mapping, basis = self._create_mapping_basis(c + local_offset, deriv, ufl_argument, ffc_element)
-                    if basis is None:
-                        if not mapping in code:
-                            code[mapping] = []
-                        continue
+                    # Create mapping and basis name.
+                    #mapping, basis = self._create_mapping_basis(c + local_offset, deriv, avg, ufl_argument, ffc_element)
+                    mapping, basis = self._create_mapping_basis(c + local_offset, deriv, ufl_argument, ffc_element) # AVG FIXME: Pass avg here after integration
+                    if not mapping in code:
+                        code[mapping] = []
 
-                    # Multiply basis by appropriate transform.
-                    if transformation == "covariant piola":
-                        dxdX = f_transform("JINV", c, local_comp, tdim, gdim, self.restriction)
-                        self.trans_set.add(dxdX)
-                        basis = f_mult([dxdX, basis])
-                    elif transformation == "contravariant piola":
-                        self.trans_set.add(f_detJ(self.restriction))
-                        detJ = f_inv(f_detJ(self.restriction))
-                        dXdx = f_transform("J", local_comp, c, gdim, tdim, self.restriction)
-                        self.trans_set.add(dXdx)
-                        basis = f_mult([detJ, dXdx, basis])
-                    else:
-                        error("Transformation is not supported: " + repr(transformation))
-
-                    # Add transformation if needed.
-                    if mapping in code:
+                    if basis is not None:
+                        # Multiply basis by appropriate transform.
+                        if transformation == "covariant piola":
+                            dxdX = f_transform("JINV", c, local_comp, tdim, gdim, self.restriction)
+                            self.trans_set.add(dxdX)
+                            basis = f_mult([dxdX, basis])
+                        elif transformation == "contravariant piola":
+                            self.trans_set.add(f_detJ(self.restriction))
+                            detJ = f_inv(f_detJ(self.restriction))
+                            dXdx = f_transform("J", local_comp, c, gdim, tdim, self.restriction)
+                            self.trans_set.add(dXdx)
+                            basis = f_mult([detJ, dXdx, basis])
+                        else:
+                            error("Transformation is not supported: " + repr(transformation))
+    
+                        # Add transformation if needed.
                         code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
-                    else:
-                        code[mapping] = [self.__apply_transform(basis, derivatives, multi, tdim, gdim)]
 
         # Add sums and group if necessary.
         for key, val in code.items():
@@ -506,7 +503,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
     def create_function(self, ufl_function, derivatives, component, local_comp,
                         local_offset, ffc_element, is_quad_element,
-                        transformation, multiindices, tdim, gdim):
+                        transformation, multiindices, tdim, gdim, avg=None): # AVG FIXME: Remove default avg=None after final integration
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Prefetch formats to speed up code generation.
@@ -525,42 +522,44 @@ class QuadratureTransformer(QuadratureTransformerBase):
                 deriv = [multi.count(i) for i in range(self.tdim)]
                 if not any(deriv):
                     deriv = []
-                # Call other function to create function name.
-                function_name = self._create_function_name(component, deriv, is_quad_element, ufl_function, ffc_element)
-                if function_name is None:
-                    continue
 
-                # Add transformation if needed.
-                code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
+                # Create function name.
+                #function_name = self._create_function_name(component, deriv, avg, is_quad_element, ufl_function, ffc_element)
+                function_name = self._create_function_name(component, deriv, is_quad_element, ufl_function, ffc_element) # AVG FIXME
+                if function_name:
+                    # Add transformation if needed.
+                    code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
 
         # Handle non-affine mappings.
         else:
+            ffc_assert(avg is None, "Taking average is not supported for non-affine mappings.")
+
             # Loop derivatives and get multi indices.
             for multi in multiindices:
                 deriv = [multi.count(i) for i in range(self.tdim)]
                 if not any(deriv):
                     deriv = []
+
                 for c in range(self.tdim):
-                    function_name = self._create_function_name(c + local_offset, deriv, is_quad_element, ufl_function, ffc_element)
-                    if function_name is None:
-                        continue
-
-                    # Multiply basis by appropriate transform.
-                    if transformation == "covariant piola":
-                        dxdX = f_transform("JINV", c, local_comp, tdim, gdim, self.restriction)
-                        self.trans_set.add(dxdX)
-                        function_name = f_mult([dxdX, function_name])
-                    elif transformation == "contravariant piola":
-                        self.trans_set.add(f_detJ(self.restriction))
-                        detJ = f_inv(f_detJ(self.restriction))
-                        dXdx = f_transform("J", local_comp, c, gdim, tdim, self.restriction)
-                        self.trans_set.add(dXdx)
-                        function_name = f_mult([detJ, dXdx, function_name])
-                    else:
-                        error("Transformation is not supported: ", repr(transformation))
-
-                    # Add transformation if needed.
-                    code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
+                    #function_name = self._create_function_name(c + local_offset, deriv, avg, is_quad_element, ufl_function, ffc_element)
+                    function_name = self._create_function_name(c + local_offset, deriv, is_quad_element, ufl_function, ffc_element) # AVG FIXME
+                    if function_name:
+                        # Multiply basis by appropriate transform.
+                        if transformation == "covariant piola":
+                            dxdX = f_transform("JINV", c, local_comp, tdim, gdim, self.restriction)
+                            self.trans_set.add(dxdX)
+                            function_name = f_mult([dxdX, function_name])
+                        elif transformation == "contravariant piola":
+                            self.trans_set.add(f_detJ(self.restriction))
+                            detJ = f_inv(f_detJ(self.restriction))
+                            dXdx = f_transform("J", local_comp, c, gdim, tdim, self.restriction)
+                            self.trans_set.add(dXdx)
+                            function_name = f_mult([detJ, dXdx, function_name])
+                        else:
+                            error("Transformation is not supported: ", repr(transformation))
+    
+                        # Add transformation if needed.
+                        code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
 
         if not code:
             return None
