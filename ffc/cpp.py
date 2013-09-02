@@ -221,7 +221,7 @@ format.update({
     "function value":     lambda i: "F%d" % i,
     "nonzero columns":    lambda i: "nzc%d" % i,
     "weight":             lambda i: "W%d" % (i),
-    "psi name":           lambda c, et, e, co, d, a=None: _generate_psi_name(c, et, e, co, d, a), # FIXME: Temporary disabled avg argument for testing of new code
+    "psi name":           lambda c, et, e, co, d, a: _generate_psi_name(c, et, e, co, d, a),
     # both
     "free indices":       ["r","s","t","u"],
     "matrix index":       lambda i, j, range_j: _matrix_index(i, str(j), str(range_j))

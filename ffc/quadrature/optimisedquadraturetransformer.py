@@ -358,7 +358,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
     def create_argument(self, ufl_argument, derivatives, component, local_comp,
                         local_offset, ffc_element, transformation, multiindices,
-                        tdim, gdim, avg=None): # AVG FIXME
+                        tdim, gdim, avg):
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Prefetch formats to speed up code generation.
@@ -377,8 +377,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                     deriv = []
 
                 # Create mapping and basis name.
-                #mapping, basis = self._create_mapping_basis(component, deriv, avg, ufl_argument, ffc_element)
-                mapping, basis = self._create_mapping_basis(component, deriv, ufl_argument, ffc_element) # AVG FIXME
+                mapping, basis = self._create_mapping_basis(component, deriv, avg, ufl_argument, ffc_element)
                 if not mapping in code:
                     code[mapping] = []
 
@@ -398,8 +397,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
                 for c in range(self.tdim):
                     # Create mapping and basis name.
-                    #mapping, basis = self._create_mapping_basis(c + local_offset, deriv, avg, ufl_argument, ffc_element)
-                    mapping, basis = self._create_mapping_basis(c + local_offset, deriv, ufl_argument, ffc_element) # AVG FIXME
+                    mapping, basis = self._create_mapping_basis(c + local_offset, deriv, avg, ufl_argument, ffc_element)
                     if not mapping in code:
                         code[mapping] = []
 
@@ -429,7 +427,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
     def create_function(self, ufl_function, derivatives, component, local_comp,
                        local_offset, ffc_element, is_quad_element, transformation, multiindices,
-                       tdim, gdim, avg=None): # AVG FIXME
+                       tdim, gdim, avg):
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Prefetch formats to speed up code generation.
@@ -448,8 +446,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                     deriv = []
 
                 # Create function name.
-                #function_name = self._create_function_name(component, deriv, avg, is_quad_element, ufl_function, ffc_element)
-                function_name = self._create_function_name(component, deriv, is_quad_element, ufl_function, ffc_element) # AVG FIXME
+                function_name = self._create_function_name(component, deriv, avg, is_quad_element, ufl_function, ffc_element)
                 if function_name:
                     # Add transformation if needed.
                     code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
@@ -465,8 +462,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                     deriv = []
 
                 for c in range(self.tdim):
-                    #function_name = self._create_function_name(c + local_offset, deriv, avg, is_quad_element, ufl_function, ffc_element)
-                    function_name = self._create_function_name(c + local_offset, deriv, is_quad_element, ufl_function, ffc_element) # AVG FIXME
+                    function_name = self._create_function_name(c + local_offset, deriv, avg, is_quad_element, ufl_function, ffc_element)
                     if function_name:
                         # Multiply basis by appropriate transform.
                         if transformation == "covariant piola":

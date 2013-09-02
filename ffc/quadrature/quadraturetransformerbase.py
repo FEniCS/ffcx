@@ -278,7 +278,7 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     # Argument (basisfunction.py).
     # -------------------------------------------------------------------------
-    def _argument(self, o): # AVG FIXME: Use this version
+    def argument(self, o):
         #print("\nVisiting Argument:" + repr(o))
 
         # Map o to object with proper element and numbering
@@ -304,36 +304,6 @@ class QuadratureTransformerBase(Transformer):
                                          transformation, multiindices,
                                          self.tdim, self.gdim, self.avg)
             self.argument_cache[key] = basis
-
-        return basis
-
-    def argument(self, o): # AVG FIXME: Remove this version
-        #print("\nVisiting Argument:" + repr(o))
-
-        # Map o to object with proper element and numbering
-        o = self._function_replace_map[o]
-
-        # Create aux. info.
-        components = self.component()
-        derivatives = self.derivatives()
-         # Check if basis is already in cache
-        basis = self.argument_cache.get((o, components, derivatives, self.restriction), None)
-        # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
-        if basis is not None and not self.optimise_parameters["optimisation"]:
-        #if basis is not None:
-            return basis
-
-        # Get auxiliary variables to generate basis
-        (component, local_elem, local_comp, local_offset,
-         ffc_element, transformation, multiindices) = self._get_auxiliary_variables(o, components, derivatives)
-
-        # Create mapping and code for basis function and add to dict.
-        basis = self.create_argument(o, derivatives, component, local_comp,
-                                     local_offset, ffc_element,
-                                     transformation, multiindices,
-                                     self.tdim, self.gdim)
-
-        self.argument_cache[(o, components, derivatives, self.restriction)] = basis
 
         return basis
 
@@ -413,7 +383,7 @@ class QuadratureTransformerBase(Transformer):
         derivatives = self.derivatives()
 
         # Check if function is already in cache
-        key = (o, components, derivatives, self.restriction)#, self.avg) # AVG FIXME
+        key = (o, components, derivatives, self.restriction, self.avg)
         function_code = self.function_cache.get(key)
 
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
@@ -430,7 +400,7 @@ class QuadratureTransformerBase(Transformer):
             # Create code for function and add empty tuple to cache dict.
             function_code = {(): self.create_function(o, derivatives, component,
                                                       local_comp, local_offset, ffc_element, is_quad_element,
-                                                      transformation, multiindices, self.tdim, self.gdim)}#, self.avg)} # AVG FIXME
+                                                      transformation, multiindices, self.tdim, self.gdim, self.avg)}
 
             self.function_cache[key] = function_code
 
@@ -937,10 +907,8 @@ class QuadratureTransformerBase(Transformer):
         else:
             error("Unknown entity type %s." % self.entitytype)
 
-    #def _create_mapping_basis(self, component, deriv, avg, ufl_argument, ffc_element):
-    def _create_mapping_basis(self, component, deriv, ufl_argument, ffc_element): # AVG FIXME
+    def _create_mapping_basis(self, component, deriv, avg, ufl_argument, ffc_element):
         "Create basis name and mapping from given basis_info."
-        avg=None # AVG FIXME
         # Get string for integration points.
         f_ip = "0" if (avg or self.points == 1) else format["integration points"]
         generate_psi_name = format["psi name"]
@@ -1014,10 +982,7 @@ class QuadratureTransformerBase(Transformer):
 
         return (mapping, basis)
 
-    #def _create_function_name(self, component, deriv, avg, is_quad_element, ufl_function, ffc_element):
-    def _create_function_name(self, component, deriv, is_quad_element, ufl_function, ffc_element): # AVG FIXME
-        avg = None # AVG FIXME
-
+    def _create_function_name(self, component, deriv, avg, is_quad_element, ufl_function, ffc_element):
         # Get string for integration points.
         f_ip = "0" if (avg or self.points == 1) else format["integration points"]
 
