@@ -369,8 +369,11 @@ class MonomialTransformer(ReuseTransformer):
         (expr, exponent) = o.operands()
         if not isinstance(exponent, IntValue):
             raise MonomialException("Cannot handle non-integer exponents.")
+        e = int(exponent)
+        if e < 0:
+            raise MonomialException("Cannot handle negative exponents.")
         p = MonomialSum(Monomial())
-        for i in range(int(exponent)):
+        for i in range(e):
             p = p * s
         return p
 
