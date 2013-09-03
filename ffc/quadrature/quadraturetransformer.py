@@ -423,6 +423,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                         local_offset, ffc_element, transformation, multiindices,
                         tdim, gdim, avg):
         "Create code for basis functions, and update relevant tables of used basis."
+        ffc_assert(ufl_argument in self._function_replace_values, "Expecting ufl_argument to have been mapped prior to this call.")
 
         # Prefetch formats to speed up code generation.
         f_group         = format["grouping"]
@@ -448,7 +449,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                 mapping, basis = self._create_mapping_basis(component, deriv, avg, ufl_argument, ffc_element)
                 if not mapping in code:
                     code[mapping] = []
-                    
+
                 if basis is not None:
                     # Add transformation
                     code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
@@ -483,7 +484,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                             basis = f_mult([detJ, dXdx, basis])
                         else:
                             error("Transformation is not supported: " + repr(transformation))
-    
+
                         # Add transformation if needed.
                         code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
 
@@ -503,6 +504,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                         local_offset, ffc_element, is_quad_element,
                         transformation, multiindices, tdim, gdim, avg):
         "Create code for basis functions, and update relevant tables of used basis."
+        ffc_assert(ufl_function in self._function_replace_values, "Expecting ufl_function to have been mapped prior to this call.")
 
         # Prefetch formats to speed up code generation.
         f_mult          = format["multiply"]
@@ -553,7 +555,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                             function_name = f_mult([detJ, dXdx, function_name])
                         else:
                             error("Transformation is not supported: ", repr(transformation))
-    
+
                         # Add transformation if needed.
                         code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
 

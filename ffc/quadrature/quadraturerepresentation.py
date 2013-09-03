@@ -251,7 +251,7 @@ def _tabulate_entities(domain_type, cell):
     for entity in range(num_entities):
         # TODO: Use 0 as key for cell and we may be able to generalize other places:
         key = None if domain_type == "cell" else entity
-        entities.add(key) 
+        entities.add(key)
     return entities
 
 def insert_nested_dict(root, keys, value):
@@ -285,7 +285,7 @@ def _tabulate_basis(sorted_integrals, domain_type, form_data):
         degree, rule = pr
 
         # Get all unique elements in integral.
-        elements = [form_data.element_replace_map[e]
+        ufl_elements = [form_data.element_replace_map[e]
                     for e in extract_unique_elements(integral)]
 
         # Find all CellAvg and FacetAvg in integrals and extract elements
@@ -297,7 +297,7 @@ def _tabulate_basis(sorted_integrals, domain_type, form_data):
 
         # Create a list of equivalent FIAT elements (with same
         # ordering of elements).
-        fiat_elements = [create_element(e) for e in elements]
+        fiat_elements = [create_element(e) for e in ufl_elements]
 
         # Make quadrature rule and get points and weights.
         (points, weights) = _create_quadrature_points_and_weights(domain_type, form_data.cell, degree, rule)
@@ -323,18 +323,17 @@ def _tabulate_basis(sorted_integrals, domain_type, form_data):
         integrals[len_weights] = integral
 
         # Find the highest number of derivatives needed for each element
-        num_derivatives = _find_element_derivatives(integral.integrand(), elements,
+        num_derivatives = _find_element_derivatives(integral.integrand(), ufl_elements,
                                                     form_data.element_replace_map)
 
         # Loop FIAT elements and tabulate basis as usual.
         for i, element in enumerate(fiat_elements):
             # Tabulate table of basis functions and derivatives in points
             psi_table = _tabulate_psi_table(domain_type, form_data.cell, element,
-                                        num_derivatives[elements[i]], points)
+                                        num_derivatives[ufl_elements[i]], points)
 
-            # Insert table into dictionary based on UFL elements.
-            #psi_tables[len_weights][elements[i]] = { None: psi_table } # AVG FIXME
-            psi_tables[len_weights][elements[i]] = psi_table
+            # Insert table into dictionary based on UFL elements. (None=not averaged)
+            psi_tables[len_weights][ufl_elements[i]] = { None: psi_table }
 
     # Loop over elements found in CellAvg and tabulate basis averages
     len_weights = 1
@@ -351,7 +350,7 @@ def _tabulate_basis(sorted_integrals, domain_type, form_data):
             # Make quadrature rule and get points and weights.
             (points, weights) = _create_quadrature_points_and_weights(avg_domain_type, form_data.cell, element.degree(), "default")
             wsum = sum(weights)
-    
+
             # Tabulate table of basis functions and derivatives in points
             entity_psi_tables = _tabulate_psi_table(avg_domain_type, form_data.cell, fiat_element, 0, points)
             rank = len(element.value_shape())

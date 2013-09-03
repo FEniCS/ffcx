@@ -360,6 +360,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                         local_offset, ffc_element, transformation, multiindices,
                         tdim, gdim, avg):
         "Create code for basis functions, and update relevant tables of used basis."
+        ffc_assert(ufl_argument in self._function_replace_values, "Expecting ufl_argument to have been mapped prior to this call.")
 
         # Prefetch formats to speed up code generation.
         f_transform     = format["transform"]
@@ -388,7 +389,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # Handle non-affine mappings.
         else:
             ffc_assert(avg is None, "Taking average is not supported for non-affine mappings.")
-            
+
             # Loop derivatives and get multi indices.
             for multi in multiindices:
                 deriv = [multi.count(i) for i in range(self.tdim)]
@@ -412,7 +413,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                             basis = create_product([detJ, dXdx, basis])
                         else:
                             error("Transformation is not supported: " + repr(transformation))
-    
+
                         # Add transformation if needed.
                         code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
 
@@ -429,6 +430,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                        local_offset, ffc_element, is_quad_element, transformation, multiindices,
                        tdim, gdim, avg):
         "Create code for basis functions, and update relevant tables of used basis."
+        ffc_assert(ufl_function in self._function_replace_values, "Expecting ufl_function to have been mapped prior to this call.")
 
         # Prefetch formats to speed up code generation.
         f_transform     = format["transform"]
@@ -474,7 +476,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                             function_name = create_product([detJ, dXdx, function_name])
                         else:
                             error("Transformation is not supported: ", repr(transformation))
-    
+
                         # Add transformation if needed.
                         code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
 

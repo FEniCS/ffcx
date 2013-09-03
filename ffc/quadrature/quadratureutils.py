@@ -80,10 +80,7 @@ def flatten_psi_tables(tables, entitytype):
         element_map[num_points] = {}
 
         # There's a set of tables for each element
-        #for element, avg_tables in sorted_items(element_tables, key=lambda x: str(x)):
-        for element, entity_tables in sorted_items(element_tables, key=lambda x: str(x)):
-            avg_tables = { None: entity_tables } # FIXME: Temporary hack to test this code without actually enabling the new avg table generation code
-
+        for element, avg_tables in sorted_items(element_tables, key=lambda x: str(x)):
             element_map[num_points][element] = counter
 
             # There's a set of tables for non-averaged and averaged (averaged only occurs with num_points == 1)

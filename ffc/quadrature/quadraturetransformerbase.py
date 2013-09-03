@@ -67,7 +67,10 @@ class QuadratureTransformerBase(Transformer):
         # Save optimise_parameters, weights and fiat_elements_map.
         self.optimise_parameters = optimise_parameters
 
+        # Map from original functions with possibly incomplete elements
+        # to functions with properly completed elements
         self._function_replace_map = function_replace_map
+        self._function_replace_values = set(function_replace_map.values()) # For assertions
 
         # Create containers and variables.
         self.used_psi_tables = set()
@@ -663,11 +666,12 @@ class QuadratureTransformerBase(Transformer):
         return code
 
     def cell_avg(self, o):
+        ffc_assert(self.avg is None, "Not expecting nested averages.")
+
         # Just get the first operand, there should only be one.
         expr, = o.operands()
 
         # Set average marker, visit operand and reset marker
-        ffc_assert(self.avg is None, "Not expecting nested averages.")
         self.avg = "cell"
         code = self.visit(expr)
         self.avg = None
@@ -675,11 +679,13 @@ class QuadratureTransformerBase(Transformer):
         return code
 
     def facet_avg(self, o):
+        ffc_assert(self.avg is None, "Not expecting nested averages.")
+        ffc_assert(self.entitytype != "cell", "Cannot take facet_avg in a cell integral.")
+
         # Just get the first operand, there should only be one.
         expr, = o.operands()
 
         # Set average marker, visit operand and reset marker
-        ffc_assert(self.avg is None, "Not expecting nested averages.")
         self.avg = "facet"
         code = self.visit(expr)
         self.avg = None
@@ -909,6 +915,8 @@ class QuadratureTransformerBase(Transformer):
 
     def _create_mapping_basis(self, component, deriv, avg, ufl_argument, ffc_element):
         "Create basis name and mapping from given basis_info."
+        ffc_assert(ufl_argument in self._function_replace_values, "Expecting ufl_argument to have been mapped prior to this call.")
+
         # Get string for integration points.
         f_ip = "0" if (avg or self.points == 1) else format["integration points"]
         generate_psi_name = format["psi name"]
@@ -922,7 +930,7 @@ class QuadratureTransformerBase(Transformer):
                    "Currently, Argument index must be either 0 or 1: " + repr(ufl_argument))
 
         # Get element counter and loop index.
-        element_counter = self.element_map[self.points][ufl_argument.element()]
+        element_counter = self.element_map[1 if avg else self.points][ufl_argument.element()]
         loop_index = indices[ufl_argument.count()]
 
         # Create basis access, we never need to map the entry in the basis table
@@ -983,11 +991,13 @@ class QuadratureTransformerBase(Transformer):
         return (mapping, basis)
 
     def _create_function_name(self, component, deriv, avg, is_quad_element, ufl_function, ffc_element):
+        ffc_assert(ufl_function in self._function_replace_values, "Expecting ufl_function to have been mapped prior to this call.")
+
         # Get string for integration points.
         f_ip = "0" if (avg or self.points == 1) else format["integration points"]
 
         # Get the element counter.
-        element_counter = self.element_map[self.points][ufl_function.element()]
+        element_counter = self.element_map[1 if avg else self.points][ufl_function.element()]
 
         # Get current cell entity, with current restriction considered
         entity = self._get_current_entity()
