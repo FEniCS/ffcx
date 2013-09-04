@@ -173,17 +173,13 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             return {(): create_product([val]*expo.value())}
         elif isinstance(expo, FloatValue):
             exp = format["floating point"](expo.value())
-#            sym = create_symbol(format["std power"](str(val), exp), val.t)
-#            sym.base_expr = val
-#            sym.base_op = 1 # Add one operation for the pow() function.
-            sym = create_symbol(format["std power"], val.t, val, 1, exp)
+            sym = create_symbol(format["std power"](str(val), exp), val.t, val, 1)
             return {(): sym}
         elif isinstance(expo, (Coefficient, Operator)):
             exp = self.visit(expo)[()]
-#            sym = create_symbol(format["std power"](str(val), exp[()]), val.t)
-#            sym.base_expr = val
-#            sym.base_op = 1 # Add one operation for the pow() function.
-            sym = create_symbol(format["std power"], val.t, val, 1, exp)
+#            print "pow exp: ", exp
+#            print "pow val: ", val
+            sym = create_symbol(format["std power"](str(val), exp), val.t, val, 1)
             return {(): sym}
         else:
             error("power does not support this exponent: " + repr(expo))
@@ -197,10 +193,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Take absolute value of operand.
         val = operands[0][()]
-#        new_val = create_symbol(format["absolute value"](str(val)), val.t)
-#        new_val.base_expr = val
-#        new_val.base_op = 1 # Add one operation for taking the absolute value.
-        new_val = create_symbol(format["absolute value"], val.t, val, 1)
+        new_val = create_symbol(format["absolute value"](str(val)), val.t, val, 1)
         return {():new_val}
 
     # -------------------------------------------------------------------------
@@ -213,7 +206,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         c, = operands
         ffc_assert(len(c) == 1 and c.keys()[0] == (),\
             "Condition for NotCondition should only be one function: " + repr(c))
-        sym = create_symbol("", c[()].t, cond=(c[()], format["not"]))
+        sym = create_symbol(format["not"](str(c[()])), c[()].t, base_op=c[()].ops()+1)
         return {(): sym}
 
     def binary_condition(self, o, *operands):
@@ -234,7 +227,9 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Get the minimum type
         t = min(lhs[()].t, rhs[()].t)
-        sym = create_symbol("", t, cond=(lhs[()], format[name_map[o._name]], rhs[()]))
+        ops = lhs[()].ops() + rhs[()].ops() + 1
+        cond = str(lhs[()])+format[name_map[o._name]]+str(rhs[()])
+        sym = create_symbol(format["grouping"](cond), t, base_op=ops)
         return {(): sym}
 
     def conditional(self, o, *operands):
@@ -520,10 +515,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # Use format function on value of operand.
         operand = operands[0]
         for key, val in operand.items():
-#            new_val = create_symbol(format_function(str(val)), val.t)
-#            new_val.base_expr = val
-#            new_val.base_op = 1 # Add one operation for the math function.
-            new_val = create_symbol(format_function, val.t, val, 1)
+            new_val = create_symbol(format_function(str(val)), val.t, val, 1)
             operand[key] = new_val
         return operand
 
@@ -544,7 +536,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         if x is None:
             x = format["floating point"](0.0)
 
-        sym = create_symbol(format_function, x.t, x, 1, nu)
+        sym = create_symbol(format_function(x,nu), x.t, x, 1)
         return {():sym}
 
     # -------------------------------------------------------------------------
