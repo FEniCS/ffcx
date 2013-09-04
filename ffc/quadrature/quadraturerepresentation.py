@@ -88,7 +88,7 @@ def compute_integral_ir(itg_data,
 
     # Save tables populated by transformer
     ir["name_map"] = transformer.name_map
-    ir["unique_tables"] = transformer.unique_tables # Basis values?
+    ir["unique_tables"] = transformer.unique_tables  # Basis values?
 
     # Save tables map, to extract table names for optimisation option -O.
     ir["psi_tables_map"] = transformer.psi_tables_map
@@ -241,6 +241,30 @@ def _tabulate_psi_table(domain_type, cell, element, deriv_order, points):
         psi_table[key] = element.tabulate(deriv_order, entity_points)
     return psi_table
 
+def _tabulate_entities(domain_type, cell):
+    "Tabulate psi table for different integral types."
+    # MSA: I attempted to generalize this function, could this way of
+    # handling domain types generically extend to other parts of the code?
+    entity_dim = domain_to_entity_dim(domain_type, cell)
+    num_entities = cellname_to_num_entities[cell.cellname()][entity_dim]
+    entities = set()
+    for entity in range(num_entities):
+        # TODO: Use 0 as key for cell and we may be able to generalize other places:
+        key = None if domain_type == "cell" else entity
+        entities.add(key)
+    return entities
+
+def insert_nested_dict(root, keys, value):
+    for k in keys[:-1]:
+        d = root.get(k)
+        if d is None:
+            d = {}
+            root[k] = d
+        root = d
+    root[keys[-1]] = value
+
+from ufl.classes import CellAvg, FacetAvg
+
 def _tabulate_basis(sorted_integrals, domain_type, form_data):
     "Tabulate the basisfunctions and derivatives."
 
@@ -252,22 +276,28 @@ def _tabulate_basis(sorted_integrals, domain_type, form_data):
     quadrature_weights = {}
     psi_tables = {}
     integrals = {}
+    avg_elements = { "cell": [], "facet": [] }
 
     # Loop the quadrature points and tabulate the basis values.
     for pr, integral in sorted_integrals.iteritems():
 
         # Extract number of points and the rule.
-        # TODO: The rule is currently unused because the fiatinterface does not
-        # implement support for other rules than those defined in FIAT_NEW
         degree, rule = pr
 
         # Get all unique elements in integral.
-        elements = [form_data.element_replace_map[e]
+        ufl_elements = [form_data.element_replace_map[e]
                     for e in extract_unique_elements(integral)]
+
+        # Find all CellAvg and FacetAvg in integrals and extract elements
+        for avg, AvgType in (("cell", CellAvg), ("facet", FacetAvg)):
+            expressions = extract_type(integral, AvgType)
+            avg_elements[avg] = [form_data.element_replace_map[e]
+                                 for expr in expressions
+                                 for e in extract_unique_elements(expr)]
 
         # Create a list of equivalent FIAT elements (with same
         # ordering of elements).
-        fiat_elements = [create_element(e) for e in elements]
+        fiat_elements = [create_element(e) for e in ufl_elements]
 
         # Make quadrature rule and get points and weights.
         (points, weights) = _create_quadrature_points_and_weights(domain_type, form_data.cell, degree, rule)
@@ -293,17 +323,66 @@ def _tabulate_basis(sorted_integrals, domain_type, form_data):
         integrals[len_weights] = integral
 
         # Find the highest number of derivatives needed for each element
-        num_derivatives = _find_element_derivatives(integral.integrand(), elements,
+        num_derivatives = _find_element_derivatives(integral.integrand(), ufl_elements,
                                                     form_data.element_replace_map)
 
         # Loop FIAT elements and tabulate basis as usual.
         for i, element in enumerate(fiat_elements):
             # Tabulate table of basis functions and derivatives in points
             psi_table = _tabulate_psi_table(domain_type, form_data.cell, element,
-                                        num_derivatives[elements[i]], points)
+                                        num_derivatives[ufl_elements[i]], points)
 
-            # Insert table into dictionary based on UFL elements.
-            psi_tables[len_weights][elements[i]] = psi_table
+            # Insert table into dictionary based on UFL elements. (None=not averaged)
+            psi_tables[len_weights][ufl_elements[i]] = { None: psi_table }
+
+    # Loop over elements found in CellAvg and tabulate basis averages
+    len_weights = 1
+    for avg in ("cell", "facet"):
+        # Doesn't matter if it's exterior or interior
+        if avg == "cell":
+            avg_domain_type = "cell"
+        elif avg == "facet":
+            avg_domain_type = "exterior_facet"
+
+        for element in avg_elements[avg]:
+            fiat_element = create_element(element)
+
+            # Make quadrature rule and get points and weights.
+            (points, weights) = _create_quadrature_points_and_weights(avg_domain_type, form_data.cell, element.degree(), "default")
+            wsum = sum(weights)
+
+            # Tabulate table of basis functions and derivatives in points
+            entity_psi_tables = _tabulate_psi_table(avg_domain_type, form_data.cell, fiat_element, 0, points)
+            rank = len(element.value_shape())
+
+            # Hack, duplicating table with per-cell values for each facet in the case of cell_avg(f) in a facet integral
+            actual_entities = _tabulate_entities(domain_type, form_data.cell)
+            if len(actual_entities) > len(entity_psi_tables):
+                assert len(entity_psi_tables) == 1
+                assert avg_domain_type == "cell"
+                assert "facet" in domain_type
+                v, = entity_psi_tables.values()
+                entity_psi_tables = dict((e, v) for e in actual_entities)
+
+            for entity, deriv_table in entity_psi_tables.items():
+                deriv, = list(deriv_table.keys()) # Not expecting derivatives of averages
+                psi_table = deriv_table[deriv]
+
+                if rank:
+                    # Compute numeric integral
+                    num_dofs, num_components, num_points = psi_table.shape
+                    ffc_assert(num_points == len(weights), "Weights and table shape does not match.")
+                    avg_psi_table = numpy.asarray([[[numpy.dot(psi_table[j,k,:], weights) / wsum]
+                                                   for k in range(num_components)]
+                                                   for j in range(num_dofs)])
+                else:
+                    # Compute numeric integral
+                    num_dofs, num_points = psi_table.shape
+                    ffc_assert(num_points == len(weights), "Weights and table shape does not match.")
+                    avg_psi_table = numpy.asarray([[numpy.dot(psi_table[j,:], weights) / wsum] for j in range(num_dofs)])
+
+                # Insert table into dictionary based on UFL elements.
+                insert_nested_dict(psi_tables, (len_weights, element, avg, entity, deriv), avg_psi_table)
 
     return (integrals, psi_tables, quadrature_weights)
 

@@ -50,50 +50,75 @@ def create_psi_tables(tables, eliminate_zeros, entitytype):
 def flatten_psi_tables(tables, entitytype):
     """Create a 'flat' dictionary of tables with unique names and a name
     map that maps number of quadrature points and element name to a unique
-    element number. Returns:
-    element_map    - {num_quad_points:{ufl_element:element_number,},}.
-    flat_tables - {unique_table_name:values (ip,basis),}."""
+    element number.
+
+    Input tables on the format for scalar and non-scalar elements respectively:
+      tables[num_points][element][entity][derivs][ip][dof]
+      tables[num_points][element][entity][derivs][ip][component][dof]
+
+    Planning to change this into:
+      tables[num_points][element][avg][entity][derivs][ip][dof]
+      tables[num_points][element][avg][entity][derivs][ip][component][dof]
+
+    Returns:
+      element_map - { num_quad_points: {ufl_element: element_number} }.
+      flat_tables - { unique_table_name: values[ip,dof] }.
+    """
 
     generate_psi_name = format["psi name"]
+
+    def sorted_items(mapping, **sorted_args):
+        return [(k, mapping[k]) for k in sorted(mapping.keys(), **sorted_args)]
 
     # Initialise return values and element counter.
     flat_tables = {}
     element_map = {}
     counter = 0
-    # Loop quadrature points and get element dictionary {elem: {tables}}.
-    for point in sorted(tables.keys()):
-        elem_dict = tables[point]
-        element_map[point] = {}
-        # Loop all elements and get all their tables.
-        for elem in sorted(elem_dict.keys(), key=lambda x: str(x)):
-            entity_tables = elem_dict[elem]
-            element_map[point][elem] = counter
-            for entity in sorted(entity_tables.keys()):
-                elem_table = entity_tables[entity]
-                for derivs in sorted(elem_table.keys()):
-                    if len(elem.value_shape()) != 0:
-                        # If the element value rank != 0, we must loop the components.
-                        # before the derivatives (that's the way the values are tabulated).
-                        comp_table = elem_table[derivs]
-                        transposed_table = numpy.transpose(comp_table, (1,0,2))
-                        enum_tables = list(enumerate(transposed_table))
-                    else:
-                        # If we don't have any components.
-                        enum_tables = [((), elem_table[derivs])]
 
-                    for num_comp, psi_table in enum_tables:
-                        # Verify shape of basis (can be omitted for speed
-                        # if needed I think).
-                        ffc_assert(len(numpy.shape(psi_table)) == 2 and numpy.shape(psi_table)[1] == point, \
-                                    "Something is wrong with this table: " + str(psi_table))
+    # There's a separate set of tables for each number of quadrature points
+    for num_points, element_tables in sorted_items(tables):
+        element_map[num_points] = {}
 
-                        # Generate the table name.
-                        name = generate_psi_name(counter, entitytype, entity, num_comp, derivs)
+        # There's a set of tables for each element
+        for element, avg_tables in sorted_items(element_tables, key=lambda x: str(x)):
+            element_map[num_points][element] = counter
 
-                        ffc_assert(name not in flat_tables, \
-                                    "Table name is not unique, something is wrong: " + name + str(flat_tables))
-                        flat_tables[name] = numpy.transpose(psi_table)
-            # Increase unique element counter.
+            # There's a set of tables for non-averaged and averaged (averaged only occurs with num_points == 1)
+            for avg, entity_tables in sorted_items(avg_tables):
+
+                # There's a set of tables for each entity number (only 1 for the cell, >1 for facets and vertices)
+                for entity, derivs_tables in sorted_items(entity_tables):
+
+                    # There's a set of tables for each derivative combination
+                    for derivs, fiat_tables in sorted_items(derivs_tables):
+
+                        # Transform fiat_tables to a list of tables on the form psi_table[dof][ip] for each scalar component
+                        if element.value_shape():
+                            # Table is on the form fiat_tables[ip][component][dof].
+                            transposed_table = numpy.transpose(fiat_tables, (1,2,0))
+                            component_tables = list(enumerate(transposed_table))
+                            #component_tables = [numpy.transpose(fiat_tables[:,i,:] for i in range(fiat_tables.shape[1]))]
+                        else:
+                            # Scalar element, table is on the form fiat_tables[ip][dof].
+                            # Using () for the component because generate_psi_name expects that
+                            component_tables = [((), numpy.transpose(fiat_tables))]
+
+                        # Iterate over the innermost tables for each scalar component
+                        for component, psi_table in component_tables:
+                            # Generate the table name.
+                            name = generate_psi_name(counter, entitytype, entity, component, derivs, avg)
+
+                            # Verify shape of basis (can be omitted for speed if needed).
+                            ffc_assert(len(numpy.shape(psi_table)) == 2 and numpy.shape(psi_table)[0] == num_points,
+                                        "This table has the wrong shape: " + str(psi_table))
+                            # Verify uniqueness of names
+                            ffc_assert(name not in flat_tables,
+                                        "Table name is not unique, something is wrong:\n  name = %s\n  table = %s\n" % (name, flat_tables))
+
+                            # Store table with unique name
+                            flat_tables[name] = psi_table
+
+            # Increase unique numpoints*element counter
             counter += 1
 
     return (element_map, flat_tables)
@@ -239,6 +264,7 @@ def unique_psi_tables(tables, eliminate_zeros):
     for name in inverse_name_map:
         inverse_name_map[name] = tuple(inverse_name_map[name])
 
+    # Note: inverse_name_map here is called name_map in create_psi_tables and the quadraturetransformerbase class
     return (inverse_name_map, tables)
 
 def unique_tables(tables):

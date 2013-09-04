@@ -18,12 +18,12 @@
 # First added:  2013-02-09
 # Last changed: 2013-03-04
 
-import numpy
+#import numpy
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
-from ffc.cpp import format
+#from ffc.cpp import format
 from ffc.fiatinterface import create_element
 from ffc.representationutils import initialize_integral_ir
-from ffc.quadrature.quadratureutils import create_psi_tables
+#from ffc.quadrature.quadratureutils import create_psi_tables
 from ffc.quadrature.quadraturerepresentation import _parse_optimise_parameters, _sort_integrals, _tabulate_basis
 
 def compute_integral_ir(itg_data,
