@@ -121,8 +121,7 @@ def _extract_variables(val, basis_consts, ip_consts, geo_consts, t_set, optimisa
         if val.base_expr is None:
             return val
         new_base = _extract_variables(val.base_expr, basis_consts, ip_consts, geo_consts, t_set, optimisation)
-        new_sym = create_symbol(val.v, val.t, new_base, val.base_op, val.exp, val.cond)
-        new_sym.exp = val.exp
+        new_sym = create_symbol(val.v, val.t, new_base, val.base_op)
         if new_sym.t == BASIS:
             return _reduce_expression(new_sym, [], basis_consts, f_B, True)
         elif new_sym.t == IP:
