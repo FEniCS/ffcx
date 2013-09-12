@@ -31,6 +31,7 @@ It uses Instant to wrap the generated code into a Python module."""
 import os, sys
 import instant
 import ufc_utils
+import ufc
 
 # UFL modules
 from ufl.classes import Form, FiniteElementBase, TestFunction
@@ -59,7 +60,7 @@ FFC_PARAMETERS_JIT = default_parameters()
 FFC_PARAMETERS_JIT["no-evaluate_basis_derivatives"] = True
 
 # Set debug level for Instant
-instant.set_logging_level("warning")
+instant.set_log_level("warning")
 
 def jit(ufl_object, parameters=None, common_cell=None):
     """Just-in-time compile the given form or element
@@ -137,6 +138,15 @@ def _compute_element_mapping(form, common_cell):
 
     return element_mapping
 
+def check_swig_version(compiled_module):
+    
+    # Check swig version of compiled module
+    if compiled_module and compiled_module.swigversion != ufc.__swigversion__:
+        error("Incompatible swig versions detected. UFC swig "\
+              "version is not the same as extension module swig "\
+              "version: '%s' != '%s' " % \
+              (ufc.__swigversion__, compiled_module.swigversion))
+
 def jit_form(form, parameters=None, common_cell=None):
     "Just-in-time compile the given form."
 
@@ -162,30 +172,31 @@ def jit_form(form, parameters=None, common_cell=None):
     jit_object = JITObject(form, parameters)
 
     # Set prefix for generated code
-    prefix = "ffc_form_" + jit_object.signature()
+    module_name = "ffc_form_" + jit_object.signature()
 
     # Use Instant cache if possible
-    cache_dir = parameters["cache_dir"]
-    if cache_dir == "": cache_dir = None
-    module = instant.import_module(jit_object, cache_dir=cache_dir)
+    cache_dir = parameters["cache_dir"] or None
+    module = instant.import_module(module_name, cache_dir=cache_dir)
     if module:
-
+        check_swig_version(module)
         debug("Reusing form from cache.")
-        compiled_form = _extract_form(module, prefix)
-        return (compiled_form, module, form_data, prefix)
+        compiled_form = _extract_form(module, module_name)
+        return (compiled_form, module, form_data, module_name)
 
-    try:
-
-        # Take lock to serialise code generation and compilation.
-        lock = instant.locking.get_lock(instant.get_default_cache_dir(),
-                                        'ffc_' + jit_object.signature())
+    # Take lock to serialise file removal.
+    # Need to add "_0" to lock as instant.import_module acquire
+    # lock with name: module_name
+    with instant.file_lock(instant.get_default_cache_dir(), \
+                           module_name + "_0") as lock:
 
         # Retry Instant cache. The module may have been created while we waited
         # for the lock, even if it didn't exist before.
-        module = instant.import_module(jit_object, cache_dir=cache_dir)
+        module = instant.import_module(module_name, cache_dir=cache_dir)
         if module:
-            compiled_form = _extract_form(module, prefix)
-            return (compiled_form, module, form_data, prefix)
+            check_swig_version(module)
+            debug("Reusing form from cache.")
+            compiled_form = _extract_form(module, module_name)
+            return (compiled_form, module, form_data, module_name)
 
         # Write a message
         log(INFO + 5,
@@ -193,19 +204,17 @@ def jit_form(form, parameters=None, common_cell=None):
 
         # Generate code
         compile_form(form,
-                     prefix=prefix,
+                     prefix=module_name,
                      parameters=parameters)
 
         # Build module using Instant (through UFC)
         debug("Compiling and linking Python extension module, this may take some time.")
-        hfile = prefix + ".h"
-        cppfile = prefix + ".cpp"
+        hfile   = module_name + ".h"
+        cppfile = module_name + ".cpp"
         module = ufc_utils.build_ufc_module(
             hfile,
-            swig_binary=parameters["swig_binary"],
-            swig_path=parameters["swig_path"],
             source_directory = os.curdir,
-            signature = jit_object.signature(),
+            signature = module_name,
             sources = [cppfile] if parameters["split"] else [],
             cppargs = parameters["cpp_optimize_flags"].split() \
                       if parameters["cpp_optimize"] else ["-O0"],
@@ -218,13 +227,12 @@ def jit_form(form, parameters=None, common_cell=None):
             if os.path.isfile(cppfile):
                 os.unlink(cppfile)
 
+        check_swig_version(module)
+
         # Extract compiled form
-        compiled_form = _extract_form(module, prefix)
+        compiled_form = _extract_form(module, module_name)
 
-        return compiled_form, module, form_data, prefix
-
-    finally:
-        instant.locking.release_lock(lock)
+        return compiled_form, module, form_data, module_name
 
 def jit_element(element, parameters=None):
     "Just-in-time compile the given element"

@@ -95,7 +95,6 @@ class JITObject:
         signatures = [form_signature,
                       parameters_signature,
                       ffc_signature,
-                      swig_signature,
                       cell_signature,
                       ufc_signature]
         string = ";".join(signatures)
@@ -105,7 +104,6 @@ class JITObject:
         #print "form_signature       =", form_signature
         #print "parameters_signature =", parameters_signature
         #print "ffc_signature        =", ffc_signature
-        #print "swig_signature       =", swig_signature
         #print "cell_signature       =", cell_signature
         #print "signature            =", self._signature
 

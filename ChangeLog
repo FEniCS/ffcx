@@ -1,4 +1,5 @@
 1.x.x [2013-0?-??]
+ - Fix bug with runtime check of SWIG version
  - Move DOLFIN wrappers here from DOLFIN
  - Add support for new UFL operators cell_avg and facet_avg
  - Add new reference data handling system, now data is kept in an external repository
