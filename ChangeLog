@@ -1,3 +1,4 @@
+ - Add current swigversion to the JIT compiled extension module
  - Remove dofmap::max_local_dimension()
  - Remove cell argument from dofmap::local_dimension()
 2.2.0 [2013-03-24]

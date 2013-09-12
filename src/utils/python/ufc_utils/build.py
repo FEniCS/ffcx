@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake@simula.no)"
-__date__ = "2009-03-06 -- 2013-02-01"
+__date__ = "2009-03-06 -- 2013-09-12"
 __license__  = "This code is released into the public domain"
 
 __all__ = ['build_ufc_module']
@@ -12,7 +12,7 @@ import os, sys, re, glob
 from distutils import sysconfig
 
 def build_ufc_module(h_files, source_directory="", system_headers=None, \
-                     swig_binary="swig", swig_path="", **kwargs):
+                     **kwargs):
     """Build a python extension module from ufc compliant source code.
 
     The compiled module will be imported and returned by the function.
@@ -24,10 +24,6 @@ def build_ufc_module(h_files, source_directory="", system_headers=None, \
        The directory where the source files reside.
     @param system_headers:
        Extra headers that will be #included in the generated wrapper file.
-    @param swig_binary:
-       Name of the swig binary instant need to look for
-    @param swig_path:
-       Path to the swig binary
 
     Any additional keyword arguments are passed on to instant.build_module.
     """
@@ -54,6 +50,19 @@ def build_ufc_module(h_files, source_directory="", system_headers=None, \
 
     # Get the swig interface file declarations
     declarations = extract_declarations(h_files2)
+    declarations += """
+    
+// SWIG version
+%inline %{
+int get_swigversion() { return  SWIGVERSION; }
+%}
+
+%pythoncode %{
+tmp = hex(get_swigversion())
+swigversion = "%d.%d.%d"%(tuple(map(int, [tmp[-5], tmp[-3], tmp[-2:]])))
+del tmp, get_swigversion
+%}
+"""
 
     # Call instant and return module
     return instant.build_module(wrap_headers            = h_files,
