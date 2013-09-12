@@ -51,8 +51,6 @@ FFC_PARAMETERS = {
                                              # messages with level >= log_level
   "log_prefix":                     "",      # log prefix
   "error_control":                  False,   # with error control
-  "swig_binary":                    "swig",  # swig binary file for the JIT compiler
-  "swig_path":                      "",      # path to swig binary for the JIT compiler
 }
 
 def default_parameters():
