@@ -141,38 +141,47 @@ def _create_fiat_element(ufl_element):
     if family == "Real":
         dg0_element = ufl.FiniteElement("DG", cell, 0)
         constant = _create_fiat_element(dg0_element)
-        return SpaceOfReals(constant)
+        element = SpaceOfReals(constant)
 
     # Handle the specialized time elements
-    if family == "Lobatto" :
-        return FFCLobattoElement(ufl_element.degree())
-    if family == "Radau" :
-        return FFCRadauElement(ufl_element.degree())
+    elif family == "Lobatto" :
+        element = FFCLobattoElement(ufl_element.degree())
+
+    elif family == "Radau" :
+        element = FFCRadauElement(ufl_element.degree())
 
     # FIXME: AL: Should this really be here?
     # Handle QuadratureElement
-    if family == "Quadrature":
-        return FFCQuadratureElement(ufl_element)
+    elif family == "Quadrature":
+        element = FFCQuadratureElement(ufl_element)
 
-    # Create FIAT cell
-    fiat_cell = reference_cell(cell.cellname())
-
-    # Handle Bubble element as RestrictedElement of P_{k} to interior
-    if family == "Bubble":
-        V = FIAT.supported_elements["Lagrange"](fiat_cell, degree)
-        dim = cell.topological_dimension()
-        return RestrictedElement(V, _indices(V, "interior", dim), None)
-
-    # Check if finite element family is supported by FIAT
-    if not family in FIAT.supported_elements:
-        error("Sorry, finite element of type \"%s\" are not supported by FIAT.", family)
-
-    # Create FIAT finite element
-    ElementClass = FIAT.supported_elements[family]
-    if degree is None:
-        element = ElementClass(fiat_cell)
     else:
-        element = ElementClass(fiat_cell, degree)
+        # Create FIAT cell
+        fiat_cell = reference_cell(cell.cellname())
+
+        # Handle Bubble element as RestrictedElement of P_{k} to interior
+        if family == "Bubble":
+            V = FIAT.supported_elements["Lagrange"](fiat_cell, degree)
+            dim = cell.topological_dimension()
+            return RestrictedElement(V, _indices(V, "interior", dim), None)
+
+        # Check if finite element family is supported by FIAT
+        if not family in FIAT.supported_elements:
+            error("Sorry, finite element of type \"%s\" are not supported by FIAT.", family)
+
+        # Create FIAT finite element
+        ElementClass = FIAT.supported_elements[family]
+        if degree is None:
+            element = ElementClass(fiat_cell)
+        else:
+            element = ElementClass(fiat_cell, degree)
+
+    # Consistency check between UFL and FIAT elements. This will not hold for elements
+    # where the reference value shape is different from the global value shape, i.e.
+    # RT elements on a triangle in 3D.
+    #ffc_assert(element.value_shape() == ufl_element.value_shape(),
+    #           "Something went wrong in the construction of FIAT element from UFL element." + \
+    #           "Shapes are %s and %s." % (element.value_shape(), ufl_element.value_shape()))
 
     return element
 
