@@ -535,11 +535,13 @@ def _interpolate_vertex_values(ufl_element, element, cell):
     # FIXME: Temporary hack!
     if len(ir["element_data"]) == 1:
         ir["element_data"][0]["physical_value_size"] = ir["physical_value_size"]
+
     # Consistency check, related to note in _evaluate_dofs
-    ffc_assert(sum(data["physical_value_size"] for data in ir["element_data"]) == ir["physical_value_size"],
-               "Failed to set physical value size correctly for subelements.")
-    ffc_assert(sum(data["reference_value_size"] for data in ir["element_data"]) == ir["reference_value_size"],
-               "Failed to set reference value size correctly for subelements.")
+    # This will fail for e.g. (RT1 x DG0) on a manifold
+    if sum(data["physical_value_size"] for data in ir["element_data"]) != ir["physical_value_size"]:
+        ir = "Failed to set physical value size correctly for subelements."
+    elif sum(data["reference_value_size"] for data in ir["element_data"]) != ir["reference_value_size"]:
+        ir = "Failed to set reference value size correctly for subelements."
 
     return ir
 
