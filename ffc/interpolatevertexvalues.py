@@ -59,7 +59,7 @@ def interpolate_vertex_values(ir):
             code.append(format["orientation"](tdim, gdim))
 
     # Compute total value dimension for (mixed) element
-    total_dim = sum(data["value_size"] for data in ir["element_data"])
+    total_dim = ir["physical_value_size"]
 
     # Generate code for each element
     value_offset = 0
@@ -73,7 +73,7 @@ def interpolate_vertex_values(ir):
                                                        space_offset))
 
         # Update offsets for value- and space dimension
-        value_offset += data["value_size"]
+        value_offset += data["physical_value_size"]
         space_offset += data["space_dim"]
 
     # Remove unused variables. (Not tracking set of used variables in
@@ -88,7 +88,7 @@ def _interpolate_vertex_values_element(data, gdim, tdim, total_value_size,
 
     # Extract vertex values for all basis functions
     vertex_values = data["basis_values"]
-    value_size = data["value_size"]
+    value_size = data["physical_value_size"]
     space_dim = data["space_dim"]
     mapping = data["mapping"]
 

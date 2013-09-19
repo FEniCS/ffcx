@@ -125,7 +125,7 @@ def _compute_element_ir(ufl_element, element_id, element_numbers):
     ir["value_dimension"] = ufl_element.value_shape()
     ir["evaluate_basis"] = _evaluate_basis(ufl_element, element, cell)
     ir["evaluate_dof"] = _evaluate_dof(ufl_element, element, cell)
-    ir["interpolate_vertex_values"] = _interpolate_vertex_values(element, cell)
+    ir["interpolate_vertex_values"] = _interpolate_vertex_values(ufl_element, element, cell)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = _create_sub_foo(ufl_element, element_numbers)
 
@@ -495,7 +495,7 @@ def _tabulate_facet_dofs(element, cell):
         facet_dofs[facet].sort()
     return facet_dofs
 
-def _interpolate_vertex_values(element, cell):
+def _interpolate_vertex_values(ufl_element, element, cell):
     "Compute intermediate representation of interpolate_vertex_values."
 
     # Check for QuadratureElement
@@ -512,17 +512,37 @@ def _interpolate_vertex_values(element, cell):
     ir["needs_jacobian"] = any("piola" in m for m in mappings)
     ir["needs_oriented"] = needs_oriented_jacobian(element)
 
+    # See note in _evaluate_dofs
+    ir["reference_value_size"] = _value_size(element)
+    ir["physical_value_size"] = _value_size(ufl_element)
+
     # Get vertices of reference cell
     cell = reference_cell(cell.cellname())
     vertices = cell.get_vertices()
 
     # Compute data for each constituent element
     extract = lambda values: values[values.keys()[0]].transpose()
-    ir["element_data"] = [{"value_size": _value_size(e),
+    all_fiat_elm = all_elements(element)
+    ir["element_data"] = [{
+                           # See note in _evaluate_dofs
+                           "reference_value_size": _value_size(e),
+                           "physical_value_size": _value_size(e), # FIXME: Get from corresponding ufl element
                            "basis_values": extract(e.tabulate(0, vertices)),
                            "mapping": e.mapping()[0],
                            "space_dim": e.space_dimension()}
-                          for e in all_elements(element)]
+                          for e in all_fiat_elm]
+
+    # FIXME: Temporary hack!
+    if len(ir["element_data"]) == 1:
+        ir["element_data"][0]["physical_value_size"] = ir["physical_value_size"]
+
+    # Consistency check, related to note in _evaluate_dofs
+    # This will fail for e.g. (RT1 x DG0) on a manifold
+    if sum(data["physical_value_size"] for data in ir["element_data"]) != ir["physical_value_size"]:
+        ir = "Failed to set physical value size correctly for subelements."
+    elif sum(data["reference_value_size"] for data in ir["element_data"]) != ir["reference_value_size"]:
+        ir = "Failed to set reference value size correctly for subelements."
+
     return ir
 
 def _create_sub_foo(ufl_element, element_numbers):
