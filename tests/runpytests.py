@@ -26,5 +26,6 @@ if __name__ == "__main__":
         casemodule = __import__(submodulename, fromlist=[testmodulename])
         casesuite = loader.loadTestsFromModule(casemodule)
         fullsuite.addTests(casesuite)
-    unittest.TextTestRunner(verbosity=verbosity).run(fullsuite)
+    r = unittest.TextTestRunner(verbosity=verbosity).run(fullsuite)
+    sys.exit(0 if r.wasSuccessful() else 1)
 
