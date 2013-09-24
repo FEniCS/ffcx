@@ -5,8 +5,9 @@ from collections import defaultdict
 
 modulename = r"uflacs"
 #skipmods = ['utils', 'commands']
-skipmods = ['utils', 'commands', 'geometry', 'backends']
+#skipmods = ['utils', 'commands', 'geometry', 'backends']
 #skipmods = ['utils', 'commands', 'geometry', 'codeutils', 'backends']
+skipmods = ['utils', 'commands']
 
 r = re.compile(r'from +' + modulename + r'[.]([^ ]*) +import')
 
@@ -45,17 +46,27 @@ for f in files[:]:
 # TODO: Make topological sorting of pmods for neater prints
 pmods = sorted(pimports.keys())
 
+print
 print '*'*80
+print
 for m in pmods:
+    print "="*70, m
+    l = max(len(k) for k in imports[m])
+    fmt = '%s depends on'
     for k,v in imports[m].iteritems():
         if v:
-            print '%s: %s' % (k, v)
+            print fmt % k
+            print '\n'.join('    %s' % vv for vv in v)
 
+print
 print '*'*80
+print
+l = max(len(m) for m in pmods)
+fmt = '%%%ds  depends on  %%s' % l
 for m in pmods:
     v = pimports[m]
     if v:
-        print '%s: %s' % (m, v)
+        print fmt % (m, v)
 
 
 def rename(x):
