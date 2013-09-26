@@ -5,6 +5,7 @@ RESULT=0
 rm -f generated/*
 
 rm -f python_tests.log
+#python runpytests.py 2>&1 | tee -a python_tests.log
 python runpytests.py &> python_tests.log
 if [ $? -ne 0 ]; then
     RESULT=1
@@ -14,6 +15,7 @@ else
 fi
 
 rm -f cpp_tests.log
+#make 2>&1 | tee -a cpp_tests.log
 make &> cpp_tests.log
 if [ $? -ne 0 ]; then
     RESULT=2
