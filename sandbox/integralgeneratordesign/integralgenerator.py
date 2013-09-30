@@ -1,4 +1,6 @@
 
+from ufl.common import product
+
 from uflacs.utils.log import debug, info, warning, error, uflacs_assert
 from uflacs.codeutils.format_code_structure import format_code_structure, Indented, Block, ForRange
 from uflacs.geometry.default_names import names
@@ -43,8 +45,9 @@ class IntegralGenerator(object):
         if len(quadrature_rules) > 1:
             warning("Multiple quadrature rules not fully implemented, will likely crash somewhere.")
 
-        self._argument_space_dimensions = ir["prim_idims"] # FIXME: *2 for dS?
         self._dof_ranges = ir["dof_ranges"]
+        self._argument_space_dimensions = ir["prim_idims"] # FIXME: *2 for dS?
+        self._A_size = product(self._argument_space_dimensions)
 
         self._num_arguments = len(self._argument_space_dimensions)
         self._idofs = ["%s%d" % (names.ia, i) for i in range(self._num_arguments)]
@@ -89,8 +92,14 @@ class IntegralGenerator(object):
 
         This includes initial piecewise constant geometry computations and such.
         """
-        parts = ["// Piecewise constant stage"]
+        parts = []
+
+        memset = "memset(%s, 0, %d * sizeof(%s[0]));" % (names.A, self._A_size, names.A)
+        parts += [langfmt.comment("Reset element tensor"), memset, ""]
+
+        parts += ["// Piecewise constant stage"]
         parts += ["// FIXME: Implement this"]
+
         return parts
 
     def generate_post_quadrature(self): # TODO
