@@ -192,17 +192,36 @@ class IntegralGenerator(object):
         return parts
 
     def generate_argument_partition(self, num_points, iarg, dofblock): # FIXME
-        # FIXME: Get partition associated with (num_points, iarg, dofblock)
-        # FIXME: Generate accumulation properly
         parts = []
+
+        # FIXME: Get partition associated with (num_points, iarg, dofblock)
+        #dofblocks = self._dofblocks[num_points]
+        #p = self._dofblock_partition[num_points][iarg].get(dofblock)
+        p = None
+        if p is not None:
+            # FIXME: Generate partition computation here
+            #parts += generate_partition_assignments(p)
+            pass
+
+        # TODO: Remove this mock code
         parts += ["s[...] = ...; // {0} x {1}".format(iarg, dofblock)]
+
         return parts
 
     def generate_integrand_accumulation(self, num_points, dofblock): # FIXME
-        # FIXME: Get partition associated with (num_points, dofblock)
-        # FIXME: Generate accumulation properly
         parts = []
+
+        # FIXME: Get partition associated with (num_points, dofblock)
+        #p = self._dofblock_integrand_partition[num_points].get(dofblock) # TODO: This should probably always be here
+        p = None
+        if p is not None:
+            # FIXME: Generate accumulation properly
+            #parts += generate_partition_accumulations(p)
+            pass
+
+        # TODO: Remove this mock code
         parts += ["A[{0}] += f * v * D;".format(dofblock)]
+
         return parts
 
 
