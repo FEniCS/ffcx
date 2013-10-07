@@ -17,13 +17,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Kristian B. Oelgaard 2010-2011
+# Modified by Kristian B. Oelgaard 2010-2013
 # Modified by Marie Rognes 2007-2012
 # Modified by Peter Brune 2009
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-28
-# Last changed: 2013-01-25
+# Last changed: 2013-09-24
 
 # Code snippets
 
@@ -478,12 +478,11 @@ compute_max_facet_edge_length_tetrahedron_3d(max_facet_edge_length, facet%(restr
 # generate the combinations: [(0, 0), (0, 1), (1, 0), (1, 1)] (i.e., xx, xy, yx, yy)
 # which will also be the ordering of derivatives in the return value.
 combinations_snippet = """\
-// Declare pointer to two dimensional array that holds combinations of derivatives and initialise
-unsigned int **%(combinations)s = new unsigned int *[%(num_derivatives)s];
-for (unsigned int row = 0; row < %(num_derivatives)s; row++)
+// Declare two dimensional array that holds combinations of derivatives and initialise
+unsigned int %(combinations)s[%(max_num_derivatives)s][%(max_degree)s];
+for (unsigned int row = 0; row < %(max_num_derivatives)s; row++)
 {
-  %(combinations)s[row] = new unsigned int [%(n)s];
-  for (unsigned int col = 0; col < %(n)s; col++)
+  for (unsigned int col = 0; col < %(max_degree)s; col++)
     %(combinations)s[row][col] = 0;
 }
 
@@ -524,11 +523,9 @@ const double %%(K)s[%d][%d] = %s""" % (tdim, gdim, matrix)
 
     snippet +="""// Declare transformation matrix
 // Declare pointer to two dimensional array and initialise
-double **%%(transform)s = new double *[%%(num_derivatives)s%(g)s];
-
+double %%(transform)s[%%(max_g_deriv)s][%%(max_t_deriv)s];
 for (unsigned int j = 0; j < %%(num_derivatives)s%(g)s; j++)
 {
-  %%(transform)s[j] = new double [%%(num_derivatives)s%(t)s];
   for (unsigned int k = 0; k < %%(num_derivatives)s%(t)s; k++)
     %%(transform)s[j][k] = 1;
 }

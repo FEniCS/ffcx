@@ -2,7 +2,7 @@
 basis values.  This module generates code which is more or less a C++
 representation of the code found in FIAT_NEW."""
 
-# Copyright (C) 2007-2010 Kristian B. Oelgaard
+# Copyright (C) 2007-2013 Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -22,7 +22,7 @@ representation of the code found in FIAT_NEW."""
 # Modified by Anders Logg 2013
 #
 # First added:  2007-04-16
-# Last changed: 2013-01-10
+# Last changed: 2013-10-07
 
 # Python modules
 import math
@@ -81,6 +81,7 @@ def _evaluate_basis_derivatives_all(data):
     # (possibly mixed).
     physical_value_size = data["physical_value_size"]
     space_dimension = data["space_dimension"]
+    max_degree = data["max_degree"]
 
     # Special case where space dimension is one (constant elements).
     if space_dimension == 1:
@@ -94,17 +95,41 @@ def _evaluate_basis_derivatives_all(data):
     else:
         _g = "_g"
 
+    # If n == 0, call evaluate_basis.
+    code += [format["comment"]("Call evaluate_basis_all if order of derivatives is equal to zero.")]
+    cond = format["argument derivative order"] + format["is equal"] + format["int"](0)
+    val = [format["call basis all"]]
+    val += [format["return"]("")]
+    code += [format["if"](cond, indent("\n".join(val),2))]
+
     code += _compute_num_derivatives(data["geometric_dimension"], _g)
 
-    # Declare helper value to hold single dof values and reset.
-    code += ["", f_comment("Helper variable to hold values of a single dof.")]
     if (physical_value_size == 1):
         num_vals = f_num_derivs(_g)
     else:
         num_vals = f_mul([f_int(physical_value_size), f_num_derivs(_g)])
-    code += [f_array(f_double, f_dof_vals, num_vals)]
+
+    # Reset values.
+    code += ["", f_comment("Set values equal to zero.")]
+    name    = f_component(f_values, f_index(f_r, f_s, num_vals))
+    lines_s = [f_assign(name, f_float(0.0))]
+    loop_s  = [(f_s, 0, num_vals)]
+    lines_r = f_loop(lines_s, loop_s)
+    loop_r  = [(f_r, 0, space_dimension)]
+    code    += f_loop(lines_r, loop_r)
+
+    # If n > max_degree, return zeros.
+    code += ["", format["comment"]("If order of derivatives is greater than the maximum polynomial degree, return zeros.")]
+    cond = format["argument derivative order"] + format["greater than"] + f_int(max_degree)
+    val  = format["return"]("")
+    code += [format["if"](cond, indent(val,2))]
+
+    # Declare helper value to hold single dof values and reset.
+    code += [f_comment("Helper variable to hold values of a single dof.")]
+    nds = data["geometric_dimension"]**max_degree*physical_value_size
+    code += [format["declaration"](f_double, f_component(f_dof_vals, f_int(nds)))]
     line  = [f_assign(f_component(f_dof_vals, f_r), f_float(0.0))]
-    code += f_loop(line, [(f_r, 0, num_vals)])
+    code += f_loop(line, [(f_r, 0, nds)])
 
     # Create loop over dofs that calls evaluate_basis_derivatives for a single dof and
     # inserts the values into the global array.
@@ -118,9 +143,6 @@ def _evaluate_basis_derivatives_all(data):
     lines_r += f_loop(lines_s, loop_s)
     loop_r   = [(f_r, 0, space_dimension)]
     code    += f_loop(lines_r, loop_r)
-
-    code += ["", f_comment("Delete pointer.")]
-    code += [f_del_array(f_dof_vals)]
 
     # Generate bode (no need to remove unused).
     return "\n".join(code)
@@ -142,14 +164,7 @@ def _evaluate_basis_derivatives(data):
     element_cellname = data["cellname"]
     gdim = data["geometric_dimension"]
     tdim = data["topological_dimension"]
-
-    # Get code snippets for Jacobian, inverse of Jacobian and mapping of
-    # coordinates from physical element to the FIAT reference element.
-    code += [format["compute_jacobian"](tdim, gdim)]
-    code += [format["compute_jacobian_inverse"](tdim, gdim)]
-    if data["needs_oriented"]:
-        code += [format["orientation"](tdim, gdim)]
-    code += ["", format["fiat coordinate map"](element_cellname, gdim)]
+    max_degree = data["max_degree"]
 
     # Compute number of derivatives that has to be computed, and
     # declare an array to hold the values of the derivatives on the
@@ -160,8 +175,22 @@ def _evaluate_basis_derivatives(data):
         _g = ""
         code += _compute_num_derivatives(tdim, "")
 
+        # Reset all values.
+        code += _reset_values(data, _g)
+
+        # Handle values of argument 'n'.
+        code += _handle_degree(max_degree)
+
+        # If max_degree is zero, return code (to avoid declarations such as
+        # combinations[1][0]) and because there's nothing to compute.)
+        if max_degree == 0:
+            return remove_unused("\n".join(code))
+
+        # Generate geo code.
+        code += _geometry_related_code(data, tdim, gdim, element_cellname)
+
         # Generate all possible combinations of derivatives.
-        code += _generate_combinations(tdim, "")
+        code += _generate_combinations(tdim, "", max_degree)
     else:
         _t = "_t"
         _g = "_g"
@@ -169,15 +198,26 @@ def _evaluate_basis_derivatives(data):
         code += [""]
         code += _compute_num_derivatives(gdim, _g)
 
+        # Reset all values.
+        code += _reset_values(data, _g)
+
+        # Handle values of argument 'n'.
+        code += _handle_degree(max_degree)
+
+        # If max_degree is zero, return code (to avoid declarations such as
+        # combinations[1][0]) and because there's nothing to compute.)
+        if max_degree == 0:
+            return remove_unused("\n".join(code))
+
+        # Generate geo code.
+        code += _geometry_related_code(data, tdim, gdim, element_cellname)
+
         # Generate all possible combinations of derivatives.
-        code += _generate_combinations(tdim, _t)
-        code += _generate_combinations(gdim, _g)
+        code += _generate_combinations(tdim, _t, max_degree)
+        code += _generate_combinations(gdim, _g, max_degree)
 
     # Generate the transformation matrix.
-    code += _generate_transform(element_cellname, gdim)
-
-    # Reset all values.
-    code += _reset_values(data, _g)
+    code += _generate_transform(element_cellname, gdim, tdim, max_degree)
 
     # Create code for all basis values (dofs).
     dof_cases = []
@@ -186,6 +226,41 @@ def _evaluate_basis_derivatives(data):
     code += [format["switch"](format["argument basis num"], dof_cases)]
     code = remove_unused("\n".join(code))
     #code = "\n".join(code)
+    return code
+
+def _handle_degree(max_degree):
+    """Check value of argument 'n' against the maximum polynomial degree of the
+    finite element. If user ask for n>max_degree return an appropriate number
+    of zeros in the 'values' array. If n==0, simply direct call to
+    evaluate_basis."""
+
+    code = []
+
+    # If n == 0, call evaluate_basis.
+    code += [format["comment"]("Call evaluate_basis if order of derivatives is equal to zero.")]
+    cond = format["argument derivative order"] + format["is equal"] + format["int"](0)
+    val = [format["call basis"](format["argument dof num"], format["argument values"])]
+    val += [format["return"]("")]
+    code += [format["if"](cond, indent("\n".join(val),2))]
+
+    # If n > max_degree, derivatives are always zero. Since the appropriate number of
+    # zeros have already been inserted into the 'values' array simply return.
+    code += [format["comment"]("If order of derivatives is greater than the maximum polynomial degree, return zeros.")]
+    cond = format["argument derivative order"] + format["greater than"] + format["int"](max_degree)
+    val = format["return"]("")
+    code += [format["if"](cond, val)]
+
+    return code
+
+def _geometry_related_code(data, tdim, gdim, element_cellname):
+    code = []
+    # Get code snippets for Jacobian, inverse of Jacobian and mapping of
+    # coordinates from physical element to the FIAT reference element.
+    code += [format["compute_jacobian"](tdim, gdim)]
+    code += [format["compute_jacobian_inverse"](tdim, gdim)]
+    if data["needs_oriented"]:
+        code += [format["orientation"](tdim, gdim)]
+    code += ["", format["fiat coordinate map"](element_cellname, gdim)]
     return code
 
 def _compute_num_derivatives(dimension, suffix=""):
@@ -211,21 +286,27 @@ def _compute_num_derivatives(dimension, suffix=""):
 
     return code
 
-def _generate_combinations(dimension, suffix):
+def _generate_combinations(dimension, suffix, max_degree):
     "Generate all possible combinations of derivatives of order 'n'."
+
+    nds = dimension**max_degree
 
     # Use code from format.
     code = ["", format["combinations"]\
             % {"combinations": format["derivative combinations"](suffix),\
                "dimension-1": dimension-1,\
                "num_derivatives" : format["num derivatives"](suffix),\
-               "n": format["argument derivative order"]}]
+               "n": format["argument derivative order"],
+               "max_num_derivatives":format["int"](nds),
+               "max_degree":format["int"](max_degree)}]
     return code
 
-def _generate_transform(element_cellname, gdim):
+def _generate_transform(element_cellname, gdim, tdim, max_degree):
     """Generate the transformation matrix, which is used to transform
     derivatives from reference element back to the physical element."""
 
+    max_g_d = gdim**max_degree
+    max_t_d = tdim**max_degree
     # Generate code to construct the inverse of the Jacobian
     if (element_cellname in ["interval", "triangle", "tetrahedron"]):
         code = ["", format["transform snippet"][element_cellname][gdim]\
@@ -233,7 +314,8 @@ def _generate_transform(element_cellname, gdim):
            "num_derivatives" : format["num derivatives"](""),\
            "n": format["argument derivative order"],\
            "combinations": format["derivative combinations"](""),\
-           "K":format["transform Jinv"]}]
+           "K":format["transform Jinv"],
+           "max_g_deriv":max_g_d, "max_t_deriv":max_t_d}]
     else:
         error("Cannot generate transform for shape: %s" % element_cellname)
 
@@ -285,51 +367,9 @@ def _generate_dof_code(data, dof_data):
     # Transform derivatives to physical element by multiplication with the transformation matrix.
     code += _transform_derivatives(data, dof_data)
 
-    # Delete pointers.
-    code += _delete_pointers(data, dof_data)
-
     code = remove_unused("\n".join(code))
-#    code = "\n".join(code)
 
     return code
-
-#def _mixed_elements(data_list):
-#    "Generate code for each sub-element in the event of vector valued elements or mixed elements."
-
-#    # Prefetch formats to speed up code generation.
-#    f_dofmap_if = format["dofmap if"]
-#    f_if        = format["if"]
-
-#    sum_value_dim = 0
-#    sum_space_dim = 0
-
-#    # Init return code.
-#    code = []
-
-#    # Generate code for each element.
-#    for data in data_list:
-
-#        # Get value and space dimension (should be tensor ready).
-#        value_dim = sum(data["value_shape"] or (1,))
-#        space_dim = data["space_dimension"]
-
-#        # Generate map from global to local dof.
-#        element_code = [_map_dof(sum_space_dim)]
-
-#        # Generate code for basis element.
-#        element_code += _generate_element_code(data, sum_value_dim)
-
-#        # Remove unused code for each sub element and indent code.
-#        if_code = indent(remove_unused("\n".join(element_code)), 2)
-
-#        # Create if statement and add to code.
-#        code += [f_if(f_dofmap_if(sum_space_dim, sum_space_dim + space_dim - 1), if_code)]
-
-#        # Increase sum of value dimension, and space dimension.
-#        sum_value_dim += value_dim
-#        sum_space_dim += space_dim
-
-#    return code
 
 def _tabulate_dmats(dof_data):
     "Tabulate the derivatives of the polynomial base"
@@ -474,6 +514,7 @@ def _compute_reference_derivatives(data, dof_data):
 
     tdim = data["topological_dimension"]
     gdim = data["geometric_dimension"]
+    max_degree = data["max_degree"]
 
     if tdim == gdim:
         _t = ""
@@ -494,34 +535,32 @@ def _compute_reference_derivatives(data, dof_data):
     code = [f_comment("Compute reference derivatives.")]
 
     # Declare pointer to array that holds derivatives on the FIAT element
-    code += [f_comment("Declare pointer to array of derivatives on FIAT element.")]
+    code += [f_comment("Declare array of derivatives on FIAT element.")]
     # The size of the array of reference derivatives is equal to the number of derivatives
     # times the number of components of the basis element
     if (num_components == 1):
         num_vals = f_num_derivs(_t)
     else:
         num_vals = f_mul([f_int(num_components), f_num_derivs(_t)])
-    code += [f_array(f_double, f_derivatives, num_vals)]
-    # Reset values of reference derivatives.
-    name = f_component(f_derivatives, f_r)
-    lines = [f_assign(name, f_float(0))]
-    code += f_loop(lines, [(f_r, 0, num_vals)])
+
+    nds = tdim**max_degree*num_components
+    code += [format["declaration"](f_double, f_component(f_derivatives, f_int(nds)))]
+    line  = [f_assign(f_component(f_derivatives, f_r), f_float(0.0))]
+    code += f_loop(line, [(f_r, 0, nds)])
     code += [""]
 
     mapping = dof_data["mapping"]
     if "piola" in mapping:
         # In either of the Piola cases, the value space of the derivatives is the geometric dimension rather than the topological dimension.
-        code += [f_comment("Declare pointer to array of reference derivatives on physical element.")]
+        code += [f_comment("Declare array of reference derivatives on physical element.")]
 
         _p = "_p"
         num_components_p = gdim
 
-        num_vals_physical = f_mul([f_int(gdim), f_num_derivs(_t)])
-        code += [f_array(f_double, f_derivatives+_p, num_vals_physical)]
-        # Reset values of reference derivatives.
-        name = f_component(f_derivatives+_p, f_r)
-        lines = [f_assign(name, f_float(0))]
-        code += f_loop(lines, [(f_r, 0, num_vals_physical)])
+        nds = tdim**max_degree*gdim
+        code += [format["declaration"](f_double, f_component(f_derivatives+_p, f_int(nds)))]
+        line  = [f_assign(f_component(f_derivatives+_p, f_r), f_float(0.0))]
+        code += f_loop(line, [(f_r, 0, nds)])
         code += [""]
     else:
         _p = ""
@@ -650,32 +689,4 @@ def _transform_derivatives(data, dof_data):
 
     loop_vars = [(f_r, 0, f_num_derivs(_g)), (f_s, 0, f_num_derivs(_t))]
     code += f_loop(lines, loop_vars)
-    return code
-
-def _delete_pointers(data, dof_data):
-    "Delete the pointers to arrays."
-
-    if data["topological_dimension"]==data["geometric_dimension"]:
-        _t = ""
-        _g = ""
-    else:
-        _t = "_t"
-        _g = "_g"
-
-    f_del_array = format["delete dynamic array"]
-    code = []
-
-    code += ["", format["comment"]("Delete pointer to array of derivatives on FIAT element")]
-    code += [f_del_array(format["reference derivatives"]), ""]
-    if "piola" in dof_data["mapping"]:
-        code += [format["comment"]("Delete pointer to array of reference derivatives on physical element.")]
-        code += [f_del_array(format["reference derivatives"]+"_p"), ""]
-
-    code += [format["comment"]("Delete pointer to array of combinations of derivatives and transform")]
-    code += [f_del_array(format["derivative combinations"](_t), format["num derivatives"](_t))]
-    if _t != _g:
-        code += [f_del_array(format["derivative combinations"](_g), format["num derivatives"](_g))]
-
-    code += [f_del_array(format["transform matrix"], format["num derivatives"](_g))]
-
     return code
