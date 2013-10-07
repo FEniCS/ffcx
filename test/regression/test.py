@@ -28,9 +28,10 @@ option --bench.
 #
 # Modified by Martin Alnaes, 2013
 # Modified by Johannes Ring, 2013
+# Modified by Kristian B. Oelgaard, 2013
 #
 # First added:  2010-01-21
-# Last changed: 2013-04-23
+# Last changed: 2013-10-04
 
 # FIXME: Need to add many more test cases. Quite a few DOLFIN forms
 # failed after the FFC tests passed.
@@ -254,7 +255,7 @@ set the environment variable BOOST_DIR.
     # Set compiler options
     compiler_options = "%s -Wall" % ufc_cflags
     if not permissive:
-        compiler_options += " -Werror"
+        compiler_options += " -Werror -pedantic"
     if bench:
         info("Benchmarking activated")
         # Takes too long to build with -O2
@@ -320,7 +321,7 @@ def validate_programs(reference_dir):
     "Validate generated programs against references."
 
     # Get a list of all files
-    output_files = [f for f in os.listdir(".") if f.endswith(".out")]
+    output_files = [f for f in os.listdir(".") if f.endswith(".json")]
     output_files.sort()
 
     begin("Validating generated programs (%d programs found)" % len(output_files))
@@ -424,7 +425,7 @@ def validate_programs(reference_dir):
             info_green("%s OK" % fj)
         else:
             info_red("%s differs" % fj)
-            log_error("Json output differs for %s, diff follows (reference first, generated second)"
+            log_error("Json output differs for %s, diff follows (generated first, reference second)"
                       % os.path.join(*reference_json_file.split(os.path.sep)[-3:]))
             print_recdiff(json_diff, printer=log_error)
 
