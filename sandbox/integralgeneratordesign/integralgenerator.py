@@ -29,6 +29,29 @@ def create_fake_ir():
         }
     return ir
 
+"""
+TODO: Implement all steps in generate_expression_body. See in particular these functions:
+
+Pre quadrature:
+  tfmt.define_output_variables_reset()
+  tfmt.define_piecewise_geometry()
+  tfmt.define_piecewise_coefficients()
+  tfmt.define_registers(num_registers)
+
+In quadrature:
+  tfmt.define_coord_loop()
+  tfmt.define_coord_vars()
+  tfmt.define_coord_dependent_geometry()
+  tfmt.define_coord_dependent_coefficients()
+
+Argument loops:
+  for ac in range(rank):
+    tfmt.define_argument_for_loop(ac)
+    tfmt.define_argument_loop_vars(ac)
+
+Post quadrature:
+
+"""
 class IntegralGenerator(object):
     def __init__(self):
         # TODO: This is just fake test data
@@ -124,7 +147,12 @@ class IntegralGenerator(object):
         This includes assigning to output array if there is no integration.
         """
         parts = []
+
         # TODO: If no integration, assuming we generate an expression, and assign results here
+        # Corresponding code from compiler.py:
+        #assign_to_variables = tfmt.output_variable_names(len(final_variable_names))
+        #parts += list(format_assignments(zip(assign_to_variables, final_variable_names)))
+
         return parts
 
     def generate_quadrature_loop(self, num_points):
@@ -191,18 +219,71 @@ class IntegralGenerator(object):
 
         return parts
 
+    def build_datastructures(self):
+        # FIXME: Build this representation of integrands, either by looping
+        #        like this or by looping over data structures in a more
+        #        unstructured fashion. Either way this is the structure we want:
+
+        num_points = [3]
+
+        #dofrange = (begin, end)
+        #dofblock = ()  |  (dofrange0,)  |  (dofrange0, dofrange1)
+
+        partitions = {}
+
+        # partitions["piecewise"] = partition of expressions independent of quadrature and argument loops
+        partitions["piecewise"] = []
+
+        # partitions["varying"][np] = partition of expressions dependent on np quadrature but independent of argument loops
+        partitions["varying"] = dict((np, []) for np in num_points)
+
+        # partitions["argument"][np][iarg][dofrange] = partition depending on this dofrange of argument iarg
+        partitions["argument"] = dict((np, [dict() for i in range(rank)]) for np in num_points)
+
+        # partitions["integrand"][np][dofrange] = partition depending on this dofrange of argument iarg
+        partitions["integrand"] = dict((np, dict()) for np in num_points)
+
+        #dofblock_partition[np][iarg][dofrange] == partitions["argument"][np][iarg][dofrange]
+        #dofblock_integrand_partition[np][dofrange] == partitions["integrand"][np][dofblock]
+
+        argument_dofblocks = {} # { num_points: [dofblock, ...] } # FIXME: Fill this first
+        dofblock_partition = {} # { num_points: { iarg: { dofblock: partition } } }
+        for num_points in sorted(argument_dofblocks.keys()):
+            dofblock_partition[num_points] = {}
+            for iarg in range(rank):
+                dofblock_partition[num_points][iarg] = {}
+                for dofblock in argument_dofblocks[num_points]: # FIXME
+                    # FIXME: Make this the partition of code that depends on only argument iarg
+                    #        for this dofblock in the integrand corresponding to num_points
+                    partition = []
+                    dofblock_partition[num_points][iarg][dofblock] = partition
+
+        dofblocks = {} # { num_points: [dofblock, ...] } # FIXME: Fill this first
+        dofblock_integrand_partition = {} # { num_points: { dofblock: partition } }
+        for num_points in sorted(dofblocks.keys()):
+            dofblock_integrand_partition[num_points] = {}
+            for dofblock in dofblocks[num_points]:
+                # FIXME: Make this the partition of code that depends on this full dofblock
+                #        in the integrand corresponding to num_points
+                partition = []
+                dofblock_integrand_partition[num_points][dofblock] = partition
+
+        self._dofblock_partition = dofblock_partition
+        self._dofblock_integrand_partition = dofblock_integrand_partition
+        self._dofblocks = dofblocks
+        self._dofblocks = dict( (num_points, db.keys()) for num_points, db in self._dofblock_integrand_partition.iteritems())
+
     def generate_argument_partition(self, num_points, iarg, dofblock): # FIXME
         parts = []
 
         # FIXME: Get partition associated with (num_points, iarg, dofblock)
-        #dofblocks = self._dofblocks[num_points]
         #p = self._dofblock_partition[num_points][iarg].get(dofblock)
+        #p = self._partitions["argument"][num_points][iarg].get(dofrange)
         p = None
         if p is not None:
             # FIXME: Generate partition computation here
             #parts += generate_partition_assignments(p)
             pass
-
         # TODO: Remove this mock code
         parts += ["s[...] = ...; // {0} x {1}".format(iarg, dofblock)]
 
@@ -212,15 +293,20 @@ class IntegralGenerator(object):
         parts = []
 
         # FIXME: Get partition associated with (num_points, dofblock)
-        #p = self._dofblock_integrand_partition[num_points].get(dofblock) # TODO: This should probably always be here
-        p = None
-        if p is not None:
-            # FIXME: Generate accumulation properly
-            #parts += generate_partition_accumulations(p)
-            pass
+        #p = self._dofblock_integrand_partition[num_points][dofblock]
+        #p = self._partitions["integrand"][num_points].get(dofblock)
 
-        # TODO: Remove this mock code
-        parts += ["A[{0}] += f * v * D;".format(dofblock)]
+        # FIXME: Generate accumulation properly
+        #parts += generate_partition_accumulations(p)
+        parts += ["A[{0}] += f * v * D;".format(dofblock)] # TODO: Remove this mock code
+
+        # Corresponding code from compiler.py:
+        #final_variable_names = [format_register_variable(p, r) for r in ir["target_registers"]]
+        #assign_to_variables = tfmt.output_variable_names(len(final_variable_names))
+        #scaling_factor = tfmt.accumulation_scaling_factor()
+        #parts += list(format_scaled_additions(zip(assign_to_variables,
+        #                                          final_variable_names),
+        #                                          scaling_factor))
 
         return parts
 
