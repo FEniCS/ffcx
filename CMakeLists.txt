@@ -36,13 +36,13 @@ find_package(PythonInterp 2 QUIET)
 # Set variables to help find Python library that is compatible with
 # interpreter
 if (PYTHONINTERP_FOUND)
-  # Get include path from Python interpretter
+  # Get Python include path from Python interpretter
   execute_process(COMMAND "${PYTHON_EXECUTABLE}" -c
                           "import distutils.sysconfig, sys; sys.stdout.write(distutils.sysconfig.get_python_inc())"
                     OUTPUT_VARIABLE _PYTHON_INCLUDE_PATH
                     RESULT_VARIABLE _PYTHON_INCLUDE_RESULT)
 
-  # Get library path from interpreter
+  # Get Python library path from interpreter
   execute_process(COMMAND "${PYTHON_EXECUTABLE}" -c
                           "import os, sys, inspect; sys.stdout.write(os.path.split(os.path.split(inspect.getfile(inspect))[0])[0])"
                     OUTPUT_VARIABLE _PYTHON_LIB_PATH
@@ -86,26 +86,34 @@ if (PYTHONINTERP_FOUND)
   if (NOT DEFINED UFC_INSTALL_PYTHON_EXT_DIR)
     # Get path for platform-dependent Python modules (since we install
     # a binary libary)
-    execute_process(
-      COMMAND ${PYTHON_EXECUTABLE} -c "import sys, distutils.sysconfig; sys.stdout.write(distutils.sysconfig.get_python_lib(plat_specific=True, prefix='${CMAKE_INSTALL_PREFIX}'))"
+
+    # Python command string to discover module install location
+    if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+      set(PYTHON_LIB_DISCOVER_STR "import sys, distutils.sysconfig; sys.stdout.write(distutils.sysconfig.get_python_lib(plat_specific=True))")
+    else()
+      set(PYTHON_LIB_DISCOVER_STR "import sys, distutils.sysconfig; sys.stdout.write(distutils.sysconfig.get_python_lib(plat_specific=True, prefix='${CMAKE_INSTALL_PREFIX}'))")
+    endif()
+
+    # Run Python to find module install path
+    execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${PYTHON_LIB_DISCOVER_STR}"
       OUTPUT_VARIABLE UFC_INSTALL_PYTHON_EXT_DIR
       )
-    # Strip off CMAKE_INSTALL_PREFIX (is added later by CMake)
-    string(REGEX REPLACE "${CMAKE_INSTALL_PREFIX}(/|\\\\)([^ ]*)" "\\2"
-      UFC_INSTALL_PYTHON_EXT_DIR "${UFC_INSTALL_PYTHON_EXT_DIR}")
     set(UFC_INSTALL_PYTHON_EXT_DIR ${UFC_INSTALL_PYTHON_EXT_DIR}
       CACHE PATH "Python extension module installation directory.")
   endif()
 
+  # Python command string to discover module install location
+  if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(PYTHON_LIB_DISCOVER_STR "import sys, distutils.sysconfig; sys.stdout.write(distutils.sysconfig.get_python_lib(plat_specific=False))")
+  else()
+    set(PYTHON_LIB_DISCOVER_STR "import sys, distutils.sysconfig; sys.stdout.write(distutils.sysconfig.get_python_lib(plat_specific=False, prefix='${CMAKE_INSTALL_PREFIX}'))")
+  endif()
+
+  # Get path for pure Python modules
   if (NOT DEFINED UFC_INSTALL_PYTHON_MODULE_DIR)
-    # Get path for pure Python modules
-    execute_process(
-      COMMAND ${PYTHON_EXECUTABLE} -c "import sys, distutils.sysconfig; sys.stdout.write(distutils.sysconfig.get_python_lib(plat_specific=False, prefix='${CMAKE_INSTALL_PREFIX}'))"
+    execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${PYTHON_LIB_DISCOVER_STR}"
       OUTPUT_VARIABLE UFC_INSTALL_PYTHON_MODULE_DIR
       )
-    # Strip off CMAKE_INSTALL_PREFIX (is added later by CMake)
-    string(REGEX REPLACE "${CMAKE_INSTALL_PREFIX}(/|\\\\)([^ ]*)" "\\2"
-      UFC_INSTALL_PYTHON_MODULE_DIR "${UFC_INSTALL_PYTHON_MODULE_DIR}")
     set(UFC_INSTALL_PYTHON_MODULE_DIR ${UFC_INSTALL_PYTHON_MODULE_DIR}
       CACHE PATH "Python module installation directory.")
   endif()
