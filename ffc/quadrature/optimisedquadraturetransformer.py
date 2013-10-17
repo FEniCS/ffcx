@@ -525,6 +525,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         for key, val in operand.items():
             new_val = create_symbol(format_function(str(val)), val.t, val, 1)
             operand[key] = new_val
+        #raise Exception("pause")
         return operand
 
     def _bessel_function(self, operands, format_function):

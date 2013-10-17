@@ -619,6 +619,11 @@ class QuadratureTransformer(QuadratureTransformerBase):
             new_operand[key] = format_function(val)
         return new_operand
 
+    def _atan_2_function(self, operands, format_function):
+        x1,x2 = operands
+        x1,x2 = x1.values()[0],x2.values()[0]
+        return {():format_function(x1, x2)}
+
     def _bessel_function(self, operands, format_function):
         # TODO: Are these safety checks needed?
         ffc_assert(len(operands) == 2,\

@@ -226,6 +226,10 @@ class QuadratureTransformerBase(Transformer):
         print "\n\nVisiting MathFunction:", repr(o)
         error("This MathFunction is not supported (yet).")
 
+    def atan_2_function(self, o):
+        print "\n\nVisiting Atan2Function:", repr(o)
+        error("Atan2Function is not implemented (yet).")
+
     def bessel_function(self, o):
         print "\n\nVisiting BesselFunction:", repr(o)
         error("BesselFunction is not implemented (yet).")
@@ -604,6 +608,11 @@ class QuadratureTransformerBase(Transformer):
         #print("\n\nVisiting Atan: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
         return self._math_function(operands, format["atan"])
 
+    def atan_2(self, o, *operands):
+        #print("\n\nVisiting Atan2: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        self.additional_includes_set.add("#include <cmath>")
+        return self._atan_2_function(operands, format["atan_2"])
+
     def erf(self, o, *operands):
         #print("\n\nVisiting Erf: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
         return self._math_function(operands, format["erf"])
@@ -854,6 +863,9 @@ class QuadratureTransformerBase(Transformer):
         error("This function should be implemented by the child class.")
 
     def _math_function(self, operands, format_function):
+        error("This function should be implemented by the child class.")
+
+    def _atan_2_function(self, operands, format_function):
         error("This function should be implemented by the child class.")
 
     def _get_auxiliary_variables(self,
