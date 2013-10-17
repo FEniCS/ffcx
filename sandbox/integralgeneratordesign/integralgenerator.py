@@ -173,18 +173,47 @@ class IntegralGenerator(object):
         parts = []
         parts += [self.generate_quadrature_body_setup(num_points)]
 
-        drs = self._dof_ranges[num_points]
+        # TODO: Get this from ir
+        self._integrand_term_factors = {}
+        self._integrand_term_factors[num_points] = {} # IM in factorization code
+        self._modified_argument_dofrange = {}
+        self._modified_argument_dofrange[num_points] = [] # TODO: Build from dof ranges of AV in factorization code
+        self._modified_arguments = {}
+        self._modified_arguments[num_points] = [] # AV in factorization code
+
+        # ITF: tuple(modified_argument_indices) -> code_index
+        ITF = self._integrand_term_factors[num_points]
+        # MAD: modified_argument_index -> dofrange
+        MAD = self._modified_argument_dofrange[num_points]
+
+        # Generate pre-argument loop computations
+        for mas in ITF:
+            db = tuple(MAD[ma] for ma in mas)
+            ssa_index = ITF[mas]
+            # TODO: Generate code for f*D and store reference to it with mas
+            #f = self._ssa[ssa_index]
+            #vname = name_from(mas)
+            #vcode = code_from(ssa_index)
+            #code += ["%s = (%s) * D;" % (vname, vcode)]
+            #factors[mas] = vname
 
         if self._num_arguments == 0: # Functional
+            # TODO: Partitions data structure may look something like this:
+            #itg_partition = self._partitions["integrand"][num_points][()]
+
             # Accumulate into element scalar
-            dofblock = ()
-            parts += [self.generate_integrand_accumulation(num_points, dofblock)]
+            parts += [self.generate_integrand_accumulation(num_points, ())]
 
         elif self._num_arguments == 1: # Linear form
             # Loop over dofranges of argument 0 and accumulate into element vector
-            for dofrange0 in drs[0]:
+            drs0 = sorted(MAD[mas[0]] for mas in ITF)
+            for dofrange0 in drs0:
                 (b0,e0) = dofrange0
                 dofblock = (dofrange0,)
+
+                # TODO: Partitions data structure may look something like this:
+                #arg_partition = self._partitions["argument"][num_points][0][dofrange0]
+                #itg_partition = self._partitions["integrand"][num_points][dofblock]
 
                 body0 = [self.generate_argument_partition(num_points, 0, dofblock)]
                 body0 += [self.generate_integrand_accumulation(num_points, dofblock)]
@@ -194,16 +223,28 @@ class IntegralGenerator(object):
 
         elif self._num_arguments == 2: # Bilinear form
             # Loop over dofranges of argument 0 (rows of element matrix)
-            for dofrange0 in drs[0]:
+            drs0 = sorted(MAD[mas[0]] for mas in ITF)
+            for dofrange0 in drs0:
                 (b0,e0) = dofrange0
                 dofblock = (dofrange0,)
+
+                # Find dofblocks starting with this dofrange
+                dofblocks = sorted(tuple(MAD[ma] for ma in mas) for mas in ITF if MAD[mas[0]] == dofrange0)
+
+                # TODO: Partitions data structure may look something like this:
+                #arg_partition = self._partitions["argument"][num_points][0][dofrange0]
 
                 body0 = [self.generate_argument_partition(num_points, 0, dofblock)]
 
                 # Loop over dofranges of argument 1 and accumulate into element matrix
-                for dofrange1 in drs[1]:
+                drs1 = sorted(db[1] for db in dofblocks)
+                for dofrange1 in drs1:
                     (b1,e1) = dofrange1
                     dofblock = (dofrange0,dofrange1)
+
+                    # TODO: Partitions data structure may look something like this:
+                    #arg_partition = self._partitions["argument"][num_points][1][dofrange1]
+                    #itg_partition = self._partitions["integrand"][num_points][dofblock]
 
                     body1 = [self.generate_argument_partition(num_points, 1, dofblock)]
                     body1 += [self.generate_integrand_accumulation(num_points, dofblock)]
@@ -240,7 +281,7 @@ class IntegralGenerator(object):
         # partitions["argument"][np][iarg][dofrange] = partition depending on this dofrange of argument iarg
         partitions["argument"] = dict((np, [dict() for i in range(rank)]) for np in num_points)
 
-        # partitions["integrand"][np][dofrange] = partition depending on this dofrange of argument iarg
+        # partitions["integrand"][np][dofblock] = partition for computing final integrand contribution in this dofblock
         partitions["integrand"] = dict((np, dict()) for np in num_points)
 
         #dofblock_partition[np][iarg][dofrange] == partitions["argument"][np][iarg][dofrange]
