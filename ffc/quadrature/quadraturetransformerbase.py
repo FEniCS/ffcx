@@ -605,7 +605,7 @@ class QuadratureTransformerBase(Transformer):
         return self._math_function(operands, format["asin"])
 
     def atan(self, o, *operands):
-        print("\n\nVisiting Atan: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        #print("\n\nVisiting Atan: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
         return self._math_function(operands, format["atan"])
 
     def atan_2(self, o, *operands):
