@@ -330,7 +330,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     def min_facet_edge_length(self, o):
         # FIXME: this has no meaning for cell integrals. (Need check in FFC or UFL).
 
-        if self.tdim < 3:
+        tdim = self.tdim # FIXME: o.domain().topological_dimension() ???
+        if tdim < 3:
             return self.facet_area(o)
 
         edgelen = format["min facet edge length"](self.restriction)
@@ -341,7 +342,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     def max_facet_edge_length(self, o):
         # FIXME: this has no meaning for cell integrals. (Need check in FFC or UFL).
 
-        if self.tdim < 3:
+        tdim = self.tdim # FIXME: o.domain().topological_dimension() ???
+        if tdim < 3:
             return self.facet_area(o)
 
         edgelen = format["max facet edge length"](self.restriction)
@@ -368,7 +370,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         if transformation == "affine":
             # Loop derivatives and get multi indices.
             for multi in multiindices:
-                deriv = [multi.count(i) for i in range(self.tdim)]
+                deriv = [multi.count(i) for i in range(tdim)]
                 if not any(deriv):
                     deriv = []
 
@@ -387,11 +389,11 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
             # Loop derivatives and get multi indices.
             for multi in multiindices:
-                deriv = [multi.count(i) for i in range(self.tdim)]
+                deriv = [multi.count(i) for i in range(tdim)]
                 if not any(deriv):
                     deriv = []
 
-                for c in range(self.tdim):
+                for c in range(tdim):
                     # Create mapping and basis name.
                     mapping, basis = self._create_mapping_basis(c + local_offset, deriv, avg, ufl_argument, ffc_element)
                     if not mapping in code:
@@ -438,7 +440,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         if transformation == "affine":
             # Loop derivatives and get multi indices.
             for multi in multiindices:
-                deriv = [multi.count(i) for i in range(self.tdim)]
+                deriv = [multi.count(i) for i in range(tdim)]
                 if not any(deriv):
                     deriv = []
 
@@ -454,11 +456,11 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
             # Loop derivatives and get multi indices.
             for multi in multiindices:
-                deriv = [multi.count(i) for i in range(self.tdim)]
+                deriv = [multi.count(i) for i in range(tdim)]
                 if not any(deriv):
                     deriv = []
 
-                for c in range(self.tdim):
+                for c in range(tdim):
                     function_name = self._create_function_name(c + local_offset, deriv, avg, is_quad_element, ufl_function, ffc_element)
                     if function_name:
                         # Multiply basis by appropriate transform.

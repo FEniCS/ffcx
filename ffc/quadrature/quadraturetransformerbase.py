@@ -299,6 +299,8 @@ class QuadratureTransformerBase(Transformer):
         key = (o, components, derivatives, self.restriction, self.avg)
         basis = self.argument_cache.get(key, None)
 
+        tdim = self.tdim # FIXME: o.domain().topological_dimension() ???
+
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
         if basis is None or self.optimise_parameters["optimisation"]:
             # Get auxiliary variables to generate basis
@@ -309,7 +311,7 @@ class QuadratureTransformerBase(Transformer):
             basis = self.create_argument(o, derivatives, component, local_comp,
                                          local_offset, ffc_element,
                                          transformation, multiindices,
-                                         self.tdim, self.gdim, self.avg)
+                                         tdim, self.gdim, self.avg)
             self.argument_cache[key] = basis
 
         return basis
@@ -404,10 +406,12 @@ class QuadratureTransformerBase(Transformer):
             ffc_assert(not (derivatives and is_quad_element), \
                        "Derivatives of Quadrature elements are not supported: " + repr(o))
 
+            tdim = self.tdim # FIXME: o.domain().topological_dimension() ???
+
             # Create code for function and add empty tuple to cache dict.
             function_code = {(): self.create_function(o, derivatives, component,
                                                       local_comp, local_offset, ffc_element, is_quad_element,
-                                                      transformation, multiindices, self.tdim, self.gdim, self.avg)}
+                                                      transformation, multiindices, tdim, self.gdim, self.avg)}
 
             self.function_cache[key] = function_code
 
@@ -907,7 +911,8 @@ class QuadratureTransformerBase(Transformer):
         transformation = ffc_sub_element.mapping()[0]
 
         # Generate FFC multi index for derivatives.
-        multiindices = FFCMultiIndex([range(self.tdim)]*len(derivatives)).indices
+        tdim = self.tdim # FIXME: ufl_element.domain().topological_dimension() ???
+        multiindices = FFCMultiIndex([range(tdim)]*len(derivatives)).indices
 
         #print "in create_auxiliary"
         #print "component = ", component

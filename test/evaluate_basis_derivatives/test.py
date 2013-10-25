@@ -161,7 +161,8 @@ def compute_values(ufl_element, deriv_order):
     element_name = get_element_name(ufl_element)
 
     # Create g++ code
-    num_derivs = ufl_element.cell().topological_dimension()**deriv_order
+    domain, = ufl_element.domains() # Assuming single domain
+    num_derivs = domain.topological_dimension()**deriv_order
     options = {"element": element_name, "derivative_order":deriv_order, "num_derivatives":num_derivs}
     code = evaluate_basis_derivatives_code % options
     f = open("evaluate_basis_derivatives.cpp", "w")

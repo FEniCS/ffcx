@@ -33,7 +33,7 @@ from ffc.log import info, debug, ffc_assert
 # Cache for computed integrand representations
 #_cache = {}
 
-def extract_monomial_form(integrals, function_replace_map):
+def extract_monomial_form(integrands, function_replace_map):
     """
     Extract monomial representation of form (if possible). When
     successful, the form is represented as a sum of products of scalar
@@ -45,18 +45,10 @@ def extract_monomial_form(integrals, function_replace_map):
 
     # Iterate over all integrals
     monomial_form = MonomialForm()
-    for integral in integrals:
-
-        # Get measure and integrand
-        measure = integral.measure()
-        if measure.domain_type() == "point":
-            raise MonomialException("Point integrals are not supported by tensor representation.")
-
-        integrand = integral.integrand()
-
+    for integrand in integrands:
         # Extract monomial representation if possible
-        integrand = extract_monomial_integrand(integrand, function_replace_map)
-        monomial_form.append(integrand, measure)
+        monomial_integrand = extract_monomial_integrand(integrand, function_replace_map)
+        monomial_form.append(monomial_integrand)
 
     return monomial_form
 
@@ -251,28 +243,27 @@ class MonomialForm:
     """
 
     def __init__(self):
-        self.integrals = []
+        self.integrands = []
 
-    def append(self, integrand, measure):
-        self.integrals.append((integrand, measure))
+    def append(self, integrand):
+        self.integrands.append(integrand)
 
     def __len__(self):
-        return len(self.integrals)
+        return len(self.integrands)
 
     def __getitem__(self, i):
-        return self.integrals[i]
+        return self.integrands[i]
 
     def __iter__(self):
-        return iter(self.integrals)
+        return iter(self.integrands)
 
     def __str__(self):
-        if len(self.integrals) == 0:
+        if len(self.integrands) == 0:
             return "<Empty form>"
-        s  = "Monomial form of %d integral(s)\n" % len(self.integrals)
+        s  = "Monomial form of %d integral(s)\n" % len(self.integrands)
         s += len(s) * "-" + "\n"
-        for (integrand, measure) in self.integrals:
+        for integrand in self.integrands:
             s += "Integrand: " + str(integrand) + "\n"
-            s += "Measure:   " + str(measure) + "\n"
         return s
 
 class MonomialTransformer(ReuseTransformer):

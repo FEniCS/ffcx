@@ -76,6 +76,10 @@ class ErrorControlGenerator:
         assert(len(extract_arguments(self.goal)) == 0)
         assert(len(extract_arguments(self.weak_residual)) == 1)
 
+        # Get the domain, assuming there's only one
+        assert(len(self.weak_residual.domains()) == 1)
+        self.domain, = self.weak_residual.domains()
+
         # Store map from identifiers to names for forms and generated
         # coefficients
         self.ec_names = {}
@@ -118,6 +122,11 @@ class ErrorControlGenerator:
         # Generate form for computing error indicators
         eta_T = self.error_indicators()
 
+        # Paranoid checks added after introduction of multidomain features in ufl:
+        for i, form in enumerate((a_star, L_star, eta_h, a_R_T, L_R_T, a_R_dT, L_R_dT, eta_T)):
+            assert len(form.domains()) > 0, ("Zero domains at form %d" % i)
+            assert len(form.domains()) == 1, ("%d domains at form %d" % (len(form.domains()), i))
+
         # Return all generated forms in CERTAIN order matching
         # constructor of dolfin/adaptivity/ErrorControl.h
         return (a_star, L_star, eta_h, a_R_T, L_R_T, a_R_dT, L_R_dT, eta_T)
@@ -153,7 +162,7 @@ class ErrorControlGenerator:
         # Define forms defining linear variational problem for cell
         # residual
         v_T = self._b_T*v
-        a_R_T = inner(v_T, R_T)*dx()
+        a_R_T = inner(v_T, R_T)*dx(self.domain)
         L_R_T = replace(self.weak_residual, {v_h: v_T})
 
         return (a_R_T, L_R_T)
@@ -174,10 +183,10 @@ class ErrorControlGenerator:
         # Define forms defining linear variational problem for facet
         # residual
         v_e = self._b_e*v
-        a_R_dT = ((inner(v_e('+'), R_e('+')) + inner(v_e('-'), R_e('-')))*dS()
-                  + inner(v_e, R_e)*ds())
+        a_R_dT = ((inner(v_e('+'), R_e('+')) + inner(v_e('-'), R_e('-')))*dS(self.domain)
+                  + inner(v_e, R_e)*ds(self.domain))
         L_R_dT = (replace(self.weak_residual, {v_h: v_e})
-                  - inner(v_e, self._R_T)*dx())
+                  - inner(v_e, self._R_T)*dx(self.domain))
 
         return (a_R_dT, L_R_dT)
 
@@ -201,10 +210,10 @@ class ErrorControlGenerator:
 
         # Define linear form for computing error indicators
         v = self.module.TestFunction(self._DG0)
-        eta_T = (v*inner(R_T, z - z_h)*dx()
+        eta_T = (v*inner(R_T, z - z_h)*dx(self.domain)
                  + avg(v)*(inner(R_dT('+'), (z - z_h)('+'))
-                           + inner(R_dT('-'), (z - z_h)('-')))*dS()
-                 + v*inner(R_dT, z - z_h)*ds())
+                           + inner(R_dT('-'), (z - z_h)('-')))*dS(self.domain)
+                 + v*inner(R_dT, z - z_h)*ds(self.domain))
 
         return eta_T
 
@@ -254,9 +263,9 @@ class UFLErrorControlGenerator(ErrorControlGenerator):
         # Discontinuous version of primal trial element space
         self._dV = tear(self._V)
 
-        # Extract cell and geometric dimension
-        cell = self._V.cell()
-        gdim = cell.geometric_dimension()
+        # Extract domain and geometric dimension
+        domain, = self._V.domains()
+        gdim = domain.geometric_dimension()
 
         # Coefficient representing improved dual
         E = increase_order(Vhat)
@@ -264,7 +273,7 @@ class UFLErrorControlGenerator(ErrorControlGenerator):
         self.ec_names[id(self._Ez_h)] = "__improved_dual"
 
         # Coefficient representing cell bubble function
-        B = FiniteElement("B", cell, gdim + 1)
+        B = FiniteElement("B", domain, gdim + 1)
         self._b_T = Coefficient(B)
         self.ec_names[id(self._b_T)] = "__cell_bubble"
 
@@ -273,7 +282,7 @@ class UFLErrorControlGenerator(ErrorControlGenerator):
         self.ec_names[id(self._R_T)] = "__cell_residual"
 
         # Coefficient representing cell cone function
-        C = FiniteElement("DG", cell, gdim)
+        C = FiniteElement("DG", domain, gdim)
         self._b_e = Coefficient(C)
         self.ec_names[id(self._b_e)] = "__cell_cone"
 
@@ -286,4 +295,4 @@ class UFLErrorControlGenerator(ErrorControlGenerator):
         self.ec_names[id(self._z_h)] = "__discrete_dual_solution"
 
         # Piecewise constants for assembling indicators
-        self._DG0 = FiniteElement("DG", cell, 0)
+        self._DG0 = FiniteElement("DG", domain, 0)

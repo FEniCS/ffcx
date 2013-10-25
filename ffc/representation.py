@@ -42,6 +42,7 @@ from itertools import chain
 # Import UFL
 import ufl
 from ufl.classes import Measure
+from ufl.geometry import cellname2dim
 
 # FFC modules
 from ffc.utils import compute_permutations, product
@@ -110,22 +111,23 @@ def _compute_element_ir(ufl_element, element_id, element_numbers):
 
     # Create FIAT element
     element = create_element(ufl_element)
-    cell = ufl_element.cell()
+    domain, = ufl_element.domains() # Assuming single domain
+    cellname = domain.cell().cellname()
 
     # Store id
     ir = {"id": element_id}
 
     # Compute data for each function
-    ir["signature"] = repr(ufl_element)
-    ir["cell_shape"] = cell.cellname()
-    ir["topological_dimension"] = cell.topological_dimension()
-    ir["geometric_dimension"] = cell.geometric_dimension()
+    ir["signature"] = ufl_element.reconstruction_signature()
+    ir["cell_shape"] = cellname
+    ir["topological_dimension"] = domain.topological_dimension()
+    ir["geometric_dimension"] = domain.geometric_dimension()
     ir["space_dimension"] = element.space_dimension()
     ir["value_rank"] = len(ufl_element.value_shape())
     ir["value_dimension"] = ufl_element.value_shape()
-    ir["evaluate_basis"] = _evaluate_basis(ufl_element, element, cell)
-    ir["evaluate_dof"] = _evaluate_dof(ufl_element, element, cell)
-    ir["interpolate_vertex_values"] = _interpolate_vertex_values(ufl_element, element, cell)
+    ir["evaluate_basis"] = _evaluate_basis(ufl_element, element)
+    ir["evaluate_dof"] = _evaluate_dof(ufl_element, element)
+    ir["interpolate_vertex_values"] = _interpolate_vertex_values(ufl_element, element)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = _create_sub_foo(ufl_element, element_numbers)
 
@@ -138,25 +140,26 @@ def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
 
     # Create FIAT element
     element = create_element(ufl_element)
-    cell = ufl_element.cell()
+    domain, = ufl_element.domains() # Assuming single domain
+    cellname = domain.cell().cellname()
 
     # Precompute repeatedly used items
     num_dofs_per_entity = _num_dofs_per_entity(element)
-    facet_dofs = _tabulate_facet_dofs(element, cell)
+    facet_dofs = _tabulate_facet_dofs(element, cellname)
 
     # Store id
     ir = {"id": element_id}
 
     # Compute data for each function
-    ir["signature"] = "FFC dofmap for " + repr(ufl_element)
+    ir["signature"] = "FFC dofmap for " + ufl_element.reconstruction_signature()
     ir["needs_mesh_entities"] = _needs_mesh_entities(element)
-    ir["topological_dimension"] = cell.topological_dimension()
-    ir["geometric_dimension"] = cell.geometric_dimension()
+    ir["topological_dimension"] = domain.topological_dimension()
+    ir["geometric_dimension"] = domain.geometric_dimension()
     ir["global_dimension"] = _global_dimension(element)
     ir["local_dimension"] = element.space_dimension()
     ir["num_facet_dofs"] = len(facet_dofs[0])
     ir["num_entity_dofs"] = num_dofs_per_entity
-    ir["tabulate_dofs"] = _tabulate_dofs(element, cell)
+    ir["tabulate_dofs"] = _tabulate_dofs(element, cellname)
     ir["tabulate_facet_dofs"] = facet_dofs
     ir["tabulate_entity_dofs"] = (element.entity_dofs(), num_dofs_per_entity)
     ir["tabulate_coordinates"] = _tabulate_coordinates(ufl_element, element)
@@ -293,8 +296,9 @@ def _generate_physical_offsets(ufl_element, offset=0):
 
     # Refer to reference if gdim == tdim. This is a hack to support
     # more stuff (in particular restricted elements)
-    gdim = ufl_element.cell().geometric_dimension()
-    tdim = ufl_element.cell().topological_dimension()
+    domain, = ufl_element.domains() # Assuming single domain
+    gdim = domain.geometric_dimension()
+    tdim = domain.topological_dimension()
     if (gdim == tdim):
         return _generate_reference_offsets(create_element(ufl_element))
 
@@ -313,7 +317,7 @@ def _generate_physical_offsets(ufl_element, offset=0):
             "This element combination is not implemented"
     return offsets
 
-def _evaluate_dof(ufl_element, element, cell):
+def _evaluate_dof(ufl_element, element):
     "Compute intermediate representation of evaluate_dof."
 
     # With regard to reference_value_size vs physical_value_size: Note
@@ -327,11 +331,13 @@ def _evaluate_dof(ufl_element, element, cell):
     # value size. This of course only matters for elements that have
     # different physical and reference value shapes and sizes.
 
+    domain, = ufl_element.domains() # Assuming single domain
+
     return {"mappings": element.mapping(),
             "reference_value_size": _value_size(element),
             "physical_value_size": _value_size(ufl_element),
-            "geometric_dimension": cell.geometric_dimension(),
-            "topological_dimension": cell.topological_dimension(),
+            "geometric_dimension": domain.geometric_dimension(),
+            "topological_dimension": domain.topological_dimension(),
             "dofs": [L.pt_dict for L in element.dual_basis()],
             "physical_offsets": _generate_physical_offsets(ufl_element)}
 
@@ -356,8 +362,11 @@ def _extract_elements(element):
 #     else:
 #         error("Tensor valued elements are not supported yet: %d " % shape)
 
-def _evaluate_basis(ufl_element, element, cell):
+def _evaluate_basis(ufl_element, element):
     "Compute intermediate representation for evaluate_basis."
+
+    domain, = ufl_element.domains() # Assuming single domain
+    cellname = domain.cell().cellname()
 
     # Handle Mixed and EnrichedElements by extracting 'sub' elements.
     elements = _extract_elements(element)
@@ -378,9 +387,9 @@ def _evaluate_basis(ufl_element, element, cell):
     # Initialise data with 'global' values.
     data = {"reference_value_size": _value_size(element),
             "physical_value_size": _value_size(ufl_element),
-            "cellname" : cell.cellname(),
-            "topological_dimension" : cell.topological_dimension(),
-            "geometric_dimension" : cell.geometric_dimension(),
+            "cellname" : cellname,
+            "topological_dimension" : domain.topological_dimension(),
+            "geometric_dimension" : domain.geometric_dimension(),
             "space_dimension" : element.space_dimension(),
             "needs_oriented": needs_oriented_jacobian(element),
             "max_degree": max([e.degree() for e in elements])
@@ -426,20 +435,22 @@ def _tabulate_coordinates(ufl_element, element):
     if uses_integral_moments(element):
         return {}
 
+    domain, = ufl_element.domains() # Assuming single domain
+
     data = {}
-    data["tdim"] = ufl_element.cell().topological_dimension()
-    data["gdim"] = ufl_element.cell().geometric_dimension()
+    data["tdim"] = domain.topological_dimension()
+    data["gdim"] = domain.geometric_dimension()
     data["points"] = [L.pt_dict.keys()[0] for L in element.dual_basis()]
     return data
 
-def _tabulate_dofs(element, cell):
+def _tabulate_dofs(element, cellname):
     "Compute intermediate representation of tabulate_dofs."
 
     if isinstance(element, SpaceOfReals):
         return None
 
     # Extract number of entities for each dimension for this cell
-    num_entities = cellname_to_num_entities[cell.cellname()]
+    num_entities = cellname_to_num_entities[cellname]
 
     # Extract number of dofs per entity for each element
     elements = all_elements(element)
@@ -464,18 +475,17 @@ def _tabulate_dofs(element, cell):
 
     return (dofs_per_element, num_dofs_per_element, num_entities, need_offset, fakes)
 
-
-def _tabulate_facet_dofs(element, cell):
+def _tabulate_facet_dofs(element, cellname):
     "Compute intermediate representation of tabulate_facet_dofs."
 
     # Compute incidences
-    incidence = __compute_incidence(cell.topological_dimension())
+    incidence = __compute_incidence(cellname2dim[cellname])
 
     # Get topological dimension
     D = max([pair[0][0] for pair in incidence])
 
     # Get the number of facets
-    num_facets = cellname_to_num_entities[cell.cellname()][-2]
+    num_facets = cellname_to_num_entities[cellname][-2]
 
     # Find out which entities are incident to each facet
     incident = num_facets*[None]
@@ -495,7 +505,7 @@ def _tabulate_facet_dofs(element, cell):
         facet_dofs[facet].sort()
     return facet_dofs
 
-def _interpolate_vertex_values(ufl_element, element, cell):
+def _interpolate_vertex_values(ufl_element, element):
     "Compute intermediate representation of interpolate_vertex_values."
 
     # Check for QuadratureElement
@@ -503,9 +513,12 @@ def _interpolate_vertex_values(ufl_element, element, cell):
         if isinstance(e, QuadratureElement):
             return "Function is not supported/implemented for QuadratureElement."
 
+    domain, = ufl_element.domains() # Assuming single domain
+    cellname = domain.cell().cellname()
+
     ir = {}
-    ir["geometric_dimension"] = cell.geometric_dimension()
-    ir["topological_dimension"] = cell.topological_dimension()
+    ir["geometric_dimension"] = domain.geometric_dimension()
+    ir["topological_dimension"] = domain.topological_dimension()
 
     # Check whether computing the Jacobian is necessary
     mappings = element.mapping()
@@ -517,8 +530,8 @@ def _interpolate_vertex_values(ufl_element, element, cell):
     ir["physical_value_size"] = _value_size(ufl_element)
 
     # Get vertices of reference cell
-    cell = reference_cell(cell.cellname())
-    vertices = cell.get_vertices()
+    fiat_cell = reference_cell(cellname)
+    vertices = fiat_cell.get_vertices()
 
     # Compute data for each constituent element
     extract = lambda values: values[values.keys()[0]].transpose()
@@ -563,9 +576,10 @@ def _has_foo_integrals(domain_type, form_data):
 def _create_default_foo_integral(domain_type, form_data):
     "Compute intermediate representation of create_default_foo_integral."
     itg_data = [itg_data for itg_data in form_data.integral_data
-           if itg_data.domain_id == Measure.DOMAIN_ID_OTHERWISE and itg_data.domain_type == domain_type]
+                if (itg_data.domain_id == "otherwise" and
+                    itg_data.domain_type == domain_type)]
     ffc_assert(len(itg_data) in (0,1), "Expecting at most one default integral of each type.")
-    return Measure.DOMAIN_ID_OTHERWISE if itg_data else None
+    return "otherwise" if itg_data else None
 
 #--- Utility functions ---
 

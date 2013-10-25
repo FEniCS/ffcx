@@ -55,7 +55,7 @@ def transform_monomial_form(monomial_form):
     # extraction.
 
     # Transform each integral
-    for (integrand, measure) in monomial_form:
+    for integrand in monomial_form:
         for (i, monomial) in enumerate(integrand.monomials):
             if not isinstance(monomial, TransformedMonomial):
                 integrand.monomials[i] = TransformedMonomial(monomial)
@@ -282,8 +282,9 @@ class TransformedMonomial:
 
             # Extract dimensions
             sdim = fiat_element.space_dimension()
-            gdim = ufl_element.cell().geometric_dimension()
-            tdim = ufl_element.cell().topological_dimension()
+            domain, = ufl_element.domains() # Assuming single domain
+            gdim = domain.geometric_dimension()
+            tdim = domain.topological_dimension()
 
             # Extract basis function index and coefficients
             if isinstance(f.function, Argument):
