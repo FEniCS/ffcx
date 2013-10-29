@@ -622,6 +622,11 @@ class QuadratureTransformer(QuadratureTransformerBase):
     def _atan_2_function(self, operands, format_function):
         x1,x2 = operands
         x1,x2 = x1.values()[0],x2.values()[0]
+
+        if x1 is None:
+            x1 = format["floating point"](0.0)
+        if x2 is None:
+            x2 = format["floating point"](0.0)
         return {():format_function(x1, x2)}
 
     def _bessel_function(self, operands, format_function):
