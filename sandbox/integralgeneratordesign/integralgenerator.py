@@ -312,7 +312,8 @@ class IntegralGenerator(object):
         self._dofblock_partition = dofblock_partition
         self._dofblock_integrand_partition = dofblock_integrand_partition
         self._dofblocks = dofblocks
-        self._dofblocks = dict( (num_points, db.keys()) for num_points, db in self._dofblock_integrand_partition.iteritems())
+        self._dofblocks = dict( (num_points, sorted(db.keys()))
+                                for num_points, db in self._dofblock_integrand_partition.iteritems())
 
     def generate_argument_partition(self, num_points, iarg, dofblock): # FIXME
         parts = []
