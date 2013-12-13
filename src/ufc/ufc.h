@@ -77,7 +77,7 @@ namespace ufc
     std::size_t geometric_dimension;
 
     /// Array of global indices for the mesh entities of the cell
-    std::size_t** entity_indices;
+    std::vector<std::vector<std::size_t> > entity_indices;
 
     /// Array of coordinates for the vertices of the cell
     double** coordinates;
