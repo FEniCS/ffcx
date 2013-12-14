@@ -61,8 +61,7 @@ namespace ufc
     /// Constructor
     cell(): cell_shape(interval),
             topological_dimension(0), geometric_dimension(0),
-            entity_indices(0), coordinates(0), index(0), local_facet(-1),
-            mesh_identifier(-1) {}
+            index(0), local_facet(-1), mesh_identifier(-1) {}
 
     /// Destructor
     virtual ~cell() {}
@@ -78,9 +77,6 @@ namespace ufc
 
     /// Array of global indices for the mesh entities of the cell
     std::vector<std::vector<std::size_t> > entity_indices;
-
-    /// Array of coordinates for the vertices of the cell
-    double** coordinates;
 
     // FIXME: Temporary until we remove UFCCell
     std::vector<double> vertex_coordinates;

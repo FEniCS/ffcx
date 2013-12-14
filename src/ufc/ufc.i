@@ -15,7 +15,6 @@
 
 // Ignore interface to ufc::cell that will not be available for the user
 %ignore ufc::cell::entity_indices;
-%ignore ufc::cell::coordinates;
 
 // Declare which classes should be stored using shared_ptr
 %shared_ptr(ufc::cell_integral)
