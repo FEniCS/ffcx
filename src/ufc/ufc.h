@@ -78,9 +78,6 @@ namespace ufc
     /// Array of global indices for the mesh entities of the cell
     std::vector<std::vector<std::size_t> > entity_indices;
 
-    // FIXME: Temporary until we remove UFCCell
-    std::vector<double> vertex_coordinates;
-
     /// Cell index (short-cut for entity_indices[topological_dimension][0])
     std::size_t index;
 
