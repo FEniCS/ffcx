@@ -1,3 +1,6 @@
+ - Use std::vector<std::vector<std::size_t> > for topology data
+ - Remove vertex coordinates from ufc::cell
+ - Improve detection of compatible Python libraries
  - Add current swigversion to the JIT compiled extension module
  - Remove dofmap::max_local_dimension()
  - Remove cell argument from dofmap::local_dimension()

@@ -20,10 +20,10 @@ Each string has the following format variables: 'classname',
 'members', 'constructor', 'destructor', plus one for each interface
 function with name equal to the function name.
 
-For more information about UFC and the FEniCS project, visit
+For more information about UFC and the FEniCS Project, visit
 
     http://www.fenicsproject.org
-    https://launchpad.net/ufc
+    https://bitbucket.org/fenics-project/ufc
 
 """
 

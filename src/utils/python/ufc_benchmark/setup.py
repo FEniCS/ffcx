@@ -16,9 +16,8 @@ setup(### metadata:
       maintainer_email  = 'martinal@simula.no',
       url               = 'http://www.fenicsproject.org',
       description       = 'Benchmark utility for UFC implementations.',
-      download_url      = 'https://launchpad.net/ufc',
+      download_url      = 'https://bitbucket/fenics-project/ufc',
       ### contents:
       py_modules   = ['ufc_benchmark'],
       ext_modules  = [extension],
       )
-
