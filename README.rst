@@ -45,6 +45,6 @@ Dependencies
 #.  The latest version of FIAT, UFC and UFL
 
     You need to have FIAT, UFC and UFL installed. They are available from the
-    web page: https://launchpad.net/fenics-project/.
+    web page: https://bitbucket.org/fenics-project/.
 
 #. The Python NumPy module
