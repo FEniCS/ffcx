@@ -1,3 +1,4 @@
+2.3.0 [2014-01-07]
  - Use std::vector<std::vector<std::size_t> > for topology data
  - Remove vertex coordinates from ufc::cell
  - Improve detection of compatible Python libraries
