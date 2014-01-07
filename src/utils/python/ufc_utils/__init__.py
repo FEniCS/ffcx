@@ -1,4 +1,4 @@
-"""Code generation format strings for UFC (Unified Form-assembly Code) v. 2.3.0.
+"""Code generation format strings for UFC (Unified Form-assembly Code) v. 2.3.0+.
 
 Three format strings are defined for each of the following UFC classes:
 
@@ -30,7 +30,7 @@ For more information about UFC and the FEniCS Project, visit
 # -*- coding: utf-8 -*-
 __author__  = "Martin Sandve Alnaes, Anders Logg, Kent-Andre Mardal, Ola Skavhaug, and Hans Petter Langtangen"
 __date__    = "2014-01-07"
-__version__ = "2.3.0"
+__version__ = "2.3.0+"
 __license__ = "This code is released into the public domain"
 
 UFC_VERSION_MAJOR = 2
