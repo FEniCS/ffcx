@@ -16,9 +16,10 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Kristian B. Oelgaard 2009
+# Modified by Johannes Ring 2014
 #
 # First added:  2005-05-20
-# Last changed: 2013-03-24
+# Last changed: 2014-01-07
 
-FFC_VERSION = "1.2.0+"
-UFC_VERSION = "2.2.0+"
+FFC_VERSION = "1.3.0"
+UFC_VERSION = "2.3.0"
