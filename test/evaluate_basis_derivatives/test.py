@@ -25,8 +25,6 @@ from instant.output import get_status_output
 import sys, os, pickle, numpy, shutil
 
 # Elements, supported by FFC and FIAT, and their supported shape and orders
-# TODO: RT order 0 gives error from FIAT, but is allowed by UFL
-# TODO: Nedelec order 0 gives error from FIAT, but is allowed by UFL
 single_elements = [ {"family": "Lagrange",\
                       "shapes": ["interval", "triangle", "tetrahedron"],\
                       "orders": [1, 2, 3, 4]},\
@@ -38,16 +36,22 @@ single_elements = [ {"family": "Lagrange",\
                       "orders": [1]},\
                     {"family": "Raviart-Thomas",\
                       "shapes": ["triangle", "tetrahedron"],\
-                      "orders": [1, 2]},\
+                      "orders": [1, 2, 3]},\
+                    {"family": "Discontinuous Raviart-Thomas",\
+                      "shapes": ["triangle", "tetrahedron"],\
+                      "orders": [1, 2, 3]},\
                     {"family": "Brezzi-Douglas-Marini",\
                       "shapes": ["triangle", "tetrahedron"],\
                       "orders": [1, 2, 3]},\
                     {"family": "Brezzi-Douglas-Fortin-Marini",\
-                      "shapes": ["triangle", "tetrahedron"],\
-                      "orders": [1, 2, 3]},\
+                      "shapes": ["triangle"],\
+                      "orders": [2]},\
                     {"family": "Nedelec 1st kind H(curl)",\
                       "shapes": ["triangle", "tetrahedron"],\
-                      "orders": [1, 2]}]
+                      "orders": [1, 2, 3]},\
+                    {"family": "Nedelec 2nd kind H(curl)",\
+                      "shapes": ["triangle", "tetrahedron"],\
+                      "orders": [1, 2, 3]}]
 
 # Create some mixed elements
 dg0_tri = FiniteElement("DG", "triangle", 0)
@@ -55,6 +59,7 @@ dg1_tri = FiniteElement("DG", "triangle", 1)
 cg1_tri = FiniteElement("CG", "triangle", 1)
 cr1_tri = FiniteElement("CR", "triangle", 1)
 rt1_tri = FiniteElement("RT", "triangle", 1)
+drt2_tri = FiniteElement("DRT", "triangle", 2)
 bdm1_tri = FiniteElement("BDM", "triangle", 1)
 ned1_tri = FiniteElement("N1curl", "triangle", 1)
 
@@ -63,6 +68,7 @@ dg1_tet = FiniteElement("DG", "tetrahedron", 1)
 cg1_tet = FiniteElement("CG", "tetrahedron", 1)
 cr1_tet = FiniteElement("CR", "tetrahedron", 1)
 rt1_tet = FiniteElement("RT", "tetrahedron", 1)
+drt2_tet = FiniteElement("DRT", "tetrahedron", 2)
 bdm1_tet = FiniteElement("BDM", "tetrahedron", 1)
 ned1_tet = FiniteElement("N1curl", "tetrahedron", 1)
 
@@ -70,10 +76,12 @@ mixed_elements = [MixedElement([dg0_tri]*4), MixedElement([cg1_tri]*3), MixedEle
                   MixedElement([dg1_tri, cg1_tri, cr1_tri, rt1_tri, bdm1_tri, ned1_tri]),\
                   MixedElement([MixedElement([rt1_tri, cr1_tri]), cg1_tri, ned1_tri]),\
                   MixedElement([ned1_tri, dg1_tri, MixedElement([rt1_tri, cr1_tri])]),\
+                  MixedElement([drt2_tri, cg1_tri]),\
                   MixedElement([dg0_tet]*4), MixedElement([cg1_tet]*3), MixedElement([bdm1_tet]*2),\
                   MixedElement([dg1_tet, cg1_tet, cr1_tet, rt1_tet, bdm1_tet, ned1_tet]),\
                   MixedElement([MixedElement([rt1_tet, cr1_tet]), cg1_tet, ned1_tet]),\
-                  MixedElement([ned1_tet, dg1_tet, MixedElement([rt1_tet, cr1_tet])])]
+                  MixedElement([ned1_tet, dg1_tet, MixedElement([rt1_tet, cr1_tet])]),\
+                  MixedElement([drt2_tet, cg1_tet])]
 
 ffc_failed = []
 gcc_failed = []
