@@ -35,7 +35,7 @@ v = TestFunction(element)
 f = Coefficient(element)
 
 # Normal component, mesh size and right-hand side
-n = element.cell().n
+n = FacetNormal(triangle)
 h = Constant(triangle)
 
 # Parameters

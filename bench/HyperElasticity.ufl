@@ -35,7 +35,8 @@ B  = Coefficient(element)       # Body force per unit mass
 T  = Coefficient(element)       # Traction force on the boundary
 
 # Kinematics
-I = Identity(v.cell().d)        # Identity tensor
+d = len(u)
+I = Identity(d)                 # Identity tensor
 F = I + grad(u)                 # Deformation gradient
 C = F.T*F                       # Right Cauchy-Green tensor
 E = (C - I)/2                   # Euler-Lagrange strain tensor

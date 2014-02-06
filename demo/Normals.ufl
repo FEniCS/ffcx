@@ -24,7 +24,7 @@ cell = triangle
 
 element = VectorElement("Lagrange", cell, 1)
 
-n = cell.n
+n = FacetNormal(cell)
 
 v = TrialFunction(element)
 u = TestFunction(element)
