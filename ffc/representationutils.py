@@ -39,8 +39,9 @@ def transform_component(component, offset, ufl_element):
     # This code is used for tensor/monomialtransformation.py and
     # quadrature/quadraturetransformerbase.py.
 
-    gdim = ufl_element.cell().geometric_dimension()
-    tdim = ufl_element.cell().topological_dimension()
+    domain, = ufl_element.domains() # Assuming single domain
+    gdim = domain.geometric_dimension()
+    tdim = domain.topological_dimension()
 
     # Do nothing if we are not in a special case: The special cases
     # occur if we have piola mapped elements (for which value_shape !=
@@ -104,16 +105,20 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
                    "interior_facet": "facet",
                    "point": "vertex",
                    }[itg_data.domain_type]
+    cellname = itg_data.domain.cell().cellname()
+    tdim = itg_data.domain.topological_dimension()
+    assert all(tdim == itg.domain().topological_dimension() for itg in itg_data.integrals)
+
     return { "representation":       representation,
              "domain_type":          itg_data.domain_type,
              "domain_id":            itg_data.domain_id,
              "form_id":              form_id,
              "rank":                 form_data.rank,
              "geometric_dimension":  form_data.geometric_dimension,
-             "topological_dimension":form_data.topological_dimension,
+             "topological_dimension": tdim,
              "entitytype":           entitytype,
-             "num_facets":           cellname_to_num_entities[form_data.cell.cellname()][-2],
-             "num_vertices":         cellname_to_num_entities[form_data.cell.cellname()][0],
+             "num_facets":           cellname_to_num_entities[cellname][-2],
+             "num_vertices":         cellname_to_num_entities[cellname][0],
              "needs_oriented":       needs_oriented_jacobian(form_data),
            }
 

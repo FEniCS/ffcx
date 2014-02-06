@@ -42,7 +42,7 @@ def compute_integral_ir(itg_data,
 
     # Tabulate quadrature points and basis function values in these points
     integrals_dict, psi_tables, quad_weights = \
-        _tabulate_basis(sorted_integrals, itg_data.domain_type, form_data)
+        _tabulate_basis(sorted_integrals, form_data, itg_data)
 
     # Save tables for quadrature weights and points
     ir["quadrature_weights"] = quad_weights

@@ -130,7 +130,8 @@ def _create_fiat_element(ufl_element):
 
     # Get element data
     family = ufl_element.family()
-    cell = ufl_element.cell()
+    domain, = ufl_element.domains() # Assuming single domain
+    cellname = domain.cell().cellname() # Assuming single cell in domain
     degree = ufl_element.degree()
 
     # Check that FFC supports this element
@@ -139,7 +140,7 @@ def _create_fiat_element(ufl_element):
 
     # Handle the space of the constant
     if family == "Real":
-        dg0_element = ufl.FiniteElement("DG", cell, 0)
+        dg0_element = ufl.FiniteElement("DG", domain, 0)
         constant = _create_fiat_element(dg0_element)
         element = SpaceOfReals(constant)
 
@@ -157,12 +158,12 @@ def _create_fiat_element(ufl_element):
 
     else:
         # Create FIAT cell
-        fiat_cell = reference_cell(cell.cellname())
+        fiat_cell = reference_cell(cellname)
 
         # Handle Bubble element as RestrictedElement of P_{k} to interior
         if family == "Bubble":
             V = FIAT.supported_elements["Lagrange"](fiat_cell, degree)
-            dim = cell.topological_dimension()
+            dim = domain.topological_dimension()
             return RestrictedElement(V, _indices(V, "interior", dim), None)
 
         # Check if finite element family is supported by FIAT
@@ -273,39 +274,39 @@ def _create_restricted_element(ufl_element):
         error("create_restricted_element expects an ufl.RestrictedElement")
 
     base_element = ufl_element.element()
-    domain = ufl_element.cell_restriction()
+    restriction_domain = ufl_element.cell_restriction()
 
     # If simple element -> create RestrictedElement from fiat_element
     if isinstance(base_element, ufl.FiniteElement):
         element = _create_fiat_element(base_element)
-        return RestrictedElement(element, _indices(element, domain), domain)
+        return RestrictedElement(element, _indices(element, restriction_domain), restriction_domain)
 
     # If restricted mixed element -> convert to mixed restricted element
     if isinstance(base_element, ufl.MixedElement):
-        elements = _extract_elements(base_element, domain)
+        elements = _extract_elements(base_element, restriction_domain)
         return MixedElement(elements)
 
     error("Cannot create restricted element from %s" % str(ufl_element))
 
-def _indices(element, domain, dim=0):
-    "Extract basis functions indices that correspond to domain."
+def _indices(element, restriction_domain, dim=0):
+    "Extract basis functions indices that correspond to restriction_domain."
 
-    # FIXME: The domain argument in FFC/UFL needs to be re-thought and
+    # FIXME: The restriction_domain argument in FFC/UFL needs to be re-thought and
     # cleaned-up.
 
-    # If domain is "interior", pick basis functions associated with
+    # If restriction_domain is "interior", pick basis functions associated with
     # cell.
-    if domain == "interior" and dim:
+    if restriction_domain == "interior" and dim:
         return element.entity_dofs()[dim][0]
 
-    # If domain is a ufl.Cell, pick basis functions associated with
-    # the topological degree of the domain and of all lower
+    # If restriction_domain is a ufl.Cell, pick basis functions associated with
+    # the topological degree of the restriction_domain and of all lower
     # dimensions.
-    if isinstance(domain, ufl.Cell):
-        dim = domain.topological_dimension()
+    if isinstance(restriction_domain, ufl.Cell):
+        dim = restriction_domain.topological_dimension()
         entity_dofs = element.entity_dofs()
         indices = []
-        for dim in range(domain.topological_dimension() + 1):
+        for dim in range(restriction_domain.topological_dimension() + 1):
             entities = entity_dofs[dim]
             for (entity, index) in entities.iteritems():
                 indices += index
@@ -313,7 +314,7 @@ def _indices(element, domain, dim=0):
 
     # Just extract all indices to make handling in RestrictedElement
     # uniform.
-    #elif isinstance(domain, ufl.Measure):
+    #elif isinstance(restriction_domain, ufl.Measure):
     #    indices = []
     #    entity_dofs = element.entity_dofs()
     #    for dim, entities in entity_dofs.items():
@@ -322,5 +323,4 @@ def _indices(element, domain, dim=0):
     #    return indices
 
     else:
-        error("Restriction to domain: %s, is not supported." % repr(domain))
-
+        error("Restriction to domain: %s, is not supported." % repr(restriction_domain))

@@ -32,7 +32,6 @@ form representation type.
 
 # UFL modules
 from ufl.common import istr, tstr
-#from ufl.integral import Measure
 from ufl.finiteelement import MixedElement, EnrichedElement
 from ufl.algorithms import estimate_total_polynomial_degree
 from ufl.algorithms import sort_elements
@@ -127,7 +126,7 @@ def _analyze_form(form, object_names, parameters):
     "Analyze form, returning form data."
 
     # Check that form is not empty
-    ffc_assert(len(form.integrals()),
+    ffc_assert(not form.empty(),
                "Form (%s) seems to be zero: cannot compile it." % str(form))
 
     # Compute form metadata
@@ -152,73 +151,67 @@ def _attach_integral_metadata(form_data, parameters):
     # Iterate over integral collections
     quad_schemes = []
     for ida in form_data.integral_data:
-        common_metadata = ida.metadata # TODO: Is it possible to detach this from IntegralData? It's a bit strange from the ufl side.
+        # TODO: Is it possible to detach this from IntegralData? It's a bit strange from the ufl side.
+        common_metadata = ida.metadata
 
         # Iterate over integrals
         integral_metadatas = []
         for integral in ida.integrals:
 
-            # Get metadata for integral
-            integral_metadata = integral.compiler_data() or {}
+            # Fill in integral metadata with default values
+            # NB! This modifies the metadata of the input integral data!
+            integral_metadata = integral.metadata() or {}
             for key in metadata_keys:
-                if not key in integral_metadata:
+                if key not in integral_metadata:
                     integral_metadata[key] = parameters[key]
 
-            # Special case: handling -1 as "auto" for quadrature_degree
-            if integral_metadata["quadrature_degree"] == -1:
-                integral_metadata["quadrature_degree"] = "auto"
-
-            # Check metadata
-            r  = integral_metadata["representation"]
-            qd = integral_metadata["quadrature_degree"]
-            qr = integral_metadata["quadrature_rule"]
-            if not r in ("quadrature", "tensor", "uflacs", "auto"):
-                info("Valid choices are 'tensor', 'quadrature', 'uflacs', or 'auto'.")
-                error("Illegal choice of representation for integral: " + str(r))
-            if not qd  == "auto":
-                qd = int(qd)
-                if not qd >= 0:
-                    info("Valid choices are nonnegative integers or 'auto'.")
-                    error("Illegal quadrature degree for integral: " + str(qd))
-                integral_metadata["quadrature_degree"] = qd
-            if not qr in ("default", "canonical", "vertex", "auto"):
-                info("Valid choices are 'default', 'canonical', 'vertex', and 'auto'.")
-                error("Illegal choice of quadrature rule for integral: " + str(qr))
-
             # Automatic selection of representation
+            r = integral_metadata["representation"]
             if r == "auto":
-                # TODO: This doesn't really need the measure except for code redesign
-                #       reasons, pass integrand instead to reduce dependencies.
-                #       Not sure if function_replace_map is really needed either,
-                #       just passing it to be on the safe side.
                 r = _auto_select_representation(integral,
                                                 form_data.unique_sub_elements,
                                                 form_data.function_replace_map)
                 info("representation:    auto --> %s" % r)
-                integral_metadata["representation"] = r
-            else:
+            elif r in ("quadrature", "tensor", "uflacs"):
                 info("representation:    %s" % r)
+            else:
+                info("Valid choices are 'tensor', 'quadrature', 'uflacs', or 'auto'.")
+                error("Illegal choice of representation for integral: " + str(r))
+            integral_metadata["representation"] = r
 
             # Automatic selection of quadrature degree
-            if qd == "auto":
+            qd = integral_metadata["quadrature_degree"]
+            # Special case: handling -1 as "auto" for quadrature_degree
+            if qd in ("auto", -1):
                 qd = _auto_select_quadrature_degree(integral.integrand(),
                                                     r,
                                                     form_data.unique_sub_elements,
                                                     form_data.element_replace_map)
                 info("quadrature_degree: auto --> %d" % qd)
-                integral_metadata["quadrature_degree"] = qd
             else:
+                qd = int(qd)
                 info("quadrature_degree: %d" % qd)
-            _check_quadrature_degree(qd, form_data.topological_dimension)
+            # Validate degree
+            if not qd >= 0:
+                info("Valid choices are nonnegative integers or 'auto'.")
+                error("Illegal quadrature degree for integral: " + str(qd))
+            tdim = integral.domain().topological_dimension()
+            _check_quadrature_degree(qd, tdim)
+            integral_metadata["quadrature_degree"] = qd
+            assert isinstance(qd, int)
 
             # Automatic selection of quadrature rule
+            qr = integral_metadata["quadrature_rule"]
             if qr == "auto":
                 # Just use default for now.
                 qr = "default"
                 info("quadrature_rule:   auto --> %s" % qr)
-                integral_metadata["quadrature_rule"] = qr
-            else:
+            elif qr in ("default", "canonical", "vertex"):
                 info("quadrature_rule:   %s" % qr)
+            else:
+                info("Valid choices are 'default', 'canonical', 'vertex', and 'auto'.")
+                error("Illegal choice of quadrature rule for integral: " + str(qr))
+            integral_metadata["quadrature_rule"] = qr
             quad_schemes.append(qr)
 
             # Append to list of metadata
@@ -228,45 +221,51 @@ def _attach_integral_metadata(form_data, parameters):
         if len(ida.integrals) == 1:
             common_metadata.update(integral_metadatas[0])
         else:
-
             # Check that representation is the same
-            # FIXME: Why must the representation within a sub domain be the same?
+            # (Generating code with different representations within a
+            # single tabulate_tensor is considered not worth the effort)
             representations = [md["representation"] for md in integral_metadatas]
-            if not all_equal(representations):
+            if all_equal(representations):
+                r = representations[0]
+            else:
                 r = "quadrature"
                 info("Integral representation must be equal within each sub domain, using %s representation." % r)
-            else:
-                r = representations[0]
 
             # Check that quadrature degree is the same
             # FIXME: Why must the degree within a sub domain be the same?
+            #        This makes no sense considering that num_points is
+            #        used as a key all over in quadrature representation...
             quadrature_degrees = [md["quadrature_degree"] for md in integral_metadatas]
-            if not all_equal(quadrature_degrees):
+            if all_equal(quadrature_degrees):
+                qd = quadrature_degrees[0]
+            else:
                 qd = max(quadrature_degrees)
                 info("Quadrature degree must be equal within each sub domain, using degree %d." % qd)
-            else:
-                qd = quadrature_degrees[0]
+            assert isinstance(qd, int)
 
             # Check that quadrature rule is the same
             # FIXME: Why must the rule within a sub domain be the same?
+            #        To support this would be more work since num_points is used
+            #        to identify quadrature rules in the quadrature representation.
             quadrature_rules = [md["quadrature_rule"] for md in integral_metadatas]
-            if not all_equal(quadrature_rules):
+            if all_equal(quadrature_rules):
+                qr = quadrature_rules[0]
+            else:
                 qr = "canonical"
                 info("Quadrature rule must be equal within each sub domain, using %s rule." % qr)
-            else:
-                qr = quadrature_rules[0]
 
             # Update common metadata
+            assert isinstance(qd, int)
             common_metadata["representation"] = r
             common_metadata["quadrature_degree"] = qd
             common_metadata["quadrature_rule"] = qr
 
     # Update scheme for QuadratureElements
-    if not all_equal(quad_schemes):
+    if all_equal(quad_schemes):
+        scheme = quad_schemes[0]
+    else:
         scheme = "canonical"
         info("Quadrature rule must be equal within each sub domain, using %s rule." % qr)
-    else:
-        scheme = quad_schemes[0]
     for element in form_data.sub_elements:
         if element.family() == "Quadrature":
             element._quad_scheme = scheme
@@ -291,6 +290,10 @@ def _auto_select_representation(integral, elements, function_replace_map):
     necessarily get the same representation.
     """
 
+    # Skip unsupported integration domain types
+    if integral.domain_type() == "point":
+        return "quadrature"
+
     # Get ALL sub elements, needed to check for restrictions of EnrichedElements.
     sub_elements = []
     for e in elements:
@@ -301,12 +304,12 @@ def _auto_select_representation(integral, elements, function_replace_map):
         return "quadrature"
 
     # Use quadrature representation if any elements are restricted to
-    # UFL.Measure. This is used when integrals are computed over discontinuities.
+    # ufl.Measure. This is used when integrals are computed over discontinuities.
     #if len([e for e in sub_elements if isinstance(e.cell_restriction(), Measure)]):
     #    return "quadrature"
 
     # Estimate cost of tensor representation
-    tensor_cost = estimate_cost(integral, function_replace_map)
+    tensor_cost = estimate_cost(integral.integrand(), function_replace_map)
     debug("Estimated cost of tensor representation: " + str(tensor_cost))
 
     # Use quadrature if tensor representation is not possible

@@ -35,9 +35,8 @@ import ufc
 
 # UFL modules
 from ufl.classes import Form, FiniteElementBase, TestFunction
-from ufl.domains import as_domain
 from ufl.objects import dx
-from ufl.algorithms import as_form, extract_common_cell, extract_elements, extract_sub_elements
+from ufl.algorithms import as_form, extract_elements, extract_sub_elements
 from ufl.common import istr, tstr
 
 # FFC modules
@@ -62,7 +61,7 @@ FFC_PARAMETERS_JIT["no-evaluate_basis_derivatives"] = True
 # Set debug level for Instant
 instant.set_log_level("warning")
 
-def jit(ufl_object, parameters=None, common_cell=None):
+def jit(ufl_object, parameters=None):
     """Just-in-time compile the given form or element
 
     Parameters:
@@ -75,71 +74,10 @@ def jit(ufl_object, parameters=None, common_cell=None):
     if isinstance(ufl_object, FiniteElementBase):
         return jit_element(ufl_object, parameters)
     else:
-        return jit_form(ufl_object, parameters, common_cell)
+        return jit_form(ufl_object, parameters)
 
-def _auto_select_degree(elements):
-    """
-    Automatically select degree for all elements of the form in cases
-    where this has not been specified by the user. This feature is
-    used by DOLFIN to allow the specification of Expressions with
-    undefined degrees.
-    """
-
-    # Extract common degree
-    common_degree = max([e.degree() for e in elements] or [None])
-    if common_degree is None:
-        common_degree = default_quadrature_degree
-
-    # Degree must be at least 1 (to work with Lagrange elements)
-    common_degree = max(1, common_degree)
-
-    return common_degree
-
-def _compute_element_mapping(form, common_cell):
-    "Compute element mapping for element replacement"
-
-    # Extract all elements
-    elements = extract_elements(form)
-    elements = extract_sub_elements(elements)
-
-    # Get cell and degree
-    # FIXME: implement extract_common_top_domain(s) instead of this
-    common_cell = extract_common_cell(form, common_cell)
-    common_domain = as_domain(common_cell) # FIXME:
-    common_degree = _auto_select_degree(elements)
-
-    # Compute element map
-    element_mapping = {}
-    for element in elements:
-
-        # Flag for whether element needs to be reconstructed
-        reconstruct = False
-
-        # Set cell
-        domain = element.domain()
-        if domain is None:
-            info("Adjusting missing element domain to %s." % \
-                     (common_domain,))
-            domain = common_domain
-            reconstruct = True
-
-        # Set degree
-        degree = element.degree()
-        if degree is None:
-            info("Adjusting element degree from %s to %d" % \
-                     (istr(degree), common_degree))
-            degree = common_degree
-            reconstruct = True
-
-        # Reconstruct element and add to map
-        if reconstruct:
-            element_mapping[element] = element.reconstruct(domain=domain,
-                                                           degree=degree)
-
-    return element_mapping
 
 def check_swig_version(compiled_module):
-    
     # Check swig version of compiled module
     if compiled_module and compiled_module.swigversion != ufc.__swigversion__:
         error("Incompatible swig versions detected. UFC swig "\
@@ -147,7 +85,7 @@ def check_swig_version(compiled_module):
               "version: '%s' != '%s' " % \
               (ufc.__swigversion__, compiled_module.swigversion))
 
-def jit_form(form, parameters=None, common_cell=None):
+def jit_form(form, parameters=None):
     "Just-in-time compile the given form."
 
     # Check that we get a Form
@@ -161,12 +99,8 @@ def jit_form(form, parameters=None, common_cell=None):
     set_level(parameters["log_level"])
     set_prefix(parameters["log_prefix"])
 
-    # Compute element mapping for element replacement
-    element_mapping = _compute_element_mapping(form, common_cell)
-
     # Compute form metadata and extract preprocessed form
-    form_data = form.compute_form_data(common_cell=common_cell,
-                                       element_mapping=element_mapping)
+    form_data = form.compute_form_data()
 
     # Wrap input
     jit_object = JITObject(form, parameters)
@@ -186,7 +120,7 @@ def jit_form(form, parameters=None, common_cell=None):
     # Take lock to serialise file removal.
     # Need to add "_0" to lock as instant.import_module acquire
     # lock with name: module_name
-    with instant.file_lock(instant.get_default_cache_dir(), \
+    with instant.file_lock(instant.get_default_cache_dir(),
                            module_name + "_0") as lock:
 
         # Retry Instant cache. The module may have been created while we waited

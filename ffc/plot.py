@@ -75,14 +75,16 @@ def plot(element, rotate=True):
         # Create cell model
         cell, is3d = create_cell_model(element)
 
+        cellname = element.cell().cellname() # Assuming single cell
+
         # Create dof models
         dofs, num_moments = create_dof_models(element)
 
         # Create title
         if element.degree() is not None:
-            title = "%s of degree %d on a %s" % (element.family(), element.degree(), element.cell().cellname())
+            title = "%s of degree %d on a %s" % (element.family(), element.degree(), cellname)
         else:
-            title = "%s on a %s" % (element.family(), element.cell().cellname())
+            title = "%s on a %s" % (element.family(), cellname)
 
         # Render plot window
         render([cell] + dofs, title, num_moments, is3d, rotate)

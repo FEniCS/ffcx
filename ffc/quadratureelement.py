@@ -51,15 +51,16 @@ class QuadratureElement:
         # Create quadrature (only interested in points)
         # TODO: KBO: What should we do about quadrature functions that live on ds, dS?
         # Get cell and facet names.
-        cellname = ufl_element.cell().cellname()
-        #facet_cellname = ufl_element.cell().facet_cellname()
+        domain, = ufl_element.domains() # Assuming single domain
+        cellname = domain.cell().cellname()
+        #facet_cellname = domain.cell().facet_cellname()
         points, weights = create_quadrature(cellname, degree, self._quad_scheme)
 
         # Save the quadrature points
         self._points = points
 
         # Create entity dofs.
-        ufc_cell = reference_cell(ufl_element.cell().cellname())
+        ufc_cell = reference_cell(cellname)
         self._entity_dofs = _create_entity_dofs(ufc_cell, len(points))
 
         # The dual is a simply the PointEvaluation at the quadrature points
@@ -68,7 +69,8 @@ class QuadratureElement:
 
         # Save the geometric dimension.
         # FIXME: KBO: Do we need to change this in order to integrate on facets?
-        self._geometric_dimension = ufl_element.cell().geometric_dimension()
+        #        MSA: Not the geometric dimension, but maybe the topological dimension somewhere?
+        self._geometric_dimension = domain.geometric_dimension()
 
     def space_dimension(self):
         "The element space dimension is simply the number of quadrature points"
@@ -121,10 +123,10 @@ class QuadratureElement:
         values = numpy.eye(len(self._points))
         return {(0,)*self._geometric_dimension: values}
 
-def _create_entity_dofs(cell, num_dofs):
+def _create_entity_dofs(fiat_cell, num_dofs):
     "This function is ripped from FIAT/discontinuous_lagrange.py"
     entity_dofs = {}
-    top = cell.get_topology()
+    top = fiat_cell.get_topology()
     for dim in sorted( top ):
         entity_dofs[dim] = {}
         for entity in sorted( top[dim] ):
