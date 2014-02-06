@@ -14,8 +14,8 @@ lmbda_S = Constant(cell)
 mu_FD = Constant(cell)
 lmbda_FD = Constant(cell)
 
-N_F = cell.n
-N_S = cell.n
+N_F = FacetNormal(cell)
+N_S = FacetNormal(cell)
 
 #Create measures
 dx_F = dx(0)

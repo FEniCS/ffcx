@@ -10,7 +10,7 @@ V = VectorElement("CG", cell, 1)
 W = TensorElement("CG", cell, 1)
 S = TensorElement("CG", cell, 1, symmetry=True)
 
-x, y = cell.x
+x, y = SpatialCoordinate(cell)
 
 u = Coefficient(U)
 v = Coefficient(V)

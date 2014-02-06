@@ -42,7 +42,7 @@ class test_ufl_expression_compilation(CodegenTestCase):
         ASSERT_EQ(A[1], 0.1);
         ASSERT_EQ(A[2], 0.2);
         """
-        expr = ufl.tetrahedron.x
+        expr = ufl.SpatialCoordinate(ufl.tetrahedron)
         code = self.compile_expression(expr)
         self.emit_test(code)
 
@@ -56,7 +56,7 @@ class test_ufl_expression_compilation(CodegenTestCase):
         POST:
         ASSERT_EQ(A[0], x[0] + x[1] + x[2]);
         """
-        x = ufl.tetrahedron.x
+        x = ufl.SpatialCoordinate(ufl.tetrahedron)
         expr = x[0] + x[1] + x[2]
         code = self.compile_expression(expr)
         print code
@@ -72,7 +72,7 @@ class test_ufl_expression_compilation(CodegenTestCase):
         POST:
         ASSERT_EQ(A[0], x[0] * x[1] * x[2]);
         """
-        x = ufl.tetrahedron.x
+        x = ufl.SpatialCoordinate(ufl.tetrahedron)
         expr = x[0] * x[1] * x[2]
         code = self.compile_expression(expr)
         print code
@@ -89,7 +89,7 @@ class test_ufl_expression_compilation(CodegenTestCase):
         POST:
         ASSERT_EQ(A[0], (x[0] + x[1]) * x[2] - (x[0] + (x[1] * x[2])));
         """
-        x = ufl.tetrahedron.x
+        x = ufl.SpatialCoordinate(ufl.tetrahedron)
         expr = (x[0] + x[1]) * x[2] - (x[0] + (x[1] * x[2]))
         code = self.compile_expression(expr)
         print code

@@ -7,11 +7,11 @@ from ufl import *
 
 cell = triangle
 
-x = cell.x
-xi = cell.xi
-J = cell.J
-detJ = cell.detJ
-K = cell.Jinv
+x = SpatialCoordinate(cell)
+xi = LocalCoordinate(cell)
+J = GeometryJacobi(cell)
+detJ = GeometryJacobiDeterminant(cell)
+K = InverseGeometryJacobi(cell)
 
 S0 = FiniteElement("DG", cell, 0)
 S1 = FiniteElement("CG", cell, 1)

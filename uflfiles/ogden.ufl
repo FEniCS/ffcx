@@ -1,7 +1,7 @@
 
 cell = tetrahedron
 
-d = cell.d
+d = cell.geometric_dimension()
 I = Identity(d)
 
 V = VectorElement("CG", cell, 1)
