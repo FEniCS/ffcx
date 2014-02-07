@@ -267,16 +267,49 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     # FacetNormal, CellVolume, Circumradius (geometry.py).
     # -------------------------------------------------------------------------
+    def local_coordinate(self, o):
+        error("This object should be implemented by the child class.")
+
+    def jacobian(self, o):
+        error("This object should be implemented by the child class.")
+
+    def jacobian_determinant(self, o):
+        error("This object should be implemented by the child class.")
+
+    def jacobian_inverse(self, o):
+        error("This object should be implemented by the child class.")
+
+    def cell_barycenter(self, o):
+        error("This object should be implemented by the child class.")
+
+    def facet_barycenter(self, o):
+        error("This object should be implemented by the child class.")
+
+    def cell_normal(self, o):
+        error("This object should be implemented by the child class.")
+
     def facet_normal(self, o):
-        print "\n\nVisiting FacetNormal: ", repr(o)
         error("This object should be implemented by the child class.")
 
     def cell_volume(self, o):
-        print "\n\nVisiting CellVolume: ", repr(o)
         error("This object should be implemented by the child class.")
 
     def circumradius(self, o):
-        print "\n\nVisiting Circumeradius: ", repr(o)
+        error("This object should be implemented by the child class.")
+
+    def cell_surface_area(self, o):
+        error("This object should be implemented by the child class.")
+
+    def facet_diameter(self, o):
+        error("This object should be implemented by the child class.")
+
+    def facet_area(self, o):
+        error("This object should be implemented by the child class.")
+
+    def min_facet_edge_length(self, o):
+        error("This object should be implemented by the child class.")
+
+    def max_facet_edge_length(self, o):
         error("This object should be implemented by the child class.")
 
     # -------------------------------------------------------------------------

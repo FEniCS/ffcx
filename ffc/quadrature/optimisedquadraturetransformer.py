@@ -270,14 +270,37 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     # FacetNormal, CellVolume, Circumradius, FacetArea (geometry.py).
     # -------------------------------------------------------------------------
-    def facet_normal(self, o,  *operands):
-        #print("Visiting FacetNormal:")
+    def local_coordinate(self, o):
+        error("This object should be implemented by the child class.") # FIXME
 
-        # Get the component
+    def jacobian(self, o):
+        error("This object should be implemented by the child class.") # FIXME
+
+    def jacobian_determinant(self, o):
+        error("This object should be implemented by the child class.") # FIXME
+
+    def jacobian_inverse(self, o):
+        error("This object should be implemented by the child class.") # FIXME
+
+    def cell_barycenter(self, o):
+        error("This object should be implemented by the child class.") # FIXME
+
+    def facet_barycenter(self, o):
+        error("This object should be implemented by the child class.") # FIXME
+
+    def cell_normal(self, o):
+        error("This object should be implemented by the child class.") # FIXME
+
+    def cell_surface_area(self, o):
+        error("This object should be implemented by the child class.") # FIXME
+
+    def facet_diameter(self, o):
+        error("This object should be implemented by the child class.") # FIXME
+
+    def facet_normal(self, o):
         components = self.component()
 
         # Safety check.
-        ffc_assert(not operands, "Didn't expect any operands for FacetNormal: " + repr(operands))
         ffc_assert(len(components) == 1,
                    "FacetNormal expects 1 component index: " + repr(components))
 
@@ -291,24 +314,18 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         return {(): create_symbol(normal_component, GEO)}
 
-    def cell_volume(self, o,  *operands):
-        # Safety check.
-        ffc_assert(not operands, "Didn't expect any operands for CellVolume: " + repr(operands))
-
+    def cell_volume(self, o):
         # FIXME: KBO: This has to change for higher order elements
-#        detJ = format["det(J)"](self.restriction)
-#        volume = format["absolute value"](detJ)
-#        self.trans_set.add(detJ)
+        #detJ = format["det(J)"](self.restriction)
+        #volume = format["absolute value"](detJ)
+        #self.trans_set.add(detJ)
 
         volume = format["cell volume"](self.restriction)
         self.trans_set.add(volume)
 
         return {():create_symbol(volume, GEO)}
 
-    def circumradius(self, o,  *operands):
-        # Safety check.
-        ffc_assert(not operands, "Didn't expect any operands for Circumradius: " + repr(operands))
-
+    def circumradius(self, o):
         # FIXME: KBO: This has to change for higher order elements
         circumradius = format["circumradius"](self.restriction)
         self.trans_set.add(circumradius)
@@ -316,7 +333,6 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         return {():create_symbol(circumradius, GEO)}
 
     def facet_area(self, o):
-
         # FIXME: KBO: This has to change for higher order elements
         # NOTE: Omitting restriction because the area of a facet is the same
         # on both sides.
