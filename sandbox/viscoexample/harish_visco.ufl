@@ -46,7 +46,8 @@ n0 = VectorConstant(cell)
 
 # Define kinematic measures in terms of the displacement
 def kinematics(u):
-    I = Identity(u.cell().d)    # Identity tensor
+    d = len(u)
+    I = Identity(d)             # Identity tensor
     F = I + grad(u)             # Deformation gradient
     C = F.T*F                   # Right Cauchy-Green tensor
     J = variable(det(F))        # Jacobian
@@ -122,7 +123,7 @@ Q_n = beta_inf*exp(xi)*S_iso_inf_n + H_p
 S_n = S_vol_inf_n + S_iso_inf_n + Q_n
 
 # Define the variational form for the problem
-I = Identity(cell.d)
+I = Identity(len(u))
 M = inner(S_n, S_n)*dx # Added for UFL debugging and profiling
 F = inner((I + grad(u))*S_n, grad(v))*dx
 J = derivative(F, u, du)

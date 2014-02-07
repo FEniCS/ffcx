@@ -43,5 +43,5 @@ for fn in filenames:
         else:
             if tt.search(line):
                 in_tabulate_tensor = True
-                skip_lines = 2
+                skip_lines = 3
 

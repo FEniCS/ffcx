@@ -99,7 +99,7 @@ class test_tabulate_tensor_body(CodegenTestCase):
         """
         cell = interval
 
-        x = cell.x[0]
+        x = SpatialCoordinate(cell)[0]
         expr = x
         integral = expr*dP
 
@@ -142,7 +142,7 @@ class test_tabulate_tensor_body(CodegenTestCase):
         ASSERT_EQ(A[0], 0.15*1.2*(2.0+3.0));
         """
         cell = interval
-        x = cell.x[0]
+        x = SpatialCoordinate(cell)[0]
 
         V = VectorElement("DG", cell, 0, dim=2)
         w0 = Constant(cell, count=0)
@@ -206,13 +206,13 @@ class test_tabulate_tensor_body(CodegenTestCase):
         td = cell.topological_dimension()
 
         values = []
-        values.extend(cell.x[i] for i in range(gd))
-        values.extend(cell.xi[i] for i in range(td))
-        values.extend(cell.J[i,j] for i in range(gd) for i in range(td))
-        values.extend(cell.Jinv[i,j] for i in range(td) for i in range(gd))
-        values.append(cell.detJ)
-        values.append(cell.volume)
-        values.append(cell.circumradius)
+        values.extend(SpatialCoordinate(cell)[i] for i in range(gd))
+        values.extend(LocalCoordinate(cell)[i] for i in range(td))
+        values.extend(GeometryJacobian(cell)[i,j] for i in range(gd) for i in range(td))
+        values.extend(InverseGeometryJacobian(cell)[i,j] for i in range(td) for i in range(gd))
+        values.append(GeometryJacobianDeterminant(cell))
+        values.append(CellVolume(cell))
+        values.append(Circumradius(cell))
 
         expr = as_vector(values)
 

@@ -48,7 +48,8 @@ n0 = Constant((0, 0, 1))
 
 # Define kinematic measures in terms of the displacement
 def kinematics(u):
-    I = Identity(u.cell().d)    # Identity tensor
+    d = len(u)
+    I = Identity(d)             # Identity tensor
     F = I + grad(u)             # Deformation gradient
     C = F.T*F                   # Right Cauchy-Green tensor
     J = variable(det(F))        # Jacobian
@@ -180,7 +181,7 @@ for t_n in times:
     S_n = S_vol_inf_n + S_iso_inf_n + Q_n
 
     # Define the variational form for the problem
-    F = inner((Identity(u.cell().d) + grad(u))*S_n, grad(v))*dx
+    F = inner((Identity(len(u)) + grad(u))*S_n, grad(v))*dx
     J = derivative(F, u, du)
 
     # Solve the boundary value problem
