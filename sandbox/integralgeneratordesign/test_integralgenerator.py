@@ -17,31 +17,25 @@ class TestIntegralGenerator(unittest.TestCase):
 
         debug(g.__class__.__name__, code)
 
-    def test_exterior_facet_integral_generator(self):
+    def xtest_exterior_facet_integral_generator(self):
         g = ExteriorFacetIntegralGenerator()
         code = g.generate()
 
         debug(g.__class__.__name__, code)
 
-    def test_interior_facet_integral_generator(self):
+    def xtest_interior_facet_integral_generator(self):
         g = InteriorFacetIntegralGenerator()
         code = g.generate()
 
         debug(g.__class__.__name__, code)
 
-    def test_cutcell_integral_generator(self):
-        g = CutcellIntegralGenerator()
+    def xtest_quadrature_integral_generator(self):
+        g = QuadratureIntegralGenerator()
         code = g.generate()
 
         debug(g.__class__.__name__, code)
 
-    def test_subcell_integral_generator(self):
-        g = SubcellIntegralGenerator()
-        code = g.generate()
-
-        debug(g.__class__.__name__, code)
-
-    def test_diract_integral_generator(self):
+    def xtest_diract_integral_generator(self):
         g = DiracIntegralGenerator()
         code = g.generate()
 
