@@ -72,11 +72,6 @@ endif()
 find_package(SWIG QUIET)
 include(UseSWIG)
 
-# Look for Boost (shared_ptr support for Python wrappers)
-set(Boost_ADDITIONAL_VERSIONS 1.43 1.43.0)
-set(BOOST_ROOT $ENV{BOOST_DIR})
-find_package(Boost 1.36 QUIET)
-
 #------------------------------------------------------------------------------
 # Get installation path for Python modules
 
@@ -141,7 +136,7 @@ install(FILES ${UFC_H} DESTINATION ${UFC_INCLUDE_DIR} COMPONENT Development)
 #------------------------------------------------------------------------------
 # Build SWIG extension and install
 
-if (UFC_ENABLE_PYTHON AND SWIG_FOUND AND Boost_FOUND)
+if (UFC_ENABLE_PYTHON AND SWIG_FOUND)
 
   # Check SWIG version
   if (${SWIG_VERSION} LESS 2.0)
@@ -163,7 +158,7 @@ if (UFC_ENABLE_PYTHON AND SWIG_FOUND AND Boost_FOUND)
   endif()
 
   # Include directories
-  include_directories(${UFC_SOURCE_DIR}/src/ufc ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
+  include_directories(${UFC_SOURCE_DIR}/src/ufc ${PYTHON_INCLUDE_DIRS})
 
   # Set module name
   set(SWIG_MODULE_NAME ufc)

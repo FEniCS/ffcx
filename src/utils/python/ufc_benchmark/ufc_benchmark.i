@@ -40,10 +40,10 @@
 
 %{
 class NoDeleter { public: void operator()(ufc::form *) {} };
-boost::shared_ptr<ufc::form> form_ptr(ufc::form * form) { return boost::shared_ptr<ufc::form>(form, NoDeleter()); }
+std::shared_ptr<ufc::form> form_ptr(ufc::form * form) { return std::shared_ptr<ufc::form>(form, NoDeleter()); }
 %}
 class NoDeleter { public: void operator()(ufc::form *) {} };
-boost::shared_ptr<ufc::form> form_ptr(ufc::form * form) { return boost::shared_ptr<ufc::form>(form, NoDeleter()); }
+std::shared_ptr<ufc::form> form_ptr(ufc::form * form) { return std::shared_ptr<ufc::form>(form, NoDeleter()); }
 
 // ----------------------- Python wrapper for benchmark
 

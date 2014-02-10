@@ -46,12 +46,12 @@ def build_ufc_module(h_files, source_directory="", system_headers=None, \
     assert all(isinstance(header, str) for header in system_headers), \
            "Elements of 'system_headers' must be 'str'."
 
-    system_headers.append("boost/shared_ptr.hpp")
+    system_headers.append("<memory>")
 
     # Get the swig interface file declarations
     declarations = extract_declarations(h_files2)
     declarations += """
-    
+
 // SWIG version
 %inline %{
 int get_swigversion() { return  SWIGVERSION; }
@@ -77,10 +77,9 @@ def extract_declarations(h_files):
 
     # Swig declarations
     declarations =r"""
-//Uncomment these to produce code for std::tr1::shared_ptr
-//#define SWIG_SHARED_PTR_NAMESPACE std
-//#define SWIG_SHARED_PTR_SUBNAMESPACE tr1
-%include <boost_shared_ptr.i>
+// Use std::shared_ptr
+#define SWIG_SHARED_PTR_NAMESPACE std
+%include <memory>
 
 // Declare which classes should be stored using shared_ptr
 %shared_ptr(ufc::cell_integral)
