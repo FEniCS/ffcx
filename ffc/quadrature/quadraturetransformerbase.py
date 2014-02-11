@@ -279,14 +279,23 @@ class QuadratureTransformerBase(Transformer):
     def jacobian_inverse(self, o):
         error("This object should be implemented by the child class.")
 
-    def cell_barycenter(self, o):
+    def facet_jacobian(self, o):
         error("This object should be implemented by the child class.")
 
-    def facet_barycenter(self, o):
+    def facet_jacobian_determinant(self, o):
         error("This object should be implemented by the child class.")
 
-    def cell_normal(self, o):
+    def facet_jacobian_inverse(self, o):
         error("This object should be implemented by the child class.")
+
+    #def cell_barycenter(self, o):
+    #    error("This object should be implemented by the child class.")
+
+    #def facet_barycenter(self, o):
+    #    error("This object should be implemented by the child class.")
+
+    #def cell_normal(self, o):
+    #    error("This object should be implemented by the child class.")
 
     def facet_normal(self, o):
         error("This object should be implemented by the child class.")
@@ -297,11 +306,11 @@ class QuadratureTransformerBase(Transformer):
     def circumradius(self, o):
         error("This object should be implemented by the child class.")
 
-    def cell_surface_area(self, o):
-        error("This object should be implemented by the child class.")
+    #def cell_surface_area(self, o):
+    #    error("This object should be implemented by the child class.")
 
-    def facet_diameter(self, o):
-        error("This object should be implemented by the child class.")
+    #def facet_diameter(self, o):
+    #    error("This object should be implemented by the child class.")
 
     def facet_area(self, o):
         error("This object should be implemented by the child class.")
