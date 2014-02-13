@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake@simula.no)"
-__date__ = "2009-03-06 -- 2013-09-12"
+__date__ = "2009-03-06 -- 2014-02-13"
 __license__  = "This code is released into the public domain"
 
 __all__ = ['build_ufc_module']
@@ -46,7 +46,7 @@ def build_ufc_module(h_files, source_directory="", system_headers=None, \
     assert all(isinstance(header, str) for header in system_headers), \
            "Elements of 'system_headers' must be 'str'."
 
-    system_headers.append("<memory>")
+    system_headers.append("memory")
 
     # Get the swig interface file declarations
     declarations = extract_declarations(h_files2)
@@ -79,7 +79,7 @@ def extract_declarations(h_files):
     declarations =r"""
 // Use std::shared_ptr
 #define SWIG_SHARED_PTR_NAMESPACE std
-%include <memory>
+%include <std_shared_ptr.i>
 
 // Declare which classes should be stored using shared_ptr
 %shared_ptr(ufc::cell_integral)

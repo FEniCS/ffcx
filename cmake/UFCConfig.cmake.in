@@ -11,6 +11,9 @@ set(UFC_FOUND TRUE)
 # Include directories
 set(UFC_INCLUDE_DIRS "@CMAKE_INSTALL_PREFIX@/@UFC_INCLUDE_DIR@")
 
+# Compiler flags
+set(UFC_CXX_FLAGS "@CMAKE_CXX_FLAGS@")
+
 # Python include directories
 set(UFC_PYTHON_INCLUDE_DIRS
   "@PYTHON_INCLUDE_DIRS@"

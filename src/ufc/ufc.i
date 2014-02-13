@@ -6,7 +6,6 @@
 %}
 
 // Use std::shared_ptr
-#define SWIG_SHARED_PTR_NAMESPACE std
 %include <std_shared_ptr.i>
 
 // Ignore interface to ufc::cell that will not be available for the user

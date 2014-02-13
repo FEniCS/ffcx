@@ -138,6 +138,17 @@ install(FILES ${UFC_H} DESTINATION ${UFC_INCLUDE_DIR} COMPONENT Development)
 
 if (UFC_ENABLE_PYTHON AND SWIG_FOUND)
 
+  include(CheckCXXCompilerFlag)
+  CHECK_CXX_COMPILER_FLAG(-std=c++11 HAVE_STD_CPP11)
+  if (HAVE_STD_CPP11)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+  else()
+    CHECK_CXX_COMPILER_FLAG(-std=c++0x HAVE_STD_CPP0x)
+    if (HAVE_STD_CPP0x)
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+    endif()
+  endif()
+
   # Check SWIG version
   if (${SWIG_VERSION} LESS 2.0)
       message(ERROR " UFC requires SWIG version 2.0 or greater. You have version ${SWIG_VERSION}. Set UFC_ENABLE_PYTHON to False or install correct SWIG version.")
