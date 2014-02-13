@@ -54,23 +54,23 @@ update_ec_template = """
   virtual void update_ec(const dolfin::Form& a, const dolfin::Form& L)
   {
     // This stuff is created here and shipped elsewhere
-    boost::shared_ptr<dolfin::Form> a_star;           // Dual lhs
-    boost::shared_ptr<dolfin::Form> L_star;           // Dual rhs
-    boost::shared_ptr<dolfin::FunctionSpace> V_Ez_h;  // Extrapolation space
-    boost::shared_ptr<dolfin::Function> Ez_h;         // Extrapolated dual
-    boost::shared_ptr<dolfin::Form> residual;         // Residual (as functional)
-    boost::shared_ptr<dolfin::FunctionSpace> V_R_T;   // Trial space for cell residual
-    boost::shared_ptr<dolfin::Form> a_R_T;            // Cell residual lhs
-    boost::shared_ptr<dolfin::Form> L_R_T;            // Cell residual rhs
-    boost::shared_ptr<dolfin::FunctionSpace> V_b_T;   // Function space for cell bubble
-    boost::shared_ptr<dolfin::Function> b_T;          // Cell bubble
-    boost::shared_ptr<dolfin::FunctionSpace> V_R_dT;  // Trial space for facet residual
-    boost::shared_ptr<dolfin::Form> a_R_dT;           // Facet residual lhs
-    boost::shared_ptr<dolfin::Form> L_R_dT;           // Facet residual rhs
-    boost::shared_ptr<dolfin::FunctionSpace> V_b_e;   // Function space for cell cone
-    boost::shared_ptr<dolfin::Function> b_e;          // Cell cone
-    boost::shared_ptr<dolfin::FunctionSpace> V_eta_T; // Function space for indicators
-    boost::shared_ptr<dolfin::Form> eta_T;            // Indicator form
+    std::shared_ptr<dolfin::Form> a_star;           // Dual lhs
+    std::shared_ptr<dolfin::Form> L_star;           // Dual rhs
+    std::shared_ptr<dolfin::FunctionSpace> V_Ez_h;  // Extrapolation space
+    std::shared_ptr<dolfin::Function> Ez_h;         // Extrapolated dual
+    std::shared_ptr<dolfin::Form> residual;         // Residual (as functional)
+    std::shared_ptr<dolfin::FunctionSpace> V_R_T;   // Trial space for cell residual
+    std::shared_ptr<dolfin::Form> a_R_T;            // Cell residual lhs
+    std::shared_ptr<dolfin::Form> L_R_T;            // Cell residual rhs
+    std::shared_ptr<dolfin::FunctionSpace> V_b_T;   // Function space for cell bubble
+    std::shared_ptr<dolfin::Function> b_T;          // Cell bubble
+    std::shared_ptr<dolfin::FunctionSpace> V_R_dT;  // Trial space for facet residual
+    std::shared_ptr<dolfin::Form> a_R_dT;           // Facet residual lhs
+    std::shared_ptr<dolfin::Form> L_R_dT;           // Facet residual rhs
+    std::shared_ptr<dolfin::FunctionSpace> V_b_e;   // Function space for cell cone
+    std::shared_ptr<dolfin::Function> b_e;          // Cell cone
+    std::shared_ptr<dolfin::FunctionSpace> V_eta_T; // Function space for indicators
+    std::shared_ptr<dolfin::Form> eta_T;            // Indicator form
 
     // Some handy views
     const dolfin::FunctionSpace& Vhat(*(a.function_space(0))); // Primal test

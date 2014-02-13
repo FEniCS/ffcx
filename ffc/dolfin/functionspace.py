@@ -79,17 +79,17 @@ public:
   // Create standard function space (reference version)
   %(classname)s(const dolfin::Mesh& mesh):
     dolfin::FunctionSpace(dolfin::reference_to_no_delete_pointer(mesh),
-                          boost::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(boost::shared_ptr<ufc::finite_element>(new %(ufc_finite_element_classname)s()))),
-                          boost::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(boost::shared_ptr<ufc::dofmap>(new %(ufc_dofmap_classname)s()), mesh)))
+                          std::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(std::shared_ptr<ufc::finite_element>(new %(ufc_finite_element_classname)s()))),
+                          std::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(std::shared_ptr<ufc::dofmap>(new %(ufc_dofmap_classname)s()), mesh)))
   {
     // Do nothing
   }
 
   // Create standard function space (shared pointer version)
-  %(classname)s(boost::shared_ptr<const dolfin::Mesh> mesh):
+  %(classname)s(std::shared_ptr<const dolfin::Mesh> mesh):
     dolfin::FunctionSpace(mesh,
-                          boost::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(boost::shared_ptr<ufc::finite_element>(new %(ufc_finite_element_classname)s()))),
-                          boost::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(boost::shared_ptr<ufc::dofmap>(new %(ufc_dofmap_classname)s()), *mesh)))
+                          std::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(std::shared_ptr<ufc::finite_element>(new %(ufc_finite_element_classname)s()))),
+                          std::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(std::shared_ptr<ufc::dofmap>(new %(ufc_dofmap_classname)s()), *mesh)))
   {
     // Do nothing
   }
@@ -99,18 +99,18 @@ public:
   // Create standard function space (reference version)
   %(classname)s(const dolfin::Mesh& mesh, const dolfin::SubDomain& constrained_domain):
     dolfin::FunctionSpace(dolfin::reference_to_no_delete_pointer(mesh),
-                          boost::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(boost::shared_ptr<ufc::finite_element>(new %(ufc_finite_element_classname)s()))),
-                          boost::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(boost::shared_ptr<ufc::dofmap>(new %(ufc_dofmap_classname)s()), mesh,
+                          std::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(std::shared_ptr<ufc::finite_element>(new %(ufc_finite_element_classname)s()))),
+                          std::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(std::shared_ptr<ufc::dofmap>(new %(ufc_dofmap_classname)s()), mesh,
                               dolfin::reference_to_no_delete_pointer(constrained_domain))))
   {
     // Do nothing
   }
 
   // Create standard function space (shared pointer version)
-  %(classname)s(boost::shared_ptr<const dolfin::Mesh> mesh, boost::shared_ptr<const dolfin::SubDomain> constrained_domain):
+  %(classname)s(std::shared_ptr<const dolfin::Mesh> mesh, std::shared_ptr<const dolfin::SubDomain> constrained_domain):
     dolfin::FunctionSpace(mesh,
-                          boost::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(boost::shared_ptr<ufc::finite_element>(new %(ufc_finite_element_classname)s()))),
-                          boost::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(boost::shared_ptr<ufc::dofmap>(new %(ufc_dofmap_classname)s()), *mesh, constrained_domain)))
+                          std::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(std::shared_ptr<ufc::finite_element>(new %(ufc_finite_element_classname)s()))),
+                          std::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(std::shared_ptr<ufc::dofmap>(new %(ufc_dofmap_classname)s()), *mesh, constrained_domain)))
   {
     // Do nothing
   }
@@ -120,18 +120,18 @@ public:
   // Create restricted function space (reference version)
   %(classname)s(const dolfin::Restriction& restriction):
     dolfin::FunctionSpace(dolfin::reference_to_no_delete_pointer(restriction.mesh()),
-                          boost::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(boost::shared_ptr<ufc::finite_element>(new %(ufc_finite_element_classname)s()))),
-                          boost::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(boost::shared_ptr<ufc::dofmap>(new %(ufc_dofmap_classname)s()),
+                          std::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(std::shared_ptr<ufc::finite_element>(new %(ufc_finite_element_classname)s()))),
+                          std::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(std::shared_ptr<ufc::dofmap>(new %(ufc_dofmap_classname)s()),
                                                                                      reference_to_no_delete_pointer(restriction))))
   {
     // Do nothing
   }
 
   // Create restricted function space (shared pointer version)
-  %(classname)s(boost::shared_ptr<const dolfin::Restriction> restriction):
+  %(classname)s(std::shared_ptr<const dolfin::Restriction> restriction):
     dolfin::FunctionSpace(dolfin::reference_to_no_delete_pointer(restriction->mesh()),
-                          boost::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(boost::shared_ptr<ufc::finite_element>(new %(ufc_finite_element_classname)s()))),
-                          boost::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(boost::shared_ptr<ufc::dofmap>(new %(ufc_dofmap_classname)s()),
+                          std::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(std::shared_ptr<ufc::finite_element>(new %(ufc_finite_element_classname)s()))),
+                          std::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(std::shared_ptr<ufc::dofmap>(new %(ufc_dofmap_classname)s()),
                                                                                      restriction)))
   {
     // Do nothing

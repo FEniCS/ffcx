@@ -24,19 +24,19 @@ dolfin_includes = """\
 #include <dolfin/adaptivity/GoalFunctional.h>"""
 #-------------------------------------------------------------------------------
 snippets = {"shared_ptr_space":
-                ("boost::shared_ptr<const dolfin::FunctionSpace> %s",
+                ("std::shared_ptr<const dolfin::FunctionSpace> %s",
                  "    _function_spaces[%d] = %s;"),
             "referenced_space":
                 ("const dolfin::FunctionSpace& %s",
                  "    _function_spaces[%d] = reference_to_no_delete_pointer(%s);"),
             "shared_ptr_mesh":
-                ("boost::shared_ptr<const dolfin::Mesh> mesh",
+                ("std::shared_ptr<const dolfin::Mesh> mesh",
                  "    _mesh = mesh;"),
             "referenced_mesh":
                 ("const dolfin::Mesh& mesh",
                  "    _mesh = reference_to_no_delete_pointer(mesh);"),
             "shared_ptr_coefficient":
-                ("boost::shared_ptr<const dolfin::GenericFunction> %s",
+                ("std::shared_ptr<const dolfin::GenericFunction> %s",
                  "    this->%s = *%s;"),
             "referenced_coefficient":
                 ("const dolfin::GenericFunction& %s",
