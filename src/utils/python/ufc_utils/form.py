@@ -77,6 +77,12 @@ public:
 %(num_point_domains)s
   }
 
+  /// Return the number of quadrature domains
+  virtual std::size_t num_quadrature_domains() const
+  {
+%(num_quadrature_domains)s
+  }
+
   /// Return whether the form has any cell integrals
   virtual bool has_cell_integrals() const
   {
@@ -99,6 +105,12 @@ public:
   virtual bool has_point_integrals() const
   {
 %(has_point_integrals)s
+  }
+
+  /// Return whether the form has any quadrature integrals
+  virtual bool has_quadrature_integrals() const
+  {
+%(has_quadrature_integrals)s
   }
 
   /// Create a new finite element for argument function i
@@ -137,6 +149,12 @@ public:
 %(create_point_integral)s
   }
 
+  /// Create a new quadrature integral on sub domain i
+  virtual ufc::quadrature_integral* create_quadrature_integral(std::size_t i) const
+  {
+%(create_quadrature_integral)s
+  }
+
   /// Create a new cell integral on everywhere else
   virtual ufc::cell_integral* create_default_cell_integral() const
   {
@@ -159,6 +177,12 @@ public:
   virtual ufc::point_integral* create_default_point_integral() const
   {
 %(create_default_point_integral)s
+  }
+
+  /// Create a new quadrature integral on everywhere else
+  virtual ufc::quadrature_integral* create_default_quadrature_integral() const
+  {
+%(create_default_quadrature_integral)s
   }
 
 };
@@ -211,6 +235,9 @@ public:
   /// Return the number of point domains
   virtual std::size_t num_point_domains() const;
 
+  /// Return the number of quadrature domains
+  virtual std::size_t num_quadrature_domains() const;
+
   /// Return whether the form has any cell integrals
   virtual bool has_cell_integrals() const;
 
@@ -222,6 +249,9 @@ public:
 
   /// Return whether the form has any point integrals
   virtual bool has_point_integrals() const;
+
+  /// Return whether the form has any quadrature integrals
+  virtual bool has_quadrature_integrals() const;
 
   /// Create a new finite element for argument function i
   virtual ufc::finite_element* create_finite_element(std::size_t i) const;
@@ -239,7 +269,10 @@ public:
   virtual ufc::interior_facet_integral* create_interior_facet_integral(std::size_t i) const;
 
   /// Create a new point integral on sub domain i
-  virtual ufc::point_integral* create_point_integral(std::size_t i) const;
+  virtual ufc::point_integral* create_quadrature_integral(std::size_t i) const;
+
+  /// Create a new quadrature integral on sub domain i
+  virtual ufc::quadrature_integral* create_quadrature_integral(std::size_t i) const;
 
   /// Create a new cell integral on everywhere else
   virtual ufc::cell_integral* create_default_cell_integral() const;
@@ -252,6 +285,9 @@ public:
 
   /// Create a new point integral on everywhere else
   virtual ufc::point_integral* create_default_point_integral() const;
+
+  /// Create a new quadrature integral on everywhere else
+  virtual ufc::quadrature_integral* create_default_quadrature_integral() const;
 };
 """
 
@@ -310,6 +346,12 @@ std::size_t %(classname)s::num_point_domains() const
 %(num_point_domains)s
 }
 
+/// Return the number of quadrature domains
+std::size_t %(classname)s::num_quadrature_domains() const
+{
+%(num_quadrature_domains)s
+}
+
 /// Return whether the form has any cell integrals
 bool %(classname)s::has_cell_integrals() const
 {
@@ -332,6 +374,12 @@ bool %(classname)s::has_interior_facet_integrals() const
 bool %(classname)s::has_point_integrals() const
 {
 %(has_point_integrals)s
+}
+
+/// Return whether the form has any quadrature integrals
+bool %(classname)s::has_quadrature_integrals() const
+{
+%(has_quadrature_integrals)s
 }
 
 /// Create a new finite element for argument function i
@@ -370,6 +418,12 @@ ufc::point_integral* %(classname)s::create_point_integral(std::size_t i) const
 %(create_point_integral)s
 }
 
+/// Create a new quadrature integral on sub domain i
+ufc::quadrature_integral* %(classname)s::create_quadrature_integral(std::size_t i) const
+{
+%(create_quadrature_integral)s
+}
+
 /// Create a new cell integral on everywhere else
 ufc::cell_integral* %(classname)s::create_default_cell_integral() const
 {
@@ -392,6 +446,12 @@ ufc::interior_facet_integral* %(classname)s::create_default_interior_facet_integ
 ufc::point_integral* %(classname)s::create_default_point_integral() const
 {
 %(create_default_point_integral)s
+}
+
+/// Create a new quadrature integral on everywhere else
+ufc::quadrature_integral* %(classname)s::create_default_quadrature_integral() const
+{
+%(create_default_quadrature_integral)s
 }
 
 """
