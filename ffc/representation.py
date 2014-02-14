@@ -237,24 +237,33 @@ def _compute_form_ir(form_data, form_id, element_numbers):
     ir["signature"] = form_data.signature
     ir["rank"] = form_data.rank
     ir["num_coefficients"] = form_data.num_coefficients
+
     ir["num_cell_domains"] = form_data.num_sub_domains.get("cell",0)
     ir["num_exterior_facet_domains"] = form_data.num_sub_domains.get("exterior_facet",0)
     ir["num_interior_facet_domains"] = form_data.num_sub_domains.get("interior_facet",0)
     ir["num_point_domains"] = form_data.num_sub_domains.get("point",0)
+    ir["num_quadrature_domains"] = form_data.num_sub_domains.get("quadrature",0)
+
     ir["has_cell_integrals"] = _has_foo_integrals("cell", form_data)
     ir["has_exterior_facet_integrals"] = _has_foo_integrals("exterior_facet", form_data)
     ir["has_interior_facet_integrals"] = _has_foo_integrals("interior_facet", form_data)
     ir["has_point_integrals"] = _has_foo_integrals("point", form_data)
+    ir["has_quadrature_integrals"] = _has_foo_integrals("quadrature", form_data)
+
     ir["create_finite_element"] = [element_numbers[e] for e in form_data.elements]
     ir["create_dofmap"] = [element_numbers[e] for e in form_data.elements]
+
     ir["create_cell_integral"] = _create_foo_integral("cell", form_data)
     ir["create_exterior_facet_integral"] = _create_foo_integral("exterior_facet", form_data)
     ir["create_interior_facet_integral"] = _create_foo_integral("interior_facet", form_data)
     ir["create_point_integral"] = _create_foo_integral("point", form_data)
+    ir["create_quadrature_integral"] = _create_foo_integral("quadrature", form_data)
+
     ir["create_default_cell_integral"] = _create_default_foo_integral("cell", form_data)
     ir["create_default_exterior_facet_integral"] = _create_default_foo_integral("exterior_facet", form_data)
     ir["create_default_interior_facet_integral"] = _create_default_foo_integral("interior_facet", form_data)
     ir["create_default_point_integral"] = _create_default_foo_integral("point", form_data)
+    ir["create_default_quadrature_integral"] = _create_default_foo_integral("quadrature", form_data)
 
     return ir
 
