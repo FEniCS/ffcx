@@ -269,7 +269,7 @@ public:
   virtual ufc::interior_facet_integral* create_interior_facet_integral(std::size_t i) const;
 
   /// Create a new point integral on sub domain i
-  virtual ufc::point_integral* create_quadrature_integral(std::size_t i) const;
+  virtual ufc::point_integral* create_point_integral(std::size_t i) const;
 
   /// Create a new quadrature integral on sub domain i
   virtual ufc::quadrature_integral* create_quadrature_integral(std::size_t i) const;
