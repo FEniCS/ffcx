@@ -150,11 +150,11 @@ class IntegralGenerator(object):
         """
         parts = []
         parts += [self.generate_quadrature_tables()]
-        parts += [self.generate_element_tables()] # FIXME: Implement!
+        parts += [self.generate_element_tables()]
         parts += [self.generate_tensor_reset()]
-        parts += [self.generate_pre_quadrature_loops()] # FIXME: Implement!
+        parts += [self.generate_piecewise_partition()]
         parts += [self.generate_quadrature_loops()]
-        parts += [self.generate_post_quadrature_loops()] # TODO: Implement for expression support
+        parts += [self.generate_finishing_statements()]
         return format_code_structure(Indented(parts))
 
     def generate_quadrature_tables(self):
@@ -183,25 +183,16 @@ class IntegralGenerator(object):
 
         return parts
 
-    def generate_element_tables(self): # FIXME
+    def generate_element_tables(self): # FIXME: Generate element tables here
         "Generate static tables with precomputed element basis function values in quadrature points."
-        parts = ["// FIXME: Section for precomputed element basis function values"]
+        parts = []
+        parts += ["// FIXME: Section for precomputed element basis function values"]
         return parts
 
     def generate_tensor_reset(self):
         "Generate statements for resetting the element tensor to zero."
         memset = "memset(%s, 0, %d * sizeof(%s[0]));" % (names.A, self._A_size, names.A)
         parts = [langfmt.comment("Reset element tensor"), memset, ""]
-        return parts
-
-    def generate_pre_quadrature_loops(self): # FIXME
-        """Generate statements prior to the quadrature loop.
-
-        This mostly includes computations involving piecewise constant geometry and coefficients.
-        """
-        parts = []
-        parts += ["// Section for piecewise constant computations"]
-        parts += ["// FIXME: Implement this"]
         return parts
 
     def generate_quadrature_loops(self):
@@ -225,22 +216,21 @@ class IntegralGenerator(object):
         self._integrand_term_factors[num_points] = {} # IM in factorization code
         # modified_argument_dofrange: modified_argument_index -> dofrange
         self._modified_argument_dofrange = {}
-        self._modified_argument_dofrange[num_points] = [] # TODO: Build from dof ranges of AV in factorization code
+        self._modified_argument_dofrange[num_points] = []# FIXME: Build from dof ranges of AV in factorization code
         #self._modified_arguments = {}
         #self._modified_arguments[num_points] = [] # AV in factorization code
 
 
-
         parts += ["// Quadrature loop body setup {0}".format(num_points)]
-        # FIXME: All leftover argument independent computations here
-        # FIXME: Implement x-partition generation here
 
-        # Generate pre-argument loop computations
+        parts += self.generate_varying_partition(num_points)
+
+        # Generate pre-argument loop computations # FIXME: What is this?
         for mas in self._integrand_term_factors[num_points]:
             dofblock = tuple(self._modified_argument_dofrange[num_points][ma] for ma in mas)
             ssa_index = self._integrand_term_factors[num_points][mas]
 
-            # TODO: Generate code for f*D and store reference to it with mas
+            # FIXME: Generate code for f*D and store reference to it with mas
             #f = self._ssa[ssa_index]
             #vname = name_from(mas)
             #vcode = code_from(ssa_index)
@@ -279,30 +269,63 @@ class IntegralGenerator(object):
             body = []
             # Generate code partition for dofblock at this loop level
             body += self.generate_argument_partition(num_points, iarg, dofblock)
+
             # Generate nested inner loops (only triggers for forms with two or more arguments
             body += self.generate_quadrature_body_dofblocks(num_points, dofblock)
+
             # Wrap setup, subloops, and accumulation in a loop for this level
             parts += [ForRange(self._idofs[level], dofrange[0], dofrange[1], body=body)]
+        return parts
+
+    def generate_piecewise_partition(self): # FIXME: Generate 'piecewise' partition here
+        """Generate statements prior to the quadrature loop.
+
+        This mostly includes computations involving piecewise constant geometry and coefficients.
+        """
+        parts = []
+        parts += ["// FIXME: Section for piecewise constant computations"]
+
+        # FIXME: Get partition associated with num_points
+        p = None
+        #p = self._dofblock_partition_???
+        #p = self._partitions["piecewise"]
+
+        if p is not None:
+            parts += generate_partition_assignments(p) # FIXME: Generate partition computation here
+        else:
+            parts += ["// FIXME: sp[...] = ...;"] # TODO: Remove this mock code
+
+        return parts
+
+    def generate_varying_partition(self, num_points): # FIXME: Generate 'varying' partition
+        parts = []
+        parts += ["// FIXME: Section for geometrically varying computations"]
+
+        # FIXME: Get partition associated with num_points
+        p = None
+        #p = self._dofblock_partition_???.get(num_points)
+        #p = self._partitions["varying"].get(num_points)
+
+        if p is not None:
+            parts += generate_partition_assignments(p) # FIXME: Generate partition computation here
+        else:
+            parts += ["// FIXME: sv[...] = ...;"] # TODO: Remove this mock code
+
         return parts
 
     def generate_argument_partition(self, num_points, iarg, dofblock): # FIXME: Define better and implement
         """Generate code for the partition corresponding to arguments 0..iarg within given dofblock."""
         parts = []
-        dofrange = dofblock[iarg]
-
-        # TODO: Partitions data structure may look something like this:
-        #arg_partition = self._partitions["argument"][num_points][level][dofrange]
 
         # FIXME: Get partition associated with (num_points, iarg, dofblock)
-        #p = self._dofblock_partition[num_points][iarg].get(dofblock)
-        #p = self._partitions["argument"][num_points][iarg].get(dofrange)
         p = None
+        #p = self._dofblock_partition[num_points][iarg].get(dofblock)
+        #p = self._partitions["argument"][num_points][iarg].get(dofblock[iarg])
+
         if p is not None:
-            # FIXME: Generate partition computation here
-            #parts += generate_partition_assignments(p)
-            pass
-        # TODO: Remove this mock code
-        parts += ["s[...] = ...; // {0} x {1}".format(iarg, dofblock)]
+            parts += generate_partition_assignments(p) # FIXME: Generate partition computation here
+        else:
+            parts += ["// FIXME: sa[...] = ...; // {0} x {1}".format(iarg, dofblock)] # TODO: Remove this mock code
 
         return parts
 
@@ -310,12 +333,14 @@ class IntegralGenerator(object):
         parts = []
 
         # FIXME: Get partition associated with (num_points, dofblock)
+        p = None
         #p = self._dofblock_integrand_partition[num_points][dofblock]
         #p = self._partitions["integrand"][num_points].get(dofblock)
 
-        # FIXME: Generate accumulation properly
-        #parts += generate_partition_accumulations(p)
-        parts += ["A[{0}] += f * v * D;".format(dofblock)] # TODO: Remove this mock code
+        if p is not None:
+            parts += generate_partition_accumulations(p) # FIXME: Generate partition computation here
+        else:
+            parts += ["// FIXME: A[{0}] += f * v * D;".format(dofblock)] # TODO: Remove this mock code
 
         # Corresponding code from compiler.py:
         #final_variable_names = [format_register_variable(p, r) for r in ir["target_registers"]]
@@ -327,7 +352,7 @@ class IntegralGenerator(object):
 
         return parts
 
-    def generate_post_quadrature_loops(self): # TODO: Implement for expression support
+    def generate_finishing_statements(self):
         """Generate finishing statements.
 
         This includes assigning to output array if there is no integration.
@@ -335,6 +360,7 @@ class IntegralGenerator(object):
         parts = []
 
         if not self._num_points:
+            # TODO: Implement for expression support
             error("Expression generation not implemented yet.")
             # TODO: If no integration, assuming we generate an expression, and assign results here
             # Corresponding code from compiler.py:
