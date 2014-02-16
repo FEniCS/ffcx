@@ -214,31 +214,42 @@ def _generate_form_code(ir, prefix, parameters):
     code = {}
     code["classname"] = classname(prefix, ir["id"])
     code["members"] = ""
+
     code["constructor"] = do_nothing
     code["constructor_arguments"] = ""
     code["initializer_list"] = ""
     code["destructor"] = do_nothing
+
     code["signature"] = ret('"%s"' % ir["signature"])
     code["rank"] = ret(ir["rank"])
     code["num_coefficients"] = ret(ir["num_coefficients"])
+
     code["num_cell_domains"] = ret(ir["num_cell_domains"])
     code["num_exterior_facet_domains"] = ret(ir["num_exterior_facet_domains"])
     code["num_interior_facet_domains"] = ret(ir["num_interior_facet_domains"])
     code["num_point_domains"] = ret(ir["num_point_domains"])
+    code["num_quadrature_domains"] = ret(ir["num_quadrature_domains"])
+
     code["has_cell_integrals"] = _has_foo_integrals(ir, "cell")
     code["has_exterior_facet_integrals"] = _has_foo_integrals(ir, "exterior_facet")
     code["has_interior_facet_integrals"] = _has_foo_integrals(ir, "interior_facet")
     code["has_point_integrals"] = _has_foo_integrals(ir, "point")
+    code["has_quadrature_integrals"] = _has_foo_integrals(ir, "quadrature")
+
     code["create_finite_element"] = _create_foo(prefix, "finite_element", ir["create_finite_element"])
     code["create_dofmap"] = _create_foo(prefix, "dofmap", ir["create_dofmap"])
+
     code["create_cell_integral"] = _create_foo_integral(ir, "cell", prefix)
     code["create_exterior_facet_integral"] = _create_foo_integral(ir, "exterior_facet", prefix)
     code["create_interior_facet_integral"] = _create_foo_integral(ir, "interior_facet", prefix)
     code["create_point_integral"] = _create_foo_integral(ir, "point", prefix)
+    code["create_quadrature_integral"] = _create_foo_integral(ir, "quadrature", prefix)
+
     code["create_default_cell_integral"] = _create_default_foo_integral(ir, "cell", prefix)
     code["create_default_exterior_facet_integral"] = _create_default_foo_integral(ir, "exterior_facet", prefix)
     code["create_default_interior_facet_integral"] = _create_default_foo_integral(ir, "interior_facet", prefix)
     code["create_default_point_integral"] = _create_default_foo_integral(ir, "point", prefix)
+    code["create_default_quadrature_integral"] = _create_default_foo_integral(ir, "quadrature", prefix)
 
     # Postprocess code
     _postprocess_code(code, parameters)

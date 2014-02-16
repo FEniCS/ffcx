@@ -88,6 +88,9 @@ def format_code(code, wrapper_code, prefix, parameters):
             elif "point_integral" in code_integral["classname"]:
                 code_h += _format_h("point_integral", code_integral, parameters)
                 code_c += _format_c("point_integral", code_integral, parameters)
+            elif "quadrature_integral" in code_integral["classname"]:
+                code_h += _format_h("quadrature_integral", code_integral, parameters)
+                code_c += _format_c("quadrature_integral", code_integral, parameters)
 
     # Generate code for form
     if code_forms:
