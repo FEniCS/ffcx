@@ -2,16 +2,11 @@
 
 %{
 #include "ufc.h"
-// If using std::tr1::shared_ptr comment out this line
-#include <boost/shared_ptr.hpp>
-// Un comment this line to use std::tr1, only works with swig version  >= 1.3.37
-//#include <tr1/memory>
+#include <memory>
 %}
 
-// Un comment these lines to use std::tr1, only works with swig version  >= 1.3.37
-//#define SWIG_SHARED_PTR_NAMESPACE std
-//#define SWIG_SHARED_PTR_SUBNAMESPACE tr1
-%include <boost_shared_ptr.i>
+// Use std::shared_ptr
+%include <std_shared_ptr.i>
 
 // Ignore interface to ufc::cell that will not be available for the user
 %ignore ufc::cell::entity_indices;

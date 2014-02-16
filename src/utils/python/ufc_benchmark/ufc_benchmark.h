@@ -7,7 +7,7 @@
 #define __UFC_BENCHMARK_H__
 
 #include "ufc.h"
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <vector>
 
 /* Benchmark time to run tabulate_tensor for all integrals in a form. *
@@ -21,20 +21,20 @@ std::vector< std::vector<double> > tabulate_cell_tensor(const ufc::form & form,
                                                         int domain);
 
 /* Compute one cell integral. */
-std::vector< std::vector<double> > tabulate_cell_integral(const boost::shared_ptr<ufc::form> form,
+std::vector< std::vector<double> > tabulate_cell_integral(const std::shared_ptr<ufc::form> form,
                                                           std::vector< std::vector<double> > w,
                                                           ufc::cell cell,
                                                           int domain);
 
 /* Compute one exterior facet integral. */
-std::vector< std::vector<double> > tabulate_exterior_facet_integral(const boost::shared_ptr<ufc::form> form,
+std::vector< std::vector<double> > tabulate_exterior_facet_integral(const std::shared_ptr<ufc::form> form,
                                                                     std::vector< std::vector<double> > w,
                                                                     ufc::cell& cell,
                                                                     int facet,
                                                                     int domain);
 
 /* Compute one interior facet integral. */
-std::vector< std::vector<double> > tabulate_interior_facet_integral(const boost::shared_ptr<ufc::form> form,
+std::vector< std::vector<double> > tabulate_interior_facet_integral(const std::shared_ptr<ufc::form> form,
                                                                     std::vector< std::vector<double> > macro_w,
                                                                     ufc::cell& cell0,
                                                                     ufc::cell& cell1,
