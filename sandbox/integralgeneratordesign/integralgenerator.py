@@ -112,7 +112,7 @@ class IntegralGenerator(object):
         partitions["integrand"] = dict((np, {}) for np in num_points)
 
         #dofblock_partition[np][iarg][dofrange] == partitions["argument"][np][iarg][dofrange]
-        #dofblock_integrand_partition[np][dofrange] == partitions["integrand"][np][dofblock]
+        #dofblock_integrand_partition[np][dofblock] == partitions["integrand"][np][dofblock]
 
         argument_dofblocks = {} # { num_points: [dofblock, ...] } # FIXME: Fill this first
         dofblock_partition = {} # { num_points: { iarg: { dofblock: partition } } }
@@ -267,8 +267,11 @@ class IntegralGenerator(object):
         for dofrange in dofranges:
             dofblock = outer_dofblock + (dofrange,)
             body = []
+
+            # FIXME: Argument partitions should be computed outside of the dofblock loops,
+            #        in separate argument dofrange loops, which reduces n*n computations to n.
             # Generate code partition for dofblock at this loop level
-            body += self.generate_argument_partition(num_points, iarg, dofblock)
+            body += self.generate_argument_partition(num_points, iarg, dofblock[iarg])
 
             # Generate nested inner loops (only triggers for forms with two or more arguments
             body += self.generate_quadrature_body_dofblocks(num_points, dofblock)
@@ -313,19 +316,19 @@ class IntegralGenerator(object):
 
         return parts
 
-    def generate_argument_partition(self, num_points, iarg, dofblock): # FIXME: Define better and implement
+    def generate_argument_partition(self, num_points, iarg, dofrange): # FIXME: Define better and implement
         """Generate code for the partition corresponding to arguments 0..iarg within given dofblock."""
         parts = []
 
-        # FIXME: Get partition associated with (num_points, iarg, dofblock)
+        # FIXME: Get partition associated with (num_points, iarg, dofrange)
         p = None
-        #p = self._dofblock_partition[num_points][iarg].get(dofblock)
-        #p = self._partitions["argument"][num_points][iarg].get(dofblock[iarg])
+        #p = self._dofblock_partition[num_points][iarg].get(dofrange)
+        #p = self._partitions["argument"][num_points][iarg].get(dofrange)
 
         if p is not None:
             parts += generate_partition_assignments(p) # FIXME: Generate partition computation here
         else:
-            parts += ["// FIXME: sa[...] = ...; // {0} x {1}".format(iarg, dofblock)] # TODO: Remove this mock code
+            parts += ["// FIXME: sa[...] = ...; // {0} x {1}".format(iarg, dofrange)] # TODO: Remove this mock code
 
         return parts
 
