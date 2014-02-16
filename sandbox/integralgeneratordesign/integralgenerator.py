@@ -77,6 +77,71 @@ class IntegralGenerator(object):
         self._num_arguments = len(self._argument_space_dimensions)
         self._idofs = ["%s%d" % (names.ia, i) for i in range(self._num_arguments)]
 
+        # TODO: Get this from ir
+        # integrand_term_factors: tuple(modified_argument_indices) -> code_index
+        self._integrand_term_factors = {}
+        self._integrand_term_factors[num_points] = {} # IM in factorization code
+        # modified_argument_dofrange: modified_argument_index -> dofrange
+        self._modified_argument_dofrange = {}
+        self._modified_argument_dofrange[num_points] = [] # TODO: Build from dof ranges of AV in factorization code
+        #self._modified_arguments = {}
+        #self._modified_arguments[num_points] = [] # AV in factorization code
+
+    def build_datastructures(self):
+        # FIXME: Build this representation of integrands, either by looping
+        #        like this or by looping over data structures in a more
+        #        unstructured fashion. Either way this is the structure we want:
+
+        num_points = [3]
+
+        #dofrange = (begin, end)
+        #dofblock = ()  |  (dofrange0,)  |  (dofrange0, dofrange1)
+
+        partitions = {}
+
+        # partitions["piecewise"] = partition of expressions independent of quadrature and argument loops
+        partitions["piecewise"] = []
+
+        # partitions["varying"][np] = partition of expressions dependent on np quadrature but independent of argument loops
+        partitions["varying"] = dict((np, []) for np in num_points)
+
+        # partitions["argument"][np][iarg][dofrange] = partition depending on this dofrange of argument iarg
+        partitions["argument"] = dict((np, [{} for i in range(rank)]) for np in num_points)
+
+        # partitions["integrand"][np][dofblock] = partition for computing final integrand contribution in this dofblock
+        partitions["integrand"] = dict((np, {}) for np in num_points)
+
+        #dofblock_partition[np][iarg][dofrange] == partitions["argument"][np][iarg][dofrange]
+        #dofblock_integrand_partition[np][dofrange] == partitions["integrand"][np][dofblock]
+
+        argument_dofblocks = {} # { num_points: [dofblock, ...] } # FIXME: Fill this first
+        dofblock_partition = {} # { num_points: { iarg: { dofblock: partition } } }
+        for num_points in sorted(argument_dofblocks.keys()):
+            dofblock_partition[num_points] = {}
+            for iarg in range(rank):
+                dofblock_partition[num_points][iarg] = {}
+                for dofblock in argument_dofblocks[num_points]: # FIXME
+                    # FIXME: Make this the partition of code that depends on only argument iarg
+                    #        for this dofblock in the integrand corresponding to num_points
+                    partition = []
+                    dofblock_partition[num_points][iarg][dofblock] = partition
+
+        dofblocks = {} # { num_points: [dofblock, ...] } # FIXME: Fill this first
+        dofblock_integrand_partition = {} # { num_points: { dofblock: partition } }
+        for num_points in sorted(dofblocks.keys()):
+            dofblock_integrand_partition[num_points] = {}
+            for dofblock in dofblocks[num_points]:
+                # FIXME: Make this the partition of code that depends on this full dofblock
+                #        in the integrand corresponding to num_points
+                partition = []
+                dofblock_integrand_partition[num_points][dofblock] = partition
+
+        self._dofblock_partition = dofblock_partition
+        self._dofblock_integrand_partition = dofblock_integrand_partition
+        self._dofblocks = dofblocks
+        self._dofblocks = dict( (num_points, sorted(db.keys()))
+                                for num_points, db in self._dofblock_integrand_partition.iteritems())
+
     def generate(self):
         """Generate entire tabulate_tensor body.
 
@@ -85,16 +150,19 @@ class IntegralGenerator(object):
         """
         parts = []
         parts += [self.generate_quadrature_tables()]
-        parts += [self.generate_element_tables()]
+        parts += [self.generate_element_tables()] # FIXME: Implement!
         parts += [self.generate_tensor_reset()]
-        parts += [self.generate_pre_quadrature_loops()]
+        parts += [self.generate_pre_quadrature_loops()] # FIXME: Implement!
         parts += [self.generate_quadrature_loops()]
-        parts += [self.generate_post_quadrature_loops()]
+        parts += [self.generate_post_quadrature_loops()] # TODO: Implement for expression support
         return format_code_structure(Indented(parts))
 
     def generate_quadrature_tables(self):
         "Generate static tables of quadrature points and weights."
-        parts = ["// Section for quadrature weights and points"]
+        parts = []
+
+        if self._num_points:
+            parts += ["// Section for quadrature weights and points"]
 
         for num_points in self._num_points:
             weights = self._weights[num_points]
@@ -138,58 +206,40 @@ class IntegralGenerator(object):
 
     def generate_quadrature_loops(self):
         "Generate all quadrature loops."
-        parts = [self.generate_quadrature_loop(num_points) for num_points in self._num_points]
-        return parts
-
-    def generate_post_quadrature_loops(self): # TODO
-        """Generate finishing statements.
-
-        This includes assigning to output array if there is no integration.
-        """
         parts = []
-
-        # TODO: If no integration, assuming we generate an expression, and assign results here
-        # Corresponding code from compiler.py:
-        #assign_to_variables = tfmt.output_variable_names(len(final_variable_names))
-        #parts += list(format_assignments(zip(assign_to_variables, final_variable_names)))
-
-        return parts
-
-    def generate_quadrature_loop(self, num_points):
-        "Generate a single quadrature loop."
-        return ForRange(names.iq, 0, num_points,
-                        body=self.generate_quadrature_body(num_points))
-
-    def generate_quadrature_body_setup(self, num_points): # FIXME
-        """
-        """
-        parts = ["// Quadrature loop body setup {0}".format(num_points)]
-        # FIXME: All leftover argument independent computations here
+        for num_points in self._num_points:
+            body = self.generate_quadrature_body(num_points)
+            parts += [ForRange(names.iq, 0, num_points, body=body)]
         return parts
 
     def generate_quadrature_body(self, num_points):
         """
         """
         parts = []
-        parts += [self.generate_quadrature_body_setup(num_points)]
 
-        # TODO: Get this from ir
+
+
+        # FIXME: Get this from ir in constructor, remove this hack
+        # integrand_term_factors: tuple(modified_argument_indices) -> code_index
         self._integrand_term_factors = {}
         self._integrand_term_factors[num_points] = {} # IM in factorization code
+        # modified_argument_dofrange: modified_argument_index -> dofrange
         self._modified_argument_dofrange = {}
         self._modified_argument_dofrange[num_points] = [] # TODO: Build from dof ranges of AV in factorization code
-        self._modified_arguments = {}
-        self._modified_arguments[num_points] = [] # AV in factorization code
+        #self._modified_arguments = {}
+        #self._modified_arguments[num_points] = [] # AV in factorization code
 
-        # integrand_term_factors: tuple(modified_argument_indices) -> code_index
-        integrand_term_factors = self._integrand_term_factors[num_points]
-        # modified_argument_dofrange: modified_argument_index -> dofrange
-        modified_argument_dofrange = self._modified_argument_dofrange[num_points]
+
+
+        parts += ["// Quadrature loop body setup {0}".format(num_points)]
+        # FIXME: All leftover argument independent computations here
+        # FIXME: Implement x-partition generation here
 
         # Generate pre-argument loop computations
-        for mas in integrand_term_factors:
-            dofblock = tuple(modified_argument_dofrange[ma] for ma in mas)
-            ssa_index = integrand_term_factors[mas]
+        for mas in self._integrand_term_factors[num_points]:
+            dofblock = tuple(self._modified_argument_dofrange[num_points][ma] for ma in mas)
+            ssa_index = self._integrand_term_factors[num_points][mas]
+
             # TODO: Generate code for f*D and store reference to it with mas
             #f = self._ssa[ssa_index]
             #vname = name_from(mas)
@@ -197,108 +247,46 @@ class IntegralGenerator(object):
             #code += ["%s = (%s) * D;" % (vname, vcode)]
             #factors[mas] = vname
 
-        if self._num_arguments == 0: # Functional
-            # Accumulate into element scalar
-            parts += [self.generate_integrand_accumulation(num_points, ())]
-        else:
-            # Nested loops and accumulation into element tensor for linear, bilinear, trilinear form
-            parts += self.generate_quadrature_body_dofblocks(num_points)
+        # Nested argument loops and accumulation into element tensor
+        parts += self.generate_quadrature_body_dofblocks(num_points)
 
         return parts
 
     def generate_quadrature_body_dofblocks(self, num_points, outer_dofblock=()):
-        # The loop level here equals the argument count (in renumbered >= 0 format)
-        level = len(outer_dofblock)
-        assert level < self._num_arguments
+        parts = []
+
+        # The loop level iarg here equals the argument count (in renumbered >= 0 format)
+        iarg = len(outer_dofblock)
+        if iarg == self._num_arguments:
+            # At the innermost argument loop level we accumulate into the element tensor
+            parts += [self.generate_integrand_accumulation(num_points, outer_dofblock)]
+            return parts
+        assert iarg < self._num_arguments
 
         # integrand_term_factors: tuple(modified_argument_indices) -> code_index
-        integrand_term_factors = self._integrand_term_factors[num_points]
         # modified_argument_dofrange: modified_argument_index -> dofrange
         modified_argument_dofrange = self._modified_argument_dofrange[num_points]
 
-        # Find dofranges at this level starting with outer_dofblock
-        dofranges = sorted(modified_argument_dofrange[mas[level]]
-                           for mas in integrand_term_factors
+        # Find dofranges at this loop level iarg starting with outer_dofblock
+        dofranges = sorted(modified_argument_dofrange[mas[iarg]]
+                           for mas in self._integrand_term_factors[num_points]
                            if all(modified_argument_dofrange[mas[i]] == outer_dofblock[i]
-                                  for i in xrange(level)))
+                                  for i in xrange(iarg)))
+
         # Build loops for each dofrange
-        parts = []
         for dofrange in dofranges:
-            (begin,end) = dofrange
             dofblock = outer_dofblock + (dofrange,)
-
-            setup = [self.generate_argument_partition(num_points, level, dofblock)]
-
-            if level < self._num_arguments-1:
-                # Generate nested inner loops
-                subloops = self.generate_quadrature_body_dofblock(num_points, dofblock)
-                body = setup + subloops
-            else:
-                # At the innermost level we accumulate into the element tensor
-                accumulation = [self.generate_integrand_accumulation(num_points, dofblock)]
-                body = setup + accumulation
-
+            body = []
+            # Generate code partition for dofblock at this loop level
+            body += self.generate_argument_partition(num_points, iarg, dofblock)
+            # Generate nested inner loops (only triggers for forms with two or more arguments
+            body += self.generate_quadrature_body_dofblocks(num_points, dofblock)
             # Wrap setup, subloops, and accumulation in a loop for this level
-            loop = ForRange(self._idofs[level], begin, end, body=body)
-            parts += loop
+            parts += [ForRange(self._idofs[level], dofrange[0], dofrange[1], body=body)]
         return parts
 
-    def build_datastructures(self):
-        # FIXME: Build this representation of integrands, either by looping
-        #        like this or by looping over data structures in a more
-        #        unstructured fashion. Either way this is the structure we want:
-
-        num_points = [3]
-
-        #dofrange = (begin, end)
-        #dofblock = ()  |  (dofrange0,)  |  (dofrange0, dofrange1)
-
-        partitions = {}
-
-        # partitions["piecewise"] = partition of expressions independent of quadrature and argument loops
-        partitions["piecewise"] = []
-
-        # partitions["varying"][np] = partition of expressions dependent on np quadrature but independent of argument loops
-        partitions["varying"] = dict((np, []) for np in num_points)
-
-        # partitions["argument"][np][iarg][dofrange] = partition depending on this dofrange of argument iarg
-        partitions["argument"] = dict((np, [dict() for i in range(rank)]) for np in num_points)
-
-        # partitions["integrand"][np][dofblock] = partition for computing final integrand contribution in this dofblock
-        partitions["integrand"] = dict((np, dict()) for np in num_points)
-
-        #dofblock_partition[np][iarg][dofrange] == partitions["argument"][np][iarg][dofrange]
-        #dofblock_integrand_partition[np][dofrange] == partitions["integrand"][np][dofblock]
-
-        argument_dofblocks = {} # { num_points: [dofblock, ...] } # FIXME: Fill this first
-        dofblock_partition = {} # { num_points: { iarg: { dofblock: partition } } }
-        for num_points in sorted(argument_dofblocks.keys()):
-            dofblock_partition[num_points] = {}
-            for iarg in range(rank):
-                dofblock_partition[num_points][iarg] = {}
-                for dofblock in argument_dofblocks[num_points]: # FIXME
-                    # FIXME: Make this the partition of code that depends on only argument iarg
-                    #        for this dofblock in the integrand corresponding to num_points
-                    partition = []
-                    dofblock_partition[num_points][iarg][dofblock] = partition
-
-        dofblocks = {} # { num_points: [dofblock, ...] } # FIXME: Fill this first
-        dofblock_integrand_partition = {} # { num_points: { dofblock: partition } }
-        for num_points in sorted(dofblocks.keys()):
-            dofblock_integrand_partition[num_points] = {}
-            for dofblock in dofblocks[num_points]:
-                # FIXME: Make this the partition of code that depends on this full dofblock
-                #        in the integrand corresponding to num_points
-                partition = []
-                dofblock_integrand_partition[num_points][dofblock] = partition
-
-        self._dofblock_partition = dofblock_partition
-        self._dofblock_integrand_partition = dofblock_integrand_partition
-        self._dofblocks = dofblocks
-        self._dofblocks = dict( (num_points, sorted(db.keys()))
-                                for num_points, db in self._dofblock_integrand_partition.iteritems())
-
-    def generate_argument_partition(self, num_points, iarg, dofblock): # FIXME
+    def generate_argument_partition(self, num_points, iarg, dofblock): # FIXME: Define better and implement
+        """Generate code for the partition corresponding to arguments 0..iarg within given dofblock."""
         parts = []
         dofrange = dofblock[iarg]
 
@@ -318,7 +306,7 @@ class IntegralGenerator(object):
 
         return parts
 
-    def generate_integrand_accumulation(self, num_points, dofblock): # FIXME
+    def generate_integrand_accumulation(self, num_points, dofblock): # FIXME: Implement!
         parts = []
 
         # FIXME: Get partition associated with (num_points, dofblock)
@@ -336,6 +324,22 @@ class IntegralGenerator(object):
         #parts += list(format_scaled_additions(zip(assign_to_variables,
         #                                          final_variable_names),
         #                                          scaling_factor))
+
+        return parts
+
+    def generate_post_quadrature_loops(self): # TODO: Implement for expression support
+        """Generate finishing statements.
+
+        This includes assigning to output array if there is no integration.
+        """
+        parts = []
+
+        if not self._num_points:
+            error("Expression generation not implemented yet.")
+            # TODO: If no integration, assuming we generate an expression, and assign results here
+            # Corresponding code from compiler.py:
+            #assign_to_variables = tfmt.output_variable_names(len(final_variable_names))
+            #parts += list(format_assignments(zip(assign_to_variables, final_variable_names)))
 
         return parts
 
