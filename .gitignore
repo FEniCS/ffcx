@@ -22,6 +22,9 @@ cmake_install.cmake
 cmake_uninstall.cmake
 Makefile
 install_manifest.txt
+templates/UFCConfig.cmake
+templates/UFCConfigVersion.cmake
+templates/UseUFC.cmake
 
 # Temporaries
 *~
@@ -29,3 +32,10 @@ install_manifest.txt
 # OS X files
 .DS_Store
 .DS_Store?
+
+# Local build files
+/build
+
+# SWIG generated files
+src/ufc/ufc.py
+src/ufc/ufc_wrap.cpp
