@@ -211,6 +211,39 @@ class FunctionValueTests(unittest.TestCase):
                                  6*x[1]- 3*x[0]*x[1] - 6*x[1]**2),
                       ]
 
+    def testDRT1_2D(self):
+        "Test values of DRT1."
+
+        element = create(FiniteElement("Discontinuous Raviart-Thomas", "triangle", 1))
+        reference = [lambda x: (x[0], x[1]),
+                     lambda x: (1 - x[0], -x[1]),
+                     lambda x: (x[0], x[1] - 1)]
+
+        points = [random_point(triangle) for i in range(num_points)]
+        self._check_function_values(points, element, reference)
+
+    def testDRT2_2D(self):
+        "Test values of DRT2."
+
+        element = create(FiniteElement("Discontinuous Raviart-Thomas", "triangle", 2))
+
+        reference = [ lambda x: (-x[0] + 3*x[0]**2,
+                                 -x[1] + 3*x[0]*x[1]),
+                      lambda x: (-x[0] + 3*x[0]*x[1],
+                                 -x[1] + 3*x[1]**2),
+                      lambda x: ( 2 - 5*x[0] - 3*x[1] + 3*x[0]*x[1] + 3*x[0]**2,
+                                  -2*x[1] + 3*x[0]*x[1] + 3*x[1]**2),
+                      lambda x: (-1.0 + x[0] + 3*x[1] - 3*x[0]*x[1],
+                                 x[1] - 3*x[1]**2),
+                      lambda x: (2*x[0] - 3*x[0]*x[1] - 3*x[0]**2,
+                                 -2 + 3*x[0]+ 5*x[1] - 3*x[0]*x[1] - 3*x[1]**2),
+                      lambda x: (- x[0] + 3*x[0]**2,
+                                 + 1 - 3*x[0] - x[1] + 3*x[0]*x[1]),
+                      lambda x: (6*x[0] - 3*x[0]*x[1] - 6*x[0]**2,
+                                 3*x[1] - 6*x[0]*x[1] - 3*x[1]**2),
+                      lambda x: (3*x[0] - 6*x[0]*x[1] - 3*x[0]**2,
+                                 6*x[1]- 3*x[0]*x[1] - 6*x[1]**2),
+                      ]
 
         points = [random_point(triangle) for i in range(num_points)]
         self._check_function_values(points, element, reference)
@@ -229,6 +262,16 @@ class FunctionValueTests(unittest.TestCase):
 
     def testRT1_3D(self):
         element = create(FiniteElement("RT", "tetrahedron", 1))
+        reference = [lambda x: (-x[0], -x[1], -x[2]),
+                     lambda x: (-1.0 + x[0], x[1], x[2]),
+                     lambda x: (-x[0], 1.0 - x[1], -x[2]),
+                     lambda x: ( x[0], x[1], -1.0 + x[2])
+                     ]
+        points = [random_point(tetrahedron) for i in range(num_points)]
+        self._check_function_values(points, element, reference)
+
+    def testDRT1_3D(self):
+        element = create(FiniteElement("DRT", "tetrahedron", 1))
         reference = [lambda x: (-x[0], -x[1], -x[2]),
                      lambda x: (-1.0 + x[0], x[1], x[2]),
                      lambda x: (-x[0], 1.0 - x[1], -x[2]),

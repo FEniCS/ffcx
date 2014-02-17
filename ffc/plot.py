@@ -40,18 +40,19 @@ except:
     _soya_imported = False
 
 # Colors for elements
-element_colors = {"Argyris":                  (0.45, 0.70, 0.80),
-                  "Arnold-Winther":           (0.00, 0.00, 1.00),
-                  "Brezzi-Douglas-Marini":    (1.00, 1.00, 0.00),
-                  "Crouzeix-Raviart":         (1.00, 0.25, 0.25),
-                  "Discontinuous Lagrange":   (0.00, 0.25, 0.00),
-                  "Hermite":                  (0.50, 1.00, 0.50),
-                  "Lagrange":                 (0.00, 1.00, 0.00),
-                  "Mardal-Tai-Winther":       (1.00, 0.10, 0.90),
-                  "Morley":                   (0.40, 0.40, 0.40),
-                  "Nedelec 1st kind H(curl)": (0.90, 0.30, 0.00),
-                  "Nedelec 2nd kind H(curl)": (0.70, 0.20, 0.00),
-                  "Raviart-Thomas":           (0.90, 0.60, 0.00)}
+element_colors = {"Argyris":                      (0.45, 0.70, 0.80),
+                  "Arnold-Winther":               (0.00, 0.00, 1.00),
+                  "Brezzi-Douglas-Marini":        (1.00, 1.00, 0.00),
+                  "Crouzeix-Raviart":             (1.00, 0.25, 0.25),
+                  "Discontinuous Lagrange":       (0.00, 0.25, 0.00),
+                  "Discontinuous Raviart-Thomas": (0.90, 0.90, 0.30),
+                  "Hermite":                      (0.50, 1.00, 0.50),
+                  "Lagrange":                     (0.00, 1.00, 0.00),
+                  "Mardal-Tai-Winther":           (1.00, 0.10, 0.90),
+                  "Morley":                       (0.40, 0.40, 0.40),
+                  "Nedelec 1st kind H(curl)":     (0.90, 0.30, 0.00),
+                  "Nedelec 2nd kind H(curl)":     (0.70, 0.20, 0.00),
+                  "Raviart-Thomas":               (0.90, 0.60, 0.00)}
 
 def plot(element, rotate=True):
     "Plot finite element."
