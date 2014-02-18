@@ -1,3 +1,6 @@
+Credits for FFC
+===============
+
 Main authors:
 
     Anders Logg
@@ -47,3 +50,26 @@ Contributors:
 
     Peter Brune
     email: brune@uchicago.edu
+
+Credits for UFC
+===============
+
+UFC was merged into FFC 2014-02-18. Below is the list of credits for
+UFC at the time of the merge.
+
+Main authors:
+
+    Martin Sandve Alnaes   <martinal@simula.no>
+    Anders Logg            <logg@simula.no>
+    Kent-Andre Mardal      <kent-and@simula.no
+    Ola Skavhaug           <skavhaug@simula.no>
+    Hans Petter Langtangen <hpl@simula.no>
+
+Main contributors:
+
+    Asmund Odegard         <aasmund@simula.no>
+    Kristian Oelgaard      <k.b.oelgaard@tudelft.nl>
+    Johan Hake             <hake@simula.no>
+    Garth N. Wells         <gnw20@cam.ac.uk>
+    Marie E. Rognes        <meg@simula.no>
+    Johannes Ring          <johannr@simula.no>
