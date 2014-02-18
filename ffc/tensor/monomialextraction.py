@@ -93,6 +93,8 @@ class MonomialFactor:
             self.components = []
             self.derivatives = []
             self.restriction = None
+            if isinstance(arg, Argument) and arg.part() is not None: # Not supported (yet?)
+                raise MonomialException, ("Unable to create monomial from expression: " + str(arg))
         elif arg is None:
             self.function = None
             self.components = []
@@ -104,8 +106,11 @@ class MonomialFactor:
     def element(self):
         return self.function.element()
 
-    def count(self):
-        return self.function.count()
+    def index(self):
+        if isinstance(self.function, Coefficient):
+            return self.function.count()
+        else:
+            return self.function.number()
 
     def apply_derivative(self, indices):
         self.derivatives += indices

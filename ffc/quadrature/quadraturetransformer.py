@@ -461,7 +461,6 @@ class QuadratureTransformer(QuadratureTransformerBase):
                         local_offset, ffc_element, transformation, multiindices,
                         tdim, gdim, avg):
         "Create code for basis functions, and update relevant tables of used basis."
-        ffc_assert(ufl_argument in self._function_replace_values, "Expecting ufl_argument to have been mapped prior to this call.")
 
         # Prefetch formats to speed up code generation.
         f_group         = format["grouping"]
