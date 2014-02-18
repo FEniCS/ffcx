@@ -1,0 +1,4 @@
+Name: UFC
+Description: Unified Form-assembly Code
+Version: @UFC_VERSION_STRING@
+Cflags:  -I@CMAKE_INSTALL_PREFIX@/@UFC_INCLUDE_DIR@

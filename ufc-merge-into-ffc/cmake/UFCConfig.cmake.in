@@ -1,0 +1,29 @@
+# - UFC
+# CMake configuration for UFC (http:://fenicsproject.org)
+#
+# This file has been automatically generated.
+
+# FIXME: Check that naming conforms to CMake standards
+
+# Package found
+set(UFC_FOUND TRUE)
+
+# Include directories
+set(UFC_INCLUDE_DIRS "@CMAKE_INSTALL_PREFIX@/@UFC_INCLUDE_DIR@")
+
+# Compiler flags
+set(UFC_CXX_FLAGS "@CMAKE_CXX_FLAGS@")
+
+# Python include directories
+set(UFC_PYTHON_INCLUDE_DIRS
+  "@PYTHON_INCLUDE_DIRS@"
+  "@Boost_INCLUDE_DIRS@")
+
+# Python libraries
+set(UFC_PYTHON_LIBRARIES "@PYTHON_LIBRARIES@")
+
+# Version
+set(UFC_VERSION_STRING "@UFC_VERSION_STRING@")
+
+# The location of the UseUFC.cmake file
+set(UFC_USE_FILE "@CMAKE_INSTALL_PREFIX@/@UFC_CMAKE_CONFIG_DIR@/UseUFC.cmake")
