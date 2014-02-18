@@ -47,6 +47,7 @@ Topic :: Software Development :: Libraries
 """
 
 def get_status_output(cmd, input=None, cwd=None, env=None):
+    "Run command and return status and output"
     pipe = subprocess.Popen(cmd, shell=True, cwd=cwd, env=env,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT)
@@ -55,16 +56,17 @@ def get_status_output(cmd, input=None, cwd=None, env=None):
     status = pipe.returncode
     return status, output
 
-# Return the git revision as a string
 def git_version():
+    "Return the git revision as a string"
     GIT_REVISION = "Unknown"
     failure, output = get_status_output('git rev-parse HEAD')
     if not failure:
         GIT_REVISION = output.strip().decode('ascii')
-        
+
     return GIT_REVISION
 
 def get_version_info():
+    "Get version number and Git revision"
     FULLVERSION = VERSION
     if os.path.exists('.git'):
         GIT_REVISION = git_version()
@@ -89,6 +91,8 @@ def get_prefix():
     return prefix
 
 def get_swig_executable():
+
+
     # Find SWIG executable
     swig_executable = None
     for executable in ['swig', 'swig2.0']:
@@ -175,7 +179,7 @@ def setup_package():
                                     '-fastquery', '-nobuildnone'],
                          extra_compile_args=CXX_FLAGS.split(),
                          include_dirs=[os.path.join('src', 'ufc')])]
-    
+
     setup(name='UFC',
           version=FULLVERSION,
           maintainer='FEniCS Developers',
@@ -188,8 +192,8 @@ def setup_package():
           license='Public Domain',
           classifiers=[_f for _f in CLASSIFIERS.split('\n') if _f],
           platforms=['Windows', 'Linux', 'Solaris', 'Mac OS-X', 'Unix'],
-          packages=['', 'ufc_utils'],
-          package_dir={'': os.path.join('src', 'ufc'),
+          packages=['ufc', 'ufc_utils'],
+          package_dir={'ufc': os.path.join('src', 'ufc'),
                        'ufc_utils': os.path.join('src', 'utils', 'python', 'ufc_utils')},
           data_files=[('include', [os.path.join('src', 'ufc', 'ufc.h'),
                                    os.path.join('src', 'ufc', 'ufc_geometry.h')]),
@@ -201,6 +205,7 @@ def setup_package():
                        [os.path.join('templates', 'ufc-1.pc')]),
                       (os.path.join('include', 'swig'),
                        [os.path.join('src', 'ufc', 'ufc.i')])],
+          ext_package="ufc",
           ext_modules=modules,
           cmdclass={'build_ext': my_build_ext},
           )
