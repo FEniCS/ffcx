@@ -5,3 +5,4 @@
 /tests/generated/
 /tests/generatedtmp/
 /tests/python_tests.log
+__pycache__
