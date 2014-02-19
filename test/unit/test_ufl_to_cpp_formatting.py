@@ -85,20 +85,20 @@ def test_cpp_formatting_of_form_arguments():
     V = ufl.FiniteElement("CG", ufl.cell2D, 1)
     f = ufl.Coefficient(V).reconstruct(count=0)
     assert expr2cpp(f) == "w0"
-    v = ufl.Argument(V).reconstruct(count=0)
+    v = ufl.TestFunction(V)
     assert expr2cpp(v) == "v0"
 
     V = ufl.VectorElement("CG", ufl.cell2D, 1)
     f = ufl.Coefficient(V).reconstruct(count=1)
     assert expr2cpp(f[0]) == "w0[0]" # Renumbered to 0...
-    v = ufl.Argument(V).reconstruct(count=3)
-    assert expr2cpp(v[1]) == "v0[1]" # Renumbered to 0...
+    v = ufl.Argument(V, number=3)
+    assert expr2cpp(v[1]) == "v3[1]" # NOT renumbered to 0...
 
     V = ufl.TensorElement("CG", ufl.cell2D, 1)
     f = ufl.Coefficient(V).reconstruct(count=2)
     assert expr2cpp(f[1,0]) == "w0[1][0]" # Renumbered to 0...
-    v = ufl.Argument(V).reconstruct(count=3)
-    assert expr2cpp(v[0,1]) == "v0[0][1]" # Renumbered to 0...
+    v = ufl.Argument(V, number=3)
+    assert expr2cpp(v[0,1]) == "v3[0][1]" # NOT renumbered to 0...
 
     # TODO: Test mixed functions
     # TODO: Test tensor functions with symmetries
@@ -141,8 +141,8 @@ def test_cpp_formatting_of_derivatives():
     V = ufl.FiniteElement("CG", ufl.cell2D, 1)
     f = ufl.Coefficient(V).reconstruct(count=0)
     assert expr2cpp(f.dx(0)) == "d1_w0[0]"
-    v = ufl.Argument(V).reconstruct(count=3)
-    assert expr2cpp(v.dx(1)) == "d1_v0[1]" # Renumbered to 0...
+    v = ufl.Argument(V, number=3)
+    assert expr2cpp(v.dx(1)) == "d1_v3[1]" # NOT renumbered to 0...
     # TODO: Test more derivatives
     # TODO: Test variable derivatives using diff
 

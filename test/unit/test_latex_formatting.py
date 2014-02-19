@@ -64,23 +64,24 @@ def test_latex_formatting_of_geometry():
 
 def test_latex_formatting_of_form_arguments():
     # Test form arguments (faked for testing!)
-    V = ufl.FiniteElement("CG", ufl.cell2D, 1)
-    f = ufl.Coefficient(V).reconstruct(count=0)
-    assert expr2latex(f) == r"\overset{0}{w}"
-    v = ufl.Argument(V).reconstruct(count=0)
-    assert expr2latex(v) == r"\overset{0}{v}"
-
+    U = ufl.FiniteElement("CG", ufl.cell2D, 1)
     V = ufl.VectorElement("CG", ufl.cell2D, 1)
-    f = ufl.Coefficient(V).reconstruct(count=1)
-    assert expr2latex(f[0]) == r"\overset{0}{w}_{0}" # Renumbered to 0...
-    v = ufl.Argument(V).reconstruct(count=3)
-    assert expr2latex(v[1]) == r"\overset{0}{v}_{1}" # Renumbered to 0...
+    W = ufl.TensorElement("CG", ufl.cell2D, 1)
 
-    V = ufl.TensorElement("CG", ufl.cell2D, 1)
-    f = ufl.Coefficient(V).reconstruct(count=2)
+    v = ufl.TestFunction(U)
+    assert expr2latex(v) == r"\overset{0}{v}"
+    f = ufl.Coefficient(U, count=0)
+    assert expr2latex(f) == r"\overset{0}{w}"
+
+    f = ufl.Coefficient(V, count=1)
+    assert expr2latex(f[0]) == r"\overset{0}{w}_{0}" # Renumbered to 0...
+    v = ufl.Argument(V, number=3)
+    assert expr2latex(v[1]) == r"\overset{3}{v}_{1}" # NOT renumbered to 0...
+
+    f = ufl.Coefficient(W).reconstruct(count=2)
     assert expr2latex(f[1,0]) == r"\overset{0}{w}_{1 0}" # Renumbered to 0...
-    v = ufl.Argument(V).reconstruct(count=3)
-    assert expr2latex(v[0,1]) == r"\overset{0}{v}_{0 1}" # Renumbered to 0...
+    v = ufl.Argument(W, number=3)
+    assert expr2latex(v[0,1]) == r"\overset{3}{v}_{0 1}" # Renumbered to 0...
 
     # TODO: Test mixed functions
     # TODO: Test tensor functions with symmetries
@@ -121,8 +122,8 @@ def test_latex_formatting_of_derivatives():
     V = ufl.FiniteElement("CG", ufl.cell2D, 1)
     f = ufl.Coefficient(V).reconstruct(count=0)
     assert expr2latex(f.dx(0)) == r"\overset{0}{w}_{, 0}"
-    v = ufl.Argument(V).reconstruct(count=3)
-    assert expr2latex(v.dx(1)) == r"\overset{0}{v}_{, 1}"
+    v = ufl.Argument(V, number=3)
+    assert expr2latex(v.dx(1)) == r"\overset{3}{v}_{, 1}"
     # TODO: Test more derivatives
     # TODO: Test variable derivatives using diff
 
