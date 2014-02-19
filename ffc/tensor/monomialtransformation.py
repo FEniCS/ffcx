@@ -290,11 +290,11 @@ class TransformedMonomial:
             if isinstance(f.function, Argument):
                 vindex = MonomialIndex(index_type=MonomialIndex.PRIMARY,
                                        index_range=range(sdim),
-                                       index_id=f.count())
+                                       index_id=f.index())
 
             elif isinstance(f.function, Coefficient):
                 vindex = MonomialIndex(index_range=range(sdim))
-                coefficient = MonomialCoefficient(vindex, f.count())
+                coefficient = MonomialCoefficient(vindex, f.index())
                 self.coefficients.append(coefficient)
 
             # Extract components
