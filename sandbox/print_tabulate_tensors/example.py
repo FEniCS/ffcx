@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0, "../../site-packages")
+sys.path.insert(0, "../..")
 uflacs = __import__("uflacs")
 
 import uflacs.backends.ffc as uffc
