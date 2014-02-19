@@ -35,12 +35,7 @@ LIBS=-lgtest -lpthread
 
 default: all
 
-#default: run_pytests
-
 all: run_testall
-
-run_pytests:
-	./runpytests.py
 
 run: ${TEST_RUN}
 

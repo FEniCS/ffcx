@@ -1,0 +1,265 @@
+#!/usr/bin/env python
+"""
+Tests of graph representation of expressions.
+"""
+
+from ufl import *
+from ufl.common import product
+from ufl.permutation import compute_indices
+
+from uflacs.analysis.indexing import (shape_to_strides, multiindex_to_component,
+                                        component_to_multiindex, indexing_to_component)
+from uflacs.analysis.indexing import (map_indexed_arg_components,
+                                        map_indexed_arg_components2,
+                                        map_component_tensor_arg_components)
+from uflacs.analysis.graph_symbols import (map_list_tensor_symbols,
+                                             map_transposed_symbols, get_node_symbols)
+from uflacs.analysis.graph import build_graph, rebuild_expression_from_graph
+from uflacs.analysis.graph_rebuild import rebuild_scalar_e2i
+from uflacs.analysis.graph_ssa import (compute_dependencies,
+                                         mark_active,
+                                         mark_partitions,
+                                         compute_dependency_count,
+                                         invert_dependencies,
+                                         default_cache_score_policy,
+                                         compute_cache_scores,
+                                         allocate_registers)
+
+from operator import eq as equal
+
+def test_graph_algorithm_allocates_correct_number_of_symbols():
+    U = FiniteElement("CG", cell2D, 1)
+    V = VectorElement("CG", cell2D, 1)
+    W = TensorElement("CG", cell2D, 1)
+    u = Coefficient(U)
+    v = Coefficient(V)
+    w = Coefficient(W)
+
+    expr = u
+    G = build_graph([expr], DEBUG=0)
+    assert G.V_symbols.num_elements == 1
+    assert G.total_unique_symbols == 1
+
+    expr = u**2
+    G = build_graph([expr], DEBUG=0)
+    assert G.V_symbols.num_elements == 3
+    assert G.total_unique_symbols == 3
+
+    expr = u**2/2
+    G = build_graph([expr], DEBUG=0)
+    assert G.V_symbols.num_elements == 4
+    assert G.total_unique_symbols == 4
+
+    expr = dot(v,v)/2
+    G = build_graph([expr], DEBUG=0)
+    assert G.V_symbols.num_elements == 5
+    assert G.total_unique_symbols == 5
+
+    # Testing Indexed
+    expr = v[i]*v[i]
+    G = build_graph([expr], DEBUG=0)
+    assert G.V_symbols.num_elements == 2+2+2+1
+    assert G.total_unique_symbols == 2+2+1
+
+    # Reusing symbols for indexed with different ordering
+    # Note that two index sums are created, giving 2+1 symbols
+    expr = w[i,j]*w[j,i]
+    G = build_graph([expr], DEBUG=0)
+    assert G.V_symbols.num_elements == 4+4+4+4+2+1
+    assert G.total_unique_symbols == 4+4+2+1
+
+    # Testing ComponentTensor
+    expr = dot(as_vector(2*v[i], i), v)
+    G = build_graph([expr], DEBUG=0)
+    assert G.V_symbols.num_elements == 2+1 + 2+2+2 + 1
+    assert G.total_unique_symbols == 2+1 + 2+1
+
+    expr = dot(v+2*v,v)
+    G = build_graph([expr], DEBUG=0)
+    assert G.V_symbols.num_elements == 2+1 + 2+2+2+2 + 1
+    assert G.total_unique_symbols == 2+1 + 2+2 + 1
+
+    expr = outer(v,v)[i,j]*outer(v,v)[j,i]
+    G = build_graph([expr], DEBUG=0)
+    assert G.V_symbols.num_elements == 21 # 2+4+4+4 + 4+2+1
+    assert G.total_unique_symbols == 13 # 2+4+4 + 2+1
+
+def test_rebuild_expression_from_graph_basic_scalar_expressions():
+    U = FiniteElement("CG", cell2D, 1)
+    V = VectorElement("CG", cell2D, 1)
+    W = TensorElement("CG", cell2D, 1)
+    u = Coefficient(U)
+    v = Coefficient(V)
+    w = Coefficient(W)
+
+    # ... Literals are reproduced
+    literals = [as_ufl(0), as_ufl(1), as_ufl(3.14)]
+    for v1 in literals:
+        G = build_graph([v1])
+        v2 = rebuild_expression_from_graph(G)
+        assert v1 == v2
+
+    v1 = u
+    G = build_graph([v1])
+    v2 = rebuild_expression_from_graph(G)
+    assert v1 == v2
+
+    # ... Simple operators are reproduced
+    for v1 in [2+u, u+u, u*u, u*2, u**2, u**u, u/u, sin(u)]:
+        G = build_graph([v1])
+        v2 = rebuild_expression_from_graph(G)
+        assert v1 == v2
+
+def test_rebuild_expression_from_graph_on_products_with_indices():
+    U = FiniteElement("CG", cell2D, 1)
+    V = VectorElement("CG", cell2D, 1)
+    W = TensorElement("CG", cell2D, 1)
+    u = Coefficient(U)
+    v = Coefficient(V)
+    w = Coefficient(W)
+    i, j, k, l = indices(4)
+
+    # Test fixed index
+    fixed = [u*v[0], v[1]*v[0], w[0,1]*w[0,0]]
+    for v1 in fixed:
+        G = build_graph([v1])
+        v2 = rebuild_expression_from_graph(G)
+        assert v1 == v2
+
+    # Test simple repeated index
+    v1 = v[i]*v[i]
+    G = build_graph([v1])
+    v2 = rebuild_expression_from_graph(G)
+    ve = v[0]**2 + v[1]**2
+    assert ve == v2
+
+    # Test double repeated index
+    v1 = w[i,j]*w[j,i]
+    G = build_graph([v1])
+    v2 = rebuild_expression_from_graph(G)
+    ve = (w[1,1]**2 + w[1,0]*w[0,1]) + (w[0,1]*w[1,0] + w[0,0]**2)
+    if 0:
+        print
+        print v1
+        print ve
+        print v2
+        print
+    assert ve == v2
+
+    # Test mix of repeated and non-repeated index
+    v1 = (w[i,j]*w[j,0] + v[i])*v[i]
+    G = build_graph([v1])
+    v2 = rebuild_expression_from_graph(G)
+    ve = ( (w[0,0]*w[0,0] + w[0,1]*w[1,0] + v[0])*v[0]
+          +(w[1,0]*w[0,0] + w[1,1]*w[1,0] + v[1])*v[1])
+    assert ve == v2
+
+def test_rebuild_expression_from_graph_basic_tensor_expressions():
+    U = FiniteElement("CG", cell2D, 1)
+    V = VectorElement("CG", cell2D, 1)
+    W = TensorElement("CG", cell2D, 1)
+    u = Coefficient(U)
+    v = Coefficient(V)
+    w = Coefficient(W)
+
+    v1 = v
+    G = build_graph([v1])
+    v2 = rebuild_expression_from_graph(G)
+    assert as_vector((v1[0], v1[1])) == v2
+
+    v1 = w
+    G = build_graph([v1])
+    v2 = rebuild_expression_from_graph(G)
+    assert as_vector((v1[0,0],v1[0,1],v1[1,0],v1[1,1])) == v2
+
+    v1 = v+v
+    G = build_graph([v1])
+    v2 = rebuild_expression_from_graph(G)
+    ve = as_vector((2*v[0],2*v[1]))
+    if 0:
+        print
+        print ve
+        print v2
+        print
+    assert ve == v2
+
+    v1 = w+w
+    G = build_graph([v1])
+    v2 = rebuild_expression_from_graph(G)
+    ve = as_vector((2*w[0,0],2*w[0,1],2*w[1,0],2*w[1,1]))
+    assert ve == v2
+
+    v1 = u*v
+    G = build_graph([v1])
+    v2 = rebuild_expression_from_graph(G)
+    ve = as_vector((u*v[0],u*v[1]))
+    assert ve == v2
+
+    v1 = u*w
+    G = build_graph([v1])
+    v2 = rebuild_expression_from_graph(G)
+    ve = as_vector((u*w[0,0],u*w[0,1],u*w[1,0],u*w[1,1]))
+    assert ve == v2
+
+    v1 = v[i]*v[i]
+    G = build_graph([v1])
+    v2 = rebuild_expression_from_graph(G)
+    ve = v[0]*v[0] + v[1]*v[1]
+    assert ve == v2
+
+    v1 = w[i,j]*w[j,i]
+    G = build_graph([v1])
+    v2 = rebuild_expression_from_graph(G)
+    ve = (w[0,0]*w[0,0] + w[0,1]*w[1,0]) \
+       + (w[1,0]*w[0,1] + w[1,1]*w[1,1])
+    assert ve == v2
+
+# Compounds not implemented, not expecting to do this anytime soon
+def xtest_rebuild_expression_from_graph_on_compounds():
+    U = FiniteElement("CG", cell2D, 1)
+    V = VectorElement("CG", cell2D, 1)
+    W = TensorElement("CG", cell2D, 1)
+    u = Coefficient(U)
+    v = Coefficient(V)
+    w = Coefficient(W)
+
+    v1 = dot(v,v)
+    G = build_graph([v1])
+    v2 = rebuild_expression_from_graph(G)
+
+    v1 = outer(v,v)
+    G = build_graph([v1])
+    v2 = rebuild_expression_from_graph(G)
+
+    v1 = outer(v,v)[i,j]*outer(v,v)[j,i]
+    G = build_graph([v1])
+    v2 = rebuild_expression_from_graph(G)
+    #print v1
+    #print v2
+    # FIXME: Assert something
+
+def test_flattening_of_tensor_valued_expression_symbols():
+    #from uflacs.analysis.graph import foo
+    def flatten_expression_symbols(v, vsyms, opsyms):
+        sh = v.shape()
+        if sh == ():
+            assert len(vsyms) == 1
+            if not opsyms:
+                res = [(v, vsyms[0], ())]
+            else:
+                assert len(opsyms[0]) == 1
+                res = [(v, vsyms[0], tuple(syms[0] for syms in opsyms))]
+        else:
+            res = []
+            if isinstance(v, ufl.classes.Sum):
+                for i in range(len(vsyms)):
+                    u = None # sum of component i for syms in opsyms
+                    res += (u, vsyms[i], tuple(syms[i] for syms in opsyms))
+        return res
+
+    v = as_ufl(1)
+    vsyms = (0,)
+    opsyms = ()
+    res = flatten_expression_symbols(v, vsyms, opsyms)
+    assert res == [(v, 0, ())]
+

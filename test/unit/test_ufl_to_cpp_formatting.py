@@ -188,14 +188,14 @@ def test_cpp_formatting_precedence_handling():
     assert expr2cpp(ufl.cos(x+2)) == "cos(2 + x[0])"
     assert expr2cpp(ufl.tan(x/2)) == "tan(x[0] / 2)"
     assert expr2cpp(ufl.acos(x + 3 * y)) == "acos(x[0] + 3 * x[1])"
-    assert expr2cpp(ufl.asin(ufl.atan(x**4)), "asin(atan(pow(x[0]) == 4)))"
+    assert expr2cpp(ufl.asin(ufl.atan(x**4))) == "asin(atan(pow(x[0], 4)))"
     assert expr2cpp(ufl.sin(y) + ufl.tan(x)) == "sin(x[1]) + tan(x[0])"
 
     # Test precedence handling with mixed types
     assert expr2cpp(3 * (2 + x)) == "3 * (2 + x[0])"
     assert expr2cpp((2 * x) + (3 * y)) == "2 * x[0] + 3 * x[1]"
     assert expr2cpp(2 * (x + 3) * y) == "x[1] * (2 * (3 + x[0]))"
-    assert expr2cpp(2 * (x + 3)**4 * y, "x[1] * (2 * pow(3 + x[0]) == 4))"
+    assert expr2cpp(2 * (x + 3)**4 * y) == "x[1] * (2 * pow(3 + x[0], 4))"
     # TODO: More tests covering all types and more combinations!
 
 def test_cpp_formatting_with_variables():

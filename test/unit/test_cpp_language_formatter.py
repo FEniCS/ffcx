@@ -2,7 +2,14 @@
 
 # TODO: Change methods of these classes to not take ufl expression as first argument
 
-def test_cpp_literal_formatter(self):
+import uflacs
+from uflacs.codeutils.cpp_format import (CppLiteralFormatterRules,
+                                         CppArithmeticFormatterRules,
+                                         CppCmathFormatterRules,
+                                         CppConditionalFormatterRules)
+from ufl import as_ufl
+
+def test_cpp_literal_formatter():
     fmt = CppLiteralFormatterRules()
 
     assert fmt.int_value(as_ufl(123)) == "123"
@@ -17,7 +24,7 @@ def test_cpp_literal_formatter(self):
     assert fmt.float_value(str(1.0/3.0))[:7] == "0.33333"
     assert fmt.zero("0") == "0"
 
-def test_cpp_arithmetic_formatter(self):
+def test_cpp_arithmetic_formatter():
     fmt = CppArithmeticFormatterRules()
     assert fmt.sum(None, "1", "2") == "1 + 2"
     assert fmt.sum(None, "1", "2", "3") == "1 + 2 + 3"
@@ -25,7 +32,7 @@ def test_cpp_arithmetic_formatter(self):
     assert fmt.product(None, "1", "2", "3") == "1 * 2 * 3"
     assert fmt.division(None, "1", "2") == "1 / 2"
 
-def test_cpp_cmath_formatter(self):
+def test_cpp_cmath_formatter():
     fmt = CppCmathFormatterRules()
     assert fmt.power(None, "x", "y") == "pow(x, y)"
     assert fmt.sqrt(None, "x") == "sqrt(x)"
@@ -46,7 +53,7 @@ def test_cpp_cmath_formatter(self):
     #self.assertEqual(fmt.bessel_k(None, "n", "x"), "cyl_bessel_k(n, x)")
     #self.assertEqual(fmt.bessel_l(None, "n", "x"), "cyl_neumann(n, x)")
 
-def test_cpp_conditional_formatter(self):
+def test_cpp_conditional_formatter():
     fmt = CppConditionalFormatterRules()
     assert fmt.eq(None, "x", "y") == "x == y"
     assert fmt.ne(None, "x", "y") == "x != y"
