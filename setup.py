@@ -7,7 +7,7 @@ import os
 import platform
 
 # Version number
-major = 0
+major = 1
 minor = 3
 maintenance = 0
 #development = "" # Select this for release
