@@ -51,7 +51,7 @@ def get_swig_executable():
         raise OSError('Unable to find SWIG installation. Please install SWIG version 2.0 or higher.')
 
     # Check that SWIG version is ok
-    output = subprocess.check_output('%s -version' % swig_executable)
+    output = subprocess.check_output([swig_executable, "-version"])
     swig_version = re.findall(r'SWIG Version ([0-9.]+)', output)[0]
     swig_version_ok = True
     swig_minimum_version = [2, 0, 0]
@@ -67,18 +67,6 @@ def get_swig_executable():
 
     return swig_executable
 
-def write_config_file(infile, outfile, variables={}):
-    "Write config file based on template"
-    class AtTemplate(string.Template):
-        delimiter = '@'
-    s = AtTemplate(open(infile, 'r').read())
-    s = s.substitute(**variables)
-    a = open(outfile, 'w')
-    try:
-        a.write(s)
-    finally:
-        a.close()
-
 def create_windows_batch_files(scripts):
     """Create Windows batch files, to get around problem that we
     cannot run Python scripts in the prompt without the .py
@@ -93,6 +81,58 @@ def create_windows_batch_files(scripts):
     scripts.extend(batch_files)
     return scripts
 
+def write_config_file(infile, outfile, variables={}):
+    "Write config file based on template"
+    class AtTemplate(string.Template):
+        delimiter = '@'
+    s = AtTemplate(open(infile, 'r').read())
+    s = s.substitute(**variables)
+    a = open(outfile, 'w')
+    try:
+        a.write(s)
+    finally:
+        a.close()
+
+def generate_config_files():
+    "Generate and install configuration files"
+
+    # Get variables
+    INSTALL_PREFIX  = get_installation_prefix()
+    SWIG_EXECUTABLE = get_swig_executable()
+    PYTHON_LIBRARY  = 'libpython2.7.so'
+    MAJOR, MINOR, MICRO = VERSION.split(".")
+
+    # Generate UFCConfig.cmake
+    write_config_file(os.path.join('cmake/templates', 'UFCConfig.cmake.in'),
+                      os.path.join('cmake/templates', 'UFCConfig.cmake'),
+                      variables=dict(INSTALL_PREFIX=INSTALL_PREFIX,
+                                     CXX_FLAGS=CXX_FLAGS,
+                                     PYTHON_INCLUDE_DIR=sysconfig.get_python_inc(),
+                                     PYTHON_LIBRARY=PYTHON_LIBRARY,
+                                     PYTHON_EXECUTABLE=sys.executable,
+                                     SWIG_EXECUTABLE=SWIG_EXECUTABLE,
+                                     FULLVERSION=VERSION))
+
+    # Generate UFCConfigVersion.cmake
+    write_config_file(os.path.join('cmake/templates', 'UFCConfigVersion.cmake.in'),
+                      os.path.join('cmake/templates', 'UFCConfigVersion.cmake'),
+                      variables=dict(FULLVERSION=VERSION,
+                                     MAJOR=MAJOR, MINOR=MINOR, MICRO=MICRO))
+
+    # Generate UseUFC.cmake
+    write_config_file(os.path.join('cmake/templates', 'UseUFC.cmake.in'),
+                      os.path.join('cmake/templates', 'UseUFC.cmake'))
+
+    # FIXME: Generation of pkgconfig file may no longer be needed, so
+    # FIXME: we may consider removing this.
+
+    # Generate ufc-1.pc
+    write_config_file(os.path.join('cmake/templates', 'ufc-1.pc.in'),
+                      os.path.join('cmake/templates', 'ufc-1.pc'),
+                      variables=dict(FULLVERSION=VERSION,
+                                     INSTALL_PREFIX=INSTALL_PREFIX,
+                                     CXX_FLAGS=CXX_FLAGS))
+
 def run_install():
     "Run installation"
 
@@ -101,11 +141,14 @@ def run_install():
     if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
         scripts = create_windows_batch_files(scripts)
 
+    # Generate config files
+    generate_config_files()
 
+    # FIXME: Someone needs to explain what this does. Benjamin?
     ext_kwargs = dict(include_dirs=[numpy.get_include()])
     if LooseVersion(numpy.__version__) > LooseVersion("1.6.2"):
-        ext_kwargs["define_macros"] = [ ("NPY_NO_DEPRECATED_API", "NPY_%s_%s_API_VERSION" \
-                                             % tuple(numpy.__version__.split(".")[:2]))]
+        ext_kwargs["define_macros"] = [("NPY_NO_DEPRECATED_API", "NPY_%s_%s_API_VERSION" \
+                                            % tuple(numpy.__version__.split(".")[:2]))]
 
     # Setup extension module for FFC time elements
     ext_module_time = Extension("ffc.time_elements_ext",
@@ -149,48 +192,15 @@ def run_install():
 def setup_package_ufc():
 
     # FIXME: Contents of this function should be moved:
-    # - Move config file generation stuff to function generate_config_files
     # - Merge call to setup with FFC call to setup below
 
-    PREFIX = get_installation_prefix()
-    # FIXME: How can we get the path to the Python library? Do we need it?
-    PYTHON_LIBRARY = 'libpython2.7.so'
-    FULLVERSION=VERSION
-    SWIG_EXECUTABLE = get_swig_executable()
-
-    # Rewrite the CMake files every time
-    configure_file(os.path.join('templates', 'UFCConfig.cmake.in'),
-                   os.path.join('templates', 'UFCConfig.cmake'),
-                   variables=dict(INSTALL_PREFIX=PREFIX,
-                                  CXX_FLAGS=CXX_FLAGS,
-                                  PYTHON_INCLUDE_DIR=sysconfig.get_python_inc(),
-                                  PYTHON_LIBRARY=PYTHON_LIBRARY,
-                                  PYTHON_EXECUTABLE=sys.executable,
-                                  SWIG_EXECUTABLE=SWIG_EXECUTABLE,
-                                  FULLVERSION=FULLVERSION))
-    configure_file(os.path.join('templates', 'UFCConfigVersion.cmake.in'),
-                   os.path.join('templates', 'UFCConfigVersion.cmake'),
-                   variables=dict(FULLVERSION=FULLVERSION,
-                                  MAJOR=MAJOR, MINOR=MINOR, MICRO=MICRO))
-    configure_file(os.path.join('templates', 'UseUFC.cmake.in'),
-                   os.path.join('templates', 'UseUFC.cmake'))
-    # FIXME: Do we still need to generate the pkg-config file?
-    configure_file(os.path.join('templates', 'ufc-1.pc.in'),
-                   os.path.join('templates', 'ufc-1.pc'),
-                   variables=dict(FULLVERSION=FULLVERSION,
-                                  INSTALL_PREFIX=PREFIX,
-                                  CXX_FLAGS=CXX_FLAGS))
-
-    # Subclass build_ext to help distutils find the correct SWIG executable
-    from distutils.command import build_ext
     class my_build_ext(build_ext.build_ext):
         def find_swig(self):
             return SWIG_EXECUTABLE
 
-
     # Run setup
     setup(name='UFC',
-          version=FULLVERSION,
+          version=VERSION,
           maintainer='FEniCS Developers',
           maintainer_email='fenics@fenicsproject.org',
           description=DOCLINES[0],
