@@ -18,7 +18,7 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2008-09-04
-# Last changed: 2013-01-25
+# Last changed: 2014-02-20
 
 # Python modules.
 from hashlib import sha1
@@ -33,12 +33,12 @@ import ufl
 from constants import FFC_VERSION
 
 # UFC modules.
-import ufc_utils
+from ffc.backends import ufc
 
 # Compute signature of all ufc headers combined
-ufc_signature = sha1(''.join(getattr(ufc_utils, header)
+ufc_signature = sha1(''.join(getattr(ufc, header)
                              for header in
-                             (k for k in vars(ufc_utils).keys()
+                             (k for k in vars(ufc).keys()
                               if k.endswith("_header")))
                               ).hexdigest()
 

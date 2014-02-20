@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2013 Anders Logg
+# Copyright (C) 2010-2014 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -16,7 +16,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2010-01-18
-# Last changed: 2013-03-21
+# Last changed: 2014-02-20
 
 # Python modules
 from itertools import chain
@@ -25,8 +25,8 @@ from itertools import chain
 from ffc.log import begin, end, info, error
 from ffc.utils import all_equal
 from ffc.cpp import format
-from ffc.dolfin.wrappers import generate_dolfin_code
-from ffc.dolfin.capsules import UFCElementNames, UFCFormNames
+from ffc.backends.dolfin.wrappers import generate_dolfin_code
+from ffc.backends.dolfin.capsules import UFCElementNames, UFCFormNames
 
 __all__ = ["generate_wrapper_code"]
 

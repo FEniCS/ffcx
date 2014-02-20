@@ -1,7 +1,7 @@
 """This module provides a just-in-time (JIT) form compiler.
 It uses Instant to wrap the generated code into a Python module."""
 
-# Copyright (C) 2007-2013 Anders Logg
+# Copyright (C) 2007-2014 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -25,12 +25,11 @@ It uses Instant to wrap the generated code into a Python module."""
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2007-07-20
-# Last changed: 2013-01-25
+# Last changed: 2014-02-20
 
 # Python modules
 import os, sys
 import instant
-import ufc_utils
 import ufc
 
 # UFL modules
@@ -53,6 +52,7 @@ from mixedelement import MixedElement
 from compiler import compile_form
 from jitobject import JITObject
 from ffc.quadratureelement import default_quadrature_degree
+from ffc.backends.ufc import build_ufc_module
 
 # Special Options for JIT-compilation
 FFC_PARAMETERS_JIT = default_parameters()
@@ -145,7 +145,7 @@ def jit_form(form, parameters=None):
         debug("Compiling and linking Python extension module, this may take some time.")
         hfile   = module_name + ".h"
         cppfile = module_name + ".cpp"
-        module = ufc_utils.build_ufc_module(
+        module = build_ufc_module(
             hfile,
             source_directory = os.curdir,
             signature = module_name,
