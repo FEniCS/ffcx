@@ -42,9 +42,18 @@ Dependencies
 
 #.  Python, version 2.6
 
-#.  The latest version of FIAT, UFC and UFL
+#.  The latest version of FIAT and UFL
 
-    You need to have FIAT, UFC and UFL installed. They are available from the
+    You need to have FIAT and UFL installed. They are available from the
     web page: https://bitbucket.org/fenics-project/.
 
 #. The Python NumPy module
+
+
+Notes
+-----
+
+From February 2014, the code generation interface UFC is distributed
+as part of FFC, and the UFC repository has been merged into the FFC
+repository. From this point onwards, UFC version numbers are reset
+to the same version numbers as for FFC.
