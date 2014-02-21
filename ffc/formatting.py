@@ -9,7 +9,7 @@ It relies on templates for UFC code available as part of the module
 ufc_utils.
 """
 
-# Copyright (C) 2009 Anders Logg
+# Copyright (C) 2009-2014 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -27,18 +27,16 @@ ufc_utils.
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2009-12-16
-# Last changed: 2011-02-21
+# Last changed: 2014-02-20
 
 # Python modules
 import os
-
-# UFC code generation templates
-from ufc_utils import templates
 
 # FFC modules
 from ffc.log import info, error, begin, end, dstr
 from ffc.constants import FFC_VERSION, UFC_VERSION
 from ffc.cpp import format
+from ffc.backends.ufc import templates
 
 def format_code(code, wrapper_code, prefix, parameters):
     "Format given code in UFC format."

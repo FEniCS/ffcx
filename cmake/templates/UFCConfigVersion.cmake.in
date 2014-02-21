@@ -1,9 +1,14 @@
+# CMake configuration for UFC (http://fenicsproject.org/)
+#
+# This file has been generated automatically by the FFC/UFC installation.
+
+# FIXME: When should versions be defined as compatible?
+
 set(PACKAGE_VERSION "@FULLVERSION")
 set(PACKAGE_VERSION_MAJOR "@MAJOR")
 set(PACKAGE_VERSION_MINOR "@MINOR")
 set(PACKAGE_VERSION_PATCH "@MICRO")
 
-# FIXME: When should versions be defined as compatible?
 # This version is compatible only with matching major.minor versions.
 if ("${PACKAGE_VERSION_MAJOR}.${PACKAGE_VERSION_MINOR}" VERSION_EQUAL "${PACKAGE_FIND_VERSION_MAJOR}.${PACKAGE_FIND_VERSION_MINOR}")
   # This version is compatible with equal or lesser patch versions.
