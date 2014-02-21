@@ -1,7 +1,6 @@
-# - UFC
-# CMake configuration for UFC (http:://fenicsproject.org)
+# CMake configuration for UFC (http://fenicsproject.org/)
 #
-# This file has been automatically generated.
+# This file has been generated automatically by the FFC/UFC installation.
 
 # FIXME: Check that naming conforms to CMake standards
 
