@@ -171,7 +171,7 @@ def run_install():
                                 **ext_kwargs)
 
     # Setup extension module for UFC
-    ext_module_ufc = Extension("_ufc",
+    ext_module_ufc = Extension("ufc._ufc",
                                sources=[os.path.join("ufc", "ufc.i")],
                                swig_opts=["-c++", "-shadow", "-modern",
                                           "-modernargs", "-fastdispatch",
