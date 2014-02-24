@@ -155,20 +155,13 @@ def run_install():
     # Generate config files
     generate_config_files(SWIG_EXECUTABLE)
 
-    # FIXME: Someone needs to explain what this does. Benjamin?
-    ext_kwargs = dict(include_dirs=[numpy.get_include()])
-    if LooseVersion(numpy.__version__) > LooseVersion("1.6.2"):
-        ext_kwargs["define_macros"] = [("NPY_NO_DEPRECATED_API", "NPY_%s_%s_API_VERSION" \
-                                            % tuple(numpy.__version__.split(".")[:2]))]
-
     # Setup extension module for FFC time elements
     ext_module_time = Extension("ffc.time_elements_ext",
                                 ["ffc/ext/time_elements_interface.cpp",
                                  "ffc/ext/time_elements.cpp",
                                  "ffc/ext/LobattoQuadrature.cpp",
                                  "ffc/ext/RadauQuadrature.cpp",
-                                 "ffc/ext/Legendre.cpp"],
-                                **ext_kwargs)
+                                 "ffc/ext/Legendre.cpp"])
 
     # Setup extension module for UFC
     ext_module_ufc = Extension("ufc._ufc",
