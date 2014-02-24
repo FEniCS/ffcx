@@ -8,8 +8,8 @@
 
 #include <ufc.h>
 
-namespace uflacs
-{
+//namespace uflacs
+//{
     struct mock_cell
     {
         // These coordinates are all that generated code should care about, the rest is to support the tests
@@ -214,6 +214,6 @@ namespace uflacs
         }
     };
 
-}
+//}
 
 #endif
