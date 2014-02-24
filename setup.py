@@ -147,14 +147,15 @@ def run_install():
     if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
         scripts = create_windows_batch_files(scripts)
 
-    # Define callback for distutils to find correct SWIG executable
+    # Subclass extension building command to ensure that distutils to
+    # finds the correct SWIG executable
     SWIG_EXECUTABLE = get_swig_executable()
     class my_build_ext(build_ext.build_ext):
         def find_swig(self):
             return SWIG_EXECUTABLE
 
-    # Subclass the build command to ensure that build_ext produces ufc.py
-    # before build_py tries to copy it.
+    # Subclass the build command to ensure that build_ext produces
+    # ufc.py before build_py tries to copy it.
     class my_build(build):
         def run(self):
             self.run_command('build_ext')
@@ -206,6 +207,7 @@ def run_install():
           package_dir      = {"ffc": "ffc",
                               "ufc": "ufc"},
           scripts          = scripts,
+          include_dirs     = [numpy.get_include()],
           ext_modules      = [ext_module_time, ext_module_ufc],
           cmdclass         = {"build": my_build, "build_ext": my_build_ext},
           data_files       = [(os.path.join("share", "man", "man1"),
