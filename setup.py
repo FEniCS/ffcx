@@ -4,6 +4,7 @@ import os, sys, platform, re, subprocess, string, numpy
 from distutils import sysconfig, spawn
 from distutils.core import setup, Extension
 from distutils.command import build_ext
+from distutils.command.build import build
 from distutils.version import LooseVersion
 
 VERSION   = "1.3.0+"
@@ -152,6 +153,13 @@ def run_install():
         def find_swig(self):
             return SWIG_EXECUTABLE
 
+    # Subclass the build command to ensure that build_ext produces ufc.py
+    # before build_py tries to copy it.
+    class my_build(build):
+        def run(self):
+            self.run_command('build_ext')
+            build.run(self)
+
     # Generate config files
     generate_config_files(SWIG_EXECUTABLE)
 
@@ -199,7 +207,7 @@ def run_install():
                               "ufc": "ufc"},
           scripts          = scripts,
           ext_modules      = [ext_module_time, ext_module_ufc],
-          cmdclass         = {"build_ext": my_build_ext},
+          cmdclass         = {"build": my_build, "build_ext": my_build_ext},
           data_files       = [(os.path.join("share", "man", "man1"),
                                [os.path.join("doc", "man", "man1", "ffc.1.gz")]),
                               (os.path.join("include"),
