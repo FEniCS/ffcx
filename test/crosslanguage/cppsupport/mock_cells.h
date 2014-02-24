@@ -6,7 +6,7 @@
 #ifndef __MOCK_CELLS_H
 #define __MOCK_CELLS_H
 
-#include "ufc.h"
+#include <ufc.h>
 
 namespace uflacs
 {

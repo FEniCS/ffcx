@@ -9,10 +9,17 @@ from collections import defaultdict
 
 from instant.output import get_status_output
 
+
+# TODO: For a generic framework, this needs to change somewhat:
+_supportcode = '#include "mock_cells.h"'
+
+
 _gtest_runner_template = """
 #include <gtest/gtest.h>
 
-{includes}
+{supportcode}
+
+{testincludes}
 
 int main(int argc, char **argv)
 {{
@@ -126,10 +133,10 @@ class GTestContext:
 
         # Collect headers in include list for runner code
         self._test_header_names = [os.path.split(h)[-1] for h in headers]
-        includes = '\n'.join('#include "{0}"'.format(h) for h in self._test_header_names)
+        testincludes = '\n'.join('#include "{0}"'.format(h) for h in self._test_header_names)
 
         # Write test runner code to file
-        runner_code = _gtest_runner_template.format(includes=includes)
+        runner_code = _gtest_runner_template.format(supportcode=_supportcode, testincludes=testincludes)
 
         self._main_filename = os.path.join(self._gendir, "main.cpp")
         with open(self._main_filename, "w") as f:

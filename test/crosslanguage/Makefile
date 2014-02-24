@@ -11,14 +11,15 @@ PYTEST=py.test
 # Local filenames
 TESTBINARY=run_gtest
 TESTSRCDIR=generated
+TESTSUPPORTDIR=cppsupport
 TESTMAINSRC=${TESTSRCDIR}/main.cpp
 
 # Configure ufc
 UFCINCDIR=`pkg-config ufc-1 --cflags`
 
 # Configure gtest
-LIBDIRS=-L${GTEST_DIR}/lib
-LIBS=-lgtest -lpthread
+GTESTINCDIR=-I${GTEST_DIR}/include
+GTESTLIBS=-L${GTEST_DIR}/lib -lgtest -lpthread
 
 # Flags set for easy debugging # TODO: Allow overriding
 CXXFLAGS=-g -O0
@@ -35,10 +36,10 @@ run: ${TESTBINARY}
 
 # Also depends on ${TESTSRCDIR}/*.h but this rule seems to be sufficient
 # because the test binary is touched every time the python tests run
-${TESTBINARY}: ${TESTMAINSRC}
-	${CXX} ${CXXFLAGS} -o ${TESTBINARY} ${TESTMAINSRC} -I${TESTSRCDIR} \
-		-I${UFCINCDIR} \
-		-I${GTEST_DIR}/include -L${GTEST_DIR}/lib -lgtest -lpthread
+${TESTBINARY}: ${TESTMAINSRC} ${TESTSUPPORTDIR}/*.h
+	${CXX} ${CXXFLAGS} -o ${TESTBINARY} \
+		${TESTMAINSRC} -I${TESTSRCDIR} -I${TESTSUPPORTDIR} \
+		${UFCINCDIR} ${GTESTINCDIR} ${GTESTLIBS}
 
 # Enable this to run py.test to regenerate main.cpp each time python tests are changed.
 # Currently disabled because I think py.test should call make and not the other way around.
