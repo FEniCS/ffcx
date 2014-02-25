@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 
-import os, sys, platform, re, subprocess, string, numpy
+import os, sys, platform, re, subprocess, string, numpy, tempfile, shutil
 from distutils import sysconfig, spawn
 from distutils.core import setup, Extension
 from distutils.command import build_ext
 from distutils.command.build import build
 from distutils.version import LooseVersion
+from distutils.ccompiler import new_compiler
 
 VERSION   = "1.3.0+"
-CXX_FLAGS = "-std=c++11 " + os.environ.get("CXXFLAGS", "")
 SCRIPTS   = [os.path.join("scripts", "ffc")]
 
 AUTHORS = """\
@@ -100,7 +100,7 @@ def write_config_file(infile, outfile, variables={}):
     finally:
         a.close()
 
-def generate_config_files(SWIG_EXECUTABLE):
+def generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
     "Generate and install configuration files"
 
     # Get variables
@@ -139,6 +139,32 @@ def generate_config_files(SWIG_EXECUTABLE):
                                      INSTALL_PREFIX=INSTALL_PREFIX,
                                      CXX_FLAGS=CXX_FLAGS))
 
+def has_cxx_flag(cc, flag):
+    "Return True if compiler supports given flag"
+    tmpdir = tempfile.mkdtemp(prefix="ffc-build-")
+    devnull = oldstderr = None
+    try:
+        try:
+            fname = os.path.join(tmpdir, "flagname.cpp")
+            f = open(fname, "w")
+            f.write("int main() { return 0;}")
+            f.close()
+            # Redirect stderr to /dev/null to hide any error messages
+            # from the compiler.
+            devnull = open(os.devnull, 'w')
+            oldstderr = os.dup(sys.stderr.fileno())
+            os.dup2(devnull.fileno(), sys.stderr.fileno())
+            cc.compile([fname], output_dir=tmpdir, extra_preargs=[flag])
+        except:
+            return False
+        return True
+    finally:
+        if oldstderr is not None:
+            os.dup2(oldstderr, sys.stderr.fileno())
+        if devnull is not None:
+            devnull.close()
+        shutil.rmtree(tmpdir)
+
 def run_install():
     "Run installation"
 
@@ -161,8 +187,16 @@ def run_install():
             self.run_command('build_ext')
             build.run(self)
 
+    # Check that compiler supports C++11 features
+    cc = new_compiler()
+    CXX_FLAGS = os.environ.get("CXXFLAGS", "")
+    if has_cxx_flag(cc, "-std=c++11"):
+        CXX_FLAGS += " -std=c++11"
+    elif has_cxx_flag(cc, "-std=c++0x"):
+        CXX_FLAGS += " -std=c++0x"
+
     # Generate config files
-    generate_config_files(SWIG_EXECUTABLE)
+    generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS)
 
     # Setup extension module for FFC time elements
     ext_module_time = Extension("ffc.time_elements_ext",
