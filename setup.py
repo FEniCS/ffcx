@@ -100,19 +100,46 @@ def write_config_file(infile, outfile, variables={}):
     finally:
         a.close()
 
+def find_python_library():
+    "Return the full path to the Python library (empty string if not found)"
+    pyver = sysconfig.get_python_version()
+    libpython_names = [
+        "python%s" % pyver.replace(".", ""),
+        "python%smu" % pyver,
+        "python%sm" % pyver,
+        "python%su" % pyver,
+        "python%s" % pyver,
+        ]
+    dirs = [
+        "%s/lib" % os.environ.get("PYTHON_DIR", ""),
+        "%s" % sysconfig.get_config_vars().get("LIBDIR", ""),
+        "/usr/lib/%s" % sysconfig.get_config_vars().get("MULTIARCH", ""),
+        "/usr/local/lib",
+        "/opt/local/lib",
+        "/usr/lib",
+        "/usr/lib64",
+        ]
+    libpython = None
+    cc = new_compiler()
+    for name in libpython_names:
+        libpython = cc.find_library_file(dirs, name)
+        if libpython is not None:
+            break
+    return libpython or ""
+
 def generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
     "Generate and install configuration files"
 
     # Get variables
-    INSTALL_PREFIX  = get_installation_prefix()
-    PYTHON_LIBRARY  = "libpython2.7.so"
+    INSTALL_PREFIX = get_installation_prefix()
+    PYTHON_LIBRARY = os.environ.get("PYTHON_LIBRARY", find_python_library())
     MAJOR, MINOR, MICRO = VERSION.split(".")
 
     # Generate UFCConfig.cmake
     write_config_file(os.path.join("cmake/templates", "UFCConfig.cmake.in"),
                       os.path.join("cmake/templates", "UFCConfig.cmake"),
                       variables=dict(INSTALL_PREFIX=INSTALL_PREFIX,
-                                     CXX_FLAGS=CXX_FLAGS,
+                                     CXX_FLAGS=CXX_FLAGS.strip(),
                                      PYTHON_INCLUDE_DIR=sysconfig.get_python_inc(),
                                      PYTHON_LIBRARY=PYTHON_LIBRARY,
                                      PYTHON_EXECUTABLE=sys.executable,
