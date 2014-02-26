@@ -11,7 +11,12 @@ from instant.output import get_status_output
 
 
 # TODO: For a generic framework, this needs to change somewhat:
-_supportcode = '#include "mock_cells.h"'
+_supportcode = '''
+#include <ufc.h>
+#include <ufc_geometry.h>
+#include "mock_cells.h"
+#include "debugging.h"
+'''
 
 
 _gtest_runner_template = """
