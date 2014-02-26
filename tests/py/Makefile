@@ -1,4 +1,0 @@
-
-default:
-	cd .. && make -k
-
