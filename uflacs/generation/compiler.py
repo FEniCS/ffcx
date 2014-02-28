@@ -148,23 +148,19 @@ def compile_expression_partitions(expressions, parameters):
         print "Profiling results:"
         print tt
 
-    partitions_ir = {}
-    partitions_ir["V"] = V
-    partitions_ir["modified_terminal_indices"] = modified_terminal_indices
-    partitions_ir["active"] = active
-    partitions_ir[""] = spatially_dependent_indices
+    # FIXME: What do we need to return here?
+    expr_ir = {}
+    expr_ir["argument_factorization"] = argument_factorization
+    expr_ir["argument_factors"] = argument_factors
+    expr_ir["V"] = V
+    expr_ir["target_variables"]
+    expr_ir["active"] = active
+    expr_ir["dependencies"] = dependencies
+    expr_ir["inverse_dependencies"] = inverse_dependencies
+    expr_ir["modified_terminal_indices"] = modified_terminal_indices
+    expr_ir["spatially_dependent_indices"] = spatially_dependent_indices
+    return expr_ir
 
-    partitions_ir[""] = 0
-    partitions_ir[""] = 0
-    partitions_ir[""] = 0
-    partitions_ir[""] = 0
-
-    #partitions_ir["num_registers"] = num_registers
-    #partitions_ir["partitions"] = partitions
-    #partitions_ir["allocations"] = allocations
-    #partitions_ir["target_registers"] = target_registers
-
-    return partitions_ir
 
 def old_code_useful_for_table_building():
     pass
@@ -179,7 +175,6 @@ def old_code_useful_for_table_building():
     #dofblocks[np] = [...]
     #argument_blocks[np] = sorted(argument_factorization.keys())
     # FIXME: Can we avoid explicit dofblocks in here by using ma index tuples?
-
 
 
 def old_code_useful_for_optimization():
@@ -201,5 +196,9 @@ def old_code_useful_for_optimization():
     num_registers = sum(1 if x >= 0 else 0 for x in allocations)
     # TODO: If we renumber we can allocate registers separately for each partition, which is probably a good idea.
 
-
-
+    expr_oir = {}
+    expr_oir["num_registers"] = num_registers
+    expr_oir["partitions"] = partitions
+    expr_oir["allocations"] = allocations
+    expr_oir["target_registers"] = target_registers
+    return expr_oir

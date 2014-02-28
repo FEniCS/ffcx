@@ -63,6 +63,8 @@ for form in forms:
     #print "First apply ufl preprocessing to form"
     #print str(expr)
 
+
+    # FIXME: Apply these transformations at a suitable place in uflacs compiler
     expr = replace(expr, fd.function_replace_map)
     #print "Then function replace map"
     #print str(expr)
@@ -71,7 +73,8 @@ for form in forms:
     print "And change to local grad"
     print str(expr)
 
-    #print "TODO: Build list based graph representation of scalar subexpressions"
+
+    #print "Build list based graph representation of scalar subexpressions"
     expressions = [expr]
 
     e2i, V, target_variables, modified_terminals = build_scalar_graph(expressions)
@@ -147,15 +150,42 @@ for form in forms:
     print spatially_dependent_indices
     print
 
+    expr_ir = {}
+    expr_ir["argument_factorization"] = argument_factorization
+    expr_ir["argument_factors"] = argument_factors
+    expr_ir["V"] = V
+    expr_ir["target_variables"]
+    expr_ir["active"] = active
+    expr_ir["dependencies"] = dependencies
+    expr_ir["inverse_dependencies"] = inverse_dependencies
+    expr_ir["modified_terminal_indices"] = modified_terminal_indices
+    expr_ir["spatially_dependent_indices"] = spatially_dependent_indices
+
+
     # ... Tables enter here
 
-    #print "TODO: Build modified_argument_tables = { argument_factors_index: (uname,b,e) }
+    #print "Build modified_argument_tables = { argument_factors_index: (uname,b,e) }"
+    modified_argument_tables = {}
+    for i, a in enumerate(expr_ir["argument_factors"]):
+        mt = analyse_modified_terminal2(a)
+        (uname, b, e) = ("FIXME", 0, 0) # FIXME
+        modified_argument_tables[i] = (uname, b, e)
 
-    #print "TODO: Build modified_terminal_tables = { factorized_vertices_index: (uname,b,e) } for args,coeffs,jacobian"
+    #print "Build modified_terminal_tables = { factorized_vertices_index: (uname,b,e) } for coeffs,jacobian"
+    modified_terminal_tables = {}
+    for i in expr_ir["modified_terminal_indices"]:
+        mt = analyse_modified_terminal2(expr_ir["V"][i])
+        if FIXME:
+            (uname, b, e) = ("FIXME", 0, 0) # FIXME
+            modified_terminal_tables[i] = (uname, b, e)
 
-    #print "TODO: Generate code for defining tables referenced by modified_argument_tables and modified_terminal_tables"
+    # ... Code generation starts here
 
-    #print "TODO: Generate code for loop nests in tabulate_tensor with blocks of A[(i0+b0)*n1+(i1+b1)] += f*v0[i0]*v1[i1]"
+    #print "TODO: Generate code for defining tables referenced by"\
+    #      " modified_argument_tables and modified_terminal_tables"
+
+    #print "TODO: Generate code for loop nests in tabulate_tensor with"\
+    #      " blocks of A[(i0+b0)*n1+(i1+b1)] += f*v0[i0]*v1[i1]"
 
     #print "TODO: Generate code for cellwise and spatial partitions of factorized_vertices"
 
