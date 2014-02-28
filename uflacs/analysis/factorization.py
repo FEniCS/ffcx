@@ -4,7 +4,7 @@ from ufl.classes import Terminal, Indexed, Grad, Restricted, FacetAvg, CellAvg, 
 
 from uflacs.utils.log import uflacs_assert
 
-from uflacs.analysis.graph_ssa import compute_dependencies
+from uflacs.analysis.graph_dependencies import compute_dependencies
 from uflacs.analysis.modified_terminals import analyse_modified_terminal2, strip_modified_terminal
 
 def _build_arg_sets(V):
@@ -380,4 +380,4 @@ def compute_argument_factorization(SV, target_variables, dependencies):
     print format_mapping(e2fi)
     dependencies = compute_dependencies(e2fi, FV)
 
-    return AV, FV, IM, target_variables, dependencies
+    return IM, AV, FV, target_variables, dependencies

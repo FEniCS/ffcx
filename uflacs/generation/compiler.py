@@ -6,16 +6,16 @@ from uflacs.utils.log import error, uflacs_assert
 from uflacs.analysis.graph import build_graph
 from uflacs.analysis.graph_vertices import build_scalar_graph_vertices
 from uflacs.analysis.graph_rebuild import rebuild_scalar_e2i
-from uflacs.analysis.graph_ssa import (compute_dependencies,
-                                         mark_active,
-                                         mark_partitions,
-                                         compute_dependency_count,
-                                         invert_dependencies,
-                                         default_cache_score_policy,
-                                         compute_cache_scores,
-                                         allocate_registers)
+from uflacs.analysis.graph_dependencies import (compute_dependencies,
+                                                mark_active, mark_image)
+from uflacs.analysis.graph_ssa import (mark_partitions,
+                                       compute_dependency_count,
+                                       invert_dependencies,
+                                       default_cache_score_policy,
+                                       compute_cache_scores,
+                                       allocate_registers)
 from uflacs.analysis.factorization import compute_argument_factorization, rebuild_scalar_graph_from_factorization
-
+from uflacs.analysis.modified_terminals import is_modified_terminal
 from uflacs.codeutils.expr_formatter import ExprFormatter
 from uflacs.codeutils.element_tensor_formatter import build_loops
 from uflacs.codeutils.format_lines import format_assignments, format_scaled_additions
@@ -95,9 +95,11 @@ def compile_expression_partitions(expressions, parameters):
     if not isinstance(expressions, list):
         expressions = [expressions]
 
+
     # Build scalar list-based graph representation
     tt.step('build_scalar_graph')
     e2i, V, target_variables, modified_terminals = build_scalar_graph(expressions)
+
 
     # Compute sparse dependency matrix
     tt.step('compute_dependencies')
@@ -105,37 +107,82 @@ def compile_expression_partitions(expressions, parameters):
 
     # Compute factorization of arguments
     tt.step('compute_argument_factorization')
-    # AV, FV, IM
-    argument_factors, V, argument_factorization, target_variables, dependencies = \
+    argument_factorization, argument_factors, V, target_variables, dependencies = \
         compute_argument_factorization(V, target_variables, dependencies)
 
 
-
-    # Mark subexpressisons that are actually needed for final result
-    tt.step('mark_active')
-    max_symbol = len(V)
-    active, num_active = mark_active(max_symbol, dependencies, target_variables)
-
-
-
-    # TODO: Just mark subexpressions as inside/outside quadrature loop
-    # Mark subexpressions with which loop they belong inside
-    tt.step('mark_partitions')
-    # NB! This one assumes that argument mapping has been applied in V, which it currently hasn't.
-    # However this code may be superseeded soon anyway?
-    partitions = mark_partitions(V, active, dependencies, rank)
-
-
+    # Various dependency analysis
+    tt.step('various dependency analysis')
 
     # Count the number of dependencies every subexpr has
-    tt.step('compute_dependency_count')
     depcount = compute_dependency_count(dependencies)
 
-
     # Build the 'inverse' of the sparse dependency matrix
-    tt.step('invert_dependencies')
     inverse_dependencies = invert_dependencies(dependencies, depcount)
 
+    # Mark subexpressions of V that are actually needed for final result
+    active, num_active = mark_active(dependencies, target_variables)
+
+    # Build set of modified_terminal indices into factorized_vertices
+    modified_terminal_indices = [i for i,v in enumerate(V)
+                                 if is_modified_terminal(v)]
+
+    # Build piecewise/varying markers for factorized_vertices
+    spatially_dependent_terminal_indices = [i for i in modified_terminal_indices
+                                   if not V[i].is_cellwise_constant()]
+    spatially_dependent_indices, num_spatial = mark_image(inverse_dependencies,
+                                                          spatially_dependent_terminal_indices)
+
+    # TODO: Spatially_dependent_indices shows that factorization is needed
+    #       for loop invariant code motion w.r.t. quadrature loop as well
+    #       Postphoning that until everything is working fine again.
+
+    rank = max(len(k) for k in argument_factorization.keys())
+    for i,a in enumerate(argument_factors):
+        iarg = a.number()
+        #ipart = a.part()
+
+    # Print timing
+    tt.stop()
+    if parameters["enable_profiling"]:
+        print "Profiling results:"
+        print tt
+
+    partitions_ir = {}
+    partitions_ir["V"] = V
+    partitions_ir["modified_terminal_indices"] = modified_terminal_indices
+    partitions_ir["active"] = active
+    partitions_ir[""] = spatially_dependent_indices
+
+    partitions_ir[""] = 0
+    partitions_ir[""] = 0
+    partitions_ir[""] = 0
+    partitions_ir[""] = 0
+
+    #partitions_ir["num_registers"] = num_registers
+    #partitions_ir["partitions"] = partitions
+    #partitions_ir["allocations"] = allocations
+    #partitions_ir["target_registers"] = target_registers
+
+    return partitions_ir
+
+def old_code_useful_for_table_building():
+    pass
+    # FIXME: Use ideas from this in building of modified_argument_tables and modified_terminal_tables
+
+    # XXX: FIXME: find dofrange for each argument_factors value
+    #dofranges[np][iarg] = [...]
+    #argument_factors2[np][iarg] = [ma for ma in argument_factors if ma involves iarg and is needed for np]
+    # FIXME: Can we avoid explicit dofranges in here by using ma indices?
+
+    # XXX: FIXME: find dofblock for each argument_factorization item
+    #dofblocks[np] = [...]
+    #argument_blocks[np] = sorted(argument_factorization.keys())
+    # FIXME: Can we avoid explicit dofblocks in here by using ma index tuples?
+
+
+
+def old_code_useful_for_optimization():
 
     # Use heuristics to mark the usefulness of storing every subexpr in a variable
     tt.step('compute_cache_scores')
@@ -156,31 +203,3 @@ def compile_expression_partitions(expressions, parameters):
 
 
 
-    if 0: # FIXME: Use ideas from this in building of modified_argument_tables and modified_terminal_tables
-        # XXX: FIXME: find dofrange for each argument_factors value
-        #dofranges[np][iarg] = [...]
-        #argument_factors2[np][iarg] = [ma for ma in argument_factors if ma involves iarg and is needed for np] # FIXME: Can we avoid explicit dofranges in here by using ma indices?
-
-        # XXX: FIXME: find dofblock for each argument_factorization item
-        #dofblocks[np] = [...]
-        #argument_blocks[np] = sorted(argument_factorization.keys()) # FIXME: Can we avoid explicit dofblocks in here by using ma index tuples?
-        pass
-
-
-    # Print timing
-    tt.stop()
-    if parameters["enable_profiling"]:
-        print "Profiling results:"
-        print tt
-
-    partitions_ir = {}
-    partitions_ir["V"] = V
-    partitions_ir["terminals"] = modified_terminals
-
-    partitions_ir["num_registers"] = num_registers
-    partitions_ir["active"] = active
-    partitions_ir["partitions"] = partitions
-    partitions_ir["allocations"] = allocations
-    partitions_ir["target_registers"] = target_registers
-
-    return partitions_ir

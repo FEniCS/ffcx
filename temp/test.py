@@ -11,9 +11,17 @@ from uflacs import *
 from ufl import *
 from ufl.algorithms import replace, change_to_local_grad
 
-domain = Domain(triangle)
+if 0:
+    domain0 = Domain(triangle)
+    V0 = VectorElement("CG", domain0, 1)
+    x = Coefficient(V0)
+    domain = Domain(x)
+    # This currently seems to fail in ufl, thought it was supposed to work now...
+else:
+    domain = Domain(triangle)
+
+V = FiniteElement("CG", domain, 2)
 dx = Measure("cell", domain)
-V = FiniteElement("CG", domain, 1)
 
 u = TrialFunction(V)
 v = TestFunction(V)
@@ -34,6 +42,10 @@ if case == 3:
     M = grad(f)[0]*dx
     L = grad(v)[0]*dx
     a = dot(grad(u),grad(v))*dx
+if case == 4:
+    M = grad(f)[0]*dx
+    L = grad(v)[0]*dx
+    a = dot(2*grad(u),f*grad(v))*dx
 
 forms = [M, L, a]
 
@@ -42,21 +54,21 @@ from uflacs.generation.compiler import *
 for form in forms:
     print '/'*80
 
-    print "Initial expression"
     expr = form.integrals()[0].integrand()
-    print str(expr)
+    #print "Initial expression"
+    #print str(expr)
 
-    print "First apply ufl preprocessing to form"
     fd = form.compute_form_data()
     expr = fd.preprocessed_form.integrals()[0].integrand()
-    print str(expr)
+    #print "First apply ufl preprocessing to form"
+    #print str(expr)
 
-    print "Then function replace map"
     expr = replace(expr, fd.function_replace_map)
-    print str(expr)
+    #print "Then function replace map"
+    #print str(expr)
 
-    print "And change to local grad"
     expr = change_to_local_grad(expr)
+    print "And change to local grad"
     print str(expr)
 
     #print "TODO: Build list based graph representation of scalar subexpressions"
@@ -64,16 +76,17 @@ for form in forms:
 
     e2i, V, target_variables, modified_terminals = build_scalar_graph(expressions)
 
-    print
-    print "\nV:"
-    print format_enumerated_sequence(V)
-    print "\ne2i:"
-    print format_mapping(e2i)
-    print "\ntarget_variables:"
-    print format_enumerated_sequence(target_variables)
-    print "\nmodified_terminals:"
-    print format_enumerated_sequence(modified_terminals)
-    print
+    if 0:
+        print
+        print "\nV:"
+        print format_enumerated_sequence(V)
+        print "\ne2i:"
+        print format_mapping(e2i)
+        print "\ntarget_variables:"
+        print format_enumerated_sequence(target_variables)
+        print "\nmodified_terminals:"
+        print format_enumerated_sequence(modified_terminals)
+        print
 
     dependencies = compute_dependencies(e2i, V)
     print '\ndependencies:'
@@ -81,36 +94,58 @@ for form in forms:
 
     print "Build factorization"
     # AV, FV, IM
-    argument_factors, factorized_vertices, argument_factorization, target_variables, dependencies = \
+    argument_factorization, argument_factors, V, target_variables, dependencies = \
         compute_argument_factorization(V, target_variables, dependencies)
     # argument_factors = [v, ...] where each v is a modified argument
-    # factorized_vertices = [v, ...] where each v is argument independent
+    # V = [v, ...] where each v is argument independent
     # factorization = { (i,...): j } where (i,...) are indices into argument_factors and j is an index into factorized_vertices
+    if 0:
+        print
+        print '\nargument_factorization'
+        print format_mapping(argument_factorization)
+        print '\nargument factors'
+        print format_enumerated_sequence(argument_factors)
+        print '\nV'
+        print format_enumerated_sequence(V)
+        print '\ntarget_variables'
+        print target_variables
+        print '\ndependencies'
+        print dependencies
+        print
+
+    # Count the number of dependencies every subexpr has
+    depcount = compute_dependency_count(dependencies)
+
+    # Build the 'inverse' of the sparse dependency matrix
+    inverse_dependencies = invert_dependencies(dependencies, depcount)
+
+    print "Mark subexpressions of V that are actually needed for final result"
+    active, num_active = mark_active(dependencies, target_variables)
+
+    print "Build set of modified_terminal indices into factorized_vertices"
+    modified_terminal_indices = [i for i,v in enumerate(V)
+                                 if is_modified_terminal(v)]
+
+    print "Build piecewise/varying markers for factorized_vertices"
+    spatially_dependent_terminal_indices = [i for i in modified_terminal_indices
+                                   if not V[i].is_cellwise_constant()]
+    spatially_dependent_indices, num_spatial = mark_image(inverse_dependencies, spatially_dependent_terminal_indices)
+
     print
-    print '\nargument factors'
-    print format_enumerated_sequence(argument_factors)
-    print '\nfactorized_vertices'
-    print format_enumerated_sequence(factorized_vertices)
-    print '\nargument_factorization'
-    print format_mapping(argument_factorization)
-    print '\ntarget_variables'
-    print target_variables
-    print '\ndependencies'
-    print dependencies
+    print "Vertices:"
+    print format_enumerated_sequence(V)
     print
-
-
-    # This is crap:
-    # Rebuild some graphs from factorization
-    #V, e2i, dependencies = rebuild_scalar_graph_from_factorization(
-    #    argument_factors, factorized_vertices, argument_factorization)
-    # TODO: target_variables for non-scalar or multiple expressions
-    #target_variables = [len(V)-1]
-
-
-    #print "TODO: Build piecewise/varying markers for factorized_vertices"
-
-    #print "TODO: Build set of modified_terminal indices into factorized_vertices"
+    print "Active:", num_active, len(V)
+    print format_enumerated_sequence(active)
+    print
+    print "Modified terminals:"
+    print modified_terminal_indices
+    print
+    print "Spatially dependent:"
+    print spatially_dependent_terminal_indices
+    print
+    print spatially_dependent_indices
+    print
 
     # ... Tables enter here
 
