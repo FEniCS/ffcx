@@ -5,10 +5,13 @@ from uflacs.analysis.graph_rebuild import rebuild_expression_from_graph
 
 class Graph2(object):
     def __init__(self):
-        self.e2i = {}
-        self.V = []
-        self.expression_vertices = []
+
         self.nv = 0
+        self.V = []
+        self.e2i = {}
+
+        self.expression_vertices = []
+
         self.V_shapes = []
         self.V_symbols = None # Crs matrix
         self.total_unique_symbols = 0

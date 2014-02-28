@@ -65,10 +65,10 @@ def build_graph_vertices(expressions):
     # Make a list of the nodes by their ordering
     V = build_array_from_counts(e2i)
 
-    # Get vertex indices representing input expressions
-    vs = [e2i[expr] for expr in expressions]
+    # Get vertex indices representing input expression roots
+    ri = [e2i[expr] for expr in expressions]
 
-    return e2i, V, vs
+    return e2i, V, ri
 
 def build_scalar_graph_vertices(expressions):
     # Count unique expression nodes across multiple expressions, treating modified terminals as a unit
@@ -77,7 +77,7 @@ def build_scalar_graph_vertices(expressions):
     # Make a list of the nodes by their ordering
     V = build_array_from_counts(e2i)
 
-    # Get vertex indices representing input expressions
-    vs = [e2i[expr] for expr in expressions]
+    # Get vertex indices representing input expression roots
+    ri = [e2i[expr] for expr in expressions]
 
-    return e2i, V, vs
+    return e2i, V, ri

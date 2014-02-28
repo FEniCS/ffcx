@@ -5,80 +5,49 @@ from ufl.classes import Terminal, Indexed, Grad, Restricted, FacetAvg, CellAvg, 
 from uflacs.utils.log import uflacs_assert
 
 from uflacs.analysis.graph_ssa import compute_dependencies
-from uflacs.analysis.modified_terminals import analyse_modified_terminal
+from uflacs.analysis.modified_terminals import analyse_modified_terminal2, strip_modified_terminal
 
-def strip_modified_terminal(v):
-    "Extract core Terminal from a modified terminal or return None."
-    while not isinstance(v, Terminal):
-        if isinstance(v, (Indexed, Grad, Restricted, FacetAvg, CellAvg)):
-            v = v.operands()[0]
-        else:
-            return None
-    return v
-
-def build_argument_component_sets(SV):
-    "Build mapping {argument_count: {vertex_number: modified_terminal}} with all argument vertices."
+def _build_arg_sets(V):
+    "Build arg_sets = { argument number: set(j for j where V[j] is a modified Argument with this number) }"
     arg_sets = {}
-    for i,v in enumerate(SV):
-        a = strip_modified_terminal(v)
-        if not isinstance(a, Argument):
+    for i,v in enumerate(V):
+        arg = strip_modified_terminal(v)
+        if not isinstance(arg, Argument):
             continue
-        c = a.number()
-        s = arg_sets.get(c)
-        if s is None:
-            s = {}
-            arg_sets[c] = s
-        s[i] = v
+        num = arg.number()
+        arg_set = arg_sets.get(num)
+        if arg_set is None:
+            arg_set = {}
+            arg_sets[num] = arg_set
+        arg_set[i] = v
     return arg_sets
 
-def build_valid_argument_combinations(arg_sets):
-    "Build all valid permuations of argument products combinations."
-    if not arg_sets:
-        return set(), []
-    counts = sorted(arg_sets.keys())
-    arg_indices = set(arg_sets[counts[0]])
-    arg_combos = [(i,) for i in sorted(arg_indices)]
-    for c in counts[1:]:
-        js = sorted(arg_sets[c])
-        arg_indices.update(js)
-        arg_combos = [comb + (j,) for comb in arg_combos for j in js]
-    return arg_indices, arg_combos
-
-def build_argument_indices_from_arg_sets(arg_sets):
+def _build_argument_indices_from_arg_sets(V, arg_sets):
     "Build ordered list of indices to modified arguments."
-    arg_indices = set()
-    for js in arg_sets.values():
-        arg_indices.update(js)
-    return sorted(arg_indices)
-
-def build_argument_indices(SV):
-    "Build ordered list of indices to modified arguments."
-
-    arg_sets = {}
-    for i,v in enumerate(SV):
-        a = strip_modified_terminal(v)
-        if not isinstance(a, Argument):
-            continue
-        c = a.number()
-        s = arg_sets.get(c)
-        if s is None:
-            s = {}
-            arg_sets[c] = s
-        s[i] = v
-
+    # Build set of all indices of V referring to modified arguments
     arg_indices = set()
     for js in arg_sets.values():
         arg_indices.update(js)
 
+    # Make a canonical ordering of vertex indices for modified arguments
     def arg_ordering_key(i):
-        a = None # TODO: Include averaging state
-        (t, c, d, r) = analyse_modified_terminal(arg_ordering_key.SV[i])
-        assert t.number() >= 0
-        #print "IN ARG ORDERING:", str(arg_ordering_key.SV[i])
-        return (t.number(), c, d, r, a) # TODO: Include part
-    arg_ordering_key.SV = SV
+        "Return a key for sorting argument vertex indices based on the properties of the modified terminal."
+        mt = analyse_modified_terminal2(arg_ordering_key.V[i])
+        assert isinstance(mt.terminal, Argument)
+        assert mt.terminal.number() >= 0
+        return (mt.terminal.number(), mt.terminal.part(),
+                mt.component,
+                mt.global_derivatives, mt.local_derivatives,
+                mt.restriction, mt.averaged)
+    arg_ordering_key.V = V
     ordered_arg_indices = sorted(arg_indices, key=arg_ordering_key)
 
+    return ordered_arg_indices
+
+def build_argument_indices(V):
+    "Build ordered list of indices to modified arguments."
+    arg_sets = _build_arg_sets(V)
+    ordered_arg_indices = _build_argument_indices_from_arg_sets(V, arg_sets)
     return ordered_arg_indices
 
 def build_argument_dependencies(dependencies, arg_indices):
@@ -155,6 +124,8 @@ def collect_argument_factors(SV, dependencies, arg_indices):
     # Adding 1 as an expression allows avoiding special representation by representing "v" as "1*v"
     if arg_indices:
         nocoeffs = add_to_fv(as_ufl(1.0))
+    # Hack to later build dependencies for the FV entries that change K*K -> K**2
+    two = add_to_fv(as_ufl(2))
 
     # Intermediate factorization for each vertex in SV on the format
     # F[i] = None # if SV[i] does not depend in arguments
@@ -321,7 +292,7 @@ def collect_argument_factors(SV, dependencies, arg_indices):
         assert all([not AV, not IM, not arg_indices])
         IM = { (): len(FV)-1 }
 
-    return AV, FV, IM
+    return FV, e2fi, AV, IM
 
 def rebuild_scalar_graph_from_factorization(AV, FV, IM):
     # TODO: What about multiple target_variables?
@@ -383,56 +354,30 @@ def rebuild_scalar_graph_from_factorization(AV, FV, IM):
     return SV, se2i, dependencies
 
 def compute_argument_factorization(SV, target_variables, dependencies):
+
     # TODO: Use target_variables! Currently just assuming the last vertex is the target here...
+
+    if list(target_variables) != [len(SV)-1]:
+        uflacs_assert(not extract_type(SV[-1], Argument),
+                      "Multiple or nonscalar Argument dependent expressions not supported in factorization.")
+        AV = []
+        FV = SV
+        IM = {}
+        return AV, FV, IM, target_variables, dependencies
+
     assert list(target_variables) == [len(SV)-1]
 
-    arg_sets = build_argument_component_sets(SV)
-    #arg_indices, valid_arg_combos = build_valid_argument_combinations(arg_sets)
-    #arg_indices = build_argument_indices(arg_sets)
     arg_indices = build_argument_indices(SV)
-
     A = build_argument_dependencies(dependencies, arg_indices)
+    FV, e2fi, AV, IM = collect_argument_factors(SV, dependencies, arg_indices)
 
-    if 0:
-        print '\n'
-        print 'BEGIN DEBUGGING compute_argument_factorization'
-        print 'SV:'
-        print '\n'.join("%d: %s" % (i,v) for i,v in enumerate(SV))
-        print 'target_variables:'
-        print target_variables
-        print 'dependencies:'
-        print dependencies
-        print 'arg_sets:'
-        print '\n'.join(map(str,arg_sets.items()))
-        print 'arg_indices:'
-        print arg_indices
-        #print 'valid_arg_combos:'
-        #print valid_arg_combos
-        print 'A:'
-        print A
-        print 'END DEBUGGING compute_argument_factorization'
-        print '\n'
+    # Indices into FV that are needed for final result
+    target_variables = sorted(IM.values())
 
-    AV, FV, IM = collect_argument_factors(SV, dependencies, arg_indices)
-    if 0:
-        print '\n'
-        print 'BEGIN DEBUGGING collect_argument_factors results'
-        print 'AV:'
-        print '\n'.join("%d: %s" % (i,v) for i,v in enumerate(AV))
-        print 'FV:'
-        print '\n'.join("%d: %s" % (i,v) for i,v in enumerate(FV))
-        print 'IM:'
-        print IM
-        print 'END DEBUGGING collect_argument_factors results'
-        print '\n'
+    from uflacs.generation.compiler import format_enumerated_sequence, format_mapping
+    print 'fooooooooooo'
+    print format_enumerated_sequence(FV)
+    print format_mapping(e2fi)
+    dependencies = compute_dependencies(e2fi, FV)
 
-    if 0:
-        # TODO: Write some useful debug info here
-        for j in target_variables:
-            it = F[j]
-            (k, v), = it.items()
-            args   = " * ".join(str(SV[j]) for j in k)
-            coeffs = " * ".join(str(SV[j]) for j in v)
-            print "s_%d = (%s) * (%s)" % (j, coeffs, args)
-
-    return AV, FV, IM
+    return AV, FV, IM, target_variables, dependencies

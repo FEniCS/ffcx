@@ -27,19 +27,19 @@ def compile_expression(expr, prefix=""):
                               apply_expand_compounds_before=False,
                               apply_expand_compounds_after=False,
                               use_alternative_wrapper_algorithm=False)
-    object_names = {}
-    form_argument_mapping = {}
+
+    # FIXME: Preprocess expression grad2localgrad etc.
 
     # Compile expression into intermediate representation (partitions in ssa form)
-    partitions_ir = compile_expression_partitions(expr, form_argument_mapping, parameters)
+    partitions_ir = compile_expression_partitions(expr, parameters)
 
     # FIXME: Hack to automatically disable integral accumulation in statement formatter
     partitions_ir["entitytype"] = None
 
     # Build code representation
     code, dummy_coefficient_names = generate_expression_code(partitions_ir,
-                                                             form_argument_mapping,
-                                                             object_names,
+                                                             {},
+                                                             {},
                                                              ToyCppLanguageFormatter,
                                                              ToyCppStatementFormatter)
 
@@ -72,8 +72,10 @@ def compile_form(form, prefix=""):
             object_names = form_data.object_names
             form_argument_mapping = form_data.function_replace_map
 
+            # FIXME: Preprocess expression grad2localgrad etc.
+
             # Compile expression into intermediate representation (partitions in ssa form)
-            partitions_ir = compile_expression_partitions(expr, form_argument_mapping, parameters)
+            partitions_ir = compile_expression_partitions(expr, parameters)
 
             # Build code representation
             integral_code, dummy_coefficient_names = generate_expression_code(partitions_ir,

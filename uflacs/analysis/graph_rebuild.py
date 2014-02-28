@@ -5,10 +5,8 @@ from ufl.permutation import compute_indices
 
 import ufl
 from ufl import as_vector
-from ufl.classes import (Terminal, FormArgument, Grad, Restricted,
-                         Indexed, ComponentTensor, ListTensor, Transposed, Variable,
-                         IndexSum, MultiIndex,
-                         UtilityType, Label, Data)
+from ufl.classes import (MultiIndex, ComponentTensor, ListTensor, Transposed, Variable,
+                         IndexSum, UtilityType, Label, Data)
 from ufl.algorithms import MultiFunction
 
 from uflacs.utils.log import error, uflacs_assert
@@ -217,7 +215,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
     # we need to identify which index to do the contractions over,
     # and build expressions such as sum(a*b for a,b in zip(aops, bops))
 
-def rebuild_scalar_e2i(G, form_argument_mapping=None, DEBUG=False):
+def rebuild_scalar_e2i(G, DEBUG=False):
     """Build a new expression2index mapping where each subexpression is scalar valued.
 
     Input:
@@ -242,7 +240,7 @@ def rebuild_scalar_e2i(G, form_argument_mapping=None, DEBUG=False):
     terminals = set()
 
     # These types are not expected to be part of the graph at this point
-    unexpected = (MultiIndex, Data, Label, ComponentTensor, ListTensor, Transposed, Variable)
+    unexpected = (MultiIndex, Data, UtilityType, Label, ComponentTensor, ListTensor, Transposed, Variable)
 
     def emit_expression(s, u):
         # Allocate count for scalar expression and
@@ -281,7 +279,7 @@ def rebuild_scalar_e2i(G, form_argument_mapping=None, DEBUG=False):
 
         if is_modified_terminal(v):
             if 0: print "Adding terminal: ", repr(v)
-            sh = v.shape() # FIXME: When modified terminals include Indexed, this should always be ()!
+            sh = v.shape()
             uflacs_assert(v.free_indices() == (), "Expecting no free indices.")
             if sh == ():
                 # Store single modified terminal expression component
@@ -294,7 +292,8 @@ def rebuild_scalar_e2i(G, form_argument_mapping=None, DEBUG=False):
                 for s, c in izip(vs, compute_indices(sh)):
                     u = v[c]
                     emit_expression(s, u)
-                    terminals.add(u) # FIXME: Keep modified terminal expression components in the graph that is input here!
+                    # FIXME: Keep modified terminal expression components in the graph that is input here!
+                    terminals.add(u)
         else:
             # Find symbols of operands
             sops = []
