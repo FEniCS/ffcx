@@ -53,6 +53,15 @@ class ModifiedTerminal(object):
         self.restriction = restriction
         self.component = component
 
+    def __str__(self):
+        s = []
+        s += ["terminal:           {0}".format(self.terminal)]
+        s += ["global_derivatives: {0}".format(self.global_derivatives)]
+        s += ["local_derivatives:  {0}".format(self.local_derivatives)]
+        s += ["averaged:           {0}".format(self.averaged)]
+        s += ["restriction:        {0}".format(self.restriction)]
+        s += ["component:          {0}".format(self.component)]
+        return '\n'.join(s)
 
 def analyse_modified_terminal2(o):
     """Analyse a so-called 'modified terminal' expression and return its properties in more compact form.

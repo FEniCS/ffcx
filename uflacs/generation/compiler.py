@@ -153,7 +153,7 @@ def compile_expression_partitions(expressions, parameters):
     expr_ir["argument_factorization"] = argument_factorization
     expr_ir["argument_factors"] = argument_factors
     expr_ir["V"] = V
-    expr_ir["target_variables"]
+    expr_ir["target_variables"] = target_variables
     expr_ir["active"] = active
     expr_ir["dependencies"] = dependencies
     expr_ir["inverse_dependencies"] = inverse_dependencies
