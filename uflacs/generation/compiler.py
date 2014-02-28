@@ -15,7 +15,6 @@ from uflacs.analysis.graph_ssa import (compute_dependencies,
                                          compute_cache_scores,
                                          allocate_registers)
 from uflacs.analysis.factorization import compute_argument_factorization, rebuild_scalar_graph_from_factorization
-from uflacs.analysis.dependency_handler import DependencyHandler
 
 from uflacs.codeutils.expr_formatter import ExprFormatter
 from uflacs.codeutils.element_tensor_formatter import build_loops
@@ -28,22 +27,20 @@ from uflacs.generation.partitions import build_partition_labels
 # 2) generate_code_from_ssa
 # 3) generate_expression_body
 
-def compile_expression_partitions(expression, form_argument_mapping, parameters):
+
+def compile_expression_partitions(expressions, parameters):
     """FIXME: Refactoring in progress!
 
-    DONE:
-    - Change ufl.Argument to take number instead of count. Now renumbering is not needed
+    TODO: assuming more symbolic preprocessing
+    - Make caller apply grad->localgrad+jacobianinverse
+    - Make caller apply coefficient mapping
+    - Make caller apply piola mappings
 
     TODO:
     - Build modified_argument_factors
     - Build modified_argument_blocks
     - Rewrite build_partition_labels in terms of modified_argument_blocks instead of dofblocks
     - Rewrite mark_partitions to use seeds from partition_labels
-
-    - Now rank is not needed and we can remove the form_argument_mapping argument
-
-    - Apply Grad->JacobiInverse*LocalGrad transformation in one of the stages in here
-    - Apply Piola transforms in one of the stages in here
 
     - Place partition_labels, argument_factors, etc. in ir
     - Use new ir information in code generation
@@ -61,43 +58,51 @@ def compile_expression_partitions(expression, form_argument_mapping, parameters)
     # Timing object
     tt = TicToc('compile_expression_partitions')
 
-    # TODO: Cleaner way to set rank
-    rank = len(set(arg for arg in form_argument_mapping if isinstance(arg, Argument)))
+    # Wrap in list if we only get one expression
+    if not isinstance(expressions, list):
+        expressions = [expressions]
+
 
     # Build the initial coarse computational graph of the expression
     tt.step('build_graph')
-    G = build_graph([expression])
+    G = build_graph(expressions)
+
 
     # Build more fine grained computational graph of scalar subexpressions
     tt.step('rebuild_scalar_e2i')
-    # FIXME: Apply Grad -> GeometryJacobi * LocalGrad change at this point?
-    # FIXME: Apply Piola mappings at this point?
-    unused_e2i, NV, unused_W, terminals, nvs = rebuild_scalar_e2i(G, DEBUG=False)
+    unused_e2i, NV, unused_W, modified_terminals, nvs = rebuild_scalar_e2i(G, DEBUG=False)
     # Target expression is NV[nvs[:]].
-    # TODO: Make it target expressionS, expressions[k] -> NV[nvs[k][:]], len(nvs[k]) == value_size(expressions[k])
+    # TODO: Make it so that expressions[k] <-> NV[nvs[k][:]], len(nvs[k]) == value_size(expressions[k])
+
 
     # Straigthen out V to represent single operations
     tt.step('build_scalar_graph_vertices')
     se2i, SV, target_variables = build_scalar_graph_vertices([NV[s] for s in nvs])
 
+
     # Compute sparse dependency matrix
     tt.step('compute_dependencies')
     dependencies = compute_dependencies(se2i, SV)
+
 
     # Compute factorization of arguments
     tt.step('compute_dependencies')
     # TODO: Fix factorization algorithm for multiple target variables! Or is there any point?
     if parameters["enable_factorization"] and len(target_variables) == 1:
+
         # AV, FV, IM
         argument_factors, factorized_vertices, argument_factorization = \
             compute_argument_factorization(SV, target_variables, dependencies)
+
 
         # Rebuild some graphs from factorization
         SV, se2i, dependencies = rebuild_scalar_graph_from_factorization(\
             argument_factors, factorized_vertices, argument_factorization)
 
+
         # TODO: target_variables for non-scalar or multiple expressions
         target_variables = [len(SV)-1]
+
 
     if 0: # FIXME: Use this!
 
@@ -117,11 +122,17 @@ def compile_expression_partitions(expression, form_argument_mapping, parameters)
         # FIXME: change mark_partitions to use this numbering instead
         # FIXME: change code generation to use this numbering instead
 
+
     # Mark subexpressisons that are actually needed for final result
     tt.step('mark_active')
     max_symbol = len(SV)
-
     active, num_active = mark_active(max_symbol, dependencies, target_variables)
+
+    # TODO: Mark subexpressions with inside/outside quadrature loop
+
+
+    # TODO: Renumber expressions to group inside/outside and argument factors?
+
 
     # Mark subexpressions with which loop they belong inside
     tt.step('mark_partitions')
@@ -129,13 +140,17 @@ def compile_expression_partitions(expression, form_argument_mapping, parameters)
     # However this code may be superseeded soon anyway?
     partitions = mark_partitions(SV, active, dependencies, rank)
 
+
+
     # Count the number of dependencies every subexpr has
     tt.step('compute_dependency_count')
     depcount = compute_dependency_count(dependencies)
 
+
     # Build the 'inverse' of the sparse dependency matrix
     tt.step('invert_dependencies')
     inverse_dependencies = invert_dependencies(dependencies, depcount)
+
 
     # Use heuristics to mark the usefulness of storing every subexpr in a variable
     tt.step('compute_cache_scores')
@@ -168,12 +183,12 @@ def compile_expression_partitions(expression, form_argument_mapping, parameters)
         print "Profiling results:"
         print tt
 
-    ir = {}
-    ir["num_registers"] = num_registers
-    ir["SV"] = SV
-    ir["active"] = active
-    ir["partitions"] = partitions
-    ir["allocations"] = allocations
-    ir["target_registers"] = target_registers
-    ir["terminals"] = terminals
-    return ir
+    partitions_ir = {}
+    partitions_ir["num_registers"] = num_registers
+    partitions_ir["SV"] = SV
+    partitions_ir["active"] = active
+    partitions_ir["partitions"] = partitions
+    partitions_ir["allocations"] = allocations
+    partitions_ir["target_registers"] = target_registers
+    partitions_ir["terminals"] = modified_terminals
+    return partitions_ir

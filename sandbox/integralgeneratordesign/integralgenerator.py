@@ -13,7 +13,7 @@ def create_fake_ir():
     # TODO: This is just fake test data
     ir = {}
     ir["prim_idims"] = [7, 8]
-    ir["quadrature_weights"] = {
+    ir["quadrature_rules"] = {
         1: ( [0.5, 0.5],  [(0.1, 0.2), (0.3, 0.4)] ),
         2: ( [3.5, 3.5],  [(1.1, 1.2), (2.3, 2.4)] ),
         }
@@ -58,7 +58,10 @@ class IntegralGenerator(object):
         ir = create_fake_ir()
 
         # Parse quadrature rules
-        quadrature_rules = ir["quadrature_weights"]
+        quadrature_rules = ir["quadrature_rules"]
+        if len(quadrature_rules) > 1:
+            warning("Multiple quadrature rules not fully implemented, will likely crash somewhere.")
+
         self._num_points = []
         self._weights = {}
         self._points = {}
@@ -67,8 +70,6 @@ class IntegralGenerator(object):
             w, p = quadrature_rules[num_points]
             self._weights[num_points] = w
             self._points[num_points] = p
-        if len(quadrature_rules) > 1:
-            warning("Multiple quadrature rules not fully implemented, will likely crash somewhere.")
 
         # Parse argument space dimensions etc.
         self._dof_ranges = ir["dof_ranges"]

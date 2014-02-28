@@ -2,8 +2,8 @@
 class ToyCppStatementFormatter(object):
     """Class containing functions for generating definitions of registers,
     argument loops, and output variable names."""
-    def __init__(self, dependency_handler, ir):
-        self._dependency_handler = dependency_handler
+    def __init__(self, unused_dependency_handler, ir):
+        self._unused_dependency_handler = unused_dependency_handler
 
     def define_registers(self, num_registers, partition=None):
         # TODO: Partition is not yet used by compiler

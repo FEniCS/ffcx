@@ -37,11 +37,11 @@ def compile_expression(expr, prefix=""):
     partitions_ir["entitytype"] = None
 
     # Build code representation
-    code, dh = generate_expression_code(partitions_ir,
-                                        form_argument_mapping,
-                                        object_names,
-                                        ToyCppLanguageFormatter,
-                                        ToyCppStatementFormatter)
+    code, dummy_coefficient_names = generate_expression_code(partitions_ir,
+                                                             form_argument_mapping,
+                                                             object_names,
+                                                             ToyCppLanguageFormatter,
+                                                             ToyCppStatementFormatter)
 
     # Wrap in a block for readability
     code = Block(code)
@@ -71,18 +71,16 @@ def compile_form(form, prefix=""):
             expr = integrand
             object_names = form_data.object_names
             form_argument_mapping = form_data.function_replace_map
-            argument_mapping = dict((k,v) for (k,v) in form_argument_mapping.items()
-                                    if isinstance(k, Argument))
 
             # Compile expression into intermediate representation (partitions in ssa form)
             partitions_ir = compile_expression_partitions(expr, form_argument_mapping, parameters)
 
             # Build code representation
-            integral_code, dh = generate_expression_code(partitions_ir,
-                                                         form_argument_mapping,
-                                                         object_names,
-                                                         ToyCppLanguageFormatter,
-                                                         ToyCppStatementFormatter)
+            integral_code, dummy_coefficient_names = generate_expression_code(partitions_ir,
+                                                                              form_argument_mapping,
+                                                                              object_names,
+                                                                              ToyCppLanguageFormatter,
+                                                                              ToyCppStatementFormatter)
 
             # Wrap in a block for readability
             code.append(['',Block(integral_code),''])

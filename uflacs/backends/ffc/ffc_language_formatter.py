@@ -21,6 +21,7 @@ class FFCLanguageFormatter(MultiFunction, CppFormatterRulesCollection):
 
         # An object used to track who depends on what
         self._dependency_handler = dependency_handler
+        self._coefficient_mapping = self._dependency_handler.form_argument_mapping
 
         # The rest of the FFC representation dict, flexible way to work for now,
         # maybe replace with whatever we need more specifically later
@@ -119,9 +120,7 @@ class FFCLanguageFormatter(MultiFunction, CppFormatterRulesCollection):
         return code
 
     def coefficient(self, o, component=(), derivatives=(), restriction=None):
-        dh = self._dependency_handler
-
-        o = dh.form_argument_mapping.get(o, o)
+        o = self._coefficient_mapping.get(o, o)
         uflacs_assert(o.count() >= 0,
             "Expecting positive count, provide a renumbered form argument mapping.")
 
@@ -129,18 +128,16 @@ class FFCLanguageFormatter(MultiFunction, CppFormatterRulesCollection):
             return self._piecewise_constant_coefficient(o, component, derivatives, restriction)
         else:
             code = self._computed_form_argument_name(o, component, derivatives, restriction, names.wbase)
-            dh.require(o, component, derivatives, restriction, code)
+            self._dependency_handler.require(o, component, derivatives, restriction, code)
             return code
 
     def argument(self, o, component=(), derivatives=(), restriction=None):
-        dh = self._dependency_handler
-
         uflacs_assert(o.number() >= 0,
             "Expecting positive count, provide a renumbered form argument mapping.")
 
         if derivatives:
             code = self._computed_form_argument_name(o, component, derivatives, restriction, names.vbase)
-            dh.require(o, component, derivatives, restriction, code)
+            self._dependency_handler.require(o, component, derivatives, restriction, code)
         else:
             # Pick entity index variable name, following ufc argument names
             entity = format_entity_name(self._entitytype, restriction)

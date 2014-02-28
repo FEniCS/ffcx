@@ -15,7 +15,6 @@ from uflacs.analysis.graph_ssa import (compute_dependencies,
                                          compute_cache_scores,
                                          allocate_registers)
 from uflacs.analysis.factorization import compute_argument_factorization, rebuild_scalar_graph_from_factorization
-from uflacs.analysis.dependency_handler import DependencyHandler
 
 from uflacs.codeutils.expr_formatter import ExprFormatter
 from uflacs.codeutils.element_tensor_formatter import build_loops

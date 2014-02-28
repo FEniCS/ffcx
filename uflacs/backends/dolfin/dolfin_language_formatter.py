@@ -45,11 +45,10 @@ class DolfinExpressionLanguageFormatter(MultiFunction, CppFormatterRulesCollecti
         return self.geometric_quantity(o, component, derivatives, restriction)
 
     def coefficient(self, o, component=(), derivatives=(), restriction=None):
-        dh = self._dependency_handler
         basename = "w%d" % o.count()
-        basename = dh.coefficient_names[o]
-        #o = dh.form_argument_mapping.get(o,o)#[o]
-        #print dh.form_argument_mapping
+        basename = self._dependency_handler.coefficient_names[o]
+        #o = self._dependency_handler.form_argument_mapping.get(o,o)#[o]
+        #print self._dependency_handler.form_argument_mapping
         return self.form_argument(o, component, derivatives, restriction, basename)
 
     def argument(self, o, component=(), derivatives=(), restriction=None):

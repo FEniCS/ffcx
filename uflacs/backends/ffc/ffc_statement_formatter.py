@@ -180,7 +180,7 @@ class FFCStatementFormatter(object):
         self._ir = ir
 
         # Practical variables
-        rank = len(dependency_handler.mapped_arguments)
+        rank = ir["rank"]
         self._idofs = ["%s%d" % (names.ia, i) for i in range(rank)] # FIXME: Make reusable function for idof
 
         # TODO: Support multiple quadrature loops, affects several places...
@@ -455,9 +455,8 @@ class FFCStatementFormatter(object):
             return None
 
     def define_piecewise_coefficients(self):
-        dh = self._dependency_handler
         code = []
-        for c in dh.mapped_coefficients:
+        for c in self._dependency_handler.mapped_coefficients:
             if c.is_cellwise_constant():
                 cc = c.count()
                 code.append(langfmt.comment("Coefficient w%d = %s[%d][0:%d]" % (cc, names.w, cc, self._ir["coeff_idims"][cc])))
@@ -584,25 +583,24 @@ class FFCStatementFormatter(object):
 
     def define_coord_dependent_coefficients(self):
         "Define all coordinate dependent coefficients."
-        dh = self._dependency_handler
         code = []
 
         # Compute non-constant coefficients and their derivatives
-        for w in dh.mapped_coefficients:
+        for w in self._dependency_handler.mapped_coefficients:
 
             # Constants are handled by direct reference to dof array
             if w.is_cellwise_constant():
                 continue
 
             # Only compute coefficient components that have been referenced
-            reqdata = dh.required.get(w)
+            reqdata = self._dependency_handler.required.get(w)
             if reqdata is None:
                 print
                 print "In define_coord_dependent_coefficients: req is None:"
                 print 'repr(w):', repr(w)
                 print 'str(w): ', str(w)
                 print 'required set:'
-                print dh.required
+                print self._dependency_handler.required
                 print
                 continue
 
@@ -624,11 +622,11 @@ class FFCStatementFormatter(object):
         dh = self._dependency_handler
         code = []
 
-        v = dh.mapped_arguments[argument_number]
+        v = self._dependency_handler.mapped_arguments[argument_number]
         assert v.number() == argument_number
         idof = self._idofs[argument_number]
 
-        reqdata = dh.required.get(v)
+        reqdata = self._dependency_handler.required.get(v)
         if reqdata:
             element = v.element()
             tdim = self._cell.topological_dimension()

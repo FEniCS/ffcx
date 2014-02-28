@@ -6,43 +6,6 @@ from ufl import *
 
 from uflacs.backends.toy.toy_compiler import compile_expression
 
-""" FIXME: Update to these:
-    /// UFC tabulate_tensor signatures:
-
-    /// Tabulate the tensor for the contribution from a local cell
-    virtual void tabulate_tensor(double* A,
-                                 const double * const * w,
-                                 const double* vertex_coordinates) const = 0;
-
-    /// Tabulate the tensor for the contribution from a local exterior facet
-    virtual void tabulate_tensor(double* A,
-                                 const double * const * w,
-                                 const double* vertex_coordinates,
-                                 std::size_t facet) const = 0;
-
-    /// Tabulate the tensor for the contribution from a local interior facet
-    virtual void tabulate_tensor(double* A,
-                                 const double * const * w,
-                                 const double* vertex_coordinates_0,
-                                 const double* vertex_coordinates_1, // FIXME: Change in UFC to vertex_coordinates0 consistent with facet0
-                                 std::size_t facet0,
-                                 std::size_t facet1) const = 0;
-
-    /// Tabulate the tensor for the contribution from the local vertex
-    virtual void tabulate_tensor(double* A,
-                                 const double * const * w,
-                                 const double* vertex_coordinates,
-                                 std::size_t vertex) const = 0;
-
-    /// Tabulate the tensor for the contributions from a set of points
-    virtual void tabulate_tensor(double* A,
-                                 const double * const * w,
-                                 const double* vertex_coordinates,
-                                 std::size_t num_points,
-                                 const double * const * points) const = 0;
-*/
-"""
-
 def compile_expression0(expr):
     code = ""
     return code
@@ -301,4 +264,5 @@ def test_tabulate_tensor_interval_facet(gtest):
     code = "// TODO"
 
     gtest.add(pre + code + post)
+
 

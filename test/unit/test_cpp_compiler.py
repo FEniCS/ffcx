@@ -7,7 +7,6 @@ Tests of generic C++ compilation code.
 
 import uflacs
 from uflacs.backends.toy.toy_compiler import compile_form
-#from uflacs.backends.toy.toy_compiler import compile_expression_lines
 
 import ufl
 from ufl import as_ufl

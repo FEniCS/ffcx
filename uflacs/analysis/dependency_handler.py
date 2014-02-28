@@ -6,13 +6,10 @@ from uflacs.utils.log import uflacs_assert, error
 
 class DependencyHandler2(object):
     """Class used to collect dependencies during early compilation stages."""
-    def __init__(self, modified_terminals, form_argument_mapping=None, object_names=None):
+    def __init__(self, modified_terminals, form_argument_mapping=None):
         # FIXME: A bit confused now, which objects are relabeled and which are not?
         # Mapping from original to relabeled form argument objects
         self.form_argument_mapping = form_argument_mapping or {}
-
-        # Store object names, an id(obj) -> name mapping
-        self.object_names = object_names or {}
 
         # FIXME: Start by building a new structure here, then use that instead of the below structures
         # FIXME: Split up in more data structures, typically need to iterate over geometry,
@@ -62,13 +59,10 @@ class DependencyHandler2(object):
 
 class DependencyHandler(object):
     """Class used to collect dependencies during early compilation stages."""
-    def __init__(self, modified_terminals, form_argument_mapping=None, object_names=None):
+    def __init__(self, modified_terminals, form_argument_mapping=None):
         # FIXME: A bit confused now, which objects are relabeled and which are not?
         # Mapping from original to relabeled form argument objects
         self.form_argument_mapping = form_argument_mapping or {}
-
-        # Store object names, an id(obj) -> name mapping
-        self.object_names = object_names or {}
 
         # Analyse modified terminals and store data about them in a canonical ordering
         self.terminal_data = [analyse_modified_terminal(o, form_argument_mapping)

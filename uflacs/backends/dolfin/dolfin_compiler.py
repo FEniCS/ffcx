@@ -27,12 +27,9 @@ def compile_dolfin_expression_body(expr, parameters, object_names=None):
     partitions_ir = compile_expression_partitions(expr, form_argument_mapping, parameters)
 
     # Compile eval function body with generic compiler routine
-    code, dh = generate_expression_code(partitions_ir, form_argument_mapping, object_names,
-                                        DolfinExpressionLanguageFormatter,
-                                        DolfinExpressionStatementFormatter)
-
-    # TODO: Something better? This makes the tests pass...
-    coefficient_names = sorted(dh.coefficient_names.values())
+    code, coefficient_names = generate_expression_code(partitions_ir, form_argument_mapping, object_names,
+                                                       DolfinExpressionLanguageFormatter,
+                                                       DolfinExpressionStatementFormatter)
 
     # Format into a single string
     #formatted = format_code_structure(code)

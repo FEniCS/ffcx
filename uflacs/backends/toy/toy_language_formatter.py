@@ -16,6 +16,7 @@ class ToyCppLanguageFormatter(MultiFunction, CppFormatterRulesCollection):
 
         # An object used to track who depends on what
         self._dependency_handler = dependency_handler
+        self._coefficient_mapping = self._dependency_handler.form_argument_mapping
 
     def geometric_quantity(self, o, component=(), derivatives=(), restriction=None):
         "Generic rendering of variable names for all piecewise constant geometric quantities."
@@ -46,6 +47,8 @@ class ToyCppLanguageFormatter(MultiFunction, CppFormatterRulesCollection):
         return self.geometric_quantity(o, component, derivatives, restriction)
 
     def _piecewise_constant_coefficient(self, o, component, derivatives, restriction):
+        o = self._coefficient_mapping.get(o, o)
+
         uflacs_assert(not derivatives,
                       "Not expecting derivatives of constant coefficients!")
 
@@ -55,11 +58,11 @@ class ToyCppLanguageFormatter(MultiFunction, CppFormatterRulesCollection):
         if restriction == "-":
             comp += len(si2vi)
 
-        o = self._dependency_handler.form_argument_mapping.get(o, o)
         return "w[%d][%d]" % (o.count(), comp)
 
     def coefficient(self, o, component=(), derivatives=(), restriction=None):
-        o = self._dependency_handler.form_argument_mapping.get(o, o)
+        o = self._coefficient_mapping.get(o, o)
+
         count = o.count()
         uflacs_assert(count >= 0,
             "Expecting positive count, provide a renumbered form argument mapping.")

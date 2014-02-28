@@ -69,21 +69,17 @@ def generate_code_from_ssa(partitions_ir, language_formatter):
     final_variable_names = [format_register_variable(p, r) for r in target_registers]
     return partition_codes, final_variable_names
 
+
+
 # FIXME: Replace generate_expression_body and FFCStatementFormatter with the new IntegralGenerator class
-def generate_expression_body(target_statement_formatter, partition_codes,
+def generate_expression_body(target_statement_formatter, partition_codes, rank,
                              final_variable_names, num_registers):
     "Join partitions with target specific loops and declarations."
     # Use shorter name below
     tfmt = target_statement_formatter
-    dh = target_statement_formatter._dependency_handler
-    rank = len(dh.mapped_arguments)
 
     # Make a shallow copy of dict, we consume the dict entries below
     partition_codes = dict(partition_codes)
-
-    # Both 'required' and 'terminals' are filled during partition compilation
-    #req = dh.required
-    #term = dh.terminals
 
     # Build loop structure (intended for tabulate_tensor)
     loops = []
@@ -168,7 +164,14 @@ def generate_expression_code(partitions_ir, form_argument_mapping, object_names,
     "Core of toy expression compiler."
 
     # Create an object to track dependencies across other components
-    dependency_handler = DependencyHandler(partitions_ir["terminals"], form_argument_mapping, object_names)
+    dependency_handler = DependencyHandler(partitions_ir["terminals"],
+                                           form_argument_mapping,
+                                           object_names)
+
+    #dependency_handler = DependencyHandler(partitions_ir["terminals"],
+    #                                       uflacs_ir["function_replace_map"],
+    #                                       uflacs_ir["argument_names"],
+    #                                       uflacs_ir["coefficient_names"])
 
     # This formatter is a multifunction implementing target specific formatting rules
     language_formatter = create_language_formatter(dependency_handler, partitions_ir)
@@ -180,10 +183,14 @@ def generate_expression_code(partitions_ir, form_argument_mapping, object_names,
     partition_codes, final_variable_names = generate_code_from_ssa(partitions_ir, language_formatter)
 
     # Generate full code from snippets
+    #rank = len(target_statement_formatter._dependency_handler.mapped_arguments)
+    rank = len(uflacs_ir["argument_names"])
     code = generate_expression_body(statement_formatter,
                                     partition_codes,
+                                    rank,
                                     final_variable_names,
                                     partitions_ir["num_registers"])
 
     # Leave final formatting to the caller
-    return code, dependency_handler
+    coefficient_names = sorted(dependency_handler.coefficient_names.values())
+    return code, coefficient_names
