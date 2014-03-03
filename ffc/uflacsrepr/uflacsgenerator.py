@@ -1,4 +1,4 @@
-# Copyright (C) 2013 Martin Alnaes
+# Copyright (C) 2013-2014 Martin Alnaes
 #
 # This file is part of FFC.
 #
@@ -14,13 +14,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# First added:  2013-02-12
-# Last changed: 2013-03-04
 
+from ffc.log import info
 from ffc.representationutils import initialize_integral_code
-from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
-from ffc.cpp import format, indent
 
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
@@ -31,8 +27,13 @@ def generate_integral_code(ir, prefix, parameters):
     code = initialize_integral_code(ir, prefix, parameters)
 
     # Delegate to uflacs to generate tabulate_tensor body
-    import uflacs.backends.ffc
-    ucode = uflacs.backends.ffc.generate_tabulate_tensor_code(ir, parameters)
-    code["tabulate_tensor"] = ucode["tabulate_tensor"]
-    code["additional_includes_set"] = ir.get("additional_includes_set",set()) | set(ucode["additional_includes_set"])
+    import uflacs.backends.ffc # Don't laugh on the next line here :-p
+    uflacs_code = uflacs.backends.ffc.ffc_uflacs_generator.generate_tabulate_tensor_code(ir, parameters)
+
+    code["tabulate_tensor"] = uflacs_code["tabulate_tensor"]
+
+    code["additional_includes_set"] = set()
+    code["additional_includes_set"].update(ir.get("additional_includes_set",()))
+    code["additional_includes_set"].update(uflacs_code["additional_includes_set"])
+
     return code

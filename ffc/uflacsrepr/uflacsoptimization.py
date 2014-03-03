@@ -1,4 +1,4 @@
-# Copyright (C) 2013 Martin Alnaes
+# Copyright (C) 2013-2014 Martin Alnaes
 #
 # This file is part of FFC.
 #
@@ -14,20 +14,17 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# First added:  2009-12-16
-# Last changed: 2013-02-12
 
-from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
-from ffc.cpp import format
+from ffc.log import info
 
 def optimize_integral_ir(ir, parameters):
     "Compute optimized intermediate representation of integral."
 
     info("Optimizing uflacs representation")
 
-    # Call upon uflacs to optimize ssa representation prior to code generation. Should be possible to skip this step.
-    import uflacs.backends.ffc
-    oir = uflacs.backends.ffc.optimize_tabulate_tensor_ir(ir, parameters)
+    # Call upon uflacs to optimize ssa representation prior to code generation.
+    # Should be possible to skip this step.
+    import uflacs.backends.ffc  # Don't laugh on the next line here :-p
+    oir = uflacs.backends.ffc.ffc_uflacs_representation.optimize_tabulate_tensor_ir(ir, parameters)
 
     return oir
