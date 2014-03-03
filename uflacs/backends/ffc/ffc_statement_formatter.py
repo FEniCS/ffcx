@@ -22,8 +22,7 @@ from uflacs.geometry.generate_geometry_snippets import (
     generate_x_from_xi_snippets,
     generate_xi_from_x_snippets)
 
-from uflacs.analysis.table_utils import derivative_listing_to_counts
-from uflacs.analysis.table_utils import generate_psi_table_name
+from uflacs.elementtables.table_utils import generate_psi_table_name, derivative_listing_to_counts
 
 # TODO: Move this to shared standardized formatting utils for cleaner code formatting, including declarations
 # TODO: Should some of these be implemented in the format_code_structure design instead?

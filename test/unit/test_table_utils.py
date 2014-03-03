@@ -3,7 +3,7 @@
 Tests of table manipulation utilities.
 """
 
-from uflacs.analysis.table_utils import equal_tables, strip_table_zeros, build_unique_tables, get_ffc_table_values
+from uflacs.elementtables.table_utils import equal_tables, strip_table_zeros, build_unique_tables, get_ffc_table_values
 
 import numpy as np
 default_tolerance = 1e-14

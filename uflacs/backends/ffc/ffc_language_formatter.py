@@ -10,7 +10,7 @@ from uflacs.codeutils.cpp_format import CppFormatterRulesCollection
 from uflacs.geometry.default_names import names
 from uflacs.backends.ffc.ffc_statement_formatter import langfmt
 from uflacs.backends.ffc.ffc_statement_formatter import (format_element_table_access, format_entity_name)
-from uflacs.analysis.table_utils import derivative_listing_to_counts, flatten_component
+from uflacs.elementtables.table_utils import derivative_listing_to_counts, flatten_component
 
 
 class FFCLanguageFormatter(MultiFunction, CppFormatterRulesCollection):

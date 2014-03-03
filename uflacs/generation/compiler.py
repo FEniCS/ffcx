@@ -61,7 +61,7 @@ def build_scalar_graph(expressions):
     return e2i, V, target_variables, modified_terminals
 
 
-def compile_expression_partitions(expressions, parameters):
+def compute_expr_ir(expressions, parameters):
     """FIXME: Refactoring in progress!
 
     TODO: assuming more symbolic preprocessing
@@ -75,7 +75,7 @@ def compile_expression_partitions(expressions, parameters):
     - Rewrite build_partition_labels in terms of modified_argument_blocks instead of dofblocks
     - Rewrite mark_partitions to use seeds from partition_labels
 
-    - Place partition_labels, argument_factors, etc. in ir
+    - Place partition_labels, modified_arguments, etc. in ir
     - Use new ir information in code generation
 
     - Apply some suitable renumbering of vertices and corresponding arrays prior to returning
@@ -107,7 +107,7 @@ def compile_expression_partitions(expressions, parameters):
 
     # Compute factorization of arguments
     tt.step('compute_argument_factorization')
-    argument_factorization, argument_factors, V, target_variables, dependencies = \
+    argument_factorization, modified_arguments, V, target_variables, dependencies = \
         compute_argument_factorization(V, target_variables, dependencies)
 
 
@@ -138,7 +138,7 @@ def compile_expression_partitions(expressions, parameters):
     #       Postphoning that until everything is working fine again.
 
     rank = max(len(k) for k in argument_factorization.keys())
-    for i,a in enumerate(argument_factors):
+    for i,a in enumerate(modified_arguments):
         iarg = a.number()
         #ipart = a.part()
 
@@ -151,7 +151,7 @@ def compile_expression_partitions(expressions, parameters):
     # FIXME: What do we need to return here?
     expr_ir = {}
     expr_ir["argument_factorization"] = argument_factorization
-    expr_ir["argument_factors"] = argument_factors
+    expr_ir["modified_arguments"] = modified_arguments
     expr_ir["V"] = V
     expr_ir["target_variables"] = target_variables
     expr_ir["active"] = active
@@ -166,9 +166,9 @@ def old_code_useful_for_table_building():
     pass
     # FIXME: Use ideas from this in building of modified_argument_tables and modified_terminal_tables
 
-    # XXX: FIXME: find dofrange for each argument_factors value
+    # XXX: FIXME: find dofrange for each modified_arguments value
     #dofranges[np][iarg] = [...]
-    #argument_factors2[np][iarg] = [ma for ma in argument_factors if ma involves iarg and is needed for np]
+    #modified_arguments2[np][iarg] = [ma for ma in modified_arguments if ma involves iarg and is needed for np]
     # FIXME: Can we avoid explicit dofranges in here by using ma indices?
 
     # XXX: FIXME: find dofblock for each argument_factorization item

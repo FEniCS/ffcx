@@ -61,6 +61,31 @@ def build_unique_tables(tables):
         mapping[k] = i
     return unique, mapping
 
+def build_unique_tables2(tables):
+    """Given a list or dict of tables, return a list of unique tables
+    and a dict of unique table indices for each input table key."""
+    unique = []
+    mapping = {}
+
+    if isinstance(tables, list):
+        keys = list(range(len(tables)))
+    elif isinstance(tables, dict):
+        keys = sorted(tables.keys())
+
+    for k in keys:
+        t = tables[k]
+        found = -1
+        for i,u in enumerate(unique):
+            if equal_tables(u, t):
+                found = i
+                break
+        if found == -1:
+            i = len(unique)
+            unique.append(t)
+        mapping[k] = i
+
+    return unique, mapping
+
 def get_ffc_table_values(tables, entitytype, num_points, element, flat_component, derivative_counts):
     """Extract values from ffc element table.
 
@@ -104,9 +129,9 @@ def get_ffc_table_values(tables, entitytype, num_points, element, flat_component
         res[entity, :, :] = arr
     return res
 
-def generate_psi_table_name(element_counter, flat_component, derivative_counts, entitytype):
+def generate_psi_table_name(element_counter, flat_component, derivative_counts, averaged, entitytype):
     """Generate a name for the psi table of the form:
-    FE#_C#_D###[_F|V], where '#' will be an integer value.
+    FE#_C#_D###[_AC|_AF|][_F|V], where '#' will be an integer value.
 
     FE  - is a simple counter to distinguish the various bases, it will be
           assigned in an arbitrary fashion.
@@ -116,6 +141,10 @@ def generate_psi_table_name(element_counter, flat_component, derivative_counts, 
 
     D   - is the number of derivatives in each spatial direction if any.
           If the element is defined in 3D, then D012 means d^3(*)/dydz^2.
+
+    AC  - marks that the element values are averaged over the cell
+
+    AF  - marks that the element values are averaged over the facet
 
     F   - marks that the first array dimension enumerates facets on the cell
 
@@ -132,6 +161,11 @@ def generate_psi_table_name(element_counter, flat_component, derivative_counts, 
 
     if any(derivative_counts):
         name += "_D" + "".join(map(str,derivative_counts))
+
+    if averaged == "cell":
+        name += "_AC"
+    elif averaged == "facet":
+        name += "_AF"
 
     if entitytype == "cell":
         pass
@@ -169,7 +203,7 @@ def flatten_component(component, shape, symmetry):
 
 
 def _examples(tables):
-    name = generate_psi_table_name(counter, flat_component, derivative_counts, entitytype)
+    name = generate_psi_table_name(counter, flat_component, derivative_counts, averaged, entitytype)
     values = get_ffc_table_values(tables, entitytype, num_points, element, flat_component, derivative_counts)
 
     begin, end, table = strip_table_zeros(table)

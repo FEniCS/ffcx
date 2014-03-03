@@ -21,6 +21,7 @@ packages = [
     "uflacs.codeutils",
     "uflacs.geometry",
     "uflacs.analysis",
+    "uflacs.elementtables",
     "uflacs.generation",
     "uflacs.backends",
     "uflacs.backends.toy",

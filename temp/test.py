@@ -98,17 +98,17 @@ for form in forms:
 
     print "Build factorization"
     # AV, FV, IM
-    argument_factorization, argument_factors, V, target_variables, dependencies = \
+    argument_factorization, modified_arguments, V, target_variables, dependencies = \
         compute_argument_factorization(V, target_variables, dependencies)
-    # argument_factors = [v, ...] where each v is a modified argument
+    # modified_arguments = [v, ...] where each v is a modified argument
     # V = [v, ...] where each v is argument independent
-    # factorization = { (i,...): j } where (i,...) are indices into argument_factors and j is an index into factorized_vertices
+    # factorization = { (i,...): j } where (i,...) are indices into modified_arguments and j is an index into factorized_vertices
     if 0:
         print
         print '\nargument_factorization'
         print format_mapping(argument_factorization)
         print '\nargument factors'
-        print format_enumerated_sequence(argument_factors)
+        print format_enumerated_sequence(modified_arguments)
         print '\nV'
         print format_enumerated_sequence(V)
         print '\ntarget_variables'
@@ -151,9 +151,11 @@ for form in forms:
     print spatially_dependent_indices
     print
 
+
+    # This is returned from ir compiler:
     expr_ir = {}
     expr_ir["argument_factorization"] = argument_factorization
-    expr_ir["argument_factors"] = argument_factors
+    expr_ir["modified_arguments"] = modified_arguments
     expr_ir["V"] = V
     expr_ir["target_variables"] = target_variables
     expr_ir["active"] = active
@@ -163,11 +165,12 @@ for form in forms:
     expr_ir["spatially_dependent_indices"] = spatially_dependent_indices
 
 
+
     # ... Tables enter here
     from uflacs.analysis.modified_terminals import analyse_modified_terminal2
-    #print "Build modified_argument_tables = { argument_factors_index: (uname,b,e) }"
+    #print "Build modified_argument_tables = { modified_arguments_index: (uname,b,e) }"
     modified_argument_tables = {}
-    for i, a in enumerate(expr_ir["argument_factors"]):
+    for i, a in enumerate(expr_ir["modified_arguments"]):
         mt = analyse_modified_terminal2(a)
         (uname, b, e) = (str(a), mt.terminal.number(), mt.terminal.number()+3) # FIXME
         modified_argument_tables[i] = (uname, b, e)

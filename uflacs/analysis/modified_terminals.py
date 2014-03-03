@@ -42,16 +42,34 @@ class ModifiedTerminal(object):
         global_derivatives - TODO: Explain
         local_derivatives  - TODO: Explain
         averages    - TODO: Explain
-        restriction - TODO: Explain
         component   - TODO: Explain
+        restriction - TODO: Explain
     """
     def __init__(self, terminal, global_derivatives, local_derivatives, averaged, restriction, component):
         self.terminal = terminal
+        self.component = component # TODO: Make this global_component and local_component
         self.global_derivatives = global_derivatives
         self.local_derivatives = local_derivatives
         self.averaged = averaged
         self.restriction = restriction
-        self.component = component
+
+    def as_tuple(self):
+        t = self.terminal
+        c = self.component
+        gd = self.global_derivatives
+        ld = self.local_derivatives
+        a = self.averaged
+        r = self.restriction
+        return (t, c, gd, ld, a, r)
+
+    def __hash__(self):
+        return hash(self.as_tuple())
+
+    def __eq__(self, other):
+        return isinstance(other, ModifiedTerminal) and self.as_tuple() == other.as_tuple()
+
+    def __lt__(self, other):
+        return self.as_tuple() < other.as_tuple()
 
     def __str__(self):
         s = []
@@ -59,8 +77,8 @@ class ModifiedTerminal(object):
         s += ["global_derivatives: {0}".format(self.global_derivatives)]
         s += ["local_derivatives:  {0}".format(self.local_derivatives)]
         s += ["averaged:           {0}".format(self.averaged)]
-        s += ["restriction:        {0}".format(self.restriction)]
         s += ["component:          {0}".format(self.component)]
+        s += ["restriction:        {0}".format(self.restriction)]
         return '\n'.join(s)
 
 def analyse_modified_terminal2(o):
@@ -75,8 +93,8 @@ def analyse_modified_terminal2(o):
     component = None
     global_derivatives = []
     local_derivatives = []
-    restriction = None
     averaged = None
+    restriction = None
     while not isinstance(t, Terminal):
         if not isinstance(t, terminal_modifier_types):
             error("Unexpected type %s object %s." % (type(t), repr(t)))
