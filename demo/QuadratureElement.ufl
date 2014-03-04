@@ -16,10 +16,10 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2008-03-31
-# Last changed: 2011-03-08
+# Last changed: 2014-03-04
 #
-# The linearised bilinear form a(u,v) and linear form L(v) for
-# the nonlinear equation - div (1+u) grad u = f (non-linear Poisson)
+# The linearised bilinear form a(u, v) and linear form L(v) for
+# the nonlinear equation -div (1 + u) grad u = f (nonlinear Poisson)
 #
 # Compile this form with FFC: ffc QuadratureElement.ufl
 

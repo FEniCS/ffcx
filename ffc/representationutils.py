@@ -18,14 +18,18 @@ quadrature and tensor representation."""
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Martin Alnaes, 2013
+# Modified by Martin Alnaes 2013
+# Modified by Anders Logg 2014
 #
 # First added:  2013-01-08
-# Last changed: 2013-02-10
+# Last changed: 2014-03-04
+
+from ufl.measure import domain_type_to_measure_name
 
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import cellname_to_num_entities
 from ffc.cpp import format
+from ffc.log import error
 
 def transform_component(component, offset, ufl_element):
     """
@@ -100,27 +104,37 @@ def needs_oriented_jacobian(form_data):
 def initialize_integral_ir(representation, itg_data, form_data, form_id):
     """Initialize a representation dict with common information that is
     expected independently of which representation is chosen."""
-    entitytype = { "cell": "cell",
-                   "exterior_facet": "facet",
-                   "interior_facet": "facet",
-                   "point": "vertex",
-                   }[itg_data.domain_type]
+
+    # Recognized domain types
+    entity_types = {"cell": "cell",
+                    "exterior_facet": "facet",
+                    "interior_facet": "facet",
+                    "point": "vertex"}
+
+    # Check and extract entity type
+    domain_type = itg_data.domain_type
+    if not itg_data.domain_type in entity_types:
+        error("Unsupported integration domain type: %s (%s)" \
+                  % (domain_type, domain_type_to_measure_name[domain_type]))
+    entity_type = entity_types[itg_data.domain_type]
+
+    # Check topological dimension
     cellname = itg_data.domain.cell().cellname()
     tdim = itg_data.domain.topological_dimension()
     assert all(tdim == itg.domain().topological_dimension() for itg in itg_data.integrals)
 
-    return { "representation":       representation,
-             "domain_type":          itg_data.domain_type,
-             "domain_id":            itg_data.domain_id,
-             "form_id":              form_id,
-             "rank":                 form_data.rank,
-             "geometric_dimension":  form_data.geometric_dimension,
-             "topological_dimension": tdim,
-             "entitytype":           entitytype,
-             "num_facets":           cellname_to_num_entities[cellname][-2],
-             "num_vertices":         cellname_to_num_entities[cellname][0],
-             "needs_oriented":       needs_oriented_jacobian(form_data),
-           }
+    # Initialize integral intermediate representation
+    return {"representation":       representation,
+            "domain_type":          itg_data.domain_type,
+            "domain_id":            itg_data.domain_id,
+            "form_id":              form_id,
+            "rank":                 form_data.rank,
+            "geometric_dimension":  form_data.geometric_dimension,
+            "topological_dimension": tdim,
+            "entitytype":           entitytype,
+            "num_facets":           cellname_to_num_entities[cellname][-2],
+            "num_vertices":         cellname_to_num_entities[cellname][0],
+            "needs_oriented":       needs_oriented_jacobian(form_data)}
 
 def initialize_integral_code(ir, prefix, parameters):
     "Representation independent default initialization of code dict for integral from intermediate representation."
