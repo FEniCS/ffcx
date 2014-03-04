@@ -6,9 +6,10 @@ from uflacs.utils.log import error, uflacs_assert
 from uflacs.analysis.graph import build_graph
 from uflacs.analysis.graph_vertices import build_scalar_graph_vertices
 from uflacs.analysis.graph_rebuild import rebuild_scalar_e2i
-from uflacs.analysis.graph_ssa import (compute_dependencies,
-                                         mark_active,
-                                         mark_partitions,
+from uflacs.analysis.graph_dependencies import (compute_dependencies,
+                                                mark_active)
+
+from uflacs.analysis.graph_ssa import (mark_partitions,
                                          compute_dependency_count,
                                          invert_dependencies,
                                          default_cache_score_policy,

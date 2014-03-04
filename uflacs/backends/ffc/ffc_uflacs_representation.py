@@ -1,12 +1,14 @@
 
+from ufl.algorithms import replace, change_to_local_grad
+
 from uflacs.utils.log import uflacs_assert
 from uflacs.params import default_parameters
 from uflacs.analysis.modified_terminals import analyse_modified_terminal2
 from uflacs.generation.compiler import compute_expr_ir
+from uflacs.elementtables.terminaltables import build_element_tables, optimize_element_tables
 
-from ufl.algorithms import replace, change_to_local_grad
-def compute_tabulate_tensor_ir(integrals_dict,
-                               form_data,
+def compute_tabulate_tensor_ir(psi_tables, entitytype,
+                               integrals_dict, form_data,
                                parameters):
     # TODO: Hack before we get default parameters properly into ffc
     p = default_parameters()
@@ -35,9 +37,10 @@ def compute_tabulate_tensor_ir(integrals_dict,
     # NB! Using the last num_points from integrals_dict below, but not handling it properly yet
     uflacs_assert(len(integrals_dict) == 1, "Not supporting multiple integration rules yet.")
     num_points, = list(integrals_dict.keys())
-    expr_ir = ir["expr_ir"][num_points]
+    expr_ir = uflacs_ir["expr_ir"][num_points]
 
     # Build set of modified terminal ufl expressions
+    V = expr_ir["V"]
     modified_terminals = [V[i] for i in expr_ir["modified_terminal_indices"]]
     modified_terminals += expr_ir["modified_arguments"]
 
@@ -45,12 +48,12 @@ def compute_tabulate_tensor_ir(integrals_dict,
     terminal_data = [analyse_modified_terminal2(o) for o in modified_terminals]
 
     # Build tables needed by all modified terminals (currently build here means extract from ffc psi_tables)
-    tables, terminal_table_names = build_element_tables(ir["psi_tables"], num_points,
-                                                        ir["entitytype"], terminal_data)
+    tables, terminal_table_names = build_element_tables(psi_tables, num_points,
+                                                        entitytype, terminal_data)
 
     # Optimize tables and get table name and dofrange for each modified terminal
     unique_tables, terminal_table_ranges = optimize_element_tables(tables, terminal_table_names)
-    expr_id["unique_tables"] = unique_tables
+    expr_ir["unique_tables"] = unique_tables
 
     # Split into arguments and other terminals before storing in expr_ir
     # TODO: Some tables are associated with num_points, some are not (i.e. piecewise constant, averaged and x0)
@@ -58,19 +61,7 @@ def compute_tabulate_tensor_ir(integrals_dict,
     expr_ir["modified_argument_table_ranges"] = terminal_table_ranges[:n]
     expr_ir["modified_terminal_table_ranges"] = terminal_table_ranges[n:]
 
-
-    # In code generation, do something like:
-    matr = expr_ir["modified_argument_table_ranges"]
-    for mas, factor in expr_ir["argument_factorization"].iteritems():
-        fetables = tuple(matr[ma][0] for ma in mas)
-        dofblock = tuple(tuple(matr[ma][1], matr[ma][2]) for ma in mas)
-        modified_argument_blocks[dofblock] = (fetables, factor)
-        #
-        #for (i0=dofblock0[0]; i0<dofblock0[1]; ++i0)
-        #  for (i1=dofblock1[0]; i1<dofblock1[1]; ++i1)
-        #    A[i0*n1 + i1] += (fetables[0][iq][i0-dofblock0[0]]
-        #                    * fetables[1][iq][i1-dofblock1[0]]) * V[factor] * weight;
-        #
+    assert len(expr_ir["modified_argument_table_ranges"]) == len(expr_ir["modified_arguments"])
 
     return uflacs_ir
 

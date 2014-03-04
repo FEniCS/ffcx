@@ -2,11 +2,10 @@
 
 from ufl.common import product
 from uflacs.utils.log import debug, info, warning, error, uflacs_assert
-from uflacs.codeutils.format_code_structure import format_code_structure, Indented, Block, ForRange
+from uflacs.codeutils.format_code_structure import format_code_structure, Indented, Block, ForRange, ArrayDecl
 from uflacs.geometry.default_names import names
 from uflacs.codeutils.languageformatter import CppStatementFormatterRules
 langfmt = CppStatementFormatterRules()
-
 
 """ # FFC language formatter includes, some may be useful:
 from ufl.common import component_to_index
@@ -54,7 +53,7 @@ class IntegralGenerator(object):
         self.ir = ir
 
         # Consistency check on quadrature rules
-        nps1 = sorted(ir["uflacs_ir"]["expr_ir"].keys())
+        nps1 = sorted(ir["uflacs"]["expr_ir"].keys())
         nps2 = sorted(ir["quadrature_rules"].keys())
         if nps1 != nps2:
             uflacs_warning("Got different num_points for expression irs and quadrature rules:\n{0}\n{1}".format(
@@ -119,7 +118,7 @@ class IntegralGenerator(object):
         "Generate static tables with precomputed element basis function values in quadrature points."
         parts = []
         parts += [langfmt.comment("Section for precomputed element basis function values")]
-        expr_irs = self.ir["uflacs_ir"]["expr_ir"]
+        expr_irs = self.ir["uflacs"]["expr_ir"]
         for num_points in sorted(expr_irs):
             tables = expr_irs[num_points]["unique_tables"]
             comment = "Definitions of {0} tables for {0} quadrature points".format(len(tables), num_points)
@@ -161,7 +160,7 @@ class IntegralGenerator(object):
         return parts
 
     def dummy(self):
-        expr_ir = self.ir["uflacs_ir"]["expr_ir"][num_points]
+        expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
 
         # Core expression graph:
         expr_ir["V"]
@@ -189,11 +188,21 @@ class IntegralGenerator(object):
         parts += ["// Quadrature loop body setup {0}".format(num_points)]
         parts += self.generate_varying_partition(num_points)
 
-        expr_ir = self.ir["uflacs_ir"]["expr_ir"][num_points]
+        expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
         # tuple(modified_argument_indices) -> code_index
         AF = expr_ir["argument_factorization"]
         # modified_argument_index -> (tablename, dofbegin, dofend)
         MATR = expr_ir["modified_argument_table_ranges"]
+
+        print
+        print AF
+        print MATR
+        from itertools import chain
+        print set(chain(*AF.keys()))
+        print len(MATR)
+        print len(expr_ir["modified_arguments"])
+        print expr_ir["modified_arguments"]
+        print
 
         # Generate pre-argument loop computations # FIXME: What is this?
         for mas in sorted(AF):
@@ -223,7 +232,7 @@ class IntegralGenerator(object):
             return parts
         assert iarg < self.ir["rank"]
 
-        expr_ir = self.ir["uflacs_ir"]["expr_ir"][num_points]
+        expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
         # tuple(modified_argument_indices) -> code_index
         AF = expr_ir["argument_factorization"]
 
@@ -252,6 +261,21 @@ class IntegralGenerator(object):
             idof = "{name}{num}".format(name=names.ia, num=level)
             parts += [ForRange(idof, dofrange[0], dofrange[1], body=body)]
         return parts
+
+    def foobar(self):
+        # In code generation, do something like:
+        matr = expr_ir["modified_argument_table_ranges"]
+        for mas, factor in expr_ir["argument_factorization"].iteritems():
+            fetables = tuple(matr[ma][0] for ma in mas)
+            dofblock = tuple((matr[ma][1:3]) for ma in mas)
+            modified_argument_blocks[dofblock] = (fetables, factor)
+            #
+            #for (i0=dofblock0[0]; i0<dofblock0[1]; ++i0)
+            #  for (i1=dofblock1[0]; i1<dofblock1[1]; ++i1)
+            #    A[i0*n1 + i1] += (fetables[0][iq][i0-dofblock0[0]]
+            #                    * fetables[1][iq][i1-dofblock1[0]]) * V[factor] * weight;
+            #
+
 
     def generate_piecewise_partition(self): # FIXME: Generate 'piecewise' partition here
         """Generate statements prior to the quadrature loop.

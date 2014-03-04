@@ -1,10 +1,12 @@
 
 from uflacs.utils.log import uflacs_assert
-from uflacs.analysis.dependency_handler import DependencyHandler
-from uflacs.codeutils.format_code_structure import format_code_structure, Indented, ArrayDecl
-from uflacs.generation.generate import generate_code_from_ssa, generate_expression_body
-from uflacs.backends.ffc.ffc_language_formatter import FFCLanguageFormatter
-from uflacs.backends.ffc.ffc_statement_formatter import FFCStatementFormatter
+#from uflacs.analysis.dependency_handler import DependencyHandler
+#from uflacs.codeutils.format_code_structure import format_code_structure, Indented, ArrayDecl
+#from uflacs.generation.generate import generate_code_from_ssa, generate_expression_body
+#from uflacs.backends.ffc.ffc_language_formatter import FFCLanguageFormatter
+#from uflacs.backends.ffc.ffc_statement_formatter import FFCStatementFormatter
+
+from uflacs.generation.integralgenerator import IntegralGenerator
 
 def generate_tabulate_tensor_code(ir, parameters):
 

@@ -1,8 +1,9 @@
 
 from ufl.common import product
 from ufl.classes import FormArgument, GeometricQuantity
-from ufl.algorithms import unique_tuple
+from ufl.algorithms.analysis import unique_tuple
 
+from uflacs.analysis.datastructures import object_array
 from uflacs.elementtables.table_utils import (generate_psi_table_name,
                                               get_ffc_table_values,
                                               strip_table_zeros,
@@ -62,13 +63,15 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
       terminal_table_names
     """
     element_counter_map = {} #build_element_counter_map(extract_terminal_elements(terminal_data))
-    terminal_table_names = {}
+    terminal_table_names = object_array(len(terminal_data))
     tables = {}
     for i, mt in enumerate(terminal_data):
         t = mt.terminal
         gd = mt.global_derivatives
         ld = mt.local_derivatives
-
+        gc = mt.component
+        #gc = mt.global_component # TODO
+        #lc = mt.local_component # TODO
         domain = t.domain()
 
         # FIXME: Add element tables for GeometricQuantities as well!
@@ -81,8 +84,8 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
                 element_counter = len(element_counter_map)
                 element_counter_map[element] = element_counter
 
-            # Flatten component # TODO: This is the global component!
-            flat_component = flatten_component(c, t.shape(), element.symmetry())
+            # Flatten component # TODO: This is the global component! Want the local component?
+            flat_component = flatten_component(gc, t.shape(), element.symmetry())
 
             # Change derivatives format for table lookup
             gdim = domain.geometric_dimension()
@@ -90,8 +93,9 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
             tdim = domain.topological_dimension()
             local_derivatives = tuple(derivative_listing_to_counts(ld, tdim)) # TODO: Is this right?
 
+            assert not any(global_derivatives), "TODO: Does it make sense to have global derivatives in here now?"
+
             # Build name for this particular table
-            assert not global_derivatives # TODO: Does it make sense to have global derivatives in here?
             # TODO: Include num_points in table name?
             name = generate_psi_table_name(element_counter, flat_component,
                                          local_derivatives, mt.averaged, entitytype)
@@ -148,11 +152,13 @@ def optimize_element_tables(tables, terminal_table_names):
 
     # Build mapping from terminal data index to compacted table data:
     # terminal data index -> (unique name, table range begin, table range end)
-    terminal_table_ranges = {}
-    for i, name in terminal_table_names.iteritems():
-        unique_name = unique_table_names[table_name_to_unique_index[name]]
-        b, e = table_ranges[name]
-        terminal_table_ranges[i] = (unique_name, b, e)
+    terminal_table_ranges = object_array(len(terminal_table_names))
+    for i, name in enumerate(terminal_table_names):
+        if name is not None:
+            unique_index = table_name_to_unique_index[name]
+            unique_name = unique_table_names[unique_index]
+            b, e = table_ranges[name]
+            terminal_table_ranges[i] = (unique_name, b, e)
 
     return unique_tables, terminal_table_ranges
 
