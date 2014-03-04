@@ -54,9 +54,9 @@ def compute_integral_ir(itg_data,
     ir["optimise_parameters"] = parse_optimise_parameters(parameters)
 
     # Sort integrals into a dict with quadrature degree and rule as key
-    sorted_integrals = _sort_integrals(itg_data.integrals,
-                                       itg_data.metadata["quadrature_degree"],
-                                       itg_data.metadata["quadrature_rule"])
+    sorted_integrals = sort_integrals(itg_data.integrals,
+                                      itg_data.metadata["quadrature_degree"],
+                                      itg_data.metadata["quadrature_rule"])
 
     # Tabulate quadrature points and basis function values in these points
     integrals_dict, psi_tables, quadrature_rules = \
@@ -102,7 +102,7 @@ def compute_integral_ir(itg_data,
 
     return ir
 
-def _sort_integrals(integrals, default_quadrature_degree, default_quadrature_rule):
+def sort_integrals(integrals, default_quadrature_degree, default_quadrature_rule):
     """Sort and accumulate integrals according to the number of quadrature points needed per axis.
 
     All integrals should be over the same (sub)domain.

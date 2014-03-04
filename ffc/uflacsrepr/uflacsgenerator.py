@@ -27,8 +27,9 @@ def generate_integral_code(ir, prefix, parameters):
     code = initialize_integral_code(ir, prefix, parameters)
 
     # Delegate to uflacs to generate tabulate_tensor body
-    import uflacs.backends.ffc # Don't laugh on the next line here :-p
-    uflacs_code = uflacs.backends.ffc.ffc_uflacs_generator.generate_tabulate_tensor_code(ir, parameters)
+    # Don't laugh on the next line here :-p
+    from uflacs.backends.ffc.ffc_uflacs_generator import generate_tabulate_tensor_code
+    uflacs_code = generate_tabulate_tensor_code(ir, parameters)
 
     code["tabulate_tensor"] = uflacs_code["tabulate_tensor"]
 
