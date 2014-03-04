@@ -225,4 +225,54 @@ for form in forms:
 
     #print "TODO: Generate code for geometry"
 
+    """How to generate each modified terminal type:
+
+    - Argument: table name and dofrange says it all, generate directly from table name and index names
+
+    - Coefficient[degree==0]: use dofname directly
+    - Coefficient[degree>0]: generate (inline) dot product between dofnames and table
+
+    - Jacobian: generate (inline) dot product between "vertex dofnames" and LocalGrad
+
+    - JacobianDeterminant: generate code snippet for now
+    - JacobianInverse: generate code snippet for now
+
+    - SpatialCoordinate: generate (inline) dot product between "vertex dofnames" and table
+    - LocalCoordinate: Need FacetLocalCoordinate as well. Make all Facet* subclass FacetGeometricQuantity?
+    """
+
     print '\\'*80
+
+"""How to approximate tensor representation as a special case:
+
+ - Choose to compute factors first for all quadrature points:
+   for(iq)
+   {
+     ...;
+     F[iq][k] = ...;
+   }
+
+ - Then implement the tensor contractions smartly:
+   A[i0*n1 + i1] = sum(
+       V0[k][iq][i0-b0[k]] * V1[k][iq][i1-b1[k]] * F[k][iq] * weights[iq]
+       for i0 in [b0[k], e0[k])
+       for i1 in [b1[k], e1[k])
+       for iq in [0,nq)
+       for k in [0,nterms)
+       ) * detJ;
+
+ - We can always precompute product of arguments and weights at the cost of large tables:
+   - Precompute: T[i0][i1][k][iq] = V0[k][iq][i0-b0[k]] * V1[k][iq][i1-b1[k]] * weights[iq]
+   - Compute: F[k][iq] = ...; with arbitrary code (not limited like tensor representation)
+   - Compute: A[i0][j0] = sum(T[i0][j0][k][iq]*F[k][iq] for k in terms for iq in [0,nq))
+
+ - If F[k][iq] = F[k], we can precompute the sum of T over iq:
+   - T[k][i0][i1] = sum(V0[k][iq][i0-b0[k]] * V1[k][iq][i1-b1[k]] * weights[iq] for iq in [0,nq))
+   - Compute: F[k] = ...; with arbitrary code (not limited like tensor representation)
+   - Compute: A[i0][j0] = sum(T[i0][j0][k]*F[k] for k in terms)
+
+ - If F[k][iq] = F[k] = F, we can do fully precomputable mass matrix:
+   - T[i0][i1] = sum(V0[k][iq][i0-b0[k]] * V1[k][iq][i1-b1[k]] * weights[iq] for iq in [0,nq) for k in terms)
+   - Compute: F = ...; with arbitrary code (not limited like tensor representation)
+   - Compute: A[i0][j0] = T[i0][j0] * F
+"""

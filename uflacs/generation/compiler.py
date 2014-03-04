@@ -70,14 +70,10 @@ def compute_expr_ir(expressions, parameters):
     - Make caller apply piola mappings
 
     TODO:
-    - Build modified_argument_factors
     - Build modified_argument_blocks
-    - Rewrite build_partition_labels in terms of modified_argument_blocks instead of dofblocks
-    - Rewrite mark_partitions to use seeds from partition_labels
-
-    - Place partition_labels, modified_arguments, etc. in ir
     - Use new ir information in code generation
 
+    Work for later:
     - Apply some suitable renumbering of vertices and corresponding arrays prior to returning
     - Allocate separate registers for each partition
       (but e.g. argument[iq][i0] may need to be accessible in other loops)
@@ -133,14 +129,17 @@ def compute_expr_ir(expressions, parameters):
     spatially_dependent_indices, num_spatial = mark_image(inverse_dependencies,
                                                           spatially_dependent_terminal_indices)
 
-    # TODO: Spatially_dependent_indices shows that factorization is needed
-    #       for loop invariant code motion w.r.t. quadrature loop as well
-    #       Postphoning that until everything is working fine again.
+    # TODO: Inspection of spatially_dependent_indices shows that factorization is
+    # needed for effective loop invariant code motion w.r.t. quadrature loop as well.
+    # Postphoning that until everything is working fine again.
+    # Core ingredients for such factorization would be:
+    # - Flatten products of products somehow
+    # - Sorting flattened product factors by loop dependency then by canonical ordering
 
-    rank = max(len(k) for k in argument_factorization.keys())
-    for i,a in enumerate(modified_arguments):
-        iarg = a.number()
-        #ipart = a.part()
+    #rank = max(len(k) for k in argument_factorization.keys())
+    #for i,a in enumerate(modified_arguments):
+    #    iarg = a.number()
+    #    #ipart = a.part()
 
     # Print timing
     tt.stop()
@@ -148,34 +147,25 @@ def compute_expr_ir(expressions, parameters):
         print "Profiling results:"
         print tt
 
-    # FIXME: What do we need to return here?
+    # Build IR for the given expressions
     expr_ir = {}
-    expr_ir["argument_factorization"] = argument_factorization
-    expr_ir["modified_arguments"] = modified_arguments
+
+    # Core expression graph:
     expr_ir["V"] = V
     expr_ir["target_variables"] = target_variables
+
+    # Result of factorization:
+    expr_ir["modified_arguments"] = modified_arguments
+    expr_ir["argument_factorization"] = argument_factorization
+
+    # Metadata and dependency information:
     expr_ir["active"] = active
     expr_ir["dependencies"] = dependencies
     expr_ir["inverse_dependencies"] = inverse_dependencies
     expr_ir["modified_terminal_indices"] = modified_terminal_indices
     expr_ir["spatially_dependent_indices"] = spatially_dependent_indices
+
     return expr_ir
-
-
-def old_code_useful_for_table_building():
-    pass
-    # FIXME: Use ideas from this in building of modified_argument_tables and modified_terminal_tables
-
-    # XXX: FIXME: find dofrange for each modified_arguments value
-    #dofranges[np][iarg] = [...]
-    #modified_arguments2[np][iarg] = [ma for ma in modified_arguments if ma involves iarg and is needed for np]
-    # FIXME: Can we avoid explicit dofranges in here by using ma indices?
-
-    # XXX: FIXME: find dofblock for each argument_factorization item
-    #dofblocks[np] = [...]
-    #argument_blocks[np] = sorted(argument_factorization.keys())
-    # FIXME: Can we avoid explicit dofblocks in here by using ma index tuples?
-
 
 def old_code_useful_for_optimization():
 
@@ -185,7 +175,7 @@ def old_code_useful_for_optimization():
                                   active,
                                   dependencies,
                                   inverse_dependencies,
-                                  partitions,
+                                  partitions, # TODO: Rewrite in terms of something else, this doesn't exist anymore
                                   cache_score_policy=default_cache_score_policy)
 
     # Allocate variables to store subexpressions in

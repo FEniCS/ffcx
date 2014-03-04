@@ -1,33 +1,28 @@
 
-from ufl.common import product
 
+from ufl.common import product
 from uflacs.utils.log import debug, info, warning, error, uflacs_assert
 from uflacs.codeutils.format_code_structure import format_code_structure, Indented, Block, ForRange
 from uflacs.geometry.default_names import names
-
-# TODO: Refactor
-from uflacs.backends.ffc.ffc_statement_formatter import CppStatementFormatterRules
+from uflacs.codeutils.languageformatter import CppStatementFormatterRules
 langfmt = CppStatementFormatterRules()
 
-def create_fake_ir():
-    # TODO: This is just fake test data
-    ir = {}
-    ir["prim_idims"] = [7, 8]
-    ir["quadrature_rules"] = {
-        1: ( [0.5, 0.5],  [(0.1, 0.2), (0.3, 0.4)] ),
-        2: ( [3.5, 3.5],  [(1.1, 1.2), (2.3, 2.4)] ),
-        }
-    ir["dof_ranges"] = {
-        1: [
-            ((0,3), (3,6)),
-            ((1,2), (4,5))
-            ],
-        2: [
-            ((1,2), (4,6)),
-            ((0,5),)
-            ],
-        }
-    return ir
+
+""" # FFC language formatter includes, some may be useful:
+from ufl.common import component_to_index
+from ufl.permutation import build_component_numbering
+from ufl.algorithms import MultiFunction
+
+from uflacs.utils.log import uflacs_assert, warning, error
+
+# TODO: The organization of code utilities is a bit messy...
+from uflacs.codeutils.cpp_format import CppFormatterRulesCollection
+from uflacs.geometry.default_names import names
+from uflacs.backends.ffc.ffc_statement_formatter import langfmt
+from uflacs.backends.ffc.ffc_statement_formatter import (format_element_table_access, format_entity_name)
+from uflacs.elementtables.table_utils import derivative_listing_to_counts, flatten_component
+"""
+
 
 """
 TODO: Implement all steps in generate_expression_body. See in particular these functions:
@@ -52,96 +47,29 @@ Argument loops:
 Post quadrature:
 
 """
+
 class IntegralGenerator(object):
-    def __init__(self):
-        # TODO: This is just fake test data
-        ir = create_fake_ir()
+    def __init__(self, ir):
+        # Store ir
+        self.ir = ir
 
-        # Parse quadrature rules
-        quadrature_rules = ir["quadrature_rules"]
-        if len(quadrature_rules) > 1:
-            warning("Multiple quadrature rules not fully implemented, will likely crash somewhere.")
+        # Consistency check on quadrature rules
+        nps1 = sorted(ir["uflacs_ir"]["expr_ir"].keys())
+        nps2 = sorted(ir["quadrature_rules"].keys())
+        if nps1 != nps2:
+            uflacs_warning("Got different num_points for expression irs and quadrature rules:\n{0}\n{1}".format(
+                nps1, nps2))
 
-        self._num_points = []
-        self._weights = {}
-        self._points = {}
-        for num_points in sorted(quadrature_rules.keys()):
-            self._num_points.append(num_points)
-            w, p = quadrature_rules[num_points]
-            self._weights[num_points] = w
-            self._points[num_points] = p
+        # TODO: Populate these
+        self._using_names = set()
+        self._includes = set(("#include <cstring>",
+                              "#include <cmath>"))
 
-        # Parse argument space dimensions etc.
-        self._dof_ranges = ir["dof_ranges"]
-        self._argument_space_dimensions = ir["prim_idims"] # FIXME: *2 for dS?
-        self._A_size = product(self._argument_space_dimensions)
-        self._num_arguments = len(self._argument_space_dimensions)
-        self._idofs = ["%s%d" % (names.ia, i) for i in range(self._num_arguments)]
+    def generate_using_statements(self):
+        return ["using %s;" % name for name in sorted(self._using_names)]
 
-        # TODO: Get this from ir
-        # integrand_term_factors: tuple(modified_argument_indices) -> code_index
-        self._integrand_term_factors = {}
-        self._integrand_term_factors[num_points] = {} # IM in factorization code
-        # modified_argument_dofrange: modified_argument_index -> dofrange
-        self._modified_argument_dofrange = {}
-        self._modified_argument_dofrange[num_points] = [] # TODO: Build from dof ranges of AV in factorization code
-        #self._modified_arguments = {}
-        #self._modified_arguments[num_points] = [] # AV in factorization code
-
-    def build_datastructures(self):
-        # FIXME: Build this representation of integrands, either by looping
-        #        like this or by looping over data structures in a more
-        #        unstructured fashion. Either way this is the structure we want:
-
-        num_points = [3]
-
-        #dofrange = (begin, end)
-        #dofblock = ()  |  (dofrange0,)  |  (dofrange0, dofrange1)
-
-        partitions = {}
-
-        # partitions["piecewise"] = partition of expressions independent of quadrature and argument loops
-        partitions["piecewise"] = []
-
-        # partitions["varying"][np] = partition of expressions dependent on np quadrature but independent of argument loops
-        partitions["varying"] = dict((np, []) for np in num_points)
-
-        # partitions["argument"][np][iarg][dofrange] = partition depending on this dofrange of argument iarg
-        partitions["argument"] = dict((np, [{} for i in range(rank)]) for np in num_points)
-
-        # partitions["integrand"][np][dofblock] = partition for computing final integrand contribution in this dofblock
-        partitions["integrand"] = dict((np, {}) for np in num_points)
-
-        #dofblock_partition[np][iarg][dofrange] == partitions["argument"][np][iarg][dofrange]
-        #dofblock_integrand_partition[np][dofblock] == partitions["integrand"][np][dofblock]
-
-        argument_dofblocks = {} # { num_points: [dofblock, ...] } # FIXME: Fill this first
-        dofblock_partition = {} # { num_points: { iarg: { dofblock: partition } } }
-        for num_points in sorted(argument_dofblocks.keys()):
-            dofblock_partition[num_points] = {}
-            for iarg in range(rank):
-                dofblock_partition[num_points][iarg] = {}
-                for dofblock in argument_dofblocks[num_points]: # FIXME
-                    # FIXME: Make this the partition of code that depends on only argument iarg
-                    #        for this dofblock in the integrand corresponding to num_points
-                    partition = []
-                    dofblock_partition[num_points][iarg][dofblock] = partition
-
-        dofblocks = {} # { num_points: [dofblock, ...] } # FIXME: Fill this first
-        dofblock_integrand_partition = {} # { num_points: { dofblock: partition } }
-        for num_points in sorted(dofblocks.keys()):
-            dofblock_integrand_partition[num_points] = {}
-            for dofblock in dofblocks[num_points]:
-                # FIXME: Make this the partition of code that depends on this full dofblock
-                #        in the integrand corresponding to num_points
-                partition = []
-                dofblock_integrand_partition[num_points][dofblock] = partition
-
-        self._dofblock_partition = dofblock_partition
-        self._dofblock_integrand_partition = dofblock_integrand_partition
-        self._dofblocks = dofblocks
-        self._dofblocks = dict( (num_points, sorted(db.keys()))
-                                for num_points, db in self._dofblock_integrand_partition.iteritems())
+    def get_includes(self):
+        return sorted(self._includes)
 
     def generate(self):
         """Generate entire tabulate_tensor body.
@@ -150,6 +78,7 @@ class IntegralGenerator(object):
         that matches a suitable version of the UFC tabulate_tensor signatures.
         """
         parts = []
+        parts += [self.generate_using_statements()]
         parts += [self.generate_quadrature_tables()]
         parts += [self.generate_element_tables()]
         parts += [self.generate_tensor_reset()]
@@ -162,21 +91,23 @@ class IntegralGenerator(object):
         "Generate static tables of quadrature points and weights."
         parts = []
 
-        if self._num_points:
+        qrs = self.ir["quadrature_rules"]
+        if qrs:
             parts += ["// Section for quadrature weights and points"]
 
-        for num_points in self._num_points:
-            weights = self._weights[num_points]
-            points = self._points[num_points]
+        for num_points in sorted(qrs):
+            weights = qrs[num_points][0]
+            points = qrs[num_points][1]
+
+            # Size of quadrature points depends on context, assume this is correct:
             pdim = len(points[0])
 
+            wname = "%s%d" % (names.weights, num_points)
+            pname = "%s%d" % (names.points, num_points)
+
+            # TODO: Improve langfmt.array_decl to handle the {} wrappers here
             weights = "{ %s }" % langfmt.precision_floats(weights)
             points = "{ %s }" % langfmt.precision_floats(x for p in points for x in p)
-
-            #wname = "%s%d" % (names.weights, num_points) # TODO: Use this everywhere
-            #pname = "%s%d" % (names.points, num_points) # TODO: Use this everywhere
-            wname = "%s" % names.weights
-            pname = "%s" % names.points
 
             parts += [langfmt.array_decl("static const double", wname, num_points, weights)]
             parts += [langfmt.array_decl("static const double", pname, num_points*pdim, points)]
@@ -184,22 +115,47 @@ class IntegralGenerator(object):
 
         return parts
 
-    def generate_element_tables(self): # FIXME: Generate element tables here
+    def generate_element_tables(self):
         "Generate static tables with precomputed element basis function values in quadrature points."
         parts = []
-        parts += ["// FIXME: Section for precomputed element basis function values"]
+        parts += [langfmt.comment("Section for precomputed element basis function values")]
+        expr_irs = self._ir["uflacs_ir"]["expr_ir"]
+        for num_points in sorted(expr_irs):
+            tables = expr_irs[num_points]["unique_tables"]
+            comment = "Definitions of {0} tables for {0} quadrature points".format(len(tables), num_points)
+            parts += [langfmt.comment(comment)]
+            for name in sorted(tables):
+                table = tables[name]
+                if product(table.shape) > 0:
+                    # TODO: Move to langfmt:
+                    parts += [ArrayDecl("static const double", name, table.shape, table)]
         return parts
 
     def generate_tensor_reset(self):
         "Generate statements for resetting the element tensor to zero."
-        memset = "memset(%s, 0, %d * sizeof(%s[0]));" % (names.A, self._A_size, names.A)
-        parts = [langfmt.comment("Reset element tensor"), memset, ""]
+
+        # Compute tensor size
+        if self.ir["domain_type"] == "interior_facet":
+            A_shape = self.ir["prim_idims"]
+        else:
+            A_shape = [2*n for n in self.ir["prim_idims"]]
+        A_size = product(A_shape)
+
+        # TODO: Move to langfmt:
+        def memzero(ptrname, size):
+            return "memset({ptrname}, 0, {size} * sizeof(*{ptrname}));".format(ptrname=ptrname, size=size)
+
+        parts = []
+        parts += [langfmt.comment("Reset element tensor")]
+        parts += [memzero(names.A, A_size)]
+        #parts += [langfmt.memzero(names.A, A_size)]
+        parts += [""]
         return parts
 
     def generate_quadrature_loops(self):
         "Generate all quadrature loops."
         parts = []
-        for num_points in self._num_points:
+        for num_points in sorted(self.ir["uflacs"]["expr_ir"]):
             body = self.generate_quadrature_body(num_points)
             parts += [ForRange(names.iq, 0, num_points, body=body)]
         return parts
@@ -208,7 +164,6 @@ class IntegralGenerator(object):
         """
         """
         parts = []
-
 
 
         # FIXME: Get this from ir in constructor, remove this hack
@@ -248,11 +203,11 @@ class IntegralGenerator(object):
 
         # The loop level iarg here equals the argument count (in renumbered >= 0 format)
         iarg = len(outer_dofblock)
-        if iarg == self._num_arguments:
+        if iarg == self.ir["rank"]:
             # At the innermost argument loop level we accumulate into the element tensor
             parts += [self.generate_integrand_accumulation(num_points, outer_dofblock)]
             return parts
-        assert iarg < self._num_arguments
+        assert iarg < self.ir["rank"]
 
         # integrand_term_factors: tuple(modified_argument_indices) -> code_index
         # modified_argument_dofrange: modified_argument_index -> dofrange
@@ -278,7 +233,8 @@ class IntegralGenerator(object):
             body += self.generate_quadrature_body_dofblocks(num_points, dofblock)
 
             # Wrap setup, subloops, and accumulation in a loop for this level
-            parts += [ForRange(self._idofs[level], dofrange[0], dofrange[1], body=body)]
+            idof = "{name}{num}".format(name=names.ia, num=level)
+            parts += [ForRange(idof, dofrange[0], dofrange[1], body=body)]
         return parts
 
     def generate_piecewise_partition(self): # FIXME: Generate 'piecewise' partition here
@@ -363,7 +319,7 @@ class IntegralGenerator(object):
         """
         parts = []
 
-        if not self._num_points:
+        if not self.ir["quadrature_rules"]: # Rather check ir["domain_type"]?
             # TODO: Implement for expression support
             error("Expression generation not implemented yet.")
             # TODO: If no integration, assuming we generate an expression, and assign results here

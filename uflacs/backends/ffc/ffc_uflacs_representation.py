@@ -50,12 +50,27 @@ def compute_tabulate_tensor_ir(integrals_dict,
 
     # Optimize tables and get table name and dofrange for each modified terminal
     unique_tables, terminal_table_ranges = optimize_element_tables(tables, terminal_table_names)
+    expr_id["unique_tables"] = unique_tables
 
     # Split into arguments and other terminals before storing in expr_ir
     # TODO: Some tables are associated with num_points, some are not (i.e. piecewise constant, averaged and x0)
     n = len(modified_terminals)
-    expr_ir["modified_terminal_table_ranges"] = terminal_table_ranges[:n]
+    expr_ir["modified_argument_table_ranges"] = terminal_table_ranges[:n]
     expr_ir["modified_terminal_table_ranges"] = terminal_table_ranges[n:]
+
+
+    # In code generation, do something like:
+    matr = expr_ir["modified_argument_table_ranges"]
+    for mas, factor in expr_ir["argument_factorization"].iteritems():
+        fetables = tuple(matr[ma][0] for ma in mas)
+        dofblock = tuple(tuple(matr[ma][1], matr[ma][2]) for ma in mas)
+        modified_argument_blocks[dofblock] = (fetables, factor)
+        #
+        #for (i0=dofblock0[0]; i0<dofblock0[1]; ++i0)
+        #  for (i1=dofblock1[0]; i1<dofblock1[1]; ++i1)
+        #    A[i0*n1 + i1] += (fetables[0][iq][i0-dofblock0[0]]
+        #                    * fetables[1][iq][i1-dofblock1[0]]) * V[factor] * weight;
+        #
 
     return uflacs_ir
 
