@@ -125,11 +125,20 @@ def compute_expr_ir(expressions, parameters):
 
     # Build piecewise/varying markers for factorized_vertices
     spatially_dependent_terminal_indices = [i for i in modified_terminal_indices
-                                   if not V[i].is_cellwise_constant()]
-    spatially_dependent_indices, num_spatial = mark_image(inverse_dependencies,
-                                                          spatially_dependent_terminal_indices)
+                                            if not V[i].is_cellwise_constant()]
+    varying, num_spatial = mark_image(inverse_dependencies,
+                                      spatially_dependent_terminal_indices)
+    piecewise = 1 - varying
+    # Skip non-active things
+    varying *= active
+    piecewise *= active
 
-    # TODO: Inspection of spatially_dependent_indices shows that factorization is
+    # TODO: Skip literals in both varying and piecewise
+    #nonliteral = ...
+    #varying *= nonliteral
+    #piecewise *= nonliteral
+
+    # TODO: Inspection of varying shows that factorization is
     # needed for effective loop invariant code motion w.r.t. quadrature loop as well.
     # Postphoning that until everything is working fine again.
     # Core ingredients for such factorization would be:
@@ -163,7 +172,8 @@ def compute_expr_ir(expressions, parameters):
     expr_ir["dependencies"] = dependencies
     expr_ir["inverse_dependencies"] = inverse_dependencies
     expr_ir["modified_terminal_indices"] = modified_terminal_indices
-    expr_ir["spatially_dependent_indices"] = spatially_dependent_indices
+    expr_ir["varying"] = varying
+    expr_ir["piecewise"] = piecewise
 
     return expr_ir
 

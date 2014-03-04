@@ -172,14 +172,31 @@ class IntegralGenerator(object):
 
         # Metadata and dependency information:
         expr_ir["active"]
+        expr_ir["varying"]
+        expr_ir["piecewise"]
         expr_ir["dependencies"]
         expr_ir["inverse_dependencies"]
         expr_ir["modified_terminal_indices"]
-        expr_ir["spatially_dependent_indices"]
 
         # Table names and dofranges
         expr_ir["modified_argument_table_ranges"]
         expr_ir["modified_terminal_table_ranges"]
+
+        # Generate pre-argument loop computations # TODO: What is this?
+        expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
+        # tuple(modified_argument_indices) -> code_index
+        AF = expr_ir["argument_factorization"]
+        # modified_argument_index -> (tablename, dofbegin, dofend)
+        MATR = expr_ir["modified_argument_table_ranges"]
+        for mas in sorted(AF):
+            dofblock = tuple(MATR[ma][1:3] for ma in mas)
+            ssa_index = AF[mas]
+            # TODO: Generate code for f*D and store reference to it with mas
+            #f = self._ssa[ssa_index]
+            #vname = name_from(mas)
+            #vcode = code_from(ssa_index)
+            #code += ["%s = (%s) * D;" % (vname, vcode)]
+            #factors[mas] = vname
 
     def generate_quadrature_body(self, num_points):
         """
@@ -187,34 +204,6 @@ class IntegralGenerator(object):
         parts = []
         parts += ["// Quadrature loop body setup {0}".format(num_points)]
         parts += self.generate_varying_partition(num_points)
-
-        expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
-        # tuple(modified_argument_indices) -> code_index
-        AF = expr_ir["argument_factorization"]
-        # modified_argument_index -> (tablename, dofbegin, dofend)
-        MATR = expr_ir["modified_argument_table_ranges"]
-
-        print
-        print AF
-        print MATR
-        from itertools import chain
-        print set(chain(*AF.keys()))
-        print len(MATR)
-        print len(expr_ir["modified_arguments"])
-        print expr_ir["modified_arguments"]
-        print
-
-        # Generate pre-argument loop computations # FIXME: What is this?
-        for mas in sorted(AF):
-            dofblock = tuple(MATR[ma][1:3] for ma in mas)
-            ssa_index = AF[mas]
-
-            # FIXME: Generate code for f*D and store reference to it with mas
-            #f = self._ssa[ssa_index]
-            #vname = name_from(mas)
-            #vcode = code_from(ssa_index)
-            #code += ["%s = (%s) * D;" % (vname, vcode)]
-            #factors[mas] = vname
 
         # Nested argument loops and accumulation into element tensor
         parts += self.generate_quadrature_body_dofblocks(num_points)
@@ -276,40 +265,40 @@ class IntegralGenerator(object):
             #                    * fetables[1][iq][i1-dofblock1[0]]) * V[factor] * weight;
             #
 
+    def generate_partition(self, V, partition):
+        parts = []
+        parts += ["// TODO: Generate partition %s" % (partition,)]
+        parts += ["V ="]
+        parts += [str(V)]
+        for i,p in enumerate(partition):
+            if p:
+                v = V[i]
+                parts += [str(v)] # FIXME: Handle generation of code from partitions, including register rendering.
+        return parts
 
-    def generate_piecewise_partition(self): # FIXME: Generate 'piecewise' partition here
+    def generate_piecewise_partition(self):
         """Generate statements prior to the quadrature loop.
 
         This mostly includes computations involving piecewise constant geometry and coefficients.
         """
         parts = []
-        parts += ["// FIXME: Section for piecewise constant computations"]
+        parts += ["// Section for piecewise constant computations"]
 
-        # FIXME: Get partition associated with num_points
-        p = None
-        #p = self._dofblock_partition_???
-        #p = self._partitions["piecewise"]
-
-        if p is not None:
-            parts += generate_partition_assignments(p) # FIXME: Generate partition computation here
-        else:
-            parts += ["// FIXME: sp[...] = ...;"] # TODO: Remove this mock code
+        expr_irs = self.ir["uflacs"]["expr_ir"]
+        for num_points in sorted(expr_irs):
+            expr_ir = expr_irs[num_points]
+            parts += self.generate_partition(expr_ir["V"], expr_ir["piecewise"])
 
         return parts
 
-    def generate_varying_partition(self, num_points): # FIXME: Generate 'varying' partition
+    def generate_varying_partition(self, num_points):
         parts = []
-        parts += ["// FIXME: Section for geometrically varying computations"]
+        parts += ["// Section for geometrically varying computations"]
 
-        # FIXME: Get partition associated with num_points
-        p = None
-        #p = self._dofblock_partition_???.get(num_points)
-        #p = self._partitions["varying"].get(num_points)
-
-        if p is not None:
-            parts += generate_partition_assignments(p) # FIXME: Generate partition computation here
-        else:
-            parts += ["// FIXME: sv[...] = ...;"] # TODO: Remove this mock code
+        expr_irs = self.ir["uflacs"]["expr_ir"]
+        for num_points in sorted(expr_irs):
+            expr_ir = expr_irs[num_points]
+            parts += self.generate_partition(expr_ir["V"], expr_ir["varying"])
 
         return parts
 
