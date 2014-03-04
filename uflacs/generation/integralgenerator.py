@@ -119,7 +119,7 @@ class IntegralGenerator(object):
         "Generate static tables with precomputed element basis function values in quadrature points."
         parts = []
         parts += [langfmt.comment("Section for precomputed element basis function values")]
-        expr_irs = self._ir["uflacs_ir"]["expr_ir"]
+        expr_irs = self.ir["uflacs_ir"]["expr_ir"]
         for num_points in sorted(expr_irs):
             tables = expr_irs[num_points]["unique_tables"]
             comment = "Definitions of {0} tables for {0} quadrature points".format(len(tables), num_points)
@@ -160,31 +160,45 @@ class IntegralGenerator(object):
             parts += [ForRange(names.iq, 0, num_points, body=body)]
         return parts
 
+    def dummy(self):
+        expr_ir = self.ir["uflacs_ir"]["expr_ir"][num_points]
+
+        # Core expression graph:
+        expr_ir["V"]
+        expr_ir["target_variables"]
+
+        # Result of factorization:
+        expr_ir["modified_arguments"]
+        expr_ir["argument_factorization"]
+
+        # Metadata and dependency information:
+        expr_ir["active"]
+        expr_ir["dependencies"]
+        expr_ir["inverse_dependencies"]
+        expr_ir["modified_terminal_indices"]
+        expr_ir["spatially_dependent_indices"]
+
+        # Table names and dofranges
+        expr_ir["modified_argument_table_ranges"]
+        expr_ir["modified_terminal_table_ranges"]
+
     def generate_quadrature_body(self, num_points):
         """
         """
         parts = []
-
-
-        # FIXME: Get this from ir in constructor, remove this hack
-        # integrand_term_factors: tuple(modified_argument_indices) -> code_index
-        self._integrand_term_factors = {}
-        self._integrand_term_factors[num_points] = {} # IM in factorization code
-        # modified_argument_dofrange: modified_argument_index -> dofrange
-        self._modified_argument_dofrange = {}
-        self._modified_argument_dofrange[num_points] = []# FIXME: Build from dof ranges of AV in factorization code
-        #self._modified_arguments = {}
-        #self._modified_arguments[num_points] = [] # AV in factorization code
-
-
         parts += ["// Quadrature loop body setup {0}".format(num_points)]
-
         parts += self.generate_varying_partition(num_points)
 
+        expr_ir = self.ir["uflacs_ir"]["expr_ir"][num_points]
+        # tuple(modified_argument_indices) -> code_index
+        AF = expr_ir["argument_factorization"]
+        # modified_argument_index -> (tablename, dofbegin, dofend)
+        MATR = expr_ir["modified_argument_table_ranges"]
+
         # Generate pre-argument loop computations # FIXME: What is this?
-        for mas in self._integrand_term_factors[num_points]:
-            dofblock = tuple(self._modified_argument_dofrange[num_points][ma] for ma in mas)
-            ssa_index = self._integrand_term_factors[num_points][mas]
+        for mas in sorted(AF):
+            dofblock = tuple(MATR[ma][1:3] for ma in mas)
+            ssa_index = AF[mas]
 
             # FIXME: Generate code for f*D and store reference to it with mas
             #f = self._ssa[ssa_index]
@@ -209,14 +223,16 @@ class IntegralGenerator(object):
             return parts
         assert iarg < self.ir["rank"]
 
-        # integrand_term_factors: tuple(modified_argument_indices) -> code_index
-        # modified_argument_dofrange: modified_argument_index -> dofrange
-        modified_argument_dofrange = self._modified_argument_dofrange[num_points]
+        expr_ir = self.ir["uflacs_ir"]["expr_ir"][num_points]
+        # tuple(modified_argument_indices) -> code_index
+        AF = expr_ir["argument_factorization"]
+
+        # modified_argument_index -> (tablename, dofbegin, dofend)
+        MATR = expr_ir["modified_argument_table_ranges"]
 
         # Find dofranges at this loop level iarg starting with outer_dofblock
-        dofranges = sorted(modified_argument_dofrange[mas[iarg]]
-                           for mas in self._integrand_term_factors[num_points]
-                           if all(modified_argument_dofrange[mas[i]] == outer_dofblock[i]
+        dofranges = sorted(MATR[mas[iarg]][1:3] for mas in AF
+                           if all(MATR[mas[i]][1:3] == outer_dofblock[i]
                                   for i in xrange(iarg)))
 
         # Build loops for each dofrange
