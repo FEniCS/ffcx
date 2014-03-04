@@ -135,9 +135,9 @@ class IntegralGenerator(object):
 
         # Compute tensor size
         if self.ir["domain_type"] == "interior_facet":
-            A_shape = self.ir["prim_idims"]
-        else:
             A_shape = [2*n for n in self.ir["prim_idims"]]
+        else:
+            A_shape = self.ir["prim_idims"]
         A_size = product(A_shape)
 
         # TODO: Move to langfmt:
@@ -258,7 +258,7 @@ class IntegralGenerator(object):
             body += self.generate_quadrature_body_dofblocks(num_points, dofblock)
 
             # Wrap setup, subloops, and accumulation in a loop for this level
-            idof = "{name}{num}".format(name=names.ia, num=level)
+            idof = "{name}{num}".format(name=names.ia, num=iarg)
             parts += [ForRange(idof, dofrange[0], dofrange[1], body=body)]
         return parts
 

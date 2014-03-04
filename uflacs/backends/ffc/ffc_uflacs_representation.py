@@ -57,9 +57,12 @@ def compute_tabulate_tensor_ir(psi_tables, entitytype,
 
     # Split into arguments and other terminals before storing in expr_ir
     # TODO: Some tables are associated with num_points, some are not (i.e. piecewise constant, averaged and x0)
-    n = len(modified_terminals)
-    expr_ir["modified_argument_table_ranges"] = terminal_table_ranges[:n]
-    expr_ir["modified_terminal_table_ranges"] = terminal_table_ranges[n:]
+    n = len(expr_ir["modified_terminal_indices"])
+    m = len(expr_ir["modified_arguments"])
+    assert len(terminal_table_ranges) == n+m
+    assert len(terminal_table_names) == n+m
+    expr_ir["modified_terminal_table_ranges"] = terminal_table_ranges[:n]
+    expr_ir["modified_argument_table_ranges"] = terminal_table_ranges[n:]
 
     assert len(expr_ir["modified_argument_table_ranges"]) == len(expr_ir["modified_arguments"])
 
