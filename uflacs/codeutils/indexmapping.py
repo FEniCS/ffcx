@@ -94,15 +94,24 @@ class AxisMapping(object):
                            for i in range(self.num_axes)]
 
     def format_decl(self):
-        return ''.join('[{}]'.format(size) for size in self.axis_size)
+        return ''.join('[{0}]'.format(size) for size in self.axis_size)
 
     def format_access(self, **kwargs):
-        return ''.join('[{}]'.format(' + '.join(mul_dims([self.dim_stride[i][j],
-                                                          kwargs.get(self.axis_index_names[i][j],self.axis_index_names[i][j])
-                                                          ])
-                                                for j in range(self.num_dims[i])))
-                       for i in range(self.num_axes))
+        expressions = self.format_index_expressions(**kwargs)
+        return ''.join('[{0}]'.format(expr) for expr in expressions)
 
+    def format_index_expressions(self, **kwargs):
+        expressions = []
+        for i in range(self.num_axes):
+            terms = []
+            for j in range(self.num_dims[i]):
+                stride = self.dim_stride[i][j]
+                index = kwargs.get(self.axis_index_names[i][j], self.axis_index_names[i][j])
+                term = mul_dims([stride, index])
+                terms.append(term)
+            expr = ' + '.join(terms)
+            expressions.append(expr)
+        return expressions
 
 # TODO: Change this into unit tests
 def _test():

@@ -625,11 +625,10 @@ class FFCStatementFormatter(object):
         uflacs_assert(num_variables == 1, "Only single integrands implemented for ffc.")
 
         if self._idofs:
-            im = IndexMapping(dict((idof, idim) for idof, idim in zip(self._idofs, self._argument_space_dimensions)))
+            dofdims = zip(self._idofs, self._argument_space_dimensions)
+            im = IndexMapping(dict((idof, idim) for idof, idim in dofdims))
             am = AxisMapping(im, [self._idofs])
-            ii = am.format_access()
+            ii, = am.format_index_expressions()
         else:
-            ii = "[0]"
-
-        #return [langfmt.array_access(names.A, ii)] # Adds [] TODO: Consolidate fragmented code generation utils
-        return [names.A + ii]
+            ii = "0"
+        return [langfmt.array_access(names.A, ii)]

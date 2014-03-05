@@ -4,6 +4,7 @@ from ufl.common import product
 from uflacs.utils.log import debug, info, warning, error, uflacs_assert
 from uflacs.codeutils.format_code_structure import format_code_structure, Indented, Block, ForRange, ArrayDecl
 from uflacs.geometry.default_names import names
+from uflacs.codeutils.indexmapping import IndexMapping, AxisMapping
 from uflacs.codeutils.languageformatter import CppStatementFormatterRules
 langfmt = CppStatementFormatterRules()
 
@@ -58,6 +59,12 @@ class IntegralGenerator(object):
         if nps1 != nps2:
             uflacs_warning("Got different num_points for expression irs and quadrature rules:\n{0}\n{1}".format(
                 nps1, nps2))
+
+        # Compute shape of element tensor
+        if self.ir["domain_type"] == "interior_facet":
+            self._A_shape = [2*n for n in self.ir["prim_idims"]]
+        else:
+            self._A_shape = self.ir["prim_idims"]
 
         # TODO: Populate these
         self._using_names = set()
@@ -134,11 +141,7 @@ class IntegralGenerator(object):
         "Generate statements for resetting the element tensor to zero."
 
         # Compute tensor size
-        if self.ir["domain_type"] == "interior_facet":
-            A_shape = [2*n for n in self.ir["prim_idims"]]
-        else:
-            A_shape = self.ir["prim_idims"]
-        A_size = product(A_shape)
+        A_size = product(self._A_shape)
 
         # TODO: Move to langfmt:
         def memzero(ptrname, size):
@@ -204,6 +207,8 @@ class IntegralGenerator(object):
         parts = []
         parts += ["// Quadrature loop body setup {0}".format(num_points)]
         parts += self.generate_varying_partition(num_points)
+
+        # FIXME: Move argument partitions here
 
         # Nested argument loops and accumulation into element tensor
         parts += self.generate_quadrature_body_dofblocks(num_points)
@@ -302,42 +307,64 @@ class IntegralGenerator(object):
 
         return parts
 
-    def generate_argument_partition(self, num_points, iarg, dofrange): # FIXME: Define better and implement
+    def generate_argument_partition(self, num_points, iarg, dofrange):
         """Generate code for the partition corresponding to arguments 0..iarg within given dofblock."""
         parts = []
-
-        # FIXME: Get partition associated with (num_points, iarg, dofrange)
-        p = None
-        #p = self._dofblock_partition[num_points][iarg].get(dofrange)
-        #p = self._partitions["argument"][num_points][iarg].get(dofrange)
-
-        if p is not None:
-            parts += generate_partition_assignments(p) # FIXME: Generate partition computation here
-        else:
-            parts += ["// FIXME: sa[...] = ...; // {0} x {1}".format(iarg, dofrange)] # TODO: Remove this mock code
-
+        # TODO: What do we want to do here? Define!
+        # Should this be a single loop over i0, i1 separately outside of the double loop over (i0,i1)?
         return parts
 
-    def generate_integrand_accumulation(self, num_points, dofblock): # FIXME: Implement!
+    def generate_integrand_accumulation(self, num_points, dofblock):
         parts = []
 
-        # FIXME: Get partition associated with (num_points, dofblock)
-        p = None
-        #p = self._dofblock_integrand_partition[num_points][dofblock]
-        #p = self._partitions["integrand"][num_points].get(dofblock)
+        expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
+        AF = expr_ir["argument_factorization"]
+        V = expr_ir["V"]
+        MATR = expr_ir["modified_argument_table_ranges"]
 
-        if p is not None:
-            parts += generate_partition_accumulations(p) # FIXME: Generate partition computation here
-        else:
-            parts += ["// FIXME: A[{0}] += f * v * D;".format(dofblock)] # TODO: Remove this mock code
+        idofs = ["{0}{1}".format(names.ia, i) for i in range(self.ir["rank"])]
 
-        # Corresponding code from compiler.py:
-        #final_variable_names = [format_register_variable(p, r) for r in ir["target_registers"]]
-        #assign_to_variables = tfmt.output_variable_names(len(final_variable_names))
-        #scaling_factor = tfmt.accumulation_scaling_factor()
-        #parts += list(format_scaled_additions(zip(assign_to_variables,
-        #                                          final_variable_names),
-        #                                          scaling_factor))
+        # Find the blocks to build: (TODO: This is rather awkward, having to rediscover these relations here)
+        arguments_and_factors = sorted(expr_ir["argument_factorization"].items(), key=lambda x: x[0])
+        for args, factor_index in arguments_and_factors:
+            if not all(tuple(dofblock[iarg]) == tuple(MATR[ma][1:3]) for iarg, ma in enumerate(args)):
+                continue
+
+            factors = []
+
+            # Get factor expression
+            # FIXME: Scale with weight and detJ here, or better include in f some time earlier
+            # TODO: Omit f if it's 1 or 1.0
+            f = V[factor_index]
+            factors += [str(f)] # FIXME: Format f properly
+
+            # Get table names
+            argfactors = []
+            for i,ma in enumerate(args):
+                uname = MATR[ma][0]
+                entity = "0" # FIXME
+                iq = names.iq
+                dof = "{0}-{1}".format(idofs[i], dofblock[i][0]) # TODO
+                access = langfmt.array_access(uname, entity, iq, dof)
+                argfactors.append(access)
+            factors.extend(argfactors)
+
+            # TODO: Use proper expression formatting
+            expr = " * ".join(factors)
+
+            # Format index access to A
+            if idofs:
+                dofdims = zip(idofs, self._A_shape)
+                im = IndexMapping(dict((idof, idim) for idof, idim in dofdims))
+                am = AxisMapping(im, [idofs])
+                A_ii, = am.format_index_expressions()
+            else:
+                A_ii = "0"
+            A_access = langfmt.array_access(names.A, A_ii)
+
+            # Emit assignment
+            assign = langfmt.iadd(A_access, expr)
+            parts += [assign]
 
         return parts
 
