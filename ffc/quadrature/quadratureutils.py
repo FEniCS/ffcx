@@ -33,6 +33,7 @@ def create_psi_tables(tables, eliminate_zeros, entity_type):
     "Create names and maps for tables and non-zero entries if appropriate."
 
     debug("\nQG-utils, psi_tables:\n" + str(tables))
+
     # Create element map {points:{element:number,},}
     # and a plain dictionary {name:values,}.
     element_map, flat_tables = flatten_psi_tables(tables, entity_type)
@@ -41,7 +42,6 @@ def create_psi_tables(tables, eliminate_zeros, entity_type):
     # Reduce tables such that we only have those tables left with unique values
     # Create a name map for those tables that are redundant.
     name_map, unique_tables = unique_psi_tables(flat_tables, eliminate_zeros)
-
     debug("\nQG-utils, psi_tables, unique_tables:\n" + str(unique_tables))
     debug("\nQG-utils, psi_tables, name_map:\n" + str(name_map))
 
@@ -291,7 +291,7 @@ def unique_tables(tables):
             continue
         val0 = numpy.array(tables[name0])
 
-        for j in range(i+1, len(names)):
+        for j in range(i + 1, len(names)):
             name1 = names[j]
             if name1 in mapped:
                 continue
@@ -300,7 +300,7 @@ def unique_tables(tables):
             # Check if dimensions match.
             if numpy.shape(val0) == numpy.shape(val1):
                 # Check if values are the same.
-                if abs(val0 - val1).max() < format_epsilon:
+                if len(val0) > 0 and abs(val0 - val1).max() < format_epsilon:
                     mapped.append(name1)
                     del tables[name1]
                     if name0 in name_map:
@@ -342,6 +342,7 @@ def create_permutations(expr):
     # This is probably not used.
     if len(expr) == 0:
         return expr
+
     # Format keys and values to lists and tuples.
     if len(expr) == 1:
         new = {}
@@ -355,6 +356,7 @@ def create_permutations(expr):
             new[key] = val
 
         return new
+
     # Create permutations of two lists.
     # TODO: there could be a cleverer way of changing types of keys and vals.
     if len(expr) == 2:

@@ -971,6 +971,7 @@ class QuadratureTransformerBase(Transformer):
 
     def _create_mapping_basis(self, component, deriv, avg, ufl_argument, ffc_element):
         "Create basis name and mapping from given basis_info."
+
         # Get string for integration points.
         f_ip = "0" if (avg or self.points == 1) else format["integration points"]
         generate_psi_name = format["psi name"]
@@ -1005,7 +1006,14 @@ class QuadratureTransformerBase(Transformer):
         # Get current cell entity, with current restriction considered
         entity = self._get_current_entity()
 
+
+
         name = generate_psi_name(element_counter, self.entity_type, entity, component, deriv, avg)
+
+        print
+        print "name =", name
+        print "name_map =", self.name_map
+
         name, non_zeros, zeros, ones = self.name_map[name]
         loop_index_range = shape(self.unique_tables[name])[1]
 

@@ -23,7 +23,7 @@
 # First added:  2009-01-07
 # Last changed: 2014-03-05
 
-import numpy
+import numpy, itertools
 
 # UFL modules
 from ufl.classes import Form, Integral, Grad
@@ -247,11 +247,31 @@ def _map_entity_points(cellname, tdim, points, entity_dim, entity):
     elif entity_dim == 0:
         return (reference_cell_vertices(cellname)[entity],)
 
+def _tabulate_empty_psi_table(tdim, deriv_order):
+    "Tabulate psi table when there are no points"
+
+    # All combinations of partial derivatives up to given order
+    gdim = tdim # hack, consider passing gdim variable here
+    derivs = [d for d in itertools.product(*(gdim*[range(0, deriv_order + 1)]))]
+    derivs = [d for d in derivs if sum(d) <= deriv_order]
+
+    # Return empty table
+    table = {}
+    for d in derivs:
+        table[d] = [[]]
+
+    return {None: table}
+
 def _tabulate_psi_table(domain_type, cellname, tdim, element, deriv_order, points):
     "Tabulate psi table for different integral types."
     # MSA: I attempted to generalize this function, could this way of
     # handling domain types generically extend to other parts of the code?
-    if len(points) == 0: return {None: {(0, 0): numpy.array([[], [], []])}}
+
+    # Handle case when list of points is empty
+    if len(points) == 0:
+        return _tabulate_empty_psi_table(tdim, deriv_order)
+
+    # Otherwise, call FIAT to tabulate
     entity_dim = domain_to_entity_dim(domain_type, tdim)
     num_entities = cellname_to_num_entities[cellname][entity_dim]
     psi_table = {}
@@ -260,6 +280,7 @@ def _tabulate_psi_table(domain_type, cellname, tdim, element, deriv_order, point
         # TODO: Use 0 as key for cell and we may be able to generalize other places:
         key = None if domain_type == "cell" else entity
         psi_table[key] = element.tabulate(deriv_order, entity_points)
+
     return psi_table
 
 def _tabulate_entities(domain_type, cellname, tdim):
@@ -356,7 +377,7 @@ def _tabulate_basis(sorted_integrals, form_data, itg_data):
         for i, element in enumerate(fiat_elements):
             # Tabulate table of basis functions and derivatives in points
             psi_table = _tabulate_psi_table(domain_type, cellname, tdim, element,
-                                        num_derivatives[ufl_elements[i]], points)
+                                            num_derivatives[ufl_elements[i]], points)
 
             # Insert table into dictionary based on UFL elements. (None=not averaged)
             psi_tables[len_weights][ufl_elements[i]] = {None: psi_table}
