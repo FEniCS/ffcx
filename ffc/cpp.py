@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-12-16
-# Last changed: 2013-01-25
+# Last changed: 2014-03-05
 
 # Python modules
 import re, numpy, platform
@@ -528,7 +528,7 @@ def _matrix_index(i, j, range_j):
         access = format["add"]([irj, j])
     return access
 
-def _generate_psi_name(counter, entitytype, entity, component, derivatives, avg):
+def _generate_psi_name(counter, entity_type, entity, component, derivatives, avg):
     """Generate a name for the psi table of the form:
     FE#_f#_v#_C#_D###_A#, where '#' will be an integer value.
 
@@ -549,9 +549,9 @@ def _generate_psi_name(counter, entitytype, entity, component, derivatives, avg)
 
     name = "FE%d" % counter
 
-    if entitytype == "facet":
+    if entity_type == "facet":
         name += "_f%d" % entity
-    elif entitytype == "vertex":
+    elif entity_type == "vertex":
         name += "_v%d" % entity
 
     if component != () and component != []:

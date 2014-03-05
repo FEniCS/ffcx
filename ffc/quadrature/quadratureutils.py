@@ -18,7 +18,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2007-03-16
-# Last changed: 2010-05-18
+# Last changed: 2014-03-05
 
 # Hacked by Marie E. Rognes, 2013.
 
@@ -29,13 +29,13 @@ import numpy
 from ffc.log import debug, error, ffc_assert
 from ffc.cpp import format
 
-def create_psi_tables(tables, eliminate_zeros, entitytype):
+def create_psi_tables(tables, eliminate_zeros, entity_type):
     "Create names and maps for tables and non-zero entries if appropriate."
 
     debug("\nQG-utils, psi_tables:\n" + str(tables))
     # Create element map {points:{element:number,},}
     # and a plain dictionary {name:values,}.
-    element_map, flat_tables = flatten_psi_tables(tables, entitytype)
+    element_map, flat_tables = flatten_psi_tables(tables, entity_type)
     debug("\nQG-utils, psi_tables, flat_tables:\n" + str(flat_tables))
 
     # Reduce tables such that we only have those tables left with unique values
@@ -47,7 +47,7 @@ def create_psi_tables(tables, eliminate_zeros, entitytype):
 
     return (element_map, name_map, unique_tables)
 
-def flatten_psi_tables(tables, entitytype):
+def flatten_psi_tables(tables, entity_type):
     """Create a 'flat' dictionary of tables with unique names and a name
     map that maps number of quadrature points and element name to a unique
     element number.
@@ -106,7 +106,7 @@ def flatten_psi_tables(tables, entitytype):
                         # Iterate over the innermost tables for each scalar component
                         for component, psi_table in component_tables:
                             # Generate the table name.
-                            name = generate_psi_name(counter, entitytype, entity, component, derivs, avg)
+                            name = generate_psi_name(counter, entity_type, entity, component, derivs, avg)
 
                             # Verify shape of basis (can be omitted for speed if needed).
                             ffc_assert(len(numpy.shape(psi_table)) == 2 and numpy.shape(psi_table)[0] == num_points,

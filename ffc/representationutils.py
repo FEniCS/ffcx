@@ -22,7 +22,7 @@ quadrature and tensor representation."""
 # Modified by Anders Logg 2014
 #
 # First added:  2013-01-08
-# Last changed: 2014-03-04
+# Last changed: 2014-03-05
 
 from ufl.measure import domain_type_to_measure_name
 
@@ -105,11 +105,12 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
     """Initialize a representation dict with common information that is
     expected independently of which representation is chosen."""
 
-    # Recognized domain types
-    entity_types = {"cell": "cell",
+    # Mapping from recognized domain types to entity types
+    entity_types = {"cell":           "cell",
                     "exterior_facet": "facet",
                     "interior_facet": "facet",
-                    "point": "vertex"}
+                    "point":          "vertex",
+                    "quadrature":     "cell"}
 
     # Check and extract entity type
     domain_type = itg_data.domain_type
@@ -124,17 +125,17 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
     assert all(tdim == itg.domain().topological_dimension() for itg in itg_data.integrals)
 
     # Initialize integral intermediate representation
-    return {"representation":       representation,
-            "domain_type":          itg_data.domain_type,
-            "domain_id":            itg_data.domain_id,
-            "form_id":              form_id,
-            "rank":                 form_data.rank,
-            "geometric_dimension":  form_data.geometric_dimension,
+    return {"representation":        representation,
+            "domain_type":           itg_data.domain_type,
+            "domain_id":             itg_data.domain_id,
+            "form_id":               form_id,
+            "rank":                  form_data.rank,
+            "geometric_dimension":   form_data.geometric_dimension,
             "topological_dimension": tdim,
-            "entitytype":           entitytype,
-            "num_facets":           cellname_to_num_entities[cellname][-2],
-            "num_vertices":         cellname_to_num_entities[cellname][0],
-            "needs_oriented":       needs_oriented_jacobian(form_data)}
+            "entity_type":           entity_type,
+            "num_facets":            cellname_to_num_entities[cellname][-2],
+            "num_vertices":          cellname_to_num_entities[cellname][0],
+            "needs_oriented":        needs_oriented_jacobian(form_data)}
 
 def initialize_integral_code(ir, prefix, parameters):
     "Representation independent default initialization of code dict for integral from intermediate representation."
