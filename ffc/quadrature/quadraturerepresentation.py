@@ -251,6 +251,7 @@ def _tabulate_psi_table(domain_type, cellname, tdim, element, deriv_order, point
     "Tabulate psi table for different integral types."
     # MSA: I attempted to generalize this function, could this way of
     # handling domain types generically extend to other parts of the code?
+    if len(points) == 0: return {None: {(0, 0): numpy.array([[], [], []])}}
     entity_dim = domain_to_entity_dim(domain_type, tdim)
     num_entities = cellname_to_num_entities[cellname][entity_dim]
     psi_table = {}
@@ -358,7 +359,7 @@ def _tabulate_basis(sorted_integrals, form_data, itg_data):
                                         num_derivatives[ufl_elements[i]], points)
 
             # Insert table into dictionary based on UFL elements. (None=not averaged)
-            psi_tables[len_weights][ufl_elements[i]] = { None: psi_table }
+            psi_tables[len_weights][ufl_elements[i]] = {None: psi_table}
 
     # Loop over elements found in CellAvg and tabulate basis averages
     len_weights = 1

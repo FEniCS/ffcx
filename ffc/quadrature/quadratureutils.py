@@ -323,7 +323,7 @@ def get_ones(tables):
     names = []
     for name in tables:
         vals = tables[name]
-        if abs(vals - numpy.ones(numpy.shape(vals))).max() < f_epsilon:
+        if len(vals) > 0 and abs(vals - numpy.ones(numpy.shape(vals))).max() < f_epsilon:
             names.append(name)
     return names
 
@@ -333,7 +333,7 @@ def contains_zeros(tables):
     names = []
     for name in tables:
         vals = tables[name]
-        if abs(vals).max() < f_epsilon:
+        if len(vals) > 0 and abs(vals).max() < f_epsilon:
             names.append(name)
     return names
 
