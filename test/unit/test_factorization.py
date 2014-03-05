@@ -10,7 +10,14 @@ from uflacs.analysis.factorization import compute_argument_factorization
 
 def compare_compute_argument_factorization(SV, dependencies, expected_AV, expected_FV, expected_IM):
     target_variables = [len(SV)-1]
-    AV, FV, IM = compute_argument_factorization(SV, target_variables, dependencies)
+
+    argument_factorization, modified_arguments, V, target_variables, dependencies = \
+        compute_argument_factorization(SV, target_variables, dependencies)
+
+    # TODO: Rename in tests
+    AV = modified_arguments
+    FV = V
+    IM = argument_factorization
 
     assert AV == expected_AV
     if 0:

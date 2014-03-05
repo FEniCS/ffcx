@@ -7,8 +7,9 @@ import ufl
 # are formatted, so no compounds etc. are included here.
 # Would be nice to format e.g. dot(u, v) -> u \cdot v.
 
-class LatexFormatterErrorRules(object):
-    "Error rules catching groups of missing types by their superclasses."
+class LatexFormattingRules(object):
+
+    # === Error rules catching groups of missing types by their superclasses ===
 
     # Generic fallback error messages for missing rules:
     def expr(self, o):
@@ -16,6 +17,9 @@ class LatexFormatterErrorRules(object):
 
     def terminal(self, o):
         error("Missing LaTeX formatting rule for terminal type %s." % o._uflclass)
+
+    def constant_value(self, o, component=(), derivatives=(), restriction=None):
+        error("Missing LaTeX rule for constant value type %s." % o._uflclass)
 
     def geometric_quantity(self, o, component=(), derivatives=()):
         error("Missing LaTeX formatting rule for geometric quantity type %s." % o._uflclass)
@@ -33,12 +37,7 @@ class LatexFormatterErrorRules(object):
     derivative = invalid_request
     restricted = invalid_request
 
-
-class LatexLiteralFormatterRules(object):
-    "Formatting rules for literal constants."
-
-    def constant_value(self, o, component=(), derivatives=(), restriction=None):
-        error("Missing LaTeX rule for constant value type %s." % o._uflclass)
+    # === Formatting rules for literal constants ===
 
     def zero(self, o, component=(), derivatives=(), restriction=None):
         return "0" if not o.shape() else r"{\mathbf 0}"
@@ -64,8 +63,9 @@ class LatexLiteralFormatterRules(object):
     def permutation_symbol(self, o):
         return r"{\mathbf \varepsilon}"
 
+    # === Formatting rules for geometric quantities ===
 
-class LatexGeometryFormatterRules(object): # TODO: Add all geometric quantities here, use restriction
+    # TODO: Add all geometric quantities here, use restriction
 
     def spatial_coordinate(self, o, component=(), derivatives=(), restriction=None):
         if component:
@@ -101,19 +101,23 @@ class LatexGeometryFormatterRules(object): # TODO: Add all geometric quantities 
         else:
             return r"K_{\text{rad}}"
 
-
-class LatexFormArgumentFormatterRules(object):
+    # === Formatting rules for functions ===
 
     def coefficient(self, o, component=(), derivatives=(), restriction=None):
         common_name = "w"
-        c = o.count() # TODO: Use coefficient mapping
+        c = o.count()
+
         uflacs_assert(c >= 0, "Expecting positive count, have you preprocessed the expression?")
-        # TODO: Use restriction
+
         name = r"\overset{%d}{%s}" % (c, common_name)
+
+        # TODO: Use restriction
+
         if component:
             cstr = ' '.join('%d' % d for d in component)
         else:
             cstr = ''
+
         if derivatives:
             dstr = ' '.join('%d' % d for d in derivatives)
             return "%s_{%s, %s}" % (name, cstr, dstr)
@@ -125,12 +129,16 @@ class LatexFormArgumentFormatterRules(object):
     def argument(self, o, component=(), derivatives=(), restriction=None):
         common_name = "v"
         c = o.number()
-        # TODO: Use restriction
+
         name = r"\overset{%d}{%s}" % (c, common_name)
+
+        # TODO: Use restriction
+
         if component:
             cstr = ' '.join('%d' % d for d in component)
         else:
             cstr = ''
+
         if derivatives:
             dstr = ' '.join('%d' % d for d in derivatives)
             return "%s_{%s, %s}" % (name, cstr, dstr)
@@ -139,9 +147,7 @@ class LatexFormArgumentFormatterRules(object):
         else:
             return "%s_{%s}" % (name, cstr)
 
-
-class LatexArithmeticFormatterRules(object):
-    "Formatting rules for arithmetic operations."
+    # === Formatting rules for arithmetic operations ===
 
     def sum(self, o, *ops):
         return " + ".join(ops)
@@ -152,9 +158,7 @@ class LatexArithmeticFormatterRules(object):
     def division(self, o, a, b):
         return r"\frac{%s}{%s}" % (a, b)
 
-
-class LatexCmathFormatterRules(object):
-    "Formatting rules for <cmath> functions."
+    # === Formatting rules for cmath functions ===
 
     def power(self, o, a, b):
         return "{%s}^{%s}" % (a, b)
@@ -198,11 +202,11 @@ class LatexCmathFormatterRules(object):
     def atan(self, o, op):
         return r"\arctan(%s)" % (op,)
 
+    # === Formatting rules for bessel functions ===
+
     # TODO: Bessel functions, erf
 
-
-class LatexConditionalFormatterRules(object):
-    "Formatting rules for conditional expressions."
+    # === Formatting rules for conditional expressions ===
 
     def conditional(self, o, c, t, f):
         return r"\left{{%s} \text{if} {%s} \text{else} {%s}\right}" % (t, c, f)
@@ -234,8 +238,8 @@ class LatexConditionalFormatterRules(object):
     def not_condition(self, o, a):
         return r" \lnot %s" % (a,)
 
+    # === Formatting rules for restrictions ===
 
-class LatexRestrictionFormatterRules(object):
     def positive_restricted(self, o, a):
         return r"%s^{[+]}" % (a,) # TODO
 
@@ -243,23 +247,11 @@ class LatexRestrictionFormatterRules(object):
         return r"%s^{[-]}" % (a,) # TODO
 
 
-class LatexFormatterRulesCollection(LatexFormatterErrorRules,
-                                    LatexLiteralFormatterRules,
-                                    LatexGeometryFormatterRules,
-                                    LatexFormArgumentFormatterRules,
-                                    LatexArithmeticFormatterRules,
-                                    LatexCmathFormatterRules,
-                                    LatexConditionalFormatterRules,
-                                    LatexRestrictionFormatterRules):
-    """LaTeX formatting rules collection."""
-    def __init__(self):
-        pass
-
-
 from ufl.algorithms.transformations import MultiFunction
-class LatexFormatter(MultiFunction, LatexFormatterRulesCollection):
+class LatexFormatter(MultiFunction, LatexFormattingRules):
     """Default LaTeX formatter class.
 
     Customize by copying this and overriding rules."""
     def __init__(self):
         MultiFunction.__init__(self)
+

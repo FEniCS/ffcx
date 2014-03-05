@@ -6,18 +6,18 @@ from ufl.algorithms import MultiFunction
 from uflacs.utils.log import uflacs_assert, warning, error
 
 # TODO: The organization of code utilities is a bit messy...
-from uflacs.codeutils.cpp_format import CppFormatterRulesCollection
+from uflacs.codeutils.cpp_format import CppFormattingRules
 from uflacs.geometry.default_names import names
 from uflacs.backends.ffc.ffc_statement_formatter import langfmt
 from uflacs.backends.ffc.ffc_statement_formatter import (format_element_table_access, format_entity_name)
 from uflacs.elementtables.table_utils import derivative_listing_to_counts, flatten_component
 
 
-class FFCLanguageFormatter(MultiFunction, CppFormatterRulesCollection):
+class FFCLanguageFormatter(MultiFunction, CppFormattingRules):
     """FFC specific cpp formatter class."""
     def __init__(self, dependency_handler, ir):
         MultiFunction.__init__(self)
-        CppFormatterRulesCollection.__init__(self)
+        CppFormattingRules.__init__(self)
 
         # An object used to track who depends on what
         self._dependency_handler = dependency_handler

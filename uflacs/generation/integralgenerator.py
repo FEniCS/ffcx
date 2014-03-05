@@ -1,12 +1,17 @@
 
-
 from ufl.common import product
+
 from uflacs.utils.log import debug, info, warning, error, uflacs_assert
-from uflacs.codeutils.format_code_structure import format_code_structure, Indented, Block, ForRange, ArrayDecl
+from uflacs.codeutils.format_code_structure import format_code_structure, Indented, Block, ForRange, ArrayDecl, ArrayAccess, Comment, Assign, AssignAdd
+
+from uflacs.analysis.modified_terminals import analyse_modified_terminal2
 from uflacs.geometry.default_names import names
 from uflacs.codeutils.indexmapping import IndexMapping, AxisMapping
-from uflacs.codeutils.languageformatter import CppStatementFormatterRules
-langfmt = CppStatementFormatterRules()
+
+from uflacs.codeutils.cpp_statement_formatting_rules import CppStatementFormattingRules
+langfmt = CppStatementFormattingRules() # TODO: Only used for precision_float now, get rid of this.
+
+from uflacs.codeutils.expr_formatter2 import ExprFormatter2
 
 """ # FFC language formatter includes, some may be useful:
 from ufl.common import component_to_index
@@ -16,9 +21,6 @@ from ufl.algorithms import MultiFunction
 from uflacs.utils.log import uflacs_assert, warning, error
 
 # TODO: The organization of code utilities is a bit messy...
-from uflacs.codeutils.cpp_format import CppFormatterRulesCollection
-from uflacs.geometry.default_names import names
-from uflacs.backends.ffc.ffc_statement_formatter import langfmt
 from uflacs.backends.ffc.ffc_statement_formatter import (format_element_table_access, format_entity_name)
 from uflacs.elementtables.table_utils import derivative_listing_to_counts, flatten_component
 """
@@ -56,7 +58,7 @@ Post quadrature:
 """
 
 class IntegralGenerator(object):
-    def __init__(self, ir):
+    def __init__(self, ir, language_formatter):
         # Store ir
         self.ir = ir
 
@@ -80,9 +82,7 @@ class IntegralGenerator(object):
 
         # This is a transformer that collects terminal modifiers
         # and delegates formatting to the language_formatter
-        # FIXME: Refactoring in process, language_formatter?
-        language_formatter = FFCLanguageFormatter(None, ir) # FIXME: This design makes my head spin
-        self.expr_formatter = ExprFormatter(language_formatter, {})
+        self.expr_formatter = ExprFormatter2(language_formatter, {})
 
     def generate_using_statements(self):
         return ["using %s;" % name for name in sorted(self._using_names)]
@@ -124,12 +124,11 @@ class IntegralGenerator(object):
             wname = "%s%d" % (names.weights, num_points)
             pname = "%s%d" % (names.points, num_points)
 
-            # TODO: Improve langfmt.array_decl to handle the {} wrappers here
-            weights = "{ %s }" % langfmt.precision_floats(weights)
-            points = "{ %s }" % langfmt.precision_floats(x for p in points for x in p)
+            weights = [langfmt.precision_float(w) for w in weights]
+            points = [langfmt.precision_float(x) for p in points for x in p]
 
-            parts += [langfmt.array_decl("static const double", wname, num_points, weights)]
-            parts += [langfmt.array_decl("static const double", pname, num_points*pdim, points)]
+            parts += [ArrayDecl("static const double", wname, num_points, weights)]
+            parts += [ArrayDecl("static const double", pname, num_points*pdim, points)]
             parts += [""]
 
         return parts
@@ -137,16 +136,15 @@ class IntegralGenerator(object):
     def generate_element_tables(self):
         "Generate static tables with precomputed element basis function values in quadrature points."
         parts = []
-        parts += [langfmt.comment("Section for precomputed element basis function values")]
+        parts += [Comment("Section for precomputed element basis function values")]
         expr_irs = self.ir["uflacs"]["expr_ir"]
         for num_points in sorted(expr_irs):
             tables = expr_irs[num_points]["unique_tables"]
             comment = "Definitions of {0} tables for {0} quadrature points".format(len(tables), num_points)
-            parts += [langfmt.comment(comment)]
+            parts += [Comment(comment)]
             for name in sorted(tables):
                 table = tables[name]
                 if product(table.shape) > 0:
-                    # TODO: Move to langfmt:
                     parts += [ArrayDecl("static const double", name, table.shape, table)]
         return parts
 
@@ -156,14 +154,13 @@ class IntegralGenerator(object):
         # Compute tensor size
         A_size = product(self._A_shape)
 
-        # TODO: Move to langfmt:
+        # TODO: Make this an ast primitive?
         def memzero(ptrname, size):
             return "memset({ptrname}, 0, {size} * sizeof(*{ptrname}));".format(ptrname=ptrname, size=size)
 
         parts = []
-        parts += [langfmt.comment("Reset element tensor")]
+        parts += [Comment("Reset element tensor")]
         parts += [memzero(names.A, A_size)]
-        #parts += [langfmt.memzero(names.A, A_size)]
         parts += [""]
         return parts
 
@@ -238,21 +235,20 @@ class IntegralGenerator(object):
 
                 v = V[i]
 
-                vname = langfmt.array_access(name, j)
+                # TODO: Use expression formatting? String expected in expr_formatter.variables below!
+                vname = "{0}[{1}]".format(name, j)
                 vcode = self.expr_formatter.visit(v)
 
                 self.expr_formatter.variables[v] = vname
                 #self.variables[i] = vname # TODO: Store vname with V index?
 
-                assignment = langfmt.assign(vname, vcode)
-                assignments += [assignment]
+                assignments += [Assign(vname, vcode)]
                 j += 1
 
         parts = []
         if j > 0:
             # Declare array large enough to hold all subexpressions we've emitted
-            parts += [langfmt.array_decl("double", name, j)]
-            parts += [decl]
+            parts += [ArrayDecl("double", name, j)]
             parts += assignments
         return parts
 
@@ -319,16 +315,17 @@ class IntegralGenerator(object):
             argfactors = []
             for i,ma in enumerate(args):
                 uname = MATR[ma][0]
-                mt = analyze_modified_terminals2(MA[ma])
+                mt = analyse_modified_terminal2(MA[ma])
+
                 entity = format_entity_name(self.ir["entitytype"], mt.restriction)
                 iq = names.iq
-                dof = "{0}-{1}".format(idofs[i], dofblock[i][0]) # TODO
-                access = langfmt.array_access(uname, entity, iq, dof)
-                argfactors.append(access)
+                dof = "{0}-{1}".format(idofs[i], dofblock[i][0]) # TODO: Use proper expression formatting
+
+                argfactors += [ArrayAccess(uname, (entity, iq, dof))]
             factors.extend(argfactors)
 
             # TODO: Use proper expression formatting
-            expr = " * ".join(factors)
+            expr = " * ".join(format_code_structure(fac) for fac in factors)
 
             # Format index access to A
             if idofs:
@@ -337,12 +334,11 @@ class IntegralGenerator(object):
                 am = AxisMapping(im, [idofs])
                 A_ii, = am.format_index_expressions()
             else:
-                A_ii = "0"
-            A_access = langfmt.array_access(names.A, A_ii)
+                A_ii = 0
+            A_access = ArrayAccess(names.A, A_ii)
 
             # Emit assignment
-            assign = langfmt.iadd(A_access, expr)
-            parts += [assign]
+            parts += [AssignAdd(A_access, expr)]
 
         return parts
 

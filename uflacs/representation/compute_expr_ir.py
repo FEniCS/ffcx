@@ -1,7 +1,8 @@
 
-import numpy
 from uflacs.utils.tictoc import TicToc
-from uflacs.utils.log import error, uflacs_assert
+from uflacs.utils.str_utils import format_sequence, format_enumerated_sequence, format_mapping
+
+from uflacs.analysis.modified_terminals import is_modified_terminal
 
 from uflacs.analysis.graph import build_graph
 from uflacs.analysis.graph_vertices import build_scalar_graph_vertices
@@ -14,65 +15,42 @@ from uflacs.analysis.graph_ssa import (mark_partitions,
                                        default_cache_score_policy,
                                        compute_cache_scores,
                                        allocate_registers)
-from uflacs.analysis.factorization import compute_argument_factorization, rebuild_scalar_graph_from_factorization
-from uflacs.analysis.modified_terminals import is_modified_terminal
-from uflacs.codeutils.expr_formatter import ExprFormatter
-from uflacs.codeutils.element_tensor_formatter import build_loops
-from uflacs.codeutils.format_lines import format_assignments, format_scaled_additions
 
-from uflacs.generation.partitions import build_partition_labels
+from uflacs.analysis.factorization import compute_argument_factorization
 
 
-# TODO: Move to utils:
-def format_sequence(sequence):
-    return '\n'.join("{0}".format(v) for v in sequence)
-def format_enumerated_sequence(sequence):
-    return '\n'.join("{0}: {1}".format(i, v) for i,v in enumerate(sequence))
-def format_mapping(mapping):
-    return '\n'.join("{0}: {1}".format(k, v) for k,v in mapping.items())
-
-
-# FFC compiler calls:
-# 1) compile_expression_partitions
-# 2) generate_code_from_ssa
-# 3) generate_expression_body
-
-
-# TODO: Refactoring and cleanup of the algorithms hidden behind this clean interface
-# TODO: Clean up graph building: remove modified_terminals returnee from there, can build that elsewhere
 def build_scalar_graph(expressions):
+    """Build list representation of expression graph covering the given expressions.
+
+    TODO: Renaming, refactoring and cleanup of the graph building algorithms used in here
+    """
+
     # Build the initial coarse computational graph of the expression
     G = build_graph(expressions)
 
     assert len(expressions) == 1, "Multiple expressions in graph building needs more work from this point on."
 
     # Build more fine grained computational graph of scalar subexpressions
-    unused_e2i, NV, unused_W, modified_terminals, nvs = rebuild_scalar_e2i(G, DEBUG=False)
-
     # Target expression is NV[nvs[:]].
     # TODO: Make it so that expressions[k] <-> NV[nvs[k][:]], len(nvs[k]) == value_size(expressions[k])
+    NV, nvs = rebuild_scalar_e2i(G, DEBUG=False)
 
-    # Get scalar target expressions
+    # Get scalar target expressions, turns out we'll actually throw away the rest of NV and nvs!
     scalar_expressions = [NV[s] for s in nvs]
 
-    # Straigthen out V to represent single operations
+    # Build new list representation of graph where all vertices of V represent single scalar operations
     e2i, V, target_variables = build_scalar_graph_vertices(scalar_expressions)
 
-    return e2i, V, target_variables, modified_terminals
+    return e2i, V, target_variables
 
 
 def compute_expr_ir(expressions, parameters):
     """FIXME: Refactoring in progress!
 
     TODO: assuming more symbolic preprocessing
-    - Make caller apply grad->localgrad+jacobianinverse
-    - Make caller apply coefficient mapping
-    - Make caller apply piola mappings
+    - Make caller apply pullback mappings for vector element functions
 
     TODO:
-    - Build modified_argument_blocks
-    - Use new ir information in code generation
-
     Work for later:
     - Apply some suitable renumbering of vertices and corresponding arrays prior to returning
     - Allocate separate registers for each partition
@@ -94,7 +72,7 @@ def compute_expr_ir(expressions, parameters):
 
     # Build scalar list-based graph representation
     tt.step('build_scalar_graph')
-    e2i, V, target_variables, modified_terminals = build_scalar_graph(expressions)
+    e2i, V, target_variables = build_scalar_graph(expressions)
 
 
     # Compute sparse dependency matrix
@@ -167,13 +145,15 @@ def compute_expr_ir(expressions, parameters):
     expr_ir["modified_arguments"] = modified_arguments
     expr_ir["argument_factorization"] = argument_factorization
 
-    # Metadata and dependency information:
-    expr_ir["active"] = active
+    # Dependency structure of graph:
+    expr_ir["modified_terminal_indices"] = modified_terminal_indices
     expr_ir["dependencies"] = dependencies
     expr_ir["inverse_dependencies"] = inverse_dependencies
-    expr_ir["modified_terminal_indices"] = modified_terminal_indices
-    expr_ir["varying"] = varying
+
+    # Metadata about each vertex
+    expr_ir["active"] = active
     expr_ir["piecewise"] = piecewise
+    expr_ir["varying"] = varying
 
     return expr_ir
 

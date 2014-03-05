@@ -23,6 +23,7 @@ packages = [
     "uflacs.analysis",
     "uflacs.elementtables",
     "uflacs.generation",
+    "uflacs.representation",
     "uflacs.backends",
     "uflacs.backends.toy",
     "uflacs.backends.latex",

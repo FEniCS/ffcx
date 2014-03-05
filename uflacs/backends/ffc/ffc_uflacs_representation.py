@@ -4,7 +4,7 @@ from ufl.algorithms import replace, change_to_local_grad
 from uflacs.utils.log import uflacs_assert
 from uflacs.params import default_parameters
 from uflacs.analysis.modified_terminals import analyse_modified_terminal2
-from uflacs.generation.compiler import compute_expr_ir
+from uflacs.representation.compute_expr_ir import compute_expr_ir
 from uflacs.elementtables.terminaltables import build_element_tables, optimize_element_tables
 
 def compute_tabulate_tensor_ir(psi_tables, entitytype,

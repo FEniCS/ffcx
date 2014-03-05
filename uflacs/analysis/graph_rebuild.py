@@ -225,9 +225,11 @@ def rebuild_scalar_e2i(G, DEBUG=False):
     - G.total_unique_symbols
 
     Output:
-    - ne2i - Mapping from scalar subexpressions to a contiguous unique index
     - NV   - Array with reverse mapping from index to expression
     - nvs  - Tuple of ne2i indices corresponding to the last vertex of G.V
+
+    Old output now no longer returned but possible to restore if needed:
+    - ne2i - Mapping from scalar subexpressions to a contiguous unique index
     - W    - Array with reconstructed scalar subexpressions for each original symbol
     - terminals - Set of modified terminal expressions (terminals possibly wrapped
                   in grad, restriction and indexed)
@@ -336,11 +338,14 @@ def rebuild_scalar_e2i(G, DEBUG=False):
                   "Expecting that all symbols in vs are handled at this point.")
     nvs = [ne2i[W[s]] for s in vs]
 
-    return ne2i, NV, W, terminals, nvs # FIXME: Which returnees do we need?
+    # TODO: Make it so that expressions[k] <-> NV[nvs[k][:]], len(nvs[k]) == value_size(expressions[k])
+
+    return NV, nvs
 
 def rebuild_expression_from_graph(G, DEBUG=False):
     "This is currently only used by tests."
-    ne2i, NV, W, terminals, nvs = rebuild_scalar_e2i(G, DEBUG=DEBUG)
+    NV, nvs = rebuild_scalar_e2i(G, DEBUG=DEBUG)
+ 
     # Find expressions of final v
     w = [NV[k] for k in nvs]
     if len(w) == 1:

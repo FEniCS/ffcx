@@ -1,13 +1,15 @@
 
+
+# FIXME: This file probably needs a massive rewrite.
+
+
 from ufl.classes import Terminal, Indexed, Grad
 
 from uflacs.codeutils.expr_formatter import ExprFormatter
 from uflacs.codeutils.format_code_structure import (format_code_structure,
                                                     Block, Indented, Namespace, Class)
-from uflacs.codeutils.element_tensor_formatter import build_loops
-from uflacs.codeutils.format_lines import format_assignments, format_additions
 
-from uflacs.generation.compiler import compile_expression_partitions
+from uflacs.representation.compute_expr_ir import compute_expr_ir 
 from uflacs.generation.generate import generate_expression_code
 
 from uflacs.backends.dolfin.expression import format_dolfin_expression
@@ -24,7 +26,7 @@ def compile_dolfin_expression_body(expr, parameters, object_names=None):
         object_names = {}
 
     # Compile expression into intermediate representation (partitions in ssa form)
-    partitions_ir = compile_expression_partitions(expr, form_argument_mapping, parameters)
+    partitions_ir = compute_expr_ir(expr, parameters)
 
     # Compile eval function body with generic compiler routine
     code, coefficient_names = generate_expression_code(partitions_ir, form_argument_mapping, object_names,

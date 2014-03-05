@@ -6,12 +6,12 @@ from ufl.algorithms import MultiFunction
 
 from uflacs.utils.log import uflacs_assert
 
-from uflacs.codeutils.cpp_format import CppFormatterRulesCollection
+from uflacs.codeutils.cpp_format import CppFormattingRules
 
-class DolfinExpressionLanguageFormatter(MultiFunction, CppFormatterRulesCollection):
+class DolfinExpressionLanguageFormatter(MultiFunction, CppFormattingRules):
     def __init__(self, dependency_handler, ir):
         MultiFunction.__init__(self)
-        CppFormatterRulesCollection.__init__(self)
+        CppFormattingRules.__init__(self)
 
         # An object used to track who depends on what
         self._dependency_handler = dependency_handler

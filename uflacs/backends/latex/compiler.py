@@ -3,7 +3,7 @@ from ufl.classes import Terminal, Indexed, Grad
 from ufl.algorithms import Graph, expand_indices, strip_variables
 from uflacs.codeutils.format_code_structure import format_code_structure
 from uflacs.codeutils.expr_formatter import ExprFormatter
-from uflacs.codeutils.latex_format import LatexFormatterRules
+from uflacs.codeutils.latex_formatting_rules import LatexFormatter
 
 latex_document_header = r"""
 \documentclass[a4paper]{article}
@@ -44,7 +44,7 @@ def compile_form(form, prefix):
 
     # This formatter is a multifunction with single operator
     # formatting rules for generic C++ formatting
-    latex_formatter = LatexFormatterRules()
+    latex_formatter = LatexFormatter()
 
     # This final formatter implements a generic framework handling indices etc etc.
     code_formatter = ExprFormatter(latex_formatter, variables)

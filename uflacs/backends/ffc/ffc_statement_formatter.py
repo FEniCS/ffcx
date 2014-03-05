@@ -24,8 +24,8 @@ from uflacs.geometry.generate_geometry_snippets import (
 
 from uflacs.elementtables.table_utils import generate_psi_table_name, derivative_listing_to_counts
 
-from uflacs.codeutils.languageformatter import CppStatementFormatterRules
-langfmt = CppStatementFormatterRules()
+from uflacs.codeutils.cpp_statement_formatting_rules import CppStatementFormattingRules
+langfmt = CppStatementFormattingRules()
 
 def format_entity_name(entitytype, r):
     if entitytype == "cell":

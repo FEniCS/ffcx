@@ -1,0 +1,13 @@
+domain = Domain(triangle)
+
+V = FiniteElement("CG", domain, 1)
+
+x, y = SpatialCoordinate(domain)
+
+u = TrialFunction(V)
+v = TestFunction(V)
+f = Coefficient(V)
+c = Constant(domain)
+
+a = (f*u)*(c*v)*dx
+

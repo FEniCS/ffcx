@@ -24,3 +24,15 @@ def format_members(obj, prefix=''):
     it = sorted(vars(obj).iteritems(), key=lambda x: x[0])
     return "\n\n".join(fmt(k, v) for (k,v) in it)
 
+
+# TODO: These are basically the same as the above:
+
+def format_sequence(sequence):
+    return '\n'.join("{0}".format(v) for v in sequence)
+
+def format_enumerated_sequence(sequence):
+    return '\n'.join("{0}: {1}".format(i, v) for i,v in enumerate(sequence))
+
+def format_mapping(mapping):
+    return '\n'.join("{0}: {1}".format(k, v) for k,v in mapping.items())
+

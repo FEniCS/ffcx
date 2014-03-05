@@ -1,11 +1,9 @@
 
-from uflacs.utils.log import uflacs_assert, info, warning, error
-
 import ufl
 from ufl.algorithms.transformations import Transformer
 
+from uflacs.utils.log import uflacs_assert, info, warning, error
 from uflacs.codeutils.precedence import build_precedence_map
-
 
 class ExprFormatter(Transformer):
     """Language independent formatting class containing rules for
@@ -20,40 +18,47 @@ class ExprFormatter(Transformer):
         self.precedence = build_precedence_map()
         self.max_precedence = max(self.precedence.itervalues())
 
-    def expr(self, o):
-        # Check variable cache
-        v = self.variables.get(o)
+    def expr(self, e):
+        # Check variable cache first
+        v = self.variables.get(e)
         if v is not None:
             return v
 
+        # Handling of  operator precedence:
         # Visit children and wrap in () if necessary.
         # This could be improved by considering the
         # parsing order to avoid some (), but that
         # may be language dependent? (usually left-right).
         # Keeping it simple and safe for now at least.
         ops = []
-        for op in o.operands():
-            opc = self.visit(op)
-            # Skip () around variables
-            if not op in self.variables:
-                po = self.precedence[o._uflclass]
-                pop = self.precedence[op._uflclass]
+        for o in e.operands():
+            ocode = self.visit(o)
+
+            if o in self.variables:
+                # Skip () around variables
+                wrap = False
+            else:
                 # Ignore left-right rule and just add
                 # slightly more () than strictly necessary
-                if po < self.max_precedence and pop <= po:
-                    opc = '(' + opc + ')'
-            ops.append(opc)
+                pe = self.precedence[e._uflclass]
+                po = self.precedence[o._uflclass]
+                wrap = (pe < self.max_precedence and po <= pe)
+
+            if wrap:
+                ocode = '({0})'.format(ocode)
+            ops.append(ocode)
 
         # Delegate formatting
-        return self.language_formatter(o, *ops)
+        return self.language_formatter(e, *ops)
 
-    def terminal(self, o):
-        # Check variable cache
-        v = self.variables.get(o)
+    def terminal(self, e):
+        # Check variable cache first
+        v = self.variables.get(e)
         if v is not None:
             return v
+
         # Delegate formatting
-        return self.language_formatter(o)
+        return self.language_formatter(e)
 
     def multi_index(self, o):
         "Expecting expand_indices to have been applied, so all indices are fixed."
@@ -62,9 +67,6 @@ class ExprFormatter(Transformer):
     def indexed(self, o):
         """Gets value indices and passes on control to either
         grad_component or a target specific terminal formatter."""
-
-        # TODO: Test variables/component/derivatives combos more!
-
         # Use eventual given variable.
         # Note that we do not want to look for a variable for
         # A, but rather for the specific component of A.
@@ -149,3 +151,4 @@ class ExprFormatter(Transformer):
                       "Assuming restrictions have been propagated all the way to the terminals!")
 
         return self.language_formatter(A, component, derivatives, restriction)
+

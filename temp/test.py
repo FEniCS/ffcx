@@ -50,7 +50,7 @@ if case == 4:
 
 forms = [M, L, a]
 
-from uflacs.generation.compiler import *
+from uflacs.representation.compute_expr_ir import *
 
 for form in forms:
     print '/'*80

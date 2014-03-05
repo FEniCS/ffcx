@@ -11,7 +11,7 @@ from ufl.algorithms import preprocess_expression, expand_indices
 def expr2latex(expr, variables=None):
     "This is a test specific function for formatting ufl to LaTeX."
     from uflacs.codeutils.expr_formatter import ExprFormatter
-    from uflacs.codeutils.latex_format import LatexFormatter
+    from uflacs.codeutils.latex_formatting_rules import LatexFormatter
 
     # Preprocessing expression before applying formatting.
     # In a compiler, one should probably assume that these
