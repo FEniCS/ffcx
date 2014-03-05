@@ -330,7 +330,8 @@ void %(classname)s::tabulate_tensor(double* %(restrict)s A,
 quadrature_integral_combined = """\
 /// This class defines the interface for the tabulation of the cell
 /// tensor corresponding to the local contribution to a form from
-/// the integral over an unknown cell fragment with quadrature points given.
+/// the integral over an unknown cell fragment with quadrature
+/// points given.
 
 class %(classname)s: public ufc::quadrature_integral
 {%(members)s
@@ -365,7 +366,8 @@ public:
 quadrature_integral_header = """\
 /// This class defines the interface for the tabulation of the cell
 /// tensor corresponding to the local contribution to a form from
-/// the integral over an unknown cell fragment with quadrature points given.
+/// the integral over an unknown cell fragment with quadrature
+/// points given.
 
 class %(classname)s: public ufc::quadrature_integral
 {%(members)s

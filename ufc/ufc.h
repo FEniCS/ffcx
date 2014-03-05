@@ -364,7 +364,8 @@ namespace ufc
 
   /// This class defines the interface for the tabulation of the cell
   /// tensor corresponding to the local contribution to a form from
-  /// the integral over an unknown cell fragment with quadrature points given.
+  /// the integral over an unknown cell fragment with quadrature
+  /// points given.
 
   class quadrature_integral
   {
