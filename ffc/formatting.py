@@ -27,7 +27,7 @@ ufc_utils.
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2009-12-16
-# Last changed: 2014-02-20
+# Last changed: 2014-03-05
 
 # Python modules
 import os
@@ -74,21 +74,25 @@ def format_code(code, wrapper_code, prefix, parameters):
     # Generate code for integrals
     if code_integrals:
         for code_integral in code_integrals:
-            if "cell_integral" in code_integral["classname"]:
+            classname = code_integral["classname"]
+            # Note silly first test needed because of weak test
+            if "cell_integral" in classname and not "quadrature_cell_integral" in classname:
                 code_h += _format_h("cell_integral", code_integral, parameters)
                 code_c += _format_c("cell_integral", code_integral, parameters)
-            elif "exterior_facet_integral" in code_integral["classname"]:
+            elif "exterior_facet_integral" in classname:
                 code_h += _format_h("exterior_facet_integral", code_integral, parameters)
                 code_c += _format_c("exterior_facet_integral", code_integral, parameters)
-            elif "interior_facet_integral" in code_integral["classname"]:
+            elif "interior_facet_integral" in classname:
                 code_h += _format_h("interior_facet_integral", code_integral, parameters)
                 code_c += _format_c("interior_facet_integral", code_integral, parameters)
-            elif "point_integral" in code_integral["classname"]:
+            elif "point_integral" in classname:
                 code_h += _format_h("point_integral", code_integral, parameters)
                 code_c += _format_c("point_integral", code_integral, parameters)
-            elif "quadrature_integral" in code_integral["classname"]:
-                code_h += _format_h("quadrature_integral", code_integral, parameters)
-                code_c += _format_c("quadrature_integral", code_integral, parameters)
+            elif "quadrature_cell_integral" in classname:
+                code_h += _format_h("quadrature_cell_integral", code_integral, parameters)
+                code_c += _format_c("quadrature_cell_integral", code_integral, parameters)
+            else:
+                error("Unable to figure out base class for %s" % classname)
 
     # Generate code for form
     if code_forms:

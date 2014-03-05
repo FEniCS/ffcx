@@ -327,18 +327,18 @@ void %(classname)s::tabulate_tensor(double* %(restrict)s A,
 }
 """
 
-quadrature_integral_combined = """\
+quadrature_cell_integral_combined = """\
 /// This class defines the interface for the tabulation of the cell
 /// tensor corresponding to the local contribution to a form from
 /// the integral over an unknown cell fragment with quadrature
 /// points given.
 
-class %(classname)s: public ufc::quadrature_integral
+class %(classname)s: public ufc::quadrature_cell_integral
 {%(members)s
 public:
 
   /// Constructor
-  %(classname)s(%(constructor_arguments)s) : ufc::quadrature_integral()%(initializer_list)s
+  %(classname)s(%(constructor_arguments)s) : ufc::quadrature_cell_integral()%(initializer_list)s
   {
 %(constructor)s
   }
@@ -363,13 +363,13 @@ public:
 };
 """
 
-quadrature_integral_header = """\
+quadrature_cell_integral_header = """\
 /// This class defines the interface for the tabulation of the cell
 /// tensor corresponding to the local contribution to a form from
 /// the integral over an unknown cell fragment with quadrature
 /// points given.
 
-class %(classname)s: public ufc::quadrature_integral
+class %(classname)s: public ufc::quadrature_cell_integral
 {%(members)s
 public:
 
@@ -389,9 +389,9 @@ public:
 };
 """
 
-quadrature_integral_implementation = """\
+quadrature_cell_integral_implementation = """\
 /// Constructor
-%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::quadrature_integral()%(initializer_list)s
+%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::quadrature_cell_integral()%(initializer_list)s
 {
 %(constructor)s
 }

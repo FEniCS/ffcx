@@ -27,7 +27,7 @@ UFC function from an (optimized) intermediate representation (OIR).
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2009-12-16
-# Last changed: 2013-02-10
+# Last changed: 2014-03-05
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -50,7 +50,6 @@ def _not_implemented(function_name, return_null=False):
     if return_null:
         body += "\n" + format["return"](0)
     return body
-
 
 def generate_code(ir, prefix, parameters):
     "Generate code from intermediate representation."
