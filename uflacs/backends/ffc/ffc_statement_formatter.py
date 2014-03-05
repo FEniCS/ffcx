@@ -218,17 +218,6 @@ class FFCStatementFormatter(object):
 
         # TODO: Add all cell geometry stuff here, any more?
 
-        # Define quadrature rules
-        if self._enable_quadrature_rule:
-            weights = langfmt.precision_floats(self._weights)
-            points = langfmt.precision_floats(x for p in self._points for x in p)
-            pdim = len(self._points[0])
-            code.extend(["",
-                langfmt.comment("Quadrature weights and points"),
-                langfmt.array_decl("static const double", names.weights, self._num_points, "{ %s }" % weights),
-                langfmt.array_decl("static const double", names.points, self._num_points*pdim, "{ %s }" % points),
-                ])
-
         code.append("")
         return code
 
@@ -290,16 +279,6 @@ class FFCStatementFormatter(object):
 
         code.append("")
         return code
-
-    def define_coord_loop(self):
-        if self._enable_coord_loop:
-            code = ["",
-                    langfmt.comment("Loop over coordinates"),
-                    langfmt.for_loop("int", names.iq, 0, self._num_points),
-                    ]
-            return code
-        else:
-            return None
 
     def define_coord_vars(self):
         code = [langfmt.comment("Computing coordinates in necessary coordinate systems:")]
@@ -379,16 +358,6 @@ class FFCStatementFormatter(object):
 
         code += [""]
         return code
-
-    def define_coord_dependent_geometry(self):
-        # No such thing yet, place e.g. non-affine jacobi here if needed
-        return []
-
-    def accumulation_scaling_factor(self):
-        if self._enable_accumulation:
-            return "D"
-        else:
-            return None
 
     def define_piecewise_coefficients(self):
         code = []
@@ -548,11 +517,6 @@ class FFCStatementFormatter(object):
             code = [comment, code, ""]
         return code
 
-    def define_argument_for_loop(self, argument_number):
-        idof = self._idofs[argument_number]
-        isize = self._argument_space_dimensions[argument_number]
-        return langfmt.for_loop("int", idof, "0", isize)
-
     def define_argument_loop_vars(self, argument_number):
         "Define all mapped argument derivatives for this argument count."
         dh = self._dependency_handler
@@ -610,25 +574,3 @@ class FFCStatementFormatter(object):
             comment = langfmt.comment("Compute mapped derivatives of argument %d" % (argument_number,))
             code = [comment] + code + [""]
         return code
-
-    def define_output_variables_reset(self):
-        from ufl.common import product
-        Asize = product(self._argument_space_dimensions)
-        memset = "memset(%s, 0, %d * sizeof(%s[0]));" % (names.A, Asize, names.A)
-        code = [langfmt.comment("Reset element tensor"), memset, ""]
-        return code
-
-    def output_variable_names(self, num_variables):
-        # For integrands, the number of variables is 1,
-        # but that single variable is actually an array entry
-        # indexed with one or more loop variables.
-        uflacs_assert(num_variables == 1, "Only single integrands implemented for ffc.")
-
-        if self._idofs:
-            dofdims = zip(self._idofs, self._argument_space_dimensions)
-            im = IndexMapping(dict((idof, idim) for idof, idim in dofdims))
-            am = AxisMapping(im, [self._idofs])
-            ii, = am.format_index_expressions()
-        else:
-            ii = "0"
-        return [langfmt.array_access(names.A, ii)]

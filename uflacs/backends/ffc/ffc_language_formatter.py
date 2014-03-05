@@ -77,22 +77,6 @@ class FFCLanguageFormatter(MultiFunction, CppFormatterRulesCollection):
         uflacs_assert(restriction is None, "Assuming facet_area is not restricted.")
         return self.geometric_quantity(o, component, derivatives, restriction)
 
-    def _piecewise_constant_coefficient(self, o, component, derivatives, restriction):
-        uflacs_assert(not derivatives,
-                      "Not expecting derivatives of constant coefficients!")
-
-        # Map component to flat index
-        vi2si, si2vi = build_component_numbering(o.shape(), o.element().symmetry())
-        flat_component = vi2si[component]
-        size = len(si2vi)
-
-        # Offset index if on second cell in interior facet integral
-        if restriction == "-":
-            flat_component += size
-
-        # Return direct reference to dof array
-        return langfmt.array_access(names.w, o.count(), flat_component)
-
     def _computed_form_argument_name(self, o, component, derivatives, restriction, basename):
 
         if derivatives:
@@ -118,18 +102,6 @@ class FFCLanguageFormatter(MultiFunction, CppFormatterRulesCollection):
         code = "%s%d%s%s%s" % (basename, o.number(), der, comp, res)
 
         return code
-
-    def coefficient(self, o, component=(), derivatives=(), restriction=None):
-        o = self._coefficient_mapping.get(o, o)
-        uflacs_assert(o.count() >= 0,
-            "Expecting positive count, provide a renumbered form argument mapping.")
-
-        if o.is_cellwise_constant():
-            return self._piecewise_constant_coefficient(o, component, derivatives, restriction)
-        else:
-            code = self._computed_form_argument_name(o, component, derivatives, restriction, names.wbase)
-            self._dependency_handler.require(o, component, derivatives, restriction, code)
-            return code
 
     def argument(self, o, component=(), derivatives=(), restriction=None):
         uflacs_assert(o.number() >= 0,

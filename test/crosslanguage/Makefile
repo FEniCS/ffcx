@@ -15,8 +15,8 @@ TESTSUPPORTDIR=cppsupport
 TESTMAINSRC=${TESTSRCDIR}/main.cpp
 
 # Configure ufc
-#UFCINCDIR=`pkg-config ufc-1 --cflags`
-UFCINCDIR=-I${UFC_INCLUDE_DIR}
+UFCINCDIR=`pkg-config ufc-1 --cflags`
+#UFCINCDIR=-I${UFC_INCLUDE_DIR}
 
 # Configure gtest
 GTESTINCDIR=-I${GTEST_DIR}/include

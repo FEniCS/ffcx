@@ -24,24 +24,31 @@ from uflacs.elementtables.table_utils import derivative_listing_to_counts, flatt
 """
 
 
+def format_entity_name(entitytype, r):
+    if entitytype == "cell":
+        entity = "0" #None # FIXME: Keep 3D tables and use entity 0 for cells or make tables 2D and use None?
+    elif entitytype == "facet":
+        entity = names.facet + names.restriction_postfix[r]
+    elif entitytype == "vertex":
+        entity = names.vertex
+    return entity
+
+
 """
 TODO: Implement all steps in generate_expression_body. See in particular these functions:
 
 Pre quadrature:
-  tfmt.define_output_variables_reset()  # DONE: generate_tensor_reset
-  tfmt.define_piecewise_geometry()      # FIXME: generate_pre_quadrature_loops
-  tfmt.define_piecewise_coefficients()  # FIXME: ditto
+  tfmt.define_piecewise_geometry()      # FIXME:
+  tfmt.define_piecewise_coefficients()  # FIXME:
   tfmt.define_registers(num_registers)
 
 In quadrature:
   tfmt.define_coord_loop()
   tfmt.define_coord_vars()
-  tfmt.define_coord_dependent_geometry()
   tfmt.define_coord_dependent_coefficients()
 
 Argument loops:
   for ac in range(rank):
-    tfmt.define_argument_for_loop(ac)
     tfmt.define_argument_loop_vars(ac)
 
 Post quadrature:
@@ -70,6 +77,12 @@ class IntegralGenerator(object):
         self._using_names = set()
         self._includes = set(("#include <cstring>",
                               "#include <cmath>"))
+
+        # This is a transformer that collects terminal modifiers
+        # and delegates formatting to the language_formatter
+        # FIXME: Refactoring in process, language_formatter?
+        language_formatter = FFCLanguageFormatter(None, ir) # FIXME: This design makes my head spin
+        self.expr_formatter = ExprFormatter(language_formatter, {})
 
     def generate_using_statements(self):
         return ["using %s;" % name for name in sorted(self._using_names)]
@@ -162,45 +175,6 @@ class IntegralGenerator(object):
             parts += [ForRange(names.iq, 0, num_points, body=body)]
         return parts
 
-    def dummy(self):
-        expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
-
-        # Core expression graph:
-        expr_ir["V"]
-        expr_ir["target_variables"]
-
-        # Result of factorization:
-        expr_ir["modified_arguments"]
-        expr_ir["argument_factorization"]
-
-        # Metadata and dependency information:
-        expr_ir["active"]
-        expr_ir["varying"]
-        expr_ir["piecewise"]
-        expr_ir["dependencies"]
-        expr_ir["inverse_dependencies"]
-        expr_ir["modified_terminal_indices"]
-
-        # Table names and dofranges
-        expr_ir["modified_argument_table_ranges"]
-        expr_ir["modified_terminal_table_ranges"]
-
-        # Generate pre-argument loop computations # TODO: What is this?
-        expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
-        # tuple(modified_argument_indices) -> code_index
-        AF = expr_ir["argument_factorization"]
-        # modified_argument_index -> (tablename, dofbegin, dofend)
-        MATR = expr_ir["modified_argument_table_ranges"]
-        for mas in sorted(AF):
-            dofblock = tuple(MATR[ma][1:3] for ma in mas)
-            ssa_index = AF[mas]
-            # TODO: Generate code for f*D and store reference to it with mas
-            #f = self._ssa[ssa_index]
-            #vname = name_from(mas)
-            #vcode = code_from(ssa_index)
-            #code += ["%s = (%s) * D;" % (vname, vcode)]
-            #factors[mas] = vname
-
     def generate_quadrature_body(self, num_points):
         """
         """
@@ -208,7 +182,10 @@ class IntegralGenerator(object):
         parts += ["// Quadrature loop body setup {0}".format(num_points)]
         parts += self.generate_varying_partition(num_points)
 
-        # FIXME: Move argument partitions here
+        # Compute single argument partitions outside of the dofblock loops
+        for iarg in range(self.ir["rank"]):
+            for dofrange in []: # FIXME:
+                parts += self.generate_argument_partition(num_points, iarg, dofrange)
 
         # Nested argument loops and accumulation into element tensor
         parts += self.generate_quadrature_body_dofblocks(num_points)
@@ -243,11 +220,6 @@ class IntegralGenerator(object):
             dofblock = outer_dofblock + (dofrange,)
             body = []
 
-            # FIXME: Argument partitions should be computed outside of the dofblock loops,
-            #        in separate argument dofrange loops, which reduces n*n computations to n.
-            # Generate code partition for dofblock at this loop level
-            body += self.generate_argument_partition(num_points, iarg, dofblock[iarg])
-
             # Generate nested inner loops (only triggers for forms with two or more arguments
             body += self.generate_quadrature_body_dofblocks(num_points, dofblock)
 
@@ -256,29 +228,32 @@ class IntegralGenerator(object):
             parts += [ForRange(idof, dofrange[0], dofrange[1], body=body)]
         return parts
 
-    def foobar(self):
-        # In code generation, do something like:
-        matr = expr_ir["modified_argument_table_ranges"]
-        for mas, factor in expr_ir["argument_factorization"].iteritems():
-            fetables = tuple(matr[ma][0] for ma in mas)
-            dofblock = tuple((matr[ma][1:3]) for ma in mas)
-            modified_argument_blocks[dofblock] = (fetables, factor)
-            #
-            #for (i0=dofblock0[0]; i0<dofblock0[1]; ++i0)
-            #  for (i1=dofblock1[0]; i1<dofblock1[1]; ++i1)
-            #    A[i0*n1 + i1] += (fetables[0][iq][i0-dofblock0[0]]
-            #                    * fetables[1][iq][i1-dofblock1[0]]) * V[factor] * weight;
-            #
-
-    def generate_partition(self, V, partition):
-        parts = []
-        parts += ["// TODO: Generate partition %s" % (partition,)]
-        parts += ["V ="]
-        parts += [str(V)]
+    def generate_partition(self, name, V, partition): # TODO: Rather take list of vertices, not markers
+        assignments = []
+        j = 0
         for i,p in enumerate(partition):
             if p:
+                # TODO: Consider optimized ir here.
+                # This code just generates variables for _all_ subexpressions marked by p.
+
                 v = V[i]
-                parts += [str(v)] # FIXME: Handle generation of code from partitions, including register rendering.
+
+                vname = langfmt.array_access(name, j)
+                vcode = self.expr_formatter.visit(v)
+
+                self.expr_formatter.variables[v] = vname
+                #self.variables[i] = vname # TODO: Store vname with V index?
+
+                assignment = langfmt.assign(vname, vcode)
+                assignments += [assignment]
+                j += 1
+
+        parts = []
+        if j > 0:
+            # Declare array large enough to hold all subexpressions we've emitted
+            parts += [langfmt.array_decl("double", name, j)]
+            parts += [decl]
+            parts += assignments
         return parts
 
     def generate_piecewise_partition(self):
@@ -292,7 +267,7 @@ class IntegralGenerator(object):
         expr_irs = self.ir["uflacs"]["expr_ir"]
         for num_points in sorted(expr_irs):
             expr_ir = expr_irs[num_points]
-            parts += self.generate_partition(expr_ir["V"], expr_ir["piecewise"])
+            parts += self.generate_partition("sp", expr_ir["V"], expr_ir["piecewise"])
 
         return parts
 
@@ -303,7 +278,7 @@ class IntegralGenerator(object):
         expr_irs = self.ir["uflacs"]["expr_ir"]
         for num_points in sorted(expr_irs):
             expr_ir = expr_irs[num_points]
-            parts += self.generate_partition(expr_ir["V"], expr_ir["varying"])
+            parts += self.generate_partition("sv", expr_ir["V"], expr_ir["varying"])
 
         return parts
 
@@ -321,6 +296,7 @@ class IntegralGenerator(object):
         AF = expr_ir["argument_factorization"]
         V = expr_ir["V"]
         MATR = expr_ir["modified_argument_table_ranges"]
+        MA = expr_ir["modified_arguments"]
 
         idofs = ["{0}{1}".format(names.ia, i) for i in range(self.ir["rank"])]
 
@@ -336,13 +312,15 @@ class IntegralGenerator(object):
             # FIXME: Scale with weight and detJ here, or better include in f some time earlier
             # TODO: Omit f if it's 1 or 1.0
             f = V[factor_index]
-            factors += [str(f)] # FIXME: Format f properly
+            fcode = self.expr_formatter.visit(f)
+            factors += [fcode]
 
             # Get table names
             argfactors = []
             for i,ma in enumerate(args):
                 uname = MATR[ma][0]
-                entity = "0" # FIXME
+                mt = analyze_modified_terminals2(MA[ma])
+                entity = format_entity_name(self.ir["entitytype"], mt.restriction)
                 iq = names.iq
                 dof = "{0}-{1}".format(idofs[i], dofblock[i][0]) # TODO
                 access = langfmt.array_access(uname, entity, iq, dof)
@@ -384,6 +362,62 @@ class IntegralGenerator(object):
             #parts += list(format_assignments(zip(assign_to_variables, final_variable_names)))
 
         return parts
+
+
+    def dummy(self):
+        expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
+
+        # Core expression graph:
+        expr_ir["V"]
+        expr_ir["target_variables"]
+
+        # Result of factorization:
+        expr_ir["modified_arguments"]
+        expr_ir["argument_factorization"]
+
+        # Metadata and dependency information:
+        expr_ir["active"]
+        expr_ir["varying"]
+        expr_ir["piecewise"]
+        expr_ir["dependencies"]
+        expr_ir["inverse_dependencies"]
+        expr_ir["modified_terminal_indices"]
+
+        # Table names and dofranges
+        expr_ir["modified_argument_table_ranges"]
+        expr_ir["modified_terminal_table_ranges"]
+
+        # Generate pre-argument loop computations # TODO: What is this?
+        expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
+        # tuple(modified_argument_indices) -> code_index
+        AF = expr_ir["argument_factorization"]
+        # modified_argument_index -> (tablename, dofbegin, dofend)
+        MATR = expr_ir["modified_argument_table_ranges"]
+        for mas in sorted(AF):
+            dofblock = tuple(MATR[ma][1:3] for ma in mas)
+            ssa_index = AF[mas]
+            # TODO: Generate code for f*D and store reference to it with mas
+            #f = self._ssa[ssa_index]
+            #vname = name_from(mas)
+            #vcode = code_from(ssa_index)
+            #code += ["%s = (%s) * D;" % (vname, vcode)]
+            #factors[mas] = vname
+
+    def foobar(self):
+        # In code generation, do something like:
+        matr = expr_ir["modified_argument_table_ranges"]
+        for mas, factor in expr_ir["argument_factorization"].iteritems():
+            fetables = tuple(matr[ma][0] for ma in mas)
+            dofblock = tuple((matr[ma][1:3]) for ma in mas)
+            modified_argument_blocks[dofblock] = (fetables, factor)
+            #
+            #for (i0=dofblock0[0]; i0<dofblock0[1]; ++i0)
+            #  for (i1=dofblock1[0]; i1<dofblock1[1]; ++i1)
+            #    A[i0*n1 + i1] += (fetables[0][iq][i0-dofblock0[0]]
+            #                    * fetables[1][iq][i1-dofblock1[0]]) * V[factor] * weight;
+            #
+
+
 
 
 class CellIntegralGenerator(IntegralGenerator):
