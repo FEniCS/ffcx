@@ -150,6 +150,7 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, domain_type, c
 
     elif domain_type == "exterior_facet":
         # Compute transformed integrals.
+        info("Transforming exterior facet integral")
         terms = [None]*num_facets
         for i in range(num_facets):
             info("Transforming exterior facet integral %d" % i)
@@ -158,6 +159,7 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, domain_type, c
 
     elif domain_type == "interior_facet":
         # Compute transformed integrals.
+        info("Transforming interior facet integral")
         terms = [[None]*num_facets for i in range(num_facets)]
         for i in range(num_facets):
             for j in range(num_facets):
@@ -172,17 +174,31 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, domain_type, c
             info("Transforming point integral (%d)" % i)
             transformer.update_vertex(i)
             terms[i] = _transform_integrals(transformer, integrals_dict, domain_type)
+
+    elif domain_type == "quadrature_cell":
+        # Note: Perform same transformations as for "cell" domain type
+        # Compute transformed integrals.
+        info("Transforming quadrature integral")
+        transformer.update_cell()
+        terms = _transform_integrals(transformer, integrals_dict, domain_type)
+
     else:
         error("Unhandled domain type: " + str(domain_type))
     return terms
 
-def _create_quadrature_points_and_weights(domain_type, cellname, facet_cellname, degree, rule):
+def _create_quadrature_points_and_weights(domain_type,
+                                          cellname,
+                                          facet_cellname,
+                                          degree,
+                                          rule):
     if domain_type == "cell":
         (points, weights) = create_quadrature(cellname, degree, rule)
     elif domain_type == "exterior_facet" or domain_type == "interior_facet":
         (points, weights) = create_quadrature(facet_cellname, degree, rule)
     elif domain_type == "point":
         (points, weights) = ([()], numpy.array([1.0,])) # TODO: Will be fixed
+    elif domain_type == "quadrature_cell":
+        (points, weights) = ([], [])
     else:
         error("Unknown integral type: " + str(domain_type))
     return (points, weights)
@@ -216,6 +232,8 @@ def domain_to_entity_dim(domain_type, tdim):
         entity_dim = tdim - 1
     elif domain_type == "point":
         entity_dim = 0
+    elif domain_type == "quadrature_cell":
+        entity_dim = tdim
     else:
         error("Unknown domain_type: %s" % domain_type)
     return entity_dim

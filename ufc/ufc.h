@@ -367,12 +367,12 @@ namespace ufc
   /// the integral over an unknown cell fragment with quadrature
   /// points given.
 
-  class quadrature_integral
+  class quadrature_cell_integral
   {
   public:
 
     /// Destructor
-    virtual ~quadrature_integral() {}
+    virtual ~quadrature_cell_integral() {}
 
     /// Tabulate the tensor for the contribution from a local cell
     virtual void tabulate_tensor(double* A,
@@ -428,7 +428,7 @@ namespace ufc
     virtual std::size_t num_point_domains() const = 0;
 
     /// Return the number of quadrature domains
-    virtual std::size_t num_quadrature_domains() const = 0;
+    virtual std::size_t num_quadrature_cell_domains() const = 0;
 
     /// Return whether form has any cell integrals
     virtual bool has_cell_integrals() const = 0;
@@ -442,8 +442,8 @@ namespace ufc
     /// Return whether form has any point integrals
     virtual bool has_point_integrals() const = 0;
 
-    /// Return whether form has any quadrature integrals
-    virtual bool has_quadrature_integrals() const = 0;
+    /// Return whether form has any quadrature cell integrals
+    virtual bool has_quadrature_cell_integrals() const = 0;
 
     /// Create a new finite element for argument function i
     virtual finite_element* create_finite_element(std::size_t i) const = 0;
@@ -465,8 +465,8 @@ namespace ufc
     /// Create a new point integral on sub domain i
     virtual point_integral* create_point_integral(std::size_t i) const = 0;
 
-    /// Create a new quadrature integral on sub domain i
-    virtual quadrature_integral* create_quadrature_integral(std::size_t i) const = 0;
+    /// Create a new quadrature cell integral on sub domain i
+    virtual quadrature_cell_integral* create_quadrature_cell_integral(std::size_t i) const = 0;
 
     /// Create a new cell integral on everywhere else
     virtual cell_integral* create_default_cell_integral() const = 0;
@@ -482,8 +482,8 @@ namespace ufc
     /// Create a new point integral on everywhere else
     virtual point_integral* create_default_point_integral() const = 0;
 
-    /// Create a new quadrature integral on everywhere else
-    virtual quadrature_integral* create_default_quadrature_integral() const = 0;
+    /// Create a new quadrature cell integral on everywhere else
+    virtual quadrature_cell_integral* create_default_quadrature_cell_integral() const = 0;
 
   };
 
