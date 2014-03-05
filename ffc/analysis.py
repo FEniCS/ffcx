@@ -28,7 +28,7 @@ form representation type.
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-05
-# Last changed: 2013-01-25
+# Last changed: 2014-03-05
 
 # UFL modules
 from ufl.common import istr, tstr
@@ -309,7 +309,7 @@ def _auto_select_representation(integral, elements, function_replace_map):
     #    return "quadrature"
 
     # Estimate cost of tensor representation
-    tensor_cost = estimate_cost(integral.integrand(), function_replace_map)
+    tensor_cost = estimate_cost(integral, function_replace_map)
     debug("Estimated cost of tensor representation: " + str(tensor_cost))
 
     # Use quadrature if tensor representation is not possible

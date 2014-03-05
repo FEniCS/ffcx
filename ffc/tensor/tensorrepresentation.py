@@ -29,7 +29,7 @@ might be (re-)implemented in a future version of FFC
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-05
-# Last changed: 2013-02-10
+# Last changed: 2014-03-05
 
 # FFC modules
 from ffc.log import info, error
