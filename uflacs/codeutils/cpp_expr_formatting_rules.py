@@ -56,14 +56,14 @@ class CppFormattingRules(object):
         return "0"
 
     def int_value(self, e, mt):
-        return "{0}".format(int(o))
+        return "{0}".format(int(e))
 
     def float_value(self, e, mt):
         # Using configurable precision parameter from ufl
         if mt.global_derivatives or mt.local_derivatives:
             return self.zero(None)
         else:
-            return ufl.constantvalue.format_float(float(o))
+            return ufl.constantvalue.format_float(float(e))
 
     def identity(self, o, mt):
         if mt.global_derivatives or mt.local_derivatives:
