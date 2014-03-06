@@ -30,6 +30,7 @@ class FFCLanguageFormatter(MultiFunction, CppFormattingRules):
         CppFormattingRules.__init__(self)
 
     def generate_element_table_access(self, mt):
+        # FIXME: See  format_element_table_access  get_element_table_data
         return "FE[0]" # FIXME
 
     def generate_geometry_table_access(self, mt):
@@ -130,15 +131,39 @@ class FFCLanguageFormatter(MultiFunction, CppFormattingRules):
         access = "{name}{count}{der}{comp}{res}".format(name=names.w, count=t.count(), der=der, comp=comp, res=res)
         return access
 
+
+    def _old_geometric_quantity(self, o, mt):
+        "Generic rendering of variable names for all piecewise constant geometric quantities."
+        uflacs_assert(not mt.global_derivatives and not mt.local_derivatives,
+                      "Compiler should be able to simplify derivatives of geometry.")
+
+        # Simply using the UFL str to define the name in the generated code, ensures consistency
+        name = str(o)
+        if mt.restriction:
+            res = names.restriction_postfix[mt.restriction]
+            name = name + res
+
+        # Indexing if there is a shape
+        sh = o.shape()
+        if sh:
+            code = langfmt.array_access(name, component_to_index(mt.component, sh))
+        else:
+            code = name
+
+        return code
+
     def spatial_coordinate(self, e, mt):
+        # FIXME: See define_coord_vars
         access = "x" # FIXME
         return access
 
     def local_coordinate(self, e, mt):
+        # FIXME: See define_coord_vars
         access = "X" # FIXME
         return access
 
     def jacobian(self, e, mt):
+        # FIXME: See _define_piecewise_geometry  define_piecewise_geometry
         access = "J" # FIXME
         return access
 
@@ -182,6 +207,10 @@ class FFCLanguageFormatter(MultiFunction, CppFormattingRules):
         return code
 
     def generate_coefficient_definition(self, mt):
+        # FIXME: See ffc_statement_formatter
+        #  define_coord_dependent_coefficients
+        #  _define_coord_dependent_coefficient
+        #
         code = []
         if not t.is_cellwise_constant():
             name = generate_varying_coefficient_access(mt)
