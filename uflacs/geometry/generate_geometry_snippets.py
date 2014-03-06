@@ -1,4 +1,4 @@
-from uflacs.codeutils.format_code_structure import Indented, WithKeywords
+from uflacs.codeutils.format_code import Indented, WithKeywords
 
 # A dependency graph like this might be a way to automatically figure out which quantities to generate?
 dependencies = {

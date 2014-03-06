@@ -1,7 +1,7 @@
 
 from ufl.classes import Terminal, Indexed, Grad
 from ufl.algorithms import Graph, expand_indices, strip_variables
-from uflacs.codeutils.format_code_structure import format_code_structure
+from uflacs.codeutils.format_code import format_code
 from uflacs.codeutils.expr_formatter import ExprFormatter
 from uflacs.codeutils.latex_formatting_rules import LatexFormatter
 
@@ -107,7 +107,7 @@ def compile_form(form, prefix):
         formexprcode = '\\\\\n    &+'.join(form_integrals)
         code.append((formname, ' = ', formexprcode))
 
-    return format_code_structure(code)
+    return format_code(code)
 
 def compile_latex_document(data, prefix=""):
     code = [[latex_document_header]]
@@ -124,4 +124,4 @@ def compile_latex_document(data, prefix=""):
                  [compile_form(form, prefix) for form in data.forms],
                  [r'\end{align}']]
     code += [[latex_document_footer]]
-    return format_code_structure(code)
+    return format_code(code)

@@ -2,7 +2,7 @@
 from ufl.common import product
 
 from uflacs.utils.log import debug, info, warning, error, uflacs_assert
-from uflacs.codeutils.format_code_structure import format_code_structure, Indented, Block, ForRange, ArrayDecl, ArrayAccess, Comment, Assign, AssignAdd
+from uflacs.codeutils.format_code import format_code, Indented, Block, ForRange, ArrayDecl, ArrayAccess, Comment, Assign, AssignAdd
 
 from uflacs.analysis.modified_terminals import analyse_modified_terminal2
 from uflacs.geometry.default_names import names
@@ -104,7 +104,7 @@ class IntegralGenerator(object):
         parts += [self.generate_piecewise_partition()]
         parts += [self.generate_quadrature_loops()]
         parts += [self.generate_finishing_statements()]
-        return format_code_structure(Indented(parts))
+        return format_code(Indented(parts))
 
     def generate_quadrature_tables(self):
         "Generate static tables of quadrature points and weights."
@@ -325,7 +325,7 @@ class IntegralGenerator(object):
             factors.extend(argfactors)
 
             # TODO: Use proper expression formatting
-            expr = " * ".join(format_code_structure(fac) for fac in factors)
+            expr = " * ".join(format_code(fac) for fac in factors)
 
             # Format index access to A
             if idofs:

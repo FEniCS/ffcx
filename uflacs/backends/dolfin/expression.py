@@ -1,4 +1,4 @@
-from uflacs.codeutils.format_code_structure import (format_code_structure,
+from uflacs.codeutils.format_code import (format_code,
                                                     strip_trailing_whitespace,
                                                     WithKeywords, Class, Indented)
 
@@ -58,4 +58,4 @@ def format_dolfin_expression(classname="MyExpression",
     code = Class(name=classname,
                  superclass="Expression",
                  public_body=classbody)
-    return strip_trailing_whitespace(format_code_structure(code))
+    return strip_trailing_whitespace(format_code(code))

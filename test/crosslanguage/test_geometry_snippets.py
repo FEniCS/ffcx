@@ -5,7 +5,7 @@ Unit tests of generated geometry snippet code.
 """
 
 import ufl
-from uflacs.codeutils.format_code_structure import format_code_structure
+from uflacs.codeutils.format_code import format_code
 from uflacs.geometry.generate_geometry_snippets import (
     generate_array_definition_snippets,
     generate_z_Axpy_snippets,
@@ -47,7 +47,7 @@ def test_compute_jacobian_interval_1d(gtest):
     cell = ufl.Cell('interval', 1)
     r = None
     snippets = generate_jacobian_snippets(cell, r)
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -68,7 +68,7 @@ def test_compute_jacobian_interval_2d(gtest):
     cell = ufl.Cell('interval', 2)
     r = None
     snippets = generate_jacobian_snippets(cell, r)
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -89,7 +89,7 @@ def test_compute_jacobian_interval_3d(gtest):
     cell = ufl.Cell('interval', 3)
     r = None
     snippets = generate_jacobian_snippets(cell, r)
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -110,7 +110,7 @@ def test_compute_jacobian_triangle_2d(gtest):
     cell = ufl.Cell('triangle', 2)
     r = None
     snippets = generate_jacobian_snippets(cell, r)
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -131,7 +131,7 @@ def test_compute_jacobian_triangle_3d(gtest):
     cell = ufl.Cell('triangle', 3)
     r = None
     snippets = generate_jacobian_snippets(cell, r)
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -152,7 +152,7 @@ def test_compute_jacobian_tetrahedron_3d(gtest):
     cell = ufl.Cell('tetrahedron', 3)
     r = None
     snippets = generate_jacobian_snippets(cell, r)
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -178,7 +178,7 @@ def test_compute_jacobian_inverse_interval_1d(gtest):
     snippets.append( generate_jacobian_snippets(cell, r) )
     snippets.append( generate_jacobian_determinants_snippets(cell, r) )
     snippets.append( generate_jacobian_inverse_snippets(cell, r) )
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -202,7 +202,7 @@ def test_compute_jacobian_inverse_interval_2d(gtest):
     snippets.append( generate_jacobian_snippets(cell, r) )
     snippets.append( generate_jacobian_determinants_snippets(cell, r) )
     snippets.append( generate_jacobian_inverse_snippets(cell, r) )
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -226,7 +226,7 @@ def test_compute_jacobian_inverse_interval_3d(gtest):
     snippets.append( generate_jacobian_snippets(cell, r) )
     snippets.append( generate_jacobian_determinants_snippets(cell, r) )
     snippets.append( generate_jacobian_inverse_snippets(cell, r) )
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -250,7 +250,7 @@ def test_compute_jacobian_inverse_triangle_2d(gtest):
     snippets.append( generate_jacobian_snippets(cell, r) )
     snippets.append( generate_jacobian_determinants_snippets(cell, r) )
     snippets.append( generate_jacobian_inverse_snippets(cell, r) )
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -274,7 +274,7 @@ def test_compute_jacobian_inverse_triangle_3d(gtest):
     snippets.append( generate_jacobian_snippets(cell, r) )
     snippets.append( generate_jacobian_determinants_snippets(cell, r) )
     snippets.append( generate_jacobian_inverse_snippets(cell, r) )
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -298,7 +298,7 @@ def test_compute_jacobian_inverse_tetrahedron_3d(gtest):
     snippets.append( generate_jacobian_snippets(cell, r) )
     snippets.append( generate_jacobian_determinants_snippets(cell, r) )
     snippets.append( generate_jacobian_inverse_snippets(cell, r) )
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -325,7 +325,7 @@ def test_compute_x_from_xi_interval_1d(gtest):
     snippets = []
     snippets.append( generate_jacobian_snippets(cell, r) )
     snippets.append( generate_x_from_xi_snippets(cell, r) )
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -351,7 +351,7 @@ def test_compute_x_from_xi_interval_2d(gtest):
     snippets = []
     snippets.append( generate_jacobian_snippets(cell, r) )
     snippets.append( generate_x_from_xi_snippets(cell, r) )
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -379,7 +379,7 @@ def test_compute_x_from_xi_interval_3d(gtest):
     snippets = []
     snippets.append( generate_jacobian_snippets(cell, r) )
     snippets.append( generate_x_from_xi_snippets(cell, r) )
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -406,7 +406,7 @@ def test_compute_x_from_xi_triangle_2d(gtest):
     snippets = []
     snippets.append( generate_jacobian_snippets(cell, r) )
     snippets.append( generate_x_from_xi_snippets(cell, r) )
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -434,7 +434,7 @@ def test_compute_x_from_xi_triangle_3d(gtest):
     snippets = []
     snippets.append( generate_jacobian_snippets(cell, r) )
     snippets.append( generate_x_from_xi_snippets(cell, r) )
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -462,7 +462,7 @@ def test_compute_x_from_xi_tetrahedron_3d(gtest):
     snippets = []
     snippets.append( generate_jacobian_snippets(cell, r) )
     snippets.append( generate_x_from_xi_snippets(cell, r) )
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -492,7 +492,7 @@ def test_compute_xi_from_x_interval_1d(gtest):
     snippets.append( generate_jacobian_determinants_snippets(cell, r) )
     snippets.append( generate_jacobian_inverse_snippets(cell, r) )
     snippets.append( generate_xi_from_x_snippets(cell, r) )
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -520,7 +520,7 @@ def test_compute_xi_from_x_interval_2d(gtest):
     snippets.append( generate_jacobian_determinants_snippets(cell, r) )
     snippets.append( generate_jacobian_inverse_snippets(cell, r) )
     snippets.append( generate_xi_from_x_snippets(cell, r) )
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -548,7 +548,7 @@ def test_compute_xi_from_x_interval_3d(gtest):
     snippets.append( generate_jacobian_determinants_snippets(cell, r) )
     snippets.append( generate_jacobian_inverse_snippets(cell, r) )
     snippets.append( generate_xi_from_x_snippets(cell, r) )
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -577,7 +577,7 @@ def test_compute_xi_from_x_triangle_2d(gtest):
     snippets.append( generate_jacobian_determinants_snippets(cell, r) )
     snippets.append( generate_jacobian_inverse_snippets(cell, r) )
     snippets.append( generate_xi_from_x_snippets(cell, r) )
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -606,7 +606,7 @@ def test_compute_xi_from_x_triangle_3d(gtest):
     snippets.append( generate_jacobian_determinants_snippets(cell, r) )
     snippets.append( generate_jacobian_inverse_snippets(cell, r) )
     snippets.append( generate_xi_from_x_snippets(cell, r) )
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 
@@ -636,7 +636,7 @@ def test_compute_xi_from_x_tetrahedron_3d(gtest):
     snippets.append( generate_jacobian_determinants_snippets(cell, r) )
     snippets.append( generate_jacobian_inverse_snippets(cell, r) )
     snippets.append( generate_xi_from_x_snippets(cell, r) )
-    code = format_code_structure(snippets)
+    code = format_code(snippets)
 
     gtest.add(pre + code + post)
 

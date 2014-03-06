@@ -2,6 +2,19 @@
 Tools for stitching together code snippets.
 """
 
+
+def strip_trailing_whitespace(s):
+    return '\n'.join(l.rstrip() for l in s.split('\n'))
+
+def format_float(x):
+    eps = 1e-12 # FIXME: Configurable threshold
+    if abs(x) < eps:
+        return "0.0"
+
+    precision = 12 # FIXME: Configurable precision
+    fmt = "%%.%de" % precision
+    return fmt % x
+
 def indent(text, level, indentchar='    '):
     if level == 0:
         return text
@@ -51,6 +64,8 @@ def build_recursive_initializer_list(values, sizes):
 
     return initializer_list
 
+
+
 class Code(object):
     pass
 
@@ -59,20 +74,20 @@ class Indented(Code):
         self.code = code
 
     def format(self, level, indentchar, keywords):
-        return format_code_structure(self.code, level+1, indentchar, keywords)
+        return format_code(self.code, level+1, indentchar, keywords)
 
-class WithKeywords(Code):
+class WithKeywords(Code): # TODO: Do we need this? Can simplify quite a bit by removing.
     def __init__(self, code, keywords):
         self.code = code
         self.keywords = keywords
 
     def format(self, level, indentchar, keywords):
-        if keywords:
+        if keywords: # TODO: Merge with self.keywords instead
             raise RuntimeError("Doubly defined keywords not implemented.")
         fmt_keywords = {}
         for k,v in self.keywords.iteritems():
-            fmt_keywords[k] = format_code_structure(v, 0, indentchar, keywords)
-        return format_code_structure(self.code, level, indentchar, fmt_keywords)
+            fmt_keywords[k] = format_code(v, 0, indentchar, keywords)
+        return format_code(self.code, level, indentchar, fmt_keywords)
 
 class Block(Code):
     def __init__(self, body, start='{', end='}'):
@@ -82,7 +97,7 @@ class Block(Code):
 
     def format(self, level, indentchar, keywords):
         code = [self.start, Indented(self.body), self.end]
-        return format_code_structure(code, level, indentchar, keywords)
+        return format_code(code, level, indentchar, keywords)
 
 class TemplateArgumentList(Code):
 
@@ -105,9 +120,9 @@ class TemplateArgumentList(Code):
             if isinstance(last, TemplateArgumentList) or (
                 isinstance(last, Type) and last.template_arguments):
                 end = ' ' + end
-        code = [sep.join(format_code_structure(arg, keywords=keywords) for arg in self.args)]
+        code = [sep.join(format_code(arg, keywords=keywords) for arg in self.args)]
         code = (start, container(code), end)
-        return format_code_structure(code, level, indentchar, keywords)
+        return format_code(code, level, indentchar, keywords)
 
 class Type(Code):
     def __init__(self, name, template_arguments=None, multiline=False):
@@ -119,7 +134,7 @@ class Type(Code):
         code = self.name
         if self.template_arguments:
             code = code, TemplateArgumentList(self.template_arguments, self.multiline)
-        return format_code_structure(code, level, indentchar, keywords)
+        return format_code(code, level, indentchar, keywords)
 
 class TypeDef(Code):
     def __init__(self, type_, typedef):
@@ -128,7 +143,7 @@ class TypeDef(Code):
 
     def format(self, level, indentchar, keywords):
         code = ('typedef ', self.type_, " %s;" % self.typedef)
-        return format_code_structure(code, level, indentchar, keywords)
+        return format_code(code, level, indentchar, keywords)
 
 class Namespace(Code):
     def __init__(self, name, body):
@@ -137,7 +152,7 @@ class Namespace(Code):
 
     def format(self, level, indentchar, keywords):
         code = ['namespace %s' % self.name, Block(self.body)]
-        return format_code_structure(code, level, indentchar, keywords)
+        return format_code(code, level, indentchar, keywords)
 
 class VariableDecl(Code):
     def __init__(self, typename, name):
@@ -147,7 +162,7 @@ class VariableDecl(Code):
     def format(self, level, indentchar, keywords):
         sep = " "
         code = (self.typename, sep, self.name, ";")
-        return format_code_structure(code, level, indentchar, keywords)
+        return format_code(code, level, indentchar, keywords)
 
 class ArrayDecl(Code):
     def __init__(self, typename, name, sizes, values=None):
@@ -165,7 +180,7 @@ class ArrayDecl(Code):
             initializer_list = build_recursive_initializer_list(self.values, self.sizes)
             valuescode = (" = ", initializer_list)
         code = (self.typename, sep, self.name, brackets, valuescode, ";")
-        return format_code_structure(code, level, indentchar, keywords)
+        return format_code(code, level, indentchar, keywords)
 
 class ArrayAccess(Code):
     def __init__(self, arraydecl, indices):
@@ -194,7 +209,7 @@ class ArrayAccess(Code):
     def format(self, level, indentchar, keywords):
         brackets = tuple("[%s]" % n for n in self.indices)
         code = (self.arrayname, brackets)
-        return format_code_structure(code, level, indentchar, keywords)
+        return format_code(code, level, indentchar, keywords)
 
 class WhileLoop(Code):
     def __init__(self, check, body=None):
@@ -205,7 +220,7 @@ class WhileLoop(Code):
         code = ("while (", self.check, ")")
         if self.body is not None:
             code = [code, Block(self.body)]
-        return format_code_structure(code, level, indentchar, keywords)
+        return format_code(code, level, indentchar, keywords)
 
 class ForLoop(Code):
     def __init__(self, init, check, increment, body=None):
@@ -218,7 +233,7 @@ class ForLoop(Code):
         code = ("for (", self.init, "; ", self.check, "; ", self.increment, ")")
         if self.body is not None:
             code = [code, Block(self.body)]
-        return format_code_structure(code, level, indentchar, keywords)
+        return format_code(code, level, indentchar, keywords)
 
 class ForRange(Code):
     def __init__(self, name, lower, upper, body=None):
@@ -232,7 +247,7 @@ class ForRange(Code):
         check = (self.name, " < ", self.upper)
         increment = ("++", self.name)
         code = ForLoop(init, check, increment, body=self.body)
-        return format_code_structure(code, level, indentchar, keywords)
+        return format_code(code, level, indentchar, keywords)
 
 class Class(Code):
     def __init__(self, name, superclass=None, public_body=None,
@@ -263,7 +278,7 @@ class Class(Code):
         if self.private_body:
             code += ['private:', Indented(self.private_body)]
         code += ['};']
-        return format_code_structure(code, level, indentchar, keywords)
+        return format_code(code, level, indentchar, keywords)
 
 class Comment(Code):
     def __init__(self, comment):
@@ -271,7 +286,7 @@ class Comment(Code):
 
     def format(self, level, indentchar, keywords):
         code = ("// ", self.comment)
-        return format_code_structure(code, level, indentchar, keywords)
+        return format_code(code, level, indentchar, keywords)
 
 class Return(Code):
     def __init__(self, value):
@@ -279,7 +294,8 @@ class Return(Code):
 
     def format(self, level, indentchar, keywords):
         code = ("return ", self.value, ";")
-        return format_code_structure(code, level, indentchar, keywords)
+        return format_code(code, level, indentchar, keywords)
+
 
 class AssignBase(Code):
     def __init__(self, lhs, rhs):
@@ -288,7 +304,7 @@ class AssignBase(Code):
 
     def format(self, level, indentchar, keywords):
         code = (self.lhs, type(self).op, self.rhs, ";")
-        return format_code_structure(code, level, indentchar, keywords)
+        return format_code(code, level, indentchar, keywords)
 
 class Assign(AssignBase):
     op = " = "
@@ -306,19 +322,79 @@ class AssignDiv(AssignBase):
     op = " /= "
 
 
-def strip_trailing_whitespace(s):
-    return '\n'.join(l.rstrip() for l in s.split('\n'))
+class UnOp(Code):
+    def __init__(self, arg):
+        self.arg = arg
 
-def format_float(x):
-    eps = 1e-12 # FIXME: Configurable threshold
-    if abs(x) < eps:
-        return "0.0"
+    def format(self, level, indentchar, keywords):
+        # TODO: Handle precedence at this level instead of in the ExprFormatter stuff?
+        code = (type(self).op, self.arg)
+        return format_code(code, level, indentchar, keywords)
 
-    precision = 12 # FIXME: Configurable precision
-    fmt = "%%.%de" % precision
-    return fmt % x
+class BinOp(Code):
+    def __init__(self, lhs, rhs):
+        self.lhs = lhs
+        self.rhs = rhs
 
-def format_code_structure(code, level=0, indentchar='    ', keywords=None):
+    def format(self, level, indentchar, keywords):
+        # TODO: Handle precedence at this level instead of in the ExprFormatter stuff?
+        code = (self.lhs, type(self).op, self.rhs)
+        return format_code(code, level, indentchar, keywords)
+
+class NOp(Code):
+    def __init__(self, *ops):
+        self.ops = ops
+
+    def format(self, level, indentchar, keywords):
+        # TODO: Handle precedence at this level instead of in the ExprFormatter stuff?
+        code = []
+        for op in self.ops:
+            code.append(self.ops)
+            code.append(type(self).op)
+        code = tuple(code[:-1])
+        return format_code(code, level, indentchar, keywords)
+
+
+class Add(BinOp):
+    op = " + "
+
+class Sub(BinOp):
+    op = " - "
+
+class Mul(BinOp):
+    op = " * "
+
+class Div(BinOp):
+    op = " / "
+
+
+class Negative(UnOp):
+    op = "-"
+
+
+class Sum(NOp):
+    op = " + "
+
+class Product(NOp):
+    op = " * "
+
+
+class LinearCombination(Code):
+    def __init__(self, ops1, ops2):
+        self.ops1 = ops1
+        self.ops2 = ops2
+
+    def format(self, level, indentchar, keywords):
+        # TODO: Handle precedence at this level instead of in the ExprFormatter stuff?
+        code = []
+        for a,b in zip(self.ops1, self.ops2):
+            code.append("{0} * {1}".format(a,b))
+            code.append(" + ")
+        code = tuple(code[:-1])
+        return format_code(code, level, indentchar, keywords)
+
+
+def format_code(code, level=0, indentchar='    ', keywords=None):
     """Format code by stitching together snippets. The code can
     be built recursively using the following types:
 
@@ -366,15 +442,18 @@ def format_code_structure(code, level=0, indentchar='    ', keywords=None):
     """
     if isinstance(code, str):
         if keywords:
-            code = code % keywords
-        return indent(code, level, indentchar)
+            code = code % keywords # TODO: Either change to new formatting or just remove keywords
+        if level:
+            return indent(code, level, indentchar)
+        else:
+            return code
 
     if isinstance(code, list):
-        return "\n".join(format_code_structure(item, level, indentchar, keywords) for item in code)
+        return "\n".join(format_code(item, level, indentchar, keywords) for item in code)
 
     if isinstance(code, tuple):
-        joined = "".join(format_code_structure(item, 0, indentchar) for item in code)
-        return format_code_structure(joined, level, indentchar, keywords)
+        joined = "".join(format_code(item, 0, indentchar, keywords) for item in code)
+        return format_code(joined, level, indentchar, keywords)
 
     if isinstance(code, Code):
         return code.format(level, indentchar, keywords)
@@ -386,3 +465,4 @@ def format_code_structure(code, level=0, indentchar='    ', keywords=None):
         return indent(format_float(code), level, indentchar)
 
     raise RuntimeError("Unexpected type %s:\n%s" % (type(code),str(code)))
+

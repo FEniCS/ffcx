@@ -11,7 +11,7 @@ from ufl.algorithms import expand_derivatives, expand_compounds
 from uflacs.utils.tictoc import TicToc
 from uflacs.utils.log import error
 
-from uflacs.codeutils.format_code_structure import Block, format_code_structure
+from uflacs.codeutils.format_code import Block, format_code
 
 from uflacs.generation.compiler import compile_expression_partitions
 from uflacs.generation.generate import generate_code_from_ssa, generate_expression_code, generate_expression_body
@@ -53,7 +53,7 @@ def compile_expression(expr, prefix=""):
     code = Block(code)
 
     # Format code representation into a single string
-    formatted = format_code_structure(code)
+    formatted = format_code(code)
     return formatted
 
 def compile_form(form, prefix=""):
@@ -94,7 +94,7 @@ def compile_form(form, prefix=""):
             code.append(['',Block(integral_code),''])
 
     # Format code representation into a single string
-    formatted = format_code_structure(code)
+    formatted = format_code(code)
     return formatted
 
 def compile_element(element, prefix=""):

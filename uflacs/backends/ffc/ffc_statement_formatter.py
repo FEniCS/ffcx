@@ -4,7 +4,7 @@ from ufl.classes import GeometricQuantity
 
 from uflacs.utils.log import uflacs_assert, warning, error
 
-from uflacs.codeutils.format_code_structure import ForRange
+from uflacs.codeutils.format_code import ForRange
 from uflacs.codeutils.indexmapping import IndexMapping, AxisMapping
 
 from uflacs.geometry.default_names import names

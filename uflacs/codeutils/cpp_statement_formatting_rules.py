@@ -1,6 +1,6 @@
 
 # TODO: Replace with cgen module?
-# TODO: Should some of these be implemented in the format_code_structure design instead? Or should that design call upon this class for formatting?
+# TODO: Should some of these be implemented in the format_code design instead? Or should that design call upon this class for formatting?
 
 class CppStatementFormattingRules(object):
 

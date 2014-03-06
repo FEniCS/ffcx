@@ -10,7 +10,7 @@ def run_compile_toy(options, args):
     "Compile forms and expressions from .ufl file(s) into C++ code with undefined FEM backend."
     from ufl.algorithms import load_ufl_file
     from uflacs.backends.toy.toy_compiler import compile_element, compile_expression, compile_form
-    from uflacs.codeutils.format_code_structure import format_code_structure
+    from uflacs.codeutils.format_code import format_code
 
     for input_filename in args:
         prefix, ext = os.path.splitext(os.path.basename(input_filename))
@@ -22,7 +22,7 @@ def run_compile_toy(options, args):
         data = load_ufl_file(input_filename)
 
         info("Compiling '%s'..." % prefix)
-        code = format_code_structure([
+        code = format_code([
             ['// Elements'],
             [compile_element(element, prefix) for element in data.elements],
             ['// Expressions'],

@@ -6,7 +6,7 @@
 from ufl.classes import Terminal, Indexed, Grad
 
 from uflacs.codeutils.expr_formatter import ExprFormatter
-from uflacs.codeutils.format_code_structure import (format_code_structure,
+from uflacs.codeutils.format_code import (format_code,
                                                     Block, Indented, Namespace, Class)
 
 from uflacs.representation.compute_expr_ir import compute_expr_ir 
@@ -34,7 +34,7 @@ def compile_dolfin_expression_body(expr, parameters, object_names=None):
                                                        DolfinExpressionStatementFormatter)
 
     # Format into a single string
-    #formatted = format_code_structure(code)
+    #formatted = format_code(code)
 
     # Get member function names TODO: Distinguish types of functions?
     member_names = dict(constants=[],
@@ -110,7 +110,7 @@ def format_uflacs_header(prefix, file_code):
             includes, '',
             Namespace(prefix, file_code), '',
             postguard]
-    return format_code_structure(code)
+    return format_code(code)
 
 def compile_dolfin_expressions_header(expressions, object_names, prefix):
     """Generate code for a dolfin Expression from a UFL Expr.
