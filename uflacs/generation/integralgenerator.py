@@ -15,7 +15,7 @@ from uflacs.codeutils.expr_formatter2 import ExprFormatter2
 
 
 class IntegralGenerator(object):
-    def __init__(self, ir, language_formatter, backend_formatter):
+    def __init__(self, ir, language_formatter, backend_access, backend_definitions):
         # Store ir
         self.ir = ir
 
@@ -37,7 +37,8 @@ class IntegralGenerator(object):
         self._includes = set(("#include <cstring>",
                               "#include <cmath>"))
 
-        self.backend_formatter = backend_formatter
+        self.backend_access = backend_access
+        self.backend_definitions = backend_definitions
 
         # This is a transformer that collects terminal modifiers
         # and delegates formatting to the language_formatter
@@ -83,8 +84,8 @@ class IntegralGenerator(object):
             wname = "%s%d" % (names.weights, num_points)
             pname = "%s%d" % (names.points, num_points)
 
-            weights = [self.backend_formatter.precision_float(w) for w in weights]
-            points = [self.backend_formatter.precision_float(x) for p in points for x in p]
+            weights = [self.backend_access.precision_float(w) for w in weights]
+            points = [self.backend_access.precision_float(x) for p in points for x in p]
 
             parts += [ArrayDecl("static const double", wname, num_points, weights)]
             parts += [ArrayDecl("static const double", pname, num_points*pdim, points)]
@@ -197,8 +198,8 @@ class IntegralGenerator(object):
 
                 if is_modified_terminal(v):
                     mt = analyse_modified_terminal2(v)
-                    vaccess = self.backend_formatter(mt.terminal, mt, table_ranges[i])
-                    vdef = self.backend_formatter.generate_modified_terminal_definition(mt, vaccess, table_ranges[i])
+                    vaccess = self.backend_access(mt.terminal, mt, table_ranges[i])
+                    vdef = self.backend_definitions(mt.terminal, mt, table_ranges[i], vaccess)
                     terminalcode += [vdef]
                 else:
                     # Count assignments so we get a new vname each time
@@ -207,8 +208,8 @@ class IntegralGenerator(object):
                     vcode = self.expr_formatter.visit(v) # TODO: Generate Code instead of str here?
                     assignments += [Assign(vaccess, vcode)]
 
-                vname = format_code(vaccess)
-                self.expr_formatter.variables[v] = vname # TODO: If expr_formatter generates Code, use vaccess here.
+                vname = format_code(vaccess) # TODO: Can skip this if expr_formatter generates Code
+                self.expr_formatter.variables[v] = vname
 
         parts = []
         if j > 0:
@@ -284,7 +285,7 @@ class IntegralGenerator(object):
             argfactors = []
             for i,ma in enumerate(args):
                 mt = analyse_modified_terminal2(MA[ma])
-                access = self.backend_formatter(mt.terminal, mt, MATR[ma])
+                access = self.backend_access(mt.terminal, mt, MATR[ma])
                 argfactors += [access]
             factors.extend(argfactors)
 
