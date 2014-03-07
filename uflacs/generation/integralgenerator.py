@@ -2,63 +2,20 @@
 from ufl.common import product
 
 from uflacs.utils.log import debug, info, warning, error, uflacs_assert
-from uflacs.codeutils.format_code import format_code, Indented, Block, ForRange, ArrayDecl, ArrayAccess, Comment, Assign, AssignAdd
 
-from uflacs.analysis.modified_terminals import analyse_modified_terminal2
-from uflacs.geometry.default_names import names
+from uflacs.analysis.modified_terminals import analyse_modified_terminal2, is_modified_terminal
+
+from uflacs.codeutils.format_code import (format_code, Indented, Block, Comment,
+                                          ForRange,
+                                          ArrayDecl, ArrayAccess,
+                                          Assign, AssignAdd)
 from uflacs.codeutils.indexmapping import IndexMapping, AxisMapping
-
-from uflacs.codeutils.cpp_statement_formatting_rules import CppStatementFormattingRules
-langfmt = CppStatementFormattingRules() # TODO: Only used for precision_float now, get rid of this.
-
+from uflacs.geometry.default_names import names
 from uflacs.codeutils.expr_formatter2 import ExprFormatter2
 
-""" # FFC language formatter includes, some may be useful:
-from ufl.common import component_to_index
-from ufl.permutation import build_component_numbering
-from ufl.algorithms import MultiFunction
-
-from uflacs.utils.log import uflacs_assert, warning, error
-
-# TODO: The organization of code utilities is a bit messy...
-from uflacs.backends.ffc.ffc_statement_formatter import (format_element_table_access, format_entity_name)
-from uflacs.elementtables.table_utils import derivative_listing_to_counts, flatten_component
-"""
-
-
-def format_entity_name(entitytype, r):
-    if entitytype == "cell":
-        entity = "0" #None # FIXME: Keep 3D tables and use entity 0 for cells or make tables 2D and use None?
-    elif entitytype == "facet":
-        entity = names.facet + names.restriction_postfix[r]
-    elif entitytype == "vertex":
-        entity = names.vertex
-    return entity
-
-
-"""
-TODO: Implement all steps in generate_expression_body. See in particular these functions:
-
-Pre quadrature:
-  tfmt.define_piecewise_geometry()      # FIXME:
-  tfmt.define_piecewise_coefficients()  # FIXME:
-  tfmt.define_registers(num_registers)
-
-In quadrature:
-  tfmt.define_coord_loop()
-  tfmt.define_coord_vars()
-  tfmt.define_coord_dependent_coefficients()
-
-Argument loops:
-  for ac in range(rank):
-    tfmt.define_argument_loop_vars(ac)
-
-Post quadrature:
-
-"""
 
 class IntegralGenerator(object):
-    def __init__(self, ir, language_formatter):
+    def __init__(self, ir, language_formatter, backend_formatter):
         # Store ir
         self.ir = ir
 
@@ -79,6 +36,8 @@ class IntegralGenerator(object):
         self._using_names = set()
         self._includes = set(("#include <cstring>",
                               "#include <cmath>"))
+
+        self.backend_formatter = backend_formatter
 
         # This is a transformer that collects terminal modifiers
         # and delegates formatting to the language_formatter
@@ -124,8 +83,8 @@ class IntegralGenerator(object):
             wname = "%s%d" % (names.weights, num_points)
             pname = "%s%d" % (names.points, num_points)
 
-            weights = [langfmt.precision_float(w) for w in weights]
-            points = [langfmt.precision_float(x) for p in points for x in p]
+            weights = [self.backend_formatter.precision_float(w) for w in weights]
+            points = [self.backend_formatter.precision_float(x) for p in points for x in p]
 
             parts += [ArrayDecl("static const double", wname, num_points, weights)]
             parts += [ArrayDecl("static const double", pname, num_points*pdim, points)]
@@ -225,30 +184,39 @@ class IntegralGenerator(object):
             parts += [ForRange(idof, dofrange[0], dofrange[1], body=body)]
         return parts
 
-    def generate_partition(self, name, V, partition): # TODO: Rather take list of vertices, not markers
+    def generate_partition(self, name, V, partition, table_ranges): # TODO: Rather take list of vertices, not markers
+        terminalcode = []
         assignments = []
         j = 0
         for i,p in enumerate(partition):
             if p:
-                # TODO: Consider optimized ir here.
+                # TODO: Consider optimized ir here with markers for which subexpressions to store in variables.
                 # This code just generates variables for _all_ subexpressions marked by p.
 
                 v = V[i]
 
-                # TODO: Use expression formatting? String expected in expr_formatter.variables below!
-                vname = "{0}[{1}]".format(name, j)
-                vcode = self.expr_formatter.visit(v)
+                if is_modified_terminal(v):
+                    mt = analyse_modified_terminal2(v)
+                    vaccess = self.backend_formatter(mt.terminal, mt, table_ranges[i])
+                    vdef = self.backend_formatter.generate_modified_terminal_definition(mt, vaccess, table_ranges[i])
+                    terminalcode += [vdef]
+                else:
+                    # Count assignments so we get a new vname each time
+                    j += 1
+                    vaccess = ArrayAccess(name, j)
+                    vcode = self.expr_formatter.visit(v) # TODO: Generate Code instead of str here?
+                    assignments += [Assign(vaccess, vcode)]
 
-                self.expr_formatter.variables[v] = vname
-                #self.variables[i] = vname # TODO: Store vname with V index?
-
-                assignments += [Assign(vname, vcode)]
-                j += 1
+                vname = format_code(vaccess)
+                self.expr_formatter.variables[v] = vname # TODO: If expr_formatter generates Code, use vaccess here.
 
         parts = []
         if j > 0:
+            # Compute all terminals first
+            parts += terminalcode
             # Declare array large enough to hold all subexpressions we've emitted
             parts += [ArrayDecl("double", name, j)]
+            # Then add all computations
             parts += assignments
         return parts
 
@@ -263,7 +231,8 @@ class IntegralGenerator(object):
         expr_irs = self.ir["uflacs"]["expr_ir"]
         for num_points in sorted(expr_irs):
             expr_ir = expr_irs[num_points]
-            parts += self.generate_partition("sp", expr_ir["V"], expr_ir["piecewise"])
+            MTTR = expr_ir["modified_terminal_table_ranges"]
+            parts += self.generate_partition("sp", expr_ir["V"], expr_ir["piecewise"], MTTR)
 
         return parts
 
@@ -274,7 +243,8 @@ class IntegralGenerator(object):
         expr_irs = self.ir["uflacs"]["expr_ir"]
         for num_points in sorted(expr_irs):
             expr_ir = expr_irs[num_points]
-            parts += self.generate_partition("sv", expr_ir["V"], expr_ir["varying"])
+            MTTR = expr_ir["modified_terminal_table_ranges"]
+            parts += self.generate_partition("sv", expr_ir["V"], expr_ir["varying"], MTTR)
 
         return parts
 
@@ -307,21 +277,15 @@ class IntegralGenerator(object):
             # Get factor expression
             # FIXME: Scale with weight and detJ here, or better include in f some time earlier
             # TODO: Omit f if it's 1 or 1.0
-            f = V[factor_index]
-            fcode = self.expr_formatter.visit(f)
+            fcode = self.expr_formatter.variables[V[factor_index]]
             factors += [fcode]
 
             # Get table names
             argfactors = []
             for i,ma in enumerate(args):
-                uname = MATR[ma][0]
                 mt = analyse_modified_terminal2(MA[ma])
-
-                entity = format_entity_name(self.ir["entitytype"], mt.restriction)
-                iq = names.iq
-                dof = "{0}-{1}".format(idofs[i], dofblock[i][0]) # TODO: Use proper expression formatting
-
-                argfactors += [ArrayAccess(uname, (entity, iq, dof))]
+                access = self.backend_formatter(mt.terminal, mt, MATR[ma])
+                argfactors += [access]
             factors.extend(argfactors)
 
             # TODO: Use proper expression formatting

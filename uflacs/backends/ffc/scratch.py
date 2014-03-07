@@ -1,16 +1,28 @@
 
 from ufl.common import component_to_index
 from ufl.permutation import build_component_numbering
+from ufl.classes import Argument, Coefficient, GeometricQuantity
 from ufl.algorithms import MultiFunction
 
 from uflacs.utils.log import uflacs_assert, warning, error
 
-# TODO: The organization of code utilities is a bit messy...
-from uflacs.codeutils.cpp_expr_formatting_rules import CppFormattingRules
 from uflacs.geometry.default_names import names
-from uflacs.backends.ffc.ffc_statement_formatter import langfmt
-from uflacs.backends.ffc.ffc_statement_formatter import (format_element_table_access, format_entity_name)
-from uflacs.elementtables.table_utils import derivative_listing_to_counts, flatten_component
+from uflacs.codeutils.cpp_statement_formatting_rules import CppStatementFormattingRules
+langfmt = CppStatementFormattingRules()
+
+from uflacs.codeutils.format_code import (format_code,
+                                          ForRange,
+                                          VariableDecl,
+                                          ArrayAccess,
+                                          AssignAdd, Assign,
+                                          Add, Sub, Mul,)
+
+
+# TODO: The organization of code utilities is a bit messy...
+#from uflacs.backends.ffc.ffc_statement_formatter import format_element_table_access
+#from uflacs.elementtables.table_utils import derivative_listing_to_counts
+from uflacs.elementtables.table_utils import flatten_component
+
 
 
 def format_entity_name(entitytype, r):
@@ -23,11 +35,15 @@ def format_entity_name(entitytype, r):
     return entity
 
 
-class FFCLanguageFormatter(MultiFunction, CppFormattingRules):
+class FFCBackendFormatter(MultiFunction):
     """FFC specific cpp formatter class."""
-    def __init__(self, ir):
+    def __init__(self, ir, parameters):
         MultiFunction.__init__(self)
-        CppFormattingRules.__init__(self)
+        self.ir = ir
+        self.parameters = parameters
+
+    def precision_float(self, f):
+        return "%g" % f # TODO: Control float formatting precision here
 
     def generate_element_table_access(self, mt):
         # FIXME: See  format_element_table_access  get_element_table_data
@@ -36,9 +52,11 @@ class FFCLanguageFormatter(MultiFunction, CppFormattingRules):
     def generate_geometry_table_access(self, mt):
         return "FJ[0]" # FIXME
 
-    def generate_coefficient_dof_access(self, coefficient_number, dof_number):
-        # TODO: Add domain number
-        return langfmt.array_access(names.w, coefficient_number, dof_number)
+    def generate_coefficient_dof_access(self, coefficient, dof_number):
+        # TODO: Add domain_number = self.ir["domain_numbering"][coefficient.domain().domain_key()]
+        # TODO: Flatten dofs array and use CRS lookup table.
+        # TODO: Apply integral specific renumbering.
+        return ArrayAccess(names.w, (coefficient.count(), dof_number))
 
     def generate_domain_dof_access(self, num_vertices, gdim, vertex, component):
         # TODO: Add domain number as argument here, and {domain_offset} to array indexing:
@@ -48,50 +66,33 @@ class FFCLanguageFormatter(MultiFunction, CppFormattingRules):
 
     # === Multifunction handlers for all modified terminal types, basic C++ types are covered by base class ===
 
-    def modified_terminal(self, o):
-        "Analyse underlying modified terminal structure and pass on to handler of terminal type."
-        mt = analyse_modified_terminal2(o)
-        return self(mt.terminal, mt)
+    def expr(self, e, mt, tabledata):
+        error("Missing handler for type {0}.".format(str(e)))
 
-    # Terminal modifiers TODO: Any more? Add local_value/pullback
-    grad = modified_terminal
-    local_grad = modified_terminal
-    restriction = modified_terminal
-    indexed = modified_terminal
-    facet_avg = modified_terminal
-    cell_avg = modified_terminal
+    def argument(self, e, mt, tabledata):
 
-    def argument(self, e, mt):
         # Expecting only local derivatives and values here
-        assert not (mt.global_derivatives and any(mt.global_derivatives))
+        assert not (mt.global_derivatives and any(mt.global_derivatives)) # FIXME: Clarify format
         #assert mt.global_component is None
 
-        t = mt.terminal
-        element = t.element()
-
-        # Pick entity index variable name, following ufc argument names
-        entity = format_entity_name(self._entitytype, mt.restriction) # FIXME
-
-        idof = "{0}{1}".format(names.ia, t.number())
-
-        # TODO: Local component
-        flat_component = flatten_component(mt.component, element.value_shape(), element.symmetry())
-
         # No need to store basis function value in its own variable, just get table value directly
-        access = format_element_table_access(self._ir, self._entitytype, self._num_points,
-                                             element, flat_component, (), entity, idof, True) # FIXME
-
+        uname, begin, end = tabledata
+        entity = format_entity_name(self.ir["entitytype"], mt.restriction) # FIXME: Clarify mt.restriction format
+        iq = names.iq
+        idof = "{0}{1}".format(names.ia, mt.terminal.number())
+        dof = format_code(Sub(idof, begin))
+        access = ArrayAccess(uname, (entity, iq, dof))
         return access
 
-    def coefficient(self, e, mt):
+    def coefficient(self, e, mt, tabledata):
         t = mt.terminal
         if t.is_cellwise_constant():
-            access = self._constant_coefficient(e, mt)
+            access = self._constant_coefficient(e, mt, tabledata)
         else:
-            access = self._varying_coefficient(e, mt)
+            access = self._varying_coefficient(e, mt, tabledata)
         return access
 
-    def _constant_coefficient(self, e, mt):
+    def _constant_coefficient(self, e, mt, tabledata):
         # Map component to flat index
         vi2si, si2vi = build_component_numbering(mt.terminal.shape(), mt.terminal.element().symmetry())
         flat_component = vi2si[mt.component]
@@ -101,9 +102,9 @@ class FFCLanguageFormatter(MultiFunction, CppFormattingRules):
             flat_component += len(si2vi)
 
         # Return direct reference to dof array
-        return self.generate_coefficient_dof_access(mt.terminal.count(), flat_component)
+        return self.generate_coefficient_dof_access(mt.terminal, flat_component)
 
-    def _varying_coefficient(self, e, mt):
+    def _varying_coefficient(self, e, mt, tabledata):
         t = mt.terminal
 
         # Expecting only local derivatives and values here
@@ -132,7 +133,7 @@ class FFCLanguageFormatter(MultiFunction, CppFormattingRules):
         return access
 
 
-    def _old_geometric_quantity(self, o, mt):
+    def _old_geometric_quantity(self, o, mt, tabledata):
         "Generic rendering of variable names for all piecewise constant geometric quantities."
         uflacs_assert(not mt.global_derivatives and not mt.local_derivatives,
                       "Compiler should be able to simplify derivatives of geometry.")
@@ -152,73 +153,101 @@ class FFCLanguageFormatter(MultiFunction, CppFormattingRules):
 
         return code
 
-    def spatial_coordinate(self, e, mt):
+    def spatial_coordinate(self, e, mt, tabledata):
         # FIXME: See define_coord_vars
         access = "x" # FIXME
         return access
 
-    def local_coordinate(self, e, mt):
+    def local_coordinate(self, e, mt, tabledata):
         # FIXME: See define_coord_vars
         access = "X" # FIXME
         return access
 
-    def jacobian(self, e, mt):
+    def jacobian(self, e, mt, tabledata):
         # FIXME: See _define_piecewise_geometry  define_piecewise_geometry
         access = "J" # FIXME
         return access
 
-    def jacobian_inverse(self, e, mt):
+    def jacobian_inverse(self, e, mt, tabledata):
         access = "K" # FIXME
         return access
 
-    def jacobian_determinant(self, e, mt):
+    def jacobian_determinant(self, e, mt, tabledata):
         access = "detJ" # FIXME
         return access
 
-    def facet_jacobian(self, e, mt):
+    def facet_jacobian(self, e, mt, tabledata):
         access = "J" # FIXME
         return access
 
-    def facet_jacobian_inverse(self, e, mt):
+    def facet_jacobian_inverse(self, e, mt, tabledata):
         access = "K" # FIXME
         return access
 
-    def facet_jacobian_determinant(self, e, mt):
+    def facet_jacobian_determinant(self, e, mt, tabledata):
         access = "detJ" # FIXME
         return access
 
-    def facet_normal(self, e, mt):
+    def facet_normal(self, e, mt, tabledata):
         access = "n" # FIXME
         return access
 
     # === Generate code definitions ===
 
-    def generate_modified_terminal_definition(self, mt):
+    def generate_modified_terminal_definition(self, mt, name, tabledata):
         if isinstance(mt.terminal, Argument):
-            return self.generate_argument_definition(mt)
+            return self.generate_argument_definition(mt, name, tabledata)
         if isinstance(mt.terminal, Coefficient):
-            return self.generate_coefficient_definition(mt)
+            return self.generate_coefficient_definition(mt, name, tabledata)
         if isinstance(mt.terminal, GeometricQuantity):
-            return self.generate_geometric_quantity_definition(mt)
+            return self.generate_geometric_quantity_definition(mt, name, tabledata)
         error("Unknown terminal type {0}.".format(type(mt.terminal)))
 
-    def generate_argument_definition(self, mt):
+    def generate_argument_definition(self, mt, name, tabledata):
         code = []
         return code
 
-    def generate_coefficient_definition(self, mt):
-        # FIXME: See ffc_statement_formatter
-        #  define_coord_dependent_coefficients
-        #  _define_coord_dependent_coefficient
-        #
+    def generate_coefficient_definition(self, mt, name, tabledata):
         code = []
-        if not t.is_cellwise_constant():
-            name = generate_varying_coefficient_access(mt)
-            value = "1.0" # FIXME: Linear combination of dofs and tables
-            code += ["const double {name} = {value};".format(name, value)]
+        if mt.terminal.is_cellwise_constant():
+            # For a constant coefficient we reference the dofs directly, so no definition needed
+            pass
+        else:
+            # No need to store basis function value in its own variable, just get table value directly
+            uname, begin, end = tabledata
+            entity = format_entity_name(self.ir["entitytype"], mt.restriction) # FIXME: Clarify mt.restriction format
+            iq = names.iq
+            idof = names.ic
+
+            dof = format_code(Sub(idof, begin))
+            table_access = ArrayAccess(uname, (entity, iq, dof))
+
+            dof_access = self.generate_coefficient_dof_access(mt.terminal, idof)
+
+            prod = Mul(dof_access, table_access)
+            body = [AssignAdd(name, prod)]
+
+            # Loop to accumulate linear combination of dofs and tables
+            code += [VariableDecl("const double", name, "0.0")]
+            code += [ForRange(idof, begin, end, body=body)]
+
         return code
 
-    def generate_geometric_quantity_definition(self, mt):
+    def generate_geometric_quantity_definition(self, mt, name, tabledata):
         code = []
-        code += ["double geometry = 1.0;"] # FIXME
+
+        # FIXME: Implement:
+        # SpatialCoordinate
+        # LocalCoordinate
+        # Jacobian
+        # JacobianInverse
+        # JacobianDeterminant
+        # FacetJacobian
+        # FacetJacobianInverse
+        # FacetJacobianDeterminant
+        # FacetNormal
+        # Others...
+
+        code += ["double {name} = 1.0; // FIXME".format(name=name)]
+
         return code

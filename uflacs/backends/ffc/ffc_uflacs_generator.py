@@ -1,14 +1,18 @@
 
 from uflacs.generation.integralgenerator import IntegralGenerator
-from uflacs.backends.ffc.scratch import FFCLanguageFormatter
+from uflacs.codeutils.cpp_expr_formatting_rules import CppExprFormatter
+from uflacs.backends.ffc.scratch import FFCBackendFormatter
 
 def generate_tabulate_tensor_code(ir, parameters):
 
+    # Create C++ backend
+    language_formatter = CppExprFormatter()
+
     # Create FFC backend
-    language_formatter = FFCLanguageFormatter(ir)
+    backend_formatter = FFCBackendFormatter(ir, parameters)
 
     # Create code generator for integral body
-    ig = IntegralGenerator(ir, language_formatter)
+    ig = IntegralGenerator(ir, language_formatter, backend_formatter)
 
     # Generate code for the tabulate_tensor body
     body = ig.generate()

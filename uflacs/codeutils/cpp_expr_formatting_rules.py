@@ -13,10 +13,12 @@ class CppFormattingRules(object):
 
     # === Utility functions ===
 
-    def add_include(self, include):
+    # TODO: Other solution to this
+    def add_include(self, include, system):
         "Callback to be implemented by subclass for recording includes needed."
         pass
 
+    # TODO: Other solution to this
     def add_using(self, using):
         "Callback to be implemented by subclass for recording using symbols needed."
         pass
@@ -140,7 +142,7 @@ class CppFormattingRules(object):
     # === Formatting rules for bessel functions ===
 
     def _bessel(self, o, n, v, name):
-        self.add_include("#include <boost/math/special_functions.hpp>")
+        self.add_include("boost/math/special_functions.hpp", True)
         self.add_using("boost::math::{0}".format(name))
         return "{0}({1}, {2})".format(name, n, v)
 
@@ -189,9 +191,8 @@ class CppFormattingRules(object):
         return "!{0}".format(a)
 
 from ufl.algorithms import MultiFunction
-class CppFormatter(MultiFunction, CppFormattingRules):
+class CppExprFormatter(MultiFunction, CppFormattingRules):
     """C++ formatter class. Customize by copying this class and overriding specific rules."""
     def __init__(self):
         MultiFunction.__init__(self)
         CppFormattingRules.__init__(self)
-

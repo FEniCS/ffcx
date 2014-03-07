@@ -155,13 +155,17 @@ class Namespace(Code):
         return format_code(code, level, indentchar, keywords)
 
 class VariableDecl(Code):
-    def __init__(self, typename, name):
+    def __init__(self, typename, name, value=None):
         self.typename = typename
         self.name = name
+        self.value = value
 
     def format(self, level, indentchar, keywords):
         sep = " "
-        code = (self.typename, sep, self.name, ";")
+        code = (self.typename, sep, self.name)
+        if self.value is not None:
+            code += (" = ", self.value)
+        code += (";",)
         return format_code(code, level, indentchar, keywords)
 
 class ArrayDecl(Code):
@@ -195,15 +199,15 @@ class ArrayAccess(Code):
             self.indices = (indices,)
 
         # Early error checking of array dimensions
-        if any(isinstance(i, int) and i < 0 for i in indices):
+        if any(isinstance(i, int) and i < 0 for i in self.indices):
             raise ValueError("Index value < 0.")
 
         # Additional checks possible if we get an ArrayDecl instead of just a name
         if isinstance(arraydecl, ArrayDecl):
-            if len(indices) != len(arraydecl.sizes):
+            if len(self.indices) != len(arraydecl.sizes):
                 raise ValueError("Invalid number of indices.")
             if any((isinstance(i, int) and isinstance(d, int) and i >= d)
-                   for i,d in zip(indices, arraydecl.sizes)):
+                   for i,d in zip(self.indices, arraydecl.sizes)):
                 raise ValueError("Index value >= array dimension.")
 
     def format(self, level, indentchar, keywords):

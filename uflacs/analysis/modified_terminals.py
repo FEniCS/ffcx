@@ -8,29 +8,10 @@ from ufl.sorting import sorted_expr
 from uflacs.utils.log import uflacs_assert, warning, error
 
 
-# TODO: Add LocalGrad, FacetAvg and CellAvg to modifiers everywhere relevant and handle in table extraction
-
-
+#########################################################################################
 # This is THE definition of modifier types, try to use this everywhere
 terminal_modifier_types = (LocalGrad, Grad, Restricted, Indexed, FacetAvg, CellAvg)
-
-def is_modified_terminal(v):
-    "Check if v is a terminal or a terminal wrapped in terminal modifier types."
-    while not isinstance(v, Terminal):
-        if isinstance(v, terminal_modifier_types):
-            v = v.operands()[0]
-        else:
-            return False
-    return True
-
-def strip_modified_terminal(v):
-    "Extract core Terminal from a modified terminal or return None."
-    while not isinstance(v, Terminal):
-        if isinstance(v, terminal_modifier_types):
-            v = v.operands()[0]
-        else:
-            return None
-    return v
+#########################################################################################
 
 
 class ModifiedTerminal(object):
@@ -45,7 +26,8 @@ class ModifiedTerminal(object):
         component   - TODO: Explain
         restriction - TODO: Explain
     """
-    def __init__(self, terminal, global_derivatives, local_derivatives, averaged, restriction, component):
+    def __init__(self, expr, terminal, global_derivatives, local_derivatives, averaged, restriction, component):
+        self.expr = expr
         self.terminal = terminal
         self.component = component # TODO: Make this global_component and local_component
         self.global_derivatives = global_derivatives
@@ -81,7 +63,30 @@ class ModifiedTerminal(object):
         s += ["restriction:        {0}".format(self.restriction)]
         return '\n'.join(s)
 
-def analyse_modified_terminal2(o):
+
+
+def is_modified_terminal(v):
+    "Check if v is a terminal or a terminal wrapped in terminal modifier types."
+    while not isinstance(v, Terminal):
+        if isinstance(v, terminal_modifier_types):
+            v = v.operands()[0]
+        else:
+            return False
+    return True
+
+
+def strip_modified_terminal(v):
+    "Extract core Terminal from a modified terminal or return None."
+    while not isinstance(v, Terminal):
+        if isinstance(v, terminal_modifier_types):
+            v = v.operands()[0]
+        else:
+            return None
+    return v
+
+
+# TODO: Rename without the 2
+def analyse_modified_terminal2(expr):
     """Analyse a so-called 'modified terminal' expression and return its properties in more compact form.
 
     A modified terminal expression is an object of a Terminal subtype, wrapped in terminal modifier types.
@@ -89,16 +94,16 @@ def analyse_modified_terminal2(o):
     The wrapper types can include 0-* Grad or LocalGrad objects,
     and 0-1 Restricted, 0-1 Indexed, and 0-1 FacetAvg or CellAvg objects.
     """
-    t = o
+    # Data to determine
     component = None
     global_derivatives = []
     local_derivatives = []
     averaged = None
     restriction = None
-    while not isinstance(t, Terminal):
-        if not isinstance(t, terminal_modifier_types):
-            error("Unexpected type %s object %s." % (type(t), repr(t)))
 
+    # Start with expr and strip away layers of modifiers
+    t = expr
+    while not isinstance(t, Terminal):
         if isinstance(t, Indexed):
             uflacs_assert(component is None, "Got twice indexed terminal.")
             t, i = t.operands()
@@ -132,6 +137,14 @@ def analyse_modified_terminal2(o):
             averaged = "facet"
             t, = t.operands()
 
+        elif isinstance(t, terminal_modifier_types):
+            error("Missing handler for terminal modifier type %s, object is %s." % (type(t), repr(t)))
+
+        else:
+            error("Unexpected type %s object %s." % (type(t), repr(t)))
+
+    # FIXME: Flatten component here?
+
     component = tuple(component) if component else ()
     global_derivatives = tuple(sorted(global_derivatives))
     local_derivatives = tuple(sorted(local_derivatives))
@@ -141,10 +154,4 @@ def analyse_modified_terminal2(o):
     uflacs_assert(all(c >= 0 and c < d for c,d in zip(component, t.shape())),
                   "Component indices %s are outside terminal shape %s" % (component, t.shape()))
 
-    return ModifiedTerminal(t, global_derivatives, local_derivatives, averaged, restriction, component)
-
-
-def analyse_modified_terminal(o): # FIXME: Temporary wrapper to transition from tuple to mt struct
-    mt = analyse_modified_terminal2(o)
-    return (mt.terminal, mt.component, mt.derivatives, mt.restriction)
-
+    return ModifiedTerminal(expr, t, global_derivatives, local_derivatives, averaged, restriction, component)
