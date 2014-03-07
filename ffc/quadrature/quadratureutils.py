@@ -18,9 +18,10 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2007-03-16
-# Last changed: 2014-03-05
-
-# Hacked by Marie E. Rognes, 2013.
+# Last changed: 2014-03-07
+#
+# Hacked by Marie E. Rognes 2013
+# Modified by Anders Logg 2014
 
 # Python modules.
 import numpy
@@ -64,6 +65,8 @@ def flatten_psi_tables(tables, entity_type):
       element_map - { num_quad_points: {ufl_element: element_number} }.
       flat_tables - { unique_table_name: values[ip,dof] }.
     """
+
+    print tables
 
     generate_psi_name = format["psi name"]
 
@@ -109,8 +112,8 @@ def flatten_psi_tables(tables, entity_type):
                             name = generate_psi_name(counter, entity_type, entity, component, derivs, avg)
 
                             # Verify shape of basis (can be omitted for speed if needed).
-                            ffc_assert(len(numpy.shape(psi_table)) == 2 and numpy.shape(psi_table)[0] == num_points,
-                                        "This table has the wrong shape: " + str(psi_table))
+                            ffc_assert(num_points is None or (len(numpy.shape(psi_table)) == 2 and numpy.shape(psi_table)[0] == num_points),
+                                       "This table has the wrong shape: " + str(psi_table))
                             # Verify uniqueness of names
                             ffc_assert(name not in flat_tables,
                                         "Table name is not unique, something is wrong:\n  name = %s\n  table = %s\n" % (name, flat_tables))

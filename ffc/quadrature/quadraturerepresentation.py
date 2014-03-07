@@ -21,7 +21,7 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-03-05
+# Last changed: 2014-03-07
 
 import numpy, itertools
 
@@ -176,8 +176,8 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, domain_type, c
             terms[i] = _transform_integrals(transformer, integrals_dict, domain_type)
 
     elif domain_type == "quadrature_cell":
-        # Note: Perform same transformations as for "cell" domain type
-        # Compute transformed integrals.
+
+        # Compute transformed integrals (same as for cell integrals).
         info("Transforming quadrature integral")
         transformer.update_cell()
         terms = _transform_integrals(transformer, integrals_dict, domain_type)
@@ -198,7 +198,7 @@ def _create_quadrature_points_and_weights(domain_type,
     elif domain_type == "point":
         (points, weights) = ([()], numpy.array([1.0,])) # TODO: Will be fixed
     elif domain_type == "quadrature_cell":
-        (points, weights) = ([], [])
+        (points, weights) = (None, None)
     else:
         error("Unknown integral type: " + str(domain_type))
     return (points, weights)
@@ -268,7 +268,7 @@ def _tabulate_psi_table(domain_type, cellname, tdim, element, deriv_order, point
     # handling domain types generically extend to other parts of the code?
 
     # Handle case when list of points is empty
-    if len(points) == 0:
+    if points is None:
         return _tabulate_empty_psi_table(tdim, deriv_order)
 
     # Otherwise, call FIAT to tabulate
@@ -317,7 +317,7 @@ def _tabulate_basis(sorted_integrals, form_data, itg_data):
     quadrature_weights = {}
     psi_tables = {}
     integrals = {}
-    avg_elements = { "cell": [], "facet": [] }
+    avg_elements = {"cell": [], "facet": []}
 
     domain_type = itg_data.domain_type
     cellname = itg_data.domain.cell().cellname()
@@ -350,7 +350,7 @@ def _tabulate_basis(sorted_integrals, form_data, itg_data):
                                                                   facet_cellname, degree, rule)
 
         # The TOTAL number of weights/points
-        len_weights = len(weights)
+        len_weights = None if weights is None else len(weights)
 
         # Assert that this is unique
         ffc_assert(len_weights not in quadrature_weights, \

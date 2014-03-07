@@ -22,7 +22,7 @@ transformers to translate UFL expressions."""
 # Modified by Garth N. Wells, 2013
 #
 # First added:  2009-10-13
-# Last changed: 2014-03-05
+# Last changed: 2014-03-06
 
 # Python modules.
 from itertools import izip
@@ -977,8 +977,8 @@ class QuadratureTransformerBase(Transformer):
         generate_psi_name = format["psi name"]
 
         # Only support test and trial functions.
-        indices = { 0: format["first free index"],
-                    1: format["second free index"]}
+        indices = {0: format["first free index"],
+                   1: format["second free index"]}
 
         # Check that we have a basis function.
         ffc_assert(ufl_argument.number() in indices,
@@ -988,6 +988,9 @@ class QuadratureTransformerBase(Transformer):
 
         # Get element counter and loop index.
         element_counter = self.element_map[1 if avg else self.points][ufl_argument.element()]
+
+        print "element_counter =", element_counter
+
         loop_index = indices[ufl_argument.number()]
 
         # Create basis access, we never need to map the entry in the basis table

@@ -16,7 +16,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2014-03-04
-# Last changed: 2014-03-05
+# Last changed: 2014-03-06
 #
 # Bilinear form defined in terms of a quadrature integral dQ.
 #

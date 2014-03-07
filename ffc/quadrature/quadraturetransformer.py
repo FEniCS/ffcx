@@ -21,7 +21,7 @@
 # Modified by Anders Logg 2009, 2013
 #
 # First added:  2009-02-09
-# Last changed: 2013-01-10
+# Last changed: 2014-03-07
 
 # Python modules.
 from numpy import shape
@@ -692,6 +692,8 @@ class QuadratureTransformer(QuadratureTransformerBase):
     def _create_entry_data(self, val, domain_type):
         # Multiply value by weight and determinant
         # Create weight and scale factor.
+
+        print "CHECK", self.points
         weight = format["weight"](self.points)
         if self.points > 1:
             weight += format["component"]("", format["integration points"])

@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-12-16
-# Last changed: 2014-03-05
+# Last changed: 2014-03-07
 
 # Python modules
 import re, numpy, platform
@@ -222,7 +222,7 @@ format.update({
 #    "basis constant":     lambda i: "B%d" % i,
     "function value":     lambda i: "F%d" % i,
     "nonzero columns":    lambda i: "nzc%d" % i,
-    "weight":             lambda i: "W%d" % (i),
+    "weight":             lambda i: "W" if i is None else "W%d" % (i),
     "psi name":           lambda c, et, e, co, d, a: _generate_psi_name(c, et, e, co, d, a),
     # both
     "free indices":       ["r","s","t","u"],
