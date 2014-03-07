@@ -368,11 +368,14 @@ def _generate_element_tensor(integrals, sets, optimise_parameters):
             ("Number of operations to compute element tensor for following IP loop = %s" % str(quadrature_ops)))
 
         # Loop code over all IPs.
-        if points > 1:
-            element_code += f_loop(ip_code, [(f_ip, 0, points)])
-        else:
+        if points == 0:
             element_code.append(f_comment("Only 1 integration point, omitting IP loop."))
             element_code += ip_code
+        elif points is None:
+            num_points = "num_quadrature_points"
+            element_code += f_loop(ip_code, [(f_ip, 0, num_points)])
+        else:
+            element_code += f_loop(ip_code, [(f_ip, 0, points)])
 
     return (element_code, members_code, tensor_ops_count)
 
