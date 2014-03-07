@@ -75,6 +75,9 @@ format.update({
     "uint declaration":               "unsigned int",
     "static const uint declaration":  "static const unsigned int",
     "static const float declaration": "static const double",
+    "vector table declaration":       "std::vector< std::vector<double> >",
+    "double array declaration":       "double*",
+    "const double array declaration": "const double*",
     "const float declaration":        lambda v, w: "const double %s = %s;" % (v, w),
     "const uint declaration":         lambda v, w: "const unsigned int %s = %s;" % (v, w),
     "dynamic array":                  lambda t, n, s: "%s *%s = new %s[%s];" % (t, n, t, s),
@@ -187,26 +190,27 @@ format.update({
 # code generators.
 format.update({
     # evaluate_basis and evaluate_basis_derivatives
-    "tmp value":                lambda i: "tmp%d" % i,
-    "tmp ref value":            lambda i: "tmp_ref%d" % i,
-    "local dof":                "dof",
-    "basisvalues":              "basisvalues",
-    "coefficients":             lambda i: "coefficients%d" %(i),
-    "num derivatives":          lambda t_or_g :"num_derivatives" + t_or_g,
-    "derivative combinations":  lambda t_or_g :"combinations" + t_or_g,
-    "transform matrix":         "transform",
-    "transform Jinv":           "Jinv",
-    "dmats":                    lambda i: "dmats%s" %(i),
-    "dmats old":                "dmats_old",
-    "reference derivatives":    "derivatives",
-    "dof values":               "dof_values",
-    "dof map if":               lambda i,j: "%d <= %s && %s <= %d"\
-                                % (i, format["argument basis num"], format["argument basis num"], j),
-    "dereference pointer":      lambda n: "*%s" % n,
-    "reference variable":       lambda n: "&%s" % n,
-    "call basis":               lambda i, s: "evaluate_basis(%s, %s, x, vertex_coordinates, cell_orientation);" % (i, s),
-    "call basis all":           "evaluate_basis_all(values, x, vertex_coordinates, cell_orientation);",
-    "call basis_derivatives":   lambda i, s: "evaluate_basis_derivatives(%s, n, %s, x, vertex_coordinates, cell_orientation);" % (i, s),
+    "tmp value":                  lambda i: "tmp%d" % i,
+    "tmp ref value":              lambda i: "tmp_ref%d" % i,
+    "local dof":                  "dof",
+    "basisvalues":                "basisvalues",
+    "coefficients":               lambda i: "coefficients%d" %(i),
+    "num derivatives":            lambda t_or_g :"num_derivatives" + t_or_g,
+    "derivative combinations":    lambda t_or_g :"combinations" + t_or_g,
+    "transform matrix":           "transform",
+    "transform Jinv":             "Jinv",
+    "dmats":                      lambda i: "dmats%s" %(i),
+    "dmats old":                  "dmats_old",
+    "reference derivatives":      "derivatives",
+    "dof values":                 "dof_values",
+    "dof map if":                 lambda i,j: "%d <= %s && %s <= %d"\
+                                  % (i, format["argument basis num"], format["argument basis num"], j),
+    "dereference pointer":        lambda n: "*%s" % n,
+    "reference variable":         lambda n: "&%s" % n,
+    "call basis":                 lambda i, s: "evaluate_basis(%s, %s, x, vertex_coordinates, cell_orientation);" % (i, s),
+    "call basis_all":             "evaluate_basis_all(values, x, vertex_coordinates, cell_orientation);",
+    "call basis_derivatives":     lambda i, s: "evaluate_basis_derivatives(%s, n, %s, x, vertex_coordinates, cell_orientation);" % (i, s),
+    "call basis_derivatives_all": lambda i, s: "evaluate_basis_derivatives_all(n, %s, x, vertex_coordinates, cell_orientation);" % s,
 
     # quadrature code generators
     "integration points": "ip",
@@ -226,7 +230,8 @@ format.update({
     "psi name":           lambda c, et, e, co, d, a: _generate_psi_name(c, et, e, co, d, a),
     # both
     "free indices":       ["r","s","t","u"],
-    "matrix index":       lambda i, j, range_j: _matrix_index(i, str(j), str(range_j))
+    "matrix index":       lambda i, j, range_j: _matrix_index(i, str(j), str(range_j)),
+    "quadrature point":   lambda i, gdim: "quadrature_points + %s*%d" % (i, gdim)
 })
 
 # Misc
@@ -259,16 +264,17 @@ format.update({
     "generate max facet edge length": lambda tdim, gdim, r=None: max_facet_edge_length[tdim][gdim] % {"restriction": _choose_map[r]},
     "generate ip coordinates":  lambda g, num_ip, name, ip, r=None: (ip_coordinates[g][0], ip_coordinates[g][1] % \
                                 {"restriction": _choose_map[r], "ip": ip, "name": name, "num_ip": num_ip}),
-    "scale factor snippet":    scale_factor,
-    "map onto physical":       map_onto_physical,
-    "combinations":            combinations_snippet,
-    "transform snippet":       transform_snippet,
-    "evaluate function":       evaluate_f,
-    "ufc comment":             comment_ufc,
-    "dolfin comment":          comment_dolfin,
-    "header_h":                header_h,
-    "header_c":                header_c,
-    "footer":                  footer
+    "scale factor snippet":     scale_factor,
+    "map onto physical":        map_onto_physical,
+    "evaluate basis snippet":   eval_basis,
+    "combinations":             combinations_snippet,
+    "transform snippet":        transform_snippet,
+    "evaluate function":        evaluate_f,
+    "ufc comment":              comment_ufc,
+    "dolfin comment":           comment_dolfin,
+    "header_h":                 header_h,
+    "header_c":                 header_c,
+    "footer":                   footer
 })
 
 # Class names

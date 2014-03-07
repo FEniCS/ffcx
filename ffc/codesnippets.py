@@ -23,12 +23,12 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-28
-# Last changed: 2013-09-24
+# Last changed: 2014-03-07
 
 # Code snippets
 
 __all__ = ["comment_ufc", "comment_dolfin", "header_h", "header_c", "footer",
-           "compute_jacobian", "compute_jacobian_inverse"]
+           "compute_jacobian", "compute_jacobian_inverse", "eval_basis"]
 
 __old__ = ["evaluate_f",
            "facet_determinant", "map_onto_physical",
@@ -760,3 +760,30 @@ facet_area = {1: {1: _facet_area_1D,
 min_facet_edge_length = {3: {3: _min_facet_edge_length_3D}}
 
 max_facet_edge_length = {3: {3: _max_facet_edge_length_3D}}
+
+# Misc code snippets
+
+def eval_basis(name, gdim, num_basis_functions):
+    "Code for calling evaluate basis (derivatives) at quadrature points"
+
+    # Extract
+
+    num_basis_functions = 5
+
+    variables = {"name": name,
+                 "gdim": gdim,
+                 "num_basis_functions": num_basis_functions}
+
+    return """\
+std::vector< std::vector<double> > %(name)s(num_quadrature_points);
+
+// Iterate over quadrature points and tabulate bases
+for (unsigned int ip = 0; ip < num_quadrature_points; ip++)
+{
+  %(name)s[ip].resize(%(num_basis_functions)s);
+  const double* values = &%(name)s[i][0];
+  const double* x = quadrature_points + ip*%(gdim)s;
+  const int cell_orientation = 0; // cell orientation currently not supported
+  evaluate_basis_all(values, x, vertex_coordinates, cell_orientation);
+}
+""" % variables

@@ -22,7 +22,7 @@ representation of the code found in FIAT_NEW."""
 # Modified by Anders Logg 2013
 #
 # First added:  2007-04-16
-# Last changed: 2013-10-07
+# Last changed: 2014-03-07
 
 # Python modules
 import math
@@ -98,7 +98,7 @@ def _evaluate_basis_derivatives_all(data):
     # If n == 0, call evaluate_basis.
     code += [format["comment"]("Call evaluate_basis_all if order of derivatives is equal to zero.")]
     cond = format["argument derivative order"] + format["is equal"] + format["int"](0)
-    val = [format["call basis all"]]
+    val = [format["call basis_all"]]
     val += [format["return"]("")]
     code += [format["if"](cond, indent("\n".join(val),2))]
 

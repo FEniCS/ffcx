@@ -238,7 +238,7 @@ def _tabulate_tensor(ir, parameters):
     name_map = ir["name_map"]
     tables = ir["unique_tables"]
     tables.update(affine_tables) # TODO: This is not populated anywhere, remove?
-    common += _tabulate_psis(tables, used_psi_tables, name_map, used_nzcs, opt_par)
+    common += _tabulate_psis(tables, used_psi_tables, name_map, used_nzcs, opt_par, domain_type, gdim)
 
     # Reset the element tensor (array 'A' given as argument to tabulate_tensor() by assembler)
     # Handle functionals.
@@ -587,24 +587,31 @@ def _tabulate_weights(quadrature_weights):
 
     return code
 
-def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_parameters):
+def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_parameters, domain_type, gdim):
     "Tabulate values of basis functions and their derivatives at quadrature points."
 
     # Prefetch formats to speed up code generation.
-    f_comment     = format["comment"]
-    f_table       = format["static const float declaration"]
-    f_component   = format["component"]
-    f_const_uint  = format["static const uint declaration"]
-    f_nzcolumns   = format["nonzero columns"]
-    f_list        = format["list"]
-    f_decl        = format["declaration"]
-    f_tensor      = format["tabulate tensor"]
-    f_new_line    = format["new line"]
-    f_int         = format["int"]
+    f_comment      = format["comment"]
+    f_table        = format["static const float declaration"]
+    f_vector_table = format["vector table declaration"]
+    f_double_array = format["const double array declaration"]
+    f_component    = format["component"]
+    f_const_uint   = format["static const uint declaration"]
+    f_nzcolumns    = format["nonzero columns"]
+    f_list         = format["list"]
+    f_decl         = format["declaration"]
+    f_tensor       = format["tabulate tensor"]
+    f_new_line     = format["new line"]
+    f_int          = format["int"]
+    f_eval_basis   = format["call basis_all"]
+    f_eval_derivs  = format["call basis_derivatives_all"]
+    f_loop         = format["generate loop"]
+    f_quad_point   = format["quadrature point"]
+    f_eval_basis   = format["evaluate basis snippet"]
 
     # FIXME: Check if we can simplify the tabulation
     code = []
-    code += [f_comment("Value of basis functions at quadrature points.")]
+    code += [f_comment("Values of basis functions at quadrature points.")]
 
     # Get list of non zero columns, if we ignore ones, ignore columns with one component.
     if optimise_parameters["ignore ones"]:
@@ -636,16 +643,36 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
 
     # Loop items in table and tabulate.
     for name in sorted(list(used_psi_tables)):
+
         # Only proceed if values are still used (if they're not remapped).
         vals = tables[name]
-        if not vals is None:
-            # Add declaration to name.
-            ip, dofs = numpy.shape(vals)
-            decl_name = f_component(name, [ip, dofs])
 
-            # Generate array of values.
-            value = f_tensor(vals)
-            code += [f_decl(f_table, decl_name, f_new_line + value), ""]
+        if not vals is None:
+
+            if domain_type == "quadrature_cell":
+
+                ffc_assert(len(vals) == 0, "Not expecting any basis function values for quadrature cell integral.")
+
+                # Call evaluate_basis_[derivatives_]all to compute values
+                num_basis_functions = 5 # FIXME
+                code += [f_eval_basis(name, gdim, num_basis_functions)]
+
+                print
+                print "CODE"
+                print name
+                print
+                print "\n".join(code)
+                exit(1)
+
+            else:
+
+                # Add declaration to name.
+                ip, dofs = numpy.shape(vals)
+                decl_name = f_component(name, [ip, dofs])
+
+                # Generate array of values.
+                value = f_tensor(vals)
+                code += [f_decl(f_table, decl_name, f_new_line + value), ""]
 
         # Tabulate non-zero indices.
         if optimise_parameters["eliminate zeros"]:

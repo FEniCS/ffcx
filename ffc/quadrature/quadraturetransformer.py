@@ -695,7 +695,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         print "CHECK", self.points
         weight = format["weight"](self.points)
-        if self.points > 1:
+        if self.points is None or self.points > 1:
             weight += format["component"]("", format["integration points"])
 
         # Update sets of used variables.
