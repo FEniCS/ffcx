@@ -9,7 +9,7 @@ from uflacs.codeutils.format_code import (format_code, Indented, Block, Comment,
                                           ForRange,
                                           ArrayDecl, ArrayAccess,
                                           Assign, AssignAdd,
-                                          Product, LinearCombination)
+                                          Product)
 from uflacs.codeutils.indexmapping import IndexMapping, AxisMapping
 from uflacs.geometry.default_names import names
 from uflacs.codeutils.expr_formatter2 import ExprFormatter2

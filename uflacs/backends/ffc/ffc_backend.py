@@ -15,7 +15,8 @@ from uflacs.codeutils.format_code import (format_code,
                                           VariableDecl,
                                           ArrayAccess,
                                           AssignAdd, Assign,
-                                          Add, Sub, Mul,)
+                                          Add, Sub, Mul,
+                                          Sum,)
 
 
 # TODO: The organization of code utilities is a bit messy...
@@ -300,42 +301,39 @@ class FFCDefinitionsBackend(MultiFunction):
             # Reference coordinates are known, no coordinate field, so we compute
             # this component as linear combination of vertex_coordinates "dofs" and table
 
-            if 0:
-                uname, begin, end = tabledata # FIXME: Missing data for spatial_coordinate, inject VCG1 earlier!
-            else:
-                uname = "FIXME"
-                begin = 0
-                end = 0
-
-            entity = format_entity_name(self.ir["entitytype"], mt.restriction)
-            iq = names.iq
-            idof = names.ic # Assuming idof == vertex for scalar linear CG1 element
-
             gdim = len(e)
             assert gdim == mt.terminal.domain().cell().geometric_dimension()
             num_vertices = mt.terminal.domain().cell().topological_dimension() + 1 # FIXME: Get from cellname?
 
             if 0:
-                table_access = ArrayAccess(uname, (entity, iq, Sub(idof, begin)))
-                dof_access = generate_domain_dof_access(num_vertices, gdim, idof, mt.flat_component)
+                uname, begin, end = tabledata # FIXME: Missing data for spatial_coordinate, inject VCG1 earlier!
+            else:
+                uname, begin, end = "FIXME", 0, num_vertices
 
+            # access here is e.g. x0, component 0 of x
+
+            uflacs_assert(end-begin == num_vertices, "Assuming linear element for affine simplices here.")
+            entity = format_entity_name(self.ir["entitytype"], mt.restriction)
+            vertex = names.ic
+
+            if 0: # Generated loop version:
+                table_access = ArrayAccess(uname, (entity, names.iq, vertex))
+                dof_access = generate_domain_dof_access(num_vertices, gdim, vertex, mt.flat_component)
                 prod = Mul(dof_access, table_access)
-                body = [AssignAdd(access, prod)]
 
                 # Loop to accumulate linear combination of dofs and tables
-                code += [VariableDecl("const double", access, "0.0")] # access here is e.g. x0, component 0 of x
-                code += [ForRange(idof, 0, num_vertices, body=body)]
+                code += [VariableDecl("const double", access, "0.0")]
+                code += [ForRange(vertex, 0, num_vertices, body=[AssignAdd(access, prod)])]
 
-            else: # FIXME: Do it this way instead, skip the loop:
-                dofs = []
-                tablevalues = []
-                for idof in range(0, end-begin):
-                    table_access = ArrayAccess(uname, (entity, iq, idof))
-                    dof_access = generate_domain_dof_access(num_vertices, gdim, idof, mt.flat_component)
-                    tablevalues.append(table_access)
-                    dofs.append(dof_access)
-                lincomb = LinearCombination(dofs, tablevalues)
-                code += [VariableDecl("const double", access, lincomb)] # access here is e.g. x0, component 0 of x
+            else: # Inlined version:
+                prods = []
+                for vertex in range(0, num_vertices):
+                    table_access = ArrayAccess(uname, (entity, names.iq, vertex))
+                    dof_access = generate_domain_dof_access(num_vertices, gdim, vertex, mt.flat_component)
+                    prods += [Mul(dof_access, table_access)]
+
+                # Inlined loop to accumulate linear combination of dofs and tables
+                code += [VariableDecl("const double", access, Sum(prods))]
 
         return code
 

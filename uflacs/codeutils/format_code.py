@@ -383,21 +383,6 @@ class Product(NOp):
     op = " * "
 
 
-class LinearCombination(Code):
-    def __init__(self, ops1, ops2):
-        self.ops1 = ops1
-        self.ops2 = ops2
-
-    def format(self, level, indentchar, keywords):
-        # TODO: Handle precedence at this level instead of in the ExprFormatter stuff?
-        code = []
-        for a,b in zip(self.ops1, self.ops2):
-            code.append("{0} * {1}".format(a,b))
-            code.append(" + ")
-        code = tuple(code[:-1])
-        return format_code(code, level, indentchar, keywords)
-
-
 def format_code(code, level=0, indentchar='    ', keywords=None):
     """Format code by stitching together snippets. The code can
     be built recursively using the following types:
