@@ -315,21 +315,25 @@ class FFCDefinitionsBackend(MultiFunction):
             assert gdim == mt.terminal.domain().cell().geometric_dimension()
             num_vertices = mt.terminal.domain().cell().topological_dimension() + 1 # FIXME: Get from cellname?
 
-            dof = format_code(Sub(idof, begin))
-            table_access = ArrayAccess(uname, (entity, iq, dof))
+            if 0:
+                table_access = ArrayAccess(uname, (entity, iq, Sub(idof, begin)))
+                dof_access = generate_domain_dof_access(num_vertices, gdim, idof, mt.flat_component)
 
-            dof_access = generate_domain_dof_access(num_vertices, gdim, idof, mt.flat_component)
+                prod = Mul(dof_access, table_access)
+                body = [AssignAdd(access, prod)]
 
-            prod = Mul(dof_access, table_access)
-            body = [AssignAdd(access, prod)]
+                # Loop to accumulate linear combination of dofs and tables
+                code += [VariableDecl("const double", access, "0.0")] # access here is e.g. x0, component 0 of x
+                code += [ForRange(idof, 0, num_vertices, body=body)]
 
-            # Loop to accumulate linear combination of dofs and tables
-            code += [VariableDecl("const double", access, "0.0")] # access here is e.g. x0, component 0 of x
-            code += [ForRange(idof, 0, num_vertices, body=body)]
-
-            if 0: # FIXME: Do it this way instead, skip the loop:
-                dofs = FIXME
-                tablevalues = FIXME
+            else: # FIXME: Do it this way instead, skip the loop:
+                dofs = []
+                tablevalues = []
+                for idof in range(0, end-begin):
+                    table_access = ArrayAccess(uname, (entity, iq, idof))
+                    dof_access = generate_domain_dof_access(num_vertices, gdim, idof, mt.flat_component)
+                    tablevalues.append(table_access)
+                    dofs.append(dof_access)
                 lincomb = LinearCombination(dofs, tablevalues)
                 code += [VariableDecl("const double", access, lincomb)] # access here is e.g. x0, component 0 of x
 
