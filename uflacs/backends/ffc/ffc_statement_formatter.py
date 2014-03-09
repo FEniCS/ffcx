@@ -359,17 +359,6 @@ class FFCStatementFormatter(object):
         code += [""]
         return code
 
-    def define_piecewise_coefficients(self):
-        code = []
-        for c in self._dependency_handler.mapped_coefficients:
-            if c.is_cellwise_constant():
-                cc = c.count()
-                code.append(langfmt.comment("Coefficient w%d = %s[%d][0:%d]" % (cc, names.w, cc, self._ir["coeff_idims"][cc])))
-        if code:
-            comment = langfmt.comment("Constants are fetched directly from dof array %s[][]:" % (names.w,))
-            code = [comment] + code + [""]
-        return code
-
     def _define_coord_dependent_coefficient(self, w, reqdata):
         "Define a single coordinate dependent coefficient."
         code = []

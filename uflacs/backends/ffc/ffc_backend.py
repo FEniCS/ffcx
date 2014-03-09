@@ -34,6 +34,49 @@ def format_entity_name(entitytype, r):
         entity = names.vertex
     return entity
 
+def format_mt_der(mt):
+    # Expecting only local derivatives here
+    assert not mt.global_derivatives
+    # Add derivatives to name
+    if mt.local_derivatives:
+        der = "_d{0}".format(''.join(map(str, mt.local_derivatives)))
+    else:
+        der = ""
+    return der
+
+def format_mt_comp(mt):
+    # Add flattened component to name (TODO: this should be the local component?)
+    if mt.component:
+        comp = "_c{0}".format(mt.flat_component)
+    else:
+        comp = ""
+    return comp
+
+def format_mt_avg(mt):
+    # Add averaged state to name
+    if mt.averaged:
+        avg = "_a{0}".format(mt.averaged)
+    else:
+        avg = ""
+    return avg
+
+def format_mt_res(mt):
+    # Add restriction to name
+    if mt.restriction == "+":
+        res = "_r0"
+    elif mt.restriction == "-":
+        res = "_r1"
+    else:
+        res = ""
+    return res
+
+def format_mt_name(basename, mt):
+    access = "{basename}{avg}{res}{der}{comp}".format(basename=basename,
+                                                      avg=format_mt_avg(mt),
+                                                      res=format_mt_res(mt),
+                                                      der=format_mt_der(mt),
+                                                      comp=format_mt_comp(mt))
+    return access
 
 
 def generate_element_table_access(mt):
@@ -72,12 +115,12 @@ class FFCAccessBackend(MultiFunction):
     def argument(self, e, mt, tabledata):
 
         # Expecting only local derivatives and values here
-        assert not (mt.global_derivatives and any(mt.global_derivatives)) # FIXME: Clarify format
+        assert not mt.global_derivatives
         #assert mt.global_component is None
 
         # No need to store basis function value in its own variable, just get table value directly
         uname, begin, end = tabledata
-        entity = format_entity_name(self.ir["entitytype"], mt.restriction) # FIXME: Clarify mt.restriction format
+        entity = format_entity_name(self.ir["entitytype"], mt.restriction)
         iq = names.iq
         idof = "{0}{1}".format(names.ia, mt.terminal.number())
         dof = format_code(Sub(idof, begin))
@@ -95,89 +138,72 @@ class FFCAccessBackend(MultiFunction):
     def _constant_coefficient(self, e, mt, tabledata):
         # Map component to flat index
         vi2si, si2vi = build_component_numbering(mt.terminal.shape(), mt.terminal.element().symmetry())
-        flat_component = vi2si[mt.component]
+        num_flat_components = len(si2vi)
+        uflacs_assert(mt.flat_component == vi2si[mt.component], "Incompatible component flattening!")
 
         # Offset index if on second cell in interior facet integral
-        if mt.restriction == "-":
-            flat_component += len(si2vi)
+        if mt.restriction == "-": # TODO: Get the notion that '-' is the second cell from a central definition?
+            idof = mt.flat_component + len(si2vi)
+        else:
+            idof = mt.flat_component
 
         # Return direct reference to dof array
-        return generate_coefficient_dof_access(mt.terminal, flat_component)
+        return generate_coefficient_dof_access(mt.terminal, idof)
 
     def _varying_coefficient(self, e, mt, tabledata):
-        t = mt.terminal
-
-        # Expecting only local derivatives and values here
-        assert not (mt.global_derivatives and any(mt.global_derivatives))
-        #assert mt.global_component is None
-
-        # Add derivatives to name
-        if mt.local_derivatives and any(mt.local_derivatives):
-            derivative_str = ''.join(map(str, mt.local_derivatives))
-            der = "_d{0}".format(derivative_str)
-        else:
-            der = ""
-
-        # Add flattened component to name (TODO: this should be the local component)
-        if t.shape():
-            flat_component = flatten_component(mt.component, t.shape(), t.element().symmetry())
-            comp = "_c{0}".format(flat_component)
-        else:
-            comp = ""
-
-        # Add restriction to name
-        res = names.restriction_postfix[mt.restriction]
-
         # Format base coefficient (derivative) name
-        access = "{name}{count}{der}{comp}{res}".format(name=names.w, count=t.count(), der=der, comp=comp, res=res)
+        basename = "{name}{count}".format(name=names.w, count=mt.terminal.count())
+        access = format_mt_name(basename, mt)
         return access
 
-
-    def _old_geometric_quantity(self, o, mt, tabledata):
-        "Generic rendering of variable names for all piecewise constant geometric quantities."
-        uflacs_assert(not mt.global_derivatives and not mt.local_derivatives,
-                      "Compiler should be able to simplify derivatives of geometry.")
-
-        # Simply using the UFL str to define the name in the generated code, ensures consistency
-        name = str(o)
-        if mt.restriction:
-            res = names.restriction_postfix[mt.restriction]
-            name = name + res
-
-        # Indexing if there is a shape
-        sh = o.shape()
-        if sh:
-            code = langfmt.array_access(name, component_to_index(mt.component, sh))
-        else:
-            code = name
-
-        return code
-
     def quadrature_weight(self, e, mt, tabledata):
-        access = ArrayAccess("weight", names.iq)
+        # FIXME: Need num_points to identify weights array name?
+        #        Or maybe place it in tabledata=(name, 0, num_points)
+        access = ArrayAccess(names.weights, names.iq)
         return access
 
     def spatial_coordinate(self, e, mt, tabledata):
         # FIXME: See define_coord_vars
-        access = "x" # FIXME
+
+        uflacs_assert(not mt.global_derivatives, "")
+        uflacs_assert(not mt.local_derivatives, "")
+        uflacs_assert(not mt.restriction, "")
+        uflacs_assert(not mt.averaged, "")
+
+        access = "{basename}{comp}".format(basename=names.x,
+                                           comp=format_mt_comp(mt))
         return access
 
     def local_coordinate(self, e, mt, tabledata):
         # FIXME: See define_coord_vars
-        access = "X" # FIXME
+
+        uflacs_assert(not mt.global_derivatives, "")
+        uflacs_assert(not mt.local_derivatives, "")
+        uflacs_assert(not mt.restriction, "")
+        uflacs_assert(not mt.averaged, "")
+
+        access = "{basename}{comp}".format(basename=names.xi,
+                                           comp=format_mt_comp(mt))
         return access
 
     def jacobian(self, e, mt, tabledata):
         # FIXME: See _define_piecewise_geometry  define_piecewise_geometry
-        access = "J" # FIXME
+
+        uflacs_assert(not mt.global_derivatives, "")
+        uflacs_assert(not mt.local_derivatives, "")
+        uflacs_assert(not mt.restriction, "")
+        uflacs_assert(not mt.averaged, "")
+
+        access = "{basename}{comp}".format(basename=names.J,
+                                           comp=format_mt_comp(mt))
         return access
 
     def reference_facet_jacobian(self, e, mt, tabledata):
-        access = "RFJ" # FIXME
+        access = "RFJ_FIXME" # FIXME: Constant table access
         return access
 
     def facet_normal(self, e, mt, tabledata):
-        access = "n" # FIXME
+        access = "nFIXME" # FIXME: Computed from tables?
         return access
 
     def jacobian_inverse(self, e, mt, tabledata):
@@ -221,7 +247,7 @@ class FFCDefinitionsBackend(MultiFunction):
         else:
             # No need to store basis function value in its own variable, just get table value directly
             uname, begin, end = tabledata
-            entity = format_entity_name(self.ir["entitytype"], mt.restriction) # FIXME: Clarify mt.restriction format
+            entity = format_entity_name(self.ir["entitytype"], mt.restriction)
             iq = names.iq
             idof = names.ic
 
@@ -263,28 +289,49 @@ class FFCDefinitionsBackend(MultiFunction):
 
         code = []
 
-        # TODO: Switch off if physical coordinates given
-        # TODO: Insert coordinate field symbolically if existing, no need to handle that here
+        # TODO: Move to init
+        self.physical_coordinates_known = self.ir["domain_type"] == "quadrature"
 
-        if 1: # reference_coordinates_given, no coordinate field
+        if self.physical_coordinates_known:
+            pass
+        else:
+            uflacs_assert(mt.terminal.domain().coordinates() is None,
+                          "Assuming coefficient field symbolically inserted before this point.")
+            # Reference coordinates are known, no coordinate field, so we compute
+            # this component as linear combination of vertex_coordinates "dofs" and table
 
-            # No need to store basis function value in its own variable, just get table value directly
-            uname, begin, end = tabledata
-            entity = format_entity_name(self.ir["entitytype"], mt.restriction) # FIXME: Clarify mt.restriction format
+            if 0:
+                uname, begin, end = tabledata # FIXME: Missing data for spatial_coordinate, inject VCG1 earlier!
+            else:
+                uname = "FIXME"
+                begin = 0
+                end = 0
+
+            entity = format_entity_name(self.ir["entitytype"], mt.restriction)
             iq = names.iq
-            vertex = names.ic
+            idof = names.ic # Assuming idof == vertex for scalar linear CG1 element
+
+            gdim = len(e)
+            assert gdim == mt.terminal.domain().cell().geometric_dimension()
+            num_vertices = mt.terminal.domain().cell().topological_dimension() + 1 # FIXME: Get from cellname?
 
             dof = format_code(Sub(idof, begin))
             table_access = ArrayAccess(uname, (entity, iq, dof))
 
-            dof_access = generate_domain_dof_access(num_vertices, len(e), vertex, mt.component[0])
+            dof_access = generate_domain_dof_access(num_vertices, gdim, idof, mt.flat_component)
 
             prod = Mul(dof_access, table_access)
             body = [AssignAdd(access, prod)]
 
             # Loop to accumulate linear combination of dofs and tables
             code += [VariableDecl("const double", access, "0.0")] # access here is e.g. x0, component 0 of x
-            code += [ForRange(vertex, 0, num_vertices, body=body)]
+            code += [ForRange(idof, 0, num_vertices, body=body)]
+
+            if 0: # FIXME: Do it this way instead, skip the loop:
+                dofs = FIXME
+                tablevalues = FIXME
+                lincomb = LinearCombination(dofs, tablevalues)
+                code += [VariableDecl("const double", access, lincomb)] # access here is e.g. x0, component 0 of x
 
         return code
 
@@ -296,14 +343,12 @@ class FFCDefinitionsBackend(MultiFunction):
 
         If physical coordinates are given and domain is affine:
           X = K*(x-x0)
-        TODO: Insert symbolically
+        This is inserted symbolically.
 
         If physical coordinates are given and domain is non- affine:
           Not currently supported.
         """
-        # TODO: See define_coord_vars
         code = []
-        code += [VariableDecl("double", access, "1.0")] # FIXME
         return code
 
     def jacobian(self, e, mt, tabledata, access):

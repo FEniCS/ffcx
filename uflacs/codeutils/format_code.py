@@ -211,7 +211,7 @@ class ArrayAccess(Code):
                 raise ValueError("Index value >= array dimension.")
 
     def format(self, level, indentchar, keywords):
-        brackets = tuple("[%s]" % n for n in self.indices)
+        brackets = tuple(("[", n, "]") for n in self.indices)
         code = (self.arrayname, brackets)
         return format_code(code, level, indentchar, keywords)
 

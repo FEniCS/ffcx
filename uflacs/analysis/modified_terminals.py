@@ -1,11 +1,14 @@
 
+from ufl.permutation import build_component_numbering
 from ufl.classes import (Terminal, Grad, ReferenceGrad, Indexed, FixedIndex,
                          Restricted, PositiveRestricted, NegativeRestricted,
                          FacetAvg, CellAvg,
-                         Coefficient, Argument, GeometricQuantity)
+                         FormArgument, Coefficient, Argument, GeometricQuantity)
 from ufl.sorting import sorted_expr
 
 from uflacs.utils.log import uflacs_assert, warning, error
+
+from uflacs.elementtables.table_utils import flatten_component
 
 
 #########################################################################################
@@ -19,21 +22,35 @@ class ModifiedTerminal(object):
 
     The variables of this class are:
 
-        terminal - the Terminal object
-        global_derivatives - TODO: Explain
-        local_derivatives  - TODO: Explain
-        averages    - TODO: Explain
-        component   - TODO: Explain
-        restriction - TODO: Explain
+        expr - The original UFL expression
+
+        terminal           - the underlying Terminal object
+        global_derivatives - tuple of ints, each meaning derivative in that global direction
+        local_derivatives  - tuple of ints, each meaning derivative in that local direction
+        averaged           - None, 'facet' or 'cell'
+        restriction        - None, '+' or '-'
+        component          - tuple of ints, the global component of the Terminal
+        flat_component     - single int, flattened local component of the Terminal, considering symmetry
+
     """
-    def __init__(self, expr, terminal, global_derivatives, local_derivatives, averaged, restriction, component):
+    def __init__(self, expr, terminal, global_derivatives, local_derivatives, averaged, restriction, component, flat_component):
+        # The original expression
         self.expr = expr
+
+        # The underlying terminal expression
         self.terminal = terminal
-        self.component = component # TODO: Make this global_component and local_component
+
+        # Components
+        self.component = component
+        self.flat_component = flat_component
+        self.restriction = restriction
+
+        # Derivatives
         self.global_derivatives = global_derivatives
         self.local_derivatives = local_derivatives
+
+        # Evaluation method (alternative: { None, 'facet_midpoint', 'cell_midpoint', 'facet_avg', 'cell_avg' })
         self.averaged = averaged
-        self.restriction = restriction
 
     def as_tuple(self):
         t = self.terminal
@@ -143,15 +160,24 @@ def analyse_modified_terminal2(expr):
         else:
             error("Unexpected type %s object %s." % (type(t), repr(t)))
 
-    # FIXME: Flatten component here?
-
+    # Make sure component is an integer tuple
     component = tuple(component) if component else ()
-    global_derivatives = tuple(sorted(global_derivatives))
-    local_derivatives = tuple(sorted(local_derivatives))
 
+    # Assert that component is within the shape of the terminal (this is the global component!)
     uflacs_assert(len(component) == t.rank(),
                   "Length of component does not match rank of terminal.")
     uflacs_assert(all(c >= 0 and c < d for c,d in zip(component, t.shape())),
                   "Component indices %s are outside terminal shape %s" % (component, t.shape()))
 
-    return ModifiedTerminal(expr, t, global_derivatives, local_derivatives, averaged, restriction, component)
+    # Flatten component # TODO: Make the flat component local?
+    symmetry = t.element().symmetry() if isinstance(t, FormArgument) else {}
+    vi2si, si2vi = build_component_numbering(t.shape(), symmetry)
+    flat_component = vi2si[component]
+    #num_flat_components = len(si2vi)
+
+    # Make canonical representation of derivatives
+    global_derivatives = tuple(sorted(global_derivatives))
+    local_derivatives = tuple(sorted(local_derivatives))
+
+    return ModifiedTerminal(expr, t, global_derivatives, local_derivatives,
+                            averaged, restriction, component, flat_component)
