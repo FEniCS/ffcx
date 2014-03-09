@@ -95,6 +95,7 @@ def generate_coefficient_dof_access(coefficient, dof_number):
 
 def generate_domain_dof_access(num_vertices, gdim, vertex, component):
     # TODO: Add domain number as argument here, and {domain_offset} to array indexing:
+    # FIXME: Handle restriction here
     #domain_offset = self.ir["domain_offsets"][domain_number]
     return ArrayAccess(names.vertex_coordinates, Add(Mul(gdim, vertex), component))
 
@@ -231,6 +232,8 @@ class FFCDefinitionsBackend(MultiFunction):
         self.ir = ir
         self.parameters = parameters
 
+        self.physical_coordinates_known = self.ir["domain_type"] == "quadrature"
+
     def expr(self, t, mt, tabledata, access):
         error("Unhandled type {0}".format(type(t)))
 
@@ -286,12 +289,7 @@ class FFCDefinitionsBackend(MultiFunction):
         """
         # FIXME: See define_coord_vars
 
-        # FIXME: This probably has bugs, check out format of tables we get here...
-
         code = []
-
-        # TODO: Move to init
-        self.physical_coordinates_known = self.ir["domain_type"] == "quadrature"
 
         if self.physical_coordinates_known:
             pass
@@ -301,8 +299,7 @@ class FFCDefinitionsBackend(MultiFunction):
             # Reference coordinates are known, no coordinate field, so we compute
             # this component as linear combination of vertex_coordinates "dofs" and table
 
-            gdim = len(e)
-            assert gdim == mt.terminal.domain().cell().geometric_dimension()
+            gdim = mt.terminal.domain().cell().geometric_dimension()
             num_vertices = mt.terminal.domain().cell().topological_dimension() + 1 # FIXME: Get from cellname?
 
             if 0:
@@ -359,7 +356,48 @@ class FFCDefinitionsBackend(MultiFunction):
         J = sum_k xdof_k grad_X xphi_k(X)
         """
         code = []
-        code += [VariableDecl("double", access, "1.0")] # FIXME
+
+        if self.physical_coordinates_known:
+            pass
+        else:
+            uflacs_assert(mt.terminal.domain().coordinates() is None,
+                          "Assuming coefficient field symbolically inserted before this point.")
+            # Reference coordinates are known, no coordinate field, so we compute
+            # this component as linear combination of vertex_coordinates "dofs" and table
+
+            gdim = mt.terminal.domain().cell().geometric_dimension()
+            num_vertices = mt.terminal.domain().cell().topological_dimension() + 1 # FIXME: Get from cellname?
+
+            if 0:
+                uname, begin, end = tabledata # FIXME: Missing data for spatial_coordinate, inject VCG1 earlier!
+            else:
+                uname, begin, end = "dFIXME", 0, num_vertices
+
+            # access here is e.g. x0, component 0 of x
+
+            uflacs_assert(end-begin == num_vertices, "Assuming linear element for affine simplices here.")
+            entity = format_entity_name(self.ir["entitytype"], mt.restriction)
+            vertex = names.ic
+
+            if 0: # Generated loop version:
+                table_access = ArrayAccess(uname, (entity, vertex))
+                dof_access = generate_domain_dof_access(num_vertices, gdim, vertex, mt.flat_component)
+                prod = Mul(dof_access, table_access)
+
+                # Loop to accumulate linear combination of dofs and tables
+                code += [VariableDecl("const double", access, "0.0")]
+                code += [ForRange(vertex, 0, num_vertices, body=[AssignAdd(access, prod)])]
+
+            else: # Inlined version:
+                prods = []
+                for vertex in range(0, num_vertices):
+                    table_access = ArrayAccess(uname, (entity, vertex))
+                    dof_access = generate_domain_dof_access(num_vertices, gdim, vertex, mt.flat_component)
+                    prods += [Mul(dof_access, table_access)]
+
+                # Inlined loop to accumulate linear combination of dofs and tables
+                code += [VariableDecl("const double", access, Sum(prods))]
+
         return code
 
     def jacobian_inverse(self, e, mt, tabledata, access):
