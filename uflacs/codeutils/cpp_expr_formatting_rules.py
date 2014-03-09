@@ -38,7 +38,7 @@ class CppFormattingRules(object):
         return ops[0] # or just fall through like this if necessary
 
     def invalid_request(self, o, *ops):
-        error("Invalid request for C++ formatting of a {0}.".format(o._uflclass))
+        error("Invalid request for C++ formatting of a {0}, str = {1}".format(o._uflclass, str(o)))
     wrapper_type = invalid_request
     index_sum    = invalid_request
     indexed      = invalid_request

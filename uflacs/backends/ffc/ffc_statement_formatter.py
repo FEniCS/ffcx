@@ -474,11 +474,11 @@ class FFCStatementFormatter(object):
                 mapping_row = get_inline_mapping_row(element, gd, tdim, gdim, r)
 
                 # Get list with direct access to local gradient values
-                local_grad = [langfmt.array_access(locgradname, ld) for ld in range(tdim)]
+                reference_grad = [langfmt.array_access(locgradname, ld) for ld in range(tdim)]
 
                 # Map local gradient with row of K (or J^T) to get the
                 # global derivative direction d
-                dvalue_expr = " + ".join(langfmt.product(mapping_row[ld], local_grad[ld]) for ld in range(tdim))
+                dvalue_expr = " + ".join(langfmt.product(mapping_row[ld], reference_grad[ld]) for ld in range(tdim))
 
                 # Declare variable for coefficient derivative value initialized
                 # with inline mapping expression
@@ -555,15 +555,15 @@ class FFCStatementFormatter(object):
                     mapping_row = get_inline_mapping_row(element, gd, tdim, gdim, r)
 
                     # Get list with direct access to local gradient values
-                    local_grad = [format_element_table_access(self._ir, self._entitytype,
+                    reference_grad = [format_element_table_access(self._ir, self._entitytype,
                                                               self._num_points, element,
                                                               c, (ld,), entity, idof, True)
                                   for ld in range(tdim)]
-                    #print c, r, gd, local_grad
+                    #print c, r, gd, reference_grad
 
                     # Map local gradient with row of K (or J^T) to get the
                     # global derivative direction d
-                    dvalue_expr = " + ".join(langfmt.product(mapping_row[ld], local_grad[ld])
+                    dvalue_expr = " + ".join(langfmt.product(mapping_row[ld], reference_grad[ld])
                                              for ld in range(tdim))
 
                     # Declare variable for coefficient derivative value initialized

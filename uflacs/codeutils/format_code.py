@@ -346,14 +346,14 @@ class BinOp(Code):
         return format_code(code, level, indentchar, keywords)
 
 class NOp(Code):
-    def __init__(self, *ops):
+    def __init__(self, ops):
         self.ops = ops
 
     def format(self, level, indentchar, keywords):
         # TODO: Handle precedence at this level instead of in the ExprFormatter stuff?
         code = []
         for op in self.ops:
-            code.append(self.ops)
+            code.append(op)
             code.append(type(self).op)
         code = tuple(code[:-1])
         return format_code(code, level, indentchar, keywords)

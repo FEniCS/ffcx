@@ -1,5 +1,5 @@
 
-from ufl.classes import (Terminal, Grad, LocalGrad, Indexed, FixedIndex,
+from ufl.classes import (Terminal, Grad, ReferenceGrad, Indexed, FixedIndex,
                          Restricted, PositiveRestricted, NegativeRestricted,
                          FacetAvg, CellAvg,
                          Coefficient, Argument, GeometricQuantity)
@@ -10,7 +10,7 @@ from uflacs.utils.log import uflacs_assert, warning, error
 
 #########################################################################################
 # This is THE definition of modifier types, try to use this everywhere
-terminal_modifier_types = (LocalGrad, Grad, Restricted, Indexed, FacetAvg, CellAvg)
+terminal_modifier_types = (ReferenceGrad, Grad, Restricted, Indexed, FacetAvg, CellAvg)
 #########################################################################################
 
 
@@ -91,7 +91,7 @@ def analyse_modified_terminal2(expr):
 
     A modified terminal expression is an object of a Terminal subtype, wrapped in terminal modifier types.
 
-    The wrapper types can include 0-* Grad or LocalGrad objects,
+    The wrapper types can include 0-* Grad or ReferenceGrad objects,
     and 0-1 Restricted, 0-1 Indexed, and 0-1 FacetAvg or CellAvg objects.
     """
     # Data to determine
@@ -110,7 +110,7 @@ def analyse_modified_terminal2(expr):
             uflacs_assert(all(isinstance(j, FixedIndex) for j in i), "Expected only fixed indices.")
             component = [int(j) for j in i]
 
-        elif isinstance(t, LocalGrad):
+        elif isinstance(t, ReferenceGrad):
             uflacs_assert(len(component), "Got local gradient of terminal without prior indexing.")
             local_derivatives.append(component[-1])
             component = component[:-1]

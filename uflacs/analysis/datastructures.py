@@ -5,9 +5,7 @@ def int_array(size):
     return numpy.zeros(size, dtype=int)
 
 def object_array(size):
-    # TODO: Any gain in using a numpy array for object lists?
-    #return numpy.array(dtype=object)
-    return [None]*size
+    return numpy.empty(size, dtype=object)
 
 class CRS(object):
     """A compressed row storage matrix with no sparsity pattern."""

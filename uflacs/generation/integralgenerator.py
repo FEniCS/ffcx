@@ -8,7 +8,8 @@ from uflacs.analysis.modified_terminals import analyse_modified_terminal2, is_mo
 from uflacs.codeutils.format_code import (format_code, Indented, Block, Comment,
                                           ForRange,
                                           ArrayDecl, ArrayAccess,
-                                          Assign, AssignAdd)
+                                          Assign, AssignAdd,
+                                          Product, LinearCombination)
 from uflacs.codeutils.indexmapping import IndexMapping, AxisMapping
 from uflacs.geometry.default_names import names
 from uflacs.codeutils.expr_formatter2 import ExprFormatter2
@@ -141,7 +142,7 @@ class IntegralGenerator(object):
 
         # Compute single argument partitions outside of the dofblock loops
         for iarg in range(self.ir["rank"]):
-            for dofrange in []: # FIXME:
+            for dofrange in []: # TODO: Move f*arg0 out here
                 parts += self.generate_argument_partition(num_points, iarg, dofrange)
 
         # Nested argument loops and accumulation into element tensor
@@ -188,7 +189,9 @@ class IntegralGenerator(object):
     def generate_partition(self, name, V, partition, table_ranges): # TODO: Rather take list of vertices, not markers
         terminalcode = []
         assignments = []
+        from ufl.classes import ConstantValue
         j = 0
+        print "Generating partition ", name
         for i,p in enumerate(partition):
             if p:
                 # TODO: Consider optimized ir here with markers for which subexpressions to store in variables.
@@ -198,9 +201,12 @@ class IntegralGenerator(object):
 
                 if is_modified_terminal(v):
                     mt = analyse_modified_terminal2(v)
-                    vaccess = self.backend_access(mt.terminal, mt, table_ranges[i])
-                    vdef = self.backend_definitions(mt.terminal, mt, table_ranges[i], vaccess)
-                    terminalcode += [vdef]
+                    if isinstance(mt.terminal, ConstantValue):
+                        vaccess = self.expr_formatter.visit(v)
+                    else:
+                        vaccess = self.backend_access(mt.terminal, mt, table_ranges[i])
+                        vdef = self.backend_definitions(mt.terminal, mt, table_ranges[i], vaccess)
+                        terminalcode += [vdef]
                 else:
                     # Count assignments so we get a new vname each time
                     j += 1
@@ -209,6 +215,7 @@ class IntegralGenerator(object):
                     assignments += [Assign(vaccess, vcode)]
 
                 vname = format_code(vaccess) # TODO: Can skip this if expr_formatter generates Code
+                print '\nStoring {0} = {1}'.format(vname, str(v))
                 self.expr_formatter.variables[v] = vname
 
         parts = []
@@ -228,25 +235,23 @@ class IntegralGenerator(object):
         """
         parts = []
         parts += ["// Section for piecewise constant computations"]
-
         expr_irs = self.ir["uflacs"]["expr_ir"]
         for num_points in sorted(expr_irs):
             expr_ir = expr_irs[num_points]
-            MTTR = expr_ir["modified_terminal_table_ranges"]
-            parts += self.generate_partition("sp", expr_ir["V"], expr_ir["piecewise"], MTTR)
-
+            parts += self.generate_partition("sp",
+                                             expr_ir["V"],
+                                             expr_ir["piecewise"],
+                                             expr_ir["table_ranges"])
         return parts
 
     def generate_varying_partition(self, num_points):
         parts = []
         parts += ["// Section for geometrically varying computations"]
-
-        expr_irs = self.ir["uflacs"]["expr_ir"]
-        for num_points in sorted(expr_irs):
-            expr_ir = expr_irs[num_points]
-            MTTR = expr_ir["modified_terminal_table_ranges"]
-            parts += self.generate_partition("sv", expr_ir["V"], expr_ir["varying"], MTTR)
-
+        expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
+        parts += self.generate_partition("sv",
+                                         expr_ir["V"],
+                                         expr_ir["varying"],
+                                         expr_ir["table_ranges"])
         return parts
 
     def generate_argument_partition(self, num_points, iarg, dofrange):
@@ -275,22 +280,18 @@ class IntegralGenerator(object):
 
             factors = []
 
-            # Get factor expression
-            # FIXME: Scale with weight and detJ here, or better include in f some time earlier
-            # TODO: Omit f if it's 1 or 1.0
-            fcode = self.expr_formatter.variables[V[factor_index]]
+            # Get factor expression # TODO: Omit f if it's 1 or 1.0
+            f = V[factor_index]
+            fcode = self.expr_formatter.visit(f)
             factors += [fcode]
 
             # Get table names
             argfactors = []
-            for i,ma in enumerate(args):
+            for i, ma in enumerate(args):
                 mt = analyse_modified_terminal2(MA[ma])
                 access = self.backend_access(mt.terminal, mt, MATR[ma])
                 argfactors += [access]
             factors.extend(argfactors)
-
-            # TODO: Use proper expression formatting
-            expr = " * ".join(format_code(fac) for fac in factors)
 
             # Format index access to A
             if idofs:
@@ -303,7 +304,7 @@ class IntegralGenerator(object):
             A_access = ArrayAccess(names.A, A_ii)
 
             # Emit assignment
-            parts += [AssignAdd(A_access, expr)]
+            parts += [AssignAdd(A_access, Product(factors))]
 
         return parts
 

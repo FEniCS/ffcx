@@ -52,9 +52,7 @@ def generate_coefficient_dof_access(coefficient, dof_number):
 def generate_domain_dof_access(num_vertices, gdim, vertex, component):
     # TODO: Add domain number as argument here, and {domain_offset} to array indexing:
     #domain_offset = self.ir["domain_offsets"][domain_number]
-    name = names.vertex_coordinates
-    return "{name}[{gdim}*{vertex} + {component}]".format(**locals())
-
+    return ArrayAccess(names.vertex_coordinates, Add(Mul(gdim, vertex), component))
 
 class FFCAccessBackend(MultiFunction):
     """FFC specific cpp formatter class."""
@@ -69,7 +67,7 @@ class FFCAccessBackend(MultiFunction):
     # === Multifunction handlers for all modified terminal types, basic C++ types are covered by base class ===
 
     def expr(self, e, mt, tabledata):
-        error("Missing handler for type {0}.".format(str(e)))
+        error("Missing handler for type {0}.".format(e._uflclass.__name__))
 
     def argument(self, e, mt, tabledata):
 
@@ -155,6 +153,10 @@ class FFCAccessBackend(MultiFunction):
 
         return code
 
+    def quadrature_weight(self, e, mt, tabledata):
+        access = ArrayAccess("weight", names.iq)
+        return access
+
     def spatial_coordinate(self, e, mt, tabledata):
         # FIXME: See define_coord_vars
         access = "x" # FIXME
@@ -170,29 +172,28 @@ class FFCAccessBackend(MultiFunction):
         access = "J" # FIXME
         return access
 
-    def jacobian_inverse(self, e, mt, tabledata):
-        access = "K" # FIXME
-        return access
-
-    def jacobian_determinant(self, e, mt, tabledata):
-        access = "detJ" # FIXME
-        return access
-
-    def facet_jacobian(self, e, mt, tabledata):
-        access = "J" # FIXME
-        return access
-
-    def facet_jacobian_inverse(self, e, mt, tabledata):
-        access = "K" # FIXME
-        return access
-
-    def facet_jacobian_determinant(self, e, mt, tabledata):
-        access = "detJ" # FIXME
+    def reference_facet_jacobian(self, e, mt, tabledata):
+        access = "RFJ" # FIXME
         return access
 
     def facet_normal(self, e, mt, tabledata):
         access = "n" # FIXME
         return access
+
+    def jacobian_inverse(self, e, mt, tabledata):
+        error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
+
+    def jacobian_determinant(self, e, mt, tabledata):
+        error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
+
+    def facet_jacobian(self, e, mt, tabledata):
+        error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
+
+    def facet_jacobian_inverse(self, e, mt, tabledata):
+        error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
+
+    def facet_jacobian_determinant(self, e, mt, tabledata):
+        error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
 
 
 
@@ -203,7 +204,7 @@ class FFCDefinitionsBackend(MultiFunction):
         self.ir = ir
         self.parameters = parameters
 
-    def expr(self, t, mt, name, tabledata, access):
+    def expr(self, t, mt, tabledata, access):
         error("Unhandled type {0}".format(type(t)))
 
     # === Generate code definitions ===
@@ -240,40 +241,112 @@ class FFCDefinitionsBackend(MultiFunction):
 
     # FIXME: See _define_piecewise_geometry  define_piecewise_geometry
 
+    def quadrature_weight(self, e, mt, tabledata, access):
+        code = []
+        return code
+
     def spatial_coordinate(self, e, mt, tabledata, access):
+        """Return definition code for the physical spatial coordinates.
+
+        If physical coordinates are given:
+          No definition needed.
+
+        If reference coordinates are given:
+          x = sum_k xdof_k xphi_k(X)
+
+        If reference facet coordinates are given:
+          x = sum_k xdof_k xphi_k(Xf)
+        """
         # FIXME: See define_coord_vars
-        code += [VariableDecl("double", access, "1.0")] # FIXME
+
+        # FIXME: This probably has bugs, check out format of tables we get here...
+
+        code = []
+
+        # TODO: Switch off if physical coordinates given
+        # TODO: Insert coordinate field symbolically if existing, no need to handle that here
+
+        if 1: # reference_coordinates_given, no coordinate field
+
+            # No need to store basis function value in its own variable, just get table value directly
+            uname, begin, end = tabledata
+            entity = format_entity_name(self.ir["entitytype"], mt.restriction) # FIXME: Clarify mt.restriction format
+            iq = names.iq
+            vertex = names.ic
+
+            dof = format_code(Sub(idof, begin))
+            table_access = ArrayAccess(uname, (entity, iq, dof))
+
+            dof_access = generate_domain_dof_access(num_vertices, len(e), vertex, mt.component[0])
+
+            prod = Mul(dof_access, table_access)
+            body = [AssignAdd(access, prod)]
+
+            # Loop to accumulate linear combination of dofs and tables
+            code += [VariableDecl("const double", access, "0.0")] # access here is e.g. x0, component 0 of x
+            code += [ForRange(vertex, 0, num_vertices, body=body)]
+
         return code
 
     def local_coordinate(self, e, mt, tabledata, access):
-        # FIXME: See define_coord_vars
+        """Return definition code for the reference spatial coordinates.
+
+        If reference coordinates are given:
+          No definition needed.
+
+        If physical coordinates are given and domain is affine:
+          X = K*(x-x0)
+        TODO: Insert symbolically
+
+        If physical coordinates are given and domain is non- affine:
+          Not currently supported.
+        """
+        # TODO: See define_coord_vars
+        code = []
         code += [VariableDecl("double", access, "1.0")] # FIXME
         return code
 
     def jacobian(self, e, mt, tabledata, access):
+        """Return definition code for the Jacobian of x(X).
+
+        J = sum_k xdof_k grad_X xphi_k(X)
+        """
+        code = []
         code += [VariableDecl("double", access, "1.0")] # FIXME
         return code
 
     def jacobian_inverse(self, e, mt, tabledata, access):
+        "TODO: Insert symbolically"
+        code = []
         code += [VariableDecl("double", access, "1.0")] # FIXME
         return code
 
     def jacobian_determinant(self, e, mt, tabledata, access):
+        "TODO: Insert symbolically"
+        code = []
         code += [VariableDecl("double", access, "1.0")] # FIXME
         return code
 
     def facet_jacobian(self, e, mt, tabledata, access):
+        "TODO: Define! Table in ufc_geometry?"
+        code = []
         code += [VariableDecl("double", access, "1.0")] # FIXME
         return code
 
     def facet_jacobian_inverse(self, e, mt, tabledata, access):
+        "TODO: Insert symbolically"
+        code = []
         code += [VariableDecl("double", access, "1.0")] # FIXME
         return code
 
     def facet_jacobian_determinant(self, e, mt, tabledata, access):
+        "TODO: Insert symbolically"
+        code = []
         code += [VariableDecl("double", access, "1.0")] # FIXME
         return code
 
     def facet_normal(self, e, mt, tabledata, access):
+        "TODO: Insert symbolically?"
+        code = []
         code += [VariableDecl("double", access, "1.0")] # FIXME
         return code

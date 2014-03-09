@@ -10,7 +10,7 @@ from uflacs import *
 
 from ufl import *
 from ufl.classes import GeometricQuantity
-from ufl.algorithms import replace, change_to_local_grad
+from ufl.algorithms import replace, change_to_reference_grad
 
 if 0:
     domain0 = Domain(triangle)
@@ -70,7 +70,7 @@ for form in forms:
     #print "Then function replace map"
     #print str(expr)
 
-    expr = change_to_local_grad(expr)
+    expr = change_to_reference_grad(expr)
     print "And change to local grad"
     print str(expr)
 
@@ -232,7 +232,7 @@ for form in forms:
     - Coefficient[degree==0]: use dofname directly
     - Coefficient[degree>0]: generate (inline) dot product between dofnames and table
 
-    - Jacobian: generate (inline) dot product between "vertex dofnames" and LocalGrad
+    - Jacobian: generate (inline) dot product between "vertex dofnames" and ReferenceGrad
 
     - JacobianDeterminant: generate code snippet for now
     - JacobianInverse: generate code snippet for now
