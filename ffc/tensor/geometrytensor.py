@@ -38,7 +38,7 @@ class GeometryTensor:
         "Create geometry tensor for given monomial."
 
         # Save monomial data
-        self.determinant = monomial.determinant
+        self.determinants = monomial.determinants
         self.coefficients = monomial.coefficients
         self.transforms = monomial.transforms
 
