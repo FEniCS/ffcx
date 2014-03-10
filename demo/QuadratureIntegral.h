@@ -11,7 +11,7 @@
 //   error_control:                  False
 //   form_postfix:                   True
 //   format:                         'ufc'
-//   log_level:                      40
+//   log_level:                      10
 //   log_prefix:                     ''
 //   optimize:                       False
 //   output_dir:                     '.'
@@ -1209,23 +1209,29 @@ public:
     
     // Compute circumradius of triangle in 2D
     
-    // Values of basis functions at quadrature points.
-    std::vector< std::vector<double> > FE0_D01[0][1] = \
-    {};
-    
-    double* test;
+    // Evaluate basis functions for table FE0
+    std::vector<double> FE0(num_quadrature_points);
     for (unsigned int ip = 0; ip < num_quadrature_points; ip++)
     {
+      FE0[ip].resize(3);
+      const double* values = &FE0[i][0];
+      const double* x = quadrature_points + ip*2;
+      const int cell_orientation = 0; // cell orientation currently not supported
       evaluate_basis_all(values, x, vertex_coordinates, cell_orientation);
-    }// end loop over 'ip'
-    std::vector< std::vector<double> > FE0_D10[0][1] = \
-    {};
+    }
     
-    double* test;
+    // Evaluate order 1 derivatives of basis functions for table(s) FE0_D
+    std::vector<double> FE0_D01(num_quadrature_points);
+    std::vector<double> FE0_D10(num_quadrature_points);
     for (unsigned int ip = 0; ip < num_quadrature_points; ip++)
     {
-      evaluate_basis_all(values, x, vertex_coordinates, cell_orientation);
-    }// end loop over 'ip'
+      FE0[ip].resize(3);
+      const double* values = &FE0[i][0];
+      const double* x = quadrature_points + ip*2;
+      const int cell_orientation = 0; // cell orientation currently not supported
+      evaluate_basis_derivatives_all(1, values, x, vertex_coordinates, cell_orientation);
+    }
+    
     // Reset values in the element tensor.
     for (unsigned int r = 0; r < 9; r++)
     {
@@ -1240,13 +1246,13 @@ public:
     for (unsigned int ip = 0; ip < num_quadrature_points; ip++)
     {
       
-      // Number of operations for primary indices: 18
+      // Number of operations for primary indices: 7
       for (unsigned int j = 0; j < 1; j++)
       {
         for (unsigned int k = 0; k < 1; k++)
         {
-          // Number of operations to compute entry: 18
-          A[j*3 + k] += (((K[0]*FE0_D10[ip][j] + K[2]*FE0_D01[ip][j]))*((K[0]*FE0_D10[ip][k] + K[2]*FE0_D01[ip][k])) + ((K[1]*FE0_D10[ip][j] + K[3]*FE0_D01[ip][j]))*((K[1]*FE0_D10[ip][k] + K[3]*FE0_D01[ip][k])))*W[ip]*det;
+          // Number of operations to compute entry: 7
+          A[j*3 + k] += FE0[ip][j]*((K[0]*FE0_D10[ip][k] + K[2]*FE0_D01[ip][k]))*W[ip]*det;
         }// end loop over 'k'
       }// end loop over 'j'
     }// end loop over 'ip'
@@ -1288,7 +1294,7 @@ public:
   /// Return a string identifying the form
   virtual const char* signature() const
   {
-    return "0de9a2ec361348fdd46903f4bbf045177085b054b2be3420b6c5734b51fbad9031c5ab3f3ed32968f5ed9a6820ca0ab63e13bde6c40f80b3477067c5177fb0c9";
+    return "b21051855d9090fb4283c5ac388dcb8678a5f80bbe6480f5fe46dc7d1946c03189f35bc375663839eea652b3dc2df481eeca1c7c29290bf24bca51a765db1110";
   }
 
   /// Return the rank of the global tensor (r)

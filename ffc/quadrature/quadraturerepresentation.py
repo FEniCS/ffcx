@@ -21,7 +21,7 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-03-07
+# Last changed: 2014-03-10
 
 import numpy, itertools
 
@@ -61,7 +61,7 @@ def compute_integral_ir(itg_data,
         _tabulate_basis(sorted_integrals, form_data, itg_data)
 
     # Save tables for quadrature weights and points
-    ir["quadrature_weights"]  = quad_weights
+    ir["quadrature_weights"] = quad_weights
 
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.
@@ -71,12 +71,13 @@ def compute_integral_ir(itg_data,
     # Create and save the optisation parameters.
     ir["optimise_parameters"] = _parse_optimise_parameters(parameters)
 
-    # Create transformer.
+    # Select transformer.
     if ir["optimise_parameters"]["optimisation"]:
         QuadratureTransformerClass = QuadratureTransformerOpt
     else:
         QuadratureTransformerClass = QuadratureTransformer
 
+    # Create transformer.
     transformer = QuadratureTransformerClass(psi_tables,
                                              quad_weights,
                                              form_data.geometric_dimension,
@@ -100,6 +101,9 @@ def compute_integral_ir(itg_data,
 
     # Insert empty data which will be populated if optimization is turned on
     ir["geo_consts"] = {}
+
+    # Extract element data for psi_tables, needed for runtime quadrature (quadrature_cell)
+    ir["element_data"] = _extract_element_data(transformer.element_map)
 
     return ir
 
@@ -433,6 +437,10 @@ def _tabulate_basis(sorted_integrals, form_data, itg_data):
                 # Insert table into dictionary based on UFL elements.
                 insert_nested_dict(psi_tables, (len_weights, element, avg, entity, deriv), avg_psi_table)
 
+
+    print psi_tables
+
+
     return (integrals, psi_tables, quadrature_weights)
 
 def _sort_integrals(integrals, metadata, form_data):
@@ -491,3 +499,24 @@ def _transform_integrals(transformer, integrals, domain_type):
         transformed_integrals.append((point, terms, transformer.function_data,
                                       {}, transformer.coordinate, transformer.conditionals))
     return transformed_integrals
+
+def _extract_element_data(element_map):
+    "Extract element data for psi_tables"
+
+    # Iterate over map
+    element_data = {}
+    for elements in element_map.itervalues():
+        for ufl_element, counter in elements.iteritems():
+
+            # Create corresponding FIAT element
+            fiat_element = create_element(ufl_element)
+
+            # Compute value size
+            shape = ufl_element.value_shape()
+            value_size = 1 if shape == () else product(shape)
+
+            # Store data
+            element_data[counter] = {"value_size":      value_size,
+                                     "local_dimension": fiat_element.space_dimension()}
+
+    return element_data

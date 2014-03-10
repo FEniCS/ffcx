@@ -16,7 +16,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2014-03-04
-# Last changed: 2014-03-07
+# Last changed: 2014-03-10
 #
 # Bilinear form defined in terms of a quadrature integral dQ.
 #
@@ -27,4 +27,5 @@ element = FiniteElement("Lagrange", triangle, 1)
 u = TrialFunction(element)
 v = TestFunction(element)
 
-a = u*v*dQ + dot(grad(u), grad(v))*dQ
+#a = dot(grad(u), grad(v))*dQ
+a = u.dx(0)*v*dQ

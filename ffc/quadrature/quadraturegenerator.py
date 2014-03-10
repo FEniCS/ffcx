@@ -22,10 +22,10 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-03-07
+# Last changed: 2014-03-10
 
 # Python modules.
-import functools
+import functools, itertools
 import numpy
 
 # UFL modules.
@@ -63,16 +63,17 @@ def _tabulate_tensor(ir, parameters):
     f_facet         = format["facet"]
 
     # Get data.
-    opt_par     = ir["optimise_parameters"]
-    domain_type = ir["domain_type"]
-    gdim        = ir["geometric_dimension"]
-    tdim        = ir["topological_dimension"]
-    num_facets  = ir["num_facets"]
-    num_vertices= ir["num_vertices"]
-    prim_idims  = ir["prim_idims"]
-    integrals   = ir["trans_integrals"]
-    geo_consts  = ir["geo_consts"]
-    oriented    = ir["needs_oriented"]
+    opt_par      = ir["optimise_parameters"]
+    domain_type  = ir["domain_type"]
+    gdim         = ir["geometric_dimension"]
+    tdim         = ir["topological_dimension"]
+    num_facets   = ir["num_facets"]
+    num_vertices = ir["num_vertices"]
+    prim_idims   = ir["prim_idims"]
+    integrals    = ir["trans_integrals"]
+    geo_consts   = ir["geo_consts"]
+    oriented     = ir["needs_oriented"]
+    element_data = ir["element_data"]
 
     # Create sets of used variables.
     used_weights    = set()
@@ -230,15 +231,25 @@ def _tabulate_tensor(ir, parameters):
     # the unused transformations.
     common = [remove_unused(jacobi_code, trans_set)]
 
+    # FIXME: After introduction of quadrature_cell, the common code
+    # here is not really common anymore. Think about how to
+    # restructure this function.
+
     # Add common code except for domain_type "quadrature_cell"
     if domain_type != "quadrature_cell":
         common += _tabulate_weights([quadrature_weights[p] for p in used_weights])
 
-    # Add common code for updating tables
-    name_map = ir["name_map"]
-    tables = ir["unique_tables"]
-    tables.update(affine_tables) # TODO: This is not populated anywhere, remove?
-    common += _tabulate_psis(tables, used_psi_tables, name_map, used_nzcs, opt_par, domain_type, gdim)
+        # Add common code for updating tables
+        name_map = ir["name_map"]
+        tables = ir["unique_tables"]
+        tables.update(affine_tables) # TODO: This is not populated anywhere, remove?
+        common += _tabulate_psis(tables, used_psi_tables, name_map, used_nzcs, opt_par, domain_type, gdim)
+
+    # Add special tabulation code for "quadrature_cell"
+    elif domain_type == "quadrature_cell":
+        common += _evaluate_basis_at_quadrature_points(used_psi_tables,
+                                                       gdim,
+                                                       element_data)
 
     # Reset the element tensor (array 'A' given as argument to tabulate_tensor() by assembler)
     # Handle functionals.
@@ -649,30 +660,13 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
 
         if not vals is None:
 
-            if domain_type == "quadrature_cell":
+            # Add declaration to name.
+            ip, dofs = numpy.shape(vals)
+            decl_name = f_component(name, [ip, dofs])
 
-                ffc_assert(len(vals) == 0, "Not expecting any basis function values for quadrature cell integral.")
-
-                # Call evaluate_basis_[derivatives_]all to compute values
-                num_basis_functions = 5 # FIXME
-                code += [f_eval_basis(name, gdim, num_basis_functions)]
-
-                print
-                print "CODE"
-                print name
-                print
-                print "\n".join(code)
-                exit(1)
-
-            else:
-
-                # Add declaration to name.
-                ip, dofs = numpy.shape(vals)
-                decl_name = f_component(name, [ip, dofs])
-
-                # Generate array of values.
-                value = f_tensor(vals)
-                code += [f_decl(f_table, decl_name, f_new_line + value), ""]
+            # Generate array of values.
+            value = f_tensor(vals)
+            code += [f_decl(f_table, decl_name, f_new_line + value), ""]
 
         # Tabulate non-zero indices.
         if optimise_parameters["eliminate zeros"]:
@@ -689,4 +683,104 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
 
                         # Remove from list of columns.
                         new_nzcs.remove(inv_name_map[n][1])
+    return code
+
+def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data):
+    "Generate code for calling evaluate basis (derivatives) at quadrature points"
+
+    # Prefetch formats to speed up code generation
+    f_comment = format["comment"]
+
+    code = []
+
+    # Extract prefixes for tables
+    prefixes = sorted(list(set(table.split("_")[0] for table in psi_tables)))
+
+    # For each uniqe prefix ("FE0" etc), figure out which derivatives
+    # need to be tabulated
+    used_derivatives = {}
+    for prefix in prefixes:
+        derivatives = set()
+        for table in psi_tables:
+            if "_C" in table:
+                # FIXME: Bailout for now, add support for this later
+                error("quadrature cell integrals not yet supported for vector valued function spaces")
+            if "_D" in table:
+                d = table.split("_D")[1].split("_")[0]
+                n = sum([int(_d) for _d in d]) # FIXME: Will fail for more than 9 derivatives...
+            else:
+                n = 0
+            derivatives.add(n)
+        used_derivatives[prefix] = derivatives
+
+
+    # FIXME: Move code snippets to codesnippets.py
+
+    f_eval_basis_decl = """\
+std::vector<double> %(prefix)s(num_quadrature_points);"""
+
+    f_eval_basis = """\
+for (unsigned int ip = 0; ip < num_quadrature_points; ip++)
+{
+  %(prefix)s[ip].resize(%(space_dim)s);
+  const double* values = &%(prefix)s[i][0];
+  const double* x = quadrature_points + ip*%(gdim)s;
+  const int cell_orientation = 0; // cell orientation currently not supported
+  evaluate_basis_all(values, x, vertex_coordinates, cell_orientation);
+}
+"""
+
+    f_eval_derivs_decl = """\
+std::vector<double> %(prefix)s_D%(d)s(num_quadrature_points);"""
+
+    f_eval_derivs = """\
+for (unsigned int ip = 0; ip < num_quadrature_points; ip++)
+{
+  %(prefix)s[ip].resize(%(space_dim)s);
+  const double* values = &%(prefix)s[i][0];
+  const double* x = quadrature_points + ip*%(gdim)s;
+  const int cell_orientation = 0; // cell orientation currently not supported
+  evaluate_basis_derivatives_all(%(n)s, values, x, vertex_coordinates, cell_orientation);
+}
+"""
+
+
+    # Generate code for calling evaluate_basis_[derivatives_]all
+    for prefix in prefixes:
+
+        # Get element data for current element
+        counter = int(prefix.split("FE")[1])
+        space_dim = element_data[counter]["local_dimension"]
+
+        # Iterate over derivative orders
+        for n in used_derivatives[prefix]:
+
+            # Code for evaluate_basis_all
+            if n == 0:
+                code += [f_comment("Evaluate basis functions for table %s" % prefix)]
+                code += [f_eval_basis_decl % {"prefix": prefix}]
+                code += [f_eval_basis % {"prefix": prefix,
+                                         "gdim": gdim,
+                                         "space_dim": space_dim}]
+
+            # Code for evaluate_basis_derivatives_all
+            else:
+
+                # Create names for derivatives
+                derivs = [d for d in itertools.product(*(gdim*[range(0, n + 1)]))]
+                derivs = [d for d in derivs if sum(d) == n]
+                derivs = ["".join(str(_d) for _d in d) for d in derivs]
+
+                # Generate code
+                code += [f_comment("Evaluate order %d derivatives of basis functions for table(s) %s_D" % (n, prefix))]
+                code += [(f_eval_derivs_decl % {"prefix": prefix, "d": d}) for d in derivs]
+                code += [f_eval_derivs % {"prefix": prefix,
+                                          "gdim": gdim,
+                                          "space_dim": space_dim,
+                                          "n": n}]
+
+    #print
+    #print "\n".join(code)
+    #exit(0)
+
     return code

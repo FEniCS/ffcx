@@ -23,7 +23,7 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-28
-# Last changed: 2014-03-07
+# Last changed: 2014-03-10
 
 # Code snippets
 
@@ -763,10 +763,11 @@ max_facet_edge_length = {3: {3: _max_facet_edge_length_3D}}
 
 # Misc code snippets
 
-def eval_basis(name, gdim, num_basis_functions):
+# FIXME: Cleanup, now residing mostly in quadraturegenerator.py
+def eval_basis(name, names, gdim, num_basis_functions):
     "Code for calling evaluate basis (derivatives) at quadrature points"
 
-    # Extract
+    print names
 
     num_basis_functions = 5
 

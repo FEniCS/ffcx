@@ -18,7 +18,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2007-03-16
-# Last changed: 2014-03-07
+# Last changed: 2014-03-10
 #
 # Hacked by Marie E. Rognes 2013
 # Modified by Anders Logg 2014
@@ -65,8 +65,6 @@ def flatten_psi_tables(tables, entity_type):
       element_map - { num_quad_points: {ufl_element: element_number} }.
       flat_tables - { unique_table_name: values[ip,dof] }.
     """
-
-    print tables
 
     generate_psi_name = format["psi name"]
 
