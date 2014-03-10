@@ -108,7 +108,8 @@ public:
   virtual void tabulate_tensor(double* %(restrict)s A,
                                const double * const * %(restrict)s w,
                                const double* %(restrict)s vertex_coordinates,
-                               std::size_t facet) const
+                               std::size_t facet,
+                               int cell_orientation) const
   {
 %(tabulate_tensor)s
   }
@@ -135,7 +136,8 @@ public:
   virtual void tabulate_tensor(double* %(restrict)s A,
                                const double * const * %(restrict)s w,
                                const double* %(restrict)s vertex_coordinates,
-                               std::size_t facet) const;
+                               std::size_t facet,
+                               int cell_orientation) const;
 
 };
 """
@@ -157,7 +159,8 @@ exterior_facet_integral_implementation = """\
 void %(classname)s::tabulate_tensor(double* %(restrict)s A,
                                     const double * const * %(restrict)s w,
                                     const double* %(restrict)s vertex_coordinates,
-                                    std::size_t facet) const
+                                    std::size_t facet,
+                                    int cell_orientation) const
 {
 %(tabulate_tensor)s
 }
@@ -190,7 +193,9 @@ public:
                                const double* %(restrict)s vertex_coordinates_0,
                                const double* %(restrict)s vertex_coordinates_1,
                                std::size_t facet_0,
-                               std::size_t facet_1) const
+                               std::size_t facet_1,
+                               int cell_orientation_0,
+                               int cell_orientation_1) const
   {
 %(tabulate_tensor)s
   }
@@ -219,7 +224,9 @@ public:
                                const double* %(restrict)s vertex_coordinates_0,
                                const double* %(restrict)s vertex_coordinates_1,
                                std::size_t facet_0,
-                               std::size_t facet_1) const;
+                               std::size_t facet_1,
+                               int cell_orientation_0,
+                               int cell_orientation_1) const;
 
 };
 """
@@ -243,7 +250,9 @@ void %(classname)s::tabulate_tensor(double* %(restrict)s A,
                                     const double* %(restrict)s vertex_coordinates_0,
                                     const double* %(restrict)s vertex_coordinates_1,
                                     std::size_t facet_0,
-                                    std::size_t facet_1) const
+                                    std::size_t facet_1,
+                                    int cell_orientation_0,
+                                    int cell_orientation_1) const
 {
 %(tabulate_tensor)s
 }
@@ -273,7 +282,8 @@ public:
   virtual void tabulate_tensor(double* %(restrict)s A,
                                const double * const * %(restrict)s w,
                                const double* %(restrict)s vertex_coordinates,
-                               std::size_t vertex) const
+                               std::size_t vertex,
+                               int cell_orientation) const
   {
 %(tabulate_tensor)s
   }
@@ -299,7 +309,8 @@ public:
   virtual void tabulate_tensor(double* %(restrict)s A,
                                const double * const * %(restrict)s w,
                                const double* %(restrict)s vertex_coordinates,
-                               std::size_t vertex) const;
+                               std::size_t vertex,
+                               int cell_orientation) const;
 
 };
 """
@@ -321,7 +332,8 @@ point_integral_implementation = """\
 void %(classname)s::tabulate_tensor(double* %(restrict)s A,
                                     const double * const * %(restrict)s w,
                                     const double* %(restrict)s vertex_coordinates,
-                                    std::size_t vertex) const
+                                    std::size_t vertex,
+                                    int cell_orientation) const
 {
 %(tabulate_tensor)s
 }
@@ -354,7 +366,8 @@ public:
                                const double* %(restrict)s vertex_coordinates,
                                std::size_t num_quadrature_points,
                                const double* %(restrict)s quadrature_points,
-                               const double* %(restrict)s quadrature_weights) const
+                               const double* %(restrict)s quadrature_weights,
+                               int cell_orientation) const
   {
 %(tabulate_tensor)s
   }
@@ -383,7 +396,8 @@ public:
                                const double* %(restrict)s vertex_coordinates,
                                std::size_t num_quadrature_points,
                                const double* %(restrict)s quadrature_points,
-                               const double* %(restrict)s quadrature_weights) const;
+                               const double* %(restrict)s quadrature_weights,
+                               int cell_orientation) const;
 };
 """
 
@@ -406,7 +420,8 @@ void %(classname)s::tabulate_tensor(double* %(restrict)s A,
                                     const double* %(restrict)s vertex_coordinates,
                                     std::size_t num_quadrature_points,
                                     const double* %(restrict)s quadrature_points,
-                                    const double* %(restrict)s quadrature_weights) const
+                                    const double* %(restrict)s quadrature_weights,
+                                    int cell_orientation) const;
 {
 %(tabulate_tensor)s
 }
