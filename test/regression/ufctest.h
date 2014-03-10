@@ -714,7 +714,7 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
   //printer.print_scalar("signature", form.signature());
 
   // rank
-  //printer.print_scalar("rank", form.rank());
+  printer.print_scalar("rank", form.rank());
 
   // num_coefficients
   printer.print_scalar("num_coefficients", form.num_coefficients());
