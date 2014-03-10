@@ -59,6 +59,7 @@ class IntegralGenerator(object):
         """
         parts = []
         parts += [self.generate_using_statements()]
+        parts += [self.backend_definitions.initial()]
         parts += [self.generate_quadrature_tables()]
         parts += [self.generate_element_tables()]
         parts += [self.generate_tensor_reset()]
@@ -191,7 +192,7 @@ class IntegralGenerator(object):
         assignments = []
         from ufl.classes import ConstantValue
         j = 0
-        print "Generating partition ", name
+        #print "Generating partition ", name
         for i,p in enumerate(partition):
             if p:
                 # TODO: Consider optimized ir here with markers for which subexpressions to store in variables.
@@ -215,7 +216,7 @@ class IntegralGenerator(object):
                     assignments += [Assign(vaccess, vcode)]
 
                 vname = format_code(vaccess) # TODO: Can skip this if expr_formatter generates Code
-                print '\nStoring {0} = {1}'.format(vname, str(v))
+                #print '\nStoring {0} = {1}'.format(vname, str(v))
                 self.expr_formatter.variables[v] = vname
 
         parts = []

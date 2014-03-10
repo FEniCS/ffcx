@@ -36,6 +36,24 @@ from uflacs.codeutils.format_code import (format_code,
 from uflacs.elementtables.table_utils import flatten_component
 
 
+# TODO: Insert in ufc_geometry or ufc_cells header
+ufc_reference_facet_jacobian_tables = """
+/// --- Jacobians of reference facet cell to reference cell coordinate mappings by UFC conventions ---
+
+static const double triangle_reference_facet_jacobian[3][2][1] = {
+  { {-1.0}, { 1.0} },
+  { { 0.0}, { 1.0} },
+  { { 1.0}, { 0.0} },
+  };
+
+static const double tetrahedron_reference_facet_jacobian[4][3][2] = {
+  { {-1.0, -1.0}, {1.0, 0.0}, {0.0, 1.0} },
+  { { 0.0,  0.0}, {1.0, 0.0}, {0.0, 1.0} },
+  { { 1.0,  0.0}, {0.0, 0.0}, {0.0, 1.0} },
+  { { 1.0,  0.0}, {0.0, 1.0}, {0.0, 0.0} },
+  };
+"""
+
 
 def format_entity_name(entitytype, r):
     if entitytype == "cell":
@@ -73,14 +91,7 @@ def format_mt_avg(mt):
     return avg
 
 def format_mt_res(mt):
-    # Add restriction to name
-    if mt.restriction == "+":
-        res = "_r0"
-    elif mt.restriction == "-":
-        res = "_r1"
-    else:
-        res = ""
-    return res
+    return names.restriction_postfix[mt.restriction].replace("_", "_r")
 
 def format_mt_name(basename, mt):
     access = "{basename}{avg}{res}{der}{comp}".format(basename=basename,
@@ -90,6 +101,15 @@ def format_mt_name(basename, mt):
                                                       comp=format_mt_comp(mt))
     return access
 
+def ufc_restriction_postfix(restriction):
+    # TODO: Get restriction postfix from somewhere central
+    if restriction == "+":
+        res = "_0"
+    elif restriction == "-":
+        res = "_1"
+    else:
+        res = ""
+    return res
 
 #def generate_element_table_access(mt):
 #    # FIXME: See  format_element_table_access  get_element_table_data
@@ -109,15 +129,7 @@ def generate_coefficient_dof_access(coefficient, dof_number):
 def generate_domain_dof_access(num_vertices, gdim, vertex, component, restriction):
     # TODO: Add domain number as argument here, and {domain_offset} to array indexing:
     #domain_offset = self.ir["domain_offsets"][domain_number]
-
-    # TODO: Get restriction postfix from somewhere central
-    if restriction == "+":
-        res = "_0"
-    elif restriction == "-":
-        res = "_1"
-    else:
-        res = ""
-    vc = "{0}{1}".format(names.vertex_coordinates, res)
+    vc = names.vertex_coordinates + names.restriction_postfix[restriction]
     return ArrayAccess(vc, Add(Mul(gdim, vertex), component))
 
 def generate_domain_dofs_access(num_vertices, gdim, restriction):
@@ -248,8 +260,16 @@ class FFCAccessBackend(MultiFunction):
                                            comp=format_mt_comp(mt))
         return access
 
-    def reference_facet_jacobian(self, e, mt, tabledata): # FIXME
-        access = "RFJ_FIXME" # FIXME: Constant table access
+    def reference_facet_jacobian(self, e, mt, tabledata):
+        cellname = mt.terminal.domain().cell().cellname()
+        if cellname in ("triangle", "tetrahedron"):
+            tablename = "{0}_reference_facet_jacobian".format(cellname)
+            facet = names.facet + names.restriction_postfix[mt.restriction]
+            access = ArrayAccess(tablename, (facet, mt.component[0], mt.component[1]))
+        elif cellname == "interval":
+            error("The reference facet jacobian doesn't make sense for interval cell.")
+        else:
+            error("Unhandled cell types {0}.".format(cellname))
         return access
 
     def facet_normal(self, e, mt, tabledata): # FIXME
@@ -284,6 +304,7 @@ class FFCDefinitionsBackend(MultiFunction):
 
     def initial(self): # TODO: Need something like this?
         code = []
+        code += [ufc_reference_facet_jacobian_tables]
         return code
 
     def expr(self, t, mt, tabledata, access):
@@ -447,10 +468,10 @@ class FFCDefinitionsBackend(MultiFunction):
 
         return code
 
-    def reference_facet_jacobian(self, e, mt, tabledata, access): # FIXME
-        "TODO: Define table in ufc_geometry? Or insert among regular tables?"
+    def reference_facet_jacobian(self, e, mt, tabledata, access):
+        # Currently the table is inserted in self.initial()
+        # TODO: Define table in ufc_geometry? Or insert among regular tables?
         code = []
-        code += [VariableDecl("double", access, "1.0 /* FIXME */")] # FIXME
         return code
 
     def facet_normal(self, e, mt, tabledata, access): # FIXME

@@ -44,6 +44,6 @@ class Names:
         self.ild = "ild" # Local derivative accumulation loop
 
         # Rules, make functions?
-        self.restriction_postfix = { "+": "_r0", "-": "_r1", None: "" } # TODO: Use this wherever we need it?
+        self.restriction_postfix = { "+": "_0", "-": "_1", None: "" } # TODO: Use this wherever we need it?
 
 names = Names()
