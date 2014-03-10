@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-12-16
-# Last changed: 2014-03-07
+# Last changed: 2014-03-10
 
 # Python modules
 import re, numpy, platform
@@ -519,7 +519,7 @@ def _generate_loop(lines, loop_vars, _indent):
     indices.reverse()
     for index in indices:
         _indent -= 2
-        code.append(indent(f_end + f_comment("end loop over '%s'" % index), _indent))
+        code.append(indent(f_end + " " + f_comment("end loop over '%s'" % index), _indent))
 
     return code
 

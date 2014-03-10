@@ -690,6 +690,7 @@ def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data):
 
     # Prefetch formats to speed up code generation
     f_comment = format["comment"]
+    f_loop    = format["generate loop"]
 
     code = []
 
@@ -717,33 +718,38 @@ def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data):
     # FIXME: Move code snippets to codesnippets.py
 
     f_eval_basis_decl = """\
-std::vector<double> %(prefix)s(num_quadrature_points);"""
+std::vector<std::vector<double> > %(prefix)s(num_quadrature_points);"""
 
     f_eval_basis = """\
-for (unsigned int ip = 0; ip < num_quadrature_points; ip++)
-{
-  %(prefix)s[ip].resize(%(space_dim)s);
-  const double* values = &%(prefix)s[i][0];
-  const double* x = quadrature_points + ip*%(gdim)s;
-  const int cell_orientation = 0; // cell orientation currently not supported
-  evaluate_basis_all(values, x, vertex_coordinates, cell_orientation);
-}
+// Get current quadrature point and compute values of basis function derivatives
+const double* x = quadrature_points + ip*%(gdim)s;
+static double values[%(num_vals)s];
+const int cell_orientation = 0; // cell orientation currently not supported
+evaluate_basis_all(values, x, vertex_coordinates, cell_orientation);"""
+
+    f_eval_basis_copy = """\
+
+// Copy values to table %(prefix)s
+%(prefix)s[ip].resize(%(num_vals)s);
+std::copy(values, values + %(num_vals)s, %(prefix)s[ip].begin());
 """
 
     f_eval_derivs_decl = """\
-std::vector<double> %(prefix)s_D%(d)s(num_quadrature_points);"""
+std::vector<std::vector<double> > %(prefix)s_D%(d)s(num_quadrature_points);"""
 
     f_eval_derivs = """\
-for (unsigned int ip = 0; ip < num_quadrature_points; ip++)
-{
-  %(prefix)s[ip].resize(%(space_dim)s);
-  const double* values = &%(prefix)s[i][0];
-  const double* x = quadrature_points + ip*%(gdim)s;
-  const int cell_orientation = 0; // cell orientation currently not supported
-  evaluate_basis_derivatives_all(%(n)s, values, x, vertex_coordinates, cell_orientation);
-}
-"""
+// Get current quadrature point and compute values of basis function derivatives
+const double* x = quadrature_points + ip*%(gdim)s;
+static double values[%(num_vals)s];
+const int cell_orientation = 0; // cell orientation currently not supported
+evaluate_basis_derivatives_all(%(n)s, values, x, vertex_coordinates, cell_orientation);"""
 
+    f_eval_derivs_copy = """\
+
+// Copy values to table %(prefix)s_D%(d)s
+%(prefix)s_D%(d)s[ip].resize(%(num_vals)s);
+for (unsigned int i = 0; i < %(num_vals)s; i++)
+  %(prefix)s_D%(d)s[ip][i] = values[%(offset)s + i*%(stride)s];"""
 
     # Generate code for calling evaluate_basis_[derivatives_]all
     for prefix in prefixes:
@@ -751,17 +757,32 @@ for (unsigned int ip = 0; ip < num_quadrature_points; ip++)
         # Get element data for current element
         counter = int(prefix.split("FE")[1])
         space_dim = element_data[counter]["local_dimension"]
+        value_size = element_data[counter]["value_size"]
 
         # Iterate over derivative orders
         for n in used_derivatives[prefix]:
 
             # Code for evaluate_basis_all
             if n == 0:
-                code += [f_comment("Evaluate basis functions for table %s" % prefix)]
+
+                # Size of array to evaluate_basis_all
+                num_vals = space_dim*value_size
+
+                # Generate block of code for loop
+                block = []
+                block += [f_eval_basis      % {"prefix":    prefix,
+                                               "gdim":      gdim,
+                                               "space_dim": space_dim,
+                                               "num_vals":  num_vals}]
+                block += [f_eval_basis_copy % {"prefix":    prefix,
+                                               "num_vals":  num_vals}]
+
+                # Generate code
+                code += [f_comment("Create table %s for basis function values" % prefix)]
                 code += [f_eval_basis_decl % {"prefix": prefix}]
-                code += [f_eval_basis % {"prefix": prefix,
-                                         "gdim": gdim,
-                                         "space_dim": space_dim}]
+                code += [""]
+                code += [f_comment("Evaluate at all quadrature points")]
+                code += f_loop(block, [("ip", 0, "num_quadrature_points")])
 
             # Code for evaluate_basis_derivatives_all
             else:
@@ -771,16 +792,37 @@ for (unsigned int ip = 0; ip < num_quadrature_points; ip++)
                 derivs = [d for d in derivs if sum(d) == n]
                 derivs = ["".join(str(_d) for _d in d) for d in derivs]
 
-                # Generate code
-                code += [f_comment("Evaluate order %d derivatives of basis functions for table(s) %s_D" % (n, prefix))]
-                code += [(f_eval_derivs_decl % {"prefix": prefix, "d": d}) for d in derivs]
-                code += [f_eval_derivs % {"prefix": prefix,
-                                          "gdim": gdim,
-                                          "space_dim": space_dim,
-                                          "n": n}]
+                # Size of array to evaluate_basis_derivatives_all
+                num_vals = space_dim*value_size*len(derivs)
+                stride = value_size*len(derivs)
 
-    #print
-    #print "\n".join(code)
-    #exit(0)
+                # Generate block of code for loop
+                block = []
+                block += [f_eval_derivs %       {"prefix":    prefix,
+                                                 "gdim":      gdim,
+                                                 "space_dim": space_dim,
+                                                 "num_vals":  num_vals,
+                                                 "n":         n}]
+                block += [(f_eval_derivs_copy % {"prefix":    prefix,
+                                                 "d":         d,
+                                                 "num_vals":  num_vals,
+                                                 "offset":    i,
+                                                 "stride":    stride,
+                                                 }) for (i, d) in enumerate(derivs)]
+
+                # Generate code
+                code += [f_comment("Create table(s) %s_D for order %d basis function derivatives" % (prefix, n))]
+                code += [(f_eval_derivs_decl % {"prefix": prefix, "d": d}) for d in derivs]
+                code += [""]
+                code += [f_comment("Evaluate at all quadrature points")]
+                code += f_loop(block, [("ip", 0, "num_quadrature_points")])
+
+
+            # Add newline
+            code += [""]
+
+    print
+    print "\n".join(code)
+    exit(0)
 
     return code
