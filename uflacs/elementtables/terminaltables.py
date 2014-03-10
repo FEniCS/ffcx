@@ -1,6 +1,7 @@
 
+import ufl
 from ufl.common import product
-from ufl.classes import FormArgument, GeometricQuantity
+from ufl.classes import FormArgument, GeometricQuantity, SpatialCoordinate, Jacobian
 from ufl.algorithms.analysis import unique_tuple
 
 from uflacs.analysis.datastructures import object_array
@@ -70,41 +71,59 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
         gd = mt.global_derivatives
         ld = mt.local_derivatives
         gc = mt.component
-        #gc = mt.global_component # TODO
-        #lc = mt.local_component # TODO
+        fc = mt.flat_component
+
         domain = t.domain()
 
         # FIXME: Add element tables for GeometricQuantities as well!
         if isinstance(t, FormArgument):
             element = t.element()
 
+        elif isinstance(t, SpatialCoordinate):
+            x = domain.coordinates()
+            if x is None:
+                element = ufl.VectorElement("Lagrange", domain, 1)
+            else:
+                element = x.element()
+
+        elif isinstance(t, Jacobian):
+            x = domain.coordinates()
+            if x is None:
+                element = ufl.VectorElement("Lagrange", domain, 1)
+            else:
+                element = x.element()
+            # J[i,j] = dx[i]/dX[j]
+            fc, ld = gc
+            ld = (ld,)
+
+        else:
+            element = None
+
+        if element is not None:
             # Count elements as we go
             element_counter = element_counter_map.get(element)
             if element_counter is None:
                 element_counter = len(element_counter_map)
                 element_counter_map[element] = element_counter
 
-            # Flatten component # TODO: This is the global component! Want the local component?
-            flat_component = flatten_component(gc, t.shape(), element.symmetry())
-
             # Change derivatives format for table lookup
             gdim = domain.geometric_dimension()
-            global_derivatives = tuple(derivative_listing_to_counts(gd, gdim))
             tdim = domain.topological_dimension()
-            local_derivatives = tuple(derivative_listing_to_counts(ld, tdim)) # TODO: Is this right?
+            global_derivatives = tuple(derivative_listing_to_counts(gd, gdim))
+            local_derivatives = tuple(derivative_listing_to_counts(ld, tdim))
 
             assert not any(global_derivatives), "TODO: Does it make sense to have global derivatives in here now?"
 
             # Build name for this particular table
             # TODO: Include num_points in table name?
-            name = generate_psi_table_name(element_counter, flat_component,
+            name = generate_psi_table_name(element_counter, fc,
                                          local_derivatives, mt.averaged, entitytype)
 
             # Extract the values of the table from ffc table format
             table = tables.get(name)
             if table is None:
                 table = get_ffc_table_values(psi_tables, entitytype, num_points,
-                                             element, flat_component, local_derivatives)
+                                             element, fc, local_derivatives)
                 tables[name] = table
 
             # Store table name with modified terminal

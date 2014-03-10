@@ -1,3 +1,12 @@
+"""
+FIXME:
+- Inject CG1 tables for x and J at some point and pass them here through tabledata
+- Check the code for J carefully
+- Pass num_points to weight, x, X
+- Make reference_facet_jacobi tables and use below
+- Fix FacetNormal (sign?)
+- Handle cell restriction in generate_domain_dof_access
+"""
 
 from ufl.common import component_to_index
 from ufl.permutation import build_component_numbering
@@ -28,7 +37,7 @@ from uflacs.elementtables.table_utils import flatten_component
 
 def format_entity_name(entitytype, r):
     if entitytype == "cell":
-        entity = "0" #None # FIXME: Keep 3D tables and use entity 0 for cells or make tables 2D and use None?
+        entity = "0" #None # TODO: Keep 3D tables and use entity 0 for cells or make tables 2D and use None?
     elif entitytype == "facet":
         entity = names.facet + names.restriction_postfix[r]
     elif entitytype == "vertex":
@@ -80,12 +89,14 @@ def format_mt_name(basename, mt):
     return access
 
 
-def generate_element_table_access(mt):
-    # FIXME: See  format_element_table_access  get_element_table_data
-    return "FE[0]" # FIXME
+#def generate_element_table_access(mt):
+#    # FIXME: See  format_element_table_access  get_element_table_data
+#    #entity = format_entity_name(self.ir["entitytype"], mt.restriction)
+#    #return ArrayAccess(uname, (entity, names.iq, dof_number))
+#    return "FE[0]" # FIXME
 
-def generate_geometry_table_access(mt):
-    return "FJ[0]" # FIXME
+#def generate_geometry_table_access(mt):
+#    return "FJ[0]" # FIXME
 
 def generate_coefficient_dof_access(coefficient, dof_number):
     # TODO: Add domain_number = self.ir["domain_numbering"][coefficient.domain().domain_key()]
@@ -99,12 +110,22 @@ def generate_domain_dof_access(num_vertices, gdim, vertex, component):
     #domain_offset = self.ir["domain_offsets"][domain_number]
     return ArrayAccess(names.vertex_coordinates, Add(Mul(gdim, vertex), component))
 
+def generate_domain_dofs_access(num_vertices, gdim):
+    # TODO: Add domain number as argument here, and {domain_offset} to array indexing:
+    # FIXME: Handle restriction here
+    #domain_offset = self.ir["domain_offsets"][domain_number]
+    return [ArrayAccess(names.vertex_coordinates, Add(Mul(gdim, vertex), component))
+            for component in range(gdim)
+            for vertex in range(num_vertices)]
+
 class FFCAccessBackend(MultiFunction):
     """FFC specific cpp formatter class."""
     def __init__(self, ir, parameters):
         MultiFunction.__init__(self)
         self.ir = ir
         self.parameters = parameters
+
+        self.physical_coordinates_known = self.ir["domain_type"] == "quadrature"
 
     def precision_float(self, f):
         return "%g" % f # TODO: Control float formatting precision here
@@ -160,37 +181,46 @@ class FFCAccessBackend(MultiFunction):
 
     def quadrature_weight(self, e, mt, tabledata):
         # FIXME: Need num_points to identify weights array name?
-        #        Or maybe place it in tabledata=(name, 0, num_points)
+        #        Or maybe place it in tabledata:
+        #name, dummy, num_points = tabledata
         access = ArrayAccess(names.weights, names.iq)
         return access
 
     def spatial_coordinate(self, e, mt, tabledata):
-        # FIXME: See define_coord_vars
-
         uflacs_assert(not mt.global_derivatives, "")
         uflacs_assert(not mt.local_derivatives, "")
         uflacs_assert(not mt.restriction, "")
         uflacs_assert(not mt.averaged, "")
 
-        access = "{basename}{comp}".format(basename=names.x,
-                                           comp=format_mt_comp(mt))
+        if self.physical_coordinates_known:
+            # FIXME: Need num_points to identify points array name?
+            #        Or maybe place it in tabledata:
+            #name, dummy, num_points = tabledata
+            access = ArrayAccess(names.points, (names.iq, mt.flat_component))
+        elif mt.terminal.domain().coordinates() is not None:
+            error("Expecting spatial coordinate to be symbolically rewritten.")
+        else:
+            access = "{basename}{comp}".format(basename=names.x,
+                                               comp=format_mt_comp(mt))
         return access
 
-    def local_coordinate(self, e, mt, tabledata):
-        # FIXME: See define_coord_vars
-
+    def reference_coordinate(self, e, mt, tabledata):
         uflacs_assert(not mt.global_derivatives, "")
         uflacs_assert(not mt.local_derivatives, "")
         uflacs_assert(not mt.restriction, "")
         uflacs_assert(not mt.averaged, "")
 
-        access = "{basename}{comp}".format(basename=names.xi,
-                                           comp=format_mt_comp(mt))
+        if self.physical_coordinates_known:
+            error("Expecting reference coordinate to be symbolically rewritten.")
+        else:
+            # FIXME: Need num_points to identify points array name?
+            #        Or maybe place it in tabledata:
+            #name, dummy, num_points = tabledata
+            access = ArrayAccess(names.points, (names.iq, mt.flat_component))
+
         return access
 
     def jacobian(self, e, mt, tabledata):
-        # FIXME: See _define_piecewise_geometry  define_piecewise_geometry
-
         uflacs_assert(not mt.global_derivatives, "")
         uflacs_assert(not mt.local_derivatives, "")
         uflacs_assert(not mt.restriction, "")
@@ -200,11 +230,11 @@ class FFCAccessBackend(MultiFunction):
                                            comp=format_mt_comp(mt))
         return access
 
-    def reference_facet_jacobian(self, e, mt, tabledata):
+    def reference_facet_jacobian(self, e, mt, tabledata): # FIXME
         access = "RFJ_FIXME" # FIXME: Constant table access
         return access
 
-    def facet_normal(self, e, mt, tabledata):
+    def facet_normal(self, e, mt, tabledata): # FIXME
         access = "nFIXME" # FIXME: Computed from tables?
         return access
 
@@ -269,8 +299,6 @@ class FFCDefinitionsBackend(MultiFunction):
 
         return code
 
-    # FIXME: See _define_piecewise_geometry  define_piecewise_geometry
-
     def quadrature_weight(self, e, mt, tabledata, access):
         code = []
         return code
@@ -287,8 +315,6 @@ class FFCDefinitionsBackend(MultiFunction):
         If reference facet coordinates are given:
           x = sum_k xdof_k xphi_k(Xf)
         """
-        # FIXME: See define_coord_vars
-
         code = []
 
         if self.physical_coordinates_known:
@@ -300,16 +326,14 @@ class FFCDefinitionsBackend(MultiFunction):
             # this component as linear combination of vertex_coordinates "dofs" and table
 
             gdim = mt.terminal.domain().cell().geometric_dimension()
-            num_vertices = mt.terminal.domain().cell().topological_dimension() + 1 # FIXME: Get from cellname?
+            num_vertices = mt.terminal.domain().cell().topological_dimension() + 1 # TODO: Get from cellname?
 
-            if 0:
-                uname, begin, end = tabledata # FIXME: Missing data for spatial_coordinate, inject VCG1 earlier!
-            else:
-                uname, begin, end = "FIXME", 0, num_vertices
+            uname, begin, end = tabledata
 
             # access here is e.g. x0, component 0 of x
 
-            uflacs_assert(end-begin == num_vertices, "Assuming linear element for affine simplices here.")
+            uflacs_assert(0 <= begin <= end <= num_vertices*gdim,
+                          "Assuming linear element for affine simplices here.")
             entity = format_entity_name(self.ir["entitytype"], mt.restriction)
             vertex = names.ic
 
@@ -320,21 +344,21 @@ class FFCDefinitionsBackend(MultiFunction):
 
                 # Loop to accumulate linear combination of dofs and tables
                 code += [VariableDecl("const double", access, "0.0")]
-                code += [ForRange(vertex, 0, num_vertices, body=[AssignAdd(access, prod)])]
+                code += [ForRange(vertex, begin, end, body=[AssignAdd(access, prod)])]
 
             else: # Inlined version:
+                dof_access = generate_domain_dofs_access(num_vertices, gdim)
                 prods = []
-                for vertex in range(0, num_vertices):
-                    table_access = ArrayAccess(uname, (entity, names.iq, vertex))
-                    dof_access = generate_domain_dof_access(num_vertices, gdim, vertex, mt.flat_component)
-                    prods += [Mul(dof_access, table_access)]
+                for idof in range(begin, end):
+                    table_access = ArrayAccess(uname, (entity, names.iq, Sub(idof, begin)))
+                    prods += [Mul(dof_access[idof], table_access)]
 
                 # Inlined loop to accumulate linear combination of dofs and tables
                 code += [VariableDecl("const double", access, Sum(prods))]
 
         return code
 
-    def local_coordinate(self, e, mt, tabledata, access):
+    def reference_coordinate(self, e, mt, tabledata, access):
         """Return definition code for the reference spatial coordinates.
 
         If reference coordinates are given:
@@ -366,16 +390,14 @@ class FFCDefinitionsBackend(MultiFunction):
             # this component as linear combination of vertex_coordinates "dofs" and table
 
             gdim = mt.terminal.domain().cell().geometric_dimension()
-            num_vertices = mt.terminal.domain().cell().topological_dimension() + 1 # FIXME: Get from cellname?
+            num_vertices = mt.terminal.domain().cell().topological_dimension() + 1 # TODO: Get from cellname?
 
-            if 0:
-                uname, begin, end = tabledata # FIXME: Missing data for spatial_coordinate, inject VCG1 earlier!
-            else:
-                uname, begin, end = "dFIXME", 0, num_vertices
+            uname, begin, end = tabledata
 
-            # access here is e.g. x0, component 0 of x
+            # access here is e.g. J_0, component 0 of J
 
-            uflacs_assert(end-begin == num_vertices, "Assuming linear element for affine simplices here.")
+            uflacs_assert(0 <= (end-begin) <= num_vertices,
+                          "Assuming linear element for affine simplices here.")
             entity = format_entity_name(self.ir["entitytype"], mt.restriction)
             vertex = names.ic
 
@@ -386,52 +408,43 @@ class FFCDefinitionsBackend(MultiFunction):
 
                 # Loop to accumulate linear combination of dofs and tables
                 code += [VariableDecl("const double", access, "0.0")]
-                code += [ForRange(vertex, 0, num_vertices, body=[AssignAdd(access, prod)])]
+                code += [ForRange(vertex, begin, end, body=[AssignAdd(access, prod)])]
 
             else: # Inlined version:
                 prods = []
-                for vertex in range(0, num_vertices):
-                    table_access = ArrayAccess(uname, (entity, vertex))
-                    dof_access = generate_domain_dof_access(num_vertices, gdim, vertex, mt.flat_component)
-                    prods += [Mul(dof_access, table_access)]
+                dof_access = generate_domain_dofs_access(num_vertices, gdim)
+                for idof in range(begin, end):
+                    table_access = ArrayAccess(uname, (entity, Sub(idof, begin)))
+                    prods += [Mul(dof_access[idof], table_access)]
 
                 # Inlined loop to accumulate linear combination of dofs and tables
                 code += [VariableDecl("const double", access, Sum(prods))]
 
         return code
 
-    def jacobian_inverse(self, e, mt, tabledata, access):
-        "TODO: Insert symbolically"
+    def reference_facet_jacobian(self, e, mt, tabledata, access): # FIXME
+        "TODO: Define table in ufc_geometry? Or insert among regular tables?"
         code = []
-        code += [VariableDecl("double", access, "1.0")] # FIXME
+        code += [VariableDecl("double", access, "1.0 /* FIXME */")] # FIXME
         return code
 
-    def jacobian_determinant(self, e, mt, tabledata, access):
-        "TODO: Insert symbolically"
-        code = []
-        code += [VariableDecl("double", access, "1.0")] # FIXME
-        return code
-
-    def facet_jacobian(self, e, mt, tabledata, access):
-        "TODO: Define! Table in ufc_geometry?"
-        code = []
-        code += [VariableDecl("double", access, "1.0")] # FIXME
-        return code
-
-    def facet_jacobian_inverse(self, e, mt, tabledata, access):
-        "TODO: Insert symbolically"
-        code = []
-        code += [VariableDecl("double", access, "1.0")] # FIXME
-        return code
-
-    def facet_jacobian_determinant(self, e, mt, tabledata, access):
-        "TODO: Insert symbolically"
-        code = []
-        code += [VariableDecl("double", access, "1.0")] # FIXME
-        return code
-
-    def facet_normal(self, e, mt, tabledata, access):
+    def facet_normal(self, e, mt, tabledata, access): # FIXME
         "TODO: Insert symbolically?"
         code = []
-        code += [VariableDecl("double", access, "1.0")] # FIXME
+        code += [VariableDecl("double", access, "1.0 /* FIXME */")] # FIXME
         return code
+
+    def jacobian_inverse(self, e, mt, tabledata, access):
+        error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
+
+    def jacobian_determinant(self, e, mt, tabledata, access):
+        error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
+
+    def facet_jacobian(self, e, mt, tabledata, access):
+        error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
+
+    def facet_jacobian_inverse(self, e, mt, tabledata, access):
+        error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
+
+    def facet_jacobian_determinant(self, e, mt, tabledata, access):
+        error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
