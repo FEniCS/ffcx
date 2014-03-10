@@ -1,11 +1,13 @@
 """
 FIXME:
-- Inject CG1 tables for x and J at some point and pass them here through tabledata
-- Check the code for J carefully
-- Pass num_points to weight, x, X
 - Make reference_facet_jacobi tables and use below
 - Fix FacetNormal (sign?)
-- Handle cell restriction in generate_domain_dof_access
+- Restrict Jacobian etc. in ufl change_to_reference
+
+DONE - Inject CG1 tables for x and J at some point and pass them here through tabledata
+DONE - Check the code for J carefully
+HACKED- Pass num_points to weight, x, X
+DONE - Handle cell restriction in generate_domain_dof_access
 """
 
 from ufl.common import component_to_index
@@ -104,17 +106,25 @@ def generate_coefficient_dof_access(coefficient, dof_number):
     # TODO: Apply integral specific renumbering.
     return ArrayAccess(names.w, (coefficient.count(), dof_number))
 
-def generate_domain_dof_access(num_vertices, gdim, vertex, component):
+def generate_domain_dof_access(num_vertices, gdim, vertex, component, restriction):
     # TODO: Add domain number as argument here, and {domain_offset} to array indexing:
-    # FIXME: Handle restriction here
     #domain_offset = self.ir["domain_offsets"][domain_number]
-    return ArrayAccess(names.vertex_coordinates, Add(Mul(gdim, vertex), component))
 
-def generate_domain_dofs_access(num_vertices, gdim):
+    # TODO: Get restriction postfix from somewhere central
+    if restriction == "+":
+        res = "_0"
+    elif restriction == "-":
+        res = "_1"
+    else:
+        res = ""
+    vc = "{0}{1}".format(names.vertex_coordinates, res)
+    return ArrayAccess(vc, Add(Mul(gdim, vertex), component))
+
+def generate_domain_dofs_access(num_vertices, gdim, restriction):
     # TODO: Add domain number as argument here, and {domain_offset} to array indexing:
     # FIXME: Handle restriction here
     #domain_offset = self.ir["domain_offsets"][domain_number]
-    return [ArrayAccess(names.vertex_coordinates, Add(Mul(gdim, vertex), component))
+    return [generate_domain_dof_access(num_vertices, gdim, vertex, component, restriction)
             for component in range(gdim)
             for vertex in range(num_vertices)]
 
@@ -126,6 +136,8 @@ class FFCAccessBackend(MultiFunction):
         self.parameters = parameters
 
         self.physical_coordinates_known = self.ir["domain_type"] == "quadrature"
+
+        self._current_num_points, = self.ir["uflacs"]["expr_ir"].keys() # TODO: Hack!
 
     def precision_float(self, f):
         return "%g" % f # TODO: Control float formatting precision here
@@ -180,10 +192,12 @@ class FFCAccessBackend(MultiFunction):
         return access
 
     def quadrature_weight(self, e, mt, tabledata):
-        # FIXME: Need num_points to identify weights array name?
+        # TODO: Need num_points to identify weights array name?
         #        Or maybe place it in tabledata:
         #name, dummy, num_points = tabledata
-        access = ArrayAccess(names.weights, names.iq)
+        num_points = self._current_num_points # TODO: Fix this hack!
+        weights = "{0}{1}".format(names.weights, num_points)
+        access = ArrayAccess(weights, names.iq)
         return access
 
     def spatial_coordinate(self, e, mt, tabledata):
@@ -193,10 +207,12 @@ class FFCAccessBackend(MultiFunction):
         uflacs_assert(not mt.averaged, "")
 
         if self.physical_coordinates_known:
-            # FIXME: Need num_points to identify points array name?
+            # TODO: Need num_points to identify points array name?
             #        Or maybe place it in tabledata:
             #name, dummy, num_points = tabledata
-            access = ArrayAccess(names.points, (names.iq, mt.flat_component))
+            num_points = self._current_num_points # TODO: Fix this hack!
+            points = "{0}{1}".format(names.points, num_points)
+            access = ArrayAccess(points, (names.iq, mt.flat_component))
         elif mt.terminal.domain().coordinates() is not None:
             error("Expecting spatial coordinate to be symbolically rewritten.")
         else:
@@ -213,10 +229,12 @@ class FFCAccessBackend(MultiFunction):
         if self.physical_coordinates_known:
             error("Expecting reference coordinate to be symbolically rewritten.")
         else:
-            # FIXME: Need num_points to identify points array name?
+            # TODO: Need num_points to identify points array name?
             #        Or maybe place it in tabledata:
             #name, dummy, num_points = tabledata
-            access = ArrayAccess(names.points, (names.iq, mt.flat_component))
+            num_points = self._current_num_points # TODO: Fix this hack!
+            points = "{0}{1}".format(names.points, num_points)
+            access = ArrayAccess(points, (names.iq, mt.flat_component))
 
         return access
 
@@ -264,6 +282,10 @@ class FFCDefinitionsBackend(MultiFunction):
 
         self.physical_coordinates_known = self.ir["domain_type"] == "quadrature"
 
+    def initial(self): # TODO: Need something like this?
+        code = []
+        return code
+
     def expr(self, t, mt, tabledata, access):
         error("Unhandled type {0}".format(type(t)))
 
@@ -294,7 +316,7 @@ class FFCDefinitionsBackend(MultiFunction):
             body = [AssignAdd(access, prod)]
 
             # Loop to accumulate linear combination of dofs and tables
-            code += [VariableDecl("const double", access, "0.0")]
+            code += [VariableDecl("double", access, "0.0")]
             code += [ForRange(idof, begin, end, body=body)]
 
         return code
@@ -339,15 +361,16 @@ class FFCDefinitionsBackend(MultiFunction):
 
             if 0: # Generated loop version:
                 table_access = ArrayAccess(uname, (entity, names.iq, vertex))
-                dof_access = generate_domain_dof_access(num_vertices, gdim, vertex, mt.flat_component)
+                dof_access = generate_domain_dof_access(num_vertices, gdim, vertex,
+                                                        mt.flat_component, mt.restriction)
                 prod = Mul(dof_access, table_access)
 
                 # Loop to accumulate linear combination of dofs and tables
-                code += [VariableDecl("const double", access, "0.0")]
+                code += [VariableDecl("double", access, "0.0")]
                 code += [ForRange(vertex, begin, end, body=[AssignAdd(access, prod)])]
 
             else: # Inlined version:
-                dof_access = generate_domain_dofs_access(num_vertices, gdim)
+                dof_access = generate_domain_dofs_access(num_vertices, gdim, mt.restriction)
                 prods = []
                 for idof in range(begin, end):
                     table_access = ArrayAccess(uname, (entity, names.iq, Sub(idof, begin)))
@@ -374,7 +397,7 @@ class FFCDefinitionsBackend(MultiFunction):
         code = []
         return code
 
-    def jacobian(self, e, mt, tabledata, access):
+    def jacobian(self, e, mt, tabledata, access): # TODO: Handle jacobian and restricted in change_to_reference
         """Return definition code for the Jacobian of x(X).
 
         J = sum_k xdof_k grad_X xphi_k(X)
@@ -400,21 +423,23 @@ class FFCDefinitionsBackend(MultiFunction):
                           "Assuming linear element for affine simplices here.")
             entity = format_entity_name(self.ir["entitytype"], mt.restriction)
             vertex = names.ic
+            iq = 0
 
             if 0: # Generated loop version:
-                table_access = ArrayAccess(uname, (entity, vertex))
-                dof_access = generate_domain_dof_access(num_vertices, gdim, vertex, mt.flat_component)
+                table_access = ArrayAccess(uname, iq, (entity, vertex))
+                dof_access = generate_domain_dof_access(num_vertices, gdim, vertex,
+                                                        mt.flat_component, mt.restriction)
                 prod = Mul(dof_access, table_access)
 
                 # Loop to accumulate linear combination of dofs and tables
-                code += [VariableDecl("const double", access, "0.0")]
+                code += [VariableDecl("double", access, "0.0")]
                 code += [ForRange(vertex, begin, end, body=[AssignAdd(access, prod)])]
 
             else: # Inlined version:
                 prods = []
-                dof_access = generate_domain_dofs_access(num_vertices, gdim)
+                dof_access = generate_domain_dofs_access(num_vertices, gdim, mt.restriction)
                 for idof in range(begin, end):
-                    table_access = ArrayAccess(uname, (entity, Sub(idof, begin)))
+                    table_access = ArrayAccess(uname, (entity, 0, Sub(idof, begin)))
                     prods += [Mul(dof_access[idof], table_access)]
 
                 # Inlined loop to accumulate linear combination of dofs and tables
