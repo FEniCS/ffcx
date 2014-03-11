@@ -43,11 +43,11 @@ from symbolics import generate_aux_constants
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
     code = initialize_integral_code(ir, prefix, parameters)
-    code["tabulate_tensor"] = _tabulate_tensor(ir, parameters)
+    code["tabulate_tensor"] = _tabulate_tensor(ir, prefix, parameters)
     code["additional_includes_set"] = ir["additional_includes_set"]
     return code
 
-def _tabulate_tensor(ir, parameters):
+def _tabulate_tensor(ir, prefix, parameters):
     "Generate code for a single integral (tabulate_tensor())."
 
     f_comment       = format["comment"]
@@ -249,7 +249,8 @@ def _tabulate_tensor(ir, parameters):
     elif domain_type == "quadrature_cell":
         common += _evaluate_basis_at_quadrature_points(used_psi_tables,
                                                        gdim,
-                                                       element_data)
+                                                       element_data,
+                                                       prefix)
 
     # Reset the element tensor (array 'A' given as argument to tabulate_tensor() by assembler)
     # Handle functionals.
@@ -684,12 +685,13 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
                         new_nzcs.remove(inv_name_map[n][1])
     return code
 
-def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data):
+def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data, form_prefix):
     "Generate code for calling evaluate basis (derivatives) at quadrature points"
 
     # Prefetch formats to speed up code generation
     f_comment          = format["comment"]
     f_declaration      = format["declaration"]
+    f_static_array     = format["static array"]
     f_loop             = format["generate loop"]
     f_eval_basis_decl  = format["eval_basis_decl"]
     f_eval_basis       = format["eval_basis"]
@@ -702,6 +704,9 @@ def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data):
 
     # Extract prefixes for tables
     prefixes = sorted(list(set(table.split("_")[0] for table in psi_tables)))
+
+    # Use lower case prefix for form name
+    form_prefix = form_prefix.lower()
 
     # For each uniqe prefix ("FE0" etc), figure out which derivatives
     # need to be tabulated
@@ -744,18 +749,21 @@ def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data):
 
                 # Generate block of code for loop
                 block = []
-                block += [f_eval_basis      % {"prefix":    prefix,
-                                               "gdim":      gdim,
-                                               "space_dim": space_dim,
-                                               "num_vals":  num_vals}]
-                block += [f_eval_basis_copy % {"prefix":    prefix,
-                                               "num_vals":  num_vals}]
+                block += [f_eval_basis      % {"prefix":      prefix,
+                                               "form_prefix": form_prefix,
+                                               "gdim":        gdim,
+                                               "space_dim":   space_dim,
+                                               "num_vals":    num_vals,
+                                               "counter":     counter}]
+                block += [f_eval_basis_copy % {"prefix":      prefix,
+                                               "space_dim":   space_dim}]
 
                 # Generate code
                 code += [f_comment("Create table %s for basis function values" % prefix)]
                 code += [f_eval_basis_decl % {"prefix": prefix}]
                 code += [""]
                 code += [f_comment("Evaluate basis functions at quadrature points")]
+                code += [f_static_array("double", "values", num_vals)]
                 code += f_loop(block, [("ip", 0, "num_quadrature_points")])
 
             # Code for evaluate_basis_derivatives_all
@@ -772,14 +780,16 @@ def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data):
 
                 # Generate block of code for loop
                 block = []
-                block += [f_eval_derivs %       {"prefix":    prefix,
-                                                 "gdim":      gdim,
-                                                 "space_dim": space_dim,
-                                                 "num_vals":  num_vals,
-                                                 "n":         n}]
+                block += [f_eval_derivs %       {"prefix":      prefix,
+                                                 "form_prefix": form_prefix,
+                                                 "gdim":        gdim,
+                                                 "space_dim":   space_dim,
+                                                 "num_vals":    num_vals,
+                                                 "n":           n,
+                                                 "counter":     counter}]
                 block += [(f_eval_derivs_copy % {"prefix":    prefix,
                                                  "d":         d,
-                                                 "num_vals":  num_vals,
+                                                 "space_dim": space_dim,
                                                  "offset":    i,
                                                  "stride":    stride,
                                                  }) for (i, d) in enumerate(derivs)]
@@ -789,6 +799,7 @@ def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data):
                 code += [(f_eval_derivs_decl % {"prefix": prefix, "d": d}) for d in derivs]
                 code += [""]
                 code += [f_comment("Evaluate basis function derivatives at quadrature points")]
+                code += [f_static_array("double", "values", num_vals)]
                 code += f_loop(block, [("ip", 0, "num_quadrature_points")])
 
 

@@ -81,6 +81,8 @@ format.update({
     "const float declaration":        lambda v, w: "const double %s = %s;" % (v, w),
     "const uint declaration":         lambda v, w: "const unsigned int %s = %s;" % (v, w),
     "dynamic array":                  lambda t, n, s: "%s *%s = new %s[%s];" % (t, n, t, s),
+    "static array":                   lambda t, n, s: "static %s %s[%d];" % (t, n, s),
+    "fixed array":                    lambda t, n, s: "%s %s[%d];" % (t, n, s),
     "delete dynamic array":           lambda n, s=None: _delete_array(n, s),
     "create foo":                     lambda v: "new %s()" % v
 })
@@ -207,10 +209,10 @@ format.update({
                                   % (i, format["argument basis num"], format["argument basis num"], j),
     "dereference pointer":        lambda n: "*%s" % n,
     "reference variable":         lambda n: "&%s" % n,
-    "call basis":                 lambda i, s: "evaluate_basis(%s, %s, x, vertex_coordinates, cell_orientation);" % (i, s),
-    "call basis_all":             "evaluate_basis_all(values, x, vertex_coordinates, cell_orientation);",
-    "call basis_derivatives":     lambda i, s: "evaluate_basis_derivatives(%s, n, %s, x, vertex_coordinates, cell_orientation);" % (i, s),
-    "call basis_derivatives_all": lambda i, s: "evaluate_basis_derivatives_all(n, %s, x, vertex_coordinates, cell_orientation);" % s,
+    "call basis":                 lambda i, s: "_evaluate_basis(%s, %s, x, vertex_coordinates, cell_orientation);" % (i, s),
+    "call basis_all":             "_evaluate_basis_all(values, x, vertex_coordinates, cell_orientation);",
+    "call basis_derivatives":     lambda i, s: "_evaluate_basis_derivatives(%s, n, %s, x, vertex_coordinates, cell_orientation);" % (i, s),
+    "call basis_derivatives_all": lambda i, s: "_evaluate_basis_derivatives_all(n, %s, x, vertex_coordinates, cell_orientation);" % s,
 
     # quadrature code generators
     "integration points": "ip",

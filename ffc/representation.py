@@ -34,7 +34,7 @@ in the intermediate representation under the key "foo".
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2009-12-16
-# Last changed: 2013-02-10
+# Last changed: 2014-03-11
 
 # Python modules
 from itertools import chain
@@ -242,13 +242,13 @@ def _compute_form_ir(form_data, form_id, element_numbers):
     ir["num_exterior_facet_domains"] = form_data.num_sub_domains.get("exterior_facet",0)
     ir["num_interior_facet_domains"] = form_data.num_sub_domains.get("interior_facet",0)
     ir["num_point_domains"] = form_data.num_sub_domains.get("point",0)
-    ir["num_quadrature_domains"] = form_data.num_sub_domains.get("quadrature",0)
+    ir["num_quadrature_cell_domains"] = form_data.num_sub_domains.get("quadrature",0)
 
     ir["has_cell_integrals"] = _has_foo_integrals("cell", form_data)
     ir["has_exterior_facet_integrals"] = _has_foo_integrals("exterior_facet", form_data)
     ir["has_interior_facet_integrals"] = _has_foo_integrals("interior_facet", form_data)
     ir["has_point_integrals"] = _has_foo_integrals("point", form_data)
-    ir["has_quadrature_integrals"] = _has_foo_integrals("quadrature", form_data)
+    ir["has_quadrature_cell_integrals"] = _has_foo_integrals("quadrature_cell", form_data)
 
     ir["create_finite_element"] = [element_numbers[e] for e in form_data.elements]
     ir["create_dofmap"] = [element_numbers[e] for e in form_data.elements]
@@ -257,13 +257,13 @@ def _compute_form_ir(form_data, form_id, element_numbers):
     ir["create_exterior_facet_integral"] = _create_foo_integral("exterior_facet", form_data)
     ir["create_interior_facet_integral"] = _create_foo_integral("interior_facet", form_data)
     ir["create_point_integral"] = _create_foo_integral("point", form_data)
-    ir["create_quadrature_integral"] = _create_foo_integral("quadrature", form_data)
+    ir["create_quadrature_cell_integral"] = _create_foo_integral("quadrature_cell", form_data)
 
     ir["create_default_cell_integral"] = _create_default_foo_integral("cell", form_data)
     ir["create_default_exterior_facet_integral"] = _create_default_foo_integral("exterior_facet", form_data)
     ir["create_default_interior_facet_integral"] = _create_default_foo_integral("interior_facet", form_data)
     ir["create_default_point_integral"] = _create_default_foo_integral("point", form_data)
-    ir["create_default_quadrature_integral"] = _create_default_foo_integral("quadrature", form_data)
+    ir["create_default_quadrature_cell_integral"] = _create_default_foo_integral("quadrature_cell", form_data)
 
     return ir
 

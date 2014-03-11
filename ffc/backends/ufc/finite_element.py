@@ -69,7 +69,7 @@ public:
                               double* values,
                               const double* x,
                               const double* vertex_coordinates,
-                              int cell_orientation) const
+                              int cell_orientation)
   {
 %(evaluate_basis)s
   }
@@ -88,7 +88,7 @@ public:
   static void _evaluate_basis_all(double* values,
                                   const double* x,
                                   const double* vertex_coordinates,
-                                  int cell_orientation) const
+                                  int cell_orientation)
   {
 %(evaluate_basis_all)s
   }
@@ -108,7 +108,7 @@ public:
                                           double* values,
                                           const double* x,
                                           const double* vertex_coordinates,
-                                          int cell_orientation) const
+                                          int cell_orientation)
   {
 %(evaluate_basis_derivatives)s
   }
@@ -129,7 +129,7 @@ public:
                                               double* values,
                                               const double* x,
                                               const double* vertex_coordinates,
-                                              int cell_orientation) const
+                                              int cell_orientation)
   {
 %(evaluate_basis_derivatives_all)s
   }
@@ -250,7 +250,7 @@ public:
                               double* values,
                               const double* x,
                               const double* vertex_coordinates,
-                              int cell_orientation) const;
+                              int cell_orientation);
 
   /// Evaluate basis function i at given point x in cell (non-static member function)
   virtual void evaluate_basis(std::size_t i,
@@ -266,7 +266,7 @@ public:
   static void _evaluate_basis_all(double* values,
                                   const double* x,
                                   const double* vertex_coordinates,
-                                  int cell_orientation) const;
+                                  int cell_orientation);
 
   /// Evaluate all basis functions at given point x in cell (non-static member function)
   virtual void evaluate_basis_all(double* values,
@@ -283,7 +283,7 @@ public:
                                           double* values,
                                           const double* x,
                                           const double* vertex_coordinates,
-                                          int cell_orientation) const;
+                                          int cell_orientation);
 
   /// Evaluate order n derivatives of basis function i at given point x in cell (non-static member function)
   virtual void evaluate_basis_derivatives(std::size_t i,
@@ -301,7 +301,7 @@ public:
                                               double* values,
                                               const double* x,
                                               const double* vertex_coordinates,
-                                              int cell_orientation) const;
+                                              int cell_orientation);
 
   /// Evaluate order n derivatives of all basis functions at given point x in cell (non-static member function)
   virtual void evaluate_basis_derivatives_all(std::size_t n,
@@ -417,7 +417,7 @@ void %(classname)s::_evaluate_basis(std::size_t i,
                                     double* values,
                                     const double* x,
                                     const double* vertex_coordinates,
-                                    int cell_orientation) const
+                                    int cell_orientation)
 {
 %(evaluate_basis)s
 }
@@ -426,7 +426,7 @@ void %(classname)s::_evaluate_basis(std::size_t i,
 void %(classname)s::_evaluate_basis_all(double* values,
                                         const double* x,
                                         const double* vertex_coordinates,
-                                        int cell_orientation) const
+                                        int cell_orientation)
 {
 %(evaluate_basis_all)s
 }
@@ -437,7 +437,7 @@ void %(classname)s::_evaluate_basis_derivatives(std::size_t i,
                                                 double* values,
                                                 const double* x,
                                                 const double* vertex_coordinates,
-                                                int cell_orientation) const
+                                                int cell_orientation)
 {
 %(evaluate_basis_derivatives)s
 }
@@ -447,7 +447,7 @@ void %(classname)s::_evaluate_basis_derivatives_all(std::size_t n,
                                                     double* values,
                                                     const double* x,
                                                     const double* vertex_coordinates,
-                                                    int cell_orientation) const
+                                                    int cell_orientation)
 {
 %(evaluate_basis_derivatives_all)s
 }
