@@ -23,12 +23,14 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-28
-# Last changed: 2014-03-10
+# Last changed: 2014-03-11
 
 # Code snippets
 
 __all__ = ["comment_ufc", "comment_dolfin", "header_h", "header_c", "footer",
-           "compute_jacobian", "compute_jacobian_inverse", "eval_basis"]
+           "compute_jacobian", "compute_jacobian_inverse",
+           "eval_basis_decl", "eval_basis", "eval_basis_copy",
+           "eval_derivs_decl", "eval_derivs", "eval_derivs_copy"]
 
 __old__ = ["evaluate_f",
            "facet_determinant", "map_onto_physical",
@@ -761,30 +763,38 @@ min_facet_edge_length = {3: {3: _min_facet_edge_length_3D}}
 
 max_facet_edge_length = {3: {3: _max_facet_edge_length_3D}}
 
-# Misc code snippets
+# Code snippets for runtime quadrature (calling evaluate_basis)
 
-# FIXME: Cleanup, now residing mostly in quadraturegenerator.py
-def eval_basis(name, names, gdim, num_basis_functions):
-    "Code for calling evaluate basis (derivatives) at quadrature points"
+eval_basis_decl = """\
+std::vector<std::vector<double> > %(prefix)s(num_quadrature_points);"""
 
-    print names
+eval_basis = """\
+// Get current quadrature point and compute values of basis function derivatives
+const double* x = quadrature_points + ip*%(gdim)s;
+static double values[%(num_vals)s];
+const int cell_orientation = 0; // cell orientation currently not supported
+evaluate_basis_all(values, x, vertex_coordinates, cell_orientation);"""
 
-    num_basis_functions = 5
+eval_basis_copy = """\
 
-    variables = {"name": name,
-                 "gdim": gdim,
-                 "num_basis_functions": num_basis_functions}
+// Copy values to table %(prefix)s
+%(prefix)s[ip].resize(%(num_vals)s);
+std::copy(values, values + %(num_vals)s, %(prefix)s[ip].begin());
+"""
 
-    return """\
-std::vector< std::vector<double> > %(name)s(num_quadrature_points);
+eval_derivs_decl = """\
+std::vector<std::vector<double> > %(prefix)s_D%(d)s(num_quadrature_points);"""
 
-// Iterate over quadrature points and tabulate bases
-for (unsigned int ip = 0; ip < num_quadrature_points; ip++)
-{
-  %(name)s[ip].resize(%(num_basis_functions)s);
-  const double* values = &%(name)s[i][0];
-  const double* x = quadrature_points + ip*%(gdim)s;
-  const int cell_orientation = 0; // cell orientation currently not supported
-  evaluate_basis_all(values, x, vertex_coordinates, cell_orientation);
-}
-""" % variables
+eval_derivs = """\
+// Get current quadrature point and compute values of basis function derivatives
+const double* x = quadrature_points + ip*%(gdim)s;
+static double values[%(num_vals)s];
+const int cell_orientation = 0; // cell orientation currently not supported
+evaluate_basis_derivatives_all(%(n)s, values, x, vertex_coordinates, cell_orientation);"""
+
+eval_derivs_copy = """\
+
+// Copy values to table %(prefix)s_D%(d)s
+%(prefix)s_D%(d)s[ip].resize(%(num_vals)s);
+for (unsigned int i = 0; i < %(num_vals)s; i++)
+  %(prefix)s_D%(d)s[ip][i] = values[%(offset)s + i*%(stride)s];"""

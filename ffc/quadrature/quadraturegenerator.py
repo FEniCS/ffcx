@@ -22,22 +22,22 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-03-10
+# Last changed: 2014-03-11
 
-# Python modules.
+# Python modules
 import functools, itertools
 import numpy
 
-# UFL modules.
+# UFL modules
 from ufl.algorithms.printing import tree_format
 
-## FFC modules.
+## FFC modules
 from ffc.log import info, debug, ffc_assert, error
 from ffc.cpp import format, remove_unused
 
 from ffc.representationutils import initialize_integral_code
 
-# Utility and optimisation functions for quadraturegenerator.
+# Utility and optimization functions for quadraturegenerator
 from symbolics import generate_aux_constants
 
 def generate_integral_code(ir, prefix, parameters):
@@ -689,8 +689,14 @@ def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data):
     "Generate code for calling evaluate basis (derivatives) at quadrature points"
 
     # Prefetch formats to speed up code generation
-    f_comment = format["comment"]
-    f_loop    = format["generate loop"]
+    f_comment          = format["comment"]
+    f_loop             = format["generate loop"]
+    f_eval_basis_decl  = format["eval_basis_decl"]
+    f_eval_basis       = format["eval_basis"]
+    f_eval_basis_copy  = format["eval_basis_copy"]
+    f_eval_derivs_decl = format["eval_derivs_decl"]
+    f_eval_derivs      = format["eval_derivs"]
+    f_eval_derivs_copy = format["eval_derivs_copy"]
 
     code = []
 
@@ -716,40 +722,6 @@ def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data):
 
 
     # FIXME: Move code snippets to codesnippets.py
-
-    f_eval_basis_decl = """\
-std::vector<std::vector<double> > %(prefix)s(num_quadrature_points);"""
-
-    f_eval_basis = """\
-// Get current quadrature point and compute values of basis function derivatives
-const double* x = quadrature_points + ip*%(gdim)s;
-static double values[%(num_vals)s];
-const int cell_orientation = 0; // cell orientation currently not supported
-evaluate_basis_all(values, x, vertex_coordinates, cell_orientation);"""
-
-    f_eval_basis_copy = """\
-
-// Copy values to table %(prefix)s
-%(prefix)s[ip].resize(%(num_vals)s);
-std::copy(values, values + %(num_vals)s, %(prefix)s[ip].begin());
-"""
-
-    f_eval_derivs_decl = """\
-std::vector<std::vector<double> > %(prefix)s_D%(d)s(num_quadrature_points);"""
-
-    f_eval_derivs = """\
-// Get current quadrature point and compute values of basis function derivatives
-const double* x = quadrature_points + ip*%(gdim)s;
-static double values[%(num_vals)s];
-const int cell_orientation = 0; // cell orientation currently not supported
-evaluate_basis_derivatives_all(%(n)s, values, x, vertex_coordinates, cell_orientation);"""
-
-    f_eval_derivs_copy = """\
-
-// Copy values to table %(prefix)s_D%(d)s
-%(prefix)s_D%(d)s[ip].resize(%(num_vals)s);
-for (unsigned int i = 0; i < %(num_vals)s; i++)
-  %(prefix)s_D%(d)s[ip][i] = values[%(offset)s + i*%(stride)s];"""
 
     # Generate code for calling evaluate_basis_[derivatives_]all
     for prefix in prefixes:

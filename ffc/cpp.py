@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-12-16
-# Last changed: 2014-03-10
+# Last changed: 2014-03-11
 
 # Python modules
 import re, numpy, platform
@@ -274,8 +274,13 @@ format.update({
     "dolfin comment":           comment_dolfin,
     "header_h":                 header_h,
     "header_c":                 header_c,
-    "footer":                   footer
-})
+    "footer":                   footer,
+    "eval_basis_decl":          eval_basis_decl,
+    "eval_basis":               eval_basis,
+    "eval_basis_copy":          eval_basis_copy,
+    "eval_derivs_decl":         eval_derivs_decl,
+    "eval_derivs":              eval_derivs,
+    "eval_derivs_copy":         eval_derivs_copy})
 
 # Class names
 format.update({

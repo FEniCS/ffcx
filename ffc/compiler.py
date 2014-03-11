@@ -136,6 +136,9 @@ def compile_form(forms, object_names={}, prefix="Form",\
     """This function generates UFC code for a given UFL form or list
     of UFL forms."""
 
+
+    print parameters
+
     info("Compiling form %s\n" % prefix)
 
     # Reset timing
