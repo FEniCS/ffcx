@@ -769,7 +769,7 @@ eval_basis_decl = """\
 std::vector<std::vector<double> > %(prefix)s(num_quadrature_points);"""
 
 eval_basis = """\
-// Get current quadrature point and compute values of basis function derivatives
+// Get current quadrature point and compute values of basis functions
 const double* x = quadrature_points + ip*%(gdim)s;
 static double values[%(num_vals)s];
 const int cell_orientation = 0; // cell orientation currently not supported

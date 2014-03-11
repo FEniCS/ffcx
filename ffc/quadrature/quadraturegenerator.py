@@ -690,6 +690,7 @@ def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data):
 
     # Prefetch formats to speed up code generation
     f_comment          = format["comment"]
+    f_declaration      = format["declaration"]
     f_loop             = format["generate loop"]
     f_eval_basis_decl  = format["eval_basis_decl"]
     f_eval_basis       = format["eval_basis"]
@@ -720,8 +721,10 @@ def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data):
             derivatives.add(n)
         used_derivatives[prefix] = derivatives
 
-
-    # FIXME: Move code snippets to codesnippets.py
+    # Generate code for setting quadrature weights
+    code += [f_comment("Set quadrature weights")]
+    code += [f_declaration("const double*", "W", "quadrature_weights")]
+    code += [""]
 
     # Generate code for calling evaluate_basis_[derivatives_]all
     for prefix in prefixes:
@@ -753,7 +756,7 @@ def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data):
                 code += [f_comment("Create table %s for basis function values" % prefix)]
                 code += [f_eval_basis_decl % {"prefix": prefix}]
                 code += [""]
-                code += [f_comment("Evaluate at all quadrature points")]
+                code += [f_comment("Evaluate basis functions at quadrature points")]
                 code += f_loop(block, [("ip", 0, "num_quadrature_points")])
 
             # Code for evaluate_basis_derivatives_all
@@ -786,15 +789,11 @@ def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data):
                 code += [f_comment("Create table(s) %s_D for order %d basis function derivatives" % (prefix, n))]
                 code += [(f_eval_derivs_decl % {"prefix": prefix, "d": d}) for d in derivs]
                 code += [""]
-                code += [f_comment("Evaluate at all quadrature points")]
+                code += [f_comment("Evaluate basis function derivatives at quadrature points")]
                 code += f_loop(block, [("ip", 0, "num_quadrature_points")])
 
 
             # Add newline
             code += [""]
-
-    print
-    print "\n".join(code)
-    exit(0)
 
     return code
