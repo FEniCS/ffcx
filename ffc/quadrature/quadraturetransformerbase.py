@@ -22,7 +22,7 @@ transformers to translate UFL expressions."""
 # Modified by Garth N. Wells, 2013
 #
 # First added:  2009-10-13
-# Last changed: 2014-03-06
+# Last changed: 2014-03-11
 
 # Python modules.
 from itertools import izip
@@ -988,9 +988,6 @@ class QuadratureTransformerBase(Transformer):
 
         # Get element counter and loop index.
         element_counter = self.element_map[1 if avg else self.points][ufl_argument.element()]
-
-        print "element_counter =", element_counter
-
         loop_index = indices[ufl_argument.number()]
 
         # Create basis access, we never need to map the entry in the basis table

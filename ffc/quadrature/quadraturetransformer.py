@@ -21,7 +21,7 @@
 # Modified by Anders Logg 2009, 2013
 #
 # First added:  2009-02-09
-# Last changed: 2014-03-07
+# Last changed: 2014-03-11
 
 # Python modules.
 from numpy import shape
@@ -193,8 +193,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     code[()] = None
                     return code
                 elif not v:
-                    print "v: '%s'" % repr(v)
-                    error("should not happen")
+                    error("should not happen: %s" % str("v: '%s'" % repr(v)))
                 elif v == "1":
                     pass
                 else:
@@ -693,7 +692,6 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # Multiply value by weight and determinant
         # Create weight and scale factor.
 
-        print "CHECK", self.points
         weight = format["weight"](self.points)
         if self.points is None or self.points > 1:
             weight += format["component"]("", format["integration points"])

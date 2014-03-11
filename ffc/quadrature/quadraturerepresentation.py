@@ -21,7 +21,7 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-03-10
+# Last changed: 2014-03-11
 
 import numpy, itertools
 
@@ -437,10 +437,6 @@ def _tabulate_basis(sorted_integrals, form_data, itg_data):
                 # Insert table into dictionary based on UFL elements.
                 insert_nested_dict(psi_tables, (len_weights, element, avg, entity, deriv), avg_psi_table)
 
-
-    print psi_tables
-
-
     return (integrals, psi_tables, quadrature_weights)
 
 def _sort_integrals(integrals, metadata, form_data):
@@ -513,7 +509,7 @@ def _extract_element_data(element_map):
 
             # Compute value size
             shape = ufl_element.value_shape()
-            value_size = 1 if shape == () else product(shape)
+            value_size = 1 if shape == () else itertools.product(shape)
 
             # Store data
             element_data[counter] = {"value_size":      value_size,

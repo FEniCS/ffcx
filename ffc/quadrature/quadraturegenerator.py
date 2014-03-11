@@ -283,7 +283,6 @@ def _tabulate_tensor(ir, parameters):
         # Add geo ops count to integral ops count for writing info.
         if isinstance(ops[-1], int):
             ops[-1] += geo_ops
-        info(message[domain_type] % [str(o) for o in tuple(ops)])
     return "\n".join(common) + "\n" + tensor_code
 
 def _generate_element_tensor(integrals, sets, optimise_parameters):
