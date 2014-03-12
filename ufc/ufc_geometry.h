@@ -34,16 +34,130 @@
 
 // TODO: Split this header into smaller files ufc_geometry_<cell>.h or ufc_geometry_<cell>_<n>d.h?
 
+
+/// --- Local reference cell coordinates by UFC conventions ---
+
+static const double interval_vertices[2][1] = {
+  {0.0},
+  {1.0}
+  };
+
+static const double triangle_vertices[3][2] = {
+  {0.0, 0.0},
+  {1.0, 0.0},
+  {0.0, 1.0}
+  };
+
+static const double tetrahedron_vertices[4][3] = {
+  {0.0, 0.0, 0.0},
+  {1.0, 0.0, 0.0},
+  {0.0, 1.0, 0.0},
+  {0.0, 0.0, 1.0}
+  };
+
 /// --- Local reference cell entity relations by UFC conventions ---
-static const unsigned int interval_facet_vertices[2][2] = {{0}, {1}};
-static const unsigned int triangle_facet_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
-static const unsigned int tetrahedron_facet_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
+
+static const unsigned int interval_facet_vertices[2][2] = {
+  {0},
+  {1}
+  };
+
+static const unsigned int triangle_facet_vertices[3][2] = {
+  {1, 2},
+  {0, 2},
+  {0, 1}
+  };
+
+static const unsigned int tetrahedron_facet_vertices[4][3] = {
+  {1, 2, 3},
+  {0, 2, 3},
+  {0, 1, 3},
+  {0, 1, 2}
+  };
+
 static const unsigned int tetrahedron_facet_edge_vertices[4][3][2] = {
   {{2, 3}, {1, 3}, {1, 2}},
   {{2, 3}, {0, 3}, {0, 2}},
   {{1, 3}, {0, 3}, {0, 1}},
-  {{1, 2}, {0, 2}, {0, 1}},
+  {{1, 2}, {0, 2}, {0, 1}}
   };
+
+/// --- Jacobians of reference facet cell to reference cell coordinate mappings by UFC conventions ---
+
+static const double triangle_reference_facet_jacobian[3][2][1] = {
+  { {-1.0}, { 1.0} },
+  { { 0.0}, { 1.0} },
+  { { 1.0}, { 0.0} },
+  };
+
+static const double tetrahedron_reference_facet_jacobian[4][3][2] = {
+  { {-1.0, -1.0}, {1.0, 0.0}, {0.0, 1.0} },
+  { { 0.0,  0.0}, {1.0, 0.0}, {0.0, 1.0} },
+  { { 1.0,  0.0}, {0.0, 0.0}, {0.0, 1.0} },
+  { { 1.0,  0.0}, {0.0, 1.0}, {0.0, 0.0} },
+  };
+
+/// --- Coordinate mappings from reference facet cell to reference cell by UFC conventions ---
+
+inline void compute_reference_facet_to_reference_cell_coordinates_interval(double Xc[1], unsigned int facet)
+{
+  switch (facet)
+  {
+  case 0:
+    Xc[0] = 0.0;
+    break;
+  case 1:
+    Xc[0] = 1.0;
+    break;
+  };
+}
+
+inline void compute_reference_facet_to_reference_cell_coordinates_triangle(double Xc[2], const double Xf[1], unsigned int facet)
+{
+  switch (facet)
+  {
+  case 0:
+    Xc[0] = 1.0 - Xf[0];
+    Xc[1] = Xf[0];
+    break;
+  case 1:
+    Xc[0] = 0.0;
+    Xc[1] = Xf[0];
+    break;
+  case 2:
+    Xc[0] = Xf[0];
+    Xc[1] = 0.0;
+    break;
+  };
+}
+
+inline void compute_reference_facet_to_reference_cell_coordinates_tetrahedron(double Xc[3], const double Xf[2], unsigned int facet)
+{
+  switch (facet)
+  {
+  case 0:
+    Xc[0] = 1.0 - Xf[0] - Xf[1];
+    Xc[1] = Xf[0];
+    Xc[2] = Xf[1];
+    break;
+  case 1:
+    Xc[0] = 0.0;
+    Xc[1] = Xf[0];
+    Xc[2] = Xf[1];
+    break;
+  case 2:
+    Xc[0] = Xf[0];
+    Xc[1] = 0.0;
+    Xc[2] = Xf[1];
+    break;
+  case 3:
+    Xc[0] = Xf[0];
+    Xc[1] = Xf[1];
+    Xc[2] = 0.0;
+    break;
+  };
+}
+
 
 ///--- Computation of Jacobian matrices ---
 
