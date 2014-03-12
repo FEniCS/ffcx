@@ -23,6 +23,7 @@
 import numpy
 
 # UFL modules
+import ufl
 from ufl.classes import Grad, CellAvg, FacetAvg
 from ufl.algorithms import extract_unique_elements, extract_type, extract_elements
 
@@ -122,8 +123,13 @@ def insert_nested_dict(root, keys, value):
         root = d
     root[keys[-1]] = value
 
+
+# MSA: This function is in serious need for some refactoring and splitting up.
+#      Or perhaps I should just add a new implementation for uflacs,
+#      but I'd rather not have two versions to maintain.
 def tabulate_basis(sorted_integrals, form_data, itg_data):
     "Tabulate the basisfunctions and derivatives."
+
     # MER: Note to newbies: this code assumes that each integral in
     # the dictionary of sorted_integrals that enters here, has a
     # unique number of quadrature points ...
@@ -140,14 +146,45 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
     tdim = itg_data.domain.topological_dimension()
 
     # Loop the quadrature points and tabulate the basis values.
-    for pr, integral in sorted_integrals.iteritems():
+    rules = sorted(sorted_integrals.keys())
+    for degree, scheme in rules:
 
-        # Extract degree and rule.
-        degree, rule = pr
+        # --------- Creating quadrature rule
+        # Make quadrature rule and get points and weights.
+        (points, weights) = _create_quadrature_points_and_weights(domain_type, cellname,
+                                                                  facet_cellname, degree, scheme)
+        # The TOTAL number of weights/points
+        len_weights = len(weights)
+        # Add points and rules to dictionary
+        ffc_assert(len_weights not in quadrature_rules,
+                   "This number of points is already present in the weight table: " + repr(quadrature_rules))
+        quadrature_rules[len_weights] = (weights, points)
+
+
+        # --------- Store integral
+
+        # Add the integral with the number of points as a key to the return integrals.
+        integral = sorted_integrals[(degree, scheme)]
+        ffc_assert(len_weights not in integrals, \
+                   "This number of points is already present in the integrals: " + repr(integrals))
+        integrals[len_weights] = integral
+
+
+        # --------- Analyse UFL elements in integral
 
         # Get all unique elements in integral.
         ufl_elements = [form_data.element_replace_map[e]
-                    for e in extract_unique_elements(integral)]
+                        for e in extract_unique_elements(integral)]
+
+        # Insert elements for x and J
+        domain = integral.domain() # FIXME: For all domains to be sure? Better to rewrite though.
+        x = domain.coordinates()
+        if x is None:
+            x_element = ufl.VectorElement("Lagrange", domain, 1)
+        else:
+            x_element = x.element()
+        if x_element not in ufl_elements:
+            ufl_elements.append(x_element)
 
         # Find all CellAvg and FacetAvg in integrals and extract elements
         for avg, AvgType in (("cell", CellAvg), ("facet", FacetAvg)):
@@ -156,46 +193,31 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
                                  for expr in expressions
                                  for e in extract_unique_elements(expr)]
 
-        # Create a list of equivalent FIAT elements (with same
-        # ordering of elements).
-        fiat_elements = [create_element(e) for e in ufl_elements]
-
-        # Make quadrature rule and get points and weights.
-        (points, weights) = _create_quadrature_points_and_weights(domain_type, cellname,
-                                                                  facet_cellname, degree, rule)
-
-        # The TOTAL number of weights/points
-        len_weights = len(weights)
-
-        # Assert that this is unique
-        ffc_assert(len_weights not in quadrature_rules, \
-                    "This number of points is already present in the weight table: " + repr(quadrature_rules))
-        ffc_assert(len_weights not in psi_tables, \
-                    "This number of points is already present in the psi table: " + repr(psi_tables))
-        ffc_assert(len_weights not in integrals, \
-                    "This number of points is already present in the integrals: " + repr(integrals))
-
-        # Add points and rules to dictionary.
-        quadrature_rules[len_weights] = (weights, points)
-
-        # Add the number of points to the psi tables dictionary.
-        psi_tables[len_weights] = {}
-
-        # Add the integral with the number of points as a key to the return integrals.
-        integrals[len_weights] = integral
-
         # Find the highest number of derivatives needed for each element
         num_derivatives = _find_element_derivatives(integral.integrand(), ufl_elements,
                                                     form_data.element_replace_map)
+        # Need at least 1 for the Jacobian
+        num_derivatives[x_element] = max(num_derivatives.get(x_element,0), 1)
+
+
+        # --------- Evaluate FIAT elements in quadrature points and store in tables
+
+        # Add the number of points to the psi tables dictionary.
+        ffc_assert(len_weights not in psi_tables, \
+                   "This number of points is already present in the psi table: " + repr(psi_tables))
+        psi_tables[len_weights] = {}
 
         # Loop FIAT elements and tabulate basis as usual.
-        for i, element in enumerate(fiat_elements):
+        for ufl_element in ufl_elements:
+            fiat_element = create_element(ufl_element)
+
             # Tabulate table of basis functions and derivatives in points
-            psi_table = _tabulate_psi_table(domain_type, cellname, tdim, element,
-                                        num_derivatives[ufl_elements[i]], points)
+            psi_table = _tabulate_psi_table(domain_type, cellname, tdim, fiat_element,
+                                        num_derivatives[ufl_element], points)
 
             # Insert table into dictionary based on UFL elements. (None=not averaged)
-            psi_tables[len_weights][ufl_elements[i]] = { None: psi_table }
+            psi_tables[len_weights][ufl_element] = { None: psi_table }
+
 
     # Loop over elements found in CellAvg and tabulate basis averages
     len_weights = 1
