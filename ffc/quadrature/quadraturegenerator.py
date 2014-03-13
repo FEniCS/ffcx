@@ -20,9 +20,6 @@
 # Modified by Mehdi Nikbakht 2010
 # Modified by Anders Logg 2013
 # Modified by Martin Alnaes, 2013
-#
-# First added:  2009-01-07
-# Last changed: 2013-02-20
 
 # Python modules.
 import functools

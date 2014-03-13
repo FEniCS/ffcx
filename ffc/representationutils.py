@@ -1,7 +1,7 @@
 """This module contains utility functions for some code shared between
 quadrature and tensor representation."""
 
-# Copyright (C) 2012-2013 Marie Rognes
+# Copyright (C) 2012-2014 Marie Rognes
 #
 # This file is part of FFC.
 #
@@ -18,10 +18,7 @@ quadrature and tensor representation."""
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Martin Alnaes, 2013
-#
-# First added:  2013-01-08
-# Last changed: 2013-02-10
+# Modified by Martin Alnaes, 2013-2014
 
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import cellname_to_num_entities
