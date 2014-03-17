@@ -265,8 +265,8 @@ def _tabulate_tensor(ir, prefix, parameters):
         tables.update(affine_tables) # TODO: This is not populated anywhere, remove?
         common += _tabulate_psis(tables, used_psi_tables, name_map, used_nzcs, opt_par, domain_type, gdim)
 
-    # Add special tabulation code for "quadrature_cell"
-    elif domain_type == "quadrature_cell":
+    # Add special tabulation code for "quadrature_cell" and "quadrature_facet"
+    else:
         common += _evaluate_basis_at_quadrature_points(used_psi_tables,
                                                        gdim,
                                                        element_data,
