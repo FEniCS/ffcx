@@ -22,7 +22,7 @@ quadrature and tensor representation."""
 # Modified by Anders Logg 2014
 #
 # First added:  2013-01-08
-# Last changed: 2014-03-05
+# Last changed: 2014-03-17
 
 from ufl.measure import domain_type_to_measure_name
 
@@ -104,10 +104,6 @@ def needs_oriented_jacobian(form_data):
 def initialize_integral_ir(representation, itg_data, form_data, form_id):
     """Initialize a representation dict with common information that is
     expected independently of which representation is chosen."""
-
-    # FIXME: Rename "quadrature" in UFL to "quadrature_cell"
-    if itg_data.domain_type == "quadrature":
-        itg_data.domain_type = "quadrature_cell"
 
     # Mapping from recognized domain types to entity types
     entity_types = {"cell":            "cell",
