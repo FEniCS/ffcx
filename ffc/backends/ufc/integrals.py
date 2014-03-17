@@ -349,7 +349,7 @@ public:
 %(destructor)s
   }
 
-  /// Tabulate the tensor for the contribution from a local cell
+  /// Tabulate the tensor for the contribution from a cell fragment
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
                                const double* vertex_coordinates,
@@ -379,7 +379,7 @@ public:
   /// Destructor
   virtual ~%(classname)s();
 
-  /// Tabulate the tensor for the contribution from a local cell
+  /// Tabulate the tensor for the contribution from a cell fragment
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
                                const double* vertex_coordinates,
@@ -436,13 +436,16 @@ public:
 %(destructor)s
   }
 
-  /// Tabulate the tensor for the contribution from a local facet
+  /// Tabulate the tensor for the contribution from a facet fragment
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
-                               const double* vertex_coordinates,
+                               const double* vertex_coordinates_0
+                               std::size_t num_cells_1,
+                               const double* vertex_coordinates_1,
                                std::size_t num_quadrature_points,
                                const double* quadrature_points,
-                               const double* quadrature_weights) const
+                               const double* quadrature_weights,
+                               std::size_t* quadrature_point_to_cell_map_1) const
   {
 %(tabulate_tensor)s
   }
@@ -466,13 +469,17 @@ public:
   /// Destructor
   virtual ~%(classname)s();
 
-  /// Tabulate the tensor for the contribution from a local facet
+  /// Tabulate the tensor for the contribution from a facet fragment
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
-                               const double* vertex_coordinates,
+                               const double* vertex_coordinates_0
+                               std::size_t num_cells_1,
+                               const double* vertex_coordinates_1,
                                std::size_t num_quadrature_points,
                                const double* quadrature_points,
-                               const double* quadrature_weights) const;
+                               const double* quadrature_weights,
+                               std::size_t* quadrature_point_to_cell_map_1) const
+
 };
 """
 
@@ -492,10 +499,13 @@ quadrature_facet_integral_implementation = """\
 /// Tabulate the tensor for the contribution from a local facet
 void %(classname)s::tabulate_tensor(double* A,
                                     const double * const * w,
-                                    const double* vertex_coordinates,
+                                    const double* vertex_coordinates_0
+                                    std::size_t num_cells_1,
+                                    const double* vertex_coordinates_1,
                                     std::size_t num_quadrature_points,
                                     const double* quadrature_points,
-                                    const double* quadrature_weights) const
+                                    const double* quadrature_weights,
+                                    std::size_t* quadrature_point_to_cell_map_1) const
 {
 %(tabulate_tensor)s
 }
