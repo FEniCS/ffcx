@@ -37,5 +37,8 @@ M = psi*dx
 F = derivative(M, U, v)
 J = derivative(F, U, u) 
 
-forms = [M, F, J]
+#forms = [M, F, J]
+forms = [J]
+#forms = [F]
+#forms = [M]
 

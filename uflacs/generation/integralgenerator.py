@@ -210,8 +210,8 @@ class IntegralGenerator(object):
                         terminalcode += [vdef]
                 else:
                     # Count assignments so we get a new vname each time
-                    j += 1
                     vaccess = ArrayAccess(name, j)
+                    j += 1
                     vcode = self.expr_formatter.visit(v) # TODO: Generate Code instead of str here?
                     assignments += [Assign(vaccess, vcode)]
 
