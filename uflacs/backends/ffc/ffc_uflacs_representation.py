@@ -3,6 +3,7 @@ from ufl.algorithms import replace
 from ufl.algorithms.change_to_reference import (change_to_reference_grad,
                                                 compute_integrand_scaling_factor,
                                                 change_to_reference_geometry)
+from ufl.algorithms import propagate_restrictions
 
 from uflacs.utils.log import uflacs_assert
 from uflacs.params import default_parameters
@@ -50,6 +51,10 @@ def compute_tabulate_tensor_ir(psi_tables, entitytype,
         else:
             physical_coordinates_known = False
         expr = change_to_reference_geometry(expr, physical_coordinates_known)
+
+        # Restrictions may not be at terminals any more, propagate them again TODO: Skip this in preprocess?
+        if integral.domain_type() == "interior_facet":
+            expr = propagate_restrictions(expr)
 
         # Build the core uflacs ir of expressions
         expr_ir = compute_expr_ir(expr, parameters)

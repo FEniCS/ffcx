@@ -1,13 +1,14 @@
 """
 FIXME:
-- Make reference_facet_jacobi tables and use below
 - Fix FacetNormal (sign?)
 - Restrict Jacobian etc. in ufl change_to_reference
+- Various restriction issues, check all quantities
 
 DONE - Inject CG1 tables for x and J at some point and pass them here through tabledata
 DONE - Check the code for J carefully
 HACKED- Pass num_points to weight, x, X
 DONE - Handle cell restriction in generate_domain_dof_access
+DONE - Make reference_facet_jacobi tables and use below
 """
 
 from ufl.common import component_to_index
@@ -272,9 +273,16 @@ class FFCAccessBackend(MultiFunction):
             error("Unhandled cell types {0}.".format(cellname))
         return access
 
-    def facet_normal(self, e, mt, tabledata): # FIXME
-        access = "nFIXME" # FIXME: Computed from tables?
+    def cell_orientation(self, e, mt, tabledata):
+        # TODO: error if not in manifold case
+        access = "cell_orientation"
         return access
+
+    def facet_normal(self, e, mt, tabledata):
+        error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
+
+    def cell_normal(self, e, mt, tabledata):
+        error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
 
     def jacobian_inverse(self, e, mt, tabledata):
         error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
@@ -474,11 +482,16 @@ class FFCDefinitionsBackend(MultiFunction):
         code = []
         return code
 
-    def facet_normal(self, e, mt, tabledata, access): # FIXME
-        "TODO: Insert symbolically?"
+    def cell_orientation(self, e, mt, tabledata, access):
         code = []
-        code += [VariableDecl("double", access, "1.0 /* FIXME */")] # FIXME
         return code
+
+    def facet_normal(self, e, mt, tabledata, access):
+        code = []
+        return code
+
+    def cell_normal(self, e, mt, tabledata, access):
+        error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
 
     def jacobian_inverse(self, e, mt, tabledata, access):
         error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
