@@ -413,3 +413,90 @@ void %(classname)s::tabulate_tensor(double* %(restrict)s A,
 %(tabulate_tensor)s
 }
 """
+
+quadrature_facet_integral_combined = """\
+/// This class defines the interface for the tabulation of the facet
+/// tensor corresponding to the local contribution to a form from
+/// the integral over an unknown facet fragment with quadrature
+/// points given.
+
+class %(classname)s: public ufc::quadrature_facet_integral
+{%(members)s
+public:
+
+  /// Constructor
+  %(classname)s(%(constructor_arguments)s) : ufc::quadrature_facet_integral()%(initializer_list)s
+  {
+%(constructor)s
+  }
+
+  /// Destructor
+  virtual ~%(classname)s()
+  {
+%(destructor)s
+  }
+
+  /// Tabulate the tensor for the contribution from a local facet
+  virtual void tabulate_tensor(double* %(restrict)s A,
+                               const double * const * %(restrict)s w,
+                               const double* %(restrict)s vertex_coordinates,
+                               std::size_t num_quadrature_points,
+                               const double* %(restrict)s quadrature_points,
+                               const double* %(restrict)s quadrature_weights) const
+  {
+%(tabulate_tensor)s
+  }
+
+};
+"""
+
+quadrature_facet_integral_header = """\
+/// This class defines the interface for the tabulation of the facet
+/// tensor corresponding to the local contribution to a form from
+/// the integral over an unknown facet fragment with quadrature
+/// points given.
+
+class %(classname)s: public ufc::quadrature_facet_integral
+{%(members)s
+public:
+
+  /// Constructor
+  %(classname)s(%(constructor_arguments)s);
+
+  /// Destructor
+  virtual ~%(classname)s();
+
+  /// Tabulate the tensor for the contribution from a local facet
+  virtual void tabulate_tensor(double* %(restrict)s A,
+                               const double * const * %(restrict)s w,
+                               const double* %(restrict)s vertex_coordinates,
+                               std::size_t num_quadrature_points,
+                               const double* %(restrict)s quadrature_points,
+                               const double* %(restrict)s quadrature_weights) const;
+};
+"""
+
+quadrature_facet_integral_implementation = """\
+/// Constructor
+%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::quadrature_facet_integral()%(initializer_list)s
+{
+%(constructor)s
+}
+
+/// Destructor
+%(classname)s::~%(classname)s()
+{
+%(destructor)s
+}
+
+/// Tabulate the tensor for the contribution from a local facet
+void %(classname)s::tabulate_tensor(double* %(restrict)s A,
+                                    const double * const * %(restrict)s w,
+                                    const double* %(restrict)s vertex_coordinates,
+                                    std::size_t num_quadrature_points,
+                                    const double* %(restrict)s quadrature_points,
+                                    const double* %(restrict)s quadrature_weights) const
+{
+%(tabulate_tensor)s
+}
+"""

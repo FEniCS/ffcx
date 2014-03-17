@@ -106,11 +106,12 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
     expected independently of which representation is chosen."""
 
     # Mapping from recognized domain types to entity types
-    entity_types = {"cell":            "cell",
-                    "exterior_facet":  "facet",
-                    "interior_facet":  "facet",
-                    "point":           "vertex",
-                    "quadrature_cell": "cell"}
+    entity_types = {"cell":             "cell",
+                    "exterior_facet":   "facet",
+                    "interior_facet":   "facet",
+                    "point":            "vertex",
+                    "quadrature_cell":  "cell",
+                    "quadrature_facet": "facet"}
 
     # Check and extract entity type
     domain_type = itg_data.domain_type

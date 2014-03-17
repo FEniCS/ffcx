@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-12-16
-# Last changed: 2014-03-11
+# Last changed: 2014-03-17
 
 # Python modules
 import re, numpy, platform
@@ -306,6 +306,9 @@ format.update({
     "classname quadrature_cell_integral":  lambda prefix, form_id, sub_domain:\
               "%s_quadrature_cell_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
 
+    "classname quadrature_facet_integral":  lambda prefix, form_id, sub_domain:\
+              "%s_quadrature_facet_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
+
     "classname form": lambda prefix, i: "%s_form_%d" % (prefix.lower(), i)
 })
 
@@ -563,7 +566,10 @@ def _generate_psi_name(counter, entity_type, entity, component, derivatives, avg
     name = "FE%d" % counter
 
     if entity_type == "facet":
-        name += "_f%d" % entity
+        if entity is None:
+            name += "_f0"
+        else:
+            name += "_f%d" % entity
     elif entity_type == "vertex":
         name += "_v%d" % entity
 
@@ -611,7 +617,7 @@ def _generate_cell_volume(tdim, gdim, domain_type):
     # Choose restrictions
     if domain_type in ("cell", "exterior_facet", "quadrature_cell"):
         code = volume % {"restriction": ""}
-    elif domain_type == "interior_facet":
+    elif domain_type in ("interior_facet", "quadrature_facet"):
         code = volume % {"restriction": _choose_map["+"]}
         code += volume % {"restriction": _choose_map["-"]}
     else:
@@ -627,7 +633,7 @@ def _generate_circumradius(tdim, gdim, domain_type):
     # Choose restrictions
     if domain_type in ("cell", "exterior_facet", "point", "quadrature_cell"):
         code = radius % {"restriction": ""}
-    elif domain_type == "interior_facet":
+    elif domain_type in ("interior_facet", "quadrature_facet"):
         code = radius % {"restriction": _choose_map["+"]}
         code += radius % {"restriction": _choose_map["-"]}
     else:

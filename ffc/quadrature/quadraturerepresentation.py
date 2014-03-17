@@ -21,7 +21,7 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-03-11
+# Last changed: 2014-03-17
 
 import numpy, itertools
 
@@ -102,7 +102,8 @@ def compute_integral_ir(itg_data,
     # Insert empty data which will be populated if optimization is turned on
     ir["geo_consts"] = {}
 
-    # Extract element data for psi_tables, needed for runtime quadrature (quadrature_cell)
+    # Extract element data for psi_tables, needed for runtime quadrature.
+    # This is used by the two integral types quadrature_cell and quadrature_facet
     ir["element_data"] = _extract_element_data(transformer.element_map)
 
     return ir
@@ -181,9 +182,17 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, domain_type, c
 
     elif domain_type == "quadrature_cell":
 
-        # Compute transformed integrals (same as for cell integrals).
-        info("Transforming quadrature integral")
+        # Compute transformed integrale: same as for cell integrals
+        info("Transforming quadrature cell integral")
         transformer.update_cell()
+        terms = _transform_integrals(transformer, integrals_dict, domain_type)
+
+    elif domain_type == "quadrature_facet":
+
+        # Compute transformed integrals: same as for cell integrals but
+        # we need to set a dummy facet-facet combination
+        info("Transforming quadrature facet integral")
+        transformer.update_facets(0, 0)
         terms = _transform_integrals(transformer, integrals_dict, domain_type)
 
     else:
@@ -202,6 +211,8 @@ def _create_quadrature_points_and_weights(domain_type,
     elif domain_type == "point":
         (points, weights) = ([()], numpy.array([1.0,])) # TODO: Will be fixed
     elif domain_type == "quadrature_cell":
+        (points, weights) = (None, None)
+    elif domain_type == "quadrature_facet":
         (points, weights) = (None, None)
     else:
         error("Unknown integral type: " + str(domain_type))
