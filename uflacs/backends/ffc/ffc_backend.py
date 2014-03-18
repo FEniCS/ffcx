@@ -11,6 +11,7 @@ DONE - Handle cell restriction in generate_domain_dof_access
 DONE - Make reference_facet_jacobi tables and use below
 """
 
+import ufl
 from ufl.common import component_to_index
 from ufl.permutation import build_component_numbering
 from ufl.classes import Argument, Coefficient, GeometricQuantity
@@ -153,7 +154,8 @@ class FFCAccessBackend(MultiFunction):
         self._current_num_points, = self.ir["uflacs"]["expr_ir"].keys() # TODO: Hack!
 
     def precision_float(self, f):
-        return "%g" % f # TODO: Control float formatting precision here
+        # Use ufl utility to control float formatting precision, same as ffc quadrature mode uses
+        return ufl.constantvalue.format_float(f)
 
     def get_includes(self):
         return []
