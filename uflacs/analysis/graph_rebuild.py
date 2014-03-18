@@ -12,7 +12,7 @@ from ufl.algorithms import MultiFunction
 from uflacs.utils.log import error, uflacs_assert
 from uflacs.analysis.datastructures import (int_array, object_array,
                                               CRS, rows_to_crs, rows_dict_to_crs)
-from uflacs.analysis.indexing import indexing_to_component
+from uflacs.analysis.indexing import indexing_to_component, shape_to_strides
 
 from uflacs.analysis.modified_terminals import is_modified_terminal
 
@@ -165,18 +165,110 @@ class ReconstructScalarSubexpressions(MultiFunction):
         uflacs_assert(tm == len(res), "Size mismatch.")
         return res
 
+    def element_wise3(self, scalar_operator, o, ops):
+        # oops has shapes and indices, while ops are lists of scalar component values
+        oops = o.operands()
+
+        # --- Compute shapes and sizes of o
+        # Index shape
+        ii = sorted(o.free_indices(), key=lambda x: x.count())
+        idims = o.index_dimensions()
+        ish = tuple(idims[i] for i in ii)
+        im = product(ish)
+        # Regular shape
+        sh = o.shape()
+        m = product(sh)
+        # Total shape
+        tsh = sh+ish
+        tm = m*im
+
+        # Look for tensor shaped operands, allowing 0, 1 or all to have the same shape as o
+        # TODO: Check for this:
+        # - sum:      a.shape() == b.shape()
+        # - division: a.shape() == anything,  b.shape() == ()
+        # - product:  not (a.shape() == () and b.shape() == ())
+        shaped = 0
+        for iop,op in enumerate(oops):
+            opsh = op.shape()
+            if opsh == ():
+                continue
+            elif opsh == sh:
+                shaped += 1
+            else:
+                error("Not expecting shape %s, overall shape is %s." % (opsh, sh))
+        uflacs_assert(shaped in (0,1,len(ops)), "Confused about shapes of operands.")
+
+        # --- Compute shapes and sizes for each operand
+        iirev = reversed(ii)
+        istrides = [None]*len(ops)  #
+        opims = [None]*len(ops)     # Index value size for each operand
+        for iop,op in enumerate(oops):
+            # --- Compute shapes and sizes of op
+            # Index shapes
+            opii = sorted(op.free_indices(), key=lambda x: x.count())  # Free indices
+            opidims = op.index_dimensions()                       # Index dimensions
+            opish = tuple(opidims[i] for i in opii)               # Index shape
+            opim = product(opish)                                 # Index value size
+            # Tensor shapes
+            opsh = op.shape()                                     # Tensor shape
+            #opm = product(opsh)                                   # Tensor value size
+            # Total shapes
+            #optm = opm*opim                                       # Total value size
+            #optsh = opsh+opish                                    # Total value shape
+
+            # Store index strides and index value size for op
+            istrides[iop] = shape_to_strides(opish)
+            opims[iop] = opim if opsh else 0
+
+        # These are the same:
+        #sk = indexing_to_component(sc, (), sh)
+        #sk = multiindex_to_component(sc, shape_to_strides(sh)) # And strides are known? TODO: Optimize?
+
+        # Compute each scalar value of o in terms of ops
+        res = []
+        sindices = compute_indices(sh)
+        iindices = compute_indices(ish)
+        scomponents = [(sc, indexing_to_component(sc, (), sh)) for sc in sindices]
+        icomponents = [(ic, indexing_to_component(ic, (), ish)) for ic in iindices]
+        for sc,sk in scomponents: # TODO: Optimization: swap loops so we recompute less?
+            for ic,ik in icomponents:
+                k = sk*im + ik # Compute the output component index (not used!)
+                uflacs_assert(k == len(res), "Invalid assumption or a bug?")
+
+                sops = []
+                for iop,op in enumerate(ops):
+                    # Find the operand component index in the index space
+                    if istrides[iop]:
+                        assert istrides[iop][-1] == 1, "Strides={0}".format(istrides[iop])
+                    jk = sum(a*b for a,b in izip(ic, istrides[iop]))
+
+                    # Only add tensor component offset for the tensor-valued operand
+                    if oops[iop].shape():
+                        jk += sk*opims[iop]
+
+                    sops.append(op[jk])
+
+                res.append(scalar_operator(sops))
+
+        uflacs_assert(tm == len(res), "Size mismatch.")
+        return res
+
     def division(self, o, ops):
         uflacs_assert(len(ops) == 2, "Expecting two operands.")
+        uflacs_assert(len(ops[1]) == 1, "Expecting scalar divisor.")
         def _div(args):
             a, b = args
             return a / b
-        return self.element_wise(_div, o, ops)
+        return self.element_wise(_div, o, ops) # FIXME
 
     def sum(self, o, ops):
-        return self.element_wise(sum, o, ops)
+        uflacs_assert(len(ops[0]) == len(ops[1]), "Expecting equal shapes.")
+        return self.element_wise(sum, o, ops) # FIXME
 
     def product(self, o, ops):
-        return self.element_wise2(product, o, ops)
+        a, b = o.operands()
+        uflacs_assert(not (a.shape() and b.shape()), "Expecting only one nonscalar shape.")
+        return self.element_wise2(product, o, ops) # FIXME
 
     def index_sum(self, o, ops):
         summand, mi = o.operands()
@@ -345,7 +437,7 @@ def rebuild_scalar_e2i(G, DEBUG=False):
 def rebuild_expression_from_graph(G, DEBUG=False):
     "This is currently only used by tests."
     NV, nvs = rebuild_scalar_e2i(G, DEBUG=DEBUG)
- 
+
     # Find expressions of final v
     w = [NV[k] for k in nvs]
     if len(w) == 1:
