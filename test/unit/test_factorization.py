@@ -33,36 +33,41 @@ def test_compute_argument_factorization():
     a, b, c, d, e, f, g = [Coefficient(V, count=k) for k in range(7)]
 
     one = as_ufl(1.0)
+    two = as_ufl(2)
+
+    # Test workaround for hack in factorization:
+    FVpre = [two]
+    offset = len(FVpre)
 
     # Test basic non-argument terminal
     SV = [f]
     dependencies = [()]
     AV = []
-    FV = [f]
-    IM = { (): 0 }
+    FV = FVpre + [f]
+    IM = { (): 0 + offset }
     compare_compute_argument_factorization(SV, dependencies, AV, FV, IM)
 
     # Test basic non-argument sum
     SV = [f, g, f+g]
     dependencies = [(), (), (0,1)]
     AV = []
-    FV = [f, g, f+g]
-    IM = { (): 2 }
+    FV = FVpre + [f, g, f+g]
+    IM = { (): 2 + offset }
     compare_compute_argument_factorization(SV, dependencies, AV, FV, IM)
 
     # Test basic non-argument product
     SV = [f, g, f*g]
     dependencies = [(), (), (0,1)]
     AV = []
-    FV = [f, g, f*g]
-    IM = { (): 2 }
+    FV = FVpre + [f, g, f*g]
+    IM = { (): 2 + offset }
     compare_compute_argument_factorization(SV, dependencies, AV, FV, IM)
 
     # Test basic single-argument-only expression
     SV = [v]
     dependencies = [()]
     AV = [v]
-    FV = [one]
+    FV = [one] + FVpre
     IM = { (0,): 0 } # v == AV[0] * FV[0]
     compare_compute_argument_factorization(SV, dependencies, AV, FV, IM)
 
@@ -70,15 +75,15 @@ def test_compute_argument_factorization():
     SV = [f, v, f*v]
     dependencies = [(), (), (0,1)]
     AV = [v]
-    FV = [one, f]
-    IM = { (0,): 1 } # f*v == AV[0] * FV[1]
+    FV = [one] + FVpre + [f]
+    IM = { (0,): 1 + offset } # f*v == AV[0] * FV[1]
     compare_compute_argument_factorization(SV, dependencies, AV, FV, IM)
 
     # Test basic argument product
     SV = [u, v, u*v]
     dependencies = [(), (), (0,1)]
     AV = [v, u] # Test function < trial function
-    FV = [one]
+    FV = [one] + FVpre
     IM = { (0,1): 0 } # v*u == (AV[0] * AV[1]) * FV[0]
     compare_compute_argument_factorization(SV, dependencies, AV, FV, IM)
 
@@ -86,8 +91,8 @@ def test_compute_argument_factorization():
     SV = [u, f, v, (f*v), u*(f*v)]
     dependencies = [(), (), (), (1,2), (0,3)]
     AV = [v, u]
-    FV = [one, f]
-    IM = { (0,1): 1 } # f*(u*v) == (AV[0] * AV[1]) * FV[1]
+    FV = [one] + FVpre + [f]
+    IM = { (0,1): 1 + offset } # f*(u*v) == (AV[0] * AV[1]) * FV[1]
     compare_compute_argument_factorization(SV, dependencies, AV, FV, IM)
 
     # Test more complex situation
@@ -110,13 +115,13 @@ def test_compute_argument_factorization():
                     (13,14),
                     ]
     AV = [v, u, u.dx(0)]
-    FV = [one, a, b, c, d, e, # 0..5
+    FV = [one] + FVpre + [a, b, c, d, e, # 0..5
           c+d, # 6, introduced by SV[13]
           e*a, # 7, introduced by SV[14]
           e*b, # 8, introduced by SV[14]
           (e*a)*(c+d), # 9
           (e*b)*(c+d), # 10
           ]
-    IM = { (0,1): 9,  # (a*e)*(c+d)*(u*v) == (AV[0] * AV[2]) * FV[13]
-           (0,2): 10 } # (b*e)*(c+d)*(u.dx(0)*v) == (AV[1] * AV[2]) * FV[12]
+    IM = { (0,1): 9 + offset,  # (a*e)*(c+d)*(u*v) == (AV[0] * AV[2]) * FV[13]
+           (0,2): 10 + offset } # (b*e)*(c+d)*(u.dx(0)*v) == (AV[1] * AV[2]) * FV[12]
     compare_compute_argument_factorization(SV, dependencies, AV, FV, IM)

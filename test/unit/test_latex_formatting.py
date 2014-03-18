@@ -4,14 +4,14 @@ Tests of LaTeX formatting rules.
 """
 
 from uflacs.utils.log import uflacs_assert, info, warning, error
+from uflacs.codeutils.expr_formatter import ExprFormatter
+from uflacs.codeutils.latex_expr_formatting_rules import LatexFormatter
 
 import ufl
 from ufl.algorithms import preprocess_expression, expand_indices
 
 def expr2latex(expr, variables=None):
     "This is a test specific function for formatting ufl to LaTeX."
-    from uflacs.codeutils.expr_formatter import ExprFormatter
-    from uflacs.codeutils.latex_formatting_rules import LatexFormatter
 
     # Preprocessing expression before applying formatting.
     # In a compiler, one should probably assume that these
@@ -74,14 +74,14 @@ def test_latex_formatting_of_form_arguments():
     assert expr2latex(f) == r"\overset{0}{w}"
 
     f = ufl.Coefficient(V, count=1)
-    assert expr2latex(f[0]) == r"\overset{0}{w}_{0}" # Renumbered to 0...
+    assert expr2latex(f[0]) == r"\overset{1}{w}_{0}" # NOT renumbered to 0...
     v = ufl.Argument(V, number=3)
     assert expr2latex(v[1]) == r"\overset{3}{v}_{1}" # NOT renumbered to 0...
 
     f = ufl.Coefficient(W).reconstruct(count=2)
-    assert expr2latex(f[1,0]) == r"\overset{0}{w}_{1 0}" # Renumbered to 0...
+    assert expr2latex(f[1,0]) == r"\overset{2}{w}_{1 0}" # NOT renumbered to 0...
     v = ufl.Argument(W, number=3)
-    assert expr2latex(v[0,1]) == r"\overset{3}{v}_{0 1}" # Renumbered to 0...
+    assert expr2latex(v[0,1]) == r"\overset{3}{v}_{0 1}" # NOT renumbered to 0...
 
     # TODO: Test mixed functions
     # TODO: Test tensor functions with symmetries
