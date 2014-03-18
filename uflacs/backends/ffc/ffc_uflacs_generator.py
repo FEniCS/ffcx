@@ -19,9 +19,9 @@ def generate_tabulate_tensor_code(ir, parameters):
     body = ig.generate()
 
     # Fetch includes
-    includes = [] # sorted(set(ig.get_includes() + backend.get_includes())) # FIXME
-    includes = set(("#include <cstring>",
-                    "#include <cmath>"))
+    includes = set()
+    includes.update(ig.get_includes())
+    includes.update(backend_definitions.get_includes())
 
     # Format uflacs specific code structures into a single
     # string and place in dict before returning to ffc

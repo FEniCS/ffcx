@@ -33,10 +33,13 @@ class IntegralGenerator(object):
         else:
             self._A_shape = self.ir["prim_idims"]
 
-        # TODO: Populate these
+        # TODO: Populate these with only what's needed
         self._using_names = set()
-        self._includes = set(("#include <cstring>",
-                              "#include <cmath>"))
+        self._includes = set((
+            "#include <cstring>",
+            "#include <cmath>",
+            "#include <boost/math/special_functions.hpp>",
+            ))
 
         self.backend_access = backend_access
         self.backend_definitions = backend_definitions

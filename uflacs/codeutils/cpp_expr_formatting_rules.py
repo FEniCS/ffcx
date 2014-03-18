@@ -11,18 +11,6 @@ class CppFormattingRules(object):
     def __init__(self):
         pass
 
-    # === Utility functions ===
-
-    # TODO: Other solution to this
-    def add_include(self, include, system):
-        "Callback to be implemented by subclass for recording includes needed."
-        pass
-
-    # TODO: Other solution to this
-    def add_using(self, using):
-        "Callback to be implemented by subclass for recording using symbols needed."
-        pass
-
     # === Error handlers for missing formatting rules ===
 
     # Generic fallback error messages for missing rules:
@@ -87,15 +75,13 @@ class CppFormattingRules(object):
     # === Formatting rules for cmath functions ===
 
     def _cmath(self, name, op):
-        self.add_using("std::{0}".format(name))
-        return "{0}({1})".format(name, op)
+        return "{0}{1}({2})".format("std::", name, op)
 
     def math_function(self, o, op):
         return self._cmath(o._name, op)
 
     def power(self, o, a, b):
-        self.add_using("std::pow")
-        return "pow({0}, {1})".format(a, b)
+        return "{0}pow({1}, {2})".format("std::", a, b)
 
     def sqrt(self, o, op):
         return self._cmath("sqrt", op)
@@ -142,9 +128,7 @@ class CppFormattingRules(object):
     # === Formatting rules for bessel functions ===
 
     def _bessel(self, o, n, v, name):
-        self.add_include("boost/math/special_functions.hpp", True)
-        self.add_using("boost::math::{0}".format(name))
-        return "{0}({1}, {2})".format(name, n, v)
+        return "{0}{1}({2}, {3})".format("boost::math::", name, n, v)
 
     def bessel_i(self, o, n, v):
         return self._bessel(o, n, v, "cyl_bessel_i")

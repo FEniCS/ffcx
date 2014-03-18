@@ -155,6 +155,9 @@ class FFCAccessBackend(MultiFunction):
     def precision_float(self, f):
         return "%g" % f # TODO: Control float formatting precision here
 
+    def get_includes(self):
+        return []
+
     # === Multifunction handlers for all modified terminal types, basic C++ types are covered by base class ===
 
     def expr(self, e, mt, tabledata):
@@ -309,6 +312,9 @@ class FFCDefinitionsBackend(MultiFunction):
         self.parameters = parameters
 
         self.physical_coordinates_known = self.ir["domain_type"] == "quadrature"
+
+    def get_includes(self):
+        return []
 
     def initial(self): # TODO: Need something like this?
         code = []
