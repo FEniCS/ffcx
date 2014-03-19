@@ -348,8 +348,8 @@ def _generate_geometry_tensors(terms, j_set, g_set, tdim, gdim):
             value = format_add(values)
 
             # Multiply with determinant factor
-            det = GK.determinant
-            value = _multiply_value_by_det(value, GK.determinant, len(values) > 1, j_set)
+            dets = GK.determinants
+            value = _multiply_value_by_det(value, dets, len(values) > 1, j_set)
             det_used = True
 
             # Add code
@@ -389,20 +389,34 @@ def _generate_entry(GK, a, i, j_set, tdim, gdim):
 
     return entry
 
-def _multiply_value_by_det(value, det, is_sum, j_set):
-    "Generate code for multiplication of value by determinant."
-    if not det.power == 0:
-        J = format["det(J)"](det.restriction)
-        d = [format["power"](J, det.power)]
-        j_set.add(J)
+def _multiply_value_by_det(value, dets, is_sum, j_set):
+    "Generate code for multiplication of value by determinant(s)."
+
+    # FIXME: MER: This is way complicated than it should be
+
+    # Cell / exterior facets:
+    d = []
+    if all([det.restriction == None for det in dets]):
+        total_power = sum(det.power for det in dets)
+        if not total_power == 0:
+            J = format["det(J)"](None)
+            d += [format["power"](J, total_power)]
+            j_set.add(J)
+    # Interior facets
     else:
-        d = []
+        for det in dets:
+            if not det.power == 0:
+                J = format["det(J)"](det.restriction)
+                d += [format["power"](J, det.power)]
+                j_set.add(J)
+
     if value == "1.0":
         v = []
     elif is_sum:
         v = [format["grouping"](value)]
     else:
         v = [value]
+
     return format["multiply"](d + [format["scale factor"]] + v)
 
 def _extract_factors(GK, a, b, j_set, tdim, gdim, index_type):

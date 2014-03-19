@@ -139,21 +139,28 @@ class MonomialIndex:
 class MonomialDeterminant:
     "This class representes a determinant factor in a monomial."
 
-    # FIXME: Handle restrictions for determinants
-
-    def __init__(self):
+    def __init__(self, power=None, restriction=None):
         "Create empty monomial determinant."
-        self.power = 0
-        self.restriction = None
+        if power is None:
+            self.power = 0
+        else:
+            self.power = power
+        self.restriction = restriction
 
     def __str__(self):
         "Return informal string representation (pretty-print)."
-        if self.power == 0:
-            return "|det F'|"
-        elif self.power == 1:
-            return "|det F'| (det F')"
+        # FIXME: This pretty-print is plain misleading b/c of the
+        # implicit relic factor |det J| etc.
+        if not self.restriction:
+            r = ""
         else:
-            return "|det F'| (det F')^%s" % str(self.power)
+            r = "(%s)" %  self.restriction
+        if self.power == 0:
+            return "|det F'%s|" % r
+        elif self.power == 1:
+            return "|det F'%s| (det F'%s)" % (r, r)
+        else:
+            return "|det F'%s| (det F'%s)^%s" % (r, r, str(self.power))
 
 class MonomialCoefficient:
     "This class represents a coefficient in a monomial."
@@ -247,7 +254,7 @@ class TransformedMonomial:
 
         # Reset monomial data
         self.float_value = monomial.float_value
-        self.determinant = MonomialDeterminant()
+        self.determinants = []
         self.coefficients = []
         self.transforms = []
         self.arguments = []
@@ -346,16 +353,20 @@ class TransformedMonomial:
                     # phi(x) = (det J)^{-1} J Phi(X)
                     index0 = component
                     index1 = MonomialIndex(index_range=range(tdim)) + offset
-                    transform = MonomialTransform(index0, index1, MonomialTransform.J,
+                    transform = MonomialTransform(index0, index1,
+                                                  MonomialTransform.J,
                                                   f.restriction, offset)
                     self.transforms.append(transform)
-                    self.determinant.power -= 1
+                    determinant = MonomialDeterminant(power=-1,
+                                                      restriction=f.restriction)
+                    self.determinants.append(determinant)
                     components[0] = index1
                 elif mapping == "covariant piola":
                     # phi(x) = J^{-T} Phi(X)
                     index0 = MonomialIndex(index_range=range(tdim)) + offset
                     index1 = component
-                    transform = MonomialTransform(index0, index1, MonomialTransform.JINV,
+                    transform = MonomialTransform(index0, index1,
+                                                  MonomialTransform.JINV,
                                                   f.restriction, offset)
                     self.transforms.append(transform)
                     components[0] = index0
@@ -464,7 +475,7 @@ class TransformedMonomial:
         factors = []
         if not self.float_value == 1.0:
             factors.append(self.float_value)
-        factors.append(self.determinant)
+        factors += self.determinants
         factors += self.coefficients
         factors += self.transforms
         return " * ".join([str(f) for f in factors]) + " | " + " * ".join([str(v) for v in self.arguments])
