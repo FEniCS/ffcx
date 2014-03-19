@@ -22,7 +22,7 @@ quadrature and tensor representation."""
 # Modified by Anders Logg 2014
 #
 # First added:  2013-01-08
-# Last changed: 2014-03-17
+# Last changed: 2014-03-19
 
 from ufl.measure import domain_type_to_measure_name
 
@@ -110,8 +110,7 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
                     "exterior_facet":   "facet",
                     "interior_facet":   "facet",
                     "point":            "vertex",
-                    "quadrature_cell":  "cell",
-                    "quadrature_facet": "facet"}
+                    "custom":           "cell"}
 
     # Check and extract entity type
     domain_type = itg_data.domain_type

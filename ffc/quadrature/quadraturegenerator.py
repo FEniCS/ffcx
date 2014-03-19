@@ -45,6 +45,10 @@ def generate_integral_code(ir, prefix, parameters):
     code = initialize_integral_code(ir, prefix, parameters)
     code["tabulate_tensor"] = _tabulate_tensor(ir, prefix, parameters)
     code["additional_includes_set"] = ir["additional_includes_set"]
+
+    # FIXME: Temporary implementation
+    code["num_cells"] = "return 1;"
+
     return code
 
 def _tabulate_tensor(ir, prefix, parameters):
@@ -199,7 +203,7 @@ def _tabulate_tensor(ir, prefix, parameters):
         jacobi_code += "\n"
         jacobi_code += "\n\n" + format["facet determinant"](tdim, gdim) # FIXME: This is not defined in a point???
 
-    elif domain_type == "quadrature_cell":
+    elif domain_type == "custom":
 
         # Update transformer with facets and generate code + set of used geometry terms.
         tensor_code, mem_code, num_ops = _generate_element_tensor(integrals, sets, \
@@ -231,12 +235,12 @@ def _tabulate_tensor(ir, prefix, parameters):
     # the unused transformations.
     common = [remove_unused(jacobi_code, trans_set)]
 
-    # FIXME: After introduction of quadrature_cell, the common code
+    # FIXME: After introduction of custom integrals, the common code
     # here is not really common anymore. Think about how to
     # restructure this function.
 
     # Add common code except for quadrature type integrals
-    if not domain_type in ("quadrature_cell", "quadrature_facet"):
+    if domain_type != "custom":
         common += _tabulate_weights([quadrature_weights[p] for p in used_weights])
 
         # Add common code for updating tables
@@ -245,7 +249,7 @@ def _tabulate_tensor(ir, prefix, parameters):
         tables.update(affine_tables) # TODO: This is not populated anywhere, remove?
         common += _tabulate_psis(tables, used_psi_tables, name_map, used_nzcs, opt_par, domain_type, gdim)
 
-    # Add special tabulation code for "quadrature_cell" and "quadrature_facet"
+    # Add special tabulation code for custom integral
     else:
         common += _evaluate_basis_at_quadrature_points(used_psi_tables,
                                                        gdim,
@@ -279,7 +283,7 @@ def _tabulate_tensor(ir, prefix, parameters):
                "exterior_facet": "Exterior facet %d, number of operations to compute tensor: %s",
                "interior_facet": "Interior facets (%d, %d), number of operations to compute tensor: %s",
                "point": "Point %s, number of operations to compute tensor: %s",
-               "quadrature_cell": "Quadrature cell, number of operations to compute tensor: %s"}
+               "custom":         "Custom domain, number of operations to compute tensor: %s"}
     for ops in operations:
         # Add geo ops count to integral ops count for writing info.
         if isinstance(ops[-1], int):
@@ -716,7 +720,7 @@ def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data, form_pr
         for table in psi_tables:
             if "_C" in table:
                 # FIXME: Bailout for now, add support for this later
-                error("quadrature cell integrals not yet supported for vector valued function spaces")
+                error("custom integrals not yet supported for vector valued function spaces")
             if "_D" in table:
                 d = table.split("_D")[1].split("_")[0]
                 n = sum([int(_d) for _d in d]) # FIXME: Will fail for more than 9 derivatives...
