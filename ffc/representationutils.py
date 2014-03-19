@@ -135,7 +135,8 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
             "entity_type":           entity_type,
             "num_facets":            cellname_to_num_entities[cellname][-2],
             "num_vertices":          cellname_to_num_entities[cellname][0],
-            "needs_oriented":        needs_oriented_jacobian(form_data)}
+            "needs_oriented":        needs_oriented_jacobian(form_data),
+            "num_cells":             itg_data.metadata["num_cells"]}
 
 def initialize_integral_code(ir, prefix, parameters):
     "Representation independent default initialization of code dict for integral from intermediate representation."
