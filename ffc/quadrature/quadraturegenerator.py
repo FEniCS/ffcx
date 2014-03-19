@@ -222,7 +222,7 @@ def _tabulate_tensor(ir, prefix, parameters):
         jacobi_code = ""
         for i in range(num_cells):
             jacobi_code += "\n"
-            jacobi_code += f_comment("Compute geometric quantities for cell %d" % i)
+            jacobi_code += f_comment("--- Compute geometric quantities for cell %d ---" % i)
             jacobi_code += "\n\n"
             jacobi_code += format["compute_jacobian"](tdim, gdim, r=i)
             jacobi_code += "\n"
@@ -259,7 +259,9 @@ def _tabulate_tensor(ir, prefix, parameters):
         common += _evaluate_basis_at_quadrature_points(used_psi_tables,
                                                        gdim,
                                                        element_data,
-                                                       prefix)
+                                                       prefix,
+                                                       num_vertices,
+                                                       num_cells)
 
     # Reset the element tensor (array 'A' given as argument to tabulate_tensor() by assembler)
     # Handle functionals.
@@ -701,7 +703,12 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
                         new_nzcs.remove(inv_name_map[n][1])
     return code
 
-def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data, form_prefix):
+def _evaluate_basis_at_quadrature_points(psi_tables,
+                                         gdim,
+                                         element_data,
+                                         form_prefix,
+                                         num_vertices,
+                                         num_cells):
     "Generate code for calling evaluate basis (derivatives) at quadrature points"
 
     # Prefetch formats to speed up code generation
@@ -753,6 +760,7 @@ def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data, form_pr
         counter = int(prefix.split("FE")[1])
         space_dim = element_data[counter]["local_dimension"]
         value_size = element_data[counter]["value_size"]
+        macro_dim = space_dim*num_cells
 
         # Iterate over derivative orders
         for n in used_derivatives[prefix]:
@@ -760,27 +768,42 @@ def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data, form_pr
             # Code for evaluate_basis_all
             if n == 0:
 
-                # Size of array to evaluate_basis_all
-                num_vals = space_dim*value_size
-
-                # Generate block of code for loop
-                block = []
-                block += [f_eval_basis      % {"prefix":      prefix,
-                                               "form_prefix": form_prefix,
-                                               "gdim":        gdim,
-                                               "space_dim":   space_dim,
-                                               "num_vals":    num_vals,
-                                               "counter":     counter}]
-                block += [f_eval_basis_copy % {"prefix":      prefix,
-                                               "space_dim":   space_dim}]
-
-                # Generate code
+                # Generate code for declaration of FE table
                 code += [f_comment("Create table %s for basis function values" % prefix)]
-                code += [f_eval_basis_decl % {"prefix": prefix}]
-                code += [""]
-                code += [f_comment("Evaluate basis functions at quadrature points")]
-                code += [f_static_array("double", "values", num_vals)]
-                code += f_loop(block, [("ip", 0, "num_quadrature_points")])
+                code += [f_eval_basis_decl % {"prefix": prefix, "macro_dim": macro_dim}]
+
+                # Iterate over cells (in macro element)
+                for cell_number in range(num_cells):
+
+                    code += [f_comment("--- Evaluation of basis functions for cell %d ---" % cell_number)]
+                    code += [""]
+
+                    # Size of array to evaluate_basis_all
+                    num_vals = space_dim*value_size
+
+                    # Cell offset for array of vertex coordinates
+                    vertex_offset = cell_number*num_vertices*gdim
+
+                    # Cell offset for array of values
+                    values_offset = cell_number*num_vals
+
+                    # Generate block of code for loop
+                    block = []
+                    block += [f_eval_basis      % {"prefix":        prefix,
+                                                   "form_prefix":   form_prefix,
+                                                   "gdim":          gdim,
+                                                   "num_vals":      num_vals,
+                                                   "counter":       counter,
+                                                   "vertex_offset": vertex_offset,
+                                                   "values_offset": values_offset}]
+                    block += [f_eval_basis_copy % {"prefix":        prefix,
+                                                   "space_dim":     space_dim}]
+
+                    # Generate code
+                    code += [f_comment("Evaluate basis functions at quadrature points")]
+                    code += [f_static_array("double", "values", num_vals)]
+                    code += f_loop(block, [("ip", 0, "num_quadrature_points")])
+                    code += [""]
 
             # Code for evaluate_basis_derivatives_all
             else:
@@ -790,36 +813,51 @@ def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data, form_pr
                 derivs = [d for d in derivs if sum(d) == n]
                 derivs = ["".join(str(_d) for _d in d) for d in derivs]
 
-                # Size of array to evaluate_basis_derivatives_all
-                num_vals = space_dim*value_size*len(derivs)
-                stride = value_size*len(derivs)
-
-                # Generate block of code for loop
-                block = []
-                block += [f_eval_derivs %       {"prefix":      prefix,
-                                                 "form_prefix": form_prefix,
-                                                 "gdim":        gdim,
-                                                 "space_dim":   space_dim,
-                                                 "num_vals":    num_vals,
-                                                 "n":           n,
-                                                 "counter":     counter}]
-                block += [(f_eval_derivs_copy % {"prefix":    prefix,
-                                                 "d":         d,
-                                                 "space_dim": space_dim,
-                                                 "offset":    i,
-                                                 "stride":    stride,
-                                                 }) for (i, d) in enumerate(derivs)]
-
-                # Generate code
+                # Generate code for declaration of FE table
                 code += [f_comment("Create table(s) %s_D for order %d basis function derivatives" % (prefix, n))]
-                code += [(f_eval_derivs_decl % {"prefix": prefix, "d": d}) for d in derivs]
+                code += [(f_eval_derivs_decl % {"prefix": prefix, "d": d, "macro_dim": macro_dim}) for d in derivs]
+
+                # Iterate over cells (in macro element)
+                for cell_number in range(num_cells):
+
+                    code += [f_comment("--- Evaluation of basis function derivatives for cell %d ---" % cell_number)]
+                    code += [""]
+
+                    # Size of array to evaluate_basis_derivatives_all
+                    num_vals = space_dim*value_size*len(derivs)
+
+                    # Cell offset for array of vertex coordinates
+                    vertex_offset = cell_number*num_vertices*gdim
+
+                    # Cell offset for array of values
+                    values_offset = cell_number*num_vals
+
+                    # Stride for values array
+                    stride = value_size*len(derivs)
+
+                    # Generate block of code for loop
+                    block = []
+                    block += [f_eval_derivs %       {"prefix":        prefix,
+                                                     "form_prefix":   form_prefix,
+                                                     "gdim":          gdim,
+                                                     "num_vals":      num_vals,
+                                                     "n":             n,
+                                                     "counter":       counter,
+                                                     "vertex_offset": vertex_offset}]
+                    block += [(f_eval_derivs_copy % {"prefix":        prefix,
+                                                     "d":             d,
+                                                     "space_dim":     space_dim,
+                                                     "offset":        i,
+                                                     "stride":        stride,
+                                                     }) for (i, d) in enumerate(derivs)]
+
+                    # Generate code
+                    code += [f_comment("Evaluate basis function derivatives at quadrature points")]
+                    code += [f_static_array("double", "values", num_vals)]
+                    code += f_loop(block, [("ip", 0, "num_quadrature_points")])
+                    code += [""]
+
+                # Add newline
                 code += [""]
-                code += [f_comment("Evaluate basis function derivatives at quadrature points")]
-                code += [f_static_array("double", "values", num_vals)]
-                code += f_loop(block, [("ip", 0, "num_quadrature_points")])
-
-
-            # Add newline
-            code += [""]
 
     return code

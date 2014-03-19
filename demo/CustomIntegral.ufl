@@ -32,4 +32,4 @@ dc1 = dc(1, metadata={"num_cells": 2})
 
 #a = dot(grad(u), grad(v))*dc0 + jump(u)*jump(v)*dc1
 
-a = jump(u)*jump(v)*dc1
+a = jump(u.dx(0))*jump(v)*dc1

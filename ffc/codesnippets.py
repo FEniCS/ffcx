@@ -766,33 +766,39 @@ max_facet_edge_length = {3: {3: _max_facet_edge_length_3D}}
 # Code snippets for runtime quadrature (calling evaluate_basis)
 
 eval_basis_decl = """\
-std::vector<std::vector<double> > %(prefix)s(num_quadrature_points);"""
+std::vector<std::vector<double> > %(prefix)s(num_quadrature_points);
+for (std::size_t ip = 0; i < num_quadrature_points; i++)
+  %(prefix)s.resize(%(macro_dim)s);
+"""
 
 eval_basis = """\
 // Get current quadrature point and compute values of basis functions
 const double* x = quadrature_points + ip*%(gdim)s;
+const double* v = vertex_coordinates + %(vertex_offset)s;
 const int cell_orientation = 0; // cell orientation currently not supported
-%(form_prefix)s_finite_element_%(counter)s::_evaluate_basis_all(values, x, vertex_coordinates, cell_orientation);"""
+%(form_prefix)s_finite_element_%(counter)s::_evaluate_basis_all(values, x, v, cell_orientation);"""
 
 eval_basis_copy = """\
 
 // Copy values to table %(prefix)s
-%(prefix)s[ip].resize(%(space_dim)s);
 std::copy(values, values + %(space_dim)s, %(prefix)s[ip].begin());
 """
 
 eval_derivs_decl = """\
-std::vector<std::vector<double> > %(prefix)s_D%(d)s(num_quadrature_points);"""
+std::vector<std::vector<double> > %(prefix)s_D%(d)s(num_quadrature_points);
+for (std::size_t ip = 0; i < num_quadrature_points; i++)
+  %(prefix)s_D%(d)s.resize(%(macro_dim)s);
+"""
 
 eval_derivs = """\
 // Get current quadrature point and compute values of basis function derivatives
 const double* x = quadrature_points + ip*%(gdim)s;
+const double* v = vertex_coordinates + %(vertex_offset)s;
 const int cell_orientation = 0; // cell orientation currently not supported
-%(form_prefix)s_finite_element_%(counter)s::_evaluate_basis_derivatives_all(%(n)s, values, x, vertex_coordinates, cell_orientation);"""
+%(form_prefix)s_finite_element_%(counter)s::_evaluate_basis_derivatives_all(%(n)s, values, x, v, cell_orientation);"""
 
 eval_derivs_copy = """\
 
 // Copy values to table %(prefix)s_D%(d)s
-%(prefix)s_D%(d)s[ip].resize(%(space_dim)s);
-for (unsigned int i = 0; i < %(space_dim)s; i++)
+for (std::size_t i = 0; i < %(space_dim)s; i++)
   %(prefix)s_D%(d)s[ip][i] = values[%(offset)s + i*%(stride)s];"""
