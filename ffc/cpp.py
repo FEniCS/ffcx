@@ -31,7 +31,8 @@ import re, numpy, platform
 from ffc.log import debug, error
 
 # Mapping of restrictions
-_choose_map = {None: "", "+": "_0", "-": "_1"}
+_fixed_map = {None: "", "+": "_0", "-": "_1"}
+_choose_map = lambda r: _fixed_map[r] if r in _fixed_map else "_%s" % str(r)
 
 # FIXME: MSA: Using a dict to collect functions in a namespace is weird
 #             and makes the code harder to follow, change to a class
@@ -137,21 +138,21 @@ format.update({
     "cell":               lambda s: "ufc::%s" % s,
     "J":                  lambda i, j, m, n: "J[%d]" % _flatten(i, j, m, n),
     "inv(J)":             lambda i, j, m, n: "K[%d]" % _flatten(i, j, m, n),
-    "det(J)":             lambda r=None: "detJ%s" % _choose_map[r],
-    "cell volume":        lambda r=None: "volume%s" % _choose_map[r],
-    "circumradius":       lambda r=None: "circumradius%s" % _choose_map[r],
+    "det(J)":             lambda r=None: "detJ%s" % _choose_map(r),
+    "cell volume":        lambda r=None: "volume%s" % _choose_map(r),
+    "circumradius":       lambda r=None: "circumradius%s" % _choose_map(r),
     "facet area":         "facet_area",
     "min facet edge length": lambda r: "min_facet_edge_length",
     "max facet edge length": lambda r: "max_facet_edge_length",
     "scale factor":       "det",
     "transform":          lambda t, i, j, m, n, r: _transform(t, i, j, m, n, r),
-    "normal component":   lambda r, j: "n%s%s" % (_choose_map[r], j),
+    "normal component":   lambda r, j: "n%s%s" % (_choose_map(r), j),
     "x coordinate":       "X",
     "y coordinate":       "Y",
     "z coordinate":       "Z",
     "ip coordinates":     lambda i, j: "X%d[%d]" % (i, j),
     "affine map table":   lambda i, j: "FEA%d_f%d" % (i, j),
-    "vertex_coordinates": lambda r=None: "vertex_coordinates%s" % _choose_map[r]
+    "vertex_coordinates": lambda r=None: "vertex_coordinates%s" % _choose_map(r)
 })
 
 # UFC function arguments and class members (names)
@@ -163,7 +164,7 @@ format.update({
     "argument derivative order":  "n",
     "argument values":            "values",
     "argument coordinates":       "dof_coordinates",
-    "facet":                      lambda r: "facet%s" % _choose_map[r],
+    "facet":                      lambda r: "facet%s" % _choose_map(r),
     "vertex":                     "vertex",
     "argument axis":              "i",
     "argument dimension":         "d",
@@ -252,20 +253,20 @@ from codesnippets import *
 
 format.update({
     "compute_jacobian":         lambda tdim, gdim, r=None: \
-                                compute_jacobian[tdim][gdim] % {"restriction": _choose_map[r]},
+                                compute_jacobian[tdim][gdim] % {"restriction": _choose_map(r)},
     "compute_jacobian_inverse": lambda tdim, gdim, r=None: \
-                                compute_jacobian_inverse[tdim][gdim] % {"restriction": _choose_map[r]},
-    "orientation":              lambda tdim, gdim, r=None: orientation_snippet % {"restriction": _choose_map[r]} if tdim != gdim else "",
-    "facet determinant":        lambda tdim, gdim, r=None: facet_determinant[tdim][gdim] % {"restriction": _choose_map[r]},
+                                compute_jacobian_inverse[tdim][gdim] % {"restriction": _choose_map(r)},
+    "orientation":              lambda tdim, gdim, r=None: orientation_snippet % {"restriction": _choose_map(r)} if tdim != gdim else "",
+    "facet determinant":        lambda tdim, gdim, r=None: facet_determinant[tdim][gdim] % {"restriction": _choose_map(r)},
     "fiat coordinate map":      lambda cell, gdim: fiat_coordinate_map[cell][gdim],
     "generate normal":          lambda tdim, gdim, i: _generate_normal(tdim, gdim, i),
     "generate cell volume":     lambda tdim, gdim, i: _generate_cell_volume(tdim, gdim, i),
     "generate circumradius":    lambda tdim, gdim, i: _generate_circumradius(tdim, gdim, i),
     "generate facet area":      lambda tdim, gdim: facet_area[tdim][gdim],
-    "generate min facet edge length": lambda tdim, gdim, r=None: min_facet_edge_length[tdim][gdim] % {"restriction": _choose_map[r]},
-    "generate max facet edge length": lambda tdim, gdim, r=None: max_facet_edge_length[tdim][gdim] % {"restriction": _choose_map[r]},
+    "generate min facet edge length": lambda tdim, gdim, r=None: min_facet_edge_length[tdim][gdim] % {"restriction": _choose_map(r)},
+    "generate max facet edge length": lambda tdim, gdim, r=None: max_facet_edge_length[tdim][gdim] % {"restriction": _choose_map(r)},
     "generate ip coordinates":  lambda g, num_ip, name, ip, r=None: (ip_coordinates[g][0], ip_coordinates[g][1] % \
-                                {"restriction": _choose_map[r], "ip": ip, "name": name, "num_ip": num_ip}),
+                                {"restriction": _choose_map(r), "ip": ip, "name": name, "num_ip": num_ip}),
     "scale factor snippet":     scale_factor,
     "map onto physical":        map_onto_physical,
     "evaluate basis snippet":   eval_basis,
@@ -431,7 +432,7 @@ def _inner_product(v, w):
     return result
 
 def _transform(type, i, j, m, n, r):
-    map_name = {"J": "J", "JINV": "K"}[type] + _choose_map[r]
+    map_name = {"J": "J", "JINV": "K"}[type] + _choose_map(r)
     return (map_name + "[%d]") % _flatten(i, j, m, n)
 
 # FIXME: Input to _generate_switch should be a list of tuples (i, case)
@@ -598,9 +599,9 @@ def _generate_normal(tdim, gdim, domain_type, reference_normal=False):
         code = direction % {"restriction": "", "facet" : "facet"}
         code += normal % {"direction" : "", "restriction": ""}
     elif domain_type == "interior_facet":
-        code = direction % {"restriction": _choose_map["+"], "facet": "facet_0"}
-        code += normal % {"direction" : "", "restriction": _choose_map["+"]}
-        code += normal % {"direction" : "!", "restriction": _choose_map["-"]}
+        code = direction % {"restriction": _choose_map("+"), "facet": "facet_0"}
+        code += normal % {"direction" : "", "restriction": _choose_map("+")}
+        code += normal % {"direction" : "!", "restriction": _choose_map("-")}
     else:
         error("Unsupported domain_type: %s" % str(domain_type))
     return code
@@ -615,8 +616,8 @@ def _generate_cell_volume(tdim, gdim, domain_type):
     if domain_type in ("cell", "exterior_facet"):
         code = volume % {"restriction": ""}
     elif domain_type in ("interior_facet", "custom"):
-        code = volume % {"restriction": _choose_map["+"]}
-        code += volume % {"restriction": _choose_map["-"]}
+        code = volume % {"restriction": _choose_map("+")}
+        code += volume % {"restriction": _choose_map("-")}
     else:
         error("Unsupported domain_type: %s" % str(domain_type))
     return code
@@ -631,8 +632,8 @@ def _generate_circumradius(tdim, gdim, domain_type):
     if domain_type in ("cell", "exterior_facet", "point"):
         code = radius % {"restriction": ""}
     elif domain_type in ("interior_facet", "custom"):
-        code = radius % {"restriction": _choose_map["+"]}
-        code += radius % {"restriction": _choose_map["-"]}
+        code = radius % {"restriction": _choose_map("+")}
+        code += radius % {"restriction": _choose_map("-")}
     else:
         error("Unsupported domain_type: %s" % str(domain_type))
     return code

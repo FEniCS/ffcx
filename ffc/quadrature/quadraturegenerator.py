@@ -219,14 +219,14 @@ def _tabulate_tensor(ir, prefix, parameters):
         operations.append([num_ops])
 
         # Generate code for basic geometric quantities
-        jacobi_code  = ""
-        jacobi_code += format["compute_jacobian"](tdim, gdim)
-        jacobi_code += "\n"
-        jacobi_code += format["compute_jacobian_inverse"](tdim, gdim)
-        if oriented:
-            jacobi_code += format["orientation"](tdim, gdim)
-        jacobi_code += "\n"
-        jacobi_code += format["scale factor snippet"]
+        jacobi_code = ""
+        for i in range(num_cells):
+            jacobi_code += "\n"
+            jacobi_code += f_comment("Compute geometric quantities for cell %d" % i)
+            jacobi_code += "\n\n"
+            jacobi_code += format["compute_jacobian"](tdim, gdim, r=i)
+            jacobi_code += "\n"
+            jacobi_code += format["compute_jacobian_inverse"](tdim, gdim, r=i)
 
     else:
         error("Unhandled integral type: " + str(domain_type))
@@ -293,6 +293,13 @@ def _tabulate_tensor(ir, prefix, parameters):
         # Add geo ops count to integral ops count for writing info.
         if isinstance(ops[-1], int):
             ops[-1] += geo_ops
+
+    print
+    print "-------------------------------------------------------------------"
+    print "\n".join(common) + "\n" + tensor_code
+    print "-------------------------------------------------------------------"
+    exit(0)
+
     return "\n".join(common) + "\n" + tensor_code
 
 def _generate_element_tensor(integrals, sets, optimise_parameters):
