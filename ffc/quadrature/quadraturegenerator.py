@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-03-17
+# Last changed: 2014-03-19
 
 # Python modules
 import functools, itertools
@@ -200,26 +200,6 @@ def _tabulate_tensor(ir, prefix, parameters):
         jacobi_code += "\n\n" + format["facet determinant"](tdim, gdim) # FIXME: This is not defined in a point???
 
     elif domain_type == "quadrature_cell":
-
-        # Update transformer with facets and generate code + set of used geometry terms.
-        tensor_code, mem_code, num_ops = _generate_element_tensor(integrals, sets, \
-                                         opt_par)
-        tensor_code = "\n".join(tensor_code)
-
-        # Set operations equal to num_ops (for printing info on operations).
-        operations.append([num_ops])
-
-        # Generate code for basic geometric quantities
-        jacobi_code  = ""
-        jacobi_code += format["compute_jacobian"](tdim, gdim)
-        jacobi_code += "\n"
-        jacobi_code += format["compute_jacobian_inverse"](tdim, gdim)
-        if oriented:
-            jacobi_code += format["orientation"](tdim, gdim)
-        jacobi_code += "\n"
-        jacobi_code += format["scale factor snippet"]
-
-    elif domain_type == "quadrature_facet":
 
         # Update transformer with facets and generate code + set of used geometry terms.
         tensor_code, mem_code, num_ops = _generate_element_tensor(integrals, sets, \

@@ -327,18 +327,19 @@ void %(classname)s::tabulate_tensor(double* A,
 }
 """
 
-quadrature_cell_integral_combined = """\
-/// This class defines the interface for the tabulation of the cell
-/// tensor corresponding to the local contribution to a form from
-/// the integral over an unknown cell fragment with quadrature
-/// points given.
+custom_integral_combined = """\
 
-class %(classname)s: public ufc::quadrature_cell_integral
+/// This class defines the interface for the tabulation of the
+/// tensor corresponding to the local contribution to a form
+/// from the integral over a custom domain defined in terms of
+/// a set of quadrature points and weights.
+
+class %(classname)s: public ufc::custom_integral
 {%(members)s
 public:
 
   /// Constructor
-  %(classname)s(%(constructor_arguments)s) : ufc::quadrature_cell_integral()%(initializer_list)s
+  %(classname)s(%(constructor_arguments)s) : ufc::custom_integral()%(initializer_list)s
   {
 %(constructor)s
   }
@@ -349,7 +350,13 @@ public:
 %(destructor)s
   }
 
-  /// Tabulate the tensor for the contribution from a cell fragment
+  /// Return the number of cells involved in evaluation of the integral
+  virtual std::size_t num_cells() const
+  {
+%(num_cells)s
+  }
+
+  /// Tabulate the tensor for the contribution from custom domain
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
                                const double* vertex_coordinates,
@@ -363,13 +370,13 @@ public:
 };
 """
 
-quadrature_cell_integral_header = """\
-/// This class defines the interface for the tabulation of the cell
-/// tensor corresponding to the local contribution to a form from
-/// the integral over an unknown cell fragment with quadrature
-/// points given.
+custom_integral_header = """\
+/// This class defines the interface for the tabulation of the
+/// tensor corresponding to the local contribution to a form
+/// from the integral over a custom domain defined in terms of
+/// a set of quadrature points and weights.
 
-class %(classname)s: public ufc::quadrature_cell_integral
+class %(classname)s: public ufc::custom_integral
 {%(members)s
 public:
 
@@ -379,19 +386,23 @@ public:
   /// Destructor
   virtual ~%(classname)s();
 
-  /// Tabulate the tensor for the contribution from a cell fragment
+  /// Return the number of cells involved in evaluation of the integral
+  virtual std::size_t num_cells() const;
+
+  /// Tabulate the tensor for the contribution from custom domain
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
                                const double* vertex_coordinates,
                                std::size_t num_quadrature_points,
                                const double* quadrature_points,
                                const double* quadrature_weights) const;
+
 };
 """
 
-quadrature_cell_integral_implementation = """\
+custom_integral_implementation = """\
 /// Constructor
-%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::quadrature_cell_integral()%(initializer_list)s
+%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::custom_integral()%(initializer_list)s
 {
 %(constructor)s
 }
@@ -402,110 +413,19 @@ quadrature_cell_integral_implementation = """\
 %(destructor)s
 }
 
-/// Tabulate the tensor for the contribution from a local cell
+/// Return the number of cells involved in evaluation of the integral
+std::size_t %(classname)s::num_cells() const
+{
+%(num_cells)s
+}
+
+/// Tabulate the tensor for the contribution from custom domain
 void %(classname)s::tabulate_tensor(double* A,
                                     const double * const * w,
                                     const double* vertex_coordinates,
                                     std::size_t num_quadrature_points,
                                     const double* quadrature_points,
                                     const double* quadrature_weights) const
-{
-%(tabulate_tensor)s
-}
-"""
-
-quadrature_facet_integral_combined = """\
-/// This class defines the interface for the tabulation of the facet
-/// tensor corresponding to the local contribution to a form from
-/// the integral over an unknown facet fragment with quadrature
-/// points given.
-
-class %(classname)s: public ufc::quadrature_facet_integral
-{%(members)s
-public:
-
-  /// Constructor
-  %(classname)s(%(constructor_arguments)s) : ufc::quadrature_facet_integral()%(initializer_list)s
-  {
-%(constructor)s
-  }
-
-  /// Destructor
-  virtual ~%(classname)s()
-  {
-%(destructor)s
-  }
-
-  /// Tabulate the tensor for the contribution from a facet fragment
-  virtual void tabulate_tensor(double* A,
-                               const double * const * w,
-                               const double* vertex_coordinates_0
-                               std::size_t num_cells_1,
-                               const double* vertex_coordinates_1,
-                               std::size_t num_quadrature_points,
-                               const double* quadrature_points,
-                               const double* quadrature_weights,
-                               std::size_t* quadrature_point_to_cell_map_1) const
-  {
-%(tabulate_tensor)s
-  }
-
-};
-"""
-
-quadrature_facet_integral_header = """\
-/// This class defines the interface for the tabulation of the facet
-/// tensor corresponding to the local contribution to a form from
-/// the integral over an unknown facet fragment with quadrature
-/// points given.
-
-class %(classname)s: public ufc::quadrature_facet_integral
-{%(members)s
-public:
-
-  /// Constructor
-  %(classname)s(%(constructor_arguments)s);
-
-  /// Destructor
-  virtual ~%(classname)s();
-
-  /// Tabulate the tensor for the contribution from a facet fragment
-  virtual void tabulate_tensor(double* A,
-                               const double * const * w,
-                               const double* vertex_coordinates_0
-                               std::size_t num_cells_1,
-                               const double* vertex_coordinates_1,
-                               std::size_t num_quadrature_points,
-                               const double* quadrature_points,
-                               const double* quadrature_weights,
-                               std::size_t* quadrature_point_to_cell_map_1) const
-
-};
-"""
-
-quadrature_facet_integral_implementation = """\
-/// Constructor
-%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::quadrature_facet_integral()%(initializer_list)s
-{
-%(constructor)s
-}
-
-/// Destructor
-%(classname)s::~%(classname)s()
-{
-%(destructor)s
-}
-
-/// Tabulate the tensor for the contribution from a local facet
-void %(classname)s::tabulate_tensor(double* A,
-                                    const double * const * w,
-                                    const double* vertex_coordinates_0
-                                    std::size_t num_cells_1,
-                                    const double* vertex_coordinates_1,
-                                    std::size_t num_quadrature_points,
-                                    const double* quadrature_points,
-                                    const double* quadrature_weights,
-                                    std::size_t* quadrature_point_to_cell_map_1) const
 {
 %(tabulate_tensor)s
 }
