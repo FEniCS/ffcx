@@ -23,7 +23,7 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-28
-# Last changed: 2014-03-11
+# Last changed: 2014-03-19
 
 # Code snippets
 
@@ -357,27 +357,27 @@ n%(restriction)s2 /= n%(restriction)s_length;
 """
 
 _cell_volume_1D = """\
-// Cell volume
+// Compute cell volume
 const double volume%(restriction)s = std::abs(detJ%(restriction)s);"""
 
 _cell_volume_2D = """\
-// Cell volume
+// Compute cell volume
 const double volume%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
 
 _cell_volume_2D_1D = """\
-// Cell volume of interval in 2D
+// Compute cell volume of interval in 2D
 const double volume%(restriction)s = std::abs(detJ%(restriction)s);"""
 
 _cell_volume_3D = """\
-// Cell volume
+// Compute cell volume
 const double volume%(restriction)s = std::abs(detJ%(restriction)s)/6.0;"""
 
 _cell_volume_3D_1D = """\
-// Cell volume of interval in 3D
+// Compute cell volume of interval in 3D
 const double volume%(restriction)s = std::abs(detJ%(restriction)s);"""
 
 _cell_volume_3D_2D = """\
-// Cell volume of triangle in 3D
+// Compute cell volume of triangle in 3D
 const double volume%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
 
 _circumradius_1D = """\
