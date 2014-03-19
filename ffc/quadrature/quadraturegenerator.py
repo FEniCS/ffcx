@@ -161,7 +161,7 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += "\n"
             jacobi_code += format["compute_jacobian_inverse"](tdim, gdim, r=_r)
             if oriented:
-                jacobi_code += format["orientation"](tdim, gdim)
+                jacobi_code += format["orientation"](tdim, gdim, r=_r)
             jacobi_code += "\n"
         jacobi_code += "\n\n" + format["facet determinant"](tdim, gdim, r="+")
         jacobi_code += "\n\n" + format["generate normal"](tdim, gdim, domain_type)
