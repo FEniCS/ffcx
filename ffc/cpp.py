@@ -283,7 +283,9 @@ format.update({
     "eval_basis_copy":          eval_basis_copy,
     "eval_derivs_decl":         eval_derivs_decl,
     "eval_derivs":              eval_derivs,
-    "eval_derivs_copy":         eval_derivs_copy})
+    "eval_derivs_copy":         eval_derivs_copy,
+    "extract_cell_coordinates": lambda offset, r : "const double* vertex_coordinates_%d = vertex_coordinates + %d;" % (r, offset)
+    })
 
 # Class names
 format.update({

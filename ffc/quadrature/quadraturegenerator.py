@@ -253,6 +253,9 @@ def _tabulate_tensor(ir, prefix, parameters):
             jacobi_code += "\n"
             jacobi_code += f_comment("--- Compute geometric quantities on cell %d ---" % i)
             jacobi_code += "\n\n"
+            jacobi_code += f_comment("Extract vertex coordinates\n")
+            jacobi_code += format["extract_cell_coordinates"]((tdim + 1)*gdim*i, r=i)
+            jacobi_code += "\n\n"
             jacobi_code += format["compute_jacobian"](tdim, gdim, r=i)
             jacobi_code += "\n"
             jacobi_code += format["compute_jacobian_inverse"](tdim, gdim, r=i)

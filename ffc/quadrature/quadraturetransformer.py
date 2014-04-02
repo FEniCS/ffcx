@@ -474,6 +474,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         # Handle affine mappings.
         if transformation == "affine":
+
             # Loop derivatives and get multi indices.
             for multi in multiindices:
                 deriv = [multi.count(i) for i in range(tdim)]
@@ -488,6 +489,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
                 if basis is not None:
                     # Add transformation
+                    print "Skipping"
                     code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
 
         # Handle non-affine mappings.
@@ -614,11 +616,12 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         # Add transformation if needed.
         transforms = []
-        for i, direction in enumerate(derivatives):
-            ref = multi[i]
-            t = f_transform("JINV", ref, direction, tdim, gdim, self.restriction)
-            self.trans_set.add(t)
-            transforms.append(t)
+        if not self.domain_type == "custom":
+            for i, direction in enumerate(derivatives):
+                ref = multi[i]
+                t = f_transform("JINV", ref, direction, tdim, gdim, self.restriction)
+                self.trans_set.add(t)
+                transforms.append(t)
 
         # Only multiply by basis if it is present.
         if function:
@@ -697,7 +700,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
             weight += format["component"]("", format["integration points"])
 
         # Update sets of used variables.
-        if domain_type == "point":
+        if domain_type in ("point", "custom"):
             trans_set = set()
             value = format["mul"]([val, weight])
         else:
