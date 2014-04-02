@@ -23,7 +23,7 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-28
-# Last changed: 2014-03-19
+# Last changed: 2014-04-02
 
 # Code snippets
 
@@ -358,43 +358,51 @@ n%(restriction)s2 /= n%(restriction)s_length;
 
 _cell_volume_1D = """\
 // Compute cell volume
-const double volume%(restriction)s = std::abs(detJ%(restriction)s);"""
+const double volume%(restriction)s = std::abs(detJ%(restriction)s);
+"""
 
 _cell_volume_2D = """\
 // Compute cell volume
-const double volume%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
+const double volume%(restriction)s = std::abs(detJ%(restriction)s)/2.0;
+"""
 
 _cell_volume_2D_1D = """\
 // Compute cell volume of interval in 2D
-const double volume%(restriction)s = std::abs(detJ%(restriction)s);"""
+const double volume%(restriction)s = std::abs(detJ%(restriction)s);
+"""
 
 _cell_volume_3D = """\
 // Compute cell volume
-const double volume%(restriction)s = std::abs(detJ%(restriction)s)/6.0;"""
+const double volume%(restriction)s = std::abs(detJ%(restriction)s)/6.0;
+"""
 
 _cell_volume_3D_1D = """\
 // Compute cell volume of interval in 3D
-const double volume%(restriction)s = std::abs(detJ%(restriction)s);"""
+const double volume%(restriction)s = std::abs(detJ%(restriction)s);
+"""
 
 _cell_volume_3D_2D = """\
 // Compute cell volume of triangle in 3D
-const double volume%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
+const double volume%(restriction)s = std::abs(detJ%(restriction)s)/2.0;
+"""
 
 _circumradius_1D = """\
 // Compute circumradius; in 1D it is equal to half the cell length
-const double circumradius%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
+const double circumradius%(restriction)s = std::abs(detJ%(restriction)s)/2.0;
+"""
 
 _circumradius_2D = """\
 // Compute circumradius of triangle in 2D
 const double v1v2%(restriction)s  = std::sqrt((vertex_coordinates%(restriction)s[4] - vertex_coordinates%(restriction)s[2])*(vertex_coordinates%(restriction)s[4] - vertex_coordinates%(restriction)s[2]) + (vertex_coordinates%(restriction)s[5] - vertex_coordinates%(restriction)s[3])*(vertex_coordinates%(restriction)s[5] - vertex_coordinates%(restriction)s[3]) );
 const double v0v2%(restriction)s  = std::sqrt(J%(restriction)s[3]*J%(restriction)s[3] + J%(restriction)s[1]*J%(restriction)s[1]);
 const double v0v1%(restriction)s  = std::sqrt(J%(restriction)s[0]*J%(restriction)s[0] + J%(restriction)s[2]*J%(restriction)s[2]);
-
-const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);"""
+const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);
+"""
 
 _circumradius_2D_1D = """\
 // Compute circumradius of interval in 3D (1/2 volume)
-const double circumradius%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
+const double circumradius%(restriction)s = std::abs(detJ%(restriction)s)/2.0;
+"""
 
 _circumradius_3D = """\
 // Compute circumradius
@@ -409,20 +417,21 @@ const  double lb%(restriction)s   = v0v2%(restriction)s*v1v3%(restriction)s;
 const  double lc%(restriction)s   = v0v1%(restriction)s*v2v3%(restriction)s;
 const  double s%(restriction)s    = 0.5*(la%(restriction)s+lb%(restriction)s+lc%(restriction)s);
 const  double area%(restriction)s = std::sqrt(s%(restriction)s*(s%(restriction)s-la%(restriction)s)*(s%(restriction)s-lb%(restriction)s)*(s%(restriction)s-lc%(restriction)s));
-
-const double circumradius%(restriction)s = area%(restriction)s / ( 6.0*volume%(restriction)s );"""
+const double circumradius%(restriction)s = area%(restriction)s / ( 6.0*volume%(restriction)s );
+"""
 
 _circumradius_3D_1D = """\
 // Compute circumradius of interval in 3D (1/2 volume)
-const double circumradius%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
+const double circumradius%(restriction)s = std::abs(detJ%(restriction)s)/2.0;
+"""
 
 _circumradius_3D_2D = """\
 // Compute circumradius of triangle in 3D
 const double v1v2%(restriction)s  = std::sqrt( (vertex_coordinates%(restriction)s[6] - vertex_coordinates%(restriction)s[3])*(vertex_coordinates%(restriction)s[6] - vertex_coordinates%(restriction)s[3]) + (vertex_coordinates%(restriction)s[7] - vertex_coordinates%(restriction)s[4])*(vertex_coordinates%(restriction)s[7] - vertex_coordinates%(restriction)s[4]) + (vertex_coordinates%(restriction)s[8] - vertex_coordinates%(restriction)s[5])*(vertex_coordinates%(restriction)s[8] - vertex_coordinates%(restriction)s[5]));
 const double v0v2%(restriction)s = std::sqrt( J%(restriction)s[3]*J%(restriction)s[3] + J%(restriction)s[1]*J%(restriction)s[1] + J%(restriction)s[5]*J%(restriction)s[5]);
 const double v0v1%(restriction)s = std::sqrt( J%(restriction)s[0]*J%(restriction)s[0] + J%(restriction)s[2]*J%(restriction)s[2] + J%(restriction)s[4]*J%(restriction)s[4]);
-
-const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);"""
+const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);
+"""
 
 _facet_area_1D = """\
 // Facet area (FIXME: Should this be 0.0?)

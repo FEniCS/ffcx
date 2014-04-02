@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-12-16
-# Last changed: 2014-03-19
+# Last changed: 2014-04-02
 
 # Python modules
 import re, numpy, platform
@@ -260,8 +260,8 @@ format.update({
     "facet determinant":        lambda tdim, gdim, r=None: facet_determinant[tdim][gdim] % {"restriction": _choose_map(r)},
     "fiat coordinate map":      lambda cell, gdim: fiat_coordinate_map[cell][gdim],
     "generate normal":          lambda tdim, gdim, i: _generate_normal(tdim, gdim, i),
-    "generate cell volume":     lambda tdim, gdim, i: _generate_cell_volume(tdim, gdim, i),
-    "generate circumradius":    lambda tdim, gdim, i: _generate_circumradius(tdim, gdim, i),
+    "generate cell volume":     lambda tdim, gdim, i, r=None: _generate_cell_volume(tdim, gdim, i, r),
+    "generate circumradius":    lambda tdim, gdim, i, r=None: _generate_circumradius(tdim, gdim, i, r),
     "generate facet area":      lambda tdim, gdim: facet_area[tdim][gdim],
     "generate min facet edge length": lambda tdim, gdim, r=None: min_facet_edge_length[tdim][gdim] % {"restriction": _choose_map(r)},
     "generate max facet edge length": lambda tdim, gdim, r=None: max_facet_edge_length[tdim][gdim] % {"restriction": _choose_map(r)},
@@ -606,7 +606,7 @@ def _generate_normal(tdim, gdim, domain_type, reference_normal=False):
         error("Unsupported domain_type: %s" % str(domain_type))
     return code
 
-def _generate_cell_volume(tdim, gdim, domain_type):
+def _generate_cell_volume(tdim, gdim, domain_type, r=None):
     "Generate code for computing cell volume."
 
     # Choose snippets
@@ -615,14 +615,16 @@ def _generate_cell_volume(tdim, gdim, domain_type):
     # Choose restrictions
     if domain_type in ("cell", "exterior_facet"):
         code = volume % {"restriction": ""}
-    elif domain_type in ("interior_facet", "custom"):
+    elif domain_type == "interior_facet":
         code = volume % {"restriction": _choose_map("+")}
         code += volume % {"restriction": _choose_map("-")}
+    elif domain_type == "custom":
+        code = volume % {"restriction": _choose_map(r)}
     else:
         error("Unsupported domain_type: %s" % str(domain_type))
     return code
 
-def _generate_circumradius(tdim, gdim, domain_type):
+def _generate_circumradius(tdim, gdim, domain_type, r=None):
     "Generate code for computing a cell's circumradius."
 
     # Choose snippets
@@ -631,9 +633,11 @@ def _generate_circumradius(tdim, gdim, domain_type):
     # Choose restrictions
     if domain_type in ("cell", "exterior_facet", "point"):
         code = radius % {"restriction": ""}
-    elif domain_type in ("interior_facet", "custom"):
+    elif domain_type == "interior_facet":
         code = radius % {"restriction": _choose_map("+")}
         code += radius % {"restriction": _choose_map("-")}
+    elif domain_type == "custom":
+        code = radius % {"restriction": _choose_map(r)}
     else:
         error("Unsupported domain_type: %s" % str(domain_type))
     return code
