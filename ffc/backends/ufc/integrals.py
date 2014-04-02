@@ -328,11 +328,10 @@ void %(classname)s::tabulate_tensor(double* A,
 """
 
 custom_integral_combined = """\
-
 /// This class defines the interface for the tabulation of the
-/// tensor corresponding to the local contribution to a form
-/// from the integral over a custom domain defined in terms of
-/// a set of quadrature points and weights.
+/// tensor corresponding to the local contribution to a form from
+/// the integral over a custom domain defined in terms of a set of
+/// quadrature points and weights.
 
 class %(classname)s: public ufc::custom_integral
 {%(members)s
@@ -372,9 +371,9 @@ public:
 
 custom_integral_header = """\
 /// This class defines the interface for the tabulation of the
-/// tensor corresponding to the local contribution to a form
-/// from the integral over a custom domain defined in terms of
-/// a set of quadrature points and weights.
+/// tensor corresponding to the local contribution to a form from
+/// the integral over a custom domain defined in terms of a set of
+/// quadrature points and weights.
 
 class %(classname)s: public ufc::custom_integral
 {%(members)s

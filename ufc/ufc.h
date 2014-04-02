@@ -362,19 +362,25 @@ namespace ufc
 
   };
 
-  /// This class defines the interface for the tabulation of the cell
+  /// This class defines the interface for the tabulation of the
   /// tensor corresponding to the local contribution to a form from
-  /// the integral over an unknown cell fragment with quadrature
-  /// points given.
+  /// the integral over a custom domain defined in terms of a set of
+  /// quadrature points and weights.
 
-  class quadrature_cell_integral
+  class custom_integral
   {
   public:
 
-    /// Destructor
-    virtual ~quadrature_cell_integral() {}
+    /// Constructor
+    custom_integral() {}
 
-    /// Tabulate the tensor for the contribution from a local cell
+    /// Destructor
+    virtual ~custom_integral() {};
+
+    /// Return the number of cells involved in evaluation of the integral
+    virtual std::size_t num_cells() const = 0;
+
+    /// Tabulate the tensor for the contribution from custom domain
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
                                  const double* vertex_coordinates,
