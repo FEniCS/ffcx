@@ -790,7 +790,7 @@ const int cell_orientation = 0; // cell orientation currently not supported
 eval_basis_copy = """\
 
 // Copy values to table %(prefix)s
-std::copy(values, values + %(space_dim)s, %(prefix)s[ip].begin());
+std::copy(values, values + %(space_dim)s, %(prefix)s[ip].begin() + %(values_offset)s);
 """
 
 eval_derivs_decl = """\
@@ -810,4 +810,4 @@ eval_derivs_copy = """\
 
 // Copy values to table %(prefix)s_D%(d)s
 for (std::size_t i = 0; i < %(space_dim)s; i++)
-  %(prefix)s_D%(d)s[ip][i] = values[%(offset)s + i*%(stride)s];"""
+  %(prefix)s_D%(d)s[ip][i] = values[%(values_offset)s + %(offset)s + i*%(stride)s];"""
