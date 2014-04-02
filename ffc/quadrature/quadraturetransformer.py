@@ -21,7 +21,7 @@
 # Modified by Anders Logg 2009, 2013
 #
 # First added:  2009-02-09
-# Last changed: 2014-03-11
+# Last changed: 2014-04-02
 
 # Python modules.
 from numpy import shape

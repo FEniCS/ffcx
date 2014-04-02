@@ -32,7 +32,7 @@ import numpy
 from ufl.algorithms.printing import tree_format
 
 # FFC modules
-from ffc.log import info, debug, ffc_assert, error
+from ffc.log import info, debug, ffc_assert, error, warning
 from ffc.cpp import format, remove_unused
 from ffc.utils import compute_derivative_tuples
 
@@ -98,9 +98,10 @@ def _tabulate_tensor(ir, prefix, parameters):
     operations = []
     if domain_type == "cell":
 
-        # Update transformer with facets and generate code + set of used geometry terms.
-        tensor_code, mem_code, num_ops = _generate_element_tensor(integrals, sets, \
-                                         opt_par)
+        # Generate code for computing element tensor
+        tensor_code, mem_code, num_ops = _generate_element_tensor(integrals,
+                                                                  sets,
+                                                                  opt_par)
         tensor_code = "\n".join(tensor_code)
 
         # Set operations equal to num_ops (for printing info on operations).
@@ -121,6 +122,8 @@ def _tabulate_tensor(ir, prefix, parameters):
         jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, domain_type)
 
     elif domain_type == "exterior_facet":
+
+        # Iterate over facets
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
             # Update transformer with facets and generate case code + set of used geometry terms.
@@ -155,14 +158,17 @@ def _tabulate_tensor(ir, prefix, parameters):
         jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, domain_type)
 
     elif domain_type == "interior_facet":
+
         # Modify the dimensions of the primary indices because we have a macro element
         prim_idims = [d*2 for d in prim_idims]
 
+        # Iterate over combinations of facets
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
         for i in range(num_facets):
             for j in range(num_facets):
                 # Update transformer with facets and generate case code + set of used geometry terms.
-                c, mem_code, ops = _generate_element_tensor(integrals[i][j], sets, \
+                c, mem_code, ops = _generate_element_tensor(integrals[i][j],
+                                                            sets,
                                                             opt_par)
                 case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
                 case += c
@@ -195,12 +201,15 @@ def _tabulate_tensor(ir, prefix, parameters):
         jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, domain_type)
 
     elif domain_type == "point":
+
+        # Iterate over vertices
         cases = [None for i in range(num_vertices)]
         for i in range(num_vertices):
             # Update transformer with vertices and generate case code +
             # set of used geometry terms.
             c, mem_code, ops = _generate_element_tensor(integrals[i],
-                                                        sets, opt_par)
+                                                        sets,
+                                                        opt_par)
             case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
             case += c
             cases[i] = "\n".join(case)
@@ -223,9 +232,16 @@ def _tabulate_tensor(ir, prefix, parameters):
 
     elif domain_type == "custom":
 
-        # Update transformer with facets and generate code + set of used geometry terms.
-        tensor_code, mem_code, num_ops = _generate_element_tensor(integrals, sets, \
-                                         opt_par)
+        # Warning that more than two cells in only partly supported.
+        # The missing piece is to couple multiple cells to
+        # restrictions other than '+' and '-'.
+        if num_cells > 2:
+            warning("Custom integrals with more than two cells only partly supported.")
+
+        # Generate code for computing element tensor
+        tensor_code, mem_code, num_ops = _generate_element_tensor(integrals,
+                                                                  sets,
+                                                                  opt_par)
         tensor_code = "\n".join(tensor_code)
 
         # Set operations equal to num_ops (for printing info on operations).
@@ -309,12 +325,6 @@ def _tabulate_tensor(ir, prefix, parameters):
         if isinstance(ops[-1], int):
             ops[-1] += geo_ops
 
-    print
-    print "-------------------------------------------------------------------"
-    print "\n".join(common) + "\n" + tensor_code
-    print "-------------------------------------------------------------------"
-    exit(0)
-
     return "\n".join(common) + "\n" + tensor_code
 
 def _generate_element_tensor(integrals, sets, optimise_parameters):
@@ -342,6 +352,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters):
     # tabulate unique tables (and only non-zero entries) it doesn't seem to
     # be necessary. Should it be deleted?
     members_code = ""
+
     # We receive a dictionary {num_points: form,}.
     # Loop points and forms.
     for points, terms, functions, ip_consts, coordinate, conditionals in integrals:
