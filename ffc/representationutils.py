@@ -108,7 +108,7 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
 
     return { "representation":       representation,
              "domain_type":          itg_data.domain_type,
-             "domain_id":            itg_data.domain_id,
+             "subdomain_id":            itg_data.subdomain_id,
              "form_id":              form_id,
              "rank":                 form_data.rank,
              "geometric_dimension":  form_data.geometric_dimension,
@@ -123,7 +123,7 @@ def initialize_integral_code(ir, prefix, parameters):
     "Representation independent default initialization of code dict for integral from intermediate representation."
     code = {}
     code["restrict"] = parameters["restrict_keyword"]
-    code["classname"] = format["classname " + ir["domain_type"] + "_integral"](prefix, ir["form_id"], ir["domain_id"])
+    code["classname"] = format["classname " + ir["domain_type"] + "_integral"](prefix, ir["form_id"], ir["subdomain_id"])
     code["members"] = ""
     code["constructor"] = format["do nothing"]
     code["constructor_arguments"] = ""

@@ -573,8 +573,8 @@ def _create_sub_foo(ufl_element, element_numbers):
 
 def _create_foo_integral(domain_type, form_data):
     "Compute intermediate representation of create_foo_integral."
-    return [itg_data.domain_id for itg_data in form_data.integral_data
-           if itg_data.domain_type == domain_type and isinstance(itg_data.domain_id, int)]
+    return [itg_data.subdomain_id for itg_data in form_data.integral_data
+           if itg_data.domain_type == domain_type and isinstance(itg_data.subdomain_id, int)]
 
 def _has_foo_integrals(domain_type, form_data):
     "Compute intermediate representation of has_foo_integrals."
@@ -585,7 +585,7 @@ def _has_foo_integrals(domain_type, form_data):
 def _create_default_foo_integral(domain_type, form_data):
     "Compute intermediate representation of create_default_foo_integral."
     itg_data = [itg_data for itg_data in form_data.integral_data
-                if (itg_data.domain_id == "otherwise" and
+                if (itg_data.subdomain_id == "otherwise" and
                     itg_data.domain_type == domain_type)]
     ffc_assert(len(itg_data) in (0,1), "Expecting at most one default integral of each type.")
     return "otherwise" if itg_data else None
