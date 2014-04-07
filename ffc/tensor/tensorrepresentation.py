@@ -56,7 +56,7 @@ def compute_integral_ir(itg_data,
     transform_monomial_form(monomial_form)
 
     # Get some integral properties
-    domain_type = itg_data.domain_type
+    integral_type = itg_data.integral_type
     quadrature_degree = itg_data.metadata["quadrature_degree"]
     quadrature_rule = itg_data.metadata["quadrature_rule"]
 
@@ -68,22 +68,22 @@ def compute_integral_ir(itg_data,
     # Helper to simplify code below
     compute_terms = lambda i, j: _compute_terms(monomial_form,
                                            i, j,
-                                           domain_type,
+                                           integral_type,
                                            quadrature_degree,
                                            quadrature_rule,
                                            cellname,
                                            facet_cellname)
 
     # Compute representation of cell tensor
-    if domain_type == "cell":
+    if integral_type == "cell":
         # Compute sum of tensor representations
         terms = compute_terms(None, None)
 
-    elif domain_type == "exterior_facet":
+    elif integral_type == "exterior_facet":
         # Compute sum of tensor representations for each facet
         terms = [compute_terms(i, None) for i in range(num_facets)]
 
-    elif domain_type == "interior_facet":
+    elif integral_type == "interior_facet":
         # Compute sum of tensor representations for each facet-facet pair
         terms = [[compute_terms(i, j) for j in range(num_facets)] for i in range(num_facets)]
         for i in range(num_facets):
@@ -91,7 +91,7 @@ def compute_integral_ir(itg_data,
                 reorder_entries(terms[i][j])
 
     else:
-        error("Unhandled domain type: " + str(domain_type))
+        error("Unhandled domain type: " + str(integral_type))
 
     # Initialize representation and store terms
     ir = initialize_integral_ir("tensor", itg_data, form_data, form_id)
@@ -101,7 +101,7 @@ def compute_integral_ir(itg_data,
 
 def _compute_terms(monomial_form,
                    facet0, facet1,
-                   domain_type,
+                   integral_type,
                    quadrature_degree,
                    quadrature_rule,
                    cellname,
@@ -117,7 +117,7 @@ def _compute_terms(monomial_form,
 
             # Compute reference tensor
             A0 = ReferenceTensor(monomial,
-                                 domain_type,
+                                 integral_type,
                                  facet0, facet1,
                                  quadrature_degree,
                                  quadrature_rule,

@@ -695,7 +695,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
     def _count_operations(self, expression):
         return operation_count(expression, format)
 
-    def _create_entry_data(self, val, domain_type):
+    def _create_entry_data(self, val, integral_type):
         # Multiply value by weight and determinant
         # Create weight and scale factor.
         weight = format["weight"](self.points)
@@ -703,7 +703,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
             weight += format["component"]("", format["integration points"])
 
         # Update sets of used variables.
-        if domain_type == "point":
+        if integral_type == "point":
             trans_set = set()
             value = format["mul"]([val, weight])
         else:

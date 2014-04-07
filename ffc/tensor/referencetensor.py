@@ -37,7 +37,7 @@ class ReferenceTensor:
 
     def __init__(self,
                  monomial,
-                 domain_type,
+                 integral_type,
                  facet0, facet1,
                  quadrature_order,
                  quadrature_rule,
@@ -47,7 +47,7 @@ class ReferenceTensor:
 
         # Compute reference tensor
         self.A0 = integrate(monomial,
-                            domain_type,
+                            integral_type,
                             facet0, facet1,
                             quadrature_order,
                             quadrature_rule,

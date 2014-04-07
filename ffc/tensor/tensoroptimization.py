@@ -52,23 +52,23 @@ def optimize_integral_ir(ir, parameters):
 
     # Extract data from intermediate representation
     AK = ir["AK"]
-    domain_type = ir["domain_type"]
+    integral_type = ir["integral_type"]
     num_facets = ir["num_facets"]
     rank = ir["rank"]
 
     # Optimize cell integrals
-    if domain_type == "cell":
+    if integral_type == "cell":
         for (k, (A0, GK, dummy)) in enumerate(AK):
             ir["AK"][k] = (A0, GK, _optimize_tensor_contraction(A0.A0, rank))
 
     # Optimize exterior facet integrals
-    elif domain_type == "exterior_facet":
+    elif integral_type == "exterior_facet":
         for i in range(num_facets):
             for (k, (A0, GK, dummy)) in enumerate(AK[i]):
                 ir["AK"][i][k] = (A0, GK, _optimize_tensor_contraction(A0.A0, rank))
 
     # Optimize interior facet integrals
-    elif domain_type == "interior_facet":
+    elif integral_type == "interior_facet":
         for i in range(num_facets):
             for j in range(num_facets):
                 for (k, (A0, GK, dummy)) in enumerate(AK[i][j]):
@@ -76,7 +76,7 @@ def optimize_integral_ir(ir, parameters):
 
     # Unhandled integral type
     else:
-        error("Unhandled integral type: " + str(domain_type))
+        error("Unhandled integral type: " + str(integral_type))
 
     return ir
 

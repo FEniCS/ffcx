@@ -36,25 +36,25 @@ def optimize_integral_ir(ir, parameters):
     parameters = ir["optimise_parameters"]
     if parameters["optimisation"]:
         integrals  =  ir["trans_integrals"]
-        domain_type = ir["domain_type"]
+        integral_type = ir["integral_type"]
         num_facets =  ir["num_facets"]
         num_vertices =  ir["num_vertices"]
         geo_consts =  ir["geo_consts"]
         psi_tables_map =  ir["psi_tables_map"]
-        if domain_type == "cell":
+        if integral_type == "cell":
             info("Optimising expressions for cell integral")
             if parameters["optimisation"] in ("precompute_ip_const", "precompute_basis_const"):
                 _precompute_expressions(integrals, geo_consts, parameters["optimisation"])
             else:
                 _simplify_expression(integrals, geo_consts, psi_tables_map)
-        elif domain_type == "exterior_facet":
+        elif integral_type == "exterior_facet":
             for i in range(num_facets):
                 info("Optimising expressions for facet integral %d" % i)
                 if parameters["optimisation"] in ("precompute_ip_const", "precompute_basis_const"):
                     _precompute_expressions(integrals[i], geo_consts, parameters["optimisation"])
                 else:
                     _simplify_expression(integrals[i], geo_consts, psi_tables_map)
-        elif domain_type == "interior_facet":
+        elif integral_type == "interior_facet":
             for i in range(num_facets):
                 for j in range(num_facets):
                     info("Optimising expressions for facet integral (%d, %d)" % (i, j))
@@ -62,7 +62,7 @@ def optimize_integral_ir(ir, parameters):
                         _precompute_expressions(integrals[i][j], geo_consts,parameters["optimisation"])
                     else:
                         _simplify_expression(integrals[i][j], geo_consts, psi_tables_map)
-        elif domain_type == "point":
+        elif integral_type == "point":
             for i in range(num_vertices):
                 info("Optimising expressions for poin integral %d" % i)
                 if parameters["optimisation"] in ("precompute_ip_const", "precompute_basis_const"):
@@ -70,7 +70,7 @@ def optimize_integral_ir(ir, parameters):
                 else:
                     _simplify_expression(integrals[i], geo_consts, psi_tables_map)
         else:
-            error("Unhandled domain type: " + str(domain_type))
+            error("Unhandled domain type: " + str(integral_type))
 
     return ir
 

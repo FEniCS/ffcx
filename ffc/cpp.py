@@ -567,7 +567,7 @@ def _generate_psi_name(counter, entitytype, entity, component, derivatives, avg)
 
     return name
 
-def _generate_normal(tdim, gdim, domain_type, reference_normal=False):
+def _generate_normal(tdim, gdim, integral_type, reference_normal=False):
     "Generate code for computing normal"
 
     # Choose snippets
@@ -578,47 +578,47 @@ def _generate_normal(tdim, gdim, domain_type, reference_normal=False):
     normal = facet_normal[tdim][gdim]
 
     # Choose restrictions
-    if domain_type == "exterior_facet":
+    if integral_type == "exterior_facet":
         code = direction % {"restriction": "", "facet" : "facet"}
         code += normal % {"direction" : "", "restriction": ""}
-    elif domain_type == "interior_facet":
+    elif integral_type == "interior_facet":
         code = direction % {"restriction": _choose_map["+"], "facet": "facet_0"}
         code += normal % {"direction" : "", "restriction": _choose_map["+"]}
         code += normal % {"direction" : "!", "restriction": _choose_map["-"]}
     else:
-        error("Unsupported domain_type: %s" % str(domain_type))
+        error("Unsupported integral_type: %s" % str(integral_type))
     return code
 
-def _generate_cell_volume(tdim, gdim, domain_type):
+def _generate_cell_volume(tdim, gdim, integral_type):
     "Generate code for computing cell volume."
 
     # Choose snippets
     volume = cell_volume[tdim][gdim]
 
     # Choose restrictions
-    if domain_type in ("cell", "exterior_facet"):
+    if integral_type in ("cell", "exterior_facet"):
         code = volume % {"restriction": ""}
-    elif domain_type == "interior_facet":
+    elif integral_type == "interior_facet":
         code = volume % {"restriction": _choose_map["+"]}
         code += volume % {"restriction": _choose_map["-"]}
     else:
-        error("Unsupported domain_type: %s" % str(domain_type))
+        error("Unsupported integral_type: %s" % str(integral_type))
     return code
 
-def _generate_circumradius(tdim, gdim, domain_type):
+def _generate_circumradius(tdim, gdim, integral_type):
     "Generate code for computing a cell's circumradius."
 
     # Choose snippets
     radius = circumradius[tdim][gdim]
 
     # Choose restrictions
-    if domain_type in ("cell", "exterior_facet", "point", "quadrature"):
+    if integral_type in ("cell", "exterior_facet", "point", "quadrature"):
         code = radius % {"restriction": ""}
-    elif domain_type == "interior_facet":
+    elif integral_type == "interior_facet":
         code = radius % {"restriction": _choose_map["+"]}
         code += radius % {"restriction": _choose_map["-"]}
     else:
-        error("Unsupported domain_type: %s" % str(domain_type))
+        error("Unsupported integral_type: %s" % str(integral_type))
     return code
 
 def _flatten(i, j, m, n):

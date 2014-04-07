@@ -87,7 +87,7 @@ def compute_integral_ir(itg_data,
     # Transform integrals.
     cellname = itg_data.domain.cell().cellname()
     ir["trans_integrals"] = _transform_integrals_by_type(ir, transformer, integrals_dict,
-                                                         itg_data.domain_type, cellname)
+                                                         itg_data.integral_type, cellname)
 
     # Save tables populated by transformer
     ir["name_map"] = transformer.name_map
@@ -112,11 +112,11 @@ def sort_integrals(integrals, default_quadrature_degree, default_quadrature_rule
         return {}
 
     # Get domain properties from first integral, assuming all are the same
-    domain_type  = integrals[0].domain_type()
+    integral_type  = integrals[0].integral_type()
     subdomain_id    = integrals[0].subdomain_id()
     domain_label = integrals[0].domain().label()
     domain       = integrals[0].domain() # FIXME: Is this safe? Get as input?
-    ffc_assert(all(domain_type == itg.domain_type() for itg in integrals),
+    ffc_assert(all(integral_type == itg.integral_type() for itg in integrals),
                "Expecting only integrals of the same type.")
     ffc_assert(all(domain_label == itg.domain().label() for itg in integrals),
                "Expecting only integrals on the same domain.")
@@ -139,53 +139,53 @@ def sort_integrals(integrals, default_quadrature_degree, default_quadrature_rule
     for key, integrands in sorted_integrands.items():
         # Summing integrands in a canonical ordering defined by UFL
         integrand = sorted_expr_sum(integrands)
-        sorted_integrals[key] = Integral(integrand, domain_type, domain, subdomain_id, {}, None)
+        sorted_integrals[key] = Integral(integrand, integral_type, domain, subdomain_id, {}, None)
     return sorted_integrals
 
-def _transform_integrals_by_type(ir, transformer, integrals_dict, domain_type, cellname):
+def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type, cellname):
     num_facets = cellname_to_num_entities[cellname][-2]
     num_vertices = cellname_to_num_entities[cellname][0]
 
-    if domain_type == "cell":
+    if integral_type == "cell":
         # Compute transformed integrals.
         info("Transforming cell integral")
         transformer.update_cell()
-        terms = _transform_integrals(transformer, integrals_dict, domain_type)
+        terms = _transform_integrals(transformer, integrals_dict, integral_type)
 
-    elif domain_type == "exterior_facet":
+    elif integral_type == "exterior_facet":
         # Compute transformed integrals.
         terms = [None]*num_facets
         for i in range(num_facets):
             info("Transforming exterior facet integral %d" % i)
             transformer.update_facets(i, None)
-            terms[i] = _transform_integrals(transformer, integrals_dict, domain_type)
+            terms[i] = _transform_integrals(transformer, integrals_dict, integral_type)
 
-    elif domain_type == "interior_facet":
+    elif integral_type == "interior_facet":
         # Compute transformed integrals.
         terms = [[None]*num_facets for i in range(num_facets)]
         for i in range(num_facets):
             for j in range(num_facets):
                 info("Transforming interior facet integral (%d, %d)" % (i, j))
                 transformer.update_facets(i, j)
-                terms[i][j] = _transform_integrals(transformer, integrals_dict, domain_type)
+                terms[i][j] = _transform_integrals(transformer, integrals_dict, integral_type)
 
-    elif domain_type == "point":
+    elif integral_type == "point":
         # Compute transformed integrals.
         terms = [None]*num_vertices
         for i in range(num_vertices):
             info("Transforming point integral (%d)" % i)
             transformer.update_vertex(i)
-            terms[i] = _transform_integrals(transformer, integrals_dict, domain_type)
+            terms[i] = _transform_integrals(transformer, integrals_dict, integral_type)
     else:
-        error("Unhandled domain type: " + str(domain_type))
+        error("Unhandled domain type: " + str(integral_type))
     return terms
 
-def _transform_integrals(transformer, integrals, domain_type):
+def _transform_integrals(transformer, integrals, integral_type):
     "Transform integrals from UFL expression to quadrature representation."
     transformed_integrals = []
     for point, integral in integrals.items():
         transformer.update_points(point)
-        terms = transformer.generate_terms(integral.integrand(), domain_type)
+        terms = transformer.generate_terms(integral.integrand(), integral_type)
         transformed_integrals.append((point, terms, transformer.function_data,
                                       {}, transformer.coordinate, transformer.conditionals))
     return transformed_integrals

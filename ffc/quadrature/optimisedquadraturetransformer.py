@@ -586,7 +586,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     def _count_operations(self, expression):
         return expression.ops()
 
-    def _create_entry_data(self, val, domain_type):
+    def _create_entry_data(self, val, integral_type):
 #        zero = False
         # Multiply value by weight and determinant
         ACCESS = GEO
@@ -597,7 +597,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         weight = self._create_symbol(weight, ACCESS)[()]
 
         # Create value.
-        if domain_type == "point":
+        if integral_type == "point":
             trans_set = set()
             value = create_product([val, weight])
         else:
