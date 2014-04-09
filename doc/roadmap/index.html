@@ -4,63 +4,29 @@
   <meta charset="utf-8">
 
   <title>Roadmap of uflacs development</title>
+  <meta name="description" content="Roadmap for development of uflacs towards feature completeness.">
+  <meta name="author" content="Martin Sandve Alnæs">
 
   <link rel="stylesheet" href="css/reveal.min.css">
   <link rel="stylesheet" href="css/theme/night.css" id="theme">
+
   <!-- Add support for old IE -->
   <!--[if lt IE 9]>
   <script src="lib/js/html5shiv.js"></script>
   <![endif]-->
+
 </head>
 
 <body>
   <div class="reveal">
     <div class="slides">
 
-<!-- Example slide with code
-      <section>
-
-        <section>
-          <h3>Example slides below</h3>
-        </section>
-
-        <section>
-          <h3>Code example</h3>
-          <pre><code data-trim contenteditable>
-              foo = bar();
-          </code></pre>
-        </section>
-
-        <section>
-          <h3>Point list</h3>
-          <ul>
-            <li>...</li>
-            <li>...</li>
-            <li>...</li>
-          </ul>
-        </section>
-
-        <section>
-          <h3>Image</h3>
-          <img src="images/image.jpg">
-        </section>
-
-        <section>
-          <h3>Image and pointlist (fix alignment)</h3>
-          <div style="text-align: left;">
-            <ul>
-              <li>...</li>
-              <li>...</li>
-              <li>...</li>
-            </ul>
-          </div>
-          <div style="text-align: right;">
-            <img src="images/image.jpg">
-          </div>
-        </section>
-
+      <section id="title-slide">
+        <h2><script>document.write(document.title);</script></h2>
+        <h4>Martin Sandve Alnæs</h4>
+        <h4>10/4 2014</h4>
       </section>
--->
+
 
       <!-- Work in progress, current focus -->
       <section id="wip">
@@ -68,7 +34,8 @@
         <section>
           <h3>Work in progress</h3>
           <ul>
-            <li>...</li>
+            <li>Fix bug in value numbering algorithm with tensor/scalar division.</li>
+            <li>Straighten out restrictions, starting with "Jacobian should be restricted" error.</li>
           </ul>
         </section>
 
@@ -589,7 +556,56 @@ ffc -r uflacs
 
 
       <!-- End of talk -->
+
+
+<!-- Example slides
+      <section>
+
+        <section>
+          <h3>Example slides below</h3>
+        </section>
+
+        <section>
+          <h3>Code example</h3>
+          <pre><code data-trim contenteditable>
+              foo = bar();
+          </code></pre>
+        </section>
+
+        <section>
+          <h3>Point list</h3>
+          <ul>
+            <li>...</li>
+            <li>...</li>
+            <li>...</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>Image</h3>
+          <img src="images/image.jpg">
+        </section>
+
+        <section>
+          <h3>Image and pointlist (fix alignment)</h3>
+          <div style="text-align: left;">
+            <ul>
+              <li>...</li>
+              <li>...</li>
+              <li>...</li>
+            </ul>
+          </div>
+          <div style="text-align: right;">
+            <img src="images/image.jpg">
+          </div>
+        </section>
+
+      </section>
+
+-->
+
     </div>
+
     <script src="lib/js/head.min.js"></script>
     <script src="js/reveal.min.js"></script>
 
@@ -602,9 +618,9 @@ ffc -r uflacs
           //center=false,
 
           math: {
-		    // mathjax: 'http://cdn.mathjax.org/mathjax/latest/MathJax.js',
-			config: 'TeX-AMS_HTML-full'
-		  },
+            // mathjax: 'http://cdn.mathjax.org/mathjax/latest/MathJax.js',
+            config: 'TeX-AMS_HTML-full'
+          },
 
           dependencies: [
             { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
