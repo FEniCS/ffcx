@@ -83,19 +83,19 @@ def test_cpp_formatting_of_geometry():
 def test_cpp_formatting_of_form_arguments():
     # Test form arguments (faked for testing!)
     V = ufl.FiniteElement("CG", ufl.cell2D, 1)
-    f = ufl.Coefficient(V).reconstruct(count=0)
+    f = ufl.Coefficient(V, count=0)
     assert expr2cpp(f) == "w0"
     v = ufl.TestFunction(V)
     assert expr2cpp(v) == "v0"
 
     V = ufl.VectorElement("CG", ufl.cell2D, 1)
-    f = ufl.Coefficient(V).reconstruct(count=1)
+    f = ufl.Coefficient(V, count=1)
     assert expr2cpp(f[0]) == "w0[0]" # Renumbered to 0...
     v = ufl.Argument(V, number=3)
     assert expr2cpp(v[1]) == "v3[1]" # NOT renumbered to 0...
 
     V = ufl.TensorElement("CG", ufl.cell2D, 1)
-    f = ufl.Coefficient(V).reconstruct(count=2)
+    f = ufl.Coefficient(V, count=2)
     assert expr2cpp(f[1,0]) == "w0[1][0]" # Renumbered to 0...
     v = ufl.Argument(V, number=3)
     assert expr2cpp(v[0,1]) == "v3[0][1]" # NOT renumbered to 0...
@@ -139,7 +139,7 @@ def test_cpp_formatting_of_derivatives():
 
     # Test derivatives of target specific test fakes
     V = ufl.FiniteElement("CG", ufl.cell2D, 1)
-    f = ufl.Coefficient(V).reconstruct(count=0)
+    f = ufl.Coefficient(V, count=0)
     assert expr2cpp(f.dx(0)) == "d1_w0[0]"
     v = ufl.Argument(V, number=3)
     assert expr2cpp(v.dx(1)) == "d1_v3[1]" # NOT renumbered to 0...
@@ -210,7 +210,7 @@ def test_cpp_formatting_with_variables():
                     variables={ufl.eq(x, 2): 'c1', ufl.ne(y, 4): 'c2'}) == "c1 || c2 ? 7: 8"
     # we can replace coefficients (formatted by user provided code)
     V = ufl.FiniteElement("CG", ufl.cell2D, 1)
-    f = ufl.Coefficient(V).reconstruct(count=0)
+    f = ufl.Coefficient(V, count=0)
     assert expr2cpp(f, variables={f: 'f'}) == "f"
     assert expr2cpp(f**3, variables={f: 'f'}) == "pow(f, 3)"
     # variables do not replace derivatives of variable expressions

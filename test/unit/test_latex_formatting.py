@@ -78,7 +78,7 @@ def test_latex_formatting_of_form_arguments():
     v = ufl.Argument(V, number=3)
     assert expr2latex(v[1]) == r"\overset{3}{v}_{1}" # NOT renumbered to 0...
 
-    f = ufl.Coefficient(W).reconstruct(count=2)
+    f = ufl.Coefficient(W, count=2)
     assert expr2latex(f[1,0]) == r"\overset{2}{w}_{1 0}" # NOT renumbered to 0...
     v = ufl.Argument(W, number=3)
     assert expr2latex(v[0,1]) == r"\overset{3}{v}_{0 1}" # NOT renumbered to 0...
@@ -120,7 +120,7 @@ def test_latex_formatting_of_derivatives():
 
     # Test derivatives of form arguments
     V = ufl.FiniteElement("CG", ufl.cell2D, 1)
-    f = ufl.Coefficient(V).reconstruct(count=0)
+    f = ufl.Coefficient(V, count=0)
     assert expr2latex(f.dx(0)) == r"\overset{0}{w}_{, 0}"
     v = ufl.Argument(V, number=3)
     assert expr2latex(v.dx(1)) == r"\overset{3}{v}_{, 1}"
@@ -187,7 +187,7 @@ def test_latex_formatting_of_variables():
         assert expr2latex(ufl.conditional(ufl.Or(ufl.eq(x, 2), ufl.ne(y, 4)), 7, 8), variables={ufl.eq(x, 2): 'c1', ufl.ne(y, 4): 'c2'}) == "c1 || c2 ? 7: 8"
     # we can replace coefficients (formatted by user provided code)
     V = ufl.FiniteElement("CG", ufl.cell2D, 1)
-    f = ufl.Coefficient(V).reconstruct(count=0)
+    f = ufl.Coefficient(V, count=0)
     assert expr2latex(f, variables={f: 'f'}) == "f"
     assert expr2latex(f**3, variables={f: 'f'}) == r"{f}^{3}"
     # variables do not replace derivatives of variable expressions

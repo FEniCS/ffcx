@@ -35,18 +35,21 @@ if case == 1:
     M = 1*dx
     L = v*dx
     a = u*v*dx
-if case == 2:
+elif case == 2:
     M = f*dx
     L = f*v*dx
     a = f*u*v*dx
-if case == 3:
+elif case == 3:
     M = grad(f)[0]*dx
     L = grad(v)[0]*dx
     a = dot(grad(u),grad(v))*dx
-if case == 4:
+elif case == 4:
     M = grad(f)[0]*dx
     L = grad(v)[0]*dx
     a = dot(2*grad(u),f*grad(v))*dx
+else:
+    print "Invalid case", case
+    sys.exit(-1)
 
 forms = [M, L, a]
 
