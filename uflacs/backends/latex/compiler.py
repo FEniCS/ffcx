@@ -24,7 +24,7 @@ def compile_expression(expr, prefix):
 
 def format_integral(integral, integrandcode):
     dt = integral.integral_type()
-    did = integral.domain_id()
+    did = integral.subdomain_id()
     if dt == 'cell':
         domain = r"\Omega_{%d}" % (did,)
         dx = Measure._integral_types[dt]
@@ -57,7 +57,7 @@ def compile_form(form, prefix):
 
     # Then we iterate over the integrals
     for data in fd.integral_data:
-        integral_type, domain_id, integrals, metadata = data
+        integral_type, subdomain_id, integrals, metadata = data
         form_integrals = []
         for itg in integrals:
             # Fetch the expression
