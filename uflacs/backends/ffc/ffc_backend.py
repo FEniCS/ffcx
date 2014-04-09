@@ -149,7 +149,7 @@ class FFCAccessBackend(MultiFunction):
         self.ir = ir
         self.parameters = parameters
 
-        self.physical_coordinates_known = self.ir["domain_type"] == "quadrature"
+        self.physical_coordinates_known = self.ir["integral_type"] == "quadrature"
 
         self._current_num_points, = self.ir["uflacs"]["expr_ir"].keys() # TODO: Hack!
 
@@ -313,7 +313,7 @@ class FFCDefinitionsBackend(MultiFunction):
         self.ir = ir
         self.parameters = parameters
 
-        self.physical_coordinates_known = self.ir["domain_type"] == "quadrature"
+        self.physical_coordinates_known = self.ir["integral_type"] == "quadrature"
 
     def get_includes(self):
         return []

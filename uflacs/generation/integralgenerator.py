@@ -28,7 +28,7 @@ class IntegralGenerator(object):
                 nps1, nps2))
 
         # Compute shape of element tensor
-        if self.ir["domain_type"] == "interior_facet":
+        if self.ir["integral_type"] == "interior_facet":
             self._A_shape = [2*n for n in self.ir["prim_idims"]]
         else:
             self._A_shape = self.ir["prim_idims"]
@@ -319,7 +319,7 @@ class IntegralGenerator(object):
         """
         parts = []
 
-        if not self.ir["quadrature_rules"]: # Rather check ir["domain_type"]?
+        if not self.ir["quadrature_rules"]: # Rather check ir["integral_type"]?
             # TODO: Implement for expression support
             error("Expression generation not implemented yet.")
             # TODO: If no integration, assuming we generate an expression, and assign results here

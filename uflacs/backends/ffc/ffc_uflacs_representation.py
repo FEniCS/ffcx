@@ -42,18 +42,18 @@ def compute_tabulate_tensor_ir(psi_tables, entitytype,
         expr = change_to_reference_grad(expr) # TODO: Make this optional depending on backend
 
         # Compute and apply integration scaling factor
-        scale = compute_integrand_scaling_factor(integral.domain(), integral.domain_type())
+        scale = compute_integrand_scaling_factor(integral.domain(), integral.integral_type())
         expr = expr * scale
 
         # Change geometric representation to lower level quantities
-        if integral.domain_type() == "quadrature":
+        if integral.integral_type() == "quadrature":
             physical_coordinates_known = True
         else:
             physical_coordinates_known = False
         expr = change_to_reference_geometry(expr, physical_coordinates_known)
 
         # Restrictions may not be at terminals any more, propagate them again TODO: Skip this in preprocess?
-        if integral.domain_type() == "interior_facet":
+        if integral.integral_type() == "interior_facet":
             expr = propagate_restrictions(expr)
 
         # Build the core uflacs ir of expressions

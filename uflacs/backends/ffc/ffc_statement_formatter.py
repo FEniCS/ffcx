@@ -108,7 +108,7 @@ class FFCStatementFormatter(object):
         # TODO: Make more configurable?
 
         self._dependency_handler = dependency_handler
-        self._domain_type = ir["domain_type"]
+        self._integral_type = ir["integral_type"]
         self._cell = ir["cell"]
         self._entitytype = ir["entitytype"]
         self._argument_space_dimensions = ir["prim_idims"] # FIXME: Dimensions with dS?
@@ -130,7 +130,7 @@ class FFCStatementFormatter(object):
             self._weights = ()
             self._points = ()
 
-        if self._domain_type == "point":
+        if self._integral_type == "point":
             self._enable_coord_loop = False
             self._enable_accumulation = False
             self._enable_quadrature_rule = False
@@ -151,18 +151,18 @@ class FFCStatementFormatter(object):
 
     def define_piecewise_geometry(self):
         code = [langfmt.comment("Computing piecewise constant geometry for %s integral on %s in %dD:" % (
-            self._domain_type, self._cell.cellname(), self._cell.geometric_dimension()))]
+            self._integral_type, self._cell.cellname(), self._cell.geometric_dimension()))]
 
         # TODO: Seed this from terminal data and extend with geometry dependency dict
         needed = {}
 
         # Generate geometry either for single cell or cells on both sides of facet
-        if self._domain_type == "interior_facet":
+        if self._integral_type == "interior_facet":
             restrictions = ("+", "-")
-        elif self._domain_type == "point":
+        elif self._integral_type == "point":
             restrictions = ()
         else:
-            assert self._domain_type in ("cell", "exterior_facet")
+            assert self._integral_type in ("cell", "exterior_facet")
             restrictions = (None,)
         needed["J"] = restrictions
         needed["detJ"] = restrictions
@@ -172,12 +172,12 @@ class FFCStatementFormatter(object):
         needed["det"] = restrictions
 
         # Generate geometry either for single cell or + side cell of facet
-        if self._domain_type == "interior_facet":
+        if self._integral_type == "interior_facet":
             restrictions = ("+",)
-        elif self._domain_type == "point":
+        elif self._integral_type == "point":
             restrictions = ()
         else:
-            assert self._domain_type in ("cell", "exterior_facet")
+            assert self._integral_type in ("cell", "exterior_facet")
             restrictions = (None,)
         needed["facet_area"] = restrictions
         needed["n"] = restrictions # FIXME: normal direction depends on side! Add a - when referencing from - side
@@ -299,7 +299,7 @@ class FFCStatementFormatter(object):
         # format current quadrature point
         point = names.iq if self._num_points > 1 else "0"
 
-        if self._domain_type == "cell":
+        if self._integral_type == "cell":
             # let xi point to current quadrature point
             code += ["const double *%s = &%s[%s*%d];" % (names.xi, names.points, point, tdim)]
 
@@ -308,7 +308,7 @@ class FFCStatementFormatter(object):
 
             det_restrictions = (None,)
 
-        elif self._domain_type == "exterior_facet":
+        elif self._integral_type == "exterior_facet":
             # let xi point to current quadrature point
             code += ["const double *%s = &%s[%s*%d];" % (names.xi, names.points, point, tdim)]
 
@@ -317,7 +317,7 @@ class FFCStatementFormatter(object):
 
             det_restrictions = (None,)
 
-        elif self._domain_type == "interior_facet":
+        elif self._integral_type == "interior_facet":
             # let xi point to current quadrature point (FIXME: On reference facet cell?)
             code += ["const double *%s = &%s[%s*%d];" % (names.xi, names.points, point, tdim)]
 
@@ -326,7 +326,7 @@ class FFCStatementFormatter(object):
 
             det_restrictions = ("+",)
 
-        elif self._domain_type == "point":
+        elif self._integral_type == "point":
             # assuming 'vertex' defined, not arbitrary point integral
             # let x point to specified vertex
             code += ["const double *%s = &%s[%s*%d];" % (names.x, names.vertex_coordinates, names.vertex, tdim)]
@@ -336,7 +336,7 @@ class FFCStatementFormatter(object):
 
             assert not self._enable_accumulation
 
-        elif self._domain_type == "pointset": # FIXME: Add pointset domain type to distinguish between the two
+        elif self._integral_type == "pointset": # FIXME: Add pointset domain type to distinguish between the two
             # multiple point evaluation, points are given
             code += ["const double *%s = &%s[%d * %s];" % (
                 names.x, names.points, gdim, names.iq)] # TODO: Using 'iq' to mean 'current point' in input coordinate loop, is this ok?

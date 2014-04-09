@@ -23,17 +23,17 @@ def compile_expression(expr, prefix):
     return r"\text{TODO: format as LaTeX code: %s}" % str(expr)
 
 def format_integral(integral, integrandcode):
-    dt = integral.domain_type()
+    dt = integral.integral_type()
     did = integral.domain_id()
     if dt == 'cell':
         domain = r"\Omega_{%d}" % (did,)
-        dx = Measure._domain_types[dt]
+        dx = Measure._integral_types[dt]
     elif dt == 'exterior_facet':
         domain = r"\partial\Omega_{%d}" % (did,)
-        dx = Measure._domain_types[dt]
+        dx = Measure._integral_types[dt]
     elif dt == 'interior_facet':
         domain = r"\Gamma_{%d}" % (did,)
-        dx = Measure._domain_types[dt]
+        dx = Measure._integral_types[dt]
     return r"\int_{%s} %s %s" % (domain, integrandcode, dx)
 
 def compile_form(form, prefix):
@@ -57,7 +57,7 @@ def compile_form(form, prefix):
 
     # Then we iterate over the integrals
     for data in fd.integral_data:
-        domain_type, domain_id, integrals, metadata = data
+        integral_type, domain_id, integrals, metadata = data
         form_integrals = []
         for itg in integrals:
             # Fetch the expression
