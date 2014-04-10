@@ -16,14 +16,15 @@ from uflacs.analysis.graph_symbols import (map_list_tensor_symbols,
                                              map_transposed_symbols, get_node_symbols)
 from uflacs.analysis.graph import build_graph, rebuild_expression_from_graph
 from uflacs.analysis.graph_rebuild import rebuild_scalar_e2i
-from uflacs.analysis.graph_ssa import (compute_dependencies,
-                                         mark_active,
-                                         mark_partitions,
-                                         compute_dependency_count,
-                                         invert_dependencies,
-                                         default_cache_score_policy,
-                                         compute_cache_scores,
-                                         allocate_registers)
+from uflacs.analysis.graph_dependencies import (compute_dependencies,
+                                                mark_active,
+                                                mark_image)
+from uflacs.analysis.graph_ssa import (mark_partitions,
+                                       compute_dependency_count,
+                                       invert_dependencies,
+                                       default_cache_score_policy,
+                                       compute_cache_scores,
+                                       allocate_registers)
 
 from operator import eq as equal
 
@@ -35,6 +36,7 @@ def test_graph_algorithm_allocates_correct_number_of_symbols():
     v = Coefficient(V)
     w = Coefficient(W)
 
+    # Testing some scalar expressions
     expr = u
     G = build_graph([expr], DEBUG=0)
     assert G.V_symbols.num_elements == 1
@@ -83,6 +85,37 @@ def test_graph_algorithm_allocates_correct_number_of_symbols():
     G = build_graph([expr], DEBUG=0)
     assert G.V_symbols.num_elements == 21 # 2+4+4+4 + 4+2+1
     assert G.total_unique_symbols == 13 # 2+4+4 + 2+1
+
+    # Testing tensor/scalar
+    expr = as_ufl(2)
+    G = build_graph([expr], DEBUG=0)
+    assert G.V_symbols.num_elements == 1
+    assert G.total_unique_symbols == 1
+
+    expr = v
+    G = build_graph([expr], DEBUG=0)
+    assert G.V_symbols.num_elements == 2
+    assert G.total_unique_symbols == 2
+
+    expr = outer(v,v)
+    G = build_graph([expr], DEBUG=0)
+    assert G.V_symbols.num_elements == 2+4
+    assert G.total_unique_symbols == 2+4
+
+    expr = as_tensor(v[i]*v[j],(i,j))
+    G = build_graph([expr], DEBUG=0)
+    assert G.V_symbols.num_elements == 2+2+2+4+4
+    assert G.total_unique_symbols == 2+4
+
+    expr = as_tensor(v[i]*v[j]/2,(i,j))
+    G = build_graph([expr], DEBUG=0)
+    assert G.V_symbols.num_elements == 2+2+2+4+4+4+1
+    assert G.total_unique_symbols == 2+1+4+4
+
+    expr = outer(v,v)/2 # converted to the tensor notation above
+    G = build_graph([expr], DEBUG=0)
+    assert G.V_symbols.num_elements == 2+2+2+4+4+4+1
+    assert G.total_unique_symbols == 2+1+4+4
 
 def test_rebuild_expression_from_graph_basic_scalar_expressions():
     U = FiniteElement("CG", cell2D, 1)
@@ -262,4 +295,3 @@ def test_flattening_of_tensor_valued_expression_symbols():
     opsyms = ()
     res = flatten_expression_symbols(v, vsyms, opsyms)
     assert res == [(v, 0, ())]
-

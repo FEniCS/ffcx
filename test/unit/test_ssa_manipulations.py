@@ -16,14 +16,15 @@ from uflacs.analysis.graph_symbols import (map_list_tensor_symbols,
                                              map_transposed_symbols, get_node_symbols)
 from uflacs.analysis.graph import build_graph, rebuild_expression_from_graph
 from uflacs.analysis.graph_rebuild import rebuild_scalar_e2i
-from uflacs.analysis.graph_ssa import (compute_dependencies,
-                                         mark_active,
-                                         mark_partitions,
-                                         compute_dependency_count,
-                                         invert_dependencies,
-                                         default_cache_score_policy,
-                                         compute_cache_scores,
-                                         allocate_registers)
+from uflacs.analysis.graph_dependencies import (compute_dependencies,
+                                                mark_active,
+                                                mark_image)
+from uflacs.analysis.graph_ssa import (mark_partitions,
+                                       compute_dependency_count,
+                                       invert_dependencies,
+                                       default_cache_score_policy,
+                                       compute_cache_scores,
+                                       allocate_registers)
 
 def test_dependency_construction():
     cell = cell2D
