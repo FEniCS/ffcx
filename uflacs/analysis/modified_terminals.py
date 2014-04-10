@@ -13,7 +13,7 @@ from uflacs.elementtables.table_utils import flatten_component
 
 #########################################################################################
 # This is THE definition of modifier types, try to use this everywhere
-terminal_modifier_types = (ReferenceGrad, Grad, Restricted, Indexed, FacetAvg, CellAvg)
+terminal_modifier_types = (Indexed, ReferenceGrad, Grad, Restricted, FacetAvg, CellAvg)
 #########################################################################################
 
 
@@ -79,7 +79,6 @@ class ModifiedTerminal(object):
         s += ["component:          {0}".format(self.component)]
         s += ["restriction:        {0}".format(self.restriction)]
         return '\n'.join(s)
-
 
 
 def is_modified_terminal(v):

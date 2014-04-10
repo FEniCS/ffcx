@@ -193,59 +193,107 @@ def test_rebuild_expression_from_graph_basic_tensor_expressions():
     W = TensorElement("CG", cell2D, 1)
     u = Coefficient(U)
     v = Coefficient(V)
+    vb = Coefficient(V)
     w = Coefficient(W)
+    wb = Coefficient(W)
 
+    # Single vector
     v1 = v
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
     assert as_vector((v1[0], v1[1])) == v2
 
+    # Single tensor
     v1 = w
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
     assert as_vector((v1[0,0],v1[0,1],v1[1,0],v1[1,1])) == v2
 
+    # Vector sum
     v1 = v+v
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
     ve = as_vector((2*v[0],2*v[1]))
-    if 0:
-        print
-        print ve
-        print v2
-        print
     assert ve == v2
 
+    v1 = v+vb
+    G = build_graph([v1])
+    v2 = rebuild_expression_from_graph(G)
+    ve = as_vector((v[0]+vb[0],v[1]+vb[1]))
+    assert ve == v2
+
+    # Tensor sum
     v1 = w+w
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
     ve = as_vector((2*w[0,0],2*w[0,1],2*w[1,0],2*w[1,1]))
     assert ve == v2
 
+    v1 = w+wb
+    G = build_graph([v1])
+    v2 = rebuild_expression_from_graph(G)
+    ve = as_vector((w[0,0]+wb[0,0],w[0,1]+wb[0,1],w[1,0]+wb[1,0],w[1,1]+wb[1,1]))
+    assert ve == v2
+
+    # Scalar-vector product
     v1 = u*v
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
     ve = as_vector((u*v[0],u*v[1]))
     assert ve == v2
 
+    # Scalar-tensor product
     v1 = u*w
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
     ve = as_vector((u*w[0,0],u*w[0,1],u*w[1,0],u*w[1,1]))
     assert ve == v2
 
+    # Vector-vector index based inner product
     v1 = v[i]*v[i]
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
     ve = v[0]*v[0] + v[1]*v[1]
     assert ve == v2
 
+    v1 = v[i]*vb[i]
+    G = build_graph([v1])
+    v2 = rebuild_expression_from_graph(G)
+    ve = v[0]*vb[0] + v[1]*vb[1]
+    assert ve == v2
+
+    # Tensor-tensor index based transposed inner product
     v1 = w[i,j]*w[j,i]
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
     ve = (w[0,0]*w[0,0] + w[0,1]*w[1,0]) \
        + (w[1,0]*w[0,1] + w[1,1]*w[1,1])
     assert ve == v2
+
+    v1 = w[i,j]*wb[j,i]
+    G = build_graph([v1])
+    v2 = rebuild_expression_from_graph(G)
+    ve = (w[0,0]*wb[0,0] + w[0,1]*wb[1,0]) \
+       + (w[1,0]*wb[0,1] + w[1,1]*wb[1,1])
+    assert ve == v2
+
+    # Vector/scalar division
+    v1 = v/u
+    G = build_graph([v1])
+    v2 = rebuild_expression_from_graph(G)
+    ve = as_vector((v[0]/u,v[1]/u))
+    assert ve == v2
+
+    # Tensor/scalar division
+    v1 = w/u
+    G = build_graph([v1])
+    v2 = rebuild_expression_from_graph(G)
+    ve = as_vector((w[0,0]/u,w[0,1]/u,w[1,0]/u,w[1,1]/u))
+    assert ve == v2
+
+    # FIXME: Write more tests to discover bugs in ReconstructScalarSubexpressions.element_wise*
+
+    #assert False
 
 # Compounds not implemented, not expecting to do this anytime soon
 def xtest_rebuild_expression_from_graph_on_compounds():
