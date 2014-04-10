@@ -12,10 +12,7 @@ from ufl.constantvalue import as_ufl
 from ufl.algorithms import preprocess_expression, expand_indices
 
 import uflacs
-from uflacs.codeutils.cpp_format import (CppLiteralFormatterRules,
-                                         CppArithmeticFormatterRules,
-                                         CppCmathFormatterRules,
-                                         CppConditionalFormatterRules)
+from uflacs.codeutils.cpp_expr_formatting_rules import CppFormattingRules
 from uflacs.analysis.dependency_handler import DependencyHandler
 from uflacs.codeutils.expr_formatter import ExprFormatter
 from uflacs.backends.toy.toy_language_formatter import ToyCppLanguageFormatter

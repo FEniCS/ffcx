@@ -39,20 +39,23 @@ class CppFormattingRules(object):
 
     # === Formatting rules for literal constants ===
 
-    def constant_value(self, e, mt):
+    def constant_value(self, e, mt=None):
         error("Missing C++ rule for constant value type {0}.".format(e._uflclass))
 
-    def zero(self, e, mt):
+    def zero(self, e, mt=None):
         return "0"
 
-    def int_value(self, e, mt):
-        return "{0}".format(int(e))
-
-    def float_value(self, e, mt):
-        # Using configurable precision parameter from ufl
-        if mt.global_derivatives or mt.local_derivatives:
-            return self.zero(None)
+    def int_value(self, e, mt=None):
+        if mt is not None and (mt.global_derivatives or mt.local_derivatives):
+            return "0"
         else:
+            return "{0}".format(int(e))
+
+    def float_value(self, e, mt=None):
+        if mt is not None and (mt.global_derivatives or mt.local_derivatives):
+            return "0"
+        else:
+            # Using configurable precision parameter from ufl
             return ufl.constantvalue.format_float(float(e))
 
     def identity(self, o, mt):
@@ -93,7 +96,8 @@ class CppFormattingRules(object):
         return self._cmath("exp", op)
 
     def abs(self, o, op):
-        return "fabs({0})".format(op)
+        #return "fabs({0})".format(op) # C version
+        return self._cmath("abs", op) # C++ stl version
 
     def cos(self, o, op):
         return self._cmath("cos", op)
