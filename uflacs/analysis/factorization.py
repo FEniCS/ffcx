@@ -5,6 +5,7 @@ from ufl.classes import Terminal, Indexed, Grad, Restricted, FacetAvg, CellAvg, 
 from uflacs.utils.log import uflacs_assert
 from uflacs.utils.str_utils import format_enumerated_sequence, format_mapping
 
+from uflacs.analysis.datastructures import int_array, object_array
 from uflacs.analysis.graph_dependencies import compute_dependencies
 from uflacs.analysis.modified_terminals import analyse_modified_terminal2, strip_modified_terminal
 
@@ -65,6 +66,166 @@ def build_argument_dependencies(dependencies, arg_indices):
         A[i] = sorted(argdeps)
     return A
 
+
+
+def add_to_fv(expr, FV, e2fi):
+    fi = e2fi.get(expr)
+    if fi is None:
+        fi = len(e2fi)
+        FV.append(expr)
+        e2fi[expr] = fi
+    return fi
+
+# Reuse these empty objects where appropriate to save memory
+noargs = {}
+
+def handle_modified_terminal(i, v, F, FV, e2fi, arg_indices, AV, sv2av):
+    # v is a modified terminal...
+    if i in arg_indices:
+        # ... a modified Argument
+        argkey = (i,)
+        fi = None
+
+        # Adding 1 as an expression allows avoiding special representation by representing "v" as "1*v"
+        one = add_to_fv(as_ufl(1.0), FV, e2fi)
+        factors = { argkey: one }
+
+        assert AV[sv2av[i]] == v
+    else:
+        # ... record a non-argument modified terminal
+        factors = noargs
+        fi = add_to_fv(v, FV, e2fi)
+    return fi, factors
+
+def handle_sum(i, v, deps, F, FV, sv2fv, e2fi):
+    uflacs_assert(len(deps) == 2, "Assuming binary sum here. This can be fixed if needed.")
+    fac0 = F[deps[0]]
+    fac1 = F[deps[1]]
+
+    # This assertion would fail for combined matrix+vector factorization
+    if 0 and len(fac0) != len(fac1):
+        print '\n'*5
+        print i, deps
+        print str(v)
+        print repr(v)
+        print str(v.operands()[0])
+        print str(v.operands()[1])
+        print fac0
+        print fac1
+        print '\n'*5
+
+    argkeys = sorted(set(fac0.keys()) | set(fac1.keys()))
+
+    if argkeys: # f*arg + g*arg = (f+g)*arg
+        keylen = len(argkeys[0])
+        fi = None
+        factors = {}
+        for argkey in argkeys:
+            uflacs_assert(len(argkey) == keylen, "Expecting equal argument rank terms among summands.")
+
+            fi0 = fac0.get(argkey)
+            fi1 = fac1.get(argkey)
+            if fi0 is None:
+                fisum = fi1
+            elif fi1 is None:
+                fisum = fi0
+            else:
+                f0 = FV[fi0]
+                f1 = FV[fi1]
+                fisum = add_to_fv(f0 + f1, FV, e2fi)
+            factors[argkey] = fisum
+
+    else: # non-arg + non-arg
+        factors = noargs
+        fi = add_to_fv(v, FV, e2fi)
+
+    return fi, factors
+
+def handle_product(i, v, deps, F, FV, sv2fv, e2fi):
+    uflacs_assert(len(deps) == 2, "Assuming binary product here. This can be fixed if needed.")
+    fac0 = F[deps[0]]
+    fac1 = F[deps[1]]
+
+    if not fac0 and not fac1: # non-arg * non-arg
+        # Record non-argument product
+        factors = noargs
+        f0 = FV[sv2fv[deps[0]]]
+        f1 = FV[sv2fv[deps[1]]]
+        assert f1*f0 == v
+        fi = add_to_fv(v, FV, e2fi)
+        assert FV[fi] == v
+        if 0:
+            print "NON*NON:", i, str(v)
+            print "        ", fi
+            print "        ", factors
+
+    elif not fac0: # non-arg * arg
+        f0 = FV[sv2fv[deps[0]]]
+        fi = None
+        factors = {}
+        for k1,fi1 in fac1.items():
+            # Record products of non-arg operand with each factor of arg-dependent operand
+            factors[k1] = add_to_fv(f0*FV[fi1], FV, e2fi)
+        if 0:
+            print "NON*ARG:", i, str(v)
+            print "        ", factors
+
+    elif not fac1: # arg * non-arg
+        f1 = FV[sv2fv[deps[1]]]
+        fi = None
+        factors = {}
+        for k0,fi0 in fac0.items():
+            # Record products of non-arg operand with each factor of arg-dependent operand
+            factors[k0] = add_to_fv(f1*FV[fi0], FV, e2fi)
+        if 0:
+            print "ARG*NON:", i, str(v)
+            print "        ", factors
+
+    else: # arg * arg
+        fi = None
+        factors = {}
+        for k0,fi0 in fac0.items():
+            for k1,fi1 in fac1.items():
+                # Record products of each factor of arg-dependent operand
+                argkey = tuple(sorted(k0+k1)) # sort key for canonical representation
+                factors[argkey] = add_to_fv(FV[fi0]*FV[fi1], FV, e2fi)
+        if 0:
+            print "ARG*ARG:", i, str(v)
+            print "        ", factors
+    return fi, factors
+
+def handle_division(i, v, deps, F, FV, sv2fv, e2fi):
+    fac0 = F[deps[0]]
+    fac1 = F[deps[1]]
+    assert not fac1, "Cannot divide by arguments."
+
+    if fac0: # arg / non-arg
+        f1 = FV[sv2fv[deps[1]]]
+        fi = None
+        factors = {}
+        for k0,fi0 in fac0.items():
+            # Record products of non-arg operand with each factor of arg-dependent operand
+            factors[k0] = add_to_fv(f1 / FV[fi0], FV, e2fi)
+
+    else: # non-arg / non-arg
+        # Record non-argument subexpression
+        fi = add_to_fv(v, FV, e2fi)
+        factors = noargs
+
+    return fi, factors
+
+def handle_operator(i, v, deps, F, FV, sv2fv, e2fi):
+    # TODO: Check something?
+    facs = [F[deps[j]] for j in range(len(deps))]
+    if any(facs):
+        # TODO: Can this happen?
+        error("Assuming that a {0} cannot be applied to arguments. If this is wrong please report a bug..".format(type(v)))
+    else:
+        # Record non-argument subexpression
+        fi = add_to_fv(v, FV, e2fi)
+        factors = noargs
+    return fi, factors
+
 def collect_argument_factors(SV, dependencies, arg_indices):
     """Factorizes a scalar expression graph w.r.t. scalar Argument
     components.
@@ -101,9 +262,6 @@ def collect_argument_factors(SV, dependencies, arg_indices):
     # TODO: Instead of argdeps being a list of argument vertex indices v (indirectly) depends on,
     #       it should be a mapping { combo: factors } to handle e.g. (u + fu')(gv + v')
 
-    # Reuse these empty objects where appropriate to save memory
-    noargs = {}
-
     # Extract argument component subgraph
     AV = [SV[j] for j in arg_indices]
     av2sv = arg_indices
@@ -114,162 +272,33 @@ def collect_argument_factors(SV, dependencies, arg_indices):
     # Data structure for building non-argument factors
     FV = []
     e2fi = {}
-    def add_to_fv(expr):
-        fi = e2fi.get(expr)
-        if fi is None:
-            fi = len(e2fi)
-            FV.append(expr)
-            e2fi[expr] = fi
-        return fi
 
-    # Adding 1 as an expression allows avoiding special representation by representing "v" as "1*v"
-    if arg_indices:
-        nocoeffs = add_to_fv(as_ufl(1.0))
     # Hack to later build dependencies for the FV entries that change K*K -> K**2
-    two = add_to_fv(as_ufl(2))
+    two = add_to_fv(as_ufl(2), FV, e2fi)
 
     # Intermediate factorization for each vertex in SV on the format
-    # F[i] = None # if SV[i] does not depend in arguments
+    # F[i] = None # if SV[i] does not depend on arguments
     # F[i] = { argkey: fi } # if SV[i] does depend on arguments, where:
     #   FV[fi] is the expression SV[i] with arguments factored out
     #   argkey is a tuple with indices into SV for each of the argument components SV[i] depends on
     # F[i] = { argkey1: fi1, argkey2: fi2, ... } # if SV[i] is a linear combination of multiple argkey configurations
-    F = [None]*len(SV) # TODO: Use array
-    sv2fv = [None]*len(SV) # TODO: Use array
+    F = object_array(len(SV)) # TODO: Use some CRS based format?
+    sv2fv = int_array(len(SV))
 
     # Factorize each subexpression in order:
     for i,v in enumerate(SV):
         deps = dependencies[i]
-        fi = None
 
         if not len(deps):
-            # v is a modified terminal...
-            if i in arg_indices:
-                # ... a modified Argument
-                argkey = (i,)
-                factors = { argkey: nocoeffs }
-                assert AV[sv2av[i]] == v
-            else:
-                # ... record a non-argument modified terminal
-                factors = noargs
-                fi = add_to_fv(v)
-
-        elif isinstance(v, Sum): # FIXME: Test test test!
-            uflacs_assert(len(deps) == 2, "Assuming binary sum here. This can be fixed if needed.")
-            fac0 = F[deps[0]]
-            fac1 = F[deps[1]]
-
-            # This assertion would fail for combined matrix+vector factorization
-            if 0 and len(fac0) != len(fac1):
-                print '\n'*5
-                print i, deps
-                print str(v)
-                print repr(v)
-                print str(v.operands()[0])
-                print str(v.operands()[1])
-                print fac0
-                print fac1
-                print '\n'*5
-
-            argkeys = sorted(set(fac0.keys()) | set(fac1.keys()))
-
-            if argkeys: # f*arg + g*arg = (f+g)*arg
-                keylen = len(argkeys[0])
-
-                factors = {}
-                for argkey in argkeys:
-                    uflacs_assert(len(argkey) == keylen, "Expecting equal argument rank terms among summands.")
-
-                    fi0 = fac0.get(argkey)
-                    fi1 = fac1.get(argkey)
-                    if fi0 is None:
-                        fisum = fi1
-                    elif fi1 is None:
-                        fisum = fi0
-                    else:
-                        f0 = FV[fi0]
-                        f1 = FV[fi1]
-                        fisum = add_to_fv(f0 + f1)
-                    factors[argkey] = fisum
-            else: # non-arg + non-arg
-                factors = noargs
-                fi = add_to_fv(v)
-
-        elif isinstance(v, Product): # FIXME: Test test test!
-            uflacs_assert(len(deps) == 2, "Assuming binary product here. This can be fixed if needed.")
-            fac0 = F[deps[0]]
-            fac1 = F[deps[1]]
-
-            if not fac0 and not fac1: # non-arg * non-arg
-                # Record non-argument product
-                factors = noargs
-                f0 = FV[sv2fv[deps[0]]]
-                f1 = FV[sv2fv[deps[1]]]
-                assert f1*f0 == v
-                fi = add_to_fv(v)
-                assert FV[fi] == v
-                if 0:
-                    print "NON*NON:", i, str(v)
-                    print "        ", fi
-                    print "        ", factors
-
-            elif not fac0: # non-arg * arg
-                f0 = FV[sv2fv[deps[0]]]
-                factors = {}
-                for k1,fi1 in fac1.items():
-                    # Record products of non-arg operand with each factor of arg-dependent operand
-                    factors[k1] = add_to_fv(f0*FV[fi1])
-                if 0:
-                    print "NON*ARG:", i, str(v)
-                    print "        ", factors
-
-            elif not fac1: # arg * non-arg
-                f1 = FV[sv2fv[deps[1]]]
-                factors = {}
-                for k0,fi0 in fac0.items():
-                    # Record products of non-arg operand with each factor of arg-dependent operand
-                    factors[k0] = add_to_fv(f1*FV[fi0])
-                if 0:
-                    print "ARG*NON:", i, str(v)
-                    print "        ", factors
-
-            else: # arg * arg
-                factors = {}
-                for k0,fi0 in fac0.items():
-                    for k1,fi1 in fac1.items():
-                        # Record products of each factor of arg-dependent operand
-                        argkey = tuple(sorted(k0+k1)) # sort key for canonical representation
-                        factors[argkey] = add_to_fv(FV[fi0]*FV[fi1])
-                if 0:
-                    print "ARG*ARG:", i, str(v)
-                    print "        ", factors
-
+            fi, factors = handle_modified_terminal(i, v, F, FV, e2fi, arg_indices, AV, sv2av)
+        elif isinstance(v, Sum):
+            fi, factors = handle_sum(i, v, deps, F, FV, sv2fv, e2fi)
+        elif isinstance(v, Product):
+            fi, factors = handle_product(i, v, deps, F, FV, sv2fv, e2fi)
         elif isinstance(v, Division):
-            fac0 = F[deps[0]]
-            fac1 = F[deps[1]]
-            assert not fac1, "Cannot divide by arguments."
-            if fac0: # arg / non-arg
-                f1 = FV[sv2fv[deps[1]]]
-                factors = {}
-                for k0,fi0 in fac0.items():
-                    # Record products of non-arg operand with each factor of arg-dependent operand
-                    factors[k0] = add_to_fv(f1 / FV[fi0])
-
-            else:
-                # Record non-argument subexpression
-                fi = add_to_fv(v)
-                factors = noargs
-
-        else:
-            # TODO: Check something?
-            facs = [F[deps[j]] for j in range(len(deps))]
-            if any(facs):
-                # TODO: Can this happen? Assert and proper message at least.
-                notimplemented
-            else:
-                # Record non-argument subexpression
-                fi = add_to_fv(v)
-                factors = noargs
+            fi, factors = handle_division(i, v, deps, F, FV, sv2fv, e2fi)
+        else: # All other operators
+            fi, factors = handle_operator(i, v, deps, F, FV, sv2fv, e2fi)
 
         #print 'fac:', i, factors
         if fi is not None:
