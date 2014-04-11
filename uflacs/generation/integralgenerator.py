@@ -11,7 +11,6 @@ from uflacs.codeutils.format_code import (format_code, Indented, Block, Comment,
                                           Assign, AssignAdd,
                                           Product)
 from uflacs.codeutils.indexmapping import IndexMapping, AxisMapping
-from uflacs.geometry.default_names import names
 from uflacs.codeutils.expr_formatter2 import ExprFormatter2
 
 
@@ -86,8 +85,8 @@ class IntegralGenerator(object):
             # Size of quadrature points depends on context, assume this is correct:
             pdim = len(points[0])
 
-            wname = "%s%d" % (names.weights, num_points)
-            pname = "%s%d" % (names.points, num_points)
+            wname = self.backend_access.weights_array_name(num_points)
+            pname = self.backend_access.points_array_name(num_points)
 
             weights = [self.backend_access.precision_float(w) for w in weights]
             points = [self.backend_access.precision_float(x) for p in points for x in p]
@@ -116,16 +115,17 @@ class IntegralGenerator(object):
     def generate_tensor_reset(self):
         "Generate statements for resetting the element tensor to zero."
 
-        # Compute tensor size
-        A_size = product(self._A_shape)
-
-        # TODO: Make this an ast primitive?
+        # Could move this to codeutils or backend
         def memzero(ptrname, size):
             return "memset({ptrname}, 0, {size} * sizeof(*{ptrname}));".format(ptrname=ptrname, size=size)
 
+        # Compute tensor size
+        A_size = product(self._A_shape)
+        A = self.backend_access.element_tensor_name()
+
         parts = []
         parts += [Comment("Reset element tensor")]
-        parts += [memzero(names.A, A_size)]
+        parts += [memzero(A, A_size)]
         parts += [""]
         return parts
 
@@ -134,7 +134,7 @@ class IntegralGenerator(object):
         parts = []
         for num_points in sorted(self.ir["uflacs"]["expr_ir"]):
             body = self.generate_quadrature_body(num_points)
-            parts += [ForRange(names.iq, 0, num_points, body=body)]
+            parts += [ForRange(self.backend_access.quadrature_loop_index(), 0, num_points, body=body)]
         return parts
 
     def generate_quadrature_body(self, num_points):
@@ -186,7 +186,7 @@ class IntegralGenerator(object):
             body += self.generate_quadrature_body_dofblocks(num_points, dofblock)
 
             # Wrap setup, subloops, and accumulation in a loop for this level
-            idof = "{name}{num}".format(name=names.ia, num=iarg)
+            idof = self.backend_access.argument_loop_index(iarg)
             parts += [ForRange(idof, dofrange[0], dofrange[1], body=body)]
         return parts
 
@@ -274,7 +274,7 @@ class IntegralGenerator(object):
         MATR = expr_ir["modified_argument_table_ranges"]
         MA = expr_ir["modified_arguments"]
 
-        idofs = ["{0}{1}".format(names.ia, i) for i in range(self.ir["rank"])]
+        idofs = [self.backend_access.argument_loop_index(i) for i in range(self.ir["rank"])]
 
         # Find the blocks to build: (TODO: This is rather awkward, having to rediscover these relations here)
         arguments_and_factors = sorted(expr_ir["argument_factorization"].items(), key=lambda x: x[0])
@@ -284,10 +284,11 @@ class IntegralGenerator(object):
 
             factors = []
 
-            # Get factor expression # TODO: Omit f if it's 1 or 1.0
+            # Get factor expression
             f = V[factor_index]
             fcode = self.expr_formatter.visit(f)
-            factors += [fcode]
+            if fcode not in ("1", "1.0"): # TODO: Nicer way to do this
+                factors += [fcode]
 
             # Get table names
             argfactors = []
@@ -302,10 +303,10 @@ class IntegralGenerator(object):
                 dofdims = zip(idofs, self._A_shape)
                 im = IndexMapping(dict((idof, idim) for idof, idim in dofdims))
                 am = AxisMapping(im, [idofs])
-                A_ii, = am.format_index_expressions()
+                A_ii, = am.format_index_expressions() # TODO: Integrate this with other code utils
             else:
                 A_ii = 0
-            A_access = ArrayAccess(names.A, A_ii)
+            A_access = self.backend_access.element_tensor_entry(A_ii)
 
             # Emit assignment
             parts += [AssignAdd(A_access, Product(factors))]
@@ -382,21 +383,3 @@ class IntegralGenerator(object):
             #    A[i0*n1 + i1] += (fetables[0][iq][i0-dofblock0[0]]
             #                    * fetables[1][iq][i1-dofblock1[0]]) * V[factor] * weight;
             #
-
-
-
-
-class CellIntegralGenerator(IntegralGenerator):
-    pass
-
-class ExteriorFacetIntegralGenerator(IntegralGenerator):
-    pass
-
-class InteriorFacetIntegralGenerator(IntegralGenerator):
-    pass
-
-class DiracIntegralGenerator(IntegralGenerator):
-    pass
-
-class QuadratureIntegralGenerator(IntegralGenerator):
-    pass

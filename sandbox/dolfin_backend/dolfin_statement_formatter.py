@@ -12,9 +12,6 @@ class DolfinExpressionStatementFormatter(object):
     def __init__(self, dependency_handler, ir):
         self._dependency_handler = dependency_handler
 
-        # Configuration options for statement formatting
-        self._output_basename = "values"
-
     def define_registers(self, num_registers):
         return ['double s[%d];' % num_registers]
 
@@ -57,18 +54,6 @@ class DolfinExpressionStatementFormatter(object):
                 code += [tdecl, teval]
         return code
 
-    def define_coord_loop(self):
-        # When evaluating expressions in a point, there is no coordinate loop
-        return None
-
-    def define_coord_vars(self):
-        # Since x is an input argument to Expression, nothing to do here.
-        return []
-
-    def define_coord_dependent_geometry(self):
-        # No coordinate dependent geometry supported here.
-        return []
-
     def define_coord_dependent_coefficients(self):
         # FIXME: Compute x dependent coefficients.
         evaluated = set()
@@ -104,17 +89,5 @@ class DolfinExpressionStatementFormatter(object):
                 code += [tdecl, teval]
         return code
 
-    def define_argument_for_loop(self, argument_count):
-        return None
-
-    def define_argument_loop_vars(self, argument_count):
-        return []
-
-    def accumulation_scaling_factor(self):
-        return None
-
-    def define_output_variables_reset(self):
-        return []
-
     def output_variable_names(self, num_variables):
-        return ['%s[%d]' % (self._output_basename, i,) for i in xrange(num_variables)]
+        return ['%s[%d]' % ("values", i,) for i in xrange(num_variables)]

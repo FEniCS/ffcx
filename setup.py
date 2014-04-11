@@ -25,10 +25,10 @@ packages = [
     "uflacs.generation",
     "uflacs.representation",
     "uflacs.backends",
-    "uflacs.backends.toy",
-    "uflacs.backends.latex",
+    #"uflacs.backends.toy",
+    #"uflacs.backends.latex",
     "uflacs.backends.ffc",
-    "uflacs.backends.dolfin",
+    #"uflacs.backends.dolfin",
     ]
 
 

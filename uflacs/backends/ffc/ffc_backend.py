@@ -1,5 +1,6 @@
 """
 FIXME:
+- Fix elementwise bugs in graph_rebuild
 - Fix FacetNormal (sign?)
 - Restrict Jacobian etc. in ufl change_to_reference
 - Various restriction issues, check all quantities
@@ -19,7 +20,6 @@ from ufl.algorithms import MultiFunction
 
 from uflacs.utils.log import uflacs_assert, warning, error
 
-from uflacs.geometry.default_names import names
 from uflacs.codeutils.cpp_statement_formatting_rules import CppStatementFormattingRules
 langfmt = CppStatementFormattingRules()
 
@@ -31,30 +31,57 @@ from uflacs.codeutils.format_code import (format_code,
                                           Add, Sub, Mul,
                                           Sum,)
 
-
-# TODO: The organization of code utilities is a bit messy...
-#from uflacs.backends.ffc.ffc_statement_formatter import format_element_table_access
-#from uflacs.elementtables.table_utils import derivative_listing_to_counts
 from uflacs.elementtables.table_utils import flatten_component
 
 
-# TODO: Insert in ufc_geometry or ufc_cells header
-ufc_reference_facet_jacobian_tables = """
-/// --- Jacobians of reference facet cell to reference cell coordinate mappings by UFC conventions ---
+class Names: # TODO: This is not used much anymore, integrate in backend class
+    def __init__(self):
+        # Topology argument names
+        self.vertex = "vertex"
+        self.facet = "facet"
 
-static const double triangle_reference_facet_jacobian[3][2][1] = {
-  { {-1.0}, { 1.0} },
-  { { 0.0}, { 1.0} },
-  { { 1.0}, { 0.0} },
-  };
+        # Geometry names
+        self.vertex_coordinates = "vertex_coordinates"
+        self.xi = "xi"
+        self.x = "x"
+        self.J = "J"
+        self.K = "K"
+        self.detJ = "detJ"
+        self.det = "det"
 
-static const double tetrahedron_reference_facet_jacobian[4][3][2] = {
-  { {-1.0, -1.0}, {1.0, 0.0}, {0.0, 1.0} },
-  { { 0.0,  0.0}, {1.0, 0.0}, {0.0, 1.0} },
-  { { 1.0,  0.0}, {0.0, 0.0}, {0.0, 1.0} },
-  { { 1.0,  0.0}, {0.0, 1.0}, {0.0, 0.0} },
-  };
-"""
+        # Quadrature rule
+        self.points = "points"
+        self.weights = "weights"
+
+        # Quadrature temps
+        self.qw = "qw"
+        self.D = "D"
+
+        # (Base)name for intermediate registers
+        self.s = "s"
+
+        # Element tensor
+        self.A = "A"
+
+        # Coefficient dofs array
+        self.w = "w"
+
+        # Basenames for function components
+        self.wbase = "w"
+        self.vbase = "v"
+        self.dwbase = "dw"
+        self.dvbase = "dv"
+
+        # Loop indices
+        self.iq = "iq"   # Quadrature loop
+        self.ic = "ic"   # Coefficient accumulation loop
+        self.ia = "ia"   # Argument dof loop
+        self.ild = "ild" # Local derivative accumulation loop
+
+        # Rules, make functions?
+        self.restriction_postfix = { "+": "_0", "-": "_1", None: "" } # TODO: Use this wherever we need it?
+
+names = Names()
 
 
 def format_entity_name(entitytype, r):
@@ -113,6 +140,8 @@ def ufc_restriction_postfix(restriction):
         res = ""
     return res
 
+#from uflacs.backends.ffc.ffc_statement_formatter import format_element_table_access
+#from uflacs.elementtables.table_utils import derivative_listing_to_counts
 #def generate_element_table_access(mt):
 #    # FIXME: See  format_element_table_access  get_element_table_data
 #    #entity = format_entity_name(self.ir["entitytype"], mt.restriction)
@@ -146,19 +175,44 @@ class FFCAccessBackend(MultiFunction):
     """FFC specific cpp formatter class."""
     def __init__(self, ir, parameters):
         MultiFunction.__init__(self)
+
+        # Store ir and parameters
         self.ir = ir
         self.parameters = parameters
 
+        # Configure definitions behaviour
         self.physical_coordinates_known = self.ir["integral_type"] == "quadrature"
 
-        self._current_num_points, = self.ir["uflacs"]["expr_ir"].keys() # TODO: Hack!
+        self._current_num_points, = self.ir["uflacs"]["expr_ir"].keys() # TODO: Hack! Assuming single quadrature rule here.
 
     def precision_float(self, f):
         # Use ufl utility to control float formatting precision, same as ffc quadrature mode uses
         return ufl.constantvalue.format_float(f)
 
     def get_includes(self):
-        return []
+        "Return include statements to insert at top of file."
+        includes = []
+        return includes
+
+    # === Access to names of quantities not among the symbolic UFL types ===
+
+    def weights_array_name(self, num_points):
+        return "{0}{1}".format(names.weights, num_points)
+
+    def points_array_name(self, num_points):
+        return "{0}{1}".format(names.points, num_points)
+
+    def quadrature_loop_index(self):
+        return names.iq
+
+    def argument_loop_index(self, iarg):
+        return "{name}{num}".format(name=names.ia, num=iarg)
+
+    def element_tensor_name(self):
+        return names.A
+
+    def element_tensor_entry(self, index):
+        return ArrayAccess(names.A, index)
 
     # === Multifunction handlers for all modified terminal types, basic C++ types are covered by base class ===
 
@@ -174,8 +228,10 @@ class FFCAccessBackend(MultiFunction):
         # No need to store basis function value in its own variable, just get table value directly
         uname, begin, end = tabledata
         entity = format_entity_name(self.ir["entitytype"], mt.restriction)
-        iq = names.iq
-        idof = "{0}{1}".format(names.ia, mt.terminal.number())
+
+        iq = self.quadrature_loop_index()
+        idof = self.argument_loop_index(mt.terminal.number())
+
         dof = format_code(Sub(idof, begin))
         access = ArrayAccess(uname, (entity, iq, dof))
         return access
@@ -209,13 +265,12 @@ class FFCAccessBackend(MultiFunction):
         access = format_mt_name(basename, mt)
         return access
 
-    def quadrature_weight(self, e, mt, tabledata):
+    def quadrature_weight(self, e, mt, tabledata): # TODO: let num_points be arg here
         # TODO: Need num_points to identify weights array name?
         #        Or maybe place it in tabledata:
         #name, dummy, num_points = tabledata
         num_points = self._current_num_points # TODO: Fix this hack!
-        weights = "{0}{1}".format(names.weights, num_points)
-        access = ArrayAccess(weights, names.iq)
+        access = ArrayAccess(self.weights_array_name(num_points), self.quadrature_loop_index())
         return access
 
     def spatial_coordinate(self, e, mt, tabledata):
@@ -229,8 +284,7 @@ class FFCAccessBackend(MultiFunction):
             #        Or maybe place it in tabledata:
             #name, dummy, num_points = tabledata
             num_points = self._current_num_points # TODO: Fix this hack!
-            points = "{0}{1}".format(names.points, num_points)
-            access = ArrayAccess(points, (names.iq, mt.flat_component))
+            access = ArrayAccess(self.points_array_name(num_points), (self.quadrature_loop_index(), mt.flat_component))
         elif mt.terminal.domain().coordinates() is not None:
             error("Expecting spatial coordinate to be symbolically rewritten.")
         else:
@@ -252,7 +306,7 @@ class FFCAccessBackend(MultiFunction):
             #name, dummy, num_points = tabledata
             num_points = self._current_num_points # TODO: Fix this hack!
             points = "{0}{1}".format(names.points, num_points)
-            access = ArrayAccess(points, (names.iq, mt.flat_component))
+            access = ArrayAccess(points, (self.quadrature_loop_index(), mt.flat_component))
 
         return access
 
@@ -310,17 +364,22 @@ class FFCDefinitionsBackend(MultiFunction):
     """FFC specific cpp formatter class."""
     def __init__(self, ir, parameters):
         MultiFunction.__init__(self)
+
+        # Store ir and parameters
         self.ir = ir
         self.parameters = parameters
 
+        # Configure definitions behaviour
         self.physical_coordinates_known = self.ir["integral_type"] == "quadrature"
 
     def get_includes(self):
-        return []
+        "Return include statements to insert at top of file."
+        includes = []
+        return includes
 
-    def initial(self): # TODO: Need something like this?
+    def initial(self):
+        "Return code inserted at beginning of kernel."
         code = []
-        code += [ufc_reference_facet_jacobian_tables]
         return code
 
     def expr(self, t, mt, tabledata, access):
@@ -341,6 +400,7 @@ class FFCDefinitionsBackend(MultiFunction):
             # No need to store basis function value in its own variable, just get table value directly
             uname, begin, end = tabledata
             entity = format_entity_name(self.ir["entitytype"], mt.restriction)
+
             iq = names.iq
             idof = names.ic
 
@@ -395,9 +455,10 @@ class FFCDefinitionsBackend(MultiFunction):
                           "Assuming linear element for affine simplices here.")
             entity = format_entity_name(self.ir["entitytype"], mt.restriction)
             vertex = names.ic
+            iq = names.iq
 
             if 0: # Generated loop version:
-                table_access = ArrayAccess(uname, (entity, names.iq, vertex))
+                table_access = ArrayAccess(uname, (entity, iq, vertex))
                 dof_access = generate_domain_dof_access(num_vertices, gdim, vertex,
                                                         mt.flat_component, mt.restriction)
                 prod = Mul(dof_access, table_access)
@@ -410,7 +471,7 @@ class FFCDefinitionsBackend(MultiFunction):
                 dof_access = generate_domain_dofs_access(num_vertices, gdim, mt.restriction)
                 prods = []
                 for idof in range(begin, end):
-                    table_access = ArrayAccess(uname, (entity, names.iq, Sub(idof, begin)))
+                    table_access = ArrayAccess(uname, (entity, iq, Sub(idof, begin)))
                     prods += [Mul(dof_access[idof], table_access)]
 
                 # Inlined loop to accumulate linear combination of dofs and tables

@@ -8,6 +8,7 @@ modulename = r"uflacs"
 #skipmods = ['utils', 'commands', 'geometry', 'backends']
 #skipmods = ['utils', 'commands', 'geometry', 'codeutils', 'backends']
 skipmods = ['utils', 'commands']
+#skipmods = []
 
 r = re.compile(r'from +' + modulename + r'[.]([^ ]*) +import')
 

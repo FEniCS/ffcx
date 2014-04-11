@@ -13,9 +13,7 @@ from ufl.algorithms import preprocess_expression, expand_indices
 
 import uflacs
 from uflacs.codeutils.cpp_expr_formatting_rules import CppFormattingRules
-from uflacs.analysis.dependency_handler import DependencyHandler
 from uflacs.codeutils.expr_formatter import ExprFormatter
-from uflacs.backends.toy.toy_language_formatter import ToyCppLanguageFormatter
 
 def expr2cpp(expr, variables=None):
     "This is a test specific function for formatting ufl to C++."
@@ -29,13 +27,6 @@ def expr2cpp(expr, variables=None):
     # compiler algorithm to get scalar valued expressions
     # that can be directlly formatted into C++
     expr = expand_indices(expr_data.preprocessed_expr)
-
-    # Setup arguments to language formatter...
-    ir = {}
-    modified_terminals = [] # FIXME: Need something here?
-    form_argument_mapping = {}
-    object_names = {}
-    dh = DependencyHandler(modified_terminals, form_argument_mapping, object_names)
 
     # This formatter is a multifunction implementing target
     # specific C++ formatting rules
