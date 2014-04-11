@@ -205,7 +205,7 @@ def handle_division(i, v, deps, F, FV, sv2fv, e2fi):
         factors = {}
         for k0,fi0 in fac0.items():
             # Record products of non-arg operand with each factor of arg-dependent operand
-            factors[k0] = add_to_fv(f1 / FV[fi0], FV, e2fi)
+            factors[k0] = add_to_fv(FV[fi0] / f1, FV, e2fi)
 
     else: # non-arg / non-arg
         # Record non-argument subexpression
