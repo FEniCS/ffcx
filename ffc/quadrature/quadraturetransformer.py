@@ -21,7 +21,7 @@
 # Modified by Anders Logg 2009, 2013
 #
 # First added:  2009-02-09
-# Last changed: 2014-04-02
+# Last changed: 2014-04-15
 
 # Python modules.
 from numpy import shape
@@ -622,7 +622,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         # Add transformation if needed.
         transforms = []
-        if not self.domain_type == "custom":
+        if not self.integral_type == "custom":
             for i, direction in enumerate(derivatives):
                 ref = multi[i]
                 t = f_transform("JINV", ref, direction, tdim, gdim, self.restriction)

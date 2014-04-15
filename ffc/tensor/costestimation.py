@@ -16,7 +16,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2010-01-25
-# Last changed: 2014-03-05
+# Last changed: 2014-04-15
 
 # FFC modules
 from ffc.log import debug
@@ -32,9 +32,9 @@ def estimate_cost(integral, function_replace_map):
     if the integrand can be represented as a monomial, and -1 if not.
     """
 
-    # Check that domain type is supported
+    # Check that integral type is supported
     supported = ["cell", "exterior_facet", "interior_facet"]
-    if not integral.domain_type() in supported:
+    if not integral.integral_type() in supported:
         return -1
 
     # Extract monomial integrand

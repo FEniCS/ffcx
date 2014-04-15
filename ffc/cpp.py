@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-12-16
-# Last changed: 2014-04-02
+# Last changed: 2014-04-15
 
 # Python modules
 import re, numpy, platform
@@ -608,7 +608,7 @@ def _generate_normal(tdim, gdim, integral_type, reference_normal=False):
         error("Unsupported integral_type: %s" % str(integral_type))
     return code
 
-def _generate_cell_volume(tdim, gdim, domain_type, r=None):
+def _generate_cell_volume(tdim, gdim, integral_type, r=None):
     "Generate code for computing cell volume."
 
     # Choose snippets
@@ -623,10 +623,10 @@ def _generate_cell_volume(tdim, gdim, domain_type, r=None):
     elif integral_type == "custom":
         code = volume % {"restriction": _choose_map(r)}
     else:
-        error("Unsupported domain_type: %s" % str(domain_type))
+        error("Unsupported integral_type: %s" % str(integral_type))
     return code
 
-def _generate_circumradius(tdim, gdim, domain_type, r=None):
+def _generate_circumradius(tdim, gdim, integral_type, r=None):
     "Generate code for computing a cell's circumradius."
 
     # Choose snippets

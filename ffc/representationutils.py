@@ -22,9 +22,9 @@ quadrature and tensor representation."""
 # Modified by Anders Logg 2014
 #
 # First added:  2013-01-08
-# Last changed: 2014-04-02
+# Last changed: 2014-04-15
 
-from ufl.measure import domain_type_to_measure_name
+from ufl.measure import integral_type_to_measure_name
 
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import cellname_to_num_entities
@@ -113,11 +113,11 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
                     "custom":           "cell"}
 
     # Check and extract entity type
-    domain_type = itg_data.domain_type
-    if not itg_data.domain_type in entity_types:
+    integral_type = itg_data.integral_type
+    if not itg_data.integral_type in entity_types:
         error("Unsupported integration domain type: %s (%s)" \
-                  % (domain_type, domain_type_to_measure_name[domain_type]))
-    entity_type = entity_types[itg_data.domain_type]
+                  % (integral_type, integral_type_to_measure_name[integral_type]))
+    entity_type = entity_types[itg_data.integral_type]
 
     # Check topological dimension
     cellname = itg_data.domain.cell().cellname()
@@ -131,7 +131,7 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
 
     # Initialize integral intermediate representation
     return {"representation":        representation,
-            "domain_type":           itg_data.domain_type,
+            "integral_type":         itg_data.integral_type,
             "domain_id":             itg_data.domain_id,
             "form_id":               form_id,
             "rank":                  form_data.rank,
