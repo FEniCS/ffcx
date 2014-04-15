@@ -106,20 +106,13 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
     expected independently of which representation is chosen."""
 
     # Mapping from recognized domain types to entity types
-    entity_types = {"cell":             "cell",
-                    "exterior_facet":   "facet",
-                    "interior_facet":   "facet",
-                    "point":            "vertex",
-                    "custom":           "cell"}
+    entity_type = {"cell":           "cell",
+                   "exterior_facet": "facet",
+                   "interior_facet": "facet",
+                   "point":          "vertex",
+                   "custom":         "cell"}[itg_data.integral_type]
 
-    # Check and extract entity type
-    integral_type = itg_data.integral_type
-    if not itg_data.integral_type in entity_types:
-        error("Unsupported integration domain type: %s (%s)" \
-                  % (integral_type, integral_type_to_measure_name[integral_type]))
-    entity_type = entity_types[itg_data.integral_type]
-
-    # Check topological dimension
+    # Extract data
     cellname = itg_data.domain.cell().cellname()
     tdim = itg_data.domain.topological_dimension()
     assert all(tdim == itg.domain().topological_dimension() for itg in itg_data.integrals)
@@ -129,15 +122,14 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
     if "num_cells" in itg_data.metadata:
         num_cells = itg_data.metadata["num_cells"]
 
-    # Initialize integral intermediate representation
     return {"representation":        representation,
             "integral_type":         itg_data.integral_type,
-            "domain_id":             itg_data.domain_id,
+            "subdomain_id":          itg_data.subdomain_id,
             "form_id":               form_id,
             "rank":                  form_data.rank,
             "geometric_dimension":   form_data.geometric_dimension,
             "topological_dimension": tdim,
-            "entity_type":           entity_type,
+            "entitytype":            entity_type,
             "num_facets":            cellname_to_num_entities[cellname][-2],
             "num_vertices":          cellname_to_num_entities[cellname][0],
             "needs_oriented":        needs_oriented_jacobian(form_data),
