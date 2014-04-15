@@ -316,7 +316,8 @@ namespace ufc
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
                                  const double* vertex_coordinates,
-                                 std::size_t facet) const = 0;
+                                 std::size_t facet,
+                                 int cell_orientation) const = 0;
 
   };
 
@@ -337,7 +338,9 @@ namespace ufc
                                  const double* vertex_coordinates_0,
                                  const double* vertex_coordinates_1,
                                  std::size_t facet_0,
-                                 std::size_t facet_1) const = 0;
+                                 std::size_t facet_1,
+                                 int cell_orientation_0,
+                                 int cell_orientation_1) const = 0;
 
   };
 
@@ -358,7 +361,8 @@ namespace ufc
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
                                  const double* vertex_coordinates,
-                                 std::size_t vertex) const = 0;
+                                 std::size_t vertex,
+                                 int cell_orientation) const = 0;
 
   };
 
@@ -386,7 +390,8 @@ namespace ufc
                                  const double* vertex_coordinates,
                                  std::size_t num_quadrature_points,
                                  const double* quadrature_points,
-                                 const double* quadrature_weights) const = 0;
+                                 const double* quadrature_weights,
+                                 int cell_orientation) const = 0;
 
   };
 

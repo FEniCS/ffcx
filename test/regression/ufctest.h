@@ -510,7 +510,8 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
     for(std::size_t i = 0; i < tensor_size; i++)
       A[i] = 0.0;
 
-    integral.tabulate_tensor(A, w, vertex_coordinates.data(), facet);
+    integral.tabulate_tensor(A, w, vertex_coordinates.data(), facet,
+                             c.orientation);
     printer.print_array("tabulate_tensor", tensor_size, A, facet);
   }
 
@@ -522,7 +523,8 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
     {
       double t0 = time();
       for (std::size_t i = 0; i < num_reps; i++)
-        integral.tabulate_tensor(A, w, vertex_coordinates.data(), 0);
+        integral.tabulate_tensor(A, w, vertex_coordinates.data(), 0,
+                                 c.orientation);
       double dt = time() - t0;
       if (dt > minimum_timing)
       {
@@ -576,7 +578,9 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
                                w,
                                vertex_coordinates0.data(),
                                vertex_coordinates1.data(),
-                               facet0, facet1);
+                               facet0, facet1,
+                               c0.orientation,
+                               c1.orientation);
       printer.print_array("tabulate_tensor", macro_tensor_size, A,
                           facet0, facet1);
     }
@@ -593,7 +597,9 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
       {
         integral.tabulate_tensor(A, w,
                                  vertex_coordinates0.data(),
-                                 vertex_coordinates1.data(), 0, 0);
+                                 vertex_coordinates1.data(), 0, 0,
+                                 c0.orientation,
+                                 c1.orientation);
       }
 
       double dt = time() - t0;
@@ -639,7 +645,8 @@ void test_point_integral(ufc::point_integral& integral,
     for(std::size_t i = 0; i < tensor_size; i++)
       A[i] = 0.0;
 
-    integral.tabulate_tensor(A, w, vertex_coordinates.data(), vertex);
+    integral.tabulate_tensor(A, w, vertex_coordinates.data(), vertex,
+                             c.orientation);
     printer.print_array("tabulate_tensor", tensor_size, A, vertex);
   }
 
@@ -651,7 +658,8 @@ void test_point_integral(ufc::point_integral& integral,
     {
       double t0 = time();
       for (std::size_t i = 0; i < num_reps; i++)
-        integral.tabulate_tensor(A, w, vertex_coordinates.data(), 0);
+        integral.tabulate_tensor(A, w, vertex_coordinates.data(), 0,
+                                 c.orientation);
       double dt = time() - t0;
       if (dt > minimum_timing)
       {
@@ -714,7 +722,7 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
   //printer.print_scalar("signature", form.signature());
 
   // rank
-  //printer.print_scalar("rank", form.rank());
+  printer.print_scalar("rank", form.rank());
 
   // num_coefficients
   printer.print_scalar("num_coefficients", form.num_coefficients());

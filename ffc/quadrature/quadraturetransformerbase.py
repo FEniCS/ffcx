@@ -267,7 +267,10 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     # FacetNormal, CellVolume, Circumradius (geometry.py).
     # -------------------------------------------------------------------------
-    def local_coordinate(self, o):
+    def reference_coordinate(self, o):
+        error("This object should be implemented by the child class.")
+
+    def reference_facet_coordinate(self, o):
         error("This object should be implemented by the child class.")
 
     def jacobian(self, o):
@@ -286,6 +289,9 @@ class QuadratureTransformerBase(Transformer):
         error("This object should be implemented by the child class.")
 
     def facet_jacobian_inverse(self, o):
+        error("This object should be implemented by the child class.")
+
+    def reference_facet_jacobian(self, o):
         error("This object should be implemented by the child class.")
 
     #def cell_barycenter(self, o):
@@ -809,7 +815,7 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     # Generate terms for representation.
     # -------------------------------------------------------------------------
-    def generate_terms(self, integrand, domain_type):
+    def generate_terms(self, integrand, integral_type):
         "Generate terms for code generation."
 
         # Set domain type
@@ -830,7 +836,7 @@ class QuadratureTransformerBase(Transformer):
             if val is None:
                 continue
             # Create data.
-            value, ops, sets = self._create_entry_data(val, domain_type)
+            value, ops, sets = self._create_entry_data(val, integral_type)
             # Extract nzc columns if any and add to sets.
             used_nzcs = set([int(k[1].split(f_nzc)[1].split("[")[0]) for k in key if f_nzc in k[1]])
             sets.append(used_nzcs)

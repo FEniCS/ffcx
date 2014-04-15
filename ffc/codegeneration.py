@@ -475,10 +475,10 @@ def _create_foo_integral(ir, integral_type, prefix):
     postfix = ir["create_" + integral_type + "_integral"]
     return _create_foo(prefix, class_name, postfix, numbers=postfix)
 
-def _has_foo_integrals(ir, domain_type):
+def _has_foo_integrals(ir, integral_type):
     ret = format["return"]
     b = format["bool"]
-    i = ir["has_%s_integrals" % domain_type]
+    i = ir["has_%s_integrals" % integral_type]
     return ret(b(i))
 
 def _create_default_foo_integral(ir, integral_type, prefix):

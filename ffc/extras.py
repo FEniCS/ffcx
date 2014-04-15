@@ -73,17 +73,17 @@ def compute_tensor_representation(form):
     # Extract entries in reference tensor
     reference_tensors = []
     for i in ir_integrals:
-        if i["domain_type"] == "cell":
+        if i["integral_type"] == "cell":
             t = [A0.A0 for (A0, GK, dummy) in i["AK"]]
             if len(t) == 1: t = t[0]
-        elif i["domain_type"] == "exterior_facet":
+        elif i["integral_type"] == "exterior_facet":
             t = [A0.A0 for j in i["AK"] for (A0, GK, dummy) in j]
             if len(t) == 1: t = t[0]
-        elif i["domain_type"] == "interior_facet":
+        elif i["integral_type"] == "interior_facet":
             t = [A0.A0 for j in i["AK"] for k in j for (A0, GK, dummy) in k]
             if len(t) == 1: t = t[0]
         else:
-            raise RuntimeError, "Unhandled domain type: %s" % str(i["domain_type"])
+            raise RuntimeError, "Unhandled domain type: %s" % str(i["integral_type"])
         reference_tensors.append(t)
 
     # Extract code

@@ -571,22 +571,22 @@ def _create_sub_foo(ufl_element, element_numbers):
     "Compute intermediate representation of create_sub_element/dofmap."
     return [element_numbers[e] for e in ufl_element.sub_elements()]
 
-def _create_foo_integral(domain_type, form_data):
+def _create_foo_integral(integral_type, form_data):
     "Compute intermediate representation of create_foo_integral."
-    return [itg_data.domain_id for itg_data in form_data.integral_data
-           if itg_data.domain_type == domain_type and isinstance(itg_data.domain_id, int)]
+    return [itg_data.subdomain_id for itg_data in form_data.integral_data
+           if itg_data.integral_type == integral_type and isinstance(itg_data.subdomain_id, int)]
 
-def _has_foo_integrals(domain_type, form_data):
+def _has_foo_integrals(integral_type, form_data):
     "Compute intermediate representation of has_foo_integrals."
-    v = (form_data.num_sub_domains.get(domain_type,0) > 0
-         or _create_default_foo_integral(domain_type, form_data) is not None)
+    v = (form_data.num_sub_domains.get(integral_type,0) > 0
+         or _create_default_foo_integral(integral_type, form_data) is not None)
     return bool(v)
 
-def _create_default_foo_integral(domain_type, form_data):
+def _create_default_foo_integral(integral_type, form_data):
     "Compute intermediate representation of create_default_foo_integral."
     itg_data = [itg_data for itg_data in form_data.integral_data
-                if (itg_data.domain_id == "otherwise" and
-                    itg_data.domain_type == domain_type)]
+                if (itg_data.subdomain_id == "otherwise" and
+                    itg_data.integral_type == integral_type)]
     ffc_assert(len(itg_data) in (0,1), "Expecting at most one default integral of each type.")
     return "otherwise" if itg_data else None
 

@@ -23,9 +23,6 @@
 # Python modules.
 from hashlib import sha1
 
-# Instant modules.
-from instant import get_swig_version
-
 # UFL modules.
 import ufl
 
@@ -88,7 +85,6 @@ class JITObject:
         # Compute other relevant signatures
         parameters_signature = _parameters_signature(self.parameters)
         ffc_signature = str(FFC_VERSION)
-        swig_signature = str(get_swig_version())
         #cell_signature = str(self.form.form_data().cell)
 
         # Build common signature

@@ -270,7 +270,10 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     # FacetNormal, CellVolume, Circumradius, FacetArea (geometry.py).
     # -------------------------------------------------------------------------
-    def local_coordinate(self, o):
+    def reference_coordinate(self, o):
+        error("This object should be implemented by the child class.") # FIXME
+
+    def reference_facet_coordinate(self, o):
         error("This object should be implemented by the child class.") # FIXME
 
     def jacobian(self, o):
@@ -289,6 +292,9 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         error("This object should be implemented by the child class.") # FIXME
 
     def facet_jacobian_inverse(self, o):
+        error("This object should be implemented by the child class.") # FIXME
+
+    def reference_facet_jacobian(self, o):
         error("This object should be implemented by the child class.") # FIXME
 
     #def cell_barycenter(self, o):
@@ -580,7 +586,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     def _count_operations(self, expression):
         return expression.ops()
 
-    def _create_entry_data(self, val, domain_type):
+    def _create_entry_data(self, val, integral_type):
 #        zero = False
         # Multiply value by weight and determinant
         ACCESS = GEO
@@ -591,7 +597,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         weight = self._create_symbol(weight, ACCESS)[()]
 
         # Create value.
-        if domain_type == "point":
+        if integral_type == "point":
             trans_set = set()
             value = create_product([val, weight])
         else:

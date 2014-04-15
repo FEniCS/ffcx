@@ -181,10 +181,10 @@ const double det = std::abs(detJ);"""
 
 orientation_snippet = """
 // Check orientation
-if (cell_orientation == -1)
+if (cell_orientation%(restriction)s == -1)
   throw std::runtime_error("cell orientation must be defined (not -1)");
 // (If cell_orientation == 1 = down, multiply det(J) by -1)
-else if (cell_orientation == 1)
+else if (cell_orientation%(restriction)s == 1)
   detJ%(restriction)s *= -1;
 """
 

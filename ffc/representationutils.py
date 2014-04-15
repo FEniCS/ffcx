@@ -1,7 +1,7 @@
 """This module contains utility functions for some code shared between
 quadrature and tensor representation."""
 
-# Copyright (C) 2012-2013 Marie Rognes
+# Copyright (C) 2012-2014 Marie Rognes
 #
 # This file is part of FFC.
 #
@@ -147,7 +147,7 @@ def initialize_integral_code(ir, prefix, parameters):
     "Representation independent default initialization of code dict for integral from intermediate representation."
     code = {}
     code["restrict"] = parameters["restrict_keyword"]
-    code["classname"] = format["classname " + ir["domain_type"] + "_integral"](prefix, ir["form_id"], ir["domain_id"])
+    code["classname"] = format["classname " + ir["integral_type"] + "_integral"](prefix, ir["form_id"], ir["subdomain_id"])
     code["members"] = ""
     code["constructor"] = format["do nothing"]
     code["constructor_arguments"] = ""

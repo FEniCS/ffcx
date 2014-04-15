@@ -193,7 +193,8 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     code[()] = None
                     return code
                 elif not v:
-                    error("should not happen: %s" % str("v: '%s'" % repr(v)))
+                    print "v: '%s'" % repr(v)
+                    error("should not happen")
                 elif v == "1":
                     pass
                 else:
@@ -350,7 +351,10 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     # FacetNormal, CellVolume, Circumradius, FacetArea (geometry.py).
     # -------------------------------------------------------------------------
-    def local_coordinate(self, o):
+    def reference_coordinate(self, o):
+        error("This object should be implemented by the child class.") # FIXME
+
+    def reference_facet_coordinate(self, o):
         error("This object should be implemented by the child class.") # FIXME
 
     def jacobian(self, o):
@@ -369,6 +373,9 @@ class QuadratureTransformer(QuadratureTransformerBase):
         error("This object should be implemented by the child class.") # FIXME
 
     def facet_jacobian_inverse(self, o):
+        error("This object should be implemented by the child class.") # FIXME
+
+    def reference_facet_jacobian(self, o):
         error("This object should be implemented by the child class.") # FIXME
 
     #def cell_barycenter(self, o):
@@ -489,7 +496,6 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
                 if basis is not None:
                     # Add transformation
-                    print "Skipping"
                     code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
 
         # Handle non-affine mappings.
@@ -691,7 +697,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
     def _count_operations(self, expression):
         return operation_count(expression, format)
 
-    def _create_entry_data(self, val, domain_type):
+    def _create_entry_data(self, val, integral_type):
         # Multiply value by weight and determinant
         # Create weight and scale factor.
 
@@ -700,7 +706,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
             weight += format["component"]("", format["integration points"])
 
         # Update sets of used variables.
-        if domain_type in ("point", "custom"):
+        if integral_type in ("point", "custom"):
             trans_set = set()
             value = format["mul"]([val, weight])
         else:
