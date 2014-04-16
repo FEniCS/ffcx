@@ -21,10 +21,10 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-04-02
+# Last changed: 2014-04-16
 
-import numpy
-from collections import defaultdict
+# Python modules
+import numpy, itertools, collections
 
 # UFL modules
 from ufl.classes import Form, Integral
@@ -130,7 +130,7 @@ def sort_integrals(integrals, default_quadrature_degree, default_quadrature_rule
     ffc_assert(all(subdomain_id == itg.subdomain_id() for itg in integrals),
                "Expecting only integrals on the same subdomain.")
 
-    sorted_integrands = defaultdict(list)
+    sorted_integrands = collections.defaultdict(list)
     for integral in integrals:
         # Override default degree and rule if specified in integral metadata
         integral_metadata = integral.metadata() or {}

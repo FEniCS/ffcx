@@ -16,7 +16,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2014-03-04
-# Last changed: 2014-04-02
+# Last changed: 2014-04-16
 #
 # Bilinear form defined in terms of a quadrature integral dQ.
 #
@@ -36,3 +36,5 @@ a = jump(u.dx(0))*jump(v)*dc1
 #a = jump(u)*jump(v)*dc1
 #a = u('+')*v('-')*dS
 #a = u('-')*v('-')*dc1
+
+print a
