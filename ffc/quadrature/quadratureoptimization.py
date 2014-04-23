@@ -22,7 +22,7 @@
 # Last changed: 2014-04-23
 
 # FFC modules
-from ffc.log import info, error
+from ffc.log import info, error, warning
 from ffc.cpp import format
 from ffc.quadrature.symbolics import optimise_code, BASIS, IP, GEO, CONST
 from ffc.quadrature.symbolics import create_product, create_sum, create_symbol, create_fraction
@@ -33,14 +33,22 @@ def optimize_integral_ir(ir, parameters):
     # FIXME: input argument "parameters" has been added to optimize_integral_ir
     # FIXME: which shadows a local parameter
 
+    # Get integral type and optimization parameters
+    integral_type = ir["integral_type"]
     parameters = ir["optimise_parameters"]
+
+    # Check whether we should optimize
     if parameters["optimisation"]:
-        integrals  =  ir["trans_integrals"]
-        integral_type = ir["integral_type"]
-        num_facets =  ir["num_facets"]
-        num_vertices =  ir["num_vertices"]
-        geo_consts =  ir["geo_consts"]
-        psi_tables_map =  ir["psi_tables_map"]
+
+        # Get parameters
+        integrals      = ir["trans_integrals"]
+        integral_type  = ir["integral_type"]
+        num_facets     = ir["num_facets"]
+        num_vertices   = ir["num_vertices"]
+        geo_consts     = ir["geo_consts"]
+        psi_tables_map = ir["psi_tables_map"]
+
+        # Optimize based on integral type
         if integral_type == "cell":
             info("Optimising expressions for cell integral")
             if parameters["optimisation"] in ("precompute_ip_const", "precompute_basis_const"):
@@ -69,12 +77,6 @@ def optimize_integral_ir(ir, parameters):
                     _precompute_expressions(integrals[i], geo_consts, parameters["optimisation"])
                 else:
                     _simplify_expression(integrals[i], geo_consts, psi_tables_map)
-        elif integral_type == "custom":
-            info("Optimising expressions for custom integral")
-            if parameters["optimisation"] in ("precompute_ip_const", "precompute_basis_const"):
-                _precompute_expressions(integrals, geo_consts, parameters["optimisation"])
-            else:
-                _simplify_expression(integrals, geo_consts, psi_tables_map)
         else:
             error("Unhandled domain type: " + str(integral_type))
 

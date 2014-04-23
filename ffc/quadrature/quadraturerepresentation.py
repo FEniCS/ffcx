@@ -21,7 +21,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-04-16
+# Last changed: 2014-04-23
 
 # Python modules
 import numpy, itertools, collections
@@ -48,13 +48,15 @@ def compute_integral_ir(itg_data,
                         parameters):
     "Compute intermediate represention of integral."
 
+    print parameters
+
     info("Computing quadrature representation")
 
     # Initialise representation
     ir = initialize_integral_ir("quadrature", itg_data, form_data, form_id)
 
     # Create and save the optisation parameters.
-    ir["optimise_parameters"] = parse_optimise_parameters(parameters)
+    ir["optimise_parameters"] = parse_optimise_parameters(parameters, itg_data)
 
     # Sort integrals into a dict with quadrature degree and rule as key
     sorted_integrals = sort_integrals(itg_data.integrals,
@@ -73,12 +75,13 @@ def compute_integral_ir(itg_data,
     ir["prim_idims"] = [create_element(ufl_element).space_dimension()
                         for ufl_element in form_data.argument_elements]
 
-    # Create transformer.
+    # Select transformer
     if ir["optimise_parameters"]["optimisation"]:
         QuadratureTransformerClass = QuadratureTransformerOpt
     else:
         QuadratureTransformerClass = QuadratureTransformer
 
+    # Create transformer
     transformer = QuadratureTransformerClass(psi_tables,
                                              quadrature_rules,
                                              form_data.geometric_dimension,

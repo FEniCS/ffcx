@@ -22,7 +22,7 @@ transformers to translate UFL expressions."""
 # Modified by Garth N. Wells, 2013
 #
 # First added:  2009-10-13
-# Last changed: 2014-04-15
+# Last changed: 2014-04-23
 
 # Python modules.
 from itertools import izip

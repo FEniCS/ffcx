@@ -17,17 +17,26 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Anders Logg, 2009.
-# Modified by Martin Alnaes, 2013-2014
+# Modified by Anders Logg 2009, 2014
+# Modified by Martin Alnaes 2013-2014
 
-def parse_optimise_parameters(parameters):
+# FFC modules
+from ffc.log import warning
+
+def parse_optimise_parameters(parameters, itg_data):
+
+    # Initialize parameters
     optimise_parameters = {"eliminate zeros":     False,
                            "optimisation":        False,
                            "ignore ones":         False,
                            "remove zero terms":   False,
                            "ignore zero tables":  False}
 
-    if parameters["optimize"]:
+
+    # Set optimized parameters
+    if parameters["optimize"] and itg_data.integral_type == "custom":
+        warning("Optimization not available for custom integrals, skipping optimization.")
+    elif parameters["optimize"]:
         optimise_parameters["ignore ones"]        = True
         optimise_parameters["remove zero terms"]  = True
         optimise_parameters["ignore zero tables"] = True
