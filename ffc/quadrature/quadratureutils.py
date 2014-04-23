@@ -18,7 +18,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2007-03-16
-# Last changed: 2014-04-15
+# Last changed: 2014-04-23
 #
 # Hacked by Marie E. Rognes 2013
 # Modified by Anders Logg 2014
@@ -158,8 +158,13 @@ def unique_psi_tables(tables, eliminate_zeros):
     non_zero_columns = {}
     if eliminate_zeros:
         for name in sorted(tables.keys()):
+
             # Get values.
             vals = tables[name]
+
+            # Skip if values are missing
+            if len(vals) == 0:
+                continue
 
             # Use the first row as reference.
             non_zeros = list(vals[0].nonzero()[0])

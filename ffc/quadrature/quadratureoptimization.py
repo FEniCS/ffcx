@@ -19,7 +19,7 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2010-02-08
-# Last changed: 2013-02-10
+# Last changed: 2014-04-23
 
 # FFC modules
 from ffc.log import info, error
@@ -69,6 +69,12 @@ def optimize_integral_ir(ir, parameters):
                     _precompute_expressions(integrals[i], geo_consts, parameters["optimisation"])
                 else:
                     _simplify_expression(integrals[i], geo_consts, psi_tables_map)
+        elif integral_type == "custom":
+            info("Optimising expressions for custom integral")
+            if parameters["optimisation"] in ("precompute_ip_const", "precompute_basis_const"):
+                _precompute_expressions(integrals, geo_consts, parameters["optimisation"])
+            else:
+                _simplify_expression(integrals, geo_consts, psi_tables_map)
         else:
             error("Unhandled domain type: " + str(integral_type))
 
