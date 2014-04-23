@@ -18,27 +18,29 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2007-06-09
-# Last changed: 2007-06-09
+# Last changed: 2014-04-23
 
-import os
-import re
-import sys
+import os, re, sys
 
+# Name of log file
 pwd = os.path.dirname(os.path.abspath(__file__))
+logfile = os.path.join(pwd, "test.log")
+os.system("rm -f %s" % logfile)
 
 # Tests to run
 tests = ["unit", "regression"]
 
-failed = []
-
 # Run tests
+failed = []
 for test in tests:
     print "Running tests: %s" % test
     print "----------------------------------------------------------------------"
     os.chdir(os.path.join(pwd, test))
-    failure = os.system("python test.py")
+    failure = os.system("python test.py | tee -a %s" % logfile)
     if failure:
         failed.append(test)
     print ""
+
+print "To view the test log, use the following command: less -R test.log"
 
 sys.exit(len(failed))
