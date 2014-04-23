@@ -23,7 +23,7 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-28
-# Last changed: 2014-04-02
+# Last changed: 2014-04-23
 
 # Code snippets
 
@@ -784,13 +784,12 @@ eval_basis = """\
 // Get current quadrature point and compute values of basis functions
 const double* x = quadrature_points + ip*%(gdim)s;
 const double* v = vertex_coordinates + %(vertex_offset)s;
-const int cell_orientation = 0; // cell orientation currently not supported
-%(form_prefix)s_finite_element_%(counter)s::_evaluate_basis_all(values, x, v, cell_orientation);"""
+%(form_prefix)s_finite_element_%(counter)s::_evaluate_basis_all(%(values)s, x, v, cell_orientation);"""
 
 eval_basis_copy = """\
 
 // Copy values to table %(prefix)s
-std::copy(values, values + %(space_dim)s, %(prefix)s[ip].begin() + %(values_offset)s);
+std::copy(%(values)s, %(values)s + %(space_dim)s, %(prefix)s[ip].begin() + %(values_offset)s);
 """
 
 eval_derivs_decl = """\
@@ -803,11 +802,10 @@ eval_derivs = """\
 // Get current quadrature point and compute values of basis function derivatives
 const double* x = quadrature_points + ip*%(gdim)s;
 const double* v = vertex_coordinates + %(vertex_offset)s;
-const int cell_orientation = 0; // cell orientation currently not supported
-%(form_prefix)s_finite_element_%(counter)s::_evaluate_basis_derivatives_all(%(n)s, values, x, v, cell_orientation);"""
+%(form_prefix)s_finite_element_%(counter)s::_evaluate_basis_derivatives_all(%(n)s, %(values)s, x, v, cell_orientation);"""
 
 eval_derivs_copy = """\
 
 // Copy values to table %(prefix)s_D%(d)s
 for (std::size_t i = 0; i < %(space_dim)s; i++)
-  %(prefix)s_D%(d)s[ip][i] = values[%(values_offset)s + %(offset)s + i*%(stride)s];"""
+  %(prefix)s_D%(d)s[ip][i] = %(values)s[%(values_offset)s + %(offset)s + i*%(stride)s];"""

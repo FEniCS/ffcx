@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-04-15
+# Last changed: 2014-04-16
 
 # Python modules
 import functools, itertools
@@ -820,21 +820,25 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
                     # Cell offset for array of values
                     values_offset = cell_number*num_vals
 
+                    # Name of values array
+                    values = "values_%d" % cell_number
+
                     # Generate block of code for loop
                     block = []
                     block += [f_eval_basis      % {"prefix":        prefix,
                                                    "form_prefix":   form_prefix,
                                                    "gdim":          gdim,
                                                    "counter":       counter,
-                                                   "vertex_offset": vertex_offset}]
+                                                   "vertex_offset": vertex_offset,
+                                                   "values":        values}]
                     block += [f_eval_basis_copy % {"prefix":        prefix,
                                                    "space_dim":     space_dim,
-                                                   "values_offset": values_offset}]
+                                                   "values_offset": values_offset,
+                                                   "values":        values}]
 
                     # Generate code
                     code += [f_comment("Evaluate basis functions at all quadrature points")]
-                    if cell_number == 0:
-                        code += [f_static_array("double", "values", num_vals)]
+                    code += [f_static_array("double", values, num_vals)]
                     code += f_loop(block, [("ip", 0, "num_quadrature_points")])
                     code += [""]
 
@@ -869,6 +873,9 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
                     # Stride for values array
                     stride = value_size*len(derivs)
 
+                    # Name of values array
+                    values = "dvalues_%d_%d" % (n, cell_number)
+
                     # Generate block of code for loop
                     block = []
                     block += [f_eval_derivs %       {"prefix":        prefix,
@@ -876,19 +883,20 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
                                                      "gdim":          gdim,
                                                      "n":             n,
                                                      "counter":       counter,
-                                                     "vertex_offset": vertex_offset}]
+                                                     "vertex_offset": vertex_offset,
+                                                     "values":        values}]
                     block += [(f_eval_derivs_copy % {"prefix":        prefix,
                                                      "space_dim":     space_dim,
                                                      "values_offset": values_offset,
                                                      "d":             d,
                                                      "offset":        i,
                                                      "stride":        stride,
+                                                     "values":        values
                                                      }) for (i, d) in enumerate(derivs)]
 
                     # Generate code
                     code += [f_comment("Evaluate basis function derivatives at all quadrature points")]
-                    if cell_number == 0:
-                        code += [f_static_array("double", "values", num_vals)]
+                    code += [f_static_array("double", values, num_vals)]
                     code += f_loop(block, [("ip", 0, "num_quadrature_points")])
                     code += [""]
 
