@@ -23,7 +23,7 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-28
-# Last changed: 2014-04-23
+# Last changed: 2014-04-24
 
 # Code snippets
 
@@ -777,7 +777,7 @@ max_facet_edge_length = {3: {3: _max_facet_edge_length_3D}}
 eval_basis_decl = """\
 std::vector<std::vector<double> > %(prefix)s(num_quadrature_points);
 for (std::size_t ip = 0; ip < num_quadrature_points; ip++)
-  %(prefix)s.resize(%(macro_dim)s);
+  %(prefix)s[ip].resize(%(macro_dim)s);
 """
 
 eval_basis = """\
@@ -795,7 +795,7 @@ std::copy(%(values)s, %(values)s + %(space_dim)s, %(prefix)s[ip].begin() + %(val
 eval_derivs_decl = """\
 std::vector<std::vector<double> > %(prefix)s_D%(d)s(num_quadrature_points);
 for (std::size_t ip = 0; ip < num_quadrature_points; ip++)
-  %(prefix)s_D%(d)s.resize(%(macro_dim)s);
+  %(prefix)s_D%(d)s[ip].resize(%(macro_dim)s);
 """
 
 eval_derivs = """\
