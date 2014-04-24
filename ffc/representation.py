@@ -34,7 +34,7 @@ in the intermediate representation under the key "foo".
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2009-12-16
-# Last changed: 2014-03-19
+# Last changed: 2014-04-24
 
 # Python modules
 from itertools import chain
@@ -242,7 +242,7 @@ def _compute_form_ir(form_data, form_id, element_numbers):
     ir["num_exterior_facet_domains"] = form_data.num_sub_domains.get("exterior_facet",0)
     ir["num_interior_facet_domains"] = form_data.num_sub_domains.get("interior_facet",0)
     ir["num_point_domains"] = form_data.num_sub_domains.get("point",0)
-    ir["num_custom_domains"] = form_data.num_sub_domains.get("quadrature",0)
+    ir["num_custom_domains"] = form_data.num_sub_domains.get("custom",0)
 
     ir["has_cell_integrals"] = _has_foo_integrals("cell", form_data)
     ir["has_exterior_facet_integrals"] = _has_foo_integrals("exterior_facet", form_data)
