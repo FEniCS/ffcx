@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-04-23
+# Last changed: 2014-04-28
 
 # Python modules
 import functools, itertools
@@ -416,7 +416,6 @@ def _generate_element_tensor(integrals, sets, optimise_parameters):
 
         # Generate code to evaluate the element tensor.
         integral_code, ops = _generate_integral_code(points, terms, sets, optimise_parameters)
-
         num_ops += ops
         if points is None:
             quadrature_ops = "unknown"
@@ -558,7 +557,6 @@ def _generate_integral_code(points, terms, sets, optimise_parameters):
 
             # Create comment for number of operations
             entry_ops_comment = f_comment("Number of operations to compute entry: %d" % entry_ops)
-
             entry_code = f_iadd(f_A(entry), value)
             loops[loop][0] += entry_ops
             loops[loop][1] += [entry_ops_comment, entry_code]

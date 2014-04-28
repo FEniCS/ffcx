@@ -21,7 +21,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-04-23
+# Last changed: 2014-04-28
 
 # Python modules
 import numpy, itertools, collections
@@ -47,8 +47,6 @@ def compute_integral_ir(itg_data,
                         form_id,
                         parameters):
     "Compute intermediate represention of integral."
-
-    print parameters
 
     info("Computing quadrature representation")
 
