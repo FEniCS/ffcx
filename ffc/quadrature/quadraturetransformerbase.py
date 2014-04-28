@@ -1024,7 +1024,7 @@ class QuadratureTransformerBase(Transformer):
         # If we have a restricted function and domain type is custom,
         # then special-case set loop index range since table is empty.
         if self.restriction in ("+", "-") and self.integral_type == "custom":
-            loop_index_range = space_dim
+            loop_index_range = ffc_element.space_dimension() # difference from `space_dimension`...
 
         basis = ""
         # Ignore zeros if applicable
