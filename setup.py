@@ -7,8 +7,8 @@ import sys
 import platform
 
 # Version number
-major = 0
-minor = 2
+major = 1
+minor = 3
 maintenance = 0
 
 scripts = [pjoin("scripts", "uflacs")]
