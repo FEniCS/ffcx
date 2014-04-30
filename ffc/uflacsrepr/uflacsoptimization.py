@@ -22,9 +22,7 @@ def optimize_integral_ir(ir, parameters):
 
     info("Optimizing uflacs representation")
 
-    # Call upon uflacs to optimize ssa representation prior to code generation.
-    # Should be possible to skip this step.
-    import uflacs.backends.ffc  # Don't laugh on the next line here :-p
-    oir = uflacs.backends.ffc.ffc_uflacs_representation.optimize_tabulate_tensor_ir(ir, parameters)
+    # TODO: Implement optimization of ssa representation prior to code generation here.
+    oir = ir
 
     return oir
