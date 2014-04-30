@@ -19,7 +19,7 @@
 %shared_ptr(ufc::exterior_facet_integral)
 %shared_ptr(ufc::interior_facet_integral)
 %shared_ptr(ufc::point_integral)
-%shared_ptr(ufc::quadrature_integral)
+%shared_ptr(ufc::custom_integral)
 %shared_ptr(ufc::form)
 
 %include <exception.i>
