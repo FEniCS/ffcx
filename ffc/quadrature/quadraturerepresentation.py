@@ -48,8 +48,6 @@ def compute_integral_ir(itg_data,
                         parameters):
     "Compute intermediate represention of integral."
 
-    print parameters
-
     info("Computing quadrature representation")
 
     # Initialise representation
