@@ -276,11 +276,36 @@ namespace ufc
 
   };
 
+  /// This class defines the shared interface for classes implementing
+  /// the tabulation of a tensor corresponding to the local contribution
+  /// to a form from an integral.
+
+  class integral
+  {
+  public:
+
+    /// Destructor
+    virtual ~integral() {}
+
+    /// Tabulate which form coefficients are used by this integral
+    //virtual const std::vector<bool> & enabled_coefficients() const = 0;
+    virtual const std::vector<bool> & enabled_coefficients() const
+    {
+      static const std::vector<bool> enabled({
+          true, true, true, true, true,
+          true, true, true, true, true,
+          true, true, true, true, true,
+          true, true, true, true, true, });
+      return enabled;
+    }
+
+  };
+
   /// This class defines the interface for the tabulation of the cell
   /// tensor corresponding to the local contribution to a form from
   /// the integral over a cell.
 
-  class cell_integral
+  class cell_integral: public integral
   {
   public:
 
@@ -293,19 +318,13 @@ namespace ufc
                                  const double* vertex_coordinates,
                                  int cell_orientation) const = 0;
 
-    // FIXME: New experimental version
-    /// Tabulate the tensor for the contribution from a local cell
-    virtual void tabulate_tensor_new(double* A,
-                                     const double * const * w,
-                                     const cell_geometry& c) const {}
-
   };
 
   /// This class defines the interface for the tabulation of the
   /// exterior facet tensor corresponding to the local contribution to
   /// a form from the integral over an exterior facet.
 
-  class exterior_facet_integral
+  class exterior_facet_integral: public integral
   {
   public:
 
@@ -325,7 +344,7 @@ namespace ufc
   /// interior facet tensor corresponding to the local contribution to
   /// a form from the integral over an interior facet.
 
-  class interior_facet_integral
+  class interior_facet_integral: public integral
   {
   public:
 
@@ -347,7 +366,7 @@ namespace ufc
   /// This class defines the interface for the tabulation of
   /// an expression evaluated at exactly one point.
 
-  class point_integral
+  class point_integral: public integral
   {
   public:
 
@@ -371,7 +390,7 @@ namespace ufc
   /// the integral over a custom domain defined in terms of a set of
   /// quadrature points and weights.
 
-  class custom_integral
+  class custom_integral: public integral
   {
   public:
 
@@ -456,10 +475,10 @@ namespace ufc
     /// Return whether form has any custom integrals
     virtual bool has_custom_integrals() const = 0;
 
-    /// Create a new finite element for argument function i
+    /// Create a new finite element for argument function 0 <= i < r+n
     virtual finite_element* create_finite_element(std::size_t i) const = 0;
 
-    /// Create a new dofmap for argument function i
+    /// Create a new dofmap for argument function 0 <= i < r+n
     virtual dofmap* create_dofmap(std::size_t i) const = 0;
 
     /// Create a new cell integral on sub domain i
