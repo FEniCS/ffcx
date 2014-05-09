@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>Roadmap of uflacs development</title>
+  <meta name="description" content="Roadmap for development of uflacs towards feature completeness.">
+  <meta name="author" content="Martin Sandve Alnæs">
+
+  <link rel="stylesheet" href="css/reveal.min.css">
+  <link rel="stylesheet" href="css/theme/night.css" id="theme">
+
+  <!-- Add support for old IE -->
+  <!--[if lt IE 9]>
+  <script src="lib/js/html5shiv.js"></script>
+  <![endif]-->
+
+</head>
+
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <section id="title-slide">
+        <h2><script>document.write(document.title);</script></h2>
+        <h4>Martin Sandve Alnæs</h4>
+        <h4>10/4 2014</h4>
+      </section>
+
+
+      <!-- Work in progress, current focus -->
+      <section id="wip">
+
+        <section id="priorities">
+          <a href="#/priorities"><h3>Work in progress - current top priorities</h3></a>
+          <ul>
+            <li>Straighten out restrictions, starting with "Jacobian should be restricted" error.</li>
+            <li>Then find the next thing to do by running FFC regression demos.</li>
+          </ul>
+        </section>
+
+      </section>
+
+
+      <!-- Features section -->
+      <section id="status-geometry">
+
+        <section>
+          <h3>Status of geometry types</h3>
+          <ul>
+          <li>Many are working.</li>
+          <li>For each geometry type:
+            <ul>
+              <li>For each integral type:
+                <ul>
+                  <li>Test!</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <li>Types on the next slide:</li>
+          </ul>
+        </section>
+
+        <section tagcloud>
+          SpatialCoordinate
+          ReferenceCoordinate
+          ReferenceFacetCoordinate
+          CellOriginCoordinate
+          Jacobian
+          JacobianDeterminant
+          JacobianInverse
+          FacetJacobian
+          FacetJacobianDeterminant
+          FacetJacobianInverse
+          ReferenceFacetJacobian
+          CellVolume
+          Circumradius
+          FacetArea
+          MinFacetEdgeLength
+          MaxFacetEdgeLength
+          FacetNormal
+          CellNormal
+          CellOrientation
+          QuadratureWeight
+        </section>
+
+        <section>
+          <h3>...</h3>
+        </section>
+
+      </section>
+
+
+      <!-- Features section -->
+      <section id="status-integrals">
+
+        <section>
+          <h3>Status of integral types</h3>
+          <p>Need unit testing of geometry.</p>
+          <p>Need unit testing of gradient mappings.</p>
+          <p>Need unit testing of integration scaling.</p>
+        </section>
+
+        <section tagcloud>
+          cell
+          exterior_facet
+          interior_facet
+          quadrature
+          point
+        </section>
+
+        </section>
+
+      </section>
+
+
+      <!-- Features section -->
+      <section id="status-coefficients">
+
+        <section>
+          <h3>Status of coefficient types</h3>
+        </section>
+
+        <section>
+          <h3>Constant coefficients</h3>
+        </section>
+
+        <section>
+          <h3>Varying coefficients</h3>
+        </section>
+
+        <section>
+          <h3>Mixed coefficients</h3>
+        </section>
+
+      </section>
+
+
+      <!-- Features section -->
+      <section id="status-arguments">
+
+        <section>
+          <h3>Status of argument types</h3>
+        </section>
+
+        <section>
+          <h3>Constant arguments</h3>
+        </section>
+
+        <section>
+          <h3>Varying arguments</h3>
+        </section>
+
+        <section>
+          <h3>Mixed arguments</h3>
+        </section>
+
+      </section>
+
+
+      <!-- Testing techniques -->
+      <section id="testing-commands">
+
+        <section>
+          <h3>Commands to test uflacs with ffc:</h3>
+          <pre><code data-trim contenteditable>
+ffc -r uflacs
+./test.py --ext-uflacs --skip-download --permissive --print-timing
+./test.py --ext-uflacs --skip-download --permissive --print-timing --bench
+          </code></pre>
+        </section>
+
+        <section>
+          <h3>Python unit testing status</h3>
+        </section>
+
+        <section>
+          <h3>C++ unit testing status</h3>
+        </section>
+
+      </section>
+
+
+      <!-- FFC regression demos working -->
+      <section id="regression-correct">
+
+        <section>
+          <a href="#/regression-correct">
+          <h3>Overview of which FFC regression test demos that produce CORRECT results</h3>
+          </a>
+        </section>
+
+        <section tagcloud>
+          Mass
+          Poisson1D
+          Poisson
+          VectorPoisson
+          TensorWeightedPoisson
+          Heat
+          Stokes
+          NavierStokes
+          Division
+          NeumannProblem
+          StabilisedStokes
+          Optimization
+          MixedMixedElement
+          Mini
+          SpatialCoordinates
+          SubDomain
+          P5tet
+          P5tri
+          Constant
+          Equation
+          ReactionDiffusion
+          EnergyNorm
+          AlgebraOperators
+          Components
+          MathFunctions
+          QuadratureElement
+          MetaData
+          CoefficientOperators
+          Elasticity
+          HyperElasticity
+        </section>
+
+      </section>
+
+
+      <!-- FFC regression demos not working -->
+      <section id="regression-incorrect">
+
+        <section>
+          <a href="#/regression-incorrect">
+          <h3>Overview of which FFC regression test demos that produce
+          INCORRECT results</h3>
+          </a>
+          <p>Probable reasons:</p>
+          <ul>
+            <li>Fancy element mappings</li>
+          </ul>
+        </section>
+
+        <section tagcloud>
+          MixedPoissonDual
+          MixedPoisson
+        </section>
+
+      </section>
+
+
+      <!-- FFC regression demos not working -->
+      <section id="regression-fail-generate">
+
+        <section>
+          <a href="#/regression-fail-generate">
+          <h3>Overview of which FFC regression test demos that fail to
+          generate code:</h3>
+          </a>
+        </section>
+
+        <section tagcloud>
+          PoissonDG
+          Biharmonic
+          SubDomains
+          CellGeometry
+          Conditional
+          Normals
+          AdaptivePoisson
+          FacetIntegrals
+          FacetRestrictionAD
+          RestrictedElement
+          PointMeasure
+          VectorLaplaceGradCurl
+        </section>
+
+        <!-- Split by reason -->
+
+        <section>
+          <h3>Jacobians and restrictions</h3>
+          Biharmonic
+          SubDomains
+          FacetIntegrals
+          FacetRestrictionAD
+        </section>
+
+        <section>
+          <h3>Facet normals</h3>
+          Normals
+        </section>
+
+        <section>
+          <h3>Missing geometry</h3>
+          CellGeometry
+        </section>
+
+        <section>
+          <h3>Other reasons</h3>
+          PoissonDG
+          AdaptivePoisson
+          RestrictedElement
+          PointMeasure
+          VectorLaplaceGradCurl
+        </section>
+
+        <section>
+          <h3>Manifold dimensions</h3>
+          ProjectionManifold
+        </section>
+
+        <section>
+          <h3>Conditionals</h3>
+          Conditional
+        </section>
+
+      </section>
+
+
+      <!-- FFC regression demos not yet checked -->
+<!--
+      <section>
+
+        <section>
+          <h3>Slides for each FFC regression test demo not yet checked</h3>
+        </section>
+
+
+        <section>
+          <h3>AdaptivePoisson.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>AlgebraOperators.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>Biharmonic.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>CellGeometry.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>CoefficientOperators.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>Components.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>Conditional.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>Constant.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>Division.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>Elasticity.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>EnergyNorm.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>Equation.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>FacetIntegrals.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>FacetRestrictionAD.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>Heat.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>HyperElasticity.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>Mass.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>MathFunctions.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>MetaData.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>Mini.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>MixedMixedElement.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>MixedPoisson.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>MixedPoissonDual.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>NavierStokes.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>NeumannProblem.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>Normals.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>Optimization.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>P5tet.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>P5tri.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>PointMeasure.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>Poisson.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>Poisson1D.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>PoissonDG.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>ProjectionManifold.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>QuadratureElement.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>ReactionDiffusion.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>RestrictedElement.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>SpatialCoordinates.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>StabilisedStokes.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>Stokes.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>SubDomain.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>SubDomains.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>TensorWeightedPoisson.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>VectorLaplaceGradCurl.ufl</h3>
+        </section>
+
+
+        <section>
+          <h3>VectorPoisson.ufl</h3>
+        </section>
+
+      </section>
+-->
+
+      <!-- Future code improvement -->
+      <section>
+
+        <section>
+          <h3>Clean up graph building code</h3>
+        </section>
+
+        <section>
+          <h3>Rewrite ffc table generation</h3>
+        </section>
+
+        <section>
+          <h3>Merge into ffc?</h3>
+        </section>
+
+      </section>
+
+
+      <!-- Future optimization -->
+      <section>
+
+        <section>
+          <h3>Loop invariant code motion</h3>
+        </section>
+
+        <section>
+          <h3>Loop fusion</h3>
+        </section>
+
+        <section>
+          <h3>Identify relation to tensor representation</h3>
+        </section>
+
+        <section>
+          <h3>AVX vectorization</h3>
+        </section>
+
+        <section>
+          <h3>BLAS</h3>
+        </section>
+
+      </section>
+
+
+      <!-- End of talk -->
+
+
+<!-- Example slides
+      <section>
+
+        <section>
+          <h3>Example slides below</h3>
+        </section>
+
+        <section>
+          <h3>Code example</h3>
+          <pre><code data-trim contenteditable>
+              foo = bar();
+          </code></pre>
+        </section>
+
+        <section>
+          <h3>Point list</h3>
+          <ul>
+            <li>...</li>
+            <li>...</li>
+            <li>...</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>Image</h3>
+          <img src="images/image.jpg">
+        </section>
+
+        <section>
+          <h3>Image and pointlist (fix alignment)</h3>
+          <div style="text-align: left;">
+            <ul>
+              <li>...</li>
+              <li>...</li>
+              <li>...</li>
+            </ul>
+          </div>
+          <div style="text-align: right;">
+            <img src="images/image.jpg">
+          </div>
+        </section>
+
+      </section>
+
+-->
+
+    </div>
+
+    <script src="lib/js/head.min.js"></script>
+    <script src="js/reveal.min.js"></script>
+
+    <script>
+        // Required, even if empty
+        Reveal.initialize({
+          //controls: true,
+          //progress: true,
+          //history=true,
+          //center=false,
+
+          math: {
+            // mathjax: 'http://cdn.mathjax.org/mathjax/latest/MathJax.js',
+            config: 'TeX-AMS_HTML-full'
+          },
+
+          dependencies: [
+            { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+            { src: 'plugin/tagcloud/tagcloud.js', async: true },
+            { src: 'plugin/math/math.js', async: true },
+          ]
+        })
+    </script>
+</body>
+</html>

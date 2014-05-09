@@ -1,8 +1,8 @@
 import sys
-sys.path.insert(0, "../../site-packages")
+sys.path.insert(0, "../..")
 uflacs = __import__("uflacs")
 
-import uflacs.backends.ffc as uffc
+from uflacs.backends.ffc.ffc_compiler import compile_tabulate_tensor_code
 from ufl import *
 
 cell = triangle
@@ -135,7 +135,7 @@ forms += [us1('+')*vs1('-')*dS]
 forms += [us1*vs1*dP]
 
 for form in forms:
-    code = uffc.compile_tabulate_tensor_code(form, optimize=True)
+    code = compile_tabulate_tensor_code(form, optimize=True)
     print
     print ('/'*40), str(form)
     print code

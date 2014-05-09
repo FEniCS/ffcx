@@ -1,0 +1,6 @@
+1.4.0 [2014-xx-xx]
+- New factorization algorithm
+1.3.0 [2014-02-19]
+- Last version working with FEniCS 1.3
+- Tagged fenics-1.3 in the git repository but not officially released
+
