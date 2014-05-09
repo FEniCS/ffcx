@@ -288,16 +288,7 @@ namespace ufc
     virtual ~integral() {}
 
     /// Tabulate which form coefficients are used by this integral
-    //virtual const std::vector<bool> & enabled_coefficients() const = 0;
-    virtual const std::vector<bool> & enabled_coefficients() const
-    {
-      static const std::vector<bool> enabled({
-          true, true, true, true, true,
-          true, true, true, true, true,
-          true, true, true, true, true,
-          true, true, true, true, true, });
-      return enabled;
-    }
+    virtual const std::vector<bool> & enabled_coefficients() const = 0;
 
   };
 
