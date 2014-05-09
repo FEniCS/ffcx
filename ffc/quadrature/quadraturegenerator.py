@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-04-28
+# Last changed: 2014-05-09
 
 # Python modules
 import functools, itertools
@@ -820,7 +820,7 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
                     values_offset = cell_number*num_vals
 
                     # Name of values array
-                    values = "values_%d" % cell_number
+                    values = "%s_values_%d" % (prefix, cell_number)
 
                     # Generate block of code for loop
                     block = []
@@ -873,7 +873,7 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
                     stride = value_size*len(derivs)
 
                     # Name of values array
-                    values = "dvalues_%d_%d" % (n, cell_number)
+                    values = "%s_dvalues_%d_%d" % (prefix, n, cell_number)
 
                     # Generate block of code for loop
                     block = []
