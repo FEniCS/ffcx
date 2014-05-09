@@ -31,11 +31,11 @@
       <!-- Work in progress, current focus -->
       <section id="wip">
 
-        <section>
-          <h3>Work in progress</h3>
+        <section id="priorities">
+          <a href="#/priorities"><h3>Work in progress - current top priorities</h3></a>
           <ul>
-            <li>Fix bug in value numbering algorithm with tensor/scalar division.</li>
             <li>Straighten out restrictions, starting with "Jacobian should be restricted" error.</li>
+            <li>Then find the next thing to do by running FFC regression demos.</li>
           </ul>
         </section>
 
@@ -186,7 +186,9 @@ ffc -r uflacs
       <section id="regression-correct">
 
         <section>
+          <a href="#/regression-correct">
           <h3>Overview of which FFC regression test demos that produce CORRECT results</h3>
+          </a>
         </section>
 
         <section tagcloud>
@@ -229,8 +231,10 @@ ffc -r uflacs
       <section id="regression-incorrect">
 
         <section>
+          <a href="#/regression-incorrect">
           <h3>Overview of which FFC regression test demos that produce
           INCORRECT results</h3>
+          </a>
           <p>Probable reasons:</p>
           <ul>
             <li>Fancy element mappings</li>
@@ -249,12 +253,14 @@ ffc -r uflacs
       <section id="regression-fail-generate">
 
         <section>
-          <h3>Overview of which FFC regression test demos that fail to generate code:</h3>
+          <a href="#/regression-fail-generate">
+          <h3>Overview of which FFC regression test demos that fail to
+          generate code:</h3>
+          </a>
         </section>
 
         <section tagcloud>
           PoissonDG
-          ProjectionManifold
           Biharmonic
           SubDomains
           CellGeometry
@@ -266,6 +272,45 @@ ffc -r uflacs
           RestrictedElement
           PointMeasure
           VectorLaplaceGradCurl
+        </section>
+
+        <!-- Split by reason -->
+
+        <section>
+          <h3>Jacobians and restrictions</h3>
+          Biharmonic
+          SubDomains
+          FacetIntegrals
+          FacetRestrictionAD
+        </section>
+
+        <section>
+          <h3>Facet normals</h3>
+          Normals
+        </section>
+
+        <section>
+          <h3>Missing geometry</h3>
+          CellGeometry
+        </section>
+
+        <section>
+          <h3>Other reasons</h3>
+          PoissonDG
+          AdaptivePoisson
+          RestrictedElement
+          PointMeasure
+          VectorLaplaceGradCurl
+        </section>
+
+        <section>
+          <h3>Manifold dimensions</h3>
+          ProjectionManifold
+        </section>
+
+        <section>
+          <h3>Conditionals</h3>
+          Conditional
         </section>
 
       </section>
