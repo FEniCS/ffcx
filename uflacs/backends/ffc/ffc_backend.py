@@ -359,7 +359,7 @@ class FFCAccessBackend(MultiFunction):
     def jacobian_determinant(self, e, mt, tabledata):
         error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
 
-    def facet_jacobian(self, e, mt, tabledata):
+    def physical_facet_jacobian(self, e, mt, tabledata):
         error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
 
     def facet_jacobian_inverse(self, e, mt, tabledata):
@@ -578,7 +578,7 @@ class FFCDefinitionsBackend(MultiFunction):
     def jacobian_determinant(self, e, mt, tabledata, access):
         error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
 
-    def facet_jacobian(self, e, mt, tabledata, access):
+    def physical_facet_jacobian(self, e, mt, tabledata, access):
         error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
 
     def facet_jacobian_inverse(self, e, mt, tabledata, access):
