@@ -83,7 +83,7 @@ cell_integral_implementation = """\
 }
 
 /// Tabulate which form coefficients are used by this integral
-virtual const std::vector<bool> & %(classname)s::enabled_coefficients() const
+const std::vector<bool> & %(classname)s::enabled_coefficients() const
 {
 %(enabled_coefficients)s
 }
@@ -180,7 +180,7 @@ exterior_facet_integral_implementation = """\
 }
 
 /// Tabulate which form coefficients are used by this integral
-virtual const std::vector<bool> & %(classname)s::enabled_coefficients() const
+const std::vector<bool> & %(classname)s::enabled_coefficients() const
 {
 %(enabled_coefficients)s
 }
@@ -284,7 +284,7 @@ interior_facet_integral_implementation = """\
 }
 
 /// Tabulate which form coefficients are used by this integral
-virtual const std::vector<bool> & %(classname)s::enabled_coefficients() const
+const std::vector<bool> & %(classname)s::enabled_coefficients() const
 {
 %(enabled_coefficients)s
 }
@@ -383,7 +383,7 @@ point_integral_implementation = """\
 }
 
 /// Tabulate which form coefficients are used by this integral
-virtual const std::vector<bool> & %(classname)s::enabled_coefficients() const
+const std::vector<bool> & %(classname)s::enabled_coefficients() const
 {
 %(enabled_coefficients)s
 }
@@ -496,7 +496,7 @@ custom_integral_implementation = """\
 }
 
 /// Tabulate which form coefficients are used by this integral
-virtual const std::vector<bool> & %(classname)s::enabled_coefficients() const
+const std::vector<bool> & %(classname)s::enabled_coefficients() const
 {
 %(enabled_coefficients)s
 }
