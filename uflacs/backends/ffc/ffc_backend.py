@@ -299,9 +299,9 @@ class FFCAccessBackend(MultiFunction):
         return access
 
     def reference_coordinate(self, e, mt, tabledata):
-        uflacs_assert(not mt.global_derivatives, "Not expecting derivatives of ReferenceCoordinates.")
-        uflacs_assert(not mt.local_derivatives, "Not expecting derivatives of ReferenceCoordinates.")
-        uflacs_assert(not mt.averaged, "Not expecting average of ReferenceCoordinates.")
+        uflacs_assert(not mt.global_derivatives, "Not expecting derivatives of CellCoordinates.")
+        uflacs_assert(not mt.local_derivatives, "Not expecting derivatives of CellCoordinates.")
+        uflacs_assert(not mt.averaged, "Not expecting average of CellCoordinates.")
 
         assert not mt.restriction # FIXME: Not used!
 
