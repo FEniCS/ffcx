@@ -291,7 +291,7 @@ class QuadratureTransformerBase(Transformer):
     def facet_jacobian_inverse(self, o):
         error("This object should be implemented by the child class.")
 
-    def reference_facet_jacobian(self, o):
+    def cell_facet_jacobian(self, o):
         error("This object should be implemented by the child class.")
 
     #def cell_barycenter(self, o):
