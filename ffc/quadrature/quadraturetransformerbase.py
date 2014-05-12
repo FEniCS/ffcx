@@ -282,7 +282,7 @@ class QuadratureTransformerBase(Transformer):
     def jacobian_inverse(self, o):
         error("This object should be implemented by the child class.")
 
-    def physical_facet_jacobian(self, o):
+    def facet_jacobian(self, o):
         error("This object should be implemented by the child class.")
 
     def facet_jacobian_determinant(self, o):
