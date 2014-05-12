@@ -327,13 +327,13 @@ class FFCAccessBackend(MultiFunction):
         access = format_mt_name(names.J, mt)
         return access
 
-    def reference_facet_jacobian(self, e, mt, tabledata):
+    def cell_facet_jacobian(self, e, mt, tabledata):
 
         #assert mt.restriction # FIXME: needed in current failing situation
 
         cellname = mt.terminal.domain().cell().cellname()
         if cellname in ("triangle", "tetrahedron"):
-            tablename = "{0}_reference_facet_jacobian".format(cellname)
+            tablename = "{0}_cell_facet_jacobian".format(cellname)
             facet = names.facet + names.restriction_postfix[mt.restriction] # FIXME
             access = ArrayAccess(tablename, (facet, mt.component[0], mt.component[1]))
         elif cellname == "interval":
@@ -555,7 +555,7 @@ class FFCDefinitionsBackend(MultiFunction):
 
         return code
 
-    def reference_facet_jacobian(self, e, mt, tabledata, access):
+    def cell_facet_jacobian(self, e, mt, tabledata, access):
         # Currently the table is inserted in self.initial()
         # TODO: Define table in ufc_geometry? Or insert among regular tables?
         code = []
