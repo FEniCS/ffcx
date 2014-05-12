@@ -298,7 +298,7 @@ class FFCAccessBackend(MultiFunction):
 
         return access
 
-    def reference_coordinate(self, e, mt, tabledata):
+    def cell_coordinate(self, e, mt, tabledata):
         uflacs_assert(not mt.global_derivatives, "Not expecting derivatives of CellCoordinates.")
         uflacs_assert(not mt.local_derivatives, "Not expecting derivatives of CellCoordinates.")
         uflacs_assert(not mt.averaged, "Not expecting average of CellCoordinates.")
@@ -489,7 +489,7 @@ class FFCDefinitionsBackend(MultiFunction):
 
         return code
 
-    def reference_coordinate(self, e, mt, tabledata, access):
+    def cell_coordinate(self, e, mt, tabledata, access):
         """Return definition code for the reference spatial coordinates.
 
         If reference coordinates are given:
