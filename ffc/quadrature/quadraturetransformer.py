@@ -354,7 +354,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
     def cell_coordinate(self, o):
         error("This object should be implemented by the child class.") # FIXME
 
-    def reference_facet_coordinate(self, o):
+    def facet_coordinate(self, o):
         error("This object should be implemented by the child class.") # FIXME
 
     def jacobian(self, o):
