@@ -267,7 +267,7 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     # FacetNormal, CellVolume, Circumradius (geometry.py).
     # -------------------------------------------------------------------------
-    def reference_coordinate(self, o):
+    def cell_coordinate(self, o):
         error("This object should be implemented by the child class.")
 
     def reference_facet_coordinate(self, o):
