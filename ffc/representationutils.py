@@ -117,10 +117,8 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
     tdim = itg_data.domain.topological_dimension()
     assert all(tdim == itg.domain().topological_dimension() for itg in itg_data.integrals)
 
-    # Set number of cells if not set
-    num_cells = None
-    if "num_cells" in itg_data.metadata:
-        num_cells = itg_data.metadata["num_cells"]
+    # Set number of cells if not set TODO: Get automatically from number of domains
+    num_cells = itg_data.metadata.get("num_cells")
 
     return {"representation":        representation,
             "integral_type":         itg_data.integral_type,
@@ -133,7 +131,19 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
             "num_facets":            cellname_to_num_entities[cellname][-2],
             "num_vertices":          cellname_to_num_entities[cellname][0],
             "needs_oriented":        needs_oriented_jacobian(form_data),
-            "num_cells":             num_cells}
+            "num_cells":             num_cells,
+            "enabled_coefficients":  itg_data.enabled_coefficients,
+            }
+
+def generate_enabled_coefficients(enabled_coefficients):
+    # TODO: I don't know how to implement this using the format dict, this will do for now:
+    initializer_list = ", ".join("true" if enabled else "false"
+                                 for enabled in enabled_coefficients)
+    code = '\n'.join([
+        "static const std::vector<bool> enabled({%s});" % initializer_list,
+        "return enabled;",
+        ])
+    return code
 
 def initialize_integral_code(ir, prefix, parameters):
     "Representation independent default initialization of code dict for integral from intermediate representation."
@@ -145,5 +155,6 @@ def initialize_integral_code(ir, prefix, parameters):
     code["constructor_arguments"] = ""
     code["initializer_list"] = ""
     code["destructor"] = format["do nothing"]
+    code["enabled_coefficients"] = generate_enabled_coefficients(ir["enabled_coefficients"])
     #code["additional_includes_set"] = set() #ir["additional_includes_set"]
     return code
