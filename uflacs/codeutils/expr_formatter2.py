@@ -1,6 +1,6 @@
 
 import ufl
-from ufl.algorithms.transformations import Transformer
+from ufl.algorithms import Transformer
 
 from uflacs.utils.log import uflacs_assert, info, warning, error
 from uflacs.codeutils.precedence import build_precedence_map

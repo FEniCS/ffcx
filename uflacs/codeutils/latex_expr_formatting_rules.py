@@ -247,11 +247,10 @@ class LatexFormattingRules(object):
         return r"%s^{[-]}" % (a,) # TODO
 
 
-from ufl.algorithms.transformations import MultiFunction
+from ufl.algorithms import MultiFunction
 class LatexFormatter(MultiFunction, LatexFormattingRules):
     """Default LaTeX formatter class.
 
     Customize by copying this and overriding rules."""
     def __init__(self):
         MultiFunction.__init__(self)
-
