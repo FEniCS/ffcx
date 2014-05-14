@@ -22,7 +22,7 @@ transformers to translate UFL expressions."""
 # Modified by Garth N. Wells, 2013
 #
 # First added:  2009-10-13
-# Last changed: 2014-05-09
+# Last changed: 2014-05-13
 
 # Python modules.
 from itertools import izip
@@ -1021,10 +1021,10 @@ class QuadratureTransformerBase(Transformer):
         name, non_zeros, zeros, ones = self.name_map[name]
         loop_index_range = shape(self.unique_tables[name])[1]
 
-        # If we have a restricted function and domain type is custom,
-        # then special-case set loop index range since table is empty.
-        if self.restriction in ("+", "-") and self.integral_type == "custom":
-            loop_index_range = ffc_element.space_dimension() # difference from `space_dimension`...
+        # If domain type is custom, then special-case set loop index
+        # range since table is empty
+        if self.integral_type == "custom":
+            loop_index_range = ffc_element.space_dimension() # different from `space_dimension`...
 
         basis = ""
         # Ignore zeros if applicable

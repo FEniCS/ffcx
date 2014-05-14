@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-05-09
+# Last changed: 2014-05-13
 
 # Python modules
 import functools, itertools
@@ -734,7 +734,6 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
                         new_nzcs.remove(inv_name_map[n][1])
     return code
 
-
 def _evaluate_basis_at_quadrature_points(psi_tables,
                                          gdim,
                                          element_data,
@@ -758,7 +757,12 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
     code = []
 
     # Extract prefixes for tables
+
+    print psi_tables
+
     prefixes = sorted(list(set(table.split("_")[0] for table in psi_tables)))
+
+    print prefixes
 
     # Use lower case prefix for form name
     form_prefix = form_prefix.lower()
