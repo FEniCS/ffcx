@@ -18,7 +18,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2007-06-09
-# Last changed: 2014-04-23
+# Last changed: 2014-05-15
 
 import os, re, sys
 
@@ -36,8 +36,10 @@ for test in tests:
     print "Running tests: %s" % test
     print "----------------------------------------------------------------------"
     os.chdir(os.path.join(pwd, test))
-    failure = os.system("python test.py | tee -a %s" % logfile)
+    #failure = os.system("python test.py | tee -a %s" % logfile)
+    failure = os.system("python test.py")
     if failure:
+        print "Test FAILED"
         failed.append(test)
     print ""
 
