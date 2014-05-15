@@ -21,7 +21,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-04-28
+# Last changed: 2014-05-15
 
 # Python modules
 import numpy, itertools, collections
@@ -31,7 +31,7 @@ from ufl.classes import Form, Integral
 from ufl.sorting import sorted_expr_sum
 
 # FFC modules
-from ffc.log import ffc_assert, info, error
+from ffc.log import ffc_assert, info, error, warning
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import cellname_to_num_entities
 
@@ -45,6 +45,7 @@ from ffc.quadrature.optimisedquadraturetransformer import QuadratureTransformerO
 def compute_integral_ir(itg_data,
                         form_data,
                         form_id,
+                        element_numbers,
                         parameters):
     "Compute intermediate represention of integral."
 
@@ -106,7 +107,7 @@ def compute_integral_ir(itg_data,
 
     # Extract element data for psi_tables, needed for runtime quadrature.
     # This is used by integral type custom_integral.
-    ir["element_data"] = _extract_element_data(transformer.element_map)
+    ir["element_data"] = _extract_element_data(transformer.element_map, element_numbers)
 
     return ir
 
@@ -206,7 +207,7 @@ def _transform_integrals(transformer, integrals, integral_type):
                                       {}, transformer.coordinate, transformer.conditionals))
     return transformed_integrals
 
-def _extract_element_data(element_map):
+def _extract_element_data(element_map, element_numbers):
     "Extract element data for psi_tables"
 
     # Iterate over map
@@ -221,8 +222,17 @@ def _extract_element_data(element_map):
             shape = ufl_element.value_shape()
             value_size = 1 if shape == () else itertools.product(shape)
 
+            # Get element number
+            if ufl_element in element_numbers:
+                element_number = element_numbers[ufl_element]
+            else:
+                # FIXME: Should not be necessary, we should always know the element number
+                warning("Missing element number, likely because vector elements are not yet supported in custom integrals.")
+                element_number = None
+
             # Store data
             element_data[counter] = {"value_size":      value_size,
-                                     "local_dimension": fiat_element.space_dimension()}
+                                     "local_dimension": fiat_element.space_dimension(),
+                                     "element_number":  element_number}
 
     return element_data

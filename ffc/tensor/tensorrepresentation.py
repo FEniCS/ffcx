@@ -29,7 +29,7 @@ might be (re-)implemented in a future version of FFC
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-05
-# Last changed: 2014-03-05
+# Last changed: 2014-05-15
 
 # FFC modules
 from ffc.log import info, error
@@ -46,6 +46,7 @@ from ffc.tensor.tensorreordering import reorder_entries
 def compute_integral_ir(itg_data,
                         form_data,
                         form_id,
+                        element_numbers,
                         parameters):
     "Compute intermediate represention of integral."
 

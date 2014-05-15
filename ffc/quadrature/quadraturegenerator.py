@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-05-13
+# Last changed: 2014-05-15
 
 # Python modules
 import functools, itertools
@@ -71,7 +71,7 @@ def _tabulate_tensor(ir, prefix, parameters):
     f_int          = format["int"]
     f_facet        = format["facet"]
 
-    # Get data.
+    # Get data
     opt_par       = ir["optimise_parameters"]
     integral_type = ir["integral_type"]
     gdim          = ir["geometric_dimension"]
@@ -85,7 +85,7 @@ def _tabulate_tensor(ir, prefix, parameters):
     element_data  = ir["element_data"]
     num_cells     = ir["num_cells"]
 
-    # Create sets of used variables.
+    # Create sets of used variables
     used_weights    = set()
     used_psi_tables = set()
     used_nzcs       = set()
@@ -757,12 +757,7 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
     code = []
 
     # Extract prefixes for tables
-
-    print psi_tables
-
     prefixes = sorted(list(set(table.split("_")[0] for table in psi_tables)))
-
-    print prefixes
 
     # Use lower case prefix for form name
     form_prefix = form_prefix.lower()
@@ -796,6 +791,7 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
         counter = int(prefix.split("FE")[1])
         space_dim = element_data[counter]["local_dimension"]
         value_size = element_data[counter]["value_size"]
+        element_number = element_data[counter]["element_number"]
         macro_dim = space_dim*num_cells
 
         # Iterate over derivative orders
@@ -828,16 +824,17 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
 
                     # Generate block of code for loop
                     block = []
-                    block += [f_eval_basis      % {"prefix":        prefix,
-                                                   "form_prefix":   form_prefix,
-                                                   "gdim":          gdim,
-                                                   "counter":       counter,
-                                                   "vertex_offset": vertex_offset,
-                                                   "values":        values}]
-                    block += [f_eval_basis_copy % {"prefix":        prefix,
-                                                   "space_dim":     space_dim,
-                                                   "values_offset": values_offset,
-                                                   "values":        values}]
+                    block += [f_eval_basis      % {"prefix":         prefix,
+                                                   "form_prefix":    form_prefix,
+                                                   "gdim":           gdim,
+                                                   "counter":        counter,
+                                                   "element_number": element_number,
+                                                   "vertex_offset":  vertex_offset,
+                                                   "values":         values}]
+                    block += [f_eval_basis_copy % {"prefix":         prefix,
+                                                   "space_dim":      space_dim,
+                                                   "values_offset":  values_offset,
+                                                   "values":         values}]
 
                     # Generate code
                     code += [f_comment("Evaluate basis functions at all quadrature points")]
@@ -881,20 +878,21 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
 
                     # Generate block of code for loop
                     block = []
-                    block += [f_eval_derivs %       {"prefix":        prefix,
-                                                     "form_prefix":   form_prefix,
-                                                     "gdim":          gdim,
-                                                     "n":             n,
-                                                     "counter":       counter,
-                                                     "vertex_offset": vertex_offset,
-                                                     "values":        values}]
-                    block += [(f_eval_derivs_copy % {"prefix":        prefix,
-                                                     "space_dim":     space_dim,
-                                                     "values_offset": values_offset,
-                                                     "d":             d,
-                                                     "offset":        i,
-                                                     "stride":        stride,
-                                                     "values":        values
+                    block += [f_eval_derivs %       {"prefix":         prefix,
+                                                     "form_prefix":    form_prefix,
+                                                     "gdim":           gdim,
+                                                     "n":              n,
+                                                     "counter":        counter,
+                                                     "element_number": element_number,
+                                                     "vertex_offset":  vertex_offset,
+                                                     "values":         values}]
+                    block += [(f_eval_derivs_copy % {"prefix":         prefix,
+                                                     "space_dim":      space_dim,
+                                                     "values_offset":  values_offset,
+                                                     "d":              d,
+                                                     "offset":         i,
+                                                     "stride":         stride,
+                                                     "values":         values
                                                      }) for (i, d) in enumerate(derivs)]
 
                     # Generate code

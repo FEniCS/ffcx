@@ -34,7 +34,7 @@ in the intermediate representation under the key "foo".
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2009-12-16
-# Last changed: 2014-04-24
+# Last changed: 2014-05-15
 
 # Python modules
 from itertools import chain
@@ -93,7 +93,7 @@ def compute_ir(analysis, parameters):
 
     # Compute and flatten representation of integrals
     info("Computing representation of integrals")
-    irs = [_compute_integral_ir(fd, i, parameters) \
+    irs = [_compute_integral_ir(fd, i, element_numbers, parameters) \
                for (i, fd) in enumerate(form_datas)]
     ir_integrals = [ir for ir in chain(*irs) if not ir is None]
 
@@ -200,7 +200,7 @@ def _needs_mesh_entities(element):
     else:
         return [d > 0 for d in num_dofs_per_entity]
 
-def _compute_integral_ir(form_data, form_id, parameters):
+def _compute_integral_ir(form_data, form_id, element_numbers, parameters):
     "Compute intermediate represention for form integrals."
 
     irs = []
@@ -216,6 +216,7 @@ def _compute_integral_ir(form_data, form_id, parameters):
         ir = r.compute_integral_ir(itg_data,
                                    form_data,
                                    form_id,
+                                   element_numbers,
                                    parameters)
 
         # Append representation

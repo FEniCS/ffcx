@@ -23,7 +23,7 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-28
-# Last changed: 2014-04-24
+# Last changed: 2014-05-15
 
 # Code snippets
 
@@ -784,7 +784,7 @@ eval_basis = """\
 // Get current quadrature point and compute values of basis functions
 const double* x = quadrature_points + ip*%(gdim)s;
 const double* v = vertex_coordinates + %(vertex_offset)s;
-%(form_prefix)s_finite_element_%(counter)s::_evaluate_basis_all(%(values)s, x, v, cell_orientation);"""
+%(form_prefix)s_finite_element_%(element_number)s::_evaluate_basis_all(%(values)s, x, v, cell_orientation);"""
 
 eval_basis_copy = """\
 
@@ -802,7 +802,7 @@ eval_derivs = """\
 // Get current quadrature point and compute values of basis function derivatives
 const double* x = quadrature_points + ip*%(gdim)s;
 const double* v = vertex_coordinates + %(vertex_offset)s;
-%(form_prefix)s_finite_element_%(counter)s::_evaluate_basis_derivatives_all(%(n)s, %(values)s, x, v, cell_orientation);"""
+%(form_prefix)s_finite_element_%(element_number)s::_evaluate_basis_derivatives_all(%(n)s, %(values)s, x, v, cell_orientation);"""
 
 eval_derivs_copy = """\
 
