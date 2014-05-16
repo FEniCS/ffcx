@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-05-15
+# Last changed: 2014-05-16
 
 # Python modules
 import functools, itertools
@@ -768,6 +768,8 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
     for prefix in prefixes:
         derivatives = set()
         for table in psi_tables:
+            if not prefix in table:
+                continue
             if "_C" in table:
                 # FIXME: Bailout for now, add support for this later
                 error("custom integrals not yet supported for vector valued function spaces")
