@@ -238,6 +238,10 @@ def _tabulate_tensor(ir, prefix, parameters):
         if num_cells > 2:
             warning("Custom integrals with more than two cells only partly supported.")
 
+        # Modify the dimensions of the primary indices because we have a macro element
+        if num_cells == 2:
+            prim_idims = [d*2 for d in prim_idims]
+
         # Generate code for computing element tensor
         tensor_code, mem_code, num_ops = _generate_element_tensor(integrals,
                                                                   sets,
@@ -306,7 +310,7 @@ def _tabulate_tensor(ir, prefix, parameters):
     if prim_idims == []:
         common += [f_assign(f_A(f_int(0)), f_float(0))]
     else:
-        dim = functools.reduce(lambda v,u: v*u, prim_idims)
+        dim = functools.reduce(lambda v, u: v*u, prim_idims)
         common += f_loop([f_assign(f_A(f_r), f_float(0))], [(f_r, 0, dim)])
 
     # Create the constant geometry declarations (only generated if simplify expressions are enabled).
