@@ -273,6 +273,15 @@ class QuadratureTransformerBase(Transformer):
     def facet_coordinate(self, o):
         error("This object should be implemented by the child class.")
 
+    def cell_origin(self, o):
+        error("This object should be implemented by the child class.")
+
+    def facet_origin(self, o):
+        error("This object should be implemented by the child class.")
+
+    def cell_facet_origin(self, o):
+        error("This object should be implemented by the child class.")
+
     def jacobian(self, o):
         error("This object should be implemented by the child class.")
 
@@ -294,16 +303,16 @@ class QuadratureTransformerBase(Transformer):
     def cell_facet_jacobian(self, o):
         error("This object should be implemented by the child class.")
 
-    #def cell_barycenter(self, o):
-    #    error("This object should be implemented by the child class.")
+    def cell_facet_jacobian_determinant(self, o):
+        error("This object should be implemented by the child class.")
 
-    #def facet_barycenter(self, o):
-    #    error("This object should be implemented by the child class.")
-
-    #def cell_normal(self, o):
-    #    error("This object should be implemented by the child class.")
+    def cell_facet_jacobian_inverse(self, o):
+        error("This object should be implemented by the child class.")
 
     def facet_normal(self, o):
+        error("This object should be implemented by the child class.")
+
+    def cell_normal(self, o):
         error("This object should be implemented by the child class.")
 
     def cell_volume(self, o):
@@ -312,12 +321,6 @@ class QuadratureTransformerBase(Transformer):
     def circumradius(self, o):
         error("This object should be implemented by the child class.")
 
-    #def cell_surface_area(self, o):
-    #    error("This object should be implemented by the child class.")
-
-    #def facet_diameter(self, o):
-    #    error("This object should be implemented by the child class.")
-
     def facet_area(self, o):
         error("This object should be implemented by the child class.")
 
@@ -325,6 +328,12 @@ class QuadratureTransformerBase(Transformer):
         error("This object should be implemented by the child class.")
 
     def max_facet_edge_length(self, o):
+        error("This object should be implemented by the child class.")
+
+    def cell_orientation(self, o):
+        error("This object should be implemented by the child class.")
+
+    def quadrature_weight(self, o):
         error("This object should be implemented by the child class.")
 
     # -------------------------------------------------------------------------
