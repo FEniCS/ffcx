@@ -351,47 +351,47 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     # FacetNormal, CellVolume, Circumradius, FacetArea (geometry.py).
     # -------------------------------------------------------------------------
-    def cell_coordinate(self, o):
-        error("This object should be implemented by the child class.") # FIXME
+    def cell_coordinate(self, o): # FIXME
+        error("This object should be implemented by the child class.")
 
-    def facet_coordinate(self, o):
-        error("This object should be implemented by the child class.") # FIXME
+    def facet_coordinate(self, o): # FIXME
+        error("This object should be implemented by the child class.")
 
-    def jacobian(self, o):
-        error("This object should be implemented by the child class.") # FIXME
+    def cell_origin(self, o): # FIXME
+        error("This object should be implemented by the child class.")
 
-    def jacobian_determinant(self, o):
-        error("This object should be implemented by the child class.") # FIXME
+    def facet_origin(self, o): # FIXME
+        error("This object should be implemented by the child class.")
 
-    def jacobian_inverse(self, o):
-        error("This object should be implemented by the child class.") # FIXME
+    def cell_facet_origin(self, o): # FIXME
+        error("This object should be implemented by the child class.")
 
-    def facet_jacobian(self, o):
-        error("This object should be implemented by the child class.") # FIXME
+    def jacobian(self, o): # FIXME
+        error("This object should be implemented by the child class.")
 
-    def facet_jacobian_determinant(self, o):
-        error("This object should be implemented by the child class.") # FIXME
+    def jacobian_determinant(self, o): # FIXME
+        error("This object should be implemented by the child class.")
 
-    def facet_jacobian_inverse(self, o):
-        error("This object should be implemented by the child class.") # FIXME
+    def jacobian_inverse(self, o): # FIXME
+        error("This object should be implemented by the child class.")
 
-    def cell_facet_jacobian(self, o):
-        error("This object should be implemented by the child class.") # FIXME
+    def facet_jacobian(self, o): # FIXME
+        error("This object should be implemented by the child class.")
 
-    #def cell_barycenter(self, o):
-    #    error("This object should be implemented by the child class.") # FIXME
+    def facet_jacobian_determinant(self, o): # FIXME
+        error("This object should be implemented by the child class.")
 
-    #def facet_barycenter(self, o):
-    #    error("This object should be implemented by the child class.") # FIXME
+    def facet_jacobian_inverse(self, o): # FIXME
+        error("This object should be implemented by the child class.")
 
-    #def cell_normal(self, o):
-    #    error("This object should be implemented by the child class.") # FIXME
+    def cell_facet_jacobian(self, o): # FIXME
+        error("This object should be implemented by the child class.")
 
-    #def cell_surface_area(self, o):
-    #    error("This object should be implemented by the child class.") # FIXME
+    def cell_facet_jacobian_determinant(self, o): # FIXME
+        error("This object should be implemented by the child class.")
 
-    #def facet_diameter(self, o):
-    #    error("This object should be implemented by the child class.") # FIXME
+    def cell_facet_jacobian_inverse(self, o): # FIXME
+        error("This object should be implemented by the child class.")
 
     def facet_normal(self, o):
         #print("Visiting FacetNormal:")
@@ -411,6 +411,9 @@ class QuadratureTransformer(QuadratureTransformerBase):
         self.trans_set.add(normal_component)
 
         return {():normal_component}
+
+    def cell_normal(self, o): # FIXME
+        error("This object should be implemented by the child class.")
 
     def cell_volume(self, o):
         # FIXME: KBO: This has to change for higher order elements
@@ -460,6 +463,12 @@ class QuadratureTransformer(QuadratureTransformerBase):
         self.trans_set.add(edgelen)
 
         return {():edgelen}
+
+    def cell_orientation(self, o): # FIXME
+        error("This object should be implemented by the child class.")
+
+    def quadrature_weight(self, o): # FIXME
+        error("This object should be implemented by the child class.")
 
     # -------------------------------------------------------------------------
 
