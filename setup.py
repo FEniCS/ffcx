@@ -283,7 +283,8 @@ def run_install():
                               (os.path.join("lib", "pkgconfig"),
                                [os.path.join("cmake", "templates", "ufc-1.pc")]),
                               (os.path.join("include", "swig"),
-                               [os.path.join("ufc", "ufc.i")])])
+                               [os.path.join("ufc", "ufc.i"),
+                                os.path.join("ufc", "ufc_shared_ptr_classes.i")])])
 
 if __name__ == "__main__":
     run_install()
