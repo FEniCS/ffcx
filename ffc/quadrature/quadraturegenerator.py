@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-05-16
+# Last changed: 2014-05-20
 
 # Python modules
 import functools, itertools
@@ -874,7 +874,7 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
                     vertex_offset = cell_number*num_vertices*gdim
 
                     # Cell offset for array of values
-                    values_offset = cell_number*num_vals
+                    values_offset = cell_number*space_dim
 
                     # Stride for values array
                     stride = value_size*len(derivs)
