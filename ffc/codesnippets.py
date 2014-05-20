@@ -23,7 +23,7 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-28
-# Last changed: 2014-05-15
+# Last changed: 2014-05-20
 
 # Code snippets
 
@@ -808,4 +808,4 @@ eval_derivs_copy = """\
 
 // Copy values to table %(prefix)s_D%(d)s
 for (std::size_t i = 0; i < %(space_dim)s; i++)
-  %(prefix)s_D%(d)s[ip][i] = %(values)s[%(values_offset)s + %(offset)s + i*%(stride)s];"""
+  %(prefix)s_D%(d)s[ip][i + %(values_offset)s] = %(values)s[%(offset)s + i*%(stride)s];"""
