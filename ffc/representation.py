@@ -235,6 +235,7 @@ def _compute_form_ir(form_data, form_id, element_numbers):
     ir["constructor"] = not_implemented
     ir["destructor"] = not_implemented
     ir["signature"] = form_data.signature
+    ir["reduced_coefficients"] = form_data.reduced_coefficient_indices
     ir["rank"] = form_data.rank
     ir["num_coefficients"] = form_data.num_coefficients
 

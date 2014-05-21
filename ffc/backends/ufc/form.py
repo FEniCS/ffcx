@@ -41,6 +41,12 @@ public:
 %(signature)s
   }
 
+  /// Tabulate which original form coefficients are actually used
+  virtual std::vector<std::size_t> reduced_coefficients() const
+  {
+%(reduced_coefficients)s
+  }
+
   /// Return the rank of the global tensor (r)
   virtual std::size_t rank() const
   {
@@ -217,6 +223,9 @@ public:
   /// Return a string identifying the form
   virtual const char* signature() const;
 
+  /// Tabulate which original form coefficients are actually used
+  virtual std::vector<std::size_t> reduced_coefficients() const;
+
   /// Return the rank of the global tensor (r)
   virtual std::size_t rank() const;
 
@@ -308,6 +317,12 @@ form_implementation = """\
 const char* %(classname)s::signature() const
 {
 %(signature)s
+}
+
+/// Tabulate which original form coefficients are actually used
+std::vector<std::size_t> %(classname)s::reduced_coefficients() const
+{
+%(reduced_coefficients)s
 }
 
 /// Return the rank of the global tensor (r)

@@ -198,6 +198,15 @@ def _generate_integral_code(ir, prefix, parameters):
 
     return code
 
+def _generate_reduced_coefficients(reduced_coefficients):
+    # TODO: I don't know how to implement this using the format dict, this will do for now:
+    initializer_list = ", ".join(str(i) for i in reduced_coefficients)
+    code = '\n'.join([
+        "const std::vector<std::size_t> reduced({%s});" % initializer_list,
+        "return reduced;",
+        ])
+    return code
+
 def _generate_form_code(ir, prefix, parameters):
     "Generate code for form from intermediate representation."
 
@@ -220,6 +229,7 @@ def _generate_form_code(ir, prefix, parameters):
     code["destructor"] = do_nothing
 
     code["signature"] = ret('"%s"' % ir["signature"])
+    code["reduced_coefficients"] = _generate_reduced_coefficients(ir["reduced_coefficients"])
     code["rank"] = ret(ir["rank"])
     code["num_coefficients"] = ret(ir["num_coefficients"])
 
