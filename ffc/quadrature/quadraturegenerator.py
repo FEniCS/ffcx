@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-05-20
+# Last changed: 2014-05-21
 
 # Python modules
 import functools, itertools
@@ -251,6 +251,9 @@ def _tabulate_tensor(ir, prefix, parameters):
         # Set operations equal to num_ops (for printing info on operations).
         operations.append([num_ops])
 
+        # FIXME: Jacobi code is only needed when we use cell volume or circumradius.
+        # FIXME: Does not seem to be removed by removed_unused.
+
         # Generate code for basic geometric quantities
         jacobi_code = ""
         for i in range(num_cells):
@@ -269,9 +272,9 @@ def _tabulate_tensor(ir, prefix, parameters):
             jacobi_code += format["generate circumradius"](tdim, gdim, integral_type, r=i)
             jacobi_code += "\n"
 
-        # FIXME: Jacobi code does not seem to be needed for custom
-        # integrals, so some of the above code can be removed
-        jacobi_code = ""
+        # Generate code for cell volume and circumradius
+        jacobi_code += "\n\n" + format["generate cell volume"](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, integral_type)
 
     else:
         error("Unhandled integral type: " + str(integral_type))
