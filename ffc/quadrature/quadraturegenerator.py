@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-05-21
+# Last changed: 2014-05-22
 
 # Python modules
 import functools, itertools
@@ -271,10 +271,6 @@ def _tabulate_tensor(ir, prefix, parameters):
             jacobi_code += "\n"
             jacobi_code += format["generate circumradius"](tdim, gdim, integral_type, r=i)
             jacobi_code += "\n"
-
-        # Generate code for cell volume and circumradius
-        jacobi_code += "\n\n" + format["generate cell volume"](tdim, gdim, integral_type)
-        jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, integral_type)
 
     else:
         error("Unhandled integral type: " + str(integral_type))
