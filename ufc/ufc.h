@@ -391,6 +391,7 @@ namespace ufc
                                  std::size_t num_quadrature_points,
                                  const double* quadrature_points,
                                  const double* quadrature_weights,
+                                 const double* facet_normals,
                                  int cell_orientation) const = 0;
 
   };

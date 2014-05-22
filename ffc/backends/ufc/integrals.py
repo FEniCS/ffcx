@@ -374,6 +374,7 @@ public:
                                std::size_t num_quadrature_points,
                                const double* quadrature_points,
                                const double* quadrature_weights,
+                               const double* facet_normals,
                                int cell_orientation) const
   {
 %(tabulate_tensor)s
@@ -408,6 +409,7 @@ public:
                                std::size_t num_quadrature_points,
                                const double* quadrature_points,
                                const double* quadrature_weights,
+                               const double* facet_normals,
                                int cell_orientation) const;
 
 };
@@ -439,6 +441,7 @@ void %(classname)s::tabulate_tensor(double* A,
                                     std::size_t num_quadrature_points,
                                     const double* quadrature_points,
                                     const double* quadrature_weights,
+                                    const double* facet_normals,
                                     int cell_orientation) const
 {
 %(tabulate_tensor)s
