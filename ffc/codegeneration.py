@@ -198,12 +198,12 @@ def _generate_integral_code(ir, prefix, parameters):
 
     return code
 
-def _generate_reduced_coefficients(reduced_coefficients):
+def _generate_original_coefficient_position(original_coefficient_positions):
     # TODO: I don't know how to implement this using the format dict, this will do for now:
-    initializer_list = ", ".join(str(i) for i in reduced_coefficients)
+    initializer_list = ", ".join(str(i) for i in original_coefficient_positions)
     code = '\n'.join([
-        "const std::vector<std::size_t> reduced({%s});" % initializer_list,
-        "return reduced;",
+        "static const std::vector<std::size_t> position({%s});" % initializer_list,
+        "return position[i];",
         ])
     return code
 
@@ -229,7 +229,7 @@ def _generate_form_code(ir, prefix, parameters):
     code["destructor"] = do_nothing
 
     code["signature"] = ret('"%s"' % ir["signature"])
-    code["reduced_coefficients"] = _generate_reduced_coefficients(ir["reduced_coefficients"])
+    code["original_coefficient_position"] = _generate_original_coefficient_position(ir["original_coefficient_positions"])
     code["rank"] = ret(ir["rank"])
     code["num_coefficients"] = ret(ir["num_coefficients"])
 

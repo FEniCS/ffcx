@@ -430,8 +430,8 @@ namespace ufc
     /// Return a string identifying the form
     virtual const char* signature() const = 0;
 
-    /// Tabulate which original form coefficients are actually used
-    virtual std::vector<std::size_t> reduced_coefficients() const = 0;
+    /// Return original coefficient position for each coefficient (0 <= i < n)
+    virtual std::size_t original_coefficient_position(std::size_t i) const = 0;
 
     /// Return the rank of the global tensor (r)
     virtual std::size_t rank() const = 0;

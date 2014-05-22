@@ -18,7 +18,7 @@ form_combined = """\
 /// where each argument Vj represents the application to the
 /// sequence of basis functions of Vj and w1, w2, ..., wn are given
 /// fixed functions (coefficients).
-
+#include <iostream>
 class %(classname)s: public ufc::form
 {%(members)s
 public:
@@ -41,15 +41,16 @@ public:
 %(signature)s
   }
 
-  /// Tabulate which original form coefficients are actually used
-  virtual std::vector<std::size_t> reduced_coefficients() const
+  /// Return original coefficient position for each coefficient (0 <= i < n)
+  virtual std::size_t original_coefficient_position(std::size_t i) const
   {
-%(reduced_coefficients)s
+%(original_coefficient_position)s
   }
 
   /// Return the rank of the global tensor (r)
   virtual std::size_t rank() const
   {
+    std::cout << std::endl << "IN RANK " << std::endl << std::endl;
 %(rank)s
   }
 
@@ -223,8 +224,8 @@ public:
   /// Return a string identifying the form
   virtual const char* signature() const;
 
-  /// Tabulate which original form coefficients are actually used
-  virtual std::vector<std::size_t> reduced_coefficients() const;
+  /// Return original coefficient position for each coefficient (0 <= i < n)
+  virtual std::size_t original_coefficient_position(std::size_t i) const;
 
   /// Return the rank of the global tensor (r)
   virtual std::size_t rank() const;
@@ -319,10 +320,10 @@ const char* %(classname)s::signature() const
 %(signature)s
 }
 
-/// Tabulate which original form coefficients are actually used
-std::vector<std::size_t> %(classname)s::reduced_coefficients() const
+/// Return original coefficient position for each coefficient (0 <= i < n)
+std::size_t %(classname)s::original_coefficient_position(std::size_t i) const
 {
-%(reduced_coefficients)s
+%(original_coefficient_position)s
 }
 
 /// Return the rank of the global tensor (r)
