@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-12-16
-# Last changed: 2014-04-15
+# Last changed: 2014-05-22
 
 # Python modules
 import re, numpy, platform
@@ -216,25 +216,26 @@ format.update({
     "call basis_derivatives_all": lambda i, s: "_evaluate_basis_derivatives_all(n, %s, x, vertex_coordinates, cell_orientation);" % s,
 
     # quadrature code generators
-    "integration points": "ip",
-    "first free index":   "j",
-    "second free index":  "k",
-    "geometry constant":  lambda i: "G[%d]" % i,
-    "ip constant":        lambda i: "I[%d]" % i,
-    "basis constant":     lambda i: "B[%d]" % i,
-    "conditional":        lambda i: "C[%d]" % i,
-    "evaluate conditional":lambda i,j,k: "(%s) ? %s : %s" % (i,j,k),
-#    "geometry constant":  lambda i: "G%d" % i,
-#    "ip constant":        lambda i: "I%d" % i,
-#    "basis constant":     lambda i: "B%d" % i,
-    "function value":     lambda i: "F%d" % i,
-    "nonzero columns":    lambda i: "nzc%d" % i,
-    "weight":             lambda i: "W" if i is None else "W%d" % (i),
-    "psi name":           lambda c, et, e, co, d, a: _generate_psi_name(c, et, e, co, d, a),
+    "integration points":   "ip",
+    "first free index":     "j",
+    "second free index":    "k",
+    "geometry constant":    lambda i: "G[%d]" % i,
+    "ip constant":          lambda i: "I[%d]" % i,
+    "basis constant":       lambda i: "B[%d]" % i,
+    "conditional":          lambda i: "C[%d]" % i,
+    "evaluate conditional": lambda i,j,k: "(%s) ? %s : %s" % (i,j,k),
+#    "geometry constant":   lambda i: "G%d" % i,
+#    "ip constant":         lambda i: "I%d" % i,
+#    "basis constant":      lambda i: "B%d" % i,
+    "function value":       lambda i: "F%d" % i,
+    "nonzero columns":      lambda i: "nzc%d" % i,
+    "weight":               lambda i: "W" if i is None else "W%d" % (i),
+    "psi name":             lambda c, et, e, co, d, a: _generate_psi_name(c, et, e, co, d, a),
     # both
-    "free indices":       ["r","s","t","u"],
-    "matrix index":       lambda i, j, range_j: _matrix_index(i, str(j), str(range_j)),
-    "quadrature point":   lambda i, gdim: "quadrature_points + %s*%d" % (i, gdim)
+    "free indices":         ["r","s","t","u"],
+    "matrix index":         lambda i, j, range_j: _matrix_index(i, str(j), str(range_j)),
+    "quadrature point":     lambda i, gdim: "quadrature_points + %s*%d" % (i, gdim),
+    "facet_normal_custom":  lambda gdim: _generate_facet_normal_custom(gdim),
 })
 
 # Misc
@@ -606,6 +607,14 @@ def _generate_normal(tdim, gdim, integral_type, reference_normal=False):
         code += normal % {"direction" : "!", "restriction": _choose_map("-")}
     else:
         error("Unsupported integral_type: %s" % str(integral_type))
+    return code
+
+def _generate_facet_normal_custom(gdim):
+    "Generate code for setting facet normal in custom integrals"
+    code = format["comment"]("Set facet normal components for current quadrature point\n")
+    for i in range(gdim):
+        code += "const double n_0%d =   facet_normals[%d*ip + %d];\n" % (i, gdim, i)
+        code += "const double n_1%d = - facet_normals[%d*ip + %d];\n" % (i, gdim, i)
     return code
 
 def _generate_cell_volume(tdim, gdim, integral_type, r=None):

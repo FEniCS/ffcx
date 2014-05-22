@@ -23,7 +23,7 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-28
-# Last changed: 2014-05-20
+# Last changed: 2014-05-22
 
 # Code snippets
 

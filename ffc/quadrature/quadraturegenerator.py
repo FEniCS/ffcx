@@ -101,7 +101,8 @@ def _tabulate_tensor(ir, prefix, parameters):
         # Generate code for computing element tensor
         tensor_code, mem_code, num_ops = _generate_element_tensor(integrals,
                                                                   sets,
-                                                                  opt_par)
+                                                                  opt_par,
+                                                                  gdim)
         tensor_code = "\n".join(tensor_code)
 
         # Set operations equal to num_ops (for printing info on operations).
@@ -127,7 +128,7 @@ def _tabulate_tensor(ir, prefix, parameters):
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
             # Update transformer with facets and generate case code + set of used geometry terms.
-            c, mem_code, ops = _generate_element_tensor(integrals[i], sets, opt_par)
+            c, mem_code, ops = _generate_element_tensor(integrals[i], sets, opt_par, gdim)
             case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
             case += c
             cases[i] = "\n".join(case)
@@ -169,7 +170,8 @@ def _tabulate_tensor(ir, prefix, parameters):
                 # Update transformer with facets and generate case code + set of used geometry terms.
                 c, mem_code, ops = _generate_element_tensor(integrals[i][j],
                                                             sets,
-                                                            opt_par)
+                                                            opt_par,
+                                                            gdim)
                 case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
                 case += c
                 cases[i][j] = "\n".join(case)
@@ -209,7 +211,8 @@ def _tabulate_tensor(ir, prefix, parameters):
             # set of used geometry terms.
             c, mem_code, ops = _generate_element_tensor(integrals[i],
                                                         sets,
-                                                        opt_par)
+                                                        opt_par,
+                                                        gdim)
             case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
             case += c
             cases[i] = "\n".join(case)
@@ -245,7 +248,9 @@ def _tabulate_tensor(ir, prefix, parameters):
         # Generate code for computing element tensor
         tensor_code, mem_code, num_ops = _generate_element_tensor(integrals,
                                                                   sets,
-                                                                  opt_par)
+                                                                  opt_par,
+                                                                  gdim,
+                                                                  num_cells == 2)
         tensor_code = "\n".join(tensor_code)
 
         # Set operations equal to num_ops (for printing info on operations).
@@ -337,7 +342,7 @@ def _tabulate_tensor(ir, prefix, parameters):
 
     return "\n".join(common) + "\n" + tensor_code
 
-def _generate_element_tensor(integrals, sets, optimise_parameters):
+def _generate_element_tensor(integrals, sets, optimise_parameters, gdim, generate_custom_facet_normal=False):
     "Construct quadrature code for element tensors."
 
     # Prefetch formats to speed up code generation.
@@ -371,6 +376,10 @@ def _generate_element_tensor(integrals, sets, optimise_parameters):
 
         ip_code = []
         num_ops = 0
+
+        # Generate code for custom facet normal if necessary
+        if generate_custom_facet_normal:
+            ip_code += [format["facet_normal_custom"](gdim)]
 
         # Generate code to compute coordinates if used.
         if coordinate:
