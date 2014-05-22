@@ -18,7 +18,7 @@ form_combined = """\
 /// where each argument Vj represents the application to the
 /// sequence of basis functions of Vj and w1, w2, ..., wn are given
 /// fixed functions (coefficients).
-#include <iostream>
+
 class %(classname)s: public ufc::form
 {%(members)s
 public:
@@ -50,7 +50,6 @@ public:
   /// Return the rank of the global tensor (r)
   virtual std::size_t rank() const
   {
-    std::cout << std::endl << "IN RANK " << std::endl << std::endl;
 %(rank)s
   }
 
