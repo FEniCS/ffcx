@@ -41,7 +41,7 @@ from ffc.quadratureelement import default_quadrature_degree
 from ffc.utils import all_equal
 from ffc.tensor import estimate_cost
 
-def analyze_forms(forms, object_names, parameters):
+def analyze_forms(forms, parameters):
     """
     Analyze form(s), returning
 
@@ -54,7 +54,6 @@ def analyze_forms(forms, object_names, parameters):
 
     # Analyze forms
     form_datas = tuple(_analyze_form(form,
-                                     object_names,
                                      parameters) for form in forms)
 
     # Extract unique elements accross all forms
@@ -120,7 +119,7 @@ def _get_nested_elements(element):
         nested_elements += _get_nested_elements(e)
     return set(nested_elements)
 
-def _analyze_form(form, object_names, parameters):
+def _analyze_form(form, parameters):
     "Analyze form, returning form data."
 
     # Check that form is not empty
@@ -128,7 +127,7 @@ def _analyze_form(form, object_names, parameters):
                "Form (%s) seems to be zero: cannot compile it." % str(form))
 
     # Compute form metadata
-    form_data = compute_form_data(form, object_names=object_names)
+    form_data = compute_form_data(form)
 
     info("")
     info(str(form_data))

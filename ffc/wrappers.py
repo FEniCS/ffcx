@@ -14,9 +14,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# First added:  2010-01-18
-# Last changed: 2014-02-20
 
 # Python modules
 from itertools import chain
@@ -32,7 +29,7 @@ __all__ = ["generate_wrapper_code"]
 
 # FIXME: More clean-ups needed here.
 
-def generate_wrapper_code(analysis, prefix, parameters):
+def generate_wrapper_code(analysis, prefix, object_names, parameters):
     "Generate code for additional wrappers."
 
     # Skip if wrappers not requested
@@ -40,14 +37,14 @@ def generate_wrapper_code(analysis, prefix, parameters):
         return None
 
     # Return dolfin wrapper
-    return _generate_dolfin_wrapper(analysis, prefix, parameters)
+    return _generate_dolfin_wrapper(analysis, prefix, object_names, parameters)
 
-def _generate_dolfin_wrapper(analysis, prefix, parameters):
+def _generate_dolfin_wrapper(analysis, prefix, object_names, parameters):
 
     begin("Compiler stage 4.1: Generating additional wrapper code")
 
     # Encapsulate data
-    (capsules, common_space) = _encapsulate(prefix, analysis, parameters)
+    (capsules, common_space) = _encapsulate(prefix, object_names, analysis, parameters)
 
     # Generate code
     info("Generating wrapper code for DOLFIN")
@@ -59,7 +56,7 @@ def _generate_dolfin_wrapper(analysis, prefix, parameters):
 
     return code
 
-def _encapsulate(prefix, analysis, parameters):
+def _encapsulate(prefix, object_names, analysis, parameters):
 
     # Extract data from analysis
     form_datas, elements, element_map = analysis
@@ -73,14 +70,14 @@ def _encapsulate(prefix, analysis, parameters):
 
     # Special case: with error control
     elif (parameters["error_control"] and num_form_datas == 11):
-        capsules = [_encapsule_form(prefix, form_data, i, element_map) for
+        capsules = [_encapsule_form(prefix, object_names, form_data, i, element_map) for
                     (i, form_data) in enumerate(form_datas[:num_form_datas-1])]
-        capsules += [_encapsule_form(prefix, form_datas[-1], num_form_datas-1,
+        capsules += [_encapsule_form(prefix, object_names, form_datas[-1], num_form_datas-1,
                                      element_map, "GoalFunctional")]
 
     # Otherwise: generate standard capsules for each form
     else:
-        capsules = [_encapsule_form(prefix, form_data, i, element_map) for
+        capsules = [_encapsule_form(prefix, object_names, form_data, i, element_map) for
                     (i, form_data) in enumerate(form_datas)]
 
         # Check if all elements are equal
@@ -92,20 +89,23 @@ def _encapsulate(prefix, analysis, parameters):
     return (capsules, common_space)
 
 
-def _encapsule_form(prefix, form_data, i, element_map, superclassname=None):
+def _encapsule_form(prefix, object_names, form_data, i, element_map, superclassname=None):
     element_numbers = [element_map[e] for e in form_data.elements]
 
     if superclassname is None:
         superclassname = "Form"
 
-    form_names = UFCFormNames(form_data.name or "%d" % i,
-                              form_data.coefficient_names,
-                              format["classname form"](prefix, i),
-                              [format["classname finite_element"](prefix, j)
-                               for j in element_numbers],
-                              [format["classname dofmap"](prefix, j)
-                               for j in element_numbers],
-                              superclassname)
+    form_names = UFCFormNames(
+        object_names.get(id(form_data.original_form), "%d" % i),
+        [object_names.get(id(obj), "w%d" % i)
+         for i, obj in enumerate(form_data.reduced_coefficients)],
+        format["classname form"](prefix, i),
+        [format["classname finite_element"](prefix, j)
+         for j in element_numbers],
+        [format["classname dofmap"](prefix, j)
+         for j in element_numbers],
+        superclassname)
+
     return form_names
 
 def _encapsule_element(prefix, elements):

@@ -171,7 +171,7 @@ def jit_element(element, parameters=None):
     # Compile form
     compiled_form, module, prefix = jit_form(form, parameters)
 
-    form_data = compute_form_data(form, object_names={})
+    form_data = compute_form_data(form)
     return _extract_element_and_dofmap(module, prefix, form_data)
 
 def _check_parameters(form, parameters):
