@@ -152,12 +152,47 @@ class ReconstructScalarSubexpressions(MultiFunction):
                     if jk >= len(op):
                         print
                         print 'DEBUGGING VALUES IN element_wise2:'
+                        print
+                        print "o ="
                         print o
-                        print sh
-                        print ish
+                        print
+                        print type(o)
+                        print o.operands()[0]
+                        print o.operands()[1]
+                        print o.operands()[0].shape()
+                        print o.operands()[1].shape()
+                        print o.operands()[0].free_indices()
+                        print o.operands()[1].free_indices()
+                        print o.operands()[0].index_dimensions()
+                        print o.operands()[1].index_dimensions()
+                        print
+                        from ufl.algorithms import tree_format, traverse_terminals
+                        print tree_format(o.operands()[1])
+                        print
+                        for t in traverse_terminals(o):
+                            if not isinstance(t, MultiIndex):
+                                print t, t.shape()
+                        print
+                        print "sh, ish ="
+                        print sh, ish
+                        print
+                        print "im, m, tm ="
                         print im, m, tm
+                        print
+                        print "j, opims, istrides ="
                         print j, opims, istrides
                         print
+                        print len(op), "<= jk =", jk
+                        print sk*opims[j] + sum(a*b for a,b in izip(ic, istrides[j]))
+                        print "="
+                        print sk*opims[j]
+                        print "+"
+                        print sum(a*b for a,b in izip(ic, istrides[j]))
+                        print
+                        print j, sk, opims[j]
+                        print ic, istrides[j]
+                        print
+
                     sops.append(op[jk])
 
                 res.append(scalar_operator(sops))
