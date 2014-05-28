@@ -3,7 +3,7 @@ def compile_tabulate_tensor_code(form, optimize=True):
     """This function is basically a mock controller which allows emulating the behaviour of ffc,
     by joining compute_ir, optimize_ir, and generate_ir.
     """
-
+    from ufl.algorithms import compute_form_data
     from ffc.cpp import set_float_formatting
     from ffc.uflacsrepr import compute_integral_ir, optimize_integral_ir, generate_integral_code
 
@@ -14,7 +14,7 @@ def compile_tabulate_tensor_code(form, optimize=True):
     form_id = 0
 
     # Apply ufl preprocessing
-    form_data = form.compute_form_data()
+    form_data = compute_form_data(form)
 
     tt_codes = []
     for itg_data in form_data.integral_data:

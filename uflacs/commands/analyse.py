@@ -9,14 +9,14 @@ def add_analyse_options(opts):
 def run_analyse(options, args):
     "Analyse various properties of forms found in .ufl file(s)."
     import ufl
-    from ufl.algorithms import load_ufl_file
+    from ufl.algorithms import load_ufl_file, compute_form_data
     ufl.algorithms.preprocess.enable_profiling = True
     filenames = args
     for fn in filenames:
         info("Loading file '%s'..." % (fn,))
         data = load_ufl_file(fn)
         for form in data.forms:
-            form_data = form.compute_form_data()
+            form_data = compute_form_data(form)
 
             # Stuff we can analyse: TODO: Go through list and implement
             # cell
