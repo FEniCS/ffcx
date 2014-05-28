@@ -347,6 +347,18 @@ class FFCAccessBackend(MultiFunction):
         access = "cell_orientation"
         return access
 
+    def facet_orientation(self, e, mt, tabledata):
+        cellname = mt.terminal.domain().cell().cellname()
+        if cellname in ("triangle", "tetrahedron"):
+            tablename = "{0}_facet_orientations".format(cellname)
+            facet = names.facet + names.restriction_postfix[mt.restriction] # FIXME
+            access = ArrayAccess(tablename, (facet,))
+        elif cellname == "interval":
+            error("The facet orientation doesn't make sense for interval cell.")
+        else:
+            error("Unhandled cell types {0}.".format(cellname))
+        return access
+
     def facet_normal(self, e, mt, tabledata):
         error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
 
@@ -562,6 +574,10 @@ class FFCDefinitionsBackend(MultiFunction):
         return code
 
     def cell_orientation(self, e, mt, tabledata, access):
+        code = []
+        return code
+
+    def facet_orientation(self, e, mt, tabledata, access):
         code = []
         return code
 
