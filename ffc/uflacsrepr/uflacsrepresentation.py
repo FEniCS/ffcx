@@ -100,6 +100,10 @@ def compute_tabulate_tensor_ir(psi_tables, entitytype,
     for num_points in sorted(integrals_dict.keys()):
         integral = integrals_dict[num_points]
 
+
+        # FIXME: Move this symbolic processing to compute_form_data, give compute_form_data an option to to this for now.
+
+
         # Get integrand expr and apply some symbolic preprocessing
         expr = integral.integrand()
 
@@ -123,6 +127,8 @@ def compute_tabulate_tensor_ir(psi_tables, entitytype,
         # Restrictions may not be at terminals any more, propagate them again TODO: Skip this in preprocess?
         if integral.integral_type() == "interior_facet":
             expr = propagate_restrictions(expr)
+
+
 
         # Build the core uflacs ir of expressions
         expr_ir = compute_expr_ir(expr, parameters)
