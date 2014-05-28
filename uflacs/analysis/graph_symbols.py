@@ -2,7 +2,7 @@
 from ufl.classes import (Terminal, FormArgument, Grad, Restricted,
                          Indexed, ComponentTensor, ListTensor, Transposed, Variable,
                          IndexSum, MultiIndex,
-                         UtilityType, Label, Data)
+                         UtilityType, Label, ExprList, ExprMapping)
 
 from uflacs.utils.log import error
 

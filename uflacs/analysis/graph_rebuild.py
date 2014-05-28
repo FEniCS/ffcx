@@ -6,7 +6,7 @@ from ufl.permutation import compute_indices
 import ufl
 from ufl import as_vector
 from ufl.classes import (MultiIndex, ComponentTensor, ListTensor, Transposed, Variable,
-                         IndexSum, UtilityType, Label, Data)
+                         IndexSum, UtilityType, Label, ExprList, ExprMapping)
 from ufl.algorithms import MultiFunction
 
 from uflacs.utils.log import error, uflacs_assert
@@ -334,7 +334,7 @@ def rebuild_scalar_e2i(G, DEBUG=False):
     terminals = set()
 
     # These types are not expected to be part of the graph at this point
-    unexpected = (MultiIndex, Data, UtilityType, Label, ComponentTensor, ListTensor, Transposed, Variable)
+    unexpected = (MultiIndex, ExprList, ExprMapping, UtilityType, Label, ComponentTensor, ListTensor, Transposed, Variable)
 
     def emit_expression(s, u):
         # Allocate count for scalar expression and

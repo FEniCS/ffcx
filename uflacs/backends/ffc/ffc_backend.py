@@ -333,7 +333,7 @@ class FFCAccessBackend(MultiFunction):
 
         cellname = mt.terminal.domain().cell().cellname()
         if cellname in ("triangle", "tetrahedron"):
-            tablename = "{0}_cell_facet_jacobian".format(cellname)
+            tablename = "{0}_reference_facet_jacobian".format(cellname)
             facet = names.facet + names.restriction_postfix[mt.restriction] # FIXME
             access = ArrayAccess(tablename, (facet, mt.component[0], mt.component[1]))
         elif cellname == "interval":
