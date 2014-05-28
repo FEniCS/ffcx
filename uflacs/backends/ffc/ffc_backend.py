@@ -328,13 +328,10 @@ class FFCAccessBackend(MultiFunction):
         return access
 
     def cell_facet_jacobian(self, e, mt, tabledata):
-
-        #assert mt.restriction # FIXME: needed in current failing situation
-
         cellname = mt.terminal.domain().cell().cellname()
         if cellname in ("triangle", "tetrahedron"):
             tablename = "{0}_reference_facet_jacobian".format(cellname)
-            facet = names.facet + names.restriction_postfix[mt.restriction] # FIXME
+            facet = format_entity_name("facet", mt.restriction)
             access = ArrayAccess(tablename, (facet, mt.component[0], mt.component[1]))
         elif cellname == "interval":
             error("The reference facet jacobian doesn't make sense for interval cell.")
@@ -351,7 +348,7 @@ class FFCAccessBackend(MultiFunction):
         cellname = mt.terminal.domain().cell().cellname()
         if cellname in ("triangle", "tetrahedron"):
             tablename = "{0}_facet_orientations".format(cellname)
-            facet = names.facet + names.restriction_postfix[mt.restriction] # FIXME
+            facet = format_entity_name("facet", mt.restriction)
             access = ArrayAccess(tablename, (facet,))
         elif cellname == "interval":
             error("The facet orientation doesn't make sense for interval cell.")
