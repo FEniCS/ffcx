@@ -1,4 +1,4 @@
-// This is UFC (Unified Form-assembly Code) v. 1.4.0.
+// This is UFC (Unified Form-assembly Code) v. 1.4.0+.
 // This code is released into the public domain.
 //
 // The FEniCS Project (http://www.fenicsproject.org/) 2006-2014.
@@ -16,7 +16,7 @@
 
 #include <ufc_geometry.h>
 
-const char UFC_VERSION[] = "1.4.0";
+const char UFC_VERSION[] = "1.4.0+";
 
 namespace ufc
 {
