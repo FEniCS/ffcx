@@ -97,8 +97,8 @@ def _encapsule_form(prefix, object_names, form_data, i, element_map, superclassn
 
     form_names = UFCFormNames(
         object_names.get(id(form_data.original_form), "%d" % i),
-        [object_names.get(id(obj), "w%d" % i)
-         for i, obj in enumerate(form_data.reduced_coefficients)],
+        [object_names.get(id(obj), "w%d" % j)
+         for j, obj in enumerate(form_data.reduced_coefficients)],
         format["classname form"](prefix, i),
         [format["classname finite_element"](prefix, j)
          for j in element_numbers],
