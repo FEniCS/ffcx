@@ -155,10 +155,21 @@ def compute_tabulate_tensor_ir(psi_tables, entitytype,
     unique_tables, terminal_table_ranges = optimize_element_tables(tables, terminal_table_names)
     expr_ir["unique_tables"] = unique_tables
 
+    # Modify ranges for restricted form arguments (not geometry!)
+    from ufl.classes import FormArgument
+    for i, mt in enumerate(terminal_data):
+        # TODO: Get the definition that - means added offset from somewhere
+        if mt.restriction == "-" and isinstance(terminal_data[i].terminal, FormArgument):
+            offset = int(tables[terminal_table_names[i]].shape[-1]) # number of dofs before optimization
+            (unique_name, b, e) = terminal_table_ranges[i]
+            terminal_table_ranges[i] = (unique_name, b+offset, e+offset)
+
     # Split into arguments and other terminals before storing in expr_ir
-    # TODO: Some tables are associated with num_points, some are not (i.e. piecewise constant, averaged and x0)
+    # TODO: Some tables are associated with num_points, some are not
+    #       (i.e. piecewise constant, averaged and x0)
     n = len(expr_ir["modified_terminal_indices"])
     m = len(expr_ir["modified_arguments"])
+    assert len(terminal_data) == n+m
     assert len(terminal_table_ranges) == n+m
     assert len(terminal_table_names) == n+m
     expr_ir["modified_terminal_table_ranges"] = terminal_table_ranges[:n]
@@ -166,10 +177,7 @@ def compute_tabulate_tensor_ir(psi_tables, entitytype,
 
     # Store table data in V indexing, this is used in integralgenerator
     expr_ir["table_ranges"] = object_array(len(V))
-    expr_ir["table_ranges"][expr_ir["modified_terminal_indices"]] = expr_ir["modified_terminal_table_ranges"]
-    #for i in xrange(n):
-    #    expr_ir["table_ranges"][expr_ir["modified_terminal_indices"][i]] = terminal_table_ranges[i]
-
-    assert len(expr_ir["modified_argument_table_ranges"]) == len(expr_ir["modified_arguments"])
+    expr_ir["table_ranges"][expr_ir["modified_terminal_indices"]] = \
+        expr_ir["modified_terminal_table_ranges"]
 
     return uflacs_ir
