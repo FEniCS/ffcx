@@ -8,7 +8,7 @@ from distutils.command.build import build
 from distutils.version import LooseVersion
 from distutils.ccompiler import new_compiler
 
-VERSION   = "1.3.0+"
+VERSION   = "1.4.0"
 SCRIPTS   = [os.path.join("scripts", "ffc")]
 
 AUTHORS = """\

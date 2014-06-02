@@ -1,4 +1,4 @@
-1.4.0 [2014-04-2x]
+1.4.0 [2014-06-02]
  - Add support for integrals that know which coefficients they use
  - Many bug fixes for facet integrals over manifolds
  - Merge UFC into FFC; ChangeLog for UFC appended below
