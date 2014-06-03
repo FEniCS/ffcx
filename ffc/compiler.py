@@ -148,7 +148,7 @@ def compile_form(forms, object_names={}, prefix="Form",\
 
     # Stage 1: analysis
     cpu_time = time()
-    analysis = analyze_forms(forms, object_names, parameters)
+    analysis = analyze_forms(forms, parameters)
     _print_timing(1, time() - cpu_time)
 
     # Stage 2: intermediate representation
@@ -168,7 +168,7 @@ def compile_form(forms, object_names={}, prefix="Form",\
 
     # Stage 4.1: generate wrappers
     cpu_time = time()
-    wrapper_code = generate_wrapper_code(analysis, prefix, parameters)
+    wrapper_code = generate_wrapper_code(analysis, prefix, object_names, parameters)
     _print_timing(4.1, time() - cpu_time)
 
     # Stage 5: format code
@@ -214,7 +214,8 @@ def compile_element(elements, prefix="Element", parameters=default_parameters())
 
     # Stage 4.1: generate wrappers
     cpu_time = time()
-    wrapper_code = generate_wrapper_code(analysis, prefix, parameters)
+    object_names = {}
+    wrapper_code = generate_wrapper_code(analysis, prefix, object_names, parameters)
     _print_timing(4.1, time() - cpu_time)
 
     # Stage 5: format code

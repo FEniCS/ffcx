@@ -41,6 +41,12 @@ public:
 %(signature)s
   }
 
+  /// Return original coefficient position for each coefficient (0 <= i < n)
+  virtual std::size_t original_coefficient_position(std::size_t i) const
+  {
+%(original_coefficient_position)s
+  }
+
   /// Return the rank of the global tensor (r)
   virtual std::size_t rank() const
   {
@@ -217,6 +223,9 @@ public:
   /// Return a string identifying the form
   virtual const char* signature() const;
 
+  /// Return original coefficient position for each coefficient (0 <= i < n)
+  virtual std::size_t original_coefficient_position(std::size_t i) const;
+
   /// Return the rank of the global tensor (r)
   virtual std::size_t rank() const;
 
@@ -308,6 +317,12 @@ form_implementation = """\
 const char* %(classname)s::signature() const
 {
 %(signature)s
+}
+
+/// Return original coefficient position for each coefficient (0 <= i < n)
+std::size_t %(classname)s::original_coefficient_position(std::size_t i) const
+{
+%(original_coefficient_position)s
 }
 
 /// Return the rank of the global tensor (r)

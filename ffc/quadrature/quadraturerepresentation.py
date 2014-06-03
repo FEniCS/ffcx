@@ -18,10 +18,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Anders Logg 2009, 2014
-# Modified by Martin Alnaes 2013
-#
-# First added:  2009-01-07
-# Last changed: 2014-04-23
+# Modified by Martin Alnaes 2013-2014
 
 # Python modules
 import numpy, itertools, collections
@@ -82,7 +79,7 @@ def compute_integral_ir(itg_data,
     # Create transformer
     transformer = QuadratureTransformerClass(psi_tables,
                                              quadrature_rules,
-                                             form_data.geometric_dimension,
+                                             itg_data.domain.geometric_dimension(),
                                              itg_data.domain.topological_dimension(),
                                              ir["entitytype"],
                                              form_data.function_replace_map,

@@ -22,10 +22,7 @@ It uses Instant to wrap the generated code into a Python module."""
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Joachim Haga, 2011.
-# Modified by Martin Alnaes, 2013
-#
-# First added:  2007-07-20
-# Last changed: 2014-02-20
+# Modified by Martin Alnaes, 2013-2014
 
 # Python modules
 import os, sys
@@ -35,7 +32,7 @@ import ufc
 # UFL modules
 from ufl.classes import Form, FiniteElementBase, TestFunction
 from ufl.objects import dx
-from ufl.algorithms import extract_elements, extract_sub_elements
+from ufl.algorithms import extract_elements, extract_sub_elements, compute_form_data
 from ufl.common import istr, tstr
 
 # FFC modules
@@ -99,9 +96,6 @@ def jit_form(form, parameters=None):
     set_level(parameters["log_level"])
     set_prefix(parameters["log_prefix"])
 
-    # Compute form metadata and extract preprocessed form
-    form_data = form.compute_form_data()
-
     # Wrap input
     jit_object = JITObject(form, parameters)
 
@@ -112,61 +106,53 @@ def jit_form(form, parameters=None):
     cache_dir = parameters["cache_dir"] or None
     module = instant.import_module(module_name, cache_dir=cache_dir)
     if module:
-        check_swig_version(module)
         debug("Reusing form from cache.")
-        compiled_form = _extract_form(module, module_name)
-        return (compiled_form, module, form_data, module_name)
+    else:
+        # Take lock to serialise file removal.
+        # Need to add "_0" to lock as instant.import_module acquire
+        # lock with name: module_name
+        with instant.file_lock(instant.get_default_cache_dir(),
+                               module_name + "_0") as lock:
 
-    # Take lock to serialise file removal.
-    # Need to add "_0" to lock as instant.import_module acquire
-    # lock with name: module_name
-    with instant.file_lock(instant.get_default_cache_dir(),
-                           module_name + "_0") as lock:
+            # Retry Instant cache. The module may have been created while we waited
+            # for the lock, even if it didn't exist before.
+            module = instant.import_module(module_name, cache_dir=cache_dir)
+            if module:
+                debug("Reusing form from cache.")
+            else:
+                # Write a message
+                log(INFO + 5,
+                    "Calling FFC just-in-time (JIT) compiler, this may take some time.")
 
-        # Retry Instant cache. The module may have been created while we waited
-        # for the lock, even if it didn't exist before.
-        module = instant.import_module(module_name, cache_dir=cache_dir)
-        if module:
-            check_swig_version(module)
-            debug("Reusing form from cache.")
-            compiled_form = _extract_form(module, module_name)
-            return (compiled_form, module, form_data, module_name)
+                # Generate code
+                compile_form(form,
+                             prefix=module_name,
+                             parameters=parameters)
 
-        # Write a message
-        log(INFO + 5,
-            "Calling FFC just-in-time (JIT) compiler, this may take some time.")
+                # Build module using Instant (through UFC)
+                debug("Compiling and linking Python extension module, this may take some time.")
+                hfile   = module_name + ".h"
+                cppfile = module_name + ".cpp"
+                module = build_ufc_module(
+                    hfile,
+                    source_directory = os.curdir,
+                    signature = module_name,
+                    sources = [cppfile] if parameters["split"] else [],
+                    cppargs = parameters["cpp_optimize_flags"].split() \
+                              if parameters["cpp_optimize"] else ["-O0"],
+                    cache_dir = cache_dir)
 
-        # Generate code
-        compile_form(form,
-                     prefix=module_name,
-                     parameters=parameters)
+                # Remove code
+                if os.path.isfile(hfile):
+                    os.unlink(hfile)
+                if parameters["split"] :
+                    if os.path.isfile(cppfile):
+                        os.unlink(cppfile)
 
-        # Build module using Instant (through UFC)
-        debug("Compiling and linking Python extension module, this may take some time.")
-        hfile   = module_name + ".h"
-        cppfile = module_name + ".cpp"
-        module = build_ufc_module(
-            hfile,
-            source_directory = os.curdir,
-            signature = module_name,
-            sources = [cppfile] if parameters["split"] else [],
-            cppargs = parameters["cpp_optimize_flags"].split() \
-                      if parameters["cpp_optimize"] else ["-O0"],
-            cache_dir = cache_dir)
-
-        # Remove code
-        if os.path.isfile(hfile):
-            os.unlink(hfile)
-        if parameters["split"] :
-            if os.path.isfile(cppfile):
-                os.unlink(cppfile)
-
-        check_swig_version(module)
-
-        # Extract compiled form
-        compiled_form = _extract_form(module, module_name)
-
-        return compiled_form, module, form_data, module_name
+    # Extract compiled form
+    check_swig_version(module)
+    compiled_form = _extract_form(module, module_name)
+    return compiled_form, module, module_name
 
 def jit_element(element, parameters=None):
     "Just-in-time compile the given element"
@@ -183,8 +169,9 @@ def jit_element(element, parameters=None):
     form = v[ii]*dx
 
     # Compile form
-    compiled_form, module, form_data, prefix = jit_form(form, parameters)
+    compiled_form, module, prefix = jit_form(form, parameters)
 
+    form_data = compute_form_data(form)
     return _extract_element_and_dofmap(module, prefix, form_data)
 
 def _check_parameters(form, parameters):
