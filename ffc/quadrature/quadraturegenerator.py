@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-05-22
+# Last changed: 2014-06-03
 
 # Python modules
 import functools, itertools
@@ -245,12 +245,16 @@ def _tabulate_tensor(ir, prefix, parameters):
         if num_cells == 2:
             prim_idims = [d*2 for d in prim_idims]
 
+        # Check whether we need to generate facet normals
+        generate_custom_facet_normal = num_cells == 2
+
         # Generate code for computing element tensor
         tensor_code, mem_code, num_ops = _generate_element_tensor(integrals,
                                                                   sets,
                                                                   opt_par,
                                                                   gdim,
-                                                                  num_cells == 2)
+                                                                  generate_custom_facet_normal)
+
         tensor_code = "\n".join(tensor_code)
 
         # Set operations equal to num_ops (for printing info on operations).
@@ -377,10 +381,6 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, gdim, generat
         ip_code = []
         num_ops = 0
 
-        # Generate code for custom facet normal if necessary
-        if generate_custom_facet_normal:
-            ip_code += [format["facet_normal_custom"](gdim)]
-
         # Generate code to compute coordinates if used.
         if coordinate:
             name, gdim, ip, r = coordinate
@@ -438,6 +438,13 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, gdim, generat
         ip_code += integral_code
         element_code.append(f_comment\
             ("Number of operations to compute element tensor for following IP loop = %s" % str(quadrature_ops)))
+
+        # Generate code for custom facet normal if necessary
+        if generate_custom_facet_normal:
+            for line in ip_code:
+                if "n_00" in line:
+                    ip_code = [format["facet_normal_custom"](gdim)] + ip_code
+                    break
 
         # Loop code over all IPs.
         if points == 0:
