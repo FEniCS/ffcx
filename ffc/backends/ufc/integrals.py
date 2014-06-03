@@ -1,4 +1,4 @@
-# Code generation format strings for UFC (Unified Form-assembly Code) v. 2.3.0+.
+# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.4.0+.
 # This code is released into the public domain.
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2006-2014
@@ -22,6 +22,12 @@ public:
   virtual ~%(classname)s()
   {
 %(destructor)s
+  }
+
+  /// Tabulate which form coefficients are used by this integral
+  virtual const std::vector<bool> & enabled_coefficients() const
+  {
+%(enabled_coefficients)s
   }
 
   /// Tabulate the tensor for the contribution from a local cell
@@ -51,6 +57,9 @@ public:
   /// Destructor
   virtual ~%(classname)s();
 
+  /// Tabulate which form coefficients are used by this integral
+  virtual const std::vector<bool> & enabled_coefficients() const;
+
   /// Tabulate the tensor for the contribution from a local cell
   virtual void tabulate_tensor(double* %(restrict)s A,
                                const double * const * %(restrict)s w,
@@ -71,6 +80,12 @@ cell_integral_implementation = """\
 %(classname)s::~%(classname)s()
 {
 %(destructor)s
+}
+
+/// Tabulate which form coefficients are used by this integral
+const std::vector<bool> & %(classname)s::enabled_coefficients() const
+{
+%(enabled_coefficients)s
 }
 
 /// Tabulate the tensor for the contribution from a local cell
@@ -104,6 +119,12 @@ public:
 %(destructor)s
   }
 
+  /// Tabulate which form coefficients are used by this integral
+  virtual const std::vector<bool> & enabled_coefficients() const
+  {
+%(enabled_coefficients)s
+  }
+
   /// Tabulate the tensor for the contribution from a local exterior facet
   virtual void tabulate_tensor(double* %(restrict)s A,
                                const double * const * %(restrict)s w,
@@ -132,6 +153,9 @@ public:
   /// Destructor
   virtual ~%(classname)s();
 
+  /// Tabulate which form coefficients are used by this integral
+  virtual const std::vector<bool> & enabled_coefficients() const;
+
   /// Tabulate the tensor for the contribution from a local exterior facet
   virtual void tabulate_tensor(double* %(restrict)s A,
                                const double * const * %(restrict)s w,
@@ -153,6 +177,12 @@ exterior_facet_integral_implementation = """\
 %(classname)s::~%(classname)s()
 {
 %(destructor)s
+}
+
+/// Tabulate which form coefficients are used by this integral
+const std::vector<bool> & %(classname)s::enabled_coefficients() const
+{
+%(enabled_coefficients)s
 }
 
 /// Tabulate the tensor for the contribution from a local exterior facet
@@ -187,6 +217,12 @@ public:
 %(destructor)s
   }
 
+  /// Tabulate which form coefficients are used by this integral
+  virtual const std::vector<bool> & enabled_coefficients() const
+  {
+%(enabled_coefficients)s
+  }
+
   /// Tabulate the tensor for the contribution from a local interior facet
   virtual void tabulate_tensor(double* %(restrict)s A,
                                const double * const * %(restrict)s w,
@@ -218,6 +254,9 @@ public:
   /// Destructor
   virtual ~%(classname)s();
 
+  /// Tabulate which form coefficients are used by this integral
+  virtual const std::vector<bool> & enabled_coefficients() const;
+
   /// Tabulate the tensor for the contribution from a local interior facet
   virtual void tabulate_tensor(double* %(restrict)s A,
                                const double * const * %(restrict)s w,
@@ -242,6 +281,12 @@ interior_facet_integral_implementation = """\
 %(classname)s::~%(classname)s()
 {
 %(destructor)s
+}
+
+/// Tabulate which form coefficients are used by this integral
+const std::vector<bool> & %(classname)s::enabled_coefficients() const
+{
+%(enabled_coefficients)s
 }
 
 /// Tabulate the tensor for the contribution from a local interior facet
@@ -278,6 +323,12 @@ public:
 %(destructor)s
   }
 
+  /// Tabulate which form coefficients are used by this integral
+  virtual const std::vector<bool> & enabled_coefficients() const
+  {
+%(enabled_coefficients)s
+  }
+
   /// Tabulate the tensor for the contribution from the local vertex
   virtual void tabulate_tensor(double* %(restrict)s A,
                                const double * const * %(restrict)s w,
@@ -305,6 +356,9 @@ public:
   /// Destructor
   virtual ~%(classname)s();
 
+  /// Tabulate which form coefficients are used by this integral
+  virtual const std::vector<bool> & enabled_coefficients() const;
+
   /// Tabulate the tensor for the contribution from the local vertex
   virtual void tabulate_tensor(double* %(restrict)s A,
                                const double * const * %(restrict)s w,
@@ -326,6 +380,12 @@ point_integral_implementation = """\
 %(classname)s::~%(classname)s()
 {
 %(destructor)s
+}
+
+/// Tabulate which form coefficients are used by this integral
+const std::vector<bool> & %(classname)s::enabled_coefficients() const
+{
+%(enabled_coefficients)s
 }
 
 /// Tabulate the tensor for the contribution from the local vertex
@@ -359,6 +419,12 @@ public:
   virtual ~%(classname)s()
   {
 %(destructor)s
+  }
+
+  /// Tabulate which form coefficients are used by this integral
+  virtual const std::vector<bool> & enabled_coefficients() const
+  {
+%(enabled_coefficients)s
   }
 
   /// Return the number of cells involved in evaluation of the integral
@@ -399,6 +465,9 @@ public:
   /// Destructor
   virtual ~%(classname)s();
 
+  /// Tabulate which form coefficients are used by this integral
+  virtual const std::vector<bool> & enabled_coefficients() const;
+
   /// Return the number of cells involved in evaluation of the integral
   virtual std::size_t num_cells() const;
 
@@ -426,6 +495,12 @@ custom_integral_implementation = """\
 %(classname)s::~%(classname)s()
 {
 %(destructor)s
+}
+
+/// Tabulate which form coefficients are used by this integral
+const std::vector<bool> & %(classname)s::enabled_coefficients() const
+{
+%(enabled_coefficients)s
 }
 
 /// Return the number of cells involved in evaluation of the integral

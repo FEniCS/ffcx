@@ -8,7 +8,7 @@ from distutils.command.build import build
 from distutils.version import LooseVersion
 from distutils.ccompiler import new_compiler
 
-VERSION   = "1.3.0+"
+VERSION   = "1.4.0+"
 SCRIPTS   = [os.path.join("scripts", "ffc")]
 
 AUTHORS = """\
@@ -136,8 +136,8 @@ def generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
     MAJOR, MINOR, MICRO = VERSION.split(".")
 
     # Generate UFCConfig.cmake
-    write_config_file(os.path.join("cmake/templates", "UFCConfig.cmake.in"),
-                      os.path.join("cmake/templates", "UFCConfig.cmake"),
+    write_config_file(os.path.join("cmake", "templates", "UFCConfig.cmake.in"),
+                      os.path.join("cmake", "templates", "UFCConfig.cmake"),
                       variables=dict(INSTALL_PREFIX=INSTALL_PREFIX,
                                      CXX_FLAGS=CXX_FLAGS.strip(),
                                      PYTHON_INCLUDE_DIR=sysconfig.get_python_inc(),
@@ -147,21 +147,21 @@ def generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
                                      FULLVERSION=VERSION))
 
     # Generate UFCConfigVersion.cmake
-    write_config_file(os.path.join("cmake/templates", "UFCConfigVersion.cmake.in"),
-                      os.path.join("cmake/templates", "UFCConfigVersion.cmake"),
+    write_config_file(os.path.join("cmake", "templates", "UFCConfigVersion.cmake.in"),
+                      os.path.join("cmake", "templates", "UFCConfigVersion.cmake"),
                       variables=dict(FULLVERSION=VERSION,
                                      MAJOR=MAJOR, MINOR=MINOR, MICRO=MICRO))
 
     # Generate UseUFC.cmake
-    write_config_file(os.path.join("cmake/templates", "UseUFC.cmake.in"),
-                      os.path.join("cmake/templates", "UseUFC.cmake"))
+    write_config_file(os.path.join("cmake", "templates", "UseUFC.cmake.in"),
+                      os.path.join("cmake", "templates", "UseUFC.cmake"))
 
     # FIXME: Generation of pkgconfig file may no longer be needed, so
     # FIXME: we may consider removing this.
 
     # Generate ufc-1.pc
-    write_config_file(os.path.join("cmake/templates", "ufc-1.pc.in"),
-                      os.path.join("cmake/templates", "ufc-1.pc"),
+    write_config_file(os.path.join("cmake", "templates", "ufc-1.pc.in"),
+                      os.path.join("cmake", "templates", "ufc-1.pc"),
                       variables=dict(FULLVERSION=VERSION,
                                      INSTALL_PREFIX=INSTALL_PREFIX,
                                      CXX_FLAGS=CXX_FLAGS))
@@ -250,7 +250,7 @@ def run_install():
           description      = "The FEniCS Form Compiler",
           version          = VERSION,
           author           = AUTHORS,
-          classifiers      = CLASSIFIERS,
+          classifiers      = [_f for _f in CLASSIFIERS.split('\n') if _f],
           license          = "LGPL version 3 or later",
           author_email     = "fenics@fenicsproject.org",
           maintainer_email = "fenics@fenicsproject.org",
@@ -283,7 +283,8 @@ def run_install():
                               (os.path.join("lib", "pkgconfig"),
                                [os.path.join("cmake", "templates", "ufc-1.pc")]),
                               (os.path.join("include", "swig"),
-                               [os.path.join("ufc", "ufc.i")])])
+                               [os.path.join("ufc", "ufc.i"),
+                                os.path.join("ufc", "ufc_shared_ptr_classes.i")])])
 
 if __name__ == "__main__":
     run_install()

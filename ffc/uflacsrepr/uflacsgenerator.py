@@ -18,6 +18,10 @@
 from ffc.log import info
 from ffc.representationutils import initialize_integral_code
 
+from uflacs.codeutils.cpp_expr_formatting_rules import CppExprFormatter
+from uflacs.backends.ffc.ffc_backend import FFCAccessBackend, FFCDefinitionsBackend
+from uflacs.generation.integralgenerator import IntegralGenerator
+
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
 
@@ -26,9 +30,7 @@ def generate_integral_code(ir, prefix, parameters):
     # Generate generic ffc code snippets
     code = initialize_integral_code(ir, prefix, parameters)
 
-    # Delegate to uflacs to generate tabulate_tensor body
-    # Don't laugh on the next line here :-p
-    from uflacs.backends.ffc.ffc_uflacs_generator import generate_tabulate_tensor_code
+    # Generate tabulate_tensor body using uflacs algorithms
     uflacs_code = generate_tabulate_tensor_code(ir, parameters)
 
     code["tabulate_tensor"] = uflacs_code["tabulate_tensor"]
@@ -37,4 +39,32 @@ def generate_integral_code(ir, prefix, parameters):
     code["additional_includes_set"].update(ir.get("additional_includes_set",()))
     code["additional_includes_set"].update(uflacs_code["additional_includes_set"])
 
+    return code
+
+def generate_tabulate_tensor_code(ir, parameters):
+
+    # Create C++ backend
+    language_formatter = CppExprFormatter()
+
+    # Create FFC backend
+    backend_access = FFCAccessBackend(ir, parameters)
+    backend_definitions = FFCDefinitionsBackend(ir, parameters)
+
+    # Create code generator for integral body
+    ig = IntegralGenerator(ir, language_formatter, backend_access, backend_definitions)
+
+    # Generate code for the tabulate_tensor body
+    body = ig.generate()
+
+    # Fetch includes
+    includes = set()
+    includes.update(ig.get_includes())
+    includes.update(backend_definitions.get_includes())
+
+    # Format uflacs specific code structures into a single
+    # string and place in dict before returning to ffc
+    code = {
+        "tabulate_tensor": body,
+        "additional_includes_set": includes,
+        }
     return code

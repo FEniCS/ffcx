@@ -35,7 +35,7 @@ import ufc
 # UFL modules
 from ufl.classes import Form, FiniteElementBase, TestFunction
 from ufl.objects import dx
-from ufl.algorithms import as_form, extract_elements, extract_sub_elements
+from ufl.algorithms import extract_elements, extract_sub_elements
 from ufl.common import istr, tstr
 
 # FFC modules
@@ -90,7 +90,7 @@ def jit_form(form, parameters=None):
 
     # Check that we get a Form
     if not isinstance(form, Form):
-        form = as_form(form)
+        error("Unable to convert object to a UFL form: %s" % repr(form))
 
     # Check parameters
     parameters = _check_parameters(form, parameters)

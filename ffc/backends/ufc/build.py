@@ -1,5 +1,5 @@
 __author__ = "Johan Hake (hake@simula.no)"
-__date__ = "2009-03-06 -- 2014-02-13"
+__date__ = "2009-03-06 -- 2014-05-20"
 __license__  = "This code is released into the public domain"
 
 __all__ = ['build_ufc_module']
@@ -82,14 +82,7 @@ def extract_declarations(h_files):
 %include <std_shared_ptr.i>
 
 // Declare which classes should be stored using shared_ptr
-%shared_ptr(ufc::cell_integral)
-%shared_ptr(ufc::dofmap)
-%shared_ptr(ufc::finite_element)
-%shared_ptr(ufc::function)
-%shared_ptr(ufc::form)
-%shared_ptr(ufc::exterior_facet_integral)
-%shared_ptr(ufc::interior_facet_integral)
-%shared_ptr(ufc::point_integral)
+%include "swig/ufc_shared_ptr_classes.i"
 
 // Import types from ufc
 %import(module="ufc") "ufc.h"

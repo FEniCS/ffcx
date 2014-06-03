@@ -1,5 +1,9 @@
+1.4.0 [2014-06-02]
+ - Add support for integrals that know which coefficients they use
  - Many bug fixes for facet integrals over manifolds
  - Merge UFC into FFC; ChangeLog for UFC appended below
+ - Various updates mirroring UFL changes
+ - Experimental: New custom integral with user defined quadrature points
 1.3.0 [2014-01-07]
  - Fix bug with runtime check of SWIG version
  - Move DOLFIN wrappers here from DOLFIN
