@@ -198,6 +198,15 @@ def _generate_integral_code(ir, prefix, parameters):
 
     return code
 
+def _generate_original_coefficient_position(original_coefficient_positions):
+    # TODO: I don't know how to implement this using the format dict, this will do for now:
+    initializer_list = ", ".join(str(i) for i in original_coefficient_positions)
+    code = '\n'.join([
+        "static const std::vector<std::size_t> position({%s});" % initializer_list,
+        "return position[i];",
+        ])
+    return code
+
 def _generate_form_code(ir, prefix, parameters):
     "Generate code for form from intermediate representation."
 
@@ -220,35 +229,19 @@ def _generate_form_code(ir, prefix, parameters):
     code["destructor"] = do_nothing
 
     code["signature"] = ret('"%s"' % ir["signature"])
+    code["original_coefficient_position"] = _generate_original_coefficient_position(ir["original_coefficient_positions"])
     code["rank"] = ret(ir["rank"])
     code["num_coefficients"] = ret(ir["num_coefficients"])
-
-    code["num_cell_domains"] = ret(ir["num_cell_domains"])
-    code["num_exterior_facet_domains"] = ret(ir["num_exterior_facet_domains"])
-    code["num_interior_facet_domains"] = ret(ir["num_interior_facet_domains"])
-    code["num_point_domains"] = ret(ir["num_point_domains"])
-    code["num_custom_domains"] = ret(ir["num_custom_domains"])
-
-    code["has_cell_integrals"] = _has_foo_integrals(ir, "cell")
-    code["has_exterior_facet_integrals"] = _has_foo_integrals(ir, "exterior_facet")
-    code["has_interior_facet_integrals"] = _has_foo_integrals(ir, "interior_facet")
-    code["has_point_integrals"] = _has_foo_integrals(ir, "point")
-    code["has_custom_integrals"] = _has_foo_integrals(ir, "custom")
 
     code["create_finite_element"] = _create_foo(prefix, "finite_element", ir["create_finite_element"])
     code["create_dofmap"] = _create_foo(prefix, "dofmap", ir["create_dofmap"])
 
-    code["create_cell_integral"] = _create_foo_integral(ir, "cell", prefix)
-    code["create_exterior_facet_integral"] = _create_foo_integral(ir, "exterior_facet", prefix)
-    code["create_interior_facet_integral"] = _create_foo_integral(ir, "interior_facet", prefix)
-    code["create_point_integral"] = _create_foo_integral(ir, "point", prefix)
-    code["create_custom_integral"] = _create_foo_integral(ir, "custom", prefix)
-
-    code["create_default_cell_integral"] = _create_default_foo_integral(ir, "cell", prefix)
-    code["create_default_exterior_facet_integral"] = _create_default_foo_integral(ir, "exterior_facet", prefix)
-    code["create_default_interior_facet_integral"] = _create_default_foo_integral(ir, "interior_facet", prefix)
-    code["create_default_point_integral"] = _create_default_foo_integral(ir, "point", prefix)
-    code["create_default_custom_integral"] = _create_default_foo_integral(ir, "custom", prefix)
+    integral_types = ["cell", "exterior_facet", "interior_facet", "point", "custom"]
+    for integral_type in integral_types:
+        code["num_%s_domains" % integral_type] = ret(ir["num_%s_domains" % integral_type])
+        code["has_%s_integrals" % integral_type] = _has_foo_integrals(ir, integral_type)
+        code["create_%s_integral" % integral_type] = _create_foo_integral(ir, integral_type, prefix)
+        code["create_default_%s_integral" % integral_type] = _create_default_foo_integral(ir, integral_type, prefix)
 
     # Postprocess code
     _postprocess_code(code, parameters)
