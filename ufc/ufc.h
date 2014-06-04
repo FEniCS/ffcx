@@ -394,7 +394,7 @@ namespace ufc
     /// Return the number of cells involved in evaluation of the integral
     virtual std::size_t num_cells() const = 0;
 
-    /// Tabulate the tensor for the contribution from custom domain
+    /// Tabulate the tensor for the contribution from a custom domain
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
                                  const double* vertex_coordinates,
