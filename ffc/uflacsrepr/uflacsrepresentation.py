@@ -39,6 +39,7 @@ from uflacs.elementtables.terminaltables import build_element_tables, optimize_e
 def compute_integral_ir(itg_data,
                         form_data,
                         form_id,
+                        dummy,
                         parameters):
     "Compute intermediate represention of integral."
 
@@ -108,7 +109,7 @@ def compute_tabulate_tensor_ir(psi_tables, entitytype,
         expr = integral.integrand()
 
         # Replace coefficients so they all have proper element and domain for what's to come
-        expr = replace(expr, form_data.function_replace_map)
+        expr = replace(expr, form_data.function_replace_map) # FIXME: Doesn't replace domain coefficient!!! Merge replace functionality into change_to_reference_grad to fix?
 
         # Change from physical gradients to reference gradients
         expr = change_to_reference_grad(expr) # TODO: Make this optional depending on backend
@@ -118,16 +119,15 @@ def compute_tabulate_tensor_ir(psi_tables, entitytype,
         expr = expr * scale
 
         # Change geometric representation to lower level quantities
-        if integral.integral_type() == "quadrature":
+        if integral.integral_type() in ("custom", "point"):
             physical_coordinates_known = True
         else:
             physical_coordinates_known = False
         expr = change_to_reference_geometry(expr, physical_coordinates_known)
 
-        # Restrictions may not be at terminals any more, propagate them again TODO: Skip this in preprocess?
+        # Propagate restrictions to become terminal modifiers
         if integral.integral_type() == "interior_facet":
             expr = propagate_restrictions(expr)
-
 
 
         # Build the core uflacs ir of expressions
