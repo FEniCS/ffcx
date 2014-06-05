@@ -39,7 +39,7 @@ from uflacs.elementtables.terminaltables import build_element_tables, optimize_e
 def compute_integral_ir(itg_data,
                         form_data,
                         form_id,
-                        dummy,
+                        element_numbers, # FIXME: Not used, what's this for?
                         parameters):
     "Compute intermediate represention of integral."
 
@@ -123,7 +123,7 @@ def compute_tabulate_tensor_ir(psi_tables, entitytype,
             physical_coordinates_known = True
         else:
             physical_coordinates_known = False
-        expr = change_to_reference_geometry(expr, physical_coordinates_known)
+        expr = change_to_reference_geometry(expr, physical_coordinates_known, form_data.function_replace_map)
 
         # Propagate restrictions to become terminal modifiers
         if integral.integral_type() == "interior_facet":
