@@ -106,6 +106,7 @@ def flatten_psi_tables(tables, entity_type):
 
                         # Iterate over the innermost tables for each scalar component
                         for component, psi_table in component_tables:
+
                             # Generate the table name.
                             name = generate_psi_name(counter, entity_type, entity, component, derivs, avg)
 

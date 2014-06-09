@@ -20,7 +20,7 @@
 # Modified by Anders Logg, 2009.
 # Modified by Martin Alnaes, 2013-2014
 
-import numpy, itertools
+import numpy, itertools, functools, operator
 
 # UFL modules
 import ufl
@@ -102,7 +102,12 @@ def _tabulate_empty_psi_table(tdim, deriv_order, element):
     # Return empty table
     table = {}
     for d in derivs:
-        table[d] = [[]] if element.value_shape() == () else [[[]]]
+        value_shape = element.value_shape()
+        if value_shape == ():
+            table[d] = [[]]
+        else:
+            value_size = functools.reduce(operator.mul, value_shape, 1)
+            table[d] = [[[] for c in range(value_size)]]
 
     return {None: table}
 
