@@ -18,7 +18,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2007-03-16
-# Last changed: 2014-04-23
+# Last changed: 2014-06-09
 #
 # Hacked by Marie E. Rognes 2013
 # Modified by Anders Logg 2014
