@@ -16,7 +16,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2014-03-04
-# Last changed: 2014-06-08
+# Last changed: 2014-06-09
 #
 # This demo illustrates the use of custom integrals with vector elements.
 #
@@ -48,10 +48,13 @@ do = dc2      # overlap integral
 # Parameters
 alpha = 4.0
 
+def myjump(v, n):
+    return outer(v('+'), n('+')) + outer(v('-'), n('-'))
+
 # Bilinear form
 a = inner(grad(u), grad(v))*dx \
-  - dot(dot(avg(grad(u)), n('+')), jump(v))*di \
-  - dot(dot(avg(grad(v)), n('+')), jump(u))*di \
+  - inner(avg(grad(u)), myjump(v, n))*di \
+  - inner(avg(grad(v)), myjump(u, n))*di \
   + alpha/h*dot(jump(u), jump(v))*di \
   + inner(jump(grad(u)), jump(grad(v)))*do
 
