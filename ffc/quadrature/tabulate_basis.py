@@ -20,7 +20,7 @@
 # Modified by Anders Logg, 2009.
 # Modified by Martin Alnaes, 2013-2014
 
-import numpy, itertools, functools, operator
+import numpy, itertools
 
 # UFL modules
 import ufl
@@ -29,6 +29,7 @@ from ufl.algorithms import extract_unique_elements, extract_type, extract_elemen
 
 # FFC modules
 from ffc.log import ffc_assert, info, error, warning
+from ffc.utils import product
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import map_facet_points, reference_cell_vertices
 from ffc.fiatinterface import cellname_to_num_entities
@@ -106,7 +107,7 @@ def _tabulate_empty_psi_table(tdim, deriv_order, element):
         if value_shape == ():
             table[d] = [[]]
         else:
-            value_size = functools.reduce(operator.mul, value_shape, 1)
+            value_size = product(value_shape)
             table[d] = [[[] for c in range(value_size)]]
 
     return {None: table}
