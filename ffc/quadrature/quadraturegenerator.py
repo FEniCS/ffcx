@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-06-09
+# Last changed: 2014-06-10
 
 # Python modules
 import functools, itertools
@@ -767,9 +767,11 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
     f_static_array     = format["static array"]
     f_loop             = format["generate loop"]
     f_eval_basis_decl  = format["eval_basis_decl"]
+    f_eval_basis_init  = format["eval_basis_init"]
     f_eval_basis       = format["eval_basis"]
     f_eval_basis_copy  = format["eval_basis_copy"]
     f_eval_derivs_decl = format["eval_derivs_decl"]
+    f_eval_derivs_init = format["eval_derivs_init"]
     f_eval_derivs      = format["eval_derivs"]
     f_eval_derivs_copy = format["eval_derivs_copy"]
 
@@ -789,6 +791,12 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
     # tabulate_basis_derivatives all, and then extract the relevant
     # data and fill in the psi_tables. We therefore need to extract
     # for each prefix, which tables need to be filled in.
+
+    print
+    print "Tables:"
+    for table in psi_tables:
+        print table
+    print
 
     # For each unique prefix, check which derivatives and components are used
     used_derivatives_and_components = {}
@@ -824,62 +832,96 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
     for prefix in prefixes:
 
         # Get element data for current element
-        counter = int(prefix.split("FE")[1])
-        space_dim = element_data[counter]["local_dimension"]
-        value_size = element_data[counter]["value_size"]
+        counter        = int(prefix.split("FE")[1])
         element_number = element_data[counter]["element_number"]
-        macro_dim = space_dim*num_cells
+        space_dim      = element_data[counter]["local_dimension"]
+        value_size     = element_data[counter]["value_size"]
+
+        # Compute dimensions
+        table_size = num_cells*space_dim
+        eval_size  = space_dim*value_size
 
         # Iterate over derivative orders
-        for n, c in used_derivatives_and_components[prefix].iteritems():
+        for n, components in used_derivatives_and_components[prefix].iteritems():
+
+            print "n =", n, "c =", c
 
             # Code for evaluate_basis_all
             if n == 0:
 
-                # Generate code for declaration of FE table
-                code += [f_comment("Create table %s for basis function values on all cells" % prefix)]
-                code += [f_eval_basis_decl % {"prefix": prefix, "macro_dim": macro_dim}]
+                code += [f_comment("--- Evaluation of basis functions ---")]
+                code += [""]
 
-                # Iterate over cells (in macro element)
+                # Iterate over components and initialize tables
+                for c in components:
+
+                    # Set name of table
+                    if c is None:
+                        table_name = prefix
+                    else:
+                        table_name = prefix + "_C%s" % c
+
+                    # Generate code for declaration of table
+                    code += [f_comment("Create table %s for basis function values on all cells" % table_name)]
+                    code += [f_eval_basis_decl % {"table_name": table_name}]
+                    code += [f_eval_basis_init % {"table_name": table_name,
+                                                  "table_size": table_size}]
+
+                # Iterate over cells in macro element and evaluate basis
                 for cell_number in range(num_cells):
 
-                    code += [f_comment("--- Evaluation of basis functions on cell %d ---" % cell_number)]
                     code += [""]
 
-                    # Size of array to evaluate_basis_all
-                    num_vals = space_dim*value_size
-
-                    # Cell offset for array of vertex coordinates
+                    # Compute variables for code generation
+                    eval_name     = "%s_values_%d" % (prefix, cell_number)
                     vertex_offset = cell_number*num_vertices*gdim
-
-                    # Cell offset for array of values
-                    values_offset = cell_number*num_vals
-
-                    # Name of values array
-                    values = "%s_values_%d" % (prefix, cell_number)
+                    table_offset  = cell_number*space_dim
 
                     # Generate block of code for loop
                     block = []
-                    block += [f_eval_basis      % {"prefix":         prefix,
-                                                   "form_prefix":    form_prefix,
-                                                   "gdim":           gdim,
-                                                   "counter":        counter,
-                                                   "element_number": element_number,
-                                                   "vertex_offset":  vertex_offset,
-                                                   "values":         values}]
-                    block += [f_eval_basis_copy % {"prefix":         prefix,
-                                                   "space_dim":      space_dim,
-                                                   "values_offset":  values_offset,
-                                                   "values":         values}]
 
+                    # Generate code for calling evaluate_basis_all
+                    block += [f_eval_basis % {"form_prefix":    form_prefix,
+                                              "element_number": element_number,
+                                              "eval_name":      eval_name,
+                                              "gdim":           gdim,
+                                              "vertex_offset":  vertex_offset}]
+
+                    # Iterate over components and extract values
+                    for c in components:
+
+                        # Set name of table and component offset
+                        if c is None:
+                            table_name = prefix
+                            component_offset = 0
+                        else:
+                            table_name = prefix + "_C%s" % c
+                            component_offset = int(c)
+
+                        # Generate code for copying values
+                        block += [""]
+                        block += [f_eval_basis_copy % {"table_name":       table_name,
+                                                       "eval_name":        eval_name,
+                                                       "space_dim":        space_dim,
+                                                       "value_size":       value_size,
+                                                       "table_offset":     table_offset,
+                                                       "component_offset": component_offset}]
                     # Generate code
-                    code += [f_comment("Evaluate basis functions at all quadrature points")]
-                    code += [f_static_array("double", values, num_vals)]
+                    code += [f_comment("Evaluate basis functions on cell %d" % cell_number)]
+                    code += [f_static_array("double", eval_name, eval_size)]
                     code += f_loop(block, [("ip", 0, "num_quadrature_points")])
                     code += [""]
 
             # Code for evaluate_basis_derivatives_all
             else:
+
+                code += [f_comment("--- Evaluation of basis function derivatives of order %d ---" % n) ]
+                code += [""]
+
+                # FIXME: We extract values for all possible derivatives, even
+                # FIXME: if not all are used. (For components, we extract only
+                # FIXME: components that are actually used.) This may be optimized
+                # FIXME: but the extra cost is likely small.
 
                 # Get derivative tuples
                 deriv_tuples, _deriv_tuples = compute_derivative_tuples(n, gdim)
@@ -887,57 +929,83 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
                 # Generate names for derivatives
                 derivs = ["".join(str(_d) for _d in d) for d in _deriv_tuples]
 
-                # Generate code for declaration of FE table
-                code += [f_comment("Create table(s) %s_D for order %d basis function derivatives on all cells" % (prefix, n))]
-                code += [(f_eval_derivs_decl % {"prefix": prefix, "d": d, "macro_dim": macro_dim}) for d in derivs]
+                # Iterate over derivatives and components and initialize tables
+                for d in derivs:
+                    for c in components:
+
+                        # Set name of table
+                        if c is None:
+                            table_name = prefix + "_D%s" % d
+                        else:
+                            table_name = prefix + "_C%s_D%s" % (c, d)
+
+                        # Generate code for declaration of table
+                            code += [f_comment("Create table %s for basis function derivatives on all cells" % table_name)]
+                        code += [(f_eval_derivs_decl % {"table_name": table_name})]
+                        code += [(f_eval_derivs_init % {"table_name": table_name,
+                                                        "table_size": table_size})]
 
                 # Iterate over cells (in macro element)
                 for cell_number in range(num_cells):
 
-                    code += [f_comment("--- Evaluation of basis function derivatives on cell %d ---" % cell_number)]
                     code += [""]
+
+                    # Compute variables for code generation
+                    eval_name     = "%s_dvalues_%d_%d" % (prefix, n, cell_number)
+                    vertex_offset = cell_number*num_vertices*gdim
+                    table_offset  = cell_number*space_dim
 
                     # Size of array to evaluate_basis_derivatives_all
                     num_vals = space_dim*value_size*len(derivs)
-
-                    # Cell offset for array of vertex coordinates
-                    vertex_offset = cell_number*num_vertices*gdim
-
                     # Cell offset for array of values
                     values_offset = cell_number*space_dim
-
                     # Stride for values array
                     stride = value_size*len(derivs)
 
-                    # Name of values array
-                    values = "%s_dvalues_%d_%d" % (prefix, n, cell_number)
-
                     # Generate block of code for loop
                     block = []
-                    block += [f_eval_derivs %       {"prefix":         prefix,
-                                                     "form_prefix":    form_prefix,
-                                                     "gdim":           gdim,
-                                                     "n":              n,
-                                                     "counter":        counter,
-                                                     "element_number": element_number,
-                                                     "vertex_offset":  vertex_offset,
-                                                     "values":         values}]
-                    block += [(f_eval_derivs_copy % {"prefix":         prefix,
-                                                     "space_dim":      space_dim,
-                                                     "values_offset":  values_offset,
-                                                     "d":              d,
-                                                     "offset":         i,
-                                                     "stride":         stride,
-                                                     "values":         values
-                                                     }) for (i, d) in enumerate(derivs)]
+
+                    # Generate code for calling evaluate_basis_derivatives_all
+                    block += [f_eval_derivs % {"form_prefix":    form_prefix,
+                                               "element_number": element_number,
+                                               "eval_name":      eval_name,
+                                               "gdim":           gdim,
+                                               "vertex_offset":  vertex_offset,
+                                               "n":              n}]
+
+                    # Iterate over derivatives and components and extract values
+                    for d in derivs:
+                        for c in components:
+
+                            # Set name of table and component offset
+                            if c is None:
+                                table_name = prefix + "_D%s" % d
+                                component_offset = 0
+                            else:
+                                table_name = prefix + "_C%s_D%s" % (c, d)
+                                component_offset = int(c)
+
+                            # Generate code for copying values
+                                block += [""]
+                                block += [(f_eval_derivs_copy % {"table_name":       table_name,
+                                                                 "eval_name":        eval_name,
+                                                                 "space_dim":        space_dim,
+                                                                 "value_size":       value_size,
+                                                                 "table_offset":     table_offset,
+                                                                 "component_offset": component_offset})]
 
                     # Generate code
-                    code += [f_comment("Evaluate basis function derivatives at all quadrature points")]
-                    code += [f_static_array("double", values, num_vals)]
+                    code += [f_comment("Evaluate basis function derivatives on cell number %d" % cell_number)]
+                    code += [f_static_array("double", eval_name, eval_size)]
                     code += f_loop(block, [("ip", 0, "num_quadrature_points")])
                     code += [""]
 
                 # Add newline
                 code += [""]
+
+
+    print
+    print "\n".join(code)
+    exit(0)
 
     return code

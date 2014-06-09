@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-12-16
-# Last changed: 2014-05-22
+# Last changed: 2014-06-09
 
 # Python modules
 import re, numpy, platform
@@ -280,9 +280,11 @@ format.update({
     "header_c":                 header_c,
     "footer":                   footer,
     "eval_basis_decl":          eval_basis_decl,
+    "eval_basis_init":          eval_basis_init,
     "eval_basis":               eval_basis,
     "eval_basis_copy":          eval_basis_copy,
     "eval_derivs_decl":         eval_derivs_decl,
+    "eval_derivs_init":         eval_derivs_init,
     "eval_derivs":              eval_derivs,
     "eval_derivs_copy":         eval_derivs_copy,
     "extract_cell_coordinates": lambda offset, r : "const double* vertex_coordinates_%d = vertex_coordinates + %d;" % (r, offset)

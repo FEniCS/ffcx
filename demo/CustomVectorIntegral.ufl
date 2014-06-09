@@ -60,7 +60,7 @@ def myjump(v, n):
 
 #a = inner(grad(u), grad(v))*dc0
 
-a = u[0].dx(1)*v[0]*dc0
+a = u[0].dx(1)*v[1]*dc0
 
 # Linear form
 #L = dot(f, v)*dx

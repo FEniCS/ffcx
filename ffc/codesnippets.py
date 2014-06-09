@@ -23,14 +23,14 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-28
-# Last changed: 2014-05-22
+# Last changed: 2014-06-10
 
 # Code snippets
 
 __all__ = ["comment_ufc", "comment_dolfin", "header_h", "header_c", "footer",
            "compute_jacobian", "compute_jacobian_inverse",
-           "eval_basis_decl", "eval_basis", "eval_basis_copy",
-           "eval_derivs_decl", "eval_derivs", "eval_derivs_copy"]
+           "eval_basis_decl", "eval_basis_init", "eval_basis", "eval_basis_copy",
+           "eval_derivs_decl", "eval_derivs_init", "eval_derivs", "eval_derivs_copy"]
 
 __old__ = ["evaluate_f",
            "facet_determinant", "map_onto_physical",
@@ -775,37 +775,37 @@ max_facet_edge_length = {3: {3: _max_facet_edge_length_3D}}
 # Code snippets for runtime quadrature (calling evaluate_basis)
 
 eval_basis_decl = """\
-std::vector<std::vector<double> > %(prefix)s(num_quadrature_points);
+std::vector<std::vector<double> > %(table_name)s(num_quadrature_points);"""
+
+eval_basis_init = """\
 for (std::size_t ip = 0; ip < num_quadrature_points; ip++)
-  %(prefix)s[ip].resize(%(macro_dim)s);
-"""
+  %(table_name)s[ip].resize(%(table_size)s);"""
 
 eval_basis = """\
 // Get current quadrature point and compute values of basis functions
 const double* x = quadrature_points + ip*%(gdim)s;
 const double* v = vertex_coordinates + %(vertex_offset)s;
-%(form_prefix)s_finite_element_%(element_number)s::_evaluate_basis_all(%(values)s, x, v, cell_orientation);"""
+%(form_prefix)s_finite_element_%(element_number)s::_evaluate_basis_all(%(eval_name)s, x, v, cell_orientation);"""
 
 eval_basis_copy = """\
-
-// Copy values to table %(prefix)s
-std::copy(%(values)s, %(values)s + %(space_dim)s, %(prefix)s[ip].begin() + %(values_offset)s);
-"""
+// Copy values to table %(table_name)s
+for (std::size_t i = 0; i < %(space_dim)s; i++)
+  %(table_name)s[ip][%(table_offset)s + i] = %(eval_name)s[%(value_size)s*i + %(component_offset)s];"""
 
 eval_derivs_decl = """\
-std::vector<std::vector<double> > %(prefix)s_D%(d)s(num_quadrature_points);
+std::vector<std::vector<double> > %(table_name)s(num_quadrature_points);"""
+
+eval_derivs_init = """\
 for (std::size_t ip = 0; ip < num_quadrature_points; ip++)
-  %(prefix)s_D%(d)s[ip].resize(%(macro_dim)s);
-"""
+  %(table_name)s[ip].resize(%(table_size)s);"""
 
 eval_derivs = """\
 // Get current quadrature point and compute values of basis function derivatives
 const double* x = quadrature_points + ip*%(gdim)s;
 const double* v = vertex_coordinates + %(vertex_offset)s;
-%(form_prefix)s_finite_element_%(element_number)s::_evaluate_basis_derivatives_all(%(n)s, %(values)s, x, v, cell_orientation);"""
+%(form_prefix)s_finite_element_%(element_number)s::_evaluate_basis_derivatives_all(%(n)s, %(eval_name)s, x, v, cell_orientation);"""
 
 eval_derivs_copy = """\
-
-// Copy values to table %(prefix)s_D%(d)s
+// Copy values to table %(table_name)s
 for (std::size_t i = 0; i < %(space_dim)s; i++)
-  %(prefix)s_D%(d)s[ip][i + %(values_offset)s] = %(values)s[%(offset)s + i*%(stride)s];"""
+  %(table_name)s[ip][%(table_offset)s + i] = %(eval_name)s[%(value_size)s*i + %(component_offset)s];"""
