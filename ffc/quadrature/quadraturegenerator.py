@@ -781,24 +781,39 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
     # Use lower case prefix for form name
     form_prefix = form_prefix.lower()
 
-    # For each uniqe prefix ("FE0" etc), figure out which derivatives
-    # need to be tabulated
-    used_derivatives = {}
+    # The psi_tables used by the quadrature code are for scalar
+    # components of specific derivatives, while tabulate_basis_all and
+    # tabulate_basis_derivatives_all return data including all
+    # possible components and derivatives. We therefore need to
+    # iterate over prefixes (= elements), call tabulate_basis_all or
+    # tabulate_basis_derivatives all, and then extract the relevant
+    # data and fill in the psi_tables. We therefore need to extract
+    # for each prefix, which tables need to be filled in.
+
+    # For each unique prefix, check which derivatives and components are used
+    used_derivatives_and_components = {}
     for prefix in prefixes:
-        derivatives = set()
+        used_derivatives_and_components[prefix] = {}
         for table in psi_tables:
-            if not prefix in table:
-                continue
-#            if "_C" in table:
-#                # FIXME: Bailout for now, add support for this later
-#                error("custom integrals not yet supported for vector valued function spaces")
+            if not prefix in table: continue
+
+            # Check for derivative
             if "_D" in table:
                 d = table.split("_D")[1].split("_")[0]
-                n = sum([int(_d) for _d in d]) # FIXME: Will fail for more than 9 derivatives...
+                n = sum([int(_d) for _d in d]) # FIXME: Assume at most 9 derivatives...
             else:
                 n = 0
-            derivatives.add(n)
-        used_derivatives[prefix] = derivatives
+
+            # Check for component
+            if "_C" in table:
+                c = table.split("_C")[1].split("_")[0]
+            else:
+                c = None
+
+            # Note that derivative has been used
+            if not n in used_derivatives_and_components[prefix]:
+                used_derivatives_and_components[prefix][n] = set()
+            used_derivatives_and_components[prefix][n].add(c)
 
     # Generate code for setting quadrature weights
     code += [f_comment("Set quadrature weights")]
@@ -816,7 +831,7 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
         macro_dim = space_dim*num_cells
 
         # Iterate over derivative orders
-        for n in used_derivatives[prefix]:
+        for n, c in used_derivatives_and_components[prefix].iteritems():
 
             # Code for evaluate_basis_all
             if n == 0:

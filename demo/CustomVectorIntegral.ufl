@@ -58,7 +58,9 @@ def myjump(v, n):
 #  + alpha/h*dot(jump(u), jump(v))*di \
 #  + inner(jump(grad(u)), jump(grad(v)))*do
 
-a = inner(grad(u), grad(v))*dc0
+#a = inner(grad(u), grad(v))*dc0
+
+a = u[0].dx(1)*v[0]*dc0
 
 # Linear form
-L = dot(f, v)*dx
+#L = dot(f, v)*dx
