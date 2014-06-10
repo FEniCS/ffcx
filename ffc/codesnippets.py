@@ -790,7 +790,7 @@ const double* v = vertex_coordinates + %(vertex_offset)s;
 eval_basis_copy = """\
 // Copy values to table %(table_name)s
 for (std::size_t i = 0; i < %(space_dim)s; i++)
-  %(table_name)s[ip][%(table_offset)s + i] = %(eval_name)s[%(value_size)s*i + %(component_offset)s];"""
+  %(table_name)s[ip][%(table_offset)s + i] = %(eval_name)s[%(eval_stride)s*i + %(eval_offset)s];"""
 
 eval_derivs_decl = """\
 std::vector<std::vector<double> > %(table_name)s(num_quadrature_points);"""
@@ -808,4 +808,4 @@ const double* v = vertex_coordinates + %(vertex_offset)s;
 eval_derivs_copy = """\
 // Copy values to table %(table_name)s
 for (std::size_t i = 0; i < %(space_dim)s; i++)
-  %(table_name)s[ip][%(table_offset)s + i] = %(eval_name)s[%(value_size)s*i + %(component_offset)s];"""
+  %(table_name)s[ip][%(table_offset)s + i] = %(eval_name)s[%(eval_stride)s*i + %(eval_offset)s];"""
