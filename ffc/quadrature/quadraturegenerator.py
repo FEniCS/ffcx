@@ -792,12 +792,6 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
     # data and fill in the psi_tables. We therefore need to extract
     # for each prefix, which tables need to be filled in.
 
-    print
-    print "Tables:"
-    for table in psi_tables:
-        print table
-    print
-
     # For each unique prefix, check which derivatives and components are used
     used_derivatives_and_components = {}
     for prefix in prefixes:
@@ -839,8 +833,6 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
 
         # Iterate over derivative orders
         for n, components in used_derivatives_and_components[prefix].iteritems():
-
-            print "n =", n, "c =", c
 
             # Code for evaluate_basis_all
             if n == 0:
@@ -1000,9 +992,5 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
 
                 # Add newline
                 code += [""]
-
-    print
-    print "\n".join(code)
-    #exit(0)
 
     return code

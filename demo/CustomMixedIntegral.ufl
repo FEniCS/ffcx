@@ -15,20 +15,23 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# First added:  2014-03-04
+# First added:  2014-06-10
 # Last changed: 2014-06-10
 #
-# This demo illustrates the use of custom integrals with vector elements.
+# This demo illustrates the use of custom integrals with mixed elements.
 #
-# Compile this form with FFC: ffc CustomVectorIntegral.ufl
+# Compile this form with FFC: ffc CustomMixedIntegral.ufl
 
 # Define element
-element = VectorElement("Lagrange", triangle, 1)
+P2 = VectorElement("Lagrange", triangle, 2)
+P1 = FiniteElement("Lagrange", triangle, 1)
+
+element = P2 * P1
 
 # Define trial and test functions and right-hand side
-u = TrialFunction(element)
-v = TestFunction(element)
-f = Coefficient(element)
+(u, p) = TrialFunctions(element)
+(v, q) = TestFunctions(element)
+f = Coefficient(P2)
 
 # Define facet normal and mesh size
 n = FacetNormal(triangle)
@@ -51,12 +54,19 @@ alpha = 4.0
 def tensor_jump(v, n):
     return outer(v('+'), n('+')) + outer(v('-'), n('-'))
 
+def a_h(v, w):
+    return inner(grad(v), grad(w))*dx \
+         - inner(avg(grad(v)), tensor_jump(w, n))*di \
+         - inner(avg(grad(w)), tensor_jump(v, n))*di
+
+def b_h(v, q):
+    return -div(v)*q*dx + jump(v, n)*avg(q)*di
+
+def s_h(v, w):
+    return inner(jump(grad(v)), jump(grad(w)))*do
+
 # Bilinear form
-a = inner(grad(u), grad(v))*dx \
-  - inner(avg(grad(u)), tensor_jump(v, n))*di \
-  - inner(avg(grad(v)), tensor_jump(u, n))*di \
-  + alpha/h*dot(jump(u), jump(v))*di \
-  + inner(jump(grad(u)), jump(grad(v)))*do
+a = a_h(u, v) + b_h(v, p) + b_h(u, q) + s_h(u, v)
 
 # Linear form
 L = dot(f, v)*dx
