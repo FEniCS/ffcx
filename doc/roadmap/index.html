@@ -24,18 +24,49 @@
       <section id="title-slide">
         <h2><script>document.write(document.title);</script></h2>
         <h4>Martin Sandve Alnæs</h4>
-        <h4>10/4 2014</h4>
+        <h4>10/6 2014</h4>
       </section>
 
 
       <!-- Work in progress, current focus -->
       <section id="wip">
 
-        <section id="priorities">
-          <a href="#/priorities"><h3>Work in progress - current top priorities</h3></a>
+        <section id="wip-priorities">
+          <a href="#/wip-priorities"><h3>Work in progress - current top priorities</h3></a>
           <ul>
-            <li>Straighten out restrictions, starting with "Jacobian should be restricted" error.</li>
-            <li>Then find the next thing to do by running FFC regression demos.</li>
+            <li>...</li>
+          </ul>
+        </section>
+
+        <section id="wip-backlog">
+          <a href="#/wip-backlog"><h3>Main points left for release</h3></a>
+          <ul>
+            <li>Geometry - Circumradius, CellVolume, FacetArea, MaxFacetEdgeLength, MinFacetEdgeLength.</li>
+            <li>Conditionals.</li>
+            <li>Point integral.</li>
+            <li>Custom integral.</li>
+            <li>Non-affine vector-element mappings - implement ReferenceValueOf in UFL.</li>
+            <li>RestrictedElement.</li>
+          </ul>
+        </section>
+
+        <section id="wip-optimize-compiler">
+          <a href="#/wip-optimize-compiler"><h3>Optimization of code generation</h3></a>
+          <ul>
+            <li>Factorization algorithm in unoptimized and slow.</li>
+            <li>Profile!</li>
+          </ul>
+        </section>
+
+        <section id="wip-optimize-kernel">
+          <a href="#/wip-optimize-kernel"><h3>Optimization of generated code</h3></a>
+          <ul>
+            <li>At this point performance is competitive but has potential.</li>
+            <li>Extract constant-to-a-scale tensor parts out of quadrature loop.</li>
+            <li>Fuse loops of same size.</li>
+            <li>Add nonzero table column support similar to quadrature representation.</li>
+            <li>Auto-vectorization with AVX2 intrinsics.</li>
+            <li>Tune unstructured expressions better - generate FMAs?</li>
           </ul>
         </section>
 
@@ -48,45 +79,55 @@
         <section>
           <h3>Status of geometry types</h3>
           <ul>
-          <li>Many are working.</li>
-          <li>For each geometry type:
-            <ul>
-              <li>For each integral type:
-                <ul>
-                  <li>Test!</li>
-                </ul>
-              </li>
-            </ul>
-          </li>
-          <li>Types on the next slide:</li>
+            <li>25 types</li>
+            <li>3 cell/facet types</li>
+            <li>5 integral types</li>
+            <li>= 375 of combinations to test...</li>
+            <li>Overview below is not up to date!</li>
           </ul>
         </section>
 
+        <section>
+          <h3>Implemented geometry types</h3>
+        </section>
         <section tagcloud>
           SpatialCoordinate
-          ReferenceCoordinate
-          ReferenceFacetCoordinate
-          CellOriginCoordinate
+          FacetNormal
+        </section>
+
+        <section>
+          <h3>Geometry types likely working</h3>
+        </section>
+        <section tagcloud>
+          CellCoordinate
+          FacetCoordinate
+          CellOrigin
+          FacetOrigin
+          CellFacetOrigin
           Jacobian
           JacobianDeterminant
           JacobianInverse
           FacetJacobian
           FacetJacobianDeterminant
           FacetJacobianInverse
-          ReferenceFacetJacobian
+          CellFacetJacobian
+          CellFacetJacobianDeterminant
+          CellFacetJacobianInverse
+          CellNormal
+          CellOrientation
+          FacetOrientation
+          QuadratureWeight
+        </section>
+
+        <section>
+          <h3>Missing geometry types</h3>
+        </section>
+        <section tagcloud>
           CellVolume
           Circumradius
           FacetArea
           MinFacetEdgeLength
           MaxFacetEdgeLength
-          FacetNormal
-          CellNormal
-          CellOrientation
-          QuadratureWeight
-        </section>
-
-        <section>
-          <h3>...</h3>
         </section>
 
       </section>
@@ -97,63 +138,21 @@
 
         <section>
           <h3>Status of integral types</h3>
-          <p>Need unit testing of geometry.</p>
-          <p>Need unit testing of gradient mappings.</p>
-          <p>Need unit testing of integration scaling.</p>
+          <ul>
+            <li>Need unit testing of geometry.</li>
+            <li>Need unit testing of gradient mappings.</li>
+            <li>Need unit testing of integration scaling.</li>
+          </ul>
         </section>
 
         <section tagcloud>
           cell
           exterior_facet
           interior_facet
-          quadrature
+          custom
           point
         </section>
 
-        </section>
-
-      </section>
-
-
-      <!-- Features section -->
-      <section id="status-coefficients">
-
-        <section>
-          <h3>Status of coefficient types</h3>
-        </section>
-
-        <section>
-          <h3>Constant coefficients</h3>
-        </section>
-
-        <section>
-          <h3>Varying coefficients</h3>
-        </section>
-
-        <section>
-          <h3>Mixed coefficients</h3>
-        </section>
-
-      </section>
-
-
-      <!-- Features section -->
-      <section id="status-arguments">
-
-        <section>
-          <h3>Status of argument types</h3>
-        </section>
-
-        <section>
-          <h3>Constant arguments</h3>
-        </section>
-
-        <section>
-          <h3>Varying arguments</h3>
-        </section>
-
-        <section>
-          <h3>Mixed arguments</h3>
         </section>
 
       </section>
@@ -222,336 +221,69 @@ ffc -r uflacs
           CoefficientOperators
           Elasticity
           HyperElasticity
-        </section>
-
-      </section>
-
-
-      <!-- FFC regression demos not working -->
-      <section id="regression-incorrect">
-
-        <section>
-          <a href="#/regression-incorrect">
-          <h3>Overview of which FFC regression test demos that produce
-          INCORRECT results</h3>
-          </a>
-          <p>Probable reasons:</p>
-          <ul>
-            <li>Interior facets</li>
-            <li>Fancy element mappings</li>
-          </ul>
-        </section>
-
-        <section tagcloud>
-          Biharmonic
           SubDomains
           FacetIntegrals
           FacetRestrictionAD
-          RestrictedElement
-          MixedPoissonDual
-          MixedPoisson
         </section>
 
       </section>
 
 
       <!-- FFC regression demos not working -->
-      <section id="regression-fail-generate">
+      <section id="regression-fail">
 
         <section>
-          <a href="#/regression-fail-generate">
-          <h3>Overview of which FFC regression test demos that fail to
-          generate code:</h3>
+          <a href="#/regression-fail">
+          <h3>Overview of which FFC regression test demos that produce
+          incorrect results or fail to generate code</h3>
           </a>
-        </section>
-
-        <section tagcloud>
-          PoissonDG
-          CellGeometry
-          Conditional
-          Normals
-          AdaptivePoisson
-          PointMeasure
-          VectorLaplaceGradCurl
+          <p>Note:</p>
+          Biharmonic and PoissonDG dolfin demos work if replacing CellSize with a Constant.
         </section>
 
         <!-- Split by reason -->
 
         <section>
-          <h3>Jacobians and restrictions</h3>
-          Biharmonic
-          SubDomains
-          FacetIntegrals
-          FacetRestrictionAD
-        </section>
-
-        <section>
-          <h3>Facet normals</h3>
-          Normals
-        </section>
-
-        <section>
           <h3>Missing geometry</h3>
           CellGeometry
+          (Biharmonic)
+          (PoissonDG)
         </section>
 
         <section>
-          <h3>Other reasons</h3>
-          PoissonDG
-          AdaptivePoisson
-          RestrictedElement
+          <h3>Missing element mappings</h3>
+          MixedPoissonDual
+          MixedPoisson
+        </section>
+
+        <section>
+          <h3>Missing integral type handling</h3>
           PointMeasure
-          VectorLaplaceGradCurl
+          CustomIntegral
         </section>
 
         <section>
-          <h3>Manifold dimensions</h3>
+          <h3>Incorrect manifold dimensions</h3>
           ProjectionManifold
         </section>
 
         <section>
-          <h3>Conditionals</h3>
+          <h3>Missing conditional operators</h3>
           Conditional
         </section>
 
-      </section>
-
-
-      <!-- FFC regression demos not yet checked -->
-<!--
-      <section>
-
         <section>
-          <h3>Slides for each FFC regression test demo not yet checked</h3>
+          <h3>Missing element table definitions</h3>
+          AdaptivePoisson
+          VectorLaplaceGradCurl
         </section>
 
-
         <section>
-          <h3>AdaptivePoisson.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>AlgebraOperators.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>Biharmonic.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>CellGeometry.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>CoefficientOperators.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>Components.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>Conditional.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>Constant.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>Division.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>Elasticity.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>EnergyNorm.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>Equation.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>FacetIntegrals.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>FacetRestrictionAD.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>Heat.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>HyperElasticity.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>Mass.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>MathFunctions.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>MetaData.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>Mini.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>MixedMixedElement.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>MixedPoisson.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>MixedPoissonDual.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>NavierStokes.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>NeumannProblem.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>Normals.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>Optimization.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>P5tet.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>P5tri.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>PointMeasure.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>Poisson.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>Poisson1D.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>PoissonDG.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>ProjectionManifold.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>QuadratureElement.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>ReactionDiffusion.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>RestrictedElement.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>SpatialCoordinates.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>StabilisedStokes.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>Stokes.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>SubDomain.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>SubDomains.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>TensorWeightedPoisson.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>VectorLaplaceGradCurl.ufl</h3>
-        </section>
-
-
-        <section>
-          <h3>VectorPoisson.ufl</h3>
+          <h3>Missing element type handling</h3>
+          RestrictedElement
         </section>
 
       </section>
--->
 
       <!-- Future code improvement -->
       <section>
