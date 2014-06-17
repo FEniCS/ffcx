@@ -29,6 +29,7 @@ from ufl.algorithms import extract_unique_elements, extract_type, extract_elemen
 
 # FFC modules
 from ffc.log import ffc_assert, info, error, warning
+from ffc.utils import product
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import map_facet_points, reference_cell_vertices
 from ffc.fiatinterface import cellname_to_num_entities
@@ -91,7 +92,7 @@ def _map_entity_points(cellname, tdim, points, entity_dim, entity):
     elif entity_dim == 0:
         return (reference_cell_vertices(cellname)[entity],)
 
-def _tabulate_empty_psi_table(tdim, deriv_order):
+def _tabulate_empty_psi_table(tdim, deriv_order, element):
     "Tabulate psi table when there are no points"
 
     # All combinations of partial derivatives up to given order
@@ -102,7 +103,12 @@ def _tabulate_empty_psi_table(tdim, deriv_order):
     # Return empty table
     table = {}
     for d in derivs:
-        table[d] = [[]]
+        value_shape = element.value_shape()
+        if value_shape == ():
+            table[d] = [[]]
+        else:
+            value_size = product(value_shape)
+            table[d] = [[[] for c in range(value_size)]]
 
     return {None: table}
 
@@ -113,7 +119,7 @@ def _tabulate_psi_table(integral_type, cellname, tdim, element, deriv_order, poi
 
     # Handle case when list of points is empty
     if points is None:
-        return _tabulate_empty_psi_table(tdim, deriv_order)
+        return _tabulate_empty_psi_table(tdim, deriv_order, element)
 
     # Otherwise, call FIAT to tabulate
     entity_dim = domain_to_entity_dim(integral_type, tdim)
@@ -124,6 +130,7 @@ def _tabulate_psi_table(integral_type, cellname, tdim, element, deriv_order, poi
         # TODO: Use 0 as key for cell and we may be able to generalize other places:
         key = None if integral_type == "cell" else entity
         psi_table[key] = element.tabulate(deriv_order, entity_points)
+
     return psi_table
 
 def _tabulate_entities(integral_type, cellname, tdim):

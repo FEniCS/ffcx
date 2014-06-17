@@ -18,7 +18,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2007-03-16
-# Last changed: 2014-04-23
+# Last changed: 2014-06-09
 #
 # Hacked by Marie E. Rognes 2013
 # Modified by Anders Logg 2014
@@ -106,6 +106,7 @@ def flatten_psi_tables(tables, entity_type):
 
                         # Iterate over the innermost tables for each scalar component
                         for component, psi_table in component_tables:
+
                             # Generate the table name.
                             name = generate_psi_name(counter, entity_type, entity, component, derivs, avg)
 

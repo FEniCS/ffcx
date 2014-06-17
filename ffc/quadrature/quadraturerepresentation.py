@@ -29,6 +29,7 @@ from ufl.sorting import sorted_expr_sum
 
 # FFC modules
 from ffc.log import ffc_assert, info, error, warning
+from ffc.utils import product
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import cellname_to_num_entities
 
@@ -217,7 +218,7 @@ def _extract_element_data(element_map, element_numbers):
 
             # Compute value size
             shape = ufl_element.value_shape()
-            value_size = 1 if shape == () else itertools.product(shape)
+            value_size = 1 if shape == () else product(shape)
 
             # Get element number
             if ufl_element in element_numbers:
