@@ -16,7 +16,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2014-06-10
-# Last changed: 2014-06-10
+# Last changed: 2014-06-17
 #
 # This demo illustrates the use of custom integrals with mixed elements.
 #
@@ -28,8 +28,8 @@ P1 = FiniteElement("Lagrange", triangle, 1)
 TH = P2 * P1
 
 # Define trial and test functions and right-hand side
-(u, p) = TrialFunctions(element)
-(v, q) = TestFunctions(element)
+(u, p) = TrialFunctions(TH)
+(v, q) = TestFunctions(TH)
 f = Coefficient(P2)
 
 # Define facet normal and mesh size
