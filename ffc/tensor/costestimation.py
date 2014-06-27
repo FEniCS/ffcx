@@ -42,7 +42,7 @@ def estimate_cost(integral, function_replace_map):
     try:
         monomial_form = extract_monomial_form([integrand], function_replace_map)
         transform_monomial_form(monomial_form)
-    except Exception, exception:
+    except Exception as exception:
         debug("Monomial extraction failed: " + str(exception))
         return -1
 
