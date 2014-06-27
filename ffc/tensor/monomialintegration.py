@@ -161,7 +161,7 @@ def _compute_psi(v, table, num_points, integral_type):
         cindex = [v.components[0]]
         cshape = [len(v.components[0].index_range)]
     else:
-        raise MonomialException, "Can only handle rank 0 or rank 1 tensors."
+        raise MonomialException("Can only handle rank 0 or rank 1 tensors.")
 
     # Get indices and shapes for derivatives
     dindex = [d for d in v.derivatives]

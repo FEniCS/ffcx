@@ -305,8 +305,7 @@ def _generate_physical_offsets(ufl_element, offset=0):
         element = create_element(ufl_element)
         offsets = [offset]*element.space_dimension()
     else:
-        raise NotImplementedError, \
-            "This element combination is not implemented"
+        raise NotImplementedError("This element combination is not implemented")
     return offsets
 
 def _evaluate_dof(ufl_element, element):

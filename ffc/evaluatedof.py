@@ -321,7 +321,7 @@ def _change_variables(mapping, gdim, tdim, offset):
             values += [inner(jacobian_column, components)]
         return values
     else:
-        raise Exception, "The mapping (%s) is not allowed" % mapping
+        raise Exception("The mapping (%s) is not allowed" % mapping)
 
     return code
 

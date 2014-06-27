@@ -166,5 +166,5 @@ def _change_variables(mapping, gdim, tdim, space_dim):
                                                   [G[j][index] for j in range(tdim)])
                                             for index in range(space_dim)]
     else:
-        raise Exception, "No such mapping: %s accepted" % mapping
+        raise Exception("No such mapping: %s accepted" % mapping)
     return change_of_variables

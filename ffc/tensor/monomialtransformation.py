@@ -308,7 +308,7 @@ class TransformedMonomial:
             components = self._extract_components(f, index_map, vdim)
 
             if len(components) > 1:
-                raise MonomialException, "Can only handle rank 0 or rank 1 tensors."
+                raise MonomialException("Can only handle rank 0 or rank 1 tensors.")
 
             # Handle non-affine mappings (Piola)
             if len(components) > 0:
@@ -323,7 +323,7 @@ class TransformedMonomial:
                     fiat_sub_element = create_element(ufl_sub_element)
                     mappings.extend(fiat_sub_element.mapping())
                 if not all_equal(mappings):
-                    raise MonomialException, ("Mappings differ: " + str(mappings))
+                    raise MonomialException("Mappings differ: " + str(mappings))
                 mapping = mappings[0]
 
                 # Get component index relative to its sub element and its sub element

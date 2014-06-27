@@ -94,14 +94,14 @@ class MonomialFactor:
             self.derivatives = []
             self.restriction = None
             if isinstance(arg, Argument) and arg.part() is not None: # Not supported (yet?)
-                raise MonomialException, ("Unable to create monomial from expression: " + str(arg))
+                raise MonomialException("Unable to create monomial from expression: " + str(arg))
         elif arg is None:
             self.function = None
             self.components = []
             self.derivatives = []
             self.restriction = None
         else:
-            raise MonomialException, ("Unable to create monomial from expression: " + str(arg))
+            raise MonomialException("Unable to create monomial from expression: " + str(arg))
 
     def element(self):
         return self.function.element()
@@ -163,16 +163,16 @@ class Monomial:
             self.factors = []
             self.index_slots = None
         else:
-            raise MonomialException, ("Unable to create monomial from expression: " + str(arg))
+            raise MonomialException("Unable to create monomial from expression: " + str(arg))
 
     def apply_derivative(self, indices):
         if not len(self.factors) == 1:
-            raise MonomialException, "Expecting a single factor."
+            raise MonomialException("Expecting a single factor.")
         self.factors[0].apply_derivative(indices)
 
     def apply_tensor(self, indices):
         if not self.index_slots is None:
-            raise MonomialException, "Expecting scalar-valued expression."
+            raise MonomialException("Expecting scalar-valued expression.")
         self.index_slots = indices
 
     def apply_indices(self, indices):

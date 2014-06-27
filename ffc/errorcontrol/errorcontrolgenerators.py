@@ -100,7 +100,7 @@ class ErrorControlGenerator:
         class. Subclasses must overload the initialize_data() method
         and provide a certain set of variables. See
         UFLErrorControlGenerator for an example."""
-        raise NotImplementedError, msg
+        raise NotImplementedError(msg)
 
     def generate_all_error_control_forms(self):
         """

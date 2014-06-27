@@ -48,7 +48,7 @@ for (j, test_option) in enumerate(test_options):
         output = open("output/%s.out" % test_case).read()
         lines = [line for line in output.split("\n") if "bench" in line]
         if not len(lines) == 1:
-            raise RuntimeError, "Unable to extract benchmark data for test case %s" % test_case
+            raise RuntimeError("Unable to extract benchmark data for test case %s" % test_case)
         timing = float(lines[0].split(":")[-1])
         table[(i, j)] = (test_case, test_option, timing)
         logfile.write("%s, %s, %g\n" % (test_case, test_option, timing))
