@@ -90,7 +90,7 @@ def compute_derivative_tuples(n, gdim):
     """
 
     # Create list of derivatives (note that we have d^n derivatives)
-    deriv_tuples = [d for d in itertools.product(*(n*[range(0, gdim)]))]
+    deriv_tuples = [d for d in itertools.product(*(n*[list(range(0, gdim))]))]
 
     # Translate from list of derivative tuples to list of tuples
     # expressing the number of derivatives in each dimension...

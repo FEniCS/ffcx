@@ -97,7 +97,7 @@ def _tabulate_empty_psi_table(tdim, deriv_order, element):
 
     # All combinations of partial derivatives up to given order
     gdim = tdim # hack, consider passing gdim variable here
-    derivs = [d for d in itertools.product(*(gdim*[range(0, deriv_order + 1)]))]
+    derivs = [d for d in itertools.product(*(gdim*[list(range(0, deriv_order + 1))]))]
     derivs = [d for d in derivs if sum(d) <= deriv_order]
 
     # Return empty table

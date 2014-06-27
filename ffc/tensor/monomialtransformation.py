@@ -296,11 +296,11 @@ class TransformedMonomial:
             # Extract basis function index and coefficients
             if isinstance(f.function, Argument):
                 vindex = MonomialIndex(index_type=MonomialIndex.PRIMARY,
-                                       index_range=range(sdim),
+                                       index_range=list(range(sdim)),
                                        index_id=f.index())
 
             elif isinstance(f.function, Coefficient):
-                vindex = MonomialIndex(index_range=range(sdim))
+                vindex = MonomialIndex(index_range=list(range(sdim)))
                 coefficient = MonomialCoefficient(vindex, f.index())
                 self.coefficients.append(coefficient)
 
@@ -352,7 +352,7 @@ class TransformedMonomial:
                 if mapping == "contravariant piola":
                     # phi(x) = (det J)^{-1} J Phi(X)
                     index0 = component
-                    index1 = MonomialIndex(index_range=range(tdim)) + offset
+                    index1 = MonomialIndex(index_range=list(range(tdim))) + offset
                     transform = MonomialTransform(index0, index1,
                                                   MonomialTransform.J,
                                                   f.restriction, offset)
@@ -363,7 +363,7 @@ class TransformedMonomial:
                     components[0] = index1
                 elif mapping == "covariant piola":
                     # phi(x) = J^{-T} Phi(X)
-                    index0 = MonomialIndex(index_range=range(tdim)) + offset
+                    index0 = MonomialIndex(index_range=list(range(tdim))) + offset
                     index1 = component
                     transform = MonomialTransform(index0, index1,
                                                   MonomialTransform.JINV,
@@ -374,7 +374,7 @@ class TransformedMonomial:
             # Extract derivatives / transforms
             derivatives = []
             for d in f.derivatives:
-                index0 = MonomialIndex(index_range=range(tdim))
+                index0 = MonomialIndex(index_range=list(range(tdim)))
                 if d in index_map:
                     index1 = index_map[d]
                 elif isinstance(d, FixedIndex):
@@ -382,7 +382,7 @@ class TransformedMonomial:
                                            index_range=[int(d)],
                                            index_id=int(d))
                 else:
-                    index1 = MonomialIndex(index_range=range(gdim))
+                    index1 = MonomialIndex(index_range=list(range(gdim)))
                 index_map[d] = index1
                 transform = MonomialTransform(index0, index1, MonomialTransform.JINV, f.restriction, 0)
 
@@ -446,7 +446,7 @@ class TransformedMonomial:
                                       index_range=[comp],
                                       index_id=None)
             else:
-                index = MonomialIndex(index_range=range(vdim))
+                index = MonomialIndex(index_range=list(range(vdim)))
             index_map[c] = index
             components.append(index)
         return components

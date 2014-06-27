@@ -231,7 +231,7 @@ def _compute_product(psis, weights):
 
     # Initialize list of internal multiindices
     bshape = _compute_internal_shape(psis)
-    bindices = build_indices([range(b) for b in bshape]) or [[]]
+    bindices = build_indices([list(range(b)) for b in bshape]) or [[]]
 
     # Sum over quadrature points and internal indices
     num_points = len(weights)

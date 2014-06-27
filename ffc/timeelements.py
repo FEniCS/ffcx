@@ -55,10 +55,10 @@ class TimeElementDualSet(dual_set.DualSet):
     # Create ids
     if family == "Lobatto":
       ids[0] = {0: [0], 1: [len(points)-1]}
-      ids[1] = {0: range(1, len(points)-1)}
+      ids[1] = {0: list(range(1, len(points)-1))}
     elif family == "Radau":
       ids[0] = {0: [], 1: []}
-      ids[1] = {0: range(len(points))} # Treat all Radau points as internal
+      ids[1] = {0: list(range(len(points)))} # Treat all Radau points as internal
     else:
       error("Undefined family: %s" % family)
 

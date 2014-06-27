@@ -633,7 +633,7 @@ def __compute_sub_simplices(D, d):
     if d == 0:
         return [[i] for i in range(num_vertices)]
     elif d == D:
-        return [range(num_vertices)]
+        return [list(range(num_vertices))]
 
     # Compute all permutations of num_vertices - (d + 1)
     permutations = compute_permutations(num_vertices - d - 1, num_vertices)

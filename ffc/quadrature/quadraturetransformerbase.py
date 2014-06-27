@@ -969,7 +969,7 @@ class QuadratureTransformerBase(Transformer):
 
         # Generate FFC multi index for derivatives.
         tdim = self.tdim # FIXME: ufl_element.domain().topological_dimension() ???
-        multiindices = FFCMultiIndex([range(tdim)]*len(derivatives)).indices
+        multiindices = FFCMultiIndex([list(range(tdim))]*len(derivatives)).indices
 
         return (component, local_elem, local_comp, local_offset, ffc_element, transformation, multiindices)
 

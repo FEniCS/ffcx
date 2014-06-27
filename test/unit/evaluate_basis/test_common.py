@@ -23,6 +23,7 @@ from instant.output import get_status_output
 import numpy
 import os
 import sys
+from six.moves import range
 
 tol = 1e-14
 crit_tol = 1e-8
@@ -31,7 +32,7 @@ def xcomb(items, n):
     "Create n-tuples with combinations of items."
     if n==0: yield []
     else:
-        for i in xrange(len(items)):
+        for i in range(len(items)):
             for cc in xcomb(items[:i]+items[i+1:],n-1):
                 yield [items[i]]+cc
 

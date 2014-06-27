@@ -148,7 +148,7 @@ def generate_constructor(form, classname, space_tag, coefficient_tag=None):
     # Construct list of arguments and function space assignments
     name = "V%d"
     if form.rank > 0:
-        arguments = [argument % (name % i) for i in reversed(range(form.rank))]
+        arguments = [argument % (name % i) for i in reversed(list(range(form.rank)))]
         assignments = [assign % (i, name % i) for i in range(form.rank)]
     else:
         arguments = [argument]

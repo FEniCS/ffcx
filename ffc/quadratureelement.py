@@ -131,7 +131,7 @@ def _create_entity_dofs(fiat_cell, num_dofs):
         entity_dofs[dim] = {}
         for entity in sorted( top[dim] ):
             entity_dofs[dim][entity]=[]
-    entity_dofs[dim][0] = range(num_dofs)
+    entity_dofs[dim][0] = list(range(num_dofs))
     return entity_dofs
 
 # FFC modules to avoid circular import

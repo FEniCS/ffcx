@@ -55,7 +55,7 @@ def create_multiindex(indices):
             error("Unable to extract all indices.")
 
     # Get dimensions
-    dims = [range(len(index.index_range)) for index in indices]
+    dims = [list(range(len(index.index_range))) for index in indices]
 
     return MultiIndex(dims)
 

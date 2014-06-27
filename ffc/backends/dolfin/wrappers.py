@@ -114,7 +114,7 @@ def generate_namespace_typedefs(forms, common_function_space, error_control):
     # is present of each
     aliases = ["Functional", "LinearForm", "BilinearForm"]
     extra_aliases = {"LinearForm": "ResidualForm", "BilinearForm": "JacobianForm"}
-    for rank in sorted(range(len(aliases)), reverse=True):
+    for rank in sorted(list(range(len(aliases))), reverse=True):
         forms_of_rank = [form for form in forms if form.rank == rank]
         if len(forms_of_rank) == 1:
             pairs += [("Form_%s" % forms_of_rank[0].name, aliases[rank])]

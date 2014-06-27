@@ -58,8 +58,8 @@ def reorder_entries(terms):
         A0.A0 = tensor
 
         # Reinitialize indices to new size
-        A0.primary_multi_index = MultiIndex([range(idim) for idim in idims])
-        A0.secondary_multi_index = MultiIndex([range(adim) for adim in adims])
+        A0.primary_multi_index = MultiIndex([list(range(idim)) for idim in idims])
+        A0.secondary_multi_index = MultiIndex([list(range(adim)) for adim in adims])
         GK.secondary_multi_index = A0.secondary_multi_index
 
 def __compute_restrictions(term):
