@@ -27,6 +27,7 @@ from ufl.algorithms.analysis import extract_arguments
 
 from ffc.log import info, error
 from ffc.compiler import compile_form
+import six
 
 __all__ = ["compile_with_error_control"]
 
@@ -74,12 +75,12 @@ def compile_with_error_control(forms, object_names, reserved_objects,
     # Check that there are no conflicts between user defined and
     # generated names
     ec_names = generator.ec_names
-    comment = "%s are reserved error control names." % str(ec_names.values())
+    comment = "%s are reserved error control names." % str(list(ec_names.values()))
     assert not (set(object_names.values()) & set(ec_names.values())), \
                "Conflict between user defined and generated names: %s" % comment
 
     # Add names generated for error control to object_names
-    for (objid, name) in ec_names.iteritems():
+    for (objid, name) in six.iteritems(ec_names):
         object_names[objid] = name
 
     # Compile error control and input (pde + goal) forms as normal

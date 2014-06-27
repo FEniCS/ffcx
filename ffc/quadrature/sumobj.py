@@ -30,6 +30,7 @@ from symbolics import create_product
 from symbolics import create_sum
 from symbolics import create_fraction
 from expr import Expr
+import six
 
 #global ind
 #ind = ""
@@ -254,9 +255,9 @@ class Sum(Expr):
                 sym_groups[v] = v
 
         # Loop groups and add to new variable list.
-        for k,v in sym_groups.iteritems():
+        for k,v in six.iteritems(sym_groups):
             new_variables.append(v)
-        for k,v in prod_groups.iteritems():
+        for k,v in six.iteritems(prod_groups):
             new_variables.append(v)
 #        for k,v in frac_groups.iteritems():
 #            new_variables.append(v)
@@ -292,11 +293,11 @@ class Sum(Expr):
             # Get the occurrences.
             d = var.get_var_occurrences()
             # Delete those variables in d0 that are not in d.
-            for k, v in d0.items():
+            for k, v in list(d0.items()):
                 if not k in d:
                     del d0[k]
             # Set the number of occurrences equal to the smallest number.
-            for k, v in d.iteritems():
+            for k, v in six.iteritems(d):
                 if k in d0:
                     d0[k] = min(d0[k], v)
         return d0
@@ -338,7 +339,7 @@ class Sum(Expr):
         for var in new_sum.vrs:
             # Get dictonary of occurrences and add the variable and the number
             # of occurrences to common dictionary.
-            for k, v in var.get_var_occurrences().iteritems():
+            for k, v in six.iteritems(var.get_var_occurrences()):
 #                print
 #                print ind + "var: ", var
 #                print ind + "k: ", k
@@ -356,7 +357,7 @@ class Sum(Expr):
         # Determine the maximum reduction for each variable
         # sorted as: {(x*x*y, x*y*z, 2*y):[2, [y]]}.
         terms_reductions = {}
-        for k, v in sorted(common_vars.iteritems()):
+        for k, v in sorted(six.iteritems(common_vars)):
 #            print
 #            print ind + "k: ", k
 #            print ind + "v: ", v
@@ -408,11 +409,11 @@ class Sum(Expr):
 #        print "red: self: ", self
         if terms_reductions:
             # Invert dictionary of terms.
-            reductions_terms = dict([((v[0], tuple(v[1])), k) for k, v in terms_reductions.iteritems()])
+            reductions_terms = dict([((v[0], tuple(v[1])), k) for k, v in six.iteritems(terms_reductions)])
 
             # Create a sorted list of those variables that give the highest
             # reduction.
-            sorted_reduc_var = [k for k, v in reductions_terms.iteritems()]
+            sorted_reduc_var = [k for k, v in six.iteritems(reductions_terms)]
 #            print
 #            print ind + "raw"
 #            for k in sorted_reduc_var:
@@ -445,7 +446,7 @@ class Sum(Expr):
             # Reduce each set of terms with appropriate variables.
             all_reduced_terms = []
             reduced_expressions = []
-            for reduc_var, terms in sorted(reduction_vars.iteritems()):
+            for reduc_var, terms in sorted(six.iteritems(reduction_vars)):
 
                 # Add current terms to list of all variables that have been reduced.
                 all_reduced_terms += list(terms)
@@ -536,7 +537,7 @@ class Sum(Expr):
 
         # Create the return value.
         returns = []
-        for f, r in found.iteritems():
+        for f, r in six.iteritems(found):
             if len(r) > 1:
                 # Use expand to group expressions.
 #                r = create_sum(r).expand()
@@ -549,7 +550,7 @@ class Sum(Expr):
 def _overlap(l, d):
     "Check if a member in list l is in the value (list) of dictionary d."
     for m in l:
-        for k, v in d.iteritems():
+        for k, v in six.iteritems(d):
             if m in v:
                 return True
     return False
@@ -575,7 +576,7 @@ def _group_fractions(expr):
         return expr
 
     # Loop all fractions and create new ones using an appropriate numerator.
-    for k, v in sorted(fracs.iteritems()):
+    for k, v in sorted(six.iteritems(fracs)):
         if v[0] > 1:
             # TODO: Is it possible to avoid expanding the Sum?
             # I think we have to because x/a + 2*x/a -> 3*x/a.

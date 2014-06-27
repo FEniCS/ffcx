@@ -153,7 +153,7 @@ def group_vars(expr, format):
 
     # Reset products
     prods = []
-    for prod, f in new_prods.items():
+    for prod, f in list(new_prods.items()):
         # If we have a product append mult of both
         if prod:
             # If factor is 1.0 we don't need it
@@ -177,7 +177,7 @@ def reduction_possible(variables):
     max_val = 1
     max_var = ""
     max_vars = []
-    for key, val in variables.items():
+    for key, val in list(variables.items()):
         if max_val < val[0]:
             max_val = val[0]
             max_var = key
@@ -185,7 +185,7 @@ def reduction_possible(variables):
     # If we found a variable that appears in products multiple times, check if
     # other variables appear in the exact same products
     if max_var:
-        for key, val in variables.items():
+        for key, val in list(variables.items()):
             # Check if we have more variables in the same products
             if max_val == val[0] and variables[max_var][1] == val[1]:
                 max_vars.append(key)

@@ -41,6 +41,7 @@ from ffc.enrichedelement import EnrichedElement, SpaceOfReals
 
 # Dictionary mapping from cellname to dimension
 from ufl.geometry import cellname2dim
+import six
 
 # Number of entities associated with each cell name
 cellname_to_num_entities = {
@@ -309,7 +310,7 @@ def _indices(element, restriction_domain, dim=0):
         indices = []
         for dim in range(restriction_domain.topological_dimension() + 1):
             entities = entity_dofs[dim]
-            for (entity, index) in entities.iteritems():
+            for (entity, index) in six.iteritems(entities):
                 indices += index
         return indices
 

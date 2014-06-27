@@ -21,6 +21,7 @@
 
 from ffc.log import error
 import numpy
+import six
 
 class RestrictedElement:
     "Create a restriction of a given FIAT element."
@@ -57,7 +58,7 @@ class RestrictedElement:
     def tabulate(self, order, points):
         result = self._element.tabulate(order, points)
         extracted = {}
-        for (dtuple, values) in result.iteritems():
+        for (dtuple, values) in six.iteritems(result):
             extracted[dtuple] = numpy.array([values[i] for i in self._indices])
         return extracted
 
@@ -79,9 +80,9 @@ def _extract_entity_dofs(element, indices):
     # FIXME: Readability counts
     entity_dofs = element.entity_dofs()
     dofs = {}
-    for (dim, entities) in entity_dofs.iteritems():
+    for (dim, entities) in six.iteritems(entity_dofs):
         dofs[dim] = {}
-        for (entity, all_dofs) in entities.iteritems():
+        for (entity, all_dofs) in six.iteritems(entities):
             dofs[dim][entity] = []
             for index in all_dofs:
                 if index in indices:

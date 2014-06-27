@@ -26,6 +26,7 @@ from ffc.log import info, error, warning
 from ffc.cpp import format
 from ffc.quadrature.symbolics import optimise_code, BASIS, IP, GEO, CONST
 from ffc.quadrature.symbolics import create_product, create_sum, create_symbol, create_fraction
+import six
 
 def optimize_integral_ir(ir, parameters):
     "Compute optimized intermediate representation of integral."
@@ -88,7 +89,7 @@ def _simplify_expression(integral, geo_consts, psi_tables_map):
         # but it might be inefficient for speed.
         # A solution could be to only compare the output of evaluating the
         # integral, not the header files.
-        for loop, (data, entry_vals) in sorted(terms.iteritems()):
+        for loop, (data, entry_vals) in sorted(six.iteritems(terms)):
             t_set, u_weights, u_psi_tables, u_nzcs, basis_consts = data
             new_entry_vals = []
             psi_tables = set()
@@ -108,7 +109,7 @@ def _simplify_expression(integral, geo_consts, psi_tables_map):
 
 def _precompute_expressions(integral, geo_consts, optimisation):
     for points, terms, functions, ip_consts, coordinate, conditionals in integral:
-        for loop, (data, entry_vals) in terms.iteritems():
+        for loop, (data, entry_vals) in six.iteritems(terms):
             t_set, u_weights, u_psi_tables, u_nzcs, basis_consts = data
             new_entry_vals = []
             for entry, val, ops in entry_vals:

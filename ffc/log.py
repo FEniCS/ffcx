@@ -32,6 +32,7 @@ from ufl.log import Logger
 from ufl.log import log_functions
 from ufl.log import INFO, DEBUG, ERROR, CRITICAL
 from ufl.common import dstr, tstr
+import six
 
 # Create FFC logger
 ffc_logger = Logger("FFC")
@@ -56,7 +57,7 @@ def debug_dict(d, title=""):
     info("")
     begin(title)
     info("")
-    for (key, value) in d.iteritems():
+    for (key, value) in six.iteritems(d):
         info(key)
         info("-"*len(key))
         info(str(value))

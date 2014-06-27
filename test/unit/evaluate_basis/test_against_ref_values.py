@@ -33,8 +33,8 @@ def check_results(values, reference):
 
     # Check if we have missing values.
     missing_vals = []
-    num_refs = len(reference.keys())
-    for element in reference.keys():
+    num_refs = len(list(reference.keys()))
+    for element in list(reference.keys()):
         if not element in values:
             missing_vals.append(element)
 
@@ -169,7 +169,7 @@ def compute_values(ufl_element):
 def print_refs():
     if os.path.isfile("reference.pickle"):
         reference = pickle.load(open("reference.pickle", "r"))
-        for elem, vals in reference.items():
+        for elem, vals in list(reference.items()):
             print()
             print(elem)
             print(vals)

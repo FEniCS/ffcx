@@ -86,7 +86,7 @@ class FunctionValueTests(unittest.TestCase):
     def _check_function_values(self, points, element, reference):
         for x in points:
             table = element.tabulate(0, (x,))
-            basis = table[table.keys()[0]]
+            basis = table[list(table.keys())[0]]
             for i in range(len(basis)):
                 if element.value_shape() == ():
                     self.assertAlmostEqual(basis[i], reference[i](x))

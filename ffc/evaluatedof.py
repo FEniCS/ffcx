@@ -158,7 +158,7 @@ def _required_declarations(ir):
 def _generate_body(i, dof, mapping, gdim, tdim, offset=0, result=f_result):
     "Generate code for a single dof."
 
-    points = dof.keys()
+    points = list(dof.keys())
 
     # Generate different code if multiple points. (Otherwise ffc
     # compile time blows up.)
@@ -201,7 +201,7 @@ def _generate_multiple_points_body(i, dof, mapping, gdim, tdim,
     "Generate c++ for-loop for multiple points (integral bodies)"
 
     code = [assign(f_result, 0.0)]
-    points = dof.keys()
+    points = list(dof.keys())
     n = len(points)
 
     # Get number of tokens per point

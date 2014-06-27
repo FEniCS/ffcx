@@ -94,7 +94,7 @@ def check_results(values, reference):
     diffs = []
     num_ok = 0
     print("")
-    for element, vals in values.items():
+    for element, vals in list(values.items()):
         print("\nResults for %s:" % element)
 
         if vals is None:
@@ -194,7 +194,7 @@ def compute_values(ufl_element):
 def print_refs():
     if os.path.isfile("reference.pickle"):
         reference = pickle.load(open("reference.pickle", "r"))
-        for elem, vals in reference.items():
+        for elem, vals in list(reference.items()):
             print()
             print(elem)
             print(vals)

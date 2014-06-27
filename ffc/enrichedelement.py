@@ -63,7 +63,7 @@ class EnrichedElement:
             irange = (irange[1], irange[1] + element.space_dimension())
 
             # Insert element table into table
-            for dtuple in etable.keys():
+            for dtuple in list(etable.keys()):
 
                 if not dtuple in table:
                     if num_components == 1:

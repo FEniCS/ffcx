@@ -32,7 +32,7 @@ from ffc.backends import ufc
 # Compute signature of all ufc headers combined
 ufc_signature = sha1(''.join(getattr(ufc, header)
                              for header in
-                             (k for k in vars(ufc).keys()
+                             (k for k in list(vars(ufc).keys())
                               if k.endswith("_header")))
                               ).hexdigest()
 

@@ -72,14 +72,14 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         for op in operands:
             # If entries does already exist we can add the code, otherwise just
             # dump them in the element tensor.
-            for key, val in op.items():
+            for key, val in list(op.items()):
                 if key in code:
                     code[key].append(val)
                 else:
                     code[key] = [val]
 
         # Add sums and group if necessary.
-        for key, val in code.items():
+        for key, val in list(code.items()):
             if len(val) > 1:
                 code[key] = create_sum(val)
             elif val:
@@ -103,9 +103,9 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             # If we get an empty dict, something was zero and so is the product.
             if not op:
                 return {}
-            if len(op) > 1 or (op and op.keys()[0] != ()):
+            if len(op) > 1 or (op and list(op.keys())[0] != ()):
                 permute.append(op)
-            elif op and op.keys()[0] == ():
+            elif op and list(op.keys())[0] == ():
                 not_permute.append(op[()])
 
         # Create permutations.
@@ -119,7 +119,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # Create code.
         code ={}
         if permutations:
-            for key, val in permutations.items():
+            for key, val in list(permutations.items()):
                 # Sort key in order to create a unique key.
                 l = list(key)
                 l.sort()
@@ -148,7 +148,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         code = {}
         # Get denominator and create new values for the numerator.
         denominator = denominator_code[()]
-        for key, val in numerator_code.items():
+        for key, val in list(numerator_code.items()):
             code[key] = create_fraction(val, denominator)
 
         return code
@@ -204,7 +204,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # Get condition expression and do safety checks.
         # Might be a bit too strict?
         c, = operands
-        ffc_assert(len(c) == 1 and c.keys()[0] == (),\
+        ffc_assert(len(c) == 1 and list(c.keys())[0] == (),\
             "Condition for NotCondition should only be one function: " + repr(c))
         sym = create_symbol(format["not"](str(c[()])), c[()].t, base_op=c[()].ops()+1)
         return {(): sym}
@@ -214,9 +214,9 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # Get LHS and RHS expressions and do safety checks.
         # Might be a bit too strict?
         lhs, rhs = operands
-        ffc_assert(len(lhs) == 1 and lhs.keys()[0] == (),\
+        ffc_assert(len(lhs) == 1 and list(lhs.keys())[0] == (),\
             "LHS of Condtion should only be one function: " + repr(lhs))
-        ffc_assert(len(rhs) == 1 and rhs.keys()[0] == (),\
+        ffc_assert(len(rhs) == 1 and list(rhs.keys())[0] == (),\
             "RHS of Condtion should only be one function: " + repr(rhs))
 
         # Map names from UFL to cpp.py.
@@ -236,11 +236,11 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Get condition and return values; and do safety check.
         cond, true, false = operands
-        ffc_assert(len(cond) == 1 and cond.keys()[0] == (),\
+        ffc_assert(len(cond) == 1 and list(cond.keys())[0] == (),\
             "Condtion should only be one function: " + repr(cond))
-        ffc_assert(len(true) == 1 and true.keys()[0] == (),\
+        ffc_assert(len(true) == 1 and list(true.keys())[0] == (),\
             "True value of Condtional should only be one function: " + repr(true))
-        ffc_assert(len(false) == 1 and false.keys()[0] == (),\
+        ffc_assert(len(false) == 1 and list(false.keys())[0] == (),\
             "False value of Condtional should only be one function: " + repr(false))
 
         # Get values and test for None
@@ -454,7 +454,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                         code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
 
         # Add sums and group if necessary.
-        for key, val in code.items():
+        for key, val in list(code.items()):
             if len(val) > 1:
                 code[key] = create_sum(val)
             else:
@@ -565,7 +565,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                    "MathFunctions expect one operand of function type: " + repr(operands))
         # Use format function on value of operand.
         operand = operands[0]
-        for key, val in operand.items():
+        for key, val in list(operand.items()):
             new_val = create_symbol(format_function(str(val)), val.t, val, 1)
             operand[key] = new_val
         #raise Exception("pause")

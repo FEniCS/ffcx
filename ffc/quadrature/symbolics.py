@@ -23,6 +23,7 @@
 # FFC modules
 from ffc.log import debug, error
 from ffc.cpp import format
+import six
 
 # TODO: Use proper errors, not just RuntimeError.
 # TODO: Change all if value == 0.0 to something more safe.
@@ -105,7 +106,7 @@ def generate_aux_constants(constant_decl, name, var_type, print_ops=False):
     code = []
     append = code.append
     ops = 0
-    for num, expr in sorted([(v, k) for k, v in constant_decl.iteritems()]):
+    for num, expr in sorted([(v, k) for k, v in six.iteritems(constant_decl)]):
 #        debug("expr orig: " + str(expr))
 #        print "\nnum: ", num
 #        print "expr orig: " + repr(expr)

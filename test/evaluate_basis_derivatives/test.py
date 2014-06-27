@@ -94,10 +94,10 @@ def check_results(values, reference):
     diffs = []
     num_ok = 0
     print("")
-    for element, deriv_orders in values.items():
+    for element, deriv_orders in list(values.items()):
         print("\nResults for %s:" % element)
 
-        for deriv_order, vals in deriv_orders.items():
+        for deriv_order, vals in list(deriv_orders.items()):
             if vals is None:
                 print("Error")
                 continue
@@ -198,8 +198,8 @@ def compute_values(ufl_element, deriv_order):
 def print_refs():
     if os.path.isfile("reference.pickle"):
         reference = pickle.load(open("reference.pickle", "r"))
-        for elem, derivs in reference.items():
-            for deriv_order, vals in derivs.items():
+        for elem, derivs in list(reference.items()):
+            for deriv_order, vals in list(derivs.items()):
                 print()
                 print(elem)
                 print(deriv_order)

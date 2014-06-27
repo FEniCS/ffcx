@@ -431,7 +431,7 @@ def _tabulate_entity_dofs(ir):
         if num_dofs_per_entity[d] == 0: continue
 
         # Add check that given entity is valid:
-        num_entities = len(entity_dofs[d].keys())
+        num_entities = len(list(entity_dofs[d].keys()))
         excpt = format["exception"]("%s is larger than number of entities (%d)"
                                     % (f_i, num_entities - 1))
         check = format["if"]("%s > %d" % (f_i, num_entities - 1), excpt)

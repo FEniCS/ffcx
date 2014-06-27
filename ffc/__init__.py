@@ -34,7 +34,7 @@ try:
 
     # Import list of supported elements from FIAT
     from FIAT import supported_elements
-    supported_elements = supported_elements.keys()
+    supported_elements = list(supported_elements.keys())
     supported_elements.sort()
 
     # Append elements that we can plot

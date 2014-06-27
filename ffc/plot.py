@@ -616,7 +616,7 @@ def create_dof_models(element):
         if dof_type == "PointEval":
 
             # Point evaluation, just get point
-            points = L.keys()
+            points = list(L.keys())
             if not len(points) == 1:
                 error("Strange dof, single point expected.")
             x = points[0]
@@ -627,7 +627,7 @@ def create_dof_models(element):
         elif dof_type == "PointDeriv":
 
             # Evaluation of derivatives at point
-            points = L.keys()
+            points = list(L.keys())
             if not len(points) == 1:
                 error("Strange dof, single point expected.")
             x = points[0]
@@ -638,7 +638,7 @@ def create_dof_models(element):
         elif dof_type == "PointSecondDeriv":
 
             # Evaluation of derivatives at point
-            points = L.keys()
+            points = list(L.keys())
             if not len(points) == 1:
                 error("Strange dof, single point expected.")
             x = points[0]
@@ -649,7 +649,7 @@ def create_dof_models(element):
         elif dof_type in directional:
 
             # Normal evaluation, get point and normal
-            points = L.keys()
+            points = list(L.keys())
             if not len(points) == 1:
                 error("Strange dof, single point expected.")
             x = points[0]
@@ -662,7 +662,7 @@ def create_dof_models(element):
         elif dof_type == "PointNormalDeriv":
 
             # Evaluation of derivatives at point
-            points = L.keys()
+            points = list(L.keys())
             if not len(points) == 1:
                 error("Strange dof, single point expected.")
             x = points[0]
