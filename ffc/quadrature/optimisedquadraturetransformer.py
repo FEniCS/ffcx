@@ -619,7 +619,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Update sets of used variables (if they will not be used because of
         # optimisations later, they will be reset).
-        trans_set.update(map(lambda x: str(x), value.get_unique_vars(GEO)))
+        trans_set.update([str(x) for x in value.get_unique_vars(GEO)])
         used_points = set([self.points])
         ops = self._count_operations(value)
         used_psi_tables = set([self.psi_tables_map[b]

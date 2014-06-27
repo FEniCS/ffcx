@@ -29,6 +29,7 @@ import re, numpy, platform
 
 # FFC modules
 from ffc.log import debug, error
+from six.moves import zip
 
 # Mapping of restrictions
 _fixed_map = {None: "", "+": "_0", "-": "_1"}

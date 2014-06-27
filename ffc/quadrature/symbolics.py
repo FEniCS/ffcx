@@ -249,7 +249,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
             # Update transformation set with those values that might be embedded in IP terms.
 #            if ip_dec:
             if ip_dec and ip_dec.val != 0.0:
-                trans_set_update(map(lambda x: str(x), ip_dec.get_unique_vars(GEO)))
+                trans_set_update([str(x) for x in ip_dec.get_unique_vars(GEO)])
 
             # Append and continue if we did not have any geo values.
 #            if not geo:
@@ -259,7 +259,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
                 continue
 
             # Update the transformation set with the variables in the geo term.
-            trans_set_update(map(lambda x: str(x), geo.get_unique_vars(GEO)))
+            trans_set_update([str(x) for x in geo.get_unique_vars(GEO)])
 
             # Only declare auxiliary geo terms if we can save operations.
 #            geo = geo.expand().reduce_ops()

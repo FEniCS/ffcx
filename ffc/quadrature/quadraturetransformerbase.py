@@ -25,7 +25,7 @@ transformers to translate UFL expressions."""
 # Last changed: 2014-06-09
 
 # Python modules.
-from itertools import izip
+from six.moves import zip
 from numpy import shape, array
 
 # UFL Classes.
@@ -776,7 +776,7 @@ class QuadratureTransformerBase(Transformer):
 
         # Update the index dict (map index values of current known indices to
         # those of the component tensor)
-        for i, v in izip(indices._indices, components):
+        for i, v in zip(indices._indices, components):
             self._index2value.push(i, v)
 
         # Push an empty component tuple
