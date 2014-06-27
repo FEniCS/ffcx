@@ -170,7 +170,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                         zero = True
                         break
                     elif not v:
-                        print "v: '%s'" % repr(v)
+                        print("v: '%s'" % repr(v))
                         error("should not happen")
                     elif v == "1":
                         pass
@@ -193,7 +193,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     code[()] = None
                     return code
                 elif not v:
-                    print "v: '%s'" % repr(v)
+                    print("v: '%s'" % repr(v))
                     error("should not happen")
                 elif v == "1":
                     pass

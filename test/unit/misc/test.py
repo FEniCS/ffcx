@@ -340,7 +340,7 @@ class JITTests(unittest.TestCase):
         jit(a0, options)
         dt0 = time() - t
 
-        print ""
+        print("")
 
         # Compile a1 (should be fairly fast, using disk cache)
         t = time()
@@ -351,10 +351,10 @@ class JITTests(unittest.TestCase):
         dt0_good = 0.005
         dt1_good = 0.01
 
-        print ""
-        print "JIT in-memory cache:", dt0
-        print "JIT disk cache:     ", dt1
-        print "Reasonable values are %g and %g" % (dt0_good, dt1_good)
+        print("")
+        print("JIT in-memory cache:", dt0)
+        print("JIT disk cache:     ", dt1)
+        print("Reasonable values are %g and %g" % (dt0_good, dt1_good))
 
         # Check times
         self.assertTrue(dt0 < 10*dt0_good)

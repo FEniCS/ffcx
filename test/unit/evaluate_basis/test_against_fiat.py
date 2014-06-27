@@ -145,7 +145,7 @@ def get_fiat_values(ufl_element):
                             deriv_vals = values[deriv]
                             row[i].append(deriv_vals[i][c][p])
                 else:
-                    print values
+                    print(values)
                     error("Did not expect tensor elements")
             new_row = []
             for r in row:

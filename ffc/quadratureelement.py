@@ -114,8 +114,8 @@ class QuadratureElement:
 
         # Check that incoming points are equal to the quadrature points.
         if len(points) != len(self._points) or abs(numpy.array(points) - self._points).max() > 1e-12:
-            print "\npoints:\n", numpy.array(points)
-            print "\nquad points:\n", self._points
+            print("\npoints:\n", numpy.array(points))
+            print("\nquad points:\n", self._points)
             error("Points must be equal to coordinates of quadrature points")
 
         # Return the identity matrix of size len(self._points) in a

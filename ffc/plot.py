@@ -173,7 +173,7 @@ def render(models, title, num_moments, is3d, rotate):
         def end_round(self):
             for event in self.events:
                 if event[0] == QUIT:
-                    print "Closing plot, bye bye"
+                    print("Closing plot, bye bye")
                     sys.exit(0)
 
     # Main loop
@@ -298,7 +298,7 @@ def Arrow(scene, x, n, center=False):
 
     # Center arrow
     if center:
-        print "Centering!"
+        print("Centering!")
         x -= 0.5*(L + l)*n
 
     # Create cylinder and cone

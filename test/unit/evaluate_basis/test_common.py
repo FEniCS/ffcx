@@ -137,7 +137,7 @@ def compile_gcc_code(ufl_element, code, gcc_fail, log_file):
         log_error("element: %s,\n%s\n" % (str(ufl_element), output), log_file)
         gcc_fail.append(str(ufl_element))
         if error and ("-f" in sys.argv or "--failfast" in sys.argv):
-            print "FAIL"
+            print("FAIL")
             exit(1)
         return error
 

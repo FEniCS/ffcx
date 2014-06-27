@@ -143,13 +143,13 @@ class QuadratureTransformerBase(Transformer):
         self.function_cache = {}
 
     def disp(self):
-        print "\n\n **** Displaying QuadratureTransformer ****"
-        print "\nQuadratureTransformer, element_map:\n", self.element_map
-        print "\nQuadratureTransformer, name_map:\n", self.name_map
-        print "\nQuadratureTransformer, unique_tables:\n", self.unique_tables
-        print "\nQuadratureTransformer, used_psi_tables:\n", self.used_psi_tables
-        print "\nQuadratureTransformer, psi_tables_map:\n", self.psi_tables_map
-        print "\nQuadratureTransformer, used_weights:\n", self.used_weights
+        print("\n\n **** Displaying QuadratureTransformer ****")
+        print("\nQuadratureTransformer, element_map:\n", self.element_map)
+        print("\nQuadratureTransformer, name_map:\n", self.name_map)
+        print("\nQuadratureTransformer, unique_tables:\n", self.unique_tables)
+        print("\nQuadratureTransformer, used_psi_tables:\n", self.used_psi_tables)
+        print("\nQuadratureTransformer, psi_tables_map:\n", self.psi_tables_map)
+        print("\nQuadratureTransformer, used_weights:\n", self.used_weights)
 
     def component(self):
         "Return current component tuple."
@@ -168,12 +168,12 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     # Nothing in expr.py is handled. Can only handle children of these clases.
     def expr(self, o):
-        print "\n\nVisiting basic Expr:", repr(o), "with operands:"
+        print("\n\nVisiting basic Expr:", repr(o), "with operands:")
         error("This expression is not handled: " + repr(o))
 
     # Nothing in terminal.py is handled. Can only handle children of these clases.
     def terminal(self, o):
-        print "\n\nVisiting basic Terminal:", repr(o), "with operands:"
+        print("\n\nVisiting basic Terminal:", repr(o), "with operands:")
         error("This terminal is not handled: " + repr(o))
 
     # -------------------------------------------------------------------------
@@ -182,19 +182,19 @@ class QuadratureTransformerBase(Transformer):
     # form.py, geometry.py, indexing.py, integral.py, tensoralgebra.py, variable.py.
     # -------------------------------------------------------------------------
     def algebra_operator(self, o, *operands):
-        print "\n\nVisiting AlgebraOperator: ", repr(o)
+        print("\n\nVisiting AlgebraOperator: ", repr(o))
         error("This type of AlgebraOperator should have been expanded!!" + repr(o))
 
     def derivative(self, o, *operands):
-        print "\n\nVisiting Derivative: ", repr(o)
+        print("\n\nVisiting Derivative: ", repr(o))
         error("All derivatives apart from Grad should have been expanded!!")
 
     def compound_tensor_operator(self, o):
-        print "\n\nVisiting CompoundTensorOperator: ", repr(o)
+        print("\n\nVisiting CompoundTensorOperator: ", repr(o))
         error("CompoundTensorOperator should have been expanded.")
 
     def label(self, o):
-        print "\n\nVisiting Label: ", repr(o)
+        print("\n\nVisiting Label: ", repr(o))
         error("What is a Lable doing in the integrand?")
 
     # -------------------------------------------------------------------------
@@ -203,39 +203,39 @@ class QuadratureTransformerBase(Transformer):
     # mathfunctions.py, restriction.py
     # -------------------------------------------------------------------------
     def condition(self, o):
-        print "\n\nVisiting Condition:", repr(o)
+        print("\n\nVisiting Condition:", repr(o))
         error("This type of Condition is not supported (yet).")
 
     def constant_value(self, o):
-        print "\n\nVisiting ConstantValue:", repr(o)
+        print("\n\nVisiting ConstantValue:", repr(o))
         error("This type of ConstantValue is not supported (yet).")
 
     def index_annotated(self, o):
-        print "\n\nVisiting IndexAnnotated:", repr(o)
+        print("\n\nVisiting IndexAnnotated:", repr(o))
         error("Only child classes of IndexAnnotated is supported.")
 
     def constant_base(self, o):
-        print "\n\nVisiting ConstantBase:", repr(o)
+        print("\n\nVisiting ConstantBase:", repr(o))
         error("This type of ConstantBase is not supported (yet).")
 
     def geometric_quantity(self, o):
-        print "\n\nVisiting GeometricQuantity:", repr(o)
+        print("\n\nVisiting GeometricQuantity:", repr(o))
         error("This type of GeometricQuantity is not supported (yet).")
 
     def math_function(self, o):
-        print "\n\nVisiting MathFunction:", repr(o)
+        print("\n\nVisiting MathFunction:", repr(o))
         error("This MathFunction is not supported (yet).")
 
     def atan_2_function(self, o):
-        print "\n\nVisiting Atan2Function:", repr(o)
+        print("\n\nVisiting Atan2Function:", repr(o))
         error("Atan2Function is not implemented (yet).")
 
     def bessel_function(self, o):
-        print "\n\nVisiting BesselFunction:", repr(o)
+        print("\n\nVisiting BesselFunction:", repr(o))
         error("BesselFunction is not implemented (yet).")
 
     def restricted(self, o):
-        print "\n\nVisiting Restricted:", repr(o)
+        print("\n\nVisiting Restricted:", repr(o))
         error("This type of Restricted is not supported (only positive and negative are currently supported).")
 
     # -------------------------------------------------------------------------
@@ -245,23 +245,23 @@ class QuadratureTransformerBase(Transformer):
     # AlgebraOperators (algebra.py).
     # -------------------------------------------------------------------------
     def sum(self, o, *operands):
-        print "\n\nVisiting Sum: ", repr(o)
+        print("\n\nVisiting Sum: ", repr(o))
         error("This object should be implemented by the child class.")
 
     def product(self, o, *operands):
-        print "\n\nVisiting Product: ", repr(o)
+        print("\n\nVisiting Product: ", repr(o))
         error("This object should be implemented by the child class.")
 
     def division(self, o, *operands):
-        print "\n\nVisiting Division: ", repr(o)
+        print("\n\nVisiting Division: ", repr(o))
         error("This object should be implemented by the child class.")
 
     def power(self, o):
-        print "\n\nVisiting Power: ", repr(o)
+        print("\n\nVisiting Power: ", repr(o))
         error("This object should be implemented by the child class.")
 
     def abs(self, o, *operands):
-        print "\n\nVisiting Abs: ", repr(o)
+        print("\n\nVisiting Abs: ", repr(o))
         error("This object should be implemented by the child class.")
 
     # -------------------------------------------------------------------------

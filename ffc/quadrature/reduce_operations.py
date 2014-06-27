@@ -213,7 +213,7 @@ def is_constant(variable, format, constants = [], from_is_constant = False):
     r = access[1]
 
     if not variable.count(l) == variable.count(r):
-        print "variable: ", variable
+        print("variable: ", variable)
         error("Something wrong with variable")
 
     # Be sure that we don't have a compound
@@ -246,7 +246,7 @@ def is_constant(variable, format, constants = [], from_is_constant = False):
 
                 # Check if access is OK ('[' is before ']')
                 if not v.index(l) < v.index(r):
-                    print "variable: ", v
+                    print("variable: ", v)
                     error("Something is wrong with the array access")
 
                 # Auxiliary variables
