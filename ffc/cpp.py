@@ -595,7 +595,7 @@ def _generate_normal(tdim, gdim, integral_type, reference_normal=False):
     # Choose snippets
     direction = normal_direction[tdim][gdim]
 
-    assert (facet_normal[tdim].has_key(gdim)),\
+    assert (gdim in facet_normal[tdim]),\
         "Facet normal not yet implemented for this tdim/gdim combo"
     normal = facet_normal[tdim][gdim]
 
