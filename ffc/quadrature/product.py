@@ -30,6 +30,7 @@ from symbolics import create_product
 from symbolics import create_sum
 from symbolics import create_fraction
 from expr import Expr
+from functools import reduce
 
 #class Product(object):
 class Product(Expr):
