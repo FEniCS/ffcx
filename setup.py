@@ -58,7 +58,7 @@ def get_swig_executable():
         raise OSError("Unable to find SWIG installation. Please install SWIG version 2.0 or higher.")
 
     # Check that SWIG version is ok
-    output = subprocess.check_output([swig_executable, "-version"])
+    output = subprocess.check_output([swig_executable, "-version"]).decode('utf-8')
     swig_version = re.findall(r"SWIG Version ([0-9.]+)", output)[0]
     swig_version_ok = True
     swig_minimum_version = [2, 0, 0]
