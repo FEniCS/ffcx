@@ -22,10 +22,17 @@
   // A check for int and converter to uint
   SWIGINTERNINLINE bool Py_convert_uint(PyObject* in, std::size_t& value)
   {
+%#if PY_MAJOR_VERSION >= 3
+    if (!(PyLong_Check(in) && PyLong_AS_LONG(in)>=0))
+      return false;
+    value = static_cast<std::size_t>(PyLong_AS_LONG(in));
+    return true;
+%#else
     if (!(PyInt_Check(in) && PyInt_AS_LONG(in)>=0))
       return false;
     value = static_cast<std::size_t>(PyInt_AS_LONG(in));
     return true;
+%#endif
   }
 }
 
@@ -35,7 +42,11 @@
 %typemap(out) std::size_t
 {
   // Typemap std::size_t
-  $result = PyInt_FromLong(static_cast< long >($1));
+%#if PY_MAJOR_VERSION >= 3
+    $result = PyLong_FromLong(static_cast< long >($1));
+%#else
+    $result = PyInt_FromLong(static_cast< long >($1));
+%#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -51,7 +62,6 @@
   if (!Py_convert_uint($input, $1))
     SWIG_exception(SWIG_TypeError, "expected positive 'int' for argument $argnum");
 }
-
 
 
 //-----------------------------------------------------------------------------

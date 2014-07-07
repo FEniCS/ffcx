@@ -18,7 +18,7 @@
 # First added:  2005-05-20
 # Last changed: 2005-05-20
 
-from log import INFO
+from .log import INFO
 
 # Last changed: 2011-01-18
 
