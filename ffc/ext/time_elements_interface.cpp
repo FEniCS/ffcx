@@ -117,9 +117,35 @@ static PyMethodDef time_elements_ext_methods[] = {
   {NULL, NULL}
 };
 
-PyMODINIT_FUNC
-inittime_elements_ext(void)
-{
-   (void)Py_InitModule("time_elements_ext", time_elements_ext_methods);
-   import_array();
-}
+#if PY_MAJOR_VERSION >= 3
+    static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "time_elements_ext",             /* m_name */
+        "This is a module..",            /* m_doc */
+        -1,                              /* m_size */
+        time_elements_ext_methods,       /* m_methods */
+        NULL,                            /* m_reload */
+        NULL,                            /* m_traverse */
+        NULL,                            /* m_clear */
+        NULL,                            /* m_free */
+    };
+
+    PyMODINIT_FUNC
+    PyInit_time_elements_ext(void)
+    {
+        PyObject *m;
+        m = PyModule_Create(&moduledef);
+        import_array();
+        if(m==NULL)
+           return NULL;
+        return m;
+    }
+#else
+    PyMODINIT_FUNC
+    inittime_elements_ext(void)
+    {
+        (void)Py_InitModule("time_elements_ext", time_elements_ext_methods);
+        import_array();
+    }
+#endif
+
