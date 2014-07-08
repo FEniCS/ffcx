@@ -38,6 +38,14 @@ class ReconstructScalarSubexpressions(MultiFunction):
     power = scalar_nary
     bessel_function = scalar_nary # TODO: Is this ok?
 
+    def condition(self, o, ops):
+        sops = [op[0] for op in ops]
+        return [o.reconstruct(*sops)]
+
+    def conditional(self, o, ops):
+        sops = [op[0] for op in ops]
+        return [o.reconstruct(*sops)]
+
     def element_wise(self, scalar_operator, o, ops):
         # FIXME FIXME FIXME: products like A[i,j]*B[j,k] are allowed,
         # which means that indices do not line up and the total shape

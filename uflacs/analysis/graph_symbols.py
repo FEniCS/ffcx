@@ -1,7 +1,7 @@
 
 from ufl.classes import (Terminal, FormArgument, Grad, Restricted,
                          Indexed, ComponentTensor, ListTensor, Transposed, Variable,
-                         IndexSum, MultiIndex,
+                         IndexSum, MultiIndex, Condition,
                          UtilityType, Label, ExprList, ExprMapping)
 
 from uflacs.utils.log import error
@@ -17,13 +17,19 @@ def build_node_shapes(V):
     k = 0
     V_shapes = object_array(nv)
     for i,v in enumerate(V):
-        # Regular shape
-        sh = v.shape()
-        # Index "shape"
-        idims = v.index_dimensions()
-        ish = tuple(idims[idx] for idx in sorted_indices(v.free_indices()))
-        # Store "total" shape and size
-        tsh = sh + ish
+
+        if isinstance(v, Condition):
+            # FIXME: Shape and index calls are invalid for conditions. Is this the best fix?
+            tsh = ()
+        else:
+            # Regular shape
+            sh = v.shape()
+            # Index "shape"
+            idims = v.index_dimensions()
+            ish = tuple(idims[idx] for idx in sorted_indices(v.free_indices()))
+            # Store "total" shape and size
+            tsh = sh + ish
+
         V_shapes[i] = tsh
         # Count number of elements for CRS representation
         k += len(tsh)
