@@ -9,7 +9,7 @@ from uflacs.codeutils.precedence import build_precedence_map
 # TODO: This makes codeutils depend on analysis. Is that ok?
 from uflacs.analysis.modified_terminals import analyse_modified_terminal2
 
-class ExprFormatter2(Transformer):
+class ExprFormatter(Transformer):
     """Language independent formatting class containing rules for
     handling indexing operators such that value and derivative
     indices are propagated to terminal handlers to be implemented

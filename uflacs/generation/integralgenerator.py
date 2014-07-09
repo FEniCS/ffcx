@@ -14,7 +14,7 @@ from uflacs.codeutils.format_code import (format_code, Indented, Block, Comment,
                                           Assign, AssignAdd,
                                           Product)
 from uflacs.codeutils.indexmapping import IndexMapping, AxisMapping
-from uflacs.codeutils.expr_formatter2 import ExprFormatter2
+from uflacs.codeutils.expr_formatter import ExprFormatter
 
 
 class IntegralGenerator(object):
