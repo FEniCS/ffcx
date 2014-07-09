@@ -1,5 +1,6 @@
 
-from six.moves import xrange, itervalues, iterkeys, iteritems
+from six.moves import itervalues, iterkeys, iteritems
+from six.moves import xrange as range
 from ufl import as_ufl
 from ufl.classes import Terminal, Indexed, Grad, Restricted, FacetAvg, CellAvg, Argument, Product, Sum, Division
 
@@ -56,7 +57,7 @@ def build_argument_indices(V):
 def build_argument_dependencies(dependencies, arg_indices):
     "Preliminary algorithm: build list of argument vertex indices each vertex (indirectly) depends on."
     n = len(dependencies)
-    A = [[] for i in xrange(n)] # TODO: Use array
+    A = [[] for i in range(n)] # TODO: Use array
     for i, deps in enumerate(dependencies):
         argdeps = []
         for j in deps:
@@ -217,7 +218,7 @@ def handle_division(i, v, deps, F, FV, sv2fv, e2fi):
 
 def handle_operator(i, v, deps, F, FV, sv2fv, e2fi):
     # TODO: Check something?
-    facs = [F[deps[j]] for j in xrange(len(deps))]
+    facs = [F[deps[j]] for j in range(len(deps))]
     if any(facs):
         # TODO: Can this happen?
         error("Assuming that a {0} cannot be applied to arguments. If this is wrong please report a bug..".format(type(v)))

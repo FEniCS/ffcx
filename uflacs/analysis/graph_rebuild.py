@@ -56,7 +56,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
         uflacs_assert(all(len(op) in (1, n) for op in ops), "Unexpected number of operands.")
         # Compute each scalar value
         res = []
-        for k in xrange(n):
+        for k in range(n):
             sops = []
             for op in ops:
                 if len(op) == 1:
@@ -337,11 +337,11 @@ class ReconstructScalarSubexpressions(MultiFunction):
         ss = ops[0] # Scalar subexpressions of summand
         uflacs_assert(len(ss) == predim*postdim*d, "Mismatching number of subexpressions.")
         sops = []
-        for i in xrange(predim):
+        for i in range(predim):
             iind = i*(postdim*d)
-            for k in xrange(postdim):
+            for k in range(postdim):
                 ind = iind + k
-                sops.append([ss[ind + j*postdim] for j in xrange(d)])
+                sops.append([ss[ind + j*postdim] for j in range(d)])
 
         # For each scalar output component, sum over collected subcomponents
         return [sum(sop) for sop in sops]

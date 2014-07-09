@@ -1,5 +1,5 @@
 from dolfin import *
-from six.moves import xrange
+from six.moves import xrange as range
 
 output = {}
 for representation in ("uflacs", "quadrature"):
@@ -33,10 +33,10 @@ for representation in ("uflacs", "quadrature"):
         out.append( assemble(u*v*dx).norm('frobenius') )
         out.append( assemble(dot(grad(u), grad(v))*dx).norm('frobenius') )
 
-	m = len(out)
+    m = len(out)
 
 
-for i in xrange(m):
+for i in range(m):
     print()
     print("i =", i)
     for n in (1, 2, 4):
@@ -49,4 +49,3 @@ for i in xrange(m):
             print(n, ("%10.2e"%(d)), ("%10.2e"%(r)), ("%10.2e"%u), ("%10.2e"%q))
         else:
             print(n, "ok!")
-

@@ -1,5 +1,5 @@
 
-from six.moves import xrange
+from six.moves import xrange as range
 from ufl.common import product
 from ufl.common import component_to_index
 from ufl.permutation import build_component_numbering
@@ -91,4 +91,4 @@ class DolfinExpressionStatementFormatter(object):
         return code
 
     def output_variable_names(self, num_variables):
-        return ['%s[%d]' % ("values", i,) for i in xrange(num_variables)]
+        return ['%s[%d]' % ("values", i,) for i in range(num_variables)]

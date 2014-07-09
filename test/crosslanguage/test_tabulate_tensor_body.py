@@ -1,6 +1,6 @@
 #!/usr/bin/env py.test
 
-from six.moves import xrange
+from six.moves import xrange as range
 import ufl
 from ufl import *
 #from ufl.common import product
@@ -173,10 +173,10 @@ def xtest_interval_geometry_expressions(gtest):
     td = cell.topological_dimension()
 
     values = []
-    values.extend(SpatialCoordinate(cell)[i] for i in xrange(gd))
-    values.extend(LocalCoordinate(cell)[i] for i in xrange(td))
-    values.extend(GeometryJacobian(cell)[i, j] for i in xrange(gd) for i in xrange(td))
-    values.extend(InverseGeometryJacobian(cell)[i, j] for i in xrange(td) for i in xrange(gd))
+    values.extend(SpatialCoordinate(cell)[i] for i in range(gd))
+    values.extend(LocalCoordinate(cell)[i] for i in range(td))
+    values.extend(GeometryJacobian(cell)[i, j] for i in range(gd) for i in range(td))
+    values.extend(InverseGeometryJacobian(cell)[i, j] for i in range(td) for i in range(gd))
     values.append(GeometryJacobianDeterminant(cell))
     values.append(CellVolume(cell))
     values.append(Circumradius(cell))
@@ -265,5 +265,3 @@ def test_tabulate_tensor_interval_facet(gtest):
     code = "// TODO"
 
     gtest.add(pre + code + post)
-
-

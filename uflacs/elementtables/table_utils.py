@@ -1,5 +1,6 @@
 
-from six.moves import xrange, map, next, itervalues
+from six.moves import map, next, itervalues
+from six.moves import xrange as range
 import numpy as np
 
 default_tolerance = 1e-14
@@ -11,10 +12,10 @@ def equal_tables(a, b, eps=default_tolerance):
     if a.shape != b.shape:
         return False
     if len(a.shape) > 1:
-        return all(equal_tables(a[i], b[i], eps) for i in xrange(a.shape[0]))
+        return all(equal_tables(a[i], b[i], eps) for i in range(a.shape[0]))
     def scalars_equal(x, y, eps):
         return abs(x-y) < eps
-    return all(scalars_equal(a[i], b[i], eps) for i in xrange(a.shape[0]))
+    return all(scalars_equal(a[i], b[i], eps) for i in range(a.shape[0]))
 
 def strip_table_zeros(table, eps=default_tolerance):
     "Strip zero columns from table. Returns column range (begin,end) and the new compact table."
@@ -25,14 +26,14 @@ def strip_table_zeros(table, eps=default_tolerance):
 
     # Find first nonzero column
     begin = nc
-    for i in xrange(nc):
+    for i in range(nc):
         if np.linalg.norm(table[..., i]) > eps:
             begin = i
             break
 
     # Find (one beyond) last nonzero column
     end = begin
-    for i in xrange(nc-1, begin-1, -1):
+    for i in range(nc-1, begin-1, -1):
         if np.linalg.norm(table[..., i]) > eps:
             end = i+1
             break
@@ -115,7 +116,7 @@ def get_ffc_table_values(tables, entitytype, num_points, element, flat_component
 
     # Loop over entities and fill table blockwise (each block = points x dofs)
     sh = element.value_shape()
-    for entity in xrange(num_entities):
+    for entity in range(num_entities):
         # Access subtable
         entity_key = None if entitytype == "cell" else entity
         tbl = element_table[entity_key][derivative_counts]

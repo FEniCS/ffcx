@@ -1,5 +1,6 @@
 
-from six.moves import xrange, zip
+from six.moves import zip
+from six.moves import xrange as range
 from collections import defaultdict
 from itertools import chain
 
@@ -25,7 +26,7 @@ class SwiginacEvaluator(Transformer):
         self._on_facet = on_facet
 
         # current basis function configuration
-        self._current_basis_function = tuple(0 for i in xrange(formrep.rank))
+        self._current_basis_function = tuple(0 for i in range(formrep.rank))
 
         # current indexing status
         self._components = Stack()
@@ -136,7 +137,7 @@ class SwiginacEvaluator(Transformer):
         ops = []
         summand, multiindex = x.operands()
         index, = multiindex
-        for i in xrange(x.dimension()):
+        for i in range(x.dimension()):
             self._index2value.push(index, i)
             ops.append(self.visit(summand))
             self._index2value.pop()
@@ -243,7 +244,7 @@ class SwiginacEvaluator(Transformer):
         result = self.visit(expression)
 
         # revert index map
-        for i in xrange(len(comp)):
+        for i in range(len(comp)):
             self._index2value.pop()
         self._components.pop()
         return result
@@ -255,7 +256,7 @@ class SwiginacEvaluator(Transformer):
         df/dx_i = df/dxi_j dxi_j/dx_i."""
         Ginv = self._formrep.Ginv_sym
         xi = self._formrep.xi_sym
-        return sum(Ginv[j, i] * swiginac.diff(f, xi[j]) for j in xrange(self.nsd))
+        return sum(Ginv[j, i] * swiginac.diff(f, xi[j]) for j in range(self.nsd))
 
     def spatial_derivative(self, x):
         # Assuming that AD has been applied, so
@@ -339,4 +340,3 @@ class SwiginacEvaluator(Transformer):
 #d[Div]  =
 #d[Curl] =
 #d[Rot]  =
-

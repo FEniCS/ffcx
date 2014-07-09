@@ -334,7 +334,7 @@ def test_flattening_of_tensor_valued_expression_symbols():
         else:
             res = []
             if isinstance(v, ufl.classes.Sum):
-                for i in xrange(len(vsyms)):
+                for i in range(len(vsyms)):
                     u = None # sum of component i for syms in opsyms
                     res += (u, vsyms[i], tuple(syms[i] for syms in opsyms))
         return res

@@ -73,9 +73,9 @@ def format_element_table_access(ir, entitytype, num_points, element,
 def get_inline_mapping_row(element, gd, tdim, gdim, r):
     # TODO: Pick right mapping
     if 1:
-        mapping_row = [langfmt.array_access("K", langfmt.sum(langfmt.product(ld, gdim), gd)) for ld in xrange(tdim)]
+        mapping_row = [langfmt.array_access("K", langfmt.sum(langfmt.product(ld, gdim), gd)) for ld in range(tdim)]
     else:
-        mapping_row = [langfmt.array_access("J", langfmt.sum(langfmt.product(gd, tdim), ld)) for ld in xrange(tdim)]
+        mapping_row = [langfmt.array_access("J", langfmt.sum(langfmt.product(gd, tdim), ld)) for ld in range(tdim)]
     return mapping_row
 
 def build_crdata(reqdata, shape, symmetry):
@@ -118,7 +118,7 @@ class FFCStatementFormatter(object):
 
         # Practical variables
         rank = ir["rank"]
-        self._idofs = ["%s%d" % (names.ia, i) for i in xrange(rank)] # FIXME: Make reusable function for idof
+        self._idofs = ["%s%d" % (names.ia, i) for i in range(rank)] # FIXME: Make reusable function for idof
 
         # TODO: Support multiple quadrature loops, affects several places...
         quadrature_rules = ir["quadrature_weights"]
@@ -437,7 +437,7 @@ class FFCStatementFormatter(object):
                 code.append(langfmt.double_array_decl(locgradname, (dim,), "{ 0.0 }"))
 
                 # Add accumulation statement for each local derivative direction
-                for ld in xrange(tdim):
+                for ld in range(tdim):
                     body = []
                     # Get element derivative value table data
                     unique_table_name, begin, end = get_element_table_data(self._ir, self._entitytype, self._num_points, element, c, (ld,), False)
@@ -464,11 +464,11 @@ class FFCStatementFormatter(object):
                 mapping_row = get_inline_mapping_row(element, gd, tdim, gdim, r)
 
                 # Get list with direct access to local gradient values
-                reference_grad = [langfmt.array_access(locgradname, ld) for ld in xrange(tdim)]
+                reference_grad = [langfmt.array_access(locgradname, ld) for ld in range(tdim)]
 
                 # Map local gradient with row of K (or J^T) to get the
                 # global derivative direction d
-                dvalue_expr = " + ".join(langfmt.product(mapping_row[ld], reference_grad[ld]) for ld in xrange(tdim))
+                dvalue_expr = " + ".join(langfmt.product(mapping_row[ld], reference_grad[ld]) for ld in range(tdim))
 
                 # Declare variable for coefficient derivative value initialized
                 # with inline mapping expression
@@ -548,13 +548,13 @@ class FFCStatementFormatter(object):
                     reference_grad = [format_element_table_access(self._ir, self._entitytype,
                                                               self._num_points, element,
                                                               c, (ld,), entity, idof, True)
-                                  for ld in xrange(tdim)]
+                                  for ld in range(tdim)]
                     #print c, r, gd, reference_grad
 
                     # Map local gradient with row of K (or J^T) to get the
                     # global derivative direction d
                     dvalue_expr = " + ".join(langfmt.product(mapping_row[ld], reference_grad[ld])
-                                             for ld in xrange(tdim))
+                                             for ld in range(tdim))
 
                     # Declare variable for coefficient derivative value initialized
                     # with inline mapping expression

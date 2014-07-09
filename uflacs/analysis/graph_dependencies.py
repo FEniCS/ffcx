@@ -1,5 +1,5 @@
 
-from six.moves import xrange
+from six.moves import xrange as range
 from ufl.classes import Terminal
 
 from uflacs.utils.log import error, uflacs_assert
@@ -46,7 +46,7 @@ def mark_active(dependencies, targets):
     active[targets] = 1
 
     # Mark dependencies by looping backwards through symbols array
-    for s in xrange(n-1, -1, -1):
+    for s in range(n-1, -1, -1):
         if active[s]:
             num_used += 1
             active[dependencies[s]] = 1
@@ -76,7 +76,7 @@ def mark_image(inverse_dependencies, sources):
     image[sources] = 1
 
     # Mark dependencies by looping forwards through symbols array
-    for s in xrange(n):
+    for s in range(n):
         if image[s]:
             num_used += 1
             image[inverse_dependencies[s]] = 1

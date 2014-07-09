@@ -12,7 +12,8 @@ DONE - Handle cell restriction in generate_domain_dof_access
 DONE - Make reference_facet_jacobi tables and use below
 """
 
-from six.moves import xrange, map, iterkeys
+from six.moves import map, iterkeys
+from six.moves import xrange as range
 import ufl
 from ufl.common import component_to_index
 from ufl.permutation import build_component_numbering
@@ -169,8 +170,8 @@ def generate_domain_dofs_access(num_vertices, gdim, restriction):
     # FIXME: Handle restriction here
     #domain_offset = self.ir["domain_offsets"][domain_number]
     return [generate_domain_dof_access(num_vertices, gdim, vertex, component, restriction)
-            for component in xrange(gdim)
-            for vertex in xrange(num_vertices)]
+            for component in range(gdim)
+            for vertex in range(num_vertices)]
 
 class FFCAccessBackend(MultiFunction):
     """FFC specific cpp formatter class."""
@@ -490,7 +491,7 @@ class FFCDefinitionsBackend(MultiFunction):
             else: # Inlined version:
                 dof_access = generate_domain_dofs_access(num_vertices, gdim, mt.restriction)
                 prods = []
-                for idof in xrange(begin, end):
+                for idof in range(begin, end):
                     table_access = ArrayAccess(uname, (entity, iq, Sub(idof, begin)))
                     prods += [Mul(dof_access[idof], table_access)]
 
@@ -556,7 +557,7 @@ class FFCDefinitionsBackend(MultiFunction):
             else: # Inlined version:
                 prods = []
                 dof_access = generate_domain_dofs_access(num_vertices, gdim, mt.restriction)
-                for idof in xrange(begin, end):
+                for idof in range(begin, end):
                     table_access = ArrayAccess(uname, (entity, 0, Sub(idof, begin)))
                     prods += [Mul(dof_access[idof], table_access)]
 

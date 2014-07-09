@@ -1,5 +1,5 @@
 
-from six.moves import xrange
+from six.moves import xrange as range
 import ufl
 from ufl.classes import (Terminal, GeometricQuantity, ConstantValue,
                          Argument, Coefficient,
@@ -94,7 +94,7 @@ def build_factorized_partitions():
     partitions["varying"] = dict((np, []) for np in num_points)
 
     # partitions["argument"][np][iarg][dofrange] = partition depending on this dofrange of argument iarg
-    partitions["argument"] = dict((np, [dict() for i in xrange(rank)]) for np in num_points)
+    partitions["argument"] = dict((np, [dict() for i in range(rank)]) for np in num_points)
 
     # partitions["integrand"][np][dofrange] = partition depending on this dofrange of argument iarg
     partitions["integrand"] = dict((np, dict()) for np in num_points)
@@ -103,7 +103,7 @@ def compute_dependency_count(dependencies):
     """FIXME: Test"""
     n = len(dependencies)
     depcount = int_array(n)
-    for i in xrange(n):
+    for i in range(n):
         for d in dependencies[i]:
             depcount[d] += 1
     return depcount
@@ -113,7 +113,7 @@ def invert_dependencies(dependencies, depcount):
     n = len(dependencies)
     m = sum(depcount)
     invdeps = [()]*n
-    for i in xrange(n):
+    for i in range(n):
         for d in dependencies[i]:
             invdeps[d] = invdeps[d] + (i,)
     return rows_to_crs(invdeps, n, m, int)
@@ -186,7 +186,7 @@ def allocate_registers(active, partitions, targets,
     to_allocate = set()
 
     # For now, just using an arbitrary heuristic algorithm to select m largest scores
-    queue = [(-scores[i], i) for i in xrange(n) if active[i]]
+    queue = [(-scores[i], i) for i in range(n) if active[i]]
     heapq.heapify(queue)
 
     # Always allocate registers for all targets, for simplicity
@@ -194,7 +194,7 @@ def allocate_registers(active, partitions, targets,
     to_allocate.update(targets)
 
     # Allocate one register each for max_registers largest symbols
-    for r in xrange(num_to_allocate):
+    for r in range(num_to_allocate):
         s, i = heapq.heappop(queue)
         if -s <= score_threshold:
             break

@@ -100,8 +100,8 @@ def map_transposed_symbols(v, e2i, V_symbols):
     # sh(AT) = (c,r)
     # AT[j*r+i] = A[i*c+j]
     symbols = [None]*(r*c)
-    for j in xrange(c):
-        for i in xrange(r):
+    for j in range(c):
+        for i in range(r):
             symbols[j*r+i] = A_symbols[i*c+j]
 
     return symbols
@@ -141,7 +141,7 @@ def build_node_symbols(V, e2i, V_shapes):
         a = new_symbols.symbol_count
         b = a + n
         new_symbols.symbol_count = b
-        return xrange(a, b)
+        return range(a, b)
     new_symbols.symbol_count = 0
 
     # For all vertices

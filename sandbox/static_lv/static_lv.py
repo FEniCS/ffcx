@@ -31,7 +31,7 @@ for facet in facets(mesh):
         append8 += 1
         continue
     values = [bi.array()[l1] for l1 in ve]
-    if all(values[i] == values[2] for i in xrange(2)):
+    if all(values[i] == values[2] for i in range(2)):
         ff[facet.index()] = values[0]
     else:
         ff[facet.index()] = max(values)
@@ -152,20 +152,20 @@ L = inner(P, grad(v))*dx - inner(T, v)*ds(1)
 a = derivative(L, u, du)
 
 import time
-for i in xrange(3):
+for i in range(3):
 	tic()
 	A = assemble(a, form_compiler_parameters=compiler_options)
 	print('TIME UF', toc())
 import time
 ap = inner(grad(du), grad(v))*dx
-for i in xrange(3):
+for i in range(3):
 	tic()
 	A = assemble(ap, form_compiler_parameters=compiler_options)
 	print('TIME UP', toc())
 import time
 ap = inner(grad(du), grad(v))*dx
 compiler_options["representation"] = "tensor"
-for i in xrange(3):
+for i in range(3):
 	tic()
 	A = assemble(ap, form_compiler_parameters=compiler_options)
 	print('TIME TP', toc())
@@ -173,7 +173,7 @@ import time
 ap = inner(grad(du), grad(v))*dx
 compiler_options["representation"] = "quadrature"
 compiler_options["optimize"] = True
-for i in xrange(3):
+for i in range(3):
 	tic()
 	A = assemble(ap, form_compiler_parameters=compiler_options)
 	print('TIME QP', toc())
@@ -194,7 +194,7 @@ def sigma_t(t):
     return -3.0*(0.1+(sin(t)**2)**0.5)
 
 # Solve problem and plot solution
-for i in xrange(1, 100):
+for i in range(1, 100):
     print('='*40, "Timestep: ", i)
     sigma.assign(sigma_t(i*dt))
     solver.solve()

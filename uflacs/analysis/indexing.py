@@ -1,5 +1,6 @@
 
-from six.moves import xrange, zip
+from six.moves import xrange as range
+from six.moves import zip
 
 from ufl.common import product
 from ufl.permutation import compute_indices
@@ -14,7 +15,7 @@ def shape_to_strides(sh):
         return ()
     strides = [None]*n
     strides[n-1] = 1
-    for i in xrange(n-1, 0, -1):
+    for i in range(n-1, 0, -1):
         strides[i-1] = strides[i]*sh[i]
     return tuple(strides)
 
@@ -79,7 +80,7 @@ def map_indexed_to_arg_components(indexed):
 def map_indexed_arg_components2(Aii): # TODO: Remove when the new version is better tested
     c1, c2 = map_indexed_to_arg_components(Aii)
     d = [None]*len(c1)
-    for k in xrange(len(c1)):
+    for k in range(len(c1)):
         d[c1[k]] = k
     return d
 
@@ -111,7 +112,7 @@ def map_indexed_arg_components4(indexed):
     mi = [i for i in mi if isinstance(i, Index)]
     nmi = len(mi)
     ind1_to_mi_map = [None]*nmi
-    for k in xrange(nmi):
+    for k in range(nmi):
         ind1_to_mi_map[ind1.index(mi[k])] = k
 
     # Build map from flattened e1 component to flattened e2 component
@@ -154,7 +155,7 @@ def map_component_tensor_arg_components4(component_tensor):
     mi = [i for i in mi if isinstance(i, Index)]
     nmi = len(mi)
     ind1_to_mi_map = [None]*nmi
-    for k in xrange(nmi):
+    for k in range(nmi):
         ind1_to_mi_map[ind1.index(mi[k])] = k
 
     # Build map from flattened e1 component to flattened e2 component

@@ -43,13 +43,13 @@ class CRS(object):
 def list_to_crs(elements):
     n = len(elements)
     crs = CRS(n, n, type(elements[0]))
-    for i in xrange(n):
+    for i in range(n):
         crs.push_row((elements[i],))
     return crs
 
 def rows_dict_to_crs(rows, num_rows, num_elements, dtype):
     crs = CRS(num_rows, num_elements, dtype)
-    for i in xrange(num_rows):
+    for i in range(num_rows):
         row = rows.get(i, ())
         crs.push_row(row)
     return crs

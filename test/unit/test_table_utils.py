@@ -3,7 +3,8 @@
 Tests of table manipulation utilities.
 """
 
-from six.moves import xrange, itervalues, iteritems
+from six.moves import itervalues, iteritems
+from six.moves import xrange as range
 from uflacs.elementtables.table_utils import equal_tables, strip_table_zeros, build_unique_tables, get_ffc_table_values
 
 import numpy as np
@@ -152,7 +153,7 @@ def test_unique_tables_all_different():
         ]
     unique, mapping = build_unique_tables(tables)
     expected_unique = tables
-    expected_mapping = dict((i, i) for i in xrange(len(tables)))
+    expected_mapping = dict((i, i) for i in range(len(tables)))
     assert mapping == expected_mapping
     assert len(set(itervalues(mapping))) == len(unique)
     for i, t in enumerate(tables):
@@ -221,13 +222,13 @@ def test_get_ffc_table_values_vector_facet():
             # Make ones array of the right shape (all dimensions differ to detect algorithm bugs better)
             arr1 = np.ones((num_dofs, num_components, num_points))
             arrays = []
-            for i in xrange(num_facets):
+            for i in range(num_facets):
                 arr = (i+1.0)*arr1 # Make first digit the facet number (1,2,3)
-                for j in xrange(num_components):
+                for j in range(num_components):
                     arr[:, j,:] += 0.1*(j+1.0) # Make first decimal the component number (1,2)
-                for j in xrange(num_dofs):
+                for j in range(num_dofs):
                     arr[j,:,:] += 0.01*(j+1.0) # Make second decimal the dof number
-                for j in xrange(num_points):
+                for j in range(num_points):
                     arr[:,:, j] += 0.001*(j+1.0) # Make third decimal the point number
                 arrays.append(arr)
 
@@ -246,8 +247,8 @@ def test_get_ffc_table_values_vector_facet():
                     }
                 }
                 # Tables use flattened component, so we can loop over them as integers:
-                for component in xrange(num_components):
+                for component in range(num_components):
                     table = get_ffc_table_values(ffc_tables, entitytype, num_points, element, component, derivatives)
-                    for i in xrange(num_facets):
+                    for i in range(num_facets):
                         #print table[i,...]
                         assert equal_tables(table[i, ...], np.transpose(arrays[i][:, component,:]), default_tolerance)

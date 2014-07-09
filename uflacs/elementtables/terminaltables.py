@@ -168,7 +168,7 @@ def optimize_element_tables(tables, terminal_table_names):
 
     # Build mapping from unique table name to the table itself
     unique_tables = dict((unique_table_names[unique_index], unique_tables_list[unique_index])
-                         for unique_index in xrange(len(unique_tables_list)))
+                         for unique_index in range(len(unique_tables_list)))
 
     # Build mapping from terminal data index to compacted table data:
     # terminal data index -> (unique name, table range begin, table range end)
