@@ -1,8 +1,0 @@
-V = FiniteElement("CG", triangle, 1)
-f = Coefficient(V)
-u = TrialFunction(V)
-v = TestFunction(V)
-
-M = f*dx
-L = f*v*dx
-a = f*u*v*dx

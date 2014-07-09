@@ -1,9 +1,0 @@
-element = FiniteElement("CG", tetrahedron, 1)
-
-u = TrialFunction(element)
-v = TestFunction(element)
-
-a = (
-     + u('+')*v('+')*dS(0)
-     #+ 4.3*u('+')*v('+')*dS(1)
-     )

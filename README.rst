@@ -58,7 +58,3 @@ Author:
 
     Martin Sandve Alnæs (martinal@simula.no)
 
-Contributors:
-
-    Steffen Müthing (steffen.muething@ipvs.uni-stuttgart.de)
-
