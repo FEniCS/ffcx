@@ -12,7 +12,7 @@ minor = 4
 maintenance = 0
 #development = "" # Select this for release
 development = "+" # Select this otherwise
-version = "%d.%d.%d%s" % (major, minor, maintenance, development),
+version = "%d.%d.%d%s" % (major, minor, maintenance, development)
 
 packages = [
     "uflacs",
@@ -63,7 +63,7 @@ classifiers = CLASSIFIERS.split('\n')[1:-1]
 setup(name="uflacs",
       version=version,
       description="UFL Analyser and Compiler System",
-      author="Martin Sandve Alnæs",
+      author="Martin Sandve Alnaes",
       author_email="martinal@simula.no",
       url="http://bitbucket.com/fenics-project/uflacs",
       classifiers=classifiers,
