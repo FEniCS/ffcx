@@ -1,6 +1,4 @@
 
-from uflacs.utils.tictoc import TicToc
-
 from uflacs.analysis.modified_terminals import is_modified_terminal
 
 from uflacs.analysis.graph import build_graph
@@ -61,31 +59,24 @@ def compute_expr_ir(expressions, parameters):
     - Take a list of expressions as input to compile several expressions in one joined graph
       (e.g. to compile a,L,M together for nonlinear problems)
     """
-    # Timing object
-    tt = TicToc('compile_expression_partitions')
-
     # Wrap in list if we only get one expression
     if not isinstance(expressions, list):
         expressions = [expressions]
 
 
     # Build scalar list-based graph representation
-    tt.step('build_scalar_graph')
     e2i, V, target_variables = build_scalar_graph(expressions)
 
 
     # Compute sparse dependency matrix
-    tt.step('compute_dependencies')
     dependencies = compute_dependencies(e2i, V)
 
     # Compute factorization of arguments
-    tt.step('compute_argument_factorization')
     argument_factorization, modified_arguments, V, target_variables, dependencies = \
         compute_argument_factorization(V, target_variables, dependencies)
 
 
-    # Various dependency analysis
-    tt.step('various dependency analysis')
+    # --- Various dependency analysis ---
 
     # Count the number of dependencies every subexpr has
     depcount = compute_dependency_count(dependencies)
@@ -127,11 +118,6 @@ def compute_expr_ir(expressions, parameters):
     #    iarg = a.number()
     #    #ipart = a.part()
 
-    # Print timing
-    tt.stop()
-    if parameters["enable_profiling"]:
-        print("Profiling results:")
-        print(tt)
 
     # Build IR for the given expressions
     expr_ir = {}
@@ -159,7 +145,6 @@ def compute_expr_ir(expressions, parameters):
 def old_code_useful_for_optimization():
 
     # Use heuristics to mark the usefulness of storing every subexpr in a variable
-    tt.step('compute_cache_scores')
     scores = compute_cache_scores(V,
                                   active,
                                   dependencies,
@@ -168,7 +153,6 @@ def old_code_useful_for_optimization():
                                   cache_score_policy=default_cache_score_policy)
 
     # Allocate variables to store subexpressions in
-    tt.step('allocate_registers')
     allocations = allocate_registers(active, partitions, target_variables,
                                      scores, int(parameters["max_registers"]), int(parameters["score_threshold"]))
     target_registers = [allocations[r] for r in target_variables]
