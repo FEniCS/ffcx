@@ -36,4 +36,4 @@ def format_enumerated_sequence(sequence):
     return '\n'.join("{0}: {1}".format(i, v) for i,v in enumerate(sequence))
 
 def format_mapping(mapping):
-    return '\n'.join("{0}: {1}".format(k, v) for k,v in mapping.items())
+    return '\n'.join("{0}: {1}".format(k, v) for k,v in iteritems(mapping))

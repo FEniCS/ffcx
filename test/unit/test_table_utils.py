@@ -3,7 +3,7 @@
 Tests of table manipulation utilities.
 """
 
-from six.moves import xrange, itervalues
+from six.moves import xrange, itervalues, iteritems
 from uflacs.elementtables.table_utils import equal_tables, strip_table_zeros, build_unique_tables, get_ffc_table_values
 
 import numpy as np
@@ -179,7 +179,7 @@ def test_unique_tables_string_keys():
     expected_mapping = { 'a':0, 'b':1, 'c':2, 'd':1, 'e':3, 'f':3 }
     assert mapping == expected_mapping
     assert len(set(itervalues(mapping))) == len(unique)
-    for i,t in tables.items():
+    for i,t in iteritems(tables):
         assert equal_tables(t, unique[mapping[i]], default_tolerance)
 
 def test_get_ffc_table_values_scalar_cell():

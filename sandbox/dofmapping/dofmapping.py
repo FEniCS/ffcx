@@ -58,13 +58,13 @@ class DofSet(object):
         return self*factor
 
     def __imul__(self, factor):
-        for es, k in self.multiplicities.items():
+        for es, k in iteritems(self.multiplicities):
             self.multiplicities[es] = k * factor
         return self
 
     def __str__(self):
         s = []
-        for es, k in sorted(self.multiplicities.items(), key=lambda x: x[0].hashdata()):
+        for es, k in sorted(iteritems(self.multiplicities), key=lambda x: x[0].hashdata()):
             l = "%d %s" % (k, es)
             s.append(l)
         return '\n'.join(s)

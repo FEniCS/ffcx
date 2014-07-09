@@ -278,7 +278,7 @@ class IntegralGenerator(object):
         idofs = [self.backend_access.argument_loop_index(i) for i in xrange(self.ir["rank"])]
 
         # Find the blocks to build: (TODO: This is rather awkward, having to rediscover these relations here)
-        arguments_and_factors = sorted(expr_ir["argument_factorization"].items(), key=lambda x: x[0])
+        arguments_and_factors = sorted(iteritems(expr_ir["argument_factorization"]), key=lambda x: x[0])
         for args, factor_index in arguments_and_factors:
             if not all(tuple(dofblock[iarg]) == tuple(MATR[ma][1:3]) for iarg, ma in enumerate(args)):
                 continue

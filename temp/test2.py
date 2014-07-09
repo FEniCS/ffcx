@@ -5,8 +5,8 @@ sys.path.insert(0, "..")
 import uflacs
 print uflacs.__file__
 
+from six.moves import iteritems
 from uflacs import *
-
 
 from ufl import *
 from ufl.classes import GeometricQuantity
@@ -211,7 +211,7 @@ for form in forms:
     #      " blocks of A[(i0+b0)*n1+(i1+b1)] += f*v0[i0]*v1[i1]"
 
     # Find the blocks to build:
-    arguments_and_factors = sorted(expr_ir["argument_factorization"].items(), key=lambda x: x[0])
+    arguments_and_factors = sorted(iteritems(expr_ir["argument_factorization"]), key=lambda x: x[0])
     for args, factor_index in arguments_and_factors:
         dofblock = ()
         argunames = ()
