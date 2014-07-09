@@ -1,5 +1,6 @@
 
-from six.moves import xrange, iteritems, iterkeys
+from six import iteritems, iterkeys
+from six.moves import xrange as range
 from ufl.permutation import build_component_numbering
 from ufl.classes import GeometricQuantity
 

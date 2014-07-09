@@ -1,5 +1,6 @@
 
-from six.moves import map, iteritems
+from six import iteritems
+from six.moves import map
 
 def subclass_tree(base, all_classes):
     # This is O(n**2), but I don't care

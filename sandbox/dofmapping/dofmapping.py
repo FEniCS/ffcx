@@ -1,5 +1,6 @@
 
-from six.moves import xrange, iteritems
+from six import iteritems
+from six.moves import xrange as range
 
 class EntitySet(object):
     def __init__(self, domainid, cellname, entitydim):

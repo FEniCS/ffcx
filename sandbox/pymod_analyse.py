@@ -1,5 +1,5 @@
 
-from six.moves import iteritems, iterkeys
+from six import iteritems, iterkeys
 import shutil
 import re
 import os

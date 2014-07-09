@@ -2,7 +2,7 @@
 String manipulation and formatting utilities.
 """
 
-from six.moves import iteritems
+from six import iteritems
 
 def format_list(obj):
     assert isinstance(obj, (list, tuple))

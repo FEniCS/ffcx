@@ -1,5 +1,5 @@
 
-from six.moves import itervalues, iterkeys, iteritems
+from six import itervalues, iterkeys, iteritems
 from six.moves import xrange as range
 from ufl import as_ufl
 from ufl.classes import Terminal, Indexed, Grad, Restricted, FacetAvg, CellAvg, Argument, Product, Sum, Division

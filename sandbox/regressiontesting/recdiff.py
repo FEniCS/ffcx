@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from six.moves import zip, iterkeys
+from six import iterkeys
+from six.moves import zip
 
 class DiffMarkerType:
     def __init__(self, name):

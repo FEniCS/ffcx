@@ -26,7 +26,8 @@ def add_COMMAND_options(opts):
 __author__ = "Martin Sandve Alnes"
 __copyright__ = __author__
 
-from six.moves import map, iteritems
+from six import iteritems
+from six.moves import map
 import optparse
 
 def get_app_module_commands(app_module):

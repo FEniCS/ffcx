@@ -5,7 +5,7 @@ sys.path.insert(0, "..")
 import uflacs
 print(uflacs.__file__)
 
-from six.moves import iteritems
+from six import iteritems
 from uflacs import *
 
 from ufl import *

@@ -2,7 +2,8 @@
 Tools for stitching together code snippets.
 """
 
-from six.moves import zip, iteritems
+from six import iteritems
+from six.moves import zip
 from six.moves import xrange as range
 
 

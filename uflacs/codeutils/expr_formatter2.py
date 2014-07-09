@@ -1,5 +1,5 @@
 
-from six.moves import itervalues
+from six import itervalues
 import ufl
 from ufl.algorithms import Transformer
 

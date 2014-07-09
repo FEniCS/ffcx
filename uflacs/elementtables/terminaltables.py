@@ -1,5 +1,6 @@
 
-from six.moves import xrange, iteritems, iterkeys
+from six import iteritems, iterkeys
+from six.moves import xrange as range
 import ufl
 from ufl.common import product
 from ufl.classes import FormArgument, GeometricQuantity, SpatialCoordinate, Jacobian

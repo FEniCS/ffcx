@@ -1,5 +1,6 @@
 
-from six.moves import zip, iteritems, iterkeys
+from six import iteritems, iterkeys
+from six.moves import zip
 from six.moves import xrange as range
 from ufl.common import product
 

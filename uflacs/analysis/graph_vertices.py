@@ -1,5 +1,5 @@
 
-from six.moves import iteritems
+from six import iteritems
 from ufl.common import unique_post_traversal
 from ufl.classes import (Terminal, UtilityType,
                          Grad, Restricted, Indexed)

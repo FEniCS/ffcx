@@ -7,7 +7,7 @@ print(uflacs.__file__)
 
 from uflacs import *
 
-from six.moves import iteritems
+from six import iteritems
 from ufl import *
 from ufl.classes import GeometricQuantity
 from ufl.algorithms import replace, change_to_reference_grad
