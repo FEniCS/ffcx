@@ -5,6 +5,7 @@ Tests of generic C++ compilation code.
 
 # FIXME: These are all disabled, don't remember why, turn them on again!
 
+from six.moves import zip
 import uflacs
 #from uflacs.backends.toy.toy_compiler import compile_form
 

@@ -1,7 +1,7 @@
 
-from six.moves import xrange
+from six.moves import xrange, zip
 from collections import defaultdict
-from itertools import izip, chain
+from itertools import chain
 
 import swiginac
 
@@ -235,7 +235,7 @@ class SwiginacEvaluator(Transformer):
         # update index map with component tuple values
         comp = self.component()
         sfc_assert(len(indices) == len(comp), "Index/component mismatch.")
-        for i, v in izip(indices._indices, comp):
+        for i, v in zip(indices._indices, comp):
             self._index2value.push(i, v)
         self._components.push(())
 

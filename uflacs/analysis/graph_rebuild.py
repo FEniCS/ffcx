@@ -1,6 +1,5 @@
 
-from six.moves import xrange
-from itertools import izip
+from six.moves import xrange, zip
 from ufl.common import product
 from ufl.permutation import compute_indices
 
@@ -157,7 +156,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
                 sops = []
                 for j,op in enumerate(ops):
                     # Find the operand component index
-                    jk = sk*opims[j] + sum(a*b for a,b in izip(ic, istrides[j]))
+                    jk = sk*opims[j] + sum(a*b for a,b in zip(ic, istrides[j]))
                     if jk >= len(op):
                         print
                         print 'DEBUGGING VALUES IN element_wise2:'
@@ -192,11 +191,11 @@ class ReconstructScalarSubexpressions(MultiFunction):
                         print j, opims, istrides
                         print
                         print len(op), "<= jk =", jk
-                        print sk*opims[j] + sum(a*b for a,b in izip(ic, istrides[j]))
+                        print sk*opims[j] + sum(a*b for a,b in zip(ic, istrides[j]))
                         print "="
                         print sk*opims[j]
                         print "+"
-                        print sum(a*b for a,b in izip(ic, istrides[j]))
+                        print sum(a*b for a,b in zip(ic, istrides[j]))
                         print
                         print j, sk, opims[j]
                         print ic, istrides[j]
@@ -284,7 +283,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
                     # Find the operand component index in the index space
                     if istrides[iop]:
                         assert istrides[iop][-1] == 1, "Strides={0}".format(istrides[iop])
-                    jk = sum(a*b for a,b in izip(ic, istrides[iop]))
+                    jk = sum(a*b for a,b in zip(ic, istrides[iop]))
 
                     # Only add tensor component offset for the tensor-valued operand
                     if oops[iop].shape():
@@ -427,7 +426,7 @@ def rebuild_scalar_e2i(G, DEBUG=False):
                 terminals.add(v)
             else:
                 # Store each terminal expression component
-                for s, c in izip(vs, compute_indices(sh)):
+                for s, c in zip(vs, compute_indices(sh)):
                     u = v[c]
                     emit_expression(s, u)
                     # FIXME: Keep modified terminal expression components in the graph that is input here!
@@ -460,7 +459,7 @@ def rebuild_scalar_e2i(G, DEBUG=False):
                 print len(w)
                 print
                 uflacs_assert(len(vs) == len(w), "Expecting one symbol for each expression.")
-            for s,u in izip(vs,w):
+            for s,u in zip(vs,w):
                 emit_expression(s, u)
 
     # Reduce size of NV to the actually used parts

@@ -1,4 +1,5 @@
 
+from six.moves import zip
 from ufl.permutation import build_component_numbering
 from ufl.classes import (Terminal, Grad, ReferenceGrad, Indexed, FixedIndex,
                          Restricted, PositiveRestricted, NegativeRestricted,
