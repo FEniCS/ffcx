@@ -1,3 +1,5 @@
+
+from six.moves import iteritems
 import shutil
 import re
 import os
@@ -54,7 +56,7 @@ for m in pmods:
     print "="*70, m
     l = max(len(k) for k in imports[m])
     fmt = '%s depends on'
-    for k,v in imports[m].iteritems():
+    for k,v in iteritems(imports[m]):
         if v:
             print fmt % k
             print '\n'.join('    %s' % vv for vv in v)
@@ -78,7 +80,7 @@ names = set()
 lines = []
 for m in pmods:
     lines.append("    subgraph {\n")
-    for k,v in imports[m].iteritems():
+    for k,v in iteritems(imports[m]):
         if v:
             names.add(k)
         for t in v:

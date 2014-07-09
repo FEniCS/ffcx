@@ -1,5 +1,5 @@
 
-from six.moves import map
+from six.moves import map, iteritems
 
 def subclass_tree(base, all_classes):
     # This is O(n**2), but I don't care
@@ -33,7 +33,7 @@ def get_callables(module):
     name = module.__name__
     def cond(v):
         return callable(v) and v.__module__.startswith(name)
-    return [n for n,v in vars(module).iteritems() if cond(v)]
+    return [n for n,v in iteritems(vars(module)) if cond(v)]
 
 def curry(f, g):
     def h(*args, **kwargs):

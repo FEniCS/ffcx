@@ -1,5 +1,5 @@
 
-from six.moves import xrange
+from six.moves import xrange, iteritems
 import ufl
 from ufl.common import product
 from ufl.classes import FormArgument, GeometricQuantity, SpatialCoordinate, Jacobian
@@ -149,7 +149,7 @@ def optimize_element_tables(tables, terminal_table_names):
     # Apply zero stripping to all tables
     stripped_tables = {}
     table_ranges = {}
-    for name, table in tables.iteritems():
+    for name, table in iteritems(tables):
         begin, end, stripped_table = strip_table_zeros(table)
         stripped_tables[name] = stripped_table
         table_ranges[name] = (begin, end)

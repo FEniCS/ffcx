@@ -1,7 +1,7 @@
 """
 Tools for stitching together code snippets.
 """
-from six.moves import xrange, zip
+from six.moves import xrange, zip, iteritems
 
 
 def strip_trailing_whitespace(s):
@@ -86,7 +86,7 @@ class WithKeywords(Code): # TODO: Do we need this? Can simplify quite a bit by r
         if keywords: # TODO: Merge with self.keywords instead
             raise RuntimeError("Doubly defined keywords not implemented.")
         fmt_keywords = {}
-        for k,v in self.keywords.iteritems():
+        for k,v in iteritems(self.keywords):
             fmt_keywords[k] = format_code(v, 0, indentchar, keywords)
         return format_code(self.code, level, indentchar, fmt_keywords)
 
@@ -455,4 +455,3 @@ def format_code(code, level=0, indentchar='    ', keywords=None):
         return indent(format_float(code), level, indentchar)
 
     raise RuntimeError("Unexpected type %s:\n%s" % (type(code),str(code)))
-

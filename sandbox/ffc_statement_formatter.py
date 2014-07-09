@@ -1,5 +1,5 @@
 
-from six.moves import xrange
+from six.moves import xrange, iteritems
 from ufl.permutation import build_component_numbering
 from ufl.classes import GeometricQuantity
 
@@ -85,8 +85,8 @@ def build_crdata(reqdata, shape, symmetry):
     else:
         # Need scalar component to be None for table naming
         vi2si = {():None}
-    #for ((c,d,r,a),varname) in reqdata.iteritems(): # FIXME: Use average
-    for ((c,d,r),varname) in reqdata.iteritems():
+    #for ((c,d,r,a),varname) in iteritems(reqdata): # FIXME: Use average
+    for ((c,d,r),varname) in iteritems(reqdata):
         c = vi2si[c]
         key = (c,r)
         data = crdata.get(key)

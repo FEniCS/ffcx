@@ -1,5 +1,5 @@
 
-from six.moves import xrange
+from six.moves import xrange, iteritems
 
 class EntitySet(object):
     def __init__(self, domainid, cellname, entitydim):
@@ -45,7 +45,7 @@ class DofSet(object):
     def __iadd__(self, other):
         sm = self.multiplicities
         om = other.multiplicities
-        for es, ok in om.iteritems():
+        for es, ok in iteritems(om):
             sm[es] = sm.get(es,0) + ok
         return self
 
@@ -61,7 +61,7 @@ class DofSet(object):
         for es, k in self.multiplicities.items():
             self.multiplicities[es] = k * factor
         return self
-    
+
     def __str__(self):
         s = []
         for es, k in sorted(self.multiplicities.items(), key=lambda x: x[0].hashdata()):
@@ -115,4 +115,3 @@ def test():
     offset = 0
 
     print compute_dofranges(dofset, meshsizes, offset)
-

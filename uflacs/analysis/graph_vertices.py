@@ -1,4 +1,5 @@
 
+from six.moves import iteritems
 from ufl.common import unique_post_traversal
 from ufl.classes import (Terminal, UtilityType,
                          Grad, Restricted, Indexed)
@@ -41,7 +42,7 @@ def count_nodes_with_unique_post_traversal(expr, e2i=None, skip_terminal_modifie
 def build_array_from_counts(e2i):
     nv = len(e2i)
     V = object_array(nv)
-    for e,i in e2i.iteritems():
+    for e,i in iteritems(e2i):
         V[i] = e
     return V
 

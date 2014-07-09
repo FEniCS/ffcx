@@ -1,5 +1,5 @@
 
-from six.moves import xrange, zip
+from six.moves import xrange, zip, iteritems
 from ufl.common import product
 
 from uflacs.utils.log import debug, info, warning, error, uflacs_assert
@@ -374,7 +374,7 @@ class IntegralGenerator(object):
     def foobar(self):
         # In code generation, do something like:
         matr = expr_ir["modified_argument_table_ranges"]
-        for mas, factor in expr_ir["argument_factorization"].iteritems():
+        for mas, factor in iteritems(expr_ir["argument_factorization"]):
             fetables = tuple(matr[ma][0] for ma in mas)
             dofblock = tuple((matr[ma][1:3]) for ma in mas)
             modified_argument_blocks[dofblock] = (fetables, factor)
