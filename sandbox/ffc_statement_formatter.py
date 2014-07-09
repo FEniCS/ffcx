@@ -1,5 +1,5 @@
 
-from six.moves import xrange, iteritems
+from six.moves import xrange, iteritems, iterkeys
 from ufl.permutation import build_component_numbering
 from ufl.classes import GeometricQuantity
 
@@ -124,7 +124,7 @@ class FFCStatementFormatter(object):
         quadrature_rules = ir["quadrature_weights"]
         if quadrature_rules:
             uflacs_assert(len(quadrature_rules) == 1, "Multiple quadrature rules not implemented.")
-            self._num_points = quadrature_rules.keys()[0]
+            self._num_points, = iterkeys(quadrature_rules)
             self._weights, self._points = quadrature_rules[self._num_points]
         else:
             self._num_points = 0
