@@ -26,19 +26,19 @@ def strip_table_zeros(table, eps=default_tolerance):
     # Find first nonzero column
     begin = nc
     for i in xrange(nc):
-        if np.linalg.norm(table[...,i]) > eps:
+        if np.linalg.norm(table[..., i]) > eps:
             begin = i
             break
 
     # Find (one beyond) last nonzero column
     end = begin
-    for i in xrange(nc-1,begin-1,-1):
-        if np.linalg.norm(table[...,i]) > eps:
+    for i in xrange(nc-1, begin-1, -1):
+        if np.linalg.norm(table[..., i]) > eps:
             end = i+1
             break
 
     # Make subtable by stripping first and last columns
-    return begin, end, table[...,begin:end]
+    return begin, end, table[..., begin:end]
 
 def build_unique_tables(tables):
     """Given a list or dict of tables, return a list of unique tables
@@ -52,7 +52,7 @@ def build_unique_tables(tables):
     for k in keys:
         t = tables[k]
         found = -1
-        for i,u in enumerate(unique):
+        for i, u in enumerate(unique):
             if equal_tables(u, t):
                 found = i
                 break
@@ -76,7 +76,7 @@ def build_unique_tables2(tables):
     for k in keys:
         t = tables[k]
         found = -1
-        for i,u in enumerate(unique):
+        for i, u in enumerate(unique):
             if equal_tables(u, t):
                 found = i
                 break
@@ -124,10 +124,10 @@ def get_ffc_table_values(tables, entitytype, num_points, element, flat_component
         if sh == ():
             arr = np.transpose(tbl)
         else:
-            arr = np.transpose(tbl[:,flat_component,:])
+            arr = np.transpose(tbl[:, flat_component,:])
 
         # Assign block of values for this entity
-        res[entity, :, :] = arr
+        res[entity,:,:] = arr
     return res
 
 def generate_psi_table_name(element_counter, flat_component, derivative_counts, averaged, entitytype):
@@ -161,7 +161,7 @@ def generate_psi_table_name(element_counter, flat_component, derivative_counts, 
         assert flat_component is None
 
     if any(derivative_counts):
-        name += "_D" + "".join(map(str,derivative_counts))
+        name += "_D" + "".join(map(str, derivative_counts))
 
     if averaged == "cell":
         name += "_AC"

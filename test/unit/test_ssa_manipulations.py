@@ -50,8 +50,8 @@ def test_dependency_construction():
                    u,
                    v[0],
                    v[1],
-                   w[0,1],
-                   w[0,0]+w[1,1],
+                   w[0, 1],
+                   w[0, 0]+w[1, 1],
                    (2*v+w[1,:])[i]*v[i],
                    ]
 
@@ -89,7 +89,7 @@ def test_dependency_construction():
         if 0:
             print()
             print("====== expr                \n", expr)
-            print("====== V                   \n", '\n'.join(map(str,V)))
+            print("====== V                   \n", '\n'.join(map(str, V)))
             print("====== dependencies        \n", dependencies)
             print("====== active              \n", active)
             print("====== partitions          \n", partitions)

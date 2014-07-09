@@ -4,7 +4,7 @@ r = __import__(rep, fromlist=['compute_integral_ir', 'optimize_integral_ir', 'ge
 print(r.optimize_integral_ir, r.compute_integral_ir, r.generate_integral_code)
 
 from dolfin import *
-mesh = UnitSquareMesh(10,10)
+mesh = UnitSquareMesh(10, 10)
 V = FunctionSpace(mesh, "CG", 1)
 f = Function(V)
 M = f*dx(metadata={'representation': 'uflacs.backends.ffc'})

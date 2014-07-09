@@ -66,7 +66,7 @@ class DolfinExpressionLanguageFormatter(MultiFunction, CppFormattingRules):
             if 1:
                 return "".join("[%s]" % i for i in indices)
             else:
-                return ("[%s]" % (", ".join(map(str,indices))))
+                return ("[%s]" % (", ".join(map(str, indices))))
 
         rcode = {None:"", "+": "_p", "-": "_m"}[restriction]
 

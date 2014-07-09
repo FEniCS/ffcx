@@ -29,10 +29,10 @@ def format_dolfin_expression(classname="MyExpression",
                              mesh_functions=(),
                              functions=(),
                              generic_functions=()):
-    assert all(isinstance(x,str) for x in constants)
-    assert all(isinstance(x,str) for x in mesh_functions)
-    assert all(isinstance(x,str) for x in generic_functions)
-    assert all(isinstance(x,str) for x in functions)
+    assert all(isinstance(x, str) for x in constants)
+    assert all(isinstance(x, str) for x in mesh_functions)
+    assert all(isinstance(x, str) for x in generic_functions)
+    assert all(isinstance(x, str) for x in functions)
     # ...
     r = len(shape)
     if r == 0:

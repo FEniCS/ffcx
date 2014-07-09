@@ -13,7 +13,7 @@ from uflacs.analysis.modified_terminals import analyse_modified_terminal2, strip
 def _build_arg_sets(V):
     "Build arg_sets = { argument number: set(j for j where V[j] is a modified Argument with this number) }"
     arg_sets = {}
-    for i,v in enumerate(V):
+    for i, v in enumerate(V):
         arg = strip_modified_terminal(v)
         if not isinstance(arg, Argument):
             continue
@@ -164,7 +164,7 @@ def handle_product(i, v, deps, F, FV, sv2fv, e2fi):
         f0 = FV[sv2fv[deps[0]]]
         fi = None
         factors = {}
-        for k1,fi1 in iteritems(fac1):
+        for k1, fi1 in iteritems(fac1):
             # Record products of non-arg operand with each factor of arg-dependent operand
             factors[k1] = add_to_fv(f0*FV[fi1], FV, e2fi)
         if 0:
@@ -175,7 +175,7 @@ def handle_product(i, v, deps, F, FV, sv2fv, e2fi):
         f1 = FV[sv2fv[deps[1]]]
         fi = None
         factors = {}
-        for k0,fi0 in iteritems(fac0):
+        for k0, fi0 in iteritems(fac0):
             # Record products of non-arg operand with each factor of arg-dependent operand
             factors[k0] = add_to_fv(f1*FV[fi0], FV, e2fi)
         if 0:
@@ -185,8 +185,8 @@ def handle_product(i, v, deps, F, FV, sv2fv, e2fi):
     else: # arg * arg
         fi = None
         factors = {}
-        for k0,fi0 in iteritems(fac0):
-            for k1,fi1 in iteritems(fac1):
+        for k0, fi0 in iteritems(fac0):
+            for k1, fi1 in iteritems(fac1):
                 # Record products of each factor of arg-dependent operand
                 argkey = tuple(sorted(k0+k1)) # sort key for canonical representation
                 factors[argkey] = add_to_fv(FV[fi0]*FV[fi1], FV, e2fi)
@@ -204,7 +204,7 @@ def handle_division(i, v, deps, F, FV, sv2fv, e2fi):
         f1 = FV[sv2fv[deps[1]]]
         fi = None
         factors = {}
-        for k0,fi0 in iteritems(fac0):
+        for k0, fi0 in iteritems(fac0):
             # Record products of non-arg operand with each factor of arg-dependent operand
             factors[k0] = add_to_fv(FV[fi0] / f1, FV, e2fi)
 
@@ -266,9 +266,9 @@ def collect_argument_factors(SV, dependencies, arg_indices):
     # Extract argument component subgraph
     AV = [SV[j] for j in arg_indices]
     av2sv = arg_indices
-    sv2av = dict( (j,i) for i,j in enumerate(arg_indices) )
-    assert all(AV[i] == SV[j] for i,j in enumerate(arg_indices))
-    assert all(AV[i] == SV[j] for j,i in iteritems(sv2av))
+    sv2av = dict( (j, i) for i, j in enumerate(arg_indices) )
+    assert all(AV[i] == SV[j] for i, j in enumerate(arg_indices))
+    assert all(AV[i] == SV[j] for j, i in iteritems(sv2av))
 
     # Data structure for building non-argument factors
     FV = []
@@ -287,7 +287,7 @@ def collect_argument_factors(SV, dependencies, arg_indices):
     sv2fv = int_array(len(SV))
 
     # Factorize each subexpression in order:
-    for i,v in enumerate(SV):
+    for i, v in enumerate(SV):
         deps = dependencies[i]
 
         if not len(deps):
@@ -316,7 +316,7 @@ def collect_argument_factors(SV, dependencies, arg_indices):
     IM = F[-1]
 
     # Map argkeys from indices into SV to indices into AV, and resort keys for canonical representation
-    IM = dict( (tuple(sorted(sv2av[j] for j in argkey)), fi) for argkey,fi in iteritems(IM) )
+    IM = dict( (tuple(sorted(sv2av[j] for j in argkey)), fi) for argkey, fi in iteritems(IM) )
 
     # If this is a non-argument expression, point to the expression from IM (not sure if this is useful)
     if any([not AV, not IM, not arg_indices]):
@@ -373,13 +373,13 @@ def rebuild_scalar_graph_from_factorization(AV, FV, IM):
     if 0:
         print('\n'*10)
         print('AV:')
-        print('\n'.join('  {}: {}'.format(i, s) for i,s in enumerate(AV)))
+        print('\n'.join('  {}: {}'.format(i, s) for i, s in enumerate(AV)))
         print('FV:')
-        print('\n'.join('  {}: {}'.format(i, s) for i,s in enumerate(FV)))
+        print('\n'.join('  {}: {}'.format(i, s) for i, s in enumerate(FV)))
         print('IM:')
         print('\n'.join('  {}: {}'.format(i, IM[i]) for i in sorted(iterkeys(IM))))
         print('SV:')
-        print('\n'.join('  {}: {}'.format(i, s) for i,s in enumerate(SV)))
+        print('\n'.join('  {}: {}'.format(i, s) for i, s in enumerate(SV)))
         print('\n'*10)
 
     return SV, se2i, dependencies

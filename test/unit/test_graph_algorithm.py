@@ -53,7 +53,7 @@ def test_graph_algorithm_allocates_correct_number_of_symbols():
     assert G.V_symbols.num_elements == 4
     assert G.total_unique_symbols == 4
 
-    expr = dot(v,v)/2
+    expr = dot(v, v)/2
     G = build_graph([expr], DEBUG=0)
     assert G.V_symbols.num_elements == 5
     assert G.total_unique_symbols == 5
@@ -66,7 +66,7 @@ def test_graph_algorithm_allocates_correct_number_of_symbols():
 
     # Reusing symbols for indexed with different ordering
     # Note that two index sums are created, giving 2+1 symbols
-    expr = w[i,j]*w[j,i]
+    expr = w[i, j]*w[j, i]
     G = build_graph([expr], DEBUG=0)
     assert G.V_symbols.num_elements == 4+4+4+4+2+1
     assert G.total_unique_symbols == 4+4+2+1
@@ -77,12 +77,12 @@ def test_graph_algorithm_allocates_correct_number_of_symbols():
     assert G.V_symbols.num_elements == 2+1 + 2+2+2 + 1
     assert G.total_unique_symbols == 2+1 + 2+1
 
-    expr = dot(v+2*v,v)
+    expr = dot(v+2*v, v)
     G = build_graph([expr], DEBUG=0)
     assert G.V_symbols.num_elements == 2+1 + 2+2+2+2 + 1
     assert G.total_unique_symbols == 2+1 + 2+2 + 1
 
-    expr = outer(v,v)[i,j]*outer(v,v)[j,i]
+    expr = outer(v, v)[i, j]*outer(v, v)[j, i]
     G = build_graph([expr], DEBUG=0)
     assert G.V_symbols.num_elements == 21 # 2+4+4+4 + 4+2+1
     assert G.total_unique_symbols == 13 # 2+4+4 + 2+1
@@ -98,22 +98,22 @@ def test_graph_algorithm_allocates_correct_number_of_symbols():
     assert G.V_symbols.num_elements == 2
     assert G.total_unique_symbols == 2
 
-    expr = outer(v,v)
+    expr = outer(v, v)
     G = build_graph([expr], DEBUG=0)
     assert G.V_symbols.num_elements == 2+4
     assert G.total_unique_symbols == 2+4
 
-    expr = as_tensor(v[i]*v[j],(i,j))
+    expr = as_tensor(v[i]*v[j], (i, j))
     G = build_graph([expr], DEBUG=0)
     assert G.V_symbols.num_elements == 2+2+2+4+4
     assert G.total_unique_symbols == 2+4
 
-    expr = as_tensor(v[i]*v[j]/2,(i,j))
+    expr = as_tensor(v[i]*v[j]/2, (i, j))
     G = build_graph([expr], DEBUG=0)
     assert G.V_symbols.num_elements == 2+2+2+4+4+4+1
     assert G.total_unique_symbols == 2+1+4+4
 
-    expr = outer(v,v)/2 # converted to the tensor notation above
+    expr = outer(v, v)/2 # converted to the tensor notation above
     G = build_graph([expr], DEBUG=0)
     assert G.V_symbols.num_elements == 2+2+2+4+4+4+1
     assert G.total_unique_symbols == 2+1+4+4
@@ -154,7 +154,7 @@ def test_rebuild_expression_from_graph_on_products_with_indices():
     i, j, k, l = indices(4)
 
     # Test fixed index
-    fixed = [u*v[0], v[1]*v[0], w[0,1]*w[0,0]]
+    fixed = [u*v[0], v[1]*v[0], w[0, 1]*w[0, 0]]
     for v1 in fixed:
         G = build_graph([v1])
         v2 = rebuild_expression_from_graph(G)
@@ -168,10 +168,10 @@ def test_rebuild_expression_from_graph_on_products_with_indices():
     assert ve == v2
 
     # Test double repeated index
-    v1 = w[i,j]*w[j,i]
+    v1 = w[i, j]*w[j, i]
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
-    ve = (w[1,1]**2 + w[1,0]*w[0,1]) + (w[0,1]*w[1,0] + w[0,0]**2)
+    ve = (w[1, 1]**2 + w[1, 0]*w[0, 1]) + (w[0, 1]*w[1, 0] + w[0, 0]**2)
     if 0:
         print()
         print(v1)
@@ -181,11 +181,11 @@ def test_rebuild_expression_from_graph_on_products_with_indices():
     assert ve == v2
 
     # Test mix of repeated and non-repeated index
-    v1 = (w[i,j]*w[j,0] + v[i])*v[i]
+    v1 = (w[i, j]*w[j, 0] + v[i])*v[i]
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
-    ve = ( (w[0,0]*w[0,0] + w[0,1]*w[1,0] + v[0])*v[0]
-          +(w[1,0]*w[0,0] + w[1,1]*w[1,0] + v[1])*v[1])
+    ve = ( (w[0, 0]*w[0, 0] + w[0, 1]*w[1, 0] + v[0])*v[0]
+          +(w[1, 0]*w[0, 0] + w[1, 1]*w[1, 0] + v[1])*v[1])
     assert ve == v2
 
 def test_rebuild_expression_from_graph_basic_tensor_expressions():
@@ -208,46 +208,46 @@ def test_rebuild_expression_from_graph_basic_tensor_expressions():
     v1 = w
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
-    assert as_vector((v1[0,0],v1[0,1],v1[1,0],v1[1,1])) == v2
+    assert as_vector((v1[0, 0], v1[0, 1], v1[1, 0], v1[1, 1])) == v2
 
     # Vector sum
     v1 = v+v
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
-    ve = as_vector((2*v[0],2*v[1]))
+    ve = as_vector((2*v[0], 2*v[1]))
     assert ve == v2
 
     v1 = v+vb
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
-    ve = as_vector((v[0]+vb[0],v[1]+vb[1]))
+    ve = as_vector((v[0]+vb[0], v[1]+vb[1]))
     assert ve == v2
 
     # Tensor sum
     v1 = w+w
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
-    ve = as_vector((2*w[0,0],2*w[0,1],2*w[1,0],2*w[1,1]))
+    ve = as_vector((2*w[0, 0], 2*w[0, 1], 2*w[1, 0], 2*w[1, 1]))
     assert ve == v2
 
     v1 = w+wb
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
-    ve = as_vector((w[0,0]+wb[0,0],w[0,1]+wb[0,1],w[1,0]+wb[1,0],w[1,1]+wb[1,1]))
+    ve = as_vector((w[0, 0]+wb[0, 0], w[0, 1]+wb[0, 1], w[1, 0]+wb[1, 0], w[1, 1]+wb[1, 1]))
     assert ve == v2
 
     # Scalar-vector product
     v1 = u*v
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
-    ve = as_vector((u*v[0],u*v[1]))
+    ve = as_vector((u*v[0], u*v[1]))
     assert ve == v2
 
     # Scalar-tensor product
     v1 = u*w
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
-    ve = as_vector((u*w[0,0],u*w[0,1],u*w[1,0],u*w[1,1]))
+    ve = as_vector((u*w[0, 0], u*w[0, 1], u*w[1, 0], u*w[1, 1]))
     assert ve == v2
 
     # Vector-vector index based inner product
@@ -264,32 +264,32 @@ def test_rebuild_expression_from_graph_basic_tensor_expressions():
     assert ve == v2
 
     # Tensor-tensor index based transposed inner product
-    v1 = w[i,j]*w[j,i]
+    v1 = w[i, j]*w[j, i]
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
-    ve = (w[0,0]*w[0,0] + w[0,1]*w[1,0]) \
-       + (w[1,0]*w[0,1] + w[1,1]*w[1,1])
+    ve = (w[0, 0]*w[0, 0] + w[0, 1]*w[1, 0]) \
+       + (w[1, 0]*w[0, 1] + w[1, 1]*w[1, 1])
     assert ve == v2
 
-    v1 = w[i,j]*wb[j,i]
+    v1 = w[i, j]*wb[j, i]
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
-    ve = (w[0,0]*wb[0,0] + w[0,1]*wb[1,0]) \
-       + (w[1,0]*wb[0,1] + w[1,1]*wb[1,1])
+    ve = (w[0, 0]*wb[0, 0] + w[0, 1]*wb[1, 0]) \
+       + (w[1, 0]*wb[0, 1] + w[1, 1]*wb[1, 1])
     assert ve == v2
 
     # Vector/scalar division
     v1 = v/u
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
-    ve = as_vector((v[0]/u,v[1]/u))
+    ve = as_vector((v[0]/u, v[1]/u))
     assert ve == v2
 
     # Tensor/scalar division
     v1 = w/u
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
-    ve = as_vector((w[0,0]/u,w[0,1]/u,w[1,0]/u,w[1,1]/u))
+    ve = as_vector((w[0, 0]/u, w[0, 1]/u, w[1, 0]/u, w[1, 1]/u))
     assert ve == v2
 
     # FIXME: Write more tests to discover bugs in ReconstructScalarSubexpressions.element_wise*
@@ -305,15 +305,15 @@ def xtest_rebuild_expression_from_graph_on_compounds():
     v = Coefficient(V)
     w = Coefficient(W)
 
-    v1 = dot(v,v)
+    v1 = dot(v, v)
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
 
-    v1 = outer(v,v)
+    v1 = outer(v, v)
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
 
-    v1 = outer(v,v)[i,j]*outer(v,v)[j,i]
+    v1 = outer(v, v)[i, j]*outer(v, v)[j, i]
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
     #print v1

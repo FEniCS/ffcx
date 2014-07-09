@@ -86,19 +86,19 @@ def build_crdata(reqdata, shape, symmetry):
         # Need scalar component to be None for table naming
         vi2si = {():None}
     #for ((c,d,r,a),varname) in iteritems(reqdata): # FIXME: Use average
-    for ((c,d,r),varname) in iteritems(reqdata):
+    for ((c, d, r), varname) in iteritems(reqdata):
         c = vi2si[c]
-        key = (c,r)
+        key = (c, r)
         data = crdata.get(key)
         if not data:
             # Store mapping (c,r) -> (value name, derivative orders set, derivative value names list)
-            data = [None,set(),[]]
+            data = [None, set(), []]
             crdata[key] = data
         if d:
             data[1].add(len(d))
-            data[2].append((d,varname))
+            data[2].append((d, varname))
         else:
-            uflacs_assert(data[0] in (None,varname), "Got two variable names for same component!")
+            uflacs_assert(data[0] in (None, varname), "Got two variable names for same component!")
             data[0] = varname
     return crdata
 
@@ -144,7 +144,7 @@ class FFCStatementFormatter(object):
         code = [langfmt.comment("Declaring variables for intermediate computations:")]
 
         # TODO: Use partitioned registers in compiler, then disallow partition=None
-        name = names.s if partition is None else ("%s%d" % (names.s,partition))
+        name = names.s if partition is None else ("%s%d" % (names.s, partition))
         code += [langfmt.double_array_decl(name, num_registers)]
 
         code.append("")
@@ -251,7 +251,7 @@ class FFCStatementFormatter(object):
         done.add("vertex_coordinates")
 
         # Make a set of quantities to postphone
-        skip = set(item for item in workstack if item[0] in ("x","xi"))
+        skip = set(item for item in workstack if item[0] in ("x", "xi"))
         # ... but keep these in workstack to build dependencies properly!
 
         # Build list of geometry including dependencies
@@ -392,8 +392,8 @@ class FFCStatementFormatter(object):
         crdata = build_crdata(reqdata, w.shape(), element.symmetry())
 
         # Loop over components
-        for (c,r) in sorted(crdata.keys()):
-            value_varname, derivative_orders, derivative_varnames = crdata[(c,r)]
+        for (c, r) in sorted(crdata.keys()):
+            value_varname, derivative_orders, derivative_varnames = crdata[(c, r)]
 
             # Pick entity index variable name, following ufc argument names
             entity = format_entity_name(self._entitytype, r)
@@ -525,8 +525,8 @@ class FFCStatementFormatter(object):
             crdata = build_crdata(reqdata, v.shape(), element.symmetry())
 
             # Compute mapped derivatives for each argument component c,r
-            for (c,r) in sorted(crdata.keys()):
-                value_varname, derivative_orders, derivative_varnames = crdata[(c,r)]
+            for (c, r) in sorted(crdata.keys()):
+                value_varname, derivative_orders, derivative_varnames = crdata[(c, r)]
 
                 # Ignoring value_varname, since values are fetched directly from tables
 

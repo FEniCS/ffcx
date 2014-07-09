@@ -98,7 +98,7 @@ def compute_expr_ir(expressions, parameters):
     active, num_active = mark_active(dependencies, target_variables)
 
     # Build set of modified_terminal indices into factorized_vertices
-    modified_terminal_indices = [i for i,v in enumerate(V)
+    modified_terminal_indices = [i for i, v in enumerate(V)
                                  if is_modified_terminal(v)]
 
     # Build piecewise/varying markers for factorized_vertices

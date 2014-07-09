@@ -45,13 +45,13 @@ def test_cpp_formatting_of_literals():
     assert expr2cpp(ufl.as_ufl(3.14)) == '3.14'
     assert expr2cpp(ufl.as_ufl(0)) == "0"
     # These are actually converted to int before formatting:
-    assert expr2cpp(ufl.Identity(2)[0,0]) == "1"
-    assert expr2cpp(ufl.Identity(2)[0,1]) == "0"
-    assert expr2cpp(ufl.Identity(2)[1,0]) == "0"
-    assert expr2cpp(ufl.Identity(2)[1,1]) == "1"
-    assert expr2cpp(ufl.PermutationSymbol(3)[1,2,3]) == "1"
-    assert expr2cpp(ufl.PermutationSymbol(3)[2,1,3]) == "-1"
-    assert expr2cpp(ufl.PermutationSymbol(3)[1,1,3]) == "0"
+    assert expr2cpp(ufl.Identity(2)[0, 0]) == "1"
+    assert expr2cpp(ufl.Identity(2)[0, 1]) == "0"
+    assert expr2cpp(ufl.Identity(2)[1, 0]) == "0"
+    assert expr2cpp(ufl.Identity(2)[1, 1]) == "1"
+    assert expr2cpp(ufl.PermutationSymbol(3)[1, 2, 3]) == "1"
+    assert expr2cpp(ufl.PermutationSymbol(3)[2, 1, 3]) == "-1"
+    assert expr2cpp(ufl.PermutationSymbol(3)[1, 1, 3]) == "0"
 
 def test_cpp_formatting_of_geometry():
     # Test geometry quantities (faked for testing!)
@@ -84,9 +84,9 @@ def test_cpp_formatting_of_form_arguments():
 
     V = ufl.TensorElement("CG", ufl.cell2D, 1)
     f = ufl.Coefficient(V, count=2)
-    assert expr2cpp(f[1,0]) == "w0[1][0]" # Renumbered to 0...
+    assert expr2cpp(f[1, 0]) == "w0[1][0]" # Renumbered to 0...
     v = ufl.Argument(V, number=3)
-    assert expr2cpp(v[0,1]) == "v3[0][1]" # NOT renumbered to 0...
+    assert expr2cpp(v[0, 1]) == "v3[0][1]" # NOT renumbered to 0...
 
     # TODO: Test mixed functions
     # TODO: Test tensor functions with symmetries
@@ -121,8 +121,8 @@ def test_cpp_formatting_of_derivatives():
     # Test derivatives of basic operators
     assert expr2cpp(x.dx(0)) == "1"
     assert expr2cpp(x.dx(1)) == "0"
-    assert expr2cpp(ufl.grad(xx)[0,0]) == "1"
-    assert expr2cpp(ufl.grad(xx)[0,1]) == "0"
+    assert expr2cpp(ufl.grad(xx)[0, 0]) == "1"
+    assert expr2cpp(ufl.grad(xx)[0, 1]) == "0"
     assert expr2cpp(ufl.sin(x).dx(0)) == "cos(x[0])"
 
     # Test derivatives of target specific test fakes

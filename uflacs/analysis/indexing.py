@@ -19,7 +19,7 @@ def shape_to_strides(sh):
     return tuple(strides)
 
 def multiindex_to_component(ii, strides):
-    return sum(i*s for i,s in zip(ii,strides))
+    return sum(i*s for i, s in zip(ii, strides))
 
 def component_to_multiindex(c, strides):
     ii = []

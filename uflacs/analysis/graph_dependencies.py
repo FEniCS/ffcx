@@ -15,7 +15,7 @@ def compute_dependencies(e2i, V, ignore_terminal_modifiers=True):
     num_rows = len(V)
     dependencies = object_array(num_rows)
     num_nonzeros = 0
-    for i,v in enumerate(V):
+    for i, v in enumerate(V):
         if isinstance(v, terminalish):
             dependencies[i] = ()
         else:
@@ -46,7 +46,7 @@ def mark_active(dependencies, targets):
     active[targets] = 1
 
     # Mark dependencies by looping backwards through symbols array
-    for s in xrange(n-1,-1,-1):
+    for s in xrange(n-1, -1, -1):
         if active[s]:
             num_used += 1
             active[dependencies[s]] = 1

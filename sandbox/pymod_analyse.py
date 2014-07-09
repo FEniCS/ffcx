@@ -15,13 +15,13 @@ skipmods = ['utils', 'commands']
 r = re.compile(r'from +' + modulename + r'[.]([^ ]*) +import')
 
 files = []
-os.path.walk(modulename, lambda x, y, z: files.extend(os.path.join(y,fn) for fn in z if fn.endswith(".py")), None)
+os.path.walk(modulename, lambda x, y, z: files.extend(os.path.join(y, fn) for fn in z if fn.endswith(".py")), None)
 
 imports = defaultdict(dict)
 pimports = {}
 #for f in files:
 for f in files[:]:
-    mod = f.replace('uflacs/','').replace('.py', '').replace('/', '.').strip()
+    mod = f.replace('uflacs/', '').replace('.py', '').replace('/', '.').strip()
     pmod = mod.split('.')[0]
     if pmod in skipmods:
         continue
@@ -43,7 +43,7 @@ for f in files[:]:
         print(crap)
 
     imports[pmod][mod] = modules
-    pimports[pmod] = sorted(set(parent_modules) | set(pimports.get(pmod,())))
+    pimports[pmod] = sorted(set(parent_modules) | set(pimports.get(pmod, ())))
 
 
 # TODO: Make topological sorting of pmods for neater prints
@@ -56,7 +56,7 @@ for m in pmods:
     print("="*70, m)
     l = max(len(k) for k in imports[m])
     fmt = '%s depends on'
-    for k,v in iteritems(imports[m]):
+    for k, v in iteritems(imports[m]):
         if v:
             print(fmt % k)
             print('\n'.join('    %s' % vv for vv in v))
@@ -73,14 +73,14 @@ for m in pmods:
 
 
 def rename(x):
-    return x.replace('.','__')
+    return x.replace('.', '__')
 
 # Write submodule imports to graph
 names = set()
 lines = []
 for m in pmods:
     lines.append("    subgraph {\n")
-    for k,v in iteritems(imports[m]):
+    for k, v in iteritems(imports[m]):
         if v:
             names.add(k)
         for t in v:

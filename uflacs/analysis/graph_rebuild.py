@@ -53,7 +53,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
 
         # Products of a scalar and a tensor are allowed
         n = max(len(op) for op in ops)
-        uflacs_assert(all(len(op) in (1,n) for op in ops), "Unexpected number of operands.")
+        uflacs_assert(all(len(op) in (1, n) for op in ops), "Unexpected number of operands.")
         # Compute each scalar value
         res = []
         for k in xrange(n):
@@ -101,7 +101,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
                           "Expecting scalars.")
         else:
             shaped = 0
-            for j,op in enumerate(o.operands()):
+            for j, op in enumerate(o.operands()):
                 opsh = op.shape()
                 if opsh == ():
                     continue
@@ -109,12 +109,12 @@ class ReconstructScalarSubexpressions(MultiFunction):
                     shaped += 1
                 else:
                     error("Not expecting shape %s, overall shape is %s." % (opsh, sh))
-            uflacs_assert(shaped in (0,1), "Expecting at most one shaped operand.")
+            uflacs_assert(shaped in (0, 1), "Expecting at most one shaped operand.")
 
         # Precompute some dimensions for each operand
         istrides = [None]*len(ops)
         opims = [None]*len(ops)
-        for j,op in enumerate(o.operands()):
+        for j, op in enumerate(o.operands()):
             opii = sorted(op.free_indices(), key=lambda x: x.count())
             opidims = op.index_dimensions()
             opish = tuple(opidims[i] for i in opii)
@@ -154,9 +154,9 @@ class ReconstructScalarSubexpressions(MultiFunction):
                 k = sk*im + ik # Compute the output component index (not used!)
 
                 sops = []
-                for j,op in enumerate(ops):
+                for j, op in enumerate(ops):
                     # Find the operand component index
-                    jk = sk*opims[j] + sum(a*b for a,b in zip(ic, istrides[j]))
+                    jk = sk*opims[j] + sum(a*b for a, b in zip(ic, istrides[j]))
                     if jk >= len(op):
                         print()
                         print('DEBUGGING VALUES IN element_wise2:')
@@ -191,11 +191,11 @@ class ReconstructScalarSubexpressions(MultiFunction):
                         print(j, opims, istrides)
                         print()
                         print(len(op), "<= jk =", jk)
-                        print(sk*opims[j] + sum(a*b for a,b in zip(ic, istrides[j])))
+                        print(sk*opims[j] + sum(a*b for a, b in zip(ic, istrides[j])))
                         print("=")
                         print(sk*opims[j])
                         print("+")
-                        print(sum(a*b for a,b in zip(ic, istrides[j])))
+                        print(sum(a*b for a, b in zip(ic, istrides[j])))
                         print()
                         print(j, sk, opims[j])
                         print(ic, istrides[j])
@@ -231,7 +231,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
         # - division: a.shape() == anything,  b.shape() == ()
         # - product:  not (a.shape() == () and b.shape() == ())
         shaped = 0
-        for iop,op in enumerate(oops):
+        for iop, op in enumerate(oops):
             opsh = op.shape()
             if opsh == ():
                 continue
@@ -239,13 +239,13 @@ class ReconstructScalarSubexpressions(MultiFunction):
                 shaped += 1
             else:
                 error("Not expecting shape %s, overall shape is %s." % (opsh, sh))
-        uflacs_assert(shaped in (0,1,len(ops)), "Confused about shapes of operands.")
+        uflacs_assert(shaped in (0, 1, len(ops)), "Confused about shapes of operands.")
 
         # --- Compute shapes and sizes for each operand
         iirev = reversed(ii)
         istrides = [None]*len(ops)  #
         opims = [None]*len(ops)     # Index value size for each operand
-        for iop,op in enumerate(oops):
+        for iop, op in enumerate(oops):
             # --- Compute shapes and sizes of op
             # Index shapes
             opii = sorted(op.free_indices(), key=lambda x: x.count())  # Free indices
@@ -273,17 +273,17 @@ class ReconstructScalarSubexpressions(MultiFunction):
         iindices = compute_indices(ish)
         scomponents = [(sc, indexing_to_component(sc, (), sh)) for sc in sindices]
         icomponents = [(ic, indexing_to_component(ic, (), ish)) for ic in iindices]
-        for sc,sk in scomponents: # TODO: Optimization: swap loops so we recompute less?
-            for ic,ik in icomponents:
+        for sc, sk in scomponents: # TODO: Optimization: swap loops so we recompute less?
+            for ic, ik in icomponents:
                 k = sk*im + ik # Compute the output component index (not used!)
                 uflacs_assert(k == len(res), "Invalid assumption or a bug?")
 
                 sops = []
-                for iop,op in enumerate(ops):
+                for iop, op in enumerate(ops):
                     # Find the operand component index in the index space
                     if istrides[iop]:
                         assert istrides[iop][-1] == 1, "Strides={0}".format(istrides[iop])
-                    jk = sum(a*b for a,b in zip(ic, istrides[iop]))
+                    jk = sum(a*b for a, b in zip(ic, istrides[iop]))
 
                     # Only add tensor component offset for the tensor-valued operand
                     if oops[iop].shape():
@@ -395,7 +395,7 @@ def rebuild_scalar_e2i(G, DEBUG=False):
     reconstruct_scalar_subexpressions = ReconstructScalarSubexpressions()
 
     handled_symbols = int_array(G.total_unique_symbols)
-    for i,v in enumerate(G.V):
+    for i, v in enumerate(G.V):
         # Find symbols of v components
         vs = G.V_symbols[i]
 
@@ -459,7 +459,7 @@ def rebuild_scalar_e2i(G, DEBUG=False):
                 print(len(w))
                 print()
                 uflacs_assert(len(vs) == len(w), "Expecting one symbol for each expression.")
-            for s,u in zip(vs,w):
+            for s, u in zip(vs, w):
                 emit_expression(s, u)
 
     # Reduce size of NV to the actually used parts

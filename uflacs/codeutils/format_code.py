@@ -86,7 +86,7 @@ class WithKeywords(Code): # TODO: Do we need this? Can simplify quite a bit by r
         if keywords: # TODO: Merge with self.keywords instead
             raise RuntimeError("Doubly defined keywords not implemented.")
         fmt_keywords = {}
-        for k,v in iteritems(self.keywords):
+        for k, v in iteritems(self.keywords):
             fmt_keywords[k] = format_code(v, 0, indentchar, keywords)
         return format_code(self.code, level, indentchar, fmt_keywords)
 
@@ -102,8 +102,8 @@ class Block(Code):
 
 class TemplateArgumentList(Code):
 
-    singlelineseparators = ('<',', ','>')
-    multilineseparators = ('<\n',',\n','\n>')
+    singlelineseparators = ('<', ', ', '>')
+    multilineseparators = ('<\n', ',\n', '\n>')
 
     def __init__(self, args, multiline=True):
         self.args = args
@@ -194,7 +194,7 @@ class ArrayAccess(Code):
         else:
             self.arrayname = arraydecl
 
-        if isinstance(indices, (list,tuple)):
+        if isinstance(indices, (list, tuple)):
             self.indices = indices
         else:
             self.indices = (indices,)
@@ -208,7 +208,7 @@ class ArrayAccess(Code):
             if len(self.indices) != len(arraydecl.sizes):
                 raise ValueError("Invalid number of indices.")
             if any((isinstance(i, int) and isinstance(d, int) and i >= d)
-                   for i,d in zip(self.indices, arraydecl.sizes)):
+                   for i, d in zip(self.indices, arraydecl.sizes)):
                 raise ValueError("Index value >= array dimension.")
 
     def format(self, level, indentchar, keywords):
@@ -454,4 +454,4 @@ def format_code(code, level=0, indentchar='    ', keywords=None):
     if isinstance(code, float):
         return indent(format_float(code), level, indentchar)
 
-    raise RuntimeError("Unexpected type %s:\n%s" % (type(code),str(code)))
+    raise RuntimeError("Unexpected type %s:\n%s" % (type(code), str(code)))

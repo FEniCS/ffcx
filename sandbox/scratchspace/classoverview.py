@@ -33,7 +33,7 @@ def get_callables(module):
     name = module.__name__
     def cond(v):
         return callable(v) and v.__module__.startswith(name)
-    return [n for n,v in iteritems(vars(module)) if cond(v)]
+    return [n for n, v in iteritems(vars(module)) if cond(v)]
 
 def curry(f, g):
     def h(*args, **kwargs):

@@ -42,11 +42,11 @@ elif case == 2:
 elif case == 3:
     M = grad(f)[0]*dx
     L = grad(v)[0]*dx
-    a = dot(grad(u),grad(v))*dx
+    a = dot(grad(u), grad(v))*dx
 elif case == 4:
     M = grad(f)[0]*dx
     L = grad(v)[0]*dx
-    a = dot(2*grad(u),f*grad(v))*dx
+    a = dot(2*grad(u), f*grad(v))*dx
 else:
     print("Invalid case", case)
     sys.exit(-1)
@@ -130,7 +130,7 @@ for form in forms:
     active, num_active = mark_active(dependencies, target_variables)
 
     print("Build set of modified_terminal indices into factorized_vertices")
-    modified_terminal_indices = [i for i,v in enumerate(V)
+    modified_terminal_indices = [i for i, v in enumerate(V)
                                  if is_modified_terminal(v)]
 
     print("Build piecewise/varying markers for factorized_vertices")
@@ -217,7 +217,7 @@ for form in forms:
         argunames = ()
         for arg in args:
             uname, b, e = modified_argument_tables[arg]
-            dofblock = dofblock + ((b,e),)
+            dofblock = dofblock + ((b, e),)
             argunames = argunames + (uname,)
         print("\nTODO: Emit code for {dofblock}, {argunames}, {factor_index}".format(**locals()))
 

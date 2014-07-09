@@ -48,7 +48,7 @@ class CppStatementFormattingRules(object):
         return "%s%s" % (name, br)
 
     def array_decl(self, typename, name, dims, initializer=None):
-        dims = (dims,) if isinstance(dims, (int,str)) else dims
+        dims = (dims,) if isinstance(dims, (int, str)) else dims
         init = " = %s" % (initializer,) if initializer else ""
         br = ''.join("[%s]" % d for d in dims)
         return "%s %s%s%s;" % (typename, name, br, init)

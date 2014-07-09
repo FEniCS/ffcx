@@ -116,7 +116,7 @@ class AxisMapping(object):
 
 # TODO: Change this into unit tests
 def _test():
-    ranges = {"i": 4, "j": (10,12), "n": "N", "m": (1, "M") }
+    ranges = {"i": 4, "j": (10, 12), "n": "N", "m": (1, "M") }
     im = IndexMapping(ranges)
     print(str(eval(repr(im))))
 

@@ -1,11 +1,11 @@
 from dolfin import *
 
-mesh = UnitSquareMesh(10,10)
+mesh = UnitSquareMesh(10, 10)
 
-e = Expression(("x[0]","x[1]"))
+e = Expression(("x[0]", "x[1]"))
 print("original degree", e.ufl_element().degree())
 
-f = dot(e,e)*dx
+f = dot(e, e)*dx
 val = assemble(f, mesh=mesh)
 print("value", val)
 

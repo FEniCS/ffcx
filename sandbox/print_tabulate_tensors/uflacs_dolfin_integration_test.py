@@ -11,7 +11,7 @@ for representation in ("uflacs", "quadrature"):
         out = []
         output[representation][n] = out
 
-        mesh = UnitSquareMesh(n,3)
+        mesh = UnitSquareMesh(n, 3)
         V = FunctionSpace(mesh, "CG", 1)
         c = Constant(2.3)
         f = Function(V)
@@ -31,7 +31,7 @@ for representation in ("uflacs", "quadrature"):
         out.append( assemble(v.dx(0)*dx).norm('l2') )
 
         out.append( assemble(u*v*dx).norm('frobenius') )
-        out.append( assemble(dot(grad(u),grad(v))*dx).norm('frobenius') )
+        out.append( assemble(dot(grad(u), grad(v))*dx).norm('frobenius') )
 
 	m = len(out)
 

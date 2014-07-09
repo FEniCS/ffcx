@@ -105,7 +105,7 @@ def split_by_line_markers(text, markers):
     assert active_marker not in paragraphs
     paragraphs[active_marker] = indented(paragraph).rstrip()
 
-    return [paragraphs.get(m,"") for m in [""]+list(markers)]
+    return [paragraphs.get(m, "") for m in [""]+list(markers)]
 
 def find_parent_test_function():
     frame = inspect.currentframe()

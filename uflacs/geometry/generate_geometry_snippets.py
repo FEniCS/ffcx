@@ -5,7 +5,7 @@ from six.moves import xrange
 dependencies = {
    'J': ('vertex_coordinates',),
    'detJ': ('J',),
-   'K': ('J','detJ'),
+   'K': ('J', 'detJ'),
    'x': ('xi', 'J', 'vertex_coordinates'),
    'xi': ('x', 'K', 'vertex_coordinates'),
   }
@@ -34,18 +34,18 @@ def generate_array_definition_snippets(name, expressions, d, typename="const dou
     return decl
 
 def generate_z_Axpy_snippets(name_z, name_A, name_x, name_y, zd, xd):
-    fmt_A = dict(((i,j), '%s[%d*%d+%d]' % (name_A, i, xd, j)) for i in xrange(zd) for j in xrange(xd))
+    fmt_A = dict(((i, j), '%s[%d*%d+%d]' % (name_A, i, xd, j)) for i in xrange(zd) for j in xrange(xd))
     fmt_x = ['%s[%d]' % (name_x, j) for j in xrange(xd)]
     fmt_y = ['%s[%d]' % (name_y, i) for i in xrange(zd)]
-    fmt_Ax = [' + '.join('%s * %s' % (fmt_A[(i,j)], fmt_x[j]) for j in xrange(xd)) for i in xrange(zd)]
+    fmt_Ax = [' + '.join('%s * %s' % (fmt_A[(i, j)], fmt_x[j]) for j in xrange(xd)) for i in xrange(zd)]
     fmt_z = ['%s + %s' % (fmt_Ax[i], fmt_y[i]) for i in xrange(zd)]
     return generate_array_definition_snippets(name_z, fmt_z, zd)
 
 def generate_z_Axmy_snippets(name_z, name_A, name_x, name_y, zd, xd):
     "Generate combined definition and declaration of z = A (x - y) with dimensions zd,xd."
-    fmt_A = dict(((i,j), '%s[%d*%d+%d]' % (name_A, i, xd, j)) for i in xrange(zd) for j in xrange(xd))
+    fmt_A = dict(((i, j), '%s[%d*%d+%d]' % (name_A, i, xd, j)) for i in xrange(zd) for j in xrange(xd))
     fmt_xmy = ['(%s[%d] - %s[%d])' % (name_x, j, name_y, j) for j in xrange(xd)]
-    fmt_z = [' + '.join('%s * %s' % (fmt_A[(i,j)], fmt_xmy[j]) for j in xrange(xd)) for i in xrange(zd)]
+    fmt_z = [' + '.join('%s * %s' % (fmt_A[(i, j)], fmt_xmy[j]) for j in xrange(xd)) for i in xrange(zd)]
     return generate_array_definition_snippets(name_z, fmt_z, zd)
 
 

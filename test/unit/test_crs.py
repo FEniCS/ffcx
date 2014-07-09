@@ -33,10 +33,10 @@ def test_crs_can_have_n_element_rows():
     A = CRS(rcap, ecap, int)
     k = 0
     for i in xrange(rcap):
-        row = [i+2,i+1] + [i]*i
+        row = [i+2, i+1] + [i]*i
         k += len(row)
         A.push_row(row)
     assert A.num_elements == k
     for i in xrange(rcap):
-        row = [i+2,i+1] + [i]*i
+        row = [i+2, i+1] + [i]*i
         assert list(A[i]) == row

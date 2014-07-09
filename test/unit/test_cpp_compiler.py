@@ -39,11 +39,11 @@ def format_code_lines(expressions, expression_dependencies, want_to_cache,
     precedence = int_array(n)
     code_lines = []
     j = 0
-    for i,e in enumerate(expressions):
+    for i, e in enumerate(expressions):
         p = 0 # TODO: precedence of e
         deps = expression_dependencies[i]
         code_ops = [code_ref[d] for d in deps]
-        code_ops = [par(c) if precedence[d] > p else c for c,d in zip(code_ops,deps)]
+        code_ops = [par(c) if precedence[d] > p else c for c, d in zip(code_ops, deps)]
         code_e = format_expression(e, code_ops)
         if want_to_cache[i]:
             varname = format_variable(j)
@@ -188,7 +188,7 @@ def xtest_cpp2_compile_coefficients(u, v, w):
     expected = 'TODO'
     assert code == expected
 
-    M = w[1,0]*dx
+    M = w[1, 0]*dx
     code = compile_form(M, 'unittest')
     print('\n', code)
     expected = 'TODO'
@@ -201,7 +201,7 @@ def xtest_cpp2_compile_sums(u, v, w):
     expected = 'TODO'
     assert code == expected
 
-    M = (v[1] + w[1,1] + 3 + u)*dx
+    M = (v[1] + w[1, 1] + 3 + u)*dx
     code = compile_form(M, 'unittest')
     print('\n', code)
     expected = 'TODO'
@@ -214,7 +214,7 @@ def xtest_cpp2_compile_products(u, v, w):
     expected = 'TODO'
     assert code == expected
 
-    M = (v[1] * w[1,1] * 3 * u)*dx
+    M = (v[1] * w[1, 1] * 3 * u)*dx
     code = compile_form(M, 'unittest')
     print('\n', code)
     expected = 'TODO'

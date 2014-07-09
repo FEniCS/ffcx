@@ -39,13 +39,13 @@ def test_latex_formatting_of_literals():
     assert expr2latex(ufl.as_ufl(3.14)) == '3.14'
     assert expr2latex(ufl.as_ufl(0)) == "0"
     # These are actually converted to int before formatting:
-    assert expr2latex(ufl.Identity(2)[0,0]) == "1"
-    assert expr2latex(ufl.Identity(2)[0,1]) == "0"
-    assert expr2latex(ufl.Identity(2)[1,0]) == "0"
-    assert expr2latex(ufl.Identity(2)[1,1]) == "1"
-    assert expr2latex(ufl.PermutationSymbol(3)[1,2,3]) == "1"
-    assert expr2latex(ufl.PermutationSymbol(3)[2,1,3]) == "-1"
-    assert expr2latex(ufl.PermutationSymbol(3)[1,1,3]) == "0"
+    assert expr2latex(ufl.Identity(2)[0, 0]) == "1"
+    assert expr2latex(ufl.Identity(2)[0, 1]) == "0"
+    assert expr2latex(ufl.Identity(2)[1, 0]) == "0"
+    assert expr2latex(ufl.Identity(2)[1, 1]) == "1"
+    assert expr2latex(ufl.PermutationSymbol(3)[1, 2, 3]) == "1"
+    assert expr2latex(ufl.PermutationSymbol(3)[2, 1, 3]) == "-1"
+    assert expr2latex(ufl.PermutationSymbol(3)[1, 1, 3]) == "0"
 
 def test_latex_formatting_of_geometry():
     # Test geometry quantities
@@ -79,9 +79,9 @@ def test_latex_formatting_of_form_arguments():
     assert expr2latex(v[1]) == r"\overset{3}{v}_{1}" # NOT renumbered to 0...
 
     f = ufl.Coefficient(W, count=2)
-    assert expr2latex(f[1,0]) == r"\overset{2}{w}_{1 0}" # NOT renumbered to 0...
+    assert expr2latex(f[1, 0]) == r"\overset{2}{w}_{1 0}" # NOT renumbered to 0...
     v = ufl.Argument(W, number=3)
-    assert expr2latex(v[0,1]) == r"\overset{3}{v}_{0 1}" # NOT renumbered to 0...
+    assert expr2latex(v[0, 1]) == r"\overset{3}{v}_{0 1}" # NOT renumbered to 0...
 
     # TODO: Test mixed functions
     # TODO: Test tensor functions with symmetries
@@ -114,8 +114,8 @@ def test_latex_formatting_of_derivatives():
     # Test derivatives of basic operators
     assert expr2latex(x.dx(0)) == "1"
     assert expr2latex(x.dx(1)) == "0"
-    assert expr2latex(ufl.grad(xx)[0,0]) == "1"
-    assert expr2latex(ufl.grad(xx)[0,1]) == "0"
+    assert expr2latex(ufl.grad(xx)[0, 0]) == "1"
+    assert expr2latex(ufl.grad(xx)[0, 1]) == "0"
     assert expr2latex(ufl.sin(x).dx(0)) == r"\cos(x_0)"
 
     # Test derivatives of form arguments

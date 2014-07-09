@@ -35,8 +35,8 @@ _ffc_options = \
 }
 ffc_options = \
 {
-  "representation" : "uflacs",
-  "quadrature_degree" : 2,
+  "representation": "uflacs",
+  "quadrature_degree": 2,
 }
 # solver parameters
 solver_options = \

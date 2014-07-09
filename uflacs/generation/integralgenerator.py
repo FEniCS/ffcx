@@ -175,7 +175,7 @@ class IntegralGenerator(object):
 
         # Find dofranges at this loop level iarg starting with outer_dofblock
         dofranges = sorted(set(MATR[mas[iarg]][1:3] for mas in AF
-                           if all(MATR[mas[i]][1:3] == j for i,j in enumerate(outer_dofblock))
+                           if all(MATR[mas[i]][1:3] == j for i, j in enumerate(outer_dofblock))
                            ))
 
         # Build loops for each dofrange
@@ -197,7 +197,7 @@ class IntegralGenerator(object):
         from ufl.classes import ConstantValue
         j = 0
         #print "Generating partition ", name
-        for i,p in enumerate(partition):
+        for i, p in enumerate(partition):
             if p:
                 # TODO: Consider optimized ir here with markers for which subexpressions to store in variables.
                 # This code just generates variables for _all_ subexpressions marked by p.

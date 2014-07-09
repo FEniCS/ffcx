@@ -163,7 +163,7 @@ def test_dolfin_expression_constructors():
                                     shape=(2,))
     assert code == dolfin_expression_with_constructor1
     code = format_dolfin_expression(classname="MyExpression",
-                                    shape=(2,3))
+                                    shape=(2, 3))
     assert code == dolfin_expression_with_constructor2
 
 def test_dolfin_expression_members():
@@ -177,10 +177,10 @@ def test_dolfin_expression_members():
     assert code == dolfin_expression_with_members
     code = format_dolfin_expression(classname="MyExpression",
                                     shape=(),
-                                    constants=('c0','c1'),
-                                    mesh_functions=('mf0','mf1'),
-                                    generic_functions=('gf0','gf1'),
-                                    functions=('f0','f1'),
+                                    constants=('c0', 'c1'),
+                                    mesh_functions=('mf0', 'mf1'),
+                                    generic_functions=('gf0', 'gf1'),
+                                    functions=('f0', 'f1'),
                                     )
     assert code == dolfin_expression_with_members2
 
@@ -189,10 +189,10 @@ def test_explicit_dolfin_expression_compilation(dolfin):
                                     shape=(2,),
                                     eval_body=['values[0] = x[0];',
                                                'values[1] = x[1];'],
-                                    constants=('c0','c1'),
-                                    mesh_functions=('mf0','mf1'),
-                                    generic_functions=('gf0','gf1'),
-                                    functions=('f0','f1'),
+                                    constants=('c0', 'c1'),
+                                    mesh_functions=('mf0', 'mf1'),
+                                    generic_functions=('gf0', 'gf1'),
+                                    functions=('f0', 'f1'),
                                     )
     expr = dolfin.Expression(cppcode=code)
     assert hasattr(expr, 'c0')
@@ -238,7 +238,7 @@ def check_dolfin_expression_compilation(uexpr, expected_lines, expected_values, 
     # Add debugging lines to print scalar expressions at end of Expression eval call
     if 0:
         printme = ["x[0]", "values[0]"]
-        compiled_lines += ['std::cout '] + ['       << "%s = " << %s << std::endl' % (pm,pm) for pm in printme] + ['<< std::endl;']
+        compiled_lines += ['std::cout '] + ['       << "%s = " << %s << std::endl' % (pm, pm) for pm in printme] + ['<< std::endl;']
 
     # Wrap it in a dolfin::Expression class
     shape = uexpr.shape()
@@ -281,8 +281,8 @@ def test_dolfin_expression_compilation_of_scalar_literal():
                       'values[0] = s[0];']
 
     # Define expected evaluation values: [(x,value), (x,value), ...]
-    expected_values = [((0.0,0.0), (3.14,)),
-                       ((0.6,0.7), (3.14,)),
+    expected_values = [((0.0, 0.0), (3.14,)),
+                       ((0.6, 0.7), (3.14,)),
                        ]
 
     # Execute all tests
@@ -300,8 +300,8 @@ def test_dolfin_expression_compilation_of_vector_literal():
                       'values[1] = s[1];']
 
     # Define expected evaluation values: [(x,value), (x,value), ...]
-    expected_values = [((0.0,0.0), (1.23,7.89)),
-                       ((0.6,0.7), (1.23,7.89)),
+    expected_values = [((0.0, 0.0), (1.23, 7.89)),
+                       ((0.6, 0.7), (1.23, 7.89)),
                        ]
 
     # Execute all tests
@@ -320,8 +320,8 @@ def test_dolfin_expression_compilation_of_x():
                       'values[1] = s[1];']
 
     # Define expected evaluation values: [(x,value), (x,value), ...]
-    expected_values = [((0.0,0.0), (0.0,0.0)),
-                       ((0.6,0.7), (1.2,1.4)),
+    expected_values = [((0.0, 0.0), (0.0, 0.0)),
+                       ((0.6, 0.7), (1.2, 1.4)),
                        ]
 
     # Execute all tests
@@ -330,7 +330,7 @@ def test_dolfin_expression_compilation_of_x():
 def test_dolfin_expression_compilation_of_coefficient(dolfin):
 
     # Define some ufl expression with PyDOLFIN coefficients
-    mesh = dolfin.UnitSquareMesh(3,3)
+    mesh = dolfin.UnitSquareMesh(3, 3)
     # Using quadratic element deliberately for accuracy
     V = dolfin.FunctionSpace(mesh, "CG", 2)
     u = dolfin.Function(V)
@@ -345,8 +345,8 @@ def test_dolfin_expression_compilation_of_coefficient(dolfin):
                       'values[0] = s[0];']
 
     # Define expected evaluation values: [(x,value), (x,value), ...]
-    expected_values = [((0.0,0.0), (0.0,)),
-                       ((0.6,0.7), (2*0.6*0.7,)),
+    expected_values = [((0.0, 0.0), (0.0,)),
+                       ((0.6, 0.7), (2*0.6*0.7,)),
                        ]
 
     # Execute all tests
@@ -355,7 +355,7 @@ def test_dolfin_expression_compilation_of_coefficient(dolfin):
 def test_dolfin_expression_compilation_of_algebraic_operators(dolfin):
 
     # Define some PyDOLFIN coefficients
-    mesh = dolfin.UnitSquareMesh(3,3)
+    mesh = dolfin.UnitSquareMesh(3, 3)
     # Using quadratic element deliberately for accuracy
     V = dolfin.FunctionSpace(mesh, "CG", 2)
     u = dolfin.Function(V)
@@ -383,9 +383,9 @@ def test_dolfin_expression_compilation_of_algebraic_operators(dolfin):
                       'values[0] = s[0];']
 
     # Define expected evaluation values: [(x,value), (x,value), ...]
-    x,y = 0.6, 0.7; expected = (2*x*y + 3.14*(x*y)**2) / 4
-    expected_values = [((0.0,0.0), (0.0,)),
-                       ((x,y), (expected,)),
+    x, y = 0.6, 0.7; expected = (2*x*y + 3.14*(x*y)**2) / 4
+    expected_values = [((0.0, 0.0), (0.0,)),
+                       ((x, y), (expected,)),
                        ]
 
     # Execute all tests
@@ -395,7 +395,7 @@ def test_dolfin_expression_compilation_of_algebraic_operators(dolfin):
 def test_dolfin_expression_compilation_of_math_functions(dolfin):
 
     # Define some PyDOLFIN coefficients
-    mesh = dolfin.UnitSquareMesh(3,3)
+    mesh = dolfin.UnitSquareMesh(3, 3)
     # Using quadratic element deliberately for accuracy
     V = dolfin.FunctionSpace(mesh, "CG", 2)
     u = dolfin.Function(V)
@@ -437,14 +437,14 @@ def test_dolfin_expression_compilation_of_math_functions(dolfin):
 
     # Define expected evaluation values: [(x,value), (x,value), ...]
     import math
-    x,y = 0.6, 0.7
+    x, y = 0.6, 0.7
     u = x*y
     v = abs(math.cos(u))/2 + 0.02
     v0 = .52
     expected0 = math.tan(v0) + 1 + math.log(v0) + math.atan(v0) + math.acos(v0) + math.asin(v0)
     expected = math.sin(u) + math.tan(v) + math.exp(u) + math.log(v) + math.atan(v) + math.acos(v) + math.asin(v)
-    expected_values = [((0.0,0.0), (expected0,)),
-                       ((x,y), (expected,)),
+    expected_values = [((0.0, 0.0), (expected0,)),
+                       ((x, y), (expected,)),
                        ]
 
     # Execute all tests
@@ -453,14 +453,14 @@ def test_dolfin_expression_compilation_of_math_functions(dolfin):
 def test_dolfin_expression_compilation_of_dot_with_index_notation(dolfin):
 
     # Define some PyDOLFIN coefficients
-    mesh = dolfin.UnitSquareMesh(3,3)
+    mesh = dolfin.UnitSquareMesh(3, 3)
     # Using quadratic element deliberately for accuracy
     V = dolfin.VectorFunctionSpace(mesh, "CG", 2)
     u = dolfin.Function(V)
-    u.interpolate(dolfin.Expression(("x[0]","x[1]")))
+    u.interpolate(dolfin.Expression(("x[0]", "x[1]")))
 
     # Define ufl expression with the simplest possible index notation
-    uexpr = ufl.dot(u,u) # Needs expand_compounds, not testing here
+    uexpr = ufl.dot(u, u) # Needs expand_compounds, not testing here
 
     uexpr = u[0]*u[0] + u[1]*u[1] # Works
 
@@ -479,8 +479,8 @@ def test_dolfin_expression_compilation_of_dot_with_index_notation(dolfin):
     # Define expected evaluation values: [(x,value), (x,value), ...]
     x, y = (0.6, 0.7)
     expected = (x*x+y*y)
-    expected_values = [((0.0,0.0), (0.0,)),
-                       ((x,y), (expected,)),
+    expected_values = [((0.0, 0.0), (0.0,)),
+                       ((x, y), (expected,)),
                        ]
 
     # Execute all tests
@@ -489,14 +489,14 @@ def test_dolfin_expression_compilation_of_dot_with_index_notation(dolfin):
 def test_dolfin_expression_compilation_of_index_notation(dolfin):
 
     # Define some PyDOLFIN coefficients
-    mesh = dolfin.UnitSquareMesh(3,3)
+    mesh = dolfin.UnitSquareMesh(3, 3)
     # Using quadratic element deliberately for accuracy
     V = dolfin.VectorFunctionSpace(mesh, "CG", 2)
     u = dolfin.Function(V)
-    u.interpolate(dolfin.Expression(("x[0]","x[1]")))
+    u.interpolate(dolfin.Expression(("x[0]", "x[1]")))
 
     # Define ufl expression with index notation
-    i,j,k,l = ufl.indices(4)
+    i, j, k, l = ufl.indices(4)
     uexpr = ((u[0]*u + u[1]*u)[i]*u[j])*(u[i]*u[j])
 
     # Define expected output from compilation
@@ -520,8 +520,8 @@ def test_dolfin_expression_compilation_of_index_notation(dolfin):
     a = x*x+y*x
     b = x*y+y*y
     expected = (a*x)*(x*x) + (a*y)*(x*y) + (b*x)*(y*x) + (b*y)*(y*y)
-    expected_values = [((0.0,0.0), (0.0,)),
-                       ((x,y), (expected,)),
+    expected_values = [((0.0, 0.0), (0.0,)),
+                       ((x, y), (expected,)),
                        ]
 
     # Execute all tests

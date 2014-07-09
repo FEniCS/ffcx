@@ -147,26 +147,26 @@ def test_format_array_decl():
     with pytest.raises(ValueError):
         ArrayAccess(decl, 3)
 
-    code = ArrayDecl("double", "foo", (3,4))
+    code = ArrayDecl("double", "foo", (3, 4))
     expected = "double foo[3][4];"
     assert format_code(code) == expected
     decl = code
 
     expected = "foo[0][1]"
-    code = ArrayAccess(decl, (0,1))
+    code = ArrayAccess(decl, (0, 1))
     assert format_code(code) == expected
     expected = "foo[2][3]"
-    code = ArrayAccess(decl, (2,3))
+    code = ArrayAccess(decl, (2, 3))
     assert format_code(code) == expected
 
     with pytest.raises(ValueError):
         ArrayAccess(decl, 0)
     with pytest.raises(ValueError):
-        ArrayAccess(decl, (0,4))
+        ArrayAccess(decl, (0, 4))
     with pytest.raises(ValueError):
-        ArrayAccess(decl, (3,0))
+        ArrayAccess(decl, (3, 0))
     with pytest.raises(ValueError):
-        ArrayAccess(decl, (3,-1))
+        ArrayAccess(decl, (3, -1))
 
 def test_format_array_def():
     expected = "double foo[3] = { 1.0, 2.0, 3.0 };"
@@ -176,11 +176,11 @@ def test_format_array_def():
     assert format_code(code) == expected
 
     expected = "double foo[2][3] = {\n    { 1.0, 2.0, 3.0 },\n    { 6.0, 5.0, 4.0 }\n    };"
-    code = ArrayDecl("double", "foo", (2,3), [["1.0", "2.0", "3.0"], ["6.0", "5.0", "4.0"]])
+    code = ArrayDecl("double", "foo", (2, 3), [["1.0", "2.0", "3.0"], ["6.0", "5.0", "4.0"]])
     assert format_code(code) == expected
 
     expected = "double foo[2][2][3] = {\n        {\n        { 1.0, 2.0, 3.0 },\n        { 6.0, 5.0, 4.0 }\n        },\n        {\n        { 1.0, 2.0, 3.0 },\n        { 6.0, 5.0, 4.0 }\n        }\n    };"
-    code = ArrayDecl("double", "foo", (2,2,3), [[["1.0", "2.0", "3.0"], ["6.0", "5.0", "4.0"]],
+    code = ArrayDecl("double", "foo", (2, 2, 3), [[["1.0", "2.0", "3.0"], ["6.0", "5.0", "4.0"]],
                                                 [["1.0", "2.0", "3.0"], ["6.0", "5.0", "4.0"]]])
     if 0:
         print()
@@ -191,8 +191,8 @@ def test_format_array_def():
     assert format_code(code) == expected
 
 def test_class_with_arrays():
-    adecl = ArrayDecl('double', 'phi', (3,5))
-    aacc = ArrayAccess(adecl, (2,1))
+    adecl = ArrayDecl('double', 'phi', (3, 5))
+    aacc = ArrayAccess(adecl, (2, 1))
     expected = "Car.phi[2][1]"
     code = ("Car", ".", aacc)
     assert format_code(code) == expected
@@ -211,8 +211,8 @@ def test_class_with_arrays():
 def test_class_array_access():
     oname = 'pvars[iq]'
     vname = 'phi'
-    shape = (3,4)
-    component = ('i0',2)
+    shape = (3, 4)
+    component = ('i0', 2)
     decl = ArrayDecl('double', vname, shape)
     dcode = format_code(decl)
     acode = format_code((oname, '.', ArrayAccess(decl, component)))

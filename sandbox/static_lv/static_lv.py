@@ -129,9 +129,9 @@ J = det(F)
 
 # Material law
 f=0; s=1; n=2
-W = (bff*E[f,f]**2
-     + bxx*(E[n,n]**2 + E[s,s]**2 + E[n,s]**2)
-     + bfx*(E[f,n]**2 + E[n,f]**2 + E[f,s]**2 + E[s,f]**2))
+W = (bff*E[f, f]**2
+     + bxx*(E[n, n]**2 + E[s, s]**2 + E[n, s]**2)
+     + bfx*(E[f, n]**2 + E[n, f]**2 + E[f, s]**2 + E[s, f]**2))
 psi = 0.5*K*(exp(W) - 1) + Ccompr*(J*ln(J) - J + 1)
 
 # PK1
@@ -157,20 +157,20 @@ for i in xrange(3):
 	A = assemble(a, form_compiler_parameters=compiler_options)
 	print('TIME UF', toc())
 import time
-ap = inner(grad(du),grad(v))*dx
+ap = inner(grad(du), grad(v))*dx
 for i in xrange(3):
 	tic()
 	A = assemble(ap, form_compiler_parameters=compiler_options)
 	print('TIME UP', toc())
 import time
-ap = inner(grad(du),grad(v))*dx
+ap = inner(grad(du), grad(v))*dx
 compiler_options["representation"] = "tensor"
 for i in xrange(3):
 	tic()
 	A = assemble(ap, form_compiler_parameters=compiler_options)
 	print('TIME TP', toc())
 import time
-ap = inner(grad(du),grad(v))*dx
+ap = inner(grad(du), grad(v))*dx
 compiler_options["representation"] = "quadrature"
 compiler_options["optimize"] = True
 for i in xrange(3):
@@ -194,7 +194,7 @@ def sigma_t(t):
     return -3.0*(0.1+(sin(t)**2)**0.5)
 
 # Solve problem and plot solution
-for i in xrange(1,100):
+for i in xrange(1, 100):
     print('='*40, "Timestep: ", i)
     sigma.assign(sigma_t(i*dt))
     solver.solve()

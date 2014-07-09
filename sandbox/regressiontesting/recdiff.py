@@ -40,7 +40,7 @@ def recdiff(data1, data2, epsilon=_default_recdiff_epsilon):
     elif isinstance(data1, dict):
         return recdiff_dict(data1, data2, epsilon)
     elif isinstance(data1, list):
-        diff = [recdiff(d1, d2, epsilon) for (d1,d2) in zip(data1, data2)]
+        diff = [recdiff(d1, d2, epsilon) for (d1, d2) in zip(data1, data2)]
         return DiffEqual if all(d is DiffEqual for d in diff) else diff
     elif isinstance(data1, float):
         diff = data1 - data2

@@ -147,7 +147,7 @@ def compute_cache_scores(V, active, dependencies, inverse_dependencies, partitio
     """
     n = len(V)
     score = int_array(n)
-    for i,v in enumerate(V):
+    for i, v in enumerate(V):
         if active[i]:
             deps = dependencies[i]
             ndeps = len(deps)

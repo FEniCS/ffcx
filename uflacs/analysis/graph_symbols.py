@@ -17,7 +17,7 @@ def build_node_shapes(V):
     nv = len(V)
     k = 0
     V_shapes = object_array(nv)
-    for i,v in enumerate(V):
+    for i, v in enumerate(V):
 
         if isinstance(v, Condition):
             # FIXME: Shape and index calls are invalid for conditions. Is this the best fix?
@@ -41,7 +41,7 @@ def build_node_shapes(V):
 def build_node_sizes(V_shapes):
     nv = len(V_shapes)
     V_sizes = int_array(nv)
-    for i,sh in enumerate(V_shapes):
+    for i, sh in enumerate(V_shapes):
         V_sizes[i] = product(sh)
     return V_sizes
 
@@ -145,7 +145,7 @@ def build_node_symbols(V, e2i, V_shapes):
     new_symbols.symbol_count = 0
 
     # For all vertices
-    for i,v in enumerate(V):
+    for i, v in enumerate(V):
         n = V_sizes[i]
 
         if isinstance(v, mappable_type):

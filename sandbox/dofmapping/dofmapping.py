@@ -46,7 +46,7 @@ class DofSet(object):
         sm = self.multiplicities
         om = other.multiplicities
         for es, ok in iteritems(om):
-            sm[es] = sm.get(es,0) + ok
+            sm[es] = sm.get(es, 0) + ok
         return self
 
     def __mul__(self, factor):
