@@ -4,7 +4,7 @@ Tests of CRS data structure.
 """
 
 from six.moves import xrange
-from uflacs.analysis.datastructures import CRS
+from uflacs.datastructures.crs import CRS
 
 def test_crs_can_have_zero_element_rows():
     rcap, ecap = 3, 1

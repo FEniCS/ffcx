@@ -6,7 +6,7 @@ from ufl.common import product
 from ufl.classes import FormArgument, GeometricQuantity, SpatialCoordinate, Jacobian
 from ufl.algorithms.analysis import unique_tuple
 
-from uflacs.analysis.datastructures import object_array
+from uflacs.datastructures.arrays import object_array
 from uflacs.elementtables.table_utils import (generate_psi_table_name,
                                               get_ffc_table_values,
                                               strip_table_zeros,

@@ -7,8 +7,8 @@ from ufl.classes import (Terminal, FormArgument, Grad, Restricted,
 
 from ffc.log import error
 
-from uflacs.analysis.datastructures import (int_array, object_array,
-                                              CRS, rows_to_crs, rows_dict_to_crs)
+from uflacs.datastructures.arrays import int_array, object_array
+from uflacs.datastructures.crs import CRS, rows_to_crs, rows_dict_to_crs
 
 from uflacs.analysis.indexing import *
 

@@ -12,7 +12,7 @@ import uflacs
 import ufl
 from ufl import as_ufl
 from ufl import *
-from uflacs.analysis.datastructures import object_array, int_array
+from uflacs.datastructures.arrays import object_array, int_array
 
 def format_variable(i):
     return "s[%d]" % i

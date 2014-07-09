@@ -6,7 +6,7 @@ from ufl.classes import Terminal, Indexed, Grad, Restricted, FacetAvg, CellAvg, 
 
 from ffc.log import ffc_assert
 
-from uflacs.analysis.datastructures import int_array, object_array
+from uflacs.datastructures.arrays import int_array, object_array
 from uflacs.analysis.graph_dependencies import compute_dependencies
 from uflacs.analysis.modified_terminals import analyse_modified_terminal2, strip_modified_terminal
 

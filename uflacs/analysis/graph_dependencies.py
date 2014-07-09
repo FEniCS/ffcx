@@ -3,7 +3,8 @@ from six.moves import xrange as range
 from ufl.classes import Terminal
 
 from ffc.log import error, ffc_assert
-from uflacs.analysis.datastructures import int_array, object_array, CRS, rows_to_crs
+from uflacs.datastructures.arrays import int_array, object_array
+from uflacs.datastructures.crs import CRS, rows_to_crs
 from uflacs.analysis.modified_terminals import terminal_modifier_types
 
 def compute_dependencies(e2i, V, ignore_terminal_modifiers=True):

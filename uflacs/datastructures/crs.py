@@ -1,24 +1,21 @@
 
-from six.moves import xrange
+from six.moves import xrange as range
 import numpy
 
-def int_array(size):
-    return numpy.zeros(size, dtype=int)
-
-def object_array(size):
-    return numpy.empty(size, dtype=object)
-
 class CRS(object):
-    """A compressed row storage matrix with no sparsity pattern."""
+    """A simple compressed row storage matrix.
+
+    This CRS variant doesn't have a sparsity pattern,
+    as each row is simply a dense vector.
+    """
     def __init__(self, row_capacity, element_capacity, dtype):
-        self.row_offsets = int_array(row_capacity+1)
+        self.row_offsets = numpy.zeros(row_capacity+1, dtype=int)
         self.data = numpy.zeros(element_capacity, dtype=dtype)
         self.num_rows = 0
 
     def push_row(self, elements):
-        n = len(elements)
         a = self.row_offsets[self.num_rows]
-        b = a + n
+        b = a + len(elements)
         self.data[a:b] = elements
         self.num_rows += 1
         self.row_offsets[self.num_rows] = b
@@ -41,20 +38,22 @@ class CRS(object):
         return "[%s]" % (', '.join(str(row) for row in self),)
 
 def list_to_crs(elements):
+    "Construct a diagonal CRS matrix from a list of elements of the same type."
     n = len(elements)
     crs = CRS(n, n, type(elements[0]))
-    for i in range(n):
-        crs.push_row((elements[i],))
+    for element in elements:
+        crs.push_row((element,))
     return crs
 
 def rows_dict_to_crs(rows, num_rows, num_elements, dtype):
+    "Construct a CRS matrix from a dict mapping row index to row elements list."
     crs = CRS(num_rows, num_elements, dtype)
     for i in range(num_rows):
-        row = rows.get(i, ())
-        crs.push_row(row)
+        crs.push_row(rows.get(i, ()))
     return crs
 
 def rows_to_crs(rows, num_rows, num_elements, dtype):
+    "Construct a CRS matrix from a list of row element lists."
     crs = CRS(num_rows, num_elements, dtype)
     for row in rows:
         crs.push_row(row)

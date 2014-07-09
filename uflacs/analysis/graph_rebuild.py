@@ -10,8 +10,8 @@ from ufl.classes import (MultiIndex, ComponentTensor, ListTensor, Transposed, Va
 from ufl.algorithms import MultiFunction
 
 from ffc.log import error, ffc_assert
-from uflacs.analysis.datastructures import (int_array, object_array,
-                                              CRS, rows_to_crs, rows_dict_to_crs)
+from uflacs.datastructures.arrays import int_array, object_array,
+from uflacs.datastructures.crs import CRS, rows_to_crs, rows_dict_to_crs
 from uflacs.analysis.indexing import indexing_to_component, shape_to_strides
 
 from uflacs.analysis.modified_terminals import is_modified_terminal
