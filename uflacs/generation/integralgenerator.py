@@ -218,10 +218,10 @@ class IntegralGenerator(object):
                     # Count assignments so we get a new vname each time
                     vaccess = ArrayAccess(name, j)
                     j += 1
-                    vcode = self.expr_formatter.visit(v) # TODO: Generate Code instead of str here?
+                    vcode = self.expr_formatter.visit(v) # TODO: Generate ASTNode instead of str here?
                     assignments += [Assign(vaccess, vcode)]
 
-                vname = format_code(vaccess) # TODO: Can skip this if expr_formatter generates Code
+                vname = format_code(vaccess) # TODO: Can skip this if expr_formatter generates ASTNode
                 #print '\nStoring {0} = {1}'.format(vname, str(v))
                 self.expr_formatter.variables[v] = vname
 

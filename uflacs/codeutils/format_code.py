@@ -69,18 +69,17 @@ def build_recursive_initializer_list(values, sizes):
     return initializer_list
 
 
-
-class Code(object):
+class ASTNode(object):
     pass
 
-class Indented(Code):
+class Indented(ASTNode):
     def __init__(self, code):
         self.code = code
 
     def format(self, level, indentchar, keywords):
         return format_code(self.code, level+1, indentchar, keywords)
 
-class WithKeywords(Code): # TODO: Do we need this? Can simplify quite a bit by removing.
+class WithKeywords(ASTNode): # TODO: Do we need this? Can simplify quite a bit by removing.
     def __init__(self, code, keywords):
         self.code = code
         self.keywords = keywords
@@ -93,7 +92,7 @@ class WithKeywords(Code): # TODO: Do we need this? Can simplify quite a bit by r
             fmt_keywords[k] = format_code(v, 0, indentchar, keywords)
         return format_code(self.code, level, indentchar, fmt_keywords)
 
-class Block(Code):
+class Block(ASTNode):
     def __init__(self, body, start='{', end='}'):
         self.start = start
         self.body = body
@@ -103,7 +102,7 @@ class Block(Code):
         code = [self.start, Indented(self.body), self.end]
         return format_code(code, level, indentchar, keywords)
 
-class TemplateArgumentList(Code):
+class TemplateArgumentList(ASTNode):
 
     singlelineseparators = ('<', ', ', '>')
     multilineseparators = ('<\n', ',\n', '\n>')
@@ -128,7 +127,7 @@ class TemplateArgumentList(Code):
         code = (start, container(code), end)
         return format_code(code, level, indentchar, keywords)
 
-class Type(Code):
+class Type(ASTNode):
     def __init__(self, name, template_arguments=None, multiline=False):
         self.name = name
         self.template_arguments = template_arguments
@@ -140,7 +139,7 @@ class Type(Code):
             code = code, TemplateArgumentList(self.template_arguments, self.multiline)
         return format_code(code, level, indentchar, keywords)
 
-class TypeDef(Code):
+class TypeDef(ASTNode):
     def __init__(self, type_, typedef):
         self.type_ = type_
         self.typedef = typedef
@@ -149,7 +148,7 @@ class TypeDef(Code):
         code = ('typedef ', self.type_, " %s;" % self.typedef)
         return format_code(code, level, indentchar, keywords)
 
-class Namespace(Code):
+class Namespace(ASTNode):
     def __init__(self, name, body):
         self.name = name
         self.body = body
@@ -158,7 +157,7 @@ class Namespace(Code):
         code = ['namespace %s' % self.name, Block(self.body)]
         return format_code(code, level, indentchar, keywords)
 
-class VariableDecl(Code):
+class VariableDecl(ASTNode):
     def __init__(self, typename, name, value=None):
         self.typename = typename
         self.name = name
@@ -172,7 +171,7 @@ class VariableDecl(Code):
         code += (";",)
         return format_code(code, level, indentchar, keywords)
 
-class ArrayDecl(Code):
+class ArrayDecl(ASTNode):
     def __init__(self, typename, name, sizes, values=None):
         self.typename = typename
         self.name = name
@@ -190,7 +189,7 @@ class ArrayDecl(Code):
         code = (self.typename, sep, self.name, brackets, valuescode, ";")
         return format_code(code, level, indentchar, keywords)
 
-class ArrayAccess(Code):
+class ArrayAccess(ASTNode):
     def __init__(self, arraydecl, indices):
         if isinstance(arraydecl, ArrayDecl):
             self.arrayname = arraydecl.name
@@ -219,7 +218,7 @@ class ArrayAccess(Code):
         code = (self.arrayname, brackets)
         return format_code(code, level, indentchar, keywords)
 
-class WhileLoop(Code):
+class WhileLoop(ASTNode):
     def __init__(self, check, body=None):
         self.check = check
         self.body = body
@@ -230,7 +229,7 @@ class WhileLoop(Code):
             code = [code, Block(self.body)]
         return format_code(code, level, indentchar, keywords)
 
-class ForLoop(Code):
+class ForLoop(ASTNode):
     def __init__(self, init, check, increment, body=None):
         self.init = init
         self.check = check
@@ -243,7 +242,7 @@ class ForLoop(Code):
             code = [code, Block(self.body)]
         return format_code(code, level, indentchar, keywords)
 
-class ForRange(Code):
+class ForRange(ASTNode):
     def __init__(self, name, lower, upper, body=None):
         self.name = name
         self.lower = lower
@@ -257,7 +256,7 @@ class ForRange(Code):
         code = ForLoop(init, check, increment, body=self.body)
         return format_code(code, level, indentchar, keywords)
 
-class Class(Code):
+class Class(ASTNode):
     def __init__(self, name, superclass=None, public_body=None,
                  protected_body=None, private_body=None,
                  template_arguments=None, template_multiline=False):
@@ -288,7 +287,7 @@ class Class(Code):
         code += ['};']
         return format_code(code, level, indentchar, keywords)
 
-class Comment(Code):
+class Comment(ASTNode):
     def __init__(self, comment):
         self.comment = comment
 
@@ -296,7 +295,7 @@ class Comment(Code):
         code = ("// ", self.comment)
         return format_code(code, level, indentchar, keywords)
 
-class Return(Code):
+class Return(ASTNode):
     def __init__(self, value):
         self.value
 
@@ -305,7 +304,7 @@ class Return(Code):
         return format_code(code, level, indentchar, keywords)
 
 
-class AssignBase(Code):
+class AssignBase(ASTNode):
     def __init__(self, lhs, rhs):
         self.lhs = lhs
         self.rhs = rhs
@@ -330,7 +329,7 @@ class AssignDiv(AssignBase):
     op = " /= "
 
 
-class UnOp(Code):
+class UnOp(ASTNode):
     def __init__(self, arg):
         self.arg = arg
 
@@ -339,7 +338,7 @@ class UnOp(Code):
         code = (type(self).op, self.arg)
         return format_code(code, level, indentchar, keywords)
 
-class BinOp(Code):
+class BinOp(ASTNode):
     def __init__(self, lhs, rhs):
         self.lhs = lhs
         self.rhs = rhs
@@ -349,7 +348,7 @@ class BinOp(Code):
         code = (self.lhs, type(self).op, self.rhs)
         return format_code(code, level, indentchar, keywords)
 
-class NOp(Code):
+class NOp(ASTNode):
     def __init__(self, ops):
         self.ops = ops
 
@@ -448,7 +447,7 @@ def format_code(code, level=0, indentchar='    ', keywords=None):
         joined = "".join(format_code(item, 0, indentchar, keywords) for item in code)
         return format_code(joined, level, indentchar, keywords)
 
-    if isinstance(code, Code):
+    if isinstance(code, ASTNode):
         return code.format(level, indentchar, keywords)
 
     if isinstance(code, int):
