@@ -3,7 +3,7 @@
 Tests of table manipulation utilities.
 """
 
-from six.moves import xrange
+from six.moves import xrange, itervalues
 from uflacs.elementtables.table_utils import equal_tables, strip_table_zeros, build_unique_tables, get_ffc_table_values
 
 import numpy as np
@@ -129,7 +129,7 @@ def test_unique_tables_some_equal():
         ]
     expected_mapping = dict((i,v) for i,v in enumerate([0, 1, 2, 1, 3, 3]))
     assert mapping == expected_mapping
-    assert len(set(mapping.values())) == len(unique)
+    assert len(set(itervalues(mapping))) == len(unique)
     for i,t in enumerate(tables):
         assert equal_tables(t, unique[mapping[i]], default_tolerance)
 
@@ -139,7 +139,7 @@ def test_unique_tables_all_equal():
     expected_unique = [tables[0]]
     expected_mapping = dict((i,v) for i,v in enumerate([0]*6))
     assert mapping == expected_mapping
-    assert len(set(mapping.values())) == len(unique)
+    assert len(set(itervalues(mapping))) == len(unique)
     for i,t in enumerate(tables):
         assert equal_tables(t, unique[mapping[i]], default_tolerance)
 
@@ -154,7 +154,7 @@ def test_unique_tables_all_different():
     expected_unique = tables
     expected_mapping = dict((i,i) for i in xrange(len(tables)))
     assert mapping == expected_mapping
-    assert len(set(mapping.values())) == len(unique)
+    assert len(set(itervalues(mapping))) == len(unique)
     for i,t in enumerate(tables):
         assert equal_tables(t, unique[mapping[i]], default_tolerance)
 
@@ -178,7 +178,7 @@ def test_unique_tables_string_keys():
         ]
     expected_mapping = { 'a':0, 'b':1, 'c':2, 'd':1, 'e':3, 'f':3 }
     assert mapping == expected_mapping
-    assert len(set(mapping.values())) == len(unique)
+    assert len(set(itervalues(mapping))) == len(unique)
     for i,t in tables.items():
         assert equal_tables(t, unique[mapping[i]], default_tolerance)
 

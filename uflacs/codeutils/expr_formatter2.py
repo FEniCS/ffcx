@@ -1,4 +1,5 @@
 
+from six.moves import itervalues
 import ufl
 from ufl.algorithms import Transformer
 
@@ -19,7 +20,7 @@ class ExprFormatter2(Transformer):
         self.language_formatter = language_formatter
         self.variables = variables
         self.precedence = build_precedence_map()
-        self.max_precedence = max(self.precedence.itervalues())
+        self.max_precedence = max(itervalues(self.precedence))
 
     def expr(self, e):
         # Check variable cache first

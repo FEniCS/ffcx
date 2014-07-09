@@ -1,5 +1,5 @@
 
-from six.moves import xrange
+from six.moves import xrange, itervalues
 from ufl import as_ufl
 from ufl.classes import Terminal, Indexed, Grad, Restricted, FacetAvg, CellAvg, Argument, Product, Sum, Division
 
@@ -29,7 +29,7 @@ def _build_argument_indices_from_arg_sets(V, arg_sets):
     "Build ordered list of indices to modified arguments."
     # Build set of all indices of V referring to modified arguments
     arg_indices = set()
-    for js in arg_sets.values():
+    for js in itervalues(arg_sets):
         arg_indices.update(js)
 
     # Make a canonical ordering of vertex indices for modified arguments
@@ -403,7 +403,7 @@ def compute_argument_factorization(SV, target_variables, dependencies):
     FV, e2fi, AV, IM = collect_argument_factors(SV, dependencies, arg_indices)
 
     # Indices into FV that are needed for final result
-    target_variables = sorted(IM.values())
+    target_variables = sorted(itervalues(IM))
 
     dependencies = compute_dependencies(e2fi, FV)
 
