@@ -35,11 +35,11 @@ class IntegralGenerator(object):
 
         # TODO: Populate these with only what's needed
         self._using_names = set()
-        self._includes = set((
+        self._includes = {
             "#include <cstring>",
             "#include <cmath>",
             "#include <boost/math/special_functions.hpp>",
-            ))
+            }
 
         self.backend_access = backend_access
         self.backend_definitions = backend_definitions

@@ -31,8 +31,8 @@ for f in files[:]:
     matches = [r.search(l) for l in lines]
     groups = [m.groups() for m in matches if m]
 
-    modules = sorted(set([g[0] for g in groups if len(g) == 1]))
-    parent_modules = sorted(set([m.split('.')[0] for m in modules]))
+    modules = sorted({g[0] for g in groups if len(g) == 1})
+    parent_modules = sorted({m.split('.')[0] for m in modules})
 
     modules = [m for m in modules if not any(m.startswith(skipmod+'.') for skipmod in skipmods)]
     parent_modules = [m for m in parent_modules if m not in skipmods + [pmod]]

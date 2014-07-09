@@ -72,18 +72,18 @@ class DofSet(object):
 
 def compute_dofranges(dofset, meshsizes, offset):
     dofrange = {}
-    domainids = sorted(set([es.domainid for es in dofset.multiplicities]))
+    domainids = sorted({es.domainid for es in dofset.multiplicities})
     for domainid in domainids:
         dofrange[domainid] = {}
 
-        cellnames = sorted(set([es.cellname for es in dofset.multiplicities
-                                if es.domainid == domainid]))
+        cellnames = sorted({es.cellname for es in dofset.multiplicities
+                                if es.domainid == domainid})
 
         for cellname in cellnames:
             dofrange[domainid][cellname] = {}
 
-            entitydims = sorted(set([es.entitydim for es in dofset.multiplicities
-                                 if (es.domainid, es.cellname) == (domainid, cellname)]))
+            entitydims = sorted({es.entitydim for es in dofset.multiplicities
+                                 if (es.domainid, es.cellname) == (domainid, cellname)})
 
             for entitydim in entitydims:
                 dofrange[domainid][cellname][entitydim] = {}
