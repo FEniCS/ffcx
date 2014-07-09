@@ -12,7 +12,7 @@ DONE - Handle cell restriction in generate_domain_dof_access
 DONE - Make reference_facet_jacobi tables and use below
 """
 
-from six.moves import xrange
+from six.moves import xrange, map
 import ufl
 from ufl.common import component_to_index
 from ufl.permutation import build_component_numbering

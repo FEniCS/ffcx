@@ -3,6 +3,7 @@
 Tests of manipulations of the ssa form of expressions.
 """
 
+from six.moves import map
 from ufl import *
 from ufl.common import product
 from ufl.permutation import compute_indices

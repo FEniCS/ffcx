@@ -1,6 +1,7 @@
 
+from six.moves import map
 from collections import defaultdict
-from itertools import izip, chain
+from itertools import chain
 
 import swiginac
 
