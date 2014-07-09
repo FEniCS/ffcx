@@ -1,5 +1,5 @@
 
-from six.moves import xrange, itervalues
+from six.moves import xrange, itervalues, iterkeys
 from ufl import as_ufl
 from ufl.classes import Terminal, Indexed, Grad, Restricted, FacetAvg, CellAvg, Argument, Product, Sum, Division
 
@@ -115,7 +115,7 @@ def handle_sum(i, v, deps, F, FV, sv2fv, e2fi):
         print fac1
         print '\n'*5
 
-    argkeys = sorted(set(fac0.keys()) | set(fac1.keys()))
+    argkeys = sorted(set(iterkeys(fac0)) | set(iterkeys(fac1)))
 
     if argkeys: # f*arg + g*arg = (f+g)*arg
         keylen = len(argkeys[0])
@@ -342,7 +342,7 @@ def rebuild_scalar_graph_from_factorization(AV, FV, IM):
             SV.append(h)
 
     # Add factorization monomials
-    argkeys = sorted(IM.keys())
+    argkeys = sorted(iterkeys(IM))
     fs = []
     for argkey in argkeys:
         # Start with coefficients
@@ -377,7 +377,7 @@ def rebuild_scalar_graph_from_factorization(AV, FV, IM):
         print 'FV:'
         print '\n'.join('  {}: {}'.format(i, s) for i,s in enumerate(FV))
         print 'IM:'
-        print '\n'.join('  {}: {}'.format(i, IM[i]) for i in sorted(IM.keys()))
+        print '\n'.join('  {}: {}'.format(i, IM[i]) for i in sorted(iterkeys(IM)))
         print 'SV:'
         print '\n'.join('  {}: {}'.format(i, s) for i,s in enumerate(SV))
         print '\n'*10

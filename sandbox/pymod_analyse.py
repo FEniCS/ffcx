@@ -1,5 +1,5 @@
 
-from six.moves import iteritems
+from six.moves import iteritems, iterkeys
 import shutil
 import re
 import os
@@ -47,7 +47,7 @@ for f in files[:]:
 
 
 # TODO: Make topological sorting of pmods for neater prints
-pmods = sorted(pimports.keys())
+pmods = sorted(iterkeys(pimports))
 
 print
 print '*'*80

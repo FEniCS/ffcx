@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-from six.moves import zip
+
+from six.moves import zip, iterkeys
+
 class DiffMarkerType:
     def __init__(self, name):
         self.name = name
@@ -16,8 +18,8 @@ DiffEqual = DiffMarkerType("<equal>")
 _default_recdiff_epsilon = 1e-8
 
 def recdiff_dict(data1, data2, epsilon=_default_recdiff_epsilon):
-    keys1 = set(data1.keys())
-    keys2 = set(data2.keys())
+    keys1 = set(iterkeys(data1))
+    keys2 = set(iterkeys(data2))
     keys = keys1.intersection(keys2)
     diff = {}
     for k in keys1-keys:
@@ -52,7 +54,7 @@ def _print(line):
 def print_recdiff(diff, epsilon=_default_recdiff_epsilon, indent=0, printer=_print, prekey=""):
 
     if isinstance(diff, dict):
-        for k in sorted(diff.keys()):
+        for k in sorted(iterkeys(diff)):
              key = str(k)
              if prekey: key = ".".join((prekey, key))
              printer("%s%s: " % ("  "*indent, key))
@@ -63,7 +65,7 @@ def print_recdiff(diff, epsilon=_default_recdiff_epsilon, indent=0, printer=_pri
         for i, d in enumerate(diff):
             if isinstance(d, tuple):
                 data1, data2 = d
-                printer("%s%d: %s != %s" % ("  "*indent, i, data1, data2))   
+                printer("%s%d: %s != %s" % ("  "*indent, i, data1, data2))
 
     elif isinstance(diff, tuple):
         assert len(diff) == 2
@@ -75,5 +77,4 @@ def print_recdiff(diff, epsilon=_default_recdiff_epsilon, indent=0, printer=_pri
             printer("%s!=" % ("  "*indent))
             printer("%s%s" % ("  "*indent, data2))
         else:
-            printer("%s%s != %s" % ("  "*indent, data1, data2))   
-
+            printer("%s%s != %s" % ("  "*indent, data1, data2))

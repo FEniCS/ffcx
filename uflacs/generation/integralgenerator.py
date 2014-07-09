@@ -1,5 +1,5 @@
 
-from six.moves import xrange, zip, iteritems
+from six.moves import xrange, zip, iteritems, iterkeys
 from ufl.common import product
 
 from uflacs.utils.log import debug, info, warning, error, uflacs_assert
@@ -21,8 +21,8 @@ class IntegralGenerator(object):
         self.ir = ir
 
         # Consistency check on quadrature rules
-        nps1 = sorted(ir["uflacs"]["expr_ir"].keys())
-        nps2 = sorted(ir["quadrature_rules"].keys())
+        nps1 = sorted(iterkeys(ir["uflacs"]["expr_ir"]))
+        nps2 = sorted(iterkeys(ir["quadrature_rules"]))
         if nps1 != nps2:
             uflacs_warning("Got different num_points for expression irs and quadrature rules:\n{0}\n{1}".format(
                 nps1, nps2))

@@ -12,7 +12,7 @@ DONE - Handle cell restriction in generate_domain_dof_access
 DONE - Make reference_facet_jacobi tables and use below
 """
 
-from six.moves import xrange, map
+from six.moves import xrange, map, iterkeys
 import ufl
 from ufl.common import component_to_index
 from ufl.permutation import build_component_numbering
@@ -184,7 +184,7 @@ class FFCAccessBackend(MultiFunction):
         # Configure definitions behaviour
         self.physical_coordinates_known = self.ir["integral_type"] == "quadrature"
 
-        self._current_num_points, = self.ir["uflacs"]["expr_ir"].keys() # TODO: Hack! Assuming single quadrature rule here.
+        self._current_num_points, = iterkeys(self.ir["uflacs"]["expr_ir"]) # TODO: Hack! Assuming single quadrature rule here.
 
     def precision_float(self, f):
         # Use ufl utility to control float formatting precision, same as ffc quadrature mode uses

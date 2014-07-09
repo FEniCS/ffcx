@@ -1,5 +1,5 @@
 
-from six.moves import xrange, iteritems
+from six.moves import xrange, iteritems, iterkeys
 import ufl
 from ufl.common import product
 from ufl.classes import FormArgument, GeometricQuantity, SpatialCoordinate, Jacobian
@@ -160,7 +160,7 @@ def optimize_element_tables(tables, terminal_table_names):
     # Build mapping of constructed table names to unique names,
     # pick first constructed name
     unique_table_names = {}
-    for name in sorted(table_name_to_unique_index.keys()):
+    for name in sorted(iterkeys(table_name_to_unique_index)):
         unique_index = table_name_to_unique_index[name]
         if unique_index in unique_table_names:
             continue
