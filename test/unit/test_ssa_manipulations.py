@@ -87,14 +87,14 @@ def test_dependency_construction():
                                          scores, max_registers, score_threshold)
 
         if 0:
-            print
-            print "====== expr                \n", expr
-            print "====== V                   \n", '\n'.join(map(str,V))
-            print "====== dependencies        \n", dependencies
-            print "====== active              \n", active
-            print "====== partitions          \n", partitions
-            print "====== depcount            \n", depcount
-            print "====== inverse_dependencies\n", inverse_dependencies
-            print "====== scores              \n", scores
-            print "====== allocations         \n", allocations
-            print
+            print()
+            print("====== expr                \n", expr)
+            print("====== V                   \n", '\n'.join(map(str,V)))
+            print("====== dependencies        \n", dependencies)
+            print("====== active              \n", active)
+            print("====== partitions          \n", partitions)
+            print("====== depcount            \n", depcount)
+            print("====== inverse_dependencies\n", inverse_dependencies)
+            print("====== scores              \n", scores)
+            print("====== allocations         \n", allocations)
+            print()

@@ -87,13 +87,13 @@ class ReconstructScalarSubexpressions(MultiFunction):
         uflacs_assert(product(tsh) == tm, "Inconsistent shapes and sizes computed.")
 
         if 0:
-            print
-            print 'ii', ii
-            print 'idims', idims
-            print 'sh ', sh, m
-            print 'ish', ish, im
-            print 'tsh', tsh, tm
-            print
+            print()
+            print('ii', ii)
+            print('idims', idims)
+            print('sh ', sh, m)
+            print('ish', ish, im)
+            print('tsh', tsh, tm)
+            print()
 
         # Check that we have at most one tensor shaped operand here
         if sh == ():
@@ -140,10 +140,10 @@ class ReconstructScalarSubexpressions(MultiFunction):
             opims[j] = opim if opsh else 0
 
         if 0:
-            print
-            print istrides
-            print opims
-            print
+            print()
+            print(istrides)
+            print(opims)
+            print()
 
         # Compute each scalar value
         res = []
@@ -158,48 +158,48 @@ class ReconstructScalarSubexpressions(MultiFunction):
                     # Find the operand component index
                     jk = sk*opims[j] + sum(a*b for a,b in zip(ic, istrides[j]))
                     if jk >= len(op):
-                        print
-                        print 'DEBUGGING VALUES IN element_wise2:'
-                        print
-                        print "o ="
-                        print o
-                        print
-                        print type(o)
-                        print o.operands()[0]
-                        print o.operands()[1]
-                        print o.operands()[0].shape()
-                        print o.operands()[1].shape()
-                        print o.operands()[0].free_indices()
-                        print o.operands()[1].free_indices()
-                        print o.operands()[0].index_dimensions()
-                        print o.operands()[1].index_dimensions()
-                        print
+                        print()
+                        print('DEBUGGING VALUES IN element_wise2:')
+                        print()
+                        print("o =")
+                        print(o)
+                        print()
+                        print(type(o))
+                        print(o.operands()[0])
+                        print(o.operands()[1])
+                        print(o.operands()[0].shape())
+                        print(o.operands()[1].shape())
+                        print(o.operands()[0].free_indices())
+                        print(o.operands()[1].free_indices())
+                        print(o.operands()[0].index_dimensions())
+                        print(o.operands()[1].index_dimensions())
+                        print()
                         from ufl.algorithms import tree_format, traverse_terminals
-                        print tree_format(o.operands()[1])
-                        print
+                        print(tree_format(o.operands()[1]))
+                        print()
                         for t in traverse_terminals(o):
                             if not isinstance(t, MultiIndex):
-                                print t, t.shape()
-                        print
-                        print "sh, ish ="
-                        print sh, ish
-                        print
-                        print "im, m, tm ="
-                        print im, m, tm
-                        print
-                        print "j, opims, istrides ="
-                        print j, opims, istrides
-                        print
-                        print len(op), "<= jk =", jk
-                        print sk*opims[j] + sum(a*b for a,b in zip(ic, istrides[j]))
-                        print "="
-                        print sk*opims[j]
-                        print "+"
-                        print sum(a*b for a,b in zip(ic, istrides[j]))
-                        print
-                        print j, sk, opims[j]
-                        print ic, istrides[j]
-                        print
+                                print(t, t.shape())
+                        print()
+                        print("sh, ish =")
+                        print(sh, ish)
+                        print()
+                        print("im, m, tm =")
+                        print(im, m, tm)
+                        print()
+                        print("j, opims, istrides =")
+                        print(j, opims, istrides)
+                        print()
+                        print(len(op), "<= jk =", jk)
+                        print(sk*opims[j] + sum(a*b for a,b in zip(ic, istrides[j])))
+                        print("=")
+                        print(sk*opims[j])
+                        print("+")
+                        print(sum(a*b for a,b in zip(ic, istrides[j])))
+                        print()
+                        print(j, sk, opims[j])
+                        print(ic, istrides[j])
+                        print()
 
                     sops.append(op[jk])
 
@@ -389,7 +389,7 @@ def rebuild_scalar_e2i(G, DEBUG=False):
             NV[j] = u
         W[s] = u
         emit_expression.W_len = max(emit_expression.W_len, s+1)
-        if DEBUG: print 'emitted s, j, u:', s, j, u
+        if DEBUG: print('emitted s, j, u:', s, j, u)
     emit_expression.W_len = 0
 
     reconstruct_scalar_subexpressions = ReconstructScalarSubexpressions()
@@ -399,7 +399,7 @@ def rebuild_scalar_e2i(G, DEBUG=False):
         # Find symbols of v components
         vs = G.V_symbols[i]
 
-        if DEBUG: print '\n\n:: i, v, vs ::', i, v, vs
+        if DEBUG: print('\n\n:: i, v, vs ::', i, v, vs)
 
         # Skip if there's nothing new here (should be the case for indexing types)
         if all(handled_symbols[s] for s in vs):
@@ -415,7 +415,7 @@ def rebuild_scalar_e2i(G, DEBUG=False):
             handled_symbols[s] = 1
 
         if is_modified_terminal(v):
-            if 0: print "Adding terminal: ", repr(v)
+            if 0: print("Adding terminal: ", repr(v))
             sh = v.shape()
             uflacs_assert(v.free_indices() == (), "Expecting no free indices.")
             if sh == ():
@@ -451,13 +451,13 @@ def rebuild_scalar_e2i(G, DEBUG=False):
 
             # Store all scalar subexpressions for v symbols
             if not len(vs) == len(w):
-                print
-                print type(v)
-                print v.shape()
-                print v.free_indices()
-                print len(vs)
-                print len(w)
-                print
+                print()
+                print(type(v))
+                print(v.shape())
+                print(v.free_indices())
+                print(len(vs))
+                print(len(w))
+                print()
                 uflacs_assert(len(vs) == len(w), "Expecting one symbol for each expression.")
             for s,u in zip(vs,w):
                 emit_expression(s, u)

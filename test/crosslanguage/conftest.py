@@ -85,10 +85,10 @@ class GTestContext:
     def info(self, msg):
         pre = "In gtest generation:"
         if '\n' in msg:
-            print pre
-            print msg
+            print(pre)
+            print(msg)
         else:
-            print pre, msg
+            print(pre, msg)
 
     def pushdir(self):
         self._dirlist.append(os.path.abspath(os.curdir))

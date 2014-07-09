@@ -146,83 +146,83 @@ def test_fixtures(u, v, w):
 def xtest_cpp2_compile_scalar_literals():
     M = as_ufl(0)*dx
     code = compile_form(M, 'unittest')
-    print '\n', code
+    print('\n', code)
     expected = 'TODO'
     assert code == expected
 
     M = as_ufl(3)*dx
     code = compile_form(M, 'unittest')
-    print '\n', code
+    print('\n', code)
     expected = 'TODO'
     assert code == expected
 
     M = as_ufl(1.03)*dx
     code = compile_form(M, 'unittest')
-    print '\n', code
+    print('\n', code)
     expected = 'TODO'
     assert code == expected
 
 def xtest_cpp2_compile_geometry():
     M = CellVolume(cell2D)*dx
     code = compile_form(M, 'unittest')
-    print '\n', code
+    print('\n', code)
     expected = 'TODO'
     assert code == expected
 
     M = SpatialCoordinate(cell2D)[0]*dx
     code = compile_form(M, 'unittest')
-    print '\n', code
+    print('\n', code)
     expected = 'TODO'
     assert code == expected
 
 def xtest_cpp2_compile_coefficients(u, v, w):
     M = u*dx
     code = compile_form(M, 'unittest')
-    print '\n', code
+    print('\n', code)
     expected = 'TODO'
     assert code == expected
 
     M = v[0]*dx
     code = compile_form(M, 'unittest')
-    print '\n', code
+    print('\n', code)
     expected = 'TODO'
     assert code == expected
 
     M = w[1,0]*dx
     code = compile_form(M, 'unittest')
-    print '\n', code
+    print('\n', code)
     expected = 'TODO'
     assert code == expected
 
 def xtest_cpp2_compile_sums(u, v, w):
     M = (2 + u)*dx
     code = compile_form(M, 'unittest')
-    print '\n', code
+    print('\n', code)
     expected = 'TODO'
     assert code == expected
 
     M = (v[1] + w[1,1] + 3 + u)*dx
     code = compile_form(M, 'unittest')
-    print '\n', code
+    print('\n', code)
     expected = 'TODO'
     assert code == expected
 
 def xtest_cpp2_compile_products(u, v, w):
     M = (2*u)*dx
     code = compile_form(M, 'unittest')
-    print '\n', code
+    print('\n', code)
     expected = 'TODO'
     assert code == expected
 
     M = (v[1] * w[1,1] * 3 * u)*dx
     code = compile_form(M, 'unittest')
-    print '\n', code
+    print('\n', code)
     expected = 'TODO'
     assert code == expected
 
 def xtest_cpp_compilation():
     M = u**2/2*dx
     code = compile_form(M, 'unittest')
-    print '\n', code
+    print('\n', code)
     expected = 'TODO'
     assert code == expected

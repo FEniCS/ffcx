@@ -173,11 +173,11 @@ def test_rebuild_expression_from_graph_on_products_with_indices():
     v2 = rebuild_expression_from_graph(G)
     ve = (w[1,1]**2 + w[1,0]*w[0,1]) + (w[0,1]*w[1,0] + w[0,0]**2)
     if 0:
-        print
-        print v1
-        print ve
-        print v2
-        print
+        print()
+        print(v1)
+        print(ve)
+        print(v2)
+        print()
     assert ve == v2
 
     # Test mix of repeated and non-repeated index

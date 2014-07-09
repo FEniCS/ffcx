@@ -58,4 +58,4 @@ def tabulate_tensor_prototype():
         body += [Block(decl)]
         return body
 
-    print format_code(build_body())
+    print(format_code(build_body()))

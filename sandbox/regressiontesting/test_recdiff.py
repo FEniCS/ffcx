@@ -7,8 +7,8 @@ from recdiff import recdiff, print_recdiff, DiffEqual, DiffMissing
 class RecDiffTestCase(TestCase):
     def assertEqual(self, a, b):
         if not (a == b):
-            print a
-            print b
+            print(a)
+            print(b)
             assert a == b
     
     def assertDiffEqual(self, diff):
@@ -48,7 +48,7 @@ def _test():
     c = RecDiffTestCase()
     for k in dir(c):
         if k.startswith("test_"):
-            print "Running ", k
+            print("Running ", k)
             getattr(c,k)()
 
 def _example():

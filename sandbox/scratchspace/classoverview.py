@@ -49,7 +49,7 @@ def indent(x):
 def main():
     from ufl.classes import Expr, Terminal, Operator, all_ufl_classes, abstract_classes, terminal_classes
     tree = subclass_tree(Expr, all_ufl_classes)
-    print format_tree_indented(tree, formatter=getname)
+    print(format_tree_indented(tree, formatter=getname))
 
     # Find classes most interesting to test:
     flat = flatten_tree(tree)
@@ -60,17 +60,17 @@ def main():
     # Print classes
     fmt = curry(indent, getname)
     fmt = getname
-    print "\nNonabstract UFL terminal types:"
-    print '\n'.join(map(fmt, terminal))
-    print "\nNonabstract UFL operator types:"
-    print '\n'.join(map(fmt, nonterminal))
-    print '\n%d terminal types, %d operator types' % (len(terminal), len(nonterminal))
+    print("\nNonabstract UFL terminal types:")
+    print('\n'.join(map(fmt, terminal)))
+    print("\nNonabstract UFL operator types:")
+    print('\n'.join(map(fmt, nonterminal)))
+    print('\n%d terminal types, %d operator types' % (len(terminal), len(nonterminal)))
 
     # Print algorithms
     import ufl.algorithms
     callables = get_callables(ufl.algorithms)
-    print '\n'.join(sorted(callables))
-    print '\n%d functions from algorithms' % len(callables)
+    print('\n'.join(sorted(callables)))
+    print('\n%d functions from algorithms' % len(callables))
 
 if __name__ == '__main__':
     main()

@@ -39,8 +39,8 @@ for f in files[:]:
 
     crap = [g for g in groups if len(g) != 1]
     if crap:
-        print "Not sure what to do with this:"
-        print crap
+        print("Not sure what to do with this:")
+        print(crap)
 
     imports[pmod][mod] = modules
     pimports[pmod] = sorted(set(parent_modules) | set(pimports.get(pmod,())))
@@ -49,27 +49,27 @@ for f in files[:]:
 # TODO: Make topological sorting of pmods for neater prints
 pmods = sorted(iterkeys(pimports))
 
-print
-print '*'*80
-print
+print()
+print('*'*80)
+print()
 for m in pmods:
-    print "="*70, m
+    print("="*70, m)
     l = max(len(k) for k in imports[m])
     fmt = '%s depends on'
     for k,v in iteritems(imports[m]):
         if v:
-            print fmt % k
-            print '\n'.join('    %s' % vv for vv in v)
+            print(fmt % k)
+            print('\n'.join('    %s' % vv for vv in v))
 
-print
-print '*'*80
-print
+print()
+print('*'*80)
+print()
 l = max(len(m) for m in pmods)
 fmt = '%%%ds  depends on  %%s' % l
 for m in pmods:
     v = pimports[m]
     if v:
-        print fmt % (m, v)
+        print(fmt % (m, v))
 
 
 def rename(x):

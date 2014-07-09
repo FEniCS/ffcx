@@ -155,20 +155,20 @@ import time
 for i in xrange(3):
 	tic()
 	A = assemble(a, form_compiler_parameters=compiler_options)
-	print 'TIME UF', toc()
+	print('TIME UF', toc())
 import time
 ap = inner(grad(du),grad(v))*dx
 for i in xrange(3):
 	tic()
 	A = assemble(ap, form_compiler_parameters=compiler_options)
-	print 'TIME UP', toc()
+	print('TIME UP', toc())
 import time
 ap = inner(grad(du),grad(v))*dx
 compiler_options["representation"] = "tensor"
 for i in xrange(3):
 	tic()
 	A = assemble(ap, form_compiler_parameters=compiler_options)
-	print 'TIME TP', toc()
+	print('TIME TP', toc())
 import time
 ap = inner(grad(du),grad(v))*dx
 compiler_options["representation"] = "quadrature"
@@ -176,7 +176,7 @@ compiler_options["optimize"] = True
 for i in xrange(3):
 	tic()
 	A = assemble(ap, form_compiler_parameters=compiler_options)
-	print 'TIME QP', toc()
+	print('TIME QP', toc())
 crash
 
 
@@ -195,7 +195,7 @@ def sigma_t(t):
 
 # Solve problem and plot solution
 for i in xrange(1,100):
-    print '='*40, "Timestep: ", i
+    print('='*40, "Timestep: ", i)
     sigma.assign(sigma_t(i*dt))
     solver.solve()
     ufile << u

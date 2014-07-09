@@ -17,4 +17,4 @@ u = TrialFunction(V)
 
 a = dot(grad(u),grad(v))*dx(domain)
 A = assemble(a)
-print "A:", sum(sum(A.array()[:,:]**2))
+print("A:", sum(sum(A.array()[:,:]**2)))

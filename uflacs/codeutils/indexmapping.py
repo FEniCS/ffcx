@@ -118,26 +118,26 @@ class AxisMapping(object):
 def _test():
     ranges = {"i": 4, "j": (10,12), "n": "N", "m": (1, "M") }
     im = IndexMapping(ranges)
-    print str(eval(repr(im)))
+    print(str(eval(repr(im))))
 
     axes = ["i", "j", "n", "m"]
     am = AxisMapping(im, axes)
-    print
-    print am.axis_index_names
-    print am.axis_size
-    print am.axis_stride
-    print am.dim_stride
-    print am.format_decl()
-    print am.format_access(i='ii', j='jj', n='nn', m='mm')
+    print()
+    print(am.axis_index_names)
+    print(am.axis_size)
+    print(am.axis_stride)
+    print(am.dim_stride)
+    print(am.format_decl())
+    print(am.format_access(i='ii', j='jj', n='nn', m='mm'))
 
     axes = [("i", "j", "n", "m")]
     am = AxisMapping(im, axes)
-    print
-    print am.axis_index_names
-    print am.axis_size
-    print am.axis_stride
-    print am.dim_stride
-    print am.format_decl()
-    print am.format_access(i='ii', j='jj', n='nn', m='mm')
+    print()
+    print(am.axis_index_names)
+    print(am.axis_size)
+    print(am.axis_stride)
+    print(am.dim_stride)
+    print(am.format_decl())
+    print(am.format_access(i='ii', j='jj', n='nn', m='mm'))
 
 #_test()

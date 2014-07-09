@@ -136,10 +136,10 @@ forms += [us1*vs1*dP]
 
 for form in forms:
     code = compile_tabulate_tensor_code(form, optimize=True)
-    print
-    print ('/'*40), str(form)
-    print code
-    print
+    print()
+    print(('/'*40), str(form))
+    print(code)
+    print()
 
-print "Done compiling %d example forms." % len(forms)
+print("Done compiling %d example forms." % len(forms))
 

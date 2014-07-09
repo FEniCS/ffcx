@@ -16,7 +16,7 @@ db = re.compile("#ifdef DEBUG")
 de = re.compile("#endif // DEBUG")
 
 for fn in filenames:
-    print "========= tabulate_tensor in '%s':" % fn
+    print("========= tabulate_tensor in '%s':" % fn)
     lines = open(fn).readlines()
     in_tabulate_tensor = False
     skip_lines = 0
@@ -40,7 +40,7 @@ for fn in filenames:
                 continue
 
             if not in_debug_code:
-                print line,
+                print(line, end=' ')
 
             if braces == outside_tabulate_tensor_braces:
                 in_tabulate_tensor = False

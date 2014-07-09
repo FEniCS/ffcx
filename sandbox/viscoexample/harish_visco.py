@@ -161,7 +161,7 @@ times = arange(dt, T + dt, dt)
 
 # Subject the body to a known strain protocol and record the stresses
 for t_n in times:
-    print "t_n = ", t_n
+    print("t_n = ", t_n)
 
     # Load previous elastic stress states
     t_p = t_n - dt

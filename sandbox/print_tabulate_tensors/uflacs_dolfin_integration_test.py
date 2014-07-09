@@ -4,10 +4,10 @@ from six.moves import xrange
 output = {}
 for representation in ("uflacs", "quadrature"):
     parameters["form_compiler"]["representation"] = representation
-    print "Using form compiler representation:", representation
+    print("Using form compiler representation:", representation)
     output[representation] = {}
     for n in (1, 2, 4):
-        print "n =", n
+        print("n =", n)
         out = []
         output[representation][n] = out
 
@@ -37,8 +37,8 @@ for representation in ("uflacs", "quadrature"):
 
 
 for i in xrange(m):
-    print
-    print "i =", i
+    print()
+    print("i =", i)
     for n in (1, 2, 4):
         u = output["uflacs"][n][i]
         q = output["quadrature"][n][i]
@@ -46,7 +46,7 @@ for i in xrange(m):
         a = (abs(q)+abs(u))/2
         r = 2*abs(d) / a
         if a > 0.0 and r > 1e-8:
-            print n, ("%10.2e"%(d)), ("%10.2e"%(r)), ("%10.2e"%u), ("%10.2e"%q)
+            print(n, ("%10.2e"%(d)), ("%10.2e"%(r)), ("%10.2e"%u), ("%10.2e"%q))
         else:
-            print n, "ok!"
+            print(n, "ok!")
 

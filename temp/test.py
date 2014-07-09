@@ -3,7 +3,7 @@
 import sys
 sys.path.insert(0, "..")
 import uflacs
-print uflacs.__file__
+print(uflacs.__file__)
 
 from uflacs import *
 
@@ -48,7 +48,7 @@ elif case == 4:
     L = grad(v)[0]*dx
     a = dot(2*grad(u),f*grad(v))*dx
 else:
-    print "Invalid case", case
+    print("Invalid case", case)
     sys.exit(-1)
 
 forms = [M, L, a]
@@ -56,7 +56,7 @@ forms = [M, L, a]
 from uflacs.representation.compute_expr_ir import *
 
 for form in forms:
-    print '/'*80
+    print('/'*80)
 
     expr = form.integrals()[0].integrand()
     #print "Initial expression"
@@ -74,8 +74,8 @@ for form in forms:
     #print str(expr)
 
     expr = change_to_reference_grad(expr)
-    print "And change to local grad"
-    print str(expr)
+    print("And change to local grad")
+    print(str(expr))
 
 
     #print "Build list based graph representation of scalar subexpressions"
@@ -84,22 +84,22 @@ for form in forms:
     e2i, V, target_variables, modified_terminals = build_scalar_graph(expressions)
 
     if 0:
-        print
-        print "\nV:"
-        print format_enumerated_sequence(V)
-        print "\ne2i:"
-        print format_mapping(e2i)
-        print "\ntarget_variables:"
-        print format_enumerated_sequence(target_variables)
-        print "\nmodified_terminals:"
-        print format_enumerated_sequence(modified_terminals)
-        print
+        print()
+        print("\nV:")
+        print(format_enumerated_sequence(V))
+        print("\ne2i:")
+        print(format_mapping(e2i))
+        print("\ntarget_variables:")
+        print(format_enumerated_sequence(target_variables))
+        print("\nmodified_terminals:")
+        print(format_enumerated_sequence(modified_terminals))
+        print()
 
     dependencies = compute_dependencies(e2i, V)
-    print '\ndependencies:'
-    print format_enumerated_sequence(dependencies)
+    print('\ndependencies:')
+    print(format_enumerated_sequence(dependencies))
 
-    print "Build factorization"
+    print("Build factorization")
     # AV, FV, IM
     argument_factorization, modified_arguments, V, target_variables, dependencies = \
         compute_argument_factorization(V, target_variables, dependencies)
@@ -107,18 +107,18 @@ for form in forms:
     # V = [v, ...] where each v is argument independent
     # factorization = { (i,...): j } where (i,...) are indices into modified_arguments and j is an index into factorized_vertices
     if 0:
-        print
-        print '\nargument_factorization'
-        print format_mapping(argument_factorization)
-        print '\nargument factors'
-        print format_enumerated_sequence(modified_arguments)
-        print '\nV'
-        print format_enumerated_sequence(V)
-        print '\ntarget_variables'
-        print target_variables
-        print '\ndependencies'
-        print dependencies
-        print
+        print()
+        print('\nargument_factorization')
+        print(format_mapping(argument_factorization))
+        print('\nargument factors')
+        print(format_enumerated_sequence(modified_arguments))
+        print('\nV')
+        print(format_enumerated_sequence(V))
+        print('\ntarget_variables')
+        print(target_variables)
+        print('\ndependencies')
+        print(dependencies)
+        print()
 
     # Count the number of dependencies every subexpr has
     depcount = compute_dependency_count(dependencies)
@@ -126,33 +126,33 @@ for form in forms:
     # Build the 'inverse' of the sparse dependency matrix
     inverse_dependencies = invert_dependencies(dependencies, depcount)
 
-    print "Mark subexpressions of V that are actually needed for final result"
+    print("Mark subexpressions of V that are actually needed for final result")
     active, num_active = mark_active(dependencies, target_variables)
 
-    print "Build set of modified_terminal indices into factorized_vertices"
+    print("Build set of modified_terminal indices into factorized_vertices")
     modified_terminal_indices = [i for i,v in enumerate(V)
                                  if is_modified_terminal(v)]
 
-    print "Build piecewise/varying markers for factorized_vertices"
+    print("Build piecewise/varying markers for factorized_vertices")
     spatially_dependent_terminal_indices = [i for i in modified_terminal_indices
                                    if not V[i].is_cellwise_constant()]
     spatially_dependent_indices, num_spatial = mark_image(inverse_dependencies, spatially_dependent_terminal_indices)
 
-    print
-    print "Vertices:"
-    print format_enumerated_sequence(V)
-    print
-    print "Active:", num_active, len(V)
-    print format_enumerated_sequence(active)
-    print
-    print "Modified terminals:"
-    print modified_terminal_indices
-    print
-    print "Spatially dependent:"
-    print spatially_dependent_terminal_indices
-    print
-    print spatially_dependent_indices
-    print
+    print()
+    print("Vertices:")
+    print(format_enumerated_sequence(V))
+    print()
+    print("Active:", num_active, len(V))
+    print(format_enumerated_sequence(active))
+    print()
+    print("Modified terminals:")
+    print(modified_terminal_indices)
+    print()
+    print("Spatially dependent:")
+    print(spatially_dependent_terminal_indices)
+    print()
+    print(spatially_dependent_indices)
+    print()
 
 
     # This is returned from ir compiler:
@@ -196,11 +196,11 @@ for form in forms:
             (uname, b, e) = (str(v), 0, 0) # FIXME
             modified_terminal_tables[i] = (uname, b, e)
 
-    print
-    print "modified_argument_tables:"
-    print format_mapping(modified_argument_tables)
-    print "modified_terminal_tables:"
-    print format_mapping(modified_terminal_tables)
+    print()
+    print("modified_argument_tables:")
+    print(format_mapping(modified_argument_tables))
+    print("modified_terminal_tables:")
+    print(format_mapping(modified_terminal_tables))
 
     # ... Code generation starts here
 
@@ -219,7 +219,7 @@ for form in forms:
             uname, b, e = modified_argument_tables[arg]
             dofblock = dofblock + ((b,e),)
             argunames = argunames + (uname,)
-        print "\nTODO: Emit code for {dofblock}, {argunames}, {factor_index}".format(**locals())
+        print("\nTODO: Emit code for {dofblock}, {argunames}, {factor_index}".format(**locals()))
 
 
     #print "TODO: Generate code for cellwise and spatial partitions of factorized_vertices"
@@ -244,7 +244,7 @@ for form in forms:
     - LocalCoordinate: Need FacetLocalCoordinate as well. Make all Facet* subclass FacetGeometricQuantity?
     """
 
-    print '\\'*80
+    print('\\'*80)
 
 """How to approximate tensor representation as a special case:
 

@@ -26,7 +26,7 @@ def build_precedence_map():
     from ufl.precedence import build_precedence_mapping
     pm, missing = build_precedence_mapping(build_precedence_list())
     if 0 and missing: # Enable to see which types we are missing
-        print "Missing precedence levels for the types:"
-        print "\n".join('  %s' % c for c in missing)
+        print("Missing precedence levels for the types:")
+        print("\n".join('  %s' % c for c in missing))
     return pm
 

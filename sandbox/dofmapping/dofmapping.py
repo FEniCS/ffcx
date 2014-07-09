@@ -101,17 +101,17 @@ def compute_dofranges(dofset, meshsizes, offset):
     return dofrange
 
 def test():
-    print str(EntitySet("A", "triangle", 2))
-    print str(5*DofSet({EntitySet("A", "triangle", 2): 2}))
+    print(str(EntitySet("A", "triangle", 2)))
+    print(str(5*DofSet({EntitySet("A", "triangle", 2): 2})))
 
     es1 = EntitySet("A", "triangle", 1)
     es2 = EntitySet("A", "triangle", 0)
     dofset = DofSet({es1: 1, es2: 2})
 
-    print str(dofset)
+    print(str(dofset))
 
     meshsizes = { es1: 7, es2: 11 }
 
     offset = 0
 
-    print compute_dofranges(dofset, meshsizes, offset)
+    print(compute_dofranges(dofset, meshsizes, offset))

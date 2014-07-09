@@ -3,10 +3,10 @@
 from integralgenerator import *
 
 def debug(title, code):
-    print '\n'*3
-    print ':::', title
-    print code
-    print '\n'*2
+    print('\n'*3)
+    print(':::', title)
+    print(code)
+    print('\n'*2)
 
 import unittest
 

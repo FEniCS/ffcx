@@ -158,8 +158,8 @@ if __name__ == "__main__" :
   e2 = (l2**2 - 1)/2.0
   e3 = (l3**2 - 1)/2.0
   
-  print("F = diag(%e, %e, %e)" % (l1, l2, l3))
-  print("E = diag(%e, %e, %e)" % (e1, e2, e3))
+  print(("F = diag(%e, %e, %e)" % (l1, l2, l3)))
+  print(("E = diag(%e, %e, %e)" % (e1, e2, e3)))
 
   # invariants
   I_f  = material.I_4f(F)

@@ -18,14 +18,14 @@ V = FunctionSpace(mesh, 'CG', 2)
 if "0" in sys.argv:
     f = Expression("x[0]*x[0] + 2*x[1]*x[1]", degree=2)
     L = f*dx
-    print "Value:", assemble(L, mesh=mesh)
-    print "Form data"
-    print L.form_data()
+    print("Value:", assemble(L, mesh=mesh))
+    print("Form data")
+    print(L.form_data())
 
 if "1" in sys.argv:
     f = Expression("x[0]*x[0] + 2*x[1]*x[1]")
     L = f*dx
-    print "Value:", assemble(L, mesh=mesh)
-    print "Form data"
-    print L.form_data()
+    print("Value:", assemble(L, mesh=mesh))
+    print("Form data")
+    print(L.form_data())
 

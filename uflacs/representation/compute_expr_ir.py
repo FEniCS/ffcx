@@ -131,8 +131,8 @@ def compute_expr_ir(expressions, parameters):
     # Print timing
     tt.stop()
     if parameters["enable_profiling"]:
-        print "Profiling results:"
-        print tt
+        print("Profiling results:")
+        print(tt)
 
     # Build IR for the given expressions
     expr_ir = {}

@@ -227,12 +227,12 @@ def check_dolfin_expression_compilation(uexpr, expected_lines, expected_values, 
 
     # Check expected compilation output
     if flattened_nonempty_lines(compiled_lines) != expected_lines:
-        print '\n'*5
-        print "Upcoming failure, expected lines:"
-        print '\n'.join(expected_lines)
-        print "\nActual lines:"
-        print '\n'.join(flattened_nonempty_lines(compiled_lines))
-        print '\n'*5
+        print('\n'*5)
+        print("Upcoming failure, expected lines:")
+        print('\n'.join(expected_lines))
+        print("\nActual lines:")
+        print('\n'.join(flattened_nonempty_lines(compiled_lines)))
+        print('\n'*5)
     assert flattened_nonempty_lines(compiled_lines) == expected_lines
 
     # Add debugging lines to print scalar expressions at end of Expression eval call
@@ -248,7 +248,7 @@ def check_dolfin_expression_compilation(uexpr, expected_lines, expected_values, 
                                     eval_body=compiled_lines,
                                     **member_names)
     if 0:
-        print "SKIPPING REST OF TEST"
+        print("SKIPPING REST OF TEST")
         return
 
     # Try to compile it with DOLFIN
@@ -266,9 +266,9 @@ def check_dolfin_expression_compilation(uexpr, expected_lines, expected_values, 
             u = (u,)
         diff = numpy.array(u) - numpy.array(v)
         if numpy.dot(diff, diff) > 1e-13:
-            print "u =", u
-            print "v =", v
-            print "diff =", diff
+            print("u =", u)
+            print("v =", v)
+            print("diff =", diff)
         assert numpy.dot(diff, diff) < 1e-14
 
 def test_dolfin_expression_compilation_of_scalar_literal():

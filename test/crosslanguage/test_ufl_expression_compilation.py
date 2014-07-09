@@ -55,7 +55,7 @@ def test_compilation_of_sums(gtest):
     x = ufl.SpatialCoordinate(ufl.tetrahedron)
     expr = x[0] + x[1] + x[2]
     code = compile_expression2(expr)
-    print code
+    print(code)
 
     gtest.add(pre + code + post)
 
@@ -74,7 +74,7 @@ def test_compilation_of_products(gtest):
     x = ufl.SpatialCoordinate(ufl.tetrahedron)
     expr = x[0] * x[1] * x[2]
     code = compile_expression2(expr)
-    print code
+    print(code)
 
     gtest.add(pre + code + post)
 
@@ -95,7 +95,7 @@ def test_compilation_of_sums_and_products_with_precedence(gtest):
     x = ufl.SpatialCoordinate(ufl.tetrahedron)
     expr = (x[0] + x[1]) * x[2] - (x[0] + (x[1] * x[2]))
     code = compile_expression2(expr)
-    print code
+    print(code)
 
     gtest.add(pre + code + post)
 

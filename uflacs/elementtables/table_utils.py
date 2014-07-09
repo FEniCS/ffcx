@@ -98,7 +98,7 @@ def get_ffc_table_values(tables, entitytype, num_points, element, flat_component
 
     # Temporary fix for new table structure TODO: Handle avg properly
     if len(element_table) != 1:
-        print; print element_table
+        print(); print(element_table)
     assert len(element_table) == 1
     element_table = element_table[None]
 

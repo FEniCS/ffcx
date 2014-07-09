@@ -5,7 +5,7 @@ def test_build_graph(form_data):
     form = form_data.preprocessed_form
     for integrand in [itg.integrand() for itg in form.integrals()]:
         G = build_graph([integrand], DEBUG=1)
-        print G.total_value_size, G.total_unique_symbols
+        print(G.total_value_size, G.total_unique_symbols)
 
 # TODO: Maybe move this to a utility file and reuse. Maybe make iterator versions over forms/expressions?
 def for_each_ufl_file(filenames, file_cb=None, form_cb=None, form_data_cb=None):

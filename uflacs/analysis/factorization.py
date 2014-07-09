@@ -105,15 +105,15 @@ def handle_sum(i, v, deps, F, FV, sv2fv, e2fi):
 
     # This assertion would fail for combined matrix+vector factorization
     if 0 and len(fac0) != len(fac1):
-        print '\n'*5
-        print i, deps
-        print str(v)
-        print repr(v)
-        print str(v.operands()[0])
-        print str(v.operands()[1])
-        print fac0
-        print fac1
-        print '\n'*5
+        print('\n'*5)
+        print(i, deps)
+        print(str(v))
+        print(repr(v))
+        print(str(v.operands()[0]))
+        print(str(v.operands()[1]))
+        print(fac0)
+        print(fac1)
+        print('\n'*5)
 
     argkeys = sorted(set(iterkeys(fac0)) | set(iterkeys(fac1)))
 
@@ -156,9 +156,9 @@ def handle_product(i, v, deps, F, FV, sv2fv, e2fi):
         fi = add_to_fv(v, FV, e2fi)
         assert FV[fi] == v
         if 0:
-            print "NON*NON:", i, str(v)
-            print "        ", fi
-            print "        ", factors
+            print("NON*NON:", i, str(v))
+            print("        ", fi)
+            print("        ", factors)
 
     elif not fac0: # non-arg * arg
         f0 = FV[sv2fv[deps[0]]]
@@ -168,8 +168,8 @@ def handle_product(i, v, deps, F, FV, sv2fv, e2fi):
             # Record products of non-arg operand with each factor of arg-dependent operand
             factors[k1] = add_to_fv(f0*FV[fi1], FV, e2fi)
         if 0:
-            print "NON*ARG:", i, str(v)
-            print "        ", factors
+            print("NON*ARG:", i, str(v))
+            print("        ", factors)
 
     elif not fac1: # arg * non-arg
         f1 = FV[sv2fv[deps[1]]]
@@ -179,8 +179,8 @@ def handle_product(i, v, deps, F, FV, sv2fv, e2fi):
             # Record products of non-arg operand with each factor of arg-dependent operand
             factors[k0] = add_to_fv(f1*FV[fi0], FV, e2fi)
         if 0:
-            print "ARG*NON:", i, str(v)
-            print "        ", factors
+            print("ARG*NON:", i, str(v))
+            print("        ", factors)
 
     else: # arg * arg
         fi = None
@@ -191,8 +191,8 @@ def handle_product(i, v, deps, F, FV, sv2fv, e2fi):
                 argkey = tuple(sorted(k0+k1)) # sort key for canonical representation
                 factors[argkey] = add_to_fv(FV[fi0]*FV[fi1], FV, e2fi)
         if 0:
-            print "ARG*ARG:", i, str(v)
-            print "        ", factors
+            print("ARG*ARG:", i, str(v))
+            print("        ", factors)
     return fi, factors
 
 def handle_division(i, v, deps, F, FV, sv2fv, e2fi):
@@ -371,16 +371,16 @@ def rebuild_scalar_graph_from_factorization(AV, FV, IM):
     dependencies = compute_dependencies(se2i, SV)
 
     if 0:
-        print '\n'*10
-        print 'AV:'
-        print '\n'.join('  {}: {}'.format(i, s) for i,s in enumerate(AV))
-        print 'FV:'
-        print '\n'.join('  {}: {}'.format(i, s) for i,s in enumerate(FV))
-        print 'IM:'
-        print '\n'.join('  {}: {}'.format(i, IM[i]) for i in sorted(iterkeys(IM)))
-        print 'SV:'
-        print '\n'.join('  {}: {}'.format(i, s) for i,s in enumerate(SV))
-        print '\n'*10
+        print('\n'*10)
+        print('AV:')
+        print('\n'.join('  {}: {}'.format(i, s) for i,s in enumerate(AV)))
+        print('FV:')
+        print('\n'.join('  {}: {}'.format(i, s) for i,s in enumerate(FV)))
+        print('IM:')
+        print('\n'.join('  {}: {}'.format(i, IM[i]) for i in sorted(iterkeys(IM))))
+        print('SV:')
+        print('\n'.join('  {}: {}'.format(i, s) for i,s in enumerate(SV)))
+        print('\n'*10)
 
     return SV, se2i, dependencies
 

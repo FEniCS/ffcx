@@ -183,11 +183,11 @@ def test_format_array_def():
     code = ArrayDecl("double", "foo", (2,2,3), [[["1.0", "2.0", "3.0"], ["6.0", "5.0", "4.0"]],
                                                 [["1.0", "2.0", "3.0"], ["6.0", "5.0", "4.0"]]])
     if 0:
-        print
-        print expected
-        print
-        print format_code(code)
-        print
+        print()
+        print(expected)
+        print()
+        print(format_code(code))
+        print()
     assert format_code(code) == expected
 
 def test_class_with_arrays():

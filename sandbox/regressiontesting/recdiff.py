@@ -49,7 +49,7 @@ def recdiff(data1, data2, epsilon=_default_recdiff_epsilon):
         return DiffEqual if data1 == data2 else (data1, data2)
 
 def _print(line):
-    print line
+    print(line)
 
 def print_recdiff(diff, epsilon=_default_recdiff_epsilon, indent=0, printer=_print, prekey=""):
 

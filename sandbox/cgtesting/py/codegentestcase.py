@@ -121,7 +121,7 @@ def create_initial_test_header(tfn):
     f = open(tfn, 'w')
     f.write(format_test_skeleton(base_name, gc_header_name))
     f.close()
-    print "Created initial", tfn
+    print("Created initial", tfn)
 
 class CodegenTestCase(unittest.TestCase):
     visited = set()
@@ -166,7 +166,7 @@ class CodegenTestCase(unittest.TestCase):
                 f = open(mfn, 'w')
                 f.write(format_main([self.test_header_name]))
                 f.close()
-                print "Created initial", mfn
+                print("Created initial", mfn)
 
     def emit_test(self, code):
         # Look through stack to fine frame with test_... function name

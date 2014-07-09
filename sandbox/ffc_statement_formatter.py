@@ -490,13 +490,13 @@ class FFCStatementFormatter(object):
             # Only compute coefficient components that have been referenced
             reqdata = self._dependency_handler.required.get(w)
             if reqdata is None:
-                print
-                print "In define_coord_dependent_coefficients: req is None:"
-                print 'repr(w):', repr(w)
-                print 'str(w): ', str(w)
-                print 'required set:'
-                print self._dependency_handler.required
-                print
+                print()
+                print("In define_coord_dependent_coefficients: req is None:")
+                print('repr(w):', repr(w))
+                print('str(w): ', str(w))
+                print('required set:')
+                print(self._dependency_handler.required)
+                print()
                 continue
 
             code.append(langfmt.comment("Compute coefficient %s%d" % (names.w, w.count())))
