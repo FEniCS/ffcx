@@ -7,6 +7,6 @@ project, eventually being merged into UFL and/or FFC.
 """
 
 __author__ = "Martin Sandve Alnaes"
-__version__ = '0.1+'
-__date__ = '2013-02-11'
+__version__ = '1.4+'
+__date__ = '2014-07-09'
 __licence__ = 'LGPL v3'
