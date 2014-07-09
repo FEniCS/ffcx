@@ -4,7 +4,7 @@ from six.moves import zip
 from six.moves import xrange as range
 from ufl.common import product
 
-from uflacs.utils.log import debug, info, warning, error, uflacs_assert
+from ffc.log import debug, info, warning, error, ffc_assert
 
 from uflacs.analysis.modified_terminals import analyse_modified_terminal2, is_modified_terminal
 

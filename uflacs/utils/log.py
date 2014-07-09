@@ -47,7 +47,7 @@ for foo in log_functions:
     exec("%s = lambda *message : uflacs_logger.%s(*message)" % (foo, foo))
 
 # Assertion, copied from UFL
-def uflacs_assert(condition, *message):
+def ffc_assert(condition, *message):
     "Assert that condition is true and otherwise issue an error with given message."
     condition or error(*message)
 

@@ -1,5 +1,5 @@
 
-from uflacs.utils.log import uflacs_assert, error
+from ffc.log import ffc_assert, error
 
 import ufl
 

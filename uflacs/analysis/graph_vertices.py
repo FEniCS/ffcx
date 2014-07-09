@@ -5,7 +5,7 @@ from ufl.classes import (Terminal, UtilityType,
                          Grad, Restricted, Indexed)
 from ufl.algorithms.traversal import traverse_terminals
 
-from uflacs.utils.log import error
+from ffc.log import error
 from uflacs.analysis.datastructures import (int_array, object_array,
                                               CRS, rows_to_crs, rows_dict_to_crs)
 from uflacs.analysis.modified_terminals import is_modified_terminal

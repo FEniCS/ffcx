@@ -6,7 +6,7 @@ from ufl.classes import (Terminal, GeometricQuantity, ConstantValue,
                          Grad, Restricted, Indexed,
                          MathFunction)
 
-from uflacs.utils.log import error, uflacs_assert
+from ffc.log import error, ffc_assert
 from uflacs.analysis.datastructures import (int_array, object_array,
                                               CRS, rows_to_crs, rows_dict_to_crs)
 

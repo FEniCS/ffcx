@@ -1,5 +1,5 @@
 
-from uflacs.utils.log import uflacs_assert, info, warning, error
+from ffc.log import ffc_assert, info, warning, error
 
 import ufl
 
@@ -88,14 +88,14 @@ class LatexFormattingRules(object):
             return "n_%d" % i
 
     def cell_volume(self, o, component=(), derivatives=(), restriction=None):
-        uflacs_assert(not component, "Expecting no component for scalar value.")
+        ffc_assert(not component, "Expecting no component for scalar value.")
         if derivatives:
             return "0"
         else:
             return r"K_{\text{vol}}"
 
     def circumradius(self, o, component=(), derivatives=(), restriction=None):
-        uflacs_assert(not component, "Expecting no component for scalar value.")
+        ffc_assert(not component, "Expecting no component for scalar value.")
         if derivatives:
             return "0"
         else:
@@ -107,7 +107,7 @@ class LatexFormattingRules(object):
         common_name = "w"
         c = o.count()
 
-        uflacs_assert(c >= 0, "Expecting positive count, have you preprocessed the expression?")
+        ffc_assert(c >= 0, "Expecting positive count, have you preprocessed the expression?")
 
         name = r"\overset{%d}{%s}" % (c, common_name)
 

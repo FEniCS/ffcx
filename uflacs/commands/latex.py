@@ -1,6 +1,6 @@
 
 import os
-from uflacs.utils.log import info, warning
+from ffc.log import info, warning
 
 def add_latex_options(opts):
     "Args: list of .ufl file(s)."

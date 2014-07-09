@@ -1,6 +1,5 @@
 
 from uflacs.utils.tictoc import TicToc
-from uflacs.utils.str_utils import format_sequence, format_enumerated_sequence, format_mapping
 
 from uflacs.analysis.modified_terminals import is_modified_terminal
 

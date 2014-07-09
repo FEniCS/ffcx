@@ -4,8 +4,7 @@ from six.moves import xrange as range
 from ufl import as_ufl
 from ufl.classes import Terminal, Indexed, Grad, Restricted, FacetAvg, CellAvg, Argument, Product, Sum, Division
 
-from uflacs.utils.log import uflacs_assert
-from uflacs.utils.str_utils import format_enumerated_sequence, format_mapping
+from ffc.log import ffc_assert
 
 from uflacs.analysis.datastructures import int_array, object_array
 from uflacs.analysis.graph_dependencies import compute_dependencies
@@ -100,7 +99,7 @@ def handle_modified_terminal(i, v, F, FV, e2fi, arg_indices, AV, sv2av):
     return fi, factors
 
 def handle_sum(i, v, deps, F, FV, sv2fv, e2fi):
-    uflacs_assert(len(deps) == 2, "Assuming binary sum here. This can be fixed if needed.")
+    ffc_assert(len(deps) == 2, "Assuming binary sum here. This can be fixed if needed.")
     fac0 = F[deps[0]]
     fac1 = F[deps[1]]
 
@@ -123,7 +122,7 @@ def handle_sum(i, v, deps, F, FV, sv2fv, e2fi):
         fi = None
         factors = {}
         for argkey in argkeys:
-            uflacs_assert(len(argkey) == keylen, "Expecting equal argument rank terms among summands.")
+            ffc_assert(len(argkey) == keylen, "Expecting equal argument rank terms among summands.")
 
             fi0 = fac0.get(argkey)
             fi1 = fac1.get(argkey)
@@ -144,7 +143,7 @@ def handle_sum(i, v, deps, F, FV, sv2fv, e2fi):
     return fi, factors
 
 def handle_product(i, v, deps, F, FV, sv2fv, e2fi):
-    uflacs_assert(len(deps) == 2, "Assuming binary product here. This can be fixed if needed.")
+    ffc_assert(len(deps) == 2, "Assuming binary product here. This can be fixed if needed.")
     fac0 = F[deps[0]]
     fac1 = F[deps[1]]
 
@@ -390,7 +389,7 @@ def compute_argument_factorization(SV, target_variables, dependencies):
     # TODO: Use target_variables! Currently just assuming the last vertex is the target here...
 
     if list(target_variables) != [len(SV)-1]:
-        uflacs_assert(not extract_type(SV[-1], Argument),
+        ffc_assert(not extract_type(SV[-1], Argument),
                       "Multiple or nonscalar Argument dependent expressions not supported in factorization.")
         AV = []
         FV = SV

@@ -9,7 +9,7 @@ from ufl.classes import (MultiIndex, ComponentTensor, ListTensor, Transposed, Va
                          IndexSum, UtilityType, Label, ExprList, ExprMapping)
 from ufl.algorithms import MultiFunction
 
-from uflacs.utils.log import error, uflacs_assert
+from ffc.log import error, ffc_assert
 from uflacs.analysis.datastructures import (int_array, object_array,
                                               CRS, rows_to_crs, rows_dict_to_crs)
 from uflacs.analysis.indexing import indexing_to_component, shape_to_strides
@@ -27,7 +27,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
         error("Not expecting terminal expression in here, got %s." % type(o))
 
     def scalar_nary(self, o, ops):
-        uflacs_assert(o.shape() == (), "Expecting scalar.")
+        ffc_assert(o.shape() == (), "Expecting scalar.")
         sops = [op[0] for op in ops]
         return [o.reconstruct(*sops)]
 
@@ -53,7 +53,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
 
         # Products of a scalar and a tensor are allowed
         n = max(len(op) for op in ops)
-        uflacs_assert(all(len(op) in (1, n) for op in ops), "Unexpected number of operands.")
+        ffc_assert(all(len(op) in (1, n) for op in ops), "Unexpected number of operands.")
         # Compute each scalar value
         res = []
         for k in range(n):
@@ -62,7 +62,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
                 if len(op) == 1:
                     sops.append(op[0])
                 else:
-                    uflacs_assert(len(op) == n, "Expecting n operands.")
+                    ffc_assert(len(op) == n, "Expecting n operands.")
                     sops.append(op[k])
             res.append(scalar_operator(sops))
         return res
@@ -84,7 +84,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
         # Total shape
         tsh = sh+ish
         tm = m*im
-        uflacs_assert(product(tsh) == tm, "Inconsistent shapes and sizes computed.")
+        ffc_assert(product(tsh) == tm, "Inconsistent shapes and sizes computed.")
 
         if 0:
             print()
@@ -97,7 +97,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
 
         # Check that we have at most one tensor shaped operand here
         if sh == ():
-            uflacs_assert(all(op.shape() == () for op in o.operands()),
+            ffc_assert(all(op.shape() == () for op in o.operands()),
                           "Expecting scalars.")
         else:
             shaped = 0
@@ -109,7 +109,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
                     shaped += 1
                 else:
                     error("Not expecting shape %s, overall shape is %s." % (opsh, sh))
-            uflacs_assert(shaped in (0, 1), "Expecting at most one shaped operand.")
+            ffc_assert(shaped in (0, 1), "Expecting at most one shaped operand.")
 
         # Precompute some dimensions for each operand
         istrides = [None]*len(ops)
@@ -123,7 +123,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
             opm = product(opsh)
             optm = opm*opim
             optsh = opsh+opish
-            uflacs_assert(product(optsh) == optm, "Mismatching shapes and sizes.")
+            ffc_assert(product(optsh) == optm, "Mismatching shapes and sizes.")
 
             running = 1
             strides = []
@@ -135,7 +135,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
                     loci = opii.index(globi)
                     strides.append(running)
                     running *= d
-            #uflacs_assert(strides[-1] == opim, "Invalid stride.")
+            #ffc_assert(strides[-1] == opim, "Invalid stride.")
             istrides[j] = tuple(reversed(strides))
             opims[j] = opim if opsh else 0
 
@@ -205,7 +205,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
 
                 res.append(scalar_operator(sops))
 
-        uflacs_assert(tm == len(res), "Size mismatch.")
+        ffc_assert(tm == len(res), "Size mismatch.")
         return res
 
     def element_wise3(self, scalar_operator, o, ops):
@@ -239,7 +239,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
                 shaped += 1
             else:
                 error("Not expecting shape %s, overall shape is %s." % (opsh, sh))
-        uflacs_assert(shaped in (0, 1, len(ops)), "Confused about shapes of operands.")
+        ffc_assert(shaped in (0, 1, len(ops)), "Confused about shapes of operands.")
 
         # --- Compute shapes and sizes for each operand
         iirev = reversed(ii)
@@ -276,7 +276,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
         for sc, sk in scomponents: # TODO: Optimization: swap loops so we recompute less?
             for ic, ik in icomponents:
                 k = sk*im + ik # Compute the output component index (not used!)
-                uflacs_assert(k == len(res), "Invalid assumption or a bug?")
+                ffc_assert(k == len(res), "Invalid assumption or a bug?")
 
                 sops = []
                 for iop, op in enumerate(ops):
@@ -293,24 +293,24 @@ class ReconstructScalarSubexpressions(MultiFunction):
 
                 res.append(scalar_operator(sops))
 
-        uflacs_assert(tm == len(res), "Size mismatch.")
+        ffc_assert(tm == len(res), "Size mismatch.")
         return res
 
     def division(self, o, ops):
-        uflacs_assert(len(ops) == 2, "Expecting two operands.")
-        uflacs_assert(len(ops[1]) == 1, "Expecting scalar divisor.")
+        ffc_assert(len(ops) == 2, "Expecting two operands.")
+        ffc_assert(len(ops[1]) == 1, "Expecting scalar divisor.")
         def _div(args):
             a, b = args
             return a / b
         return self.element_wise(_div, o, ops) # FIXME
 
     def sum(self, o, ops):
-        uflacs_assert(len(ops[0]) == len(ops[1]), "Expecting equal shapes.")
+        ffc_assert(len(ops[0]) == len(ops[1]), "Expecting equal shapes.")
         return self.element_wise(sum, o, ops) # FIXME
 
     def product(self, o, ops):
         a, b = o.operands()
-        uflacs_assert(not (a.shape() and b.shape()), "Expecting only one nonscalar shape.")
+        ffc_assert(not (a.shape() and b.shape()), "Expecting only one nonscalar shape.")
         return self.element_wise2(product, o, ops) # FIXME
 
     def index_sum(self, o, ops):
@@ -335,7 +335,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
         # flattened total component of indexsum o by removing
         # axis corresponding to summation index ii.
         ss = ops[0] # Scalar subexpressions of summand
-        uflacs_assert(len(ss) == predim*postdim*d, "Mismatching number of subexpressions.")
+        ffc_assert(len(ss) == predim*postdim*d, "Mismatching number of subexpressions.")
         sops = []
         for i in range(predim):
             iind = i*(postdim*d)
@@ -417,10 +417,10 @@ def rebuild_scalar_e2i(G, DEBUG=False):
         if is_modified_terminal(v):
             if 0: print("Adding terminal: ", repr(v))
             sh = v.shape()
-            uflacs_assert(v.free_indices() == (), "Expecting no free indices.")
+            ffc_assert(v.free_indices() == (), "Expecting no free indices.")
             if sh == ():
                 # Store single modified terminal expression component
-                uflacs_assert(len(vs) == 1, "Expecting single symbol for scalar valued modified terminal.")
+                ffc_assert(len(vs) == 1, "Expecting single symbol for scalar valued modified terminal.")
                 s, u = vs[0], v
                 emit_expression(s, u)
                 terminals.add(v)
@@ -458,18 +458,18 @@ def rebuild_scalar_e2i(G, DEBUG=False):
                 print(len(vs))
                 print(len(w))
                 print()
-                uflacs_assert(len(vs) == len(w), "Expecting one symbol for each expression.")
+                ffc_assert(len(vs) == len(w), "Expecting one symbol for each expression.")
             for s, u in zip(vs, w):
                 emit_expression(s, u)
 
     # Reduce size of NV to the actually used parts
-    uflacs_assert(all(x is None for x in NV[len(ne2i):]),
+    ffc_assert(all(x is None for x in NV[len(ne2i):]),
                   "Expecting last part of NV to be empty.")
     NV = NV[:len(ne2i)]
 
     # Find symbols of final v
     vs = G.V_symbols[G.nv-1]
-    uflacs_assert(all(handled_symbols[s] for s in vs),
+    ffc_assert(all(handled_symbols[s] for s in vs),
                   "Expecting that all symbols in vs are handled at this point.")
     nvs = [ne2i[W[s]] for s in vs]
 

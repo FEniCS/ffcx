@@ -7,7 +7,7 @@ from ufl.classes import (Coefficient, SpatialCoordinate,
                          FacetNormal, FacetArea,
                          CellVolume, Circumradius)
 
-from uflacs.utils.log import uflacs_assert
+from ffc.log import ffc_assert
 
 class DolfinExpressionStatementFormatter(object):
     def __init__(self, dependency_handler, ir):
@@ -32,8 +32,8 @@ class DolfinExpressionStatementFormatter(object):
         code = []
         for t, c, d, r in self._dependency_handler.terminal_data:
             if isinstance(t, Coefficient) and t.is_cellwise_constant():
-                uflacs_assert(len(d) == 0, "grad(constant) should be removed at earlier stage by compiler.")
-                uflacs_assert(r is None, "Restrictions not supported in dolfin expressions.")
+                ffc_assert(len(d) == 0, "grad(constant) should be removed at earlier stage by compiler.")
+                ffc_assert(r is None, "Restrictions not supported in dolfin expressions.")
 
                 # Skip already evaluated functions
                 if t in evaluated:
@@ -61,7 +61,7 @@ class DolfinExpressionStatementFormatter(object):
         code = []
         for t, c, d, r in self._dependency_handler.terminal_data:
             if isinstance(t, Coefficient) and not t.is_cellwise_constant():
-                uflacs_assert(r is None, "Restrictions not supported in dolfin expressions.")
+                ffc_assert(r is None, "Restrictions not supported in dolfin expressions.")
 
                 # Skip already evaluated functions
                 if t in evaluated:

@@ -2,7 +2,7 @@
 from six.moves import xrange as range
 from ufl.classes import Terminal
 
-from uflacs.utils.log import error, uflacs_assert
+from ffc.log import error, ffc_assert
 from uflacs.analysis.datastructures import int_array, object_array, CRS, rows_to_crs
 from uflacs.analysis.modified_terminals import terminal_modifier_types
 

@@ -1,7 +1,7 @@
 
 from six.moves import xrange
 import time
-from uflacs.utils.log import debug
+from ffc.log import debug
 
 class TicToc(object):
     def __init__(self, name, showinfo=None, gettime=None):

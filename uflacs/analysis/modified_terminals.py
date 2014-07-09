@@ -7,7 +7,7 @@ from ufl.classes import (Terminal, Grad, ReferenceGrad, Indexed, FixedIndex,
                          FormArgument, Coefficient, Argument, GeometricQuantity)
 from ufl.sorting import sorted_expr
 
-from uflacs.utils.log import uflacs_assert, warning, error
+from ffc.log import ffc_assert, warning, error
 
 from uflacs.elementtables.table_utils import flatten_component
 
@@ -122,35 +122,35 @@ def analyse_modified_terminal2(expr):
     t = expr
     while not isinstance(t, Terminal):
         if isinstance(t, Indexed):
-            uflacs_assert(component is None, "Got twice indexed terminal.")
+            ffc_assert(component is None, "Got twice indexed terminal.")
             t, i = t.operands()
-            uflacs_assert(all(isinstance(j, FixedIndex) for j in i), "Expected only fixed indices.")
+            ffc_assert(all(isinstance(j, FixedIndex) for j in i), "Expected only fixed indices.")
             component = [int(j) for j in i]
 
         elif isinstance(t, ReferenceGrad):
-            uflacs_assert(len(component), "Got local gradient of terminal without prior indexing.")
+            ffc_assert(len(component), "Got local gradient of terminal without prior indexing.")
             local_derivatives.append(component[-1])
             component = component[:-1]
             t, = t.operands()
 
         elif isinstance(t, Grad):
-            uflacs_assert(len(component), "Got gradient of terminal without prior indexing.")
+            ffc_assert(len(component), "Got gradient of terminal without prior indexing.")
             global_derivatives.append(component[-1])
             component = component[:-1]
             t, = t.operands()
 
         elif isinstance(t, Restricted):
-            uflacs_assert(restriction is None, "Got twice restricted terminal!")
+            ffc_assert(restriction is None, "Got twice restricted terminal!")
             restriction = t._side
             t, = t.operands()
 
         elif isinstance(t, CellAvg):
-            uflacs_assert(averaged is None, "Got twice averaged terminal!")
+            ffc_assert(averaged is None, "Got twice averaged terminal!")
             averaged = "cell"
             t, = t.operands()
 
         elif isinstance(t, FacetAvg):
-            uflacs_assert(averaged is None, "Got twice averaged terminal!")
+            ffc_assert(averaged is None, "Got twice averaged terminal!")
             averaged = "facet"
             t, = t.operands()
 
@@ -164,9 +164,9 @@ def analyse_modified_terminal2(expr):
     component = tuple(component) if component else ()
 
     # Assert that component is within the shape of the terminal (this is the global component!)
-    uflacs_assert(len(component) == t.rank(),
+    ffc_assert(len(component) == t.rank(),
                   "Length of component does not match rank of terminal.")
-    uflacs_assert(all(c >= 0 and c < d for c, d in zip(component, t.shape())),
+    ffc_assert(all(c >= 0 and c < d for c, d in zip(component, t.shape())),
                   "Component indices %s are outside terminal shape %s" % (component, t.shape()))
 
     # Flatten component # TODO: Make the flat component local?

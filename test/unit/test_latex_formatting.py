@@ -3,7 +3,7 @@
 Tests of LaTeX formatting rules.
 """
 
-from uflacs.utils.log import uflacs_assert, info, warning, error
+from ffc.log import ffc_assert, info, warning, error
 from uflacs.codeutils.expr_formatter import ExprFormatter
 from uflacs.codeutils.latex_expr_formatting_rules import LatexFormatter
 

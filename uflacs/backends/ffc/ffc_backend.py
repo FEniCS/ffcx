@@ -20,7 +20,7 @@ from ufl.permutation import build_component_numbering
 from ufl.classes import Argument, Coefficient, GeometricQuantity
 from ufl.algorithms import MultiFunction
 
-from uflacs.utils.log import uflacs_assert, warning, error
+from ffc.log import ffc_assert, warning, error
 
 from uflacs.codeutils.cpp_statement_formatting_rules import CppStatementFormattingRules
 langfmt = CppStatementFormattingRules()
@@ -250,7 +250,7 @@ class FFCAccessBackend(MultiFunction):
         # Map component to flat index
         vi2si, si2vi = build_component_numbering(mt.terminal.shape(), mt.terminal.element().symmetry())
         num_flat_components = len(si2vi)
-        uflacs_assert(mt.flat_component == vi2si[mt.component], "Incompatible component flattening!")
+        ffc_assert(mt.flat_component == vi2si[mt.component], "Incompatible component flattening!")
 
         # Offset index if on second cell in interior facet integral
         if mt.restriction == "-": # TODO: Get the notion that '-' is the second cell from a central definition?
@@ -276,10 +276,10 @@ class FFCAccessBackend(MultiFunction):
         return access
 
     def spatial_coordinate(self, e, mt, tabledata):
-        uflacs_assert(not mt.global_derivatives, "Not expecting derivatives of SpatialCoordinates.")
-        uflacs_assert(not mt.local_derivatives, "Not expecting derivatives of SpatialCoordinates.")
-        uflacs_assert(not mt.restriction, "Not expecting restriction of SpatialCoordinates.")
-        uflacs_assert(not mt.averaged, "Not expecting average of SpatialCoordinates.")
+        ffc_assert(not mt.global_derivatives, "Not expecting derivatives of SpatialCoordinates.")
+        ffc_assert(not mt.local_derivatives, "Not expecting derivatives of SpatialCoordinates.")
+        ffc_assert(not mt.restriction, "Not expecting restriction of SpatialCoordinates.")
+        ffc_assert(not mt.averaged, "Not expecting average of SpatialCoordinates.")
 
         if self.physical_coordinates_known:
             # In a context where the physical coordinates are available in existing variables.
@@ -301,9 +301,9 @@ class FFCAccessBackend(MultiFunction):
         return access
 
     def cell_coordinate(self, e, mt, tabledata):
-        uflacs_assert(not mt.global_derivatives, "Not expecting derivatives of CellCoordinates.")
-        uflacs_assert(not mt.local_derivatives, "Not expecting derivatives of CellCoordinates.")
-        uflacs_assert(not mt.averaged, "Not expecting average of CellCoordinates.")
+        ffc_assert(not mt.global_derivatives, "Not expecting derivatives of CellCoordinates.")
+        ffc_assert(not mt.local_derivatives, "Not expecting derivatives of CellCoordinates.")
+        ffc_assert(not mt.averaged, "Not expecting average of CellCoordinates.")
 
         assert not mt.restriction # FIXME: Not used!
 
@@ -322,9 +322,9 @@ class FFCAccessBackend(MultiFunction):
         return access
 
     def jacobian(self, e, mt, tabledata):
-        uflacs_assert(not mt.global_derivatives, "Not expecting derivatives of Jacobian.")
-        uflacs_assert(not mt.local_derivatives, "Not expecting derivatives of Jacobian.")
-        uflacs_assert(not mt.averaged, "Not expecting average of Jacobian.")
+        ffc_assert(not mt.global_derivatives, "Not expecting derivatives of Jacobian.")
+        ffc_assert(not mt.local_derivatives, "Not expecting derivatives of Jacobian.")
+        ffc_assert(not mt.averaged, "Not expecting average of Jacobian.")
 
         access = format_mt_name(names.J, mt)
         return access
@@ -460,7 +460,7 @@ class FFCDefinitionsBackend(MultiFunction):
         if self.physical_coordinates_known:
             pass
         else:
-            uflacs_assert(mt.terminal.domain().coordinates() is None,
+            ffc_assert(mt.terminal.domain().coordinates() is None,
                           "Assuming coefficient field symbolically inserted before this point.")
             # Reference coordinates are known, no coordinate field, so we compute
             # this component as linear combination of vertex_coordinates "dofs" and table
@@ -472,7 +472,7 @@ class FFCDefinitionsBackend(MultiFunction):
 
             # access here is e.g. x0, component 0 of x
 
-            uflacs_assert(0 <= begin <= end <= num_vertices*gdim,
+            ffc_assert(0 <= begin <= end <= num_vertices*gdim,
                           "Assuming linear element for affine simplices here.")
             entity = format_entity_name(self.ir["entitytype"], mt.restriction)
             vertex = names.ic
@@ -526,7 +526,7 @@ class FFCDefinitionsBackend(MultiFunction):
         if self.physical_coordinates_known:
             pass
         else:
-            uflacs_assert(mt.terminal.domain().coordinates() is None,
+            ffc_assert(mt.terminal.domain().coordinates() is None,
                           "Assuming coefficient field symbolically inserted before this point.")
             # Reference coordinates are known, no coordinate field, so we compute
             # this component as linear combination of vertex_coordinates "dofs" and table
@@ -538,7 +538,7 @@ class FFCDefinitionsBackend(MultiFunction):
 
             # access here is e.g. J_0, component 0 of J
 
-            uflacs_assert(0 <= (end-begin) <= num_vertices,
+            ffc_assert(0 <= (end-begin) <= num_vertices,
                           "Assuming linear element for affine simplices here.")
             entity = format_entity_name(self.ir["entitytype"], mt.restriction)
             vertex = names.ic

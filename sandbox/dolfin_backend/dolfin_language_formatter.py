@@ -5,7 +5,7 @@ from ufl.common import component_to_index
 from ufl.permutation import build_component_numbering
 from ufl.algorithms import MultiFunction
 
-from uflacs.utils.log import uflacs_assert
+from ffc.log import ffc_assert
 
 from uflacs.codeutils.cpp_format import CppFormattingRules
 
@@ -19,7 +19,7 @@ class DolfinExpressionLanguageFormatter(MultiFunction, CppFormattingRules):
 
     def geometric_quantity(self, o, component=(), derivatives=(), restriction=None):
         "Generic rendering of variable names for all piecewise constant geometric quantities."
-        uflacs_assert(not derivatives,
+        ffc_assert(not derivatives,
                       "Compiler should be able to simplify derivatives of geometry.")
 
         # Simply using the UFL str to define the name in the generated code, ensures consistency
@@ -30,10 +30,10 @@ class DolfinExpressionLanguageFormatter(MultiFunction, CppFormattingRules):
         # Indexing if there is a shape
         sh = o.shape()
         if sh:
-            uflacs_assert(component, "Missing component for nonscalar %r." % o)
+            ffc_assert(component, "Missing component for nonscalar %r." % o)
             code = "%s[%d]" % (name, component_to_index(component, sh))
         else:
-            uflacs_assert(component == (), "Component specified for scalar %r." % o)
+            ffc_assert(component == (), "Component specified for scalar %r." % o)
             code = name
 
         # Make a record of dependency
@@ -42,7 +42,7 @@ class DolfinExpressionLanguageFormatter(MultiFunction, CppFormattingRules):
         return code
 
     def facet_area(self, o, component=(), derivatives=(), restriction=None):
-        uflacs_assert(restriction is None, "Assuming facet_area is not restricted.")
+        ffc_assert(restriction is None, "Assuming facet_area is not restricted.")
         return self.geometric_quantity(o, component, derivatives, restriction)
 
     def coefficient(self, o, component=(), derivatives=(), restriction=None):

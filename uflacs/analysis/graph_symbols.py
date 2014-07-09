@@ -5,7 +5,7 @@ from ufl.classes import (Terminal, FormArgument, Grad, Restricted,
                          IndexSum, MultiIndex, Condition,
                          UtilityType, Label, ExprList, ExprMapping)
 
-from uflacs.utils.log import error
+from ffc.log import error
 
 from uflacs.analysis.datastructures import (int_array, object_array,
                                               CRS, rows_to_crs, rows_dict_to_crs)
