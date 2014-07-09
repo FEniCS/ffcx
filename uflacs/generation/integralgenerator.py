@@ -145,7 +145,7 @@ class IntegralGenerator(object):
         parts += self.generate_varying_partition(num_points)
 
         # Compute single argument partitions outside of the dofblock loops
-        for iarg in range(self.ir["rank"]):
+        for iarg in xrange(self.ir["rank"]):
             for dofrange in []: # TODO: Move f*arg0 out here
                 parts += self.generate_argument_partition(num_points, iarg, dofrange)
 
@@ -274,7 +274,7 @@ class IntegralGenerator(object):
         MATR = expr_ir["modified_argument_table_ranges"]
         MA = expr_ir["modified_arguments"]
 
-        idofs = [self.backend_access.argument_loop_index(i) for i in range(self.ir["rank"])]
+        idofs = [self.backend_access.argument_loop_index(i) for i in xrange(self.ir["rank"])]
 
         # Find the blocks to build: (TODO: This is rather awkward, having to rediscover these relations here)
         arguments_and_factors = sorted(expr_ir["argument_factorization"].items(), key=lambda x: x[0])

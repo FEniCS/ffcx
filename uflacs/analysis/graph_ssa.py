@@ -93,7 +93,7 @@ def build_factorized_partitions():
     partitions["varying"] = dict((np, []) for np in num_points)
 
     # partitions["argument"][np][iarg][dofrange] = partition depending on this dofrange of argument iarg
-    partitions["argument"] = dict((np, [dict() for i in range(rank)]) for np in num_points)
+    partitions["argument"] = dict((np, [dict() for i in xrange(rank)]) for np in num_points)
 
     # partitions["integrand"][np][dofrange] = partition depending on this dofrange of argument iarg
     partitions["integrand"] = dict((np, dict()) for np in num_points)

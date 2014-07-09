@@ -21,7 +21,7 @@ def compare_compute_argument_factorization(SV, dependencies, expected_AV, expect
 
     assert AV == expected_AV
     if 0:
-        for n in range(1, min(len(FV), len(expected_FV))):
+        for n in xrange(1, min(len(FV), len(expected_FV))):
             assert FV[:n] == expected_FV[:n]
     assert FV == expected_FV
     assert IM == expected_IM
@@ -30,7 +30,7 @@ def test_compute_argument_factorization():
     V = FiniteElement("CG", triangle, 1)
     u = TrialFunction(V)
     v = TestFunction(V)
-    a, b, c, d, e, f, g = [Coefficient(V, count=k) for k in range(7)]
+    a, b, c, d, e, f, g = [Coefficient(V, count=k) for k in xrange(7)]
 
     one = as_ufl(1.0)
     two = as_ufl(2)

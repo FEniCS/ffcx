@@ -24,7 +24,7 @@ class SwiginacEvaluator(Transformer):
         self._on_facet = on_facet
 
         # current basis function configuration
-        self._current_basis_function = tuple(0 for i in range(formrep.rank))
+        self._current_basis_function = tuple(0 for i in xrange(formrep.rank))
 
         # current indexing status
         self._components = Stack()
@@ -135,7 +135,7 @@ class SwiginacEvaluator(Transformer):
         ops = []
         summand, multiindex = x.operands()
         index, = multiindex
-        for i in range(x.dimension()):
+        for i in xrange(x.dimension()):
             self._index2value.push(index, i)
             ops.append(self.visit(summand))
             self._index2value.pop()
@@ -242,7 +242,7 @@ class SwiginacEvaluator(Transformer):
         result = self.visit(expression)
 
         # revert index map
-        for i in range(len(comp)):
+        for i in xrange(len(comp)):
             self._index2value.pop()
         self._components.pop()
         return result
@@ -254,7 +254,7 @@ class SwiginacEvaluator(Transformer):
         df/dx_i = df/dxi_j dxi_j/dx_i."""
         Ginv = self._formrep.Ginv_sym
         xi = self._formrep.xi_sym
-        return sum(Ginv[j, i] * swiginac.diff(f, xi[j]) for j in range(self.nsd))
+        return sum(Ginv[j, i] * swiginac.diff(f, xi[j]) for j in xrange(self.nsd))
 
     def spatial_derivative(self, x):
         # Assuming that AD has been applied, so

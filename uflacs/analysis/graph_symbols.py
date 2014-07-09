@@ -140,7 +140,7 @@ def build_node_symbols(V, e2i, V_shapes):
         a = new_symbols.symbol_count
         b = a + n
         new_symbols.symbol_count = b
-        return range(a, b)
+        return xrange(a, b)
     new_symbols.symbol_count = 0
 
     # For all vertices

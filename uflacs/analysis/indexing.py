@@ -79,7 +79,7 @@ def map_indexed_to_arg_components(indexed):
 def map_indexed_arg_components2(Aii): # TODO: Remove when the new version is better tested
     c1, c2 = map_indexed_to_arg_components(Aii)
     d = [None]*len(c1)
-    for k in range(len(c1)):
+    for k in xrange(len(c1)):
         d[c1[k]] = k
     return d
 

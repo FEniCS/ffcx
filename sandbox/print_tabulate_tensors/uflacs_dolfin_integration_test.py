@@ -35,7 +35,7 @@ for representation in ("uflacs", "quadrature"):
 	m = len(out)
 
 
-for i in range(m):
+for i in xrange(m):
     print
     print "i =", i
     for n in (1, 2, 4):

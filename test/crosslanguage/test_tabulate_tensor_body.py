@@ -172,10 +172,10 @@ def xtest_interval_geometry_expressions(gtest):
     td = cell.topological_dimension()
 
     values = []
-    values.extend(SpatialCoordinate(cell)[i] for i in range(gd))
-    values.extend(LocalCoordinate(cell)[i] for i in range(td))
-    values.extend(GeometryJacobian(cell)[i,j] for i in range(gd) for i in range(td))
-    values.extend(InverseGeometryJacobian(cell)[i,j] for i in range(td) for i in range(gd))
+    values.extend(SpatialCoordinate(cell)[i] for i in xrange(gd))
+    values.extend(LocalCoordinate(cell)[i] for i in xrange(td))
+    values.extend(GeometryJacobian(cell)[i,j] for i in xrange(gd) for i in xrange(td))
+    values.extend(InverseGeometryJacobian(cell)[i,j] for i in xrange(td) for i in xrange(gd))
     values.append(GeometryJacobianDeterminant(cell))
     values.append(CellVolume(cell))
     values.append(Circumradius(cell))

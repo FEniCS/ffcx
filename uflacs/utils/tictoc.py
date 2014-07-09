@@ -22,7 +22,7 @@ class TicToc(object):
 
     def timing_stats(self, sort=True):
         stats = []
-        for i in range(len(self._ticdata)-1):
+        for i in xrange(len(self._ticdata)-1):
             t1, msg = self._ticdata[i]
             t2 = self._ticdata[i+1][0]
             t = t2-t1

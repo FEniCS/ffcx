@@ -44,7 +44,7 @@ def build_recursive_initializer_list(values, sizes):
     elif r == 2:
         assert len(values[0]) == sizes[1]
         inner = []
-        for i0 in range(sizes[0]):
+        for i0 in xrange(sizes[0]):
             inner.append( tuple(build_initializer_list(values[i0])) )
         initializer_list = ["{", Indented([build_separated_list(inner, ","), "}"])]
 
@@ -52,9 +52,9 @@ def build_recursive_initializer_list(values, sizes):
         assert len(values[0]) == sizes[1]
         assert len(values[0][0]) == sizes[2]
         outer = []
-        for i0 in range(sizes[0]):
+        for i0 in xrange(sizes[0]):
             inner = []
-            for i1 in range(sizes[1]):
+            for i1 in xrange(sizes[1]):
                 inner.append( tuple(build_initializer_list(values[i0][i1])) )
             outer.append(Indented(["{", build_separated_list(inner, ","), "}"]))
         initializer_list = ["{", Indented([build_separated_list(outer, ","), "}"])]

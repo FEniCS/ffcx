@@ -151,7 +151,7 @@ def test_unique_tables_all_different():
         ]
     unique, mapping = build_unique_tables(tables)
     expected_unique = tables
-    expected_mapping = dict((i,i) for i in range(len(tables)))
+    expected_mapping = dict((i,i) for i in xrange(len(tables)))
     assert mapping == expected_mapping
     assert len(set(mapping.values())) == len(unique)
     for i,t in enumerate(tables):
@@ -220,13 +220,13 @@ def test_get_ffc_table_values_vector_facet():
             # Make ones array of the right shape (all dimensions differ to detect algorithm bugs better)
             arr1 = np.ones((num_dofs, num_components, num_points))
             arrays = []
-            for i in range(num_facets):
+            for i in xrange(num_facets):
                 arr = (i+1.0)*arr1 # Make first digit the facet number (1,2,3)
-                for j in range(num_components):
+                for j in xrange(num_components):
                     arr[:,j,:] += 0.1*(j+1.0) # Make first decimal the component number (1,2)
-                for j in range(num_dofs):
+                for j in xrange(num_dofs):
                     arr[j,:,:] += 0.01*(j+1.0) # Make second decimal the dof number
-                for j in range(num_points):
+                for j in xrange(num_points):
                     arr[:,:,j] += 0.001*(j+1.0) # Make third decimal the point number
                 arrays.append(arr)
 
@@ -245,8 +245,8 @@ def test_get_ffc_table_values_vector_facet():
                     }
                 }
                 # Tables use flattened component, so we can loop over them as integers:
-                for component in range(num_components):
+                for component in xrange(num_components):
                     table = get_ffc_table_values(ffc_tables, entitytype, num_points, element, component, derivatives)
-                    for i in range(num_facets):
+                    for i in xrange(num_facets):
                         #print table[i,...]
                         assert equal_tables(table[i,...], np.transpose(arrays[i][:,component,:]), default_tolerance)

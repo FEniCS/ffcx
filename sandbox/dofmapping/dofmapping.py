@@ -89,7 +89,7 @@ def compute_dofranges(dofset, meshsizes, offset):
                 key = EntitySet(domainid, cellname, entitydim)
                 multiplicity = dofset.multiplicities.get(key, 0)
 
-                for entitydofnumber in range(multiplicity):
+                for entitydofnumber in xrange(multiplicity):
                     start = offset
                     count = meshsizes[key]
                     end = start + count

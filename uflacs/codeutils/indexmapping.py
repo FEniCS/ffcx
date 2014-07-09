@@ -86,12 +86,12 @@ class AxisMapping(object):
                           for names in self.axis_index_names]
 
         # The stride of each axis equals the product of the following axis sizes
-        self.axis_stride = [mul_dims(self.axis_size[i+1:]) for i in range(self.num_axes)]
+        self.axis_stride = [mul_dims(self.axis_size[i+1:]) for i in xrange(self.num_axes)]
 
         # For each axis, the internal strides of each dimension within that axis
         self.dim_stride = [tuple(mul_dims([self.index_mapping.size[name] for name in self.axis_index_names[i][j+1:]])
-                                 for j in range(self.num_dims[i]))
-                           for i in range(self.num_axes)]
+                                 for j in xrange(self.num_dims[i]))
+                           for i in xrange(self.num_axes)]
 
     def format_decl(self):
         return ''.join('[{0}]'.format(size) for size in self.axis_size)
@@ -102,9 +102,9 @@ class AxisMapping(object):
 
     def format_index_expressions(self, **kwargs):
         expressions = []
-        for i in range(self.num_axes):
+        for i in xrange(self.num_axes):
             terms = []
-            for j in range(self.num_dims[i]):
+            for j in xrange(self.num_dims[i]):
                 stride = self.dim_stride[i][j]
                 index = kwargs.get(self.axis_index_names[i][j], self.axis_index_names[i][j])
                 term = mul_dims([stride, index])
