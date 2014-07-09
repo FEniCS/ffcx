@@ -3,6 +3,7 @@
 Tests of utilities for handling shapes, indice, strides etc.
 """
 
+from six.moves import xrange
 from uflacs.analysis.indexing import (shape_to_strides, multiindex_to_component,
                                         component_to_multiindex, indexing_to_component)
 

@@ -1,4 +1,5 @@
 from dolfin import *
+from six.moves import xrange
 
 set_log_level(DEBUG)
 

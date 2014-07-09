@@ -1,4 +1,5 @@
 
+from six.moves import xrange
 from itertools import izip
 
 from ufl.common import product

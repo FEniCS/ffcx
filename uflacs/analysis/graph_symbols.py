@@ -1,4 +1,5 @@
 
+from six.moves import xrange
 from ufl.classes import (Terminal, FormArgument, Grad, Restricted,
                          Indexed, ComponentTensor, ListTensor, Transposed, Variable,
                          IndexSum, MultiIndex, Condition,

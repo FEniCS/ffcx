@@ -1,4 +1,5 @@
 
+from six.moves import xrange
 from ufl.common import product
 
 from uflacs.utils.log import debug, info, warning, error, uflacs_assert

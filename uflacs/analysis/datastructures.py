@@ -1,4 +1,5 @@
 
+from six.moves import xrange
 import numpy
 
 def int_array(size):

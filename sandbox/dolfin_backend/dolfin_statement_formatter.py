@@ -1,4 +1,5 @@
 
+from six.moves import xrange
 from ufl.common import product
 from ufl.common import component_to_index
 from ufl.permutation import build_component_numbering

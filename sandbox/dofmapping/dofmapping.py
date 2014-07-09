@@ -1,4 +1,6 @@
 
+from six.moves import xrange
+
 class EntitySet(object):
     def __init__(self, domainid, cellname, entitydim):
         self.domainid = domainid

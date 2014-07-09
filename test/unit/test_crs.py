@@ -3,6 +3,7 @@
 Tests of CRS data structure.
 """
 
+from six.moves import xrange
 from uflacs.analysis.datastructures import CRS
 
 def test_crs_can_have_zero_element_rows():

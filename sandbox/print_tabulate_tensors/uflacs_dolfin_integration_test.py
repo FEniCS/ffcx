@@ -1,4 +1,5 @@
 from dolfin import *
+from six.moves import xrange
 
 output = {}
 for representation in ("uflacs", "quadrature"):

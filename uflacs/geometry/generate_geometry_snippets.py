@@ -1,4 +1,5 @@
 from uflacs.codeutils.format_code import Indented, WithKeywords
+from six.moves import xrange
 
 # A dependency graph like this might be a way to automatically figure out which quantities to generate?
 dependencies = {

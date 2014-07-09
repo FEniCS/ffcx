@@ -1,4 +1,5 @@
 
+from six.moves import xrange
 from ufl import as_ufl
 from ufl.classes import Terminal, Indexed, Grad, Restricted, FacetAvg, CellAvg, Argument, Product, Sum, Division
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env py.test
 
+from six.moves import xrange
 import ufl
 from ufl import *
 #from ufl.common import product

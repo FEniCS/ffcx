@@ -1,4 +1,5 @@
 
+from six.moves import xrange
 import numpy as np
 
 default_tolerance = 1e-14

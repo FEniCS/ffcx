@@ -1,4 +1,5 @@
 
+from six.moves import xrange
 from collections import defaultdict
 from itertools import izip, chain
 

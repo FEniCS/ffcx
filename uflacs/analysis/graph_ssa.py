@@ -1,4 +1,5 @@
 
+from six.moves import xrange
 import ufl
 from ufl.classes import (Terminal, GeometricQuantity, ConstantValue,
                          Argument, Coefficient,

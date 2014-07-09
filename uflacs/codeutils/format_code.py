@@ -1,6 +1,7 @@
 """
 Tools for stitching together code snippets.
 """
+from six.moves import xrange
 
 
 def strip_trailing_whitespace(s):

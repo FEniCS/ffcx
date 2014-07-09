@@ -1,4 +1,5 @@
 
+from six.moves import xrange
 from ufl.classes import Terminal
 
 from uflacs.utils.log import error, uflacs_assert

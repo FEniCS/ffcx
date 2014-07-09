@@ -1,4 +1,5 @@
 
+from six.moves import xrange
 from ufl.permutation import build_component_numbering
 from ufl.classes import GeometricQuantity
 
