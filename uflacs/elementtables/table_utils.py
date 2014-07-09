@@ -1,5 +1,5 @@
 
-from six.moves import xrange, map
+from six.moves import xrange, map, next
 import numpy as np
 
 default_tolerance = 1e-14
@@ -107,7 +107,7 @@ def get_ffc_table_values(tables, entitytype, num_points, element, flat_component
 
     # Figure out shape of final array by inspecting tables
     num_entities = len(element_table)
-    num_dofs = len(element_table.itervalues().next()[derivative_counts])
+    num_dofs = len(next(element_table.itervalues())[derivative_counts])
 
     # Make 3D array for final result
     shape = (num_entities, num_points, num_dofs)
