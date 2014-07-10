@@ -98,7 +98,7 @@ class TestFractionOperators(unittest.TestCase):
         self.assertEqual(str(F0 / S0), '%s/(x*y + y*y)' % f_2)
         # Silence output
         push_level(CRITICAL)
-        self.assertRaises(Exception, F0.__div__, F0)
+        self.assertRaises(Exception, F0.__truediv__, F0)
         pop_level()
 
 if __name__ == "__main__":

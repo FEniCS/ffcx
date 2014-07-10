@@ -157,7 +157,7 @@ class Sum(Expr):
         # TODO: Is it necessary to call expand?
         return new_prods[0].expand()
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         "Division by other objects."
         # If division is illegal (this should definitely not happen).
         if other.val == 0.0:

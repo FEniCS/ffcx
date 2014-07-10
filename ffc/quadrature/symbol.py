@@ -123,7 +123,7 @@ class Symbol(Expr):
         # Else add variables from product.
         return create_product([self] + other.vrs)
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         "Division by other objects."
         # NOTE: We assume expanded objects.
         # If division is illegal (this should definitely not happen).

@@ -108,8 +108,8 @@ class TestProductOperators(unittest.TestCase):
         self.assertEqual(str(p1/p3), '%s/z' % format["float"](1))
         # Silence output
         push_level(CRITICAL)
-        self.assertRaises(Exception, p0.__div__, f0)
-        self.assertRaises(Exception, p0.__div__, F0)
+        self.assertRaises(Exception, p0.__truediv__, f0)
+        self.assertRaises(Exception, p0.__truediv__, F0)
         pop_level()
 
 if __name__ == "__main__":

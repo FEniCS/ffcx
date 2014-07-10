@@ -205,7 +205,7 @@ class Product(Expr):
         # Create new product adding all variables from other Product.
         return create_product(self.vrs + other.vrs)
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         "Division by other objects."
         # If division is illegal (this should definitely not happen).
         if other.val == 0.0:

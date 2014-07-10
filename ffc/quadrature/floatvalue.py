@@ -100,7 +100,7 @@ class FloatValue(Expr):
             return create_float(self.val*other.val)
         return other.__mul__(self)
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         "Division by other objects."
         # If division is illegal (this should definitely not happen).
         if other.val == 0.0:

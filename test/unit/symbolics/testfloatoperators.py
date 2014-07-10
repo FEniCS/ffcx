@@ -93,9 +93,9 @@ class TestFloatOperators(unittest.TestCase):
         self.assertEqual(str(fm3/S1), str(F2))
         # Silence output
         push_level(CRITICAL)
-        self.assertRaises(Exception, f2.__div__, F0)
-        self.assertRaises(Exception, f2.__div__, f0)
-        self.assertRaises(Exception, f2.__div__, Product([f0, y]))
+        self.assertRaises(Exception, f2.__truediv__, F0)
+        self.assertRaises(Exception, f2.__truediv__, f0)
+        self.assertRaises(Exception, f2.__truediv__, Product([f0, y]))
         pop_level()
 
 

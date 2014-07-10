@@ -102,8 +102,8 @@ class TestSymbolOperators(unittest.TestCase):
         self.assertEqual(str(z/p1), 'z/(x*y)')
         # Silence output
         push_level(CRITICAL)
-        self.assertRaises(Exception, x.__div__, F0)
-        self.assertRaises(Exception, y.__div__, FloatValue(0))
+        self.assertRaises(Exception, x.__truediv__, F0)
+        self.assertRaises(Exception, y.__truediv__, FloatValue(0))
         pop_level()
 
 if __name__ == "__main__":

@@ -136,7 +136,7 @@ class Fraction(Expr):
         # '/' to reduce expression.
         return create_product([self.num, other.num]).expand()/create_product([self.denom, other.denom]).expand()
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         "Division by other objects."
         # If division is illegal (this should definitely not happen).
         if other.val == 0.0:

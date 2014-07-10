@@ -90,8 +90,8 @@ class TestSumOperators(unittest.TestCase):
         self.assertEqual(str(S0 / S1), '(x + y)/(x + z)')
         # Silence output
         push_level(CRITICAL)
-        self.assertRaises(Exception, S0.__div__, FloatValue(0))
-        self.assertRaises(Exception, S0.__div__, F0)
+        self.assertRaises(Exception, S0.__truediv__, FloatValue(0))
+        self.assertRaises(Exception, S0.__truediv__, F0)
         pop_level()
 
 if __name__ == "__main__":
