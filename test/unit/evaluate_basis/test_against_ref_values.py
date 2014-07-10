@@ -18,11 +18,11 @@
 # First added:  2010-01-18
 # Last changed: 2010-01-29
 
-from cppcode import evaluate_basis_code
+from .cppcode import evaluate_basis_code
 from ufl import FiniteElement, MixedElement
 from instant.output import get_status_output
 import sys, os, pickle, numpy, shutil
-from elements import single_elements, mixed_elements
+from .elements import single_elements, mixed_elements
 
 ffc_failed = []
 gcc_failed = []

@@ -30,10 +30,11 @@ from .constants import FFC_VERSION
 from ffc.backends import ufc
 
 # Compute signature of all ufc headers combined
-ufc_signature = sha1(''.join(str(getattr(ufc, header)
+#ufc_keys = vars(ufc).keys() if sys.version_info < 3 else [str(k) in vars(ufl).keys()]
+ufc_signature = sha1(''.join(getattr(ufc, header)
                              for header in
                              (k for k in vars(ufc).keys()
-                              if k.endswith("_header"))))
+                              if k.endswith("_header"))).encode('utf-8')
                               ).hexdigest()
 
 class JITObject:
@@ -85,7 +86,7 @@ class JITObject:
                       ffc_signature,
                       ufc_signature]
         string = ";".join(signatures)
-        self._signature = sha1(string).hexdigest()
+        self._signature = sha1(string.encode('utf-8')).hexdigest()
 
         # Uncomment for debugging
         #print "form_signature       =", form_signature

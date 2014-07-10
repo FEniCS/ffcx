@@ -85,7 +85,7 @@ def run_command(command):
     global logfile
     if logfile is None:
         logfile = open("../../error.log", "w")
-    logfile.write(output + "\n")
+    logfile.write(output.decode('utf-8') + "\n")
     print(output)
     return False
 

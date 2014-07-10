@@ -18,18 +18,18 @@
 # First added:  2010-01-29
 # Last changed: 2013-01-31
 
-from cppcode import evaluate_basis_code_fiat
+from .cppcode import evaluate_basis_code_fiat
 from ufl import FiniteElement
 from ffc.fiatinterface import create_element, reference_cell
 from ffc.mixedelement import MixedElement as FFCMixedElement
 from ffc.log import info, error, debug
 import numpy
 import sys, os, numpy, shutil
-from test_common import compile_element, print_results, compile_gcc_code,\
+from .test_common import compile_element, print_results, compile_gcc_code,\
                         run_code, get_element_name, verify_values
 import time
 from ffc.log import push_level, pop_level, CRITICAL, INFO
-from elements import single_elements, mixed_elements
+from .elements import single_elements, mixed_elements
 
 # Some random points
 random_points = {1: [(0.114,), (0.349,), (0.986,)],

@@ -19,7 +19,7 @@
 # Last changed: 2014-01-28
 
 from ufl import FiniteElement, MixedElement
-from test_common import xcomb
+from .test_common import xcomb
 __all__ = ["single_elements", "mixed_elements"]
 
 # Elements, supported by FFC and FIAT, and their supported shape and orders
