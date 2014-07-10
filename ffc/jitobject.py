@@ -24,16 +24,16 @@ from hashlib import sha1
 import ufl
 
 # FFC modules.
-from constants import FFC_VERSION
+from .constants import FFC_VERSION
 
 # UFC modules.
 from ffc.backends import ufc
 
 # Compute signature of all ufc headers combined
-ufc_signature = sha1(''.join(getattr(ufc, header)
+ufc_signature = sha1(''.join(str(getattr(ufc, header)
                              for header in
-                             (k for k in list(vars(ufc).keys())
-                              if k.endswith("_header")))
+                             (k for k in vars(ufc).keys()
+                              if k.endswith("_header"))))
                               ).hexdigest()
 
 class JITObject:

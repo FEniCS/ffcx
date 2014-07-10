@@ -316,9 +316,9 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
     # Where did the values go?
     error("Values disappeared.")
 
-from floatvalue import FloatValue
-from symbol     import Symbol
-from product    import Product
-from sumobj     import Sum
-from fraction   import Fraction
+from .floatvalue import FloatValue
+from .symbol     import Symbol
+from .product    import Product
+from .sumobj     import Sum
+from .fraction   import Fraction
 

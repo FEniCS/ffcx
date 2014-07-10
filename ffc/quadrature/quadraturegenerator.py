@@ -39,7 +39,7 @@ from ffc.utils import compute_derivative_tuples
 from ffc.representationutils import initialize_integral_code
 
 # Utility and optimization functions for quadraturegenerator
-from symbolics import generate_aux_constants
+from .symbolics import generate_aux_constants
 import six
 
 def generate_integral_code(ir, prefix, parameters):

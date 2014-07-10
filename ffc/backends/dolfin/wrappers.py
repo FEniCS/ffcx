@@ -19,10 +19,10 @@
 #
 # Last changed: 2012-12-05
 
-import includes as incl
-from functionspace import *
-from form import generate_form
-from capsules import UFCElementNames
+from . import includes as incl
+from .functionspace import *
+from .form import generate_form
+from .capsules import UFCElementNames
 
 __all__ = ["generate_dolfin_code"]
 

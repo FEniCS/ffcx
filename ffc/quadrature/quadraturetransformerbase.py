@@ -47,8 +47,8 @@ from ffc.tensor.multiindex import MultiIndex as FFCMultiIndex
 from ffc.representationutils import transform_component
 
 # Utility and optimisation functions for quadraturegenerator.
-from quadratureutils import create_psi_tables
-from symbolics import BASIS, IP, GEO, CONST
+from .quadratureutils import create_psi_tables
+from .symbolics import BASIS, IP, GEO, CONST
 
 class QuadratureTransformerBase(Transformer):
     "Transform UFL representation to quadrature code."

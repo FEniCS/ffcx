@@ -19,7 +19,7 @@
 #
 # Last changed: 2012-11-14
 
-from includes import snippets
+from .includes import snippets
 
 __all__ = ["apply_function_space_template", "extract_coefficient_spaces",
            "generate_typedefs"]

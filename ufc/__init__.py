@@ -4,7 +4,7 @@ __date__ = "2010-08-19 -- 2014-02-14"
 __license__  = "Released to the public domain"
 
 # Import Python versions of the abstract classes in the UFC interface
-from ufc import (cell,
+from .ufc import (cell,
                  function,
                  form,
                  finite_element,

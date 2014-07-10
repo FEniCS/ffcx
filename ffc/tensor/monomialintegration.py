@@ -42,9 +42,9 @@ from ffc.fiatinterface import map_facet_points
 from ffc.quadrature_schemes import create_quadrature
 
 # FFC tensor representation modules
-from multiindex import build_indices
-from monomialextraction import MonomialException
-from monomialtransformation import MonomialIndex
+from .multiindex import build_indices
+from .monomialextraction import MonomialException
+from .monomialtransformation import MonomialIndex
 
 def integrate(monomial,
               integral_type,

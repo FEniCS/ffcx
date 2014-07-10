@@ -36,18 +36,18 @@ from ufl.algorithms import extract_elements, extract_sub_elements, compute_form_
 from ufl.common import istr, tstr
 
 # FFC modules
-from log import log
-from log import info
-from log import warning
-from log import debug
-from log import error
-from log import set_level
-from log import set_prefix
-from log import INFO
-from parameters import default_parameters
-from mixedelement import MixedElement
-from compiler import compile_form
-from jitobject import JITObject
+from .log import log
+from .log import info
+from .log import warning
+from .log import debug
+from .log import error
+from .log import set_level
+from .log import set_prefix
+from .log import INFO
+from .parameters import default_parameters
+from .mixedelement import MixedElement
+from .compiler import compile_form
+from .jitobject import JITObject
 from ffc.quadratureelement import default_quadrature_degree
 from ffc.backends.ufc import build_ufc_module
 

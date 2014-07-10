@@ -21,9 +21,9 @@
 #
 # Last changed: 2011-11-15
 
-from includes import snippets
-from functionspace import *
-from goalfunctional import generate_update_ec
+from .includes import snippets
+from .functionspace import *
+from .goalfunctional import generate_update_ec
 
 __all__ = ["generate_form"]
 

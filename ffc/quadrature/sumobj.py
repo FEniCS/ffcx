@@ -25,11 +25,11 @@ from ffc.log import error
 from ffc.cpp import format
 
 # FFC quadrature modules.
-from symbolics import create_float
-from symbolics import create_product
-from symbolics import create_sum
-from symbolics import create_fraction
-from expr import Expr
+from .symbolics import create_float
+from .symbolics import create_product
+from .symbolics import create_sum
+from .symbolics import create_fraction
+from .expr import Expr
 import six
 
 #global ind
@@ -589,8 +589,8 @@ def _group_fractions(expr):
         return create_sum(not_frac)
     return not_frac[0]
 
-from floatvalue import FloatValue
-from symbol     import Symbol
-from product    import Product
-from fraction   import Fraction
+from .floatvalue import FloatValue
+from .symbol     import Symbol
+from .product    import Product
+from .fraction   import Fraction
 

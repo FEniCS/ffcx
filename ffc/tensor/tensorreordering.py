@@ -24,8 +24,8 @@
 import numpy
 
 # FFC tensor representation modules
-from monomialtransformation import MonomialIndex
-from multiindex import MultiIndex
+from .monomialtransformation import MonomialIndex
+from .multiindex import MultiIndex
 
 def reorder_entries(terms):
     """Reorder entries to compute the reference tensor for an interior

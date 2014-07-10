@@ -22,7 +22,7 @@
 
 
 from FIAT import finite_element, polynomial_set, dual_set, functional, reference_element
-import time_elements_ext as ext
+from . import time_elements_ext as ext
 import numpy
 
 class TimeElementDualSet(dual_set.DualSet):

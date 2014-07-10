@@ -19,8 +19,8 @@
 # Last changed: 2010-03-07
 
 import numpy
-from utils import pick_first
-from mixedelement import _combine_entity_dofs, _num_components
+from .utils import pick_first
+from .mixedelement import _combine_entity_dofs, _num_components
 
 class EnrichedElement:
     "Create the space spanned by a list of ffc elements."

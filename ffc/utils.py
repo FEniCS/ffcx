@@ -26,7 +26,7 @@ import functools
 import itertools
 
 # FFC modules.
-from log import error
+from .log import error
 
 def product(sequence):
     "Return the product of all elements in a sequence."

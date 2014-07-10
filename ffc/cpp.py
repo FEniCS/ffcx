@@ -251,7 +251,7 @@ format.update({
 })
 
 # Code snippets
-from codesnippets import *
+from .codesnippets import *
 
 format.update({
     "compute_jacobian":         lambda tdim, gdim, r=None: \

@@ -21,13 +21,13 @@ from ffc.compiler import compile_form, compile_element
 from ffc.jitcompiler import jit
 
 # Import default parameters
-from parameters import default_parameters
+from .parameters import default_parameters
 
 # Import plotting
-from plot import *
+from .plot import *
 
 # Import useful extra functionality
-from extras import *
+from .extras import *
 
 # List of supported elements
 try:
@@ -38,7 +38,7 @@ try:
     supported_elements.sort()
 
     # Append elements that we can plot
-    from plot import element_colors
+    from .plot import element_colors
     supported_elements_for_plotting = list(set(supported_elements).union(set(element_colors.keys())))
     supported_elements_for_plotting.sort()
 

@@ -44,10 +44,10 @@ from ffc.log import info, debug, error, ffc_assert
 from ffc.cpp import format
 
 # Utility and optimisation functions for quadraturegenerator.
-from quadraturetransformerbase import QuadratureTransformerBase
-from quadratureutils import create_permutations
-from reduce_operations import operation_count
-from symbolics import IP
+from .quadraturetransformerbase import QuadratureTransformerBase
+from .quadratureutils import create_permutations
+from .reduce_operations import operation_count
+from .symbolics import IP
 
 class QuadratureTransformer(QuadratureTransformerBase):
     "Transform UFL representation to quadrature code."

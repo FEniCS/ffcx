@@ -27,7 +27,7 @@ import numpy
 from FIAT.functional import PointEvaluation
 
 # FFC modules.
-from log import error, info_red
+from .log import error, info_red
 
 # Default quadrature element degree
 default_quadrature_degree = 1
