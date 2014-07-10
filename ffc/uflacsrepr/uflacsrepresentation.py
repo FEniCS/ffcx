@@ -29,7 +29,7 @@ from ufl.algorithms.change_to_reference import (change_to_reference_grad,
                                                 change_to_reference_geometry)
 from ufl.algorithms import propagate_restrictions
 
-from uflacs.utils.log import uflacs_assert
+from ffc.log import ffc_assert
 from uflacs.params import default_parameters
 from uflacs.analysis.datastructures import object_array
 from uflacs.analysis.modified_terminals import analyse_modified_terminal2
@@ -135,7 +135,7 @@ def compute_tabulate_tensor_ir(psi_tables, entitytype,
         uflacs_ir["expr_ir"][num_points] = expr_ir
 
     # NB! Using the last num_points from integrals_dict below, but not handling it properly yet
-    uflacs_assert(len(integrals_dict) == 1, "Not supporting multiple integration rules yet.")
+    ffc_assert(len(integrals_dict) == 1, "Not supporting multiple integration rules yet.")
     num_points, = list(integrals_dict.keys())
     expr_ir = uflacs_ir["expr_ir"][num_points]
 
