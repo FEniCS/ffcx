@@ -1,6 +1,6 @@
 "Code generator for quadrature representation."
 
-# Copyright (C) 2009-2013 Kristian B. Oelgaard
+# Copyright (C) 2009-2014 Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -19,10 +19,7 @@
 #
 # Modified by Mehdi Nikbakht 2010
 # Modified by Anders Logg 2013-2014
-# Modified by Martin Alnaes 2013
-#
-# First added:  2009-01-07
-# Last changed: 2014-06-10
+# Modified by Martin Alnaes 2013-2014
 
 # Python modules
 import functools, itertools
@@ -30,11 +27,11 @@ import numpy
 
 # UFL modules
 from ufl.algorithms.printing import tree_format
+from ufl.utils.derivativetuples import compute_derivative_tuples
 
 # FFC modules
 from ffc.log import info, debug, ffc_assert, error, warning
 from ffc.cpp import format, remove_unused
-from ffc.utils import compute_derivative_tuples
 
 from ffc.representationutils import initialize_integral_code
 
