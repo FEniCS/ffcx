@@ -8,12 +8,11 @@ from ufl import as_vector
 from ufl.classes import (MultiIndex, ComponentTensor, ListTensor, Transposed, Variable,
                          IndexSum, UtilityType, Label, ExprList, ExprMapping)
 from ufl.algorithms import MultiFunction
+from ufl.utils.indexflattening import flatten_multiindex, shape_to_strides
 
 from ffc.log import error, ffc_assert
-from uflacs.datastructures.arrays import int_array, object_array,
+from uflacs.datastructures.arrays import int_array, object_array
 from uflacs.datastructures.crs import CRS, rows_to_crs, rows_dict_to_crs
-from uflacs.analysis.indexing import indexing_to_component, shape_to_strides
-
 from uflacs.analysis.modified_terminals import is_modified_terminal
 
 class ReconstructScalarSubexpressions(MultiFunction):
@@ -147,10 +146,12 @@ class ReconstructScalarSubexpressions(MultiFunction):
 
         # Compute each scalar value
         res = []
+        st = shape_to_strides(sh)
+        ist = shape_to_strides(ish)
         for sc in compute_indices(sh): # TODO: Optimization: swap loops so we recompute less
-            sk = indexing_to_component(sc, (), sh)
+            sk = flatten_multiindex(sc, st)
             for ic in compute_indices(ish):
-                ik = indexing_to_component(ic, (), ish)
+                ik = flatten_multiindex(ic, ist)
                 k = sk*im + ik # Compute the output component index (not used!)
 
                 sops = []
@@ -263,16 +264,15 @@ class ReconstructScalarSubexpressions(MultiFunction):
             istrides[iop] = shape_to_strides(opish)
             opims[iop] = opim if opsh else 0
 
-        # These are the same:
-        #sk = indexing_to_component(sc, (), sh)
-        #sk = multiindex_to_component(sc, shape_to_strides(sh)) # And strides are known? TODO: Optimize?
-
         # Compute each scalar value of o in terms of ops
         res = []
         sindices = compute_indices(sh)
         iindices = compute_indices(ish)
-        scomponents = [(sc, indexing_to_component(sc, (), sh)) for sc in sindices]
-        icomponents = [(ic, indexing_to_component(ic, (), ish)) for ic in iindices]
+        sstrides = shape_to_strides(sindices) # TODO: Optimize, strides are known above?
+        istrides = shape_to_strides(iindices)
+        # TODO: Cache icomponents and scomponents, the number of different shapes is small!
+        scomponents = [(sc, flatten_multiindex(sc, sstrides)) for sc in sindices]
+        icomponents = [(ic, flatten_multiindex(ic, istrides)) for ic in iindices]
         for sc, sk in scomponents: # TODO: Optimization: swap loops so we recompute less?
             for ic, ik in icomponents:
                 k = sk*im + ik # Compute the output component index (not used!)

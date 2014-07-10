@@ -1,5 +1,6 @@
 
 from six.moves import xrange
+from ufl.common import sorted_by_count
 from ufl.classes import (Terminal, FormArgument, Grad, Restricted,
                          Indexed, ComponentTensor, ListTensor, Transposed, Variable,
                          IndexSum, MultiIndex, Condition,
@@ -10,6 +11,7 @@ from ffc.log import error
 from uflacs.datastructures.arrays import int_array, object_array
 from uflacs.datastructures.crs import CRS, rows_to_crs, rows_dict_to_crs
 
+# FIXME: Import what's needed:
 from uflacs.analysis.indexing import *
 
 
@@ -27,7 +29,7 @@ def build_node_shapes(V):
             sh = v.shape()
             # Index "shape"
             idims = v.index_dimensions()
-            ish = tuple(idims[idx] for idx in sorted_indices(v.free_indices()))
+            ish = tuple(idims[idx] for idx in sorted_by_count(v.free_indices()))
             # Store "total" shape and size
             tsh = sh + ish
 

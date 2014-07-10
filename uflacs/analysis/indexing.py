@@ -1,44 +1,15 @@
 
+
+# FIXME: Clean up duplicates in this module
+
+
 from six.moves import xrange as range
 from six.moves import zip
 
-from ufl.common import product
+from ufl.common import product, sorted_by_count
 from ufl.permutation import compute_indices
+from ufl.utils.indexflattening import shape_to_strides, flatten_multiindex
 from ufl.classes import Indexed, ComponentTensor, ListTensor, FixedIndex, Index
-
-def sorted_indices(indices):
-    return sorted(indices, key=lambda x: x.count())
-
-def shape_to_strides(sh):
-    n = len(sh)
-    if not n:
-        return ()
-    strides = [None]*n
-    strides[n-1] = 1
-    for i in range(n-1, 0, -1):
-        strides[i-1] = strides[i]*sh[i]
-    return tuple(strides)
-
-def multiindex_to_component(ii, strides):
-    return sum(i*s for i, s in zip(ii, strides))
-
-def component_to_multiindex(c, strides):
-    ii = []
-    rest = c
-    for s in strides:
-        k = rest // s
-        ii.append(k)
-        rest -= k*s
-    return tuple(ii)
-
-def indexing_to_component(ii, ind, sh):
-    strides = shape_to_strides(sh)
-    # TODO: Handle ind
-    assert not ind
-
-    index = ii
-    c = multiindex_to_component(index, strides)
-    return c
 
 def map_indexed_to_arg_components(indexed):
     e1 = indexed
@@ -47,8 +18,8 @@ def map_indexed_to_arg_components(indexed):
     e2 = A1
 
     # Compute index shape
-    ind1 = sorted_indices(e1.free_indices())
-    ind2 = sorted_indices(e2.free_indices())
+    ind1 = sorted_by_count(e1.free_indices())
+    ind2 = sorted_by_count(e2.free_indices())
     idims1 = e1.index_dimensions()
     idims2 = e2.index_dimensions()
     ish1 = tuple(idims1[i] for i in ind1)
@@ -71,12 +42,13 @@ def map_indexed_to_arg_components(indexed):
         p1 = [None]*len(p2)
         for j, p in enumerate(p2):
             p1[sh_to_ind_map[j]] = p
-        c1 = multiindex_to_component(p1, str1)
-        c2 = multiindex_to_component(p2, str2)
+        c1 = flatten_multiindex(p1, str1)
+        c2 = flatten_multiindex(p2, str2)
         #print c1, c2
         comp1.append(c1)
         comp2.append(c2)
     return tuple(comp1), tuple(comp2)
+
 def map_indexed_arg_components2(Aii): # TODO: Remove when the new version is better tested
     c1, c2 = map_indexed_to_arg_components(Aii)
     d = [None]*len(c1)
@@ -91,8 +63,8 @@ def map_indexed_arg_components4(indexed):
     e2, mi = e1.operands()
 
     # Compute index shape
-    ind1 = sorted_indices(e1.free_indices())
-    ind2 = sorted_indices(e2.free_indices())
+    ind1 = sorted_by_count(e1.free_indices())
+    ind2 = sorted_by_count(e2.free_indices())
     idims1 = e1.index_dimensions()
     idims2 = e2.index_dimensions()
     ish1 = tuple(idims1[i] for i in ind1)
@@ -122,7 +94,7 @@ def map_indexed_arg_components4(indexed):
     d2 = [None]*ni
     for c2, p2 in enumerate(indices2):
         p1 = [p2[k] for k in ind1_to_mi_map]
-        c1 = multiindex_to_component(p1, str1)
+        c1 = flatten_multiindex(p1, str1)
         d1[c1] = c2
         d2[c2] = c1
     assert d1 == d2
@@ -134,8 +106,8 @@ def map_component_tensor_arg_components4(component_tensor):
     e1, mi = e2.operands()
 
     # Compute index shape
-    ind1 = sorted_indices(e1.free_indices())
-    ind2 = sorted_indices(e2.free_indices())
+    ind1 = sorted_by_count(e1.free_indices())
+    ind2 = sorted_by_count(e2.free_indices())
     idims1 = e1.index_dimensions()
     idims2 = e2.index_dimensions()
     ish1 = tuple(idims1[i] for i in ind1)
@@ -165,12 +137,11 @@ def map_component_tensor_arg_components4(component_tensor):
     d2 = [None]*ni
     for c2, p2 in enumerate(indices2):
         p1 = [p2[k] for k in ind1_to_mi_map]
-        c1 = multiindex_to_component(p1, str1)
+        c1 = flatten_multiindex(p1, str1)
         d1[c1] = c2
         d2[c2] = c1
     assert d1 == d2
     return d2
-
 
 def map_indexed_arg_components(indexed):
     assert isinstance(indexed, Indexed)
@@ -195,8 +166,8 @@ def map_tensor_components1(tensor, indexed, multiindex): # TODO: Rename. For Ind
     e1 = indexed # e1 = e2[multiindex]
 
     # Compute index shape
-    ind1 = sorted_indices(e1.free_indices())
-    ind2 = sorted_indices(e2.free_indices())
+    ind1 = sorted_by_count(e1.free_indices())
+    ind2 = sorted_by_count(e2.free_indices())
     idims1 = e1.index_dimensions()
     idims2 = e2.index_dimensions()
     ish1 = tuple(idims1[i] for i in ind1)
@@ -248,7 +219,7 @@ def map_tensor_components1(tensor, indexed, multiindex): # TODO: Rename. For Ind
         for k, i in enumerate(ind2_to_ind1_map):
             p2[nmui+k] = p1[i]
             p2ks.add(nmui+k)
-        c2 = multiindex_to_component(p2, str2)
+        c2 = flatten_multiindex(p2, str2)
         d1[c1] = c2
 
     return d1
@@ -259,8 +230,8 @@ def map_tensor_components2(tensor, indexed, multiindex): # TODO: Rename. For Com
     mi = [i for i in multiindex if isinstance(i, Index)]
 
     # Compute index shape
-    ind1 = sorted_indices(e1.free_indices())
-    ind2 = sorted_indices(e2.free_indices())
+    ind1 = sorted_by_count(e1.free_indices())
+    ind2 = sorted_by_count(e2.free_indices())
     idims1 = e1.index_dimensions()
     idims2 = e2.index_dimensions()
     ish1 = tuple(idims1[i] for i in ind1)
@@ -305,7 +276,7 @@ def map_tensor_components2(tensor, indexed, multiindex): # TODO: Rename. For Com
     for c2, p2 in enumerate(perm2):
         for k2, k1 in enumerate(p2_to_p1_map):
             p1[k1] = p2[k2]
-        c1 = multiindex_to_component(p1, str1)
+        c1 = flatten_multiindex(p1, str1)
         d2[c2] = c1
 
     return d2

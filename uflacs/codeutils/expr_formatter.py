@@ -16,7 +16,7 @@ class ExprFormatter(Transformer):
     for a particular language and target."""
 
     def __init__(self, language_formatter, variables):
-        super(ExprFormatter2, self).__init__()
+        super(ExprFormatter, self).__init__()
         self.language_formatter = language_formatter
         self.variables = variables
         self.precedence = build_precedence_map()

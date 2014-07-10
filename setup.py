@@ -18,6 +18,7 @@ version = "%d.%d.%d%s" % (major, minor, maintenance, development)
 packages = [
     "uflacs",
     "uflacs.codeutils",
+    "uflacs.datastructures",
     "uflacs.analysis",
     "uflacs.elementtables",
     "uflacs.generation",

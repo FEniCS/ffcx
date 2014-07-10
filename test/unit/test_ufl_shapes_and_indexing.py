@@ -7,8 +7,6 @@ from ufl import *
 from ufl.common import product
 from ufl.permutation import compute_indices
 
-from uflacs.analysis.indexing import (shape_to_strides, multiindex_to_component,
-                                        component_to_multiindex, indexing_to_component)
 from uflacs.analysis.indexing import (map_indexed_arg_components,
                                         map_indexed_arg_components2,
                                         map_component_tensor_arg_components)

@@ -10,9 +10,8 @@ from uflacs.datastructures.arrays import object_array
 from uflacs.elementtables.table_utils import (generate_psi_table_name,
                                               get_ffc_table_values,
                                               strip_table_zeros,
-                                              build_unique_tables,
-                                              derivative_listing_to_counts,
-                                              flatten_component)
+                                              build_unique_tables)
+from ufl.utils.derivativetuples import derivative_listing_to_counts
 
 def extract_terminal_elements(terminal_data):
     "Extract a list of unique elements from terminal data."

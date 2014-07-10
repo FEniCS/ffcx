@@ -9,8 +9,6 @@ from ufl.sorting import sorted_expr
 
 from ffc.log import ffc_assert, warning, error
 
-from uflacs.elementtables.table_utils import flatten_component
-
 
 #########################################################################################
 # This is THE definition of modifier types, try to use this everywhere

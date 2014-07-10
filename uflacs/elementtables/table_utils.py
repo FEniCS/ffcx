@@ -181,30 +181,6 @@ def generate_psi_table_name(element_counter, flat_component, derivative_counts, 
 
     return name
 
-
-def derivative_counts_to_listing(derivative_counts, gdim):
-    derivatives = []
-    for i, d in enumerate(derivative_counts):
-        derivatives.extend((i,)*d)
-    return derivatives
-
-def derivative_listing_to_counts(derivatives, gdim):
-    derivative_counts = [0]*gdim
-    for d in derivatives:
-        derivative_counts[d] += 1
-    return derivative_counts
-
-#from ufl.common import component_to_index
-from ufl.permutation import build_component_numbering
-def flatten_component(component, shape, symmetry):
-    if shape:
-        # Map component to flat index
-        vi2si, si2vi = build_component_numbering(shape, symmetry)
-        return vi2si[component]
-    else:
-        return None
-
-
 def _examples(tables):
     name = generate_psi_table_name(counter, flat_component, derivative_counts, averaged, entitytype)
     values = get_ffc_table_values(tables, entitytype, num_points, element, flat_component, derivative_counts)

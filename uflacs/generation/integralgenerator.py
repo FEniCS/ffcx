@@ -48,7 +48,7 @@ class IntegralGenerator(object):
 
         # This is a transformer that collects terminal modifiers
         # and delegates formatting to the language_formatter
-        self.expr_formatter = ExprFormatter2(language_formatter, {})
+        self.expr_formatter = ExprFormatter(language_formatter, {})
 
     def generate_using_statements(self):
         return ["using %s;" % name for name in sorted(self._using_names)]

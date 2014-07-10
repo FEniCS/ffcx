@@ -15,7 +15,6 @@ DONE - Make reference_facet_jacobi tables and use below
 from six import iterkeys
 from six.moves import xrange as range
 import ufl
-from ufl.common import component_to_index
 from ufl.permutation import build_component_numbering
 from ufl.classes import Argument, Coefficient, GeometricQuantity
 from ufl.algorithms import MultiFunction
@@ -32,9 +31,6 @@ from uflacs.codeutils.format_code import (format_code,
                                           AssignAdd, Assign,
                                           Add, Sub, Mul,
                                           Sum,)
-
-from uflacs.elementtables.table_utils import flatten_component
-
 
 class Names: # TODO: This is not used much anymore, integrate in backend class
     def __init__(self):
@@ -143,7 +139,7 @@ def ufc_restriction_postfix(restriction):
     return res
 
 #from uflacs.backends.ffc.ffc_statement_formatter import format_element_table_access
-#from uflacs.elementtables.table_utils import derivative_listing_to_counts
+#from ufl.utils.derivativetuples import derivative_listing_to_counts
 #def generate_element_table_access(mt):
 #    # FIXME: See  format_element_table_access  get_element_table_data
 #    #entity = format_entity_name(self.ir["entitytype"], mt.restriction)
