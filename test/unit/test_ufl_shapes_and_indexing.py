@@ -8,7 +8,6 @@ from ufl.common import product
 from ufl.permutation import compute_indices
 
 from uflacs.analysis.indexing import (map_indexed_arg_components,
-                                        map_indexed_arg_components2,
                                         map_component_tensor_arg_components)
 from uflacs.analysis.graph_symbols import (map_list_tensor_symbols,
                                              map_transposed_symbols, get_node_symbols)
@@ -30,6 +29,15 @@ def test_map_indexed_arg_components():
     assert equal(d, [0, 2, 1, 3])
 
 def test_map_indexed_arg_components2():
+
+    # This was the previous return type, copied here to preserve the test without having to rewrite
+    def map_indexed_arg_components2(Aii):
+        c1, c2 = map_indexed_to_arg_components(Aii)
+        d = [None]*len(c1)
+        for k in range(len(c1)):
+            d[c1[k]] = k
+        return d
+
     W = TensorElement("CG", cell2D, 1)
     A = Coefficient(W)
     i, j = indices(2)

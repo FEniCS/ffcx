@@ -1,179 +1,119 @@
 
-from six.moves import xrange
 from ufl.common import sorted_by_count
-from ufl.classes import (Terminal, FormArgument, Grad, Restricted,
-                         Indexed, ComponentTensor, ListTensor, Transposed, Variable,
-                         IndexSum, MultiIndex, Condition,
-                         UtilityType, Label, ExprList, ExprMapping)
+from ufl.classes import Condition
 
 from ffc.log import error
 
 from uflacs.datastructures.arrays import int_array, object_array
-from uflacs.datastructures.crs import CRS, rows_to_crs, rows_dict_to_crs
+from uflacs.datastructures.crs import CRS, rows_to_crs
+from uflacs.analysis.valuenumbering import ValueNumberer
 
-# FIXME: Import what's needed:
-from uflacs.analysis.indexing import *
+
+def total_shape(v):
+    """Compute the total shape of an expr.
+
+    The total shape is the regular shape tuple plus the index shape tuple.
+    The index shape tuple is the tuple of index dimensions of the free indices
+    of the expression, sorted by the count of the free indices.
+
+    The total shape of a tensor valued expression A and A[*indices(A.rank())]
+    is therefore the same.
+    """
+    if isinstance(v, Condition):
+        # TODO: Shape and index calls are invalid for conditions.
+        #       Is this the best fix? Could also just return () from Condition.shape()?
+        tsh = ()
+
+    else:
+        # Regular shape
+        sh = v.shape()
+
+        # Index "shape"
+        fi = v.free_indices()
+        if fi:
+            # Just an attempt at optimization, not running this code for expressions without free indices
+            idims = v.index_dimensions()
+            ish = tuple(idims[idx] for idx in sorted_by_count(fi))
+
+            # Store "total" shape
+            tsh = sh + ish
+
+        else:
+            tsh = sh
+
+    return tsh
 
 
 def build_node_shapes(V):
+    """Build total shapes for each node in list representation of expression graph.
+
+    V is an array of ufl expressions, possibly nonscalar and with free indices.
+
+    Returning a CRS where row i is the total shape of V[i].
+    """
+    # Dimensions of returned CRS
     nv = len(V)
     k = 0
+
+    # Store shapes intermediately in an array of tuples
     V_shapes = object_array(nv)
     for i, v in enumerate(V):
+        # Compute total shape of V[i]
+        V_shapes[i] = total_shape(v)
 
-        if isinstance(v, Condition):
-            # FIXME: Shape and index calls are invalid for conditions. Is this the best fix?
-            tsh = ()
-        else:
-            # Regular shape
-            sh = v.shape()
-            # Index "shape"
-            idims = v.index_dimensions()
-            ish = tuple(idims[idx] for idx in sorted_by_count(v.free_indices()))
-            # Store "total" shape and size
-            tsh = sh + ish
-
-        V_shapes[i] = tsh
         # Count number of elements for CRS representation
         k += len(tsh)
 
     # Return a more memory efficient CRS representation
     return rows_to_crs(V_shapes, nv, k, int)
 
+
 def build_node_sizes(V_shapes):
+    "Compute all the products of a sequence of shapes."
     nv = len(V_shapes)
     V_sizes = int_array(nv)
     for i, sh in enumerate(V_shapes):
         V_sizes[i] = product(sh)
     return V_sizes
 
-def get_node_symbols(expr, e2i, V_symbols):
-    return V_symbols[e2i[expr]]
-
-def map_indexed_symbols(v, e2i, V_symbols):
-    # Reuse symbols of arg A for Aii
-    Aii = v
-    A = Aii.operands()[0]
-
-    # Get symbols of argument A
-    A_symbols = get_node_symbols(A, e2i, V_symbols)
-
-    # Map A_symbols to Aii_symbols
-    d = map_indexed_arg_components(Aii)
-    symbols = [A_symbols[k] for k in d]
-    return symbols
-
-def map_component_tensor_symbols(v, e2i, V_symbols):
-    # Reuse symbols of arg Aii for A
-    A = v
-    Aii = A.operands()[0]
-
-    # Get symbols of argument Aii
-    Aii_symbols = get_node_symbols(Aii, e2i, V_symbols)
-
-    # Map A_symbols to Aii_symbols
-    d = map_component_tensor_arg_components(A)
-    symbols = [Aii_symbols[k] for k in d]
-    return symbols
-
-def map_list_tensor_symbols(v, e2i, V_symbols):
-    A = v
-    rows = A.operands()
-
-    row_symbols = [get_node_symbols(row, e2i, V_symbols) for row in rows]
-
-    symbols = []
-    for rowsymb in row_symbols:
-        symbols.extend(rowsymb) # FIXME: Test that this produces the right transposition
-    return symbols
-
-def map_transposed_symbols(v, e2i, V_symbols):
-    AT = v
-    A, = AT.operands()
-
-    assert not A.free_indices(), "Assuming no free indices in transposed (for now), report as bug if needed." # FIXME
-    r, c = A.shape()
-
-    A_symbols = get_node_symbols(A, e2i, V_symbols)
-    assert len(A_symbols) == r*c
-
-    # AT[j,i] = A[i,j]
-    # sh(A) = (r,c)
-    # sh(AT) = (c,r)
-    # AT[j*r+i] = A[i*c+j]
-    symbols = [None]*(r*c)
-    for j in range(c):
-        for i in range(r):
-            symbols[j*r+i] = A_symbols[i*c+j]
-
-    return symbols
-
-def map_variable_symbols(v, e2i, V_symbols):
-    # Direct reuse of all symbols
-    return get_node_symbols(v.operands()[0], e2i, V_symbols)
-
-mappable_type = (Indexed, ComponentTensor, ListTensor, Transposed, Variable)
-def map_symbols(v, e2i, V_symbols):
-    if isinstance(v, Indexed):
-        symbols = map_indexed_symbols(v, e2i, V_symbols)
-    elif isinstance(v, ComponentTensor):
-        symbols = map_component_tensor_symbols(v, e2i, V_symbols)
-    elif isinstance(v, ListTensor):
-        symbols = map_list_tensor_symbols(v, e2i, V_symbols)
-    elif isinstance(v, Transposed):
-        symbols = map_transposed_symbols(v, e2i, V_symbols)
-    elif isinstance(v, Variable):
-        symbols = map_variable_symbols(v, e2i, V_symbols)
-    else:
-        error("Not a mappable type!")
-    return symbols
 
 def build_node_symbols(V, e2i, V_shapes):
+    """Tabulate scalar value numbering of all nodes in a a list based representation of an expression graph.
 
-    # Compute the total value size for each node, this gives the max number of symbols we need
+    Returns:
+    V_symbols - CRS of symbols (value numbers) of each component of each node in V.
+    total_unique_symbols - The number of symbol values assigned to unique scalar components of the nodes in V.
+    """
+    # Compute the total value size for each node, this gives an upper bound on the number of symbols we need
     V_sizes = build_node_sizes(V_shapes)
     max_symbols = sum(V_sizes)
 
-    # Sparse int matrix for storing variable number of entries (symbols) per row (vertex).
+    # "Sparse" int matrix for storing variable number of entries (symbols) per row (vertex).
     symbol_type = int
     V_symbols = CRS(len(V), max_symbols, symbol_type)
 
-    # Generator for new symbols with a running counter
-    def new_symbols(n):
-        a = new_symbols.symbol_count
-        b = a + n
-        new_symbols.symbol_count = b
-        return range(a, b)
-    new_symbols.symbol_count = 0
-
-    # For all vertices
+    # Visit each node with value numberer algorithm, storing the result for each as a row in the V_symbols CRS
+    value_numberer = ValueNumberer(e2i, V_sizes, V_symbols)
     for i, v in enumerate(V):
-        n = V_sizes[i]
-
-        if isinstance(v, mappable_type):
-            # Map symbols for expressions that only represent a different
-            # view of other expressions through shape and indexing mappings.
-            symbols = map_symbols(v, e2i, V_symbols)
-        elif isinstance(v, FormArgument):
-            # Create new symbols for expressions that represent new values
-            # TODO: Ignoring symmetries for now, handle by creating only
-            # some new symbols and mapping the rest using the symmetry map.
-            symbols = new_symbols(n)
-        else:
-            # Create new symbols for expressions that represent new values
-            symbols = new_symbols(n)
-
-        assert len(symbols) == n
+        symbols = value_numberer.visit(v, i)
         V_symbols.push_row(symbols)
 
-    total_unique_symbols = new_symbols.symbol_count
+    total_unique_symbols = value_numberer.symbol_count
 
     assert all(x < total_unique_symbols for x in V_symbols.data)
     assert (total_unique_symbols-1) in V_symbols.data
 
     return V_symbols, total_unique_symbols
 
+
 def build_graph_symbols(V, e2i, DEBUG):
+    """Tabulate scalar value numbering of all nodes in a a list based representation of an expression graph.
+
+    Returns:
+    V_shapes - CRS of the total shapes of nodes in V.
+    V_symbols - CRS of symbols (value numbers) of each component of each node in V.
+    total_unique_symbols - The number of symbol values assigned to unique scalar components of the nodes in V.
+    """
     # Compute the total shape (value shape x index dimensions) for each node
     V_shapes = build_node_shapes(V)
 
