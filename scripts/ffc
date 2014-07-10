@@ -53,7 +53,7 @@ from ffc.errorcontrol import compile_with_error_control
 
 def error(msg):
     "Print error message (cannot use log system at top level)."
-    print "\n".join(["*** FFC: " + line for line in msg.split("\n")])
+    print("\n".join(["*** FFC: " + line for line in msg.split("\n")]))
 
 def info_version():
     "Print version number."
@@ -184,7 +184,7 @@ def main(argv):
                     compile_form(ufd.forms, ufd.object_names, prefix, parameters)
                 else:
                     compile_element(ufd.elements, prefix, parameters)
-            except Exception, exception:
+            except Exception as exception:
                 info("")
                 error(str(exception))
                 error("To get more information about this error, rerun FFC with --verbose.")
