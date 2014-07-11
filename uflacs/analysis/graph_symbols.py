@@ -1,5 +1,5 @@
 
-from ufl.common import sorted_by_count
+from ufl.common import sorted_by_count, product
 from ufl.classes import Condition
 
 from ffc.log import error
@@ -55,8 +55,8 @@ def build_node_shapes(V):
     V_shapes = object_array(nv)
     for i, v in enumerate(V):
         # Compute total shape of V[i]
-        V_shapes[i] = total_shape(v)
-
+        tsh = total_shape(v)
+        V_shapes[i] = tsh
         # Count number of elements for CRS representation
         k += len(tsh)
 
@@ -87,7 +87,7 @@ def build_node_symbols(V, e2i, V_shapes, V_sizes):
     # Visit each node with value numberer algorithm, storing the result for each as a row in the V_symbols CRS
     value_numberer = ValueNumberer(e2i, V_sizes, V_symbols)
     for i, v in enumerate(V):
-        V_symbols.push_row(value_numberer.visit(v, i))
+        V_symbols.push_row(value_numberer(v, i))
 
     # Get the actual number of symbols created
     total_unique_symbols = value_numberer.symbol_count
