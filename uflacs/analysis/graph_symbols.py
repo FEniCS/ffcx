@@ -22,26 +22,22 @@ def total_shape(v):
     if isinstance(v, Condition):
         # TODO: Shape and index calls are invalid for conditions.
         #       Is this the best fix? Could also just return () from Condition.shape()?
-        tsh = ()
-
+        # Return scalar shape (conditions are scalar bool expressions so this works out fine)
+        return ()
     else:
-        # Regular shape
+        # Start with regular shape
         sh = v.shape()
 
-        # Index "shape"
+        # If we have free indices, add the index "shape"
         fi = v.free_indices()
         if fi:
-            # Just an attempt at optimization, not running this code for expressions without free indices
             idims = v.index_dimensions()
             ish = tuple(idims[idx] for idx in sorted_by_count(fi))
-
-            # Store "total" shape
-            tsh = sh + ish
-
+            # Return "total" shape
+            return sh + ish
         else:
-            tsh = sh
-
-    return tsh
+            # Return just the regular shape
+            return sh
 
 
 def build_node_shapes(V):
@@ -77,31 +73,27 @@ def build_node_sizes(V_shapes):
     return V_sizes
 
 
-def build_node_symbols(V, e2i, V_shapes):
+def build_node_symbols(V, e2i, V_shapes, V_sizes):
     """Tabulate scalar value numbering of all nodes in a a list based representation of an expression graph.
 
     Returns:
     V_symbols - CRS of symbols (value numbers) of each component of each node in V.
     total_unique_symbols - The number of symbol values assigned to unique scalar components of the nodes in V.
     """
-    # Compute the total value size for each node, this gives an upper bound on the number of symbols we need
-    V_sizes = build_node_sizes(V_shapes)
-    max_symbols = sum(V_sizes)
-
-    # "Sparse" int matrix for storing variable number of entries (symbols) per row (vertex).
-    symbol_type = int
-    V_symbols = CRS(len(V), max_symbols, symbol_type)
+    # "Sparse" int matrix for storing variable number of entries (symbols) per row (vertex),
+    # with a capasity bounded by the number of scalar subexpressions including repetitions
+    V_symbols = CRS(len(V), sum(V_sizes), int)
 
     # Visit each node with value numberer algorithm, storing the result for each as a row in the V_symbols CRS
     value_numberer = ValueNumberer(e2i, V_sizes, V_symbols)
     for i, v in enumerate(V):
-        symbols = value_numberer.visit(v, i)
-        V_symbols.push_row(symbols)
+        V_symbols.push_row(value_numberer.visit(v, i))
 
+    # Get the actual number of symbols created
     total_unique_symbols = value_numberer.symbol_count
 
-    assert all(x < total_unique_symbols for x in V_symbols.data)
-    assert (total_unique_symbols-1) in V_symbols.data
+    #assert all(x < total_unique_symbols for x in V_symbols.data)
+    #assert (total_unique_symbols-1) in V_symbols.data
 
     return V_symbols, total_unique_symbols
 
@@ -117,7 +109,10 @@ def build_graph_symbols(V, e2i, DEBUG):
     # Compute the total shape (value shape x index dimensions) for each node
     V_shapes = build_node_shapes(V)
 
+    # Compute the total value size for each node
+    V_sizes = build_node_sizes(V_shapes)
+
     # Mark values with symbols
-    V_symbols, total_unique_symbols = build_node_symbols(V, e2i, V_shapes)
+    V_symbols, total_unique_symbols = build_node_symbols(V, e2i, V_shapes, V_sizes)
 
     return V_shapes, V_symbols, total_unique_symbols
