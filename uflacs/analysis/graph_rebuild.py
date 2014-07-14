@@ -224,28 +224,27 @@ def rebuild_with_scalar_subexpressions(G):
     #GRAPH SIZE:  9663   238021
     #GRAPH SIZE: 88913  3448634  #  3.5 M!!!
 
-    # Data structures
+    # Algorithm to apply to each subexpression
+    reconstruct_scalar_subexpressions = ReconstructScalarSubexpressions()
+
+    # Array to store the scalar subexpression in for each symbol
     W = object_array(G.total_unique_symbols)
 
-    reconstruct_scalar_subexpressions = ReconstructScalarSubexpressions()
-    handled_symbols = int_array(G.total_unique_symbols)
+    # Iterate over each graph node in order
     for i, v in enumerate(G.V):
 
         # Find symbols of v components
         vs = G.V_symbols[i]
 
         # Skip if there's nothing new here (should be the case for indexing types)
-        if all(handled_symbols[s] for s in vs):
+        if all(W[s] is not None for s in vs):
             continue
-
-        for s in vs:
-            handled_symbols[s] = 1
 
         if is_modified_terminal(v):
             #ffc_assert(v.free_indices() == (), "Expecting no free indices.")
             sh = v.shape()
             if sh:
-                # Store each terminal expression component
+                # Store each terminal expression component (we may not actually need all of these later!)
                 ws = [v[c] for c in compute_indices(sh)]
             else:
                 # Store single modified terminal expression component
@@ -253,7 +252,6 @@ def rebuild_with_scalar_subexpressions(G):
                 ws = [v]
 
         else:
-            # TODO: Build edge datastructure and use instead of this?
 
             # Find symbols of operands
             sops = []
@@ -263,8 +261,10 @@ def rebuild_with_scalar_subexpressions(G):
                         error("Not expecting a %s." % type(v))
                     so = ()
                 else:
-                    edges = G.e2i[vop]
-                    so = G.V_symbols[edges]
+                    k = G.e2i[vop]
+                    # TODO: Build edge datastructure and use this instead?
+                    #k = G.E[i][j]
+                    so = G.V_symbols[k]
                 sops.append(so)
 
             # Fetch reconstructed operand expressions
@@ -284,7 +284,7 @@ def rebuild_with_scalar_subexpressions(G):
     vs = G.V_symbols[G.nv-1] # TODO: This is easy to extend to multiple 'final v'
 
     # Sanity check: assert that we've handled these symbols
-    ffc_assert(all(handled_symbols[s] for s in vs),
+    ffc_assert(all(W[s] is not None for s in vs),
                   "Expecting that all symbols in vs are handled at this point.")
 
     # Return the scalar expressions for each of the components
