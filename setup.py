@@ -236,6 +236,8 @@ def run_install():
     # Setup extension module for UFC
     ext_module_ufc = Extension("ufc._ufc",
                                sources=[os.path.join("ufc", "ufc.i")],
+                               depends=[os.path.join("ufc", "ufc.h"),
+                                        os.path.join("ufc", "ufc_geometry.h")],
                                swig_opts=["-c++", "-shadow", "-modern",
                                           "-modernargs", "-fastdispatch",
                                           "-fvirtual", "-nosafecstrings",
