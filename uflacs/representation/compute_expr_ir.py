@@ -1,9 +1,10 @@
 
+from ufl.common import product
 from uflacs.analysis.modified_terminals import is_modified_terminal
 
 from uflacs.analysis.graph import build_graph
 from uflacs.analysis.graph_vertices import build_scalar_graph_vertices
-from uflacs.analysis.graph_rebuild import rebuild_scalar_e2i
+from uflacs.analysis.graph_rebuild import rebuild_with_scalar_subexpressions
 from uflacs.analysis.graph_dependencies import (compute_dependencies,
                                                 mark_active, mark_image)
 from uflacs.analysis.graph_ssa import (mark_partitions,
@@ -28,12 +29,12 @@ def build_scalar_graph(expressions):
     assert len(expressions) == 1, "Multiple expressions in graph building needs more work from this point on."
 
     # Build more fine grained computational graph of scalar subexpressions
-    # Target expression is NV[nvs[:]].
-    # TODO: Make it so that expressions[k] <-> NV[nvs[k][:]], len(nvs[k]) == value_size(expressions[k])
-    NV, nvs = rebuild_scalar_e2i(G, DEBUG=False)
+    # TODO: Make it so that
+    #   expressions[k] <-> NV[nvs[k][:]],
+    #   len(nvs[k]) == value_size(expressions[k])
+    scalar_expressions = rebuild_with_scalar_subexpressions(G)
 
-    # Get scalar target expressions, turns out we'll actually throw away the rest of NV and nvs!
-    scalar_expressions = [NV[s] for s in nvs]
+    assert len(scalar_expressions) == sum(product(expr.shape()) for expr in expressions)
 
     # Build new list representation of graph where all vertices of V represent single scalar operations
     e2i, V, target_variables = build_scalar_graph_vertices(scalar_expressions)

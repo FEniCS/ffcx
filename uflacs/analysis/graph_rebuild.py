@@ -21,11 +21,25 @@ class ReconstructScalarSubexpressions(MultiFunction):
     def __init__(self):
         super(ReconstructScalarSubexpressions, self).__init__()
 
+    # No fallbacks, need to specify each type or group of types explicitly
     def expr(self, o, *args, **kwargs):
         error("No handler for type %s" % type(o))
 
     def terminal(self, o):
         error("Not expecting terminal expression in here, got %s." % type(o))
+
+    # These types are not expected to be part of the graph at this point
+    def unexpected(self, o, *args, **kwargs):
+        error("Not expecting expression of type %s in here." % type(o))
+    multi_index = unexpected
+    expr_list = unexpected
+    expr_mapping = unexpected
+    utility_type = unexpected
+    label = unexpected
+    component_tensor = unexpected
+    list_tensor = unexpected
+    transposed = unexpected
+    variable = unexpected
 
     def scalar_nary(self, o, ops):
         ffc_assert(o.shape() == (), "Expecting scalar.")
@@ -173,7 +187,19 @@ class ReconstructScalarSubexpressions(MultiFunction):
     # we need to identify which index to do the contractions over,
     # and build expressions such as sum(a*b for a,b in zip(aops, bops))
 
-def rebuild_scalar_e2i(G, DEBUG=False):
+
+def rebuild_expression_from_graph(G):
+    "This is currently only used by tests."
+    w = rebuild_with_scalar_subexpressions(G)
+
+    # Find expressions of final v
+    if len(w) == 1:
+        return w[0]
+    else:
+        return as_vector(w) # TODO: Consider shape of initial v
+
+
+def rebuild_with_scalar_subexpressions(G):
     """Build a new expression2index mapping where each subexpression is scalar valued.
 
     Input:
@@ -189,125 +215,77 @@ def rebuild_scalar_e2i(G, DEBUG=False):
     Old output now no longer returned but possible to restore if needed:
     - ne2i - Mapping from scalar subexpressions to a contiguous unique index
     - W    - Array with reconstructed scalar subexpressions for each original symbol
-    - terminals - Set of modified terminal expressions (terminals possibly wrapped
-                  in grad, restriction and indexed)
     """
 
+    # From simplefsi3d.ufl:
+    #print "GRAPH SIZE:", len(G.V), G.total_unique_symbols
+    #GRAPH SIZE: 16251   635272
+    #GRAPH SIZE:   473     8210
+    #GRAPH SIZE:  9663   238021
+    #GRAPH SIZE: 88913  3448634  #  3.5 M!!!
+
     # Data structures
-    ne2i = {}
-    NV = object_array(G.total_unique_symbols)
     W = object_array(G.total_unique_symbols)
-    terminals = set()
-
-    # These types are not expected to be part of the graph at this point
-    unexpected = (MultiIndex, ExprList, ExprMapping, UtilityType, Label, ComponentTensor, ListTensor, Transposed, Variable)
-
-    def emit_expression(s, u):
-        # Allocate count for scalar expression and
-        # store in all cross referenced data structures
-        j = ne2i.get(u)
-        if j is None:
-            j = len(ne2i)
-            ne2i[u] = j
-            NV[j] = u
-        W[s] = u
-        emit_expression.W_len = max(emit_expression.W_len, s+1)
-        if DEBUG: print('emitted s, j, u:', s, j, u)
-    emit_expression.W_len = 0
 
     reconstruct_scalar_subexpressions = ReconstructScalarSubexpressions()
-
     handled_symbols = int_array(G.total_unique_symbols)
     for i, v in enumerate(G.V):
+
         # Find symbols of v components
         vs = G.V_symbols[i]
-
-        if DEBUG: print('\n\n:: i, v, vs ::', i, v, vs)
 
         # Skip if there's nothing new here (should be the case for indexing types)
         if all(handled_symbols[s] for s in vs):
             continue
 
-        #if all(W[s] is not None for s in vs):
-        #    continue
-
-        # This takes a lot of time:
-        #if isinstance(v, unexpected):
-        #    error("Not expecting a %s here!" % type(v))
-
         for s in vs:
             handled_symbols[s] = 1
 
         if is_modified_terminal(v):
-            if 0: print("Adding terminal: ", repr(v))
+            #ffc_assert(v.free_indices() == (), "Expecting no free indices.")
             sh = v.shape()
-            ffc_assert(v.free_indices() == (), "Expecting no free indices.")
-            if sh == ():
+            if sh:
+                # Store each terminal expression component
+                ws = [v[c] for c in compute_indices(sh)]
+            else:
                 # Store single modified terminal expression component
                 ffc_assert(len(vs) == 1, "Expecting single symbol for scalar valued modified terminal.")
-                s, u = vs[0], v
-                emit_expression(s, u)
-                terminals.add(v)
-            else:
-                # Store each terminal expression component
-                for s, c in zip(vs, compute_indices(sh)):
-                    u = v[c]
-                    emit_expression(s, u)
-                    # FIXME: Keep modified terminal expression components in the graph that is input here!
-                    terminals.add(u)
+                ws = [v]
+
         else:
+            # TODO: Build edge datastructure and use instead of this?
+
             # Find symbols of operands
             sops = []
             for j, vop in enumerate(v.operands()):
-                if isinstance(vop, MultiIndex):
+                if isinstance(vop, MultiIndex): # TODO: Store MultiIndex in G.V and allocate a symbol to it for this to work
                     if not isinstance(v, IndexSum):
-                        error("FIXME: Not expecting a %s." % type(v))
+                        error("Not expecting a %s." % type(v))
                     so = ()
                 else:
-                    so = G.V_symbols[G.e2i[vop]]
+                    edges = G.e2i[vop]
+                    so = G.V_symbols[edges]
                 sops.append(so)
 
             # Fetch reconstructed operand expressions
             wops = [tuple(W[k] for k in so) for so in sops]
 
             # Reconstruct scalar subexpressions of v
-            w = reconstruct_scalar_subexpressions(v, wops)
+            ws = reconstruct_scalar_subexpressions(v, wops)
 
             # Store all scalar subexpressions for v symbols
-            if not len(vs) == len(w):
-                print()
-                print(type(v))
-                print(v.shape())
-                print(v.free_indices())
-                print(len(vs))
-                print(len(w))
-                print()
-                ffc_assert(len(vs) == len(w), "Expecting one symbol for each expression.")
-            for s, u in zip(vs, w):
-                emit_expression(s, u)
+            ffc_assert(len(vs) == len(ws), "Expecting one symbol for each expression.")
 
-    # Reduce size of NV to the actually used parts
-    ffc_assert(all(x is None for x in NV[len(ne2i):]),
-                  "Expecting last part of NV to be empty.")
-    NV = NV[:len(ne2i)]
+        # Store each new scalar subexpression in W at the index of its symbol
+        for s, w in zip(vs, ws):
+            W[s] = w
 
-    # Find symbols of final v
-    vs = G.V_symbols[G.nv-1]
+    # Find symbols of final v from input graph
+    vs = G.V_symbols[G.nv-1] # TODO: This is easy to extend to multiple 'final v'
+
+    # Sanity check: assert that we've handled these symbols
     ffc_assert(all(handled_symbols[s] for s in vs),
                   "Expecting that all symbols in vs are handled at this point.")
-    nvs = [ne2i[W[s]] for s in vs]
 
-    # TODO: Make it so that expressions[k] <-> NV[nvs[k][:]], len(nvs[k]) == value_size(expressions[k])
-
-    return NV, nvs
-
-def rebuild_expression_from_graph(G, DEBUG=False):
-    "This is currently only used by tests."
-    NV, nvs = rebuild_scalar_e2i(G, DEBUG=DEBUG)
-
-    # Find expressions of final v
-    w = [NV[k] for k in nvs]
-    if len(w) == 1:
-        return w[0]
-    else:
-        return as_vector(w) # TODO: Consider shape of initial v
+    # Return the scalar expressions for each of the components
+    return [W[s] for s in vs]
