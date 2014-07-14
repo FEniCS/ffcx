@@ -31,7 +31,7 @@ from ufl.algorithms import propagate_restrictions
 
 from ffc.log import ffc_assert
 from uflacs.params import default_parameters
-from uflacs.analysis.datastructures import object_array
+from uflacs.datastructures.arrays import object_array
 from uflacs.analysis.modified_terminals import analyse_modified_terminal2
 from uflacs.representation.compute_expr_ir import compute_expr_ir
 from uflacs.elementtables.terminaltables import build_element_tables, optimize_element_tables
