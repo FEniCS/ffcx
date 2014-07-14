@@ -53,6 +53,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
         # Products of a scalar and a tensor are allowed
         n = max(len(op) for op in ops)
         ffc_assert(all(len(op) in (1, n) for op in ops), "Unexpected number of operands.")
+
         # Compute each scalar value
         res = []
         for k in range(n):
@@ -72,27 +73,27 @@ class ReconstructScalarSubexpressions(MultiFunction):
         # of operands are different, not just 1/n like below...
 
         # Compute shapes and sizes of o
+
         # Regular shape
         sh = o.shape()
         m = product(sh)
+
         # Index shape
-        ii = sorted(o.free_indices(), key=lambda x: x.count())
-        idims = o.index_dimensions()
-        ish = tuple(idims[i] for i in ii)
-        im = product(ish)
+        ii = o.free_indices()
+        if ii:
+            ii = sorted(ii, key=lambda x: x.count())
+            idims = o.index_dimensions()
+            ish = tuple(idims[i] for i in ii)
+            im = product(ish)
+        else:
+            ish = ()
+            im = 1
+
         # Total shape
         tsh = sh+ish
         tm = m*im
-        ffc_assert(product(tsh) == tm, "Inconsistent shapes and sizes computed.")
 
-        if 0:
-            print()
-            print('ii', ii)
-            print('idims', idims)
-            print('sh ', sh, m)
-            print('ish', ish, im)
-            print('tsh', tsh, tm)
-            print()
+        #ffc_assert(product(tsh) == tm, "Inconsistent shapes and sizes computed.")
 
         # Check that we have at most one tensor shaped operand here
         if sh == ():
@@ -134,79 +135,39 @@ class ReconstructScalarSubexpressions(MultiFunction):
                     loci = opii.index(globi)
                     strides.append(running)
                     running *= d
+
             #ffc_assert(strides[-1] == opim, "Invalid stride.")
+
             istrides[j] = tuple(reversed(strides))
             opims[j] = opim if opsh else 0
 
-        if 0:
-            print()
-            print(istrides)
-            print(opims)
-            print()
+        # Compute flattened indices within regular shape and index shape
+        st = shape_to_strides(sh)
+        ist = shape_to_strides(ish)
+
+        sind = compute_indices(sh)
+        iind = compute_indices(ish)
+
+        sflattened = [flatten_multiindex(sc, st) for sc in sind]
+        iflattened = [flatten_multiindex(ic, st) for ic in iind]
 
         # Compute each scalar value
         res = []
-        st = shape_to_strides(sh)
-        ist = shape_to_strides(ish)
-        for sc in compute_indices(sh): # TODO: Optimization: swap loops so we recompute less
-            sk = flatten_multiindex(sc, st)
-            for ic in compute_indices(ish):
-                ik = flatten_multiindex(ic, ist)
-                k = sk*im + ik # Compute the output component index (not used!)
+        for sk in sflattened:
+            #for ik in iflattened:
+            for ic in iind:
+                #k = sk*im + ik # Compute the output component index (not used!)
 
                 sops = []
                 for j, op in enumerate(ops):
                     # Find the operand component index
-                    jk = sk*opims[j] + sum(a*b for a, b in zip(ic, istrides[j]))
-                    if jk >= len(op):
-                        print()
-                        print('DEBUGGING VALUES IN element_wise2:')
-                        print()
-                        print("o =")
-                        print(o)
-                        print()
-                        print(type(o))
-                        print(o.operands()[0])
-                        print(o.operands()[1])
-                        print(o.operands()[0].shape())
-                        print(o.operands()[1].shape())
-                        print(o.operands()[0].free_indices())
-                        print(o.operands()[1].free_indices())
-                        print(o.operands()[0].index_dimensions())
-                        print(o.operands()[1].index_dimensions())
-                        print()
-                        from ufl.algorithms import tree_format, traverse_terminals
-                        print(tree_format(o.operands()[1]))
-                        print()
-                        for t in traverse_terminals(o):
-                            if not isinstance(t, MultiIndex):
-                                print(t, t.shape())
-                        print()
-                        print("sh, ish =")
-                        print(sh, ish)
-                        print()
-                        print("im, m, tm =")
-                        print(im, m, tm)
-                        print()
-                        print("j, opims, istrides =")
-                        print(j, opims, istrides)
-                        print()
-                        print(len(op), "<= jk =", jk)
-                        print(sk*opims[j] + sum(a*b for a, b in zip(ic, istrides[j])))
-                        print("=")
-                        print(sk*opims[j])
-                        print("+")
-                        print(sum(a*b for a, b in zip(ic, istrides[j])))
-                        print()
-                        print(j, sk, opims[j])
-                        print(ic, istrides[j])
-                        print()
-
+                    jk = sk*opims[j] + sum(a * b for a, b in zip(ic, istrides[j]))
                     sops.append(op[jk])
 
                 res.append(scalar_operator(sops))
 
-        ffc_assert(tm == len(res), "Size mismatch.")
+        #ffc_assert(tm == len(res), "Size mismatch.")
+
         return res
 
     def element_wise3(self, scalar_operator, o, ops):
@@ -408,8 +369,9 @@ def rebuild_scalar_e2i(G, DEBUG=False):
         #if all(W[s] is not None for s in vs):
         #    continue
 
-        if isinstance(v, unexpected):
-            error("Not expecting a %s here!" % type(v))
+        # This takes a lot of time:
+        #if isinstance(v, unexpected):
+        #    error("Not expecting a %s here!" % type(v))
 
         for s in vs:
             handled_symbols[s] = 1
