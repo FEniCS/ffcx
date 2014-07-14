@@ -1,5 +1,6 @@
 
-from six.moves import xrange, zip
+from six.moves import zip
+from six.moves import xrange as range
 from ufl.common import product
 from ufl.permutation import compute_indices
 
@@ -9,6 +10,7 @@ from ufl.classes import (MultiIndex, ComponentTensor, ListTensor, Transposed, Va
                          IndexSum, UtilityType, Label, ExprList, ExprMapping)
 from ufl.algorithms import MultiFunction
 from ufl.utils.indexflattening import flatten_multiindex, shape_to_strides
+from ufl.utils.sorting import sorted_by_count
 
 from ffc.log import error, ffc_assert
 from uflacs.datastructures.arrays import int_array, object_array
@@ -45,234 +47,94 @@ class ReconstructScalarSubexpressions(MultiFunction):
         sops = [op[0] for op in ops]
         return [o.reconstruct(*sops)]
 
-    def element_wise(self, scalar_operator, o, ops):
-        # FIXME FIXME FIXME: products like A[i,j]*B[j,k] are allowed,
-        # which means that indices do not line up and the total shape
-        # of operands are different, not just 1/n like below...
-
-        # Products of a scalar and a tensor are allowed
-        n = max(len(op) for op in ops)
-        ffc_assert(all(len(op) in (1, n) for op in ops), "Unexpected number of operands.")
-
-        # Compute each scalar value
-        res = []
-        for k in range(n):
-            sops = []
-            for op in ops:
-                if len(op) == 1:
-                    sops.append(op[0])
-                else:
-                    ffc_assert(len(op) == n, "Expecting n operands.")
-                    sops.append(op[k])
-            res.append(scalar_operator(sops))
-        return res
-
-    def element_wise2(self, scalar_operator, o, ops):
-        # FIXME FIXME FIXME: products like A[i,j]*B[j,k] are allowed,
-        # which means that indices do not line up and the total shape
-        # of operands are different, not just 1/n like below...
-
-        # Compute shapes and sizes of o
-
-        # Regular shape
-        sh = o.shape()
-        m = product(sh)
-
-        # Index shape
-        ii = o.free_indices()
-        if ii:
-            ii = sorted(ii, key=lambda x: x.count())
-            idims = o.index_dimensions()
-            ish = tuple(idims[i] for i in ii)
-            im = product(ish)
-        else:
-            ish = ()
-            im = 1
-
-        # Total shape
-        tsh = sh+ish
-        tm = m*im
-
-        #ffc_assert(product(tsh) == tm, "Inconsistent shapes and sizes computed.")
-
-        # Check that we have at most one tensor shaped operand here
-        if sh == ():
-            ffc_assert(all(op.shape() == () for op in o.operands()),
-                          "Expecting scalars.")
-        else:
-            shaped = 0
-            for j, op in enumerate(o.operands()):
-                opsh = op.shape()
-                if opsh == ():
-                    continue
-                elif opsh == sh:
-                    shaped += 1
-                else:
-                    error("Not expecting shape %s, overall shape is %s." % (opsh, sh))
-            ffc_assert(shaped in (0, 1), "Expecting at most one shaped operand.")
-
-        # Precompute some dimensions for each operand
-        istrides = [None]*len(ops)
-        opims = [None]*len(ops)
-        for j, op in enumerate(o.operands()):
-            opii = sorted(op.free_indices(), key=lambda x: x.count())
-            opidims = op.index_dimensions()
-            opish = tuple(opidims[i] for i in opii)
-            opim = product(opish)
-            opsh = op.shape()
-            opm = product(opsh)
-            optm = opm*opim
-            optsh = opsh+opish
-            ffc_assert(product(optsh) == optm, "Mismatching shapes and sizes.")
-
-            running = 1
-            strides = []
-            for globi in reversed(ii):
-                d = opidims.get(globi)
-                if d is None:
-                    strides.append(0)
-                else:
-                    loci = opii.index(globi)
-                    strides.append(running)
-                    running *= d
-
-            #ffc_assert(strides[-1] == opim, "Invalid stride.")
-
-            istrides[j] = tuple(reversed(strides))
-            opims[j] = opim if opsh else 0
-
-        # Compute flattened indices within regular shape and index shape
-        st = shape_to_strides(sh)
-        ist = shape_to_strides(ish)
-
-        sind = compute_indices(sh)
-        iind = compute_indices(ish)
-
-        sflattened = [flatten_multiindex(sc, st) for sc in sind]
-        iflattened = [flatten_multiindex(ic, st) for ic in iind]
-
-        # Compute each scalar value
-        res = []
-        for sk in sflattened:
-            #for ik in iflattened:
-            for ic in iind:
-                #k = sk*im + ik # Compute the output component index (not used!)
-
-                sops = []
-                for j, op in enumerate(ops):
-                    # Find the operand component index
-                    jk = sk*opims[j] + sum(a * b for a, b in zip(ic, istrides[j]))
-                    sops.append(op[jk])
-
-                res.append(scalar_operator(sops))
-
-        #ffc_assert(tm == len(res), "Size mismatch.")
-
-        return res
-
-    def element_wise3(self, scalar_operator, o, ops):
-        # oops has shapes and indices, while ops are lists of scalar component values
-        oops = o.operands()
-
-        # --- Compute shapes and sizes of o
-        # Index shape
-        ii = sorted(o.free_indices(), key=lambda x: x.count())
-        idims = o.index_dimensions()
-        ish = tuple(idims[i] for i in ii)
-        im = product(ish)
-        # Regular shape
-        sh = o.shape()
-        m = product(sh)
-        # Total shape
-        tsh = sh+ish
-        tm = m*im
-
-        # Look for tensor shaped operands, allowing 0, 1 or all to have the same shape as o
-        # TODO: Check for this:
-        # - sum:      a.shape() == b.shape()
-        # - division: a.shape() == anything,  b.shape() == ()
-        # - product:  not (a.shape() == () and b.shape() == ())
-        shaped = 0
-        for iop, op in enumerate(oops):
-            opsh = op.shape()
-            if opsh == ():
-                continue
-            elif opsh == sh:
-                shaped += 1
-            else:
-                error("Not expecting shape %s, overall shape is %s." % (opsh, sh))
-        ffc_assert(shaped in (0, 1, len(ops)), "Confused about shapes of operands.")
-
-        # --- Compute shapes and sizes for each operand
-        iirev = reversed(ii)
-        istrides = [None]*len(ops)  #
-        opims = [None]*len(ops)     # Index value size for each operand
-        for iop, op in enumerate(oops):
-            # --- Compute shapes and sizes of op
-            # Index shapes
-            opii = sorted(op.free_indices(), key=lambda x: x.count())  # Free indices
-            opidims = op.index_dimensions()                       # Index dimensions
-            opish = tuple(opidims[i] for i in opii)               # Index shape
-            opim = product(opish)                                 # Index value size
-            # Tensor shapes
-            opsh = op.shape()                                     # Tensor shape
-            #opm = product(opsh)                                   # Tensor value size
-            # Total shapes
-            #optm = opm*opim                                       # Total value size
-            #optsh = opsh+opish                                    # Total value shape
-
-            # Store index strides and index value size for op
-            istrides[iop] = shape_to_strides(opish)
-            opims[iop] = opim if opsh else 0
-
-        # Compute each scalar value of o in terms of ops
-        res = []
-        sindices = compute_indices(sh)
-        iindices = compute_indices(ish)
-        sstrides = shape_to_strides(sindices) # TODO: Optimize, strides are known above?
-        istrides = shape_to_strides(iindices)
-        # TODO: Cache icomponents and scomponents, the number of different shapes is small!
-        scomponents = [(sc, flatten_multiindex(sc, sstrides)) for sc in sindices]
-        icomponents = [(ic, flatten_multiindex(ic, istrides)) for ic in iindices]
-        for sc, sk in scomponents: # TODO: Optimization: swap loops so we recompute less?
-            for ic, ik in icomponents:
-                k = sk*im + ik # Compute the output component index (not used!)
-                ffc_assert(k == len(res), "Invalid assumption or a bug?")
-
-                sops = []
-                for iop, op in enumerate(ops):
-                    # Find the operand component index in the index space
-                    if istrides[iop]:
-                        assert istrides[iop][-1] == 1, "Strides={0}".format(istrides[iop])
-                    jk = sum(a*b for a, b in zip(ic, istrides[iop]))
-
-                    # Only add tensor component offset for the tensor-valued operand
-                    if oops[iop].shape():
-                        jk += sk*opims[iop]
-
-                    sops.append(op[jk])
-
-                res.append(scalar_operator(sops))
-
-        ffc_assert(tm == len(res), "Size mismatch.")
-        return res
-
     def division(self, o, ops):
         ffc_assert(len(ops) == 2, "Expecting two operands.")
         ffc_assert(len(ops[1]) == 1, "Expecting scalar divisor.")
-        def _div(args):
-            a, b = args
-            return a / b
-        return self.element_wise(_div, o, ops) # FIXME
+        b, = ops[1]
+        return [o.reconstruct(a, b) for a in ops[0]]
 
     def sum(self, o, ops):
-        ffc_assert(len(ops[0]) == len(ops[1]), "Expecting equal shapes.")
-        return self.element_wise(sum, o, ops) # FIXME
+        ffc_assert(len(ops) == 2, "Expecting two operands.")
+        ffc_assert(len(ops[0]) == len(ops[1]), "Expecting scalar divisor.")
+        return [o.reconstruct(a, b) for a, b in zip(ops[0], ops[1])]
 
     def product(self, o, ops):
-        a, b = o.operands()
-        ffc_assert(not (a.shape() and b.shape()), "Expecting only one nonscalar shape.")
-        return self.element_wise2(product, o, ops) # FIXME
+        ffc_assert(len(ops) == 2, "Expecting two operands.")
+
+        # Get the simple cases out of the way
+        na = len(ops[0])
+        nb = len(ops[1])
+
+        if na == 1: # True scalar * something
+            a, = ops[0]
+            return [o.reconstruct(a, b) for b in ops[1]]
+
+        if nb == 1: # Something * true scalar
+            b, = ops[1]
+            return [o.reconstruct(a, b) for a in ops[0]]
+
+        # Neither of operands are true scalars, this is the tricky part
+        o0, o1 = o.operands()
+
+        def _compute_shapes(expr):
+            fi = sorted_by_count(expr.free_indices())
+            idims = expr.index_dimensions()
+            sh = expr.shape()
+            ish = tuple(idims[i] for i in fi)
+            return fi, idims, sh, ish
+
+        # Get shapes and index shapes
+        fi, idims, sh, ish = _compute_shapes(o)
+        fi0, idims0, sh0, ish0 = _compute_shapes(o0)
+        fi1, idims1, sh1, ish1 = _compute_shapes(o1)
+
+        # Need to map each return component to one component of o0 and one component of o1.
+        components = compute_indices(sh)
+        indices = compute_indices(ish)
+
+        # Map component comp of o to component offset of o0 and o1
+        if sh0:
+            # o0 has shape
+            im0 = product(ish0)
+            st0 = shape_to_strides(sh0)
+            compks = [(im0*flatten_multiindex(comp, st0), 0) for comp in components]
+        elif sh1:
+            # o1 has shape
+            im1 = product(ish1)
+            st1 = shape_to_strides(sh1)
+            compks = [(0, im1*flatten_multiindex(comp, st1)) for comp in components]
+        else:
+            # Neither has shape (indices only)
+            # (It never happens that both have shape)
+            compks = [(0, 0)]
+
+        # Compute which component of o0 is used in component (comp,ind) of o
+        if fi0 or fi1:
+            # Compute strides within free index spaces
+            ist0 = shape_to_strides(ish0)
+            ist1 = shape_to_strides(ish1)
+            # Map o0 and o1 indices to o indices
+            indmap0 = [fi.index(i) for i in fi0]
+            indmap1 = [fi.index(i) for i in fi1]
+            indks = [(flatten_multiindex([ind[i] for i in indmap0], ist0),
+                      flatten_multiindex([ind[i] for i in indmap1], ist1))
+                    for ind in indices]
+        else:
+            indks = [(0,0)]*len(indices)
+
+        #from IPython.core.debugger import Pdb; pdb = Pdb(); pdb.set_trace()
+
+        # Build products for scalar components
+        results = []
+        for k00, k10 in compks:
+            for k01, k11 in indks:
+                results.append(o.reconstruct(ops[0][k00 + k01], ops[1][k10 + k11]))
+
+        #results = [o.reconstruct(ops[0][k00 + k01], ops[1][k10 + k11])
+        #           for k00, k10 in compks
+        #           for k01, k11 in indks]
+
+        return results
 
     def index_sum(self, o, ops):
         summand, mi = o.operands()

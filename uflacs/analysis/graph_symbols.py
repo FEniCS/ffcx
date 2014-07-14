@@ -1,44 +1,12 @@
 
-from ufl.common import sorted_by_count, product
-from ufl.classes import Condition
+from ufl.common import product
 
 from ffc.log import error
 
 from uflacs.datastructures.arrays import int_array, object_array
 from uflacs.datastructures.crs import CRS, rows_to_crs
 from uflacs.analysis.valuenumbering import ValueNumberer
-
-
-def total_shape(v):
-    """Compute the total shape of an expr.
-
-    The total shape is the regular shape tuple plus the index shape tuple.
-    The index shape tuple is the tuple of index dimensions of the free indices
-    of the expression, sorted by the count of the free indices.
-
-    The total shape of a tensor valued expression A and A[*indices(A.rank())]
-    is therefore the same.
-    """
-    if isinstance(v, Condition):
-        # TODO: Shape and index calls are invalid for conditions.
-        #       Is this the best fix? Could also just return () from Condition.shape()?
-        # Return scalar shape (conditions are scalar bool expressions so this works out fine)
-        return ()
-    else:
-        # Start with regular shape
-        sh = v.shape()
-
-        # If we have free indices, add the index "shape"
-        fi = v.free_indices()
-        if fi:
-            idims = v.index_dimensions()
-            ish = tuple(idims[idx] for idx in sorted_by_count(fi))
-            # Return "total" shape
-            return sh + ish
-        else:
-            # Return just the regular shape
-            return sh
-
+from uflacs.analysis.expr_shapes import total_shape
 
 def build_node_shapes(V):
     """Build total shapes for each node in list representation of expression graph.
