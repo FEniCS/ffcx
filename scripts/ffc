@@ -155,7 +155,7 @@ def main(argv):
         suffix = filename.split(".")[-1]
 
         # Turn on profiling
-        if parameters["profile"]:
+        if parameters.get("profile"):
             pr = cProfile.Profile()
             pr.enable()
 
@@ -194,7 +194,7 @@ def main(argv):
                 return 1
 
         # Turn off profiling and write status to file
-        if parameters["profile"]:
+        if parameters.get("profile"):
             pr.disable()
             pfn = "ffc_%s.profile" % filename
             pr.dump_stats(pfn)
