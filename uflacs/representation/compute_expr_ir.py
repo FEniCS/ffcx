@@ -65,9 +65,10 @@ def compute_expr_ir(expressions, parameters):
         expressions = [expressions]
 
 
+    # TODO: Can we merge these three calls to something more efficient overall?
+
     # Build scalar list-based graph representation
     e2i, V, target_variables = build_scalar_graph(expressions)
-
 
     # Compute sparse dependency matrix
     dependencies = compute_dependencies(e2i, V)

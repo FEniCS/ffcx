@@ -241,11 +241,16 @@ def rebuild_with_scalar_subexpressions(G):
             continue
 
         if is_modified_terminal(v):
+
             #ffc_assert(v.free_indices() == (), "Expecting no free indices.")
+
             sh = v.shape()
+
             if sh:
                 # Store each terminal expression component (we may not actually need all of these later!)
                 ws = [v[c] for c in compute_indices(sh)]
+                # FIXME: How does this fit in with modified terminals with symmetries?
+
             else:
                 # Store single modified terminal expression component
                 ffc_assert(len(vs) == 1, "Expecting single symbol for scalar valued modified terminal.")

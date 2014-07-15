@@ -46,6 +46,37 @@ class ValueNumberer(MultiFunction):
 
         return symbols
 
+    def _modified_terminal(self, v, i):
+        """Modifiers:
+        terminal           - the underlying Terminal object
+        global_derivatives - tuple of ints, each meaning derivative in that global direction
+        local_derivatives  - tuple of ints, each meaning derivative in that local direction
+        averaged           - None, 'facet' or 'cell'
+        restriction        - None, '+' or '-'
+        component          - tuple of ints, the global component of the Terminal
+        flat_component     - single int, flattened local component of the Terminal, considering symmetry
+        """
+        mt = analyse_modified_terminal2(v) # FIXME: need modified version of amt(), v is probably not scalar here
+
+        # (1) mt.terminal.shape() defines a core indexing space
+        # (2) mt.terminal.element().symmetry() defines core symmetries
+        # (3) averaging and restrictions define distinct symbols, no additional symmetries
+        # (4) two or more grad/reference_grad defines distinct symbols with additional symmetries
+
+        # This is the default expr implementation:
+        n = self.V_sizes[i]
+        return self.new_symbols(n)
+
+    # FIXME: Handle modified terminals with element symmetries and second derivative symmetries!
+    #terminals are implemented separately, or maybe they don't need to be?
+    #grad = _modified_terminal
+    #reference_grad = _modified_terminal
+    #facet_avg = _modified_terminal
+    #cell_avg = _modified_terminal
+    #restricted = _modified_terminal
+    #reference_value_of = _modified_terminal # Not yet implemented in UFL
+    #indexed is implemented as a fall-through operation
+
     def indexed(self, Aii, i):
         # Reuse symbols of arg A for Aii
         A = Aii.operands()[0]
