@@ -1,7 +1,11 @@
 
 from six.moves import xrange as range
+from ufl.common import product
+from ufl.permutation import compute_indices, compute_permutations
 from ufl.algorithms import MultiFunction
+from ufl.classes import FormArgument
 from uflacs.analysis.indexing import map_indexed_arg_components, map_component_tensor_arg_components
+from uflacs.analysis.modified_terminals import analyse_modified_terminal2
 
 class ValueNumberer(MultiFunction):
     """An algorithm to map the scalar components of an expression node to unique value numbers,
@@ -19,6 +23,12 @@ class ValueNumberer(MultiFunction):
         end = begin + n
         self.symbol_count = end
         return list(range(begin, end))
+
+    def new_symbol(self):
+        "Generator for new symbols with a running counter."
+        begin = self.symbol_count
+        self.symbol_count += 1
+        return begin
 
     def get_node_symbols(self, expr):
         return self.V_symbols[self.e2i[expr]]
@@ -56,25 +66,80 @@ class ValueNumberer(MultiFunction):
         component          - tuple of ints, the global component of the Terminal
         flat_component     - single int, flattened local component of the Terminal, considering symmetry
         """
-        mt = analyse_modified_terminal2(v) # FIXME: need modified version of amt(), v is probably not scalar here
 
         # (1) mt.terminal.shape() defines a core indexing space
         # (2) mt.terminal.element().symmetry() defines core symmetries
         # (3) averaging and restrictions define distinct symbols, no additional symmetries
         # (4) two or more grad/reference_grad defines distinct symbols with additional symmetries
 
-        # This is the default expr implementation:
-        n = self.V_sizes[i]
-        return self.new_symbols(n)
+        # FIXME: Need modified version of amt(), v is probably not scalar here. This hack works for now.
+        if v.shape():
+            mt = analyse_modified_terminal2(v[(0,)*len(v.shape())])
+        else:
+            mt = analyse_modified_terminal2(v)
 
-    # FIXME: Handle modified terminals with element symmetries and second derivative symmetries!
+        cell = mt.terminal.cell()
+        tdim = cell.topological_dimension()
+        gdim = cell.geometric_dimension()
+
+        num_ld = len(mt.local_derivatives)
+        num_gd = len(mt.global_derivatives)
+
+        base_components = compute_indices(mt.terminal.shape())
+        assert not (num_ld and num_gd)
+        if num_ld:
+            #d_components = compute_permutations(num_ld, tdim)
+            d_components = compute_indices((tdim,)*num_ld)
+        elif num_gd:
+            #d_components = compute_permutations(num_gd, gdim)
+            d_components = compute_indices((gdim,)*num_gd)
+        else:
+            d_components = [()]
+
+        if isinstance(mt, FormArgument):
+            symmetry = mt.element().symmetry()
+        else:
+            symmetry = {}
+
+        symbols = []
+        mapped_symbols = {}
+        for bc in base_components:
+            for dc in d_components:
+                # Build mapped component with symmetries from element and derivatives combined
+                mbc = symmetry.get(bc, bc)
+                mdc = tuple(sorted(dc))
+                c = bc + dc
+                mc = mbc + mdc
+
+                # Get existing symbol or create new and store with mapped component mc as key
+                s = mapped_symbols.get(mc)
+                if s is None:
+                    s = self.new_symbol()
+                    mapped_symbols[mc] = s
+                symbols.append(s)
+
+        assert not v.free_indices()
+        if not product(v.shape()) == len(symbols):
+            from ufl.algorithms import tree_format
+            print()
+            print(num_ld)
+            print(num_gd)
+            print(d_components)
+            print(v.shape())
+            print(len(symbols))
+            print(tree_format(v))
+            print()
+
+        return symbols
+
+    # Handle modified terminals with element symmetries and second derivative symmetries!
     #terminals are implemented separately, or maybe they don't need to be?
-    #grad = _modified_terminal
-    #reference_grad = _modified_terminal
-    #facet_avg = _modified_terminal
-    #cell_avg = _modified_terminal
-    #restricted = _modified_terminal
-    #reference_value_of = _modified_terminal # Not yet implemented in UFL
+    grad = _modified_terminal
+    reference_grad = _modified_terminal
+    facet_avg = _modified_terminal
+    cell_avg = _modified_terminal
+    restricted = _modified_terminal
+    reference_value = _modified_terminal # Not yet implemented in UFL
     #indexed is implemented as a fall-through operation
 
     def indexed(self, Aii, i):

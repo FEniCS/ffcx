@@ -30,6 +30,8 @@ def sufficient_uint_type(maxvalue):
         dtype = numpy.int64
     return dtype
 
+
+# TODO: Delete when new one has survived a few tests
 def old_compute_dependencies(e2i, V, ignore_terminal_modifiers=True):
     if ignore_terminal_modifiers:
         terminalish = (Terminal,) + terminal_modifier_types
