@@ -290,16 +290,14 @@ class IntegralGenerator(object):
             factors = []
 
             # Get factor expression
-            f = V[factor_index]
-            fcode = self.expr_formatter.visit(f)
+            fcode = self.expr_formatter.visit(V[factor_index])
             if fcode not in ("1", "1.0"): # TODO: Nicer way to do this
                 factors += [fcode]
 
             # Get table names
             argfactors = []
             for i, ma in enumerate(args):
-                mt = analyse_modified_terminal2(MA[ma])
-                access = self.backend_access(mt.terminal, mt, MATR[ma])
+                access = self.backend_access(MA[ma].terminal, MA[ma], MATR[ma])
                 argfactors += [access]
             factors.extend(argfactors)
 

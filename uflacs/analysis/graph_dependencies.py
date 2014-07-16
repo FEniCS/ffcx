@@ -1,13 +1,36 @@
 
+import numpy
 from six.moves import xrange as range
 from ufl.classes import Terminal
 
 from ffc.log import error, ffc_assert
-from uflacs.datastructures.arrays import int_array, object_array
+from uflacs.datastructures.arrays import int_array, object_array, bool_array
 from uflacs.datastructures.crs import CRS, rows_to_crs
 from uflacs.analysis.modified_terminals import terminal_modifier_types
 
-def compute_dependencies(e2i, V, ignore_terminal_modifiers=True):
+def sufficient_int_type(maxvalue):
+    if maxvalue < 2**7:
+        dtype = numpy.int8
+    elif maxvalue < 2**15:
+        dtype = numpy.int16
+    elif maxvalue < 2**31:
+        dtype = numpy.int32
+    else:
+        dtype = numpy.int64
+    return dtype
+
+def sufficient_uint_type(maxvalue):
+    if maxvalue < 2**8:
+        dtype = numpy.int8
+    elif maxvalue < 2**16:
+        dtype = numpy.int16
+    elif maxvalue < 2**32:
+        dtype = numpy.int32
+    else:
+        dtype = numpy.int64
+    return dtype
+
+def old_compute_dependencies(e2i, V, ignore_terminal_modifiers=True):
     if ignore_terminal_modifiers:
         terminalish = (Terminal,) + terminal_modifier_types
     else:
@@ -20,10 +43,33 @@ def compute_dependencies(e2i, V, ignore_terminal_modifiers=True):
         if isinstance(v, terminalish):
             dependencies[i] = ()
         else:
-            dependencies[i] = tuple(e2i[o] for o in v.operands())
+            dependencies[i] = [e2i[o] for o in v.operands()]
             num_nonzeros += len(dependencies[i])
 
     return rows_to_crs(dependencies, num_rows, num_nonzeros, int)
+
+
+def compute_dependencies(e2i, V, ignore_terminal_modifiers=True):
+    if ignore_terminal_modifiers:
+        terminalish = (Terminal,) + terminal_modifier_types
+    else:
+        terminalish = (Terminal,)
+
+    num_rows = len(V)
+
+    # Use numpy int type sufficient to hold num_rows
+    dtype = sufficient_int_type(num_rows)
+
+    # Preallocate CRS matrix of sufficient capacity
+    num_nonzeros = sum(len(v.operands()) for v in V)
+    dependencies = CRS(num_rows, num_nonzeros, dtype)
+    for v in V:
+        if isinstance(v, terminalish):
+            dependencies.push_row(())
+        else:
+            dependencies.push_row([e2i[o] for o in v.operands()])
+
+    return dependencies
 
 
 def mark_active(dependencies, targets):
@@ -40,7 +86,7 @@ def mark_active(dependencies, targets):
     n = len(dependencies)
 
     # Initial state where nothing is marked as used
-    active = int_array(n)
+    active = bool_array(n)
     num_used = 0
 
     # Seed with initially used symbols
@@ -70,7 +116,7 @@ def mark_image(inverse_dependencies, sources):
     n = len(inverse_dependencies)
 
     # Initial state where nothing is marked as used
-    image = int_array(n)
+    image = bool_array(n)
     num_used = 0
 
     # Seed with initially used symbols

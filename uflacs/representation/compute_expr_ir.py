@@ -2,6 +2,7 @@
 from ufl.common import product
 from uflacs.analysis.modified_terminals import is_modified_terminal
 
+from uflacs.analysis.modified_terminals import analyse_modified_terminal2
 from uflacs.analysis.graph import build_graph
 from uflacs.analysis.graph_vertices import build_scalar_graph_vertices
 from uflacs.analysis.graph_rebuild import rebuild_with_scalar_subexpressions
@@ -77,6 +78,9 @@ def compute_expr_ir(expressions, parameters):
     argument_factorization, modified_arguments, V, target_variables, dependencies = \
         compute_argument_factorization(V, target_variables, dependencies)
 
+    # Store modified arguments in analysed form
+    for i in range(len(modified_arguments)):
+        modified_arguments[i] = analyse_modified_terminal2(modified_arguments[i])
 
     # --- Various dependency analysis ---
 

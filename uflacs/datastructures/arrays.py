@@ -6,3 +6,6 @@ def int_array(size):
 
 def object_array(size):
     return numpy.empty(size, dtype=object)
+
+def bool_array(size):
+    return numpy.zeros(size, dtype=numpy.bool8)

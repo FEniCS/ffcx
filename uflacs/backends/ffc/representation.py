@@ -73,11 +73,10 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
 
     # Build set of modified terminal ufl expressions
     V = expr_ir["V"]
-    modified_terminals = [V[i] for i in expr_ir["modified_terminal_indices"]]
-    modified_terminals += expr_ir["modified_arguments"]
+    modified_terminals = [analyse_modified_terminal2(V[i]) for i in expr_ir["modified_terminal_indices"]]
 
     # Analyse modified terminals and store data about them
-    terminal_data = [analyse_modified_terminal2(o) for o in modified_terminals]
+    terminal_data = modified_terminals + expr_ir["modified_arguments"]
 
     # Build tables needed by all modified terminals (currently build here means extract from ffc psi_tables)
     tables, terminal_table_names = build_element_tables(psi_tables, num_points,
