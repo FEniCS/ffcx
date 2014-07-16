@@ -106,8 +106,9 @@ class IntegralGenerator(object):
         "Generate static tables with precomputed element basis function values in quadrature points."
         parts = []
         parts += [Comment("Section for precomputed element basis function values")]
+        expr_irs = self.ir["uflacs"]["expr_ir"]
         for num_points in sorted(expr_irs):
-            tables = self.ir["uflacs"]["expr_ir"][num_points]["unique_tables"]
+            tables = expr_irs[num_points]["unique_tables"]
             comment = "Definitions of {0} tables for {0} quadrature points".format(len(tables), num_points)
             parts += [Comment(comment)]
             for name in sorted(tables):
