@@ -114,6 +114,8 @@ def compute_expr_ir(expressions, parameters):
     # Core ingredients for such factorization would be:
     # - Flatten products of products somehow
     # - Sorting flattened product factors by loop dependency then by canonical ordering
+    # Or to keep binary products:
+    # - Rebalancing product trees ((a*c)*(b*d) -> (a*b)*(c*d)) to make piecewise quantities 'float' to the top of the list
 
     #rank = max(len(k) for k in argument_factorization.keys())
     #for i,a in enumerate(modified_arguments):
@@ -125,22 +127,22 @@ def compute_expr_ir(expressions, parameters):
     expr_ir = {}
 
     # Core expression graph:
-    expr_ir["V"] = V
-    expr_ir["target_variables"] = target_variables
+    expr_ir["V"] = V                               # (array) V-index -> UFL subexpression
+    expr_ir["target_variables"] = target_variables # (array) Flattened input expression component index -> V-index
 
     # Result of factorization:
-    expr_ir["modified_arguments"] = modified_arguments
-    expr_ir["argument_factorization"] = argument_factorization
+    expr_ir["modified_arguments"] = modified_arguments         # (array) MA-index -> UFL expression of modified arguments
+    expr_ir["argument_factorization"] = argument_factorization # (dict) tuple(MA-indices) -> V-index of monomial factor
 
     # Dependency structure of graph:
-    expr_ir["modified_terminal_indices"] = modified_terminal_indices
-    expr_ir["dependencies"] = dependencies
-    expr_ir["inverse_dependencies"] = inverse_dependencies
+    expr_ir["modified_terminal_indices"] = modified_terminal_indices # (array) list of V-indices to modified terminals
+    expr_ir["dependencies"] = dependencies                           # (CRS) V-index -> direct dependency V-index list
+    expr_ir["inverse_dependencies"] = inverse_dependencies           # (CRS) V-index -> direct dependee V-index list
 
     # Metadata about each vertex
-    expr_ir["active"] = active
-    expr_ir["piecewise"] = piecewise
-    expr_ir["varying"] = varying
+    expr_ir["active"] = active       # (array) V-index -> bool
+    expr_ir["piecewise"] = piecewise # (array) V-index -> bool
+    expr_ir["varying"] = varying     # (array) V-index -> bool
 
     return expr_ir
 

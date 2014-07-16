@@ -258,10 +258,10 @@ def collect_argument_factors(SV, dependencies, arg_indices):
         where := means equivalence in the mathematical sense,
         of course in a different technical representation.
 
-    TODO: Implement, test, and employ in compiler!
     """
-    # TODO: Instead of argdeps being a list of argument vertex indices v (indirectly) depends on,
-    #       it should be a mapping { combo: factors } to handle e.g. (u + fu')(gv + v')
+    # TODO: What did this comment refer to? It's probably deprecated now:
+    # Instead of argdeps being a list of argument vertex indices v (indirectly) depends on,
+    # it should be a mapping { combo: factors } to handle e.g. (u + fu')(gv + v')
 
     # Extract argument component subgraph
     AV = [SV[j] for j in arg_indices]

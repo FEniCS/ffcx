@@ -43,12 +43,14 @@ class IntegralGenerator(object):
             "#include <boost/math/special_functions.hpp>",
             }
 
-        self.backend_access = backend_access
+        # Formatter for backend agnostic expressions, delegating to given target language formatter
+        self.expr_formatter = ExprFormatter(language_formatter, {})
+
+        # Formatter for defining backend specific variables
         self.backend_definitions = backend_definitions
 
-        # This is a transformer that collects terminal modifiers
-        # and delegates formatting to the language_formatter
-        self.expr_formatter = ExprFormatter(language_formatter, {})
+        # Formatter for accessing backend specific variables
+        self.backend_access = backend_access
 
     def generate_using_statements(self):
         return ["using %s;" % name for name in sorted(self._using_names)]
@@ -104,9 +106,8 @@ class IntegralGenerator(object):
         "Generate static tables with precomputed element basis function values in quadrature points."
         parts = []
         parts += [Comment("Section for precomputed element basis function values")]
-        expr_irs = self.ir["uflacs"]["expr_ir"]
         for num_points in sorted(expr_irs):
-            tables = expr_irs[num_points]["unique_tables"]
+            tables = self.ir["uflacs"]["expr_ir"][num_points]["unique_tables"]
             comment = "Definitions of {0} tables for {0} quadrature points".format(len(tables), num_points)
             parts += [Comment(comment)]
             for name in sorted(tables):
