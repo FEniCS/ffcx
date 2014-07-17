@@ -106,7 +106,7 @@ class FFCAccessBackend(MultiFunction):
     def spatial_coordinate(self, e, mt, tabledata):
         ffc_assert(not mt.global_derivatives, "Not expecting derivatives of SpatialCoordinates.")
         ffc_assert(not mt.local_derivatives, "Not expecting derivatives of SpatialCoordinates.")
-        ffc_assert(not mt.restriction, "Not expecting restriction of SpatialCoordinates.")
+        #ffc_assert(not mt.restriction, "Not expecting restriction of SpatialCoordinates.")
         ffc_assert(not mt.averaged, "Not expecting average of SpatialCoordinates.")
 
         if self.physical_coordinates_known:
