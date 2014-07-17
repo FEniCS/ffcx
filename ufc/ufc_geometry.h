@@ -85,6 +85,11 @@ static const double tetrahedron_vertices[num_tetrahedron_vertices][tdim3] = {
 
 /// --- Local reference cell facet orientations by UFC conventions ---
 
+static const double interval_facet_orientations[num_interval_facets] = {
+  -1.0,
+  +1.0,
+  };
+
 static const double triangle_facet_orientations[num_triangle_facets] = {
   +1.0,
   -1.0,
