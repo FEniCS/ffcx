@@ -184,6 +184,9 @@ class ArrayDecl(ASTNode):
         if self.values is None:
             valuescode = ""
         else:
+            #if any(sz == 0 for sz in self.sizes):
+            #    initializer_list = "{}"
+            #else:
             initializer_list = build_recursive_initializer_list(self.values, self.sizes)
             valuescode = (" = ", initializer_list)
         code = (self.typename, sep, self.name, brackets, valuescode, ";")

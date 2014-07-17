@@ -9,6 +9,8 @@ from uflacs.codeutils.precedence import build_precedence_map
 # TODO: This makes codeutils depend on analysis. Is that ok?
 from uflacs.analysis.modified_terminals import analyse_modified_terminal2
 
+
+# TODO: Move precedence handling to AST code, making this class mostly superfluous
 class ExprFormatter(Transformer):
     """Language independent formatting class containing rules for
     handling indexing operators such that value and derivative
@@ -28,7 +30,7 @@ class ExprFormatter(Transformer):
         if v is not None:
             return v
 
-        # Handling of  operator precedence:
+        # Handling of operator precedence:
         # Visit children and wrap in () if necessary.
         # This could be improved by considering the
         # parsing order to avoid some (), but that
