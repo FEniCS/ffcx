@@ -26,10 +26,7 @@ import itertools
 # FFC modules.
 from log import error
 
-def product(sequence):
-    "Return the product of all elements in a sequence."
-    # Copied from UFL
-    return functools.reduce(operator.__mul__, sequence, 1)
+from ufl.utils.sequences import product
 
 def all_equal(sequence):
     "Check that all items in list are equal."
