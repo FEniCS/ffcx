@@ -176,12 +176,10 @@ class FFCAccessBackend(MultiFunction):
 
     def facet_orientation(self, e, mt, tabledata):
         cellname = mt.terminal.domain().cell().cellname()
-        if cellname in ("triangle", "tetrahedron"):
+        if cellname in ("interval", "triangle", "tetrahedron"):
             tablename = "{0}_facet_orientations".format(cellname)
             facet = format_entity_name("facet", mt.restriction)
             access = ArrayAccess(tablename, (facet,))
-        elif cellname == "interval":
-            error("The facet orientation doesn't make sense for interval cell.")
         else:
             error("Unhandled cell types {0}.".format(cellname))
         return access

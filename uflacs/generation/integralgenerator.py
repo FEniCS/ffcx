@@ -97,7 +97,8 @@ class IntegralGenerator(object):
             points = [self.backend_access.precision_float(x) for p in points for x in p]
 
             parts += [ArrayDecl("static const double", wname, num_points, weights)]
-            parts += [ArrayDecl("static const double", pname, num_points*pdim, points)]
+            if pdim > 0:
+                parts += [ArrayDecl("static const double", pname, num_points*pdim, points)]
             parts += [""]
 
         return parts
@@ -105,11 +106,12 @@ class IntegralGenerator(object):
     def generate_element_tables(self):
         "Generate static tables with precomputed element basis function values in quadrature points."
         parts = []
-        parts += [Comment("Section for precomputed element basis function values")]
+        parts += [Comment("Section for precomputed element basis function values"),
+                  Comment("Table dimensions: num_entities, num_points, num_dofs")]
         expr_irs = self.ir["uflacs"]["expr_ir"]
         for num_points in sorted(expr_irs):
             tables = expr_irs[num_points]["unique_tables"]
-            comment = "Definitions of {0} tables for {0} quadrature points".format(len(tables), num_points)
+            comment = "Definitions of {0} tables for {1} quadrature points".format(len(tables), num_points)
             parts += [Comment(comment)]
             for name in sorted(tables):
                 table = tables[name]

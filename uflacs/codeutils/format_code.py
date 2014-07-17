@@ -28,9 +28,10 @@ def indent(text, level, indentchar='    '):
 def build_separated_list(values, sep):
     "Make a list with sep inserted between each value in values."
     items = []
-    for v in values[:-1]:
-        items.append((v, sep))
-    items.append(values[-1])
+    if len(values):
+        for v in values[:-1]:
+            items.append((v, sep))
+        items.append(values[-1])
     return items
 
 def build_initializer_list(values, begin="{ ", sep=", ", end=" }"):
