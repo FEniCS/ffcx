@@ -48,6 +48,13 @@
 #define UFC_NUM_VERTICES_IN_QUADRILATERAL 4
 #define UFC_NUM_VERTICES_IN_HEXAHEDRON 8
 
+// Use this for array dimensions indexed by local edge number
+#define UFC_NUM_EDGES_IN_INTERVAL 1
+#define UFC_NUM_EDGES_IN_TRIANGLE 3
+#define UFC_NUM_EDGES_IN_TETRAHEDRON 6
+#define UFC_NUM_EDGES_IN_QUADRILATERAL 4
+#define UFC_NUM_EDGES_IN_HEXAHEDRON 12
+
 // Use this for array dimensions indexed by local facet number
 #define UFC_NUM_FACETS_IN_INTERVAL 2
 #define UFC_NUM_FACETS_IN_TRIANGLE 3
@@ -108,6 +115,23 @@ static const double tetrahedron_facet_orientations[UFC_NUM_FACETS_IN_TETRAHEDRON
 
 /// --- Local reference cell entity relations by UFC conventions ---
 
+static const unsigned int triangle_edge_vertices[UFC_NUM_EDGES_IN_TRIANGLE][2] = {
+  {1, 2},
+  {0, 2},
+  {0, 1}
+  };
+
+static const unsigned int tetrahedron_edge_vertices[UFC_NUM_EDGES_IN_TETRAHEDRON][2] = {
+  {2, 3},
+  {1, 3},
+  {1, 2},
+  {0, 3},
+  {0, 2},
+  {0, 1}
+  };
+
+/// --- Local reference cell entity relations by UFC conventions ---
+
 static const unsigned int interval_facet_vertices[UFC_NUM_FACETS_IN_INTERVAL][1] = {
   {0},
   {1}
@@ -131,6 +155,47 @@ static const unsigned int tetrahedron_facet_edge_vertices[UFC_NUM_FACETS_IN_TETR
   {{2, 3}, {0, 3}, {0, 2}},
   {{1, 3}, {0, 3}, {0, 1}},
   {{1, 2}, {0, 2}, {0, 1}}
+  };
+
+/// --- Reference cell edge vectors by UFC conventions (edge vertex 1 - edge vertex 0 for each edge in cell) ---
+
+static const double triangle_reference_edge_vectors[UFC_NUM_EDGES_IN_TRIANGLE][UFC_TDIM_2] = {
+  { -1.0, 1.0 },
+  {  0.0, 1.0 },
+  {  1.0, 0.0 },
+  };
+
+static const double tetrahedron_reference_edge_vectors[UFC_NUM_EDGES_IN_TETRAHEDRON][UFC_TDIM_3] = {
+  {  0.0, -1.0,  1.0 },
+  { -1.0,  0.0,  1.0 },
+  { -1.0,  1.0,  0.0 },
+  {  0.0,  0.0,  1.0 },
+  {  0.0,  1.0,  0.0 },
+  {  1.0,  0.0,  0.0 },
+  };
+
+// Edge vectors for each triangle facet of a tetrahedron
+static const double tetrahedron_facet_reference_edge_vectors[UFC_NUM_FACETS_IN_TETRAHEDRON][UFC_NUM_EDGES_IN_TRIANGLE][UFC_TDIM_3] = {
+  { // facet 0
+    { 0.0, -1.0,  1.0},
+    {-1.0,  0.0,  1.0},
+    {-1.0,  1.0,  0.0},
+  },
+  { // facet 1
+    { 0.0, -1.0,  1.0},
+    { 0.0,  0.0,  1.0},
+    { 0.0,  1.0,  0.0},
+  },
+  { // facet 2
+    {-1.0,  0.0,  1.0},
+    { 0.0,  0.0,  1.0},
+    { 1.0,  0.0,  0.0},
+  },
+  { // facet 3
+    {-1.0,  1.0,  0.0},
+    { 0.0,  1.0,  0.0},
+    { 1.0,  0.0,  0.0},
+  },
   };
 
 /// --- Jacobians of reference facet cell to reference cell coordinate mappings by UFC conventions ---
