@@ -187,8 +187,14 @@ class FFCDefinitionsBackend(MultiFunction):
         return code
 
     def cell_facet_jacobian(self, e, mt, tabledata, access):
-        # Currently the table is inserted in self.initial()
-        # TODO: Define table in ufc_geometry? Or insert among regular tables?
+        code = []
+        return code
+
+    def cell_edge_vectors(self, e, mt, tabledata, access):
+        code = []
+        return code
+
+    def facet_edge_vectors(self, e, mt, tabledata):
         code = []
         return code
 
@@ -201,8 +207,7 @@ class FFCDefinitionsBackend(MultiFunction):
         return code
 
     def facet_normal(self, e, mt, tabledata, access):
-        code = []
-        return code
+        error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
 
     def cell_normal(self, e, mt, tabledata, access):
         error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))

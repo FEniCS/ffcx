@@ -159,12 +159,36 @@ class FFCAccessBackend(MultiFunction):
 
     def cell_facet_jacobian(self, e, mt, tabledata):
         cellname = mt.terminal.domain().cell().cellname()
-        if cellname in ("triangle", "tetrahedron"):
+        if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             tablename = "{0}_reference_facet_jacobian".format(cellname)
             facet = format_entity_name("facet", mt.restriction)
             access = ArrayAccess(tablename, (facet, mt.component[0], mt.component[1]))
         elif cellname == "interval":
             error("The reference facet jacobian doesn't make sense for interval cell.")
+        else:
+            error("Unhandled cell types {0}.".format(cellname))
+        return access
+
+    def cell_edge_vectors(self, e, mt, tabledata):
+        cellname = mt.terminal.domain().cell().cellname()
+        if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
+            tablename = "{0}_reference_edge_vectors".format(cellname)
+            #facet = format_entity_name("facet", mt.restriction)
+            access = ArrayAccess(tablename, (facet, mt.component[0], mt.component[1]))
+        elif cellname == "interval":
+            error("The reference cell edge vectors doesn't make sense for interval cell.")
+        else:
+            error("Unhandled cell types {0}.".format(cellname))
+        return access
+
+    def facet_edge_vectors(self, e, mt, tabledata):
+        cellname = mt.terminal.domain().cell().cellname()
+        if cellname in ("tetrahedron", "hexahedron"):
+            tablename = "{0}_reference_edge_vectors".format(cellname)
+            facet = format_entity_name("facet", mt.restriction)
+            access = ArrayAccess(tablename, (facet, mt.component[0], mt.component[1]))
+        elif cellname in ("interval", "triangle", "quadrilateral"):
+            error("The reference cell facet edge vectors doesn't make sense for interval or triangle cell.")
         else:
             error("Unhandled cell types {0}.".format(cellname))
         return access
