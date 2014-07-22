@@ -8,6 +8,10 @@
 
 #include <cmath>
 
+// TODO: Wrap all in namespace ufc
+//namespace ufc
+//{
+
 /// A note regarding data structures. All matrices are represented as
 /// row-major flattened raw C++ arrays. Benchmarks indicate that when
 /// optimization (-O1 and up) is used, the following conditions hold:
@@ -32,23 +36,50 @@
 //       some consistency is nice to simplify the code generation.
 //       Currently only the arguments that are actually used are included.
 
-// TODO: Split this header into smaller files ufc_geometry_<cell>.h or ufc_geometry_<cell>_<n>d.h?
+/// --- Some fixed numbers by name for readability in this file ---
+// TODO: Use these numbers where relevant below to make this file more self documenting
+
+// (namespaced using UFC_ in the names because they collide with variables in other libraries)
+
+// Use this for array dimensions indexed by local vertex number
+#define UFC_NUM_VERTICES_IN_INTERVAL 2
+#define UFC_NUM_VERTICES_IN_TRIANGLE 3
+#define UFC_NUM_VERTICES_IN_TETRAHEDRON 4
+#define UFC_NUM_VERTICES_IN_QUADRILATERAL 4
+#define UFC_NUM_VERTICES_IN_HEXAHEDRON 8
+
+// Use this for array dimensions indexed by local facet number
+#define UFC_NUM_FACETS_IN_INTERVAL 2
+#define UFC_NUM_FACETS_IN_TRIANGLE 3
+#define UFC_NUM_FACETS_IN_TETRAHEDRON 4
+#define UFC_NUM_FACETS_IN_QUADRILATERAL 4
+#define UFC_NUM_FACETS_IN_HEXAHEDRON 6
+
+// Use this to show the intention that UFC_GDIM_N = N
+#define UFC_GDIM_1 1
+#define UFC_GDIM_2 2
+#define UFC_GDIM_3 3
+
+// Use this to show the intention that UFC_TDIM_N = N
+#define UFC_TDIM_1 1
+#define UFC_TDIM_2 2
+#define UFC_TDIM_3 3
 
 
 /// --- Local reference cell coordinates by UFC conventions ---
 
-static const double interval_vertices[2][1] = {
+static const double interval_vertices[UFC_NUM_VERTICES_IN_INTERVAL][UFC_TDIM_1] = {
   {0.0},
   {1.0}
   };
 
-static const double triangle_vertices[3][2] = {
+static const double triangle_vertices[UFC_NUM_VERTICES_IN_TRIANGLE][UFC_TDIM_2] = {
   {0.0, 0.0},
   {1.0, 0.0},
   {0.0, 1.0}
   };
 
-static const double tetrahedron_vertices[4][3] = {
+static const double tetrahedron_vertices[UFC_NUM_VERTICES_IN_TETRAHEDRON][UFC_TDIM_3] = {
   {0.0, 0.0, 0.0},
   {1.0, 0.0, 0.0},
   {0.0, 1.0, 0.0},
@@ -57,13 +88,18 @@ static const double tetrahedron_vertices[4][3] = {
 
 /// --- Local reference cell facet orientations by UFC conventions ---
 
-static const double triangle_facet_orientations[3] = {
+static const double interval_facet_orientations[UFC_NUM_FACETS_IN_INTERVAL] = {
+  -1.0,
+  +1.0,
+  };
+
+static const double triangle_facet_orientations[UFC_NUM_FACETS_IN_TRIANGLE] = {
   +1.0,
   -1.0,
   +1.0
   };
 
-static const double tetrahedron_facet_orientations[4] = {
+static const double tetrahedron_facet_orientations[UFC_NUM_FACETS_IN_TETRAHEDRON] = {
   +1.0,
   -1.0,
   +1.0,
@@ -72,25 +108,25 @@ static const double tetrahedron_facet_orientations[4] = {
 
 /// --- Local reference cell entity relations by UFC conventions ---
 
-static const unsigned int interval_facet_vertices[2][2] = {
+static const unsigned int interval_facet_vertices[UFC_NUM_FACETS_IN_INTERVAL][1] = {
   {0},
   {1}
   };
 
-static const unsigned int triangle_facet_vertices[3][2] = {
+static const unsigned int triangle_facet_vertices[UFC_NUM_FACETS_IN_TRIANGLE][UFC_NUM_VERTICES_IN_INTERVAL] = {
   {1, 2},
   {0, 2},
   {0, 1}
   };
 
-static const unsigned int tetrahedron_facet_vertices[4][3] = {
+static const unsigned int tetrahedron_facet_vertices[UFC_NUM_FACETS_IN_TETRAHEDRON][UFC_NUM_VERTICES_IN_TRIANGLE] = {
   {1, 2, 3},
   {0, 2, 3},
   {0, 1, 3},
   {0, 1, 2}
   };
 
-static const unsigned int tetrahedron_facet_edge_vertices[4][3][2] = {
+static const unsigned int tetrahedron_facet_edge_vertices[UFC_NUM_FACETS_IN_TETRAHEDRON][UFC_NUM_FACETS_IN_TRIANGLE][UFC_NUM_VERTICES_IN_INTERVAL] = {
   {{2, 3}, {1, 3}, {1, 2}},
   {{2, 3}, {0, 3}, {0, 2}},
   {{1, 3}, {0, 3}, {0, 1}},
@@ -99,13 +135,13 @@ static const unsigned int tetrahedron_facet_edge_vertices[4][3][2] = {
 
 /// --- Jacobians of reference facet cell to reference cell coordinate mappings by UFC conventions ---
 
-static const double triangle_reference_facet_jacobian[3][2][1] = {
+static const double triangle_reference_facet_jacobian[UFC_NUM_FACETS_IN_TRIANGLE][UFC_TDIM_2][UFC_TDIM_2-1] = {
   { {-1.0}, { 1.0} },
   { { 0.0}, { 1.0} },
   { { 1.0}, { 0.0} },
   };
 
-static const double tetrahedron_reference_facet_jacobian[4][3][2] = {
+static const double tetrahedron_reference_facet_jacobian[UFC_NUM_FACETS_IN_TETRAHEDRON][UFC_TDIM_3][UFC_TDIM_3-1] = {
   { {-1.0, -1.0}, {1.0, 0.0}, {0.0, 1.0} },
   { { 0.0,  0.0}, {1.0, 0.0}, {0.0, 1.0} },
   { { 1.0,  0.0}, {0.0, 0.0}, {0.0, 1.0} },
@@ -114,7 +150,7 @@ static const double tetrahedron_reference_facet_jacobian[4][3][2] = {
 
 /// --- Coordinate mappings from reference facet cell to reference cell by UFC conventions ---
 
-inline void compute_reference_facet_to_reference_cell_coordinates_interval(double Xc[1], unsigned int facet)
+inline void compute_reference_facet_to_reference_cell_coordinates_interval(double Xc[UFC_TDIM_1], unsigned int facet)
 {
   switch (facet)
   {
@@ -127,7 +163,7 @@ inline void compute_reference_facet_to_reference_cell_coordinates_interval(doubl
   };
 }
 
-inline void compute_reference_facet_to_reference_cell_coordinates_triangle(double Xc[2], const double Xf[1], unsigned int facet)
+inline void compute_reference_facet_to_reference_cell_coordinates_triangle(double Xc[UFC_TDIM_2], const double Xf[UFC_TDIM_2-1], unsigned int facet)
 {
   switch (facet)
   {
@@ -146,7 +182,7 @@ inline void compute_reference_facet_to_reference_cell_coordinates_triangle(doubl
   };
 }
 
-inline void compute_reference_facet_to_reference_cell_coordinates_tetrahedron(double Xc[3], const double Xf[2], unsigned int facet)
+inline void compute_reference_facet_to_reference_cell_coordinates_tetrahedron(double Xc[UFC_TDIM_3], const double Xf[UFC_TDIM_3-1], unsigned int facet)
 {
   switch (facet)
   {
@@ -177,14 +213,14 @@ inline void compute_reference_facet_to_reference_cell_coordinates_tetrahedron(do
 ///--- Computation of Jacobian matrices ---
 
 /// Compute Jacobian J for interval embedded in R^1
-inline void compute_jacobian_interval_1d(double J[1],
+inline void compute_jacobian_interval_1d(double J[UFC_GDIM_1*UFC_TDIM_1],
                                          const double vertex_coordinates[2])
 {
   J[0] = vertex_coordinates[1] - vertex_coordinates[0];
 }
 
 /// Compute Jacobian J for interval embedded in R^2
-inline void compute_jacobian_interval_2d(double J[2],
+inline void compute_jacobian_interval_2d(double J[UFC_GDIM_2*UFC_TDIM_1],
                                          const double vertex_coordinates[4])
 {
   J[0] = vertex_coordinates[2] - vertex_coordinates[0];
@@ -192,7 +228,7 @@ inline void compute_jacobian_interval_2d(double J[2],
 }
 
 /// Compute Jacobian J for interval embedded in R^3
-inline void compute_jacobian_interval_3d(double J[3],
+inline void compute_jacobian_interval_3d(double J[UFC_GDIM_3*UFC_TDIM_1],
                                          const double vertex_coordinates[6])
 {
   J[0] = vertex_coordinates[3] - vertex_coordinates[0];
@@ -201,7 +237,7 @@ inline void compute_jacobian_interval_3d(double J[3],
 }
 
 /// Compute Jacobian J for triangle embedded in R^2
-inline void compute_jacobian_triangle_2d(double J[4],
+inline void compute_jacobian_triangle_2d(double J[UFC_GDIM_2*UFC_TDIM_2],
                                          const double vertex_coordinates[6])
 {
   J[0] = vertex_coordinates[2] - vertex_coordinates[0];
@@ -211,7 +247,7 @@ inline void compute_jacobian_triangle_2d(double J[4],
 }
 
 /// Compute Jacobian J for triangle embedded in R^3
-inline void compute_jacobian_triangle_3d(double J[6],
+inline void compute_jacobian_triangle_3d(double J[UFC_GDIM_3*UFC_TDIM_2],
                                          const double vertex_coordinates[9])
 {
   J[0] = vertex_coordinates[3] - vertex_coordinates[0];
@@ -223,7 +259,7 @@ inline void compute_jacobian_triangle_3d(double J[6],
 }
 
 /// Compute Jacobian J for tetrahedron embedded in R^3
-inline void compute_jacobian_tetrahedron_3d(double J[9],
+inline void compute_jacobian_tetrahedron_3d(double J[UFC_GDIM_3*UFC_TDIM_3],
                                             const double vertex_coordinates[12])
 {
   J[0] = vertex_coordinates[3]  - vertex_coordinates[0];
@@ -345,7 +381,7 @@ inline void compute_jacobian_inverse_tetrahedron_3d(double* K,
 
 /// Compute Jacobian determinant for interval embedded in R^1
 inline void compute_jacobian_determinants_interval_1d(double & det,
-                                                      const double J[1])
+                                                      const double J[UFC_GDIM_1*UFC_TDIM_1])
 {
   det = J[0];
 }
@@ -353,7 +389,7 @@ inline void compute_jacobian_determinants_interval_1d(double & det,
 /// Compute Jacobian (pseudo)determinants for interval embedded in R^2
 inline void compute_jacobian_determinants_interval_2d(double & det2,
                                                       double & det,
-                                                      const double J[2])
+                                                      const double J[UFC_GDIM_2*UFC_TDIM_1])
 {
   det2 = J[0]*J[0] + J[1]*J[1];
   det = std::sqrt(det2);
@@ -362,7 +398,7 @@ inline void compute_jacobian_determinants_interval_2d(double & det2,
 /// Compute Jacobian (pseudo)determinants for interval embedded in R^3
 inline void compute_jacobian_determinants_interval_3d(double & det2,
                                                       double & det,
-                                                      const double J[3])
+                                                      const double J[UFC_GDIM_3*UFC_TDIM_1])
 {
   det2 = J[0]*J[0] + J[1]*J[1] + J[2]*J[2];
   det = std::sqrt(det2);
@@ -370,7 +406,7 @@ inline void compute_jacobian_determinants_interval_3d(double & det2,
 
 /// Compute Jacobian determinant for triangle embedded in R^2
 inline void compute_jacobian_determinants_triangle_2d(double & det,
-                                                      const double J[4])
+                                                      const double J[UFC_GDIM_2*UFC_TDIM_2])
 {
   det = J[0]*J[3] - J[1]*J[2];
 }
@@ -380,7 +416,7 @@ inline void compute_jacobian_determinants_triangle_3d(double & den,
                                                       double & det2,
                                                       double & det,
                                                       double c[3],
-                                                      const double J[6])
+                                                      const double J[UFC_GDIM_3*UFC_TDIM_2])
 {
   const double d_0 = J[2]*J[5] - J[4]*J[3];
   const double d_1 = J[4]*J[1] - J[0]*J[5];
@@ -399,7 +435,7 @@ inline void compute_jacobian_determinants_triangle_3d(double & den,
 /// Compute Jacobian determinants for tetrahedron embedded in R^3
 inline void compute_jacobian_determinants_tetrahedron_3d(double & det,
                                                          double d[9],
-                                                         const double J[9])
+                                                         const double J[UFC_GDIM_3*UFC_TDIM_3])
 {
   d[0*3 + 0] = J[4]*J[8] - J[5]*J[7];
   d[0*3 + 1] = J[5]*J[6] - J[3]*J[8];
@@ -417,25 +453,25 @@ inline void compute_jacobian_determinants_tetrahedron_3d(double & det,
 //--- NEW Computation of Jacobian inverses ---
 
 /// Compute Jacobian inverse K for interval embedded in R^1
-inline void new_compute_jacobian_inverse_interval_1d(double K[1],
+inline void new_compute_jacobian_inverse_interval_1d(double K[UFC_TDIM_1*UFC_GDIM_1],
                                                      double det)
 {
   K[0] = 1.0 / det;
 }
 
 /// Compute Jacobian (pseudo)inverse K for interval embedded in R^2
-inline void new_compute_jacobian_inverse_interval_2d(double K[2],
+inline void new_compute_jacobian_inverse_interval_2d(double K[UFC_TDIM_1*UFC_GDIM_2],
                                                      double det2,
-                                                     const double J[2])
+                                                     const double J[UFC_GDIM_2*UFC_TDIM_1])
 {
   K[0] = J[0] / det2;
   K[1] = J[1] / det2;
 }
 
 /// Compute Jacobian (pseudo)inverse K for interval embedded in R^3
-inline void new_compute_jacobian_inverse_interval_3d(double K[3],
+inline void new_compute_jacobian_inverse_interval_3d(double K[UFC_TDIM_1*UFC_GDIM_3],
                                                      double det2,
-                                                     const double J[3])
+                                                     const double J[UFC_GDIM_3*UFC_TDIM_1])
 {
   K[0] = J[0] / det2;
   K[1] = J[1] / det2;
@@ -443,9 +479,9 @@ inline void new_compute_jacobian_inverse_interval_3d(double K[3],
 }
 
 /// Compute Jacobian inverse K for triangle embedded in R^2
-inline void new_compute_jacobian_inverse_triangle_2d(double K[4],
+inline void new_compute_jacobian_inverse_triangle_2d(double K[UFC_TDIM_2*UFC_GDIM_2],
                                                      double det,
-                                                     const double J[4])
+                                                     const double J[UFC_GDIM_2*UFC_TDIM_2])
 {
   K[0] =  J[3] / det;
   K[1] = -J[1] / det;
@@ -454,10 +490,10 @@ inline void new_compute_jacobian_inverse_triangle_2d(double K[4],
 }
 
 /// Compute Jacobian (pseudo)inverse K for triangle embedded in R^3
-inline void new_compute_jacobian_inverse_triangle_3d(double K[6],
+inline void new_compute_jacobian_inverse_triangle_3d(double K[UFC_TDIM_2*UFC_GDIM_3],
                                                      double den,
                                                      const double c[3],
-                                                     const double J[6])
+                                                     const double J[UFC_GDIM_3*UFC_TDIM_2])
 {
   K[0] = (J[0]*c[1] - J[1]*c[2]) / den;
   K[1] = (J[2]*c[1] - J[3]*c[2]) / den;
@@ -468,7 +504,7 @@ inline void new_compute_jacobian_inverse_triangle_3d(double K[6],
 }
 
 /// Compute Jacobian inverse K for tetrahedron embedded in R^3
-inline void new_compute_jacobian_inverse_tetrahedron_3d(double K[9],
+inline void new_compute_jacobian_inverse_tetrahedron_3d(double K[UFC_TDIM_3*UFC_GDIM_3],
                                                         double det,
                                                         const double d[9])
 {
@@ -608,7 +644,7 @@ inline void compute_facet_normal_direction_tetrahedron_3d(bool & direction,
 ///--- Compute facet normal vectors ---
 
 /// Compute facet normal for interval embedded in R^1
-inline void compute_facet_normal_interval_1d(double n[1],
+inline void compute_facet_normal_interval_1d(double n[UFC_GDIM_1],
                                              bool direction)
 {
   // Facet normals are 1.0 or -1.0:   (-1.0) <-- X------X --> (1.0)
@@ -616,7 +652,7 @@ inline void compute_facet_normal_interval_1d(double n[1],
 }
 
 /// Compute facet normal for interval embedded in R^2
-inline void compute_facet_normal_interval_2d(double n[2],
+inline void compute_facet_normal_interval_2d(double n[UFC_GDIM_2],
                                              const double vertex_coordinates[4],
                                              std::size_t facet)
 {
@@ -636,7 +672,7 @@ inline void compute_facet_normal_interval_2d(double n[2],
 }
 
 /// Compute facet normal for interval embedded in R^3
-inline void compute_facet_normal_interval_3d(double n[3],
+inline void compute_facet_normal_interval_3d(double n[UFC_GDIM_3],
                                              const double vertex_coordinates[6],
                                              std::size_t facet)
 {
@@ -659,7 +695,7 @@ inline void compute_facet_normal_interval_3d(double n[3],
 }
 
 /// Compute facet normal for triangle embedded in R^2
-inline void compute_facet_normal_triangle_2d(double n[2],
+inline void compute_facet_normal_triangle_2d(double n[UFC_GDIM_2],
                                              const double dx[2],
                                              const double det,
                                              bool direction)
@@ -671,7 +707,7 @@ inline void compute_facet_normal_triangle_2d(double n[2],
 
 
 /// Compute facet normal for triangle embedded in R^3
-inline void compute_facet_normal_triangle_3d(double n[3],
+inline void compute_facet_normal_triangle_3d(double n[UFC_GDIM_3],
                                              const double vertex_coordinates[6],
                                              std::size_t facet)
 {
@@ -709,7 +745,7 @@ inline void compute_facet_normal_triangle_3d(double n[3],
 }
 
 /// Compute facet normal for tetrahedron embedded in R^3
-inline void compute_facet_normal_tetrahedron_3d(double n[3],
+inline void compute_facet_normal_tetrahedron_3d(double n[UFC_GDIM_3],
                                                 const double a[3],
                                                 const double det,
                                                 bool direction)
@@ -751,7 +787,7 @@ inline void compute_circumradius_interval_3d(double & circumradius,
 /// Compute circumradius for triangle embedded in R^2
 inline void compute_circumradius_triangle_2d(double & circumradius,
                                              const double vertex_coordinates[6],
-                                             const double J[4],
+                                             const double J[UFC_GDIM_2*UFC_TDIM_2],
                                              double volume)
 {
   // Compute circumradius of triangle in 2D
@@ -766,7 +802,7 @@ inline void compute_circumradius_triangle_2d(double & circumradius,
 /// Compute circumradius for triangle embedded in R^3
 inline void compute_circumradius_triangle_3d(double & circumradius,
                                              const double vertex_coordinates[9],
-                                             const double J[6],
+                                             const double J[UFC_GDIM_3*UFC_TDIM_2],
                                              double volume)
 {
   // Compute circumradius of triangle in 3D
@@ -782,7 +818,7 @@ inline void compute_circumradius_triangle_3d(double & circumradius,
 /// Compute circumradius for tetrahedron embedded in R^3
 inline void compute_circumradius_tetrahedron_3d(double & circumradius,
                                                 const double vertex_coordinates[12],
-                                                const double J[9],
+                                                const double J[UFC_GDIM_3*UFC_TDIM_3],
                                                 double volume)
 {
   // Compute circumradius
@@ -812,7 +848,7 @@ inline void compute_circumradius_tetrahedron_3d(double & circumradius,
 /// Compute min edge length in facet of tetrahedron embedded in R^3
 inline void compute_min_facet_edge_length_tetrahedron_3d(double & min_edge_length,
                                                          unsigned int facet,
-                                                         const double vertex_coordinates[12])
+                                                         const double vertex_coordinates[3*4])
 {
   // TODO: Extract compute_facet_edge_lengths_tetrahedron_3d(), reuse between min/max functions
   double edge_lengths_sqr[3];
@@ -846,5 +882,9 @@ inline void compute_max_facet_edge_length_tetrahedron_3d(double & max_edge_lengt
   }
   max_edge_length = std::sqrt(std::max(std::max(edge_lengths_sqr[0], edge_lengths_sqr[1]), edge_lengths_sqr[2]));
 }
+
+
+//} // TODO: Wrap all in namespace ufc
+
 
 #endif

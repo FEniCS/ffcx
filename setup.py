@@ -243,6 +243,8 @@ def run_install():
     if sys.version_info[0] > 2: swig_options.insert(0, "-py3")
     ext_module_ufc = Extension("ufc._ufc",
                                sources=[os.path.join("ufc", "ufc.i")],
+                               depends=[os.path.join("ufc", "ufc.h"),
+                                        os.path.join("ufc", "ufc_geometry.h")],
                                swig_opts=swig_options,
                                extra_compile_args=CXX_FLAGS.split(),
                                include_dirs=[os.path.join("ufc")])

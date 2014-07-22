@@ -4,7 +4,7 @@
 # command-line arguments and wraps the given form file code in a
 # Python module which is then executed.
 
-# Copyright (C) 2004-2009 Anders Logg
+# Copyright (C) 2004-2014 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -25,13 +25,11 @@
 # Modified by Ola Skavhaug, 2006.
 # Modified by Dag Lindbo, 2008.
 # Modified by Kristian B. Oelgaard 2010.
-#
-# First added:  2004-10-14
-# Last changed: 2011-01-18
 
 # Python modules.
 import sys
 import getopt
+import cProfile
 from os import curdir
 from os import path
 from os import getcwd
@@ -86,9 +84,9 @@ def main(argv):
     # Get command-line arguments
     try:
         opts, args = getopt.getopt(argv, \
-        "hVvsl:r:f:Oo:q:eR:", \
+        "hVvsl:r:f:Oo:q:ep", \
         ["help", "version", "verbose", "silent", "language=", "representation=",
-         "optimize", "output-directory=", "quadrature-rule=", "error-control", "restrict-keyword="])
+         "optimize", "output-directory=", "quadrature-rule=", "error-control", "profile"])
     except getopt.GetoptError:
         info_usage()
         error("Illegal command-line arguments.")
@@ -137,8 +135,8 @@ def main(argv):
             parameters["output_dir"] = arg
         elif opt in ("-e", "--error-control"):
             parameters["error_control"] = True
-        elif opt in ("-R", "--restrict-keyword"):
-            parameters["restrict_keyword"] = arg
+        elif opt in ("-p", "--profile"):
+            parameters["profile"] = True
 
     # Set log_level again in case -d or -s was used on the command line
     set_level(parameters["log_level"])
@@ -155,6 +153,11 @@ def main(argv):
         # Get filename prefix and suffix
         prefix = filename.split(".")[0]
         suffix = filename.split(".")[-1]
+
+        # Turn on profiling
+        if parameters.get("profile"):
+            pr = cProfile.Profile()
+            pr.enable()
 
         # Check file suffix and load ufl file
         if suffix == "ufl":
@@ -190,6 +193,13 @@ def main(argv):
                 error("To get more information about this error, rerun FFC with --verbose.")
                 return 1
 
+        # Turn off profiling and write status to file
+        if parameters.get("profile"):
+            pr.disable()
+            pfn = "ffc_%s.profile" % filename
+            pr.dump_stats(pfn)
+            info("Wrote profiling info to file %s" % pfn)
+            #pr.print_stats()
 
     return 0
 
