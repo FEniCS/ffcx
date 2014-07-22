@@ -57,7 +57,8 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
             physical_coordinates_known = False
         expr = change_to_reference_geometry(expr, physical_coordinates_known, form_data.function_replace_map)
 
-        # Propagate restrictions to become terminal modifiers
+        # Propagate restrictions to become terminal modifiers because change_to_reference_geometry
+        # may have messed it up after the first pass in compute_form_data...
         if integral.integral_type() == "interior_facet":
             expr = propagate_restrictions(expr)
 

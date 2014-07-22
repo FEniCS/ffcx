@@ -43,7 +43,7 @@ class CppFormattingRules(object):
         error("Missing C++ rule for constant value type {0}.".format(e._uflclass))
 
     def zero(self, e, mt=None):
-        return "0"
+        return "0.0"
 
     def int_value(self, e, mt=None):
         if mt is not None and (mt.global_derivatives or mt.local_derivatives):
@@ -53,16 +53,16 @@ class CppFormattingRules(object):
 
     def float_value(self, e, mt=None):
         if mt is not None and (mt.global_derivatives or mt.local_derivatives):
-            return "0"
+            return "0.0"
         else:
             # Using configurable precision parameter from ufl
             return ufl.constantvalue.format_float(float(e))
 
     def identity(self, o, mt):
         if mt.global_derivatives or mt.local_derivatives:
-            return "0"
+            return "0.0"
         else:
-            return "1" if mt.component[0] == mt.component[1] else "0"
+            return "1.0" if mt.component[0] == mt.component[1] else "0.0"
 
     # === Formatting rules for arithmetic operators ===
 
@@ -127,7 +127,20 @@ class CppFormattingRules(object):
         return self._cmath("atan", op)
 
     def erf(self, o, op):
+        #return self._cmath("erf", op) # C++11 stl has this function
         return "erf({0})".format(op)
+
+    #def erfc(self, o, op): # Not in UFL
+    #    #return self._cmath("erfc", op) # C++11 stl has this function
+    #    return "erfc({0})".format(op)
+
+    def min_value(self, o, a, b):
+        #return "fmin({0}, {1})".format(a, b) # C99 version
+        return "{0}min({1}, {2})".format("std::", a, b) # C++ stl version
+
+    def max_value(self, o, a, b):
+        #return "fmax({0}, {1})".format(a, b) # C99 version
+        return "{0}max({1}, {2})".format("std::", a, b) # C++ stl version
 
     # === Formatting rules for bessel functions ===
 

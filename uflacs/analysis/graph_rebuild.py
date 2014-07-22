@@ -49,6 +49,8 @@ class ReconstructScalarSubexpressions(MultiFunction):
     # Unary scalar functions
     math_function = scalar_nary
     abs = scalar_nary
+    min_value = scalar_nary
+    max_value = scalar_nary
     # Binary scalar functions
     power = scalar_nary
     bessel_function = scalar_nary # TODO: Is this ok?
