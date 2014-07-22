@@ -62,12 +62,12 @@
 #define UFC_NUM_FACETS_IN_QUADRILATERAL 4
 #define UFC_NUM_FACETS_IN_HEXAHEDRON 6
 
-// Use this to show the intention that UFC_GDIM_N = N
+// Use UFC_GDIM_N to show the intention that the geometric dimension is N
 #define UFC_GDIM_1 1
 #define UFC_GDIM_2 2
 #define UFC_GDIM_3 3
 
-// Use this to show the intention that UFC_TDIM_N = N
+// Use UFC_TDIM_N to show the intention that the topological dimension is N
 #define UFC_TDIM_1 1
 #define UFC_TDIM_2 2
 #define UFC_TDIM_3 3
@@ -160,18 +160,18 @@ static const unsigned int tetrahedron_facet_edge_vertices[UFC_NUM_FACETS_IN_TETR
 /// --- Reference cell edge vectors by UFC conventions (edge vertex 1 - edge vertex 0 for each edge in cell) ---
 
 static const double triangle_reference_edge_vectors[UFC_NUM_EDGES_IN_TRIANGLE][UFC_TDIM_2] = {
-  { -1.0, 1.0 },
-  {  0.0, 1.0 },
-  {  1.0, 0.0 },
+  {-1.0, 1.0},
+  { 0.0, 1.0},
+  { 1.0, 0.0},
   };
 
 static const double tetrahedron_reference_edge_vectors[UFC_NUM_EDGES_IN_TETRAHEDRON][UFC_TDIM_3] = {
-  {  0.0, -1.0,  1.0 },
-  { -1.0,  0.0,  1.0 },
-  { -1.0,  1.0,  0.0 },
-  {  0.0,  0.0,  1.0 },
-  {  0.0,  1.0,  0.0 },
-  {  1.0,  0.0,  0.0 },
+  { 0.0, -1.0,  1.0},
+  {-1.0,  0.0,  1.0},
+  {-1.0,  1.0,  0.0},
+  { 0.0,  0.0,  1.0},
+  { 0.0,  1.0,  0.0},
+  { 1.0,  0.0,  0.0},
   };
 
 // Edge vectors for each triangle facet of a tetrahedron
