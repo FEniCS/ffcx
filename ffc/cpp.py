@@ -117,6 +117,8 @@ format.update({
     "bessel_k":       lambda v, n: "boost::math::cyl_bessel_k(%s, %s)" % (str(n), str(v)),
     "bessel_y":       lambda v, n: "boost::math::cyl_neumann(%s, %s)" % (str(n), str(v)),
     "absolute value": lambda v: "std::abs(%s)" % str(v),
+    "min value":      lambda l, r: "std::min(%s, %s)" % (str(l), str(r)),
+    "max value":      lambda l, r: "std::max(%s, %s)" % (str(l), str(r)),
     "sqrt":           lambda v: "std::sqrt(%s)" % str(v),
     "addition":       lambda v: _add(v),
     "multiply":       lambda v: _multiply(v),

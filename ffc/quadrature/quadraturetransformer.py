@@ -280,6 +280,14 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # Take absolute value of operand.
         return {():f_abs(operands[0][()])}
 
+    def min_value(self, o, *operands):
+        f_min = format["min value"]
+        return {():f_min(operands[0][()], operands[1][()])}
+
+    def max_value(self, o, *operands):
+        f_max = format["max value"]
+        return {():f_max(operands[0][()], operands[1][()])}
+
     # -------------------------------------------------------------------------
     # Condition, Conditional (conditional.py).
     # -------------------------------------------------------------------------
