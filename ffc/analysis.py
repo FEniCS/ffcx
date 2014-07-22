@@ -127,8 +127,7 @@ def _analyze_form(form, parameters):
                "Form (%s) seems to be zero: cannot compile it." % str(form))
 
     # Compute form metadata
-    apr = parameters["representation"] != "uflacs" # FIXME: This is a temporary hack, refactor!
-    form_data = compute_form_data(form, apply_propagate_restrictions=apr)
+    form_data = compute_form_data(form)
 
     info("")
     info(str(form_data))
