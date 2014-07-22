@@ -173,8 +173,7 @@ class FFCAccessBackend(MultiFunction):
         cellname = mt.terminal.domain().cell().cellname()
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             tablename = "{0}_reference_edge_vectors".format(cellname)
-            #facet = format_entity_name("facet", mt.restriction)
-            access = ArrayAccess(tablename, (facet, mt.component[0], mt.component[1]))
+            access = ArrayAccess(tablename, (mt.component[0], mt.component[1]))
         elif cellname == "interval":
             error("The reference cell edge vectors doesn't make sense for interval cell.")
         else:
