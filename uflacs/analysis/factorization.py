@@ -390,7 +390,7 @@ def compute_argument_factorization(SV, target_variables, dependencies):
 
     if list(target_variables) != [len(SV)-1]:
         ffc_assert(not extract_type(SV[-1], Argument),
-                      "Multiple or nonscalar Argument dependent expressions not supported in factorization.")
+                   "Multiple or nonscalar Argument dependent expressions not supported in factorization.")
         AV = []
         FV = SV
         IM = {}

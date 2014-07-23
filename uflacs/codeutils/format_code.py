@@ -122,7 +122,7 @@ class TemplateArgumentList(ASTNode):
             # Add space to avoid >> template issue
             last = self.args[-1]
             if isinstance(last, TemplateArgumentList) or (
-                isinstance(last, Type) and last.template_arguments):
+                    isinstance(last, Type) and last.template_arguments):
                 end = ' ' + end
         code = [sep.join(format_code(arg, keywords=keywords) for arg in self.args)]
         code = (start, container(code), end)

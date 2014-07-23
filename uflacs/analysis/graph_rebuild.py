@@ -134,7 +134,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
             indmap1 = [fi.index(i) for i in fi1]
             indks = [(flatten_multiindex([ind[i] for i in indmap0], ist0),
                       flatten_multiindex([ind[i] for i in indmap1], ist1))
-                    for ind in indices]
+                     for ind in indices]
         else:
             indks = [(0, 0)]*len(indices)
 
@@ -292,7 +292,7 @@ def rebuild_with_scalar_subexpressions(G):
 
     # Sanity check: assert that we've handled these symbols
     ffc_assert(all(W[s] is not None for s in vs),
-                  "Expecting that all symbols in vs are handled at this point.")
+               "Expecting that all symbols in vs are handled at this point.")
 
     # Return the scalar expressions for each of the components
     return [W[s] for s in vs]

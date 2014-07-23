@@ -41,7 +41,7 @@ class IntegralGenerator(object):
             "#include <cstring>",
             "#include <cmath>",
             "#include <boost/math/special_functions.hpp>",
-            }
+        }
 
         # Formatter for backend agnostic expressions, delegating to given target language formatter
         self.expr_formatter = ExprFormatter(language_formatter, {})
@@ -182,7 +182,7 @@ class IntegralGenerator(object):
         # Find dofranges at this loop level iarg starting with outer_dofblock
         dofranges = sorted(set(MATR[mas[iarg]][1:3] for mas in AF
                            if all(MATR[mas[i]][1:3] == j for i, j in enumerate(outer_dofblock))
-                           ))
+                               ))
 
         # Build loops for each dofrange
         for dofrange in dofranges:

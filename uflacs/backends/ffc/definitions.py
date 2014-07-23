@@ -81,7 +81,7 @@ class FFCDefinitionsBackend(MultiFunction):
             pass
         else:
             ffc_assert(mt.terminal.domain().coordinates() is None,
-                          "Assuming coefficient field symbolically inserted before this point.")
+                       "Assuming coefficient field symbolically inserted before this point.")
             # Reference coordinates are known, no coordinate field, so we compute
             # this component as linear combination of vertex_coordinates "dofs" and table
 
@@ -94,7 +94,7 @@ class FFCDefinitionsBackend(MultiFunction):
             # access here is e.g. x0, component 0 of x
 
             ffc_assert(0 <= begin <= end <= num_vertices*gdim,
-                          "Assuming linear element for affine simplices here.")
+                       "Assuming linear element for affine simplices here.")
             entity = format_entity_name(self.ir["entitytype"], mt.restriction)
             iq = names.iq
 
@@ -148,7 +148,7 @@ class FFCDefinitionsBackend(MultiFunction):
             pass
         else:
             ffc_assert(mt.terminal.domain().coordinates() is None,
-                          "Assuming coefficient field symbolically inserted before this point.")
+                       "Assuming coefficient field symbolically inserted before this point.")
             # Reference coordinates are known, no coordinate field, so we compute
             # this component as linear combination of vertex_coordinates "dofs" and table
 
@@ -161,7 +161,7 @@ class FFCDefinitionsBackend(MultiFunction):
             # access here is e.g. J_0, component 0 of J
 
             ffc_assert(0 <= (end-begin) <= num_vertices,
-                          "Assuming linear element for affine simplices here.")
+                       "Assuming linear element for affine simplices here.")
             entity = format_entity_name(self.ir["entitytype"], mt.restriction)
             vertex = names.ic
             iq = 0
