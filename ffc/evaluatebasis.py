@@ -547,7 +547,7 @@ def _compute_basisvalues(data, dof_data):
             #        * results[idx(p,0)]
 
             for r in range(0, embedded_degree):
-                # (p+q)*(p+q+1)/2 + q
+                # (p+q)*(p+q+1)//2 + q
                 rr = _idx2d(r, 1)
                 assign_to = f_component(f_basisvalue, rr)
                 ss = _idx2d(r, 0)
@@ -596,9 +596,9 @@ def _compute_basisvalues(data, dof_data):
 
         # FIAT_NEW code (compute index function) TetrahedronExpansionSet.
         # def idx(p,q,r):
-        #     return (p+q+r)*(p+q+r+1)*(p+q+r+2)/6 + (q+r)*(q+r+1)/2 + r
+        #     return (p+q+r)*(p+q+r+1)*(p+q+r+2)//6 + (q+r)*(q+r+1)//2 + r
         def _idx3d(p, q, r):
-            return (p+q+r)*(p+q+r+1)*(p+q+r+2)/6 + (q+r)*(q+r+1)/2 + r
+            return (p+q+r)*(p+q+r+1)*(p+q+r+2)//6 + (q+r)*(q+r+1)//2 + r
 
         # FIAT_NEW.expansions.TetrahedronExpansionSet.
 

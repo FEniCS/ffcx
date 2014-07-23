@@ -110,7 +110,7 @@ def _fiat_scheme(shape, degree):
     """Get quadrature scheme from FIAT interface"""
 
     # Number of points per axis for exact integration
-    num_points_per_axis = (degree + 1 + 1) / 2
+    num_points_per_axis = (degree + 1 + 1) // 2
 
     # Create and return FIAT quadrature rulet
     return fiat_create_quadrature(shape, num_points_per_axis)

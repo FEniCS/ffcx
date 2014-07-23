@@ -89,7 +89,7 @@ class FunctionValueTests(unittest.TestCase):
             basis = table[list(table.keys())[0]]
             for i in range(len(basis)):
                 if element.value_shape() == ():
-                    self.assertAlmostEqual(basis[i], reference[i](x))
+                    self.assertAlmostEqual(float(basis[i]), reference[i](x))
                 else:
                     for k in range(element.value_shape()[0]):
                         self.assertAlmostEqual(basis[i][k][0],
