@@ -1,12 +1,6 @@
 
-from six import iterkeys
 from six.moves import xrange as range
-import ufl
-from ufl.permutation import build_component_numbering
-from ufl.classes import Argument, Coefficient, GeometricQuantity
-from ufl.algorithms import MultiFunction
 
-from ffc.log import ffc_assert, warning, error
 
 from uflacs.codeutils.cpp_statement_formatting_rules import CppStatementFormattingRules
 langfmt = CppStatementFormattingRules()
