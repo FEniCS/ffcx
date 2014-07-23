@@ -31,4 +31,3 @@ def build_precedence_map():
         print("Missing precedence levels for the types:")
         print("\n".join('  %s' % c for c in missing))
     return pm
-

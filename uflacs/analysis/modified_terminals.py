@@ -10,10 +10,10 @@ from ufl.sorting import sorted_expr
 from ffc.log import ffc_assert, warning, error
 
 
-# 
+#
 # This is THE definition of modifier types, try to use this everywhere
 terminal_modifier_types = (Indexed, ReferenceGrad, Grad, Restricted, FacetAvg, CellAvg)
-# 
+#
 
 
 class ModifiedTerminal(object):
