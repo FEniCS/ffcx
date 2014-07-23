@@ -23,7 +23,7 @@ from instant.output import get_status_output
 import numpy
 import os
 import sys
-from six.moves import range
+from six.moves import xrange as range
 
 tol = 1e-14
 crit_tol = 1e-8
@@ -96,7 +96,7 @@ def compile_element(ufl_element, ffc_fail, log_file):
     error, output = get_status_output("ffc test.ufl")
     if error:
         info_red("FFC compilation failed.")
-        log_error("element: %s,\n%s\n" % (str(ufl_element), output), log_file)
+        log_error("element: %s,\n%s\n" % (str(ufl_element), output.decode('utf-8')), log_file)
         ffc_fail.append(str(ufl_element))
     return error
 
@@ -125,7 +125,7 @@ def compile_gcc_code(ufl_element, code, gcc_fail, log_file):
     f.close()
 
     # Get UFC flags
-    ufc_cflags = get_status_output("pkg-config --cflags ufc-1")[1].strip()
+    ufc_cflags = get_status_output("pkg-config --cflags ufc-1")[1].strip().decode('utf-8')
 
     # Compile g++ code
     c = "g++ %s -Wall -Werror -o evaluate_basis evaluate_basis.cpp" % ufc_cflags
@@ -135,7 +135,7 @@ def compile_gcc_code(ufl_element, code, gcc_fail, log_file):
     error, output = get_status_output(c)
     if error:
         info_red("GCC compilation failed.")
-        log_error("element: %s,\n%s\n" % (str(ufl_element), output), log_file)
+        log_error("element: %s,\n%s\n" % (str(ufl_element), output.decode('utf-8')), log_file)
         gcc_fail.append(str(ufl_element))
         if error and ("-f" in sys.argv or "--failfast" in sys.argv):
             print("FAIL")
@@ -149,10 +149,10 @@ def run_code(ufl_element, deriv_order, run_fail, log_file):
     error, output = get_status_output(".%sevaluate_basis %d" % (os.path.sep, deriv_order))
     if error:
         info_red("Runtime error (segmentation fault?).")
-        log_error("element: %s,\n%s\n" % (str(ufl_element), output), log_file)
+        log_error("element: %s,\n%s\n" % (str(ufl_element), output.decode('utf-8')), log_file)
         run_fail.append(str(ufl_element))
         return None
-    values = [[float(value) for value in line.strip().split(" ") if value] for line in output.strip().split("\n")]
+    values = [[float(value) for value in line.strip().split(" ") if value] for line in output.strip().decode('utf-8').split("\n")]
     return numpy.array(values)
 
 def verify_values(ufl_element, ref_values, ffc_values, dif_cri, dif_acc, correct, log_file):
