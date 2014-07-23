@@ -40,19 +40,7 @@ from ffc.restrictedelement import RestrictedElement
 from ffc.enrichedelement import EnrichedElement, SpaceOfReals
 
 # Dictionary mapping from cellname to dimension
-from ufl.geometry import cellname2dim
-
-# Number of entities associated with each cell name
-cellname_to_num_entities = {
-    "cell1D": None,
-    "cell2D": None,
-    "cell3D": None,
-    "interval": (2, 1),
-    "triangle": (3, 3, 1),
-    "tetrahedron": (4, 6, 4, 1),
-    "quadrilateral": (4, 4, 1),
-    "hexahedron": (8, 12, 6, 1),
-    }
+from ufl.cell import cellname2dim
 
 # Element families supported by FFC
 supported_families = ("Brezzi-Douglas-Marini",
@@ -69,12 +57,6 @@ supported_families = ("Brezzi-Douglas-Marini",
                       "Real",
                       "Bubble",
                       "Quadrature")
-
-# Mapping from dimension to number of mesh sub-entities. (In principle,
-# cellname_to_num_entities contains the same information, but with string keys.)
-# DISABLED ON PURPOSE: It's better to use cell name instead of dimension
-#                      to stay generic w.r.t. future box elements.
-#entities_per_dim = {1: [2, 1], 2: [3, 3, 1], 3: [4, 6, 4, 1]}
 
 # Cache for computed elements
 _cache = {}

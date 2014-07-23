@@ -39,12 +39,12 @@ from itertools import chain
 # Import UFL
 import ufl
 from ufl.classes import Measure
-from ufl.geometry import cellname2dim
+from ufl.cell import cellname2dim
 
 # FFC modules
 from ffc.utils import compute_permutations, product
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
-from ffc.fiatinterface import create_element, cellname_to_num_entities, reference_cell
+from ffc.fiatinterface import create_element, reference_cell
 from ffc.mixedelement import MixedElement
 from ffc.enrichedelement import EnrichedElement, SpaceOfReals
 from ffc.quadratureelement import QuadratureElement
@@ -138,11 +138,12 @@ def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
     # Create FIAT element
     element = create_element(ufl_element)
     domain, = ufl_element.domains() # Assuming single domain
-    cellname = domain.cell().cellname()
+    cell = domain.cell()
+    cellname = cell.cellname()
 
     # Precompute repeatedly used items
     num_dofs_per_entity = _num_dofs_per_entity(element)
-    facet_dofs = _tabulate_facet_dofs(element, cellname)
+    facet_dofs = _tabulate_facet_dofs(element, cell)
 
     # Store id
     ir = {"id": element_id}
@@ -156,7 +157,7 @@ def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
     ir["local_dimension"] = element.space_dimension()
     ir["num_facet_dofs"] = len(facet_dofs[0])
     ir["num_entity_dofs"] = num_dofs_per_entity
-    ir["tabulate_dofs"] = _tabulate_dofs(element, cellname)
+    ir["tabulate_dofs"] = _tabulate_dofs(element, cell)
     ir["tabulate_facet_dofs"] = facet_dofs
     ir["tabulate_entity_dofs"] = (element.entity_dofs(), num_dofs_per_entity)
     ir["tabulate_coordinates"] = _tabulate_coordinates(ufl_element, element)
@@ -435,14 +436,14 @@ def _tabulate_coordinates(ufl_element, element):
     data["points"] = [L.pt_dict.keys()[0] for L in element.dual_basis()]
     return data
 
-def _tabulate_dofs(element, cellname):
+def _tabulate_dofs(element, cell):
     "Compute intermediate representation of tabulate_dofs."
 
     if isinstance(element, SpaceOfReals):
         return None
 
     # Extract number of entities for each dimension for this cell
-    num_entities = cellname_to_num_entities[cellname]
+    num_entities = cell.num_entities()
 
     # Extract number of dofs per entity for each element
     elements = all_elements(element)
@@ -467,17 +468,17 @@ def _tabulate_dofs(element, cellname):
 
     return (dofs_per_element, num_dofs_per_element, num_entities, need_offset, fakes)
 
-def _tabulate_facet_dofs(element, cellname):
+def _tabulate_facet_dofs(element, cell):
     "Compute intermediate representation of tabulate_facet_dofs."
 
     # Compute incidences
-    incidence = __compute_incidence(cellname2dim[cellname])
+    incidence = __compute_incidence(cell.topological_dimension())
 
     # Get topological dimension
     D = max([pair[0][0] for pair in incidence])
 
     # Get the number of facets
-    num_facets = cellname_to_num_entities[cellname][-2]
+    num_facets = cell.num_facets()
 
     # Find out which entities are incident to each facet
     incident = num_facets*[None]

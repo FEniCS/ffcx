@@ -24,6 +24,7 @@ import numpy, itertools
 
 # UFL modules
 import ufl
+from ufl.cell import Cell
 from ufl.classes import Grad, CellAvg, FacetAvg
 from ufl.algorithms import extract_unique_elements, extract_type, extract_elements
 
@@ -32,7 +33,6 @@ from ffc.log import ffc_assert, info, error, warning
 from ffc.utils import product
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import map_facet_points, reference_cell_vertices
-from ffc.fiatinterface import cellname_to_num_entities
 from ffc.quadrature_schemes import create_quadrature
 
 def _create_quadrature_points_and_weights(integral_type, cellname, facet_cellname, degree, rule):
@@ -123,7 +123,7 @@ def _tabulate_psi_table(integral_type, cellname, tdim, element, deriv_order, poi
 
     # Otherwise, call FIAT to tabulate
     entity_dim = domain_to_entity_dim(integral_type, tdim)
-    num_entities = cellname_to_num_entities[cellname][entity_dim]
+    num_entities = Cell(cellname).num_entities(entity_dim)
     psi_table = {}
     for entity in range(num_entities):
         entity_points = _map_entity_points(cellname, tdim, points, entity_dim, entity)
@@ -138,7 +138,7 @@ def _tabulate_entities(integral_type, cellname, tdim):
     # MSA: I attempted to generalize this function, could this way of
     # handling domain types generically extend to other parts of the code?
     entity_dim = domain_to_entity_dim(integral_type, tdim)
-    num_entities = cellname_to_num_entities[cellname][entity_dim]
+    num_entities = Cell(cellname).num_entities(entity_dim)
     entities = set()
     for entity in range(num_entities):
         # TODO: Use 0 as key for cell and we may be able to generalize other places:
