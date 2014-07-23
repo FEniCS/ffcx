@@ -84,7 +84,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     code[key] = [val]
 
         # Add sums and group if necessary.
-        for key, val in code.items():
+        for key, val in list(code.items()):
 
             # Exclude all zero valued terms from sum
             value = [v for v in val if not v is None]

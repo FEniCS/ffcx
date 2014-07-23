@@ -85,8 +85,8 @@ def run_command(command):
     global logfile
     if logfile is None:
         logfile = open("../../error.log", "w")
-    logfile.write(output.decode('utf-8') + "\n")
-    print(output.decode('utf-8'))
+    logfile.write(output + "\n")
+    print(output)
     return False
 
 def log_error(message):
@@ -216,7 +216,7 @@ def build_programs(bench, permissive):
     begin("Building test programs (%d header files found)" % len(header_files))
 
     # Get UFC flags
-    ufc_cflags = get_status_output("pkg-config --cflags ufc-1")[1].strip().decode('utf-8')
+    ufc_cflags = get_status_output("pkg-config --cflags ufc-1")[1].strip()
 
     # Get Boost dir (code copied from ufc/src/utils/python/ufc_utils/build.py)
     # Set a default directory for the boost installation

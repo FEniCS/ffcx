@@ -293,7 +293,7 @@ class Sum(Expr):
             # Get the occurrences.
             d = var.get_var_occurrences()
             # Delete those variables in d0 that are not in d.
-            for k, v in d0.items():
+            for k, v in list(d0.items()):
                 if not k in d:
                     del d0[k]
             # Set the number of occurrences equal to the smallest number.
