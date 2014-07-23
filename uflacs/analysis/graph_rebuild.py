@@ -136,7 +136,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
                       flatten_multiindex([ind[i] for i in indmap1], ist1))
                     for ind in indices]
         else:
-            indks = [(0,0)]*len(indices)
+            indks = [(0, 0)]*len(indices)
 
         #from IPython.core.debugger import Pdb; pdb = Pdb(); pdb.set_trace()
 
