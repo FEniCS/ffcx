@@ -287,8 +287,8 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
                 v, = list(entity_psi_tables.values())
                 entity_psi_tables = dict((e, v) for e in actual_entities)
 
-            for entity, deriv_table in list(entity_psi_tables.items()):
-                deriv, = list(deriv_table.keys()) # Not expecting derivatives of averages
+            for entity, deriv_table in entity_psi_tables.items():
+                deriv, = deriv_table.keys() # Not expecting derivatives of averages
                 psi_table = deriv_table[deriv]
 
                 if rank:

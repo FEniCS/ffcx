@@ -77,14 +77,14 @@ class QuadratureTransformer(QuadratureTransformerBase):
         for op in operands:
             # If entries does already exist we can add the code, otherwise just
             # dump them in the element tensor.
-            for key, val in list(op.items()):
+            for key, val in op.items():
                 if key in code:
                     code[key].append(val)
                 else:
                     code[key] = [val]
 
         # Add sums and group if necessary.
-        for key, val in list(code.items()):
+        for key, val in code.items():
 
             # Exclude all zero valued terms from sum
             value = [v for v in val if not v is None]
@@ -102,7 +102,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
                 # Add a product for each term that has duplicate code
                 expressions = []
-                for expr, num_occur in list(duplications.items()):
+                for expr, num_occur in duplications.items():
                     if num_occur > 1:
                         # Pre-multiply expression with number of occurrences
                         expressions.append(f_mult([f_float(num_occur), expr]))
@@ -153,7 +153,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # Create code.
         code ={}
         if permutations:
-            for key, val in list(permutations.items()):
+            for key, val in permutations.items():
                 # Sort key in order to create a unique key.
                 l = list(key)
                 l.sort()
@@ -228,7 +228,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         denominator = denominator_code[()]
         ffc_assert(denominator is not None, "Division by zero!")
 
-        for key, val in list(numerator_code.items()):
+        for key, val in numerator_code.items():
             # If numerator is None the fraction is also None
             if val is None:
                 code[key] = None
@@ -542,7 +542,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                         code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
 
         # Add sums and group if necessary.
-        for key, val in list(code.items()):
+        for key, val in code.items():
             if len(val) > 1:
                 code[key] = f_group(f_add(val))
             elif val:
@@ -677,7 +677,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # Use format function on value of operand.
         new_operand = {}
         operand = operands[0]
-        for key, val in list(operand.items()):
+        for key, val in operand.items():
             new_operand[key] = format_function(val)
         return new_operand
 
@@ -739,6 +739,6 @@ class QuadratureTransformer(QuadratureTransformerBase):
         trans_set.update(self.trans_set)
         used_points = set([self.points])
         ops = self._count_operations(value)
-        used_psi_tables = set([v for k, v in list(self.psi_tables_map.items())])
+        used_psi_tables = set([v for k, v in self.psi_tables_map.items()])
 
         return (value, ops, [trans_set, used_points, used_psi_tables])

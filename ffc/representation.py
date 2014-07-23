@@ -598,7 +598,7 @@ def _num_dofs_per_entity(element):
     Example: Lagrange of degree 3 on triangle: [1, 2, 1]
     """
     entity_dofs = element.entity_dofs()
-    return [len(entity_dofs[e][0]) for e in range(len(list(entity_dofs.keys())))]
+    return [len(entity_dofs[e][0]) for e in range(len(entity_dofs.keys()))]
 
 # These two are copied from old ffc
 def __compute_incidence(D):

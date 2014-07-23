@@ -95,7 +95,7 @@ class MixedElement:
             crange = (crange[1], crange[1] + _num_components(element))
 
             # Insert table into mixed table
-            for dtuple in list(table.keys()):
+            for dtuple in table.keys():
 
                 # Insert zeros if necessary (should only happen first time)
                 if not dtuple in mixed_table:

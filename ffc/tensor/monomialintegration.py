@@ -116,7 +116,7 @@ def _init_table(arguments, integral_type, points, facet0, facet1):
 
     # Call FIAT to tabulate the basis functions for each element
     table = {}
-    for (ufl_element, order) in list(num_derivatives.items()):
+    for (ufl_element, order) in num_derivatives.items():
         fiat_element = create_element(ufl_element)
         if integral_type == Measure.CELL:
             table[(ufl_element, None)] = fiat_element.tabulate(order, points)
