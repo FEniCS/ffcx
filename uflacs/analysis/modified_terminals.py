@@ -10,10 +10,10 @@ from ufl.sorting import sorted_expr
 from ffc.log import ffc_assert, warning, error
 
 
-#########################################################################################
+# 
 # This is THE definition of modifier types, try to use this everywhere
 terminal_modifier_types = (Indexed, ReferenceGrad, Grad, Restricted, FacetAvg, CellAvg)
-#########################################################################################
+# 
 
 
 class ModifiedTerminal(object):
@@ -170,7 +170,7 @@ def analyse_modified_terminal(expr):
     symmetry = t.element().symmetry() if isinstance(t, FormArgument) else {}
     vi2si, si2vi = build_component_numbering(t.shape(), symmetry)
     flat_component = vi2si[component]
-    #num_flat_components = len(si2vi)
+    # num_flat_components = len(si2vi)
 
     # Make canonical representation of derivatives
     global_derivatives = tuple(sorted(global_derivatives))

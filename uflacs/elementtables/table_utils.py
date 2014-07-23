@@ -105,7 +105,7 @@ def get_ffc_table_values(tables, entitytype, num_points, element, flat_component
     element_table = element_table[None]
 
     # FFC property:
-    #element_counter = element_map[num_points][element]
+    # element_counter = element_map[num_points][element]
 
     # Figure out shape of final array by inspecting tables
     num_entities = len(element_table)

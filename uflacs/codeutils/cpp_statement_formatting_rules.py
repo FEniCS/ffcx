@@ -38,7 +38,7 @@ class CppStatementFormattingRules(object):
         return "%s /= %s;" % (lvalue, rvalue)
 
     def precision_float(self, f):
-        return "%g" % f # TODO: Control float formatting precision here
+        return "%g" % f  # TODO: Control float formatting precision here
 
     def precision_floats(self, fs):
         return ', '.join(self.precision_float(f) for f in fs)

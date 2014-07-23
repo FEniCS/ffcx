@@ -69,10 +69,10 @@ class ExprFormatter(Transformer):
         # Delegate formatting
         return self.language_formatter(mt.terminal, mt)
 
-    terminal   = modified_terminal
+    terminal = modified_terminal
     reference_grad = modified_terminal
-    grad       = modified_terminal
-    cell_avg   = modified_terminal
-    facet_avg  = modified_terminal
+    grad = modified_terminal
+    cell_avg = modified_terminal
+    facet_avg = modified_terminal
     restricted = modified_terminal
-    indexed    = modified_terminal
+    indexed = modified_terminal

@@ -44,7 +44,7 @@ def extract_terminal_elements(terminal_data):
 def build_element_counter_map(elements):
     "Given a sequence of elements, build a unique mapping: element->int."
     element_counter_map = {}
-    for element in sorted(elements): # TODO: Stable sorting?
+    for element in sorted(elements):  # TODO: Stable sorting?
         if element not in element_counter_map:
             element_counter_map[element] = len(element_counter_map)
     return element_counter_map
@@ -64,7 +64,7 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
       tables
       terminal_table_names
     """
-    element_counter_map = {} #build_element_counter_map(extract_terminal_elements(terminal_data))
+    element_counter_map = {}  # build_element_counter_map(extract_terminal_elements(terminal_data))
     terminal_table_names = object_array(len(terminal_data))
     tables = {}
     for i, mt in enumerate(terminal_data):

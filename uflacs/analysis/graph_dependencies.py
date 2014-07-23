@@ -9,22 +9,22 @@ from uflacs.datastructures.crs import CRS, rows_to_crs
 from uflacs.analysis.modified_terminals import terminal_modifier_types
 
 def sufficient_int_type(maxvalue):
-    if maxvalue < 2**7:
+    if maxvalue < 2 ** 7:
         dtype = numpy.int8
-    elif maxvalue < 2**15:
+    elif maxvalue < 2 ** 15:
         dtype = numpy.int16
-    elif maxvalue < 2**31:
+    elif maxvalue < 2 ** 31:
         dtype = numpy.int32
     else:
         dtype = numpy.int64
     return dtype
 
 def sufficient_uint_type(maxvalue):
-    if maxvalue < 2**8:
+    if maxvalue < 2 ** 8:
         dtype = numpy.int8
-    elif maxvalue < 2**16:
+    elif maxvalue < 2 ** 16:
         dtype = numpy.int16
-    elif maxvalue < 2**32:
+    elif maxvalue < 2 ** 32:
         dtype = numpy.int32
     else:
         dtype = numpy.int64
@@ -95,7 +95,7 @@ def mark_active(dependencies, targets):
     active[targets] = 1
 
     # Mark dependencies by looping backwards through symbols array
-    for s in range(n-1, -1, -1):
+    for s in range(n - 1, -1, -1):
         if active[s]:
             num_used += 1
             active[dependencies[s]] = 1

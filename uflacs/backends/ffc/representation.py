@@ -22,11 +22,11 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
     parameters = p
 
     uflacs_ir = {}
-    #uflacs_ir["name"] = form_data.name
-    #uflacs_ir["coefficient_names"] = form_data.coefficient_names
-    #uflacs_ir["argument_names"] = form_data.argument_names
-    #uflacs_ir["cell"] = form_data.integration_domains[0].cell()
-    #uflacs_ir["function_replace_map"] = form_data.function_replace_map
+    # uflacs_ir["name"] = form_data.name
+    # uflacs_ir["coefficient_names"] = form_data.coefficient_names
+    # uflacs_ir["argument_names"] = form_data.argument_names
+    # uflacs_ir["cell"] = form_data.integration_domains[0].cell()
+    # uflacs_ir["function_replace_map"] = form_data.function_replace_map
 
     # Build ir for each num_points/integrand
     uflacs_ir["expr_ir"] = {}
@@ -41,10 +41,10 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
         expr = integral.integrand()
 
         # Replace coefficients so they all have proper element and domain for what's to come
-        expr = replace(expr, form_data.function_replace_map) # FIXME: Doesn't replace domain coefficient!!! Merge replace functionality into change_to_reference_grad to fix?
+        expr = replace(expr, form_data.function_replace_map)  # FIXME: Doesn't replace domain coefficient!!! Merge replace functionality into change_to_reference_grad to fix?
 
         # Change from physical gradients to reference gradients
-        expr = change_to_reference_grad(expr) # TODO: Make this optional depending on backend
+        expr = change_to_reference_grad(expr)  # TODO: Make this optional depending on backend
 
         # Compute and apply integration scaling factor
         scale = compute_integrand_scaling_factor(integral.domain(), integral.integral_type())
@@ -92,18 +92,18 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
     for i, mt in enumerate(terminal_data):
         # TODO: Get the definition that - means added offset from somewhere
         if mt.restriction == "-" and isinstance(terminal_data[i].terminal, FormArgument):
-            offset = int(tables[terminal_table_names[i]].shape[-1]) # number of dofs before optimization
+            offset = int(tables[terminal_table_names[i]].shape[-1])  # number of dofs before optimization
             (unique_name, b, e) = terminal_table_ranges[i]
-            terminal_table_ranges[i] = (unique_name, b+offset, e+offset)
+            terminal_table_ranges[i] = (unique_name, b + offset, e + offset)
 
     # Split into arguments and other terminals before storing in expr_ir
     # TODO: Some tables are associated with num_points, some are not
     #       (i.e. piecewise constant, averaged and x0)
     n = len(expr_ir["modified_terminal_indices"])
     m = len(expr_ir["modified_arguments"])
-    assert len(terminal_data) == n+m
-    assert len(terminal_table_ranges) == n+m
-    assert len(terminal_table_names) == n+m
+    assert len(terminal_data) == n + m
+    assert len(terminal_table_ranges) == n + m
+    assert len(terminal_table_names) == n + m
     expr_ir["modified_terminal_table_ranges"] = terminal_table_ranges[:n]
     expr_ir["modified_argument_table_ranges"] = terminal_table_ranges[n:]
 

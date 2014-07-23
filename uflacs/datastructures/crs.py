@@ -9,7 +9,7 @@ class CRS(object):
     as each row is simply a dense vector.
     """
     def __init__(self, row_capacity, element_capacity, dtype):
-        self.row_offsets = numpy.zeros(row_capacity+1, dtype=int)
+        self.row_offsets = numpy.zeros(row_capacity + 1, dtype=int)
         self.data = numpy.zeros(element_capacity, dtype=dtype)
         self.num_rows = 0
 
@@ -28,7 +28,7 @@ class CRS(object):
         if row < 0 or row >= self.num_rows:
             raise IndexError("Row number out of range!")
         a = self.row_offsets[row]
-        b = self.row_offsets[row+1]
+        b = self.row_offsets[row + 1]
         return self.data[a:b]
 
     def __len__(self):

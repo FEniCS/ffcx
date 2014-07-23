@@ -108,9 +108,9 @@ def compute_expr_ir(expressions, parameters):
     piecewise *= active
 
     # TODO: Skip literals in both varying and piecewise
-    #nonliteral = ...
-    #varying *= nonliteral
-    #piecewise *= nonliteral
+    # nonliteral = ...
+    # varying *= nonliteral
+    # piecewise *= nonliteral
 
     # TODO: Inspection of varying shows that factorization is
     # needed for effective loop invariant code motion w.r.t. quadrature loop as well.
@@ -121,10 +121,10 @@ def compute_expr_ir(expressions, parameters):
     # Or to keep binary products:
     # - Rebalancing product trees ((a*c)*(b*d) -> (a*b)*(c*d)) to make piecewise quantities 'float' to the top of the list
 
-    #rank = max(len(k) for k in argument_factorization.keys())
-    #for i,a in enumerate(modified_arguments):
+    # rank = max(len(k) for k in argument_factorization.keys())
+    # for i,a in enumerate(modified_arguments):
     #    iarg = a.number()
-    #    #ipart = a.part()
+    # ipart = a.part()
 
 
     # Build IR for the given expressions
@@ -132,20 +132,20 @@ def compute_expr_ir(expressions, parameters):
 
     # Core expression graph:
     expr_ir["V"] = V                               # (array) V-index -> UFL subexpression
-    expr_ir["target_variables"] = target_variables # (array) Flattened input expression component index -> V-index
+    expr_ir["target_variables"] = target_variables  # (array) Flattened input expression component index -> V-index
 
     # Result of factorization:
     expr_ir["modified_arguments"] = modified_arguments         # (array) MA-index -> UFL expression of modified arguments
-    expr_ir["argument_factorization"] = argument_factorization # (dict) tuple(MA-indices) -> V-index of monomial factor
+    expr_ir["argument_factorization"] = argument_factorization  # (dict) tuple(MA-indices) -> V-index of monomial factor
 
     # Dependency structure of graph:
-    expr_ir["modified_terminal_indices"] = modified_terminal_indices # (array) list of V-indices to modified terminals
+    expr_ir["modified_terminal_indices"] = modified_terminal_indices  # (array) list of V-indices to modified terminals
     expr_ir["dependencies"] = dependencies                           # (CRS) V-index -> direct dependency V-index list
     expr_ir["inverse_dependencies"] = inverse_dependencies           # (CRS) V-index -> direct dependee V-index list
 
     # Metadata about each vertex
     expr_ir["active"] = active       # (array) V-index -> bool
-    expr_ir["piecewise"] = piecewise # (array) V-index -> bool
+    expr_ir["piecewise"] = piecewise  # (array) V-index -> bool
     expr_ir["varying"] = varying     # (array) V-index -> bool
 
     return expr_ir
@@ -157,7 +157,7 @@ def old_code_useful_for_optimization():
                                   active,
                                   dependencies,
                                   inverse_dependencies,
-                                  partitions, # TODO: Rewrite in terms of something else, this doesn't exist anymore
+                                  partitions,  # TODO: Rewrite in terms of something else, this doesn't exist anymore
                                   cache_score_policy=default_cache_score_policy)
 
     # Allocate variables to store subexpressions in

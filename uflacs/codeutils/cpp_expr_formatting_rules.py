@@ -23,18 +23,18 @@ class CppFormattingRules(object):
     # Unexcepted type checks:
     def variable(self, o, *ops):
         error("Expecting variables to be removed before formatting C++ code.")
-        return ops[0] # or just fall through like this if necessary
+        return ops[0]  # or just fall through like this if necessary
 
     def invalid_request(self, o, *ops):
         error("Invalid request for C++ formatting of a {0}, str = {1}".format(o._uflclass, str(o)))
     wrapper_type = invalid_request
-    index_sum    = invalid_request
-    indexed      = invalid_request
-    derivative   = invalid_request
-    restricted   = invalid_request
+    index_sum = invalid_request
+    indexed = invalid_request
+    derivative = invalid_request
+    restricted = invalid_request
 
-    argument            = invalid_request
-    coefficient         = invalid_request
+    argument = invalid_request
+    coefficient = invalid_request
     geometric_quantitiy = invalid_request
 
     # === Formatting rules for literal constants ===
@@ -96,8 +96,8 @@ class CppFormattingRules(object):
         return self._cmath("exp", op)
 
     def abs(self, o, op):
-        #return "fabs({0})".format(op) # C version
-        return self._cmath("abs", op) # C++ stl version
+        # return "fabs({0})".format(op) # C version
+        return self._cmath("abs", op)  # C++ stl version
 
     def cos(self, o, op):
         return self._cmath("cos", op)
@@ -127,20 +127,20 @@ class CppFormattingRules(object):
         return self._cmath("atan", op)
 
     def erf(self, o, op):
-        #return self._cmath("erf", op) # C++11 stl has this function
+        # return self._cmath("erf", op) # C++11 stl has this function
         return "erf({0})".format(op)
 
-    #def erfc(self, o, op): # Not in UFL
-    #    #return self._cmath("erfc", op) # C++11 stl has this function
+    # def erfc(self, o, op): # Not in UFL
+    # return self._cmath("erfc", op) # C++11 stl has this function
     #    return "erfc({0})".format(op)
 
     def min_value(self, o, a, b):
-        #return "fmin({0}, {1})".format(a, b) # C99 version
-        return "{0}min({1}, {2})".format("std::", a, b) # C++ stl version
+        # return "fmin({0}, {1})".format(a, b) # C99 version
+        return "{0}min({1}, {2})".format("std::", a, b)  # C++ stl version
 
     def max_value(self, o, a, b):
-        #return "fmax({0}, {1})".format(a, b) # C99 version
-        return "{0}max({1}, {2})".format("std::", a, b) # C++ stl version
+        # return "fmax({0}, {1})".format(a, b) # C99 version
+        return "{0}max({1}, {2})".format("std::", a, b)  # C++ stl version
 
     # === Formatting rules for bessel functions ===
 

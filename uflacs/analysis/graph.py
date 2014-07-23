@@ -13,7 +13,7 @@ class Graph2(object):
         self.expression_vertices = []
 
         self.V_shapes = []
-        self.V_symbols = None # Crs matrix
+        self.V_symbols = None  # Crs matrix
         self.total_unique_symbols = 0
 
 def build_graph(expressions, DEBUG=False):

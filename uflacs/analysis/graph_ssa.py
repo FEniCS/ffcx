@@ -19,7 +19,7 @@ def default_partition_seed(expr, rank):
     """
     # TODO: Use named constants for the partition numbers here
 
-    modifiers = (Grad, Restricted, Indexed) # FIXME: Add CellAvg, FacetAvg types here, others?
+    modifiers = (Grad, Restricted, Indexed)  # FIXME: Add CellAvg, FacetAvg types here, others?
     if isinstance(expr, modifiers):
         return default_partition_seed(expr.operands()[0], rank)
 
@@ -31,13 +31,13 @@ def default_partition_seed(expr, rank):
         return p
 
     elif isinstance(expr, Coefficient):
-        if expr.is_cellwise_constant(): # This is crap, doesn't include grad modifier
+        if expr.is_cellwise_constant():  # This is crap, doesn't include grad modifier
             return 0
         else:
             return 2
 
     elif isinstance(expr, GeometricQuantity):
-        if expr.is_cellwise_constant(): # This is crap, doesn't include grad modifier
+        if expr.is_cellwise_constant():  # This is crap, doesn't include grad modifier
             return 0
         else:
             return 1
@@ -82,8 +82,8 @@ def mark_partitions(V, active, dependencies, rank,
 def build_factorized_partitions():
     num_points = [3]
 
-    #dofrange = (begin, end)
-    #dofblock = ()  |  (dofrange0,)  |  (dofrange0, dofrange1)
+    # dofrange = (begin, end)
+    # dofblock = ()  |  (dofrange0,)  |  (dofrange0, dofrange1)
 
     partitions = {}
 
@@ -112,7 +112,7 @@ def invert_dependencies(dependencies, depcount):
     """FIXME: Test"""
     n = len(dependencies)
     m = sum(depcount)
-    invdeps = [()]*n
+    invdeps = [()] * n
     for i in range(n):
         for d in dependencies[i]:
             invdeps[d] = invdeps[d] + (i,)
@@ -124,14 +124,14 @@ def default_cache_score_policy(vtype, ndeps, ninvdeps, partition):
 
     # Is the type particularly expensive to compute?
     expensive = (MathFunction,)
-    if vtype in expensive: # Could make a type-to-cost mapping, but this should do.
+    if vtype in expensive:  # Could make a type-to-cost mapping, but this should do.
         s *= 20
 
     # More deps roughly correlates to more operations
     s *= ndeps
 
     # If it is reused several times let that count significantly
-    s *= ninvdeps**3 # 1->1, 2->8, 3->27
+    s *= ninvdeps ** 3  # 1->1, 2->8, 3->27
 
     # Finally let partition count for something?
     # Or perhaps we need some more information, such as
@@ -182,7 +182,7 @@ def allocate_registers(active, partitions, targets,
 
     # Can allocate a number of registers up to given threshold
     num_to_allocate = max(num_targets,
-                          min(max_registers, n)-num_targets)
+                          min(max_registers, n) - num_targets)
     to_allocate = set()
 
     # For now, just using an arbitrary heuristic algorithm to select m largest scores
@@ -206,7 +206,7 @@ def allocate_registers(active, partitions, targets,
 
     # Some consistency checks
     assert num_to_allocate <= max_registers
-    assert registers_used <= num_to_allocate+len(targets)
+    assert registers_used <= num_to_allocate + len(targets)
     assert registers_used <= max(max_registers, len(targets))
 
     # Mark allocations
@@ -216,11 +216,11 @@ def allocate_registers(active, partitions, targets,
         allocations[i] = r
 
     # Possible data structures for improved register allocations
-    #register_status = int_array(max_registers)
+    # register_status = int_array(max_registers)
 
     # Stack/set of free registers (should wrap in stack abstraction):
-    #free_registers = int_array(max_registers)
-    #num_free_registers = max_registers
-    #free_registers[:] = reversed(xrange(max_registers))
+    # free_registers = int_array(max_registers)
+    # num_free_registers = max_registers
+    # free_registers[:] = reversed(xrange(max_registers))
 
     return allocations

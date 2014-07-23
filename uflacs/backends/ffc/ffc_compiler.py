@@ -9,7 +9,7 @@ def compile_tabulate_tensor_code(form, optimize=True):
 
     # Fake the initialization necessary to get this running through
     set_float_formatting(8)
-    parameters = { "optimize": optimize }
+    parameters = {"optimize": optimize}
     prefix = "uflacs_testing"
     form_id = 0
 
@@ -32,5 +32,5 @@ def compile_tabulate_tensor_code(form, optimize=True):
         tt_codes.append(code["tabulate_tensor"])
 
     # Just joint the tabulate tensor bodies and return
-    code = ('\n' + '/'*60 + '\n').join(tt_codes)
+    code = ('\n' + '/' * 60 + '\n').join(tt_codes)
     return code

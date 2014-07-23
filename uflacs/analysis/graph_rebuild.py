@@ -53,7 +53,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
     max_value = scalar_nary
     # Binary scalar functions
     power = scalar_nary
-    bessel_function = scalar_nary # TODO: Is this ok?
+    bessel_function = scalar_nary  # TODO: Is this ok?
 
     def condition(self, o, ops):
         sops = [op[0] for op in ops]
@@ -81,11 +81,11 @@ class ReconstructScalarSubexpressions(MultiFunction):
         na = len(ops[0])
         nb = len(ops[1])
 
-        if na == 1: # True scalar * something
+        if na == 1:  # True scalar * something
             a, = ops[0]
             return [o.reconstruct(a, b) for b in ops[1]]
 
-        if nb == 1: # Something * true scalar
+        if nb == 1:  # Something * true scalar
             b, = ops[1]
             return [o.reconstruct(a, b) for a in ops[0]]
 
@@ -113,12 +113,12 @@ class ReconstructScalarSubexpressions(MultiFunction):
             # o0 has shape
             im0 = product(ish0)
             st0 = shape_to_strides(sh0)
-            compks = [(im0*flatten_multiindex(comp, st0), 0) for comp in components]
+            compks = [(im0 * flatten_multiindex(comp, st0), 0) for comp in components]
         elif sh1:
             # o1 has shape
             im1 = product(ish1)
             st1 = shape_to_strides(sh1)
-            compks = [(0, im1*flatten_multiindex(comp, st1)) for comp in components]
+            compks = [(0, im1 * flatten_multiindex(comp, st1)) for comp in components]
         else:
             # Neither has shape (indices only)
             # (It never happens that both have shape)
@@ -136,9 +136,9 @@ class ReconstructScalarSubexpressions(MultiFunction):
                       flatten_multiindex([ind[i] for i in indmap1], ist1))
                      for ind in indices]
         else:
-            indks = [(0, 0)]*len(indices)
+            indks = [(0, 0)] * len(indices)
 
-        #from IPython.core.debugger import Pdb; pdb = Pdb(); pdb.set_trace()
+        # from IPython.core.debugger import Pdb; pdb = Pdb(); pdb.set_trace()
 
         # Build products for scalar components
         results = []
@@ -146,7 +146,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
             for k01, k11 in indks:
                 results.append(o.reconstruct(ops[0][k00 + k01], ops[1][k10 + k11]))
 
-        #results = [o.reconstruct(ops[0][k00 + k01], ops[1][k10 + k11])
+        # results = [o.reconstruct(ops[0][k00 + k01], ops[1][k10 + k11])
         #           for k00, k10 in compks
         #           for k01, k11 in indks]
 
@@ -173,14 +173,14 @@ class ReconstructScalarSubexpressions(MultiFunction):
         # Map each flattened total component of summand to
         # flattened total component of indexsum o by removing
         # axis corresponding to summation index ii.
-        ss = ops[0] # Scalar subexpressions of summand
-        ffc_assert(len(ss) == predim*postdim*d, "Mismatching number of subexpressions.")
+        ss = ops[0]  # Scalar subexpressions of summand
+        ffc_assert(len(ss) == predim * postdim * d, "Mismatching number of subexpressions.")
         sops = []
         for i in range(predim):
-            iind = i*(postdim*d)
+            iind = i * (postdim * d)
             for k in range(postdim):
                 ind = iind + k
-                sops.append([ss[ind + j*postdim] for j in range(d)])
+                sops.append([ss[ind + j * postdim] for j in range(d)])
 
         # For each scalar output component, sum over collected subcomponents
         return [sum(sop) for sop in sops]
@@ -198,7 +198,7 @@ def rebuild_expression_from_graph(G):
     if len(w) == 1:
         return w[0]
     else:
-        return as_vector(w) # TODO: Consider shape of initial v
+        return as_vector(w)  # TODO: Consider shape of initial v
 
 
 def rebuild_with_scalar_subexpressions(G):
@@ -220,11 +220,11 @@ def rebuild_with_scalar_subexpressions(G):
     """
 
     # From simplefsi3d.ufl:
-    #print "GRAPH SIZE:", len(G.V), G.total_unique_symbols
-    #GRAPH SIZE: 16251   635272
-    #GRAPH SIZE:   473     8210
-    #GRAPH SIZE:  9663   238021
-    #GRAPH SIZE: 88913  3448634  #  3.5 M!!!
+    # print "GRAPH SIZE:", len(G.V), G.total_unique_symbols
+    # GRAPH SIZE: 16251   635272
+    # GRAPH SIZE:   473     8210
+    # GRAPH SIZE:  9663   238021
+    # GRAPH SIZE: 88913  3448634  #  3.5 M!!!
 
     # Algorithm to apply to each subexpression
     reconstruct_scalar_subexpressions = ReconstructScalarSubexpressions()
@@ -244,7 +244,7 @@ def rebuild_with_scalar_subexpressions(G):
 
         if is_modified_terminal(v):
 
-            #ffc_assert(v.free_indices() == (), "Expecting no free indices.")
+            # ffc_assert(v.free_indices() == (), "Expecting no free indices.")
 
             sh = v.shape()
 
@@ -263,14 +263,14 @@ def rebuild_with_scalar_subexpressions(G):
             # Find symbols of operands
             sops = []
             for j, vop in enumerate(v.operands()):
-                if isinstance(vop, MultiIndex): # TODO: Store MultiIndex in G.V and allocate a symbol to it for this to work
+                if isinstance(vop, MultiIndex):  # TODO: Store MultiIndex in G.V and allocate a symbol to it for this to work
                     if not isinstance(v, IndexSum):
                         error("Not expecting a %s." % type(v))
                     so = ()
                 else:
                     k = G.e2i[vop]
                     # TODO: Build edge datastructure and use this instead?
-                    #k = G.E[i][j]
+                    # k = G.E[i][j]
                     so = G.V_symbols[k]
                 sops.append(so)
 
@@ -288,7 +288,7 @@ def rebuild_with_scalar_subexpressions(G):
             W[s] = w
 
     # Find symbols of final v from input graph
-    vs = G.V_symbols[G.nv-1] # TODO: This is easy to extend to multiple 'final v'
+    vs = G.V_symbols[G.nv - 1]  # TODO: This is easy to extend to multiple 'final v'
 
     # Sanity check: assert that we've handled these symbols
     ffc_assert(all(W[s] is not None for s in vs),

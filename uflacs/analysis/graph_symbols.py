@@ -60,8 +60,8 @@ def build_node_symbols(V, e2i, V_shapes, V_sizes):
     # Get the actual number of symbols created
     total_unique_symbols = value_numberer.symbol_count
 
-    #assert all(x < total_unique_symbols for x in V_symbols.data)
-    #assert (total_unique_symbols-1) in V_symbols.data
+    # assert all(x < total_unique_symbols for x in V_symbols.data)
+    # assert (total_unique_symbols-1) in V_symbols.data
 
     return V_symbols, total_unique_symbols
 

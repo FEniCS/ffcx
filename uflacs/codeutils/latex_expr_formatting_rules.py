@@ -27,7 +27,7 @@ class LatexFormattingRules(object):
     # Unexcepted type checks:
     def variable(self, o):
         error("Should strip away variables before formatting LaTeX code.")
-        return o # or just do this if necessary
+        return o  # or just do this if necessary
 
     def invalid_request(self, o, *ops):
         error("Invalid request for LaTeX formatting of a %s." % o._uflclass)
@@ -44,14 +44,14 @@ class LatexFormattingRules(object):
 
     def int_value(self, o, component=(), derivatives=(), restriction=None):
         if derivatives:
-            return self.zero(0*o)
+            return self.zero(0 * o)
         else:
             return "%d" % int(o)
 
     def float_value(self, o, component=(), derivatives=(), restriction=None):
         # Using configurable precision parameter from ufl
         if derivatives:
-            return self.zero(0*o)
+            return self.zero(0 * o)
         else:
             return ufl.constantvalue.format_float(float(o))
 
@@ -241,10 +241,10 @@ class LatexFormattingRules(object):
     # === Formatting rules for restrictions ===
 
     def positive_restricted(self, o, a):
-        return r"%s^{[+]}" % (a,) # TODO
+        return r"%s^{[+]}" % (a,)  # TODO
 
     def negative_restricted(self, o, a):
-        return r"%s^{[-]}" % (a,) # TODO
+        return r"%s^{[-]}" % (a,)  # TODO
 
 
 from ufl.algorithms import MultiFunction

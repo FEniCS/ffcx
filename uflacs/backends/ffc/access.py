@@ -30,9 +30,9 @@ class FFCAccessBackend(MultiFunction):
     def points_array_name(self, num_points):
         return "{0}{1}".format(names.points, num_points)
 
-    def quadrature_loop_index(self): #(num_points):
+    def quadrature_loop_index(self):  # (num_points):
         # If we want to use num_points-specific names for the quadrature loop index, definitions.py need num_points as well.
-        #return "{0}{1}".format(names.iq, num_points)
+        # return "{0}{1}".format(names.iq, num_points)
         return names.iq
 
     def argument_loop_index(self, iarg):
@@ -52,7 +52,7 @@ class FFCAccessBackend(MultiFunction):
     def argument(self, e, mt, tabledata, num_points):
         # Expecting only local derivatives and values here
         assert not mt.global_derivatives
-        #assert mt.global_component is None
+        # assert mt.global_component is None
 
         # No need to store basis function value in its own variable, just get table value directly
         uname, begin, end = tabledata
@@ -80,7 +80,7 @@ class FFCAccessBackend(MultiFunction):
         ffc_assert(mt.flat_component == vi2si[mt.component], "Incompatible component flattening!")
 
         # Offset index if on second cell in interior facet integral
-        if mt.restriction == "-": # TODO: Get the notion that '-' is the second cell from a central definition?
+        if mt.restriction == "-":  # TODO: Get the notion that '-' is the second cell from a central definition?
             idof = mt.flat_component + len(si2vi)
         else:
             idof = mt.flat_component
@@ -102,7 +102,7 @@ class FFCAccessBackend(MultiFunction):
     def spatial_coordinate(self, e, mt, tabledata, num_points):
         ffc_assert(not mt.global_derivatives, "Not expecting derivatives of SpatialCoordinates.")
         ffc_assert(not mt.local_derivatives, "Not expecting derivatives of SpatialCoordinates.")
-        #ffc_assert(not mt.restriction, "Not expecting restriction of SpatialCoordinates.")
+        # ffc_assert(not mt.restriction, "Not expecting restriction of SpatialCoordinates.")
         ffc_assert(not mt.averaged, "Not expecting average of SpatialCoordinates.")
 
         if self.physical_coordinates_known:
@@ -125,7 +125,7 @@ class FFCAccessBackend(MultiFunction):
         ffc_assert(not mt.local_derivatives, "Not expecting derivatives of CellCoordinates.")
         ffc_assert(not mt.averaged, "Not expecting average of CellCoordinates.")
 
-        assert not mt.restriction # FIXME: Not used!
+        assert not mt.restriction  # FIXME: Not used!
 
         if self.physical_coordinates_known:
             # No special variable should exist in this case.

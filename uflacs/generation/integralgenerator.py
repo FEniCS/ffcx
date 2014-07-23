@@ -31,7 +31,7 @@ class IntegralGenerator(object):
 
         # Compute shape of element tensor
         if self.ir["integral_type"] == "interior_facet":
-            self._A_shape = [2*n for n in self.ir["prim_idims"]]
+            self._A_shape = [2 * n for n in self.ir["prim_idims"]]
         else:
             self._A_shape = self.ir["prim_idims"]
 
@@ -98,7 +98,7 @@ class IntegralGenerator(object):
 
             parts += [ArrayDecl("static const double", wname, num_points, weights)]
             if pdim > 0:
-                parts += [ArrayDecl("static const double", pname, num_points*pdim, points)]
+                parts += [ArrayDecl("static const double", pname, num_points * pdim, points)]
             parts += [""]
 
         return parts
@@ -153,7 +153,7 @@ class IntegralGenerator(object):
 
         # Compute single argument partitions outside of the dofblock loops
         for iarg in range(self.ir["rank"]):
-            for dofrange in []: # TODO: Move f*arg0 out here
+            for dofrange in []:  # TODO: Move f*arg0 out here
                 parts += self.generate_argument_partition(num_points, iarg, dofrange)
 
         # Nested argument loops and accumulation into element tensor
@@ -197,12 +197,12 @@ class IntegralGenerator(object):
             parts += [ForRange(idof, dofrange[0], dofrange[1], body=body)]
         return parts
 
-    def generate_partition(self, name, V, partition, table_ranges, num_points): # TODO: Rather take list of vertices, not markers
+    def generate_partition(self, name, V, partition, table_ranges, num_points):  # TODO: Rather take list of vertices, not markers
         terminalcode = []
         assignments = []
         from ufl.classes import ConstantValue
         j = 0
-        #print "Generating partition ", name
+        # print "Generating partition ", name
         for i, p in enumerate(partition):
             if p:
                 # TODO: Consider optimized ir here with markers for which subexpressions to store in variables.
@@ -222,11 +222,11 @@ class IntegralGenerator(object):
                     # Count assignments so we get a new vname each time
                     vaccess = ArrayAccess(name, j)
                     j += 1
-                    vcode = self.expr_formatter.visit(v) # TODO: Generate ASTNode instead of str here?
+                    vcode = self.expr_formatter.visit(v)  # TODO: Generate ASTNode instead of str here?
                     assignments += [Assign(vaccess, vcode)]
 
-                vname = format_code(vaccess) # TODO: Can skip this if expr_formatter generates ASTNode
-                #print '\nStoring {0} = {1}'.format(vname, str(v))
+                vname = format_code(vaccess)  # TODO: Can skip this if expr_formatter generates ASTNode
+                # print '\nStoring {0} = {1}'.format(vname, str(v))
                 self.expr_formatter.variables[v] = vname
 
         parts = []
@@ -296,7 +296,7 @@ class IntegralGenerator(object):
 
             # Get factor expression
             fcode = self.expr_formatter.visit(V[factor_index])
-            if fcode not in ("1", "1.0"): # TODO: Nicer way to do this
+            if fcode not in ("1", "1.0"):  # TODO: Nicer way to do this
                 factors += [fcode]
 
             # Get table names
@@ -311,7 +311,7 @@ class IntegralGenerator(object):
                 dofdims = zip(idofs, self._A_shape)
                 im = IndexMapping(dict((idof, idim) for idof, idim in dofdims))
                 am = AxisMapping(im, [idofs])
-                A_ii, = am.format_index_expressions() # TODO: Integrate this with other code utils
+                A_ii, = am.format_index_expressions()  # TODO: Integrate this with other code utils
             else:
                 A_ii = 0
             A_access = self.backend_access.element_tensor_entry(A_ii)
@@ -328,12 +328,12 @@ class IntegralGenerator(object):
         """
         parts = []
 
-        if not self.ir["quadrature_rules"]: # Rather check ir["integral_type"]?
+        if not self.ir["quadrature_rules"]:  # Rather check ir["integral_type"]?
             # TODO: Implement for expression support
             error("Expression generation not implemented yet.")
             # TODO: If no integration, assuming we generate an expression, and assign results here
             # Corresponding code from compiler.py:
-            #assign_to_variables = tfmt.output_variable_names(len(final_variable_names))
-            #parts += list(format_assignments(zip(assign_to_variables, final_variable_names)))
+            # assign_to_variables = tfmt.output_variable_names(len(final_variable_names))
+            # parts += list(format_assignments(zip(assign_to_variables, final_variable_names)))
 
         return parts

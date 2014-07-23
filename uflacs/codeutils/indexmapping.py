@@ -61,7 +61,7 @@ def dim_mul(i, j):
     if any_str(i, j):
         return '{!r} * {!r}'.format(i, j)
     else:
-        return i*j
+        return i * j
 
 def mul_dims(dims):
     if not dims:
@@ -87,10 +87,10 @@ class AxisMapping(object):
                           for names in self.axis_index_names]
 
         # The stride of each axis equals the product of the following axis sizes
-        self.axis_stride = [mul_dims(self.axis_size[i+1:]) for i in range(self.num_axes)]
+        self.axis_stride = [mul_dims(self.axis_size[i + 1:]) for i in range(self.num_axes)]
 
         # For each axis, the internal strides of each dimension within that axis
-        self.dim_stride = [tuple(mul_dims([self.index_mapping.size[name] for name in self.axis_index_names[i][j+1:]])
+        self.dim_stride = [tuple(mul_dims([self.index_mapping.size[name] for name in self.axis_index_names[i][j + 1:]])
                                  for j in range(self.num_dims[i]))
                            for i in range(self.num_axes)]
 
@@ -116,7 +116,7 @@ class AxisMapping(object):
 
 # TODO: Change this into unit tests
 def _test():
-    ranges = {"i": 4, "j": (10, 12), "n": "N", "m": (1, "M") }
+    ranges = {"i": 4, "j": (10, 12), "n": "N", "m": (1, "M")}
     im = IndexMapping(ranges)
     print(str(eval(repr(im))))
 

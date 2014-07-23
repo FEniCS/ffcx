@@ -11,18 +11,18 @@ def strip_trailing_whitespace(s):
     return '\n'.join(l.rstrip() for l in s.split('\n'))
 
 def format_float(x):
-    eps = 1e-12 # FIXME: Configurable threshold
+    eps = 1e-12  # FIXME: Configurable threshold
     if abs(x) < eps:
         return "0.0"
 
-    precision = 12 # FIXME: Configurable precision
+    precision = 12  # FIXME: Configurable precision
     fmt = "%%.%de" % precision
     return fmt % x
 
 def indent(text, level, indentchar='    '):
     if level == 0:
         return text
-    ind = indentchar*level
+    ind = indentchar * level
     return '\n'.join(ind + line for line in text.split('\n'))
 
 def build_separated_list(values, sep):
@@ -50,7 +50,7 @@ def build_recursive_initializer_list(values, sizes):
         assert len(values[0]) == sizes[1]
         inner = []
         for i0 in range(sizes[0]):
-            inner.append( tuple(build_initializer_list(values[i0])) )
+            inner.append(tuple(build_initializer_list(values[i0])))
         initializer_list = ["{", Indented([build_separated_list(inner, ","), "}"])]
 
     elif r == 3:
@@ -60,7 +60,7 @@ def build_recursive_initializer_list(values, sizes):
         for i0 in range(sizes[0]):
             inner = []
             for i1 in range(sizes[1]):
-                inner.append( tuple(build_initializer_list(values[i0][i1])) )
+                inner.append(tuple(build_initializer_list(values[i0][i1])))
             outer.append(Indented(["{", build_separated_list(inner, ","), "}"]))
         initializer_list = ["{", Indented([build_separated_list(outer, ","), "}"])]
 
@@ -78,15 +78,15 @@ class Indented(ASTNode):
         self.code = code
 
     def format(self, level, indentchar, keywords):
-        return format_code(self.code, level+1, indentchar, keywords)
+        return format_code(self.code, level + 1, indentchar, keywords)
 
-class WithKeywords(ASTNode): # TODO: Do we need this? Can simplify quite a bit by removing.
+class WithKeywords(ASTNode):  # TODO: Do we need this? Can simplify quite a bit by removing.
     def __init__(self, code, keywords):
         self.code = code
         self.keywords = keywords
 
     def format(self, level, indentchar, keywords):
-        if keywords: # TODO: Merge with self.keywords instead
+        if keywords:  # TODO: Merge with self.keywords instead
             raise RuntimeError("Doubly defined keywords not implemented.")
         fmt_keywords = {}
         for k, v in iteritems(self.keywords):
@@ -185,9 +185,9 @@ class ArrayDecl(ASTNode):
         if self.values is None:
             valuescode = ""
         else:
-            #if any(sz == 0 for sz in self.sizes):
+            # if any(sz == 0 for sz in self.sizes):
             #    initializer_list = "{}"
-            #else:
+            # else:
             initializer_list = build_recursive_initializer_list(self.values, self.sizes)
             valuescode = (" = ", initializer_list)
         code = (self.typename, sep, self.name, brackets, valuescode, ";")
@@ -438,7 +438,7 @@ def format_code(code, level=0, indentchar='    ', keywords=None):
     """
     if isinstance(code, str):
         if keywords:
-            code = code % keywords # TODO: Either change to new formatting or just remove keywords
+            code = code % keywords  # TODO: Either change to new formatting or just remove keywords
         if level:
             return indent(code, level, indentchar)
         else:

@@ -48,7 +48,7 @@ class ValueNumberer(MultiFunction):
             actual_components = sorted(set(symmetry.values()))
             m = len(actual_components)
             actual_symbols = self.new_symbols(m)
-            symbols = mapping_of_actual_symbols_to_all_components(actual_symbols, symmetry) # Need to implement this
+            symbols = mapping_of_actual_symbols_to_all_components(actual_symbols, symmetry)  # Need to implement this
 
         else:
             n = self.V_sizes[i]
@@ -74,7 +74,7 @@ class ValueNumberer(MultiFunction):
 
         # FIXME: Need modified version of amt(), v is probably not scalar here. This hack works for now.
         if v.shape():
-            mt = analyse_modified_terminal(v[(0,)*len(v.shape())])
+            mt = analyse_modified_terminal(v[(0,) * len(v.shape())])
         else:
             mt = analyse_modified_terminal(v)
 
@@ -88,11 +88,11 @@ class ValueNumberer(MultiFunction):
         base_components = compute_indices(mt.terminal.shape())
         assert not (num_ld and num_gd)
         if num_ld:
-            #d_components = compute_permutations(num_ld, tdim)
-            d_components = compute_indices((tdim,)*num_ld)
+            # d_components = compute_permutations(num_ld, tdim)
+            d_components = compute_indices((tdim,) * num_ld)
         elif num_gd:
-            #d_components = compute_permutations(num_gd, gdim)
-            d_components = compute_indices((gdim,)*num_gd)
+            # d_components = compute_permutations(num_gd, gdim)
+            d_components = compute_indices((gdim,) * num_gd)
         else:
             d_components = [()]
 
@@ -133,14 +133,14 @@ class ValueNumberer(MultiFunction):
         return symbols
 
     # Handle modified terminals with element symmetries and second derivative symmetries!
-    #terminals are implemented separately, or maybe they don't need to be?
+    # terminals are implemented separately, or maybe they don't need to be?
     grad = _modified_terminal
     reference_grad = _modified_terminal
     facet_avg = _modified_terminal
     cell_avg = _modified_terminal
     restricted = _modified_terminal
-    reference_value = _modified_terminal # Not yet implemented in UFL
-    #indexed is implemented as a fall-through operation
+    reference_value = _modified_terminal  # Not yet implemented in UFL
+    # indexed is implemented as a fall-through operation
 
     def indexed(self, Aii, i):
         # Reuse symbols of arg A for Aii
@@ -170,26 +170,26 @@ class ValueNumberer(MultiFunction):
         row_symbols = [self.get_node_symbols(row) for row in v.operands()]
         symbols = []
         for rowsymb in row_symbols:
-            symbols.extend(rowsymb) # FIXME: Test that this produces the right transposition
+            symbols.extend(rowsymb)  # FIXME: Test that this produces the right transposition
         return symbols
 
     def transposed(self, AT, i):
         A, = AT.operands()
 
-        assert not A.free_indices(), "Assuming no free indices in transposed (for now), report as bug if needed." # FIXME
+        assert not A.free_indices(), "Assuming no free indices in transposed (for now), report as bug if needed."  # FIXME
         r, c = A.shape()
 
         A_symbols = self.get_node_symbols(A)
-        assert len(A_symbols) == r*c
+        assert len(A_symbols) == r * c
 
         # AT[j,i] = A[i,j]
         # sh(A) = (r,c)
         # sh(AT) = (c,r)
         # AT[j*r+i] = A[i*c+j]
-        symbols = [None]*(r*c)
+        symbols = [None] * (r * c)
         for j in range(c):
             for i in range(r):
-                symbols[j*r+i] = A_symbols[i*c+j]
+                symbols[j * r + i] = A_symbols[i * c + j]
         return symbols
 
     def variable(self, v, i):

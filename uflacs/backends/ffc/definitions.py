@@ -93,12 +93,12 @@ class FFCDefinitionsBackend(MultiFunction):
 
             # access here is e.g. x0, component 0 of x
 
-            ffc_assert(0 <= begin <= end <= num_vertices*gdim,
+            ffc_assert(0 <= begin <= end <= num_vertices * gdim,
                        "Assuming linear element for affine simplices here.")
             entity = format_entity_name(self.ir["entitytype"], mt.restriction)
             iq = names.iq
 
-            if 0: # Generated loop version:
+            if 0:  # Generated loop version:
                 vertex = names.ic
                 table_access = ArrayAccess(uname, (entity, iq, vertex))
                 dof_access = generate_domain_dof_access(num_vertices, gdim, vertex,
@@ -109,7 +109,7 @@ class FFCDefinitionsBackend(MultiFunction):
                 code += [VariableDecl("double", access, "0.0")]
                 code += [ForRange(vertex, begin, end, body=[AssignAdd(access, prod)])]
 
-            else: # Inlined version (we know this is bounded by a small number)
+            else:  # Inlined version (we know this is bounded by a small number)
                 dof_access = generate_domain_dofs_access(num_vertices, gdim, mt.restriction)
                 prods = []
                 for idof in range(begin, end):
@@ -160,13 +160,13 @@ class FFCDefinitionsBackend(MultiFunction):
 
             # access here is e.g. J_0, component 0 of J
 
-            ffc_assert(0 <= (end-begin) <= num_vertices,
+            ffc_assert(0 <= (end - begin) <= num_vertices,
                        "Assuming linear element for affine simplices here.")
             entity = format_entity_name(self.ir["entitytype"], mt.restriction)
             vertex = names.ic
             iq = 0
 
-            if 0: # Generated loop version:
+            if 0:  # Generated loop version:
                 table_access = ArrayAccess(uname, iq, (entity, vertex))
                 dof_access = generate_domain_dof_access(num_vertices, gdim, vertex,
                                                         mt.flat_component, mt.restriction)
@@ -176,7 +176,7 @@ class FFCDefinitionsBackend(MultiFunction):
                 code += [VariableDecl("double", access, "0.0")]
                 code += [ForRange(vertex, begin, end, body=[AssignAdd(access, prod)])]
 
-            else: # Inlined version:
+            else:  # Inlined version:
                 prods = []
                 dof_access = generate_domain_dofs_access(num_vertices, gdim, mt.restriction)
                 for idof in range(begin, end):

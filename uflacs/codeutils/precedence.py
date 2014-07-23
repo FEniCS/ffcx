@@ -9,8 +9,8 @@ def build_precedence_list():
     pl.append((ufl.classes.OrCondition,))
     pl.append((ufl.classes.AndCondition,))
     pl.append((ufl.classes.EQ, ufl.classes.NE))
-    pl.append((ufl.classes.Condition,)) # <,>,<=,>=
-    pl.append((ufl.classes.NotCondition,)) # FIXME
+    pl.append((ufl.classes.Condition,))  # <,>,<=,>=
+    pl.append((ufl.classes.NotCondition,))  # FIXME
     pl.append((ufl.classes.Sum,))
     pl.append((ufl.classes.Product, ufl.classes.Division,))
     # The highest precedence items will never need
@@ -25,7 +25,7 @@ def build_precedence_list():
 def build_precedence_map():
     from ufl.precedence import build_precedence_mapping
     pm, missing = build_precedence_mapping(build_precedence_list())
-    if 0 and missing: # Enable to see which types we are missing
+    if 0 and missing:  # Enable to see which types we are missing
         print("Missing precedence levels for the types:")
         print("\n".join('  %s' % c for c in missing))
     return pm
