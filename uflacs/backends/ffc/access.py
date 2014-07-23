@@ -10,25 +10,9 @@ from ffc.log import ffc_assert
 from uflacs.codeutils.cpp_statement_formatting_rules import CppStatementFormattingRules
 langfmt = CppStatementFormattingRules()
 
-from uflacs.codeutils.format_code import (format_code,
-                                          ForRange,
-                                          VariableDecl,
-                                          ArrayAccess,
-                                          AssignAdd, Assign,
-                                          Add, Sub, Mul,
-                                          Sum)
+from uflacs.codeutils.format_code import format_code, ArrayAccess, Sub
 
-from uflacs.backends.ffc.common import (names,
-                                        format_entity_name,
-                                        format_mt_der,
-                                        format_mt_comp,
-                                        format_mt_avg,
-                                        format_mt_res,
-                                        format_mt_name,
-                                        ufc_restriction_postfix,
-                                        generate_coefficient_dof_access,
-                                        generate_domain_dof_access,
-                                        generate_domain_dofs_access)
+from uflacs.backends.ffc.common import names, format_entity_name, format_mt_name, generate_coefficient_dof_access
 
 
 class FFCAccessBackend(MultiFunction):

@@ -1,10 +1,11 @@
 
 from six.moves import zip
 from ufl.permutation import build_component_numbering
-from ufl.classes import (Terminal, Grad, ReferenceGrad, Indexed, FixedIndex,
-                         Restricted, PositiveRestricted, NegativeRestricted,
-                         FacetAvg, CellAvg,
-                         FormArgument, Coefficient, Argument, GeometricQuantity)
+from ufl.classes import (Terminal, FormArgument,
+                         Indexed, FixedIndex,
+                         Grad, ReferenceGrad,
+                         Restricted,
+                         FacetAvg, CellAvg)
 
 from ffc.log import error
 from ffc.log import ffc_assert

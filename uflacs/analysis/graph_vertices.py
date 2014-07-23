@@ -1,7 +1,7 @@
 
 from six import iteritems
-from ufl.classes import (Terminal, UtilityType,
-                         Grad, Restricted, Indexed)
+
+from ufl.classes import Terminal, UtilityType
 
 from uflacs.datastructures.arrays import object_array
 from uflacs.analysis.modified_terminals import is_modified_terminal

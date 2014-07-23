@@ -5,8 +5,7 @@ from ufl.common import product
 from ufl.permutation import compute_indices
 
 from ufl import as_vector
-from ufl.classes import (MultiIndex, ComponentTensor, ListTensor, Transposed, Variable,
-                         IndexSum, UtilityType, Label, ExprList, ExprMapping)
+from ufl.classes import MultiIndex, IndexSum
 from ufl.algorithms import MultiFunction
 from ufl.utils.indexflattening import flatten_multiindex, shape_to_strides
 from ufl.utils.sorting import sorted_by_count

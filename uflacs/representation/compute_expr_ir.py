@@ -8,8 +8,7 @@ from uflacs.analysis.graph_vertices import build_scalar_graph_vertices
 from uflacs.analysis.graph_rebuild import rebuild_with_scalar_subexpressions
 from uflacs.analysis.graph_dependencies import (compute_dependencies,
                                                 mark_active, mark_image)
-from uflacs.analysis.graph_ssa import (mark_partitions,
-                                       compute_dependency_count,
+from uflacs.analysis.graph_ssa import (compute_dependency_count,
                                        invert_dependencies,
                                        default_cache_score_policy,
                                        compute_cache_scores,

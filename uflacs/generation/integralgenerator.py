@@ -8,7 +8,7 @@ from ffc.log import error
 
 from uflacs.analysis.modified_terminals import analyse_modified_terminal, is_modified_terminal
 
-from uflacs.codeutils.format_code import (format_code, Indented, Block, Comment,
+from uflacs.codeutils.format_code import (format_code, Indented, Comment,
                                           ForRange,
                                           ArrayDecl, ArrayAccess,
                                           Assign, AssignAdd,
