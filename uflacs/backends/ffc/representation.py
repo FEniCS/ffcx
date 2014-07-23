@@ -9,7 +9,7 @@ from ffc.log import ffc_assert
 
 from uflacs.params import default_parameters
 from uflacs.datastructures.arrays import object_array
-from uflacs.analysis.modified_terminals import analyse_modified_terminal2
+from uflacs.analysis.modified_terminals import analyse_modified_terminal
 from uflacs.representation.compute_expr_ir import compute_expr_ir
 from uflacs.elementtables.terminaltables import build_element_tables, optimize_element_tables
 
@@ -74,7 +74,7 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
 
     # Build set of modified terminal ufl expressions
     V = expr_ir["V"]
-    modified_terminals = [analyse_modified_terminal2(V[i]) for i in expr_ir["modified_terminal_indices"]]
+    modified_terminals = [analyse_modified_terminal(V[i]) for i in expr_ir["modified_terminal_indices"]]
 
     # Analyse modified terminals and store data about them
     terminal_data = modified_terminals + expr_ir["modified_arguments"]

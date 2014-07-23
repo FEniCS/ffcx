@@ -8,7 +8,7 @@ from ffc.log import ffc_assert
 
 from uflacs.datastructures.arrays import int_array, object_array
 from uflacs.analysis.graph_dependencies import compute_dependencies
-from uflacs.analysis.modified_terminals import analyse_modified_terminal2, strip_modified_terminal
+from uflacs.analysis.modified_terminals import analyse_modified_terminal, strip_modified_terminal
 
 def _build_arg_sets(V):
     "Build arg_sets = { argument number: set(j for j where V[j] is a modified Argument with this number) }"
@@ -35,7 +35,7 @@ def _build_argument_indices_from_arg_sets(V, arg_sets):
     # Make a canonical ordering of vertex indices for modified arguments
     def arg_ordering_key(i):
         "Return a key for sorting argument vertex indices based on the properties of the modified terminal."
-        mt = analyse_modified_terminal2(arg_ordering_key.V[i])
+        mt = analyse_modified_terminal(arg_ordering_key.V[i])
         assert isinstance(mt.terminal, Argument)
         assert mt.terminal.number() >= 0
         return (mt.terminal.number(), mt.terminal.part(),

@@ -87,7 +87,7 @@ class FFCDefinitionsBackend(MultiFunction):
 
             cell = mt.terminal.domain().cell()
             gdim = cell.geometric_dimension()
-            num_vertices = cell.topological_dimension() + 1 # FIXME: Get from cell!
+            num_vertices = cell.num_vertices()
 
             uname, begin, end = tabledata
 
@@ -154,7 +154,7 @@ class FFCDefinitionsBackend(MultiFunction):
 
             cell = mt.terminal.domain().cell()
             gdim = cell.geometric_dimension()
-            num_vertices = cell.topological_dimension() + 1 # FIXME: Get from cell!
+            num_vertices = cell.num_vertices()
 
             uname, begin, end = tabledata
 

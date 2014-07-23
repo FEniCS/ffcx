@@ -7,7 +7,7 @@ from ffc.log import ffc_assert, info, warning, error
 from uflacs.codeutils.precedence import build_precedence_map
 
 # TODO: This makes codeutils depend on analysis. Is that ok?
-from uflacs.analysis.modified_terminals import analyse_modified_terminal2
+from uflacs.analysis.modified_terminals import analyse_modified_terminal
 
 
 # TODO: Move precedence handling to AST code, making this class mostly superfluous
@@ -64,7 +64,7 @@ class ExprFormatter(Transformer):
             return v
 
         # Analyse modified terminal to get a single object representation
-        mt = analyse_modified_terminal2(e)
+        mt = analyse_modified_terminal(e)
 
         # Delegate formatting
         return self.language_formatter(mt.terminal, mt)

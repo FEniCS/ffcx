@@ -100,8 +100,7 @@ def strip_modified_terminal(v):
     return v
 
 
-# TODO: Rename without the 2
-def analyse_modified_terminal2(expr):
+def analyse_modified_terminal(expr):
     """Analyse a so-called 'modified terminal' expression and return its properties in more compact form.
 
     A modified terminal expression is an object of a Terminal subtype, wrapped in terminal modifier types.

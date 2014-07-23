@@ -13,8 +13,6 @@ class FFCAccessBackend(MultiFunction):
         # Configure definitions behaviour
         self.physical_coordinates_known = self.ir["integral_type"] == "quadrature"
 
-        self._current_num_points, = iterkeys(self.ir["uflacs"]["expr_ir"]) # TODO: Hack! Assuming single quadrature rule here.
-
     def precision_float(self, f):
         # Use ufl utility to control float formatting precision, same as ffc quadrature mode uses
         return ufl.constantvalue.format_float(f)
@@ -32,7 +30,9 @@ class FFCAccessBackend(MultiFunction):
     def points_array_name(self, num_points):
         return "{0}{1}".format(names.points, num_points)
 
-    def quadrature_loop_index(self):
+    def quadrature_loop_index(self): #(num_points):
+        # If we want to use num_points-specific names for the quadrature loop index, definitions.py need num_points as well.
+        #return "{0}{1}".format(names.iq, num_points)
         return names.iq
 
     def argument_loop_index(self, iarg):
@@ -46,11 +46,10 @@ class FFCAccessBackend(MultiFunction):
 
     # === Multifunction handlers for all modified terminal types, basic C++ types are covered by base class ===
 
-    def expr(self, e, mt, tabledata):
+    def expr(self, e, mt, tabledata, num_points):
         error("Missing handler for type {0}.".format(e._uflclass.__name__))
 
-    def argument(self, e, mt, tabledata):
-
+    def argument(self, e, mt, tabledata, num_points):
         # Expecting only local derivatives and values here
         assert not mt.global_derivatives
         #assert mt.global_component is None
@@ -66,7 +65,7 @@ class FFCAccessBackend(MultiFunction):
         access = ArrayAccess(uname, (entity, iq, dof))
         return access
 
-    def coefficient(self, e, mt, tabledata):
+    def coefficient(self, e, mt, tabledata, num_points):
         t = mt.terminal
         if t.is_cellwise_constant():
             access = self._constant_coefficient(e, mt, tabledata)
@@ -95,15 +94,12 @@ class FFCAccessBackend(MultiFunction):
         access = format_mt_name(basename, mt)
         return access
 
-    def quadrature_weight(self, e, mt, tabledata): # TODO: let num_points be arg here
-        # TODO: Need num_points to identify weights array name?
-        #        Or maybe place it in tabledata:
-        #name, dummy, num_points = tabledata
-        num_points = self._current_num_points # TODO: Fix this hack!
-        access = ArrayAccess(self.weights_array_name(num_points), self.quadrature_loop_index())
+    def quadrature_weight(self, e, mt, tabledata, num_points):
+        access = ArrayAccess(self.weights_array_name(num_points),
+                             self.quadrature_loop_index())
         return access
 
-    def spatial_coordinate(self, e, mt, tabledata):
+    def spatial_coordinate(self, e, mt, tabledata, num_points):
         ffc_assert(not mt.global_derivatives, "Not expecting derivatives of SpatialCoordinates.")
         ffc_assert(not mt.local_derivatives, "Not expecting derivatives of SpatialCoordinates.")
         #ffc_assert(not mt.restriction, "Not expecting restriction of SpatialCoordinates.")
@@ -111,10 +107,6 @@ class FFCAccessBackend(MultiFunction):
 
         if self.physical_coordinates_known:
             # In a context where the physical coordinates are available in existing variables.
-            # TODO: Need num_points to identify points array name?
-            #        Or maybe place it in tabledata:
-            #name, dummy, num_points = tabledata
-            num_points = self._current_num_points # TODO: Fix this hack!
             access = ArrayAccess(self.points_array_name(num_points),
                                  (self.quadrature_loop_index(), mt.flat_component))
 
@@ -128,7 +120,7 @@ class FFCAccessBackend(MultiFunction):
 
         return access
 
-    def cell_coordinate(self, e, mt, tabledata):
+    def cell_coordinate(self, e, mt, tabledata, num_points):
         ffc_assert(not mt.global_derivatives, "Not expecting derivatives of CellCoordinates.")
         ffc_assert(not mt.local_derivatives, "Not expecting derivatives of CellCoordinates.")
         ffc_assert(not mt.averaged, "Not expecting average of CellCoordinates.")
@@ -140,16 +132,12 @@ class FFCAccessBackend(MultiFunction):
             error("Expecting reference coordinate to be symbolically rewritten.")
 
         else:
-            # TODO: Need num_points to identify points array name?
-            #        Or maybe place it in tabledata:
-            #name, dummy, num_points = tabledata
-            num_points = self._current_num_points # TODO: Fix this hack!
             access = ArrayAccess(self.points_array_name(num_points),
                                  (self.quadrature_loop_index(), mt.flat_component))
 
         return access
 
-    def jacobian(self, e, mt, tabledata):
+    def jacobian(self, e, mt, tabledata, num_points):
         ffc_assert(not mt.global_derivatives, "Not expecting derivatives of Jacobian.")
         ffc_assert(not mt.local_derivatives, "Not expecting derivatives of Jacobian.")
         ffc_assert(not mt.averaged, "Not expecting average of Jacobian.")
@@ -157,7 +145,7 @@ class FFCAccessBackend(MultiFunction):
         access = format_mt_name(names.J, mt)
         return access
 
-    def cell_facet_jacobian(self, e, mt, tabledata):
+    def cell_facet_jacobian(self, e, mt, tabledata, num_points):
         cellname = mt.terminal.domain().cell().cellname()
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             tablename = "{0}_reference_facet_jacobian".format(cellname)
@@ -169,7 +157,7 @@ class FFCAccessBackend(MultiFunction):
             error("Unhandled cell types {0}.".format(cellname))
         return access
 
-    def cell_edge_vectors(self, e, mt, tabledata):
+    def cell_edge_vectors(self, e, mt, tabledata, num_points):
         cellname = mt.terminal.domain().cell().cellname()
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             tablename = "{0}_reference_edge_vectors".format(cellname)
@@ -180,7 +168,7 @@ class FFCAccessBackend(MultiFunction):
             error("Unhandled cell types {0}.".format(cellname))
         return access
 
-    def facet_edge_vectors(self, e, mt, tabledata):
+    def facet_edge_vectors(self, e, mt, tabledata, num_points):
         cellname = mt.terminal.domain().cell().cellname()
         if cellname in ("tetrahedron", "hexahedron"):
             tablename = "{0}_reference_edge_vectors".format(cellname)
@@ -192,12 +180,13 @@ class FFCAccessBackend(MultiFunction):
             error("Unhandled cell types {0}.".format(cellname))
         return access
 
-    def cell_orientation(self, e, mt, tabledata):
-        # TODO: error if not in manifold case
+    def cell_orientation(self, e, mt, tabledata, num_points):
+        # Error if not in manifold case:
+        assert mt.terminal.cell().geometric_dimension() > mt.terminal.cell().topological_dimension()
         access = "cell_orientation"
         return access
 
-    def facet_orientation(self, e, mt, tabledata):
+    def facet_orientation(self, e, mt, tabledata, num_points):
         cellname = mt.terminal.domain().cell().cellname()
         if cellname in ("interval", "triangle", "tetrahedron"):
             tablename = "{0}_facet_orientations".format(cellname)
@@ -207,23 +196,23 @@ class FFCAccessBackend(MultiFunction):
             error("Unhandled cell types {0}.".format(cellname))
         return access
 
-    def facet_normal(self, e, mt, tabledata):
+    def facet_normal(self, e, mt, tabledata, num_points):
         error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
 
-    def cell_normal(self, e, mt, tabledata):
+    def cell_normal(self, e, mt, tabledata, num_points):
         error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
 
-    def jacobian_inverse(self, e, mt, tabledata):
+    def jacobian_inverse(self, e, mt, tabledata, num_points):
         error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
 
-    def jacobian_determinant(self, e, mt, tabledata):
+    def jacobian_determinant(self, e, mt, tabledata, num_points):
         error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
 
-    def facet_jacobian(self, e, mt, tabledata):
+    def facet_jacobian(self, e, mt, tabledata, num_points):
         error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
 
-    def facet_jacobian_inverse(self, e, mt, tabledata):
+    def facet_jacobian_inverse(self, e, mt, tabledata, num_points):
         error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
 
-    def facet_jacobian_determinant(self, e, mt, tabledata):
+    def facet_jacobian_determinant(self, e, mt, tabledata, num_points):
         error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))

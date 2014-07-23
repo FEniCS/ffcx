@@ -5,7 +5,7 @@ from ufl.permutation import compute_indices, compute_permutations
 from ufl.algorithms import MultiFunction
 from ufl.classes import FormArgument
 from uflacs.analysis.indexing import map_indexed_arg_components, map_component_tensor_arg_components
-from uflacs.analysis.modified_terminals import analyse_modified_terminal2
+from uflacs.analysis.modified_terminals import analyse_modified_terminal
 
 class ValueNumberer(MultiFunction):
     """An algorithm to map the scalar components of an expression node to unique value numbers,
@@ -74,9 +74,9 @@ class ValueNumberer(MultiFunction):
 
         # FIXME: Need modified version of amt(), v is probably not scalar here. This hack works for now.
         if v.shape():
-            mt = analyse_modified_terminal2(v[(0,)*len(v.shape())])
+            mt = analyse_modified_terminal(v[(0,)*len(v.shape())])
         else:
-            mt = analyse_modified_terminal2(v)
+            mt = analyse_modified_terminal(v)
 
         cell = mt.terminal.cell()
         tdim = cell.topological_dimension()

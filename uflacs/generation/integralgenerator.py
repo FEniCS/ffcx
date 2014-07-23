@@ -6,7 +6,7 @@ from ufl.common import product
 
 from ffc.log import debug, info, warning, error, ffc_assert
 
-from uflacs.analysis.modified_terminals import analyse_modified_terminal2, is_modified_terminal
+from uflacs.analysis.modified_terminals import analyse_modified_terminal, is_modified_terminal
 
 from uflacs.codeutils.format_code import (format_code, Indented, Block, Comment,
                                           ForRange,
@@ -197,7 +197,7 @@ class IntegralGenerator(object):
             parts += [ForRange(idof, dofrange[0], dofrange[1], body=body)]
         return parts
 
-    def generate_partition(self, name, V, partition, table_ranges): # TODO: Rather take list of vertices, not markers
+    def generate_partition(self, name, V, partition, table_ranges, num_points): # TODO: Rather take list of vertices, not markers
         terminalcode = []
         assignments = []
         from ufl.classes import ConstantValue
@@ -211,11 +211,11 @@ class IntegralGenerator(object):
                 v = V[i]
 
                 if is_modified_terminal(v):
-                    mt = analyse_modified_terminal2(v)
+                    mt = analyse_modified_terminal(v)
                     if isinstance(mt.terminal, ConstantValue):
                         vaccess = self.expr_formatter.visit(v)
                     else:
-                        vaccess = self.backend_access(mt.terminal, mt, table_ranges[i])
+                        vaccess = self.backend_access(mt.terminal, mt, table_ranges[i], num_points)
                         vdef = self.backend_definitions(mt.terminal, mt, table_ranges[i], vaccess)
                         terminalcode += [vdef]
                 else:
@@ -244,6 +244,7 @@ class IntegralGenerator(object):
 
         This mostly includes computations involving piecewise constant geometry and coefficients.
         """
+        num_points = None
         parts = []
         parts += ["// Section for piecewise constant computations"]
         expr_irs = self.ir["uflacs"]["expr_ir"]
@@ -252,7 +253,8 @@ class IntegralGenerator(object):
             parts += self.generate_partition("sp",
                                              expr_ir["V"],
                                              expr_ir["piecewise"],
-                                             expr_ir["table_ranges"])
+                                             expr_ir["table_ranges"],
+                                             num_points)
         return parts
 
     def generate_varying_partition(self, num_points):
@@ -262,7 +264,8 @@ class IntegralGenerator(object):
         parts += self.generate_partition("sv",
                                          expr_ir["V"],
                                          expr_ir["varying"],
-                                         expr_ir["table_ranges"])
+                                         expr_ir["table_ranges"],
+                                         num_points)
         return parts
 
     def generate_argument_partition(self, num_points, iarg, dofrange):
@@ -299,7 +302,7 @@ class IntegralGenerator(object):
             # Get table names
             argfactors = []
             for i, ma in enumerate(args):
-                access = self.backend_access(MA[ma].terminal, MA[ma], MATR[ma])
+                access = self.backend_access(MA[ma].terminal, MA[ma], MATR[ma], num_points)
                 argfactors += [access]
             factors.extend(argfactors)
 
