@@ -1,9 +1,7 @@
 
 from six import itervalues
-import ufl
 from ufl.algorithms import Transformer
 
-from ffc.log import ffc_assert, info, warning, error
 from uflacs.codeutils.precedence import build_precedence_map
 
 # TODO: This makes codeutils depend on analysis. Is that ok?

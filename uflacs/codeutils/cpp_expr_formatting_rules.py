@@ -1,5 +1,5 @@
 
-from ffc.log import ffc_assert, error
+from ffc.log import error
 
 import ufl
 

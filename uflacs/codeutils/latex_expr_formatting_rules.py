@@ -1,5 +1,6 @@
 
-from ffc.log import ffc_assert, info, warning, error
+from ffc.log import error
+from ffc.log import ffc_assert
 
 import ufl
 

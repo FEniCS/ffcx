@@ -1,5 +1,4 @@
 from ufl.common import product
-from six.moves import xrange
 
 
 class Range(object):
