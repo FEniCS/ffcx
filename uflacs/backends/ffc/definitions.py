@@ -11,7 +11,7 @@ class FFCDefinitionsBackend(MultiFunction):
         self.parameters = parameters
 
         # Configure definitions behaviour
-        self.physical_coordinates_known = self.ir["integral_type"] == "quadrature"
+        self.physical_coordinates_known = self.ir["integral_type"] == "custom"
 
     def get_includes(self):
         "Return include statements to insert at top of file."
@@ -85,8 +85,9 @@ class FFCDefinitionsBackend(MultiFunction):
             # Reference coordinates are known, no coordinate field, so we compute
             # this component as linear combination of vertex_coordinates "dofs" and table
 
-            gdim = mt.terminal.domain().cell().geometric_dimension()
-            num_vertices = mt.terminal.domain().cell().topological_dimension() + 1 # TODO: Get from cellname?
+            cell = mt.terminal.domain().cell()
+            gdim = cell.geometric_dimension()
+            num_vertices = cell.topological_dimension() + 1 # FIXME: Get from cell!
 
             uname, begin, end = tabledata
 
@@ -95,10 +96,10 @@ class FFCDefinitionsBackend(MultiFunction):
             ffc_assert(0 <= begin <= end <= num_vertices*gdim,
                           "Assuming linear element for affine simplices here.")
             entity = format_entity_name(self.ir["entitytype"], mt.restriction)
-            vertex = names.ic
             iq = names.iq
 
             if 0: # Generated loop version:
+                vertex = names.ic
                 table_access = ArrayAccess(uname, (entity, iq, vertex))
                 dof_access = generate_domain_dof_access(num_vertices, gdim, vertex,
                                                         mt.flat_component, mt.restriction)
@@ -108,7 +109,7 @@ class FFCDefinitionsBackend(MultiFunction):
                 code += [VariableDecl("double", access, "0.0")]
                 code += [ForRange(vertex, begin, end, body=[AssignAdd(access, prod)])]
 
-            else: # Inlined version:
+            else: # Inlined version (we know this is bounded by a small number)
                 dof_access = generate_domain_dofs_access(num_vertices, gdim, mt.restriction)
                 prods = []
                 for idof in range(begin, end):
@@ -136,7 +137,7 @@ class FFCDefinitionsBackend(MultiFunction):
         code = []
         return code
 
-    def jacobian(self, e, mt, tabledata, access): # TODO: Handle jacobian and restricted in change_to_reference
+    def jacobian(self, e, mt, tabledata, access):
         """Return definition code for the Jacobian of x(X).
 
         J = sum_k xdof_k grad_X xphi_k(X)
@@ -151,8 +152,9 @@ class FFCDefinitionsBackend(MultiFunction):
             # Reference coordinates are known, no coordinate field, so we compute
             # this component as linear combination of vertex_coordinates "dofs" and table
 
-            gdim = mt.terminal.domain().cell().geometric_dimension()
-            num_vertices = mt.terminal.domain().cell().topological_dimension() + 1 # TODO: Get from cellname?
+            cell = mt.terminal.domain().cell()
+            gdim = cell.geometric_dimension()
+            num_vertices = cell.topological_dimension() + 1 # FIXME: Get from cell!
 
             uname, begin, end = tabledata
 
@@ -187,22 +189,27 @@ class FFCDefinitionsBackend(MultiFunction):
         return code
 
     def cell_facet_jacobian(self, e, mt, tabledata, access):
+        # Constant table defined in ufc_geometry.h
         code = []
         return code
 
     def cell_edge_vectors(self, e, mt, tabledata, access):
+        # Constant table defined in ufc_geometry.h
         code = []
         return code
 
     def facet_edge_vectors(self, e, mt, tabledata):
+        # Constant table defined in ufc_geometry.h
         code = []
         return code
 
     def cell_orientation(self, e, mt, tabledata, access):
+        # Computed or constant table defined in ufc_geometry.h
         code = []
         return code
 
     def facet_orientation(self, e, mt, tabledata, access):
+        # Constant table defined in ufc_geometry.h
         code = []
         return code
 

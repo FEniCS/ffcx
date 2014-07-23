@@ -55,7 +55,7 @@ def test_cpp_formatting_of_literals():
 
 def test_cpp_formatting_of_geometry():
     # Test geometry quantities (faked for testing!)
-    x = ufl.SpatialCoordinate(ufl.cell1D)[0]
+    x = ufl.SpatialCoordinate(ufl.interval)[0]
     assert expr2cpp(x) == "x[0]"
     x, y = ufl.SpatialCoordinate(ufl.cell2D)
     assert expr2cpp(x) == "x[0]"

@@ -49,7 +49,7 @@ def test_latex_formatting_of_literals():
 
 def test_latex_formatting_of_geometry():
     # Test geometry quantities
-    x = ufl.SpatialCoordinate(ufl.cell1D)[0]
+    x = ufl.SpatialCoordinate(ufl.interval)[0]
     assert expr2latex(x) == "x_0"
     x, y = ufl.SpatialCoordinate(ufl.cell2D)
     assert expr2latex(x) == "x_0"
