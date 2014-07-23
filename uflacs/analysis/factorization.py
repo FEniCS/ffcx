@@ -7,7 +7,7 @@ from ufl.classes import Division
 from ufl.classes import Product
 from ufl.classes import Sum
 
-from ffc.log import ffc_assert
+from ffc.log import ffc_assert, error
 
 from uflacs.datastructures.arrays import int_array, object_array
 from uflacs.analysis.graph_dependencies import compute_dependencies

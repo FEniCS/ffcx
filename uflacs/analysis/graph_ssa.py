@@ -80,7 +80,7 @@ def mark_partitions(V, active, dependencies, rank,
         partitions[i] = p
     return partitions
 
-
+"""
 def build_factorized_partitions():
     num_points = [3]
 
@@ -100,7 +100,7 @@ def build_factorized_partitions():
 
     # partitions["integrand"][np][dofrange] = partition depending on this dofrange of argument iarg
     partitions["integrand"] = dict((np, dict()) for np in num_points)
-
+"""
 
 def compute_dependency_count(dependencies):
     """FIXME: Test"""

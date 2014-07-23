@@ -1,8 +1,10 @@
 
 from six import iteritems, iterkeys
 from six.moves import xrange as range
+
 import ufl
 from ufl.common import product
+from ufl.utils.derivativetuples import derivative_listing_to_counts
 from ufl.classes import FormArgument, GeometricQuantity, SpatialCoordinate, Jacobian
 from ufl.algorithms.analysis import unique_tuple
 
@@ -11,8 +13,7 @@ from uflacs.elementtables.table_utils import (generate_psi_table_name,
                                               get_ffc_table_values,
                                               strip_table_zeros,
                                               build_unique_tables)
-from ufl.utils.derivativetuples import derivative_listing_to_counts
-
+from uflacs.codeutils.format_code import ArrayDecl
 
 def extract_terminal_elements(terminal_data):
     "Extract a list of unique elements from terminal data."
@@ -34,7 +35,7 @@ def extract_terminal_elements(terminal_data):
                 x = domain.coordinates()
                 if x is None:
                     # FIXME: Do this in ufl form preprocessing instead?
-                    xelement = VectorElement("CG", domain, 1)
+                    xelement = ufl.VectorElement("CG", domain, 1)
                 else:
                     xelement = x.element()
                 xs[label] = xelement

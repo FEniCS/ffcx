@@ -146,7 +146,7 @@ def compute_expr_ir(expressions, parameters):
 
     return expr_ir
 
-
+"""
 def old_code_useful_for_optimization():
 
     # Use heuristics to mark the usefulness of storing every subexpr in a variable
@@ -170,3 +170,4 @@ def old_code_useful_for_optimization():
     expr_oir["allocations"] = allocations
     expr_oir["target_registers"] = target_registers
     return expr_oir
+"""

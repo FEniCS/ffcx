@@ -6,6 +6,8 @@ from six import iteritems
 from six.moves import zip
 from six.moves import xrange as range
 
+from ffc.log import error
+
 
 def strip_trailing_whitespace(s):
     return '\n'.join(l.rstrip() for l in s.split('\n'))
