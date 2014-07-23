@@ -7,9 +7,12 @@ from ufl.classes import FormArgument
 from uflacs.analysis.indexing import map_indexed_arg_components, map_component_tensor_arg_components
 from uflacs.analysis.modified_terminals import analyse_modified_terminal
 
+
 class ValueNumberer(MultiFunction):
+
     """An algorithm to map the scalar components of an expression node to unique value numbers,
     with fallthrough for types that can be mapped to the value numbers of their operands."""
+
     def __init__(self, e2i, V_sizes, V_symbols):
         MultiFunction.__init__(self)
         self.symbol_count = 0

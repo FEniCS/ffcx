@@ -8,6 +8,7 @@ from uflacs.datastructures.crs import CRS, rows_to_crs
 from uflacs.analysis.valuenumbering import ValueNumberer
 from uflacs.analysis.expr_shapes import total_shape
 
+
 def build_node_shapes(V):
     """Build total shapes for each node in list representation of expression graph.
 

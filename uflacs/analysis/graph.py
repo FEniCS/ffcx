@@ -3,7 +3,9 @@ from uflacs.analysis.graph_vertices import build_graph_vertices
 from uflacs.analysis.graph_symbols import build_graph_symbols
 from uflacs.analysis.graph_rebuild import rebuild_expression_from_graph
 
+
 class Graph2(object):
+
     def __init__(self):
 
         self.nv = 0
@@ -15,6 +17,7 @@ class Graph2(object):
         self.V_shapes = []
         self.V_symbols = None  # Crs matrix
         self.total_unique_symbols = 0
+
 
 def build_graph(expressions, DEBUG=False):
 

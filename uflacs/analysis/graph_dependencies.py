@@ -8,6 +8,7 @@ from uflacs.datastructures.arrays import int_array, object_array, bool_array
 from uflacs.datastructures.crs import CRS, rows_to_crs
 from uflacs.analysis.modified_terminals import terminal_modifier_types
 
+
 def sufficient_int_type(maxvalue):
     if maxvalue < 2 ** 7:
         dtype = numpy.int8
@@ -18,6 +19,7 @@ def sufficient_int_type(maxvalue):
     else:
         dtype = numpy.int64
     return dtype
+
 
 def sufficient_uint_type(maxvalue):
     if maxvalue < 2 ** 8:

@@ -1,12 +1,16 @@
 from ufl.common import product
 from six.moves import xrange
 
+
 class Range(object):
+
     def __init__(self, begin, end):
         self.begin = begin
         self.end = end
 
+
 class IndexMapping(object):
+
     def __init__(self, ranges):
         self.names = sorted(ranges.keys())
 
@@ -46,6 +50,7 @@ class IndexMapping(object):
     def __repr__(self):
         return 'IndexMapping({!s})'.format(self)
 
+
 def as_tuple(a):
     if isinstance(a, tuple):
         return a
@@ -54,14 +59,17 @@ def as_tuple(a):
     else:
         return (a,)
 
+
 def any_str(*args):
     return any(isinstance(a, str) for a in args)
+
 
 def dim_mul(i, j):
     if any_str(i, j):
         return '{!r} * {!r}'.format(i, j)
     else:
         return i * j
+
 
 def mul_dims(dims):
     if not dims:
@@ -74,7 +82,9 @@ def mul_dims(dims):
         return ' * '.join(strs)
     return '1'
 
+
 class AxisMapping(object):
+
     def __init__(self, index_mapping, axes):
         self.index_mapping = index_mapping
         self.axis_index_names = [as_tuple(a) for a in axes]
@@ -115,6 +125,8 @@ class AxisMapping(object):
         return expressions
 
 # TODO: Change this into unit tests
+
+
 def _test():
     ranges = {"i": 4, "j": (10, 12), "n": "N", "m": (1, "M")}
     im = IndexMapping(ranges)

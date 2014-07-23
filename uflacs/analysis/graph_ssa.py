@@ -10,6 +10,7 @@ from ffc.log import error, ffc_assert
 from uflacs.datastructures.arrays import int_array, object_array
 from uflacs.datastructures.crs import CRS, rows_to_crs, rows_dict_to_crs
 
+
 def default_partition_seed(expr, rank):
     """
     Partition 0: Piecewise constant on each cell (including Real and DG0 coefficients)
@@ -48,6 +49,7 @@ def default_partition_seed(expr, rank):
     else:
         error("Don't know how to handle %s" % expr)
 
+
 def mark_partitions(V, active, dependencies, rank,
                     partition_seed=default_partition_seed,
                     partition_combiner=max):
@@ -79,6 +81,7 @@ def mark_partitions(V, active, dependencies, rank,
         partitions[i] = p
     return partitions
 
+
 def build_factorized_partitions():
     num_points = [3]
 
@@ -99,6 +102,7 @@ def build_factorized_partitions():
     # partitions["integrand"][np][dofrange] = partition depending on this dofrange of argument iarg
     partitions["integrand"] = dict((np, dict()) for np in num_points)
 
+
 def compute_dependency_count(dependencies):
     """FIXME: Test"""
     n = len(dependencies)
@@ -107,6 +111,7 @@ def compute_dependency_count(dependencies):
         for d in dependencies[i]:
             depcount[d] += 1
     return depcount
+
 
 def invert_dependencies(dependencies, depcount):
     """FIXME: Test"""
@@ -117,6 +122,7 @@ def invert_dependencies(dependencies, depcount):
         for d in dependencies[i]:
             invdeps[d] = invdeps[d] + (i,)
     return rows_to_crs(invdeps, n, m, int)
+
 
 def default_cache_score_policy(vtype, ndeps, ninvdeps, partition):
     # Start at 1 and then multiply with various heuristic factors
@@ -138,6 +144,7 @@ def default_cache_score_policy(vtype, ndeps, ninvdeps, partition):
     # when x from outer loop is used by y within inner loop.
 
     return s
+
 
 def compute_cache_scores(V, active, dependencies, inverse_dependencies, partitions,
                          cache_score_policy=default_cache_score_policy):
@@ -161,6 +168,8 @@ def compute_cache_scores(V, active, dependencies, inverse_dependencies, partitio
     return score
 
 import heapq
+
+
 def allocate_registers(active, partitions, targets,
                        scores, max_registers, score_threshold):
     """FIXME: Cover with tests.

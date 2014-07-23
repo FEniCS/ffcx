@@ -10,6 +10,7 @@ from six.moves import xrange as range
 def strip_trailing_whitespace(s):
     return '\n'.join(l.rstrip() for l in s.split('\n'))
 
+
 def format_float(x):
     eps = 1e-12  # FIXME: Configurable threshold
     if abs(x) < eps:
@@ -19,11 +20,13 @@ def format_float(x):
     fmt = "%%.%de" % precision
     return fmt % x
 
+
 def indent(text, level, indentchar='    '):
     if level == 0:
         return text
     ind = indentchar * level
     return '\n'.join(ind + line for line in text.split('\n'))
+
 
 def build_separated_list(values, sep):
     "Make a list with sep inserted between each value in values."
@@ -34,9 +37,11 @@ def build_separated_list(values, sep):
         items.append(values[-1])
     return items
 
+
 def build_initializer_list(values, begin="{ ", sep=", ", end=" }"):
     "Build a value initializer list."
     return [begin] + build_separated_list(values, sep) + [end]
+
 
 def build_recursive_initializer_list(values, sizes):
     r = len(sizes)
@@ -73,14 +78,18 @@ def build_recursive_initializer_list(values, sizes):
 class ASTNode(object):
     pass
 
+
 class Indented(ASTNode):
+
     def __init__(self, code):
         self.code = code
 
     def format(self, level, indentchar, keywords):
         return format_code(self.code, level + 1, indentchar, keywords)
 
+
 class WithKeywords(ASTNode):  # TODO: Do we need this? Can simplify quite a bit by removing.
+
     def __init__(self, code, keywords):
         self.code = code
         self.keywords = keywords
@@ -93,7 +102,9 @@ class WithKeywords(ASTNode):  # TODO: Do we need this? Can simplify quite a bit 
             fmt_keywords[k] = format_code(v, 0, indentchar, keywords)
         return format_code(self.code, level, indentchar, fmt_keywords)
 
+
 class Block(ASTNode):
+
     def __init__(self, body, start='{', end='}'):
         self.start = start
         self.body = body
@@ -102,6 +113,7 @@ class Block(ASTNode):
     def format(self, level, indentchar, keywords):
         code = [self.start, Indented(self.body), self.end]
         return format_code(code, level, indentchar, keywords)
+
 
 class TemplateArgumentList(ASTNode):
 
@@ -128,7 +140,9 @@ class TemplateArgumentList(ASTNode):
         code = (start, container(code), end)
         return format_code(code, level, indentchar, keywords)
 
+
 class Type(ASTNode):
+
     def __init__(self, name, template_arguments=None, multiline=False):
         self.name = name
         self.template_arguments = template_arguments
@@ -140,7 +154,9 @@ class Type(ASTNode):
             code = code, TemplateArgumentList(self.template_arguments, self.multiline)
         return format_code(code, level, indentchar, keywords)
 
+
 class TypeDef(ASTNode):
+
     def __init__(self, type_, typedef):
         self.type_ = type_
         self.typedef = typedef
@@ -149,7 +165,9 @@ class TypeDef(ASTNode):
         code = ('typedef ', self.type_, " %s;" % self.typedef)
         return format_code(code, level, indentchar, keywords)
 
+
 class Namespace(ASTNode):
+
     def __init__(self, name, body):
         self.name = name
         self.body = body
@@ -158,7 +176,9 @@ class Namespace(ASTNode):
         code = ['namespace %s' % self.name, Block(self.body)]
         return format_code(code, level, indentchar, keywords)
 
+
 class VariableDecl(ASTNode):
+
     def __init__(self, typename, name, value=None):
         self.typename = typename
         self.name = name
@@ -172,7 +192,9 @@ class VariableDecl(ASTNode):
         code += (";",)
         return format_code(code, level, indentchar, keywords)
 
+
 class ArrayDecl(ASTNode):
+
     def __init__(self, typename, name, sizes, values=None):
         self.typename = typename
         self.name = name
@@ -193,7 +215,9 @@ class ArrayDecl(ASTNode):
         code = (self.typename, sep, self.name, brackets, valuescode, ";")
         return format_code(code, level, indentchar, keywords)
 
+
 class ArrayAccess(ASTNode):
+
     def __init__(self, arraydecl, indices):
         if isinstance(arraydecl, ArrayDecl):
             self.arrayname = arraydecl.name
@@ -222,7 +246,9 @@ class ArrayAccess(ASTNode):
         code = (self.arrayname, brackets)
         return format_code(code, level, indentchar, keywords)
 
+
 class WhileLoop(ASTNode):
+
     def __init__(self, check, body=None):
         self.check = check
         self.body = body
@@ -233,7 +259,9 @@ class WhileLoop(ASTNode):
             code = [code, Block(self.body)]
         return format_code(code, level, indentchar, keywords)
 
+
 class ForLoop(ASTNode):
+
     def __init__(self, init, check, increment, body=None):
         self.init = init
         self.check = check
@@ -246,7 +274,9 @@ class ForLoop(ASTNode):
             code = [code, Block(self.body)]
         return format_code(code, level, indentchar, keywords)
 
+
 class ForRange(ASTNode):
+
     def __init__(self, name, lower, upper, body=None):
         self.name = name
         self.lower = lower
@@ -260,7 +290,9 @@ class ForRange(ASTNode):
         code = ForLoop(init, check, increment, body=self.body)
         return format_code(code, level, indentchar, keywords)
 
+
 class Class(ASTNode):
+
     def __init__(self, name, superclass=None, public_body=None,
                  protected_body=None, private_body=None,
                  template_arguments=None, template_multiline=False):
@@ -291,7 +323,9 @@ class Class(ASTNode):
         code += ['};']
         return format_code(code, level, indentchar, keywords)
 
+
 class Comment(ASTNode):
+
     def __init__(self, comment):
         self.comment = comment
 
@@ -299,7 +333,9 @@ class Comment(ASTNode):
         code = ("// ", self.comment)
         return format_code(code, level, indentchar, keywords)
 
+
 class Return(ASTNode):
+
     def __init__(self, value):
         self.value
 
@@ -309,6 +345,7 @@ class Return(ASTNode):
 
 
 class AssignBase(ASTNode):
+
     def __init__(self, lhs, rhs):
         self.lhs = lhs
         self.rhs = rhs
@@ -317,23 +354,29 @@ class AssignBase(ASTNode):
         code = (self.lhs, type(self).op, self.rhs, ";")
         return format_code(code, level, indentchar, keywords)
 
+
 class Assign(AssignBase):
     op = " = "
+
 
 class AssignAdd(AssignBase):
     op = " += "
 
+
 class AssignSub(AssignBase):
     op = " -= "
 
+
 class AssignMul(AssignBase):
     op = " *= "
+
 
 class AssignDiv(AssignBase):
     op = " /= "
 
 
 class UnOp(ASTNode):
+
     def __init__(self, arg):
         self.arg = arg
 
@@ -342,7 +385,9 @@ class UnOp(ASTNode):
         code = (type(self).op, self.arg)
         return format_code(code, level, indentchar, keywords)
 
+
 class BinOp(ASTNode):
+
     def __init__(self, lhs, rhs):
         self.lhs = lhs
         self.rhs = rhs
@@ -352,7 +397,9 @@ class BinOp(ASTNode):
         code = (self.lhs, type(self).op, self.rhs)
         return format_code(code, level, indentchar, keywords)
 
+
 class NOp(ASTNode):
+
     def __init__(self, ops):
         self.ops = ops
 
@@ -369,11 +416,14 @@ class NOp(ASTNode):
 class Add(BinOp):
     op = " + "
 
+
 class Sub(BinOp):
     op = " - "
 
+
 class Mul(BinOp):
     op = " * "
+
 
 class Div(BinOp):
     op = " / "
@@ -385,6 +435,7 @@ class Negative(UnOp):
 
 class Sum(NOp):
     op = " + "
+
 
 class Product(NOp):
     op = " * "

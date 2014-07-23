@@ -10,6 +10,7 @@ from uflacs.datastructures.arrays import int_array, object_array
 from uflacs.analysis.graph_dependencies import compute_dependencies
 from uflacs.analysis.modified_terminals import analyse_modified_terminal, strip_modified_terminal
 
+
 def _build_arg_sets(V):
     "Build arg_sets = { argument number: set(j for j where V[j] is a modified Argument with this number) }"
     arg_sets = {}
@@ -24,6 +25,7 @@ def _build_arg_sets(V):
             arg_sets[num] = arg_set
         arg_set[i] = v
     return arg_sets
+
 
 def _build_argument_indices_from_arg_sets(V, arg_sets):
     "Build ordered list of indices to modified arguments."
@@ -47,11 +49,13 @@ def _build_argument_indices_from_arg_sets(V, arg_sets):
 
     return ordered_arg_indices
 
+
 def build_argument_indices(V):
     "Build ordered list of indices to modified arguments."
     arg_sets = _build_arg_sets(V)
     ordered_arg_indices = _build_argument_indices_from_arg_sets(V, arg_sets)
     return ordered_arg_indices
+
 
 def build_argument_dependencies(dependencies, arg_indices):
     "Preliminary algorithm: build list of argument vertex indices each vertex (indirectly) depends on."
@@ -68,7 +72,6 @@ def build_argument_dependencies(dependencies, arg_indices):
     return A
 
 
-
 def add_to_fv(expr, FV, e2fi):
     fi = e2fi.get(expr)
     if fi is None:
@@ -79,6 +82,7 @@ def add_to_fv(expr, FV, e2fi):
 
 # Reuse these empty objects where appropriate to save memory
 noargs = {}
+
 
 def handle_modified_terminal(i, v, F, FV, e2fi, arg_indices, AV, sv2av):
     # v is a modified terminal...
@@ -97,6 +101,7 @@ def handle_modified_terminal(i, v, F, FV, e2fi, arg_indices, AV, sv2av):
         factors = noargs
         fi = add_to_fv(v, FV, e2fi)
     return fi, factors
+
 
 def handle_sum(i, v, deps, F, FV, sv2fv, e2fi):
     ffc_assert(len(deps) == 2, "Assuming binary sum here. This can be fixed if needed.")
@@ -141,6 +146,7 @@ def handle_sum(i, v, deps, F, FV, sv2fv, e2fi):
         fi = add_to_fv(v, FV, e2fi)
 
     return fi, factors
+
 
 def handle_product(i, v, deps, F, FV, sv2fv, e2fi):
     ffc_assert(len(deps) == 2, "Assuming binary product here. This can be fixed if needed.")
@@ -195,6 +201,7 @@ def handle_product(i, v, deps, F, FV, sv2fv, e2fi):
             print("        ", factors)
     return fi, factors
 
+
 def handle_division(i, v, deps, F, FV, sv2fv, e2fi):
     fac0 = F[deps[0]]
     fac1 = F[deps[1]]
@@ -215,6 +222,7 @@ def handle_division(i, v, deps, F, FV, sv2fv, e2fi):
 
     return fi, factors
 
+
 def handle_operator(i, v, deps, F, FV, sv2fv, e2fi):
     # TODO: Check something?
     facs = [F[deps[j]] for j in range(len(deps))]
@@ -226,6 +234,7 @@ def handle_operator(i, v, deps, F, FV, sv2fv, e2fi):
         fi = add_to_fv(v, FV, e2fi)
         factors = noargs
     return fi, factors
+
 
 def collect_argument_factors(SV, dependencies, arg_indices):
     """Factorizes a scalar expression graph w.r.t. scalar Argument
@@ -325,6 +334,7 @@ def collect_argument_factors(SV, dependencies, arg_indices):
 
     return FV, e2fi, AV, IM
 
+
 def rebuild_scalar_graph_from_factorization(AV, FV, IM):
     # TODO: What about multiple target_variables?
 
@@ -383,6 +393,7 @@ def rebuild_scalar_graph_from_factorization(AV, FV, IM):
         print('\n' * 10)
 
     return SV, se2i, dependencies
+
 
 def compute_argument_factorization(SV, target_variables, dependencies):
 

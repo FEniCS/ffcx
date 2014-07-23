@@ -1,6 +1,7 @@
 
 import ufl
 
+
 def build_precedence_list():
     "Builds a list of operator types by precedence order in the C language."
     # FIXME: Add all types we need here.
@@ -21,6 +22,7 @@ def build_precedence_list():
                ufl.classes.Terminal))
     # FIXME: Write a unit test that checks this list against all ufl classes
     return pl
+
 
 def build_precedence_map():
     from ufl.precedence import build_precedence_mapping

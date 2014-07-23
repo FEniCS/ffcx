@@ -17,7 +17,9 @@ from uflacs.datastructures.arrays import int_array, object_array
 from uflacs.datastructures.crs import CRS, rows_to_crs, rows_dict_to_crs
 from uflacs.analysis.modified_terminals import is_modified_terminal
 
+
 class ReconstructScalarSubexpressions(MultiFunction):
+
     def __init__(self):
         super(ReconstructScalarSubexpressions, self).__init__()
 

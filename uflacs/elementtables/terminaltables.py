@@ -13,6 +13,7 @@ from uflacs.elementtables.table_utils import (generate_psi_table_name,
                                               build_unique_tables)
 from ufl.utils.derivativetuples import derivative_listing_to_counts
 
+
 def extract_terminal_elements(terminal_data):
     "Extract a list of unique elements from terminal data."
     elements = []
@@ -41,6 +42,7 @@ def extract_terminal_elements(terminal_data):
 
     return unique_tuple(elements)
 
+
 def build_element_counter_map(elements):
     "Given a sequence of elements, build a unique mapping: element->int."
     element_counter_map = {}
@@ -48,6 +50,7 @@ def build_element_counter_map(elements):
         if element not in element_counter_map:
             element_counter_map[element] = len(element_counter_map)
     return element_counter_map
+
 
 def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
     """Build the element tables needed for a list of modified terminals.
@@ -132,6 +135,7 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
 
     return tables, terminal_table_names
 
+
 def optimize_element_tables(tables, terminal_table_names):
     """Optimize tables.
 
@@ -181,6 +185,7 @@ def optimize_element_tables(tables, terminal_table_names):
             terminal_table_ranges[i] = (unique_name, b, e)
 
     return unique_tables, terminal_table_ranges
+
 
 def generate_element_table_definitions(tables):
     "Format a dict of name->table into code."

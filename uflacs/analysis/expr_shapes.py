@@ -11,6 +11,7 @@ is therefore the same.
 from ufl.common import sorted_by_count
 from ufl.classes import Condition
 
+
 def compute_index_shape(v):
     "Compute the 'index shape' of v."
     fi = v.free_indices()
@@ -19,6 +20,7 @@ def compute_index_shape(v):
         return tuple(idims[idx] for idx in sorted_by_count(fi))
     else:
         return ()
+
 
 def compute_all_shapes(v):
     """Compute the tensor-, index-, and total shape of an expr.
@@ -38,6 +40,7 @@ def compute_all_shapes(v):
         total_shape = shape + index_shape
 
     return (shape, index_shape, total_shape)
+
 
 def total_shape(v):
     """Compute the total shape of an expr."""

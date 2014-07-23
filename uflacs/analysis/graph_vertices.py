@@ -10,6 +10,7 @@ from uflacs.datastructures.arrays import int_array, object_array
 from uflacs.datastructures.crs import CRS, rows_to_crs, rows_dict_to_crs
 from uflacs.analysis.modified_terminals import is_modified_terminal
 
+
 def count_nodes_with_unique_post_traversal(expr, e2i=None, skip_terminal_modifiers=False):
     """Yields o for each node o in expr, child before parent.
     Never visits a node twice."""
@@ -39,6 +40,7 @@ def count_nodes_with_unique_post_traversal(expr, e2i=None, skip_terminal_modifie
             stack.pop()
     return e2i
 
+
 def build_array_from_counts(e2i):
     nv = len(e2i)
     V = object_array(nv)
@@ -46,11 +48,13 @@ def build_array_from_counts(e2i):
         V[i] = e
     return V
 
+
 def build_node_counts(expressions):
     e2i = {}
     for expr in expressions:
         count_nodes_with_unique_post_traversal(expr, e2i, False)
     return e2i
+
 
 def build_scalar_node_counts(expressions):
     # Count unique expression nodes across multiple expressions
@@ -58,6 +62,7 @@ def build_scalar_node_counts(expressions):
     for expr in expressions:
         count_nodes_with_unique_post_traversal(expr, e2i, True)
     return e2i
+
 
 def build_graph_vertices(expressions):
     # Count unique expression nodes
@@ -70,6 +75,7 @@ def build_graph_vertices(expressions):
     ri = [e2i[expr] for expr in expressions]
 
     return e2i, V, ri
+
 
 def build_scalar_graph_vertices(expressions):
     # Count unique expression nodes across multiple expressions, treating modified terminals as a unit

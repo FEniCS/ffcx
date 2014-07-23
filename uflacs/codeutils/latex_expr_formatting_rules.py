@@ -7,6 +7,7 @@ import ufl
 # are formatted, so no compounds etc. are included here.
 # Would be nice to format e.g. dot(u, v) -> u \cdot v.
 
+
 class LatexFormattingRules(object):
 
     # === Error rules catching groups of missing types by their superclasses ===
@@ -248,9 +249,13 @@ class LatexFormattingRules(object):
 
 
 from ufl.algorithms import MultiFunction
+
+
 class LatexFormatter(MultiFunction, LatexFormattingRules):
+
     """Default LaTeX formatter class.
 
     Customize by copying this and overriding rules."""
+
     def __init__(self):
         MultiFunction.__init__(self)

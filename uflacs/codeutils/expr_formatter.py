@@ -12,6 +12,7 @@ from uflacs.analysis.modified_terminals import analyse_modified_terminal
 
 # TODO: Move precedence handling to AST code, making this class mostly superfluous
 class ExprFormatter(Transformer):
+
     """Language independent formatting class containing rules for
     handling indexing operators such that value and derivative
     indices are propagated to terminal handlers to be implemented

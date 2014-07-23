@@ -3,11 +3,14 @@ from ffc.log import ffc_assert, error
 
 import ufl
 
+
 class CppFormattingRules(object):
+
     """C++ formatting rules collection.
 
     This is the base class for target specific cpp formatter class.
     """
+
     def __init__(self):
         pass
 
@@ -192,8 +195,12 @@ class CppFormattingRules(object):
         return "!{0}".format(a)
 
 from ufl.algorithms import MultiFunction
+
+
 class CppExprFormatter(MultiFunction, CppFormattingRules):
+
     """C++ formatter class. Customize by copying this class and overriding specific rules."""
+
     def __init__(self):
         MultiFunction.__init__(self)
         CppFormattingRules.__init__(self)

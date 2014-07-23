@@ -1,8 +1,11 @@
 
 from uflacs.backends.ffc.common import *
 
+
 class FFCAccessBackend(MultiFunction):
+
     """FFC specific cpp formatter class."""
+
     def __init__(self, ir, parameters):
         MultiFunction.__init__(self)
 

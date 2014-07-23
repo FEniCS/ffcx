@@ -19,6 +19,8 @@ def map_indexed_arg_components(indexed):  # FIXME: This is the one in use. Is it
     assert all(isinstance(x, int) for x in d)
     assert len(set(d)) == len(d)
     return d
+
+
 def _map_indexed_components(tensor, indexed, multiindex):
     e2 = tensor
     e1 = indexed  # e1 = e2[multiindex]
@@ -91,6 +93,8 @@ def map_component_tensor_arg_components(component_tensor):  # FIXME: This is the
     assert all(isinstance(x, int) for x in d)
     assert len(set(d)) == len(d)
     return d
+
+
 def _map_component_tensor_components(tensor, indexed, multiindex):
     e1 = indexed
     e2 = tensor  # e2 = as_tensor(e1, multiindex)
@@ -149,7 +153,6 @@ def _map_component_tensor_components(tensor, indexed, multiindex):
     return d2
 
 
-
 def __map_indexed_to_arg_components(indexed):
     e1 = indexed
     assert isinstance(e1, Indexed)
@@ -187,6 +190,7 @@ def __map_indexed_to_arg_components(indexed):
         comp1.append(c1)
         comp2.append(c2)
     return tuple(comp1), tuple(comp2)
+
 
 def __map_indexed_arg_components4(indexed):
     assert isinstance(indexed, Indexed)
@@ -230,6 +234,7 @@ def __map_indexed_arg_components4(indexed):
         d2[c2] = c1
     assert d1 == d2
     return d1
+
 
 def __map_component_tensor_arg_components4(component_tensor):
     assert isinstance(component_tensor, ComponentTensor)

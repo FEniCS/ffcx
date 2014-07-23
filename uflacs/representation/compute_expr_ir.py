@@ -65,9 +65,7 @@ def compute_expr_ir(expressions, parameters):
     if not isinstance(expressions, list):
         expressions = [expressions]
 
-
     # TODO: Can we merge these three calls to something more efficient overall?
-
     # Build scalar list-based graph representation
     e2i, V, target_variables = build_scalar_graph(expressions)
 
@@ -126,7 +124,6 @@ def compute_expr_ir(expressions, parameters):
     #    iarg = a.number()
     # ipart = a.part()
 
-
     # Build IR for the given expressions
     expr_ir = {}
 
@@ -149,6 +146,7 @@ def compute_expr_ir(expressions, parameters):
     expr_ir["varying"] = varying     # (array) V-index -> bool
 
     return expr_ir
+
 
 def old_code_useful_for_optimization():
 

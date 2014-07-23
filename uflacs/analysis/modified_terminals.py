@@ -17,6 +17,7 @@ terminal_modifier_types = (Indexed, ReferenceGrad, Grad, Restricted, FacetAvg, C
 
 
 class ModifiedTerminal(object):
+
     """A modified terminal expression is an object of a Terminal subtype, wrapped in terminal modifier types.
 
     The variables of this class are:
@@ -32,6 +33,7 @@ class ModifiedTerminal(object):
         flat_component     - single int, flattened local component of the Terminal, considering symmetry
 
     """
+
     def __init__(self, expr, terminal, global_derivatives, local_derivatives, averaged, restriction, component, flat_component):
         # The original expression
         self.expr = expr

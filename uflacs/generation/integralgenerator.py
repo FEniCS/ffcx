@@ -18,6 +18,7 @@ from uflacs.codeutils.expr_formatter import ExprFormatter
 
 
 class IntegralGenerator(object):
+
     def __init__(self, ir, language_formatter, backend_access, backend_definitions):
         # Store ir
         self.ir = ir

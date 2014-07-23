@@ -6,6 +6,7 @@ import numpy as np
 
 default_tolerance = 1e-14
 
+
 def equal_tables(a, b, eps=default_tolerance):
     "Compare tables to be equal within a tolerance."
     a = np.asarray(a)
@@ -14,9 +15,11 @@ def equal_tables(a, b, eps=default_tolerance):
         return False
     if len(a.shape) > 1:
         return all(equal_tables(a[i], b[i], eps) for i in range(a.shape[0]))
+
     def scalars_equal(x, y, eps):
         return abs(x-y) < eps
     return all(scalars_equal(a[i], b[i], eps) for i in range(a.shape[0]))
+
 
 def strip_table_zeros(table, eps=default_tolerance):
     "Strip zero columns from table. Returns column range (begin,end) and the new compact table."
@@ -42,6 +45,7 @@ def strip_table_zeros(table, eps=default_tolerance):
     # Make subtable by stripping first and last columns
     return begin, end, table[..., begin:end]
 
+
 def build_unique_tables(tables):
     """Given a list or dict of tables, return a list of unique tables
     and a dict of unique table indices for each input table key."""
@@ -63,6 +67,7 @@ def build_unique_tables(tables):
             unique.append(t)
         mapping[k] = i
     return unique, mapping
+
 
 def build_unique_tables2(tables):
     """Given a list or dict of tables, return a list of unique tables
@@ -88,6 +93,7 @@ def build_unique_tables2(tables):
         mapping[k] = i
 
     return unique, mapping
+
 
 def get_ffc_table_values(tables, entitytype, num_points, element, flat_component, derivative_counts):
     """Extract values from ffc element table.
@@ -131,6 +137,7 @@ def get_ffc_table_values(tables, entitytype, num_points, element, flat_component
         # Assign block of values for this entity
         res[entity,:,:] = arr
     return res
+
 
 def generate_psi_table_name(element_counter, flat_component, derivative_counts, averaged, entitytype):
     """Generate a name for the psi table of the form:
@@ -180,6 +187,7 @@ def generate_psi_table_name(element_counter, flat_component, derivative_counts, 
         error("Unknown entity type %s." % entitytype)
 
     return name
+
 
 def _examples(tables):
     name = generate_psi_table_name(counter, flat_component, derivative_counts, averaged, entitytype)

@@ -13,6 +13,7 @@ from uflacs.analysis.modified_terminals import analyse_modified_terminal
 from uflacs.representation.compute_expr_ir import compute_expr_ir
 from uflacs.elementtables.terminaltables import build_element_tables, optimize_element_tables
 
+
 def compute_uflacs_integral_ir(psi_tables, entitytype,
                                integrals_dict, form_data,
                                parameters):
@@ -33,10 +34,7 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
     for num_points in sorted(integrals_dict.keys()):
         integral = integrals_dict[num_points]
 
-
         # FIXME: Move this symbolic processing to compute_form_data, give compute_form_data an option to to this for now.
-
-
         # Get integrand expr and apply some symbolic preprocessing
         expr = integral.integrand()
 
@@ -61,7 +59,6 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
         # may have messed it up after the first pass in compute_form_data...
         if integral.integral_type() == "interior_facet":
             expr = propagate_restrictions(expr)
-
 
         # Build the core uflacs ir of expressions
         expr_ir = compute_expr_ir(expr, parameters)
