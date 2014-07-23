@@ -4,7 +4,6 @@ from six.moves import xrange as range
 from ufl.common import product
 from ufl.permutation import compute_indices
 
-import ufl
 from ufl import as_vector
 from ufl.classes import (MultiIndex, ComponentTensor, ListTensor, Transposed, Variable,
                          IndexSum, UtilityType, Label, ExprList, ExprMapping)
@@ -13,8 +12,7 @@ from ufl.utils.indexflattening import flatten_multiindex, shape_to_strides
 from ufl.utils.sorting import sorted_by_count
 
 from ffc.log import error, ffc_assert
-from uflacs.datastructures.arrays import int_array, object_array
-from uflacs.datastructures.crs import CRS, rows_to_crs, rows_dict_to_crs
+from uflacs.datastructures.arrays import object_array
 from uflacs.analysis.modified_terminals import is_modified_terminal
 
 

@@ -2,7 +2,10 @@
 from six import itervalues, iterkeys, iteritems
 from six.moves import xrange as range
 from ufl import as_ufl
-from ufl.classes import Terminal, Indexed, Grad, Restricted, FacetAvg, CellAvg, Argument, Product, Sum, Division
+from ufl.classes import Argument
+from ufl.classes import Division
+from ufl.classes import Product
+from ufl.classes import Sum
 
 from ffc.log import ffc_assert
 

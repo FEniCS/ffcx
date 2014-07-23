@@ -3,8 +3,8 @@ import numpy
 from six.moves import xrange as range
 from ufl.classes import Terminal
 
-from ffc.log import error, ffc_assert
-from uflacs.datastructures.arrays import int_array, object_array, bool_array
+from uflacs.datastructures.arrays import bool_array
+from uflacs.datastructures.arrays import object_array
 from uflacs.datastructures.crs import CRS, rows_to_crs
 from uflacs.analysis.modified_terminals import terminal_modifier_types
 

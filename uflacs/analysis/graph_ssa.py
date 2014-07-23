@@ -1,14 +1,13 @@
 
 from six.moves import xrange as range
-import ufl
 from ufl.classes import (Terminal, GeometricQuantity, ConstantValue,
                          Argument, Coefficient,
                          Grad, Restricted, Indexed,
                          MathFunction)
 
-from ffc.log import error, ffc_assert
-from uflacs.datastructures.arrays import int_array, object_array
-from uflacs.datastructures.crs import CRS, rows_to_crs, rows_dict_to_crs
+from ffc.log import error
+from uflacs.datastructures.arrays import int_array
+from uflacs.datastructures.crs import rows_to_crs
 
 
 def default_partition_seed(expr, rank):

@@ -1,13 +1,9 @@
 
 from six import iteritems
-from ufl.common import unique_post_traversal
 from ufl.classes import (Terminal, UtilityType,
                          Grad, Restricted, Indexed)
-from ufl.algorithms.traversal import traverse_terminals
 
-from ffc.log import error
-from uflacs.datastructures.arrays import int_array, object_array
-from uflacs.datastructures.crs import CRS, rows_to_crs, rows_dict_to_crs
+from uflacs.datastructures.arrays import object_array
 from uflacs.analysis.modified_terminals import is_modified_terminal
 
 

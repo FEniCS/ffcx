@@ -5,9 +5,9 @@ from ufl.classes import (Terminal, Grad, ReferenceGrad, Indexed, FixedIndex,
                          Restricted, PositiveRestricted, NegativeRestricted,
                          FacetAvg, CellAvg,
                          FormArgument, Coefficient, Argument, GeometricQuantity)
-from ufl.sorting import sorted_expr
 
-from ffc.log import ffc_assert, warning, error
+from ffc.log import error
+from ffc.log import ffc_assert
 
 
 #

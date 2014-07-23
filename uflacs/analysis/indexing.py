@@ -8,7 +8,10 @@ from six.moves import xrange as range
 from ufl.common import product, sorted_by_count
 from ufl.permutation import compute_indices
 from ufl.utils.indexflattening import shape_to_strides, flatten_multiindex
-from ufl.classes import Indexed, ComponentTensor, ListTensor, FixedIndex, Index
+from ufl.classes import ComponentTensor
+from ufl.classes import FixedIndex
+from ufl.classes import Index
+from ufl.classes import Indexed
 
 
 def map_indexed_arg_components(indexed):  # FIXME: This is the one in use. Is it the best?

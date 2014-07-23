@@ -1,7 +1,6 @@
 
 from ufl.common import product
 
-from ffc.log import error
 
 from uflacs.datastructures.arrays import int_array, object_array
 from uflacs.datastructures.crs import CRS, rows_to_crs
