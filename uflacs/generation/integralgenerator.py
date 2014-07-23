@@ -2,15 +2,17 @@
 from six import iteritems, iterkeys
 from six.moves import zip
 from six.moves import xrange as range
+
 from ufl.common import product
+from ufl.classes import ConstantValue
 
 from ffc.log import error
 
 from uflacs.analysis.modified_terminals import analyse_modified_terminal, is_modified_terminal
 
 from uflacs.codeutils.format_code import (format_code, Indented, Comment,
-                                          ForRange,
-                                          ArrayDecl, ArrayAccess,
+                                          ForRange, Block,
+                                          VariableDecl, ArrayDecl, ArrayAccess,
                                           Assign, AssignAdd,
                                           Product)
 from uflacs.codeutils.indexmapping import IndexMapping, AxisMapping
@@ -66,19 +68,23 @@ class IntegralGenerator(object):
         that matches a suitable version of the UFC tabulate_tensor signatures.
         """
         parts = []
-        parts += [self.generate_using_statements()]
-        parts += [self.backend_definitions.initial()]
-        parts += [self.generate_quadrature_tables()]
-        parts += [self.generate_element_tables()]
-        parts += [self.generate_tensor_reset()]
-        parts += [self.generate_piecewise_partition()]
-        parts += [self.generate_quadrature_loops()]
-        parts += [self.generate_finishing_statements()]
+        parts += self.generate_using_statements()
+        parts += self.backend_definitions.initial()
+        parts += self.generate_quadrature_tables()
+        parts += self.generate_element_tables()
+        parts += self.generate_tensor_reset()
+        parts += self.generate_piecewise_partition()
+        parts += self.generate_quadrature_loops()
+        parts += self.generate_finishing_statements()
         return format_code(Indented(parts))
 
     def generate_quadrature_tables(self):
         "Generate static tables of quadrature points and weights."
         parts = []
+
+        # No quadrature tables for custom (given argument) or point (evaluation in single vertex)
+        if self.ir["integral_type"] in ("custom", "point"):
+            return parts
 
         qrs = self.ir["quadrature_rules"]
         if qrs:
@@ -108,7 +114,8 @@ class IntegralGenerator(object):
         "Generate static tables with precomputed element basis function values in quadrature points."
         parts = []
         parts += [Comment("Section for precomputed element basis function values"),
-                  Comment("Table dimensions: num_entities, num_points, num_dofs")]
+                  Comment("Table dimensions: num_entities, num_points, num_dofs"),
+                  ""]
         expr_irs = self.ir["uflacs"]["expr_ir"]
         for num_points in sorted(expr_irs):
             tables = expr_irs[num_points]["unique_tables"]
@@ -117,7 +124,7 @@ class IntegralGenerator(object):
             for name in sorted(tables):
                 table = tables[name]
                 if product(table.shape) > 0:
-                    parts += [ArrayDecl("static const double", name, table.shape, table)]
+                    parts += [ArrayDecl("static const double", name, table.shape, table), ""]
         return parts
 
     def generate_tensor_reset(self):
@@ -141,16 +148,23 @@ class IntegralGenerator(object):
         "Generate all quadrature loops."
         parts = []
         for num_points in sorted(self.ir["uflacs"]["expr_ir"]):
+            iq = self.backend_access.quadrature_loop_index()
             body = self.generate_quadrature_body(num_points)
-            parts += [ForRange(self.backend_access.quadrature_loop_index(), 0, num_points, body=body)]
+            if num_points == 1:
+                parts += [Comment("Only 1 quadrature point, no loop"),
+                          VariableDecl("const int", iq, 0), # TODO: Inject iq=0 in generated code instead of this line
+                          Block(body)] # Wrapping in Block to avoid thinking about scoping issues
+            else:
+                parts += [ForRange(iq, 0, num_points, body=body)]
         return parts
 
     def generate_quadrature_body(self, num_points):
         """
         """
         parts = []
-        parts += ["// Quadrature loop body setup {0}".format(num_points)]
         parts += self.generate_varying_partition(num_points)
+        if parts:
+            parts = [Comment("Quadrature loop body setup (num_points={0})".format(num_points))] + parts + [""]
 
         # Compute single argument partitions outside of the dofblock loops
         for iarg in range(self.ir["rank"]):
@@ -201,9 +215,8 @@ class IntegralGenerator(object):
     def generate_partition(self, name, V, partition, table_ranges, num_points):  # TODO: Rather take list of vertices, not markers
         terminalcode = []
         assignments = []
-        from ufl.classes import ConstantValue
         j = 0
-        # print "Generating partition ", name
+        # print "Generating partition ", name, partition
         for i, p in enumerate(partition):
             if p:
                 # TODO: Consider optimized ir here with markers for which subexpressions to store in variables.
@@ -231,9 +244,9 @@ class IntegralGenerator(object):
                 self.expr_formatter.variables[v] = vname
 
         parts = []
+        # Compute all terminals first
+        parts += terminalcode
         if j > 0:
-            # Compute all terminals first
-            parts += terminalcode
             # Declare array large enough to hold all subexpressions we've emitted
             parts += [ArrayDecl("double", name, j)]
             # Then add all computations
@@ -245,10 +258,9 @@ class IntegralGenerator(object):
 
         This mostly includes computations involving piecewise constant geometry and coefficients.
         """
-        num_points = None
-        parts = []
-        parts += ["// Section for piecewise constant computations"]
         expr_irs = self.ir["uflacs"]["expr_ir"]
+
+        parts = []
         for num_points in sorted(expr_irs):
             expr_ir = expr_irs[num_points]
             parts += self.generate_partition("sp",
@@ -256,17 +268,22 @@ class IntegralGenerator(object):
                                              expr_ir["piecewise"],
                                              expr_ir["table_ranges"],
                                              num_points)
+        if parts:
+            parts = [Comment("Section for piecewise constant computations")] + parts + [""]
         return parts
 
     def generate_varying_partition(self, num_points):
         parts = []
-        parts += ["// Section for geometrically varying computations"]
+
         expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
         parts += self.generate_partition("sv",
                                          expr_ir["V"],
                                          expr_ir["varying"],
                                          expr_ir["table_ranges"],
                                          num_points)
+
+        if parts:
+            parts = [Comment("Section for geometrically varying computations")] + parts + [""]
         return parts
 
     def generate_argument_partition(self, num_points, iarg, dofrange):

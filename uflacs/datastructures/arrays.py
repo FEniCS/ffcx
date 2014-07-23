@@ -11,4 +11,6 @@ def object_array(size):
 
 
 def bool_array(size):
-    return numpy.zeros(size, dtype=numpy.bool8)
+    #return numpy.zeros(size, dtype=numpy.bool8)
+    return numpy.zeros(size, dtype=numpy.int8)
+
