@@ -150,6 +150,8 @@ class FloatValue(Expr):
 
         # Nothing left to do.
         return create_fraction(self, other)
+        
+    __div__ = __truediv__
 
 # FFC quadrature modules.
 from .symbol     import Symbol

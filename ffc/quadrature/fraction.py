@@ -160,6 +160,8 @@ class Fraction(Expr):
         # successful and we just use the denom of self as denominator.
         return self.num/(other*self.denom)
 
+    __div__ = __truediv__
+
     # Public functions.
     def expand(self):
         "Expand the fraction expression."

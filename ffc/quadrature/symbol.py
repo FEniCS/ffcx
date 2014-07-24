@@ -193,6 +193,8 @@ class Symbol(Expr):
         # x / 2.0 -> 0.5*x.
         return num.expand()
 
+    __div__ = __truediv__
+
     # Public functions.
     def get_unique_vars(self, var_type):
         "Get unique variables (Symbols) as a set."

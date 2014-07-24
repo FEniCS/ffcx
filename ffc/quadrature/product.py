@@ -268,6 +268,8 @@ class Product(Expr):
         # If we no longer have a denominater, just return the numerator.
         return num
 
+    __div__ = __truediv__
+
     # Public functions.
     def expand(self):
         "Expand all members of the product."

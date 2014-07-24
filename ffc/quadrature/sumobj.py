@@ -195,6 +195,8 @@ class Sum(Expr):
             return create_sum(new_fracs)
         return new_fracs[0]
 
+    __div__ = __truediv__
+
     # Public functions.
     def expand(self):
         "Expand all members of the sum."
