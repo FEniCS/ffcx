@@ -24,6 +24,7 @@
 
 # Python modules
 from numpy import array
+import six
 
 # UFL and FIAT modules
 import ufl
