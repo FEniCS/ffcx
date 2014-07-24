@@ -672,7 +672,7 @@ def count_ops(code):
     "Count the number of operations in code (multiply-add pairs)."
     num_add = code.count(" + ") + code.count(" - ")
     num_multiply = code.count("*") + code.count("/")
-    return (num_add + num_multiply) / 2
+    return (num_add + num_multiply) // 2
 
 def set_float_formatting(precision):
     "Set floating point formatting based on precision."

@@ -550,7 +550,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                         code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
 
         # Add sums and group if necessary.
-        for key, val in code.items():
+        for key, val in list(code.items()):
             if len(val) > 1:
                 code[key] = f_group(f_add(val))
             elif val:

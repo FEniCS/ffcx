@@ -79,7 +79,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                     code[key] = [val]
 
         # Add sums and group if necessary.
-        for key, val in code.items():
+        for key, val in list(code.items()):
             if len(val) > 1:
                 code[key] = create_sum(val)
             elif val:
@@ -464,7 +464,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                         code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
 
         # Add sums and group if necessary.
-        for key, val in code.items():
+        for key, val in list(code.items()):
             if len(val) > 1:
                 code[key] = create_sum(val)
             else:
@@ -575,7 +575,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                    "MathFunctions expect one operand of function type: " + repr(operands))
         # Use format function on value of operand.
         operand = operands[0]
-        for key, val in operand.items():
+        for key, val in list(operand.items()):
             new_val = create_symbol(format_function(str(val)), val.t, val, 1)
             operand[key] = new_val
         #raise Exception("pause")

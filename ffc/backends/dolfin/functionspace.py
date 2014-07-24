@@ -48,7 +48,7 @@ def extract_coefficient_spaces(forms):
 
     # Return coefficient spaces sorted alphabetically by coefficient
     # name
-    names = spaces.keys()
+    names = list(spaces.keys())
     names.sort()
     return [spaces[name] for name in names]
 #-------------------------------------------------------------------------------
