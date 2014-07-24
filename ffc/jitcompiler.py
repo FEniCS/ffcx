@@ -133,13 +133,18 @@ def jit_form(form, parameters=None):
                 debug("Compiling and linking Python extension module, this may take some time.")
                 hfile   = module_name + ".h"
                 cppfile = module_name + ".cpp"
+
+                if parameters["cpp_optimize"]:
+                    cppargs = parameters["cpp_optimize_flags"].split()
+                else:
+                    cppargs = ["-O0"]
+
                 module = build_ufc_module(
                     hfile,
                     source_directory = os.curdir,
                     signature = module_name,
                     sources = [cppfile] if parameters["split"] else [],
-                    cppargs = parameters["cpp_optimize_flags"].split() \
-                              if parameters["cpp_optimize"] else ["-O0"],
+                    cppargs = cppargs,
                     cache_dir = cache_dir)
 
                 # Remove code
