@@ -21,7 +21,7 @@
 #
 # First added:  2007-02-06
 # Last changed: 2009-02-24
-
+from __future__ import print_function
 import unittest
 import sys
 import numpy

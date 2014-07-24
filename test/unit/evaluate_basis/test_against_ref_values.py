@@ -18,6 +18,7 @@
 # First added:  2010-01-18
 # Last changed: 2010-01-29
 
+from __future__ import print_function
 from .cppcode import evaluate_basis_code
 from ufl import FiniteElement, MixedElement
 from instant.output import get_status_output
