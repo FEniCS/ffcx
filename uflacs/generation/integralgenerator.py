@@ -73,8 +73,22 @@ class IntegralGenerator(object):
         parts += self.generate_quadrature_tables()
         parts += self.generate_element_tables()
         parts += self.generate_tensor_reset()
-        parts += self.generate_piecewise_partition()
-        parts += self.generate_quadrature_loops()
+
+        # If we have integrals with different number of quadrature points,
+        # we wrap each integral in a separate scope, avoiding having to
+        # think about name clashes for now. This is a bit wasteful in that
+        # piecewise quantities are not shared, but at least it should work.
+        expr_irs = self.ir["uflacs"]["expr_ir"]
+        all_num_points = sorted(expr_irs)
+        for num_points in all_num_points:
+            self.expr_formatter.variables = {}
+            pp = self.generate_piecewise_partition(num_points)
+            ql = self.generate_quadrature_loops(num_points)
+            if len(all_num_points) > 1:
+                parts += [Block([pp, ql])]
+            else:
+                parts += [pp, ql]
+
         parts += self.generate_finishing_statements()
         return format_code(Indented(parts))
 
@@ -144,18 +158,17 @@ class IntegralGenerator(object):
         parts += [""]
         return parts
 
-    def generate_quadrature_loops(self):
+    def generate_quadrature_loops(self, num_points):
         "Generate all quadrature loops."
         parts = []
-        for num_points in sorted(self.ir["uflacs"]["expr_ir"]):
-            iq = self.backend_access.quadrature_loop_index()
-            body = self.generate_quadrature_body(num_points)
-            if num_points == 1:
-                parts += [Comment("Only 1 quadrature point, no loop"),
-                          VariableDecl("const int", iq, 0), # TODO: Inject iq=0 in generated code instead of this line
-                          Block(body)] # Wrapping in Block to avoid thinking about scoping issues
-            else:
-                parts += [ForRange(iq, 0, num_points, body=body)]
+        body = self.generate_quadrature_body(num_points)
+        iq = self.backend_access.quadrature_loop_index()
+        if num_points == 1:
+            parts += [Comment("Only 1 quadrature point, no loop"),
+                      VariableDecl("const int", iq, 0), # TODO: Inject iq=0 in generated code instead of this line
+                      Block(body)] # Wrapping in Block to avoid thinking about scoping issues
+        else:
+            parts += [ForRange(iq, 0, num_points, body=body)]
         return parts
 
     def generate_quadrature_body(self, num_points):
@@ -253,30 +266,28 @@ class IntegralGenerator(object):
             parts += assignments
         return parts
 
-    def generate_piecewise_partition(self):
+    def generate_piecewise_partition(self, num_points):
         """Generate statements prior to the quadrature loop.
 
         This mostly includes computations involving piecewise constant geometry and coefficients.
         """
-        expr_irs = self.ir["uflacs"]["expr_ir"]
-
         parts = []
-        for num_points in sorted(expr_irs):
-            expr_ir = expr_irs[num_points]
-            parts += self.generate_partition("sp",
-                                             expr_ir["V"],
-                                             expr_ir["piecewise"],
-                                             expr_ir["table_ranges"],
-                                             num_points)
+        expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
+        arrayname = "sp{0}".format(num_points)
+        parts += self.generate_partition(arrayname,
+                                         expr_ir["V"],
+                                         expr_ir["piecewise"],
+                                         expr_ir["table_ranges"],
+                                         num_points)
         if parts:
             parts = [Comment("Section for piecewise constant computations")] + parts + [""]
         return parts
 
     def generate_varying_partition(self, num_points):
         parts = []
-
         expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
-        parts += self.generate_partition("sv",
+        arrayname = "sv{0}".format(num_points)
+        parts += self.generate_partition(arrayname,
                                          expr_ir["V"],
                                          expr_ir["varying"],
                                          expr_ir["table_ranges"],

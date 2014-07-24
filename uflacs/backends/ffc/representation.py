@@ -65,48 +65,48 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
         uflacs_ir["expr_ir"][num_points] = expr_ir
 
     # NB! Using the last num_points from integrals_dict below, but not handling it properly yet
-    ffc_assert(len(integrals_dict) == 1, "Not supporting multiple integration rules yet.")
-    num_points, = list(integrals_dict.keys())
-    expr_ir = uflacs_ir["expr_ir"][num_points]
+    #ffc_assert(len(integrals_dict) == 1, "Not supporting multiple integration rules yet.")
+    for num_points in sorted(integrals_dict.keys()):
+        expr_ir = uflacs_ir["expr_ir"][num_points]
 
-    # Build set of modified terminal ufl expressions
-    V = expr_ir["V"]
-    modified_terminals = [analyse_modified_terminal(V[i]) for i in expr_ir["modified_terminal_indices"]]
+        # Build set of modified terminal ufl expressions
+        V = expr_ir["V"]
+        modified_terminals = [analyse_modified_terminal(V[i]) for i in expr_ir["modified_terminal_indices"]]
 
-    # Analyse modified terminals and store data about them
-    terminal_data = modified_terminals + expr_ir["modified_arguments"]
+        # Analyse modified terminals and store data about them
+        terminal_data = modified_terminals + expr_ir["modified_arguments"]
 
-    # Build tables needed by all modified terminals (currently build here means extract from ffc psi_tables)
-    tables, terminal_table_names = build_element_tables(psi_tables, num_points,
-                                                        entitytype, terminal_data)
+        # Build tables needed by all modified terminals (currently build here means extract from ffc psi_tables)
+        tables, terminal_table_names = build_element_tables(psi_tables, num_points,
+                                                            entitytype, terminal_data)
 
-    # Optimize tables and get table name and dofrange for each modified terminal
-    unique_tables, terminal_table_ranges = optimize_element_tables(tables, terminal_table_names)
-    expr_ir["unique_tables"] = unique_tables
+        # Optimize tables and get table name and dofrange for each modified terminal
+        unique_tables, terminal_table_ranges = optimize_element_tables(tables, terminal_table_names)
+        expr_ir["unique_tables"] = unique_tables
 
-    # Modify ranges for restricted form arguments (not geometry!)
-    from ufl.classes import FormArgument
-    for i, mt in enumerate(terminal_data):
-        # TODO: Get the definition that - means added offset from somewhere
-        if mt.restriction == "-" and isinstance(terminal_data[i].terminal, FormArgument):
-            offset = int(tables[terminal_table_names[i]].shape[-1])  # number of dofs before optimization
-            (unique_name, b, e) = terminal_table_ranges[i]
-            terminal_table_ranges[i] = (unique_name, b + offset, e + offset)
+        # Modify ranges for restricted form arguments (not geometry!)
+        from ufl.classes import FormArgument
+        for i, mt in enumerate(terminal_data):
+            # TODO: Get the definition that - means added offset from somewhere
+            if mt.restriction == "-" and isinstance(terminal_data[i].terminal, FormArgument):
+                offset = int(tables[terminal_table_names[i]].shape[-1])  # number of dofs before optimization
+                (unique_name, b, e) = terminal_table_ranges[i]
+                terminal_table_ranges[i] = (unique_name, b + offset, e + offset)
 
-    # Split into arguments and other terminals before storing in expr_ir
-    # TODO: Some tables are associated with num_points, some are not
-    #       (i.e. piecewise constant, averaged and x0)
-    n = len(expr_ir["modified_terminal_indices"])
-    m = len(expr_ir["modified_arguments"])
-    assert len(terminal_data) == n + m
-    assert len(terminal_table_ranges) == n + m
-    assert len(terminal_table_names) == n + m
-    expr_ir["modified_terminal_table_ranges"] = terminal_table_ranges[:n]
-    expr_ir["modified_argument_table_ranges"] = terminal_table_ranges[n:]
+        # Split into arguments and other terminals before storing in expr_ir
+        # TODO: Some tables are associated with num_points, some are not
+        #       (i.e. piecewise constant, averaged and x0)
+        n = len(expr_ir["modified_terminal_indices"])
+        m = len(expr_ir["modified_arguments"])
+        assert len(terminal_data) == n + m
+        assert len(terminal_table_ranges) == n + m
+        assert len(terminal_table_names) == n + m
+        expr_ir["modified_terminal_table_ranges"] = terminal_table_ranges[:n]
+        expr_ir["modified_argument_table_ranges"] = terminal_table_ranges[n:]
 
-    # Store table data in V indexing, this is used in integralgenerator
-    expr_ir["table_ranges"] = object_array(len(V))
-    expr_ir["table_ranges"][expr_ir["modified_terminal_indices"]] = \
-        expr_ir["modified_terminal_table_ranges"]
+        # Store table data in V indexing, this is used in integralgenerator
+        expr_ir["table_ranges"] = object_array(len(V))
+        expr_ir["table_ranges"][expr_ir["modified_terminal_indices"]] = \
+            expr_ir["modified_terminal_table_ranges"]
 
     return uflacs_ir
