@@ -27,14 +27,10 @@ might be (re-)implemented in a future version of FFC
 #
 # Modified by Kristian B. Oelgaard, 2010.
 # Modified by Martin Alnaes, 2013
-#
-# First added:  2007-02-05
-# Last changed: 2014-05-15
 
 # FFC modules
 from ffc.log import info, error
 from ffc.representationutils import initialize_integral_ir
-from ffc.fiatinterface import cellname_to_num_entities
 
 # FFC tensor representation modules
 from ffc.tensor.monomialextraction import extract_monomial_form
@@ -65,9 +61,10 @@ def compute_integral_ir(itg_data,
     quadrature_rule = itg_data.metadata["quadrature_rule"]
 
     # Get some cell properties
-    cellname = itg_data.domain.cell().cellname()
-    facet_cellname = itg_data.domain.cell().facet_cellname()
-    num_facets = cellname_to_num_entities[cellname][-2]
+    cell = itg_data.domain.cell()
+    cellname = cell.cellname()
+    facet_cellname = cell.facet_cellname()
+    num_facets = cell.num_facets()
 
     # Helper to simplify code below
     compute_terms = lambda i, j: _compute_terms(monomial_form,

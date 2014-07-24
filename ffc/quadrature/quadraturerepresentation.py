@@ -31,7 +31,6 @@ from ufl.sorting import sorted_expr_sum
 from ffc.log import ffc_assert, info, error, warning
 from ffc.utils import product
 from ffc.fiatinterface import create_element
-from ffc.fiatinterface import cellname_to_num_entities
 
 from ffc.representationutils import initialize_integral_ir
 from ffc.quadrature.tabulate_basis import tabulate_basis
@@ -89,9 +88,9 @@ def compute_integral_ir(itg_data,
                                              ir["optimise_parameters"])
 
     # Transform integrals.
-    cellname = itg_data.domain.cell().cellname()
+    cell = itg_data.domain.cell()
     ir["trans_integrals"] = _transform_integrals_by_type(ir, transformer, integrals_dict,
-                                                         itg_data.integral_type, cellname)
+                                                         itg_data.integral_type, cell)
 
     # Save tables populated by transformer
     ir["name_map"] = transformer.name_map
@@ -150,9 +149,9 @@ def sort_integrals(integrals, default_quadrature_degree, default_quadrature_rule
         sorted_integrals[key] = Integral(integrand, integral_type, domain, subdomain_id, {}, None)
     return sorted_integrals
 
-def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type, cellname):
-    num_facets = cellname_to_num_entities[cellname][-2]
-    num_vertices = cellname_to_num_entities[cellname][0]
+def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type, cell):
+    num_facets = cell.num_facets()
+    num_vertices = cell.num_vertices()
 
     if integral_type == "cell":
         # Compute transformed integrals.

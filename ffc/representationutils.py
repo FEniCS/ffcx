@@ -20,14 +20,10 @@ quadrature and tensor representation."""
 #
 # Modified by Martin Alnaes 2013
 # Modified by Anders Logg 2014
-#
-# First added:  2013-01-08
-# Last changed: 2014-04-15
 
 from ufl.measure import integral_type_to_measure_name
 
 from ffc.fiatinterface import create_element
-from ffc.fiatinterface import cellname_to_num_entities
 from ffc.cpp import format
 from ffc.log import error
 
@@ -113,8 +109,9 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
                    "custom":         "cell"}[itg_data.integral_type]
 
     # Extract data
-    cellname = itg_data.domain.cell().cellname()
-    tdim = itg_data.domain.topological_dimension()
+    cell = itg_data.domain.cell()
+    cellname = cell.cellname()
+    tdim = cell.topological_dimension()
     assert all(tdim == itg.domain().topological_dimension() for itg in itg_data.integrals)
 
     # Set number of cells if not set TODO: Get automatically from number of domains
@@ -128,8 +125,8 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
             "geometric_dimension":   form_data.geometric_dimension,
             "topological_dimension": tdim,
             "entitytype":            entity_type,
-            "num_facets":            cellname_to_num_entities[cellname][-2],
-            "num_vertices":          cellname_to_num_entities[cellname][0],
+            "num_facets":            cell.num_facets(),
+            "num_vertices":          cell.num_vertices(),
             "needs_oriented":        needs_oriented_jacobian(form_data),
             "num_cells":             num_cells,
             "enabled_coefficients":  itg_data.enabled_coefficients,

@@ -50,7 +50,7 @@ from ffc.fiatinterface import reference_cell
 from ffc.fiatinterface import create_quadrature as fiat_create_quadrature
 
 # Dictionary mapping from cellname to dimension
-from ufl.geometry import cellname2dim
+from ufl.cell import cellname2dim
 
 def create_quadrature(shape, degree, scheme="default"):
     """

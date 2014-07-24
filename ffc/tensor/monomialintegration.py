@@ -33,7 +33,6 @@ import time
 
 # UFL modules
 from ufl.classes import Measure
-from ufl.geometry import cellname2facetname
 
 # FFC modules
 from ffc.log import info, debug, error
