@@ -85,7 +85,7 @@ class ModifiedTerminal(object):
 
 def is_modified_terminal(v):
     "Check if v is a terminal or a terminal wrapped in terminal modifier types."
-    while not isinstance(v, Terminal):
+    while not v._ufl_is_terminal_:
         if isinstance(v, terminal_modifier_types):
             v = v.operands()[0]
         else:
@@ -95,7 +95,7 @@ def is_modified_terminal(v):
 
 def strip_modified_terminal(v):
     "Extract core Terminal from a modified terminal or return None."
-    while not isinstance(v, Terminal):
+    while not v._ufl_is_terminal_:
         if isinstance(v, terminal_modifier_types):
             v = v.operands()[0]
         else:
@@ -120,7 +120,7 @@ def analyse_modified_terminal(expr):
 
     # Start with expr and strip away layers of modifiers
     t = expr
-    while not isinstance(t, Terminal):
+    while not t._ufl_is_terminal_:
         if isinstance(t, Indexed):
             ffc_assert(component is None, "Got twice indexed terminal.")
             t, i = t.operands()
