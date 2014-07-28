@@ -214,10 +214,6 @@ class QuadratureTransformerBase(Transformer):
         print "\n\nVisiting IndexAnnotated:", repr(o)
         error("Only child classes of IndexAnnotated is supported.")
 
-    def constant_base(self, o):
-        print "\n\nVisiting ConstantBase:", repr(o)
-        error("This type of ConstantBase is not supported (yet).")
-
     def geometric_quantity(self, o):
         print "\n\nVisiting GeometricQuantity:", repr(o)
         error("This type of GeometricQuantity is not supported (yet).")
@@ -470,74 +466,6 @@ class QuadratureTransformerBase(Transformer):
             self.function_cache[key] = function_code
 
         return function_code
-
-    def constant(self, o):
-        #print("\n\nVisiting Constant: " + repr(o))
-
-        # Map o to object with proper element and count
-        o = self._function_replace_map[o]
-
-        # Safety checks.
-        ffc_assert(len(self.component()) == 0, "Constant does not expect component indices: " + repr(self._components))
-        ffc_assert(o.shape() == (), "Constant should not have a value shape: " + repr(o.shape()))
-
-        # Component default is 0
-        component = 0
-
-        # Handle restriction.
-        if self.restriction == "-":
-            component += 1
-
-        # Let child class create constant symbol
-        coefficient = format["coefficient"](o.count(), component)
-        return self._create_symbol(coefficient, CONST)
-
-    def vector_constant(self, o):
-        #print("\n\nVisiting VectorConstant: " + repr(o))
-
-        # Map o to object with proper element and count
-        o = self._function_replace_map[o]
-
-        # Get the component
-        components = self.component()
-
-        # Safety checks.
-        ffc_assert(len(components) == 1, "VectorConstant expects 1 component index: " + repr(components))
-
-        # We get one component.
-        component = components[0]
-
-        # Handle restriction.
-        if self.restriction == "-":
-            component += o.shape()[0]
-
-        # Let child class create constant symbol
-        coefficient = format["coefficient"](o.count(), component)
-        return self._create_symbol(coefficient, CONST)
-
-    def tensor_constant(self, o):
-        #print("\n\nVisiting TensorConstant: " + repr(o))
-
-        # Map o to object with proper element and count
-        o = self._function_replace_map[o]
-
-        # Get the components
-        components = self.component()
-
-        # Safety checks.
-        ffc_assert(len(components) == len(o.shape()), \
-                   "The number of components '%s' must be equal to the number of shapes '%s' for TensorConstant." % (repr(components), repr(o.shape())))
-
-        # Let the UFL element handle the component map.
-        component = o.element()._sub_element_mapping[components]
-
-        # Handle restriction (offset by value shape).
-        if self.restriction == "-":
-            component += product(o.shape())
-
-        # Let child class create constant symbol
-        coefficient = format["coefficient"](o.count(), component)
-        return self._create_symbol(coefficient, CONST)
 
     # -------------------------------------------------------------------------
     # SpatialCoordinate (geometry.py).
