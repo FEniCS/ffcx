@@ -63,7 +63,7 @@ class FFCAccessBackend(MultiFunction):
     # === Multifunction handlers for all modified terminal types, basic C++ types are covered by base class ===
 
     def expr(self, e, mt, tabledata, num_points):
-        error("Missing handler for type {0}.".format(e._uflclass.__name__))
+        error("Missing handler for type {0}.".format(e._ufl_class_.__name__))
 
     def argument(self, e, mt, tabledata, num_points):
         # Expecting only local derivatives and values here

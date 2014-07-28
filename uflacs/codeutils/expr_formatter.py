@@ -45,8 +45,8 @@ class ExprFormatter(Transformer):
             else:
                 # Ignore left-right rule and just add
                 # slightly more () than strictly necessary
-                pe = self.precedence[e._uflclass]
-                po = self.precedence[o._uflclass]
+                pe = self.precedence[e._ufl_class_]
+                po = self.precedence[o._ufl_class_]
                 wrap = (pe < self.max_precedence and po <= pe)
 
             if wrap:

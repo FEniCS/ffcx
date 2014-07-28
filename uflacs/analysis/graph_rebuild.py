@@ -182,7 +182,11 @@ class ReconstructScalarSubexpressions(MultiFunction):
                 sops.append([ss[ind + j * postdim] for j in range(d)])
 
         # For each scalar output component, sum over collected subcomponents
-        return [sum(sop) for sop in sops]
+        # TODO: Need to split this into binary additions to work with future CRS format,
+        #       i.e. emitting more expressions than there are symbols for this node.
+        results = [sum(sop) for sop in sops]
+        return results
+
 
     # TODO: To implement compound tensor operators such as dot and inner,
     # we need to identify which index to do the contractions over,

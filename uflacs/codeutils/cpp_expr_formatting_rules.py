@@ -18,10 +18,10 @@ class CppFormattingRules(object):
 
     # Generic fallback error messages for missing rules:
     def expr(self, o):
-        error("Missing C++ formatting rule for expr type {0}.".format(o._uflclass))
+        error("Missing C++ formatting rule for expr type {0}.".format(o._ufl_class_))
 
     def terminal(self, o, mt):
-        error("Missing C++ formatting rule for terminal type {0}.".format(o._uflclass))
+        error("Missing C++ formatting rule for terminal type {0}.".format(o._ufl_class_))
 
     # Unexcepted type checks:
     def variable(self, o, *ops):
@@ -29,7 +29,7 @@ class CppFormattingRules(object):
         return ops[0]  # or just fall through like this if necessary
 
     def invalid_request(self, o, *ops):
-        error("Invalid request for C++ formatting of a {0}, str = {1}".format(o._uflclass, str(o)))
+        error("Invalid request for C++ formatting of a {0}, str = {1}".format(o._ufl_class_, str(o)))
     wrapper_type = invalid_request
     index_sum = invalid_request
     indexed = invalid_request
@@ -43,7 +43,7 @@ class CppFormattingRules(object):
     # === Formatting rules for literal constants ===
 
     def constant_value(self, e, mt=None):
-        error("Missing C++ rule for constant value type {0}.".format(e._uflclass))
+        error("Missing C++ rule for constant value type {0}.".format(e._ufl_class_))
 
     def zero(self, e, mt=None):
         return "0.0"

@@ -15,16 +15,16 @@ class LatexFormattingRules(object):
 
     # Generic fallback error messages for missing rules:
     def expr(self, o):
-        error("Missing LaTeX formatting rule for expr type %s." % o._uflclass)
+        error("Missing LaTeX formatting rule for expr type %s." % o._ufl_class_)
 
     def terminal(self, o):
-        error("Missing LaTeX formatting rule for terminal type %s." % o._uflclass)
+        error("Missing LaTeX formatting rule for terminal type %s." % o._ufl_class_)
 
     def constant_value(self, o, component=(), derivatives=(), restriction=None):
-        error("Missing LaTeX rule for constant value type %s." % o._uflclass)
+        error("Missing LaTeX rule for constant value type %s." % o._ufl_class_)
 
     def geometric_quantity(self, o, component=(), derivatives=()):
-        error("Missing LaTeX formatting rule for geometric quantity type %s." % o._uflclass)
+        error("Missing LaTeX formatting rule for geometric quantity type %s." % o._ufl_class_)
 
     # Unexcepted type checks:
     def variable(self, o):
@@ -32,7 +32,7 @@ class LatexFormattingRules(object):
         return o  # or just do this if necessary
 
     def invalid_request(self, o, *ops):
-        error("Invalid request for LaTeX formatting of a %s." % o._uflclass)
+        error("Invalid request for LaTeX formatting of a %s." % o._ufl_class_)
     wrapper_type = invalid_request
     index_sum = invalid_request
     indexed = invalid_request
