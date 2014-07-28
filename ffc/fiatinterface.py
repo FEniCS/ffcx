@@ -32,8 +32,6 @@ import FIAT
 # FFC modules
 from ffc.log import debug, error, ffc_assert
 from ffc.quadratureelement import QuadratureElement as FFCQuadratureElement
-from ffc.timeelements import LobattoElement as FFCLobattoElement
-from ffc.timeelements import RadauElement as FFCRadauElement
 
 from ffc.mixedelement import MixedElement
 from ffc.restrictedelement import RestrictedElement
@@ -129,9 +127,11 @@ def _create_fiat_element(ufl_element):
 
     # Handle the specialized time elements
     elif family == "Lobatto" :
+        from ffc.timeelements import LobattoElement as FFCLobattoElement
         element = FFCLobattoElement(ufl_element.degree())
 
     elif family == "Radau" :
+        from ffc.timeelements import RadauElement as FFCRadauElement
         element = FFCRadauElement(ufl_element.degree())
 
     # FIXME: AL: Should this really be here?

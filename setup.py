@@ -226,12 +226,12 @@ def run_install():
     generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS)
 
     # Setup extension module for FFC time elements
-    ext_module_time = Extension("ffc.time_elements_ext",
-                                ["ffc/ext/time_elements_interface.cpp",
-                                 "ffc/ext/time_elements.cpp",
-                                 "ffc/ext/LobattoQuadrature.cpp",
-                                 "ffc/ext/RadauQuadrature.cpp",
-                                 "ffc/ext/Legendre.cpp"])
+    ext_module_time = Extension("ffc_time_ext.time_elements_ext",
+                                ["ffc_time_ext/time_elements_interface.cpp",
+                                 "ffc_time_ext/time_elements.cpp",
+                                 "ffc_time_ext/LobattoQuadrature.cpp",
+                                 "ffc_time_ext/RadauQuadrature.cpp",
+                                 "ffc_time_ext/Legendre.cpp"])
 
     # Setup extension module for UFC
     ext_module_ufc = Extension("ufc._ufc",
