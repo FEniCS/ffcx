@@ -282,10 +282,10 @@ class MonomialTransformer(ReuseTransformer):
         self._function_replace_map = function_replace_map or {}
 
     def expr(self, o, *ops):
-        raise MonomialException("No handler defined for expression %s." % o._uflclass.__name__)
+        raise MonomialException("No handler defined for expression %s." % o._ufl_class_.__name__)
 
     def terminal(self, o):
-        raise MonomialException("No handler defined for terminal %s." % o._uflclass.__name__)
+        raise MonomialException("No handler defined for terminal %s." % o._ufl_class_.__name__)
 
     def variable(self, o):
         return self.visit(o.expression())
@@ -298,7 +298,7 @@ class MonomialTransformer(ReuseTransformer):
         denominator = o.operands()[1]
         if not isinstance(denominator, ScalarValue):
             raise MonomialException("No handler defined for expression %s."
-                                    % o._uflclass.__name__)
+                                    % o._ufl_class_.__name__)
         inverse = self.scalar_value(ScalarValue(1.0/denominator.value()))
         numerator = self.visit(o.operands()[0])
 
