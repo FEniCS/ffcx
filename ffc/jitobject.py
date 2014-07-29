@@ -25,7 +25,7 @@ import ufl
 from ufl.utils.sorting import canonicalize_metadata
 
 # FFC modules.
-from constants import FFC_VERSION
+from .constants import FFC_VERSION
 
 # UFC modules.
 from ffc.backends import ufc
@@ -34,7 +34,7 @@ from ffc.backends import ufc
 ufc_signature = sha1(''.join(getattr(ufc, header)
                              for header in
                              (k for k in sorted(vars(ufc).keys())
-                              if k.endswith("_header")))).encode('utf-8')
+                              if k.endswith("_header"))).encode('utf-8')
                               ).hexdigest()
 
 class JITObject:
