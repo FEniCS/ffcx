@@ -245,7 +245,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         #print("\n\nVisiting Power: " + repr(o))
 
         # Get base and exponent.
-        base, expo = o.operands()
+        base, expo = o.ufl_operands
 
         # Visit base to get base code.
         base_code = self.visit(base)
