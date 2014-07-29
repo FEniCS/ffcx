@@ -22,19 +22,19 @@ from hashlib import sha1
 
 # UFL modules.
 import ufl
+from ufl.utils.sorting import canonicalize_metadata
 
 # FFC modules.
-from .constants import FFC_VERSION
+from constants import FFC_VERSION
 
 # UFC modules.
 from ffc.backends import ufc
 
 # Compute signature of all ufc headers combined
-#ufc_keys = vars(ufc).keys() if sys.version_info < 3 else [str(k) in vars(ufl).keys()]
 ufc_signature = sha1(''.join(getattr(ufc, header)
                              for header in
-                             (k for k in vars(ufc).keys()
-                              if k.endswith("_header"))).encode('utf-8')
+                             (k for k in sorted(vars(ufc).keys())
+                              if k.endswith("_header")))).encode('utf-8')
                               ).hexdigest()
 
 class JITObject:
@@ -86,6 +86,7 @@ class JITObject:
                       ffc_signature,
                       ufc_signature]
         string = ";".join(signatures)
+
         self._signature = sha1(string.encode('utf-8')).hexdigest()
 
         # Uncomment for debugging
@@ -103,4 +104,4 @@ def _parameters_signature(parameters):
     for ignore in ignores:
         if ignore in parameters:
             del parameters[ignore]
-    return str(parameters)
+    return str(canonicalize_metadata(parameters))
