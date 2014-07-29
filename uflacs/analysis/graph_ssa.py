@@ -21,7 +21,7 @@ def default_partition_seed(expr, rank):
 
     modifiers = (Grad, Restricted, Indexed)  # FIXME: Add CellAvg, FacetAvg types here, others?
     if isinstance(expr, modifiers):
-        return default_partition_seed(expr.operands()[0], rank)
+        return default_partition_seed(expr.ufl_operands[0], rank)
 
     elif isinstance(expr, Argument):
         ac = expr.number()

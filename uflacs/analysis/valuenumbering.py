@@ -147,7 +147,7 @@ class ValueNumberer(MultiFunction):
 
     def indexed(self, Aii, i):
         # Reuse symbols of arg A for Aii
-        A = Aii.operands()[0]
+        A = Aii.ufl_operands[0]
 
         # Get symbols of argument A
         A_symbols = self.get_node_symbols(A)
@@ -159,7 +159,7 @@ class ValueNumberer(MultiFunction):
 
     def component_tensor(self, A, i):
         # Reuse symbols of arg Aii for A
-        Aii = A.operands()[0]
+        Aii = A.ufl_operands[0]
 
         # Get symbols of argument Aii
         Aii_symbols = self.get_node_symbols(Aii)
@@ -170,14 +170,14 @@ class ValueNumberer(MultiFunction):
         return symbols
 
     def list_tensor(self, v, i):
-        row_symbols = [self.get_node_symbols(row) for row in v.operands()]
+        row_symbols = [self.get_node_symbols(row) for row in v.ufl_operands]
         symbols = []
         for rowsymb in row_symbols:
             symbols.extend(rowsymb)  # FIXME: Test that this produces the right transposition
         return symbols
 
     def transposed(self, AT, i):
-        A, = AT.operands()
+        A, = AT.ufl_operands
 
         assert not A.free_indices(), "Assuming no free indices in transposed (for now), report as bug if needed."  # FIXME
         r, c = A.shape()
@@ -197,4 +197,4 @@ class ValueNumberer(MultiFunction):
 
     def variable(self, v, i):
         "Direct reuse of all symbols."
-        return self.get_node_symbols(v.operands()[0])
+        return self.get_node_symbols(v.ufl_operands[0])

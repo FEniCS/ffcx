@@ -36,7 +36,7 @@ class ExprFormatter(Transformer):
         # may be language dependent? (usually left-right).
         # Keeping it simple and safe for now at least.
         ops = []
-        for o in e.operands():
+        for o in e.ufl_operands:
             ocode = self.visit(o)
 
             if o in self.variables:

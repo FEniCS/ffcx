@@ -47,7 +47,7 @@ def old_compute_dependencies(e2i, V, ignore_terminal_modifiers=True):
         if isinstance(v, terminalish):
             dependencies[i] = ()
         else:
-            dependencies[i] = [e2i[o] for o in v.operands()]
+            dependencies[i] = [e2i[o] for o in v.ufl_operands]
             num_nonzeros += len(dependencies[i])
 
     return rows_to_crs(dependencies, num_rows, num_nonzeros, int)
@@ -65,13 +65,13 @@ def compute_dependencies(e2i, V, ignore_terminal_modifiers=True):
     dtype = sufficient_int_type(num_rows)
 
     # Preallocate CRS matrix of sufficient capacity
-    num_nonzeros = sum(len(v.operands()) for v in V)
+    num_nonzeros = sum(len(v.ufl_operands) for v in V)
     dependencies = CRS(num_rows, num_nonzeros, dtype)
     for v in V:
         if isinstance(v, terminalish):
             dependencies.push_row(())
         else:
-            dependencies.push_row([e2i[o] for o in v.operands()])
+            dependencies.push_row([e2i[o] for o in v.ufl_operands])
 
     return dependencies
 

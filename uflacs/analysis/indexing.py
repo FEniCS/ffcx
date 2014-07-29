@@ -17,7 +17,7 @@ from ufl.classes import Indexed
 def map_indexed_arg_components(indexed):  # FIXME: This is the one in use. Is it the best?
     assert isinstance(indexed, Indexed)
     e1 = indexed
-    e2, mi = e1.operands()
+    e2, mi = e1.ufl_operands
     d = _map_indexed_components(e2, e1, mi)
     assert all(isinstance(x, int) for x in d)
     assert len(set(d)) == len(d)
@@ -91,7 +91,7 @@ def _map_indexed_components(tensor, indexed, multiindex):
 def map_component_tensor_arg_components(component_tensor):  # FIXME: This is the one in use. Is it the best?
     assert isinstance(component_tensor, ComponentTensor)
     e2 = component_tensor
-    e1, mi = e2.operands()
+    e1, mi = e2.ufl_operands
     d = _map_component_tensor_components(e2, e1, mi)
     assert all(isinstance(x, int) for x in d)
     assert len(set(d)) == len(d)
@@ -159,7 +159,7 @@ def _map_component_tensor_components(tensor, indexed, multiindex):
 def __map_indexed_to_arg_components(indexed):
     e1 = indexed
     assert isinstance(e1, Indexed)
-    A1, mi1 = e1.operands()
+    A1, mi1 = e1.ufl_operands
     e2 = A1
 
     # Compute index shape
@@ -198,7 +198,7 @@ def __map_indexed_to_arg_components(indexed):
 def __map_indexed_arg_components4(indexed):
     assert isinstance(indexed, Indexed)
     e1 = indexed
-    e2, mi = e1.operands()
+    e2, mi = e1.ufl_operands
 
     # Compute index shape
     ind1 = sorted_by_count(e1.free_indices())
@@ -242,7 +242,7 @@ def __map_indexed_arg_components4(indexed):
 def __map_component_tensor_arg_components4(component_tensor):
     assert isinstance(component_tensor, ComponentTensor)
     e2 = component_tensor
-    e1, mi = e2.operands()
+    e1, mi = e2.ufl_operands
 
     # Compute index shape
     ind1 = sorted_by_count(e1.free_indices())

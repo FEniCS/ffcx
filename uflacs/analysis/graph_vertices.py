@@ -18,7 +18,7 @@ def count_nodes_with_unique_post_traversal(expr, e2i=None, skip_terminal_modifie
         if e._ufl_is_terminal_ or (skip_terminal_modifiers and is_modified_terminal(e)):
             return []
         else:
-            return list(e.operands())
+            return list(e.ufl_operands)
 
     stack = []
     stack.append((expr, getops(expr)))

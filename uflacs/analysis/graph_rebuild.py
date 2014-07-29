@@ -89,7 +89,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
             return [o.reconstruct(a, b) for a in ops[0]]
 
         # Neither of operands are true scalars, this is the tricky part
-        o0, o1 = o.operands()
+        o0, o1 = o.ufl_operands
 
         def _compute_shapes(expr):
             fi = sorted_by_count(expr.free_indices())
@@ -152,7 +152,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
         return results
 
     def index_sum(self, o, ops):
-        summand, mi = o.operands()
+        summand, mi = o.ufl_operands
         ii = mi[0]
         fi = summand.free_indices() # FIXME: Is sorting needed here? Looks like maybe not. Explain!
         #fi = sorted_by_count(summand.free_indices())
@@ -266,7 +266,7 @@ def rebuild_with_scalar_subexpressions(G):
 
             # Find symbols of operands
             sops = []
-            for j, vop in enumerate(v.operands()):
+            for j, vop in enumerate(v.ufl_operands):
                 if isinstance(vop, MultiIndex):  # TODO: Store MultiIndex in G.V and allocate a symbol to it for this to work
                     if not isinstance(v, IndexSum):
                         error("Not expecting a %s." % type(v))

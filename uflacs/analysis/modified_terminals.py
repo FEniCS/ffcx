@@ -87,7 +87,7 @@ def is_modified_terminal(v):
     "Check if v is a terminal or a terminal wrapped in terminal modifier types."
     while not v._ufl_is_terminal_:
         if isinstance(v, terminal_modifier_types):
-            v = v.operands()[0]
+            v = v.ufl_operands[0]
         else:
             return False
     return True
@@ -97,7 +97,7 @@ def strip_modified_terminal(v):
     "Extract core Terminal from a modified terminal or return None."
     while not v._ufl_is_terminal_:
         if isinstance(v, terminal_modifier_types):
-            v = v.operands()[0]
+            v = v.ufl_operands[0]
         else:
             return None
     return v
@@ -123,7 +123,7 @@ def analyse_modified_terminal(expr):
     while not t._ufl_is_terminal_:
         if isinstance(t, Indexed):
             ffc_assert(component is None, "Got twice indexed terminal.")
-            t, i = t.operands()
+            t, i = t.ufl_operands
             ffc_assert(all(isinstance(j, FixedIndex) for j in i), "Expected only fixed indices.")
             component = [int(j) for j in i]
 
@@ -131,28 +131,28 @@ def analyse_modified_terminal(expr):
             ffc_assert(len(component), "Got local gradient of terminal without prior indexing.")
             local_derivatives.append(component[-1])
             component = component[:-1]
-            t, = t.operands()
+            t, = t.ufl_operands
 
         elif isinstance(t, Grad):
             ffc_assert(len(component), "Got gradient of terminal without prior indexing.")
             global_derivatives.append(component[-1])
             component = component[:-1]
-            t, = t.operands()
+            t, = t.ufl_operands
 
         elif isinstance(t, Restricted):
             ffc_assert(restriction is None, "Got twice restricted terminal!")
             restriction = t._side
-            t, = t.operands()
+            t, = t.ufl_operands
 
         elif isinstance(t, CellAvg):
             ffc_assert(averaged is None, "Got twice averaged terminal!")
             averaged = "cell"
-            t, = t.operands()
+            t, = t.ufl_operands
 
         elif isinstance(t, FacetAvg):
             ffc_assert(averaged is None, "Got twice averaged terminal!")
             averaged = "facet"
-            t, = t.operands()
+            t, = t.ufl_operands
 
         elif isinstance(t, terminal_modifier_types):
             error("Missing handler for terminal modifier type %s, object is %s." % (type(t), repr(t)))
