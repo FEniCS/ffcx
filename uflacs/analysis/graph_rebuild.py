@@ -154,7 +154,8 @@ class ReconstructScalarSubexpressions(MultiFunction):
     def index_sum(self, o, ops):
         summand, mi = o.operands()
         ii = mi[0]
-        fi = summand.free_indices()
+        fi = summand.free_indices() # FIXME: Is sorting needed here? Looks like maybe not. Explain!
+        #fi = sorted_by_count(summand.free_indices())
         idims = summand.index_dimensions()
         d = idims[ii]
 
