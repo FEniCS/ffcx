@@ -13,7 +13,6 @@ stl_includes = """\
 dolfin_includes = """\
 // DOLFIN includes
 #include <dolfin/common/NoDeleter.h>
-#include <dolfin/mesh/Restriction.h>
 #include <dolfin/fem/FiniteElement.h>
 #include <dolfin/fem/DofMap.h>
 #include <dolfin/fem/Form.h>
@@ -45,4 +44,3 @@ snippets = {"shared_ptr_space":
                 ("TestSpace", "TrialSpace")
             }
 #-------------------------------------------------------------------------------
-
