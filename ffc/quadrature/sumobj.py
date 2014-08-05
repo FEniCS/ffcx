@@ -414,7 +414,7 @@ class Sum(Expr):
 
             # Create a sorted list of those variables that give the highest
             # reduction.
-            sorted_reduc_var = reversed(sorted(six.iterkeys(reductions_terms)))
+            sorted_reduc_var = sorted(six.iterkeys(reductions_terms), reverse=True)
 #            sorted_reduc_var = [k for k, v in six.iteritems(reductions_terms)]
 #            print
 #            print ind + "raw"

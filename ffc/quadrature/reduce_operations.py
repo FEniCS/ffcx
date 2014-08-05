@@ -16,9 +16,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# First added:  2008-04-24
-# Last changed: 2010-01-21
+
+from ufl.utils.sorting import sorted_by_key
 
 # FFC modules
 from ffc.log import error
@@ -153,7 +152,7 @@ def group_vars(expr, format):
 
     # Reset products
     prods = []
-    for prod, f in new_prods.items():
+    for prod, f in sorted_by_key(new_prods):
         # If we have a product append mult of both
         if prod:
             # If factor is 1.0 we don't need it
@@ -177,7 +176,7 @@ def reduction_possible(variables):
     max_val = 1
     max_var = ""
     max_vars = []
-    for key, val in variables.items():
+    for key, val in sorted_by_key(variables):
         if max_val < val[0]:
             max_val = val[0]
             max_var = key
@@ -185,7 +184,7 @@ def reduction_possible(variables):
     # If we found a variable that appears in products multiple times, check if
     # other variables appear in the exact same products
     if max_var:
-        for key, val in variables.items():
+        for key, val in sorted_by_key(variables):
             # Check if we have more variables in the same products
             if max_val == val[0] and variables[max_var][1] == val[1]:
                 max_vars.append(key)
@@ -344,7 +343,7 @@ def expand_operations(expression, format):
         prods = split_expression(a, format, mult)
         prods.sort()
         new_prods = []
-        
+
         # FIXME: Should we use deque here?
         expanded = []
         for i, p in enumerate(prods):
@@ -403,7 +402,7 @@ def reduce_operations(expression, format):
     no_mult = []
     max_vars.sort()
 
-    # If we have variables that can be moved outside 
+    # If we have variables that can be moved outside
     if max_vars:
         for p in prods:
             # Get the list of variables in current product
@@ -767,8 +766,3 @@ def get_variables(expression, variables, format, constants = []):
     # Sort list of products and return the sum
     new_prods.sort()
     return (add.join(new_prods), used_vars)
-
-
-
-
-
