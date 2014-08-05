@@ -18,15 +18,19 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Anders Logg, 2009
-#
-# First added:  2009-03-18
-# Last changed: 2014-04-23
 
 # Python modules.
 from numpy import shape
 
+from six import iteritems, iterkeys
+from six.moves import xrange as range
+from six import advance_iterator as next
+def firstkey(d):
+    return next(iterkeys(d))
+
 # UFL common.
 from ufl.common import product
+from ufl.utils.sorting import sorted_by_key
 
 # UFL Classes.
 from ufl.classes import FixedIndex
@@ -79,7 +83,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                     code[key] = [val]
 
         # Add sums and group if necessary.
-        for key, val in list(code.items()):
+        for key, val in sorted_by_key(code):
             if len(val) > 1:
                 code[key] = create_sum(val)
             elif val:
@@ -103,9 +107,9 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             # If we get an empty dict, something was zero and so is the product.
             if not op:
                 return {}
-            if len(op) > 1 or (op and list(op.keys())[0] != ()):
+            if len(op) > 1 or (op and firstkey(op) != ()):
                 permute.append(op)
-            elif op and list(op.keys())[0] == ():
+            elif op and firstkey(op) == ():
                 not_permute.append(op[()])
 
         # Create permutations.
@@ -121,8 +125,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         if permutations:
             for key, val in permutations.items():
                 # Sort key in order to create a unique key.
-                l = list(key)
-                l.sort()
+                l = sorted(key)
 
                 # TODO: I think this check can be removed for speed since we
                 # just have a list of objects we should never get any conflicts here.
@@ -214,7 +217,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # Get condition expression and do safety checks.
         # Might be a bit too strict?
         c, = operands
-        ffc_assert(len(c) == 1 and list(c.keys())[0] == (),\
+        ffc_assert(len(c) == 1 and firstkey(c) == (),\
             "Condition for NotCondition should only be one function: " + repr(c))
         sym = create_symbol(format["not"](str(c[()])), c[()].t, base_op=c[()].ops()+1)
         return {(): sym}
@@ -224,9 +227,9 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # Get LHS and RHS expressions and do safety checks.
         # Might be a bit too strict?
         lhs, rhs = operands
-        ffc_assert(len(lhs) == 1 and list(lhs.keys())[0] == (),\
+        ffc_assert(len(lhs) == 1 and firstkey(lhs) == (),\
             "LHS of Condtion should only be one function: " + repr(lhs))
-        ffc_assert(len(rhs) == 1 and list(rhs.keys())[0] == (),\
+        ffc_assert(len(rhs) == 1 and firstkey(rhs) == (),\
             "RHS of Condtion should only be one function: " + repr(rhs))
 
         # Map names from UFL to cpp.py.
@@ -243,14 +246,13 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         return {(): sym}
 
     def conditional(self, o, *operands):
-
         # Get condition and return values; and do safety check.
         cond, true, false = operands
-        ffc_assert(len(cond) == 1 and list(cond.keys())[0] == (),\
+        ffc_assert(len(cond) == 1 and firstkey(cond) == (),\
             "Condtion should only be one function: " + repr(cond))
-        ffc_assert(len(true) == 1 and list(true.keys())[0] == (),\
+        ffc_assert(len(true) == 1 and firstkey(true) == (),\
             "True value of Condtional should only be one function: " + repr(true))
-        ffc_assert(len(false) == 1 and list(false.keys())[0] == (),\
+        ffc_assert(len(false) == 1 and firstkey(false) == (),\
             "False value of Condtional should only be one function: " + repr(false))
 
         # Get values and test for None

@@ -19,15 +19,19 @@
 #
 # Modified by Peter Brune 2009
 # Modified by Anders Logg 2009, 2013
-#
-# First added:  2009-02-09
-# Last changed: 2014-05-16
 
 # Python modules.
 from numpy import shape
 
+from six import iteritems, iterkeys
+from six.moves import xrange as range
+from six import advance_iterator as next
+def firstkey(d):
+    return next(iterkeys(d))
+
 # UFL common.
 from ufl.common import product, StackDict, Stack
+from ufl.utils.sorting import sorted_by_key
 
 # UFL Classes.
 from ufl.classes import FixedIndex
@@ -77,14 +81,14 @@ class QuadratureTransformer(QuadratureTransformerBase):
         for op in operands:
             # If entries does already exist we can add the code, otherwise just
             # dump them in the element tensor.
-            for key, val in op.items():
+            for key, val in sorted_by_key(op):
                 if key in code:
                     code[key].append(val)
                 else:
                     code[key] = [val]
 
         # Add sums and group if necessary.
-        for key, val in list(code.items()):
+        for key, val in sorted_by_key(code):
 
             # Exclude all zero valued terms from sum
             value = [v for v in val if not v is None]
@@ -102,7 +106,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
                 # Add a product for each term that has duplicate code
                 expressions = []
-                for expr, num_occur in duplications.items():
+                for expr, num_occur in sorted_by_key(duplications):
                     if num_occur > 1:
                         # Pre-multiply expression with number of occurrences
                         expressions.append(f_mult([f_float(num_occur), expr]))
@@ -139,9 +143,9 @@ class QuadratureTransformer(QuadratureTransformerBase):
             # If we get an empty dict, something was zero and so is the product.
             if not op:
                 return {}
-            if len(op) > 1 or (op and list(op.keys())[0] != ()):
+            if len(op) > 1 or (op and firstkey(op) != ()):
                 permute.append(op)
-            elif op and list(op.keys())[0] == ():
+            elif op and firstkey(op) == ():
                 not_permute.append(op[()])
 
         # Create permutations.
@@ -155,8 +159,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         if permutations:
             for key, val in permutations.items():
                 # Sort key in order to create a unique key.
-                l = list(key)
-                l.sort()
+                l = sorted(key)
 
                 # Loop products, don't multiply by '1' and if we encounter a None the product is zero.
                 # TODO: Need to find a way to remove and J_inv00 terms that might
@@ -296,7 +299,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # Get condition expression and do safety checks.
         # Might be a bit too strict?
         cond, = operands
-        ffc_assert(len(cond) == 1 and list(cond.keys())[0] == (),\
+        ffc_assert(len(cond) == 1 and firstkey(cond) == (),\
             "Condition for NotCondition should only be one function: " + repr(cond))
         return {(): format["not"](cond[()])}
 
@@ -305,9 +308,9 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # Get LHS and RHS expressions and do safety checks.
         # Might be a bit too strict?
         lhs, rhs = operands
-        ffc_assert(len(lhs) == 1 and list(lhs.keys())[0] == (),\
+        ffc_assert(len(lhs) == 1 and firstkey(lhs) == (),\
             "LHS of Condition should only be one function: " + repr(lhs))
-        ffc_assert(len(rhs) == 1 and list(rhs.keys())[0] == (),\
+        ffc_assert(len(rhs) == 1 and firstkey(rhs) == (),\
             "RHS of Condition should only be one function: " + repr(rhs))
 
         # Map names from UFL to cpp.py.
@@ -330,11 +333,11 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         # Get condition and return values; and do safety check.
         cond, true, false = operands
-        ffc_assert(len(cond) == 1 and list(cond.keys())[0] == (),\
+        ffc_assert(len(cond) == 1 and firstkey(cond) == (),\
             "Condtion should only be one function: " + repr(cond))
-        ffc_assert(len(true) == 1 and list(true.keys())[0] == (),\
+        ffc_assert(len(true) == 1 and firstkey(true) == (),\
             "True value of Condtional should only be one function: " + repr(true))
-        ffc_assert(len(false) == 1 and list(false.keys())[0] == (),\
+        ffc_assert(len(false) == 1 and firstkey(false) == (),\
             "False value of Condtional should only be one function: " + repr(false))
 
         # Get values and test for None
