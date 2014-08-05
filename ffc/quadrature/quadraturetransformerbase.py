@@ -181,10 +181,6 @@ class QuadratureTransformerBase(Transformer):
     # algebra.py, differentiation.py, finiteelement.py,
     # form.py, geometry.py, indexing.py, integral.py, tensoralgebra.py, variable.py.
     # -------------------------------------------------------------------------
-    def algebra_operator(self, o, *operands):
-        print "\n\nVisiting AlgebraOperator: ", repr(o)
-        error("This type of AlgebraOperator should have been expanded!!" + repr(o))
-
     def derivative(self, o, *operands):
         print "\n\nVisiting Derivative: ", repr(o)
         error("All derivatives apart from Grad should have been expanded!!")
@@ -209,10 +205,6 @@ class QuadratureTransformerBase(Transformer):
     def constant_value(self, o):
         print "\n\nVisiting ConstantValue:", repr(o)
         error("This type of ConstantValue is not supported (yet).")
-
-    def index_annotated(self, o):
-        print "\n\nVisiting IndexAnnotated:", repr(o)
-        error("Only child classes of IndexAnnotated is supported.")
 
     def geometric_quantity(self, o):
         print "\n\nVisiting GeometricQuantity:", repr(o)
