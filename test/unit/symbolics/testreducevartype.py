@@ -136,11 +136,11 @@ class TestReduceVarType(unittest.TestCase):
 
         self.assertEqual(((), I5), rs0[0])
         self.assertEqual((B0, f1), rs0[1])
-        self.assertEqual((I0, f5), rs1[0])
-        self.assertEqual(((), B0), rs1[1])
+        self.assertEqual((I0, f5), rs1[1])
+        self.assertEqual(((), B0), rs1[0])
         self.assertEqual((
-        Product([B0, B1]), f1), rs2[0])
-        self.assertEqual((B0, I5), rs2[1])
+        Product([B0, B1]), f1), rs2[1])
+        self.assertEqual((B0, I5), rs2[0])
         self.assertEqual(((), f5), rs3[0])
         self.assertEqual((B0, I5), rs3[1])
         self.assertEqual((f5,
@@ -156,10 +156,10 @@ class TestReduceVarType(unittest.TestCase):
         self.assertEqual( [( Fraction(f1, B0), Fraction( G3, Sum([I5, f1])))], rf4)
         self.assertEqual(F4, rf5[0][0])
         self.assertEqual(FloatValue(1), rf5[0][1])
-        self.assertEqual(Fraction(I0,I1), rf6[0][0])
-        self.assertEqual(f1, rf6[0][1])
-        self.assertEqual(Fraction(f1,I1), rf6[1][0])
-        self.assertEqual(G0, rf6[1][1])
+        self.assertEqual(Fraction(I0,I1), rf6[1][0])
+        self.assertEqual(f1, rf6[1][1])
+        self.assertEqual(Fraction(f1,I1), rf6[0][0])
+        self.assertEqual(G0, rf6[0][1])
         self.assertEqual(F6, rf7[0][0])
         self.assertEqual(f1, rf7[0][1])
 

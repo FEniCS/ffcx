@@ -547,7 +547,7 @@ class Sum(Expr):
             elif r:
                 r = r.pop()
             returns.append((f, r))
-        return returns
+        return sorted(returns)
 
 def _overlap(l, d):
     "Check if a member in list l is in the value (list) of dictionary d."
