@@ -30,6 +30,7 @@ def firstkey(d):
 
 # UFL common.
 from ufl.common import product
+from ufl.utils.sorting import sorted_by_key
 
 # UFL Classes.
 from ufl.classes import FixedIndex
@@ -82,7 +83,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                     code[key] = [val]
 
         # Add sums and group if necessary.
-        for key, val in list(iteritems(code)):
+        for key, val in sorted_by_key(code):
             if len(val) > 1:
                 code[key] = create_sum(val)
             elif val:

@@ -26,6 +26,7 @@ import functools, itertools
 import numpy
 
 # UFL modules
+from ufl.utils.sorting import sorted_by_key
 from ufl.algorithms.printing import tree_format
 from ufl.utils.derivativetuples import compute_derivative_tuples
 
@@ -37,7 +38,6 @@ from ffc.representationutils import initialize_integral_code
 
 # Utility and optimization functions for quadraturegenerator
 from .symbolics import generate_aux_constants
-import six
 
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
@@ -830,7 +830,7 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
         value_size     = element_data[counter]["value_size"]
 
         # Iterate over derivative orders
-        for n, components in six.iteritems(used_derivatives_and_components[prefix]):
+        for n, components in sorted_by_key(used_derivatives_and_components[prefix]):
 
             # Code for evaluate_basis_all
             if n == 0:

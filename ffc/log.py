@@ -23,16 +23,13 @@ is a wrapper for the standard Python logging module.
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Kristian B. Oelgaard, 2009
-#
-# First added:  2009-01-12
-# Last changed: 2010-02-12
 
 # UFL modules
 from ufl.log import Logger
 from ufl.log import log_functions
 from ufl.log import INFO, DEBUG, ERROR, CRITICAL
 from ufl.common import dstr, tstr
-import six
+from ufl.utils.sorting import sorted_by_key
 
 # Create FFC logger
 ffc_logger = Logger("FFC")
@@ -57,7 +54,7 @@ def debug_dict(d, title=""):
     info("")
     begin(title)
     info("")
-    for (key, value) in six.iteritems(d):
+    for (key, value) in sorted_by_key(d):
         info(key)
         info("-"*len(key))
         info(str(value))

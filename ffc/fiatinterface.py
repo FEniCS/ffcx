@@ -18,9 +18,6 @@
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009-2013.
 # Modified by Martin Alnaes, 2013
-#
-# First added:  2009-03-06
-# Last changed: 2013-01-25
 
 # Python modules
 from numpy import array
@@ -28,6 +25,7 @@ import six
 
 # UFL and FIAT modules
 import ufl
+from ufl.utils.sorting import sorted_by_key
 import FIAT
 
 # FFC modules
@@ -292,7 +290,7 @@ def _indices(element, restriction_domain, dim=0):
         indices = []
         for dim in range(restriction_domain.topological_dimension() + 1):
             entities = entity_dofs[dim]
-            for (entity, index) in six.iteritems(entities):
+            for (entity, index) in sorted_by_key(entities):
                 indices += index
         return indices
 

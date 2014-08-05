@@ -16,9 +16,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# First added:  2009-07-12
-# Last changed: 2011-01-21
 
 # FFC modules
 from ffc.log import debug, error
@@ -106,7 +103,7 @@ def generate_aux_constants(constant_decl, name, var_type, print_ops=False):
     code = []
     append = code.append
     ops = 0
-    for num, expr in sorted([(v, k) for k, v in six.iteritems(constant_decl)]):
+    for num, expr in sorted((v, k) for k, v in six.iteritems(constant_decl)):
 #        debug("expr orig: " + str(expr))
 #        print "\nnum: ", num
 #        print "expr orig: " + repr(expr)
@@ -321,4 +318,3 @@ from .symbol     import Symbol
 from .product    import Product
 from .sumobj     import Sum
 from .fraction   import Fraction
-

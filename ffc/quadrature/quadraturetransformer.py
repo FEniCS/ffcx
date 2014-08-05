@@ -31,6 +31,7 @@ def firstkey(d):
 
 # UFL common.
 from ufl.common import product, StackDict, Stack
+from ufl.utils.sorting import sorted_by_key
 
 # UFL Classes.
 from ufl.classes import FixedIndex
@@ -80,14 +81,14 @@ class QuadratureTransformer(QuadratureTransformerBase):
         for op in operands:
             # If entries does already exist we can add the code, otherwise just
             # dump them in the element tensor.
-            for key, val in iteritems(op):
+            for key, val in sorted_by_key(op):
                 if key in code:
                     code[key].append(val)
                 else:
                     code[key] = [val]
 
         # Add sums and group if necessary.
-        for key, val in list(iteritems(code)):
+        for key, val in sorted_by_key(code):
 
             # Exclude all zero valued terms from sum
             value = [v for v in val if not v is None]
@@ -105,7 +106,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
                 # Add a product for each term that has duplicate code
                 expressions = []
-                for expr, num_occur in iteritems(duplications):
+                for expr, num_occur in sorted_by_key(duplications):
                     if num_occur > 1:
                         # Pre-multiply expression with number of occurrences
                         expressions.append(f_mult([f_float(num_occur), expr]))

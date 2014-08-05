@@ -19,15 +19,13 @@ error control
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# Last changed: 2011-06-29
 
+from ufl.utils.sorting import sorted_by_key
 from ufl import Coefficient
 from ufl.algorithms.analysis import extract_arguments
 
 from ffc.log import info, error
 from ffc.compiler import compile_form
-import six
 
 __all__ = ["compile_with_error_control"]
 
@@ -80,7 +78,7 @@ def compile_with_error_control(forms, object_names, reserved_objects,
                "Conflict between user defined and generated names: %s" % comment
 
     # Add names generated for error control to object_names
-    for (objid, name) in six.iteritems(ec_names):
+    for (objid, name) in sorted_by_key(ec_names):
         object_names[objid] = name
 
     # Compile error control and input (pde + goal) forms as normal
