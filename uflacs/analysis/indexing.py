@@ -28,19 +28,17 @@ def _map_indexed_components(tensor, indexed, multiindex):
     e2 = tensor
     e1 = indexed  # e1 = e2[multiindex]
 
-    # Compute index shape
-    ind1 = sorted_by_count(e1.free_indices())
-    ind2 = sorted_by_count(e2.free_indices())
-    idims1 = e1.index_dimensions()
-    idims2 = e2.index_dimensions()
-    ish1 = tuple(idims1[i] for i in ind1)
-    ish2 = tuple(idims2[i] for i in ind2)
+    # Get tensor and index shape
+    sh1 = e1.ufl_shape
+    sh2 = e2.ufl_shape
+    fi1 = e1.ufl_free_indices
+    fi2 = e2.ufl_free_indices
+    fid1 = e1.ufl_index_dimensions
+    fid2 = e2.ufl_index_dimensions
 
     # Compute regular and total shape
-    sh1 = e1.shape()
-    sh2 = e2.shape()
-    tsh1 = sh1 + ish1
-    tsh2 = sh2 + ish2
+    tsh1 = sh1 + fid1
+    tsh2 = sh2 + fid2
     # r1 = len(tsh1)
     r2 = len(tsh2)
     # str1 = shape_to_strides(tsh1)
@@ -49,17 +47,17 @@ def _map_indexed_components(tensor, indexed, multiindex):
     assert sh2  # Must have shape to be indexed in the first place
     assert product(tsh1) <= product(tsh2)
 
-    # Build map from ind2/ish2 position (-offset nmui) to ind1/ish1 position
-    ind2_to_ind1_map = [None] * len(ind2)
-    for k, i in enumerate(ind2):
-        ind2_to_ind1_map[k] = ind1.index(i)
+    # Build map from fi2/fid2 position (-offset nmui) to fi1/fid1 position
+    ind2_to_ind1_map = [None] * len(fi2)
+    for k, i in enumerate(fi2):
+        ind2_to_ind1_map[k] = fi1.index(i)
 
-    # Build map from ind1/ish1 position to mi position
+    # Build map from fi1/fid1 position to mi position
     nmui = len(multiindex)
     multiindex_to_ind1_map = [None] * nmui
     for k, i in enumerate(multiindex):
         if isinstance(i, Index):
-            multiindex_to_ind1_map[k] = ind1.index(i)
+            multiindex_to_ind1_map[k] = fi1.index(i.count())
 
     # Build map from flattened e1 component to flattened e2 component
     perm1 = compute_indices(tsh1)
@@ -103,19 +101,17 @@ def _map_component_tensor_components(tensor, indexed, multiindex):
     e2 = tensor  # e2 = as_tensor(e1, multiindex)
     mi = [i for i in multiindex if isinstance(i, Index)]
 
-    # Compute index shape
-    ind1 = sorted_by_count(e1.free_indices())
-    ind2 = sorted_by_count(e2.free_indices())
-    idims1 = e1.index_dimensions()
-    idims2 = e2.index_dimensions()
-    ish1 = tuple(idims1[i] for i in ind1)
-    ish2 = tuple(idims2[i] for i in ind2)
+    # Get tensor and index shape
+    sh1 = e1.ufl_shape
+    sh2 = e2.ufl_shape
+    fi1 = e1.ufl_free_indices
+    fi2 = e2.ufl_free_indices
+    fid1 = e1.ufl_index_dimensions
+    fid2 = e2.ufl_index_dimensions
 
     # Compute regular and total shape
-    sh1 = e1.shape()
-    sh2 = e2.shape()
-    tsh1 = sh1 + ish1
-    tsh2 = sh2 + ish2
+    tsh1 = sh1 + fid1
+    tsh2 = sh2 + fid2
     r1 = len(tsh1)
     r2 = len(tsh2)
     str1 = shape_to_strides(tsh1)
@@ -124,21 +120,21 @@ def _map_component_tensor_components(tensor, indexed, multiindex):
     assert sh2
     assert len(mi) == len(multiindex)
     assert product(tsh1) == product(tsh2)
-    assert ish1
+    assert fi1
 
-    assert all(i in ind1 for i in ind2)
+    assert all(i in fi1 for i in fi2)
 
     nmui = len(multiindex)
     assert nmui == len(sh2)
 
-    # Build map from ind2/ish2 position (-offset nmui) to ind1/ish1 position
+    # Build map from fi2/fid2 position (-offset nmui) to fi1/fid1 position
     p2_to_p1_map = [None] * r2
-    for k, i in enumerate(ind2):
-        p2_to_p1_map[k + nmui] = ind1.index(i)
+    for k, i in enumerate(fi2):
+        p2_to_p1_map[k + nmui] = fi1.index(i)
 
-    # Build map from ind1/ish1 position to mi position
+    # Build map from fi1/fid1 position to mi position
     for k, i in enumerate(mi):
-        p2_to_p1_map[k] = ind1.index(mi[k])
+        p2_to_p1_map[k] = fi1.index(mi[k].count())
 
     # Build map from flattened e1 component to flattened e2 component
     perm2 = compute_indices(tsh2)
@@ -162,25 +158,23 @@ def __map_indexed_to_arg_components(indexed):
     A1, mi1 = e1.ufl_operands
     e2 = A1
 
-    # Compute index shape
-    ind1 = sorted_by_count(e1.free_indices())
-    ind2 = sorted_by_count(e2.free_indices())
-    idims1 = e1.index_dimensions()
-    idims2 = e2.index_dimensions()
-    ish1 = tuple(idims1[i] for i in ind1)
-    ish2 = tuple(idims2[i] for i in ind2)
+    # Get tensor and index shape
+    sh1 = e1.ufl_shape
+    sh2 = e2.ufl_shape
+    fi1 = e1.ufl_free_indices
+    fi2 = e2.ufl_free_indices
+    fid1 = e1.ufl_index_dimensions
+    fid2 = e2.ufl_index_dimensions
 
     # Compute regular and total shape
-    sh1 = e1.shape()
-    sh2 = e2.shape()
-    tsh1 = sh1 + ish1
-    tsh2 = sh2 + ish2
+    tsh1 = sh1 + fid1
+    tsh2 = sh2 + fid2
     str1 = shape_to_strides(tsh1)
     str2 = shape_to_strides(tsh2)
     assert product(tsh1) == product(tsh2)
-    assert (not sh1) and (ish1) and (sh2) and (not ish2)
+    assert (not sh1) and (fid1) and (sh2) and (not fid2)
 
-    sh_to_ind_map = [ind1.index(i) for i in mi1 if isinstance(i, Index)]
+    sh_to_ind_map = [fi1.index(i.count()) for i in mi1 if isinstance(i, Index)]
     comp1 = []
     comp2 = []
     for p2 in compute_indices(sh2):
@@ -200,30 +194,28 @@ def __map_indexed_arg_components4(indexed):
     e1 = indexed
     e2, mi = e1.ufl_operands
 
-    # Compute index shape
-    ind1 = sorted_by_count(e1.free_indices())
-    ind2 = sorted_by_count(e2.free_indices())
-    idims1 = e1.index_dimensions()
-    idims2 = e2.index_dimensions()
-    ish1 = tuple(idims1[i] for i in ind1)
-    ish2 = tuple(idims2[i] for i in ind2)
+    # Get tensor and index shape
+    sh1 = e1.ufl_shape
+    sh2 = e2.ufl_shape
+    fi1 = e1.ufl_free_indices
+    fi2 = e2.ufl_free_indices
+    fid1 = e1.ufl_index_dimensions
+    fid2 = e2.ufl_index_dimensions
 
     # Compute regular and total shape
-    sh1 = e1.shape()
-    sh2 = e2.shape()
-    tsh1 = sh1 + ish1
-    tsh2 = sh2 + ish2
+    tsh1 = sh1 + fid1
+    tsh2 = sh2 + fid2
     str1 = shape_to_strides(tsh1)
     # str2 = shape_to_strides(tsh2)
     assert product(tsh1) == product(tsh2)
-    assert (not sh1) and (ish1) and (sh2) and (not ish2)
+    assert (not sh1) and (fid1) and (sh2) and (not fid2)
 
-    # Build map from ind1/ish1 position to mi position
+    # Build map from fi1/fid1 position to mi position
     mi = [i for i in mi if isinstance(i, Index)]
     nmi = len(mi)
     ind1_to_mi_map = [None] * nmi
     for k in range(nmi):
-        ind1_to_mi_map[ind1.index(mi[k])] = k
+        ind1_to_mi_map[fi1.index(mi[k].count())] = k
 
     # Build map from flattened e1 component to flattened e2 component
     indices2 = compute_indices(sh2)
@@ -244,30 +236,28 @@ def __map_component_tensor_arg_components4(component_tensor):
     e2 = component_tensor
     e1, mi = e2.ufl_operands
 
-    # Compute index shape
-    ind1 = sorted_by_count(e1.free_indices())
-    ind2 = sorted_by_count(e2.free_indices())
-    idims1 = e1.index_dimensions()
-    idims2 = e2.index_dimensions()
-    ish1 = tuple(idims1[i] for i in ind1)
-    ish2 = tuple(idims2[i] for i in ind2)
+    # Get tensor and index shape
+    sh1 = e1.ufl_shape
+    sh2 = e2.ufl_shape
+    fi1 = e1.ufl_free_indices
+    fi2 = e2.ufl_free_indices
+    fid1 = e1.ufl_index_dimensions
+    fid2 = e2.ufl_index_dimensions
 
     # Compute regular and total shape
-    sh1 = e1.shape()
-    sh2 = e2.shape()
-    tsh1 = sh1 + ish1
-    tsh2 = sh2 + ish2
+    tsh1 = sh1 + fid1
+    tsh2 = sh2 + fid2
     str1 = shape_to_strides(tsh1)
     # str2 = shape_to_strides(tsh2)
     assert product(tsh1) == product(tsh2)
-    assert (not sh1) and (ish1) and (sh2) and (not ish2)
+    assert (not sh1) and (fid1) and (sh2) and (not fid2)
 
-    # Build map from ind1/ish1 position to mi position
+    # Build map from fi1/fid1 position to mi position
     mi = [i for i in mi if isinstance(i, Index)]
     nmi = len(mi)
     ind1_to_mi_map = [None] * nmi
     for k in range(nmi):
-        ind1_to_mi_map[ind1.index(mi[k])] = k
+        ind1_to_mi_map[fi1.index(mi[k].count())] = k
 
     # Build map from flattened e1 component to flattened e2 component
     indices2 = compute_indices(sh2)

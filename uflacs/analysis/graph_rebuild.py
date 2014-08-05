@@ -41,7 +41,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
     variable = unexpected
 
     def scalar_nary(self, o, ops):
-        ffc_assert(o.shape() == (), "Expecting scalar.")
+        ffc_assert(o.ufl_shape == (), "Expecting scalar.")
         sops = [op[0] for op in ops]
         return [o.reconstruct(*sops)]
 
@@ -73,7 +73,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
         ffc_assert(len(ops[0]) == len(ops[1]), "Expecting scalar divisor.")
         return [o.reconstruct(a, b) for a, b in zip(ops[0], ops[1])]
 
-    def product(self, o, ops):
+    def product(self, o, ops): # FIXME: Rewrite this and similar code with new ufl indexing model
         ffc_assert(len(ops) == 2, "Expecting two operands.")
 
         # Get the simple cases out of the way
@@ -91,43 +91,25 @@ class ReconstructScalarSubexpressions(MultiFunction):
         # Neither of operands are true scalars, this is the tricky part
         o0, o1 = o.ufl_operands
 
-        def _compute_shapes(expr):
-            fi = sorted_by_count(expr.free_indices())
-            idims = expr.index_dimensions()
-            sh = expr.shape()
-            ish = tuple(idims[i] for i in fi)
-            return fi, idims, sh, ish
-
         # Get shapes and index shapes
-        fi, idims, sh, ish = _compute_shapes(o)
-        fi0, idims0, sh0, ish0 = _compute_shapes(o0)
-        fi1, idims1, sh1, ish1 = _compute_shapes(o1)
+        fi = o.ufl_free_indices
+        fid = o.ufl_index_dimensions
+        fi0 = o0.ufl_free_indices
+        fid0 = o0.ufl_index_dimensions
+        fi1 = o1.ufl_free_indices
+        fid1 = o1.ufl_index_dimensions
 
         # Need to map each return component to one component of o0 and one component of o1.
-        components = compute_indices(sh)
-        indices = compute_indices(ish)
+        indices = compute_indices(fid)
 
         # Map component comp of o to component offset of o0 and o1
-        if sh0:
-            # o0 has shape
-            im0 = product(ish0)
-            st0 = shape_to_strides(sh0)
-            compks = [(im0 * flatten_multiindex(comp, st0), 0) for comp in components]
-        elif sh1:
-            # o1 has shape
-            im1 = product(ish1)
-            st1 = shape_to_strides(sh1)
-            compks = [(0, im1 * flatten_multiindex(comp, st1)) for comp in components]
-        else:
-            # Neither has shape (indices only)
-            # (It never happens that both have shape)
-            compks = [(0, 0)]
+        compks = [(0, 0)]
 
         # Compute which component of o0 is used in component (comp,ind) of o
         if fi0 or fi1:
             # Compute strides within free index spaces
-            ist0 = shape_to_strides(ish0)
-            ist1 = shape_to_strides(ish1)
+            ist0 = shape_to_strides(fid0)
+            ist1 = shape_to_strides(fid1)
             # Map o0 and o1 indices to o indices
             indmap0 = [fi.index(i) for i in fi0]
             indmap1 = [fi.index(i) for i in fi1]
@@ -135,40 +117,25 @@ class ReconstructScalarSubexpressions(MultiFunction):
                       flatten_multiindex([ind[i] for i in indmap1], ist1))
                      for ind in indices]
         else:
+            assert False
             indks = [(0, 0)] * len(indices)
 
-        # from IPython.core.debugger import Pdb; pdb = Pdb(); pdb.set_trace()
-
         # Build products for scalar components
-        results = []
-        for k00, k10 in compks:
-            for k01, k11 in indks:
-                results.append(o.reconstruct(ops[0][k00 + k01], ops[1][k10 + k11]))
-
-        # results = [o.reconstruct(ops[0][k00 + k01], ops[1][k10 + k11])
-        #           for k00, k10 in compks
-        #           for k01, k11 in indks]
-
+        results = [o.reconstruct(ops[0][k0], ops[1][k1]) for k0, k1 in indks]
         return results
 
     def index_sum(self, o, ops):
         summand, mi = o.ufl_operands
         ii = mi[0]
-        fi = summand.free_indices() # FIXME: Is sorting needed here? Looks like maybe not. Explain!
-        #fi = sorted_by_count(summand.free_indices())
-        idims = summand.index_dimensions()
-        d = idims[ii]
+        ic = ii.count()
+        fi = summand.ufl_free_indices
+        fid = summand.ufl_index_dimensions
+        ipos = fi.index(ic)
+        d = fid[ipos]
 
         # Compute "macro-dimensions" before and after i in the total shape of a
-        predim = product(summand.shape())
-        postdim = 1
-        ic = ii.count()
-        for jj in fi:
-            jc = jj.count()
-            if jc < ic:
-                predim *= idims[jj]
-            elif jc > ic:
-                postdim *= idims[jj]
+        predim = product(summand.ufl_shape) * product(fid[:ipos])
+        postdim = product(fid[ipos+1:])
 
         # Map each flattened total component of summand to
         # flattened total component of indexsum o by removing
@@ -248,9 +215,9 @@ def rebuild_with_scalar_subexpressions(G):
 
         if is_modified_terminal(v):
 
-            # ffc_assert(v.free_indices() == (), "Expecting no free indices.")
+            # ffc_assert(v.ufl_free_indices == (), "Expecting no free indices.")
 
-            sh = v.shape()
+            sh = v.ufl_shape
 
             if sh:
                 # Store each terminal expression component (we may not actually need all of these later!)

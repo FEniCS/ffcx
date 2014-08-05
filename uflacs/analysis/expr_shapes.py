@@ -14,12 +14,7 @@ from ufl.classes import Condition
 
 def compute_index_shape(v):
     "Compute the 'index shape' of v."
-    fi = v.free_indices()
-    if fi:
-        idims = v.index_dimensions()
-        return tuple(idims[idx] for idx in sorted_by_count(fi))
-    else:
-        return ()
+    return v.ufl_index_dimensions
 
 
 def compute_all_shapes(v):
@@ -27,18 +22,9 @@ def compute_all_shapes(v):
 
     Returns (shape, size, index_shape, index_size, total_shape, total_size).
     """
-    if isinstance(v, Condition):
-        # TODO: Shape and index calls are invalid for conditions.
-        #       Is this the best fix? Could also just return () from Condition.shape()?
-        # Return scalar shape (conditions are scalar bool expressions so this works out fine)
-        shape = ()
-        index_shape = ()
-        total_shape = ()
-    else:
-        shape = v.shape()
-        index_shape = compute_index_shape(v)
-        total_shape = shape + index_shape
-
+    shape = v.ufl_shape
+    index_shape = v.ufl_index_dimensions
+    total_shape = shape + index_shape
     return (shape, index_shape, total_shape)
 
 

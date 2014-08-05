@@ -70,14 +70,14 @@ class ValueNumberer(MultiFunction):
         flat_component     - single int, flattened local component of the Terminal, considering symmetry
         """
 
-        # (1) mt.terminal.shape() defines a core indexing space
+        # (1) mt.terminal.ufl_shape defines a core indexing space
         # (2) mt.terminal.element().symmetry() defines core symmetries
         # (3) averaging and restrictions define distinct symbols, no additional symmetries
         # (4) two or more grad/reference_grad defines distinct symbols with additional symmetries
 
         # FIXME: Need modified version of amt(), v is probably not scalar here. This hack works for now.
-        if v.shape():
-            mt = analyse_modified_terminal(v[(0,) * len(v.shape())])
+        if v.ufl_shape:
+            mt = analyse_modified_terminal(v[(0,) * len(v.ufl_shape)])
         else:
             mt = analyse_modified_terminal(v)
 
@@ -88,7 +88,7 @@ class ValueNumberer(MultiFunction):
         num_ld = len(mt.local_derivatives)
         num_gd = len(mt.global_derivatives)
 
-        base_components = compute_indices(mt.terminal.shape())
+        base_components = compute_indices(mt.terminal.ufl_shape)
         assert not (num_ld and num_gd)
         if num_ld:
             # d_components = compute_permutations(num_ld, tdim)
@@ -121,14 +121,14 @@ class ValueNumberer(MultiFunction):
                     mapped_symbols[mc] = s
                 symbols.append(s)
 
-        assert not v.free_indices()
-        if not product(v.shape()) == len(symbols):
+        assert not v.ufl_free_indices
+        if not product(v.ufl_shape) == len(symbols):
             from ufl.algorithms import tree_format
             print()
             print(num_ld)
             print(num_gd)
             print(d_components)
-            print(v.shape())
+            print(v.ufl_shape)
             print(len(symbols))
             print(tree_format(v))
             print()
@@ -179,8 +179,8 @@ class ValueNumberer(MultiFunction):
     def transposed(self, AT, i):
         A, = AT.ufl_operands
 
-        assert not A.free_indices(), "Assuming no free indices in transposed (for now), report as bug if needed."  # FIXME
-        r, c = A.shape()
+        assert not A.ufl_free_indices, "Assuming no free indices in transposed (for now), report as bug if needed."  # FIXME
+        r, c = A.ufl_shape
 
         A_symbols = self.get_node_symbols(A)
         assert len(A_symbols) == r * c

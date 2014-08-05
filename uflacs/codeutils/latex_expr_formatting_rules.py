@@ -42,7 +42,7 @@ class LatexFormattingRules(object):
     # === Formatting rules for literal constants ===
 
     def zero(self, o, component=(), derivatives=(), restriction=None):
-        return "0" if not o.shape() else r"{\mathbf 0}"
+        return "0" if not o.ufl_shape else r"{\mathbf 0}"
 
     def int_value(self, o, component=(), derivatives=(), restriction=None):
         if derivatives:

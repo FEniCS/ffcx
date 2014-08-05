@@ -34,7 +34,7 @@ def build_scalar_graph(expressions):
     #   len(nvs[k]) == value_size(expressions[k])
     scalar_expressions = rebuild_with_scalar_subexpressions(G)
 
-    assert len(scalar_expressions) == sum(product(expr.shape()) for expr in expressions)
+    assert len(scalar_expressions) == sum(product(expr.ufl_shape) for expr in expressions)
 
     # Build new list representation of graph where all vertices of V represent single scalar operations
     e2i, V, target_variables = build_scalar_graph_vertices(scalar_expressions)

@@ -166,12 +166,12 @@ def analyse_modified_terminal(expr):
     # Assert that component is within the shape of the terminal (this is the global component!)
     ffc_assert(len(component) == t.rank(),
                "Length of component does not match rank of terminal.")
-    ffc_assert(all(c >= 0 and c < d for c, d in zip(component, t.shape())),
-               "Component indices %s are outside terminal shape %s" % (component, t.shape()))
+    ffc_assert(all(c >= 0 and c < d for c, d in zip(component, t.ufl_shape)),
+               "Component indices %s are outside terminal shape %s" % (component, t.ufl_shape))
 
     # Flatten component # TODO: Make the flat component local?
     symmetry = t.element().symmetry() if isinstance(t, FormArgument) else {}
-    vi2si, si2vi = build_component_numbering(t.shape(), symmetry)
+    vi2si, si2vi = build_component_numbering(t.ufl_shape, symmetry)
     flat_component = vi2si[component]
     # num_flat_components = len(si2vi)
 

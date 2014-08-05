@@ -146,7 +146,7 @@ other_stuff = """
 
 def test_dolfin_expression_with_cell(dolfin):
     e = dolfin.Expression(cppcode=dolfin_expression_with_cell)
-    assert e.shape() == ()
+    assert e.ufl_shape == ()
     values = numpy.zeros((1,))
     x = numpy.asarray((0.2, 0.2))
     mesh = dolfin.UnitSquareMesh(1, 1)
@@ -241,7 +241,7 @@ def check_dolfin_expression_compilation(uexpr, expected_lines, expected_values, 
         compiled_lines += ['std::cout '] + ['       << "%s = " << %s << std::endl' % (pm, pm) for pm in printme] + ['<< std::endl;']
 
     # Wrap it in a dolfin::Expression class
-    shape = uexpr.shape()
+    shape = uexpr.ufl_shape
     name = "MyExpression_%s" % hashlib.md5(str(hash(uexpr))).hexdigest()
     code = format_dolfin_expression(classname=name,
                                     shape=shape,

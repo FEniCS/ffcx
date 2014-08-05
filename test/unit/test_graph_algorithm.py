@@ -321,7 +321,7 @@ def xtest_rebuild_expression_from_graph_on_compounds():
 def test_flattening_of_tensor_valued_expression_symbols():
     #from uflacs.analysis.graph import foo
     def flatten_expression_symbols(v, vsyms, opsyms):
-        sh = v.shape()
+        sh = v.ufl_shape
         if sh == ():
             assert len(vsyms) == 1
             if not opsyms:

@@ -14,7 +14,7 @@ def compile_expression0(expr):
     return code
 
 def compile_expression1(expr):
-    code = "double values[%d];" % (product(expr.shape()),)
+    code = "double values[%d];" % (product(expr.ufl_shape),)
     return code
 
 def compile_expression2(expr):
