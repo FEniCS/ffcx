@@ -5,7 +5,7 @@ from ufl.common import product
 from ufl.permutation import compute_indices
 
 from ufl import as_vector
-from ufl.classes import MultiIndex, IndexSum
+from ufl.classes import MultiIndex, IndexSum, Product
 from ufl.algorithms import MultiFunction
 from ufl.utils.indexflattening import flatten_multiindex, shape_to_strides
 from ufl.utils.sorting import sorted_by_count
@@ -73,7 +73,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
         ffc_assert(len(ops[0]) == len(ops[1]), "Expecting scalar divisor.")
         return [o.reconstruct(a, b) for a, b in zip(ops[0], ops[1])]
 
-    def product(self, o, ops): # FIXME: Rewrite this and similar code with new ufl indexing model
+    def product(self, o, ops):
         ffc_assert(len(ops) == 2, "Expecting two operands.")
 
         # Get the simple cases out of the way
@@ -82,52 +82,44 @@ class ReconstructScalarSubexpressions(MultiFunction):
 
         if na == 1:  # True scalar * something
             a, = ops[0]
-            return [o.reconstruct(a, b) for b in ops[1]]
+            return [Product(a, b) for b in ops[1]]
 
         if nb == 1:  # Something * true scalar
             b, = ops[1]
-            return [o.reconstruct(a, b) for a in ops[0]]
+            return [Product(a, b) for a in ops[0]]
 
         # Neither of operands are true scalars, this is the tricky part
         o0, o1 = o.ufl_operands
 
         # Get shapes and index shapes
         fi = o.ufl_free_indices
-        fid = o.ufl_index_dimensions
         fi0 = o0.ufl_free_indices
-        fid0 = o0.ufl_index_dimensions
         fi1 = o1.ufl_free_indices
+        fid = o.ufl_index_dimensions
+        fid0 = o0.ufl_index_dimensions
         fid1 = o1.ufl_index_dimensions
 
         # Need to map each return component to one component of o0 and one component of o1.
         indices = compute_indices(fid)
 
-        # Map component comp of o to component offset of o0 and o1
-        compks = [(0, 0)]
-
         # Compute which component of o0 is used in component (comp,ind) of o
-        if fi0 or fi1:
-            # Compute strides within free index spaces
-            ist0 = shape_to_strides(fid0)
-            ist1 = shape_to_strides(fid1)
-            # Map o0 and o1 indices to o indices
-            indmap0 = [fi.index(i) for i in fi0]
-            indmap1 = [fi.index(i) for i in fi1]
-            indks = [(flatten_multiindex([ind[i] for i in indmap0], ist0),
-                      flatten_multiindex([ind[i] for i in indmap1], ist1))
-                     for ind in indices]
-        else:
-            assert False
-            indks = [(0, 0)] * len(indices)
+        # Compute strides within free index spaces
+        ist0 = shape_to_strides(fid0)
+        ist1 = shape_to_strides(fid1)
+        # Map o0 and o1 indices to o indices
+        indmap0 = [fi.index(i) for i in fi0]
+        indmap1 = [fi.index(i) for i in fi1]
+        indks = [(flatten_multiindex([ind[i] for i in indmap0], ist0),
+                  flatten_multiindex([ind[i] for i in indmap1], ist1))
+                 for ind in indices]
 
         # Build products for scalar components
-        results = [o.reconstruct(ops[0][k0], ops[1][k1]) for k0, k1 in indks]
+        results = [Product(ops[0][k0], ops[1][k1]) for k0, k1 in indks]
         return results
 
     def index_sum(self, o, ops):
         summand, mi = o.ufl_operands
-        ii = mi[0]
-        ic = ii.count()
+        ic = mi[0].count()
         fi = summand.ufl_free_indices
         fid = summand.ufl_index_dimensions
         ipos = fi.index(ic)
