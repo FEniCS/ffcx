@@ -712,7 +712,7 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
     # Construct name map.
     name_map = {}
     if inv_name_map:
-        for name in inv_name_map:
+        for name in sorted(inv_name_map):
             if inv_name_map[name][0] in name_map:
                 name_map[inv_name_map[name][0]].append(name)
             else:
