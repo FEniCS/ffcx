@@ -831,6 +831,8 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
 
         # Iterate over derivative orders
         for n, components in sorted_by_key(used_derivatives_and_components[prefix]):
+            # components are a set and need to be sorted
+            components = sorted(components)
 
             # Code for evaluate_basis_all
             if n == 0:
