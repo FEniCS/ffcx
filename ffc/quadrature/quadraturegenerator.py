@@ -292,7 +292,7 @@ def _tabulate_tensor(ir, prefix, parameters):
 
     # Add common code except for custom integrals
     if integral_type != "custom":
-        common += _tabulate_weights([quadrature_weights[p] for p in used_weights])
+        common += _tabulate_weights([quadrature_weights[p] for p in sorted(used_weights)])
 
         # Add common code for updating tables
         name_map = ir["name_map"]
@@ -736,7 +736,7 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
 
         # Tabulate non-zero indices.
         if optimise_parameters["eliminate zeros"]:
-            if name in name_map:
+            if name in sorted(name_map):
                 for n in name_map[name]:
                     if inv_name_map[n][1] and inv_name_map[n][1] in new_nzcs:
                         i, cols = inv_name_map[n][1]
