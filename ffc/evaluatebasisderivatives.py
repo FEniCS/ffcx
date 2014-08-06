@@ -624,7 +624,7 @@ def _compute_reference_derivatives(data, dof_data):
             # Create inverse of Jacobian.
             inv_jacobian_column = [f_transform("JINV", j, i, tdim, gdim, None) for j in range(tdim)]
 
-            # Create inner product of basis values and inverse of Jacobian.
+            # Create inner product of basis and inverse of Jacobian.
             inner = [f_mul([inv_jacobian_column[j], basis_col[j]]) for j in range(tdim)]
             value = f_group(f_add(inner))
             name = f_component(f_derivatives+_p, f_matrix_index(i, f_r, f_num_derivs(_t)))

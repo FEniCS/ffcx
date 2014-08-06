@@ -693,13 +693,13 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
     # Get list of non zero columns, if we ignore ones, ignore columns with one component.
     if optimise_parameters["ignore ones"]:
         nzcs = []
-        for key, val in inv_name_map.items():
+        for key, val in sorted(inv_name_map.items()):
             # Check if we have a table of ones or if number of non-zero columns
             # is larger than one.
             if val[1] and len(val[1][1]) > 1 or not val[3]:
                 nzcs.append(val[1])
     else:
-        nzcs = [val[1] for key, val in inv_name_map.items()\
+        nzcs = [val[1] for key, val in sorted(inv_name_map.items())\
                                         if val[1]]
 
     # TODO: Do we get arrays that are not unique?
@@ -719,7 +719,7 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
                 name_map[inv_name_map[name][0]] = [name]
 
     # Loop items in table and tabulate.
-    for name in sorted(list(used_psi_tables)):
+    for name in sorted(used_psi_tables):
 
         # Only proceed if values are still used (if they're not remapped).
         vals = tables[name]
@@ -776,7 +776,7 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
     code = []
 
     # Extract prefixes for tables
-    prefixes = sorted(list(set(table.split("_")[0] for table in psi_tables)))
+    prefixes = sorted(set(table.split("_")[0] for table in psi_tables))
 
     # Use lower case prefix for form name
     form_prefix = form_prefix.lower()

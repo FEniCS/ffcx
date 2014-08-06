@@ -76,7 +76,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         for op in operands:
             # If entries does already exist we can add the code, otherwise just
             # dump them in the element tensor.
-            for key, val in op.items():
+            for key, val in sorted(op.items()):
                 if key in code:
                     code[key].append(val)
                 else:

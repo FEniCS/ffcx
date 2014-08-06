@@ -284,11 +284,11 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
                 assert len(entity_psi_tables) == 1
                 assert avg_integral_type == "cell"
                 assert "facet" in integral_type
-                v, = list(entity_psi_tables.values())
+                v, = sorted(entity_psi_tables.values())
                 entity_psi_tables = dict((e, v) for e in actual_entities)
 
-            for entity, deriv_table in entity_psi_tables.items():
-                deriv, = deriv_table.keys() # Not expecting derivatives of averages
+            for entity, deriv_table in sorted(entity_psi_tables.items()):
+                deriv, = sorted(deriv_table.keys()) # Not expecting derivatives of averages
                 psi_table = deriv_table[deriv]
 
                 if rank:

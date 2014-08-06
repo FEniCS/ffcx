@@ -157,7 +157,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # Create code.
         code ={}
         if permutations:
-            for key, val in permutations.items():
+            for key, val in sorted(permutations.items()):
                 # Sort key in order to create a unique key.
                 l = sorted(key)
 
@@ -693,8 +693,8 @@ class QuadratureTransformer(QuadratureTransformerBase):
         return new_operand
 
     def _atan_2_function(self, operands, format_function):
-        x1,x2 = operands
-        x1,x2 = list(x1.values())[0],list(x2.values())[0]
+        x1, x2 = operands
+        x1, x2 = sorted(x1.values())[0], sorted(x2.values())[0]
 
         if x1 is None:
             x1 = format["floating point"](0.0)

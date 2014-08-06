@@ -17,10 +17,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
+from ufl.utils.sorting import sorted_by_key
+
 # FFC modules
 from ffc.log import debug, error
 from ffc.cpp import format
-import six
 
 # TODO: Use proper errors, not just RuntimeError.
 # TODO: Change all if value == 0.0 to something more safe.
@@ -103,7 +104,7 @@ def generate_aux_constants(constant_decl, name, var_type, print_ops=False):
     code = []
     append = code.append
     ops = 0
-    for num, expr in sorted((v, k) for k, v in six.iteritems(constant_decl)):
+    for num, expr in sorted((v, k) for k, v in sorted_by_key(constant_decl)):
 #        debug("expr orig: " + str(expr))
 #        print "\nnum: ", num
 #        print "expr orig: " + repr(expr)

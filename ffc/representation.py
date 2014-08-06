@@ -432,7 +432,7 @@ def _tabulate_coordinates(ufl_element, element):
     data = {}
     data["tdim"] = domain.topological_dimension()
     data["gdim"] = domain.geometric_dimension()
-    data["points"] = [list(L.pt_dict.keys())[0] for L in element.dual_basis()]
+    data["points"] = [sorted(L.pt_dict.keys())[0] for L in element.dual_basis()]
     return data
 
 def _tabulate_dofs(element, cell):
@@ -526,7 +526,7 @@ def _interpolate_vertex_values(ufl_element, element):
     vertices = fiat_cell.get_vertices()
 
     # Compute data for each constituent element
-    extract = lambda values: values[list(values.keys())[0]].transpose()
+    extract = lambda values: values[sorted(values.keys())[0]].transpose()
     all_fiat_elm = all_elements(element)
     ir["element_data"] = [{
                            # See note in _evaluate_dofs

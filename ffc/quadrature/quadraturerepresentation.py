@@ -198,7 +198,7 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type,
 def _transform_integrals(transformer, integrals, integral_type):
     "Transform integrals from UFL expression to quadrature representation."
     transformed_integrals = []
-    for point, integral in list(integrals.items()):
+    for point, integral in sorted(integrals.items()):
         transformer.update_points(point)
         terms = transformer.generate_terms(integral.integrand(), integral_type)
         transformed_integrals.append((point, terms, transformer.function_data,

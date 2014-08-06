@@ -73,7 +73,7 @@ def compile_with_error_control(forms, object_names, reserved_objects,
     # Check that there are no conflicts between user defined and
     # generated names
     ec_names = generator.ec_names
-    comment = "%s are reserved error control names." % str(list(ec_names.values()))
+    comment = "%s are reserved error control names." % str(sorted(ec_names.values()))
     assert not (set(object_names.values()) & set(ec_names.values())), \
                "Conflict between user defined and generated names: %s" % comment
 
