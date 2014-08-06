@@ -839,7 +839,7 @@ class QuadratureTransformerBase(Transformer):
         # Loop code and add weight and scale factor to value and sort after
         # loop ranges.
         new_terms = {}
-        for key, val in list(terms.items()):
+        for key, val in sorted(terms.items()):
             # If value was zero continue.
             if val is None:
                 continue

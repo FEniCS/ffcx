@@ -541,7 +541,7 @@ def _generate_integral_code(points, terms, sets, optimise_parameters):
     used_weights, used_psi_tables, used_nzcs, trans_set = sets
 
     # Loop terms and create code.
-    for loop, (data, entry_vals) in terms.items():
+    for loop, (data, entry_vals) in sorted(terms.items()):
 
         # If we don't have any entry values, there's no need to generate the
         # loop.
@@ -579,7 +579,7 @@ def _generate_integral_code(points, terms, sets, optimise_parameters):
             loops[loop][1] += [entry_ops_comment, entry_code]
 
     # Write all the loops of basis functions.
-    for loop, ops_lines in loops.items():
+    for loop, ops_lines in sorted(loops.items()):
         ops, lines = ops_lines
         prim_ops = functools.reduce(lambda i, j: i*j, [ops] + [l[2] for l in loop])
         # Add number of operations for current loop to total count.
