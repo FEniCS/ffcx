@@ -30,10 +30,10 @@ import instant
 import ufc
 
 # UFL modules
-from ufl.classes import Form, FiniteElementBase, TestFunction
-from ufl.objects import dx
-from ufl.algorithms import extract_elements, extract_sub_elements, compute_form_data
 from ufl.common import istr, tstr
+from ufl import TestFunction, dx
+from ufl.classes import Form, FiniteElementBase
+from ufl.algorithms import extract_elements, extract_sub_elements, compute_form_data
 
 # FFC modules
 from .log import log
