@@ -181,10 +181,6 @@ class QuadratureTransformerBase(Transformer):
     # algebra.py, differentiation.py, finiteelement.py,
     # form.py, geometry.py, indexing.py, integral.py, tensoralgebra.py, variable.py.
     # -------------------------------------------------------------------------
-    def algebra_operator(self, o, *operands):
-        print("\n\nVisiting AlgebraOperator: ", repr(o))
-        error("This type of AlgebraOperator should have been expanded!!" + repr(o))
-
     def derivative(self, o, *operands):
         print("\n\nVisiting Derivative: ", repr(o))
         error("All derivatives apart from Grad should have been expanded!!")
@@ -209,14 +205,6 @@ class QuadratureTransformerBase(Transformer):
     def constant_value(self, o):
         print("\n\nVisiting ConstantValue:", repr(o))
         error("This type of ConstantValue is not supported (yet).")
-
-    def index_annotated(self, o):
-        print("\n\nVisiting IndexAnnotated:", repr(o))
-        error("Only child classes of IndexAnnotated is supported.")
-
-    def constant_base(self, o):
-        print("\n\nVisiting ConstantBase:", repr(o))
-        error("This type of ConstantBase is not supported (yet).")
 
     def geometric_quantity(self, o):
         print("\n\nVisiting GeometricQuantity:", repr(o))
@@ -401,7 +389,7 @@ class QuadratureTransformerBase(Transformer):
         #print("\n\nVisiting Grad: " + repr(o))
 
         # Get expression
-        derivative_expr, = o.operands()
+        derivative_expr, = o.ufl_operands
 
         # Get components
         components = self.component()
@@ -566,7 +554,7 @@ class QuadratureTransformerBase(Transformer):
 
         # Get indexed expression and index, map index to current value
         # and update components
-        indexed_expr, index = o.operands()
+        indexed_expr, index = o.ufl_operands
         self._components.push(self.visit(index))
 
         # Visit expression subtrees and generate code.
@@ -600,7 +588,7 @@ class QuadratureTransformerBase(Transformer):
         #print("\n\nVisiting IndexSum: " + str(tree_format(o)))
 
         # Get expression and index that we're summing over
-        summand, multiindex = o.operands()
+        summand, multiindex = o.ufl_operands
         index, = multiindex
 
         # Loop index range, update index/value dict and generate code
@@ -706,7 +694,7 @@ class QuadratureTransformerBase(Transformer):
         #print("\n\nVisiting PositiveRestricted: " + repr(o))
 
         # Just get the first operand, there should only be one.
-        restricted_expr = o.operands()
+        restricted_expr = o.ufl_operands
         ffc_assert(len(restricted_expr) == 1, "Only expected one operand for restriction: " + repr(restricted_expr))
         ffc_assert(self.restriction is None, "Expression is restricted twice: " + repr(restricted_expr))
 
@@ -721,7 +709,7 @@ class QuadratureTransformerBase(Transformer):
         #print("\n\nVisiting NegativeRestricted: " + repr(o))
 
         # Just get the first operand, there should only be one.
-        restricted_expr = o.operands()
+        restricted_expr = o.ufl_operands
         ffc_assert(len(restricted_expr) == 1, "Only expected one operand for restriction: " + repr(restricted_expr))
         ffc_assert(self.restriction is None, "Expression is restricted twice: " + repr(restricted_expr))
 
@@ -736,7 +724,7 @@ class QuadratureTransformerBase(Transformer):
         ffc_assert(self.avg is None, "Not expecting nested averages.")
 
         # Just get the first operand, there should only be one.
-        expr, = o.operands()
+        expr, = o.ufl_operands
 
         # Set average marker, visit operand and reset marker
         self.avg = "cell"
@@ -750,7 +738,7 @@ class QuadratureTransformerBase(Transformer):
         ffc_assert(self.entity_type != "cell", "Cannot take facet_avg in a cell integral.")
 
         # Just get the first operand, there should only be one.
-        expr, = o.operands()
+        expr, = o.ufl_operands
 
         # Set average marker, visit operand and reset marker
         self.avg = "facet"
@@ -766,7 +754,7 @@ class QuadratureTransformerBase(Transformer):
         #print("\n\nVisiting ComponentTensor:\n" + str(tree_format(o)))
 
         # Get expression and indices
-        component_expr, indices = o.operands()
+        component_expr, indices = o.ufl_operands
 
         # Get current component(s)
         components = self.component()
@@ -804,7 +792,7 @@ class QuadratureTransformerBase(Transformer):
         c0, c1 = component[0], component[1:]
 
         # Get first operand
-        op = o.operands()[c0]
+        op = o.ufl_operands[c0]
 
         # Evaluate subtensor with this subcomponent
         self._components.push(c1)
