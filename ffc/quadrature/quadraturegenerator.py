@@ -486,7 +486,7 @@ def _generate_functions(functions, sets):
 
     total_ops = 0
     # Loop ranges and get list of functions.
-    for loop_range, list_of_functions in function_list.items():
+    for loop_range, list_of_functions in sorted(function_list.items()):
         function_expr = {}
         function_numbers = []
         # Loop functions.
