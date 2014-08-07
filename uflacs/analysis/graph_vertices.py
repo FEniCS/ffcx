@@ -1,7 +1,7 @@
 
 from six import iteritems
 
-from ufl.classes import Terminal, UtilityType
+from ufl.classes import Terminal, MultiIndex, Label
 
 from uflacs.datastructures.arrays import object_array
 from uflacs.analysis.modified_terminals import is_modified_terminal
@@ -30,7 +30,7 @@ def count_nodes_with_unique_post_traversal(expr, e2i=None, skip_terminal_modifie
                 ops[i] = None
                 break
         else:
-            if not isinstance(expr, UtilityType):
+            if not isinstance(expr, (MultiIndex, Label)):
                 count = len(e2i)
                 e2i[expr] = count
             stack.pop()
