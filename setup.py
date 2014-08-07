@@ -8,8 +8,6 @@ from distutils.command.build import build
 from distutils.version import LooseVersion
 from distutils.ccompiler import new_compiler
 
-import distutils
-
 VERSION   = "1.4.0+"
 SCRIPTS   = [os.path.join("scripts", "ffc")]
 
