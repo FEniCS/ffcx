@@ -43,7 +43,7 @@ def get_installation_prefix():
             prefix = sys.argv[sys.argv.index("--prefix")+1]
         except:
             prefix = sys.prefix
-    return prefix
+    return os.path.abspath(prefix)
 
 def get_swig_executable():
     "Get SWIG executable"
@@ -147,8 +147,10 @@ def generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
                                      FULLVERSION=VERSION))
 
     # Generate UFCConfigVersion.cmake
-    write_config_file(os.path.join("cmake", "templates", "UFCConfigVersion.cmake.in"),
-                      os.path.join("cmake", "templates", "UFCConfigVersion.cmake"),
+    write_config_file(os.path.join("cmake", "templates", \
+                                   "UFCConfigVersion.cmake.in"),
+                      os.path.join("cmake", "templates", \
+                                   "UFCConfigVersion.cmake"),
                       variables=dict(FULLVERSION=VERSION,
                                      MAJOR=MAJOR, MINOR=MINOR, MICRO=MICRO))
 
@@ -281,9 +283,12 @@ def run_install():
                                [os.path.join("ufc", "ufc.h"),
                                 os.path.join("ufc", "ufc_geometry.h")]),
                               (os.path.join("share", "ufc"),
-                               [os.path.join("cmake", "templates", "UFCConfig.cmake"),
-                                os.path.join("cmake", "templates", "UFCConfigVersion.cmake"),
-                                os.path.join("cmake", "templates", "UseUFC.cmake")]),
+                               [os.path.join("cmake", "templates", \
+                                             "UFCConfig.cmake"),
+                                os.path.join("cmake", "templates", \
+                                             "UFCConfigVersion.cmake"),
+                                os.path.join("cmake", "templates", \
+                                             "UseUFC.cmake")]),
                               (os.path.join("lib", "pkgconfig"),
                                [os.path.join("cmake", "templates", "ufc-1.pc")]),
                               (os.path.join("include", "swig"),
