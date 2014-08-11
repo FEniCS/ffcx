@@ -12,15 +12,15 @@ def test_cpp_literal_formatter():
 
     assert fmt.int_value(as_ufl(123)) == "123"
     assert fmt.float_value(as_ufl(1.0/3.0))[:7] == "0.33333"
-    assert fmt.zero(as_ufl(0)) == "0"
+    assert fmt.zero(as_ufl(0)) == "0.0"
 
     assert fmt.int_value(123) == "123"
     assert fmt.float_value(1.0/3.0)[:7] == "0.33333"
-    assert fmt.zero(0) == "0"
+    assert fmt.zero(0) == "0.0"
 
     assert fmt.int_value("123") == "123"
     assert fmt.float_value(str(1.0/3.0))[:7] == "0.33333"
-    assert fmt.zero("0") == "0"
+    assert fmt.zero("0") == "0.0"
 
 def test_cpp_arithmetic_formatter():
     fmt = CppFormattingRules()

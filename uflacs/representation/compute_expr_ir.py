@@ -55,8 +55,6 @@ def compute_expr_ir(expressions, parameters):
       (but e.g. argument[iq][i0] may need to be accessible in other loops)
     - Improve register allocation algorithm
 
-    - What about conditionals?
-
     - Take a list of expressions as input to compile several expressions in one joined graph
       (e.g. to compile a,L,M together for nonlinear problems)
     """
@@ -136,11 +134,11 @@ def compute_expr_ir(expressions, parameters):
 
     # Dependency structure of graph:
     expr_ir["modified_terminal_indices"] = modified_terminal_indices  # (array) list of V-indices to modified terminals
-    expr_ir["dependencies"] = dependencies                           # (CRS) V-index -> direct dependency V-index list
-    expr_ir["inverse_dependencies"] = inverse_dependencies           # (CRS) V-index -> direct dependee V-index list
+    #expr_ir["dependencies"] = dependencies                           # (CRS) V-index -> direct dependency V-index list
+    #expr_ir["inverse_dependencies"] = inverse_dependencies           # (CRS) V-index -> direct dependee V-index list
 
     # Metadata about each vertex
-    expr_ir["active"] = active       # (array) V-index -> bool
+    #expr_ir["active"] = active       # (array) V-index -> bool
     expr_ir["piecewise"] = piecewise  # (array) V-index -> bool
     expr_ir["varying"] = varying     # (array) V-index -> bool
 

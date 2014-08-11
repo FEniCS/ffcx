@@ -82,6 +82,7 @@ class IntegralGenerator(object):
         all_num_points = sorted(expr_irs)
         for num_points in all_num_points:
             self.expr_formatter.variables = {}
+            #self.ast_variables = int_array(FIXME)
             pp = self.generate_piecewise_partition(num_points)
             ql = self.generate_quadrature_loops(num_points)
             if len(all_num_points) > 1:
@@ -240,21 +241,26 @@ class IntegralGenerator(object):
                 if is_modified_terminal(v):
                     mt = analyse_modified_terminal(v)
                     if isinstance(mt.terminal, ConstantValue):
+                        # Literal value
                         vaccess = self.expr_formatter.visit(v)
                     else:
+                        # Backend specific modified terminal
                         vaccess = self.backend_access(mt.terminal, mt, table_ranges[i], num_points)
                         vdef = self.backend_definitions(mt.terminal, mt, table_ranges[i], vaccess)
+                        # Store definitions of terminals in list
                         terminalcode += [vdef]
                 else:
+                    # Application of operator
                     # Count assignments so we get a new vname each time
                     vaccess = ArrayAccess(name, j)
                     j += 1
                     vcode = self.expr_formatter.visit(v)  # TODO: Generate ASTNode instead of str here?
+                    # Store assignments of operator results in list
                     assignments += [Assign(vaccess, vcode)]
 
-                vname = format_code(vaccess)  # TODO: Can skip this if expr_formatter generates ASTNode
-                # print '\nStoring {0} = {1}'.format(vname, str(v))
-                self.expr_formatter.variables[v] = vname
+                # Store access string, either a variable name or an inlined expression
+                # TODO: Can skip format_code if expr_formatter generates ASTNode
+                self.expr_formatter.variables[v] = format_code(vaccess)
 
         parts = []
         # Compute all terminals first
@@ -263,6 +269,70 @@ class IntegralGenerator(object):
             # Declare array large enough to hold all subexpressions we've emitted
             parts += [ArrayDecl("double", name, j)]
             # Then add all computations
+            parts += assignments
+        return parts
+
+    # TODO: Rather take list of vertices, not markers
+    def alternative_generate_partition(self, name, C, MT, partition, table_ranges, num_points):
+        terminalcode = []
+        assignments = []
+
+        # C = input CRS representation of expression DAG
+        # MT = input list/dict of modified terminals
+
+        self.ast_variables = [None]*len(C) # FIXME: Create outside
+        vertices = [i for i, p in enumerate(partition) if p] # TODO: Get this as input instead of partition?
+
+        for i in vertices:
+            row = C[i] # FIXME: Get this as input
+            if len(row) == 1:
+                # Modified terminal
+                t, = row
+                mt = MT[t] # FIXME: Get this as input
+
+                if isinstance(mt.terminal, ConstantValue):
+                    # Format literal value for the chosen language
+                    vaccess = modified_literal_to_ast_node[tc](mt) # FIXME: Implement this mapping
+
+                else:
+                    # Backend specific modified terminal formatting
+                    vaccess = self.backend_access(mt.terminal, mt, table_ranges[i], num_points)
+                    vdef = self.backend_definitions(mt.terminal, mt, table_ranges[i], vaccess)
+
+                    # Store definitions of terminals in list
+                    terminalcode += [vdef]
+
+            else:
+                # Application of operator with typecode tc to operands with indices ops
+                tc = mt[0]
+                ops = mt[1:]
+
+                # Get operand AST nodes
+                opsaccess = [self.ast_variables[k] for k in ops]
+
+                # Generate expression for this operator application
+                vcode = typecode2astnode[tc](opsaccess) # FIXME: Implement this mapping
+
+                store_this_in_variable = True # TODO: Don't store all subexpressions
+                if store_this_in_variable:
+                    # Count assignments so we get a new vname each time
+                    vaccess = ArrayAccess(name, len(assignments))
+                    # Store assignments of operator results in list
+                    assignments += [Assign(vaccess, vcode)]
+                else:
+                    # Store the inlined expression
+                    vaccess = vcode
+
+            # Store access string, either a variable name or an inlined expression
+            self.ast_variables[i] = vaccess
+
+        parts = []
+        # Compute all terminals first
+        parts += terminalcode
+        # Then add all computations
+        if assignments:
+            # Declare array large enough to hold all subexpressions we've emitted
+            parts += [ArrayDecl("double", name, len(assignments))]
             parts += assignments
         return parts
 
@@ -325,6 +395,7 @@ class IntegralGenerator(object):
 
             # Get factor expression
             fcode = self.expr_formatter.visit(V[factor_index])
+            #fcode = self.ast_variables[factor_index] # TODO
             if fcode not in ("1", "1.0"):  # TODO: Nicer way to do this
                 factors += [fcode]
 

@@ -396,7 +396,20 @@ class BinOp(ASTNode):
 
     def format(self, level, indentchar, keywords):
         # TODO: Handle precedence at this level instead of in the ExprFormatter stuff?
+        #if self.lhs.precedence < self.precedence:
+        #    lhs = ('(', self.lhs, ')')
+        #else:
+        #    lhs = self.lhs
+
+        #if self.rhs.precedence <= self.precedence:
+        #    rhs = ('(', self.rhs, ')')
+        #else:
+        #    rhs = self.rhs
+
+        #code = (lhs, self.op, rhs)
+
         code = (self.lhs, type(self).op, self.rhs)
+
         return format_code(code, level, indentchar, keywords)
 
 
