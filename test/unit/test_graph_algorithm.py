@@ -8,22 +8,18 @@ from ufl import *
 from ufl.common import product
 from ufl.permutation import compute_indices
 
-from uflacs.analysis.indexing import (map_indexed_arg_components,
-                                        map_indexed_arg_components2,
-                                        map_component_tensor_arg_components)
-from uflacs.analysis.graph_symbols import (map_list_tensor_symbols,
-                                             map_transposed_symbols, get_node_symbols)
-from uflacs.analysis.graph import build_graph, rebuild_expression_from_graph
-from uflacs.analysis.graph_rebuild import rebuild_scalar_e2i
-from uflacs.analysis.graph_dependencies import (compute_dependencies,
-                                                mark_active,
-                                                mark_image)
-from uflacs.analysis.graph_ssa import (mark_partitions,
-                                       compute_dependency_count,
-                                       invert_dependencies,
-                                       default_cache_score_policy,
-                                       compute_cache_scores,
-                                       allocate_registers)
+from uflacs.analysis.graph import build_graph
+from uflacs.analysis.graph_rebuild import rebuild_expression_from_graph
+#from uflacs.analysis.graph_rebuild import rebuild_scalar_e2i
+#from uflacs.analysis.graph_dependencies import (compute_dependencies,
+#                                                mark_active,
+#                                                mark_image)
+#from uflacs.analysis.graph_ssa import (mark_partitions,
+#                                       compute_dependency_count,
+#                                       invert_dependencies,
+#                                       default_cache_score_policy,
+#                                       compute_cache_scores,
+#                                       allocate_registers)
 
 from operator import eq as equal
 
@@ -162,14 +158,14 @@ def test_rebuild_expression_from_graph_on_products_with_indices():
     v1 = v[i]*v[i]
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
-    ve = v[0]**2 + v[1]**2
+    ve = v[0]*v[0] + v[1]*v[1]
     assert ve == v2
 
     # Test double repeated index
     v1 = w[i, j]*w[j, i]
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
-    ve = (w[1, 1]**2 + w[1, 0]*w[0, 1]) + (w[0, 1]*w[1, 0] + w[0, 0]**2)
+    ve = (w[1, 1]*w[1, 1] + w[1, 0]*w[0, 1]) + (w[0, 1]*w[1, 0] + w[0, 0]*w[0, 0])
     if 0:
         print()
         print(v1)
@@ -212,7 +208,7 @@ def test_rebuild_expression_from_graph_basic_tensor_expressions():
     v1 = v+v
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
-    ve = as_vector((2*v[0], 2*v[1]))
+    ve = as_vector((v[0]+v[0], v[1]+v[1]))
     assert ve == v2
 
     v1 = v+vb
@@ -225,7 +221,7 @@ def test_rebuild_expression_from_graph_basic_tensor_expressions():
     v1 = w+w
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
-    ve = as_vector((2*w[0, 0], 2*w[0, 1], 2*w[1, 0], 2*w[1, 1]))
+    ve = as_vector((w[0, 0]+w[0, 0], w[0, 1]+w[0, 1], w[1, 0]+w[1, 0], w[1, 1]+w[1, 1]))
     assert ve == v2
 
     v1 = w+wb
@@ -272,8 +268,8 @@ def test_rebuild_expression_from_graph_basic_tensor_expressions():
     v1 = w[i, j]*wb[j, i]
     G = build_graph([v1])
     v2 = rebuild_expression_from_graph(G)
-    ve = (w[0, 0]*wb[0, 0] + w[0, 1]*wb[1, 0]) \
-       + (w[1, 0]*wb[0, 1] + w[1, 1]*wb[1, 1])
+    ve = (w[0, 0]*wb[0, 0] + w[1, 0]*wb[0, 1]) \
+       + (w[0, 1]*wb[1, 0] + w[1, 1]*wb[1, 1])
     assert ve == v2
 
     # Vector/scalar division

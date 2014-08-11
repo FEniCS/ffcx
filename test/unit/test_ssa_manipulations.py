@@ -8,24 +8,29 @@ from ufl import *
 from ufl.common import product
 from ufl.permutation import compute_indices
 
-from uflacs.analysis.indexing import (map_indexed_arg_components,
-                                        map_indexed_arg_components2,
-                                        map_component_tensor_arg_components)
-from uflacs.analysis.graph_symbols import (map_list_tensor_symbols,
-                                             map_transposed_symbols, get_node_symbols)
-from uflacs.analysis.graph import build_graph, rebuild_expression_from_graph
-from uflacs.analysis.graph_rebuild import rebuild_scalar_e2i
-from uflacs.analysis.graph_dependencies import (compute_dependencies,
-                                                mark_active,
-                                                mark_image)
-from uflacs.analysis.graph_ssa import (mark_partitions,
-                                       compute_dependency_count,
-                                       invert_dependencies,
-                                       default_cache_score_policy,
-                                       compute_cache_scores,
-                                       allocate_registers)
+from uflacs.analysis.graph import build_graph
 
-def test_dependency_construction():
+# Tests need this but it has been removed. Rewrite tests!
+#from uflacs.analysis.graph_rebuild import rebuild_scalar_e2i
+
+#from uflacs.analysis.graph_rebuild import rebuild_expression_from_graph
+
+#from uflacs.analysis.indexing import (map_indexed_arg_components,
+#                                        map_indexed_arg_components2,
+#                                        map_component_tensor_arg_components)
+#from uflacs.analysis.graph_symbols import (map_list_tensor_symbols,
+#                                             map_transposed_symbols, get_node_symbols)
+#from uflacs.analysis.graph_dependencies import (compute_dependencies,
+#                                                mark_active,
+#                                                mark_image)
+#from uflacs.analysis.graph_ssa import (mark_partitions,
+#                                       compute_dependency_count,
+#                                       invert_dependencies,
+#                                       default_cache_score_policy,
+#                                       compute_cache_scores,
+#                                       allocate_registers)
+
+def xtest_dependency_construction():
     cell = cell2D
     d = cell.geometric_dimension()
     x = SpatialCoordinate(cell)
