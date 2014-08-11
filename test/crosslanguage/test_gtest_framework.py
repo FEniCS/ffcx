@@ -11,7 +11,7 @@ def test_example_showing_how_to_test_generated_code_with_gtest(gtest):
 
     # Then we wrap the generated code in C++ setup and gtest checks
     gtestcode = """
-    double x[2] = { 1.0, 2.0 };
+    double x[2] = {{ 1.0, 2.0 }};
     {cut}
     ASSERT_TRUE(x[0] == 0.0);
     """.format(cut=cut)

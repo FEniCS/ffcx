@@ -15,7 +15,7 @@ _supportcode = '''
 #include <ufc.h>
 #include <ufc_geometry.h>
 #include "mock_cells.h"
-#include "debugging.h"
+//#include "debugging.h"
 '''
 
 

@@ -1,3 +1,4 @@
+#!/usr/bin/env py.test
 
 """
 Tests generating code for the different ufc integral types,
