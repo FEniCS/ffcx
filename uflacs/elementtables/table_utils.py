@@ -1,5 +1,6 @@
 
-from six import next, itervalues
+from six import itervalues
+from six import advance_iterator as next
 from six.moves import map
 from six.moves import xrange as range
 import numpy as np
