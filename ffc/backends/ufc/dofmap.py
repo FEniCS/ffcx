@@ -95,7 +95,7 @@ public:
   }
 
   /// Tabulate the coordinates of all dofs on a cell
-  virtual void tabulate_coordinates(double** dof_coordinates,
+  virtual void tabulate_coordinates(double* dof_coordinates,
                                     const double* vertex_coordinates) const
   {
 %(tabulate_coordinates)s
@@ -175,7 +175,7 @@ public:
                                     std::size_t d, std::size_t i) const;
 
   /// Tabulate the coordinates of all dofs on a cell
-  virtual void tabulate_coordinates(double** coordinates,
+  virtual void tabulate_coordinates(double* coordinates,
                                     const double* vertex_coordinates) const;
 
   /// Return the number of sub dofmaps (for a mixed element)
@@ -275,7 +275,7 @@ void %(classname)s::tabulate_entity_dofs(std::size_t* dofs,
 }
 
 /// Tabulate the coordinates of all dofs on a cell
-void %(classname)s::tabulate_coordinates(double** dof_coordinates,
+void %(classname)s::tabulate_coordinates(double* dof_coordinates,
                                          const double* vertex_coordinates) const
 {
 %(tabulate_coordinates)s

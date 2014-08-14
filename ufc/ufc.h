@@ -244,7 +244,7 @@ namespace ufc
     /// Return the number of dofs on each cell facet
     virtual std::size_t num_facet_dofs() const = 0;
 
-    /// Return the number of dofs associated with each cell entity of
+   /// Return the number of dofs associated with each cell entity of
     /// dimension d
     virtual std::size_t num_entity_dofs(std::size_t d) const = 0;
 
@@ -262,7 +262,7 @@ namespace ufc
                                       std::size_t d, std::size_t i) const = 0;
 
     /// Tabulate the coordinates of all dofs on a cell
-    virtual void tabulate_coordinates(double** dof_coordinates,
+    virtual void tabulate_coordinates(double* dof_coordinates,
                                       const double* vertex_coordinates) const = 0;
 
     /// Return the number of sub dofmaps (for a mixed element)
