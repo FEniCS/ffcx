@@ -11,6 +11,7 @@
 class Printer
 {
 protected:
+
   // Precision in output of floats
   const std::size_t precision;
   const double epsilon;
@@ -39,7 +40,9 @@ protected:
   template <class value_type>
   void counted_print_value(value_type value)
   {
-    //os.setf(std::ios::scientific, std::ios::floatfield); // Not set yet to avoid changing references while I have other things to worry about
+    // Not set yet to avoid changing references while I have other
+    // things  to worry about
+    //os.setf(std::ios::scientific, std::ios::floatfield);
     os.precision(precision);
     if (std::abs(static_cast<double>(value)) < epsilon)
       os << "0";
@@ -57,7 +60,8 @@ protected:
 
   // Function for printing scalar result
   template <class value_type>
-  void counted_print_scalar(std::string name, value_type value, int i=-1, int j=-1)
+  void counted_print_scalar(std::string name, value_type value, int i=-1,
+                            int j=-1)
   {
     name = counted_format_name(name, i, j);
     os << name << " = ";
@@ -67,7 +71,8 @@ protected:
 
   // Function for printing array result
   template <class value_type>
-  void counted_print_array(std::string name, unsigned int n, value_type* values, int i=-1, int j=-1)
+  void counted_print_array(std::string name, unsigned int n,
+                           value_type* values, int i=-1, int j=-1)
   {
     name = counted_format_name(name, i, j);
     os << name << " =";
@@ -81,15 +86,16 @@ protected:
 
   // Function for printing vector result
   template <class value_type>
-  void counted_print_vector(std::string name, std::vector<value_type> values, int i=-1, int j=-1)
+  void counted_print_vector(std::string name, std::vector<value_type> values,
+                            int i=-1, int j=-1)
   {
     name = counted_format_name(name, i, j);
     os << name << " =";
     for (std::size_t i = 0; i < values.size(); i++)
-      {
-        os << " ";
-        counted_print_value(values[i]);
-      }
+    {
+      os << " ";
+      counted_print_value(values[i]);
+    }
     os << std::endl;
   }
 
@@ -115,8 +121,10 @@ protected:
   {
     std::stringstream s;
     s << name;
-    if (i >= 0) s << "_" << i;
-    if (j >= 0) s << "_" << j;
+    if (i >= 0)
+      s << "_" << i;
+    if (j >= 0)
+      s << "_" << j;
     return s.str();
   }
 
@@ -173,7 +181,8 @@ protected:
 
   /// Set a named vector valued entry
   template<typename T>
-  void json_print_vector(std::string name, typename std::vector<T> values, int i=-1, int j=-1)
+  void json_print_vector(std::string name, typename std::vector<T> values,
+                         int i=-1, int j=-1)
   {
     json_begin_entry(name, i, j);
     json_os << "[";
@@ -205,15 +214,10 @@ protected:
   }
 
 public:
-  Printer(std::ostream & os, std::ostream & json_os):
-    precision(16),
-    epsilon(1e-16),
 
-    os(os),
-    counter(0),
-
-    json_os(json_os),
-    level(0)
+  Printer(std::ostream & os, std::ostream & json_os)
+    : precision(16), epsilon(1e-16), os(os), counter(0),
+      json_os(json_os), level(0)
   {}
 
   // Function for beginning unnamed result block
@@ -245,7 +249,8 @@ public:
 
   // Function for printing array result
   template <class value_type>
-  void print_array(std::string name, unsigned int n, value_type* values, int i=-1, int j=-1)
+  void print_array(std::string name, unsigned int n, value_type* values,
+                   int i=-1, int j=-1)
   {
     json_print_array(name, n, values, i, j);
     counted_print_array(name, n, values, i, j);
@@ -253,7 +258,8 @@ public:
 
   // Function for printing vector result
   template <class value_type>
-  void print_vector(std::string name, std::vector<value_type> values, int i=-1, int j=-1)
+  void print_vector(std::string name, std::vector<value_type> values,
+                    int i=-1, int j=-1)
   {
     json_print_vector(name, values, i, j);
     counted_print_vector(name, values, i, j);

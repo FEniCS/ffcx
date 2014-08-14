@@ -347,12 +347,7 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id,
     dofs[i] = 0;
 
   std::size_t num_facets = c.topological_dimension + 1;
-  double** coordinates = new double * [n];
-  for (std::size_t i = 0; i < n; i++)
-    coordinates[i] = new double[c.geometric_dimension];
-
-  // signature
-  //printer.print_scalar("signature", dofmap.signature());
+  std::vector<double> coordinates(n*c.geometric_dimension);
 
   // needs_mesh_entities
   for (std::size_t d = 0; d <= c.topological_dimension; d++)
@@ -407,11 +402,8 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id,
 
   // tabulate_coordinates
   dofmap.tabulate_coordinates(coordinates, vertex_coordinates.data());
-  for (std::size_t i = 0; i < dofmap.local_dimension(); i++)
-  {
-    printer.print_array("tabulate_coordinates", c.geometric_dimension,
-                        coordinates[i], i);
-  }
+  printer.print_array("tabulate_coordinates", c.geometric_dimension,
+                      coordinates.data(), i);
 
   // num_sub_dofmaps
   printer.print_scalar("num_sub_dofmaps", dofmap.num_sub_dofmaps());
@@ -426,9 +418,6 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id,
 
   // Cleanup
   delete [] dofs;
-  for (std::size_t i = 0; i < n; i++)
-    delete [] coordinates[i];
-  delete [] coordinates;
 
   printer.end();
 }
