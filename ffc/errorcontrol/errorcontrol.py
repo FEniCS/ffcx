@@ -22,7 +22,6 @@ error control
 
 from ufl.utils.sorting import sorted_by_key
 from ufl import Coefficient
-from ufl.algorithms.analysis import extract_arguments
 
 from ffc.log import info, error
 from ffc.compiler import compile_form
@@ -138,8 +137,8 @@ def prepare_input_arguments(forms, object_names, reserved_objects):
         assert (u), "Can't extract 'unknown'. The Coefficient representing the unknown must be labelled by 'unknown' for nonlinear problems."
 
         # Check that forms have the expected rank
-        assert(len(extract_arguments(F)) == 1)
-        assert(len(extract_arguments(M)) == 0)
+        assert(len(F.arguments()) == 1)
+        assert(len(M.arguments()) == 0)
 
         # Return primal, goal and unknown
         return (F, M, u)
@@ -153,10 +152,10 @@ def prepare_input_arguments(forms, object_names, reserved_objects):
         (a, L, M) = forms
 
         # Check that forms have the expected rank
-        arguments = extract_arguments(a)
+        arguments = a.arguments()
         assert(len(arguments) == 2)
-        assert(len(extract_arguments(L)) == 1)
-        assert(len(extract_arguments(M)) == 1)
+        assert(len(L.arguments()) == 1)
+        assert(len(M.arguments()) == 1)
 
         # Standard case: create default Coefficient in trial space and
         # label it __discrete_primal_solution
