@@ -401,9 +401,8 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id,
   }
 
   // tabulate_coordinates
-  dofmap.tabulate_coordinates(coordinates, vertex_coordinates.data());
-  printer.print_array("tabulate_coordinates", c.geometric_dimension,
-                      coordinates.data(), i);
+  dofmap.tabulate_coordinates(coordinates.data(), vertex_coordinates.data());
+  printer.print_vector("tabulate_coordinates", coordinates);
 
   // num_sub_dofmaps
   printer.print_scalar("num_sub_dofmaps", dofmap.num_sub_dofmaps());
