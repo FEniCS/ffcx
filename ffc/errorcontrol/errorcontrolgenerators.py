@@ -21,11 +21,8 @@ forms.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# Last changed: 2011-06-29
 
 from ufl import inner, dx, ds, dS, avg, replace, action
-from ufl.algorithms.analysis import extract_arguments
 
 __all__ = ["ErrorControlGenerator", "UFLErrorControlGenerator"]
 
@@ -71,10 +68,10 @@ class ErrorControlGenerator:
             self.weak_residual = - F
 
         # At least check that final forms have correct rank
-        assert(len(extract_arguments(self.lhs)) == 2)
-        assert(len(extract_arguments(self.rhs)) == 1)
-        assert(len(extract_arguments(self.goal)) == 0)
-        assert(len(extract_arguments(self.weak_residual)) == 1)
+        assert(len(self.lhs.arguments()) == 2)
+        assert(len(self.rhs.arguments()) == 1)
+        assert(len(self.goal.arguments()) == 0)
+        assert(len(self.weak_residual.arguments()) == 1)
 
         # Get the domain, assuming there's only one
         assert(len(self.weak_residual.domains()) == 1)
@@ -157,7 +154,7 @@ class ErrorControlGenerator:
         v = self.module.TestFunction(self._dV)
 
         # Extract original test function in the weak residual
-        v_h = extract_arguments(self.weak_residual)[0]
+        v_h = self.weak_residual.arguments()[0]
 
         # Define forms defining linear variational problem for cell
         # residual
@@ -178,7 +175,7 @@ class ErrorControlGenerator:
         v = self.module.TestFunction(self._dV)
 
         # Extract original test function in the weak residual
-        v_h = extract_arguments(self.weak_residual)[0]
+        v_h = self.weak_residual.arguments()[0]
 
         # Define forms defining linear variational problem for facet
         # residual
@@ -258,7 +255,7 @@ class UFLErrorControlGenerator(ErrorControlGenerator):
         self._V = self.u.element()
 
         # Primal test space == Dual trial space
-        Vhat = extract_arguments(self.weak_residual)[0].element()
+        Vhat = self.weak_residual.arguments()[0].element()
 
         # Discontinuous version of primal trial element space
         self._dV = tear(self._V)
