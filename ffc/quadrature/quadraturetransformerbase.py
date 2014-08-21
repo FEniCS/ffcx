@@ -47,8 +47,8 @@ from ffc.tensor.multiindex import MultiIndex as FFCMultiIndex
 from ffc.representationutils import transform_component
 
 # Utility and optimisation functions for quadraturegenerator.
-from .quadratureutils import create_psi_tables
-from .symbolics import BASIS, IP, GEO, CONST
+from ffc.quadrature.quadratureutils import create_psi_tables
+from ffc.quadrature.symbolics import BASIS, IP, GEO, CONST
 
 class QuadratureTransformerBase(Transformer):
     "Transform UFL representation to quadrature code."
@@ -951,9 +951,10 @@ class QuadratureTransformerBase(Transformer):
         ffc_element = create_element(ufl_element)
 
         # Assuming that mappings for all basisfunctions are equal
-        # (they should be).
         ffc_sub_element = create_element(local_elem)
         transformation = ffc_sub_element.mapping()[0]
+        ffc_assert(all(transformation == mapping for mapping in ffc_sub_element.mapping()),
+                   "Assuming subelement mappings are equal but they differ.")
 
         # Generate FFC multi index for derivatives.
         tdim = self.tdim # FIXME: ufl_element.domain().topological_dimension() ???
