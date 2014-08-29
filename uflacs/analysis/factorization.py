@@ -413,7 +413,7 @@ def compute_argument_factorization(SV, target_variables, dependencies):
     assert list(target_variables) == [len(SV) - 1]
 
     arg_indices = build_argument_indices(SV)
-    A = build_argument_dependencies(dependencies, arg_indices)
+    #A = build_argument_dependencies(dependencies, arg_indices)
     FV, e2fi, AV, IM = collect_argument_factors(SV, dependencies, arg_indices)
 
     # Indices into FV that are needed for final result
