@@ -30,6 +30,9 @@
 import sys
 import getopt
 import cProfile
+import re
+import string
+import os
 from os import curdir
 from os import path
 from os import getcwd
@@ -56,9 +59,9 @@ def error(msg):
 def info_version():
     "Print version number."
     info("""\
-This is FFC, the FEniCS Form Compiler, version %s.
+This is FFC, the FEniCS Form Compiler, version {0}.
 For further information, visit http://www.fenics.org/ffc/.
-""" % FFC_VERSION)
+""".format(FFC_VERSION))
 
 def info_usage():
     "Print usage information."
@@ -151,8 +154,11 @@ def main(argv):
     for filename in args:
 
         # Get filename prefix and suffix
-        prefix = filename.split(".")[0]
-        suffix = filename.split(".")[-1]
+        prefix, suffix = os.path.splitext(os.path.basename(filename))
+        suffix = suffix.replace(os.path.extsep, "")
+        # Remove weird characters (file system allows more than the C preprocessor)
+        prefix = re.subn("[^{}]".format(string.letters + string.digits + "_"), "!", prefix)[0]
+        prefix = re.subn("!+", "_", prefix)[0]
 
         # Turn on profiling
         if parameters.get("profile"):
@@ -196,9 +202,9 @@ def main(argv):
         # Turn off profiling and write status to file
         if parameters.get("profile"):
             pr.disable()
-            pfn = "ffc_%s.profile" % filename
+            pfn = "ffc_{0}.profile".format(prefix)
             pr.dump_stats(pfn)
-            info("Wrote profiling info to file %s" % pfn)
+            info("Wrote profiling info to file {0}".format(pfn))
             #pr.print_stats()
 
     return 0
