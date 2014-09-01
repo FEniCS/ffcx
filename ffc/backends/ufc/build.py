@@ -92,7 +92,8 @@ def extract_declarations(h_files):
 
     for h_file in h_files:
         # Read the code
-        code = open(h_file).read()
+        with open(h_file) as file:
+            code = file.read()
 
         # Extract the class names
         derived_classes   = re.findall(r"class[ ]+([\w]+)[ ]*: public", code)
