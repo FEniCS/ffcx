@@ -32,12 +32,7 @@ def extract_terminal_elements(terminal_data):
             label = domain.label()
             x = xs.get(label)
             if x is None:
-                x = domain.coordinates()
-                if x is None:
-                    # FIXME: Do this in ufl form preprocessing instead?
-                    xelement = ufl.VectorElement("CG", domain, 1)
-                else:
-                    xelement = x.element()
+                xelement = domain.coordinate_element()
                 xs[label] = xelement
                 elements.append(xelement)
 
@@ -85,19 +80,16 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
             element = t.element()
 
         elif isinstance(t, SpatialCoordinate):
-            x = domain.coordinates()
-            if x is None:
-                element = ufl.VectorElement("Lagrange", domain, 1)
-            else:
-                element = x.element()
+            element = domain.coordinate_element()
 
         elif isinstance(t, Jacobian):
-            x = domain.coordinates()
-            if x is None:
-                element = ufl.VectorElement("Lagrange", domain, 1)
-            else:
-                element = x.element()
+            #element = None #domain.jacobian_element() # TODO: add jacobian element to ufl domains?
+            #if element is None:
+            #    # If not otherwise specified, ...
+
+            # the Jacobian is the reference gradient of x so use the coordinate element
             # J[i,j] = dx[i]/dX[j]
+            element = domain.coordinate_element()
             fc, ld = gc
             ld = (ld,)
 

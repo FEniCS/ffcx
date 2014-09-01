@@ -105,6 +105,7 @@ class FFCDefinitionsBackend(MultiFunction):
         if self.physical_coordinates_known:
             pass
         else:
+            # FIXME: Generalize this code to work with arbitrary domain.coordinate_element()
             ffc_assert(mt.terminal.domain().coordinates() is None,
                        "Assuming coefficient field symbolically inserted before this point.")
             # Reference coordinates are known, no coordinate field, so we compute
@@ -172,6 +173,7 @@ class FFCDefinitionsBackend(MultiFunction):
         if self.physical_coordinates_known:
             pass
         else:
+            # FIXME: Generalize this code to work with arbitrary domain.coordinate_element()
             ffc_assert(mt.terminal.domain().coordinates() is None,
                        "Assuming coefficient field symbolically inserted before this point.")
             # Reference coordinates are known, no coordinate field, so we compute
