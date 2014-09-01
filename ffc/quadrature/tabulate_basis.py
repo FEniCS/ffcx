@@ -211,11 +211,7 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
 
         # Insert elements for x and J
         domain = integral.domain() # FIXME: For all domains to be sure? Better to rewrite though.
-        x = domain.coordinates()
-        if x is None:
-            x_element = ufl.VectorElement("Lagrange", domain, 1)
-        else:
-            x_element = x.element()
+        x_element = domain.coordinate_element()
         if x_element not in ufl_elements:
             if integral_type == "custom":
                 # FIXME: Not yet implemented, in progress
