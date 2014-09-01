@@ -157,7 +157,7 @@ def main(argv):
         prefix, suffix = os.path.splitext(os.path.basename(filename))
         suffix = suffix.replace(os.path.extsep, "")
         # Remove weird characters (file system allows more than the C preprocessor)
-        prefix = re.subn("[^{}]".format(string.letters + string.digits + "_"), "!", prefix)[0]
+        prefix = re.subn("[^{}]".format(string.ascii_letters + string.digits + "_"), "!", prefix)[0]
         prefix = re.subn("!+", "_", prefix)[0]
 
         # Turn on profiling
