@@ -916,11 +916,17 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
                 # FIXME: components that are actually used.) This may be optimized
                 # FIXME: but the extra cost is likely small.
 
+                # FIXME: Think about adding compute_unique_derivative_tuples in UFL
+
                 # Get derivative tuples
                 deriv_tuples, _deriv_tuples = compute_derivative_tuples(n, gdim)
+                unique_tuples = []
+                for d in _deriv_tuples:
+                    if not d in unique_tuples:
+                        unique_tuples.append(d)
 
                 # Generate names for derivatives
-                derivs = ["".join(str(_d) for _d in d) for d in _deriv_tuples]
+                derivs = ["".join(str(_d) for _d in d) for d in unique_tuples]
 
                 # Compute variables for code generation
                 eval_stride = value_size*len(derivs)
