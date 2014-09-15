@@ -225,7 +225,7 @@ def _extract_element_data(element_map, element_numbers):
                 element_number = element_numbers[ufl_element]
             else:
                 # FIXME: Should not be necessary, we should always know the element number
-                warning("Missing element number, likely because vector elements are not yet supported in custom integrals.")
+                #warning("Missing element number, likely because vector elements are not yet supported in custom integrals.")
                 element_number = None
 
             # Store data
