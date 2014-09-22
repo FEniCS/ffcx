@@ -264,19 +264,21 @@ def _tabulate_tensor(ir, prefix, parameters):
         # Generate code for basic geometric quantities
         jacobi_code = ""
         for i in range(num_cells):
+            r = i if num_cells > 1 else None
             jacobi_code += "\n"
             jacobi_code += f_comment("--- Compute geometric quantities on cell %d ---" % i)
             jacobi_code += "\n\n"
-            jacobi_code += f_comment("Extract vertex coordinates\n")
-            jacobi_code += format["extract_cell_coordinates"]((tdim + 1)*gdim*i, r=i)
-            jacobi_code += "\n\n"
-            jacobi_code += format["compute_jacobian"](tdim, gdim, r=i)
+            if num_cells > 1:
+                jacobi_code += f_comment("Extract vertex coordinates\n")
+                jacobi_code += format["extract_cell_coordinates"]((tdim + 1)*gdim*i, r=i)
+                jacobi_code += "\n\n"
+            jacobi_code += format["compute_jacobian"](tdim, gdim, r=r)
             jacobi_code += "\n"
-            jacobi_code += format["compute_jacobian_inverse"](tdim, gdim, r=i)
+            jacobi_code += format["compute_jacobian_inverse"](tdim, gdim, r=r)
             jacobi_code += "\n"
-            jacobi_code += format["generate cell volume"](tdim, gdim, integral_type, r=i)
+            jacobi_code += format["generate cell volume"](tdim, gdim, integral_type, r=r if num_cells > 1 else None)
             jacobi_code += "\n"
-            jacobi_code += format["generate circumradius"](tdim, gdim, integral_type, r=i)
+            jacobi_code += format["generate circumradius"](tdim, gdim, integral_type, r=r if num_cells > 1 else None)
             jacobi_code += "\n"
 
     else:
