@@ -208,7 +208,7 @@ def _compute_psi(v, table, num_points, integral_type):
                    if not index.index_type == MonomialIndex.FIXED]
 
     # Put quadrature points first
-    rank = numpy.rank(Psi)
+    rank = Psi.ndim
     Psi = numpy.transpose(Psi, (rank - 1,) + tuple(range(0, rank - 1)))
 
     # Compute internal index positions for current Psi
