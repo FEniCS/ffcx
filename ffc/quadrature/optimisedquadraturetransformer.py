@@ -200,14 +200,22 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         return {():new_val}
 
     def min_value(self, o, *operands):
-        # FIXME: I don't know how to implement this the optimized way
-        f_min = format["min value"]
-        return {():f_min(operands[0][()], operands[1][()])}
+        # Take minimum value of operands.
+        val0 = operands[0][()]
+        val1 = operands[1][()]
+        t = min(val0.t, val1.t)
+        # FIXME: I don't know how to implement this the optimized way. Is this right?
+        new_val = create_symbol(format["min value"](str(val0), str(val1)), t)
+        return {():new_val}
 
     def max_value(self, o, *operands):
-        # FIXME: I don't know how to implement this the optimized way
-        f_max = format["max value"]
-        return {():f_max(operands[0][()], operands[1][()])}
+        # Take maximum value of operands.
+        val0 = operands[0][()]
+        val1 = operands[1][()]
+        t = min(val0.t, val1.t)
+        # FIXME: I don't know how to implement this the optimized way. Is this right?
+        new_val = create_symbol(format["max value"](str(val0), str(val1)), t)
+        return {():new_val}
 
     # -------------------------------------------------------------------------
     # Condition, Conditional (conditional.py).
