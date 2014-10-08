@@ -22,7 +22,7 @@ transformers to translate UFL expressions."""
 # Modified by Garth N. Wells, 2013
 #
 # First added:  2009-10-13
-# Last changed: 2014-06-09
+# Last changed: 2014-10-08
 
 # Python modules.
 from six.moves import zip
@@ -1088,6 +1088,13 @@ class QuadratureTransformerBase(Transformer):
 
         # Get the index range of the loop index.
         loop_index_range = shape(self.unique_tables[psi_name])[1]
+
+        # If domain type is custom, then special-case set loop index
+        # range since table is empty
+        if self.integral_type == "custom":
+            loop_index_range = ffc_element.space_dimension()
+
+        # Create loop index
         if loop_index_range > 1:
             # Pick first free index of secondary type
             # (could use primary indices, but it's better to avoid confusion).
