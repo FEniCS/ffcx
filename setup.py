@@ -43,7 +43,7 @@ def get_installation_prefix():
             prefix = sys.argv[sys.argv.index("--prefix")+1]
         except:
             prefix = sys.prefix
-    return os.path.abspath(prefix)
+    return os.path.abspath(os.path.expanduser(prefix))
 
 def get_swig_executable():
     "Get SWIG executable"
