@@ -221,8 +221,8 @@ def build_programs(bench, permissive):
     # Get Boost dir (code copied from ufc/src/utils/python/ufc_utils/build.py)
     # Set a default directory for the boost installation
     if sys.platform == "darwin":
-        # Use MacPorts as default
-        default = os.path.join(os.path.sep, "opt", "local")
+        # Use Brew as default
+        default = os.path.join(os.path.sep, "usr", "local")
     else:
         default = os.path.join(os.path.sep, "usr")
 
