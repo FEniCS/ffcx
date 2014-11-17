@@ -836,7 +836,7 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
             # components are a set and need to be sorted
             components = sorted(components)
 
-            # Code for evaluate_basis_all
+            # Code for evaluate_basis_all (n = 0 which means it's not a derivative)
             if n == 0:
 
                 code += [f_comment("--- Evaluation of basis functions ---")]
@@ -907,7 +907,7 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
                     code += f_loop(block, [("ip", 0, "num_quadrature_points")])
                     code += [""]
 
-            # Code for evaluate_basis_derivatives_all
+            # Code for evaluate_basis_derivatives_all (derivative of degree n > 0)
             else:
 
                 code += [f_comment("--- Evaluation of basis function derivatives of order %d ---" % n) ]
@@ -918,25 +918,26 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
                 # FIXME: components that are actually used.) This may be optimized
                 # FIXME: but the extra cost is likely small.
 
-                # FIXME: Think about adding compute_unique_derivative_tuples in UFL
-
                 # Get derivative tuples
-                deriv_tuples, _deriv_tuples = compute_derivative_tuples(n, gdim)
-                unique_tuples = []
-                for d in _deriv_tuples:
-                    if not d in unique_tuples:
-                        unique_tuples.append(d)
+                __, deriv_tuples = compute_derivative_tuples(n, gdim)
 
                 # Generate names for derivatives
-                derivs = ["".join(str(_d) for _d in d) for d in unique_tuples]
+                derivs = ["".join(str(_d) for _d in d) for d in deriv_tuples]
 
                 # Compute variables for code generation
                 eval_stride = value_size*len(derivs)
                 eval_size   = space_dim*eval_stride
                 table_size  = num_cells*space_dim
 
-                # Iterate over derivatives and components and initialize tables
+                # Iterate over derivatives and initialize tables
+                seen_derivs = set()
                 for d in derivs:
+
+                    # Skip derivative if seen before (d^2/dxdy = d^2/dydx)
+                    if d in seen_derivs: continue
+                    seen_derivs.add(d)
+
+                    # Iterate over components
                     for c in components:
 
                         # Set name of table
@@ -971,8 +972,15 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
                                                "vertex_offset":  vertex_offset,
                                                "n":              n}]
 
-                    # Iterate over derivatives and components and extract values
+                    # Iterate over derivatives and extract values
+                    seen_derivs = set()
                     for i, d in enumerate(derivs):
+
+                        # Skip derivative if seen before (d^2/dxdy = d^2/dydx)
+                        if d in seen_derivs: continue
+                        seen_derivs.add(d)
+
+                        # Iterate over components
                         for c in components:
 
                             # Set name of table and component offset
