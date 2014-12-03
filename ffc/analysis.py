@@ -256,11 +256,14 @@ def _attach_integral_metadata(form_data, parameters):
             common_metadata["quadrature_rule"] = qr
 
     # Update scheme for QuadratureElements
-    if all_equal(quad_schemes):
+    if quad_schemes and all_equal(quad_schemes):
         scheme = quad_schemes[0]
     else:
         scheme = "canonical"
-        info("Quadrature rule must be equal within each sub domain, using %s rule." % qr)
+        info("Quadrature rule must be equal within each sub domain, using %s rule." % scheme)
+    # FIXME: This modifies the elements depending on the form compiler parameters,
+    #        this is a serious breach of the immutability of ufl objects, since the
+    #        element quad scheme is part of the signature and hash of the element...
     for element in form_data.sub_elements:
         if element.family() == "Quadrature":
             element._quad_scheme = scheme
