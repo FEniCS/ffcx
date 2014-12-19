@@ -9,7 +9,7 @@ def compile_tabulate_tensor_code(form, optimize=True):
 
     # Fake the initialization necessary to get this running through
     set_float_formatting(8)
-    parameters = {"optimize": optimize}
+    parameters = {"optimize": optimize, "restrict_keyword": ""}
     prefix = "uflacs_testing"
     form_id = 0
 
