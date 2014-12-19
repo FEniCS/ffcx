@@ -23,7 +23,8 @@ def compile_tabulate_tensor_code(form, optimize=True):
         itg_data.metadata["quadrature_rule"] = itg_data.metadata.get("quadrature_rule", "default")
 
         # Call uflacs representation functions from ffc, which again calls the matching uflacs functions
-        ir = compute_integral_ir(itg_data, form_data, form_id, parameters)
+        element_numbers = None # FIXME
+        ir = compute_integral_ir(itg_data, form_data, form_id, element_numbers, parameters)
         if optimize:
             ir = optimize_integral_ir(ir, parameters)
         code = generate_integral_code(ir, prefix, parameters)
