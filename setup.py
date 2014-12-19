@@ -46,7 +46,10 @@ def get_installation_prefix():
         try:
             prefix = sys.argv[sys.argv.index("--prefix")+1]
         except:
-            prefix = sys.prefix
+            if platform.system() == "Windows":
+                prefix = sys.prefix
+            else:
+                prefix = "/usr/local"
     return os.path.abspath(os.path.expanduser(prefix))
 
 def get_swig_executable():
