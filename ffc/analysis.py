@@ -27,6 +27,8 @@ form representation type.
 # Modified by Marie E. Rognes, 2010
 # Modified by Martin Alnaes, 2013-2014
 
+import os
+
 # UFL modules
 from ufl.common import istr, tstr
 from ufl.finiteelement import MixedElement, EnrichedElement
@@ -172,6 +174,8 @@ def _attach_integral_metadata(form_data, parameters):
             else:
                 info("Valid choices are 'tensor', 'quadrature', 'uflacs', or 'auto'.")
                 error("Illegal choice of representation for integral: " + str(r))
+            # Hack to override representation with environment variable
+            r = os.environ.get("FFC_FORCE_REPRESENTATION", r)
             integral_metadata["representation"] = r
 
             # Automatic selection of quadrature degree
