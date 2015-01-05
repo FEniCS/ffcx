@@ -38,7 +38,7 @@ option --bench.
 # FIXME: Need to add many more test cases. Quite a few DOLFIN forms
 # failed after the FFC tests passed.
 
-import os, sys, shutil, difflib
+import os, sys, shutil, difflib, sysconfig
 from numpy import array, shape, abs, max, isnan
 from ffc.log import begin, end, info, info_red, info_green, info_blue
 from ufctest import generate_test_code
@@ -236,7 +236,8 @@ def build_programs(bench, permissive):
         if os.path.isfile(os.path.join(boost_dir, inc_dir, "boost", "version.hpp")):
             boost_inc_dir = os.path.join(boost_dir, inc_dir)
             break
-    for lib_dir in ["", "lib", "lib/x86_64-linux-gnu"]:
+    libdir_multiarch = "lib/" + sysconfig.get_config_vars().get("MULTIARCH", "")
+    for lib_dir in ["", "lib", libdir_multiarch, "lib64"]:
         for ext in [".so", "-mt.so", ".dylib", "-mt.dylib"]:
             _lib = os.path.join(boost_dir, lib_dir, "lib" + boost_math_tr1_lib + ext)
             if os.path.isfile(_lib):

@@ -8,6 +8,10 @@ from distutils.command.build import build
 from distutils.version import LooseVersion
 from distutils.ccompiler import new_compiler
 
+if sys.version_info < (2, 7):
+    print("Python 2.7 or higher required, please upgrade.")
+    sys.exit(1)
+
 VERSION   = "1.4.0+"
 SCRIPTS   = [os.path.join("scripts", "ffc")]
 
@@ -42,7 +46,10 @@ def get_installation_prefix():
         try:
             prefix = sys.argv[sys.argv.index("--prefix")+1]
         except:
-            prefix = sys.prefix
+            if platform.system() == "Windows":
+                prefix = sys.prefix
+            else:
+                prefix = "/usr/local"
     return os.path.abspath(os.path.expanduser(prefix))
 
 def get_swig_executable():
