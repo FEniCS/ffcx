@@ -40,14 +40,19 @@ License along with this program. If not, see
 Dependencies
 ------------
 
-#.  Python, version 2.6
+#.  Python, version 2.7 or later
 
-#.  The latest version of FIAT and UFL
+#.  The latest version of FIAT, Instant and UFL
 
-    You need to have FIAT and UFL installed. They are available from the
-    web page: https://bitbucket.org/fenics-project/.
+    You need to have FIAT, Instant and UFL installed. They are available
+    from the web page: https://bitbucket.org/fenics-project/.
 
 #. The Python NumPy module
+
+#. The Python Six module
+
+#. SWIG, version 2.0.0 or later for Python 2 and version 3.0.3 or
+   later for Python 3
 
 
 Notes
