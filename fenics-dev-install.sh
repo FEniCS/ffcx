@@ -5,40 +5,52 @@
 # Notes:
 #
 # - This script is what most developers use to build/rebuild this package.
-# - This script is common to all distutils-based FEniCS packages.
+# - This script is common to all distutils based FEniCS packages.
 # - If this script is updated in one package, please propagate to the others!
 #
 # Environment variables:
 #
-# - $FENICS_DIR : controls installation directory $FENICS_DIR/$BRANCH
-#               : defaults to $HOME/opt/fenics
-# - $PROCS      : controls number of processors to use for build
-#               : defaults to 6
+# - $PROCS                    : controls number of processes to use for build
+#                             : defaults to 6
+# - $FENICS_PYTHON_EXECUTABLE : name of python executable
+#                             : defaults to "python"
+# - $FENICS_INSTALL_PREFIX    : path to FEniCS installation prefix
+#                             : defaults to "${HOME}/opt/<branchname>"
+#
+# Note: Some of the code below may be redundant for either distutils or
+# CMake based installations but it helps keeping the scripts up-to-date
+# if the different scripts share as much code as possible.
 
-# Check and set FENICS_DIR
-if [ -z "${FENICS_DIR}" ]; then
-    FENICS_DIR=${HOME}/opt/fenics
-fi
+# Exit on first error
+set -e
 
 # Get branch name
 BRANCH=`(git symbolic-ref --short HEAD 2> /dev/null || git describe HEAD) | sed s:/:.:g`
+echo "On branch '${BRANCH}'."
 
-# Set installation prefix
-FENICS_INSTALL_PREFIX="${FENICS_DIR}/${BRANCH}"
-echo "Installation prefix set to ${INSTALL_PREFIX}"
+# Get installation prefix
+: ${FENICS_INSTALL_PREFIX:="${HOME}/opt/fenics/${BRANCH}"}
+echo "Installation prefix set to '${FENICS_INSTALL_PREFIX}'."
 
-# Configure and install
-python setup.py install --prefix=${FENICS_INSTALL_PREFIX}
+# Get Python executable and version
+: ${FENICS_PYTHON_EXECUTABLE:=python}
+FENICS_PYTHON_VERSION=$(${FENICS_PYTHON_EXECUTABLE} -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
+echo "Python executable and version set to '${FENICS_PYTHON_EXECUTABLE} ${FENICS_PYTHON_VERSION}'."
+
+# Build
+${FENICS_PYTHON_EXECUTABLE} setup.py build
+
+# Install
+${FENICS_PYTHON_EXECUTABLE} setup.py install --prefix=${FENICS_INSTALL_PREFIX}
 
 # Write config file
-CONFIG_FILE="${FENICS_DIR}/fenics-$BRANCH.conf"
+CONFIG_FILE="${FENICS_INSTALL_PREFIX}/fenics.conf"
 rm -f ${CONFIG_FILE}
 cat << EOF > ${CONFIG_FILE}
-# FEniCS configuration file created by upd on $(date)
+# FEniCS configuration file created by fenics-dev-install.sh on $(date)
 export FENICS_INSTALL_PREFIX=${FENICS_INSTALL_PREFIX}
 export PATH=\${FENICS_INSTALL_PREFIX}/bin:\$PATH
-export PYTHONPATH=\${FENICS_INSTALL_PREFIX}/lib/python2.7/site-packages:\$PYTHONPATH
-export CMAKE_PREFIX_PATH=\${FENICS_INSTALL_PREFIX}:\$CMAKE_PREFIX_PATH
+export PYTHONPATH=\${FENICS_INSTALL_PREFIX}/lib/python${FENICS_PYTHON_VERSION}/site-packages:\${PYTHONPATH}
 EOF
 
 # Print information
