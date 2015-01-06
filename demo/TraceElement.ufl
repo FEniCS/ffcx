@@ -17,7 +17,6 @@
 #
 # Compile with: ffc --verbose -fno-evaluate_basis -fno-evaluate_basis_derivatives -r quadrature TraceElement.ufl
 
-
 shape = triangle
 order = 1
 element = FiniteElement("Discontinuous Lagrange Trace", shape, order)
