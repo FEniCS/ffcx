@@ -28,9 +28,12 @@ import ufl
 from ufl.utils.sorting import sorted_by_key
 import FIAT
 
+from FIAT.trace import DiscontinuousLagrangeTrace
+
 # FFC modules
 from ffc.log import debug, error, ffc_assert
 from ffc.quadratureelement import QuadratureElement as FFCQuadratureElement
+
 
 from ffc.mixedelement import MixedElement
 from ffc.restrictedelement import RestrictedElement
@@ -45,6 +48,7 @@ supported_families = ("Brezzi-Douglas-Marini",
                       "Crouzeix-Raviart",
                       "Discontinuous Lagrange",
                       "Discontinuous Raviart-Thomas",
+                      "Discontinuous Lagrange Trace",
                       "Lagrange",
                       "Lobatto",
                       "Nedelec 1st kind H(curl)",

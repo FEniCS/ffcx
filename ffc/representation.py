@@ -47,6 +47,7 @@ from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
 from ffc.fiatinterface import create_element, reference_cell
 from ffc.mixedelement import MixedElement
 from ffc.enrichedelement import EnrichedElement, SpaceOfReals
+from ffc.fiatinterface import DiscontinuousLagrangeTrace
 from ffc.quadratureelement import QuadratureElement
 from ffc.cpp import set_float_formatting
 
@@ -366,15 +367,15 @@ def _evaluate_basis(ufl_element, element):
     mappings = element.mapping()
 
     # This function is evidently not implemented for TensorElements
-    for e in elements:
-        if len(e.value_shape()) > 1:
-            return "Function not supported/implemented for TensorElements."
-
     # Handle QuadratureElement, not supported because the basis is only defined
     # at the dof coordinates where the value is 1, so not very interesting.
     for e in elements:
+        if len(e.value_shape()) > 1:
+            return "Function not supported/implemented for TensorElements."
         if isinstance(e, QuadratureElement):
             return "Function not supported/implemented for QuadratureElement."
+        if isinstance(e, DiscontinuousLagrangeTrace):
+            return "Function not supported for Trace elements"
 
     # Initialise data with 'global' values.
     data = {"reference_value_size": _value_size(element),
@@ -504,6 +505,8 @@ def _interpolate_vertex_values(ufl_element, element):
     for e in all_elements(element):
         if isinstance(e, QuadratureElement):
             return "Function is not supported/implemented for QuadratureElement."
+        if isinstance(e, DiscontinuousLagrangeTrace):
+            return "Function is not implemented for DiscontinuousLagrangeTrace."
 
     domain, = ufl_element.domains() # Assuming single domain
     cellname = domain.cell().cellname()
