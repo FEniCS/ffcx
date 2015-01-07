@@ -40,6 +40,7 @@ def generate_integral_code(ir, prefix, parameters):
     code["tabulate_tensor"] = _tabulate_tensor(ir, parameters)
     return code
 
+
 def _tabulate_tensor(ir, parameters):
     "Generate code for tabulate_tensor."
 
@@ -150,18 +151,13 @@ def _tabulate_tensor(ir, parameters):
 
     return "\n".join(lines)
 
+
 def _generate_tensor_contraction(terms, parameters, g_set):
     """
-    Generate code for computation of tensor contraction, choosing
-    either standard or optimized contraction.
+    Generate code for computation of tensor contraction
     """
+    return _generate_tensor_contraction_standard(terms, parameters, g_set)
 
-    # Only check first term, assuming either non or all are optimized
-    A0, GK, optimized_contraction = terms[0]
-    if optimized_contraction is None:
-        return _generate_tensor_contraction_standard(terms, parameters, g_set)
-    else:
-        return _generate_tensor_contraction_optimized(terms, parameters, g_set)
 
 def _generate_tensor_contraction_standard(terms, parameters, g_set):
     """
@@ -230,84 +226,6 @@ def _generate_tensor_contraction_standard(terms, parameters, g_set):
 
     return "\n".join(lines)
 
-def _generate_tensor_contraction_optimized(terms, parameters, g_set):
-    """
-    Generate code for computation of tensor contraction using
-    optimized tensor contraction.
-    """
-
-    # Prefetch formats to speed up code generation
-    assign            = format["assign"]
-    geometry_tensor   = format["geometry tensor"]
-    inner_product     = format["inner product"]
-    float_declaration = format["float declaration"]
-
-    # Handle naming of entries depending on the number of terms
-    if len(terms) == 1:
-        element_tensor = lambda i, j: format["element tensor"](i)
-    else:
-        element_tensor = lambda i, j: format["element tensor term"](i, j)
-
-    # Iterate over terms
-    lines = []
-    for (j, (A0, GK, optimized_contraction)) in enumerate(terms):
-
-        # Check that an optimized contraction has been computed
-        if optimized_contraction is None:
-            error("Missing optimized tensor contraction.")
-
-        # Declare array if necessary
-        if len(terms) > 1:
-            num_entries = len(optimized_contraction)
-            lines.append("%s %s;" % (float_declaration, element_tensor(num_entries, j)))
-
-        # Iterate over entries in element tensor
-        for (lhs, rhs) in optimized_contraction:
-
-            # Sanity check
-            ltype, i = lhs
-            if ltype != 0:
-                error("Expecting element tensor entry from FErari but got something else.")
-
-            # Create name of entry
-            name = element_tensor(i, j)
-
-            # Prepare coefficents and entries for inner product
-            coefficients = []
-            entries = []
-            for (c, rtype, k) in rhs:
-
-                # Set coefficient
-                if rtype == 0:
-                    coefficients.append(c)
-                    entries.append(element_tensor(k, j))
-                else:
-                    a = A0.secondary_multi_index.indices[k]
-                    gk = geometry_tensor(j, a)
-                    g_set.add(gk)
-                    coefficients.append(c)
-                    entries.append(gk)
-
-            # Generate code for inner product
-            value = inner_product(coefficients, entries)
-
-            # Add declaration
-            lines.append(assign(name, value))
-
-        # Add some space
-        if len(terms) > 1:
-            lines.append("")
-
-    # Sum contributions if we have more than one term
-    if len(terms) > 1:
-        add = format["add"]
-        A0, GK, optimized_contraction = terms[0]
-        for i in range(len(A0.primary_multi_index.indices)):
-            name = format["element tensor"](i)
-            value = add([element_tensor(i, j) for j in range(len(terms))])
-            lines.append(assign(name, value))
-
-    return "\n".join(lines)
 
 def _generate_geometry_tensors(terms, j_set, g_set, tdim, gdim):
     "Generate code for computation of geometry tensors."
@@ -364,6 +282,7 @@ def _generate_geometry_tensors(terms, j_set, g_set, tdim, gdim):
 
     return "\n".join(lines)
 
+
 def _generate_entry(GK, a, i, j_set, tdim, gdim):
     "Generate code for the value of a GK entry."
 
@@ -388,6 +307,7 @@ def _generate_entry(GK, a, i, j_set, tdim, gdim):
         entry = add(terms)
 
     return entry
+
 
 def _multiply_value_by_det(value, dets, is_sum, j_set):
     "Generate code for multiplication of value by determinant(s)."
@@ -418,6 +338,7 @@ def _multiply_value_by_det(value, dets, is_sum, j_set):
         v = [value]
 
     return format["multiply"](d + [format["scale factor"]] + v)
+
 
 def _extract_factors(GK, a, b, j_set, tdim, gdim, index_type):
     "Extract factors of given index type in GK entry."
