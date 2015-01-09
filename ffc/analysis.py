@@ -164,7 +164,12 @@ def _attach_integral_metadata(form_data, parameters):
 
             # Automatic selection of representation
             r = integral_metadata["representation"]
-            if r == "auto":
+            # Hack to override representation with environment variable
+            forced_r = os.environ.get("FFC_FORCE_REPRESENTATION")
+            if forced_r:
+                r = forced_r
+                info("representation:    forced --> %s" % r)
+            elif r == "auto":
                 r = _auto_select_representation(integral,
                                                 form_data.unique_sub_elements,
                                                 form_data.function_replace_map)
@@ -174,8 +179,6 @@ def _attach_integral_metadata(form_data, parameters):
             else:
                 info("Valid choices are 'tensor', 'quadrature', 'uflacs', or 'auto'.")
                 error("Illegal choice of representation for integral: " + str(r))
-            # Hack to override representation with environment variable
-            r = os.environ.get("FFC_FORCE_REPRESENTATION", r)
             integral_metadata["representation"] = r
 
             # Automatic selection of quadrature degree
