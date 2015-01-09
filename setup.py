@@ -6,6 +6,10 @@ import sys
 import os
 import platform
 
+if sys.version_info < (2, 7):
+    print("Python 2.7 or higher required, please upgrade.")
+    sys.exit(1)
+
 # Version number
 major = 1
 minor = 4
