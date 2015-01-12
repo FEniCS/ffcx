@@ -34,7 +34,7 @@ __version__ = "1.5.0"
 __license__ = "This code is released into the public domain"
 
 UFC_VERSION_MAJOR = 1
-UFC_VERSION_MINOR = 4
+UFC_VERSION_MINOR = 5
 UFC_VERSION_MAINTENANCE = 0
 
 UFC_VERSION = __version__
