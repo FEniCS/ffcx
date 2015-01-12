@@ -14,8 +14,8 @@ if sys.version_info < (2, 7):
 major = 1
 minor = 5
 maintenance = 0
-development = "" # Select this for release
-#development = "+" # Select this otherwise
+#development = "" # Select this for release
+development = "+" # Select this otherwise
 version = "%d.%d.%d%s" % (major, minor, maintenance, development)
 
 
