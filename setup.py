@@ -12,7 +12,7 @@ if sys.version_info < (2, 7):
     print("Python 2.7 or higher required, please upgrade.")
     sys.exit(1)
 
-VERSION   = "1.4.0+"
+VERSION   = "1.5.0"
 SCRIPTS   = [os.path.join("scripts", "ffc")]
 
 AUTHORS = """\

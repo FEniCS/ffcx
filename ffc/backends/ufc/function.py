@@ -1,7 +1,7 @@
-# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.4.0+.
+# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.5.0.
 # This code is released into the public domain.
 #
-# The FEniCS Project (http://www.fenicsproject.org/) 2006-2014
+# The FEniCS Project (http://www.fenicsproject.org/) 2006-2015
 
 function_combined = """\
 /// This class defines the interface for a general tensor-valued function.
