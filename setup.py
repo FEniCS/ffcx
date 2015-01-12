@@ -60,7 +60,7 @@ def get_swig_executable():
         swig_minimum_version = [2, 0, 0]
     else:
         swig_minimum_version = [3, 0, 3]
-    swig_minimum_version_str = string.join([str(x) for x in swig_minimum_version], ".")
+    swig_minimum_version_str = ".".join([str(x) for x in swig_minimum_version])
 
     # Find SWIG executable
     swig_executable = None
