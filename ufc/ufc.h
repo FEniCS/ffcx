@@ -1,4 +1,4 @@
-// This is UFC (Unified Form-assembly Code) v. 1.5.0+.
+// This is UFC (Unified Form-assembly Code) v. 1.6.0dev.
 // This code is released into the public domain.
 //
 // The FEniCS Project (http://www.fenicsproject.org/) 2006-2015.
@@ -7,8 +7,9 @@
 #define __UFC_H
 
 #define UFC_VERSION_MAJOR 1
-#define UFC_VERSION_MINOR 5
+#define UFC_VERSION_MINOR 6
 #define UFC_VERSION_MAINTENANCE 0
+#define UFC_VERSION_RELEASE 0
 
 #include <vector>
 #include <cstddef>
@@ -16,7 +17,17 @@
 
 #include <ufc_geometry.h>
 
-const char UFC_VERSION[] = "1.5.0+";
+#define CONCAT(a,b,c) #a "." #b "." #c
+#define EVALUATOR(a,b,c) CONCAT(a,b,c)
+
+#if UFC_VERSION_RELEASE
+const char UFC_VERSION[] = EVALUATOR(UFC_VERSION_MAJOR, UFC_VERSION_MINOR, UFC_VERSION_MAINTENANCE);
+#else
+const char UFC_VERSION[] = EVALUATOR(UFC_VERSION_MAJOR, UFC_VERSION_MINOR, UFC_VERSION_MAINTENANCE) "dev";
+#endif
+
+#undef CONCAT
+#undef EVALUATOR
 
 namespace ufc
 {

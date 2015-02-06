@@ -34,9 +34,11 @@ import os
 
 # FFC modules
 from ffc.log import info, error, begin, end, dstr
-from ffc.constants import FFC_VERSION, UFC_VERSION
+from ffc import __version__ as FFC_VERSION
+from ffc.backends.ufc import __version__ as UFC_VERSION
 from ffc.cpp import format
 from ffc.backends.ufc import templates
+
 
 def format_code(code, wrapper_code, prefix, parameters):
     "Format given code in UFC format."

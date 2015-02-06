@@ -5,15 +5,16 @@ from distutils import sysconfig, spawn
 from distutils.core import setup, Extension
 from distutils.command import build_ext
 from distutils.command.build import build
-from distutils.version import LooseVersion
 from distutils.ccompiler import new_compiler
 
 if sys.version_info < (2, 7):
     print("Python 2.7 or higher required, please upgrade.")
     sys.exit(1)
 
-VERSION   = "1.5.0+"
-SCRIPTS   = [os.path.join("scripts", "ffc")]
+VERSION = re.findall('__version__ = "(.*)"',
+                     open('ffc/__init__.py', 'r').read())[0]
+
+SCRIPTS = [os.path.join("scripts", "ffc")]
 
 AUTHORS = """\
 Anders Logg, Kristian Oelgaard, Marie Rognes, Garth N. Wells,
