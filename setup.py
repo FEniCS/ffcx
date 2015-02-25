@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 
 from distutils.core import setup
-from distutils import sysconfig
 import sys
-import os
-import platform
+import re
 
 if sys.version_info < (2, 7):
     print("Python 2.7 or higher required, please upgrade.")
     sys.exit(1)
 
-from uflacs import __version__ as version
+version = re.findall('__version__ = "(.*)"',
+                     open('uflacs/__init__.py', 'r').read())[0]
 
 packages = [
     "uflacs",
