@@ -250,7 +250,7 @@ namespace ufc
 
     /// Return the dimension of the local finite element function space
     /// for a cell
-    virtual std::size_t local_dimension() const = 0;
+    virtual std::size_t num_element_dofs() const = 0;
 
     /// Return the number of dofs on each cell facet
     virtual std::size_t num_facet_dofs() const = 0;

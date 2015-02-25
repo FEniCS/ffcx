@@ -828,7 +828,7 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
         # Get element data for current element
         counter        = int(prefix.split("FE")[1])
         element_number = element_data[counter]["element_number"]
-        space_dim      = element_data[counter]["local_dimension"]
+        space_dim      = element_data[counter]["num_element_dofs"]
         value_size     = element_data[counter]["value_size"]
 
         # Iterate over derivative orders

@@ -341,7 +341,7 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id,
   test_cell c(cell_shape, dofmap.geometric_dimension());
   const std::vector<double> vertex_coordinates
     = test_vertex_coordinates(dofmap.geometric_dimension());
-  std::size_t n = dofmap.local_dimension();
+  std::size_t n = dofmap.num_element_dofs();
   std::size_t* dofs = new std::size_t[n];
   for (std::size_t i = 0; i < n; i++)
     dofs[i] = 0;
@@ -360,8 +360,8 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id,
   printer.print_scalar("global_dimension",
                        dofmap.global_dimension(num_entities));
 
-  // local_dimension
-  printer.print_scalar("local_dimension", dofmap.local_dimension());
+  // num_element_dofs
+  printer.print_scalar("num_element_dofs", dofmap.num_element_dofs());
 
   // geometric_dimension
   printer.print_scalar("geometric_dimension", dofmap.geometric_dimension());
@@ -375,7 +375,7 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id,
 
   // tabulate_dofs
   dofmap.tabulate_dofs(dofs, num_entities, c);
-  printer.print_array("tabulate_dofs", dofmap.local_dimension(), dofs);
+  printer.print_array("tabulate_dofs", dofmap.num_element_dofs(), dofs);
 
   // tabulate_facet_dofs
   for (std::size_t facet = 0; facet < num_facets; facet++)

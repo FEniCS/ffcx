@@ -230,7 +230,7 @@ def _extract_element_data(element_map, element_numbers):
 
             # Store data
             element_data[counter] = {"value_size":      value_size,
-                                     "local_dimension": fiat_element.space_dimension(),
+                                     "num_element_dofs": fiat_element.space_dimension(),
                                      "element_number":  element_number}
 
     return element_data

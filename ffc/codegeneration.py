@@ -180,7 +180,7 @@ def _generate_dofmap_code(ir, prefix, parameters):
     code["topological_dimension"] = ret(ir["topological_dimension"])
     code["geometric_dimension"] = ret(ir["geometric_dimension"])
     code["global_dimension"] = _global_dimension(ir["global_dimension"])
-    code["local_dimension"] = ret(ir["local_dimension"])
+    code["num_element_dofs"] = ret(ir["num_element_dofs"])
     code["num_facet_dofs"] = ret(ir["num_facet_dofs"])
     code["num_entity_dofs"] \
         = switch(f_d, [ret(num) for num in ir["num_entity_dofs"]],
