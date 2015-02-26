@@ -1,6 +1,6 @@
 "This module defines rules and algorithms for generating C++ code."
 
-# Copyright (C) 2009-2013 Anders Logg
+# Copyright (C) 2009-2015 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -19,10 +19,7 @@
 #
 # Modified by Kristian B. Oelgaard 2011
 # Modified by Marie E. Rognes 2010
-# Modified by Martin Alnaes 2013
-#
-# First added:  2009-12-16
-# Last changed: 2014-06-09
+# Modified by Martin Alnaes 2013-2015
 
 # Python modules
 import re, numpy, platform

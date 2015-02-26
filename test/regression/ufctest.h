@@ -1,4 +1,4 @@
-// Copyright (C) 2010-2013 Anders Logg
+// Copyright (C) 2010-2015 Anders Logg
 //
 // This file is part of FFC.
 //
@@ -15,10 +15,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with FFC. If not, see <http://www.gnu.org/licenses/>.
 //
-// Modified by Martin Alnaes, 2013
-//
-// First added:  2010-01-24
-// Last changed: 2013-02-18
+// Modified by Martin Alnaes, 2013-2015
 //
 // Functions for calling generated UFC functions with "random" (but
 // fixed) data and print the output to screen. Useful for running
@@ -729,19 +726,19 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
   // has_point_integrals
   printer.print_scalar("has_point_integrals", form.has_point_integrals());
 
-  // num_cell_domains
-  printer.print_scalar("num_cell_domains", form.num_cell_domains());
+  // max_cell_subdomain_id
+  printer.print_scalar("max_cell_subdomain_id", form.max_cell_subdomain_id());
 
-  // num_exterior_facet_domains
-  printer.print_scalar("num_exterior_facet_domains",
-                       form.num_exterior_facet_domains());
+  // max_exterior_facet_subdomain_id
+  printer.print_scalar("max_exterior_facet_subdomain_id",
+                       form.max_exterior_facet_subdomain_id());
 
-  // num_interior_facet_domains
-  printer.print_scalar("num_interior_facet_domains",
-                       form.num_interior_facet_domains());
+  // max_interior_facet_subdomain_id
+  printer.print_scalar("max_interior_facet_subdomain_id",
+                       form.max_interior_facet_subdomain_id());
 
-  // num_point_domains
-  printer.print_scalar("num_point_domains", form.num_point_domains());
+  // max_point_subdomain_id
+  printer.print_scalar("max_point_subdomain_id", form.max_point_subdomain_id());
 
   // create_finite_element
   for (std::size_t i = 0; i < form.rank() + form.num_coefficients(); i++)
@@ -768,7 +765,7 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
                          tensor_size, w, bench, -1, printer);
     delete integral;
   }
-  for (std::size_t i = 0; i < form.num_cell_domains(); i++)
+  for (std::size_t i = 0; i < form.max_cell_subdomain_id(); i++)
   {
     ufc::cell_integral* integral = form.create_cell_integral(i);
     if (integral)
@@ -790,7 +787,7 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
     delete integral;
   }
 
-  for (std::size_t i = 0; i < form.num_exterior_facet_domains(); i++)
+  for (std::size_t i = 0; i < form.max_exterior_facet_subdomain_id(); i++)
   {
     ufc::exterior_facet_integral* integral
       = form.create_exterior_facet_integral(i);
@@ -811,7 +808,7 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
                                    macro_tensor_size, w, bench, -1, printer);
     delete integral;
   }
-  for (std::size_t i = 0; i < form.num_interior_facet_domains(); i++)
+  for (std::size_t i = 0; i < form.max_interior_facet_subdomain_id(); i++)
   {
     ufc::interior_facet_integral* integral
       = form.create_interior_facet_integral(i);
@@ -834,7 +831,7 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
     }
     delete integral;
   }
-  for (std::size_t i = 0; i < form.num_point_domains(); i++)
+  for (std::size_t i = 0; i < form.max_point_subdomain_id(); i++)
   {
     ufc::point_integral* integral = form.create_point_integral(i);
     if (integral)

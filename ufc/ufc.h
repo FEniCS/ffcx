@@ -421,20 +421,20 @@ namespace ufc
     virtual dofmap* create_dofmap(std::size_t i) const = 0;
 
 
-    /// Return the number of cell domains
-    virtual std::size_t num_cell_domains() const = 0;
+    /// Return the upper bound on subdomain ids for cell integrals
+    virtual std::size_t max_cell_subdomain_id() const = 0;
 
-    /// Return the number of exterior facet domains
-    virtual std::size_t num_exterior_facet_domains() const = 0;
+    /// Return the upper bound on subdomain ids for exterior facet integrals
+    virtual std::size_t max_exterior_facet_subdomain_id() const = 0;
 
-    /// Return the number of interior facet domains
-    virtual std::size_t num_interior_facet_domains() const = 0;
+    /// Return the upper bound on subdomain ids for interior facet integrals
+    virtual std::size_t max_interior_facet_subdomain_id() const = 0;
 
-    /// Return the number of point domains
-    virtual std::size_t num_point_domains() const = 0;
+    /// Return the upper bound on subdomain ids for point integrals
+    virtual std::size_t max_point_subdomain_id() const = 0;
 
-    /// Return the number of custom domains
-    virtual std::size_t num_custom_domains() const = 0;
+    /// Return the upper bound on subdomain ids for custom integrals
+    virtual std::size_t max_custom_subdomain_id() const = 0;
 
 
     /// Return whether form has any cell integrals

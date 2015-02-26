@@ -75,33 +75,33 @@ public:
 
 
   /// Return the number of cell domains
-  virtual std::size_t num_cell_domains() const
+  virtual std::size_t max_cell_subdomain_id() const
   {
-%(num_cell_domains)s
+%(max_cell_subdomain_id)s
   }
 
   /// Return the number of exterior facet domains
-  virtual std::size_t num_exterior_facet_domains() const
+  virtual std::size_t max_exterior_facet_subdomain_id() const
   {
-%(num_exterior_facet_domains)s
+%(max_exterior_facet_subdomain_id)s
   }
 
   /// Return the number of interior facet domains
-  virtual std::size_t num_interior_facet_domains() const
+  virtual std::size_t max_interior_facet_subdomain_id() const
   {
-%(num_interior_facet_domains)s
+%(max_interior_facet_subdomain_id)s
   }
 
   /// Return the number of point domains
-  virtual std::size_t num_point_domains() const
+  virtual std::size_t max_point_subdomain_id() const
   {
-%(num_point_domains)s
+%(max_point_subdomain_id)s
   }
 
   /// Return the number of custom domains
-  virtual std::size_t num_custom_domains() const
+  virtual std::size_t max_custom_subdomain_id() const
   {
-%(num_custom_domains)s
+%(max_custom_subdomain_id)s
   }
 
 
@@ -248,19 +248,19 @@ public:
 
 
   /// Return the number of cell domains
-  virtual std::size_t num_cell_domains() const;
+  virtual std::size_t max_cell_subdomain_id() const;
 
   /// Return the number of exterior facet domains
-  virtual std::size_t num_exterior_facet_domains() const;
+  virtual std::size_t max_exterior_facet_subdomain_id() const;
 
   /// Return the number of interior facet domains
-  virtual std::size_t num_interior_facet_domains() const;
+  virtual std::size_t max_interior_facet_subdomain_id() const;
 
   /// Return the number of point domains
-  virtual std::size_t num_point_domains() const;
+  virtual std::size_t max_point_subdomain_id() const;
 
   /// Return the number of custom domains
-  virtual std::size_t num_custom_domains() const;
+  virtual std::size_t max_custom_subdomain_id() const;
 
 
   /// Return whether the form has any cell integrals
@@ -365,34 +365,35 @@ ufc::dofmap* %(classname)s::create_dofmap(std::size_t i) const
 
 
 /// Return the number of cell domains
-std::size_t %(classname)s::num_cell_domains() const
+std::size_t %(classname)s::max_cell_subdomain_id() const
 {
-%(num_cell_domains)s
+%(max_cell_subdomain_id)s
 }
 
 /// Return the number of exterior facet domains
-std::size_t %(classname)s::num_exterior_facet_domains() const
+std::size_t %(classname)s::max_exterior_facet_subdomain_id() const
 {
-%(num_exterior_facet_domains)s
+%(max_exterior_facet_subdomain_id)s
 }
 
 /// Return the number of interior facet domains
-std::size_t %(classname)s::num_interior_facet_domains() const
+std::size_t %(classname)s::max_interior_facet_subdomain_id() const
 {
-%(num_interior_facet_domains)s
+%(max_interior_facet_subdomain_id)s
 }
 
 /// Return the number of point domains
-std::size_t %(classname)s::num_point_domains() const
+std::size_t %(classname)s::max_point_subdomain_id() const
 {
-%(num_point_domains)s
+%(max_point_subdomain_id)s
 }
 
 /// Return the number of custom domains
-std::size_t %(classname)s::num_custom_domains() const
+std::size_t %(classname)s::max_custom_subdomain_id() const
 {
-%(num_custom_domains)s
+%(max_custom_subdomain_id)s
 }
+
 
 /// Return whether the form has any cell integrals
 bool %(classname)s::has_cell_integrals() const

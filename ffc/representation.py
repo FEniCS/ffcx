@@ -244,7 +244,7 @@ def _compute_form_ir(form_data, form_id, element_numbers):
 
     integral_types = ["cell", "exterior_facet", "interior_facet", "point", "custom"]
     for integral_type in integral_types:
-        ir["num_%s_domains" % integral_type] = _num_foo_domains(integral_type, form_data)
+        ir["max_%s_subdomain_id" % integral_type] = _max_foo_subdomain_id(integral_type, form_data)
         ir["has_%s_integrals" % integral_type] = _has_foo_integrals(integral_type, form_data)
         ir["create_%s_integral" % integral_type] = _create_foo_integral(integral_type, form_data)
         ir["create_default_%s_integral" % integral_type] = _create_default_foo_integral(integral_type, form_data)
@@ -559,9 +559,9 @@ def _create_foo_integral(integral_type, form_data):
     return [itg_data.subdomain_id for itg_data in form_data.integral_data
            if itg_data.integral_type == integral_type and isinstance(itg_data.subdomain_id, int)]
 
-def _num_foo_domains(integral_type, form_data):
-    "Compute intermediate representation of num_foo_domains."
-    return form_data.num_sub_domains.get(integral_type, 0)
+def _max_foo_subdomain_id(integral_type, form_data):
+    "Compute intermediate representation of max_foo_subdomain_id."
+    return form_data.num_sub_domains.get(integral_type, 0) # TODO: Rename in form_data
 
 def _has_foo_integrals(integral_type, form_data):
     "Compute intermediate representation of has_foo_integrals."

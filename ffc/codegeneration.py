@@ -265,7 +265,7 @@ def _generate_form_code(ir, prefix, parameters):
 
     integral_types = ["cell", "exterior_facet", "interior_facet", "point", "custom"]
     for integral_type in integral_types:
-        code["num_%s_domains" % integral_type] = ret(ir["num_%s_domains" % integral_type])
+        code["max_%s_subdomain_id" % integral_type] = ret(ir["max_%s_subdomain_id" % integral_type])
         code["has_%s_integrals" % integral_type] = _has_foo_integrals(ir, integral_type)
         code["create_%s_integral" % integral_type] = _create_foo_integral(ir, integral_type, prefix)
         code["create_default_%s_integral" % integral_type] = _create_default_foo_integral(ir, integral_type, prefix)
