@@ -92,10 +92,10 @@ public:
 %(max_interior_facet_subdomain_id)s
   }
 
-  /// Return the number of point domains
-  virtual std::size_t max_point_subdomain_id() const
+  /// Return the number of vertex domains
+  virtual std::size_t max_vertex_subdomain_id() const
   {
-%(max_point_subdomain_id)s
+%(max_vertex_subdomain_id)s
   }
 
   /// Return the number of custom domains
@@ -123,10 +123,10 @@ public:
 %(has_interior_facet_integrals)s
   }
 
-  /// Return whether the form has any point integrals
-  virtual bool has_point_integrals() const
+  /// Return whether the form has any vertex integrals
+  virtual bool has_vertex_integrals() const
   {
-%(has_point_integrals)s
+%(has_vertex_integrals)s
   }
 
   /// Return whether the form has any custom integrals
@@ -154,10 +154,10 @@ public:
 %(create_interior_facet_integral)s
   }
 
-  /// Create a new point integral on sub domain subdomain_id
-  virtual ufc::point_integral* create_point_integral(std::size_t subdomain_id) const
+  /// Create a new vertex integral on sub domain subdomain_id
+  virtual ufc::vertex_integral* create_vertex_integral(std::size_t subdomain_id) const
   {
-%(create_point_integral)s
+%(create_vertex_integral)s
   }
 
   /// Create a new custom integral on sub domain subdomain_id
@@ -185,10 +185,10 @@ public:
 %(create_default_interior_facet_integral)s
   }
 
-  /// Create a new point integral on everywhere else
-  virtual ufc::point_integral* create_default_point_integral() const
+  /// Create a new vertex integral on everywhere else
+  virtual ufc::vertex_integral* create_default_vertex_integral() const
   {
-%(create_default_point_integral)s
+%(create_default_vertex_integral)s
   }
 
   /// Create a new custom integral on everywhere else
@@ -256,8 +256,8 @@ public:
   /// Return the number of interior facet domains
   virtual std::size_t max_interior_facet_subdomain_id() const;
 
-  /// Return the number of point domains
-  virtual std::size_t max_point_subdomain_id() const;
+  /// Return the number of vertex domains
+  virtual std::size_t max_vertex_subdomain_id() const;
 
   /// Return the number of custom domains
   virtual std::size_t max_custom_subdomain_id() const;
@@ -272,8 +272,8 @@ public:
   /// Return whether the form has any interior facet integrals
   virtual bool has_interior_facet_integrals() const;
 
-  /// Return whether the form has any point integrals
-  virtual bool has_point_integrals() const;
+  /// Return whether the form has any vertex integrals
+  virtual bool has_vertex_integrals() const;
 
   /// Return whether the form has any custom integrals
   virtual bool has_custom_integrals() const;
@@ -288,8 +288,8 @@ public:
   /// Create a new interior facet integral on sub domain i
   virtual ufc::interior_facet_integral* create_interior_facet_integral(std::size_t i) const;
 
-  /// Create a new point integral on sub domain i
-  virtual ufc::point_integral* create_point_integral(std::size_t i) const;
+  /// Create a new vertex integral on sub domain i
+  virtual ufc::vertex_integral* create_vertex_integral(std::size_t i) const;
 
   /// Create a new custom integral on sub domain i
   virtual ufc::custom_integral* create_custom_integral(std::size_t i) const;
@@ -304,8 +304,8 @@ public:
   /// Create a new interior facet integral on everywhere else
   virtual ufc::interior_facet_integral* create_default_interior_facet_integral() const;
 
-  /// Create a new point integral on everywhere else
-  virtual ufc::point_integral* create_default_point_integral() const;
+  /// Create a new vertex integral on everywhere else
+  virtual ufc::vertex_integral* create_default_vertex_integral() const;
 
   /// Create a new custom integral on everywhere else
   virtual ufc::custom_integral* create_default_custom_integral() const;
@@ -382,10 +382,10 @@ std::size_t %(classname)s::max_interior_facet_subdomain_id() const
 %(max_interior_facet_subdomain_id)s
 }
 
-/// Return the number of point domains
-std::size_t %(classname)s::max_point_subdomain_id() const
+/// Return the number of vertex domains
+std::size_t %(classname)s::max_vertex_subdomain_id() const
 {
-%(max_point_subdomain_id)s
+%(max_vertex_subdomain_id)s
 }
 
 /// Return the number of custom domains
@@ -413,10 +413,10 @@ bool %(classname)s::has_interior_facet_integrals() const
 %(has_interior_facet_integrals)s
 }
 
-/// Return whether the form has any point integrals
-bool %(classname)s::has_point_integrals() const
+/// Return whether the form has any vertex integrals
+bool %(classname)s::has_vertex_integrals() const
 {
-%(has_point_integrals)s
+%(has_vertex_integrals)s
 }
 
 /// Return whether the form has any custom integrals
@@ -444,10 +444,10 @@ ufc::interior_facet_integral* %(classname)s::create_interior_facet_integral(std:
 %(create_interior_facet_integral)s
 }
 
-/// Create a new point integral on sub domain subdomain_id
-ufc::point_integral* %(classname)s::create_point_integral(std::size_t subdomain_id) const
+/// Create a new vertex integral on sub domain subdomain_id
+ufc::vertex_integral* %(classname)s::create_vertex_integral(std::size_t subdomain_id) const
 {
-%(create_point_integral)s
+%(create_vertex_integral)s
 }
 
 /// Create a new custom integral on sub domain subdomain_id
@@ -475,10 +475,10 @@ ufc::interior_facet_integral* %(classname)s::create_default_interior_facet_integ
 %(create_default_interior_facet_integral)s
 }
 
-/// Create a new point integral on everywhere else
-ufc::point_integral* %(classname)s::create_default_point_integral() const
+/// Create a new vertex integral on everywhere else
+ufc::vertex_integral* %(classname)s::create_default_vertex_integral() const
 {
-%(create_default_point_integral)s
+%(create_default_vertex_integral)s
 }
 
 /// Create a new custom integral on everywhere else

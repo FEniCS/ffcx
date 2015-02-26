@@ -86,9 +86,9 @@ def format_code(code, wrapper_code, prefix, parameters):
             elif "interior_facet_integral" in classname:
                 code_h += _format_h("interior_facet_integral", code_integral, parameters)
                 code_c += _format_c("interior_facet_integral", code_integral, parameters)
-            elif "point_integral" in classname:
-                code_h += _format_h("point_integral", code_integral, parameters)
-                code_c += _format_c("point_integral", code_integral, parameters)
+            elif "vertex_integral" in classname:
+                code_h += _format_h("vertex_integral", code_integral, parameters)
+                code_c += _format_c("vertex_integral", code_integral, parameters)
             elif "custom_integral" in classname:
                 code_h += _format_h("custom_integral", code_integral, parameters)
                 code_c += _format_c("custom_integral", code_integral, parameters)

@@ -606,8 +606,8 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
   printer.end();
 }
 
-// Function for testing ufc::point_integral objects
-void test_point_integral(ufc::point_integral& integral,
+// Function for testing ufc::vertex_integral objects
+void test_vertex_integral(ufc::vertex_integral& integral,
                          ufc::shape cell_shape,
                          std::size_t gdim,
                          std::size_t tensor_size,
@@ -616,7 +616,7 @@ void test_point_integral(ufc::point_integral& integral,
                          int id,
                          Printer & printer)
 {
-  printer.begin("point_integral", id);
+  printer.begin("vertex_integral", id);
 
   // Prepare arguments
   test_cell c(cell_shape, gdim);
@@ -649,8 +649,8 @@ void test_point_integral(ufc::point_integral& integral,
       if (dt > minimum_timing)
       {
         dt /= static_cast<double>(num_reps);
-        printer.print_scalar("point_integral_timing_iterations", num_reps);
-        printer.print_scalar("point_integral_time", dt);
+        printer.print_scalar("vertex_integral_timing_iterations", num_reps);
+        printer.print_scalar("vertex_integral_time", dt);
         break;
       }
     }
@@ -723,8 +723,8 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
   printer.print_scalar("has_interior_facet_integrals",
                        form.has_interior_facet_integrals());
 
-  // has_point_integrals
-  printer.print_scalar("has_point_integrals", form.has_point_integrals());
+  // has_vertex_integrals
+  printer.print_scalar("has_vertex_integrals", form.has_vertex_integrals());
 
   // max_cell_subdomain_id
   printer.print_scalar("max_cell_subdomain_id", form.max_cell_subdomain_id());
@@ -737,8 +737,8 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
   printer.print_scalar("max_interior_facet_subdomain_id",
                        form.max_interior_facet_subdomain_id());
 
-  // max_point_subdomain_id
-  printer.print_scalar("max_point_subdomain_id", form.max_point_subdomain_id());
+  // max_vertex_subdomain_id
+  printer.print_scalar("max_vertex_subdomain_id", form.max_vertex_subdomain_id());
 
   // create_finite_element
   for (std::size_t i = 0; i < form.rank() + form.num_coefficients(); i++)
@@ -820,23 +820,23 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
     delete integral;
   }
 
-  // create_point_integral
+  // create_vertex_integral
   {
-    ufc::point_integral* integral = form.create_default_point_integral();
-    printer.print_scalar("default_point_integral", (bool)integral);
+    ufc::vertex_integral* integral = form.create_default_vertex_integral();
+    printer.print_scalar("default_vertex_integral", (bool)integral);
     if (integral)
     {
-      test_point_integral(*integral, cell_shape, gdim, tensor_size, w, bench,
+      test_vertex_integral(*integral, cell_shape, gdim, tensor_size, w, bench,
                           -1, printer);
     }
     delete integral;
   }
-  for (std::size_t i = 0; i < form.max_point_subdomain_id(); i++)
+  for (std::size_t i = 0; i < form.max_vertex_subdomain_id(); i++)
   {
-    ufc::point_integral* integral = form.create_point_integral(i);
+    ufc::vertex_integral* integral = form.create_vertex_integral(i);
     if (integral)
     {
-      test_point_integral(*integral, cell_shape, gdim, tensor_size, w, bench,
+      test_vertex_integral(*integral, cell_shape, gdim, tensor_size, w, bench,
                           i, printer);
     }
     delete integral;

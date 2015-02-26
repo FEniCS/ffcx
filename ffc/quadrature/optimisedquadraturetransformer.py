@@ -628,7 +628,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         weight = self._create_symbol(weight, ACCESS)[()]
 
         # Create value.
-        if integral_type in ("point", "custom"):
+        if integral_type in ("vertex", "custom"):
             trans_set = set()
             value = create_product([val, weight])
         else:

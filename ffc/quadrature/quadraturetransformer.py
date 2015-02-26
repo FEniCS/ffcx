@@ -739,7 +739,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
             weight += format["component"]("", format["integration points"])
 
         # Update sets of used variables.
-        if integral_type in ("point", "custom"):
+        if integral_type in ("vertex", "custom"):
             trans_set = set()
             value = format["mul"]([val, weight])
         else:

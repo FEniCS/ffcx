@@ -176,11 +176,11 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type,
                 transformer.update_facets(i, j)
                 terms[i][j] = _transform_integrals(transformer, integrals_dict, integral_type)
 
-    elif integral_type == "point":
+    elif integral_type == "vertex":
         # Compute transformed integrals.
         terms = [None]*num_vertices
         for i in range(num_vertices):
-            info("Transforming point integral (%d)" % i)
+            info("Transforming vertex integral (%d)" % i)
             transformer.update_vertex(i)
             terms[i] = _transform_integrals(transformer, integrals_dict, integral_type)
 

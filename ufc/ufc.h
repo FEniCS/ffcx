@@ -331,15 +331,15 @@ namespace ufc
 
   /// This class defines the interface for the tabulation of
   /// an expression evaluated at exactly one point.
-  class point_integral: public integral
+  class vertex_integral: public integral
   {
   public:
 
     /// Constructor
-    point_integral() {}
+    vertex_integral() {}
 
     /// Destructor
-    virtual ~point_integral() {}
+    virtual ~vertex_integral() {}
 
     /// Tabulate the tensor for the contribution from the local vertex
     virtual void tabulate_tensor(double* A,
@@ -430,8 +430,8 @@ namespace ufc
     /// Return the upper bound on subdomain ids for interior facet integrals
     virtual std::size_t max_interior_facet_subdomain_id() const = 0;
 
-    /// Return the upper bound on subdomain ids for point integrals
-    virtual std::size_t max_point_subdomain_id() const = 0;
+    /// Return the upper bound on subdomain ids for vertex integrals
+    virtual std::size_t max_vertex_subdomain_id() const = 0;
 
     /// Return the upper bound on subdomain ids for custom integrals
     virtual std::size_t max_custom_subdomain_id() const = 0;
@@ -446,8 +446,8 @@ namespace ufc
     /// Return whether form has any interior facet integrals
     virtual bool has_interior_facet_integrals() const = 0;
 
-    /// Return whether form has any point integrals
-    virtual bool has_point_integrals() const = 0;
+    /// Return whether form has any vertex integrals
+    virtual bool has_vertex_integrals() const = 0;
 
     /// Return whether form has any custom integrals
     virtual bool has_custom_integrals() const = 0;
@@ -464,8 +464,8 @@ namespace ufc
     virtual interior_facet_integral*
     create_interior_facet_integral(std::size_t subdomain_id) const = 0;
 
-    /// Create a new point integral on sub domain subdomain_id
-    virtual point_integral* create_point_integral(std::size_t subdomain_id) const = 0;
+    /// Create a new vertex integral on sub domain subdomain_id
+    virtual vertex_integral* create_vertex_integral(std::size_t subdomain_id) const = 0;
 
     /// Create a new custom integral on sub domain subdomain_id
     virtual custom_integral* create_custom_integral(std::size_t subdomain_id) const = 0;
@@ -482,8 +482,8 @@ namespace ufc
     virtual interior_facet_integral*
     create_default_interior_facet_integral() const = 0;
 
-    /// Create a new point integral on everywhere else
-    virtual point_integral* create_default_point_integral() const = 0;
+    /// Create a new vertex integral on everywhere else
+    virtual vertex_integral* create_default_vertex_integral() const = 0;
 
     /// Create a new custom integral on everywhere else
     virtual custom_integral* create_default_custom_integral() const = 0;

@@ -6,6 +6,6 @@
 %shared_ptr(ufc::cell_integral)
 %shared_ptr(ufc::exterior_facet_integral)
 %shared_ptr(ufc::interior_facet_integral)
-%shared_ptr(ufc::point_integral)
+%shared_ptr(ufc::vertex_integral)
 %shared_ptr(ufc::custom_integral)
 %shared_ptr(ufc::form)

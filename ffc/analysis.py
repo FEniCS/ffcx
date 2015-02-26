@@ -296,7 +296,7 @@ def _auto_select_representation(integral, elements, function_replace_map):
     """
 
     # Skip unsupported integration domain types
-    if integral.integral_type() == "point":
+    if integral.integral_type() == "vertex":
         return "quadrature"
 
     # Get ALL sub elements, needed to check for restrictions of EnrichedElements.

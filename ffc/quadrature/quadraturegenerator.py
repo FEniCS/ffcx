@@ -200,7 +200,7 @@ def _tabulate_tensor(ir, prefix, parameters):
         jacobi_code += "\n\n" + format["generate cell volume"](tdim, gdim, integral_type)
         jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, integral_type)
 
-    elif integral_type == "point":
+    elif integral_type == "vertex":
 
         # Iterate over vertices
         cases = [None for i in range(num_vertices)]
@@ -337,7 +337,7 @@ def _tabulate_tensor(ir, prefix, parameters):
     message = {"cell":           "Cell, number of operations to compute tensor: %s",
                "exterior_facet": "Exterior facet %d, number of operations to compute tensor: %s",
                "interior_facet": "Interior facets (%d, %d), number of operations to compute tensor: %s",
-               "point": "Point %s, number of operations to compute tensor: %s",
+               "vertex": "Point %s, number of operations to compute tensor: %s",
                "custom":         "Custom domain, number of operations to compute tensor: %s"}
     for ops in operations:
         # Add geo ops count to integral ops count for writing info.

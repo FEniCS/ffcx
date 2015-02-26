@@ -307,8 +307,8 @@ format.update({
     "classname interior_facet_integral":  lambda prefix, form_id, sub_domain:\
               "%s_interior_facet_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
 
-    "classname point_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_point_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
+    "classname vertex_integral":  lambda prefix, form_id, sub_domain:\
+              "%s_vertex_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
 
     "classname custom_integral":  lambda prefix, form_id, sub_domain:\
               "%s_custom_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
@@ -645,7 +645,7 @@ def _generate_circumradius(tdim, gdim, integral_type, r=None):
     radius = circumradius[tdim][gdim]
 
     # Choose restrictions
-    if integral_type in ("cell", "exterior_facet", "point"):
+    if integral_type in ("cell", "exterior_facet", "vertex"):
         code = radius % {"restriction": ""}
     elif integral_type == "interior_facet":
         code = radius % {"restriction": _choose_map("+")}
