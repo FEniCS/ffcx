@@ -41,6 +41,7 @@ public:
 %(signature)s
   }
 
+
   /// Return original coefficient position for each coefficient (0 <= i < n)
   virtual std::size_t original_coefficient_position(std::size_t i) const
   {
@@ -58,6 +59,19 @@ public:
   {
 %(num_coefficients)s
   }
+
+  /// Create a new finite element for argument function i
+  virtual ufc::finite_element* create_finite_element(std::size_t i) const
+  {
+%(create_finite_element)s
+  }
+
+  /// Create a new dofmap for argument function i
+  virtual ufc::dofmap* create_dofmap(std::size_t i) const
+  {
+%(create_dofmap)s
+  }
+
 
   /// Return the number of cell domains
   virtual std::size_t num_cell_domains() const
@@ -89,6 +103,7 @@ public:
 %(num_custom_domains)s
   }
 
+
   /// Return whether the form has any cell integrals
   virtual bool has_cell_integrals() const
   {
@@ -119,17 +134,6 @@ public:
 %(has_custom_integrals)s
   }
 
-  /// Create a new finite element for argument function i
-  virtual ufc::finite_element* create_finite_element(std::size_t i) const
-  {
-%(create_finite_element)s
-  }
-
-  /// Create a new dofmap for argument function i
-  virtual ufc::dofmap* create_dofmap(std::size_t i) const
-  {
-%(create_dofmap)s
-  }
 
   /// Create a new cell integral on sub domain i
   virtual ufc::cell_integral* create_cell_integral(std::size_t i) const
@@ -160,6 +164,7 @@ public:
   {
 %(create_custom_integral)s
   }
+
 
   /// Create a new cell integral on everywhere else
   virtual ufc::cell_integral* create_default_cell_integral() const
@@ -232,6 +237,7 @@ public:
   /// Return the number of coefficients (n)
   virtual std::size_t num_coefficients() const;
 
+
   /// Return the number of cell domains
   virtual std::size_t num_cell_domains() const;
 
@@ -247,6 +253,7 @@ public:
   /// Return the number of custom domains
   virtual std::size_t num_custom_domains() const;
 
+
   /// Return whether the form has any cell integrals
   virtual bool has_cell_integrals() const;
 
@@ -261,6 +268,7 @@ public:
 
   /// Return whether the form has any custom integrals
   virtual bool has_custom_integrals() const;
+
 
   /// Create a new finite element for argument function i
   virtual ufc::finite_element* create_finite_element(std::size_t i) const;
@@ -282,6 +290,7 @@ public:
 
   /// Create a new custom integral on sub domain i
   virtual ufc::custom_integral* create_custom_integral(std::size_t i) const;
+
 
   /// Create a new cell integral on everywhere else
   virtual ufc::cell_integral* create_default_cell_integral() const;
@@ -319,6 +328,7 @@ const char* %(classname)s::signature() const
 %(signature)s
 }
 
+
 /// Return original coefficient position for each coefficient (0 <= i < n)
 std::size_t %(classname)s::original_coefficient_position(std::size_t i) const
 {
@@ -336,6 +346,19 @@ std::size_t %(classname)s::num_coefficients() const
 {
 %(num_coefficients)s
 }
+
+/// Create a new finite element for argument function i
+ufc::finite_element* %(classname)s::create_finite_element(std::size_t i) const
+{
+%(create_finite_element)s
+}
+
+/// Create a new dofmap for argument function i
+ufc::dofmap* %(classname)s::create_dofmap(std::size_t i) const
+{
+%(create_dofmap)s
+}
+
 
 /// Return the number of cell domains
 std::size_t %(classname)s::num_cell_domains() const
@@ -397,17 +420,6 @@ bool %(classname)s::has_custom_integrals() const
 %(has_custom_integrals)s
 }
 
-/// Create a new finite element for argument function i
-ufc::finite_element* %(classname)s::create_finite_element(std::size_t i) const
-{
-%(create_finite_element)s
-}
-
-/// Create a new dofmap for argument function i
-ufc::dofmap* %(classname)s::create_dofmap(std::size_t i) const
-{
-%(create_dofmap)s
-}
 
 /// Create a new cell integral on sub domain i
 ufc::cell_integral* %(classname)s::create_cell_integral(std::size_t i) const
@@ -438,6 +450,7 @@ ufc::custom_integral* %(classname)s::create_custom_integral(std::size_t i) const
 {
 %(create_custom_integral)s
 }
+
 
 /// Create a new cell integral on everywhere else
 ufc::cell_integral* %(classname)s::create_default_cell_integral() const

@@ -36,7 +36,6 @@ namespace ufc
   enum shape {interval, triangle, quadrilateral, tetrahedron, hexahedron};
 
   /// This class defines the data structure for a cell in a mesh.
-
   class cell
   {
   public:
@@ -76,7 +75,6 @@ namespace ufc
   };
 
   /// This class defines the interface for a general tensor-valued function.
-
   class function
   {
   public:
@@ -92,7 +90,6 @@ namespace ufc
   };
 
   /// This class defines the interface for a finite element.
-
   class finite_element
   {
   public:
@@ -195,7 +192,6 @@ namespace ufc
 
   /// This class defines the interface for a local-to-global mapping of
   /// degrees of freedom (dofs).
-
   class dofmap
   {
   public:
@@ -262,7 +258,6 @@ namespace ufc
   /// This class defines the shared interface for classes implementing
   /// the tabulation of a tensor corresponding to the local contribution
   /// to a form from an integral.
-
   class integral
   {
   public:
@@ -278,7 +273,6 @@ namespace ufc
   /// This class defines the interface for the tabulation of the cell
   /// tensor corresponding to the local contribution to a form from
   /// the integral over a cell.
-
   class cell_integral: public integral
   {
   public:
@@ -297,7 +291,6 @@ namespace ufc
   /// This class defines the interface for the tabulation of the
   /// exterior facet tensor corresponding to the local contribution to
   /// a form from the integral over an exterior facet.
-
   class exterior_facet_integral: public integral
   {
   public:
@@ -317,7 +310,6 @@ namespace ufc
   /// This class defines the interface for the tabulation of the
   /// interior facet tensor corresponding to the local contribution to
   /// a form from the integral over an interior facet.
-
   class interior_facet_integral: public integral
   {
   public:
@@ -339,7 +331,6 @@ namespace ufc
 
   /// This class defines the interface for the tabulation of
   /// an expression evaluated at exactly one point.
-
   class point_integral: public integral
   {
   public:
@@ -363,7 +354,6 @@ namespace ufc
   /// tensor corresponding to the local contribution to a form from
   /// the integral over a custom domain defined in terms of a set of
   /// quadrature points and weights.
-
   class custom_integral: public integral
   {
   public:
@@ -403,7 +393,6 @@ namespace ufc
   /// where each argument Vj represents the application to the
   /// sequence of basis functions of Vj and w1, w2, ..., wn are given
   /// fixed functions (coefficients).
-
   class form
   {
   public:
@@ -414,6 +403,7 @@ namespace ufc
     /// Return a string identifying the form
     virtual const char* signature() const = 0;
 
+
     /// Return original coefficient position for each coefficient (0 <= i < n)
     virtual std::size_t original_coefficient_position(std::size_t i) const = 0;
 
@@ -422,6 +412,13 @@ namespace ufc
 
     /// Return the number of coefficients (n)
     virtual std::size_t num_coefficients() const = 0;
+
+    /// Create a new finite element for argument function 0 <= i < r+n
+    virtual finite_element* create_finite_element(std::size_t i) const = 0;
+
+    /// Create a new dofmap for argument function 0 <= i < r+n
+    virtual dofmap* create_dofmap(std::size_t i) const = 0;
+
 
     /// Return the number of cell domains
     virtual std::size_t num_cell_domains() const = 0;
@@ -438,6 +435,7 @@ namespace ufc
     /// Return the number of custom domains
     virtual std::size_t num_custom_domains() const = 0;
 
+
     /// Return whether form has any cell integrals
     virtual bool has_cell_integrals() const = 0;
 
@@ -453,11 +451,6 @@ namespace ufc
     /// Return whether form has any custom integrals
     virtual bool has_custom_integrals() const = 0;
 
-    /// Create a new finite element for argument function 0 <= i < r+n
-    virtual finite_element* create_finite_element(std::size_t i) const = 0;
-
-    /// Create a new dofmap for argument function 0 <= i < r+n
-    virtual dofmap* create_dofmap(std::size_t i) const = 0;
 
     /// Create a new cell integral on sub domain i
     virtual cell_integral* create_cell_integral(std::size_t i) const = 0;
@@ -475,6 +468,7 @@ namespace ufc
 
     /// Create a new custom integral on sub domain i
     virtual custom_integral* create_custom_integral(std::size_t i) const = 0;
+
 
     /// Create a new cell integral on everywhere else
     virtual cell_integral* create_default_cell_integral() const = 0;
