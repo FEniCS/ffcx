@@ -177,7 +177,8 @@ format.update({
     "argument dof num":           "i",
     "argument dof values":        "dof_values",
     "argument vertex values":     "vertex_values",
-    "argument sub":               "i" # sub domain, sub element
+    "argument sub":               "i", # sub element
+    "argument subdomain":         "subdomain_id", # sub domain
 })
 
 # Formatting used in evaluatedof.

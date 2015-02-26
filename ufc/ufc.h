@@ -404,14 +404,15 @@ namespace ufc
     virtual const char* signature() const = 0;
 
 
-    /// Return original coefficient position for each coefficient (0 <= i < n)
-    virtual std::size_t original_coefficient_position(std::size_t i) const = 0;
-
     /// Return the rank of the global tensor (r)
     virtual std::size_t rank() const = 0;
 
     /// Return the number of coefficients (n)
     virtual std::size_t num_coefficients() const = 0;
+
+    /// Return original coefficient position for each coefficient (0 <= i < n)
+    virtual std::size_t original_coefficient_position(std::size_t i) const = 0;
+
 
     /// Create a new finite element for argument function 0 <= i < r+n
     virtual finite_element* create_finite_element(std::size_t i) const = 0;
@@ -452,22 +453,22 @@ namespace ufc
     virtual bool has_custom_integrals() const = 0;
 
 
-    /// Create a new cell integral on sub domain i
-    virtual cell_integral* create_cell_integral(std::size_t i) const = 0;
+    /// Create a new cell integral on sub domain subdomain_id
+    virtual cell_integral* create_cell_integral(std::size_t subdomain_id) const = 0;
 
-    /// Create a new exterior facet integral on sub domain i
+    /// Create a new exterior facet integral on sub domain subdomain_id
     virtual exterior_facet_integral*
-    create_exterior_facet_integral(std::size_t i) const = 0;
+    create_exterior_facet_integral(std::size_t subdomain_id) const = 0;
 
-    /// Create a new interior facet integral on sub domain i
+    /// Create a new interior facet integral on sub domain subdomain_id
     virtual interior_facet_integral*
-    create_interior_facet_integral(std::size_t i) const = 0;
+    create_interior_facet_integral(std::size_t subdomain_id) const = 0;
 
-    /// Create a new point integral on sub domain i
-    virtual point_integral* create_point_integral(std::size_t i) const = 0;
+    /// Create a new point integral on sub domain subdomain_id
+    virtual point_integral* create_point_integral(std::size_t subdomain_id) const = 0;
 
-    /// Create a new custom integral on sub domain i
-    virtual custom_integral* create_custom_integral(std::size_t i) const = 0;
+    /// Create a new custom integral on sub domain subdomain_id
+    virtual custom_integral* create_custom_integral(std::size_t subdomain_id) const = 0;
 
 
     /// Create a new cell integral on everywhere else

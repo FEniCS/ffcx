@@ -138,8 +138,7 @@ def _generate_element_code(ir, prefix, parameters):
         = _not_implemented("map_from_reference_cell")
     code["map_to_reference_cell"] = _not_implemented("map_to_reference_cell")
     code["num_sub_elements"] = ret(ir["num_sub_elements"])
-    code["create_sub_element"] = _create_foo(prefix, "finite_element",
-                                             ir["create_sub_element"])
+    code["create_sub_element"] = _create_sub_element(prefix, ir)
     code["create"] = ret(create(code["classname"]))
 
     # Postprocess code
@@ -193,15 +192,13 @@ def _generate_dofmap_code(ir, prefix, parameters):
     code["tabulate_coordinates"] \
         = _tabulate_coordinates(ir["tabulate_coordinates"])
     code["num_sub_dofmaps"] = ret(ir["num_sub_dofmaps"])
-    code["create_sub_dofmap"] = _create_foo(prefix, "dofmap",
-                                            ir["create_sub_dofmap"])
+    code["create_sub_dofmap"] = _create_sub_dofmap(prefix, ir)
     code["create"] = ret(create(code["classname"]))
 
     # Postprocess code
     _postprocess_code(code, parameters)
 
     return code
-
 
 def _generate_integral_code(ir, prefix, parameters):
     "Generate code for integrals from intermediate representation."
@@ -259,26 +256,19 @@ def _generate_form_code(ir, prefix, parameters):
     code["destructor"] = do_nothing
 
     code["signature"] = ret('"%s"' % ir["signature"])
-    code["original_coefficient_position"] \
-        = _generate_original_coefficient_position(ir["original_coefficient_positions"])
+    code["original_coefficient_position"] = _generate_original_coefficient_position(ir["original_coefficient_positions"])
     code["rank"] = ret(ir["rank"])
     code["num_coefficients"] = ret(ir["num_coefficients"])
 
-    code["create_finite_element"] = _create_foo(prefix, "finite_element",
-                                                ir["create_finite_element"])
-    code["create_dofmap"] = _create_foo(prefix, "dofmap", ir["create_dofmap"])
+    code["create_finite_element"] = _create_finite_element(prefix, ir)
+    code["create_dofmap"] = _create_dofmap(prefix, ir)
 
-    integral_types = ["cell", "exterior_facet", "interior_facet", "point",
-                      "custom"]
+    integral_types = ["cell", "exterior_facet", "interior_facet", "point", "custom"]
     for integral_type in integral_types:
-        code["num_%s_domains" % integral_type] = ret(ir["num_%s_domains"
-                                                        % integral_type])
-        code["has_%s_integrals" % integral_type] \
-            = _has_foo_integrals(ir, integral_type)
-        code["create_%s_integral" % integral_type] \
-            = _create_foo_integral(ir, integral_type, prefix)
-        code["create_default_%s_integral" % integral_type] \
-            = _create_default_foo_integral(ir, integral_type, prefix)
+        code["num_%s_domains" % integral_type] = ret(ir["num_%s_domains" % integral_type])
+        code["has_%s_integrals" % integral_type] = _has_foo_integrals(ir, integral_type)
+        code["create_%s_integral" % integral_type] = _create_foo_integral(ir, integral_type, prefix)
+        code["create_default_%s_integral" % integral_type] = _create_default_foo_integral(ir, integral_type, prefix)
 
     # Postprocess code
     _postprocess_code(code, parameters)
@@ -286,7 +276,6 @@ def _generate_form_code(ir, prefix, parameters):
     return code
 
 #--- Code generation for non-trivial functions ---
-
 
 def _value_dimension(ir):
     "Generate code for value_dimension."
@@ -500,9 +489,8 @@ def _tabulate_entity_dofs(ir):
 #--- Utility functions ---
 
 
-def _create_foo(prefix, class_name, postfix, numbers=None):
+def _create_foo(prefix, class_name, postfix, arg, numbers=None):
     "Generate code for create_<foo>."
-    f_i = format["argument sub"]
     ret = format["return"]
     create = format["create foo"]
 
@@ -510,22 +498,36 @@ def _create_foo(prefix, class_name, postfix, numbers=None):
                    for i in postfix]
     cases = [ret(create(name)) for name in class_names]
     default = ret(0)
-    return format["switch"](f_i, cases, default=default, numbers=numbers)
+    return format["switch"](arg, cases, default=default, numbers=numbers)
 
+def _create_finite_element(prefix, ir):
+    f_i = format["argument sub"]
+    return _create_foo(prefix, "finite_element", ir["create_finite_element"], f_i)
+
+def _create_dofmap(prefix, ir):
+    f_i = format["argument sub"]
+    return _create_foo(prefix, "dofmap", ir["create_dofmap"], f_i)
+
+def _create_sub_element(prefix, ir):
+    f_i = format["argument sub"]
+    return _create_foo(prefix, "finite_element", ir["create_sub_element"], f_i)
+
+def _create_sub_dofmap(prefix, ir):
+    f_i = format["argument sub"]
+    return _create_foo(prefix, "dofmap", ir["create_sub_dofmap"], f_i)
 
 def _create_foo_integral(ir, integral_type, prefix):
     "Generate code for create_<foo>_integral."
+    f_i = format["argument subdomain"]
     class_name = integral_type + "_integral_" + str(ir["id"])
     postfix = ir["create_" + integral_type + "_integral"]
-    return _create_foo(prefix, class_name, postfix, numbers=postfix)
-
+    return _create_foo(prefix, class_name, postfix, f_i, numbers=postfix)
 
 def _has_foo_integrals(ir, integral_type):
     ret = format["return"]
     b = format["bool"]
     i = ir["has_%s_integrals" % integral_type]
     return ret(b(i))
-
 
 def _create_default_foo_integral(ir, integral_type, prefix):
     "Generate code for create_default_<foo>_integral."

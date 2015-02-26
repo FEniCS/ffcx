@@ -42,12 +42,6 @@ public:
   }
 
 
-  /// Return original coefficient position for each coefficient (0 <= i < n)
-  virtual std::size_t original_coefficient_position(std::size_t i) const
-  {
-%(original_coefficient_position)s
-  }
-
   /// Return the rank of the global tensor (r)
   virtual std::size_t rank() const
   {
@@ -59,6 +53,13 @@ public:
   {
 %(num_coefficients)s
   }
+
+  /// Return original coefficient position for each coefficient (0 <= i < n)
+  virtual std::size_t original_coefficient_position(std::size_t i) const
+  {
+%(original_coefficient_position)s
+  }
+
 
   /// Create a new finite element for argument function i
   virtual ufc::finite_element* create_finite_element(std::size_t i) const
@@ -135,32 +136,32 @@ public:
   }
 
 
-  /// Create a new cell integral on sub domain i
-  virtual ufc::cell_integral* create_cell_integral(std::size_t i) const
+  /// Create a new cell integral on sub domain subdomain_id
+  virtual ufc::cell_integral* create_cell_integral(std::size_t subdomain_id) const
   {
 %(create_cell_integral)s
   }
 
-  /// Create a new exterior facet integral on sub domain i
-  virtual ufc::exterior_facet_integral* create_exterior_facet_integral(std::size_t i) const
+  /// Create a new exterior facet integral on sub domain subdomain_id
+  virtual ufc::exterior_facet_integral* create_exterior_facet_integral(std::size_t subdomain_id) const
   {
 %(create_exterior_facet_integral)s
   }
 
-  /// Create a new interior facet integral on sub domain i
-  virtual ufc::interior_facet_integral* create_interior_facet_integral(std::size_t i) const
+  /// Create a new interior facet integral on sub domain subdomain_id
+  virtual ufc::interior_facet_integral* create_interior_facet_integral(std::size_t subdomain_id) const
   {
 %(create_interior_facet_integral)s
   }
 
-  /// Create a new point integral on sub domain i
-  virtual ufc::point_integral* create_point_integral(std::size_t i) const
+  /// Create a new point integral on sub domain subdomain_id
+  virtual ufc::point_integral* create_point_integral(std::size_t subdomain_id) const
   {
 %(create_point_integral)s
   }
 
-  /// Create a new custom integral on sub domain i
-  virtual ufc::custom_integral* create_custom_integral(std::size_t i) const
+  /// Create a new custom integral on sub domain subdomain_id
+  virtual ufc::custom_integral* create_custom_integral(std::size_t subdomain_id) const
   {
 %(create_custom_integral)s
   }
@@ -228,14 +229,22 @@ public:
   /// Return a string identifying the form
   virtual const char* signature() const;
 
-  /// Return original coefficient position for each coefficient (0 <= i < n)
-  virtual std::size_t original_coefficient_position(std::size_t i) const;
 
   /// Return the rank of the global tensor (r)
   virtual std::size_t rank() const;
 
   /// Return the number of coefficients (n)
   virtual std::size_t num_coefficients() const;
+
+  /// Return original coefficient position for each coefficient (0 <= i < n)
+  virtual std::size_t original_coefficient_position(std::size_t i) const;
+
+
+  /// Create a new finite element for argument function i
+  virtual ufc::finite_element* create_finite_element(std::size_t i) const;
+
+  /// Create a new dofmap for argument function i
+  virtual ufc::dofmap* create_dofmap(std::size_t i) const;
 
 
   /// Return the number of cell domains
@@ -269,12 +278,6 @@ public:
   /// Return whether the form has any custom integrals
   virtual bool has_custom_integrals() const;
 
-
-  /// Create a new finite element for argument function i
-  virtual ufc::finite_element* create_finite_element(std::size_t i) const;
-
-  /// Create a new dofmap for argument function i
-  virtual ufc::dofmap* create_dofmap(std::size_t i) const;
 
   /// Create a new cell integral on sub domain i
   virtual ufc::cell_integral* create_cell_integral(std::size_t i) const;
@@ -329,12 +332,6 @@ const char* %(classname)s::signature() const
 }
 
 
-/// Return original coefficient position for each coefficient (0 <= i < n)
-std::size_t %(classname)s::original_coefficient_position(std::size_t i) const
-{
-%(original_coefficient_position)s
-}
-
 /// Return the rank of the global tensor (r)
 std::size_t %(classname)s::rank() const
 {
@@ -346,6 +343,13 @@ std::size_t %(classname)s::num_coefficients() const
 {
 %(num_coefficients)s
 }
+
+/// Return original coefficient position for each coefficient (0 <= i < n)
+std::size_t %(classname)s::original_coefficient_position(std::size_t i) const
+{
+%(original_coefficient_position)s
+}
+
 
 /// Create a new finite element for argument function i
 ufc::finite_element* %(classname)s::create_finite_element(std::size_t i) const
@@ -421,32 +425,32 @@ bool %(classname)s::has_custom_integrals() const
 }
 
 
-/// Create a new cell integral on sub domain i
-ufc::cell_integral* %(classname)s::create_cell_integral(std::size_t i) const
+/// Create a new cell integral on sub domain subdomain_id
+ufc::cell_integral* %(classname)s::create_cell_integral(std::size_t subdomain_id) const
 {
 %(create_cell_integral)s
 }
 
-/// Create a new exterior facet integral on sub domain i
-ufc::exterior_facet_integral* %(classname)s::create_exterior_facet_integral(std::size_t i) const
+/// Create a new exterior facet integral on sub domain subdomain_id
+ufc::exterior_facet_integral* %(classname)s::create_exterior_facet_integral(std::size_t subdomain_id) const
 {
 %(create_exterior_facet_integral)s
 }
 
-/// Create a new interior facet integral on sub domain i
-ufc::interior_facet_integral* %(classname)s::create_interior_facet_integral(std::size_t i) const
+/// Create a new interior facet integral on sub domain subdomain_id
+ufc::interior_facet_integral* %(classname)s::create_interior_facet_integral(std::size_t subdomain_id) const
 {
 %(create_interior_facet_integral)s
 }
 
-/// Create a new point integral on sub domain i
-ufc::point_integral* %(classname)s::create_point_integral(std::size_t i) const
+/// Create a new point integral on sub domain subdomain_id
+ufc::point_integral* %(classname)s::create_point_integral(std::size_t subdomain_id) const
 {
 %(create_point_integral)s
 }
 
-/// Create a new custom integral on sub domain i
-ufc::custom_integral* %(classname)s::create_custom_integral(std::size_t i) const
+/// Create a new custom integral on sub domain subdomain_id
+ufc::custom_integral* %(classname)s::create_custom_integral(std::size_t subdomain_id) const
 {
 %(create_custom_integral)s
 }
