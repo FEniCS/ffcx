@@ -49,7 +49,7 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
         expr = expr * scale
 
         # Change geometric representation to lower level quantities
-        if integral.integral_type() in ("custom", "point"):
+        if integral.integral_type() in ("custom", "vertex"):
             physical_coordinates_known = True
         else:
             physical_coordinates_known = False

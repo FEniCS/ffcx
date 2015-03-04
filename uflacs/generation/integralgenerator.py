@@ -98,7 +98,7 @@ class IntegralGenerator(object):
         parts = []
 
         # No quadrature tables for custom (given argument) or point (evaluation in single vertex)
-        if self.ir["integral_type"] in ("custom", "point"):
+        if self.ir["integral_type"] in ("custom", "vertex"):
             return parts
 
         qrs = self.ir["quadrature_rules"]

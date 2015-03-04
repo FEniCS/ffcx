@@ -74,9 +74,9 @@ def test_interior_facet_integral_body(gtest):
     gtest.add(pre + code + post)
 
 
-def test_point_integral_body(gtest):
+def test_vertex_integral_body(gtest):
     """
-      class point_integral
+      class vertex_integral
         virtual void tabulate_tensor(double* A,
                                      const double * const * w,
                                      const double* vertex_coordinates,
@@ -94,10 +94,10 @@ def test_point_integral_body(gtest):
 
     gtest.add(pre + code + post)
 
-    
-def test_quadrature_integral_body(gtest):
+
+def test_custom_integral_body(gtest):
     """
-      class quadrature_integral
+      class custom_integral
         virtual void tabulate_tensor(double* A,
                                      const double * const * w,
                                      const double* vertex_coordinates,
@@ -116,4 +116,3 @@ def test_quadrature_integral_body(gtest):
     """
 
     gtest.add(pre + code + post)
-
