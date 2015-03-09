@@ -232,6 +232,9 @@ def run_install():
 
     # Check that compiler supports C++11 features
     cc = new_compiler()
+    CXX = os.environ.get("CXX")
+    if CXX:
+        cc.set_executables(compiler_so=CXX, compiler=CXX, compiler_cxx=CXX)
     CXX_FLAGS = os.environ.get("CXXFLAGS", "")
     if has_cxx_flag(cc, "-std=c++11"):
         CXX_FLAGS += " -std=c++11"
