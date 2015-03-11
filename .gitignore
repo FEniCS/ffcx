@@ -22,9 +22,9 @@ cmake_install.cmake
 cmake_uninstall.cmake
 Makefile
 install_manifest.txt
-templates/UFCConfig.cmake
-templates/UFCConfigVersion.cmake
-templates/UseUFC.cmake
+/cmake/templates/UFCConfig.cmake
+/cmake/templates/UFCConfigVersion.cmake
+/cmake/templates/UseUFC.cmake
 
 # Temporaries
 *~
@@ -37,5 +37,5 @@ templates/UseUFC.cmake
 /build
 
 # SWIG generated files
-src/ufc/ufc.py
-src/ufc/ufc_wrap.cpp
+/ufc/ufc.py
+/ufc/ufc_wrap.cpp
