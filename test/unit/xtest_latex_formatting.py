@@ -51,22 +51,22 @@ def test_latex_formatting_of_geometry():
     # Test geometry quantities
     x = ufl.SpatialCoordinate(ufl.interval)[0]
     assert expr2latex(x) == "x_0"
-    x, y = ufl.SpatialCoordinate(ufl.cell2D)
+    x, y = ufl.SpatialCoordinate(ufl.triangle)
     assert expr2latex(x) == "x_0"
     assert expr2latex(y) == "x_1"
-    nx, ny = ufl.FacetNormal(ufl.cell2D)
+    nx, ny = ufl.FacetNormal(ufl.triangle)
     assert expr2latex(nx) == "n_0"
     assert expr2latex(ny) == "n_1"
-    Kv = ufl.CellVolume(ufl.cell2D)
+    Kv = ufl.CellVolume(ufl.triangle)
     assert expr2latex(Kv) == r"K_{\text{vol}}"
-    Kr = ufl.Circumradius(ufl.cell2D)
+    Kr = ufl.Circumradius(ufl.triangle)
     assert expr2latex(Kr) == r"K_{\text{rad}}"
 
 def test_latex_formatting_of_form_arguments():
     # Test form arguments (faked for testing!)
-    U = ufl.FiniteElement("CG", ufl.cell2D, 1)
-    V = ufl.VectorElement("CG", ufl.cell2D, 1)
-    W = ufl.TensorElement("CG", ufl.cell2D, 1)
+    U = ufl.FiniteElement("CG", ufl.triangle, 1)
+    V = ufl.VectorElement("CG", ufl.triangle, 1)
+    W = ufl.TensorElement("CG", ufl.triangle, 1)
 
     v = ufl.TestFunction(U)
     assert expr2latex(v) == r"\overset{0}{v}"
@@ -119,7 +119,7 @@ def test_latex_formatting_of_derivatives():
     assert expr2latex(ufl.sin(x).dx(0)) == r"\cos(x_0)"
 
     # Test derivatives of form arguments
-    V = ufl.FiniteElement("CG", ufl.cell2D, 1)
+    V = ufl.FiniteElement("CG", ufl.triangle, 1)
     f = ufl.Coefficient(V, count=0)
     assert expr2latex(f.dx(0)) == r"\overset{0}{w}_{, 0}"
     v = ufl.Argument(V, number=3)
@@ -186,7 +186,7 @@ def test_latex_formatting_of_variables():
     if 0:
         assert expr2latex(ufl.conditional(ufl.Or(ufl.eq(x, 2), ufl.ne(y, 4)), 7, 8), variables={ufl.eq(x, 2): 'c1', ufl.ne(y, 4): 'c2'}) == "c1 || c2 ? 7: 8"
     # we can replace coefficients (formatted by user provided code)
-    V = ufl.FiniteElement("CG", ufl.cell2D, 1)
+    V = ufl.FiniteElement("CG", ufl.triangle, 1)
     f = ufl.Coefficient(V, count=0)
     assert expr2latex(f, variables={f: 'f'}) == "f"
     assert expr2latex(f**3, variables={f: 'f'}) == r"{f}^{3}"

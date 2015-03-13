@@ -129,19 +129,19 @@ import pytest
 
 @pytest.fixture
 def u():
-    return Coefficient(FiniteElement("U", cell2D, 1))
+    return Coefficient(FiniteElement("U", triangle, 1))
 @pytest.fixture
 def v():
-    return Coefficient(VectorElement("U", cell2D, 1))
+    return Coefficient(VectorElement("U", triangle, 1))
 @pytest.fixture
 def w():
-    return Coefficient(TensorElement("U", cell2D, 1))
+    return Coefficient(TensorElement("U", triangle, 1))
 
 def test_fixtures(u, v, w):
     "Just checking that fixtures work!"
-    assert u == Coefficient(FiniteElement("U", cell2D, 1), count=u.count())
-    assert v == Coefficient(VectorElement("U", cell2D, 1), count=v.count())
-    assert w == Coefficient(TensorElement("U", cell2D, 1), count=w.count())
+    assert u == Coefficient(FiniteElement("U", triangle, 1), count=u.count())
+    assert v == Coefficient(VectorElement("U", triangle, 1), count=v.count())
+    assert w == Coefficient(TensorElement("U", triangle, 1), count=w.count())
 
 def xtest_cpp2_compile_scalar_literals():
     M = as_ufl(0)*dx
@@ -163,13 +163,13 @@ def xtest_cpp2_compile_scalar_literals():
     assert code == expected
 
 def xtest_cpp2_compile_geometry():
-    M = CellVolume(cell2D)*dx
+    M = CellVolume(triangle)*dx
     code = compile_form(M, 'unittest')
     print('\n', code)
     expected = 'TODO'
     assert code == expected
 
-    M = SpatialCoordinate(cell2D)[0]*dx
+    M = SpatialCoordinate(triangle)[0]*dx
     code = compile_form(M, 'unittest')
     print('\n', code)
     expected = 'TODO'

@@ -57,32 +57,32 @@ def test_cpp_formatting_of_geometry():
     # Test geometry quantities (faked for testing!)
     x = ufl.SpatialCoordinate(ufl.interval)[0]
     assert expr2cpp(x) == "x[0]"
-    x, y = ufl.SpatialCoordinate(ufl.cell2D)
+    x, y = ufl.SpatialCoordinate(ufl.triangle)
     assert expr2cpp(x) == "x[0]"
     assert expr2cpp(y) == "x[1]"
-    nx, ny = ufl.FacetNormal(ufl.cell2D)
+    nx, ny = ufl.FacetNormal(ufl.triangle)
     assert expr2cpp(nx) == "n[0]"
     assert expr2cpp(ny) == "n[1]"
-    Kv = ufl.CellVolume(ufl.cell2D)
+    Kv = ufl.CellVolume(ufl.triangle)
     assert expr2cpp(Kv) == "volume"
-    Kr = ufl.Circumradius(ufl.cell2D)
+    Kr = ufl.Circumradius(ufl.triangle)
     assert expr2cpp(Kr) == "circumradius"
 
 def test_cpp_formatting_of_form_arguments():
     # Test form arguments (faked for testing!)
-    V = ufl.FiniteElement("CG", ufl.cell2D, 1)
+    V = ufl.FiniteElement("CG", ufl.triangle, 1)
     f = ufl.Coefficient(V, count=0)
     assert expr2cpp(f) == "w0"
     v = ufl.TestFunction(V)
     assert expr2cpp(v) == "v0"
 
-    V = ufl.VectorElement("CG", ufl.cell2D, 1)
+    V = ufl.VectorElement("CG", ufl.triangle, 1)
     f = ufl.Coefficient(V, count=1)
     assert expr2cpp(f[0]) == "w0[0]" # Renumbered to 0...
     v = ufl.Argument(V, number=3)
     assert expr2cpp(v[1]) == "v3[1]" # NOT renumbered to 0...
 
-    V = ufl.TensorElement("CG", ufl.cell2D, 1)
+    V = ufl.TensorElement("CG", ufl.triangle, 1)
     f = ufl.Coefficient(V, count=2)
     assert expr2cpp(f[1, 0]) == "w0[1][0]" # Renumbered to 0...
     v = ufl.Argument(V, number=3)
@@ -126,7 +126,7 @@ def test_cpp_formatting_of_derivatives():
     assert expr2cpp(ufl.sin(x).dx(0)) == "cos(x[0])"
 
     # Test derivatives of target specific test fakes
-    V = ufl.FiniteElement("CG", ufl.cell2D, 1)
+    V = ufl.FiniteElement("CG", ufl.triangle, 1)
     f = ufl.Coefficient(V, count=0)
     assert expr2cpp(f.dx(0)) == "d1_w0[0]"
     v = ufl.Argument(V, number=3)
@@ -197,7 +197,7 @@ def test_cpp_formatting_with_variables():
     assert expr2cpp(ufl.conditional(ufl.Or(ufl.eq(x, 2), ufl.ne(y, 4)), 7, 8),
                     variables={ufl.eq(x, 2): 'c1', ufl.ne(y, 4): 'c2'}) == "c1 || c2 ? 7: 8"
     # we can replace coefficients (formatted by user provided code)
-    V = ufl.FiniteElement("CG", ufl.cell2D, 1)
+    V = ufl.FiniteElement("CG", ufl.triangle, 1)
     f = ufl.Coefficient(V, count=0)
     assert expr2cpp(f, variables={f: 'f'}) == "f"
     assert expr2cpp(f**3, variables={f: 'f'}) == "pow(f, 3)"

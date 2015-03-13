@@ -31,7 +31,7 @@ from uflacs.analysis.graph import build_graph
 #                                       allocate_registers)
 
 def xtest_dependency_construction():
-    cell = cell2D
+    cell = triangle
     d = cell.geometric_dimension()
     x = SpatialCoordinate(cell)
     n = FacetNormal(cell)

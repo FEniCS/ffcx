@@ -16,7 +16,7 @@ from uflacs.analysis.graph import build_graph
 from operator import eq as equal
 
 def test_map_indexed_arg_components():
-    W = TensorElement("CG", cell2D, 1)
+    W = TensorElement("CG", triangle, 1)
     A = Coefficient(W)
     i, j = indices(2)
 
@@ -38,7 +38,7 @@ def test_map_indexed_arg_components2():
             d[c1[k]] = k
         return d
 
-    W = TensorElement("CG", cell2D, 1)
+    W = TensorElement("CG", triangle, 1)
     A = Coefficient(W)
     i, j = indices(2)
 
@@ -51,7 +51,7 @@ def test_map_indexed_arg_components2():
     assert equal(d, [0, 2, 1, 3])
 
 def test_map_componenttensor_arg_components():
-    W = TensorElement("CG", cell2D, 1)
+    W = TensorElement("CG", triangle, 1)
     A = Coefficient(W)
     i, j = indices(2)
 
@@ -64,7 +64,7 @@ def test_map_componenttensor_arg_components():
     assert equal(d, [0, 2, 1, 3])
 
 def test_map_list_tensor_symbols():
-    U = FiniteElement("CG", cell2D, 1)
+    U = FiniteElement("CG", triangle, 1)
     u = Coefficient(U)
     A = as_tensor(((u+1, u+2, u+3), (u**2+1, u**2+2, u**2+3)))
     # Would be nicer to refactor build_graph a bit so we could call map_list_tensor_symbols directly...
@@ -74,7 +74,7 @@ def test_map_list_tensor_symbols():
     assert s1 == s2
 
 def test_map_transposed_symbols():
-    W = TensorElement("CG", cell2D, 1)
+    W = TensorElement("CG", triangle, 1)
     w = Coefficient(W)
     A = w.T
     # Would be nicer to refactor build_graph a bit so we could call map_transposed_symbols directly...
@@ -84,7 +84,7 @@ def test_map_transposed_symbols():
     s2[1], s2[2] = s2[2], s2[1]
     assert s1 == s2
 
-    W = TensorElement("CG", cell3D, 1)
+    W = TensorElement("CG", tetrahedron, 1)
     w = Coefficient(W)
     A = w.T
     # Would be nicer to refactor build_graph a bit so we could call map_transposed_symbols directly...

@@ -24,9 +24,9 @@ from uflacs.analysis.graph_rebuild import rebuild_expression_from_graph
 from operator import eq as equal
 
 def test_graph_algorithm_allocates_correct_number_of_symbols():
-    U = FiniteElement("CG", cell2D, 1)
-    V = VectorElement("CG", cell2D, 1)
-    W = TensorElement("CG", cell2D, 1)
+    U = FiniteElement("CG", triangle, 1)
+    V = VectorElement("CG", triangle, 1)
+    W = TensorElement("CG", triangle, 1)
     u = Coefficient(U)
     v = Coefficient(V)
     w = Coefficient(W)
@@ -113,9 +113,9 @@ def test_graph_algorithm_allocates_correct_number_of_symbols():
     assert G.total_unique_symbols == 2+1+4+4
 
 def test_rebuild_expression_from_graph_basic_scalar_expressions():
-    U = FiniteElement("CG", cell2D, 1)
-    V = VectorElement("CG", cell2D, 1)
-    W = TensorElement("CG", cell2D, 1)
+    U = FiniteElement("CG", triangle, 1)
+    V = VectorElement("CG", triangle, 1)
+    W = TensorElement("CG", triangle, 1)
     u = Coefficient(U)
     v = Coefficient(V)
     w = Coefficient(W)
@@ -139,9 +139,9 @@ def test_rebuild_expression_from_graph_basic_scalar_expressions():
         assert v1 == v2
 
 def test_rebuild_expression_from_graph_on_products_with_indices():
-    U = FiniteElement("CG", cell2D, 1)
-    V = VectorElement("CG", cell2D, 1)
-    W = TensorElement("CG", cell2D, 1)
+    U = FiniteElement("CG", triangle, 1)
+    V = VectorElement("CG", triangle, 1)
+    W = TensorElement("CG", triangle, 1)
     u = Coefficient(U)
     v = Coefficient(V)
     w = Coefficient(W)
@@ -183,9 +183,9 @@ def test_rebuild_expression_from_graph_on_products_with_indices():
     assert ve == v2
 
 def test_rebuild_expression_from_graph_basic_tensor_expressions():
-    U = FiniteElement("CG", cell2D, 1)
-    V = VectorElement("CG", cell2D, 1)
-    W = TensorElement("CG", cell2D, 1)
+    U = FiniteElement("CG", triangle, 1)
+    V = VectorElement("CG", triangle, 1)
+    W = TensorElement("CG", triangle, 1)
     u = Coefficient(U)
     v = Coefficient(V)
     vb = Coefficient(V)
@@ -292,9 +292,9 @@ def test_rebuild_expression_from_graph_basic_tensor_expressions():
 
 # Compounds not implemented, not expecting to do this anytime soon
 def xtest_rebuild_expression_from_graph_on_compounds():
-    U = FiniteElement("CG", cell2D, 1)
-    V = VectorElement("CG", cell2D, 1)
-    W = TensorElement("CG", cell2D, 1)
+    U = FiniteElement("CG", triangle, 1)
+    V = VectorElement("CG", triangle, 1)
+    W = TensorElement("CG", triangle, 1)
     u = Coefficient(U)
     v = Coefficient(V)
     w = Coefficient(W)
