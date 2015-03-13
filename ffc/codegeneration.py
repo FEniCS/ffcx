@@ -264,6 +264,7 @@ def _generate_form_code(ir, prefix, parameters):
     code["create_dofmap"] = _create_dofmap(prefix, ir)
 
     integral_types = ["cell", "exterior_facet", "interior_facet", "vertex", "custom"]
+    # TODO: Add "point", "interface", "overlap", "cutcell"
     for integral_type in integral_types:
         code["max_%s_subdomain_id" % integral_type] = ret(ir["max_%s_subdomain_id" % integral_type])
         code["has_%s_integrals" % integral_type] = _has_foo_integrals(ir, integral_type)
