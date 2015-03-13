@@ -64,8 +64,14 @@ class FFCDefinitionsBackend(MultiFunction):
             pass
         else:
             # No need to store basis function value in its own variable, just get table value directly
+            code += [VariableDecl("double", access, "0.0")]
             uname, begin, end = tabledata
             entity = format_entity_name(self.ir["entitytype"], mt.restriction)
+
+            # Empty loop needs to be skipped as zero tables may not be generated
+            # FIXME: assert begin < end instead, and remove at earlier stage so dependent code can also be removed
+            if begin >= end:
+                return code
 
             iq = names.iq
             idof = names.ic
@@ -79,7 +85,6 @@ class FFCDefinitionsBackend(MultiFunction):
             body = [AssignAdd(access, prod)]
 
             # Loop to accumulate linear combination of dofs and tables
-            code += [VariableDecl("double", access, "0.0")]
             code += [ForRange(idof, begin, end, body=body)]
 
         return code

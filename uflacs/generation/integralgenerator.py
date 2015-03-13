@@ -209,9 +209,15 @@ class IntegralGenerator(object):
         MATR = expr_ir["modified_argument_table_ranges"]
 
         # Find dofranges at this loop level iarg starting with outer_dofblock
-        dofranges = sorted(set(MATR[mas[iarg]][1:3] for mas in AF
-                           if all(MATR[mas[i]][1:3] == j for i, j in enumerate(outer_dofblock))
-                               ))
+        dofranges = set()
+        for mas in AF:
+            mas_full_dofblock = tuple(MATR[j][1:3] for j in mas)
+            if tuple(mas_full_dofblock[:iarg]) == tuple(outer_dofblock):
+                dofrange = mas_full_dofblock[iarg]
+                # Skip empty dofranges TODO: Possible to remove these and related code earlier?
+                if dofrange[0] != dofrange[1]:
+                    dofranges.add(dofrange)
+        dofranges = sorted(dofranges)
 
         # Build loops for each dofrange
         for dofrange in dofranges:
