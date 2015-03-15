@@ -56,16 +56,12 @@ def get_installation_prefix():
 def get_swig_executable():
     "Get SWIG executable"
 
-    # SWIG >= 2.0.0 is required for Python 2 and >= 3.0.3 for Python 3
-    if sys.version_info[0] < 3:
-        swig_minimum_version = [2, 0, 0]
-    else:
-        swig_minimum_version = [3, 0, 3]
+    swig_minimum_version = [3, 0, 3]
     swig_minimum_version_str = ".".join([str(x) for x in swig_minimum_version])
 
     # Find SWIG executable
     swig_executable = None
-    for executable in ["swig", "swig3.0", "swig2.0"]:
+    for executable in ["swig3.0", "swig"]:
         swig_executable = spawn.find_executable(executable)
         if swig_executable is not None:
             break
