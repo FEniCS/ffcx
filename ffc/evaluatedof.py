@@ -158,6 +158,11 @@ def _required_declarations(ir):
 def _generate_body(i, dof, mapping, gdim, tdim, offset=0, result=f_result):
     "Generate code for a single dof."
 
+    # EnrichedElement is handled by having [None, ..., None] dual basis
+    if not dof:
+        return (format["exception"]("evaluate_dof(s) for enriched element "
+                                    "not implemented."), 0.0)
+
     points = list(dof.keys())
 
     # Generate different code if multiple points. (Otherwise ffc
