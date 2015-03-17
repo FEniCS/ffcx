@@ -6,6 +6,7 @@ from distutils.core import setup, Extension
 from distutils.command import build_ext
 from distutils.command.build import build
 from distutils.ccompiler import new_compiler
+from distutils.version import LooseVersion
 
 if sys.version_info < (2, 7):
     print("Python 2.7 or higher required, please upgrade.")
@@ -56,31 +57,21 @@ def get_installation_prefix():
 def get_swig_executable():
     "Get SWIG executable"
 
-    swig_minimum_version = [3, 0, 3]
-    swig_minimum_version_str = ".".join([str(x) for x in swig_minimum_version])
-
     # Find SWIG executable
     swig_executable = None
-    for executable in ["swig3.0", "swig"]:
+    swig_minimum_version = "3.0.3"
+    for executable in ["swig", "swig3.0"]:
         swig_executable = spawn.find_executable(executable)
         if swig_executable is not None:
-            break
+            # Check that SWIG version is ok
+            output = subprocess.check_output([swig_executable, "-version"]).decode('utf-8')
+            swig_version = re.findall(r"SWIG Version ([0-9.]+)", output)[0]
+            if LooseVersion(swig_version) >= LooseVersion(swig_minimum_version):
+                break
+            swig_executable = None
     if swig_executable is None:
-        raise OSError("Unable to find SWIG installation. Please install SWIG version %s or higher." % swig_minimum_version_str)
-
-    # Check that SWIG version is ok
-    output = subprocess.check_output([swig_executable, "-version"]).decode('utf-8')
-    swig_version = re.findall(r"SWIG Version ([0-9.]+)", output)[0]
-    swig_version_ok = True
-    for i, v in enumerate([int(v) for v in swig_version.split(".")]):
-        if swig_minimum_version[i] < v:
-            break
-        elif swig_minimum_version[i] == v:
-            continue
-        else:
-            swig_version_ok = False
-    if not swig_version_ok:
-        raise OSError("Unable to find SWIG version %s or higher." % swig_minimum_version_str)
+        raise OSError("Unable to find SWIG version %s or higher." % swig_minimum_version)
+    print("Found SWIG: %s (version %s)" % (swig_executable, swig_version))
 
     return swig_executable
 
