@@ -247,8 +247,13 @@ def run_install():
                     "-fastinit", "-fastunpack",
                     "-fastquery", "-nobuildnone"]
     if sys.version_info[0] > 2: swig_options.insert(0, "-py3")
+    if not os.path.exists("build"):
+        os.makedirs("build")
+    if os.path.exists(os.path.join("build", "ufc")):
+        shutil.rmtree(os.path.join("build", "ufc"))
+    shutil.copytree("ufc", os.path.join("build", "ufc"))
     ext_module_ufc = Extension("ufc._ufc",
-                               sources=[os.path.join("ufc", "ufc.i")],
+                               sources=[os.path.join("build", "ufc", "ufc.i")],
                                depends=[os.path.join("ufc", "ufc.h"),
                                         os.path.join("ufc", "ufc_geometry.h")],
                                swig_opts=swig_options,
