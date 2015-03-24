@@ -31,7 +31,7 @@ import ufc
 
 # UFL modules
 from ufl.common import istr, tstr
-from ufl import TestFunction, dx
+from ufl import TestFunction, ds
 from ufl.classes import Form, FiniteElementBase
 from ufl.algorithms import extract_elements, extract_sub_elements, compute_form_data
 
@@ -171,7 +171,7 @@ def jit_element(element, parameters=None):
     # Create simplest possible dummy form
     v = TestFunction(element)
     ii = (0,)*v.rank()
-    form = v[ii]*dx
+    form = v[ii]*ds
 
     # Compile form
     compiled_form, module, prefix = jit_form(form, parameters)
