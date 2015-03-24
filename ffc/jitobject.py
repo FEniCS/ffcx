@@ -25,7 +25,7 @@ import ufl
 from ufl.utils.sorting import canonicalize_metadata
 
 # FFC modules.
-from .constants import FFC_VERSION
+from ffc import __version__ as FFC_VERSION
 
 # UFC modules.
 from ffc.backends import ufc

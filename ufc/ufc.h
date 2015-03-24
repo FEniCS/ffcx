@@ -1,14 +1,15 @@
-// This is UFC (Unified Form-assembly Code) v. 1.4.0+.
+// This is UFC (Unified Form-assembly Code) v. 1.6.0dev.
 // This code is released into the public domain.
 //
-// The FEniCS Project (http://www.fenicsproject.org/) 2006-2014.
+// The FEniCS Project (http://www.fenicsproject.org/) 2006-2015.
 
 #ifndef __UFC_H
 #define __UFC_H
 
 #define UFC_VERSION_MAJOR 1
-#define UFC_VERSION_MINOR 4
+#define UFC_VERSION_MINOR 6
 #define UFC_VERSION_MAINTENANCE 0
+#define UFC_VERSION_RELEASE 0
 
 #include <vector>
 #include <cstddef>
@@ -16,7 +17,17 @@
 
 #include <ufc_geometry.h>
 
-const char UFC_VERSION[] = "1.4.0+";
+#define CONCAT(a,b,c) #a "." #b "." #c
+#define EVALUATOR(a,b,c) CONCAT(a,b,c)
+
+#if UFC_VERSION_RELEASE
+const char UFC_VERSION[] = EVALUATOR(UFC_VERSION_MAJOR, UFC_VERSION_MINOR, UFC_VERSION_MAINTENANCE);
+#else
+const char UFC_VERSION[] = EVALUATOR(UFC_VERSION_MAJOR, UFC_VERSION_MINOR, UFC_VERSION_MAINTENANCE) "dev";
+#endif
+
+#undef CONCAT
+#undef EVALUATOR
 
 namespace ufc
 {
@@ -24,36 +35,7 @@ namespace ufc
   /// Valid cell shapes
   enum shape {interval, triangle, quadrilateral, tetrahedron, hexahedron};
 
-  /// This class defines the interface for cell topology data.
-  class cell_topology
-  {
-  public:
-
-    /// Destructor
-    virtual ~cell_topology() {}
-
-    /// Return array of global entity indices for topological dimension d
-    //virtual const std::size_t* entity_indices(std::size_t d) const;
-
-  };
-
-  /// This class defines the interface for cell geometry data.
-  class cell_geometry
-  {
-  public:
-
-    /// Destructor
-    virtual ~cell_geometry() {}
-
-    /// Get vertex coordinates
-    //virtual void get_vertex_coordinates(const double* x[]) const;
-
-    //virtual std::vector<std::vector<double> >& void vertex_coordinates() const;
-
-  };
-
   /// This class defines the data structure for a cell in a mesh.
-
   class cell
   {
   public:
@@ -93,7 +75,6 @@ namespace ufc
   };
 
   /// This class defines the interface for a general tensor-valued function.
-
   class function
   {
   public:
@@ -109,7 +90,6 @@ namespace ufc
   };
 
   /// This class defines the interface for a finite element.
-
   class finite_element
   {
   public:
@@ -212,7 +192,6 @@ namespace ufc
 
   /// This class defines the interface for a local-to-global mapping of
   /// degrees of freedom (dofs).
-
   class dofmap
   {
   public:
@@ -239,7 +218,7 @@ namespace ufc
 
     /// Return the dimension of the local finite element function space
     /// for a cell
-    virtual std::size_t local_dimension() const = 0;
+    virtual std::size_t num_element_dofs() const = 0;
 
     /// Return the number of dofs on each cell facet
     virtual std::size_t num_facet_dofs() const = 0;
@@ -279,7 +258,6 @@ namespace ufc
   /// This class defines the shared interface for classes implementing
   /// the tabulation of a tensor corresponding to the local contribution
   /// to a form from an integral.
-
   class integral
   {
   public:
@@ -295,7 +273,6 @@ namespace ufc
   /// This class defines the interface for the tabulation of the cell
   /// tensor corresponding to the local contribution to a form from
   /// the integral over a cell.
-
   class cell_integral: public integral
   {
   public:
@@ -314,7 +291,6 @@ namespace ufc
   /// This class defines the interface for the tabulation of the
   /// exterior facet tensor corresponding to the local contribution to
   /// a form from the integral over an exterior facet.
-
   class exterior_facet_integral: public integral
   {
   public:
@@ -334,7 +310,6 @@ namespace ufc
   /// This class defines the interface for the tabulation of the
   /// interior facet tensor corresponding to the local contribution to
   /// a form from the integral over an interior facet.
-
   class interior_facet_integral: public integral
   {
   public:
@@ -356,16 +331,15 @@ namespace ufc
 
   /// This class defines the interface for the tabulation of
   /// an expression evaluated at exactly one point.
-
-  class point_integral: public integral
+  class vertex_integral: public integral
   {
   public:
 
     /// Constructor
-    point_integral() {}
+    vertex_integral() {}
 
     /// Destructor
-    virtual ~point_integral() {}
+    virtual ~vertex_integral() {}
 
     /// Tabulate the tensor for the contribution from the local vertex
     virtual void tabulate_tensor(double* A,
@@ -380,7 +354,6 @@ namespace ufc
   /// tensor corresponding to the local contribution to a form from
   /// the integral over a custom domain defined in terms of a set of
   /// quadrature points and weights.
-
   class custom_integral: public integral
   {
   public:
@@ -420,7 +393,6 @@ namespace ufc
   /// where each argument Vj represents the application to the
   /// sequence of basis functions of Vj and w1, w2, ..., wn are given
   /// fixed functions (coefficients).
-
   class form
   {
   public:
@@ -431,8 +403,6 @@ namespace ufc
     /// Return a string identifying the form
     virtual const char* signature() const = 0;
 
-    /// Return original coefficient position for each coefficient (0 <= i < n)
-    virtual std::size_t original_coefficient_position(std::size_t i) const = 0;
 
     /// Return the rank of the global tensor (r)
     virtual std::size_t rank() const = 0;
@@ -440,20 +410,32 @@ namespace ufc
     /// Return the number of coefficients (n)
     virtual std::size_t num_coefficients() const = 0;
 
-    /// Return the number of cell domains
-    virtual std::size_t num_cell_domains() const = 0;
+    /// Return original coefficient position for each coefficient (0 <= i < n)
+    virtual std::size_t original_coefficient_position(std::size_t i) const = 0;
 
-    /// Return the number of exterior facet domains
-    virtual std::size_t num_exterior_facet_domains() const = 0;
 
-    /// Return the number of interior facet domains
-    virtual std::size_t num_interior_facet_domains() const = 0;
+    /// Create a new finite element for argument function 0 <= i < r+n
+    virtual finite_element* create_finite_element(std::size_t i) const = 0;
 
-    /// Return the number of point domains
-    virtual std::size_t num_point_domains() const = 0;
+    /// Create a new dofmap for argument function 0 <= i < r+n
+    virtual dofmap* create_dofmap(std::size_t i) const = 0;
 
-    /// Return the number of custom domains
-    virtual std::size_t num_custom_domains() const = 0;
+
+    /// Return the upper bound on subdomain ids for cell integrals
+    virtual std::size_t max_cell_subdomain_id() const = 0;
+
+    /// Return the upper bound on subdomain ids for exterior facet integrals
+    virtual std::size_t max_exterior_facet_subdomain_id() const = 0;
+
+    /// Return the upper bound on subdomain ids for interior facet integrals
+    virtual std::size_t max_interior_facet_subdomain_id() const = 0;
+
+    /// Return the upper bound on subdomain ids for vertex integrals
+    virtual std::size_t max_vertex_subdomain_id() const = 0;
+
+    /// Return the upper bound on subdomain ids for custom integrals
+    virtual std::size_t max_custom_subdomain_id() const = 0;
+
 
     /// Return whether form has any cell integrals
     virtual bool has_cell_integrals() const = 0;
@@ -464,34 +446,30 @@ namespace ufc
     /// Return whether form has any interior facet integrals
     virtual bool has_interior_facet_integrals() const = 0;
 
-    /// Return whether form has any point integrals
-    virtual bool has_point_integrals() const = 0;
+    /// Return whether form has any vertex integrals
+    virtual bool has_vertex_integrals() const = 0;
 
     /// Return whether form has any custom integrals
     virtual bool has_custom_integrals() const = 0;
 
-    /// Create a new finite element for argument function 0 <= i < r+n
-    virtual finite_element* create_finite_element(std::size_t i) const = 0;
 
-    /// Create a new dofmap for argument function 0 <= i < r+n
-    virtual dofmap* create_dofmap(std::size_t i) const = 0;
+    /// Create a new cell integral on sub domain subdomain_id
+    virtual cell_integral* create_cell_integral(std::size_t subdomain_id) const = 0;
 
-    /// Create a new cell integral on sub domain i
-    virtual cell_integral* create_cell_integral(std::size_t i) const = 0;
-
-    /// Create a new exterior facet integral on sub domain i
+    /// Create a new exterior facet integral on sub domain subdomain_id
     virtual exterior_facet_integral*
-    create_exterior_facet_integral(std::size_t i) const = 0;
+    create_exterior_facet_integral(std::size_t subdomain_id) const = 0;
 
-    /// Create a new interior facet integral on sub domain i
+    /// Create a new interior facet integral on sub domain subdomain_id
     virtual interior_facet_integral*
-    create_interior_facet_integral(std::size_t i) const = 0;
+    create_interior_facet_integral(std::size_t subdomain_id) const = 0;
 
-    /// Create a new point integral on sub domain i
-    virtual point_integral* create_point_integral(std::size_t i) const = 0;
+    /// Create a new vertex integral on sub domain subdomain_id
+    virtual vertex_integral* create_vertex_integral(std::size_t subdomain_id) const = 0;
 
-    /// Create a new custom integral on sub domain i
-    virtual custom_integral* create_custom_integral(std::size_t i) const = 0;
+    /// Create a new custom integral on sub domain subdomain_id
+    virtual custom_integral* create_custom_integral(std::size_t subdomain_id) const = 0;
+
 
     /// Create a new cell integral on everywhere else
     virtual cell_integral* create_default_cell_integral() const = 0;
@@ -504,8 +482,8 @@ namespace ufc
     virtual interior_facet_integral*
     create_default_interior_facet_integral() const = 0;
 
-    /// Create a new point integral on everywhere else
-    virtual point_integral* create_default_point_integral() const = 0;
+    /// Create a new vertex integral on everywhere else
+    virtual vertex_integral* create_default_vertex_integral() const = 0;
 
     /// Create a new custom integral on everywhere else
     virtual custom_integral* create_default_custom_integral() const = 0;

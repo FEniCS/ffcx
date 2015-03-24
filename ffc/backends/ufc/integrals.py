@@ -1,7 +1,7 @@
-# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.4.0+.
+# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.6.0dev.
 # This code is released into the public domain.
 #
-# The FEniCS Project (http://www.fenicsproject.org/) 2006-2014
+# The FEniCS Project (http://www.fenicsproject.org/) 2006-2015
 
 cell_integral_combined = """\
 /// This class defines the interface for the tabulation of the cell
@@ -303,16 +303,16 @@ void %(classname)s::tabulate_tensor(double* %(restrict)s A,
 }
 """
 
-point_integral_combined = """\
+vertex_integral_combined = """\
 /// This class defines the interface for the tabulation of
-/// an expression evaluated at exactly one point.
+/// an expression evaluated at exactly one vertex.
 
-class %(classname)s: public ufc::point_integral
+class %(classname)s: public ufc::vertex_integral
 {%(members)s
 public:
 
   /// Constructor
-  %(classname)s(%(constructor_arguments)s) : ufc::point_integral()%(initializer_list)s
+  %(classname)s(%(constructor_arguments)s) : ufc::vertex_integral()%(initializer_list)s
   {
 %(constructor)s
   }
@@ -342,11 +342,11 @@ public:
 };
 """
 
-point_integral_header = """\
+vertex_integral_header = """\
 /// This class defines the interface for the tabulation of
-/// an expression evaluated at exactly one point.
+/// an expression evaluated at exactly one vertex.
 
-class %(classname)s: public ufc::point_integral
+class %(classname)s: public ufc::vertex_integral
 {%(members)s
 public:
 
@@ -369,9 +369,9 @@ public:
 };
 """
 
-point_integral_implementation = """\
+vertex_integral_implementation = """\
 /// Constructor
-%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::point_integral()%(initializer_list)s
+%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::vertex_integral()%(initializer_list)s
 {
 %(constructor)s
 }

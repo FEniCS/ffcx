@@ -1,6 +1,6 @@
 "This module defines rules and algorithms for generating C++ code."
 
-# Copyright (C) 2009-2013 Anders Logg
+# Copyright (C) 2009-2015 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -19,10 +19,7 @@
 #
 # Modified by Kristian B. Oelgaard 2011
 # Modified by Marie E. Rognes 2010
-# Modified by Martin Alnaes 2013
-#
-# First added:  2009-12-16
-# Last changed: 2014-06-09
+# Modified by Martin Alnaes 2013-2015
 
 # Python modules
 import re, numpy, platform
@@ -177,7 +174,8 @@ format.update({
     "argument dof num":           "i",
     "argument dof values":        "dof_values",
     "argument vertex values":     "vertex_values",
-    "argument sub":               "i" # sub domain, sub element
+    "argument sub":               "i", # sub element
+    "argument subdomain":         "subdomain_id", # sub domain
 })
 
 # Formatting used in evaluatedof.
@@ -309,8 +307,8 @@ format.update({
     "classname interior_facet_integral":  lambda prefix, form_id, sub_domain:\
               "%s_interior_facet_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
 
-    "classname point_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_point_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
+    "classname vertex_integral":  lambda prefix, form_id, sub_domain:\
+              "%s_vertex_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
 
     "classname custom_integral":  lambda prefix, form_id, sub_domain:\
               "%s_custom_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
@@ -647,7 +645,7 @@ def _generate_circumradius(tdim, gdim, integral_type, r=None):
     radius = circumradius[tdim][gdim]
 
     # Choose restrictions
-    if integral_type in ("cell", "exterior_facet", "point"):
+    if integral_type in ("cell", "exterior_facet", "vertex"):
         code = radius % {"restriction": ""}
     elif integral_type == "interior_facet":
         code = radius % {"restriction": _choose_map("+")}

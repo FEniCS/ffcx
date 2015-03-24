@@ -48,7 +48,7 @@ from ffc.log import set_level
 from ffc.log import DEBUG
 from ffc.log import ERROR
 from ffc.parameters import default_parameters
-from ffc.constants import FFC_VERSION
+from ffc import __version__ as FFC_VERSION
 from ffc.compiler import compile_form, compile_element
 from ffc.errorcontrol import compile_with_error_control
 

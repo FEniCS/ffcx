@@ -15,28 +15,26 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Martin Alnaes, 2013
-#
-# First added:  2010-01-24
-# Last changed: 2013-02-14
+# Modified by Martin Alnaes, 2013-2015
 
 _test_code = """\
 #include "../../ufctest.h"
-#include "%s.h"
+#include "{prefix}.h"
 #include <fstream>
 
 int main(int argc, char * argv[])
-{
-  const char jsonfilename[] = "%s.json";
+{{
+  const char jsonfilename[] = "{prefix}.json";
   std::ofstream jsonfile(jsonfilename);
-  Printer printer(std::cout, jsonfile);
+  Printer printer(jsonfile);
   printer.begin();
 
-%s%s
+{benchline}
+{tests}
 
   printer.end();
   return 0;
-}
+}}
 """
 
 def generate_test_code(header_file):
@@ -51,15 +49,14 @@ def generate_test_code(header_file):
     # Generate tests, either based on forms or elements
     if num_forms > 0:
         benchline = "  bool bench = (argc > 1) && argv[1][0] == 'b';\n"
-        tests = ['  %s_form_%d f%d; test_form(f%d, bench, %d, printer);' % (prefix.lower(), i, i, i, i)
+        tests = ['  {prefix}_form_{i} f{i}; test_form(f{i}, bench, {i}, printer);'.format(prefix=prefix.lower(), i=i)
                  for i in range(num_forms)]
     else:
         benchline = ""
-        tests = ['  %s_finite_element_%d e%d; test_finite_element(e%d, %d, printer);' % (prefix.lower(), i, i, i, i)
+        tests = ['  {prefix}_finite_element_{i} e{i}; test_finite_element(e{i}, {i}, printer);'.format(prefix=prefix.lower(), i=i)
                  for i in range(num_elements)]
 
     # Write file
     test_file = open(prefix + ".cpp", "w")
-    test_file.write(_test_code % (prefix, prefix, benchline, "\n".join(tests)))
+    test_file.write(_test_code.format(prefix=prefix, benchline=benchline, tests="\n".join(tests)))
     test_file.close()
-

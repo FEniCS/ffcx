@@ -23,16 +23,10 @@
 # Modified by Garth N. Wells, 2006
 # Modified by Marie E. Rognes, 2008
 # Modified by Kristian B. Oelgaard, 2009
-#
-# First added:  2004-11-03
-# Last changed: 2011-11-28
 
 # Python modules
 import numpy
 import time
-
-# UFL modules
-from ufl.classes import Measure
 
 # FFC modules
 from ffc.log import info, debug, error
@@ -92,7 +86,7 @@ def integrate(monomial,
 def _init_quadrature(arguments, integral_type, quadrature_degree, quadrature_rule, cellname, facet_cellname):
     "Initialize quadrature for given monomial."
     # Create quadrature rule and get points and weights
-    if integral_type == Measure.CELL:
+    if integral_type == "cell":
         (points, weights) = create_quadrature(cellname, quadrature_degree, quadrature_rule)
     else:
         (points, weights) = create_quadrature(facet_cellname, quadrature_degree, quadrature_rule)
@@ -117,12 +111,12 @@ def _init_table(arguments, integral_type, points, facet0, facet1):
     table = {}
     for (ufl_element, order) in num_derivatives.items():
         fiat_element = create_element(ufl_element)
-        if integral_type == Measure.CELL:
+        if integral_type == "cell":
             table[(ufl_element, None)] = fiat_element.tabulate(order, points)
-        elif integral_type == Measure.EXTERIOR_FACET:
+        elif integral_type == "exterior_facet":
             x = map_facet_points(points, facet0)
             table[(ufl_element, None)] = fiat_element.tabulate(order, x)
-        elif integral_type == Measure.INTERIOR_FACET:
+        elif integral_type == "interior_facet":
             x0 = map_facet_points(points, facet0)
             x1 = map_facet_points(points, facet1)
             table[(ufl_element, "+")] = fiat_element.tabulate(order, x0)

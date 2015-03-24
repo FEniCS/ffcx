@@ -5,7 +5,6 @@ The following possible optimizations are currently not implemented but
 might be (re-)implemented in a future version of FFC
 
   1. Factorization of common reference tensors
-  2. FErari optimizations
 """
 
 # Copyright (C) 2007-2014 Anders Logg

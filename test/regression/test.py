@@ -28,12 +28,10 @@ option --bench.
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Martin Alnaes, 2013
+# Modified by Martin Alnaes, 2013-2015
 # Modified by Johannes Ring, 2013
 # Modified by Kristian B. Oelgaard, 2013
 # Modified by Garth N. Wells, 2014
-#
-# First added:  2010-01-21
 
 # FIXME: Need to add many more test cases. Quite a few DOLFIN forms
 # failed after the FFC tests passed.
@@ -120,7 +118,7 @@ def generate_test_cases(bench, only_forms):
     form_files.sort()
 
     for f in form_files:
-        shutil.copy("%s/%s" % (form_directory, f), ".")
+        shutil.copy(os.path.join(form_directory, f), ".")
     info_green("Found %d form files" % len(form_files))
 
     # Generate form files for forms
@@ -308,11 +306,7 @@ def run_programs(bench):
 
         # Compile test code
         prefix = f.split(".bin")[0]
-        try:
-            os.remove(prefix + ".out")
-        except:
-            pass
-        ok = run_command(".%s%s.bin %s > %s.out" % (os.path.sep, prefix, bench, prefix))
+        ok = run_command(".%s%s.bin %s" % (os.path.sep, prefix, bench))
 
         # Check status
         if ok:
@@ -326,73 +320,12 @@ def validate_programs(reference_dir):
     "Validate generated programs against references."
 
     # Get a list of all files
-    output_files = [f for f in os.listdir(".") if f.endswith(".json")]
-    output_files.sort()
+    output_files = sorted(f for f in os.listdir(".") if f.endswith(".json"))
 
-    begin("Validating generated programs (%d programs found)" % len(output_files))
+    begin("Validating generated programs (%d .json program output files found)" % len(output_files))
 
     # Iterate over all files
-    for f in output_files:
-
-        # Get generated output
-        generated_output = open(f).read()
-
-        # Get reference output
-        reference_file = os.path.join(reference_dir, f)
-        if os.path.isfile(reference_file):
-            reference_output = open(reference_file).read()
-        else:
-            info_blue("Missing reference for %s" % reference_file)
-            continue
-
-        # Compare with reference
-        ok = True
-        old = [line.split(" = ") for line in reference_output.split("\n") if " = " in line]
-        new = dict([line.split(" = ") for line in generated_output.split("\n") if " = " in line])
-        header = ("Output differs for %s, diff follows (reference first, generated second)"
-                  % os.path.join(*reference_file.split(os.path.sep)[-3:]))
-        for (key, value) in old:
-
-            # Check if value is present
-            if not key in new:
-                if ok: log_error("\n" + header + "\n" + len(header)*"-")
-                log_error("%s: missing value in generated code" % key)
-                ok = False
-                continue
-
-            # Extract float values
-            old_values = array([float(v) for v in value.split(" ")])
-            new_values = array([float(v) for v in new[key].split(" ")])
-
-            # Check that shape is correct
-            if not shape(old_values) == shape(new_values):
-                if ok: log_error("\n" + header + "\n" + len(header)*"-")
-                log_error("%s: shape mismatch" % key)
-                ok = False
-                continue
-
-            # Check that values match to within tolerance set by 'output_tolerance'
-            diff = max(abs(old_values - new_values))
-            if diff > output_tolerance or isnan(diff):
-                if ok: log_error("\n" + header + "\n" + len(header)*"-")
-                log_error("%s: values differ, error = %g (tolerance = %g)" % (key, diff, output_tolerance))
-                log_error("  old = " + " ".join("%.16g" % v for v in old_values))
-                log_error("  new = " + " ".join("%.16g" % v for v in new_values))
-                ok = False
-
-        # Add debugging output to log file
-        debug = "\n".join([line for line in generated_output.split("\n") if "debug" in line])
-        if debug: log_error(debug)
-
-        # Check status
-        if ok:
-            info_green("%s OK" % f)
-        else:
-            info_red("%s differs" % f)
-
-
-        # Now check json references
-        fj = f.replace(".out", ".json")
+    for fj in output_files:
 
         # Get generated json output
         if os.path.exists(fj):
@@ -440,7 +373,7 @@ def validate_programs(reference_dir):
 def main(args):
     "Run all regression tests."
 
-    # Check command-line arguments TODO: Use getargs or something
+    # Check command-line arguments TODO: Use argparse
     generate_only  = "--generate-only" in args
     fast           = "--fast" in args
     bench          = "--bench" in args
@@ -451,6 +384,7 @@ def main(args):
     tolerant       = "--tolerant" in args
     print_timing   = "--print-timing" in args
     skip_download  = "--skip-download" in args
+    ignore_code_diff = "--ignore-code-diff" in args
 
     flags = (
         "--generate-only",
@@ -463,6 +397,7 @@ def main(args):
         "--tolerant",
         "--print-timing",
         "--skip-download",
+        "--ignore-code-diff",
         )
     args = [arg for arg in args if not arg in flags]
 
@@ -528,7 +463,7 @@ def main(args):
 
         # Validate code by comparing to code generated with this set
         # of compiler parameters
-        if not bench and argument not in ext_quad:
+        if not bench and (argument not in ext_quad) and not ignore_code_diff:
             validate_code(code_reference_dir)
 
         # Build and run programs and validate output to common

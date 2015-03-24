@@ -77,7 +77,7 @@ int ufc_swigversion() { return SWIGVERSION; }
 
 %pythoncode %{
 __version__ = UFC_VERSION
-del UFC_VERSION, UFC_VERSION_MAJOR, UFC_VERSION_MINOR
+del UFC_VERSION, UFC_VERSION_MAJOR, UFC_VERSION_MINOR, UFC_VERSION_MAINTENANCE, UFC_VERSION_RELEASE
 
 """Code for adding swig version to ufc extension module."""
 tmp = hex(ufc_swigversion())

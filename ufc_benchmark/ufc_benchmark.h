@@ -1,7 +1,7 @@
-// This is utility code for UFC (Unified Form-assembly Code) v 1.4.0+.
+// This is utility code for UFC (Unified Form-assembly Code) v 1.6.0dev.
 // This code is released into the public domain.
 //
-// The FEniCS Project (http://www.fenicsproject.org/) 2006-2014.
+// The FEniCS Project (http://www.fenicsproject.org/) 2006-2015.
 
 #ifndef __UFC_BENCHMARK_H__
 #define __UFC_BENCHMARK_H__

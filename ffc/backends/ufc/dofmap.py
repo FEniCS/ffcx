@@ -1,7 +1,7 @@
-# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.4.0+.
+# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.6.0dev.
 # This code is released into the public domain.
 #
-# The FEniCS Project (http://www.fenicsproject.org/) 2006-2014.
+# The FEniCS Project (http://www.fenicsproject.org/) 2006-2015.
 
 dofmap_combined = """\
 /// This class defines the interface for a local-to-global mapping of
@@ -55,9 +55,9 @@ public:
   }
 
   /// Return the dimension of the local finite element function space for a cell
-  virtual std::size_t local_dimension() const
+  virtual std::size_t num_element_dofs() const
   {
-%(local_dimension)s
+%(num_element_dofs)s
   }
 
   /// Return the number of dofs on each cell facet
@@ -153,7 +153,7 @@ public:
                                        num_global_entities) const;
 
   /// Return the dimension of the local finite element function space for a cell
-  virtual std::size_t local_dimension() const;
+  virtual std::size_t num_element_dofs() const;
 
   /// Return the number of dofs on each cell facet
   virtual std::size_t num_facet_dofs() const;
@@ -235,9 +235,9 @@ std::size_t %(classname)s::global_dimension(const std::vector<std::size_t>&
 }
 
 /// Return the dimension of the local finite element function space for a cell
-std::size_t %(classname)s::local_dimension() const
+std::size_t %(classname)s::num_element_dofs() const
 {
-%(local_dimension)s
+%(num_element_dofs)s
 }
 
 /// Return the number of dofs on each cell facet

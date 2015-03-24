@@ -69,7 +69,7 @@ def optimize_integral_ir(ir, parameters):
                         _precompute_expressions(integrals[i][j], geo_consts,parameters["optimisation"])
                     else:
                         _simplify_expression(integrals[i][j], geo_consts, psi_tables_map)
-        elif integral_type == "point":
+        elif integral_type == "vertex":
             for i in range(num_vertices):
                 info("Optimising expressions for poin integral %d" % i)
                 if parameters["optimisation"] in ("precompute_ip_const", "precompute_basis_const"):

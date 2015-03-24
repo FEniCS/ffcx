@@ -1,4 +1,4 @@
-// Copyright (C) 2010-2013 Anders Logg
+// Copyright (C) 2010-2015 Anders Logg
 //
 // This file is part of FFC.
 //
@@ -15,10 +15,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with FFC. If not, see <http://www.gnu.org/licenses/>.
 //
-// Modified by Martin Alnaes, 2013
-//
-// First added:  2010-01-24
-// Last changed: 2013-02-18
+// Modified by Martin Alnaes, 2013-2015
 //
 // Functions for calling generated UFC functions with "random" (but
 // fixed) data and print the output to screen. Useful for running
@@ -341,7 +338,7 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id,
   test_cell c(cell_shape, dofmap.geometric_dimension());
   const std::vector<double> vertex_coordinates
     = test_vertex_coordinates(dofmap.geometric_dimension());
-  std::size_t n = dofmap.local_dimension();
+  std::size_t n = dofmap.num_element_dofs();
   std::size_t* dofs = new std::size_t[n];
   for (std::size_t i = 0; i < n; i++)
     dofs[i] = 0;
@@ -360,8 +357,8 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id,
   printer.print_scalar("global_dimension",
                        dofmap.global_dimension(num_entities));
 
-  // local_dimension
-  printer.print_scalar("local_dimension", dofmap.local_dimension());
+  // num_element_dofs
+  printer.print_scalar("num_element_dofs", dofmap.num_element_dofs());
 
   // geometric_dimension
   printer.print_scalar("geometric_dimension", dofmap.geometric_dimension());
@@ -375,7 +372,7 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id,
 
   // tabulate_dofs
   dofmap.tabulate_dofs(dofs, num_entities, c);
-  printer.print_array("tabulate_dofs", dofmap.local_dimension(), dofs);
+  printer.print_array("tabulate_dofs", dofmap.num_element_dofs(), dofs);
 
   // tabulate_facet_dofs
   for (std::size_t facet = 0; facet < num_facets; facet++)
@@ -609,8 +606,8 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
   printer.end();
 }
 
-// Function for testing ufc::point_integral objects
-void test_point_integral(ufc::point_integral& integral,
+// Function for testing ufc::vertex_integral objects
+void test_vertex_integral(ufc::vertex_integral& integral,
                          ufc::shape cell_shape,
                          std::size_t gdim,
                          std::size_t tensor_size,
@@ -619,7 +616,7 @@ void test_point_integral(ufc::point_integral& integral,
                          int id,
                          Printer & printer)
 {
-  printer.begin("point_integral", id);
+  printer.begin("vertex_integral", id);
 
   // Prepare arguments
   test_cell c(cell_shape, gdim);
@@ -652,8 +649,8 @@ void test_point_integral(ufc::point_integral& integral,
       if (dt > minimum_timing)
       {
         dt /= static_cast<double>(num_reps);
-        printer.print_scalar("point_integral_timing_iterations", num_reps);
-        printer.print_scalar("point_integral_time", dt);
+        printer.print_scalar("vertex_integral_timing_iterations", num_reps);
+        printer.print_scalar("vertex_integral_time", dt);
         break;
       }
     }
@@ -726,22 +723,22 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
   printer.print_scalar("has_interior_facet_integrals",
                        form.has_interior_facet_integrals());
 
-  // has_point_integrals
-  printer.print_scalar("has_point_integrals", form.has_point_integrals());
+  // has_vertex_integrals
+  printer.print_scalar("has_vertex_integrals", form.has_vertex_integrals());
 
-  // num_cell_domains
-  printer.print_scalar("num_cell_domains", form.num_cell_domains());
+  // max_cell_subdomain_id
+  printer.print_scalar("max_cell_subdomain_id", form.max_cell_subdomain_id());
 
-  // num_exterior_facet_domains
-  printer.print_scalar("num_exterior_facet_domains",
-                       form.num_exterior_facet_domains());
+  // max_exterior_facet_subdomain_id
+  printer.print_scalar("max_exterior_facet_subdomain_id",
+                       form.max_exterior_facet_subdomain_id());
 
-  // num_interior_facet_domains
-  printer.print_scalar("num_interior_facet_domains",
-                       form.num_interior_facet_domains());
+  // max_interior_facet_subdomain_id
+  printer.print_scalar("max_interior_facet_subdomain_id",
+                       form.max_interior_facet_subdomain_id());
 
-  // num_point_domains
-  printer.print_scalar("num_point_domains", form.num_point_domains());
+  // max_vertex_subdomain_id
+  printer.print_scalar("max_vertex_subdomain_id", form.max_vertex_subdomain_id());
 
   // create_finite_element
   for (std::size_t i = 0; i < form.rank() + form.num_coefficients(); i++)
@@ -768,7 +765,7 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
                          tensor_size, w, bench, -1, printer);
     delete integral;
   }
-  for (std::size_t i = 0; i < form.num_cell_domains(); i++)
+  for (std::size_t i = 0; i < form.max_cell_subdomain_id(); i++)
   {
     ufc::cell_integral* integral = form.create_cell_integral(i);
     if (integral)
@@ -790,7 +787,7 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
     delete integral;
   }
 
-  for (std::size_t i = 0; i < form.num_exterior_facet_domains(); i++)
+  for (std::size_t i = 0; i < form.max_exterior_facet_subdomain_id(); i++)
   {
     ufc::exterior_facet_integral* integral
       = form.create_exterior_facet_integral(i);
@@ -811,7 +808,7 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
                                    macro_tensor_size, w, bench, -1, printer);
     delete integral;
   }
-  for (std::size_t i = 0; i < form.num_interior_facet_domains(); i++)
+  for (std::size_t i = 0; i < form.max_interior_facet_subdomain_id(); i++)
   {
     ufc::interior_facet_integral* integral
       = form.create_interior_facet_integral(i);
@@ -823,23 +820,23 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
     delete integral;
   }
 
-  // create_point_integral
+  // create_vertex_integral
   {
-    ufc::point_integral* integral = form.create_default_point_integral();
-    printer.print_scalar("default_point_integral", (bool)integral);
+    ufc::vertex_integral* integral = form.create_default_vertex_integral();
+    printer.print_scalar("default_vertex_integral", (bool)integral);
     if (integral)
     {
-      test_point_integral(*integral, cell_shape, gdim, tensor_size, w, bench,
+      test_vertex_integral(*integral, cell_shape, gdim, tensor_size, w, bench,
                           -1, printer);
     }
     delete integral;
   }
-  for (std::size_t i = 0; i < form.num_point_domains(); i++)
+  for (std::size_t i = 0; i < form.max_vertex_subdomain_id(); i++)
   {
-    ufc::point_integral* integral = form.create_point_integral(i);
+    ufc::vertex_integral* integral = form.create_vertex_integral(i);
     if (integral)
     {
-      test_point_integral(*integral, cell_shape, gdim, tensor_size, w, bench,
+      test_vertex_integral(*integral, cell_shape, gdim, tensor_size, w, bench,
                           i, printer);
     }
     delete integral;
