@@ -32,6 +32,7 @@ in the intermediate representation under the key "foo".
 # Modified by Marie E. Rognes 2010
 # Modified by Kristian B. Oelgaard 2010
 # Modified by Martin Alnaes, 2013-2014
+# Modified by Lizao Li 2015
 
 # Python modules
 from itertools import chain
@@ -363,9 +364,9 @@ def _evaluate_basis(ufl_element, element):
     offsets = _generate_reference_offsets(element) # Must check?
     mappings = element.mapping()
 
-    # This function is evidently not implemented for TensorElements
+    # This function is evidently not implemented for tensor product
     for e in elements:
-        if len(e.value_shape()) > 1:
+        if (len(e.value_shape()) > 1) and (e.num_sub_elements() != 1):
             return "Function not supported/implemented for TensorElements."
 
     # Handle QuadratureElement, not supported because the basis is only defined
@@ -394,11 +395,17 @@ def _evaluate_basis(ufl_element, element):
             coefficients = []
             coeffs = e.get_coeffs()
 
-            # Handle coefficients for vector valued basis elements
-            # [Raviart-Thomas, Brezzi-Douglas-Marini (BDM)].
-            if num_components > 1:
+            if (num_components > 1) and (len(e.value_shape()) == 1):
+                # Handle coefficients for vector valued basis elements
+                # [Raviart-Thomas, Brezzi-Douglas-Marini (BDM)].                
                 for c in range(num_components):
                     coefficients.append(coeffs[i][c])
+            elif (num_components > 1) and (len(e.value_shape()) == 2):
+                # Handle coefficients for tensor valued basis elements.
+                # [Regge]
+                for p in range(e.value_shape()[0]):
+                    for q in range(e.value_shape()[1]):
+                        coefficients.append(coeffs[i][p][q])
             else:
                 coefficients.append(coeffs[i])
 
@@ -512,7 +519,7 @@ def _interpolate_vertex_values(ufl_element, element):
 
     # Check whether computing the Jacobian is necessary
     mappings = element.mapping()
-    ir["needs_jacobian"] = any("piola" in m for m in mappings)
+    ir["needs_jacobian"] = any("piola" in m for m in mappings) or any("pullback as metric" in m for m in mappings)
     ir["needs_oriented"] = needs_oriented_jacobian(element)
 
     # See note in _evaluate_dofs
@@ -658,6 +665,7 @@ def uses_integral_moments(element):
     return len(integrals & tags) > 0
 
 def needs_oriented_jacobian(element):
-    # Check whether this element needs an oriented jacobian (only
-    # contravariant piolas seem to need it)
-    return ("contravariant piola" in element.mapping())
+    # Check whether this element needs an oriented jacobian
+    # (only contravariant piolas and pullback as metric seem to need it)
+    return ("contravariant piola" in element.mapping() or
+            "pullback as metric" in element.mapping())
