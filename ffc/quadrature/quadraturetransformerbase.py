@@ -20,9 +20,10 @@ transformers to translate UFL expressions."""
 #
 # Modified by Martin Alnaes, 2013
 # Modified by Garth N. Wells, 2013
+# Modified by Lizao Li, 2015
 #
 # First added:  2009-10-13
-# Last changed: 2014-10-08
+# Last changed: 2015-03-20
 
 # Python modules.
 from six.moves import zip
@@ -928,7 +929,7 @@ class QuadratureTransformerBase(Transformer):
 
         # Get subelement and the relative (flattened) component (in case we have mixed elements).
         local_comp, local_elem = ufl_element.extract_component(component)
-        ffc_assert(len(local_comp) <= 1, "Assuming there are no tensor-valued basic elements.")
+        # ffc_assert(len(local_comp) <= 1, "Assuming there are no tensor-valued basic elements.")
         local_comp = local_comp[0] if local_comp else 0
 
         # Check that component != not () since the UFL component map will turn
