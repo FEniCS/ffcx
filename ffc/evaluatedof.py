@@ -43,9 +43,10 @@ FIAT (functional.pt_dict) in the intermediate representation stage.
 #
 # Modified by Kristian B. Oelgaard 2010-2011
 # Modified by Anders Logg 2013
+# Modified by Lizao Li 2015
 #
 # First added:  2009-xx-yy
-# Last changed: 2013-01-10
+# Last changed: 2015-03-20
 
 from ffc.cpp import format, remove_unused
 from ffc.utils import pick_first
@@ -135,7 +136,7 @@ def _required_declarations(ir):
     # Check whether Jacobians are necessary.
     needs_inverse_jacobian = any(["contravariant piola" in m
                                   for m in ir["mappings"]])
-    needs_jacobian = any(["covariant piola" in m for m in ir["mappings"]])
+    needs_jacobian = any(["covariant piola" in m for m in ir["mappings"]]) or any(["pullback as metric" in m for m in ir["mappings"]])
 
     # Check if Jacobians are needed
     if not (needs_jacobian or needs_inverse_jacobian):
@@ -278,7 +279,7 @@ def _change_variables(mapping, gdim, tdim, offset):
 
     Let J be the Jacobian of F, i.e J = dx/dX and let K denote the
     inverse of the Jacobian K = J^{-1}. Then we (currently) have the
-    following three types of mappings:
+    following four types of mappings:
 
     'affine' mapping for g:
 
@@ -293,6 +294,10 @@ def _change_variables(mapping, gdim, tdim, offset):
     'covariant piola' mapping for g:
 
       G(X) = J^T g(x)          i.e  G_i(X) = J^T_ij g(x) = J_ji g_j(x)
+
+    'pullback as metric' mapping for g:
+
+      G(X) = J^T g(x) J     i.e. G_il(X) = J_ji g_jk(x) J_kl
     """
 
     # meg: Various mappings must be handled both here and in
@@ -320,6 +325,19 @@ def _change_variables(mapping, gdim, tdim, offset):
             components = [component(f_vals, j + offset) for j in range(gdim)]
             values += [inner(jacobian_column, components)]
         return values
+
+    elif mapping == "pullback as metric":
+        # physical to reference pullback as a metric
+        values = []
+        for i in range(tdim):
+            for l in range(tdim):
+                values += [inner(
+                    [inner([J(j, i, gdim, tdim) for j in range(gdim)],
+                           [component(f_vals, j * tdim + k + offset)
+                            for j in range(gdim)]) for k in range(gdim)],
+                    [J(k, l, gdim, tdim) for k in range(gdim)])]
+        return values
+    
     else:
         raise Exception("The mapping (%s) is not allowed" % mapping)
 

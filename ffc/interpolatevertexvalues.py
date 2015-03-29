@@ -18,8 +18,9 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Kristian B. Oelgaard 2010
+# Modified by Lizao Li 2015
 #
-# Last changed: 2010-02-09
+# Last changed: 2015-03-25
 
 from ffc.cpp import format, remove_unused
 
@@ -138,7 +139,7 @@ def _change_variables(mapping, gdim, tdim, space_dim):
     Let J be the Jacobian of F, i.e J = dx/dX and let K denote the
     (pseudo)-inverse of the Jacobian K = J^{-1}. Note that J is gdim x
     tdim, and conversely K is tdim x gdim.  Then we (currently) have
-    the following three types of mappings:
+    the following four types of mappings:
 
     'affine' mapping for G:
 
@@ -153,6 +154,11 @@ def _change_variables(mapping, gdim, tdim, space_dim):
     'covariant piola' mapping for f:
 
       g(x) = K^T G(X)              i.e   g_i(x) = K^T_ij G_j(X) = K_ji G_j(X)
+
+    'pullback as metric' mapping for f:
+    
+      g_il(x) = K_{ji} G_{jk} K_{kl}
+
     """
 
     if mapping is "affine":
@@ -165,6 +171,13 @@ def _change_variables(mapping, gdim, tdim, space_dim):
         change_of_variables = lambda G, i: [inner([Jinv(j, i, tdim, gdim) for j in range(tdim)],
                                                   [G[j][index] for j in range(tdim)])
                                             for index in range(space_dim)]
+    elif mapping == "pullback as metric":
+        change_of_variables = lambda G, i: [
+            inner([inner([Jinv(j, i // tdim, tdim, gdim) for j in range(tdim)],
+                         [G[j][k][index] for j in range(tdim)])
+                   for k in range(tdim)],
+                  [Jinv(k, i % tdim, tdim, gdim) for k in range(tdim)])
+            for index in range(space_dim)]
     else:
         raise Exception("No such mapping: %s accepted" % mapping)
     return change_of_variables

@@ -19,6 +19,7 @@
 #
 # Modified by Peter Brune 2009
 # Modified by Anders Logg 2009, 2013
+# Modified by Lizao Li, 2015
 
 # Python modules.
 from numpy import shape
@@ -546,6 +547,12 @@ class QuadratureTransformer(QuadratureTransformerBase):
                             dXdx = f_transform("J", local_comp, c, gdim, tdim, self.restriction)
                             self.trans_set.add(dXdx)
                             basis = f_mult([detJ, dXdx, basis])
+                        elif transformation == "pullback as metric":
+                            t1 = f_transform("JINV", c, local_comp, tdim, gdim, self.restriction)
+                            t2 = f_transform("JINV", local_comp, c, gdim, tdim, self.restriction)
+                            self.trans_set.add(t1)
+                            self.trans_set.add(t2)
+                            basis = f_mult([t1, basis, t2])
                         else:
                             error("Transformation is not supported: " + repr(transformation))
 
@@ -617,6 +624,12 @@ class QuadratureTransformer(QuadratureTransformerBase):
                             dXdx = f_transform("J", local_comp, c, gdim, tdim, self.restriction)
                             self.trans_set.add(dXdx)
                             function_name = f_mult([detJ, dXdx, function_name])
+                        elif transformation == "pullback as metric":
+                            t1 = f_transform("JINV", c, local_comp, tdim, gdim, self.restriction)
+                            t2 = f_transform("JINV", local_comp, c, gdim, tdim, self.restriction)
+                            self.trans_set.add(t1)
+                            self.trans_set.add(t2)
+                            basis = f_mult([t1, basis, t2])
                         else:
                             error("Transformation is not supported: ", repr(transformation))
 
