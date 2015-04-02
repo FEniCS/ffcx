@@ -929,9 +929,17 @@ class QuadratureTransformerBase(Transformer):
 
         # Get subelement and the relative (flattened) component (in case we have mixed elements).
         local_comp, local_elem = ufl_element.extract_component(component)
-        # ffc_assert(len(local_comp) <= 1, "Assuming there are no tensor-valued basic elements.")
-        local_comp = local_comp[0] if local_comp else 0
 
+        # For basic elements, local_comp should be flattened
+        if len(local_comp) > 0:
+            # Map component using component map from UFL. (TODO: inefficient use of this function)
+            comp_map, _ = build_component_numbering(ufl_element.value_shape(), ufl_element.symmetry())
+            local_comp = comp_map[local_comp]
+            
+        # Tensor product/mixed elements have local_comp = () and is set to 0. 
+        if ufl_element.num_sub_elements() > 0 :
+            local_comp = 0
+           
         # Check that component != not () since the UFL component map will turn
         # it into 0, and () does not mean zeroth component in this context.
         if len(component):
