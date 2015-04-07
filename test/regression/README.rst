@@ -12,10 +12,11 @@ Look at test.py for more options.
 How to update references
 ========================
 
-To update the references for the FFC regression tests, first run the
-regression test (to generate the new references) and then run the
-script upload:
+To update the references for the FFC regression tests, first commit
+your changes, then run the regression test (to generate the new
+references) and finally run the script upload:
 
+  <commit your changes>
   cd <ffcdir>/tests/regression/
   python test.py
   ./scripts/upload
