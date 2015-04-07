@@ -1,0 +1,4 @@
+
+element = FiniteElement("Discontinuous Lagrange Trace", "triangle", 0)
+v = TestFunction(element)
+L = v*ds + avg(v)*dS
