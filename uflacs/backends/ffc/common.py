@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2015 Martin Sandve Alnes
+# Copyright (C) 2011-2015 Martin Sandve Alnæs
 #
 # This file is part of UFLACS.
 #
