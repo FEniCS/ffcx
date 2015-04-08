@@ -288,7 +288,47 @@ class NOp(ASTOperator):
         code = tuple(code[:-1])
         return format_code(code, level)
 
-class Negative(UnOp):
+
+class Eq(BinOp):
+    op = " == "
+
+class Ne(BinOp):
+    op = " != "
+
+class Lt(BinOp):
+    op = " < "
+
+class Gt(BinOp):
+    op = " > "
+
+class Le(BinOp):
+    op = " <= "
+
+class Ge(BinOp):
+    op = " >= "
+
+class Not(UnOp):
+    op = "!"
+
+class And(BinOp):
+    op = " && "
+
+class Or(BinOp):
+    op = " || "
+
+class Conditional(ASTOperator):
+    def __init__(self, condition, true, false):
+        self.condition = condition
+        self.true = false
+        self.false = false
+
+    def format(self, level):
+        # TODO: Handle precedence at this level instead of in the ExprFormatter stuff?
+        code = (self.condition, " ? ", self.true, " : ", self.false)
+        return format_code(code, level)
+
+
+class Negative(UnOp): # TODO: Negate?
     op = "-"
 
 class Add(BinOp):
@@ -302,6 +342,7 @@ class Mul(BinOp):
 
 class Div(BinOp):
     op = " / "
+
 
 class Sum(NOp):
     op = " + "
@@ -334,6 +375,7 @@ class AssignMul(AssignBase):
 class AssignDiv(AssignBase):
     op = " /= "
 
+
 class Return(ASTStatement):
     def __init__(self, value):
         self.value
@@ -341,6 +383,14 @@ class Return(ASTStatement):
     def format(self, level):
         code = ("return ", self.value, ";")
         return format_code(code, level)
+
+
+# TODO: IfElseChain
+
+# TODO: Switch
+
+# TODO: Call, i.e. f(x,y) = Call("f", ("x", "y"))
+
 
 class WhileLoop(ASTStatement):
     def __init__(self, check, body=None):
