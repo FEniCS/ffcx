@@ -22,7 +22,7 @@
 # TODO: Should some of these be implemented in the format_code design instead? Or should that design call upon this class for formatting?
 
 
-class CppStatementFormattingRules(object):
+class CppASTFormatter(object):
 
     # TODO: This is a duplicate of product rule in cpp_format, placed here during refactoring.
     def product(self, a, b):

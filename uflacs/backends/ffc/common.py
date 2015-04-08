@@ -22,11 +22,6 @@ from six.moves import xrange as range
 
 from uflacs.codeutils.format_code import ArrayAccess, Add, Mul
 
-from uflacs.codeutils.cpp_statement_formatting_rules import CppStatementFormattingRules
-
-langfmt = CppStatementFormattingRules()
-
-
 class Names:  # TODO: This is not used much anymore, integrate in backend class
 
     def __init__(self):

@@ -66,12 +66,15 @@ class IntegralGenerator(object):
         }
 
         # Formatter for backend agnostic expressions, delegating to given target language formatter
+        # XXX FIXME: Replace ExprFormatter with alternative mappers, see fixmes below.
         self.expr_formatter = ExprFormatter(language_formatter, {})
 
         # Formatter for defining backend specific variables
+        # FIXME: Make sure backend_definitions always returns ASTNodes!
         self.backend_definitions = backend_definitions
 
         # Formatter for accessing backend specific variables
+        # FIXME: Make sure backend_access always returns ASTNodes!
         self.backend_access = backend_access
 
     def generate_using_statements(self):
@@ -100,8 +103,10 @@ class IntegralGenerator(object):
         expr_irs = self.ir["uflacs"]["expr_ir"]
         all_num_points = sorted(expr_irs)
         for num_points in all_num_points:
+
             self.expr_formatter.variables = {}
-            #self.ast_variables = int_array(FIXME)
+            #self.ast_variables = int_array(FIXME) # XXX FIXME insert upper bound on size here
+
             pp = self.generate_piecewise_partition(num_points)
             ql = self.generate_quadrature_loops(num_points)
             if len(all_num_points) > 1:
@@ -279,12 +284,12 @@ class IntegralGenerator(object):
                     # Count assignments so we get a new vname each time
                     vaccess = ArrayAccess(name, j)
                     j += 1
-                    vcode = self.expr_formatter.visit(v)  # TODO: Generate ASTNode instead of str here?
+                    vcode = self.expr_formatter.visit(v)
+
                     # Store assignments of operator results in list
                     assignments += [Assign(vaccess, vcode)]
 
                 # Store access string, either a variable name or an inlined expression
-                # TODO: Can skip format_code if expr_formatter generates ASTNode
                 self.expr_formatter.variables[v] = format_code(vaccess)
 
         parts = []
@@ -298,10 +303,12 @@ class IntegralGenerator(object):
         return parts
 
     # TODO: Rather take list of vertices, not markers
+    # XXX FIXME: Fix up this function and use it instead!
     def alternative_generate_partition(self, name, C, MT, partition, table_ranges, num_points):
         terminalcode = []
         assignments = []
 
+        # XXX FIXME: create these!
         # C = input CRS representation of expression DAG
         # MT = input list/dict of modified terminals
 
@@ -309,15 +316,15 @@ class IntegralGenerator(object):
         vertices = [i for i, p in enumerate(partition) if p] # TODO: Get this as input instead of partition?
 
         for i in vertices:
-            row = C[i] # FIXME: Get this as input
+            row = C[i] # XXX FIXME: Get this as input
             if len(row) == 1:
                 # Modified terminal
                 t, = row
-                mt = MT[t] # FIXME: Get this as input
+                mt = MT[t] # XXX FIXME: Get this as input
 
                 if isinstance(mt.terminal, ConstantValue):
                     # Format literal value for the chosen language
-                    vaccess = modified_literal_to_ast_node[tc](mt) # FIXME: Implement this mapping
+                    vaccess = modified_literal_to_ast_node[tc](mt) # XXX FIXME: Implement this mapping
 
                 else:
                     # Backend specific modified terminal formatting
@@ -336,7 +343,7 @@ class IntegralGenerator(object):
                 opsaccess = [self.ast_variables[k] for k in ops]
 
                 # Generate expression for this operator application
-                vcode = typecode2astnode[tc](opsaccess) # FIXME: Implement this mapping
+                vcode = typecode2astnode[tc](opsaccess) # XXX FIXME: Implement this mapping
 
                 store_this_in_variable = True # TODO: Don't store all subexpressions
                 if store_this_in_variable:
@@ -420,7 +427,7 @@ class IntegralGenerator(object):
 
             # Get factor expression
             fcode = self.expr_formatter.visit(V[factor_index])
-            #fcode = self.ast_variables[factor_index] # TODO
+            #fcode = self.ast_variables[factor_index] # XXX FIXME
             if fcode not in ("1", "1.0"):  # TODO: Nicer way to do this
                 factors += [fcode]
 
@@ -436,7 +443,7 @@ class IntegralGenerator(object):
                 dofdims = zip(idofs, self._A_shape)
                 im = IndexMapping(dict((idof, idim) for idof, idim in dofdims))
                 am = AxisMapping(im, [idofs])
-                A_ii, = am.format_index_expressions()  # TODO: Integrate this with other code utils
+                A_ii, = am.format_index_expressions() # FIXME: Integrate this with other code utils
             else:
                 A_ii = 0
             A_access = self.backend_access.element_tensor_entry(A_ii)

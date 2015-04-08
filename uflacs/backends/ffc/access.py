@@ -26,9 +26,6 @@ from ufl.corealg.multifunction import MultiFunction
 from ffc.log import error
 from ffc.log import ffc_assert
 
-from uflacs.codeutils.cpp_statement_formatting_rules import CppStatementFormattingRules
-langfmt = CppStatementFormattingRules()
-
 from uflacs.codeutils.format_code import format_code, ArrayAccess, Sub
 
 from uflacs.backends.ffc.common import names, format_entity_name, format_mt_name, generate_coefficient_dof_access

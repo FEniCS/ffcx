@@ -25,9 +25,6 @@ from ufl.corealg.multifunction import MultiFunction
 from ffc.log import error
 from ffc.log import ffc_assert
 
-from uflacs.codeutils.cpp_statement_formatting_rules import CppStatementFormattingRules
-langfmt = CppStatementFormattingRules()
-
 from uflacs.codeutils.format_code import (format_code,
                                           ForRange,
                                           VariableDecl,
