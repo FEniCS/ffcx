@@ -77,24 +77,34 @@ def build_recursive_initializer_list(values, sizes):
     return initializer_list
 
 
+# TODO: This design mixes formatting and semantics. Splitting out the formatting would be better design.
+
+
 class ASTNode(object):
     pass
 
-# TODO: Add richer types:
-# - Expression(ASTNode)
-# - Statement(ASTNode)
-# - StatementSequence(ASTNode)
+class ASTOperator(ASTNode):
+    pass
 
+class ASTStatement(ASTNode):
+    pass
 
-class Indented(ASTNode): # TODO: This is not a semantic type
+class Indented(ASTNode): # TODO: Should be part of formatting.
     def __init__(self, code):
         self.code = code
 
     def format(self, level):
         return format_code(self.code, level + 1)
 
+class Comment(ASTNode): # TODO: Make it a Commented(code, comment) instead? Add Annotated(code, annotation)?
+    def __init__(self, comment):
+        self.comment = comment
 
-class Block(ASTNode):
+    def format(self, level):
+        code = ("// ", self.comment)
+        return format_code(code, level)
+
+class Block(ASTNode): # TODO: Rename to Scope?
     def __init__(self, body, start='{', end='}'):
         self.start = start
         self.body = body
@@ -131,7 +141,6 @@ class TemplateArgumentList(ASTNode):
 
 
 class Type(ASTNode):
-
     def __init__(self, name, template_arguments=None, multiline=False):
         self.name = name
         self.template_arguments = template_arguments
@@ -145,7 +154,6 @@ class Type(ASTNode):
 
 
 class TypeDef(ASTNode):
-
     def __init__(self, type_, typedef):
         self.type_ = type_
         self.typedef = typedef
@@ -156,7 +164,6 @@ class TypeDef(ASTNode):
 
 
 class Namespace(ASTNode):
-
     def __init__(self, name, body):
         self.name = name
         self.body = body
@@ -166,8 +173,7 @@ class Namespace(ASTNode):
         return format_code(code, level)
 
 
-class VariableDecl(ASTNode):
-
+class VariableDecl(ASTStatement):
     def __init__(self, typename, name, value=None):
         self.typename = typename
         self.name = name
@@ -181,9 +187,10 @@ class VariableDecl(ASTNode):
         code += (";",)
         return format_code(code, level)
 
+# TODO: Add variable access type to replace explicit str instances all over the place.
 
-class ArrayDecl(ASTNode):
 
+class ArrayDecl(ASTStatement):
     def __init__(self, typename, name, sizes, values=None):
         self.typename = typename
         self.name = name
@@ -205,8 +212,7 @@ class ArrayDecl(ASTNode):
         return format_code(code, level)
 
 
-class ArrayAccess(ASTNode):
-
+class ArrayAccess(ASTOperator):
     def __init__(self, arraydecl, indices):
         if isinstance(arraydecl, ArrayDecl):
             self.arrayname = arraydecl.name
@@ -236,8 +242,107 @@ class ArrayAccess(ASTNode):
         return format_code(code, level)
 
 
-class WhileLoop(ASTNode):
 
+class UnOp(ASTOperator):
+    def __init__(self, arg):
+        self.arg = arg
+
+    def format(self, level):
+        # TODO: Handle precedence at this level instead of in the ExprFormatter stuff?
+        code = (type(self).op, self.arg)
+        return format_code(code, level)
+
+class BinOp(ASTOperator):
+    def __init__(self, lhs, rhs):
+        self.lhs = lhs
+        self.rhs = rhs
+
+    def format(self, level):
+        # TODO: Handle precedence at this level instead of in the ExprFormatter stuff?
+        #if self.lhs.precedence < self.precedence:
+        #    lhs = ('(', self.lhs, ')')
+        #else:
+        #    lhs = self.lhs
+
+        #if self.rhs.precedence <= self.precedence:
+        #    rhs = ('(', self.rhs, ')')
+        #else:
+        #    rhs = self.rhs
+
+        #code = (lhs, self.op, rhs)
+
+        code = (self.lhs, type(self).op, self.rhs)
+
+        return format_code(code, level)
+
+class NOp(ASTOperator):
+    def __init__(self, ops):
+        self.ops = ops
+
+    def format(self, level):
+        # TODO: Handle precedence at this level instead of in the ExprFormatter stuff?
+        code = []
+        for op in self.ops:
+            code.append(op)
+            code.append(type(self).op)
+        code = tuple(code[:-1])
+        return format_code(code, level)
+
+class Negative(UnOp):
+    op = "-"
+
+class Add(BinOp):
+    op = " + "
+
+class Sub(BinOp):
+    op = " - "
+
+class Mul(BinOp):
+    op = " * "
+
+class Div(BinOp):
+    op = " / "
+
+class Sum(NOp):
+    op = " + "
+
+class Product(NOp):
+    op = " * "
+
+
+class AssignBase(ASTStatement):
+    def __init__(self, lhs, rhs):
+        self.lhs = lhs
+        self.rhs = rhs
+
+    def format(self, level):
+        code = (self.lhs, type(self).op, self.rhs, ";")
+        return format_code(code, level)
+
+class Assign(AssignBase):
+    op = " = "
+
+class AssignAdd(AssignBase):
+    op = " += "
+
+class AssignSub(AssignBase):
+    op = " -= "
+
+class AssignMul(AssignBase):
+    op = " *= "
+
+class AssignDiv(AssignBase):
+    op = " /= "
+
+class Return(ASTStatement):
+    def __init__(self, value):
+        self.value
+
+    def format(self, level):
+        code = ("return ", self.value, ";")
+        return format_code(code, level)
+
+class WhileLoop(ASTStatement):
     def __init__(self, check, body=None):
         self.check = check
         self.body = body
@@ -249,8 +354,7 @@ class WhileLoop(ASTNode):
         return format_code(code, level)
 
 
-class ForLoop(ASTNode):
-
+class ForLoop(ASTStatement):
     def __init__(self, init, check, increment, body=None):
         self.init = init
         self.check = check
@@ -264,8 +368,7 @@ class ForLoop(ASTNode):
         return format_code(code, level)
 
 
-class ForRange(ASTNode):
-
+class ForRange(ASTStatement):
     def __init__(self, name, lower, upper, body=None):
         self.name = name
         self.lower = lower
@@ -280,8 +383,7 @@ class ForRange(ASTNode):
         return format_code(code, level)
 
 
-class Class(ASTNode):
-
+class Class(ASTStatement):
     def __init__(self, name, superclass=None, public_body=None,
                  protected_body=None, private_body=None,
                  template_arguments=None, template_multiline=False):
@@ -311,121 +413,6 @@ class Class(ASTNode):
             code += ['private:', Indented(self.private_body)]
         code += ['};']
         return format_code(code, level)
-
-
-class Comment(ASTNode):
-
-    def __init__(self, comment):
-        self.comment = comment
-
-    def format(self, level):
-        code = ("// ", self.comment)
-        return format_code(code, level)
-
-
-class Return(ASTNode): # TODO: A Statement
-
-    def __init__(self, value):
-        self.value
-
-    def format(self, level):
-        code = ("return ", self.value, ";")
-        return format_code(code, level)
-
-
-class UnOp(ASTNode):
-
-    def __init__(self, arg):
-        self.arg = arg
-
-    def format(self, level):
-        # TODO: Handle precedence at this level instead of in the ExprFormatter stuff?
-        code = (type(self).op, self.arg)
-        return format_code(code, level)
-
-class BinOp(ASTNode):
-
-    def __init__(self, lhs, rhs):
-        self.lhs = lhs
-        self.rhs = rhs
-
-    def format(self, level):
-        # TODO: Handle precedence at this level instead of in the ExprFormatter stuff?
-        #if self.lhs.precedence < self.precedence:
-        #    lhs = ('(', self.lhs, ')')
-        #else:
-        #    lhs = self.lhs
-
-        #if self.rhs.precedence <= self.precedence:
-        #    rhs = ('(', self.rhs, ')')
-        #else:
-        #    rhs = self.rhs
-
-        #code = (lhs, self.op, rhs)
-
-        code = (self.lhs, type(self).op, self.rhs)
-
-        return format_code(code, level)
-
-class NOp(ASTNode):
-
-    def __init__(self, ops):
-        self.ops = ops
-
-    def format(self, level):
-        # TODO: Handle precedence at this level instead of in the ExprFormatter stuff?
-        code = []
-        for op in self.ops:
-            code.append(op)
-            code.append(type(self).op)
-        code = tuple(code[:-1])
-        return format_code(code, level)
-
-class AssignBase(ASTNode): # TODO: Really a BinOp
-
-    def __init__(self, lhs, rhs):
-        self.lhs = lhs
-        self.rhs = rhs
-
-    def format(self, level):
-        code = (self.lhs, type(self).op, self.rhs, ";")
-        return format_code(code, level)
-
-class Negative(UnOp):
-    op = "-"
-
-class Add(BinOp):
-    op = " + "
-
-class Sub(BinOp):
-    op = " - "
-
-class Mul(BinOp):
-    op = " * "
-
-class Div(BinOp):
-    op = " / "
-
-class Sum(NOp):
-    op = " + "
-
-class Product(NOp):
-    op = " * "
-
-class Assign(AssignBase):
-    op = " = "
-
-class AssignAdd(AssignBase):
-    op = " += "
-
-class AssignSub(AssignBase):
-    op = " -= "
-
-class AssignMul(AssignBase):
-    op = " *= "
-
-class AssignDiv(AssignBase):
-    op = " /= "
 
 
 
