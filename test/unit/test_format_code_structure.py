@@ -14,47 +14,43 @@ def test_format_basics():
     # Reproduce a string
     assert format_code("string") == "string"
 
-    # Insert keywords in string using <2.6 syntax
-    code = format_code("%(string)s %(other)s", keywords=dict(string='Hello', other='World'))
-    assert code == "Hello World"
-
     # Basic strings with indentation
     assert format_code("string", 1) == "    string"
-    assert format_code("string", 2, indentchar='xy') == "xyxystring"
+    assert format_code("string", 2) == "        string"
 
     # Multiline strings with indentation
-    assert format_code("fee\nfie\nfoe", level=1, indentchar='q') == "qfee\nqfie\nqfoe"
+    assert format_code("fee\nfie\nfoe", level=1) == "    fee\n    fie\n    foe"
 
     # One item lists are the same as strings
     assert format_code(["hello"]) == "hello"
     assert format_code(["hello"], 1) == "    hello"
-    assert format_code(["hello"], 2, indentchar='xy') == "xyxyhello"
+    assert format_code(["hello"], 2) == "        hello"
 
     # Tuples are concatenated directly
     assert format_code(("hello", "world")) == "helloworld"
     assert format_code(("hello", "world"), 1) == "    helloworld"
-    code = format_code(("hello", "world"), 2, indentchar='xy')
-    assert code == "xyxyhelloworld"
+    code = format_code(("hello", "world"), 2)
+    assert code == "        helloworld"
 
     # Lists are joined with newlines
     assert format_code(["hello", "world"]) == "hello\nworld"
     assert format_code(["hello", "world"], 1) == "    hello\n    world"
-    assert format_code(["hello", "world"], 2, indentchar='xy') == "xyxyhello\nxyxyworld"
+    assert format_code(["hello", "world"], 2) == "        hello\n        world"
 
 def test_format_blocks():
     # Strings and lists can be put in Indented containers
     assert format_code(Indented("hei")) == "    hei"
-    code = format_code(Indented(["hei", Indented("verden")]), indentchar='z')
-    assert code == "zhei\nzzverden"
+    code = format_code(Indented(["hei", Indented("verden")]))
+    assert code == "    hei\n        verden"
 
     # A Block is an indented body with brackets before and after
-    code = format_code(["{", Indented("fee\nfie\nfoe"), "}"], indentchar='\t')
-    assert code == "{\n\tfee\n\tfie\n\tfoe\n}"
-    code = format_code(Block("fee\nfie\nfoe"), indentchar='\t')
-    assert code == "{\n\tfee\n\tfie\n\tfoe\n}"
+    code = format_code(["{", Indented("fee\nfie\nfoe"), "}"])
+    assert code == "{\n    fee\n    fie\n    foe\n}"
+    code = format_code(Block("fee\nfie\nfoe"))
+    assert code == "{\n    fee\n    fie\n    foe\n}"
     # A Namespace is a 'namespace foo' line before a block
-    code = format_code(Namespace("bar", "fee\nfie\nfoe"), indentchar='\t')
-    assert code == "namespace bar\n{\n\tfee\n\tfie\n\tfoe\n}"
+    code = format_code(Namespace("bar", "fee\nfie\nfoe"))
+    assert code == "namespace bar\n{\n    fee\n    fie\n    foe\n}"
 
     # Making a for loop
     code = format_code(["for (iq...)", Block("foo(iq);")])
@@ -62,20 +58,6 @@ def test_format_blocks():
     # Making a do loop
     code = format_code(["iq = 0;", "do", (Block("foo(iq);"), " while (iq < nq);")])
     assert code == "iq = 0;\ndo\n{\n    foo(iq);\n} while (iq < nq);"
-
-def test_format_keywords():
-    # Making a for loop with keywords
-    code = format_code(["for (%(i)s=0; %(i)s<n; ++%(i)s)", Block("foo(%(i)s);")], keywords={'i': 'k'})
-    assert code == "for (k=0; k<n; ++k)\n{\n    foo(k);\n}"
-    format_code(WithKeywords(["for (%(i)s=0; %(i)s<n; ++%(i)s)",
-                                        Block("foo(%(i)s);")], keywords={'i': 'k'}))
-    assert code == "for (k=0; k<n; ++k)\n{\n    foo(k);\n}"
-
-    # Formatting the same code with different keywords using WithKeywords
-    tmp = ['%(a)s', '%(b)s']
-    code = format_code([WithKeywords(tmp, keywords={'a': 'a', 'b':'b'}),
-                                WithKeywords(tmp, keywords={'a': 'x', 'b':'y'})])
-    assert code == "a\nb\nx\ny"
 
 def test_format_class():
     # Making a class declaration
@@ -91,12 +73,12 @@ def test_format_class():
 
 def test_format_template_argument_list():
     def t(args, mlcode, slcode):
-        code = format_code(TemplateArgumentList(args, False), indentchar=' ')
+        code = format_code(TemplateArgumentList(args, False))
         assert code == slcode
-        code = format_code(TemplateArgumentList(args, True), indentchar=' ')
+        code = format_code(TemplateArgumentList(args, True))
         assert code == mlcode
-    t(('A',), '<\n A\n>', '<A>')
-    t(('A', 'B'), '<\n A,\n B\n>', '<A, B>')
+    t(('A',), '<\n    A\n>', '<A>')
+    t(('A', 'B'), '<\n    A,\n    B\n>', '<A, B>')
 
 def test_format_templated_type():
     code = format_code(Type('Foo'))

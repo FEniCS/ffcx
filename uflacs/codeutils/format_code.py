@@ -23,10 +23,10 @@ def format_float(x):
     return fmt % x
 
 
-def indent(text, level, indentchar='    '):
+def indent(text, level):
     if level == 0:
         return text
-    ind = indentchar * level
+    ind = ' ' * (4 * level)
     return '\n'.join(ind + line for line in text.split('\n'))
 
 
@@ -80,45 +80,32 @@ def build_recursive_initializer_list(values, sizes):
 class ASTNode(object):
     pass
 
+# TODO: Add richer types:
+# - Expression(ASTNode)
+# - Statement(ASTNode)
+# - StatementSequence(ASTNode)
 
-class Indented(ASTNode):
 
+class Indented(ASTNode): # TODO: This is not a semantic type
     def __init__(self, code):
         self.code = code
 
-    def format(self, level, indentchar, keywords):
-        return format_code(self.code, level + 1, indentchar, keywords)
-
-
-class WithKeywords(ASTNode):  # TODO: Do we need this? Can simplify quite a bit by removing.
-
-    def __init__(self, code, keywords):
-        self.code = code
-        self.keywords = keywords
-
-    def format(self, level, indentchar, keywords):
-        if keywords:  # TODO: Merge with self.keywords instead
-            raise RuntimeError("Doubly defined keywords not implemented.")
-        fmt_keywords = {}
-        for k, v in iteritems(self.keywords):
-            fmt_keywords[k] = format_code(v, 0, indentchar, keywords)
-        return format_code(self.code, level, indentchar, fmt_keywords)
+    def format(self, level):
+        return format_code(self.code, level + 1)
 
 
 class Block(ASTNode):
-
     def __init__(self, body, start='{', end='}'):
         self.start = start
         self.body = body
         self.end = end
 
-    def format(self, level, indentchar, keywords):
+    def format(self, level):
         code = [self.start, Indented(self.body), self.end]
-        return format_code(code, level, indentchar, keywords)
+        return format_code(code, level)
 
 
 class TemplateArgumentList(ASTNode):
-
     singlelineseparators = ('<', ', ', '>')
     multilineseparators = ('<\n', ',\n', '\n>')
 
@@ -126,7 +113,7 @@ class TemplateArgumentList(ASTNode):
         self.args = args
         self.multiline = multiline
 
-    def format(self, level, indentchar, keywords):
+    def format(self, level):
         if self.multiline:
             container = Indented
             start, sep, end = self.multilineseparators
@@ -138,9 +125,9 @@ class TemplateArgumentList(ASTNode):
             if isinstance(last, TemplateArgumentList) or (
                     isinstance(last, Type) and last.template_arguments):
                 end = ' ' + end
-        code = [sep.join(format_code(arg, keywords=keywords) for arg in self.args)]
+        code = [sep.join(format_code(arg) for arg in self.args)]
         code = (start, container(code), end)
-        return format_code(code, level, indentchar, keywords)
+        return format_code(code, level)
 
 
 class Type(ASTNode):
@@ -150,11 +137,11 @@ class Type(ASTNode):
         self.template_arguments = template_arguments
         self.multiline = multiline
 
-    def format(self, level, indentchar, keywords):
+    def format(self, level):
         code = self.name
         if self.template_arguments:
             code = code, TemplateArgumentList(self.template_arguments, self.multiline)
-        return format_code(code, level, indentchar, keywords)
+        return format_code(code, level)
 
 
 class TypeDef(ASTNode):
@@ -163,9 +150,9 @@ class TypeDef(ASTNode):
         self.type_ = type_
         self.typedef = typedef
 
-    def format(self, level, indentchar, keywords):
+    def format(self, level):
         code = ('typedef ', self.type_, " %s;" % self.typedef)
-        return format_code(code, level, indentchar, keywords)
+        return format_code(code, level)
 
 
 class Namespace(ASTNode):
@@ -174,9 +161,9 @@ class Namespace(ASTNode):
         self.name = name
         self.body = body
 
-    def format(self, level, indentchar, keywords):
+    def format(self, level):
         code = ['namespace %s' % self.name, Block(self.body)]
-        return format_code(code, level, indentchar, keywords)
+        return format_code(code, level)
 
 
 class VariableDecl(ASTNode):
@@ -186,13 +173,13 @@ class VariableDecl(ASTNode):
         self.name = name
         self.value = value
 
-    def format(self, level, indentchar, keywords):
+    def format(self, level):
         sep = " "
         code = (self.typename, sep, self.name)
         if self.value is not None:
             code += (" = ", self.value)
         code += (";",)
-        return format_code(code, level, indentchar, keywords)
+        return format_code(code, level)
 
 
 class ArrayDecl(ASTNode):
@@ -203,7 +190,7 @@ class ArrayDecl(ASTNode):
         self.sizes = (sizes,) if isinstance(sizes, int) else tuple(sizes)
         self.values = values
 
-    def format(self, level, indentchar, keywords):
+    def format(self, level):
         sep = " "
         brackets = tuple("[%d]" % n for n in self.sizes)
         if self.values is None:
@@ -215,7 +202,7 @@ class ArrayDecl(ASTNode):
             initializer_list = build_recursive_initializer_list(self.values, self.sizes)
             valuescode = (" = ", initializer_list)
         code = (self.typename, sep, self.name, brackets, valuescode, ";")
-        return format_code(code, level, indentchar, keywords)
+        return format_code(code, level)
 
 
 class ArrayAccess(ASTNode):
@@ -243,10 +230,10 @@ class ArrayAccess(ASTNode):
                    for i, d in zip(self.indices, arraydecl.sizes)):
                 raise ValueError("Index value >= array dimension.")
 
-    def format(self, level, indentchar, keywords):
+    def format(self, level):
         brackets = tuple(("[", n, "]") for n in self.indices)
         code = (self.arrayname, brackets)
-        return format_code(code, level, indentchar, keywords)
+        return format_code(code, level)
 
 
 class WhileLoop(ASTNode):
@@ -255,11 +242,11 @@ class WhileLoop(ASTNode):
         self.check = check
         self.body = body
 
-    def format(self, level, indentchar, keywords):
+    def format(self, level):
         code = ("while (", self.check, ")")
         if self.body is not None:
             code = [code, Block(self.body)]
-        return format_code(code, level, indentchar, keywords)
+        return format_code(code, level)
 
 
 class ForLoop(ASTNode):
@@ -270,11 +257,11 @@ class ForLoop(ASTNode):
         self.increment = increment
         self.body = body
 
-    def format(self, level, indentchar, keywords):
+    def format(self, level):
         code = ("for (", self.init, "; ", self.check, "; ", self.increment, ")")
         if self.body is not None:
             code = [code, Block(self.body)]
-        return format_code(code, level, indentchar, keywords)
+        return format_code(code, level)
 
 
 class ForRange(ASTNode):
@@ -285,12 +272,12 @@ class ForRange(ASTNode):
         self.upper = upper
         self.body = body
 
-    def format(self, level, indentchar, keywords):
+    def format(self, level):
         init = ("int ", self.name, " = ", self.lower)
         check = (self.name, " < ", self.upper)
         increment = ("++", self.name)
         code = ForLoop(init, check, increment, body=self.body)
-        return format_code(code, level, indentchar, keywords)
+        return format_code(code, level)
 
 
 class Class(ASTNode):
@@ -306,7 +293,7 @@ class Class(ASTNode):
         self.template_arguments = template_arguments
         self.template_multiline = template_multiline
 
-    def format(self, level, indentchar, keywords):
+    def format(self, level):
         code = []
         if self.template_arguments:
             code += [('template', TemplateArgumentList(self.template_arguments,
@@ -323,7 +310,7 @@ class Class(ASTNode):
         if self.private_body:
             code += ['private:', Indented(self.private_body)]
         code += ['};']
-        return format_code(code, level, indentchar, keywords)
+        return format_code(code, level)
 
 
 class Comment(ASTNode):
@@ -331,50 +318,19 @@ class Comment(ASTNode):
     def __init__(self, comment):
         self.comment = comment
 
-    def format(self, level, indentchar, keywords):
+    def format(self, level):
         code = ("// ", self.comment)
-        return format_code(code, level, indentchar, keywords)
+        return format_code(code, level)
 
 
-class Return(ASTNode):
+class Return(ASTNode): # TODO: A Statement
 
     def __init__(self, value):
         self.value
 
-    def format(self, level, indentchar, keywords):
+    def format(self, level):
         code = ("return ", self.value, ";")
-        return format_code(code, level, indentchar, keywords)
-
-
-class AssignBase(ASTNode):
-
-    def __init__(self, lhs, rhs):
-        self.lhs = lhs
-        self.rhs = rhs
-
-    def format(self, level, indentchar, keywords):
-        code = (self.lhs, type(self).op, self.rhs, ";")
-        return format_code(code, level, indentchar, keywords)
-
-
-class Assign(AssignBase):
-    op = " = "
-
-
-class AssignAdd(AssignBase):
-    op = " += "
-
-
-class AssignSub(AssignBase):
-    op = " -= "
-
-
-class AssignMul(AssignBase):
-    op = " *= "
-
-
-class AssignDiv(AssignBase):
-    op = " /= "
+        return format_code(code, level)
 
 
 class UnOp(ASTNode):
@@ -382,11 +338,10 @@ class UnOp(ASTNode):
     def __init__(self, arg):
         self.arg = arg
 
-    def format(self, level, indentchar, keywords):
+    def format(self, level):
         # TODO: Handle precedence at this level instead of in the ExprFormatter stuff?
         code = (type(self).op, self.arg)
-        return format_code(code, level, indentchar, keywords)
-
+        return format_code(code, level)
 
 class BinOp(ASTNode):
 
@@ -394,7 +349,7 @@ class BinOp(ASTNode):
         self.lhs = lhs
         self.rhs = rhs
 
-    def format(self, level, indentchar, keywords):
+    def format(self, level):
         # TODO: Handle precedence at this level instead of in the ExprFormatter stuff?
         #if self.lhs.precedence < self.precedence:
         #    lhs = ('(', self.lhs, ')')
@@ -410,65 +365,82 @@ class BinOp(ASTNode):
 
         code = (self.lhs, type(self).op, self.rhs)
 
-        return format_code(code, level, indentchar, keywords)
-
+        return format_code(code, level)
 
 class NOp(ASTNode):
 
     def __init__(self, ops):
         self.ops = ops
 
-    def format(self, level, indentchar, keywords):
+    def format(self, level):
         # TODO: Handle precedence at this level instead of in the ExprFormatter stuff?
         code = []
         for op in self.ops:
             code.append(op)
             code.append(type(self).op)
         code = tuple(code[:-1])
-        return format_code(code, level, indentchar, keywords)
+        return format_code(code, level)
 
+class AssignBase(ASTNode): # TODO: Really a BinOp
 
-class Add(BinOp):
-    op = " + "
+    def __init__(self, lhs, rhs):
+        self.lhs = lhs
+        self.rhs = rhs
 
-
-class Sub(BinOp):
-    op = " - "
-
-
-class Mul(BinOp):
-    op = " * "
-
-
-class Div(BinOp):
-    op = " / "
-
+    def format(self, level):
+        code = (self.lhs, type(self).op, self.rhs, ";")
+        return format_code(code, level)
 
 class Negative(UnOp):
     op = "-"
 
+class Add(BinOp):
+    op = " + "
+
+class Sub(BinOp):
+    op = " - "
+
+class Mul(BinOp):
+    op = " * "
+
+class Div(BinOp):
+    op = " / "
 
 class Sum(NOp):
     op = " + "
 
-
 class Product(NOp):
     op = " * "
 
+class Assign(AssignBase):
+    op = " = "
 
-def format_code(code, level=0, indentchar='    ', keywords=None):
-    """Format code by stitching together snippets. The code can
-    be built recursively using the following types:
+class AssignAdd(AssignBase):
+    op = " += "
 
-    - str: Just a string, keywords can be provided to replace %%(name)s.
+class AssignSub(AssignBase):
+    op = " -= "
+
+class AssignMul(AssignBase):
+    op = " *= "
+
+class AssignDiv(AssignBase):
+    op = " /= "
+
+
+
+def format_code(code, level=0):
+    """Format code by stitching together snippets.
+
+    The code can be built recursively using the following types:
+
+    - str: Returned unchanged.
 
     - tuple: Concatenate items in tuple with no chars in between.
 
     - list: Concatenate items in tuple with newline in between.
 
     - Indented: Indent the code within this object one level.
-
-    - WithKeywords: Assign keywords to code within this object.
 
     - Block: Wrap code in {} and indent it.
 
@@ -503,27 +475,25 @@ def format_code(code, level=0, indentchar='    ', keywords=None):
     See the respective classes for usage.
     """
     if isinstance(code, str):
-        if keywords:
-            code = code % keywords  # TODO: Either change to new formatting or just remove keywords
         if level:
-            return indent(code, level, indentchar)
+            return indent(code, level)
         else:
             return code
 
     if isinstance(code, list):
-        return "\n".join(format_code(item, level, indentchar, keywords) for item in code)
+        return "\n".join(format_code(item, level) for item in code)
 
     if isinstance(code, tuple):
-        joined = "".join(format_code(item, 0, indentchar, keywords) for item in code)
-        return format_code(joined, level, indentchar, keywords)
+        joined = "".join(format_code(item, 0) for item in code)
+        return format_code(joined, level)
 
     if isinstance(code, ASTNode):
-        return code.format(level, indentchar, keywords)
+        return code.format(level)
 
     if isinstance(code, int):
-        return indent(str(code), level, indentchar)
+        return indent(str(code), level)
 
     if isinstance(code, float):
-        return indent(format_float(code), level, indentchar)
+        return indent(format_float(code), level)
 
     raise RuntimeError("Unexpected type %s:\n%s" % (type(code), str(code)))
