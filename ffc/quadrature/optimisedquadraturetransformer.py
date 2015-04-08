@@ -39,9 +39,6 @@ from ufl.classes import FloatValue
 from ufl.classes import Coefficient
 from ufl.classes import Operator
 
-# UFL Algorithms.
-from ufl.algorithms.printing import tree_format
-
 # FFC modules.
 from ffc.log import info, debug, error, ffc_assert
 from ffc.cpp import format
@@ -49,7 +46,7 @@ from ffc.quadrature.quadraturetransformerbase import QuadratureTransformerBase
 from ffc.quadrature.quadratureutils import create_permutations
 
 # Symbolics functions
-#from symbolics import set_format
+#from ffc.quadrature.symbolics import set_format
 from ffc.quadrature.symbolics import create_float, create_symbol, create_product,\
                                      create_sum, create_fraction, BASIS, IP, GEO, CONST
 

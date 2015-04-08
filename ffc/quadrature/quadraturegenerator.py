@@ -27,7 +27,6 @@ import numpy
 
 # UFL modules
 from ufl.utils.sorting import sorted_by_key
-from ufl.algorithms.printing import tree_format
 from ufl.utils.derivativetuples import compute_derivative_tuples
 
 # FFC modules
@@ -37,7 +36,7 @@ from ffc.cpp import format, remove_unused
 from ffc.representationutils import initialize_integral_code
 
 # Utility and optimization functions for quadraturegenerator
-from .symbolics import generate_aux_constants
+from ffc.quadrature.symbolics import generate_aux_constants
 
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
