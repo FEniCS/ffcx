@@ -6,7 +6,7 @@ from ufl.permutation import compute_indices
 
 from ufl import as_vector
 from ufl.classes import MultiIndex, IndexSum, Product
-from ufl.algorithms import MultiFunction
+from ufl.corealg.multifunction import MultiFunction
 from ufl.utils.indexflattening import flatten_multiindex, shape_to_strides
 from ufl.utils.sorting import sorted_by_count
 

@@ -2,7 +2,7 @@
 
 import ufl
 from ufl.permutation import build_component_numbering
-from ufl.algorithms import MultiFunction
+from ufl.corealg.multifunction import MultiFunction
 
 from ffc.log import error
 from ffc.log import ffc_assert

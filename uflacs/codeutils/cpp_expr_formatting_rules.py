@@ -3,6 +3,8 @@ from ffc.log import error
 
 import ufl
 
+from ufl.corealg.multifunction import MultiFunction
+
 
 class CppFormattingRules(object):
 
@@ -193,8 +195,6 @@ class CppFormattingRules(object):
 
     def not_condition(self, o, a):
         return "!{0}".format(a)
-
-from ufl.algorithms import MultiFunction
 
 
 class CppExprFormatter(MultiFunction, CppFormattingRules):

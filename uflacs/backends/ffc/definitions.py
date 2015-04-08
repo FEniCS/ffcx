@@ -1,7 +1,7 @@
 
 from six.moves import xrange as range
 
-from ufl.algorithms import MultiFunction
+from ufl.corealg.multifunction import MultiFunction
 
 from ffc.log import error
 from ffc.log import ffc_assert

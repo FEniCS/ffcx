@@ -4,6 +4,8 @@ from ffc.log import ffc_assert
 
 import ufl
 
+from ufl.corealg.multifunction import MultiFunction
+
 # TODO: Assuming in this code that preprocessed expressions
 # are formatted, so no compounds etc. are included here.
 # Would be nice to format e.g. dot(u, v) -> u \cdot v.
@@ -248,8 +250,6 @@ class LatexFormattingRules(object):
     def negative_restricted(self, o, a):
         return r"%s^{[-]}" % (a,)  # TODO
 
-
-from ufl.algorithms import MultiFunction
 
 
 class LatexFormatter(MultiFunction, LatexFormattingRules):

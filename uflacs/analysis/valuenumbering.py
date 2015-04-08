@@ -2,7 +2,7 @@
 from six.moves import xrange as range
 from ufl.common import product
 from ufl.permutation import compute_indices
-from ufl.algorithms import MultiFunction
+from ufl.corealg.multifunction import MultiFunction
 from ufl.classes import FormArgument
 from uflacs.analysis.indexing import map_indexed_arg_components, map_component_tensor_arg_components
 from uflacs.analysis.modified_terminals import analyse_modified_terminal
