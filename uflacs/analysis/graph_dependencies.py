@@ -3,54 +3,12 @@ import numpy
 from six.moves import xrange as range
 from ufl.classes import Terminal
 
+from uflacs.datastructures.types import sufficient_int_type, sufficient_uint_type
 from uflacs.datastructures.arrays import bool_array
 from uflacs.datastructures.arrays import object_array
 from uflacs.datastructures.crs import CRS, rows_to_crs
+
 from uflacs.analysis.modified_terminals import terminal_modifier_types
-
-
-def sufficient_int_type(maxvalue):
-    if maxvalue < 2 ** 7:
-        dtype = numpy.int8
-    elif maxvalue < 2 ** 15:
-        dtype = numpy.int16
-    elif maxvalue < 2 ** 31:
-        dtype = numpy.int32
-    else:
-        dtype = numpy.int64
-    return dtype
-
-
-def sufficient_uint_type(maxvalue):
-    if maxvalue < 2 ** 8:
-        dtype = numpy.int8
-    elif maxvalue < 2 ** 16:
-        dtype = numpy.int16
-    elif maxvalue < 2 ** 32:
-        dtype = numpy.int32
-    else:
-        dtype = numpy.int64
-    return dtype
-
-
-# TODO: Delete when new one has survived a few tests
-def old_compute_dependencies(e2i, V, ignore_terminal_modifiers=True):
-    if ignore_terminal_modifiers:
-        terminalish = (Terminal,) + terminal_modifier_types
-    else:
-        terminalish = (Terminal,)
-
-    num_rows = len(V)
-    dependencies = object_array(num_rows)
-    num_nonzeros = 0
-    for i, v in enumerate(V):
-        if isinstance(v, terminalish):
-            dependencies[i] = ()
-        else:
-            dependencies[i] = [e2i[o] for o in v.ufl_operands]
-            num_nonzeros += len(dependencies[i])
-
-    return rows_to_crs(dependencies, num_rows, num_nonzeros, int)
 
 
 def compute_dependencies(e2i, V, ignore_terminal_modifiers=True):
