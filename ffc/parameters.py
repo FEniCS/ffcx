@@ -1,4 +1,4 @@
-# Copyright (C) 2005-2010 Anders Logg
+# Copyright (C) 2005-2015 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -14,13 +14,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# First added:  2005-05-20
-# Last changed: 2005-05-20
 
-from .log import INFO
-
-# Last changed: 2011-01-18
+from ffc.log import INFO
 
 FFC_PARAMETERS = {
   "format":                         "ufc",   # code generation format
@@ -56,3 +51,12 @@ FFC_PARAMETERS = {
 def default_parameters():
     "Return (a copy of) the default parameter values for FFC."
     return FFC_PARAMETERS.copy()
+
+def compilation_relevant_parameters(parameters):
+    parameters = parameters.copy()
+    ignores = ["log_prefix", "log_level", "cache_dir", "output_dir"]
+    for ignore in ignores:
+        assert ignore in FFC_PARAMETERS
+        if ignore in parameters:
+            del parameters[ignore]
+    return parameters
