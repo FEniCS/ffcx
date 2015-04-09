@@ -26,6 +26,7 @@ from ufl.utils.sorting import canonicalize_metadata
 
 # FFC modules.
 from ffc import __version__ as FFC_VERSION
+from ffc.parameters import compilation_relevant_parameters
 
 # UFC modules.
 from ffc.backends import ufc
@@ -99,9 +100,5 @@ class JITObject:
 
 def _parameters_signature(parameters):
     "Return parameters signature (some parameters must be ignored)."
-    parameters = parameters.copy()
-    ignores = ["log_prefix"]
-    for ignore in ignores:
-        if ignore in parameters:
-            del parameters[ignore]
+    parameters = compilation_relevant_parameters(parameters)
     return str(canonicalize_metadata(parameters))

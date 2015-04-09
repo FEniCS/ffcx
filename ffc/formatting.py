@@ -9,7 +9,7 @@ It relies on templates for UFC code available as part of the module
 ufc_utils.
 """
 
-# Copyright (C) 2009-2014 Anders Logg
+# Copyright (C) 2009-2015 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -25,9 +25,6 @@ ufc_utils.
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# First added:  2009-12-16
-# Last changed: 2014-03-19
 
 # Python modules
 import os
@@ -38,9 +35,10 @@ from ffc import __version__ as FFC_VERSION
 from ffc.backends.ufc import __version__ as UFC_VERSION
 from ffc.cpp import format
 from ffc.backends.ufc import templates
+from ffc.parameters import compilation_relevant_parameters
 
 
-def format_code(code, wrapper_code, prefix, parameters):
+def format_code(code, wrapper_code, prefix, parameters): # FIXME: Don't write to file in this function (issue #72)
     "Format given code in UFC format."
 
     begin("Compiler stage 5: Formatting code")
@@ -108,6 +106,7 @@ def format_code(code, wrapper_code, prefix, parameters):
     # Generate code for footer
     code_h += format["footer"]
 
+    # FIXME: Return code instead of writing to file here (issue #72)
     # Write file(s)
     if parameters["split"]:
         _write_file(code_h, prefix, ".h", parameters)
@@ -144,6 +143,9 @@ def _write_file(output, prefix, postfix, parameters):
 def _generate_comment(parameters):
     "Generate code for comment on top of file."
 
+    # Drop irrelevant parameters
+    parameters = compilation_relevant_parameters(parameters)
+
     # Generate top level comment
     args = {"ffc_version": FFC_VERSION, "ufc_version": UFC_VERSION}
     if parameters["format"] == "ufc":
@@ -170,4 +172,3 @@ def _generate_additional_includes(codes):
     if s:
         return "\n".join(list(s)) + "\n"
     return ""
-

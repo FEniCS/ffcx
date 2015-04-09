@@ -40,18 +40,15 @@ from ufl.classes import FloatValue
 from ufl.classes import Coefficient
 from ufl.classes import Operator
 
-# UFL Algorithms.
-from ufl.algorithms.printing import tree_format
-
 # FFC modules.
 from ffc.log import info, debug, error, ffc_assert
 from ffc.cpp import format
 
 # Utility and optimisation functions for quadraturegenerator.
-from .quadraturetransformerbase import QuadratureTransformerBase
-from .quadratureutils import create_permutations
-from .reduce_operations import operation_count
-from .symbolics import IP
+from ffc.quadrature.quadraturetransformerbase import QuadratureTransformerBase
+from ffc.quadrature.quadratureutils import create_permutations
+from ffc.quadrature.reduce_operations import operation_count
+from ffc.quadrature.symbolics import IP
 
 class QuadratureTransformer(QuadratureTransformerBase):
     "Transform UFL representation to quadrature code."

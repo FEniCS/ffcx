@@ -89,7 +89,7 @@ The compiler stages are implemented by the following functions:
   format_code       (stage 5)
 """
 
-# Copyright (C) 2007-2013 Anders Logg
+# Copyright (C) 2007-2015 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -109,10 +109,7 @@ The compiler stages are implemented by the following functions:
 # Modified by Kristian B. Oelgaard, 2010.
 # Modified by Dag Lindbo, 2008.
 # Modified by Garth N. Wells, 2009.
-# Modified by Martin Alnaes, 2013
-#
-# First added:  2007-02-05
-# Last changed: 2013-01-25
+# Modified by Martin Alnaes, 2013-2015
 
 __all__ = ["compile_form", "compile_element"]
 
@@ -131,12 +128,16 @@ from ffc.codegeneration import generate_code
 from ffc.formatting import format_code
 from ffc.wrappers import generate_wrapper_code
 
-def compile_form(forms, object_names={}, prefix="Form",\
-                 parameters=default_parameters()):
+def compile_form(forms, object_names=None, prefix="Form", parameters=None):
     """This function generates UFC code for a given UFL form or list
     of UFL forms."""
 
     info("Compiling form %s\n" % prefix)
+
+    if object_names is None:
+        object_names = {}
+    if parameters is None:
+        parameters = default_parameters()
 
     # Reset timing
     cpu_time_0 = time()
@@ -173,7 +174,7 @@ def compile_form(forms, object_names={}, prefix="Form",\
 
     # Stage 5: format code
     cpu_time = time()
-    format_code(code, wrapper_code, prefix, parameters)
+    format_code(code, wrapper_code, prefix, parameters) # FIXME: Don't write to file in this function (issue #72)
     _print_timing(5, time() - cpu_time)
 
     info_green("FFC finished in %g seconds.", time() - cpu_time_0)
@@ -220,7 +221,7 @@ def compile_element(elements, prefix="Element", parameters=default_parameters())
 
     # Stage 5: format code
     cpu_time = time()
-    format_code(code, wrapper_code, prefix, parameters)
+    format_code(code, wrapper_code, prefix, parameters) # FIXME: Don't write to file in this function (issue #72)
     _print_timing(5, time() - cpu_time)
 
     info_green("FFC finished in %g seconds.", time() - cpu_time_0)

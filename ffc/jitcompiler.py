@@ -1,7 +1,7 @@
 """This module provides a just-in-time (JIT) form compiler.
 It uses Instant to wrap the generated code into a Python module."""
 
-# Copyright (C) 2007-2014 Anders Logg
+# Copyright (C) 2007-2015 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -22,7 +22,7 @@ It uses Instant to wrap the generated code into a Python module."""
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Joachim Haga, 2011.
-# Modified by Martin Alnaes, 2013-2014
+# Modified by Martin Alnaes, 2013-2015
 
 # Python modules
 import os, sys
@@ -36,18 +36,18 @@ from ufl.classes import Form, FiniteElementBase
 from ufl.algorithms import extract_elements, extract_sub_elements, compute_form_data
 
 # FFC modules
-from .log import log
-from .log import info
-from .log import warning
-from .log import debug
-from .log import error
-from .log import set_level
-from .log import set_prefix
-from .log import INFO
-from .parameters import default_parameters
-from .mixedelement import MixedElement
-from .compiler import compile_form
-from .jitobject import JITObject
+from ffc.log import log
+from ffc.log import info
+from ffc.log import warning
+from ffc.log import debug
+from ffc.log import error
+from ffc.log import set_level
+from ffc.log import set_prefix
+from ffc.log import INFO
+from ffc.parameters import default_parameters
+from ffc.mixedelement import MixedElement
+from ffc.compiler import compile_form
+from ffc.jitobject import JITObject
 from ffc.quadratureelement import default_quadrature_degree
 from ffc.backends.ufc import build_ufc_module
 
