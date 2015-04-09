@@ -1,6 +1,6 @@
 "Quadrature representation class for UFL"
 
-# Copyright (C) 2009-2014 Kristian B. Oelgaard
+# Copyright (C) 2009-2015 Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -18,7 +18,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Anders Logg 2009, 2014
-# Modified by Martin Alnaes 2013-2014
+# Modified by Martin Alnaes 2013-2015
 
 # Python modules
 import numpy, itertools, collections
@@ -186,7 +186,7 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type,
 
     elif integral_type == "custom":
 
-        # Compute transformed integrale: same as for cell integrals
+        # Compute transformed integrals: same as for cell integrals
         info("Transforming custom integral")
         transformer.update_cell()
         terms = _transform_integrals(transformer, integrals_dict, integral_type)
@@ -217,16 +217,14 @@ def _extract_element_data(element_map, element_numbers):
             fiat_element = create_element(ufl_element)
 
             # Compute value size
-            shape = ufl_element.value_shape()
-            value_size = 1 if shape == () else product(shape)
+            value_size = product(ufl_element.value_shape())
 
             # Get element number
-            if ufl_element in element_numbers:
-                element_number = element_numbers[ufl_element]
-            else:
+            element_number = element_numbers.get(ufl_element)
+            if element_number is None:
                 # FIXME: Should not be necessary, we should always know the element number
                 #warning("Missing element number, likely because vector elements are not yet supported in custom integrals.")
-                element_number = None
+                pass
 
             # Store data
             element_data[counter] = {"value_size":      value_size,

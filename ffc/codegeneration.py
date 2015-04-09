@@ -6,7 +6,7 @@ This module implements the generation of C++ code for the body of each
 UFC function from an (optimized) intermediate representation (OIR).
 """
 
-# Copyright (C) 2009-2013 Anders Logg
+# Copyright (C) 2009-2015 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -24,10 +24,7 @@ UFC function from an (optimized) intermediate representation (OIR).
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Mehdi Nikbakht 2010
-# Modified by Martin Alnaes, 2013
-#
-# First added:  2009-12-16
-# Last changed: 2014-03-19
+# Modified by Martin Alnaes, 2013-2015
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -41,8 +38,7 @@ from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives_all
 from ffc.evaluatedof import evaluate_dof_and_dofs, affine_weights
 from ffc.interpolatevertexvalues import interpolate_vertex_values
 
-from ffc.representation import pick_representation
-
+from ffc.representation import pick_representation, ufc_integral_types
 
 # Errors issued for non-implemented functions
 def _not_implemented(function_name, return_null=False):
@@ -263,9 +259,7 @@ def _generate_form_code(ir, prefix, parameters):
     code["create_finite_element"] = _create_finite_element(prefix, ir)
     code["create_dofmap"] = _create_dofmap(prefix, ir)
 
-    integral_types = ["cell", "exterior_facet", "interior_facet", "vertex", "custom"]
-    # TODO: Add "point", "interface", "overlap", "cutcell"
-    for integral_type in integral_types:
+    for integral_type in ufc_integral_types:
         code["max_%s_subdomain_id" % integral_type] = ret(ir["max_%s_subdomain_id" % integral_type])
         code["has_%s_integrals" % integral_type] = _has_foo_integrals(ir, integral_type)
         code["create_%s_integral" % integral_type] = _create_foo_integral(ir, integral_type, prefix)
@@ -554,7 +548,7 @@ def _indent_code(code):
     for key in code:
         if not key in ("classname", "members", "constructor_arguments",
                        "initializer_list", "additional_includes_set",
-                       "restrict"):
+                       "restrict", "class_type"):
             code[key] = indent(code[key], 4)
 
 
