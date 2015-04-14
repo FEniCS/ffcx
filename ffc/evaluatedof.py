@@ -120,6 +120,10 @@ def _required_declarations(ir):
     """Generate code for declaring required variables and geometry
     information.
     """
+    # Enriched element, no dofs defined
+    if not any(ir["dofs"]):
+        return ""
+
     code = []
     gdim = ir["geometric_dimension"]
     tdim = ir["topological_dimension"]
