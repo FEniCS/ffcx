@@ -1,7 +1,7 @@
 // This file provides utility functions for computing geometric quantities.
 // This code is released into the public domain.
 //
-// The FEniCS Project (http://www.fenicsproject.org/) 2013.
+// The FEniCS Project (http://www.fenicsproject.org/) 2013-2015.
 
 #ifndef __UFC_GEOMETRY_H
 #define __UFC_GEOMETRY_H
@@ -91,6 +91,40 @@ static const double tetrahedron_vertices[UFC_NUM_VERTICES_IN_TETRAHEDRON][UFC_TD
   {1.0, 0.0, 0.0},
   {0.0, 1.0, 0.0},
   {0.0, 0.0, 1.0}
+  };
+
+/// --- Local reference cell barycenter by UFC conventions ---
+
+static const double interval_barycenter[UFC_TDIM_1] = {
+  0.5
+  };
+
+static const double triangle_barycenter[UFC_TDIM_2] = {
+  1.0/3.0, 1.0/3.0
+  };
+
+static const double tetrahedron_barycenter[UFC_TDIM_3] = {
+  0.25, 0.25, 0.25
+  };
+
+/// --- Local reference cell facet barycenters by UFC conventions ---
+
+static const double interval_facet_barycenter[UFC_NUM_FACETS_IN_INTERVAL][UFC_TDIM_1] = {
+  {0.0},
+  {1.0}
+  };
+
+static const double triangle_facet_barycenter[UFC_NUM_FACETS_IN_TRIANGLE][UFC_TDIM_2] = {
+  {0.5, 0.5},
+  {0.0, 0.5},
+  {0.5, 0.0}
+  };
+
+static const double tetrahedron_facet_barycenter[UFC_NUM_FACETS_IN_TETRAHEDRON][UFC_TDIM_3] = {
+  {0.5, 0.5, 0.5},
+  {0.0, 1.0/3.0, 1.0/3.0},
+  {1.0/3.0, 0.0, 1.0/3.0},
+  {1.0/3.0, 1.0/3.0, 0.0},
   };
 
 /// --- Local reference cell facet orientations by UFC conventions ---
@@ -196,6 +230,26 @@ static const double tetrahedron_facet_reference_edge_vectors[UFC_NUM_FACETS_IN_T
     { 0.0,  1.0,  0.0},
     { 1.0,  0.0,  0.0},
   },
+  };
+
+/// --- Reference cell facet normals by UFC conventions (outwards pointing on reference cell) ---
+
+static const double interval_reference_facet_normals[UFC_NUM_FACETS_IN_INTERVAL][UFC_TDIM_1] = {
+  {-1.0},
+  {+1.0},
+  };
+
+static const double triangle_reference_facet_normals[UFC_NUM_FACETS_IN_TRIANGLE][UFC_TDIM_2] = {
+  { 0.7071067811865476, 0.7071067811865476 },
+  {-1.0,  0.0},
+  { 0.0, -1.0},
+  };
+
+static const double tetrahedron_reference_facet_normals[UFC_NUM_FACETS_IN_TETRAHEDRON][UFC_TDIM_3] = {
+  {0.5773502691896258, 0.5773502691896258, 0.5773502691896258},
+  {-1.0,  0.0,  0.0},
+  { 0.0, -1.0,  0.0},
+  { 0.0,  0.0, -1.0},
   };
 
 /// --- Jacobians of reference facet cell to reference cell coordinate mappings by UFC conventions ---
