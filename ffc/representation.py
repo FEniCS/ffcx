@@ -329,7 +329,7 @@ def _evaluate_dof(ufl_element, element):
             "physical_value_size": _value_size(ufl_element),
             "geometric_dimension": domain.geometric_dimension(),
             "topological_dimension": domain.topological_dimension(),
-            "dofs": [L.pt_dict for L in element.dual_basis()],
+            "dofs": [L.pt_dict if L else None for L in element.dual_basis()],
             "physical_offsets": _generate_physical_offsets(ufl_element)}
 
 def _extract_elements(element):
@@ -423,7 +423,7 @@ def _evaluate_basis(ufl_element, element):
 def _tabulate_coordinates(ufl_element, element):
     "Compute intermediate representation of tabulate_coordinates."
 
-    if uses_integral_moments(element):
+    if uses_integral_moments(element) or not element.dual_basis()[0]:
         return {}
 
     domain, = ufl_element.domains() # Assuming single domain
@@ -657,7 +657,7 @@ def uses_integral_moments(element):
     "True if element uses integral moments for its degrees of freedom."
 
     integrals = set(["IntegralMoment", "FrobeniusIntegralMoment"])
-    tags = set([L.get_type_tag() for L in element.dual_basis()])
+    tags = set([L.get_type_tag() for L in element.dual_basis() if L])
     return len(integrals & tags) > 0
 
 def needs_oriented_jacobian(element):

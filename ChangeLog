@@ -1,4 +1,7 @@
+1.6.0
  - Bump required SWIG version to 3.0.3
+ - Disable dual basis (tabulate_coordinates and evaluate_dofs) for enriched
+   elements until correct implementation is brought up
 1.5.0 [2015-01-12]
  - Remove FErari support
  - Add support for new integral type custom_integral

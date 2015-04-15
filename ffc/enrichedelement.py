@@ -48,7 +48,10 @@ class EnrichedElement:
         return [m for e in self._elements for m in e.mapping()]
 
     def dual_basis(self):
-        return [L for e in self._elements for L in e.dual_basis()]
+        # NOTE: dual basis is not sum of subelements basis; it needs to be
+        #       recomputed so that \psi_j(\phi_i) = \delta_{ij} for
+        #       \phi_i basis functions and \psi_j dual basis functions
+        return [None for e in self._elements for L in e.dual_basis()]
 
     def tabulate(self, order, points):
 
