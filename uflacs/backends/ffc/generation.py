@@ -36,8 +36,11 @@ def generate_tabulate_tensor_code(ir, parameters):
     # Create code generator for integral body
     ig = IntegralGenerator(ir, language_formatter, backend_access, backend_definitions)
 
-    # Generate code for the tabulate_tensor body
-    body = ig.generate()
+    # Generate code ast for the tabulate_tensor body
+    parts = ig.generate()
+
+    # String snippets together
+    body = str(Indented(parts))
 
     # Fetch includes
     includes = set()

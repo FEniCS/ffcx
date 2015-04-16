@@ -26,7 +26,7 @@ from ufl.corealg.multifunction import MultiFunction
 from ffc.log import error
 from ffc.log import ffc_assert
 
-from uflacs.codeutils.format_code import format_code, ArrayAccess, Sub
+from uflacs.codeutils.format_code import format_code, ArrayAccess, Sub, flattened_indices
 
 from uflacs.backends.ffc.common import names, format_entity_name, format_mt_name, generate_coefficient_dof_access
 
@@ -73,8 +73,9 @@ class FFCAccessBackend(MultiFunction):
     def element_tensor_name(self):
         return names.A
 
-    def element_tensor_entry(self, index):
-        return ArrayAccess(names.A, index)
+    def element_tensor_entry(self, indices, shape):
+        flat_index = flattened_indices(indices, shape)
+        return ArrayAccess(names.A, flat_index)
 
     # === Multifunction handlers for all modified terminal types, basic C++ types are covered by base class ===
 

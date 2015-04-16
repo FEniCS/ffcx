@@ -152,6 +152,16 @@ def compute_expr_ir(expressions, parameters):
     expr_ir["modified_arguments"] = modified_arguments         # (array) MA-index -> UFL expression of modified arguments
     expr_ir["argument_factorization"] = argument_factorization  # (dict) tuple(MA-indices) -> V-index of monomial factor
 
+    # TODO: More structured MA organization?
+    #modified_arguments[rank][block][entry] -> UFL expression of modified argument
+    #dofranges[rank][block] -> (begin, end)
+    # or
+    #modified_arguments[rank][entry] -> UFL expression of modified argument
+    #dofrange[rank][entry] -> (begin, end)
+    #argument_factorization: (dict) tuple(MA-indices (only relevant ones!)) -> V-index of monomial factor
+    # becomes
+    #argument_factorization: (dict) tuple(entry for each(!) rank) -> V-index of monomial factor ## doesn't cover intermediate f*u in f*u*v!
+
     # Dependency structure of graph:
     expr_ir["modified_terminal_indices"] = modified_terminal_indices  # (array) list of V-indices to modified terminals
     #expr_ir["dependencies"] = dependencies                           # (CRS) V-index -> direct dependency V-index list

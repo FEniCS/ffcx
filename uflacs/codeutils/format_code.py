@@ -31,10 +31,6 @@ from six.moves import xrange as range
 from ffc.log import error
 
 
-def strip_trailing_whitespace(s):
-    return '\n'.join(l.rstrip() for l in s.split('\n'))
-
-
 def format_float(x):
     eps = 1e-12  # FIXME: Configurable threshold
     if abs(x) < eps:
@@ -126,7 +122,7 @@ class Comment(ASTNode): # TODO: Make it a Commented(code, comment) instead? Add 
         code = ("// ", self.comment)
         return format_code(code, level)
 
-class Block(ASTNode): # TODO: Rename to Scope?
+class Scope(ASTNode): # TODO: Rename to Scope?
     def __init__(self, body, start='{', end='}'):
         self.start = start
         self.body = body
@@ -191,7 +187,7 @@ class Namespace(ASTNode):
         self.body = body
 
     def format(self, level):
-        code = ['namespace %s' % self.name, Block(self.body)]
+        code = ['namespace %s' % self.name, Scope(self.body)]
         return format_code(code, level)
 
 
@@ -294,7 +290,6 @@ class BinOp(ASTOperator):
         #code = (lhs, self.op, rhs)
 
         code = (self.lhs, type(self).op, self.rhs)
-
         return format_code(code, level)
 
 class NOp(ASTOperator):
@@ -382,6 +377,7 @@ class AssignBase(ASTStatement):
         code = (self.lhs, type(self).op, self.rhs, ";")
         return format_code(code, level)
 
+
 class Assign(AssignBase):
     op = " = "
 
@@ -422,7 +418,7 @@ class WhileLoop(ASTStatement):
     def format(self, level):
         code = ("while (", self.check, ")")
         if self.body is not None:
-            code = [code, Block(self.body)]
+            code = [code, Scope(self.body)]
         return format_code(code, level)
 
 
@@ -436,7 +432,7 @@ class ForLoop(ASTStatement):
     def format(self, level):
         code = ("for (", self.init, "; ", self.check, "; ", self.increment, ")")
         if self.body is not None:
-            code = [code, Block(self.body)]
+            code = [code, Scope(self.body)]
         return format_code(code, level)
 
 
@@ -501,7 +497,7 @@ def format_code(code, level=0):
 
     - Indented: Indent the code within this object one level.
 
-    - Block: Wrap code in {} and indent it.
+    - Scope: Wrap code in {} and indent it.
 
     - Namespace: Wrap code in a namespace.
 

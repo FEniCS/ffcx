@@ -29,12 +29,11 @@ from ffc.log import error
 
 from uflacs.analysis.modified_terminals import analyse_modified_terminal, is_modified_terminal
 
-from uflacs.codeutils.format_code import (format_code, Indented, Comment,
-                                          ForRange, Block,
+from uflacs.codeutils.format_code import (format_code, Comment,
+                                          ForRange, Scope,
                                           VariableDecl, ArrayDecl, ArrayAccess,
                                           Assign, AssignAdd,
                                           Product)
-from uflacs.codeutils.indexmapping import IndexMapping, AxisMapping
 from uflacs.codeutils.expr_formatter import ExprFormatter
 
 
@@ -110,12 +109,13 @@ class IntegralGenerator(object):
             pp = self.generate_piecewise_partition(num_points)
             ql = self.generate_quadrature_loops(num_points)
             if len(all_num_points) > 1:
-                parts += [Block([pp, ql])]
+                parts += [Scope([pp, ql])] # Wrapping in Scope to avoid thinking about scoping issues
             else:
                 parts += [pp, ql]
 
         parts += self.generate_finishing_statements()
-        return format_code(Indented(parts))
+
+        return parts
 
     def generate_quadrature_tables(self):
         "Generate static tables of quadrature points and weights."
@@ -191,7 +191,7 @@ class IntegralGenerator(object):
         if num_points == 1:
             parts += [Comment("Only 1 quadrature point, no loop"),
                       VariableDecl("const int", iq, 0), # TODO: Inject iq=0 in generated code instead of this line
-                      Block(body)] # Wrapping in Block to avoid thinking about scoping issues
+                      Scope(body)] # Wrapping in Scope to avoid thinking about scoping issues
         else:
             parts += [ForRange(iq, 0, num_points, body=body)]
         return parts
@@ -439,14 +439,7 @@ class IntegralGenerator(object):
             factors.extend(argfactors)
 
             # Format index access to A
-            if idofs:
-                dofdims = zip(idofs, self._A_shape)
-                im = IndexMapping(dict((idof, idim) for idof, idim in dofdims))
-                am = AxisMapping(im, [idofs])
-                A_ii, = am.format_index_expressions() # FIXME: Integrate this with other code utils
-            else:
-                A_ii = 0
-            A_access = self.backend_access.element_tensor_entry(A_ii)
+            A_access = self.backend_access.element_tensor_entry(idofs, self._A_shape)
 
             # Emit assignment
             parts += [AssignAdd(A_access, Product(factors))]

@@ -111,7 +111,6 @@ def is_modified_terminal(v):
             return False
     return True
 
-
 def strip_modified_terminal(v):
     "Extract core Terminal from a modified terminal or return None."
     while not v._ufl_is_terminal_:

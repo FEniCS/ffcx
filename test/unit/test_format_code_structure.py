@@ -43,20 +43,20 @@ def test_format_blocks():
     code = format_code(Indented(["hei", Indented("verden")]))
     assert code == "    hei\n        verden"
 
-    # A Block is an indented body with brackets before and after
+    # A Scope is an indented body with brackets before and after
     code = format_code(["{", Indented("fee\nfie\nfoe"), "}"])
     assert code == "{\n    fee\n    fie\n    foe\n}"
-    code = format_code(Block("fee\nfie\nfoe"))
+    code = format_code(Scope("fee\nfie\nfoe"))
     assert code == "{\n    fee\n    fie\n    foe\n}"
     # A Namespace is a 'namespace foo' line before a block
     code = format_code(Namespace("bar", "fee\nfie\nfoe"))
     assert code == "namespace bar\n{\n    fee\n    fie\n    foe\n}"
 
     # Making a for loop
-    code = format_code(["for (iq...)", Block("foo(iq);")])
+    code = format_code(["for (iq...)", Scope("foo(iq);")])
     assert code == "for (iq...)\n{\n    foo(iq);\n}"
     # Making a do loop
-    code = format_code(["iq = 0;", "do", (Block("foo(iq);"), " while (iq < nq);")])
+    code = format_code(["iq = 0;", "do", (Scope("foo(iq);"), " while (iq < nq);")])
     assert code == "iq = 0;\ndo\n{\n    foo(iq);\n} while (iq < nq);"
 
 def test_format_class():
