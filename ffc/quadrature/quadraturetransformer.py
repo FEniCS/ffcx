@@ -645,7 +645,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                             t2 = f_transform("JINV", local_comp, c, gdim, tdim, self.restriction)
                             self.trans_set.add(t1)
                             self.trans_set.add(t2)
-                            basis = f_mult([t1, basis, t2])
+                            function_name = f_mult([t1, function_name, t2])
                         else:
                             error("Transformation is not supported: ", repr(transformation))
 
