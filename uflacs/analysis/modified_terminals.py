@@ -105,7 +105,7 @@ class ModifiedTerminal(object):
 def is_modified_terminal(v):
     "Check if v is a terminal or a terminal wrapped in terminal modifier types."
     while not v._ufl_is_terminal_:
-        if isinstance(v, terminal_modifier_types):
+        if v._ufl_is_terminal_modifier_:
             v = v.ufl_operands[0]
         else:
             return False
@@ -115,7 +115,7 @@ def is_modified_terminal(v):
 def strip_modified_terminal(v):
     "Extract core Terminal from a modified terminal or return None."
     while not v._ufl_is_terminal_:
-        if isinstance(v, terminal_modifier_types):
+        if v._ufl_is_terminal_modifier_:
             v = v.ufl_operands[0]
         else:
             return None
@@ -173,7 +173,7 @@ def analyse_modified_terminal(expr):
             averaged = "facet"
             t, = t.ufl_operands
 
-        elif isinstance(t, terminal_modifier_types):
+        elif t._ufl_terminal_modifiers_:
             error("Missing handler for terminal modifier type %s, object is %s." % (type(t), repr(t)))
 
         else:
