@@ -96,7 +96,8 @@ def flatten_psi_tables(tables, entity_type):
                         # Flatten fiat_table for tensor-valued basis
                         # This is necessary for basic (non-tensor-product)
                         # tensor elements
-                        if len(fiat_tables.shape) > 3:
+
+                        if len(numpy.shape(fiat_tables)) > 3:
                             shape = fiat_tables.shape
                             value_shape = shape[1:-1]
                             fiat_tables = fiat_tables.reshape((shape[0],
