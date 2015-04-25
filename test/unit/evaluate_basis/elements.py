@@ -49,7 +49,10 @@ single_elements = [ {"family": "Lagrange",\
                       "orders": [1, 2, 3]},\
                     {"family": "Nedelec 2nd kind H(curl)",\
                       "shapes": ["triangle", "tetrahedron"],\
-                      "orders": [1, 2, 3]}]
+                      "orders": [1, 2, 3]},\
+                    {"family": "Regge",\
+                      "shapes": ["triangle", "tetrahedron"],\
+                      "orders": [0, 1, 2, 3]}]
 
 # Create some mixed elements
 dg0_tri = FiniteElement("DG", "triangle", 0)
@@ -60,6 +63,7 @@ rt1_tri = FiniteElement("RT", "triangle", 1)
 drt2_tri = FiniteElement("DRT", "triangle", 2)
 bdm1_tri = FiniteElement("BDM", "triangle", 1)
 ned1_tri = FiniteElement("N1curl", "triangle", 1)
+reg0_tri = FiniteElement("Regge", "triangle", 0)
 
 dg0_tet = FiniteElement("DG", "tetrahedron", 0)
 dg1_tet = FiniteElement("DG", "tetrahedron", 1)
@@ -69,10 +73,11 @@ rt1_tet = FiniteElement("RT", "tetrahedron", 1)
 drt2_tet = FiniteElement("DRT", "tetrahedron", 2)
 bdm1_tet = FiniteElement("BDM", "tetrahedron", 1)
 ned1_tet = FiniteElement("N1curl", "tetrahedron", 1)
+reg0_tet = FiniteElement("Regge", "tetrahedron", 0)
 
 # Create combinations in pairs.
-mix_tri = [MixedElement(e) for e in xcomb([dg0_tri, dg1_tri, cg1_tri, cr1_tri, rt1_tri, drt2_tri, bdm1_tri, ned1_tri], 2)]
-mix_tet = [MixedElement(e) for e in xcomb([dg0_tet, dg1_tet, cg1_tet, cr1_tet, rt1_tet, drt2_tet, bdm1_tet, ned1_tet], 2)]
+mix_tri = [MixedElement(e) for e in xcomb([dg0_tri, dg1_tri, cg1_tri, cr1_tri, rt1_tri, drt2_tri, bdm1_tri, ned1_tri, reg0_tri], 2)]
+mix_tet = [MixedElement(e) for e in xcomb([dg0_tet, dg1_tet, cg1_tet, cr1_tet, rt1_tet, drt2_tet, bdm1_tet, ned1_tet, reg0_tet], 2)]
 
 mixed_elements = [MixedElement([dg0_tri]*4), MixedElement([cg1_tri]*3), MixedElement([bdm1_tri]*2),\
                   MixedElement([dg1_tri, cg1_tri, cr1_tri, rt1_tri, bdm1_tri, ned1_tri]),\
@@ -83,4 +88,5 @@ mixed_elements = [MixedElement([dg0_tri]*4), MixedElement([cg1_tri]*3), MixedEle
                   MixedElement([dg1_tet, cg1_tet, cr1_tet, rt1_tet, bdm1_tet, ned1_tet]),\
                   MixedElement([MixedElement([rt1_tet, cr1_tet]), cg1_tet, ned1_tet]),\
                   MixedElement([ned1_tet, dg1_tet, MixedElement([rt1_tet, cr1_tet])]),\
-                  MixedElement([drt2_tet, cg1_tet])] + mix_tri + mix_tet
+                  MixedElement([drt2_tet, cg1_tet]),\
+                  MixedElement([cg1_tet, cg1_tet, cg1_tet, reg0_tet])] + mix_tri + mix_tet
