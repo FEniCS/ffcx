@@ -50,6 +50,7 @@ FIAT (functional.pt_dict) in the intermediate representation stage.
 
 from ffc.cpp import format, remove_unused
 from ffc.utils import pick_first
+from ufl.permutation import build_component_numbering
 
 __all__ = ["evaluate_dof_and_dofs", "affine_weights"]
 
@@ -188,13 +189,13 @@ def _generate_body(i, dof, mapping, gdim, tdim, offset=0, result=f_result):
     if len(F) == 1:
         return ("\n".join(code), multiply([dof[x][0][0], F[0]]))
 
-    # Take inner product between components and weights
-    #    Flatten multiindices
-    multiindices = [k for (w, k) in dof[x]]
-    multiindices.sort()
-    value = add([multiply([w, F[multiindices.index(k)]])
-                 for (w, k) in dof[x]])
+    # Flatten multiindices
+    (index_map, _) = build_component_numbering([tdim] * len(dof[x][0][1]),
+                                               ())
 
+    # Take inner product between components and weights
+    value = add([multiply([w, F[index_map[k]]]) for (w, k) in dof[x]])
+    
     # Assign value to result variable
     code.append(assign(result, value))
     return ("\n".join(code), result)
