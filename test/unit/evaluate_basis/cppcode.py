@@ -81,8 +81,19 @@ int main(int argc, char* argv[])
   unsigned int n = std::atoi(argv[1]);
 
   // Value dimension
-  // FIXME: This will not work for TensorElements
-  int N = element.value_dimension(0);
+  int N;
+  if (element.value_rank() == 0)
+  {
+    N = 1;
+  }
+  else
+  {
+    N = 1;
+    for (unsigned int i = 0; i < element.value_rank(); i++)
+    {
+      N = N * element.value_dimension(i);
+    }
+  }
 
   // Compute number of derivatives.
   unsigned int  num_derivatives = 1;
