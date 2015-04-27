@@ -650,7 +650,7 @@ def _compute_reference_derivatives(data, dof_data):
                  for k in range(tdim)],
                 [f_transform("JINV", k, l, tdim, gdim, None)
                  for k in range(tdim)]))
-            name = f_component(f_derivatives+_p, f_matrix_index(i, f_r, f_num_derivs(_t)))
+            name = f_component(f_derivatives+_p, f_matrix_index(p, f_r, f_num_derivs(_t)))
             lines += [f_assign(name, value)]
     else:
         error("Unknown mapping: %s" % mapping)
