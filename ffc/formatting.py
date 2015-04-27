@@ -38,8 +38,8 @@ from ffc.backends.ufc import templates
 from ffc.parameters import compilation_relevant_parameters
 
 
-def format_code(code, wrapper_code, prefix, parameters): # FIXME: Don't write to file in this function (issue #72)
-    "Format given code in UFC format."
+def format_code(code, wrapper_code, prefix, parameters):
+    "Format given code in UFC format. Returns two strings with header and source file contents."
 
     begin("Compiler stage 5: Formatting code")
 
@@ -60,44 +60,24 @@ def format_code(code, wrapper_code, prefix, parameters): # FIXME: Don't write to
     code_c += format["header_c"] % {"prefix": prefix}
 
     # Generate code for elements
-    if code_elements:
-        for code_element in code_elements:
-            code_h += _format_h("finite_element", code_element, parameters)
-            code_c += _format_c("finite_element", code_element, parameters)
+    for code_element in code_elements:
+        code_h += _format_h("finite_element", code_element, parameters)
+        code_c += _format_c("finite_element", code_element, parameters)
 
     # Generate code for dofmaps
-    if code_dofmaps:
-        for code_dofmap in code_dofmaps:
-            code_h += _format_h("dofmap", code_dofmap, parameters)
-            code_c += _format_c("dofmap", code_dofmap, parameters)
+    for code_dofmap in code_dofmaps:
+        code_h += _format_h("dofmap", code_dofmap, parameters)
+        code_c += _format_c("dofmap", code_dofmap, parameters)
 
     # Generate code for integrals
-    if code_integrals:
-        for code_integral in code_integrals:
-            classname = code_integral["classname"]
-            if "cell_integral" in classname:
-                code_h += _format_h("cell_integral", code_integral, parameters)
-                code_c += _format_c("cell_integral", code_integral, parameters)
-            elif "exterior_facet_integral" in classname:
-                code_h += _format_h("exterior_facet_integral", code_integral, parameters)
-                code_c += _format_c("exterior_facet_integral", code_integral, parameters)
-            elif "interior_facet_integral" in classname:
-                code_h += _format_h("interior_facet_integral", code_integral, parameters)
-                code_c += _format_c("interior_facet_integral", code_integral, parameters)
-            elif "vertex_integral" in classname:
-                code_h += _format_h("vertex_integral", code_integral, parameters)
-                code_c += _format_c("vertex_integral", code_integral, parameters)
-            elif "custom_integral" in classname:
-                code_h += _format_h("custom_integral", code_integral, parameters)
-                code_c += _format_c("custom_integral", code_integral, parameters)
-            else:
-                error("Unable to figure out base class for %s" % classname)
+    for code_integral in code_integrals:
+        code_h += _format_h(code_integral["class_type"], code_integral, parameters)
+        code_c += _format_c(code_integral["class_type"], code_integral, parameters)
 
     # Generate code for form
-    if code_forms:
-        for code_form in code_forms:
-            code_h += _format_h("form", code_form, parameters)
-            code_c += _format_c("form", code_form, parameters)
+    for code_form in code_forms:
+        code_h += _format_h("form", code_form, parameters)
+        code_c += _format_c("form", code_form, parameters)
 
     # Add wrappers
     if wrapper_code:
@@ -106,15 +86,17 @@ def format_code(code, wrapper_code, prefix, parameters): # FIXME: Don't write to
     # Generate code for footer
     code_h += format["footer"]
 
-    # FIXME: Return code instead of writing to file here (issue #72)
+    end()
+
+    return code_h, code_c
+
+def write_code(code_h, code_c, prefix, parameters):
     # Write file(s)
     if parameters["split"]:
         _write_file(code_h, prefix, ".h", parameters)
         _write_file(code_c, prefix, ".cpp", parameters)
     else:
         _write_file(code_h, prefix, ".h", parameters)
-
-    end()
 
 def _format_h(class_type, code, parameters):
     "Format header code for given class type."
@@ -132,12 +114,9 @@ def _format_c(class_type, code, parameters):
 
 def _write_file(output, prefix, postfix, parameters):
     "Write generated code to file."
-    prefix = prefix.split(os.path.join(' ',' ').split()[0])[-1]
-    full_prefix = os.path.join(parameters["output_dir"], prefix)
-    filename = "%s%s" % (full_prefix, postfix)
-    hfile = open(filename, "w")
-    hfile.write(output)
-    hfile.close()
+    filename = os.path.join(parameters["output_dir"], prefix + postfix)
+    with open(filename, "w") as hfile:
+        hfile.write(output)
     info("Output written to " + filename + ".")
 
 def _generate_comment(parameters):

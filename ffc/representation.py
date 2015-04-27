@@ -12,7 +12,7 @@ function "foo", one should only need to use the data stored
 in the intermediate representation under the key "foo".
 """
 
-# Copyright (C) 2009-2014 Anders Logg
+# Copyright (C) 2009-2015 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -31,7 +31,7 @@ in the intermediate representation under the key "foo".
 #
 # Modified by Marie E. Rognes 2010
 # Modified by Kristian B. Oelgaard 2010
-# Modified by Martin Alnaes, 2013-2014
+# Modified by Martin Alnaes, 2013-2015
 
 # Python modules
 from itertools import chain
@@ -48,6 +48,9 @@ from ffc.enrichedelement import EnrichedElement, SpaceOfReals
 from ffc.fiatinterface import DiscontinuousLagrangeTrace
 from ffc.quadratureelement import QuadratureElement
 from ffc.cpp import set_float_formatting
+
+# List of supported integral types
+ufc_integral_types = ["cell", "exterior_facet", "interior_facet", "vertex", "custom"]
 
 def pick_representation(representation):
     "Return one of the specialized code generation modules from a representation string."
@@ -241,8 +244,7 @@ def _compute_form_ir(form_data, form_id, element_numbers):
     ir["create_finite_element"] = [element_numbers[e] for e in form_data.elements]
     ir["create_dofmap"] = [element_numbers[e] for e in form_data.elements]
 
-    integral_types = ["cell", "exterior_facet", "interior_facet", "vertex", "custom"]
-    for integral_type in integral_types:
+    for integral_type in ufc_integral_types:
         ir["max_%s_subdomain_id" % integral_type] = _max_foo_subdomain_id(integral_type, form_data)
         ir["has_%s_integrals" % integral_type] = _has_foo_integrals(integral_type, form_data)
         ir["create_%s_integral" % integral_type] = _create_foo_integral(integral_type, form_data)
