@@ -1,4 +1,5 @@
-1.6.0
+1.6.0dev
+ - Rename and modify a number of UFC interface functions. See docstrings in ufc.h for details.
  - Bump required SWIG version to 3.0.3
  - Disable dual basis (tabulate_coordinates and evaluate_dofs) for enriched
    elements until correct implementation is brought up
