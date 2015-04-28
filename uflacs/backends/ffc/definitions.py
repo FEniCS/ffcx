@@ -25,14 +25,7 @@ from ufl.corealg.multifunction import MultiFunction
 from ffc.log import error
 from ffc.log import ffc_assert
 
-from uflacs.codeutils.format_code import (format_code,
-                                          ForRange,
-                                          VariableDecl,
-                                          ArrayAccess,
-                                          AssignAdd,
-                                          Sub, Mul,
-                                          Sum)
-
+# FIXME: These need language input:
 from uflacs.backends.ffc.common import (names,
                                         format_entity_name,
                                         generate_coefficient_dof_access,
@@ -41,18 +34,21 @@ from uflacs.backends.ffc.common import (names,
 
 
 class FFCDefinitionsBackend(MultiFunction):
+    """FFC specific code definitions."""
 
-    """FFC specific cpp formatter class."""
-
-    def __init__(self, ir, parameters):
+    def __init__(self, ir, language, parameters):
         MultiFunction.__init__(self)
 
         # Store ir and parameters
         self.ir = ir
+        self.language = language
         self.parameters = parameters
 
         # Configure definitions behaviour
-        self.physical_coordinates_known = self.ir["integral_type"] == "custom"
+        if self.ir["integral_type"] in ("custom", "vertex"):
+            self.physical_coordinates_known = True
+        else:
+            self.physical_coordinates_known = False
 
     def get_includes(self):
         "Return include statements to insert at top of file."
@@ -69,45 +65,51 @@ class FFCDefinitionsBackend(MultiFunction):
 
     # === Generate code definitions ===
 
+    def constant_value(self, e, mt, tabledata, access):
+        return None
+
     def argument(self, t, mt, tabledata, access):
         code = []
         return code
 
     def coefficient(self, t, mt, tabledata, access):
+        L = self.language
+
         code = []
         if mt.terminal.is_cellwise_constant():
             # For a constant coefficient we reference the dofs directly, so no definition needed
             pass
         else:
-            # No need to store basis function value in its own variable, just get table value directly
-            code += [VariableDecl("double", access, "0.0")]
+            # No need to store basis function value in its own variable,
+            # just get table value directly
+            code += [L.VariableDecl("double", access, 0.0)]
             uname, begin, end = tabledata
             entity = format_entity_name(self.ir["entitytype"], mt.restriction)
 
             # Empty loop needs to be skipped as zero tables may not be generated
-            # FIXME: assert begin < end instead, and remove at earlier stage so dependent code can also be removed
+            # FIXME: assert begin < end instead, and remove at earlier
+            #        stage so dependent code can also be removed
             if begin >= end:
                 return code
 
             iq = names.iq
             idof = names.ic
 
-            dof = format_code(Sub(idof, begin))
-            table_access = ArrayAccess(uname, (entity, iq, dof))
+            dof = L.Sub(idof, begin)
+            table_access = L.ArrayAccess(uname, (entity, iq, dof))
 
-            dof_access = generate_coefficient_dof_access(mt.terminal, idof)
+            dof_access = generate_coefficient_dof_access(L, mt.terminal, idof)
 
-            prod = Mul(dof_access, table_access)
-            body = [AssignAdd(access, prod)]
+            prod = L.Mul(dof_access, table_access)
+            body = [L.AssignAdd(access, prod)]
 
             # Loop to accumulate linear combination of dofs and tables
-            code += [ForRange(idof, begin, end, body=body)]
+            code += [L.ForRange(idof, begin, end, body=body)]
 
         return code
 
     def quadrature_weight(self, e, mt, tabledata, access):
-        code = []
-        return code
+        return []
 
     def spatial_coordinate(self, e, mt, tabledata, access):
         """Return definition code for the physical spatial coordinates.
@@ -121,6 +123,7 @@ class FFCDefinitionsBackend(MultiFunction):
         If reference facet coordinates are given:
           x = sum_k xdof_k xphi_k(Xf)
         """
+        L = self.language
         code = []
 
         if self.physical_coordinates_known:
@@ -147,24 +150,24 @@ class FFCDefinitionsBackend(MultiFunction):
 
             if 0:  # Generated loop version:
                 vertex = names.ic
-                table_access = ArrayAccess(uname, (entity, iq, vertex))
-                dof_access = generate_domain_dof_access(num_vertices, gdim, vertex,
+                table_access = L.ArrayAccess(uname, (entity, iq, vertex))
+                dof_access = generate_domain_dof_access(L, num_vertices, gdim, vertex,
                                                         mt.flat_component, mt.restriction)
-                prod = Mul(dof_access, table_access)
+                prod = L.Mul(dof_access, table_access)
 
                 # Loop to accumulate linear combination of dofs and tables
-                code += [VariableDecl("double", access, "0.0")]
-                code += [ForRange(vertex, begin, end, body=[AssignAdd(access, prod)])]
+                code += [L.VariableDecl("double", access, 0.0)]
+                code += [L.ForRange(vertex, begin, end, body=[L.AssignAdd(access, prod)])]
 
             else:  # Inlined version (we know this is bounded by a small number)
-                dof_access = generate_domain_dofs_access(num_vertices, gdim, mt.restriction)
+                dof_access = generate_domain_dofs_access(L, num_vertices, gdim, mt.restriction)
                 prods = []
                 for idof in range(begin, end):
-                    table_access = ArrayAccess(uname, (entity, iq, Sub(idof, begin)))
-                    prods += [Mul(dof_access[idof], table_access)]
+                    table_access = L.ArrayAccess(uname, (entity, iq, L.Sub(idof, begin)))
+                    prods += [L.Mul(dof_access[idof], table_access)]
 
                 # Inlined loop to accumulate linear combination of dofs and tables
-                code += [VariableDecl("const double", access, Sum(prods))]
+                code += [L.VariableDecl("const double", access, L.Sum(prods))]
 
         return code
 
@@ -181,103 +184,93 @@ class FFCDefinitionsBackend(MultiFunction):
         If physical coordinates are given and domain is non- affine:
           Not currently supported.
         """
-        code = []
-        return code
+        return []
 
     def jacobian(self, e, mt, tabledata, access):
+        if self.physical_coordinates_known:
+            return []
+        else:
+            return self._define_jacobian(e, mt, tabledata, access)
+
+    def _define_jacobian(e, mt, tabledata, access):
         """Return definition code for the Jacobian of x(X).
 
         J = sum_k xdof_k grad_X xphi_k(X)
         """
-        code = []
+        L = self.language
 
-        if self.physical_coordinates_known:
-            pass
+        # FIXME: Generalize this code to work with arbitrary domain.coordinate_element()
+        ffc_assert(mt.terminal.domain().coordinates() is None,
+                   "Assuming coefficient field symbolically inserted before this point.")
+        # Reference coordinates are known, no coordinate field, so we compute
+        # this component as linear combination of vertex_coordinates "dofs" and table
+
+        cell = mt.terminal.domain().cell()
+        gdim = cell.geometric_dimension()
+        num_vertices = cell.num_vertices()
+
+        uname, begin, end = tabledata
+
+        # access here is e.g. J_0, component 0 of J
+
+        ffc_assert(0 <= (end - begin) <= num_vertices,
+                   "Assuming linear element for affine simplices here.")
+        entity = format_entity_name(self.ir["entitytype"], mt.restriction)
+        vertex = names.ic
+        iq = 0
+
+        if 1:
+            # Inlined version:
+            prods = []
+            dof_access = generate_domain_dofs_access(L, num_vertices, gdim, mt.restriction)
+            for idof in range(begin, end):
+                ind = (entity, 0, L.Sub(idof, begin))
+                table_access = L.ArrayAccess(uname, ind)
+                prods += [L.Mul(dof_access[idof], table_access)]
+
+            # Inlined loop to accumulate linear combination of dofs and tables
+            code += [L.VariableDecl("const double", access, L.Sum(prods))]
+
         else:
-            # FIXME: Generalize this code to work with arbitrary domain.coordinate_element()
-            ffc_assert(mt.terminal.domain().coordinates() is None,
-                       "Assuming coefficient field symbolically inserted before this point.")
-            # Reference coordinates are known, no coordinate field, so we compute
-            # this component as linear combination of vertex_coordinates "dofs" and table
+            # Generated loop version:
+            table_access = L.ArrayAccess(uname, iq, (entity, vertex))
+            dof_access = generate_domain_dof_access(L, num_vertices, gdim, vertex,
+                                                    mt.flat_component, mt.restriction)
+            prod = L.Mul(dof_access, table_access)
+            accumulate = L.AssignAdd(access, prod)
 
-            cell = mt.terminal.domain().cell()
-            gdim = cell.geometric_dimension()
-            num_vertices = cell.num_vertices()
-
-            uname, begin, end = tabledata
-
-            # access here is e.g. J_0, component 0 of J
-
-            ffc_assert(0 <= (end - begin) <= num_vertices,
-                       "Assuming linear element for affine simplices here.")
-            entity = format_entity_name(self.ir["entitytype"], mt.restriction)
-            vertex = names.ic
-            iq = 0
-
-            if 0:  # Generated loop version:
-                table_access = ArrayAccess(uname, iq, (entity, vertex))
-                dof_access = generate_domain_dof_access(num_vertices, gdim, vertex,
-                                                        mt.flat_component, mt.restriction)
-                prod = Mul(dof_access, table_access)
-
-                # Loop to accumulate linear combination of dofs and tables
-                code += [VariableDecl("double", access, "0.0")]
-                code += [ForRange(vertex, begin, end, body=[AssignAdd(access, prod)])]
-
-            else:  # Inlined version:
-                prods = []
-                dof_access = generate_domain_dofs_access(num_vertices, gdim, mt.restriction)
-                for idof in range(begin, end):
-                    table_access = ArrayAccess(uname, (entity, 0, Sub(idof, begin)))
-                    prods += [Mul(dof_access[idof], table_access)]
-
-                # Inlined loop to accumulate linear combination of dofs and tables
-                code += [VariableDecl("const double", access, Sum(prods))]
+            # Loop to accumulate linear combination of dofs and tables
+            code += [L.VariableDecl("double", access, 0.0)]
+            code += [L.ForRange(vertex, begin, end, body=accumulate)]
 
         return code
 
     def cell_facet_jacobian(self, e, mt, tabledata, access):
         # Constant table defined in ufc_geometry.h
-        code = []
-        return code
+        return []
 
     def cell_edge_vectors(self, e, mt, tabledata, access):
         # Constant table defined in ufc_geometry.h
-        code = []
-        return code
+        return []
 
     def facet_edge_vectors(self, e, mt, tabledata):
         # Constant table defined in ufc_geometry.h
-        code = []
-        return code
+        return []
 
     def cell_orientation(self, e, mt, tabledata, access):
         # Computed or constant table defined in ufc_geometry.h
-        code = []
-        return code
+        return []
 
     def facet_orientation(self, e, mt, tabledata, access):
         # Constant table defined in ufc_geometry.h
-        code = []
-        return code
+        return []
 
-    def facet_normal(self, e, mt, tabledata, access):
-        error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
-
-    def cell_normal(self, e, mt, tabledata, access):
-        error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
-
-    def jacobian_inverse(self, e, mt, tabledata, access):
-        error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
-
-    def jacobian_determinant(self, e, mt, tabledata, access):
-        error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
-
-    def facet_jacobian(self, e, mt, tabledata, access):
-        error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
-
-    def facet_jacobian_inverse(self, e, mt, tabledata, access):
-        error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
-
-    def facet_jacobian_determinant(self, e, mt, tabledata, access):
-        error("Expecting {0} to be replaced with lower level types in symbolic preprocessing.".format(type(e)))
+    def _expect_symbolic_lowering(self, e, mt, tabledata, num_points):
+        error("Expecting {0} to be replaced in symbolic preprocessing.".format(type(e)))
+    facet_normal = _expect_symbolic_lowering
+    cell_normal = _expect_symbolic_lowering
+    jacobian_inverse = _expect_symbolic_lowering
+    jacobian_determinant = _expect_symbolic_lowering
+    facet_jacobian = _expect_symbolic_lowering
+    facet_jacobian_inverse = _expect_symbolic_lowering
+    facet_jacobian_determinant = _expect_symbolic_lowering

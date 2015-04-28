@@ -18,34 +18,36 @@
 
 """FFC specific algorithms for the generation phase."""
 
-from uflacs.codeutils.cpp_expr_formatting_rules import CppExprFormatter
 from uflacs.generation.integralgenerator import IntegralGenerator
+
+import codeast.cnodes # FIXME: Move to uflacs
 from uflacs.backends.ffc.access import FFCAccessBackend
 from uflacs.backends.ffc.definitions import FFCDefinitionsBackend
 
+class FFCBackend(object):
+    def __init__(self, ir, parameters):
+        self.language = codeast.cnodes
+        self.definitions = FFCDefinitionsBackend(ir, self.language, parameters)
+        self.access = FFCAccessBackend(ir, self.language, parameters)
 
 def generate_tabulate_tensor_code(ir, parameters):
 
-    # Create C++ backend
-    language_formatter = CppExprFormatter()
-
-    # Create FFC backend
-    backend_access = FFCAccessBackend(ir, parameters)
-    backend_definitions = FFCDefinitionsBackend(ir, parameters)
+    # Create FFC C++ backend
+    backend = FFCBackend(ir, parameters)
 
     # Create code generator for integral body
-    ig = IntegralGenerator(ir, language_formatter, backend_access, backend_definitions)
+    ig = IntegralGenerator(ir, backend)
 
     # Generate code ast for the tabulate_tensor body
     parts = ig.generate()
 
-    # String snippets together
+    # Format code AST as one string
     body = str(Indented(parts))
 
     # Fetch includes
     includes = set()
     includes.update(ig.get_includes())
-    includes.update(backend_definitions.get_includes())
+    includes.update(backend.definitions.get_includes())
 
     # Format uflacs specific code structures into a single
     # string and place in dict before returning to ffc

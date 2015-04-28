@@ -32,7 +32,6 @@ from uflacs.elementtables.table_utils import (generate_psi_table_name,
                                               get_ffc_table_values,
                                               strip_table_zeros,
                                               build_unique_tables)
-from uflacs.codeutils.format_code import ArrayDecl
 
 def extract_terminal_elements(terminal_data):
     "Extract a list of unique elements from terminal data."
@@ -198,14 +197,13 @@ def optimize_element_tables(tables, terminal_table_names):
 
     return unique_tables, terminal_table_ranges
 
-
-def generate_element_table_definitions(tables):
+# TODO: This seems to be unused, remove?
+def generate_element_table_definitions(L, tables):
     "Format a dict of name->table into code."
     code = []
     for name in sorted(tables):
         table = tables[name]
         if product(table.shape) > 0:
-            code += [ArrayDecl("static const double",
-                               name,
-                               table.shape, table)]
+            code += [L.ArrayDecl("static const double",
+                                 name, table.shape, table)]
     return code

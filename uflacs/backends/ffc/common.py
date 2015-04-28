@@ -20,9 +20,9 @@
 
 from six.moves import xrange as range
 
-from uflacs.codeutils.format_code import ArrayAccess, Add, Mul
 
-class Names:  # TODO: This is not used much anymore, integrate in backend class
+# TODO: This is not used much anymore, integrate in backend class, and use L.Symbol
+class Names:
 
     def __init__(self):
         # Topology argument names
@@ -138,33 +138,33 @@ def ufc_restriction_postfix(restriction):
 # from uflacs.backends.ffc.ffc_statement_formatter import format_element_table_access
 # from ufl.utils.derivativetuples import derivative_listing_to_counts
 # def generate_element_table_access(mt):
-# FIXME: See  format_element_table_access  get_element_table_data
-# entity = format_entity_name(self.ir["entitytype"], mt.restriction)
-# return ArrayAccess(uname, (entity, names.iq, dof_number))
-# return "FE[0]" # FIXME
+#     FIXME: See  format_element_table_access  get_element_table_data
+#     entity = format_entity_name(self.ir["entitytype"], mt.restriction)
+#     return L.ArrayAccess(uname, (entity, names.iq, dof_number))
+#     return "FE[0]" # FIXME
 
 # def generate_geometry_table_access(mt):
-# return "FJ[0]" # FIXME
+#     return "FJ[0]" # FIXME
 
 
-def generate_coefficient_dof_access(coefficient, dof_number):
+def generate_coefficient_dof_access(L, coefficient, dof_number):
     # TODO: Add domain_number = self.ir["domain_numbering"][coefficient.domain().domain_key()]
     # TODO: Flatten dofs array and use CRS lookup table.
     # TODO: Apply integral specific renumbering.
-    return ArrayAccess(names.w, (coefficient.count(), dof_number))
+    return L.ArrayAccess(names.w, (coefficient.count(), dof_number))
+    #return L.Symbol(names.w)[coefficient.count(), dof_number]
 
-
-def generate_domain_dof_access(num_vertices, gdim, vertex, component, restriction):
+def generate_domain_dof_access(L, num_vertices, gdim, vertex, component, restriction):
     # TODO: Add domain number as argument here, and {domain_offset} to array indexing:
     # domain_offset = self.ir["domain_offsets"][domain_number]
     vc = names.vertex_coordinates + names.restriction_postfix[restriction]
-    return ArrayAccess(vc, Add(Mul(gdim, vertex), component))
+    return L.ArrayAccess(vc, L.Add(L.Mul(gdim, vertex), component))
+    #return L.Symbol(vc)[gdim*vertex + component]
 
-
-def generate_domain_dofs_access(num_vertices, gdim, restriction):
+def generate_domain_dofs_access(L, num_vertices, gdim, restriction):
     # TODO: Add domain number as argument here, and {domain_offset} to array indexing:
     # FIXME: Handle restriction here
     # domain_offset = self.ir["domain_offsets"][domain_number]
-    return [generate_domain_dof_access(num_vertices, gdim, vertex, component, restriction)
+    return [generate_domain_dof_access(L, num_vertices, gdim, vertex, component, restriction)
             for component in range(gdim)
             for vertex in range(num_vertices)]
