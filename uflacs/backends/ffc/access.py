@@ -53,9 +53,9 @@ class FFCAccessBackend(MultiFunction):
 
 
     # === Access to names of quantities not among the symbolic UFL types ===
-
+    # FIXME: Move these out of the AccessBackend, maybe introduce a FFCBackendSymbols?
+    #        A symbols class can contain generate*names from common.* as well.
     # FIXME: Use self.language.Symbol and/or self.language.ArrayAccess to wrap names.*:
-
     def weights_array_name(self, num_points):
         return "{0}{1}".format(names.weights, num_points)
 

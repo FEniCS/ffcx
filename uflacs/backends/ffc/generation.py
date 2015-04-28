@@ -20,13 +20,14 @@
 
 from uflacs.generation.integralgenerator import IntegralGenerator
 
-import codeast.cnodes # FIXME: Move to uflacs
+import uflacs.language.cnodes
 from uflacs.backends.ffc.access import FFCAccessBackend
 from uflacs.backends.ffc.definitions import FFCDefinitionsBackend
 
 class FFCBackend(object):
+    "Class collecting all aspects of the FFC backend."
     def __init__(self, ir, parameters):
-        self.language = codeast.cnodes
+        self.language = uflacs.language.cnodes
         self.definitions = FFCDefinitionsBackend(ir, self.language, parameters)
         self.access = FFCAccessBackend(ir, self.language, parameters)
 

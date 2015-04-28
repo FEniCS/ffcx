@@ -21,6 +21,47 @@
 from six.moves import xrange as range
 
 
+# FIXME: Do something like this for shared symbol naming?
+class FFCBackendSymbols(object):
+    def __init__(self, language):
+        self.L = language
+        self.S = self.L.Symbol
+
+    def entity(self, foo):
+        return self.S("entity")
+
+    def x(self, quadloop):
+        "Physical coordinates."
+        return self.S("x" + str(quadloop))
+
+    def xi(self, quadloop):
+        "Reference cell coordinates."
+        return self.S("xi" + str(quadloop))
+
+    def coefficient_dof_access(self, coefficient, dof_number):
+        # TODO: Add domain_number = self.ir["domain_numbering"][coefficient.domain().domain_key()]
+        # TODO: Flatten dofs array and use CRS lookup table.
+        # TODO: Apply integral specific renumbering.
+        #return self.L.ArrayAccess(names.w, (coefficient.count(), dof_number))
+        w = self.S("w")
+        return w[coefficient.count(), dof_number]
+
+    def domain_dof_access(self, gdim, component, vertex, restriction):
+        # TODO: Add domain number as argument here, and {domain_offset} to array indexing:
+        # domain_offset = self.ir["domain_offsets"][domain_number]
+        vc = self.S("vertex_coordinates" + self.restriction_postfix[restriction])
+        return vc[gdim*vertex + component]
+        #return L.ArrayAccess(vc, L.Add(L.Mul(gdim, vertex), component))
+
+    def domain_dofs_access(self, gdim, num_vertices, restriction):
+        # TODO: Add domain number as argument here, and {domain_offset} to array indexing:
+        # FIXME: Handle restriction here
+        # domain_offset = self.ir["domain_offsets"][domain_number]
+        return [self.domain_dof_access(gdim, vertex, component, restriction)
+                for component in range(gdim)
+                for vertex in range(num_vertices)]
+
+
 # TODO: This is not used much anymore, integrate in backend class, and use L.Symbol
 class Names:
 

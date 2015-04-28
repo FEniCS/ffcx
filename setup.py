@@ -13,7 +13,7 @@ version = re.findall('__version__ = "(.*)"',
 
 packages = [
     "uflacs",
-    "uflacs.codeutils",
+    "uflacs.language",
     "uflacs.datastructures",
     "uflacs.analysis",
     "uflacs.elementtables",
@@ -29,7 +29,7 @@ Development Status :: 3 - Alpha
 Environment :: Console
 Intended Audience :: Developers
 Intended Audience :: Science/Research
-Programming Language :: Python :: 2.5
+Programming Language :: Python :: 2.7
 License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)
 Topic :: Scientific/Engineering :: Mathematics
 Topic :: Software Development :: Compilers
