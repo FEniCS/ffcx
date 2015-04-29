@@ -23,7 +23,7 @@ def test_cnode_expressions():
     assert str(Literal(123)) == "123"
     assert str(Literal(0.0)) == "0.0"
     assert str(Literal(1.0)) == "1.0"
-    assert str(Literal(12.3)) == "1.23e+01"
+    assert str(Literal(12.3)) == "12.3" #1.23e+01"
 
     # Variables
     # TODO: VariableAccess
@@ -209,7 +209,7 @@ def test_cnode_loop_statements():
     assert str(ForRange("i", 3, 7, Comment("body"))) == "for (int i = 3; i < 7; ++i)\n{\n    // body\n}"
 
     # Using assigns as both statements and expressions
-    assert str(While(LT(AssignAdd("x", 4.0), 17.0), AssignAdd("A", "y"))) == "while ((x += 4.0) < 1.7e+01)\n{\n    A += y;\n}"
+    assert str(While(LT(AssignAdd("x", 4.0), 17.0), AssignAdd("A", "y"))) == "while ((x += 4.0) < 17.0)\n{\n    A += y;\n}"
     assert str(ForRange("i", 3, 7, AssignAdd("A", "i"))) == "for (int i = 3; i < 7; ++i)\n{\n    A += i;\n}"
 
 def test_cnode_switch_statements():

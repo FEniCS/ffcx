@@ -20,18 +20,22 @@ import re
 
 _float_threshold = None
 _float_precision = None
-_float_fmt = None
+_float_fmt = "%r"
 
 def set_float_precision(precision, threshold=None):
     "Configure float formatting precision and zero threshold."
     global _float_epsilon, _float_precision, _float_fmt
     _float_precision = precision
     _float_threshold = threshold
-    _float_fmt = "{{:.{0:d}e}}".format(_float_precision)
+    #_float_fmt = "{{:.{0:d}e}}".format(_float_precision)
+    if _float_precision is None:
+        _float_fmt = "%r"
+    else:
+        _float_fmt = "%%.%dg" % _float_precision
 
 def reset_float_precision():
     "Set float precision and zero threshold back to default."
-    set_float_precision(15, 1e-15)
+    set_float_precision(None, None)
 
 # Execute default on startup
 reset_float_precision()
@@ -45,11 +49,12 @@ def format_float(x):
     if _float_threshold is not None and abs(x) < _float_threshold:
         return "0.0"
     else:
-        s = _float_fmt.format(x)
-        s = s.strip()
+        s = (_float_fmt % x).strip()
         s = _p0.sub("e", s)
         s = _p1.sub("", s)
         s = _p2.sub(".0", s)
+        if "." not in s and "e" not in s:
+            s = s + ".0"
         return s
 
 def format_value(snippets):

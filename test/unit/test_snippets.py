@@ -6,13 +6,19 @@ def test_format_float():
     reset_float_precision()
     assert format_float(0.0) == "0.0"
     assert format_float(1.0) == "1.0"
-    assert format_float(12.) == "1.2e+01"
+    assert format_float(12.) == "12.0"
 
-    set_float_precision(1)
-    assert format_float(1.23) == "1.2"
-    set_float_precision(2)
+    set_float_precision(3)
+    assert format_float(0.0) == "0.0"
+    assert format_float(1.0) == "1.0"
     assert format_float(1.2) == "1.2"
     assert format_float(1.23) == "1.23"
+
+    set_float_precision(15, 1e-15)
+    assert format_float(0.0) == "0.0"
+    assert format_float(1.0) == "1.0"
+    assert format_float(12.) == "12.0" # 1.2e+01
+
     reset_float_precision()
 
 def test_iter_indented_lines():
