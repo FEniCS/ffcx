@@ -102,6 +102,18 @@ class Literal(CExprTerminal):
     def ce_format(self):
         return format_value(self.value)
 
+    def __nonzero__(self):
+        return bool(self.value)
+
+    def __int__(self):
+        return int(self.value)
+
+    def __float__(self):
+        return float(self.value)
+
+    def __complex__(self):
+        return complex(self.value)
+
 class Symbol(CExprTerminal):
     "A named symbol."
     __slots__ = ("name",)
@@ -438,7 +450,8 @@ class ArrayAccess(CExprOperator):
         if isinstance(array, ArrayDecl):
             if len(self.indices) != len(array.sizes):
                 raise ValueError("Invalid number of indices.")
-            if any((isinstance(i, int) and isinstance(d, int) and i >= d)
+            ints = (int,Literal)
+            if any((isinstance(i, ints) and isinstance(d, ints) and int(i) >= int(d))
                    for i, d in zip(self.indices, array.sizes)):
                 raise ValueError("Index value >= array dimension.")
 
