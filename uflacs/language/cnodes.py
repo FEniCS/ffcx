@@ -23,6 +23,8 @@ from uflacs.language.format_lines import format_indented_lines, Indented
 from uflacs.language.precedence import PRECEDENCE
 
 """CNode TODO:
+- Array copy statement
+- Memzero statement
 - Extend ArrayDecl and ArrayAccess with support for
   flattened but conceptually multidimensional arrays,
   maybe even with padding
@@ -431,10 +433,11 @@ class ArrayAccess(CExprOperator):
     def __init__(self, array, indices):
         # Typecheck array argument
         if isinstance(array, ArrayDecl):
-            self.array = Symbol(array.name)
+            self.array = array.symbol
         elif isinstance(array, Symbol):
             self.array = array
         else:
+            assert isinstance(array, str)
             self.array = Symbol(array)
 
         # Allow expressions or literals as indices
@@ -523,11 +526,17 @@ def as_cexpr(node):
         # Wrap literal number types
         return Literal(node)
     elif isinstance(node, str):
-        # Treat string as a symbol (TODO: Using VerbatimExpr would be another option?)
+        # Treat string as a symbol
+        # TODO: Using VerbatimExpr would be another option?
         return Symbol(node)
     else:
         raise RuntimeError("Unexpected CExpr type %s:\n%s" % (type(node), str(node)))
 
+def as_symbol(symbol):
+    if isinstance(symbol, str):
+        symbol = Symbol(symbol)
+    assert isinstance(symbol, Symbol)
+    return symbol
 
 def flattened_indices(indices, shape):
     """Given a tuple of indices and a shape tuple,
@@ -684,27 +693,30 @@ class Pragma(CStatement): # TODO: Improve on this with a use case later
 
 class VariableDecl(CStatement):
     "Declare a variable, optionally define initial value."
-    __slots__ = ("typename", "name", "value")
-    def __init__(self, typename, name, value=None):
+    __slots__ = ("typename", "symbol", "value")
+    def __init__(self, typename, symbol, value=None):
+
         # No type system yet, just using strings
         assert isinstance(typename, str)
-        assert isinstance(name, str)
         self.typename = typename
-        self.name = name
+
+        # Allow Symbol or just a string
+        self.symbol = as_symbol(symbol)
+
         if value is not None:
             value = as_cexpr(value)
         self.value = value
 
     def cs_format(self):
-        code = self.typename + " " + self.name
+        code = self.typename + " " + self.symbol.name
         if self.value is not None:
             code += " = " + self.value.ce_format()
         return code + ";"
 
 def build_1d_initializer_list(values, formatter=format_value):
-    # Return a list containing a single line formatted like "{ v0, v1, v2 }"
+    '''Return a list containing a single line formatted like "{ 0.0, 1.0, 2.0 }"'''
     tokens = ["{ "]
-    if values:
+    if numpy.product(values.shape) > 0:
         sep = ", "
         fvalues = [formatter(v) for v in values]
         for v in fvalues[:-1]:
@@ -715,11 +727,20 @@ def build_1d_initializer_list(values, formatter=format_value):
     return "".join(tokens)
 
 def build_initializer_lists(values, sizes, level=0, formatter=format_value):
-    # Return a list of lines with initializer lists for a multidimensional array:
-    # "{ { v00, v01 }, { v10, v11 } }"
+    """Return a list of lines with initializer lists for a multidimensional array.
+
+    Example output:
+    { { 0.0, 0.1 },
+      { 1.0, 1.1 } }
+    """
+    values = numpy.asarray(values)
+    assert len(sizes) > 0
+    assert len(values.shape) > 0
+    assert len(sizes) == len(values.shape)
+    assert numpy.all(values.shape == sizes)
+
     r = len(sizes)
     assert r > 0
-    assert len(values) == sizes[0]
     if r == 1:
         return [build_1d_initializer_list(values, formatter)]
     else:
@@ -739,6 +760,12 @@ def build_initializer_lists(values, sizes, level=0, formatter=format_value):
         lines[-1] += " }"
         return lines
 
+def _is_zero(values):
+    if isinstance(values, (int,float,Literal)):
+        return float(values) == 0.0
+    else:
+        return numpy.count_nonzero(values) == 0
+
 class ArrayDecl(CStatement):
     """A declaration or definition of an array.
 
@@ -748,12 +775,12 @@ class ArrayDecl(CStatement):
     Otherwise use nested lists of lists to represent
     multidimensional array values to initialize to.
     """
-    __slots__ = ("typename", "name", "sizes", "values")
-    def __init__(self, typename, name, sizes, values=None):
+    __slots__ = ("typename", "symbol", "sizes", "values")
+    def __init__(self, typename, symbol, sizes, values=None):
         assert isinstance(typename, str)
-        assert isinstance(name, str)
         self.typename = typename
-        self.name = name
+
+        self.symbol = as_symbol(symbol)
 
         if isinstance(sizes, int):
             sizes = (sizes,)
@@ -766,12 +793,12 @@ class ArrayDecl(CStatement):
 
     def cs_format(self):
         brackets = ''.join("[%d]" % n for n in self.sizes)
-        decl = self.typename + " " + self.name + brackets
+        decl = self.typename + " " + self.symbol.name + brackets
 
         if self.values is None:
             # No initial values
             return decl + ";"
-        elif self.values == 0:
+        elif _is_zero(self.values):
             # By the standard, this initializes the entire array to bitwise 0
             return decl + " = { 0 };"
         else:

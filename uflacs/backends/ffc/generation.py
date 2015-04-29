@@ -21,6 +21,8 @@
 from uflacs.generation.integralgenerator import IntegralGenerator
 
 import uflacs.language.cnodes
+from uflacs.language.format_lines import format_indented_lines
+from uflacs.language.ufl_to_cnodes import UFL2CNodesTranslator
 from uflacs.backends.ffc.access import FFCAccessBackend
 from uflacs.backends.ffc.definitions import FFCDefinitionsBackend
 
@@ -28,6 +30,7 @@ class FFCBackend(object):
     "Class collecting all aspects of the FFC backend."
     def __init__(self, ir, parameters):
         self.language = uflacs.language.cnodes
+        self.ufl_to_language = UFL2CNodesTranslator(self.language)
         self.definitions = FFCDefinitionsBackend(ir, self.language, parameters)
         self.access = FFCAccessBackend(ir, self.language, parameters)
 
@@ -43,7 +46,8 @@ def generate_tabulate_tensor_code(ir, parameters):
     parts = ig.generate()
 
     # Format code AST as one string
-    body = str(Indented(parts))
+    body = format_indented_lines(parts.cs_format())
+    import IPython; IPython.embed()
 
     # Fetch includes
     includes = set()

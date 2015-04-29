@@ -192,7 +192,7 @@ class FFCDefinitionsBackend(MultiFunction):
         else:
             return self._define_jacobian(e, mt, tabledata, access)
 
-    def _define_jacobian(e, mt, tabledata, access):
+    def _define_jacobian(self, e, mt, tabledata, access):
         """Return definition code for the Jacobian of x(X).
 
         J = sum_k xdof_k grad_X xphi_k(X)
@@ -219,6 +219,7 @@ class FFCDefinitionsBackend(MultiFunction):
         vertex = names.ic
         iq = 0
 
+        code = []
         if 1:
             # Inlined version:
             prods = []

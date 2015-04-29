@@ -108,7 +108,7 @@ class IntegralGenerator(object):
 
         parts += self.generate_finishing_statements()
 
-        return parts
+        return L.StatementList(parts)
 
     def generate_quadrature_tables(self):
         "Generate static tables of quadrature points and weights."
@@ -287,7 +287,7 @@ class IntegralGenerator(object):
                 vops = [vaccesses[op] for op in v.ufl_operands]
 
                 # Mapping UFL operator to target language
-                vexpr = self.backend.language(v, *vops)
+                vexpr = self.backend.ufl_to_language(v, *vops)
 
                 # No definitions needed
                 vdef = None
@@ -314,12 +314,12 @@ class IntegralGenerator(object):
         parts = []
         # Compute all terminals first
         parts += definitions
-        if j > 0:
+        if intermediates:
             # Declare array large enough to hold all subexpressions we've emitted
             parts += [L.ArrayDecl("double", name, j)]
             # Then add all computations
             parts += intermediates
-        return parts # CStatementList(parts)
+        return parts
 
     # TODO: Rather take list of vertices, not markers
     # XXX FIXME: Fix up this function and use it instead!
@@ -431,6 +431,7 @@ class IntegralGenerator(object):
 
     def generate_integrand_accumulation(self, num_points, dofblock):
         parts = []
+        L = self.backend.language
 
         expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
         AF = expr_ir["argument_factorization"]

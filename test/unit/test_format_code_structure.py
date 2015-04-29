@@ -161,15 +161,15 @@ def test_format_array_decl():
 
 def test_format_array_def():
     expected = "double foo[3] = { 1.0, 2.0, 3.0 };"
-    code = ArrayDecl("double", "foo", 3, ["1.0", "2.0", "3.0"])
+    code = ArrayDecl("double", "foo", 3, [1.0, 2.0, 3.0])
     assert str(code) == expected
-    code = ArrayDecl("double", "foo", (3,), ["1.0", "2.0", "3.0"])
+    code = ArrayDecl("double", "foo", (3,), ["1.0", 2.0, "3.0"])
     assert str(code) == expected
 
     expected = """double foo[2][3] =
     { { 1.0, 2.0, 3.0 },
       { 6.0, 5.0, 4.0 } };"""
-    code = ArrayDecl("double", "foo", (2, 3), [["1.0", "2.0", "3.0"], ["6.0", "5.0", "4.0"]])
+    code = ArrayDecl("double", "foo", (2, 3), [[1.0, 2.0, 3.0], [6.0, 5.0, 4.0]])
     assert str(code) == expected
 
     expected = """double foo[2][2][3] =
@@ -177,8 +177,19 @@ def test_format_array_def():
         { 6.0, 5.0, 4.0 } },
       { { 1.0, 2.0, 3.0 },
         { 6.0, 5.0, 4.0 } } };"""
-    code = ArrayDecl("double", "foo", (2, 2, 3), [[["1.0", "2.0", "3.0"], ["6.0", "5.0", "4.0"]],
-                                                [["1.0", "2.0", "3.0"], ["6.0", "5.0", "4.0"]]])
+    code = ArrayDecl("double", "foo", (2, 2, 3), [[[1.0, 2.0, 3.0], [6.0, 5.0, 4.0]],
+                                                [[1.0, 2.0, 3.0], [6.0, 5.0, 4.0]]])
+    assert str(code) == expected
+
+def test_format_array_def_zero():
+    expected = "double foo[3] = { 0 };"
+    code = ArrayDecl("double", "foo", 3, [0.0, 0.0, 0.0])
+    assert str(code) == expected
+    code = ArrayDecl("double", "foo", (3,), [0.0, 0.0, 0.0])
+    assert str(code) == expected
+
+    expected = "double foo[2][3] = { 0 };"
+    code = ArrayDecl("double", "foo", (2, 3), [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
     assert str(code) == expected
 
 def xtest_class_with_arrays():

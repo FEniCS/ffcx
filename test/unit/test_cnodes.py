@@ -140,6 +140,30 @@ def test_2d_initializer_list():
     { 6 } } }"""
     assert format_indented_lines(build_initializer_lists(values, (3,2,1))) == reference
 
+def test_2d_numpy_initializer_list():
+    import numpy
+    values = [[1,2,3], [4,5,6]]
+    array = numpy.asarray(values)
+    sh = (2,3)
+    assert array.shape == sh
+    fmt = lambda v,s: format_indented_lines(build_initializer_lists(v, s))
+    assert fmt(values, sh) == "{ { 1, 2, 3 },\n  { 4, 5, 6 } }"
+    assert fmt(array, sh) == "{ { 1, 2, 3 },\n  { 4, 5, 6 } }"
+
+    values = [ [[1], [2]],  [[3], [4]],  [[5], [6]] ]
+    array = numpy.asarray(values)
+    sh = (3,2,1)
+    assert sh == array.shape
+    reference = """\
+{ { { 1 },
+    { 2 } },
+  { { 3 },
+    { 4 } },
+  { { 5 },
+    { 6 } } }"""
+    assert fmt(values, sh) == reference
+    assert fmt(array, sh) == reference
+
 def test_cnode_array_declarations():
     assert str(ArrayDecl("double", "x", 3)) == "double x[3];"
     assert str(ArrayDecl("double", "x", (3,))) == "double x[3];"

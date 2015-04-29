@@ -145,7 +145,8 @@ class FFCAccessBackend(MultiFunction):
             idof = mt.flat_component
 
         # Return direct reference to dof array
-        return generate_coefficient_dof_access(mt.terminal, idof)
+        L = self.language
+        return generate_coefficient_dof_access(L, mt.terminal, idof)
 
     def _varying_coefficient(self, e, mt, tabledata):
         # Format base coefficient (derivative) name
