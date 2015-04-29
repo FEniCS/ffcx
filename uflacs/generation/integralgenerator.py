@@ -139,9 +139,6 @@ class IntegralGenerator(object):
                 # Flatten array:
                 points = points.reshape(product(points.shape))
                 parts += [L.ArrayDecl("static const double", pname, num_points * pdim, points)]
-            parts += []
-
-        print str(L.StatementList(parts))
 
         return parts
 

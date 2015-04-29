@@ -58,7 +58,10 @@ class UFL2CNodesMixin(object):
     # === Formatting rules for cmath functions ===
 
     def power(self, o, a, b):
-        return self.L.Call("pow", (a, b))
+        name = "pow"
+        if self._enable_namespaces:
+            name = "std::" + name
+        return self.L.Call(name, (a, b))
 
     def _cmath(self, name, op):
         if self._enable_namespaces:
@@ -117,23 +120,30 @@ class UFL2CNodesMixin(object):
     #    return self._cmath("atanh", op)
 
     def erf(self, o, op):
-        #return self._cmath("erf", op) # C++11 stl has this function
-        return self.L.Call("erf", op)
+        # C++11 stl has this function
+        return self._cmath("erf", op)
 
-    #def erfc(self, o, op): # Not in UFL
-    #    return self._cmath("erfc", op) # C++11 stl has this function
+    def erfc(self, o, op): # Not in UFL
+        # C++11 stl has this function
+        return self._cmath("erfc", op)
 
     def abs(self, o, op):
         #return Call("fabs", op) # C version
         return self._cmath("abs", op)  # C++ stl version
 
     def min_value(self, o, a, b):
-        #return self.L.Call("fmin", (a, b)) # C99 version
-        return self.L.Call("min", (a, b))  # C++ stl version
+        #name = "fmin" # C99 version
+        name = "min" # C++ stl version
+        if self._enable_namespaces:
+            name = "std::" + name
+        return self.L.Call(name, (a, b))
 
     def max_value(self, o, a, b):
-        #return self.L.Call("fmax", (a, b)) # C99 version
-        return self.L.Call("max", (a, b))  # C++ stl version
+        #name = "fmax" # C99 version
+        name = "max" # C++ stl version
+        if self._enable_namespaces:
+            name = "std::" + name
+        return self.L.Call(name, (a, b))
 
     # === Formatting rules for bessel functions ===
 
