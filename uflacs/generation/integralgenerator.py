@@ -136,8 +136,12 @@ class IntegralGenerator(object):
 
             parts += [L.ArrayDecl("static const double", wname, num_points, weights)]
             if pdim > 0:
+                # Flatten array:
+                points = points.reshape(product(points.shape))
                 parts += [L.ArrayDecl("static const double", pname, num_points * pdim, points)]
             parts += []
+
+        print str(L.StatementList(parts))
 
         return parts
 
@@ -316,7 +320,7 @@ class IntegralGenerator(object):
         parts += definitions
         if intermediates:
             # Declare array large enough to hold all subexpressions we've emitted
-            parts += [L.ArrayDecl("double", name, j)]
+            parts += [L.ArrayDecl("double", name, len(intermediates))]
             # Then add all computations
             parts += intermediates
         return parts

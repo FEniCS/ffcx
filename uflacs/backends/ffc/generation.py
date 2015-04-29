@@ -46,8 +46,8 @@ def generate_tabulate_tensor_code(ir, parameters):
     parts = ig.generate()
 
     # Format code AST as one string
-    body = format_indented_lines(parts.cs_format())
-    import IPython; IPython.embed()
+    body = format_indented_lines(parts.cs_format(), 1)
+    #import IPython; IPython.embed()
 
     # Fetch includes
     includes = set()

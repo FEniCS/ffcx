@@ -47,6 +47,8 @@ class CNode(object):
         name = self.__class__.__name__
         raise NotImplementedError("Missing implementation of __str__ in " + name)
 
+CNode.debug = False
+
 
 ############## CExpr base classes
 
@@ -61,7 +63,14 @@ class CExpr(CNode):
         raise NotImplementedError("Missing implementation of ce_format() in CExpr.")
 
     def __str__(self):
-        return self.ce_format()
+        try:
+            s = self.ce_format()
+        except:
+            if CNode.debug:
+                print("Error in CExpr string formatting. Inspect self.")
+                import IPython; IPython.embed()
+            raise
+        return s
 
     def __add__(self, other):
         return Add(self, other)
@@ -577,7 +586,14 @@ class CStatement(CNode):
         raise NotImplementedError("Missing implementation of cs_format() in CStatement.")
 
     def __str__(self):
-        return format_indented_lines(self.cs_format())
+        try:
+            s = self.cs_format()
+        except:
+            if CNode.debug:
+                print("Error in CStatement string formatting. Inspect self.")
+                import IPython; IPython.embed()
+            raise
+        return format_indented_lines(s)
 
 
 ############## Statements
@@ -734,6 +750,7 @@ def build_initializer_lists(values, sizes, level=0, formatter=format_value):
       { 1.0, 1.1 } }
     """
     values = numpy.asarray(values)
+    assert numpy.product(values.shape) == numpy.product(sizes)
     assert len(sizes) > 0
     assert len(values.shape) > 0
     assert len(sizes) == len(values.shape)

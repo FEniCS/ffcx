@@ -32,6 +32,8 @@ class UFL2CNodesMixin(object):
 
     def __init__(self, language):
         self.L = language
+        # TODO: Make this configurable and add using statements somewhere:
+        self._enable_namespaces = True
 
     # === Error handlers for missing formatting rules ===
 
@@ -59,8 +61,8 @@ class UFL2CNodesMixin(object):
         return self.L.Call("pow", (a, b))
 
     def _cmath(self, name, op):
-        # TODO: Configurable namespacing?
-        #name = "std::" + name
+        if self._enable_namespaces:
+            name = "std::" + name
         return self.L.Call(name, op)
 
     def math_function(self, o, op):
@@ -136,8 +138,8 @@ class UFL2CNodesMixin(object):
     # === Formatting rules for bessel functions ===
 
     def _bessel(self, o, n, v, name):
-        #return "{0}{1}({2}, {3})".format("boost::math::", name, n, v)
-        #name = "boost::math::" + name
+        if self._enable_namespaces:
+            name = "boost::math::" + name
         return self.L.Call(name, (n, v))
 
     def bessel_i(self, o, n, v):
