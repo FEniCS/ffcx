@@ -28,6 +28,9 @@ import numpy
 # FFC modules
 from ffc.log import error
 
+# UFL utils
+from ufl.utils.sequences import product
+
 class MixedElement:
     "Create a FFC mixed element from a list of FFC/FIAT elements."
 
@@ -151,9 +154,4 @@ def _combine_entity_dofs(elements):
 
 def _num_components(element):
     "Compute number of components for element."
-    num_components = 1    
-    value_shape = element.value_shape()
-    if len(value_shape) > 0:
-        for i in range(len(value_shape)):
-            num_components *= value_shape[i]
-    return num_components
+    return product(element.value_shape())
