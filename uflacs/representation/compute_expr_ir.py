@@ -20,9 +20,8 @@
 
 
 from ufl.common import product
-from uflacs.analysis.modified_terminals import is_modified_terminal
+from uflacs.analysis.modified_terminals import is_modified_terminal, analyse_modified_terminal
 
-from uflacs.analysis.modified_terminals import analyse_modified_terminal
 from uflacs.analysis.graph import build_graph
 from uflacs.analysis.graph_vertices import build_scalar_graph_vertices
 from uflacs.analysis.graph_rebuild import rebuild_with_scalar_subexpressions

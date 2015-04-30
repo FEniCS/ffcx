@@ -63,7 +63,7 @@ def _build_argument_indices_from_arg_sets(V, arg_sets):
         assert isinstance(mt.terminal, Argument)
         assert mt.terminal.number() >= 0
         return (mt.terminal.number(), mt.terminal.part(),
-                mt.component,
+                mt.reference_value, mt.component,
                 mt.global_derivatives, mt.local_derivatives,
                 mt.restriction, mt.averaged)
     arg_ordering_key.V = V

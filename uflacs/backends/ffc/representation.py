@@ -90,12 +90,14 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
 
         # Build set of modified terminal ufl expressions
         V = expr_ir["V"]
-        modified_terminals = [analyse_modified_terminal(V[i]) for i in expr_ir["modified_terminal_indices"]]
+        modified_terminals = [analyse_modified_terminal(V[i])
+                              for i in expr_ir["modified_terminal_indices"]]
 
         # Analyse modified terminals and store data about them
         terminal_data = modified_terminals + expr_ir["modified_arguments"]
 
-        # Build tables needed by all modified terminals (currently build here means extract from ffc psi_tables)
+        # Build tables needed by all modified terminals
+        # (currently build here means extract from ffc psi_tables)
         tables, terminal_table_names = build_element_tables(psi_tables, num_points,
                                                             entitytype, terminal_data)
 
@@ -104,11 +106,13 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
         expr_ir["unique_tables"] = unique_tables
 
         # Modify ranges for restricted form arguments (not geometry!)
+        # FIXME: Should not coordinate dofs get the same offset?
         from ufl.classes import FormArgument
         for i, mt in enumerate(terminal_data):
             # TODO: Get the definition that - means added offset from somewhere
-            if mt.restriction == "-" and isinstance(terminal_data[i].terminal, FormArgument):
-                offset = int(tables[terminal_table_names[i]].shape[-1])  # number of dofs before optimization
+            if mt.restriction == "-" and isinstance(mt.terminal, FormArgument):
+                # offset = number of dofs before table optimization
+                offset = int(tables[terminal_table_names[i]].shape[-1])
                 (unique_name, b, e) = terminal_table_ranges[i]
                 terminal_table_ranges[i] = (unique_name, b + offset, e + offset)
 

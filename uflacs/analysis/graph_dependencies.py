@@ -27,25 +27,17 @@ from uflacs.datastructures.arrays import bool_array
 from uflacs.datastructures.arrays import object_array
 from uflacs.datastructures.crs import CRS, rows_to_crs
 
-from uflacs.analysis.modified_terminals import terminal_modifier_types
-
 
 def compute_dependencies(e2i, V, ignore_terminal_modifiers=True):
-    if ignore_terminal_modifiers:
-        terminalish = (Terminal,) + terminal_modifier_types
-    else:
-        terminalish = (Terminal,)
-
-    num_rows = len(V)
-
     # Use numpy int type sufficient to hold num_rows
+    num_rows = len(V)
     dtype = sufficient_int_type(num_rows)
 
     # Preallocate CRS matrix of sufficient capacity
     num_nonzeros = sum(len(v.ufl_operands) for v in V)
     dependencies = CRS(num_rows, num_nonzeros, dtype)
     for v in V:
-        if isinstance(v, terminalish):
+        if v._ufl_is_terminal_ or (ignore_terminal_modifiers and v._ufl_is_terminal_modifier_):
             dependencies.push_row(())
         else:
             dependencies.push_row([e2i[o] for o in v.ufl_operands])

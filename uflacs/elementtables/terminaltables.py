@@ -27,6 +27,8 @@ from ufl.utils.derivativetuples import derivative_listing_to_counts
 from ufl.classes import FormArgument, GeometricQuantity, SpatialCoordinate, Jacobian
 from ufl.algorithms.analysis import unique_tuple
 
+from ffc.log import ffc_assert
+
 from uflacs.datastructures.arrays import object_array
 from uflacs.elementtables.table_utils import (generate_psi_table_name,
                                               get_ffc_table_values,
@@ -39,20 +41,14 @@ def extract_terminal_elements(terminal_data):
     xs = {}
     for mt in terminal_data:
         t = mt.terminal
-
-        # Add element for function
         if isinstance(t, FormArgument):
+            # Add element for function and its coordinates
+            elements.append(t.domain().coordinate_element())
             elements.append(t.element())
 
-        # Add element for coordinate field of domain
-        if isinstance(t, (FormArgument, GeometricQuantity)):
-            domain = t.domain()
-            label = domain.label()
-            x = xs.get(label)
-            if x is None:
-                xelement = domain.coordinate_element()
-                xs[label] = xelement
-                elements.append(xelement)
+        elif isinstance(t, GeometricQuantity):
+            # Add element for coordinate field of domain
+            elements.append(t.domain().coordinate_element())
 
     return unique_tuple(elements)
 
@@ -86,14 +82,21 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
     tables = {}
     for i, mt in enumerate(terminal_data):
         t = mt.terminal
+        rv = mt.reference_value
         gd = mt.global_derivatives
         ld = mt.local_derivatives
         gc = mt.component
         fc = mt.flat_component
 
+        if gd and rv:
+            error("Global derivatives of reference values not defined.")
+        if ld and not rv:
+            import IPython; IPython.embed()
+            error("Local derivatives of global values not defined.")
+
         domain = t.domain()
 
-        # FIXME: Add element tables for GeometricQuantities as well!
+        # Add to element tables for FormArguments and relevant GeometricQuantities
         if isinstance(t, FormArgument):
             element = t.element()
 
@@ -101,48 +104,40 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
             element = domain.coordinate_element()
 
         elif isinstance(t, Jacobian):
-            #element = None #domain.jacobian_element() # TODO: add jacobian element to ufl domains?
-            #if element is None:
-            #    # If not otherwise specified, ...
-
-            # the Jacobian is the reference gradient of x so use the coordinate element
-            # J[i,j] = dx[i]/dX[j]
             element = domain.coordinate_element()
-            fc, ld = gc
-            ld = (ld,)
-
+            fc = gc[0]
+            ld = tuple(sorted((gc[1],) + ld))
+            #fc, ld = gc
+            #ld = (ld,)
         else:
-            element = None
+            continue
 
-        if element is not None:
-            # Count elements as we go
-            element_counter = element_counter_map.get(element)
-            if element_counter is None:
-                element_counter = len(element_counter_map)
-                element_counter_map[element] = element_counter
+        # Count elements as we go
+        element_counter = element_counter_map.get(element)
+        if element_counter is None:
+            element_counter = len(element_counter_map)
+            element_counter_map[element] = element_counter
 
-            # Change derivatives format for table lookup
-            gdim = domain.geometric_dimension()
-            tdim = domain.topological_dimension()
-            global_derivatives = tuple(derivative_listing_to_counts(gd, gdim))
-            local_derivatives = tuple(derivative_listing_to_counts(ld, tdim))
+        # Change derivatives format for table lookup
+        gdim = domain.geometric_dimension()
+        tdim = domain.topological_dimension()
+        global_derivatives = tuple(derivative_listing_to_counts(gd, gdim))
+        local_derivatives = tuple(derivative_listing_to_counts(ld, tdim))
 
-            assert not any(global_derivatives), "TODO: Does it make sense to have global derivatives in here now?"
+        # Build name for this particular table
+        # TODO: Include num_points in table name?
+        name = generate_psi_table_name(element_counter, fc,
+                                     local_derivatives, mt.averaged, entitytype)
 
-            # Build name for this particular table
-            # TODO: Include num_points in table name?
-            name = generate_psi_table_name(element_counter, fc,
-                                           local_derivatives, mt.averaged, entitytype)
+        # Extract the values of the table from ffc table format
+        table = tables.get(name)
+        if table is None:
+            table = get_ffc_table_values(psi_tables, entitytype, num_points,
+                                         element, fc, local_derivatives)
+            tables[name] = table
 
-            # Extract the values of the table from ffc table format
-            table = tables.get(name)
-            if table is None:
-                table = get_ffc_table_values(psi_tables, entitytype, num_points,
-                                             element, fc, local_derivatives)
-                tables[name] = table
-
-            # Store table name with modified terminal
-            terminal_table_names[i] = name
+        # Store table name with modified terminal
+        terminal_table_names[i] = name
 
     return tables, terminal_table_names
 
