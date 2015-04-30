@@ -94,14 +94,17 @@ static const double tetrahedron_vertices[UFC_NUM_VERTICES_IN_TETRAHEDRON][UFC_TD
   };
 
 // FIXME: Insert quad conventions here
+/*
 static const double quadrilateral_vertices[UFC_NUM_VERTICES_IN_QUADRILATERAL][UFC_TDIM_2] = {
   {0.0, 0.0},
   {0.0, 0.0},
   {0.0, 0.0},
   {0.0, 0.0},
   };
+*/
 
 // FIXME: Insert quad conventions here
+/*
 static const double hexahedron_vertices[UFC_NUM_VERTICES_IN_HEXAHEDRON][UFC_TDIM_3] = {
   {0.0, 0.0, 0.0},
   {0.0, 0.0, 0.0},
@@ -112,6 +115,7 @@ static const double hexahedron_vertices[UFC_NUM_VERTICES_IN_HEXAHEDRON][UFC_TDIM
   {0.0, 0.0, 0.0},
   {0.0, 0.0, 0.0},
   };
+*/
 
 /// --- Local reference cell barycenter by UFC conventions ---
 
@@ -128,14 +132,18 @@ static const double tetrahedron_barycenter[UFC_TDIM_3] = {
   };
 
 // FIXME: Insert quad conventions here
+/*
 static const double quadrilateral_barycenter[UFC_TDIM_2] = {
   0.5, 0.5
   };
+*/
 
 // FIXME: Insert quad conventions here
+/*
 static const double hexahedron_barycenter[UFC_TDIM_3] = {
   0.5, 0.5, 0.5
   };
+*/
 
 /// --- Local reference cell facet barycenters by UFC conventions ---
 
@@ -158,14 +166,17 @@ static const double tetrahedron_facet_barycenter[UFC_NUM_FACETS_IN_TETRAHEDRON][
   };
 
 // FIXME: Insert quad conventions here
+/*
 static const double quadrilateral_facet_barycenter[UFC_NUM_FACETS_IN_QUADRILATERAL][UFC_TDIM_2] = {
   {0.0, 0.0},
   {0.0, 0.0},
   {0.0, 0.0},
   {0.0, 0.0},
   };
+*/
 
 // FIXME: Insert quad conventions here
+/*
 static const double hexahedron_facet_barycenter[UFC_NUM_FACETS_IN_HEXAHEDRON][UFC_TDIM_3] = {
   {0.0, 0.5, 0.5},
   {0.0, 0.5, 0.5},
@@ -174,6 +185,7 @@ static const double hexahedron_facet_barycenter[UFC_NUM_FACETS_IN_HEXAHEDRON][UF
   {0.0, 0.5, 0.5},
   {0.0, 0.5, 0.5},
   };
+*/
 
 /// --- Local reference cell facet orientations by UFC conventions ---
 
@@ -196,14 +208,17 @@ static const double tetrahedron_facet_orientations[UFC_NUM_FACETS_IN_TETRAHEDRON
   };
 
 // FIXME: Insert quad conventions here
+/*
 static const double quadrilateral_facet_orientations[UFC_NUM_FACETS_IN_QUADRILATERAL] = {
   +1.0,
   +1.0,
   +1.0,
   +1.0,
   };
+*/
 
 // FIXME: Insert quad conventions here
+/*
 static const double hexahedron_facet_orientations[UFC_NUM_FACETS_IN_HEXAHEDRON] = {
   +1.0,
   +1.0,
@@ -212,6 +227,7 @@ static const double hexahedron_facet_orientations[UFC_NUM_FACETS_IN_HEXAHEDRON] 
   +1.0,
   +1.0,
   };
+*/
 
 /// --- Local reference cell entity relations by UFC conventions ---
 
@@ -231,14 +247,17 @@ static const unsigned int tetrahedron_edge_vertices[UFC_NUM_EDGES_IN_TETRAHEDRON
   };
 
 // FIXME: Insert quad conventions here
+/*
 static const unsigned int quadrilateral_edge_vertices[UFC_NUM_EDGES_IN_QUADRILATERAL][2] = {
   {0, 0},
   {0, 0},
   {0, 0},
   {0, 0},
   };
+*/
 
 // FIXME: Insert quad conventions here
+/*
 static const unsigned int hexahedron_edge_vertices[UFC_NUM_EDGES_IN_HEXAHEDRON][2] = {
   {0, 0},
   {0, 0},
@@ -253,6 +272,7 @@ static const unsigned int hexahedron_edge_vertices[UFC_NUM_EDGES_IN_HEXAHEDRON][
   {0, 0},
   {0, 0},
   };
+*/
 
 /// --- Local reference cell entity relations by UFC conventions ---
 
@@ -282,14 +302,17 @@ static const unsigned int tetrahedron_facet_edge_vertices[UFC_NUM_FACETS_IN_TETR
   };
 
 // FIXME: Insert quad conventions here
+/*
 static const unsigned int quadrilateral_facet_vertices[UFC_NUM_FACETS_IN_QUADRILATERAL][UFC_NUM_VERTICES_IN_INTERVAL] = {
   {0, 0},
   {0, 0},
   {0, 0},
   {0, 0},
   };
+*/
 
 // FIXME: Insert quad conventions here
+/*
 static const unsigned int hexahedron_facet_vertices[UFC_NUM_FACETS_IN_HEXAHEDRON][UFC_NUM_VERTICES_IN_QUADRILATERAL] = {
   {0, 0, 0, 0},
   {0, 0, 0, 0},
@@ -298,8 +321,10 @@ static const unsigned int hexahedron_facet_vertices[UFC_NUM_FACETS_IN_HEXAHEDRON
   {0, 0, 0, 0},
   {0, 0, 0, 0},
   };
+*/
 
 // FIXME: Insert quad conventions here
+/*
 static const unsigned int hexahedron_facet_edge_vertices[UFC_NUM_FACETS_IN_HEXAHEDRON][UFC_NUM_FACETS_IN_QUADRILATERAL][UFC_NUM_VERTICES_IN_INTERVAL] = {
   {{0, 0}, {0, 0}, {0, 0}, {0, 0}},
   {{0, 0}, {0, 0}, {0, 0}, {0, 0}},
@@ -308,6 +333,7 @@ static const unsigned int hexahedron_facet_edge_vertices[UFC_NUM_FACETS_IN_HEXAH
   {{0, 0}, {0, 0}, {0, 0}, {0, 0}},
   {{0, 0}, {0, 0}, {0, 0}, {0, 0}},
   };
+*/
 
 /// --- Reference cell edge vectors by UFC conventions (edge vertex 1 - edge vertex 0 for each edge in cell) ---
 
@@ -351,14 +377,17 @@ static const double tetrahedron_facet_reference_edge_vectors[UFC_NUM_FACETS_IN_T
   };
 
 // FIXME: Insert quad conventions here
+/*
 static const double quadrilateral_reference_edge_vectors[UFC_NUM_EDGES_IN_QUADRILATERAL][UFC_TDIM_2] = {
   { 0.0, 0.0},
   { 0.0, 0.0},
   { 0.0, 0.0},
   { 0.0, 0.0},
   };
+*/
 
 // FIXME: Insert quad conventions here
+/*
 static const double hexahedron_reference_edge_vectors[UFC_NUM_EDGES_IN_HEXAHEDRON][UFC_TDIM_3] = {
   { 0.0,  0.0,  0.0},
   { 0.0,  0.0,  0.0},
@@ -373,8 +402,10 @@ static const double hexahedron_reference_edge_vectors[UFC_NUM_EDGES_IN_HEXAHEDRO
   { 0.0,  0.0,  0.0},
   { 0.0,  0.0,  0.0},
   };
+*/
 
 // FIXME: Insert quad conventions here
+/*
 // Edge vectors for each quadrilateral facet of a hexahedron
 static const double hexahedron_facet_reference_edge_vectors[UFC_NUM_FACETS_IN_HEXAHEDRON][UFC_NUM_EDGES_IN_QUADRILATERAL][UFC_TDIM_3] = {
   { // facet 0
@@ -414,6 +445,7 @@ static const double hexahedron_facet_reference_edge_vectors[UFC_NUM_FACETS_IN_HE
     { 0.0,  0.0,  0.0},
   },
   };
+*/
 
 /// --- Reference cell facet normals by UFC conventions (outwards pointing on reference cell) ---
 
@@ -436,14 +468,17 @@ static const double tetrahedron_reference_facet_normals[UFC_NUM_FACETS_IN_TETRAH
   };
 
 // FIXME: Insert quad conventions here
+/*
 static const double quadrilateral_reference_facet_normals[UFC_NUM_FACETS_IN_QUADRILATERAL][UFC_TDIM_2] = {
   { 0.0,  0.0 },
   { 0.0,  0.0 },
   { 0.0,  0.0 },
   { 0.0,  0.0 },
   };
+*/
 
 // FIXME: Insert quad conventions here
+/*
 static const double hexahedron_reference_facet_normals[UFC_NUM_FACETS_IN_HEXAHEDRON][UFC_TDIM_3] = {
   { 0.0,  0.0,  0.0},
   { 0.0,  0.0,  0.0},
@@ -452,6 +487,7 @@ static const double hexahedron_reference_facet_normals[UFC_NUM_FACETS_IN_HEXAHED
   { 0.0,  0.0,  0.0},
   { 0.0,  0.0,  0.0},
   };
+*/
 
 /// --- Jacobians of reference facet cell to reference cell coordinate mappings by UFC conventions ---
 
@@ -469,14 +505,17 @@ static const double tetrahedron_reference_facet_jacobian[UFC_NUM_FACETS_IN_TETRA
   };
 
 // FIXME: Insert quad conventions here
+/*
 static const double quadrilateral_reference_facet_jacobian[UFC_NUM_FACETS_IN_QUADRILATERAL][UFC_TDIM_2][UFC_TDIM_2-1] = {
   { { 0.0}, { 0.0} },
   { { 0.0}, { 0.0} },
   { { 0.0}, { 0.0} },
   { { 0.0}, { 0.0} },
   };
+*/
 
 // FIXME: Insert quad conventions here
+/*
 static const double hexahedron_reference_facet_jacobian[UFC_NUM_FACETS_IN_HEXAHEDRON][UFC_TDIM_3][UFC_TDIM_3-1] = {
   { { 0.0,  0.0}, {0.0, 0.0}, {0.0, 0.0} },
   { { 0.0,  0.0}, {0.0, 0.0}, {0.0, 0.0} },
@@ -485,6 +524,7 @@ static const double hexahedron_reference_facet_jacobian[UFC_NUM_FACETS_IN_HEXAHE
   { { 0.0,  0.0}, {0.0, 0.0}, {0.0, 0.0} },
   { { 0.0,  0.0}, {0.0, 0.0}, {0.0, 0.0} },
   };
+*/
 
 /// --- Coordinate mappings from reference facet cell to reference cell by UFC conventions ---
 
