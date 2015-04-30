@@ -205,6 +205,16 @@ class FFCAccessBackend(MultiFunction):
 
         return L.Symbol(format_mt_name(names.J, mt))
 
+    def reference_normal(self, e, mt, tabledata, access):
+        L = self.language
+        cellname = mt.terminal.domain().cell().cellname()
+        if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
+            tablename = "{0}_reference_facet_normals".format(cellname)
+            facet = format_entity_name("facet", mt.restriction)
+            return L.ArrayAccess(tablename, (facet, mt.component[0]))
+        else:
+            error("Unhandled cell types {0}.".format(cellname))
+
     def cell_facet_jacobian(self, e, mt, tabledata, num_points):
         L = self.language
         cellname = mt.terminal.domain().cell().cellname()

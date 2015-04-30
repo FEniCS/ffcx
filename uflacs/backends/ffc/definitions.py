@@ -246,6 +246,10 @@ class FFCDefinitionsBackend(MultiFunction):
 
         return code
 
+    def reference_normal(self, e, mt, tabledata, access):
+        # Constant table defined in ufc_geometry.h
+        return []
+
     def cell_facet_jacobian(self, e, mt, tabledata, access):
         # Constant table defined in ufc_geometry.h
         return []
@@ -254,7 +258,7 @@ class FFCDefinitionsBackend(MultiFunction):
         # Constant table defined in ufc_geometry.h
         return []
 
-    def facet_edge_vectors(self, e, mt, tabledata):
+    def facet_edge_vectors(self, e, mt, tabledata, access):
         # Constant table defined in ufc_geometry.h
         return []
 
@@ -266,7 +270,7 @@ class FFCDefinitionsBackend(MultiFunction):
         # Constant table defined in ufc_geometry.h
         return []
 
-    def _expect_symbolic_lowering(self, e, mt, tabledata, num_points):
+    def _expect_symbolic_lowering(self, e, mt, tabledata, access):
         error("Expecting {0} to be replaced in symbolic preprocessing.".format(type(e)))
     facet_normal = _expect_symbolic_lowering
     cell_normal = _expect_symbolic_lowering
