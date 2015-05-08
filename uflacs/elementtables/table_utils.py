@@ -18,6 +18,8 @@
 
 """Utilities for precomputed table manipulation."""
 
+from __future__ import print_statement # used in some debugging
+
 from six import itervalues
 from six import advance_iterator as next
 from six.moves import map

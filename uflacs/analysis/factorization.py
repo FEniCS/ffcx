@@ -18,6 +18,8 @@
 
 """Algorithms for factorizing argument dependent monomials."""
 
+from __future__ import print_statement # used in some debugging
+
 from six import itervalues, iterkeys, iteritems
 from six.moves import xrange as range
 from ufl import as_ufl

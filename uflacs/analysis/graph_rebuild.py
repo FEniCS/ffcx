@@ -202,7 +202,7 @@ def rebuild_with_scalar_subexpressions(G):
     """
 
     # From simplefsi3d.ufl:
-    # print "GRAPH SIZE:", len(G.V), G.total_unique_symbols
+    # GRAPH SIZE: len(G.V), G.total_unique_symbols
     # GRAPH SIZE: 16251   635272
     # GRAPH SIZE:   473     8210
     # GRAPH SIZE:  9663   238021

@@ -18,6 +18,8 @@
 
 """Definitions of 'modified terminals', a core concept in uflacs."""
 
+from __future__ import print_statement # used in some debugging
+
 from six.moves import zip
 from ufl.permutation import build_component_numbering
 from ufl.classes import (Terminal, FormArgument,
