@@ -125,11 +125,10 @@ static const double tetrahedron_barycenter[UFC_TDIM_3] = {
   0.25, 0.25, 0.25
   };
 
-// FIXME: Insert quad conventions here - what is definition
-// of barycenter? Should be size of (num_vertices - 1) ?
+// FIXME: Insert quad conventions here
 /*
 static const double quadrilateral_barycenter[UFC_TDIM_2] = {
-  0.25, 0.25, 0.25
+  0.5, 0.5
   };
 */
 
@@ -137,7 +136,7 @@ static const double quadrilateral_barycenter[UFC_TDIM_2] = {
 // barycenter?
 /*
 static const double hexahedron_barycenter[UFC_TDIM_3] = {
-  0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125
+  0.5, 0.5, 0.5
   };
 */
 
@@ -359,75 +358,71 @@ static const double tetrahedron_facet_reference_edge_vectors[UFC_NUM_FACETS_IN_T
   };
 
 // FIXME: Insert quad conventions here
-/*
+
 static const double quadrilateral_reference_edge_vectors[UFC_NUM_EDGES_IN_QUADRILATERAL][UFC_TDIM_2] = {
-  { 0.0, 0.0},
-  { 0.0, 0.0},
-  { 0.0, 0.0},
-  { 0.0, 0.0},
+  { 0.0, 1.0},
+  { 0.0, 1.0},
+  { 1.0, 0.0},
+  { 1.0, 0.0},
   };
-*/
+
 
 // FIXME: Insert quad conventions here
-/*
 static const double hexahedron_reference_edge_vectors[UFC_NUM_EDGES_IN_HEXAHEDRON][UFC_TDIM_3] = {
-  { 0.0,  0.0,  0.0},
-  { 0.0,  0.0,  0.0},
-  { 0.0,  0.0,  0.0},
-  { 0.0,  0.0,  0.0},
-  { 0.0,  0.0,  0.0},
-  { 0.0,  0.0,  0.0},
-  { 0.0,  0.0,  0.0},
-  { 0.0,  0.0,  0.0},
-  { 0.0,  0.0,  0.0},
-  { 0.0,  0.0,  0.0},
-  { 0.0,  0.0,  0.0},
-  { 0.0,  0.0,  0.0},
+  { 1.0,  0.0,  0.0},
+  { 1.0,  0.0,  0.0},
+  { 1.0,  0.0,  0.0},
+  { 1.0,  0.0,  0.0},
+  { 0.0,  1.0,  0.0},
+  { 0.0,  1.0,  0.0},
+  { 0.0,  1.0,  0.0},
+  { 0.0,  1.0,  0.0},
+  { 0.0,  0.0,  1.0},
+  { 0.0,  0.0,  1.0},
+  { 0.0,  0.0,  1.0},
+  { 0.0,  0.0,  1.0},
   };
-*/
 
 // FIXME: Insert quad conventions here
-/*
 // Edge vectors for each quadrilateral facet of a hexahedron
 static const double hexahedron_facet_reference_edge_vectors[UFC_NUM_FACETS_IN_HEXAHEDRON][UFC_NUM_EDGES_IN_QUADRILATERAL][UFC_TDIM_3] = {
   { // facet 0
-    { 0.0,  0.0,  0.0},
-    { 0.0,  0.0,  0.0},
-    { 0.0,  0.0,  0.0},
-    { 0.0,  0.0,  0.0},
+    { 0.0,  0.0,  1.0},
+    { 0.0,  0.0,  1.0},
+    { 0.0,  1.0,  0.0},
+    { 0.0,  1.0,  0.0},
   },
   { // facet 1
-    { 0.0,  0.0,  0.0},
-    { 0.0,  0.0,  0.0},
-    { 0.0,  0.0,  0.0},
-    { 0.0,  0.0,  0.0},
+    { 0.0,  0.0,  1.0},
+    { 0.0,  0.0,  1.0},
+    { 0.0,  1.0,  0.0},
+    { 0.0,  1.0,  0.0},
   },
   { // facet 2
-    { 0.0,  0.0,  0.0},
-    { 0.0,  0.0,  0.0},
-    { 0.0,  0.0,  0.0},
-    { 0.0,  0.0,  0.0},
+    { 0.0,  0.0,  1.0},
+    { 0.0,  0.0,  1.0},
+    { 1.0,  0.0,  0.0},
+    { 1.0,  0.0,  0.0},
   },
   { // facet 3
-    { 0.0,  0.0,  0.0},
-    { 0.0,  0.0,  0.0},
-    { 0.0,  0.0,  0.0},
-    { 0.0,  0.0,  0.0},
+    { 0.0,  0.0,  1.0},
+    { 0.0,  0.0,  1.0},
+    { 1.0,  0.0,  0.0},
+    { 1.0,  0.0,  0.0},
   },
   { // facet 4
-    { 0.0,  0.0,  0.0},
-    { 0.0,  0.0,  0.0},
-    { 0.0,  0.0,  0.0},
-    { 0.0,  0.0,  0.0},
+    { 0.0,  1.0,  0.0},
+    { 0.0,  1.0,  0.0},
+    { 1.0,  0.0,  0.0},
+    { 1.0,  0.0,  0.0},
   },
   { // facet 5
-    { 0.0,  0.0,  0.0},
-    { 0.0,  0.0,  0.0},
-    { 0.0,  0.0,  0.0},
-    { 0.0,  0.0,  0.0},
+    { 0.0,  1.0,  0.0},
+    { 0.0,  1.0,  0.0},
+    { 1.0,  0.0,  0.0},
+    { 1.0,  0.0,  0.0},
   },
   };
-*/
 
 /// --- Reference cell facet normals by UFC conventions (outwards pointing on reference cell) ---
 
@@ -450,24 +445,21 @@ static const double tetrahedron_reference_facet_normals[UFC_NUM_FACETS_IN_TETRAH
   };
 
 // FIXME: Insert quad conventions here
-/*
 static const double quadrilateral_reference_facet_normals[UFC_NUM_FACETS_IN_QUADRILATERAL][UFC_TDIM_2] = {
-  { 0.0,  0.0 },
-  { 0.0,  0.0 },
-  { 0.0,  0.0 },
-  { 0.0,  0.0 },
+  { -1.0,  0.0 },
+  {  1.0,  0.0 },
+  {  0.0, -1.0 },
+  {  0.0,  1.0 },
   };
-*/
 
 // FIXME: Insert quad conventions here
-/*
 static const double hexahedron_reference_facet_normals[UFC_NUM_FACETS_IN_HEXAHEDRON][UFC_TDIM_3] = {
-  { 0.0,  0.0,  0.0},
-  { 0.0,  0.0,  0.0},
-  { 0.0,  0.0,  0.0},
-  { 0.0,  0.0,  0.0},
-  { 0.0,  0.0,  0.0},
-  { 0.0,  0.0,  0.0},
+  { -1.0,  0.0,  0.0},
+  {  1.0,  0.0,  0.0},
+  {  0.0, -1.0,  0.0},
+  {  0.0,  1.0,  0.0},
+  {  0.0,  0.0, -1.0},
+  {  0.0,  0.0,  1.0},
   };
 */
 
