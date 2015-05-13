@@ -364,7 +364,7 @@ def _evaluate_basis(ufl_element, element):
     offsets = _generate_reference_offsets(element) # Must check?
     mappings = element.mapping()
 
-    # This function is evidently not implemented for tensor product
+    # This function is evidently not implemented for TensorElements
     for e in elements:
         if (len(e.value_shape()) > 1) and (e.num_sub_elements() != 1):
             return "Function not supported/implemented for TensorElements."
