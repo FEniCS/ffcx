@@ -31,7 +31,7 @@ in the intermediate representation under the key "foo".
 #
 # Modified by Marie E. Rognes 2010
 # Modified by Kristian B. Oelgaard 2010
-# Modified by Martin Alnaes, 2013-2014
+# Modified by Martin Alnaes, 2013-2015
 # Modified by Lizao Li 2015
 
 # Python modules
