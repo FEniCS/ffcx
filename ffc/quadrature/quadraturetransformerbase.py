@@ -933,7 +933,7 @@ class QuadratureTransformerBase(Transformer):
         # For basic tensor elements, local_comp should be flattened
         if len(local_comp) and len(local_elem.value_shape()) > 0:
             # Map component using component map from UFL. (TODO: inefficient use of this function)
-            comp_map, _ = build_component_numbering(ufl_element.value_shape(), ufl_element.symmetry())
+            comp_map, _ = build_component_numbering(local_elem.value_shape(), local_elem.symmetry())
             local_comp = comp_map[local_comp]
             
         # Set local_comp to 0 if it is ()
