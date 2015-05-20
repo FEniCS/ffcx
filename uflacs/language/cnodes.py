@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import print_statement # used in some debugging
+from __future__ import print_function # used in some debugging
 
 import numpy
 
