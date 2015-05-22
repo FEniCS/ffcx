@@ -185,6 +185,14 @@ def analyse_modified_terminal(expr):
         else:
             error("Unexpected type %s object %s." % (type(t), repr(t)))
 
+    # Make canonical representation of derivatives
+    global_derivatives = tuple(sorted(global_derivatives))
+    local_derivatives = tuple(sorted(local_derivatives))
+
+    # TODO: Temporarily letting local_derivatives imply reference_value, but this was not intended to be the case
+    if local_derivatives:
+        reference_value = True
+
     # Make reference_value true or false
     if reference_value is None:
         reference_value = False
@@ -219,10 +227,6 @@ def analyse_modified_terminal(expr):
     vi2si, si2vi = build_component_numbering(tshape, symmetry)
     flat_component = vi2si[component]
     # num_flat_components = len(si2vi)
-
-    # Make canonical representation of derivatives
-    global_derivatives = tuple(sorted(global_derivatives))
-    local_derivatives = tuple(sorted(local_derivatives))
 
     mt = ModifiedTerminal(expr, t, global_derivatives, local_derivatives,
                           averaged, restriction, component, flat_component, reference_value)
