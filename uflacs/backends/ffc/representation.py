@@ -53,12 +53,18 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
     for num_points in sorted(integrals_dict.keys()):
         integral = integrals_dict[num_points]
 
-        # FIXME: Move this symbolic processing to compute_form_data, give compute_form_data an option to to this for now.
+        # FIXME: Move this symbolic processing to compute_form_data,
+        #        give compute_form_data an option to to this for now.
         # Get integrand expr and apply some symbolic preprocessing
         expr = integral.integrand()
 
         # Replace coefficients so they all have proper element and domain for what's to come
-        expr = replace(expr, form_data.function_replace_map)  # FIXME: Doesn't replace domain coefficient!!! Merge replace functionality into change_to_reference_grad to fix?
+        # TODO: We can avoid this step when Expression is in place and
+        #       element/domain assignment removed from compute_form_data.
+        # TODO: Doesn't replace domain coefficient!!!
+        #       Merge replace functionality into change_to_reference_grad to fix?
+        #       When coordinate field coefficient is removed I guess this issue will disappear?
+        expr = replace(expr, form_data.function_replace_map)
 
         # Change from physical gradients to reference gradients
         expr = change_to_reference_grad(expr)  # TODO: Make this optional depending on backend
