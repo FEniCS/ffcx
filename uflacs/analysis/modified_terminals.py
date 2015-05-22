@@ -189,9 +189,10 @@ def analyse_modified_terminal(expr):
     global_derivatives = tuple(sorted(global_derivatives))
     local_derivatives = tuple(sorted(local_derivatives))
 
-    # TODO: Temporarily letting local_derivatives imply reference_value, but this was not intended to be the case
-    if local_derivatives:
-        reference_value = True
+    # TODO: Temporarily letting local_derivatives imply reference_value,
+    #       but this was not intended to be the case
+    #if local_derivatives:
+    #    reference_value = True
 
     # Make reference_value true or false
     if reference_value is None:

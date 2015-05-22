@@ -18,11 +18,13 @@
 
 """The FFC specific backend to the UFLACS form compiler algorithms."""
 
-from ufl.algorithms import propagate_restrictions
-from ufl.algorithms import replace
+from ufl.algorithms.apply_restrictions import apply_restrictions
+from ufl.algorithms.apply_derivatives import apply_derivatives
+from ufl.algorithms.apply_element_mappings import apply_element_mappings
+from ufl.algorithms.apply_geometry_lowering import apply_geometry_lowering
 from ufl.algorithms.change_to_reference import (change_to_reference_grad,
-                                                compute_integrand_scaling_factor,
-                                                change_to_reference_geometry)
+                                                compute_integrand_scaling_factor)
+from ufl.algorithms import replace
 
 from ffc.log import ffc_assert
 
@@ -65,9 +67,20 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
         #       Merge replace functionality into change_to_reference_grad to fix?
         #       When coordinate field coefficient is removed I guess this issue will disappear?
         expr = replace(expr, form_data.function_replace_map)
+        from ufl.corealg.traversal import post_traversal
+        print "Initial integrand:", len(list(post_traversal(expr)))
+
+        # Apply piola mappings
+        expr = apply_element_mappings(expr) # TODO: Make this optional depending on backend
+        print "After apply_element_mappings:", len(list(post_traversal(expr)))
 
         # Change from physical gradients to reference gradients
         expr = change_to_reference_grad(expr)  # TODO: Make this optional depending on backend
+        print "After change_to_reference_grad:", len(list(post_traversal(expr)))
+
+        # Apply derivatives (again... TODO: improve pipeline to avoid doing it before this point)
+        expr = apply_derivatives(expr)
+        print "After apply_derivatives:", len(list(post_traversal(expr)))
 
         # Compute and apply integration scaling factor
         scale = compute_integrand_scaling_factor(integral.domain(), integral.integral_type())
@@ -78,12 +91,15 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
             physical_coordinates_known = True
         else:
             physical_coordinates_known = False
-        expr = change_to_reference_geometry(expr, physical_coordinates_known, form_data.function_replace_map)
+        expr = apply_geometry_lowering(expr, physical_coordinates_known,
+                                       form_data.function_replace_map)
+
+        print "After apply_geometry_lowering:", len(list(post_traversal(expr)))
 
         # Propagate restrictions to become terminal modifiers because change_to_reference_geometry
         # may have messed it up after the first pass in compute_form_data...
         if integral.integral_type() == "interior_facet":
-            expr = propagate_restrictions(expr)
+            expr = apply_restrictions(expr)
 
         # Build the core uflacs ir of expressions
         expr_ir = compute_expr_ir(expr, parameters)
