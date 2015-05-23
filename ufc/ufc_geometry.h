@@ -461,7 +461,6 @@ static const double hexahedron_reference_facet_normals[UFC_NUM_FACETS_IN_HEXAHED
   {  0.0,  0.0, -1.0},
   {  0.0,  0.0,  1.0},
   };
-*/
 
 /// --- Jacobians of reference facet cell to reference cell coordinate mappings by UFC conventions ---
 
