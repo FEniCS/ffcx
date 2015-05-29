@@ -101,6 +101,12 @@ class UFL2CNodesMixin(object):
     def tanh(self, o, op):
         return self._cmath("tanh", op)
 
+    def atan_2(self, o, x, y):
+        name = "atan_2"
+        if self._enable_namespaces:
+            name = "std::" + name
+        return self.L.Call(name, (x, y))
+
     #def acos(self, o, op): # C++11 stl has this function
     #    return self._cmath("acos", op)
 

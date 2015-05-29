@@ -72,6 +72,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
     # Binary scalar functions
     power = scalar_nary
     bessel_function = scalar_nary  # TODO: Is this ok?
+    atan_2 = scalar_nary
 
     def condition(self, o, ops):
         sops = [op[0] for op in ops]
