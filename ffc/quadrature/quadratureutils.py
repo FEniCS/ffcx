@@ -18,10 +18,11 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2007-03-16
-# Last changed: 2014-06-09
+# Last changed: 2015-03-27
 #
 # Hacked by Marie E. Rognes 2013
 # Modified by Anders Logg 2014
+# Modified by Lizao Li 2015
 
 # Python modules.
 import numpy
@@ -92,6 +93,16 @@ def flatten_psi_tables(tables, entity_type):
 
                     # There's a set of tables for each derivative combination
                     for derivs, fiat_tables in sorted_items(derivs_tables):
+                        # Flatten fiat_table for tensor-valued basis
+                        # This is necessary for basic (non-tensor-product)
+                        # tensor elements
+
+                        if len(numpy.shape(fiat_tables)) > 3:
+                            shape = fiat_tables.shape
+                            value_shape = shape[1:-1]
+                            fiat_tables = fiat_tables.reshape((shape[0],
+                                                               numpy.product(value_shape),
+                                                               shape[-1]))
 
                         # Transform fiat_tables to a list of tables on the form psi_table[dof][ip] for each scalar component
                         if element.value_shape():

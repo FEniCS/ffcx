@@ -20,10 +20,11 @@ the code found in FIAT."""
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2007-04-04
-# Last changed: 2013-01-10
+# Last changed: 2015-03-28
 #
 # Modified by Marie E. Rognes 2011
 # Modified by Anders Logg 2013
+# Modified by Lizao Li 2015
 #
 # MER: The original module generated code that was more or less a C++
 # representation of the code found in FIAT. I've modified this (for 2
@@ -318,6 +319,29 @@ def _compute_values(data, dof_data):
             # Create inner product of basis values and inverse of Jacobian.
             value = f_group(f_inner(inv_jacobian_column, basis_col))
             name = f_component(f_values, i + offset)
+            code += [f_assign(name, value)]
+    elif mapping == "pullback as metric":
+        code += ["", f_comment("Using metric pullback to map values back to the physical element")]
+        # Get temporary values before mapping.
+        code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))\
+                  for i in range(num_components)]
+        # Create names for inner product.
+        tdim = data["topological_dimension"]
+        gdim = data["geometric_dimension"]
+        basis_col = [f_tmp_ref(j) for j in range(num_components)]
+        for p in range(num_components):
+            # unflatten the indices
+            i = p // tdim
+            l = p % tdim
+            # g_il = K_ji G_jk K_kl
+            value = f_group(f_inner(
+                [f_inner([f_trans("JINV", j, i, tdim, gdim, None)
+                          for j in range(tdim)],
+                         [basis_col[j * tdim + k] for j in range(tdim)])
+                 for k in range(tdim)],
+                [f_trans("JINV", k, l, tdim, gdim, None)
+                 for k in range(tdim)]))
+            name = f_component(f_values, p + offset)
             code += [f_assign(name, value)]
     else:
         error("Unknown mapping: %s" % mapping)

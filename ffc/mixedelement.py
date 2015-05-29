@@ -18,14 +18,18 @@
 # Modified by Garth N. Wells, 2006-2009
 # Modified by Marie E. Rognes, 2007-2010
 # Modified by Kristian B. Oelgaard, 2010
+# Modified by Lizao Li, 2015
 #
-# Last changed: 2010-01-30
+# Last changed: 2015-04-25
 
 # Python modules
 import numpy
 
 # FFC modules
 from ffc.log import error
+
+# UFL utils
+from ufl.utils.sequences import product
 
 class MixedElement:
     "Create a FFC mixed element from a list of FFC/FIAT elements."
@@ -41,9 +45,9 @@ class MixedElement:
         return sum(e.space_dimension() for e in self._elements)
 
     def value_shape(self):
-        # FIXME: value_shape for tensor elements in mixed elements not
-        # well-defined
-        return (sum(sum(e.value_shape()) or 1 for e in self._elements),)
+        # Values of Tensor elements are flattened in MixedElements
+        num_comps = lambda x: numpy.prod(x) if x else 1 
+        return (sum(num_comps(e.value_shape()) or 1 for e in self._elements),)
 
     def entity_dofs(self):
         return self._entity_dofs
@@ -106,7 +110,7 @@ class MixedElement:
 
                 # Insert non-zero values
                 if (crange[1] - crange[0]) > 1:
-                    mixed_table[dtuple][irange[0]:irange[1], crange[0]:crange[1]] = table[dtuple]
+                    mixed_table[dtuple][irange[0]:irange[1], crange[0]:crange[1]] = numpy.reshape(table[dtuple], (irange[1] - irange[0], crange[1] - crange[0], len(points)))
                 else:
                     mixed_table[dtuple][irange[0]:irange[1], crange[0]] = table[dtuple]
 
@@ -150,12 +154,4 @@ def _combine_entity_dofs(elements):
 
 def _num_components(element):
     "Compute number of components for element."
-    num_components = 0
-    value_shape = element.value_shape()
-    if len(value_shape) == 0:
-        num_components += 1
-    elif len(value_shape) == 1:
-        num_components += value_shape[0]
-    else:
-        error("Cannot handle tensor-valued elements.")
-    return num_components
+    return product(element.value_shape())

@@ -144,9 +144,15 @@ def get_fiat_values(ufl_element):
                         for deriv in combinations:
                             deriv_vals = values[deriv]
                             row[i].append(deriv_vals[i][c][p])
+                elif len(value_shape) == 2:
+                    for j in range(element.value_shape()[0]):
+                        for k in range(element.value_shape()[1]):
+                            for deriv in combinations:
+                                deriv_vals = values[deriv]
+                                row[i].append(deriv_vals[i][j][k][p])
                 else:
                     print(values)
-                    error("Did not expect tensor elements")
+                    error("Did not expect tensor elements of rank > 2")
             new_row = []
             for r in row:
                 new_row += r

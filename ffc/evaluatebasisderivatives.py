@@ -20,9 +20,10 @@ representation of the code found in FIAT_NEW."""
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Anders Logg 2013
+# Modified by Lizao Li 2015
 #
 # First added:  2007-04-16
-# Last changed: 2014-03-07
+# Last changed: 2015-03-28
 
 # Python modules
 import math
@@ -509,6 +510,7 @@ def _compute_reference_derivatives(data, dof_data):
     f_float         = format["floating point"]
     f_inv           = format["inverse"]
     f_detJ          = format["det(J)"]
+    f_inner         = format["inner product"]
 
     f_r, f_s, f_t, f_u = format["free indices"]
 
@@ -628,6 +630,27 @@ def _compute_reference_derivatives(data, dof_data):
             inner = [f_mul([inv_jacobian_column[j], basis_col[j]]) for j in range(tdim)]
             value = f_group(f_add(inner))
             name = f_component(f_derivatives+_p, f_matrix_index(i, f_r, f_num_derivs(_t)))
+            lines += [f_assign(name, value)]
+    elif mapping == "pullback as metric":
+        lines += ["", f_comment("Using metric pullback to map values back to the physical element")]
+        lines += [f_const_double(f_tmp(i),
+                                f_component(f_derivatives,
+                                            f_matrix_index(i, f_r, f_num_derivs(_t))))
+                  for i in range(num_components)]
+        basis_col = [f_tmp(j) for j in range(num_components)]
+        for p in range(num_components):
+            # unflatten the indices
+            i = p // tdim
+            l = p % tdim
+            # g_il = K_ji G_jk K_kl
+            value = f_group(f_inner(
+                [f_inner([f_transform("JINV", j, i, tdim, gdim, None)
+                          for j in range(tdim)],
+                         [basis_col[j * tdim + k] for j in range(tdim)])
+                 for k in range(tdim)],
+                [f_transform("JINV", k, l, tdim, gdim, None)
+                 for k in range(tdim)]))
+            name = f_component(f_derivatives+_p, f_matrix_index(p, f_r, f_num_derivs(_t)))
             lines += [f_assign(name, value)]
     else:
         error("Unknown mapping: %s" % mapping)
