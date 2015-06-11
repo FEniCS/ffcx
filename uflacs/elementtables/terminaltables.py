@@ -125,9 +125,8 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
         local_derivatives = tuple(derivative_listing_to_counts(ld, tdim))
 
         # Build name for this particular table
-        # TODO: Include num_points in table name?
         name = generate_psi_table_name(element_counter, fc,
-                                     local_derivatives, mt.averaged, entitytype)
+                                       local_derivatives, mt.averaged, entitytype, num_points)
 
         # Extract the values of the table from ffc table format
         table = tables.get(name)

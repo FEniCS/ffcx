@@ -162,9 +162,9 @@ def get_ffc_table_values(tables, entitytype, num_points, element, flat_component
     return res
 
 
-def generate_psi_table_name(element_counter, flat_component, derivative_counts, averaged, entitytype):
+def generate_psi_table_name(element_counter, flat_component, derivative_counts, averaged, entitytype, num_quadrature_points):
     """Generate a name for the psi table of the form:
-    FE#_C#_D###[_AC|_AF|][_F|V], where '#' will be an integer value.
+    FE#_C#_D###[_AC|_AF|][_F|V][_Q#], where '#' will be an integer value.
 
     FE  - is a simple counter to distinguish the various bases, it will be
           assigned in an arbitrary fashion.
@@ -181,7 +181,9 @@ def generate_psi_table_name(element_counter, flat_component, derivative_counts, 
 
     F   - marks that the first array dimension enumerates facets on the cell
 
-    v   - marks that the first array dimension enumerates vertices on the cell
+    V   - marks that the first array dimension enumerates vertices on the cell
+
+    Q   - number of quadrature points, to distinguish between tables in a mixed quadrature degree setting
 
     """
 
@@ -209,11 +211,16 @@ def generate_psi_table_name(element_counter, flat_component, derivative_counts, 
     else:
         error("Unknown entity type %s." % entitytype)
 
+    if isinstance(num_quadrature_points, int):
+        name += "_Q%d" % num_quadrature_points
+    else:
+        assert num_quadrature_points is None
+
     return name
 
 
 def _examples(tables):
-    name = generate_psi_table_name(counter, flat_component, derivative_counts, averaged, entitytype)
+    name = generate_psi_table_name(counter, flat_component, derivative_counts, averaged, entitytype, None)
     values = get_ffc_table_values(tables, entitytype, num_points, element, flat_component, derivative_counts)
 
     begin, end, table = strip_table_zeros(table)

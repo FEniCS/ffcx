@@ -105,8 +105,6 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
         expr_ir = compute_expr_ir(expr, parameters)
         uflacs_ir["expr_ir"][num_points] = expr_ir
 
-    # NB! Using the last num_points from integrals_dict below, but not handling it properly yet
-    #ffc_assert(len(integrals_dict) == 1, "Not supporting multiple integration rules yet.")
     for num_points in sorted(integrals_dict.keys()):
         expr_ir = uflacs_ir["expr_ir"][num_points]
 
