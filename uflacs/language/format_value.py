@@ -17,6 +17,7 @@
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
 import re
+import numpy
 
 _float_threshold = None
 _float_precision = None
@@ -57,6 +58,8 @@ def format_float(x):
             s = s + ".0"
         return s
 
+_ints = (int, numpy.integer)
+_floats = (float, numpy.floating)
 def format_value(snippets):
     """Format a simple value.
 
@@ -65,10 +68,10 @@ def format_value(snippets):
     - str: Used directly.
 
     """
-    if isinstance(snippets, float):
-        return format_float(snippets)
-    elif isinstance(snippets, int):
-        return str(snippets)
+    if isinstance(snippets, floats):
+        return format_float(float(snippets))
+    elif isinstance(snippets, ints):
+        return str(int(snippets))
     elif isinstance(snippets, str):
         return snippets
     else:
