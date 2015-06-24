@@ -118,6 +118,9 @@ class Literal(CExprTerminal):
     def __nonzero__(self):
         return bool(self.value)
 
+    def __bool__(self):
+        return bool(self.value)
+
     def __int__(self):
         return int(self.value)
 
