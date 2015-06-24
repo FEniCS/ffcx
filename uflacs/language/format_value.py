@@ -68,9 +68,10 @@ def format_value(snippets):
     - str: Used directly.
 
     """
-    if isinstance(snippets, floats):
+    global _floats, _ints
+    if isinstance(snippets, _floats):
         return format_float(float(snippets))
-    elif isinstance(snippets, ints):
+    elif isinstance(snippets, _ints):
         return str(int(snippets))
     elif isinstance(snippets, str):
         return snippets
