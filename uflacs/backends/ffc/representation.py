@@ -18,6 +18,8 @@
 
 """The FFC specific backend to the UFLACS form compiler algorithms."""
 
+from six import iteritems
+
 from ufl.algorithms.apply_restrictions import apply_restrictions
 from ufl.algorithms.apply_derivatives import apply_derivatives
 from ufl.algorithms.apply_element_mappings import apply_element_mappings
@@ -50,6 +52,11 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
     # uflacs_ir["cell"] = form_data.integration_domains[0].cell()
     # uflacs_ir["function_replace_map"] = form_data.function_replace_map
 
+    # Build coefficient numbering for UFC interface here, to avoid renumbering in UFL
+    uflacs_ir["coefficient_numbering"] = { f: i for i, f in enumerate(sorted_by_count(form_data.function_replace_map.keys())) }
+    for f, g in iteritems(form_data.function_replace_map):
+        assert uflacs_ir["coefficient_numbering"][f] == g.count()
+
     # Build ir for each num_points/integrand
     uflacs_ir["expr_ir"] = {}
     for num_points in sorted(integrals_dict.keys()):
@@ -66,7 +73,7 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
         # TODO: Doesn't replace domain coefficient!!!
         #       Merge replace functionality into change_to_reference_grad to fix?
         #       When coordinate field coefficient is removed I guess this issue will disappear?
-        expr = replace(expr, form_data.function_replace_map)
+        expr = replace(expr, form_data.function_replace_map) # FIXME: Still need to apply this mapping.
         from ufl.corealg.traversal import post_traversal
         print "Initial integrand:", len(list(post_traversal(expr)))
 

@@ -25,11 +25,11 @@ from ufl.corealg.multifunction import MultiFunction
 from ffc.log import error
 from ffc.log import ffc_assert
 
-# FIXME: These need language input:
+from uflacs.backends.ffc.common import FFCBackendSymbols
+# FIXME: Move these to FFCBackendSymbols
 from uflacs.backends.ffc.common import (names,
                                         format_entity_name,
-                                        format_mt_name,
-                                        generate_coefficient_dof_access)
+                                        format_mt_name)
 
 
 class FFCAccessBackend(MultiFunction):
@@ -45,6 +45,9 @@ class FFCAccessBackend(MultiFunction):
 
         # Configure definitions behaviour
         self.physical_coordinates_known = self.ir["integral_type"] == "quadrature"
+
+        coefficient_numbering = ir["uflacs"]["coefficient_numbering"]
+        self.symbols = FFCBackendSymbols(self.language, coefficient_numbering)
 
     def get_includes(self):
         "Return include statements to insert at top of file."
@@ -62,10 +65,8 @@ class FFCAccessBackend(MultiFunction):
     def points_array_name(self, num_points):
         return "{0}{1}".format(names.points, num_points)
 
-    def quadrature_loop_index(self):  # (num_points):
-        # If we want to use num_points-specific names for the quadrature loop index, definitions.py need num_points as well.
-        # return "{0}{1}".format(names.iq, num_points)
-        return names.iq
+    def quadrature_loop_index(self):
+        return self.symbols.quadrature_loop_index()
 
     def argument_loop_index(self, iarg):
         return "{name}{num}".format(name=names.ia, num=iarg)
@@ -114,7 +115,7 @@ class FFCAccessBackend(MultiFunction):
 
         # No need to store basis function value in its own variable, just get table value directly
         uname, begin, end = tabledata
-        entity = format_entity_name(self.ir["entitytype"], mt.restriction)
+        entity = L.Symbol(format_entity_name(self.ir["entitytype"], mt.restriction))
 
         iq = self.quadrature_loop_index()
         idof = self.argument_loop_index(mt.terminal.number())
@@ -145,20 +146,20 @@ class FFCAccessBackend(MultiFunction):
             idof = mt.flat_component
 
         # Return direct reference to dof array
-        L = self.language
-        return generate_coefficient_dof_access(L, mt.terminal, idof)
+        return self.symbols.coefficient_dof_access(mt.terminal, idof)
 
     def _varying_coefficient(self, e, mt, tabledata):
         # Format base coefficient (derivative) name
-        basename = "{name}{count}".format(name=names.w, count=mt.terminal.count())
+        c = ir["coefficient_numbering"][mt.terminal] # mt.terminal.count()
+        basename = "{name}{count}".format(name=names.w, count=c)
         L = self.language
         return L.Symbol(format_mt_name(basename, mt))
 
     def quadrature_weight(self, e, mt, tabledata, num_points):
         name = self.weights_array_name(num_points)
-        ind = self.quadrature_loop_index()
+        iq = self.quadrature_loop_index()
         L = self.language
-        return L.ArrayAccess(name, ind)
+        return L.ArrayAccess(name, iq)
 
     def spatial_coordinate(self, e, mt, tabledata, num_points):
         L = self.language
@@ -170,8 +171,8 @@ class FFCAccessBackend(MultiFunction):
         if self.physical_coordinates_known:
             # In a context where the physical coordinates are available in existing variables.
             name = self.points_array_name(num_points)
-            ind = (self.quadrature_loop_index(), mt.flat_component)
-            return L.ArrayAccess(name, ind)
+            iq = self.quadrature_loop_index()
+            return L.ArrayAccess(name, (iq, mt.flat_component))
 
         elif mt.terminal.domain().coordinates() is not None:
             # No special variable should exist in this case.
@@ -194,8 +195,8 @@ class FFCAccessBackend(MultiFunction):
             error("Expecting reference coordinate to be symbolically rewritten.")
         else:
             name = self.points_array_name(num_points)
-            ind = (self.quadrature_loop_index(), mt.flat_component)
-            return L.ArrayAccess(name, ind)
+            iq = self.quadrature_loop_index()
+            return L.ArrayAccess(name, (iq, mt.flat_component))
 
     def jacobian(self, e, mt, tabledata, num_points):
         L = self.language
@@ -210,7 +211,7 @@ class FFCAccessBackend(MultiFunction):
         cellname = mt.terminal.domain().cell().cellname()
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             tablename = "{0}_reference_facet_normals".format(cellname)
-            facet = format_entity_name("facet", mt.restriction)
+            facet = L.Symbol(format_entity_name("facet", mt.restriction))
             return L.ArrayAccess(tablename, (facet, mt.component[0]))
         else:
             error("Unhandled cell types {0}.".format(cellname))
@@ -220,7 +221,7 @@ class FFCAccessBackend(MultiFunction):
         cellname = mt.terminal.domain().cell().cellname()
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             tablename = "{0}_reference_facet_jacobian".format(cellname)
-            facet = format_entity_name("facet", mt.restriction)
+            facet = L.Symbol(format_entity_name("facet", mt.restriction))
             return L.ArrayAccess(tablename, (facet, mt.component[0], mt.component[1]))
         elif cellname == "interval":
             error("The reference facet jacobian doesn't make sense for interval cell.")
@@ -243,7 +244,7 @@ class FFCAccessBackend(MultiFunction):
         cellname = mt.terminal.domain().cell().cellname()
         if cellname in ("tetrahedron", "hexahedron"):
             tablename = "{0}_reference_edge_vectors".format(cellname)
-            facet = format_entity_name("facet", mt.restriction)
+            facet = L.Symbol(format_entity_name("facet", mt.restriction))
             return L.ArrayAccess(tablename, (facet, mt.component[0], mt.component[1]))
         elif cellname in ("interval", "triangle", "quadrilateral"):
             error("The reference cell facet edge vectors doesn't make sense for interval or triangle cell.")
@@ -265,7 +266,7 @@ class FFCAccessBackend(MultiFunction):
             error("Unhandled cell types {0}.".format(cellname))
 
         tablename = "{0}_facet_orientations".format(cellname)
-        facet = format_entity_name("facet", mt.restriction)
+        facet = L.Symbol(format_entity_name("facet", mt.restriction))
         return L.ArrayAccess(tablename, (facet,))
 
     def _expect_symbolic_lowering(self, e, mt, tabledata, num_points):

@@ -25,12 +25,9 @@ from ufl.corealg.multifunction import MultiFunction
 from ffc.log import error
 from ffc.log import ffc_assert
 
-# FIXME: These need language input:
-from uflacs.backends.ffc.common import (names,
-                                        format_entity_name,
-                                        generate_coefficient_dof_access,
-                                        generate_domain_dof_access,
-                                        generate_domain_dofs_access)
+from uflacs.backends.ffc.common import FFCBackendSymbols
+# FIXME: Move these to FFCBackendSymbols
+from uflacs.backends.ffc.common import format_entity_name
 
 
 class FFCDefinitionsBackend(MultiFunction):
@@ -49,6 +46,9 @@ class FFCDefinitionsBackend(MultiFunction):
             self.physical_coordinates_known = True
         else:
             self.physical_coordinates_known = False
+
+        coefficient_numbering = ir["uflacs"]["coefficient_numbering"]
+        self.symbols = FFCBackendSymbols(self.language, coefficient_numbering)
 
     def get_includes(self):
         "Return include statements to insert at top of file."
@@ -92,13 +92,13 @@ class FFCDefinitionsBackend(MultiFunction):
             if begin >= end:
                 return code
 
-            iq = names.iq
-            idof = names.ic
+            iq = self.symbols.quadrature_loop_index()
+            idof = self.symbols.coefficient_dof_sum_index()
 
             dof = L.Sub(idof, begin)
             table_access = L.ArrayAccess(uname, (entity, iq, dof))
 
-            dof_access = generate_coefficient_dof_access(L, mt.terminal, idof)
+            dof_access = self.symbols.coefficient_dof_access(mt.terminal, idof)
 
             prod = L.Mul(dof_access, table_access)
             body = [L.AssignAdd(access, prod)]
@@ -146,13 +146,12 @@ class FFCDefinitionsBackend(MultiFunction):
             ffc_assert(0 <= begin <= end <= num_vertices * gdim,
                        "Assuming linear element for affine simplices here.")
             entity = format_entity_name(self.ir["entitytype"], mt.restriction)
-            iq = names.iq
+            iq = self.symbols.quadrature_loop_index()
 
             if 0:  # Generated loop version:
-                vertex = names.ic
+                vertex = self.symbols.coefficient_dof_sum_index()
                 table_access = L.ArrayAccess(uname, (entity, iq, vertex))
-                dof_access = generate_domain_dof_access(L, num_vertices, gdim, vertex,
-                                                        mt.flat_component, mt.restriction)
+                dof_access = self.symbols.domain_dof_access(gdim, vertex, mt.flat_component, mt.restriction)
                 prod = L.Mul(dof_access, table_access)
 
                 # Loop to accumulate linear combination of dofs and tables
@@ -160,7 +159,7 @@ class FFCDefinitionsBackend(MultiFunction):
                 code += [L.ForRange(vertex, begin, end, body=[L.AssignAdd(access, prod)])]
 
             else:  # Inlined version (we know this is bounded by a small number)
-                dof_access = generate_domain_dofs_access(L, num_vertices, gdim, mt.restriction)
+                dof_access = self.symbols.domain_dofs_access(gdim, num_vertices, mt.restriction)
                 prods = []
                 for idof in range(begin, end):
                     table_access = L.ArrayAccess(uname, (entity, iq, L.Sub(idof, begin)))
@@ -216,14 +215,14 @@ class FFCDefinitionsBackend(MultiFunction):
         ffc_assert(0 <= (end - begin) <= num_vertices,
                    "Assuming linear element for affine simplices here.")
         entity = format_entity_name(self.ir["entitytype"], mt.restriction)
-        vertex = names.ic
+        vertex = self.symbols.coefficient_dof_sum_index()
         iq = 0
 
         code = []
         if 1:
             # Inlined version:
             prods = []
-            dof_access = generate_domain_dofs_access(L, num_vertices, gdim, mt.restriction)
+            dof_access = self.symbols.domain_dofs_access(gdim, num_vertices, mt.restriction)
             for idof in range(begin, end):
                 ind = (entity, 0, L.Sub(idof, begin))
                 table_access = L.ArrayAccess(uname, ind)
@@ -235,8 +234,7 @@ class FFCDefinitionsBackend(MultiFunction):
         else:
             # Generated loop version:
             table_access = L.ArrayAccess(uname, iq, (entity, vertex))
-            dof_access = generate_domain_dof_access(L, num_vertices, gdim, vertex,
-                                                    mt.flat_component, mt.restriction)
+            dof_access = self.symbols.domain_dof_access(gdim, vertex, mt.flat_component, mt.restriction)
             prod = L.Mul(dof_access, table_access)
             accumulate = L.AssignAdd(access, prod)
 
