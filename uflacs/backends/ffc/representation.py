@@ -66,7 +66,7 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
         # TODO: Doesn't replace domain coefficient!!!
         #       Merge replace functionality into change_to_reference_grad to fix?
         #       When coordinate field coefficient is removed I guess this issue will disappear?
-        expr = replace(expr, form_data.function_replace_map) # FIXME: Still need to apply this mapping.
+        #expr = replace(expr, form_data.function_replace_map) # FIXME: Still need to apply this mapping.
 
         # Build the core uflacs ir of expressions
         expr_ir = compute_expr_ir(expr, parameters)
@@ -85,6 +85,7 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
 
         # Build tables needed by all modified terminals
         # (currently build here means extract from ffc psi_tables)
+        #print '\n'.join([str(mt.expr) for mt in terminal_data])
         tables, terminal_table_names = build_element_tables(psi_tables, num_points,
                                                             entitytype, terminal_data)
 

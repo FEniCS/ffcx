@@ -46,7 +46,7 @@ class FFCAccessBackend(MultiFunction):
         # Configure definitions behaviour
         self.physical_coordinates_known = self.ir["integral_type"] == "quadrature"
 
-        coefficient_numbering = ir["uflacs"]["coefficient_numbering"]
+        coefficient_numbering = self.ir["uflacs"]["coefficient_numbering"]
         self.symbols = FFCBackendSymbols(self.language, coefficient_numbering)
 
     def get_includes(self):
@@ -150,7 +150,8 @@ class FFCAccessBackend(MultiFunction):
 
     def _varying_coefficient(self, e, mt, tabledata):
         # Format base coefficient (derivative) name
-        c = ir["coefficient_numbering"][mt.terminal] # mt.terminal.count()
+        coefficient_numbering = self.ir["uflacs"]["coefficient_numbering"]
+        c = coefficient_numbering[mt.terminal] # mt.terminal.count()
         basename = "{name}{count}".format(name=names.w, count=c)
         L = self.language
         return L.Symbol(format_mt_name(basename, mt))
