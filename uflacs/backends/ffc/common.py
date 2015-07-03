@@ -28,6 +28,9 @@ class FFCBackendSymbols(object):
         self.S = self.L.Symbol
         self.coefficient_numbering = coefficient_numbering
 
+        # Rules, make functions? (NB! Currently duplicated from names)
+        self.restriction_postfix = {"+": "_0", "-": "_1", None: ""}  # TODO: Use this wherever we need it?
+
     # FIXME: Used in access: weights, points, ia, A, w, x, J
 
     def entity(self, foo):
