@@ -129,7 +129,19 @@ def _analyze_form(form, parameters):
                "Form (%s) seems to be zero: cannot compile it." % str(form))
 
     # Compute form metadata
-    form_data = compute_form_data(form)
+    if parameters["representation"] == "uflacs":
+        # Temporary workaround to let uflacs have a different preprocessing pipeline
+        # than the legacy representations quadrature and tensor. This approach imposes
+        # a limitation that e.g. uflacs and tensor representation cannot be mixed in the same form.
+        form_data = compute_form_data(form,
+                                      do_apply_function_pullbacks=True,
+                                      do_apply_integral_scaling=True,
+                                      do_apply_geometry_lowering=True,
+                                      preserve_geometry_types=(),
+                                      do_apply_restrictions=True,
+                                      )
+    else:
+        form_data = compute_form_data(form)
 
     info("")
     info(str(form_data))
