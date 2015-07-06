@@ -261,8 +261,11 @@ class FFCDefinitionsBackend(MultiFunction):
         return []
 
     def cell_orientation(self, e, mt, tabledata, access):
-        # Computed or constant table defined in ufc_geometry.h
-        return []
+        # Would be nicer if cell_orientation was a double variable input,
+        # but this is how dolfin/ufc/ffc currently passes this information
+        L = self.language
+        expr = L.VerbatimExpr("(cell_orientation == 1) ? -1.0: 1.0;")
+        return [L.VariableDecl("const double", access, expr)]
 
     def facet_orientation(self, e, mt, tabledata, access):
         # Constant table defined in ufc_geometry.h

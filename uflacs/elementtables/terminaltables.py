@@ -91,20 +91,18 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
         if gd and rv:
             error("Global derivatives of reference values not defined.")
         if ld and not rv:
-            import IPython; IPython.embed()
+            #import IPython; IPython.embed()
             error("Local derivatives of global values not defined.")
-
-        domain = t.domain()
 
         # Add to element tables for FormArguments and relevant GeometricQuantities
         if isinstance(t, FormArgument):
             element = t.element()
 
         elif isinstance(t, SpatialCoordinate):
-            element = domain.coordinate_element()
+            element = t.domain().coordinate_element()
 
         elif isinstance(t, Jacobian):
-            element = domain.coordinate_element()
+            element = t.domain().coordinate_element()
             fc = gc[0]
             ld = tuple(sorted((gc[1],) + ld))
             #fc, ld = gc
@@ -119,22 +117,19 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
             element_counter_map[element] = element_counter
 
         # Change derivatives format for table lookup
-        global_derivatives = ()
-        if gd:
-            gdim = domain.geometric_dimension()
-            global_derivatives = tuple(derivative_listing_to_counts(gd, gdim))
-        local_derivatives = ()
-        if ld:
-            tdim = domain.topological_dimension()
-            local_derivatives = tuple(derivative_listing_to_counts(ld, tdim))
+        gdim = t.domain().geometric_dimension()
+        tdim = t.domain().topological_dimension()
+        global_derivatives = tuple(derivative_listing_to_counts(gd, gdim))
+        local_derivatives = tuple(derivative_listing_to_counts(ld, tdim))
 
         # Build name for this particular table
         name = generate_psi_table_name(element_counter, fc,
-                                       local_derivatives, mt.averaged, entitytype, num_points)
+                                     local_derivatives, mt.averaged, entitytype, num_points)
 
         # Extract the values of the table from ffc table format
         table = tables.get(name)
         if table is None:
+            #import IPython; IPython.embed()
             table = get_ffc_table_values(psi_tables, entitytype, num_points,
                                          element, fc, local_derivatives)
             tables[name] = table

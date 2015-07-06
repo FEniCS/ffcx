@@ -258,7 +258,7 @@ class FFCAccessBackend(MultiFunction):
         gdim = mt.terminal.cell().geometric_dimension()
         tdim = mt.terminal.cell().topological_dimension()
         assert gdim > tdim
-        return L.Symbol("cell_orientation")
+        return L.Symbol("co")
 
     def facet_orientation(self, e, mt, tabledata, num_points):
         L = self.language
