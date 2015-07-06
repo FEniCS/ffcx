@@ -103,8 +103,6 @@ class ValueNumberer(MultiFunction):
             mt = analyse_modified_terminal(v)
 
         cell = mt.terminal.cell()
-        tdim = cell.topological_dimension()
-        gdim = cell.geometric_dimension()
 
         num_ld = len(mt.local_derivatives)
         num_gd = len(mt.global_derivatives)
@@ -118,9 +116,11 @@ class ValueNumberer(MultiFunction):
         base_components = compute_indices(base_shape)
 
         if num_ld:
+            tdim = cell.topological_dimension()
             # d_components = compute_permutations(num_ld, tdim)
             d_components = compute_indices((tdim,) * num_ld)
         elif num_gd:
+            gdim = cell.geometric_dimension()
             # d_components = compute_permutations(num_gd, gdim)
             d_components = compute_indices((gdim,) * num_gd)
         else:
