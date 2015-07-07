@@ -117,10 +117,16 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
             element_counter_map[element] = element_counter
 
         # Change derivatives format for table lookup
-        gdim = t.domain().geometric_dimension()
-        tdim = t.domain().topological_dimension()
-        global_derivatives = tuple(derivative_listing_to_counts(gd, gdim))
-        local_derivatives = tuple(derivative_listing_to_counts(ld, tdim))
+        if gd:
+            gdim = t.domain().geometric_dimension()
+            global_derivatives = tuple(derivative_listing_to_counts(gd, gdim))
+        else:
+            global_derivatives = None
+        if ld:
+            tdim = t.domain().topological_dimension()
+            local_derivatives = tuple(derivative_listing_to_counts(ld, tdim))
+        else:
+            local_derivatives = None
 
         # Build name for this particular table
         name = generate_psi_table_name(element_counter, fc,

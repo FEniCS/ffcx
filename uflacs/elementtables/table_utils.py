@@ -20,7 +20,7 @@
 
 from __future__ import print_function # used in some debugging
 
-from six import itervalues
+from six import itervalues, iterkeys
 from six import advance_iterator as next
 from six.moves import map
 from six.moves import xrange as range
@@ -138,7 +138,11 @@ def get_ffc_table_values(tables, entitytype, num_points, element, flat_component
 
     # Figure out shape of final array by inspecting tables
     num_entities = len(element_table)
-    num_dofs = len(next(itervalues(element_table))[derivative_counts])
+    tmp = next(itervalues(element_table)) # Pick subtable for arbitrary chosen cell entity
+    if derivative_counts is None: # Workaround for None vs (0,)*tdim
+        dc = next(iterkeys(tmp))
+        derivative_counts = (0,)*len(dc)
+    num_dofs = len(tmp[derivative_counts])
 
     # Make 3D array for final result
     shape = (num_entities, num_points, num_dofs)
@@ -194,7 +198,7 @@ def generate_psi_table_name(element_counter, flat_component, derivative_counts, 
     else:
         assert flat_component is None
 
-    if any(derivative_counts):
+    if derivative_counts and any(derivative_counts):
         name += "_D" + "".join(map(str, derivative_counts))
 
     if averaged == "cell":
