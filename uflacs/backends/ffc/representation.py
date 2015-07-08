@@ -47,10 +47,17 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
     # uflacs_ir["cell"] = form_data.integration_domains[0].cell()
     # uflacs_ir["function_replace_map"] = form_data.function_replace_map
 
-    # Build coefficient numbering for UFC interface here, to avoid renumbering in UFL
-    uflacs_ir["coefficient_numbering"] = { f: i for i, f in enumerate(sorted_by_count(form_data.function_replace_map.keys())) }
-    for f, g in iteritems(form_data.function_replace_map):
-        assert uflacs_ir["coefficient_numbering"][f] == g.count()
+    # Build coefficient numbering for UFC interface here, to avoid renumbering in UFL and application of replace mapping
+    uflacs_ir["coefficient_numbering"] = {}
+    #uflacs_ir["coefficient_element"] = {}
+    #uflacs_ir["coefficient_domain"] = {}
+    for i, f in enumerate(sorted_by_count(form_data.function_replace_map.keys())):
+        g = form_data.function_replace_map[f]
+        assert i == g.count()
+        uflacs_ir["coefficient_numbering"][g] = i # USING THIS ONE BECAUSE WE'RE CALLING REPLACE BELOW
+        #uflacs_ir["coefficient_numbering"][f] = i # If we make elements and domains well formed we can avoid replace below and use this line instead
+        #uflacs_ir["coefficient_element"][f] = g.element()
+        #uflacs_ir["coefficient_domain"][f] = g.domain()
 
     # Build ir for each num_points/integrand
     uflacs_ir["expr_ir"] = {}
@@ -66,7 +73,7 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
         # TODO: Doesn't replace domain coefficient!!!
         #       Merge replace functionality into change_to_reference_grad to fix?
         #       When coordinate field coefficient is removed I guess this issue will disappear?
-        #expr = replace(expr, form_data.function_replace_map) # FIXME: Still need to apply this mapping.
+        expr = replace(expr, form_data.function_replace_map) # FIXME: Still need to apply this mapping.
 
         # Build the core uflacs ir of expressions
         expr_ir = compute_expr_ir(expr, parameters)
