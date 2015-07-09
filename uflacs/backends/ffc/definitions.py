@@ -262,9 +262,10 @@ class FFCDefinitionsBackend(MultiFunction):
 
     def cell_orientation(self, e, mt, tabledata, access):
         # Would be nicer if cell_orientation was a double variable input,
-        # but this is how dolfin/ufc/ffc currently passes this information
+        # but this is how dolfin/ufc/ffc currently passes this information.
+        # 0 means up and gives +1.0, 1 means down and gives -1.0.
         L = self.language
-        expr = L.VerbatimExpr("(cell_orientation == 1) ? +1.0: -1.0;")
+        expr = L.VerbatimExpr("(cell_orientation == 1) ? -1.0: +1.0;")
         return [L.VariableDecl("const double", access, expr)]
 
     def facet_orientation(self, e, mt, tabledata, access):
