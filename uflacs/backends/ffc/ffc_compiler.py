@@ -33,7 +33,13 @@ def compile_tabulate_tensor_code(form, optimize=True):
     form_id = 0
 
     # Apply ufl preprocessing
-    form_data = compute_form_data(form)
+    form_data = compute_form_data(form,
+                                  do_apply_function_pullbacks=True,
+                                  do_apply_integral_scaling=True,
+                                  do_apply_geometry_lowering=True,
+                                  preserve_geometry_types=(),
+                                  do_apply_restrictions=True,
+                                  )
 
     tt_codes = []
     for itg_data in form_data.integral_data:
