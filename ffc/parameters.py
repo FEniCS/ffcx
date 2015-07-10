@@ -50,7 +50,15 @@ FFC_PARAMETERS = {
 
 def default_parameters():
     "Return (a copy of) the default parameter values for FFC."
-    return FFC_PARAMETERS.copy()
+    parameters = FFC_PARAMETERS.copy()
+
+    # HACK
+    import os
+    r = os.environ.get("FFC_FORCE_REPRESENTATION")
+    if r: parameters["representation"] = r
+
+    return parameters
+
 
 def compilation_relevant_parameters(parameters):
     parameters = parameters.copy()
@@ -59,4 +67,10 @@ def compilation_relevant_parameters(parameters):
         assert ignore in FFC_PARAMETERS
         if ignore in parameters:
             del parameters[ignore]
+
+    # HACK
+    import os
+    r = os.environ.get("FFC_FORCE_REPRESENTATION")
+    if r: parameters["representation"] = r
+
     return parameters
