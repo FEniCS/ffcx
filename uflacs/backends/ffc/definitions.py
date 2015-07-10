@@ -27,7 +27,7 @@ from ffc.log import ffc_assert
 
 from uflacs.backends.ffc.common import FFCBackendSymbols
 # FIXME: Move these to FFCBackendSymbols
-from uflacs.backends.ffc.common import format_entity_name
+from uflacs.backends.ffc.common import format_entity_name, ufc_restriction_postfix
 
 
 class FFCDefinitionsBackend(MultiFunction):
@@ -265,7 +265,8 @@ class FFCDefinitionsBackend(MultiFunction):
         # but this is how dolfin/ufc/ffc currently passes this information.
         # 0 means up and gives +1.0, 1 means down and gives -1.0.
         L = self.language
-        expr = L.VerbatimExpr("(cell_orientation == 1) ? -1.0: +1.0;")
+        co = "cell_orientation" + ufc_restriction_postfix(mt.restriction)
+        expr = L.VerbatimExpr("(" + co + " == 1) ? -1.0: +1.0;")
         return [L.VariableDecl("const double", access, expr)]
 
     def facet_orientation(self, e, mt, tabledata, access):

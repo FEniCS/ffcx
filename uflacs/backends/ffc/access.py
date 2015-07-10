@@ -65,6 +65,9 @@ class FFCAccessBackend(MultiFunction):
     def points_array_name(self, num_points):
         return "{0}{1}".format(names.points, num_points)
 
+    def physical_points_array_name(self):
+        return names.points
+
     def quadrature_loop_index(self):
         return self.symbols.quadrature_loop_index()
 
@@ -171,9 +174,11 @@ class FFCAccessBackend(MultiFunction):
 
         if self.physical_coordinates_known:
             # In a context where the physical coordinates are available in existing variables.
-            name = self.points_array_name(num_points)
+            name = self.physical_points_array_name()
             iq = self.quadrature_loop_index()
-            return L.ArrayAccess(name, (iq, mt.flat_component))
+            gdim, = mt.terminal.ufl_shape
+            index = L.Add(L.Mul(iq, gdim), mt.flat_component)
+            return L.ArrayAccess(name, index)
 
         elif mt.terminal.domain().coordinates() is not None:
             # No special variable should exist in this case.
@@ -197,7 +202,9 @@ class FFCAccessBackend(MultiFunction):
         else:
             name = self.points_array_name(num_points)
             iq = self.quadrature_loop_index()
-            return L.ArrayAccess(name, (iq, mt.flat_component))
+            tdim, = mt.terminal.ufl_shape
+            index = L.Add(L.Mul(iq, tdim), mt.flat_component)
+            return L.ArrayAccess(name, index)
 
     def jacobian(self, e, mt, tabledata, num_points):
         L = self.language
