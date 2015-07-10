@@ -170,7 +170,7 @@ def _attach_integral_metadata(form_data, parameters):
 
             # Fill in integral metadata with default values
             # NB! This modifies the metadata of the input integral data!
-            integral_metadata = integral.metadata().copy() or {}
+            integral_metadata = integral.metadata() or {}
             for key in metadata_keys:
                 if key not in integral_metadata:
                     integral_metadata[key] = parameters[key]
