@@ -232,12 +232,14 @@ def run_install():
     generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS)
 
     # Setup extension module for FFC time elements
+    numpy_include_dir = numpy.get_include()
     ext_module_time = Extension("ffc_time_ext.time_elements_ext",
-                                ["ffc_time_ext/time_elements_interface.cpp",
-                                 "ffc_time_ext/time_elements.cpp",
-                                 "ffc_time_ext/LobattoQuadrature.cpp",
-                                 "ffc_time_ext/RadauQuadrature.cpp",
-                                 "ffc_time_ext/Legendre.cpp"])
+                                sources=["ffc_time_ext/time_elements_interface.cpp",
+                                         "ffc_time_ext/time_elements.cpp",
+                                         "ffc_time_ext/LobattoQuadrature.cpp",
+                                         "ffc_time_ext/RadauQuadrature.cpp",
+                                         "ffc_time_ext/Legendre.cpp"],
+                                include_dirs = [numpy_include_dir])
 
     # Setup extension module for UFC
     swig_options = ["-c++", "-shadow", "-modern",
