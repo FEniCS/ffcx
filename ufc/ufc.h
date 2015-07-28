@@ -1,4 +1,4 @@
-// This is UFC (Unified Form-assembly Code) v. 1.6.0dev.
+// This is UFC (Unified Form-assembly Code) v. 1.6.0.
 // This code is released into the public domain.
 //
 // The FEniCS Project (http://www.fenicsproject.org/) 2006-2015.
@@ -9,7 +9,7 @@
 #define UFC_VERSION_MAJOR 1
 #define UFC_VERSION_MINOR 6
 #define UFC_VERSION_MAINTENANCE 0
-#define UFC_VERSION_RELEASE 0
+#define UFC_VERSION_RELEASE 1
 
 #include <vector>
 #include <cstddef>
