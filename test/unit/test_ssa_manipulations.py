@@ -3,6 +3,8 @@
 Tests of manipulations of the ssa form of expressions.
 """
 
+from __future__ import print_function
+
 from six.moves import map
 from ufl import *
 from ufl.common import product

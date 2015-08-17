@@ -202,7 +202,6 @@ def __map_indexed_to_arg_components(indexed):
             p1[sh_to_ind_map[j]] = p
         c1 = flatten_multiindex(p1, str1)
         c2 = flatten_multiindex(p2, str2)
-        # print c1, c2
         comp1.append(c1)
         comp2.append(c2)
     return tuple(comp1), tuple(comp2)

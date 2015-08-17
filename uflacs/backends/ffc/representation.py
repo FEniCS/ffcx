@@ -18,11 +18,10 @@
 
 """The FFC specific backend to the UFLACS form compiler algorithms."""
 
-from ufl.algorithms import propagate_restrictions
+from six import iteritems
+
 from ufl.algorithms import replace
-from ufl.algorithms.change_to_reference import (change_to_reference_grad,
-                                                compute_integrand_scaling_factor,
-                                                change_to_reference_geometry)
+from ufl.utils.sorting import sorted_by_count
 
 from ffc.log import ffc_assert
 
@@ -48,36 +47,33 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
     # uflacs_ir["cell"] = form_data.integration_domains[0].cell()
     # uflacs_ir["function_replace_map"] = form_data.function_replace_map
 
+    # Build coefficient numbering for UFC interface here, to avoid renumbering in UFL and application of replace mapping
+    uflacs_ir["coefficient_numbering"] = {}
+    #uflacs_ir["coefficient_element"] = {}
+    #uflacs_ir["coefficient_domain"] = {}
+    for i, f in enumerate(sorted_by_count(form_data.function_replace_map.keys())):
+        g = form_data.function_replace_map[f]
+        assert i == g.count()
+        uflacs_ir["coefficient_numbering"][g] = i # USING THIS ONE BECAUSE WE'RE CALLING REPLACE BELOW
+        #uflacs_ir["coefficient_numbering"][f] = i # If we make elements and domains well formed we can avoid replace below and use this line instead
+        #uflacs_ir["coefficient_element"][f] = g.element()
+        #uflacs_ir["coefficient_domain"][f] = g.domain()
+
     # Build ir for each num_points/integrand
     uflacs_ir["expr_ir"] = {}
     for num_points in sorted(integrals_dict.keys()):
         integral = integrals_dict[num_points]
 
-        # FIXME: Move this symbolic processing to compute_form_data, give compute_form_data an option to to this for now.
-        # Get integrand expr and apply some symbolic preprocessing
+        # Get integrand
         expr = integral.integrand()
 
         # Replace coefficients so they all have proper element and domain for what's to come
-        expr = replace(expr, form_data.function_replace_map)  # FIXME: Doesn't replace domain coefficient!!! Merge replace functionality into change_to_reference_grad to fix?
-
-        # Change from physical gradients to reference gradients
-        expr = change_to_reference_grad(expr)  # TODO: Make this optional depending on backend
-
-        # Compute and apply integration scaling factor
-        scale = compute_integrand_scaling_factor(integral.domain(), integral.integral_type())
-        expr = expr * scale
-
-        # Change geometric representation to lower level quantities
-        if integral.integral_type() in ("custom", "vertex"):
-            physical_coordinates_known = True
-        else:
-            physical_coordinates_known = False
-        expr = change_to_reference_geometry(expr, physical_coordinates_known, form_data.function_replace_map)
-
-        # Propagate restrictions to become terminal modifiers because change_to_reference_geometry
-        # may have messed it up after the first pass in compute_form_data...
-        if integral.integral_type() == "interior_facet":
-            expr = propagate_restrictions(expr)
+        # TODO: We can avoid this step when Expression is in place and
+        #       element/domain assignment removed from compute_form_data.
+        # TODO: Doesn't replace domain coefficient!!!
+        #       Merge replace functionality into change_to_reference_grad to fix?
+        #       When coordinate field coefficient is removed I guess this issue will disappear?
+        expr = replace(expr, form_data.function_replace_map) # FIXME: Still need to apply this mapping.
 
         # Build the core uflacs ir of expressions
         expr_ir = compute_expr_ir(expr, parameters)
@@ -88,12 +84,15 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
 
         # Build set of modified terminal ufl expressions
         V = expr_ir["V"]
-        modified_terminals = [analyse_modified_terminal(V[i]) for i in expr_ir["modified_terminal_indices"]]
+        modified_terminals = [analyse_modified_terminal(V[i])
+                              for i in expr_ir["modified_terminal_indices"]]
 
         # Analyse modified terminals and store data about them
         terminal_data = modified_terminals + expr_ir["modified_arguments"]
 
-        # Build tables needed by all modified terminals (currently build here means extract from ffc psi_tables)
+        # Build tables needed by all modified terminals
+        # (currently build here means extract from ffc psi_tables)
+        #print '\n'.join([str(mt.expr) for mt in terminal_data])
         tables, terminal_table_names = build_element_tables(psi_tables, num_points,
                                                             entitytype, terminal_data)
 
@@ -102,11 +101,13 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
         expr_ir["unique_tables"] = unique_tables
 
         # Modify ranges for restricted form arguments (not geometry!)
+        # FIXME: Should not coordinate dofs get the same offset?
         from ufl.classes import FormArgument
         for i, mt in enumerate(terminal_data):
             # TODO: Get the definition that - means added offset from somewhere
-            if mt.restriction == "-" and isinstance(terminal_data[i].terminal, FormArgument):
-                offset = int(tables[terminal_table_names[i]].shape[-1])  # number of dofs before optimization
+            if mt.restriction == "-" and isinstance(mt.terminal, FormArgument):
+                # offset = number of dofs before table optimization
+                offset = int(tables[terminal_table_names[i]].shape[-1])
                 (unique_name, b, e) = terminal_table_ranges[i]
                 terminal_table_ranges[i] = (unique_name, b + offset, e + offset)
 

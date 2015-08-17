@@ -20,9 +20,71 @@
 
 from six.moves import xrange as range
 
-from uflacs.codeutils.format_code import ArrayAccess, Add, Mul
 
-class Names:  # TODO: This is not used much anymore, integrate in backend class
+# FIXME: Do something like this for shared symbol naming?
+class FFCBackendSymbols(object):
+    def __init__(self, language, coefficient_numbering):
+        self.L = language
+        self.S = self.L.Symbol
+        self.coefficient_numbering = coefficient_numbering
+
+        # Rules, make functions? (NB! Currently duplicated from names)
+        self.restriction_postfix = {"+": "_0", "-": "_1", None: ""}  # TODO: Use this wherever we need it?
+
+    # FIXME: Used in access: weights, points, ia, A, w, x, J
+
+    def entity(self, foo):
+        return self.S("entity")
+
+    def x(self, quadloop):
+        "Physical coordinates."
+        return self.S("x" + str(quadloop))
+
+    def xi(self, quadloop):
+        "Reference cell coordinates."
+        return self.S("xi" + str(quadloop))
+
+    def quadrature_loop_index(self):
+        "Reusing a single index name for all quadrature loops, assumed not to be nested."
+        # If we want to use num_points-specific names for any symbols, this need num_points as well (or some other scope id).
+        #return self.S("iq" + str(num_points))
+        return self.S("iq")
+
+    def coefficient_dof_sum_index(self):
+        "Reusing a single index name for all coefficient dof*basis sums, assumed to always be the innermost loop."
+        return self.S("ic")
+
+    def coefficient_value_access(self, coefficient,):
+        c = self.coefficient_numbering[coefficient] # coefficient.count()
+        basename = "w" + str(c)
+        return self.S(basename)
+
+    def coefficient_dof_access(self, coefficient, dof_number):
+        # TODO: Add domain_number = self.ir["domain_numbering"][coefficient.domain().domain_key()]
+        # TODO: Flatten dofs array and use CRS lookup table.
+        # TODO: Apply integral specific renumbering.
+        c = self.coefficient_numbering[coefficient] # coefficient.count()
+        #return self.L.ArrayAccess(names.w, (c, dof_number))
+        return self.S("w")[c, dof_number]
+
+    def domain_dof_access(self, gdim, vertex, component, restriction):
+        # TODO: Add domain number as argument here, and {domain_offset} to array indexing:
+        # domain_offset = self.ir["domain_offsets"][domain_number]
+        vc = self.S("vertex_coordinates" + self.restriction_postfix[restriction])
+        return vc[gdim*vertex + component]
+        #return L.ArrayAccess(vc, L.Add(L.Mul(gdim, vertex), component))
+
+    def domain_dofs_access(self, gdim, num_vertices, restriction):
+        # TODO: Add domain number as argument here, and {domain_offset} to array indexing:
+        # FIXME: Handle restriction here
+        # domain_offset = self.ir["domain_offsets"][domain_number]
+        return [self.domain_dof_access(gdim, vertex, component, restriction)
+                for component in range(gdim)
+                for vertex in range(num_vertices)]
+
+
+# TODO: This is not used much anymore, integrate in backend class, and use L.Symbol
+class Names:
 
     def __init__(self):
         # Topology argument names
@@ -82,7 +144,6 @@ def format_entity_name(entitytype, r):
         entity = names.vertex
     return entity
 
-
 def format_mt_der(mt):
     # Expecting only local derivatives here
     assert not mt.global_derivatives
@@ -93,7 +154,6 @@ def format_mt_der(mt):
         der = ""
     return der
 
-
 def format_mt_comp(mt):
     # Add flattened component to name (TODO: this should be the local component?)
     if mt.component:
@@ -101,7 +161,6 @@ def format_mt_comp(mt):
     else:
         comp = ""
     return comp
-
 
 def format_mt_avg(mt):
     # Add averaged state to name
@@ -111,10 +170,8 @@ def format_mt_avg(mt):
         avg = ""
     return avg
 
-
 def format_mt_res(mt):
     return names.restriction_postfix[mt.restriction].replace("_", "_r")
-
 
 def format_mt_name(basename, mt):
     access = "{basename}{avg}{res}{der}{comp}".format(basename=basename,
@@ -123,7 +180,6 @@ def format_mt_name(basename, mt):
                                                       der=format_mt_der(mt),
                                                       comp=format_mt_comp(mt))
     return access
-
 
 def ufc_restriction_postfix(restriction):
     # TODO: Get restriction postfix from somewhere central
@@ -138,33 +194,10 @@ def ufc_restriction_postfix(restriction):
 # from uflacs.backends.ffc.ffc_statement_formatter import format_element_table_access
 # from ufl.utils.derivativetuples import derivative_listing_to_counts
 # def generate_element_table_access(mt):
-# FIXME: See  format_element_table_access  get_element_table_data
-# entity = format_entity_name(self.ir["entitytype"], mt.restriction)
-# return ArrayAccess(uname, (entity, names.iq, dof_number))
-# return "FE[0]" # FIXME
+#     FIXME: See  format_element_table_access  get_element_table_data
+#     entity = format_entity_name(self.ir["entitytype"], mt.restriction)
+#     return L.ArrayAccess(uname, (entity, names.iq, dof_number))
+#     return "FE[0]" # FIXME
 
 # def generate_geometry_table_access(mt):
-# return "FJ[0]" # FIXME
-
-
-def generate_coefficient_dof_access(coefficient, dof_number):
-    # TODO: Add domain_number = self.ir["domain_numbering"][coefficient.domain().domain_key()]
-    # TODO: Flatten dofs array and use CRS lookup table.
-    # TODO: Apply integral specific renumbering.
-    return ArrayAccess(names.w, (coefficient.count(), dof_number))
-
-
-def generate_domain_dof_access(num_vertices, gdim, vertex, component, restriction):
-    # TODO: Add domain number as argument here, and {domain_offset} to array indexing:
-    # domain_offset = self.ir["domain_offsets"][domain_number]
-    vc = names.vertex_coordinates + names.restriction_postfix[restriction]
-    return ArrayAccess(vc, Add(Mul(gdim, vertex), component))
-
-
-def generate_domain_dofs_access(num_vertices, gdim, restriction):
-    # TODO: Add domain number as argument here, and {domain_offset} to array indexing:
-    # FIXME: Handle restriction here
-    # domain_offset = self.ir["domain_offsets"][domain_number]
-    return [generate_domain_dof_access(num_vertices, gdim, vertex, component, restriction)
-            for component in range(gdim)
-            for vertex in range(num_vertices)]
+#     return "FJ[0]" # FIXME

@@ -19,6 +19,7 @@
 """Algorithms for value numbering within computational graphs."""
 
 from six.moves import xrange as range
+from ffc.log import warning
 from ufl.common import product
 from ufl.permutation import compute_indices
 from ufl.corealg.multifunction import MultiFunction
@@ -83,13 +84,14 @@ class ValueNumberer(MultiFunction):
         terminal           - the underlying Terminal object
         global_derivatives - tuple of ints, each meaning derivative in that global direction
         local_derivatives  - tuple of ints, each meaning derivative in that local direction
+        reference_value    - bool, whether this is represented in reference frame
         averaged           - None, 'facet' or 'cell'
         restriction        - None, '+' or '-'
         component          - tuple of ints, the global component of the Terminal
         flat_component     - single int, flattened local component of the Terminal, considering symmetry
         """
-
-        # (1) mt.terminal.ufl_shape defines a core indexing space
+        # (1) mt.terminal.ufl_shape defines a core indexing space UNLESS mt.reference_value,
+        #     in which case the reference value shape of the element must be used.
         # (2) mt.terminal.element().symmetry() defines core symmetries
         # (3) averaging and restrictions define distinct symbols, no additional symmetries
         # (4) two or more grad/reference_grad defines distinct symbols with additional symmetries
@@ -101,25 +103,36 @@ class ValueNumberer(MultiFunction):
             mt = analyse_modified_terminal(v)
 
         cell = mt.terminal.cell()
-        tdim = cell.topological_dimension()
-        gdim = cell.geometric_dimension()
 
         num_ld = len(mt.local_derivatives)
         num_gd = len(mt.global_derivatives)
-
-        base_components = compute_indices(mt.terminal.ufl_shape)
         assert not (num_ld and num_gd)
+
+        # Get base shape without the derivative axes
+        if mt.reference_value:
+            base_shape = mt.terminal.element().reference_value_shape()
+        else:
+            base_shape = mt.terminal.ufl_shape
+        base_components = compute_indices(base_shape)
+
         if num_ld:
+            tdim = cell.topological_dimension()
             # d_components = compute_permutations(num_ld, tdim)
             d_components = compute_indices((tdim,) * num_ld)
         elif num_gd:
+            gdim = cell.geometric_dimension()
             # d_components = compute_permutations(num_gd, gdim)
             d_components = compute_indices((gdim,) * num_gd)
         else:
             d_components = [()]
 
-        if isinstance(mt, FormArgument):
-            symmetry = mt.element().symmetry()
+        if isinstance(mt.terminal, FormArgument):
+            element = mt.terminal.element()
+            symmetry = element.symmetry()
+            if symmetry and mt.reference_value:
+                ffc_assert(element.value_shape() == element.reference_value_shape(),
+                           "The combination of element symmetries and "
+                           "Piola mapped elements is not currently handled.")
         else:
             symmetry = {}
 
@@ -142,15 +155,7 @@ class ValueNumberer(MultiFunction):
 
         assert not v.ufl_free_indices
         if not product(v.ufl_shape) == len(symbols):
-            from ufl.algorithms import tree_format
-            print()
-            print(num_ld)
-            print(num_gd)
-            print(d_components)
-            print(v.ufl_shape)
-            print(len(symbols))
-            print(tree_format(v))
-            print()
+            error("Internal error in value numbering.")
 
         return symbols
 
@@ -161,7 +166,7 @@ class ValueNumberer(MultiFunction):
     facet_avg = _modified_terminal
     cell_avg = _modified_terminal
     restricted = _modified_terminal
-    reference_value = _modified_terminal  # Not yet implemented in UFL
+    reference_value = _modified_terminal
     # indexed is implemented as a fall-through operation
 
     def indexed(self, Aii, i):

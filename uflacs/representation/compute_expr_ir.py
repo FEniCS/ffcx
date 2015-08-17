@@ -20,9 +20,8 @@
 
 
 from ufl.common import product
-from uflacs.analysis.modified_terminals import is_modified_terminal
+from uflacs.analysis.modified_terminals import is_modified_terminal, analyse_modified_terminal
 
-from uflacs.analysis.modified_terminals import analyse_modified_terminal
 from uflacs.analysis.graph import build_graph
 from uflacs.analysis.graph_vertices import build_scalar_graph_vertices
 from uflacs.analysis.graph_rebuild import rebuild_with_scalar_subexpressions
@@ -151,6 +150,16 @@ def compute_expr_ir(expressions, parameters):
     # Result of factorization:
     expr_ir["modified_arguments"] = modified_arguments         # (array) MA-index -> UFL expression of modified arguments
     expr_ir["argument_factorization"] = argument_factorization  # (dict) tuple(MA-indices) -> V-index of monomial factor
+
+    # TODO: More structured MA organization?
+    #modified_arguments[rank][block][entry] -> UFL expression of modified argument
+    #dofranges[rank][block] -> (begin, end)
+    # or
+    #modified_arguments[rank][entry] -> UFL expression of modified argument
+    #dofrange[rank][entry] -> (begin, end)
+    #argument_factorization: (dict) tuple(MA-indices (only relevant ones!)) -> V-index of monomial factor
+    # becomes
+    #argument_factorization: (dict) tuple(entry for each(!) rank) -> V-index of monomial factor ## doesn't cover intermediate f*u in f*u*v!
 
     # Dependency structure of graph:
     expr_ir["modified_terminal_indices"] = modified_terminal_indices  # (array) list of V-indices to modified terminals

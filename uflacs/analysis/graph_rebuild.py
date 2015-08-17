@@ -72,6 +72,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
     # Binary scalar functions
     power = scalar_nary
     bessel_function = scalar_nary  # TODO: Is this ok?
+    atan_2 = scalar_nary
 
     def condition(self, o, ops):
         sops = [op[0] for op in ops]
@@ -202,7 +203,7 @@ def rebuild_with_scalar_subexpressions(G):
     """
 
     # From simplefsi3d.ufl:
-    # print "GRAPH SIZE:", len(G.V), G.total_unique_symbols
+    # GRAPH SIZE: len(G.V), G.total_unique_symbols
     # GRAPH SIZE: 16251   635272
     # GRAPH SIZE:   473     8210
     # GRAPH SIZE:  9663   238021

@@ -18,6 +18,8 @@
 
 """Algorithms for factorizing argument dependent monomials."""
 
+from __future__ import print_function # used in some debugging
+
 from six import itervalues, iterkeys, iteritems
 from six.moves import xrange as range
 from ufl import as_ufl
@@ -63,7 +65,7 @@ def _build_argument_indices_from_arg_sets(V, arg_sets):
         assert isinstance(mt.terminal, Argument)
         assert mt.terminal.number() >= 0
         return (mt.terminal.number(), mt.terminal.part(),
-                mt.component,
+                mt.reference_value, mt.component,
                 mt.global_derivatives, mt.local_derivatives,
                 mt.restriction, mt.averaged)
     arg_ordering_key.V = V

@@ -3,6 +3,8 @@
 Tests of generic C++ compilation code.
 """
 
+from __future__ import print_function
+
 # FIXME: These are all disabled, don't remember why, turn them on again!
 
 from six.moves import zip

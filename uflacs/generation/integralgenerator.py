@@ -29,18 +29,10 @@ from ffc.log import error
 
 from uflacs.analysis.modified_terminals import analyse_modified_terminal, is_modified_terminal
 
-from uflacs.codeutils.format_code import (format_code, Indented, Comment,
-                                          ForRange, Block,
-                                          VariableDecl, ArrayDecl, ArrayAccess,
-                                          Assign, AssignAdd,
-                                          Product)
-from uflacs.codeutils.indexmapping import IndexMapping, AxisMapping
-from uflacs.codeutils.expr_formatter import ExprFormatter
-
 
 class IntegralGenerator(object):
 
-    def __init__(self, ir, language_formatter, backend_access, backend_definitions):
+    def __init__(self, ir, backend):
         # Store ir
         self.ir = ir
 
@@ -63,25 +55,22 @@ class IntegralGenerator(object):
             "#include <cstring>",
             "#include <cmath>",
             "#include <boost/math/special_functions.hpp>",
-        }
+            }
 
-        # Formatter for backend agnostic expressions, delegating to given target language formatter
-        # XXX FIXME: Replace ExprFormatter with alternative mappers, see fixmes below.
-        self.expr_formatter = ExprFormatter(language_formatter, {})
-
-        # Formatter for defining backend specific variables
-        # FIXME: Make sure backend_definitions always returns ASTNodes!
-        self.backend_definitions = backend_definitions
-
-        # Formatter for accessing backend specific variables
-        # FIXME: Make sure backend_access always returns ASTNodes!
-        self.backend_access = backend_access
+        # Backend specific plugin with attributes
+        # - language: for translating ufl operators to target language
+        # - definintions: for defining backend specific variables
+        # - access: for accessing backend specific variables
+        self.backend = backend
 
     def generate_using_statements(self):
-        return ["using %s;" % name for name in sorted(self._using_names)]
+        L = self.backend.language
+        return [L.Using(name) for name in sorted(self._using_names)]
 
     def get_includes(self):
-        return sorted(self._includes)
+        includes = set(self._includes)
+        includes.update(self.backend.definitions.get_includes())
+        return sorted(includes)
 
     def generate(self):
         """Generate entire tabulate_tensor body.
@@ -89,9 +78,11 @@ class IntegralGenerator(object):
         Assumes that the code returned from here will be wrapped in a context
         that matches a suitable version of the UFC tabulate_tensor signatures.
         """
+        L = self.backend.language
+
         parts = []
         parts += self.generate_using_statements()
-        parts += self.backend_definitions.initial()
+        parts += self.backend.definitions.initial()
         parts += self.generate_quadrature_tables()
         parts += self.generate_element_tables()
         parts += self.generate_tensor_reset()
@@ -102,23 +93,27 @@ class IntegralGenerator(object):
         # piecewise quantities are not shared, but at least it should work.
         expr_irs = self.ir["uflacs"]["expr_ir"]
         all_num_points = sorted(expr_irs)
+
+        # Reset variables, separate sets for quadrature loop
+        self.vaccesses = { num_points: {} for num_points in all_num_points }
+
         for num_points in all_num_points:
-
-            self.expr_formatter.variables = {}
-            #self.ast_variables = int_array(FIXME) # XXX FIXME insert upper bound on size here
-
             pp = self.generate_piecewise_partition(num_points)
             ql = self.generate_quadrature_loops(num_points)
             if len(all_num_points) > 1:
-                parts += [Block([pp, ql])]
+                # Wrapping in Scope to avoid thinking about scoping issues
+                parts += [L.Scope([pp, ql])]
             else:
                 parts += [pp, ql]
 
         parts += self.generate_finishing_statements()
-        return format_code(Indented(parts))
+
+        return L.StatementList(parts)
 
     def generate_quadrature_tables(self):
         "Generate static tables of quadrature points and weights."
+        L = self.backend.language
+
         parts = []
 
         # No quadrature tables for custom (given argument) or point (evaluation in single vertex)
@@ -127,7 +122,7 @@ class IntegralGenerator(object):
 
         qrs = self.ir["quadrature_rules"]
         if qrs:
-            parts += ["// Section for quadrature weights and points"]
+            parts += [L.Comment("Section for quadrature weights and points")]
 
         for num_points in sorted(qrs):
             weights = qrs[num_points][0]
@@ -136,73 +131,84 @@ class IntegralGenerator(object):
             # Size of quadrature points depends on context, assume this is correct:
             pdim = len(points[0])
 
-            wname = self.backend_access.weights_array_name(num_points)
-            pname = self.backend_access.points_array_name(num_points)
+            wname = self.backend.access.weights_array_name(num_points)
+            pname = self.backend.access.points_array_name(num_points)
 
-            weights = [self.backend_access.precision_float(w) for w in weights]
-            points = [self.backend_access.precision_float(x) for p in points for x in p]
-
-            parts += [ArrayDecl("static const double", wname, num_points, weights)]
+            parts += [L.ArrayDecl("static const double", wname, num_points, weights)]
             if pdim > 0:
-                parts += [ArrayDecl("static const double", pname, num_points * pdim, points)]
-            parts += [""]
+                # Flatten array:
+                points = points.reshape(product(points.shape))
+                parts += [L.ArrayDecl("static const double", pname, num_points * pdim, points)]
 
         return parts
 
     def generate_element_tables(self):
-        "Generate static tables with precomputed element basis function values in quadrature points."
+        """Generate static tables with precomputed element basis
+        function values in quadrature points."""
+
+        L = self.backend.language
         parts = []
-        parts += [Comment("Section for precomputed element basis function values"),
-                  Comment("Table dimensions: num_entities, num_points, num_dofs"),
-                  ""]
+        parts += [L.Comment("Section for precomputed element basis function values"),
+                  L.Comment("Table dimensions: num_entities, num_points, num_dofs")]
         expr_irs = self.ir["uflacs"]["expr_ir"]
         for num_points in sorted(expr_irs):
             tables = expr_irs[num_points]["unique_tables"]
+
             comment = "Definitions of {0} tables for {1} quadrature points".format(len(tables), num_points)
-            parts += [Comment(comment)]
+            parts += [L.Comment(comment)]
+
             for name in sorted(tables):
                 table = tables[name]
                 if product(table.shape) > 0:
-                    parts += [ArrayDecl("static const double", name, table.shape, table), ""]
+                    parts += [L.ArrayDecl("static const double", name, table.shape, table)]
         return parts
 
     def generate_tensor_reset(self):
         "Generate statements for resetting the element tensor to zero."
+        L = self.backend.language
 
         # Could move this to codeutils or backend
-        def memzero(ptrname, size):
-            return "memset({ptrname}, 0, {size} * sizeof(*{ptrname}));".format(ptrname=ptrname, size=size)
+        def memzero(ptrname, size): # FIXME: Make CStatement Memzero
+            tmp = "memset({ptrname}, 0, {size} * sizeof(*{ptrname}));"
+            code = tmp.format(ptrname=ptrname, size=size)
+            return L.VerbatimStatement(code)
 
         # Compute tensor size
         A_size = product(self._A_shape)
-        A = self.backend_access.element_tensor_name()
+        A = self.backend.access.element_tensor_name()
 
         parts = []
-        parts += [Comment("Reset element tensor")]
+        parts += [L.Comment("Reset element tensor")]
         parts += [memzero(A, A_size)]
-        parts += [""]
         return parts
 
     def generate_quadrature_loops(self, num_points):
         "Generate all quadrature loops."
+        L = self.backend.language
         parts = []
+
         body = self.generate_quadrature_body(num_points)
-        iq = self.backend_access.quadrature_loop_index()
+        iq = self.backend.access.quadrature_loop_index()
+
         if num_points == 1:
-            parts += [Comment("Only 1 quadrature point, no loop"),
-                      VariableDecl("const int", iq, 0), # TODO: Inject iq=0 in generated code instead of this line
-                      Block(body)] # Wrapping in Block to avoid thinking about scoping issues
+            # Wrapping body in Scope to avoid thinking about scoping issues
+            # TODO: Specialize generated code with iq=0 instead of defining iq here.
+            parts += [L.Comment("Only 1 quadrature point, no loop"),
+                      L.VariableDecl("const int", iq, 0),
+                      L.Scope(body)]
+
         else:
-            parts += [ForRange(iq, 0, num_points, body=body)]
+            parts += [L.ForRange(iq, 0, num_points, body=body)]
         return parts
 
     def generate_quadrature_body(self, num_points):
         """
         """
         parts = []
+        L = self.backend.language
         parts += self.generate_varying_partition(num_points)
         if parts:
-            parts = [Comment("Quadrature loop body setup (num_points={0})".format(num_points))] + parts + [""]
+            parts = [L.Comment("Quadrature loop body setup (num_points={0})".format(num_points))] + parts
 
         # Compute single argument partitions outside of the dofblock loops
         for iarg in range(self.ir["rank"]):
@@ -216,6 +222,7 @@ class IntegralGenerator(object):
 
     def generate_quadrature_body_dofblocks(self, num_points, outer_dofblock=()):
         parts = []
+        L = self.backend.language
 
         # The loop level iarg here equals the argument count (in renumbered >= 0 format)
         iarg = len(outer_dofblock)
@@ -246,76 +253,92 @@ class IntegralGenerator(object):
         # Build loops for each dofrange
         for dofrange in dofranges:
             dofblock = outer_dofblock + (dofrange,)
-            body = []
 
             # Generate nested inner loops (only triggers for forms with two or more arguments
-            body += self.generate_quadrature_body_dofblocks(num_points, dofblock)
+            body = self.generate_quadrature_body_dofblocks(num_points, dofblock)
 
             # Wrap setup, subloops, and accumulation in a loop for this level
-            idof = self.backend_access.argument_loop_index(iarg)
-            parts += [ForRange(idof, dofrange[0], dofrange[1], body=body)]
+            idof = self.backend.access.argument_loop_index(iarg)
+            parts += [L.ForRange(idof, dofrange[0], dofrange[1], body=body)]
         return parts
 
-    def generate_partition(self, name, V, partition, table_ranges, num_points):  # TODO: Rather take list of vertices, not markers
-        terminalcode = []
-        assignments = []
-        j = 0
-        # print "Generating partition ", name, partition
-        for i, p in enumerate(partition):
-            if p:
-                # TODO: Consider optimized ir here with markers for which subexpressions to store in variables.
-                # This code just generates variables for _all_ subexpressions marked by p.
+    def generate_partition(self, name, V, partition, table_ranges, num_points):
+        L = self.backend.language
 
-                v = V[i]
+        definitions = []
+        intermediates = []
 
-                if is_modified_terminal(v):
-                    mt = analyse_modified_terminal(v)
-                    if isinstance(mt.terminal, ConstantValue):
-                        # Literal value
-                        vaccess = self.expr_formatter.visit(v)
-                    else:
-                        # Backend specific modified terminal
-                        vaccess = self.backend_access(mt.terminal, mt, table_ranges[i], num_points)
-                        vdef = self.backend_definitions(mt.terminal, mt, table_ranges[i], vaccess)
-                        # Store definitions of terminals in list
-                        terminalcode += [vdef]
+        vaccesses = self.vaccesses[num_points]
+
+        partition_indices = [i for i, p in enumerate(partition) if p]
+        for i in partition_indices:
+            v = V[i]
+
+            if is_modified_terminal(v):
+                mt = analyse_modified_terminal(v)
+                # Backend specific modified terminal translation
+                vaccess = self.backend.access(mt.terminal, mt, table_ranges[i], num_points)
+                vdef = self.backend.definitions(mt.terminal, mt, table_ranges[i], vaccess)
+
+                # Store definitions of terminals in list
+                if vdef is not None:
+                    definitions.append(vdef)
+            else:
+                # Get previously visited operands (TODO: use edges of V instead of ufl_operands?)
+                vops = [vaccesses[op] for op in v.ufl_operands]
+
+                # Mapping UFL operator to target language
+                vexpr = self.backend.ufl_to_language(v, *vops)
+
+                # No definitions needed
+                vdef = None
+
+                # TODO: Let optimized ir provide mapping of vertex indices to
+                # variable indices, marking which subexpressions to store in variables
+                # and in what order:
+                #j = variable_id[i]
+                # Currently instead creating a new intermediate for each subexpression:
+                j = len(intermediates)
+
+                if j is None:
+                    # Access the inlined expression
+                    vaccess = vexpr
                 else:
-                    # Application of operator
-                    # Count assignments so we get a new vname each time
-                    vaccess = ArrayAccess(name, j)
-                    j += 1
-                    vcode = self.expr_formatter.visit(v)
+                    # Access intermediate variable
+                    vaccess = L.ArrayAccess(name, j)
+                    # Record assignment of vexpr to intermediate variable
+                    intermediates.append(L.Assign(vaccess, vexpr))
 
-                    # Store assignments of operator results in list
-                    assignments += [Assign(vaccess, vcode)]
-
-                # Store access string, either a variable name or an inlined expression
-                self.expr_formatter.variables[v] = format_code(vaccess)
+            # Store access node for future reference
+            vaccesses[v] = vaccess
 
         parts = []
         # Compute all terminals first
-        parts += terminalcode
-        if j > 0:
+        parts += definitions
+        if intermediates:
             # Declare array large enough to hold all subexpressions we've emitted
-            parts += [ArrayDecl("double", name, j)]
+            parts += [L.ArrayDecl("double", name, len(intermediates))]
             # Then add all computations
-            parts += assignments
+            parts += intermediates
         return parts
 
     # TODO: Rather take list of vertices, not markers
     # XXX FIXME: Fix up this function and use it instead!
     def alternative_generate_partition(self, name, C, MT, partition, table_ranges, num_points):
-        terminalcode = []
-        assignments = []
+        L = self.backend.language
+
+        definitions = []
+        intermediates = []
 
         # XXX FIXME: create these!
         # C = input CRS representation of expression DAG
         # MT = input list/dict of modified terminals
 
         self.ast_variables = [None]*len(C) # FIXME: Create outside
-        vertices = [i for i, p in enumerate(partition) if p] # TODO: Get this as input instead of partition?
 
-        for i in vertices:
+        # TODO: Get this as input instead of partition?
+        partition_indices = [i for i, p in enumerate(partition) if p]
+        for i in partition_indices:
             row = C[i] # XXX FIXME: Get this as input
             if len(row) == 1:
                 # Modified terminal
@@ -325,14 +348,15 @@ class IntegralGenerator(object):
                 if isinstance(mt.terminal, ConstantValue):
                     # Format literal value for the chosen language
                     vaccess = modified_literal_to_ast_node[tc](mt) # XXX FIXME: Implement this mapping
-
+                    vdef = None
                 else:
                     # Backend specific modified terminal formatting
-                    vaccess = self.backend_access(mt.terminal, mt, table_ranges[i], num_points)
-                    vdef = self.backend_definitions(mt.terminal, mt, table_ranges[i], vaccess)
+                    vaccess = self.backend.access(mt.terminal, mt, table_ranges[i], num_points)
+                    vdef = self.backend.definitions(mt.terminal, mt, table_ranges[i], vaccess)
 
-                    # Store definitions of terminals in list
-                    terminalcode += [vdef]
+                # Store definitions of terminals in list
+                if vdef is not None:
+                    definitions.append(vdef)
 
             else:
                 # Application of operator with typecode tc to operands with indices ops
@@ -343,29 +367,29 @@ class IntegralGenerator(object):
                 opsaccess = [self.ast_variables[k] for k in ops]
 
                 # Generate expression for this operator application
-                vcode = typecode2astnode[tc](opsaccess) # XXX FIXME: Implement this mapping
+                vexpr = typecode2astnode[tc](opsaccess) # XXX FIXME: Implement this mapping
 
                 store_this_in_variable = True # TODO: Don't store all subexpressions
                 if store_this_in_variable:
-                    # Count assignments so we get a new vname each time
-                    vaccess = ArrayAccess(name, len(assignments))
+                    # Count intermediates so we get a new vname each time
+                    vaccess = L.ArrayAccess(name, len(intermediates))
                     # Store assignments of operator results in list
-                    assignments += [Assign(vaccess, vcode)]
+                    intermediates.append(L.Assign(vaccess, vexpr))
                 else:
                     # Store the inlined expression
-                    vaccess = vcode
+                    vaccess = vexpr
 
-            # Store access string, either a variable name or an inlined expression
+            # Store access string, either a variable symbol or an inlined expression
             self.ast_variables[i] = vaccess
 
         parts = []
         # Compute all terminals first
-        parts += terminalcode
+        parts += definitions
         # Then add all computations
-        if assignments:
+        if intermediates:
             # Declare array large enough to hold all subexpressions we've emitted
-            parts += [ArrayDecl("double", name, len(assignments))]
-            parts += assignments
+            parts += [L.ArrayDecl("double", name, len(intermediates))]
+            parts += intermediates
         return parts
 
     def generate_piecewise_partition(self, num_points):
@@ -373,41 +397,42 @@ class IntegralGenerator(object):
 
         This mostly includes computations involving piecewise constant geometry and coefficients.
         """
-        parts = []
+        L = self.backend.language
         expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
         arrayname = "sp{0}".format(num_points)
-        parts += self.generate_partition(arrayname,
-                                         expr_ir["V"],
-                                         expr_ir["piecewise"],
-                                         expr_ir["table_ranges"],
-                                         num_points)
+        parts = self.generate_partition(arrayname,
+                                        expr_ir["V"],
+                                        expr_ir["piecewise"],
+                                        expr_ir["table_ranges"],
+                                        num_points)
         if parts:
-            parts = [Comment("Section for piecewise constant computations")] + parts + [""]
+            parts.insert(0, L.Comment("Section for piecewise constant computations"))
         return parts
 
     def generate_varying_partition(self, num_points):
-        parts = []
+        L = self.backend.language
         expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
         arrayname = "sv{0}".format(num_points)
-        parts += self.generate_partition(arrayname,
-                                         expr_ir["V"],
-                                         expr_ir["varying"],
-                                         expr_ir["table_ranges"],
-                                         num_points)
-
+        parts = self.generate_partition(arrayname,
+                                        expr_ir["V"],
+                                        expr_ir["varying"],
+                                        expr_ir["table_ranges"],
+                                        num_points)
         if parts:
-            parts = [Comment("Section for geometrically varying computations")] + parts + [""]
+            parts.insert(0, L.Comment("Section for geometrically varying computations"))
         return parts
 
     def generate_argument_partition(self, num_points, iarg, dofrange):
         """Generate code for the partition corresponding to arguments 0..iarg within given dofblock."""
         parts = []
         # TODO: What do we want to do here? Define!
-        # Should this be a single loop over i0, i1 separately outside of the double loop over (i0,i1)?
+        # Should this be a single loop over i0, i1 separately
+        # outside of the double loop over (i0,i1)?
         return parts
 
     def generate_integrand_accumulation(self, num_points, dofblock):
         parts = []
+        L = self.backend.language
 
         expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
         AF = expr_ir["argument_factorization"]
@@ -415,41 +440,41 @@ class IntegralGenerator(object):
         MATR = expr_ir["modified_argument_table_ranges"]
         MA = expr_ir["modified_arguments"]
 
-        idofs = [self.backend_access.argument_loop_index(i) for i in range(self.ir["rank"])]
+        idofs = [self.backend.access.argument_loop_index(i) for i in range(self.ir["rank"])]
 
-        # Find the blocks to build: (TODO: This is rather awkward, having to rediscover these relations here)
-        arguments_and_factors = sorted(iteritems(expr_ir["argument_factorization"]), key=lambda x: x[0])
+        # Find the blocks to build: (TODO: This is rather awkward,
+        # having to rediscover these relations here)
+        arguments_and_factors = sorted(iteritems(expr_ir["argument_factorization"]),
+                                       key=lambda x: x[0])
         for args, factor_index in arguments_and_factors:
-            if not all(tuple(dofblock[iarg]) == tuple(MATR[ma][1:3]) for iarg, ma in enumerate(args)):
+            if not all(tuple(dofblock[iarg]) == tuple(MATR[ma][1:3])
+                       for iarg, ma in enumerate(args)):
                 continue
 
             factors = []
 
             # Get factor expression
-            fcode = self.expr_formatter.visit(V[factor_index])
-            #fcode = self.ast_variables[factor_index] # XXX FIXME
-            if fcode not in ("1", "1.0"):  # TODO: Nicer way to do this
-                factors += [fcode]
+            v = V[factor_index]
+            if v._ufl_is_literal_ and float(v) == 1.0:
+                # TODO: Nicer way to check for f=1?
+                pass
+            else:
+                fexpr = self.vaccesses[num_points][v]
+                factors.append(fexpr)
 
             # Get table names
             argfactors = []
             for i, ma in enumerate(args):
-                access = self.backend_access(MA[ma].terminal, MA[ma], MATR[ma], num_points)
+                access = self.backend.access(MA[ma].terminal, MA[ma], MATR[ma], num_points)
                 argfactors += [access]
+
             factors.extend(argfactors)
 
             # Format index access to A
-            if idofs:
-                dofdims = zip(idofs, self._A_shape)
-                im = IndexMapping(dict((idof, idim) for idof, idim in dofdims))
-                am = AxisMapping(im, [idofs])
-                A_ii, = am.format_index_expressions() # FIXME: Integrate this with other code utils
-            else:
-                A_ii = 0
-            A_access = self.backend_access.element_tensor_entry(A_ii)
+            A_access = self.backend.access.element_tensor_entry(idofs, self._A_shape)
 
             # Emit assignment
-            parts += [AssignAdd(A_access, Product(factors))]
+            parts += [L.AssignAdd(A_access, L.Product(factors))]
 
         return parts
 

@@ -8,6 +8,7 @@ Build gtest:
 
   cd ../libs/gtest-1.7.0/   # This is a copy of the Google Test Framework.
   mkdir lib
+  cd lib
   cmake ..
   make
 
@@ -18,4 +19,3 @@ Running examples:
   py.test unit
   py.test system
   py.test crosslanguage
-
