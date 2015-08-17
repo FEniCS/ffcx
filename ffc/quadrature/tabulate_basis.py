@@ -25,7 +25,7 @@ import numpy, itertools
 # UFL modules
 import ufl
 from ufl.cell import Cell
-from ufl.classes import Grad, CellAvg, FacetAvg
+from ufl.classes import ReferenceGrad, Grad, CellAvg, FacetAvg
 from ufl.algorithms import extract_unique_elements, extract_type, extract_elements
 
 # FFC modules
@@ -58,7 +58,7 @@ def _find_element_derivatives(expr, elements, element_replace_map):
     num_derivatives = dict((e, 0) for e in elements)
 
     # Extract the derivatives from the integral.
-    derivatives = set(extract_type(expr, Grad))
+    derivatives = set(extract_type(expr, Grad)) | set(extract_type(expr, ReferenceGrad))
 
     # Loop derivatives and extract multiple derivatives.
     for d in list(derivatives):
@@ -67,7 +67,7 @@ def _find_element_derivatives(expr, elements, element_replace_map):
         elem, = extract_elements(d.ufl_operands[0])
         elem = element_replace_map[elem]
         # Set the number of derivatives to the highest value encountered so far.
-        num_derivatives[elem] = max(num_derivatives[elem], len(extract_type(d, Grad)))
+        num_derivatives[elem] = max(num_derivatives[elem], len(extract_type(d, Grad)), len(extract_type(d, ReferenceGrad)))
     return num_derivatives
 
 def domain_to_entity_dim(integral_type, tdim):

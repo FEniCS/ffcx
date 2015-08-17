@@ -460,74 +460,6 @@ class QuadratureTransformerBase(Transformer):
 
         return function_code
 
-    def constant(self, o):
-        #print("\n\nVisiting Constant: " + repr(o))
-
-        # Map o to object with proper element and count
-        o = self._function_replace_map[o]
-
-        # Safety checks.
-        ffc_assert(len(self.component()) == 0, "Constant does not expect component indices: " + repr(self._components))
-        ffc_assert(o.shape() == (), "Constant should not have a value shape: " + repr(o.shape()))
-
-        # Component default is 0
-        component = 0
-
-        # Handle restriction.
-        if self.restriction == "-":
-            component += 1
-
-        # Let child class create constant symbol
-        coefficient = format["coefficient"](o.count(), component)
-        return self._create_symbol(coefficient, CONST)
-
-    def vector_constant(self, o):
-        #print("\n\nVisiting VectorConstant: " + repr(o))
-
-        # Map o to object with proper element and count
-        o = self._function_replace_map[o]
-
-        # Get the component
-        components = self.component()
-
-        # Safety checks.
-        ffc_assert(len(components) == 1, "VectorConstant expects 1 component index: " + repr(components))
-
-        # We get one component.
-        component = components[0]
-
-        # Handle restriction.
-        if self.restriction == "-":
-            component += o.shape()[0]
-
-        # Let child class create constant symbol
-        coefficient = format["coefficient"](o.count(), component)
-        return self._create_symbol(coefficient, CONST)
-
-    def tensor_constant(self, o):
-        #print("\n\nVisiting TensorConstant: " + repr(o))
-
-        # Map o to object with proper element and count
-        o = self._function_replace_map[o]
-
-        # Get the components
-        components = self.component()
-
-        # Safety checks.
-        ffc_assert(len(components) == len(o.shape()), \
-                   "The number of components '%s' must be equal to the number of shapes '%s' for TensorConstant." % (repr(components), repr(o.shape())))
-
-        # Let the UFL element handle the component map.
-        component = o.element()._sub_element_mapping[components]
-
-        # Handle restriction (offset by value shape).
-        if self.restriction == "-":
-            component += product(o.shape())
-
-        # Let child class create constant symbol
-        coefficient = format["coefficient"](o.count(), component)
-        return self._create_symbol(coefficient, CONST)
-
     # -------------------------------------------------------------------------
     # SpatialCoordinate (geometry.py).
     # -------------------------------------------------------------------------
@@ -935,10 +867,10 @@ class QuadratureTransformerBase(Transformer):
             # Map component using component map from UFL. (TODO: inefficient use of this function)
             comp_map, _ = build_component_numbering(local_elem.value_shape(), local_elem.symmetry())
             local_comp = comp_map[local_comp]
-            
+
         # Set local_comp to 0 if it is ()
         if not local_comp: local_comp = 0
-           
+
         # Check that component != not () since the UFL component map will turn
         # it into 0, and () does not mean zeroth component in this context.
         if len(component):
