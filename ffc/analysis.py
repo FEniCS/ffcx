@@ -129,7 +129,19 @@ def _analyze_form(form, parameters):
                "Form (%s) seems to be zero: cannot compile it." % str(form))
 
     # Compute form metadata
-    form_data = compute_form_data(form)
+    if parameters["representation"] == "uflacs":
+        # Temporary workaround to let uflacs have a different preprocessing pipeline
+        # than the legacy representations quadrature and tensor. This approach imposes
+        # a limitation that e.g. uflacs and tensor representation cannot be mixed in the same form.
+        form_data = compute_form_data(form,
+                                      do_apply_function_pullbacks=True,
+                                      do_apply_integral_scaling=True,
+                                      do_apply_geometry_lowering=True,
+                                      preserve_geometry_types=(),
+                                      do_apply_restrictions=True,
+                                      )
+    else:
+        form_data = compute_form_data(form)
 
     info("")
     info(str(form_data))
@@ -139,6 +151,7 @@ def _analyze_form(form, parameters):
 
     return form_data
 
+# FIXME: Refactor this code. The data flow here is really something special. It's also buggy with side effects into user code by modifying dicts in-place.
 def _attach_integral_metadata(form_data, parameters):
     "Attach integral metadata"
 
@@ -164,11 +177,12 @@ def _attach_integral_metadata(form_data, parameters):
 
             # Automatic selection of representation
             r = integral_metadata["representation"]
+
             # Hack to override representation with environment variable
             forced_r = os.environ.get("FFC_FORCE_REPRESENTATION")
             if forced_r:
                 r = forced_r
-                info("representation:    forced --> %s" % r)
+                warning("representation:    forced by $FFC_FORCE_REPRESENTATION to '%s'" % r)
             elif r == "auto":
                 r = _auto_select_representation(integral,
                                                 form_data.unique_sub_elements,
@@ -199,6 +213,7 @@ def _attach_integral_metadata(form_data, parameters):
                 error("Illegal quadrature degree for integral: " + str(qd))
             tdim = integral.domain().topological_dimension()
             _check_quadrature_degree(qd, tdim)
+
             integral_metadata["quadrature_degree"] = qd
             assert isinstance(qd, int)
 
@@ -268,6 +283,7 @@ def _attach_integral_metadata(form_data, parameters):
     else:
         scheme = "canonical"
         info("Quadrature rule must be equal within each sub domain, using %s rule." % scheme)
+
     # FIXME: This modifies the elements depending on the form compiler parameters,
     #        this is a serious breach of the immutability of ufl objects, since the
     #        element quad scheme is part of the signature and hash of the element...

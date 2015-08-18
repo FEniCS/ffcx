@@ -251,6 +251,12 @@ def _check_parameters(parameters):
         warning("BLAS mode unavailable (will return in a future version).")
     if "quadrature_points" in parameters:
         warning("Option 'quadrature_points' has been replaced by 'quadrature_degree'.")
+
+    # HACK
+    import os
+    r = os.environ.get("FFC_FORCE_REPRESENTATION")
+    if r: parameters["representation"] = r
+
     return parameters
 
 def _print_timing(stage, timing):

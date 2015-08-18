@@ -267,7 +267,7 @@ format.update({
     "generate facet area":      lambda tdim, gdim: facet_area[tdim][gdim],
     "generate min facet edge length": lambda tdim, gdim, r=None: min_facet_edge_length[tdim][gdim] % {"restriction": _choose_map(r)},
     "generate max facet edge length": lambda tdim, gdim, r=None: max_facet_edge_length[tdim][gdim] % {"restriction": _choose_map(r)},
-    "generate ip coordinates":  lambda g, num_ip, name, ip, r=None: (ip_coordinates[g][0], ip_coordinates[g][1] % \
+    "generate ip coordinates":  lambda g, t, num_ip, name, ip, r=None: (ip_coordinates[t][g][0], ip_coordinates[t][g][1] % \
                                 {"restriction": _choose_map(r), "ip": ip, "name": name, "num_ip": num_ip}),
     "scale factor snippet":     scale_factor,
     "map onto physical":        map_onto_physical,
