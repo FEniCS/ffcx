@@ -760,12 +760,12 @@ transform_snippet = {"interval": {1: _transform_snippet(1, 1),
                                   3: _transform_snippet(2, 3)},
                      "tetrahedron": {3: _transform_snippet(3, 3)}}
 
-ip_coordinates = {1: {1: _ip_coordinates_1D,
-                      2: _ip_coordinates_2D_1D,
-                      3: _ip_coordinates_3D_1D},
-                  2: {2: _ip_coordinates_2D,
-                      3: _ip_coordinates_3D_2D},
-                  3: {3: _ip_coordinates_3D}}
+ip_coordinates = {1: {1: (3, _ip_coordinates_1D),
+                      2: (6, _ip_coordinates_2D_1D),
+                      3: (9, _ip_coordinates_3D_1D)},
+                  2: {2: (10, _ip_coordinates_2D),
+                      3: (15, _ip_coordinates_3D_2D)},
+                  3: {3: (21, _ip_coordinates_3D)}}
 
 # FIXME: Rename as in compute_jacobian _compute_foo_<shape>_<n>d
 

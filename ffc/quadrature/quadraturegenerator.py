@@ -99,7 +99,8 @@ def _tabulate_tensor(ir, prefix, parameters):
         tensor_code, mem_code, num_ops = _generate_element_tensor(integrals,
                                                                   sets,
                                                                   opt_par,
-                                                                  gdim)
+                                                                  gdim,
+                                                                  tdim)
         tensor_code = "\n".join(tensor_code)
 
         # Set operations equal to num_ops (for printing info on operations).
@@ -125,7 +126,7 @@ def _tabulate_tensor(ir, prefix, parameters):
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
             # Update transformer with facets and generate case code + set of used geometry terms.
-            c, mem_code, ops = _generate_element_tensor(integrals[i], sets, opt_par, gdim)
+            c, mem_code, ops = _generate_element_tensor(integrals[i], sets, opt_par, gdim, tdim)
             case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
             case += c
             cases[i] = "\n".join(case)
@@ -168,7 +169,8 @@ def _tabulate_tensor(ir, prefix, parameters):
                 c, mem_code, ops = _generate_element_tensor(integrals[i][j],
                                                             sets,
                                                             opt_par,
-                                                            gdim)
+                                                            gdim,
+                                                            tdim)
                 case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
                 case += c
                 cases[i][j] = "\n".join(case)
@@ -209,7 +211,8 @@ def _tabulate_tensor(ir, prefix, parameters):
             c, mem_code, ops = _generate_element_tensor(integrals[i],
                                                         sets,
                                                         opt_par,
-                                                        gdim)
+                                                        gdim,
+                                                        tdim)
             case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
             case += c
             cases[i] = "\n".join(case)
@@ -250,6 +253,7 @@ def _tabulate_tensor(ir, prefix, parameters):
                                                                   sets,
                                                                   opt_par,
                                                                   gdim,
+                                                                  tdim,
                                                                   generate_custom_facet_normal)
 
         tensor_code = "\n".join(tensor_code)
@@ -345,7 +349,7 @@ def _tabulate_tensor(ir, prefix, parameters):
 
     return "\n".join(common) + "\n" + tensor_code
 
-def _generate_element_tensor(integrals, sets, optimise_parameters, gdim, generate_custom_facet_normal=False):
+def _generate_element_tensor(integrals, sets, optimise_parameters, gdim, tdim, generate_custom_facet_normal=False):
     "Construct quadrature code for element tensors."
 
     # Prefetch formats to speed up code generation.
@@ -385,7 +389,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, gdim, generat
             name, gdim, ip, r = coordinate
             element_code += ["", f_comment("Declare array to hold physical coordinate of quadrature point.")]
             element_code += [f_decl(f_double, f_X(points, gdim))]
-            ops, coord_code = f_ip_coords(gdim, points, name, ip, r)
+            ops, coord_code = f_ip_coords(gdim, tdim, points, name, ip, r)
             ip_code += ["", f_comment("Compute physical coordinate of quadrature point, operations: %d." % ops)]
             ip_code += [coord_code]
             num_ops += ops
