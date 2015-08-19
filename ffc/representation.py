@@ -451,9 +451,6 @@ def _tabulate_dofs(element, cell):
     if isinstance(element, SpaceOfReals):
         return None
 
-    # Extract number of entities for each dimension for this cell
-    num_entities = cell.num_entities()
-
     # Extract number of dofs per entity for each element
     elements = all_elements(element)
     num_dofs_per_element = [_num_dofs_per_entity(e) for e in elements]
@@ -475,7 +472,7 @@ def _tabulate_dofs(element, cell):
     # Handle global "elements"
     fakes = [isinstance(e, SpaceOfReals) for e in elements]
 
-    return (dofs_per_element, num_dofs_per_element, num_entities, need_offset, fakes)
+    return (dofs_per_element, num_dofs_per_element, need_offset, fakes)
 
 def _tabulate_facet_dofs(element, cell):
     "Compute intermediate representation of tabulate_facet_dofs."

@@ -489,6 +489,20 @@ static const double hexahedron_reference_facet_normals[UFC_NUM_FACETS_IN_HEXAHED
   };
 */
 
+/// --- Reference cell volumes by UFC conventions ---
+
+static const double interval_reference_cell_volume = 1.0;
+static const double triangle_reference_cell_volume = 0.5;
+static const double tetrahedron_reference_cell_volume = 1.0/6.0;
+static const double quadrilateral_reference_cell_volume = 1.0;
+static const double hexahedron_reference_cell_volume = 1.0;
+
+static const double interval_reference_facet_volume = 1.0;
+static const double triangle_reference_facet_volume = 1.0;
+static const double tetrahedron_reference_facet_volume = 0.5;
+static const double quadrilateral_reference_facet_volume = 1.0;
+static const double hexahedron_reference_facet_volume = 1.0;
+
 /// --- Jacobians of reference facet cell to reference cell coordinate mappings by UFC conventions ---
 
 static const double triangle_reference_facet_jacobian[UFC_NUM_FACETS_IN_TRIANGLE][UFC_TDIM_2][UFC_TDIM_2-1] = {

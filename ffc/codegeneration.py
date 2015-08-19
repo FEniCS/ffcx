@@ -349,8 +349,7 @@ def _tabulate_dofs(ir):
         return assign(component(dofs_variable, 0), 0)
 
     # Extract representation
-    (dofs_per_element, num_dofs_per_element, num_entities,
-     need_offset, fakes) = ir
+    (dofs_per_element, num_dofs_per_element, need_offset, fakes) = ir
 
     # Declare offset if needed
     code = []

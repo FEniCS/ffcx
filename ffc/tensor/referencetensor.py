@@ -41,8 +41,7 @@ class ReferenceTensor:
                  facet0, facet1,
                  quadrature_order,
                  quadrature_rule,
-                 cellname,
-                 facet_cellname):
+                 cell):
         "Create reference tensor for given monomial."
 
         # Compute reference tensor
@@ -51,8 +50,7 @@ class ReferenceTensor:
                             facet0, facet1,
                             quadrature_order,
                             quadrature_rule,
-                            cellname,
-                            facet_cellname)
+                            cell)
 
         # Extract indices
         primary_indices   = monomial.extract_unique_indices(MonomialIndex.PRIMARY)

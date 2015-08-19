@@ -21,11 +21,31 @@ quadrature and tensor representation."""
 # Modified by Martin Alnaes 2013-2015
 # Modified by Anders Logg 2014
 
+import numpy
+
 from ufl.measure import integral_type_to_measure_name
+from ufl.cell import cellname2facetname
 
 from ffc.fiatinterface import create_element
 from ffc.cpp import format
 from ffc.log import error
+
+from ffc.quadrature_schemes import create_quadrature
+
+def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
+    "Create quadrature rule and return points and weights."
+    if integral_type == "cell":
+        (points, weights) = create_quadrature(cell.cellname(), degree, rule)
+    elif integral_type == "exterior_facet" or integral_type == "interior_facet":
+        facet_cellname = cellname2facetname[cell.cellname()]
+        (points, weights) = create_quadrature(facet_cellname, degree, rule)
+    elif integral_type == "vertex":
+        (points, weights) = ([()], numpy.array([1.0,])) # TODO: Will be fixed
+    elif integral_type == "custom":
+        (points, weights) = (None, None)
+    else:
+        error("Unknown integral type: " + str(integral_type))
+    return (points, weights)
 
 def transform_component(component, offset, ufl_element):
     """
