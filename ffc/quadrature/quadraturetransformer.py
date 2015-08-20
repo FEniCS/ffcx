@@ -31,7 +31,7 @@ def firstkey(d):
     return next(iterkeys(d))
 
 # UFL common.
-from ufl.common import product, StackDict, Stack
+from ufl.utils.stacks import StackDict, Stack
 from ufl.utils.sorting import sorted_by_key
 
 # UFL Classes.
@@ -549,7 +549,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                 elif transformation == "pullback as metric":
                     # g_ij = (Jinv)_ki G_kl (Jinv)lj
                     i = local_comp // tdim
-                    j = local_comp %  tdim                    
+                    j = local_comp %  tdim
                     for k in range(tdim):
                         for l in range(tdim):
                             # Create mapping and basis name.
@@ -558,7 +558,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                                 deriv, avg, ufl_argument, ffc_element)
                             if not mapping in code:
                                 code[mapping] = []
-                            if basis is not None:                  
+                            if basis is not None:
                                 J1 = f_transform("JINV", k, i, tdim, gdim, self.restriction)
                                 J2 = f_transform("JINV", l, j, tdim, gdim, self.restriction)
                                 self.trans_set.add(J1)
@@ -647,7 +647,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                 elif transformation == "pullback as metric":
                     # g_ij = (Jinv)_ki G_kl (Jinv)lj
                     i = local_comp // tdim
-                    j = local_comp %  tdim                    
+                    j = local_comp %  tdim
                     for k in range(tdim):
                         for l in range(tdim):
                             # Create mapping and basis name.

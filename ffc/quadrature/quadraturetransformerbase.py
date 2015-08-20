@@ -21,9 +21,6 @@ transformers to translate UFL expressions."""
 # Modified by Martin Alnaes, 2013
 # Modified by Garth N. Wells, 2013
 # Modified by Lizao Li, 2015
-#
-# First added:  2009-10-13
-# Last changed: 2015-03-20
 
 # Python modules.
 from six.moves import zip
@@ -31,7 +28,7 @@ from numpy import shape, array
 
 # UFL Classes.
 from ufl.classes import FixedIndex, Index
-from ufl.common import StackDict, Stack, product
+from ufl.utils.stacks import StackDict, Stack
 from ufl.permutation import build_component_numbering
 
 # UFL Algorithms.

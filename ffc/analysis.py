@@ -30,7 +30,6 @@ form representation type.
 import os
 
 # UFL modules
-from ufl.common import istr, tstr
 from ufl.finiteelement import MixedElement, EnrichedElement
 from ufl.algorithms import estimate_total_polynomial_degree
 from ufl.algorithms import sort_elements
