@@ -244,6 +244,14 @@ class FFCDefinitionsBackend(MultiFunction):
 
         return code
 
+    def reference_cell_volume(self, e, mt, tabledata, access):
+        # Constant table defined in ufc_geometry.h
+        return []
+
+    def reference_facet_volume(self, e, mt, tabledata, access):
+        # Constant table defined in ufc_geometry.h
+        return []
+
     def reference_normal(self, e, mt, tabledata, access):
         # Constant table defined in ufc_geometry.h
         return []

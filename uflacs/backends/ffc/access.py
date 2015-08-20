@@ -214,6 +214,22 @@ class FFCAccessBackend(MultiFunction):
 
         return L.Symbol(format_mt_name(names.J, mt))
 
+    def reference_cell_volume(self, e, mt, tabledata, access):
+        L = self.language
+        cellname = mt.terminal.domain().cell().cellname()
+        if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
+            return L.Symbol("{0}_reference_cell_volume".format(cellname))
+        else:
+            error("Unhandled cell types {0}.".format(cellname))
+
+    def reference_facet_volume(self, e, mt, tabledata, access):
+        L = self.language
+        cellname = mt.terminal.domain().cell().cellname()
+        if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
+            return L.Symbol("{0}_reference_facet_volume".format(cellname))
+        else:
+            error("Unhandled cell types {0}.".format(cellname))
+
     def reference_normal(self, e, mt, tabledata, access):
         L = self.language
         cellname = mt.terminal.domain().cell().cellname()
