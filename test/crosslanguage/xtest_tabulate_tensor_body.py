@@ -3,7 +3,7 @@
 from six.moves import xrange as range
 import ufl
 from ufl import *
-#from ufl.common import product
+#from ufl import product
 
 from uflacs.backends.toy.toy_compiler import compile_expression
 

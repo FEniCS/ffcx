@@ -18,7 +18,7 @@
 
 """Assigning symbols to computational graph nodes."""
 
-from ufl.common import product
+from ufl import product
 
 
 from uflacs.datastructures.arrays import int_array, object_array

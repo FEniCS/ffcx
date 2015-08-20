@@ -1,7 +1,7 @@
 #!/usr/bin/env py.test
 
 import ufl
-from ufl.common import product
+from ufl import product
 
 from uflacs.backends.toy.toy_compiler import compile_expression
 

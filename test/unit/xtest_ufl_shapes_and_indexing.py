@@ -4,7 +4,7 @@ Tests of utilities for dealing with ufl indexing and components vs flattened ind
 """
 
 from ufl import *
-from ufl.common import product
+from ufl import product
 from ufl.permutation import compute_indices
 
 from uflacs.analysis.indexing import (map_indexed_arg_components,

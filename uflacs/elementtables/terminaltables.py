@@ -22,7 +22,7 @@ from six import iteritems, iterkeys
 from six.moves import xrange as range
 
 import ufl
-from ufl.common import product
+from ufl import product
 from ufl.utils.derivativetuples import derivative_listing_to_counts
 from ufl.classes import FormArgument, GeometricQuantity, SpatialCoordinate, Jacobian
 from ufl.algorithms.analysis import unique_tuple

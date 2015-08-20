@@ -26,9 +26,6 @@ The total shape of a tensor valued expression A and A[*indices(A.rank())]
 is therefore the same.
 """
 
-from ufl.common import sorted_by_count
-from ufl.classes import Condition
-
 
 def compute_index_shape(v):
     "Compute the 'index shape' of v."
