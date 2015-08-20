@@ -24,7 +24,7 @@ import numpy, itertools
 
 # UFL modules
 import ufl
-from ufl.cell import Cell
+from ufl.cell import Cell, num_cell_entities
 from ufl.classes import ReferenceGrad, Grad, CellAvg, FacetAvg
 from ufl.algorithms import extract_unique_elements, extract_type, extract_elements
 
@@ -34,19 +34,7 @@ from ffc.utils import product
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import map_facet_points, reference_cell_vertices
 from ffc.quadrature_schemes import create_quadrature
-
-def _create_quadrature_points_and_weights(integral_type, cellname, facet_cellname, degree, rule):
-    if integral_type == "cell":
-        (points, weights) = create_quadrature(cellname, degree, rule)
-    elif integral_type == "exterior_facet" or integral_type == "interior_facet":
-        (points, weights) = create_quadrature(facet_cellname, degree, rule)
-    elif integral_type == "vertex":
-        (points, weights) = ([()], numpy.array([1.0,])) # TODO: Will be fixed
-    elif integral_type == "custom":
-        (points, weights) = (None, None)
-    else:
-        error("Unknown integral type: " + str(integral_type))
-    return (points, weights)
+from ffc.representationutils import create_quadrature_points_and_weights
 
 def _find_element_derivatives(expr, elements, element_replace_map):
     "Find the highest derivatives of given elements in expression."
@@ -120,10 +108,9 @@ def _tabulate_psi_table(integral_type, cellname, tdim, element, deriv_order, poi
     # Handle case when list of points is empty
     if points is None:
         return _tabulate_empty_psi_table(tdim, deriv_order, element)
-
     # Otherwise, call FIAT to tabulate
     entity_dim = domain_to_entity_dim(integral_type, tdim)
-    num_entities = Cell(cellname).num_entities(entity_dim)
+    num_entities = num_cell_entities[cellname][entity_dim]
     psi_table = {}
     for entity in range(num_entities):
         entity_points = _map_entity_points(cellname, tdim, points, entity_dim, entity)
@@ -138,7 +125,7 @@ def _tabulate_entities(integral_type, cellname, tdim):
     # MSA: I attempted to generalize this function, could this way of
     # handling domain types generically extend to other parts of the code?
     entity_dim = domain_to_entity_dim(integral_type, tdim)
-    num_entities = Cell(cellname).num_entities(entity_dim)
+    num_entities = num_cell_entities[cellname][entity_dim]
     entities = set()
     for entity in range(num_entities):
         # TODO: Use 0 as key for cell and we may be able to generalize other places:
@@ -173,8 +160,8 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
     avg_elements = { "cell": [], "facet": [] }
 
     integral_type = itg_data.integral_type
-    cellname = itg_data.domain.cell().cellname()
-    facet_cellname = itg_data.domain.cell().facet_cellname()
+    cell = itg_data.domain.cell()
+    cellname = cell.cellname()
     tdim = itg_data.domain.topological_dimension()
 
     # Loop the quadrature points and tabulate the basis values.
@@ -183,8 +170,7 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
 
         # --------- Creating quadrature rule
         # Make quadrature rule and get points and weights.
-        (points, weights) = _create_quadrature_points_and_weights(integral_type, cellname,
-                                                                  facet_cellname, degree, scheme)
+        (points, weights) = create_quadrature_points_and_weights(integral_type, cell, degree, scheme)
         # The TOTAL number of weights/points
         len_weights = None if weights is None else len(weights)
 
@@ -265,8 +251,7 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
             fiat_element = create_element(element)
 
             # Make quadrature rule and get points and weights.
-            (points, weights) = _create_quadrature_points_and_weights(avg_integral_type, cellname,
-                                                                      facet_cellname, element.degree(), "default")
+            (points, weights) = create_quadrature_points_and_weights(avg_integral_type, cell, element.degree(), "default")
             wsum = sum(weights)
 
             # Tabulate table of basis functions and derivatives in points

@@ -151,8 +151,8 @@ def _create_fiat_element(ufl_element):
         # Handle Bubble element as RestrictedElement of P_{k} to interior
         if family == "Bubble":
             V = FIAT.supported_elements["Lagrange"](fiat_cell, degree)
-            dim = domain.topological_dimension()
-            return RestrictedElement(V, _indices(V, "interior", dim), None)
+            tdim = domain.topological_dimension()
+            return RestrictedElement(V, _indices(V, "interior", tdim), None)
 
         # Check if finite element family is supported by FIAT
         if not family in FIAT.supported_elements:
@@ -245,8 +245,8 @@ def _extract_elements(ufl_element, domain=None):
     # Handle restricted elements since they might be mixed elements too.
     if isinstance(ufl_element, ufl.RestrictedElement):
         base_element = ufl_element.element()
-        restriction = ufl_element.cell_restriction()
-        return _extract_elements(base_element, restriction)
+        restriction_domain = ufl_element.restriction_domain()
+        return _extract_elements(base_element, restriction_domain)
 
     if domain:
         ufl_element = ufl.RestrictedElement(ufl_element, domain)
@@ -262,12 +262,13 @@ def _create_restricted_element(ufl_element):
         error("create_restricted_element expects an ufl.RestrictedElement")
 
     base_element = ufl_element.element()
-    restriction_domain = ufl_element.cell_restriction()
+    restriction_domain = ufl_element.restriction_domain()
 
     # If simple element -> create RestrictedElement from fiat_element
     if isinstance(base_element, ufl.FiniteElement):
         element = _create_fiat_element(base_element)
-        return RestrictedElement(element, _indices(element, restriction_domain), restriction_domain)
+        tdim = ufl_element.cell().topological_dimension()
+        return RestrictedElement(element, _indices(element, restriction_domain, tdim), restriction_domain)
 
     # If restricted mixed element -> convert to mixed restricted element
     if isinstance(base_element, ufl.MixedElement):
@@ -276,7 +277,7 @@ def _create_restricted_element(ufl_element):
 
     error("Cannot create restricted element from %s" % str(ufl_element))
 
-def _indices(element, restriction_domain, dim=0):
+def _indices(element, restriction_domain, tdim):
     "Extract basis functions indices that correspond to restriction_domain."
 
     # FIXME: The restriction_domain argument in FFC/UFL needs to be re-thought and
@@ -284,31 +285,27 @@ def _indices(element, restriction_domain, dim=0):
 
     # If restriction_domain is "interior", pick basis functions associated with
     # cell.
-    if restriction_domain == "interior" and dim:
-        return element.entity_dofs()[dim][0]
+    if restriction_domain == "interior":
+        return element.entity_dofs()[tdim][0]
 
-    # If restriction_domain is a ufl.Cell, pick basis functions associated with
+    # Pick basis functions associated with
     # the topological degree of the restriction_domain and of all lower
     # dimensions.
-    if isinstance(restriction_domain, ufl.Cell):
-        dim = restriction_domain.topological_dimension()
-        entity_dofs = element.entity_dofs()
-        indices = []
-        for dim in range(restriction_domain.topological_dimension() + 1):
-            entities = entity_dofs[dim]
-            for (entity, index) in sorted_by_key(entities):
-                indices += index
-        return indices
-
-    # Just extract all indices to make handling in RestrictedElement
-    # uniform.
-    #elif isinstance(restriction_domain, ufl.Measure):
-    #    indices = []
-    #    entity_dofs = element.entity_dofs()
-    #    for dim, entities in entity_dofs.items():
-    #        for entity, index in entities.items():
-    #            indices += index
-    #    return indices
-
+    if restriction_domain == "facet":
+        rdim = tdim-1
+    elif restriction_domain == "face":
+        rdim = 2
+    elif restriction_domain == "edge":
+        rdim = 1
+    elif restriction_domain == "vertex":
+        rdim = 0
     else:
         error("Restriction to domain: %s, is not supported." % repr(restriction_domain))
+
+    entity_dofs = element.entity_dofs()
+    indices = []
+    for dim in range(rdim + 1):
+        entities = entity_dofs[dim]
+        for (entity, index) in sorted_by_key(entities):
+            indices += index
+    return indices

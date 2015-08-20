@@ -33,6 +33,7 @@ from ffc.log import info, debug, error
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import map_facet_points
 from ffc.quadrature_schemes import create_quadrature
+from ffc.representationutils import create_quadrature_points_and_weights
 
 # FFC tensor representation modules
 from .multiindex import build_indices
@@ -44,8 +45,7 @@ def integrate(monomial,
               facet0, facet1,
               quadrature_degree,
               quadrature_rule,
-              cellname,
-              facet_cellname):
+              cell):
     """Compute the reference tensor for a given monomial term of a
     multilinear form"""
 
@@ -55,12 +55,7 @@ def integrate(monomial,
     tic = time.time()
 
     # Initialize quadrature points and weights
-    (points, weights) = _init_quadrature(monomial.arguments,
-                                         integral_type,
-                                         quadrature_degree,
-                                         quadrature_rule,
-                                         cellname,
-                                         facet_cellname)
+    (points, weights) = create_quadrature_points_and_weights(integral_type, cell, quadrature_degree, quadrature_rule)
 
     # Initialize quadrature table for basis functions
     table = _init_table(monomial.arguments,
@@ -82,16 +77,6 @@ def integrate(monomial,
     debug("Shape of reference tensor: " + str(numpy.shape(A0)))
 
     return A0
-
-def _init_quadrature(arguments, integral_type, quadrature_degree, quadrature_rule, cellname, facet_cellname):
-    "Initialize quadrature for given monomial."
-    # Create quadrature rule and get points and weights
-    if integral_type == "cell":
-        (points, weights) = create_quadrature(cellname, quadrature_degree, quadrature_rule)
-    else:
-        (points, weights) = create_quadrature(facet_cellname, quadrature_degree, quadrature_rule)
-
-    return (points, weights)
 
 def _init_table(arguments, integral_type, points, facet0, facet1):
     """Initialize table of basis functions and their derivatives at

@@ -324,11 +324,6 @@ def _auto_select_representation(integral, elements, function_replace_map):
     if len([e for e in sub_elements if e.family() == "Quadrature"]):
         return "quadrature"
 
-    # Use quadrature representation if any elements are restricted to
-    # ufl.Measure. This is used when integrals are computed over discontinuities.
-    #if len([e for e in sub_elements if isinstance(e, ufl.RestrictedElement) and isinstance(e.cell_restriction(), Measure)]):
-    #    return "quadrature"
-
     # Estimate cost of tensor representation
     tensor_cost = estimate_cost(integral, function_replace_map)
     debug("Estimated cost of tensor representation: " + str(tensor_cost))

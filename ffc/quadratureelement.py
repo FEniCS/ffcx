@@ -53,7 +53,6 @@ class QuadratureElement:
         # Get cell and facet names.
         domain, = ufl_element.domains() # Assuming single domain
         cellname = domain.cell().cellname()
-        #facet_cellname = domain.cell().facet_cellname()
         points, weights = create_quadrature(cellname, degree, self._quad_scheme)
 
         # Save the quadrature points
