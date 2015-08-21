@@ -43,12 +43,12 @@ def extract_terminal_elements(terminal_data):
         t = mt.terminal
         if isinstance(t, FormArgument):
             # Add element for function and its coordinates
-            elements.append(t.domain().coordinate_element())
+            elements.append(t.domain().ufl_coordinate_element)
             elements.append(t.element())
 
         elif isinstance(t, GeometricQuantity):
             # Add element for coordinate field of domain
-            elements.append(t.domain().coordinate_element())
+            elements.append(t.domain().ufl_coordinate_element)
 
     return unique_tuple(elements)
 
@@ -99,10 +99,10 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
             element = t.element()
 
         elif isinstance(t, SpatialCoordinate):
-            element = t.domain().coordinate_element()
+            element = t.domain().ufl_coordinate_element
 
         elif isinstance(t, Jacobian):
-            element = t.domain().coordinate_element()
+            element = t.domain().ufl_coordinate_element
             fc = gc[0]
             ld = tuple(sorted((gc[1],) + ld))
             #fc, ld = gc
