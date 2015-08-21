@@ -134,7 +134,7 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
                    }[itg_data.integral_type]
 
     # Extract data
-    cell = itg_data.domain.ufl_cell
+    cell = itg_data.domain.ufl_cell()
     cellname = cell.cellname()
     tdim = cell.topological_dimension()
     assert all(tdim == itg.domain().topological_dimension() for itg in itg_data.integrals)

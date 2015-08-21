@@ -52,7 +52,7 @@ class QuadratureElement:
         # TODO: KBO: What should we do about quadrature functions that live on ds, dS?
         # Get cell and facet names.
         domain, = ufl_element.domains() # Assuming single domain
-        cellname = domain.ufl_cell.cellname()
+        cellname = domain.ufl_cell().cellname()
         points, weights = create_quadrature(cellname, degree, self._quad_scheme)
 
         # Save the quadrature points

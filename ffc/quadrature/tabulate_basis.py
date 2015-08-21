@@ -160,7 +160,7 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
     avg_elements = { "cell": [], "facet": [] }
 
     integral_type = itg_data.integral_type
-    cell = itg_data.domain.ufl_cell
+    cell = itg_data.domain.ufl_cell()
     cellname = cell.cellname()
     tdim = itg_data.domain.topological_dimension()
 

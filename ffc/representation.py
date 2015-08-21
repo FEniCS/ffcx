@@ -112,7 +112,7 @@ def _compute_element_ir(ufl_element, element_id, element_numbers):
     # Create FIAT element
     element = create_element(ufl_element)
     domain, = ufl_element.domains() # Assuming single domain
-    cellname = domain.ufl_cell.cellname()
+    cellname = domain.ufl_cell().cellname()
 
     # Store id
     ir = {"id": element_id}
@@ -141,7 +141,7 @@ def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
     # Create FIAT element
     element = create_element(ufl_element)
     domain, = ufl_element.domains() # Assuming single domain
-    cell = domain.ufl_cell
+    cell = domain.ufl_cell()
     cellname = cell.cellname()
 
     # Precompute repeatedly used items
@@ -360,7 +360,7 @@ def _evaluate_basis(ufl_element, element):
     "Compute intermediate representation for evaluate_basis."
 
     domain, = ufl_element.domains() # Assuming single domain
-    cellname = domain.ufl_cell.cellname()
+    cellname = domain.ufl_cell().cellname()
 
     # Handle Mixed and EnrichedElements by extracting 'sub' elements.
     elements = _extract_elements(element)
@@ -515,7 +515,7 @@ def _interpolate_vertex_values(ufl_element, element):
             return "Function is not implemented for DiscontinuousLagrangeTrace."
 
     domain, = ufl_element.domains() # Assuming single domain
-    cellname = domain.ufl_cell.cellname()
+    cellname = domain.ufl_cell().cellname()
 
     ir = {}
     ir["geometric_dimension"] = domain.geometric_dimension()
