@@ -28,8 +28,8 @@ is a wrapper for the standard Python logging module.
 from ufl.log import Logger
 from ufl.log import log_functions
 from ufl.log import INFO, DEBUG, ERROR, CRITICAL
-from ufl.common import dstr, tstr
 from ufl.utils.sorting import sorted_by_key
+from ufl.utils.formatting import dstr, tstr
 
 # Create FFC logger
 ffc_logger = Logger("FFC")

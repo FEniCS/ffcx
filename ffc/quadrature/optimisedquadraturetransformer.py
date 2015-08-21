@@ -29,7 +29,7 @@ def firstkey(d):
     return next(iterkeys(d))
 
 # UFL common.
-from ufl.common import product
+from ufl import product
 from ufl.utils.sorting import sorted_by_key
 
 # UFL Classes.
