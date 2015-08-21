@@ -22,7 +22,7 @@ from six import iteritems, iterkeys
 from six.moves import zip
 from six.moves import xrange as range
 
-from ufl.common import product
+from ufl import product
 from ufl.classes import ConstantValue
 
 from ffc.log import error

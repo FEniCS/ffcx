@@ -19,7 +19,7 @@
 """Algorithms for the representation phase of the form compilation."""
 
 
-from ufl.common import product
+from ufl import product
 from uflacs.analysis.modified_terminals import is_modified_terminal, analyse_modified_terminal
 
 from uflacs.analysis.graph import build_graph

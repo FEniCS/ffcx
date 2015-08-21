@@ -20,7 +20,7 @@
 
 from six.moves import xrange as range
 from ffc.log import warning
-from ufl.common import product
+from ufl import product
 from ufl.permutation import compute_indices
 from ufl.corealg.multifunction import MultiFunction
 from ufl.classes import FormArgument

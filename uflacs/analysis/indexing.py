@@ -24,7 +24,8 @@
 
 from six.moves import xrange as range
 
-from ufl.common import product, sorted_by_count
+from ufl import product
+from ufl.utils.sorting import sorted_by_count
 from ufl.permutation import compute_indices
 from ufl.utils.indexflattening import shape_to_strides, flatten_multiindex
 from ufl.classes import ComponentTensor

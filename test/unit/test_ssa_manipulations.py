@@ -7,7 +7,7 @@ from __future__ import print_function
 
 from six.moves import map
 from ufl import *
-from ufl.common import product
+from ufl import product
 from ufl.permutation import compute_indices
 
 from uflacs.analysis.graph import build_graph

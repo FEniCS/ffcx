@@ -20,7 +20,7 @@
 
 from six.moves import zip
 from six.moves import xrange as range
-from ufl.common import product
+from ufl import product
 from ufl.permutation import compute_indices
 
 from ufl import as_vector
