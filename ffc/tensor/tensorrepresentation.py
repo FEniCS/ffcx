@@ -60,7 +60,7 @@ def compute_integral_ir(itg_data,
     quadrature_rule = itg_data.metadata["quadrature_rule"]
 
     # Get some cell properties
-    cell = itg_data.domain.cell()
+    cell = itg_data.domain.ufl_cell
     num_facets = cell.num_facets()
 
     # Helper to simplify code below

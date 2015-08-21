@@ -88,7 +88,7 @@ def compute_integral_ir(itg_data,
                                              ir["optimise_parameters"])
 
     # Transform integrals.
-    cell = itg_data.domain.cell()
+    cell = itg_data.domain.ufl_cell
     ir["trans_integrals"] = _transform_integrals_by_type(ir, transformer, integrals_dict,
                                                          itg_data.integral_type, cell)
 
