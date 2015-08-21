@@ -44,7 +44,7 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
     # uflacs_ir["name"] = form_data.name
     # uflacs_ir["coefficient_names"] = form_data.coefficient_names
     # uflacs_ir["argument_names"] = form_data.argument_names
-    # uflacs_ir["cell"] = form_data.integration_domains[0].cell()
+    # uflacs_ir["cell"] = form_data.integration_domains[0].ufl_cell
     # uflacs_ir["function_replace_map"] = form_data.function_replace_map
 
     # Build coefficient numbering for UFC interface here, to avoid renumbering in UFL and application of replace mapping
