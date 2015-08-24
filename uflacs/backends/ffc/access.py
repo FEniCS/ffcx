@@ -180,7 +180,7 @@ class FFCAccessBackend(MultiFunction):
             index = L.Add(L.Mul(iq, gdim), mt.flat_component)
             return L.ArrayAccess(name, index)
 
-        elif mt.terminal.domain().ufl_coordinates is not None:
+        elif mt.terminal.domain().ufl_coordinates() is not None:
             # No special variable should exist in this case.
             error("Expecting spatial coordinate to be symbolically rewritten.")
 
