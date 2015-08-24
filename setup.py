@@ -41,17 +41,17 @@ Topic :: Software Development :: Libraries
 
 def get_installation_prefix():
     "Get installation prefix"
-    try:
-        prefix = [item for item in sys.argv[1:] \
-                  if "--prefix=" in item][0].split("=")[1]
-    except:
-        try:
-            prefix = sys.argv[sys.argv.index("--prefix")+1]
-        except:
-            if platform.system() == "Windows":
-                prefix = sys.prefix
-            else:
-                prefix = "/usr/local"
+
+    prefix = sys.prefix
+    for arg in sys.argv[1:]:
+        if "--user" in arg:
+            import site
+            prefix = site.USER_BASE
+        elif arg in ("--prefix", "--home", "--root", "--install-base"):
+            prefix = sys.argv[sys.argv.index(arg)+1]
+        elif "--prefix=" in arg or "--home=" in arg or \
+          "--root=" in arg or "--install-base=" in arg:
+            prefix = arg.split("=")[1]
     return os.path.abspath(os.path.expanduser(prefix))
 
 def get_swig_executable():
