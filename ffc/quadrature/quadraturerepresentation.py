@@ -121,11 +121,11 @@ def sort_integrals(integrals, default_quadrature_degree, default_quadrature_rule
     # Get domain properties from first integral, assuming all are the same
     integral_type  = integrals[0].integral_type()
     subdomain_id    = integrals[0].subdomain_id()
-    domain_label = integrals[0].domain().ufl_label
+    domain_label = integrals[0].domain().ufl_label()
     domain       = integrals[0].domain() # FIXME: Is this safe? Get as input?
     ffc_assert(all(integral_type == itg.integral_type() for itg in integrals),
                "Expecting only integrals of the same type.")
-    ffc_assert(all(domain_label == itg.domain().ufl_label for itg in integrals),
+    ffc_assert(all(domain_label == itg.domain().ufl_label() for itg in integrals),
                "Expecting only integrals on the same domain.")
     ffc_assert(all(subdomain_id == itg.subdomain_id() for itg in integrals),
                "Expecting only integrals on the same subdomain.")
