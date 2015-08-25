@@ -278,8 +278,8 @@ class FFCAccessBackend(MultiFunction):
     def cell_orientation(self, e, mt, tabledata, num_points):
         L = self.language
         # Error if not in manifold case:
-        gdim = mt.terminal.cell().geometric_dimension()
-        tdim = mt.terminal.cell().topological_dimension()
+        gdim = mt.terminal.ufl_domain().geometric_dimension()
+        tdim = mt.terminal.ufl_domain().topological_dimension()
         assert gdim > tdim
         return L.Symbol("co")
 
