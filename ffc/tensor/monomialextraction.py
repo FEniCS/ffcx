@@ -104,7 +104,7 @@ class MonomialFactor:
             raise MonomialException("Unable to create monomial from expression: " + str(arg))
 
     def element(self):
-        return self.function.element()
+        return self.function.ufl_element()
 
     def index(self):
         if isinstance(self.function, Coefficient):

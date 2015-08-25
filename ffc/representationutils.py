@@ -59,9 +59,9 @@ def transform_component(component, offset, ufl_element):
     # This code is used for tensor/monomialtransformation.py and
     # quadrature/quadraturetransformerbase.py.
 
-    domain, = ufl_element.domains() # Assuming single domain
-    gdim = domain.geometric_dimension()
-    tdim = domain.topological_dimension()
+    cell = ufl_element.cell()
+    gdim = cell.geometric_dimension()
+    tdim = cell.topological_dimension()
 
     # Do nothing if we are not in a special case: The special cases
     # occur if we have piola mapped elements (for which value_shape !=
@@ -137,7 +137,7 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
     cell = itg_data.domain.ufl_cell()
     cellname = cell.cellname()
     tdim = cell.topological_dimension()
-    assert all(tdim == itg.domain().topological_dimension() for itg in itg_data.integrals)
+    assert all(tdim == itg.ufl_domain().topological_dimension() for itg in itg_data.integrals)
 
     # Set number of cells if not set TODO: Get automatically from number of domains
     num_cells = itg_data.metadata.get("num_cells")

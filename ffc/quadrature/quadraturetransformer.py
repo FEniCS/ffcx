@@ -452,7 +452,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
     def min_facet_edge_length(self, o):
         # FIXME: this has no meaning for cell integrals. (Need check in FFC or UFL).
 
-        tdim = self.tdim # FIXME: o.domain().topological_dimension()
+        tdim = self.tdim
         if tdim < 3:
             return self.facet_area(o)
 
@@ -464,7 +464,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
     def max_facet_edge_length(self, o):
         # FIXME: this has no meaning for cell integrals. (Need check in FFC or UFL).
 
-        tdim = self.tdim # FIXME: o.domain().topological_dimension()
+        tdim = self.tdim
         if tdim < 3:
             return self.facet_area(o)
 

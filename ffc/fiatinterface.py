@@ -116,8 +116,8 @@ def _create_fiat_element(ufl_element):
 
     # Get element data
     family = ufl_element.family()
-    domain, = ufl_element.domains() # Assuming single domain
-    cellname = domain.ufl_cell().cellname() # Assuming single cell in domain
+    cell = ufl_element.cell()
+    cellname = cell.cellname()
     degree = ufl_element.degree()
 
     # Check that FFC supports this element
@@ -126,7 +126,7 @@ def _create_fiat_element(ufl_element):
 
     # Handle the space of the constant
     if family == "Real":
-        dg0_element = ufl.FiniteElement("DG", domain, 0)
+        dg0_element = ufl.FiniteElement("DG", cell, 0)
         constant = _create_fiat_element(dg0_element)
         element = SpaceOfReals(constant)
 
@@ -151,7 +151,7 @@ def _create_fiat_element(ufl_element):
         # Handle Bubble element as RestrictedElement of P_{k} to interior
         if family == "Bubble":
             V = FIAT.supported_elements["Lagrange"](fiat_cell, degree)
-            tdim = domain.topological_dimension()
+            tdim = cell.topological_dimension()
             return RestrictedElement(V, _indices(V, "interior", tdim), None)
 
         # Check if finite element family is supported by FIAT
@@ -233,23 +233,23 @@ def map_facet_points(points, facet):
 
     return new_points
 
-def _extract_elements(ufl_element, domain=None):
+def _extract_elements(ufl_element, restriction_domain=None):
     "Recursively extract un-nested list of (component) elements."
 
     elements = []
     if isinstance(ufl_element, ufl.MixedElement):
         for sub_element in ufl_element.sub_elements():
-            elements += _extract_elements(sub_element, domain)
+            elements += _extract_elements(sub_element, restriction_domain)
         return elements
 
     # Handle restricted elements since they might be mixed elements too.
     if isinstance(ufl_element, ufl.RestrictedElement):
-        base_element = ufl_element.element()
+        base_element = ufl_element.sub_element()
         restriction_domain = ufl_element.restriction_domain()
         return _extract_elements(base_element, restriction_domain)
 
-    if domain:
-        ufl_element = ufl.RestrictedElement(ufl_element, domain)
+    if restriction_domain:
+        ufl_element = ufl.RestrictedElement(ufl_element, restriction_domain)
 
     elements += [create_element(ufl_element)]
 
@@ -261,7 +261,7 @@ def _create_restricted_element(ufl_element):
     if not isinstance(ufl_element, ufl.RestrictedElement):
         error("create_restricted_element expects an ufl.RestrictedElement")
 
-    base_element = ufl_element.element()
+    base_element = ufl_element.sub_element()
     restriction_domain = ufl_element.restriction_domain()
 
     # If simple element -> create RestrictedElement from fiat_element

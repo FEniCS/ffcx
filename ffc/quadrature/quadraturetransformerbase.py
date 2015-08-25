@@ -339,7 +339,7 @@ class QuadratureTransformerBase(Transformer):
         key = (o, components, derivatives, self.restriction, self.avg)
         basis = self.argument_cache.get(key, None)
 
-        tdim = self.tdim # FIXME: o.domain().topological_dimension() ???
+        tdim = self.tdim
 
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
         if basis is None or self.optimise_parameters["optimisation"]:
@@ -446,7 +446,7 @@ class QuadratureTransformerBase(Transformer):
             ffc_assert(not (derivatives and is_quad_element), \
                        "Derivatives of Quadrature elements are not supported: " + repr(o))
 
-            tdim = self.tdim # FIXME: o.domain().topological_dimension() ???
+            tdim = self.tdim
 
             # Create code for function and add empty tuple to cache dict.
             function_code = {(): self.create_function(o, derivatives, component,
@@ -854,7 +854,7 @@ class QuadratureTransformerBase(Transformer):
         "Helper function for both Coefficient and Argument."
 
         # Get UFL element.
-        ufl_element = ufl_function.element()
+        ufl_element = ufl_function.ufl_element()
 
         # Get subelement and the relative (flattened) component (in case we have mixed elements).
         local_comp, local_elem = ufl_element.extract_component(component)
@@ -894,7 +894,7 @@ class QuadratureTransformerBase(Transformer):
                    "Assuming subelement mappings are equal but they differ.")
 
         # Generate FFC multi index for derivatives.
-        tdim = self.tdim # FIXME: ufl_element.domain().topological_dimension() ???
+        tdim = self.tdim
         multiindices = FFCMultiIndex([list(range(tdim))]*len(derivatives)).indices
 
         return (component, local_elem, local_comp, local_offset, ffc_element, transformation, multiindices)
@@ -929,7 +929,7 @@ class QuadratureTransformerBase(Transformer):
                    "Currently, Argument part is not supporte: " + repr(ufl_argument))
 
         # Get element counter and loop index.
-        element_counter = self.element_map[1 if avg else self.points][ufl_argument.element()]
+        element_counter = self.element_map[1 if avg else self.points][ufl_argument.ufl_element()]
         loop_index = indices[ufl_argument.number()]
 
         # Offset element space dimension in case of negative restriction,
@@ -1006,7 +1006,7 @@ class QuadratureTransformerBase(Transformer):
         f_ip = "0" if (avg or self.points == 1) else format["integration points"]
 
         # Get the element counter.
-        element_counter = self.element_map[1 if avg else self.points][ufl_function.element()]
+        element_counter = self.element_map[1 if avg else self.points][ufl_function.ufl_element()]
 
         # Get current cell entity, with current restriction considered
         entity = self._get_current_entity()
@@ -1132,7 +1132,7 @@ class QuadratureTransformerBase(Transformer):
                 function_count = len(self.function_data)
                 data = (function_count, loop_index_range,
                         self._count_operations(function_expr),
-                        psi_name, used_nzcs, ufl_function.element())
+                        psi_name, used_nzcs, ufl_function.ufl_element())
                 self.function_data[function_expr] = data
             function_symbol_name = format["function value"](data[0])
 

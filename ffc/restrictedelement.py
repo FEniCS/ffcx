@@ -24,14 +24,14 @@ from ffc.log import error
 class RestrictedElement:
     "Create a restriction of a given FIAT element."
 
-    def __init__(self, element, indices, domain):
+    def __init__(self, element, indices, restriction_domain):
         if len(indices) == 0:
             error("No point in creating empty RestrictedElement.")
 
         self._element = element
         self._indices = indices
         self._entity_dofs = _extract_entity_dofs(element, indices)
-        self._domain = domain
+        self._restriction_domain = restriction_domain
 
     def space_dimension(self):
         return len(self._indices)
@@ -71,8 +71,8 @@ class RestrictedElement:
     def get_num_members(self, arg):
         return self._element.get_num_members(arg)
 
-    def domain(self):
-        return self._domain
+    def restriction_domain(self):
+        return self._restriction_domain
 
 def _extract_entity_dofs(element, indices):
     # FIXME: Readability counts

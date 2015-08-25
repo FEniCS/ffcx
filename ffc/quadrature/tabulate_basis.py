@@ -196,7 +196,7 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
                         for e in extract_unique_elements(integral)]
 
         # Insert elements for x and J
-        domain = integral.domain() # FIXME: For all domains to be sure? Better to rewrite though.
+        domain = integral.ufl_domain() # FIXME: For all domains to be sure? Better to rewrite though.
         x_element = domain.ufl_coordinate_element()
         if x_element not in ufl_elements:
             if integral_type == "custom":
