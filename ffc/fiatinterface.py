@@ -244,7 +244,7 @@ def _extract_elements(ufl_element, restriction_domain=None):
 
     # Handle restricted elements since they might be mixed elements too.
     if isinstance(ufl_element, ufl.RestrictedElement):
-        base_element = ufl_element.element()
+        base_element = ufl_element.sub_element()
         restriction_domain = ufl_element.restriction_domain()
         return _extract_elements(base_element, restriction_domain)
 
@@ -261,7 +261,7 @@ def _create_restricted_element(ufl_element):
     if not isinstance(ufl_element, ufl.RestrictedElement):
         error("create_restricted_element expects an ufl.RestrictedElement")
 
-    base_element = ufl_element.element()
+    base_element = ufl_element.sub_element()
     restriction_domain = ufl_element.restriction_domain()
 
     # If simple element -> create RestrictedElement from fiat_element
