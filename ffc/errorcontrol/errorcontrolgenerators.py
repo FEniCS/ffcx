@@ -74,8 +74,8 @@ class ErrorControlGenerator:
         assert(len(self.weak_residual.arguments()) == 1)
 
         # Get the domain, assuming there's only one
-        assert(len(self.weak_residual.domains()) == 1)
-        self.domain, = self.weak_residual.domains()
+        assert(len(self.weak_residual.ufl_domains()) == 1)
+        self.domain, = self.weak_residual.ufl_domains()
 
         # Store map from identifiers to names for forms and generated
         # coefficients
@@ -121,8 +121,8 @@ class ErrorControlGenerator:
 
         # Paranoid checks added after introduction of multidomain features in ufl:
         for i, form in enumerate((a_star, L_star, eta_h, a_R_T, L_R_T, a_R_dT, L_R_dT, eta_T)):
-            assert len(form.domains()) > 0, ("Zero domains at form %d" % i)
-            assert len(form.domains()) == 1, ("%d domains at form %d" % (len(form.domains()), i))
+            assert len(form.ufl_domains()) > 0, ("Zero domains at form %d" % i)
+            assert len(form.ufl_domains()) == 1, ("%d domains at form %d" % (len(form.ufl_domains()), i))
 
         # Return all generated forms in CERTAIN order matching
         # constructor of dolfin/adaptivity/ErrorControl.h
