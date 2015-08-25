@@ -392,9 +392,9 @@ class QuadratureTransformerBase(Transformer):
         # Get components
         components = self.component()
 
-        en = derivative_expr.rank()
+        en = len(derivative_expr.ufl_shape)
         cn = len(components)
-        ffc_assert(o.rank() == cn, "Expecting rank of grad expression to match components length.")
+        ffc_assert(len(o.ufl_shape) == cn, "Expecting rank of grad expression to match components length.")
 
         # Get direction of derivative
         if cn == en+1:

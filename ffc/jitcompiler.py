@@ -169,7 +169,7 @@ def jit_element(element, parameters=None):
 
     # Create simplest possible dummy form
     v = TestFunction(element)
-    ii = (0,)*v.rank()
+    ii = (0,)*len(v.ufl_shape)
     if element.family() == "Discontinuous Lagrange Trace":
         form = v[ii]*ds
     else:
