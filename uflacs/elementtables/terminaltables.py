@@ -43,12 +43,12 @@ def extract_terminal_elements(terminal_data):
         t = mt.terminal
         if isinstance(t, FormArgument):
             # Add element for function and its coordinates
-            elements.append(t.domain().ufl_coordinate_element())
-            elements.append(t.element())
+            elements.append(t.ufl_domain().ufl_coordinate_element())
+            elements.append(t.ufl_element())
 
         elif isinstance(t, GeometricQuantity):
             # Add element for coordinate field of domain
-            elements.append(t.domain().ufl_coordinate_element())
+            elements.append(t.ufl_domain().ufl_coordinate_element())
 
     return unique_tuple(elements)
 
@@ -96,13 +96,13 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
 
         # Add to element tables for FormArguments and relevant GeometricQuantities
         if isinstance(t, FormArgument):
-            element = t.element()
+            element = t.ufl_element()
 
         elif isinstance(t, SpatialCoordinate):
-            element = t.domain().ufl_coordinate_element()
+            element = t.ufl_domain().ufl_coordinate_element()
 
         elif isinstance(t, Jacobian):
-            element = t.domain().ufl_coordinate_element()
+            element = t.ufl_domain().ufl_coordinate_element()
             fc = gc[0]
             ld = tuple(sorted((gc[1],) + ld))
             #fc, ld = gc
@@ -118,12 +118,12 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
 
         # Change derivatives format for table lookup
         if gd:
-            gdim = t.domain().geometric_dimension()
+            gdim = t.ufl_domain().geometric_dimension()
             global_derivatives = tuple(derivative_listing_to_counts(gd, gdim))
         else:
             global_derivatives = None
         if ld:
-            tdim = t.domain().topological_dimension()
+            tdim = t.ufl_domain().topological_dimension()
             local_derivatives = tuple(derivative_listing_to_counts(ld, tdim))
         else:
             local_derivatives = None

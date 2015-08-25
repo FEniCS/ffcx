@@ -130,12 +130,12 @@ class FFCDefinitionsBackend(MultiFunction):
             pass
         else:
             # FIXME: Generalize this code to work with arbitrary domain.ufl_coordinate_element()
-            ffc_assert(mt.terminal.domain().ufl_coordinates() is None,
+            ffc_assert(mt.terminal.ufl_domain().ufl_coordinates() is None,
                        "Assuming coefficient field symbolically inserted before this point.")
             # Reference coordinates are known, no coordinate field, so we compute
             # this component as linear combination of vertex_coordinates "dofs" and table
 
-            cell = mt.terminal.domain().ufl_cell()
+            cell = mt.terminal.ufl_domain().ufl_cell()
             gdim = cell.geometric_dimension()
             num_vertices = cell.num_vertices()
 
@@ -199,12 +199,12 @@ class FFCDefinitionsBackend(MultiFunction):
         L = self.language
 
         # FIXME: Generalize this code to work with arbitrary domain.ufl_coordinate_element()
-        ffc_assert(mt.terminal.domain().ufl_coordinates() is None,
+        ffc_assert(mt.terminal.ufl_domain().ufl_coordinates() is None,
                    "Assuming coefficient field symbolically inserted before this point.")
         # Reference coordinates are known, no coordinate field, so we compute
         # this component as linear combination of vertex_coordinates "dofs" and table
 
-        cell = mt.terminal.domain().ufl_cell()
+        cell = mt.terminal.ufl_domain().ufl_cell()
         gdim = cell.geometric_dimension()
         num_vertices = cell.num_vertices()
 

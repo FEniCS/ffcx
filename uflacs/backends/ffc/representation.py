@@ -56,8 +56,8 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
         assert i == g.count()
         uflacs_ir["coefficient_numbering"][g] = i # USING THIS ONE BECAUSE WE'RE CALLING REPLACE BELOW
         #uflacs_ir["coefficient_numbering"][f] = i # If we make elements and domains well formed we can avoid replace below and use this line instead
-        #uflacs_ir["coefficient_element"][f] = g.element()
-        #uflacs_ir["coefficient_domain"][f] = g.domain()
+        #uflacs_ir["coefficient_element"][f] = g.ufl_element()
+        #uflacs_ir["coefficient_domain"][f] = g.ufl_domain()
 
     # Build ir for each num_points/integrand
     uflacs_ir["expr_ir"] = {}

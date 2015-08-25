@@ -137,7 +137,7 @@ class FFCAccessBackend(MultiFunction):
     def _constant_coefficient(self, e, mt, tabledata):
         # Map component to flat index
         vi2si, si2vi = build_component_numbering(mt.terminal.ufl_shape,
-                                                 mt.terminal.element().symmetry())
+                                                 mt.terminal.ufl_element().symmetry())
         num_flat_components = len(si2vi)
         ffc_assert(mt.flat_component == vi2si[mt.component], "Incompatible component flattening!")
 
@@ -180,7 +180,7 @@ class FFCAccessBackend(MultiFunction):
             index = L.Add(L.Mul(iq, gdim), mt.flat_component)
             return L.ArrayAccess(name, index)
 
-        elif mt.terminal.domain().ufl_coordinates() is not None:
+        elif mt.terminal.ufl_domain().ufl_coordinates() is not None:
             # No special variable should exist in this case.
             error("Expecting spatial coordinate to be symbolically rewritten.")
 
@@ -216,7 +216,7 @@ class FFCAccessBackend(MultiFunction):
 
     def reference_cell_volume(self, e, mt, tabledata, access):
         L = self.language
-        cellname = mt.terminal.domain().ufl_cell().cellname()
+        cellname = mt.terminal.ufl_domain().ufl_cell().cellname()
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             return L.Symbol("{0}_reference_cell_volume".format(cellname))
         else:
@@ -224,7 +224,7 @@ class FFCAccessBackend(MultiFunction):
 
     def reference_facet_volume(self, e, mt, tabledata, access):
         L = self.language
-        cellname = mt.terminal.domain().ufl_cell().cellname()
+        cellname = mt.terminal.ufl_domain().ufl_cell().cellname()
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             return L.Symbol("{0}_reference_facet_volume".format(cellname))
         else:
@@ -232,7 +232,7 @@ class FFCAccessBackend(MultiFunction):
 
     def reference_normal(self, e, mt, tabledata, access):
         L = self.language
-        cellname = mt.terminal.domain().ufl_cell().cellname()
+        cellname = mt.terminal.ufl_domain().ufl_cell().cellname()
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             tablename = "{0}_reference_facet_normals".format(cellname)
             facet = L.Symbol(format_entity_name("facet", mt.restriction))
@@ -242,7 +242,7 @@ class FFCAccessBackend(MultiFunction):
 
     def cell_facet_jacobian(self, e, mt, tabledata, num_points):
         L = self.language
-        cellname = mt.terminal.domain().ufl_cell().cellname()
+        cellname = mt.terminal.ufl_domain().ufl_cell().cellname()
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             tablename = "{0}_reference_facet_jacobian".format(cellname)
             facet = L.Symbol(format_entity_name("facet", mt.restriction))
@@ -254,7 +254,7 @@ class FFCAccessBackend(MultiFunction):
 
     def cell_edge_vectors(self, e, mt, tabledata, num_points):
         L = self.language
-        cellname = mt.terminal.domain().ufl_cell().cellname()
+        cellname = mt.terminal.ufl_domain().ufl_cell().cellname()
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             tablename = "{0}_reference_edge_vectors".format(cellname)
             return L.ArrayAccess(tablename, (mt.component[0], mt.component[1]))
@@ -265,7 +265,7 @@ class FFCAccessBackend(MultiFunction):
 
     def facet_edge_vectors(self, e, mt, tabledata, num_points):
         L = self.language
-        cellname = mt.terminal.domain().ufl_cell().cellname()
+        cellname = mt.terminal.ufl_domain().ufl_cell().cellname()
         if cellname in ("tetrahedron", "hexahedron"):
             tablename = "{0}_reference_edge_vectors".format(cellname)
             facet = L.Symbol(format_entity_name("facet", mt.restriction))
@@ -278,14 +278,14 @@ class FFCAccessBackend(MultiFunction):
     def cell_orientation(self, e, mt, tabledata, num_points):
         L = self.language
         # Error if not in manifold case:
-        gdim = mt.terminal.cell().geometric_dimension()
-        tdim = mt.terminal.cell().topological_dimension()
+        gdim = mt.terminal.ufl_domain().geometric_dimension()
+        tdim = mt.terminal.ufl_domain().topological_dimension()
         assert gdim > tdim
         return L.Symbol("co")
 
     def facet_orientation(self, e, mt, tabledata, num_points):
         L = self.language
-        cellname = mt.terminal.domain().ufl_cell().cellname()
+        cellname = mt.terminal.ufl_domain().ufl_cell().cellname()
         if cellname not in ("interval", "triangle", "tetrahedron"):
             error("Unhandled cell types {0}.".format(cellname))
 
