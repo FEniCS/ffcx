@@ -210,7 +210,7 @@ def _attach_integral_metadata(form_data, parameters):
             if not qd >= 0:
                 info("Valid choices are nonnegative integers or 'auto'.")
                 error("Illegal quadrature degree for integral: " + str(qd))
-            tdim = integral.domain().topological_dimension()
+            tdim = integral.ufl_domain().topological_dimension()
             _check_quadrature_degree(qd, tdim)
 
             integral_metadata["quadrature_degree"] = qd

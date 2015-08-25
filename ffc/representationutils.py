@@ -137,7 +137,7 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
     cell = itg_data.domain.ufl_cell()
     cellname = cell.cellname()
     tdim = cell.topological_dimension()
-    assert all(tdim == itg.domain().topological_dimension() for itg in itg_data.integrals)
+    assert all(tdim == itg.ufl_domain().topological_dimension() for itg in itg_data.integrals)
 
     # Set number of cells if not set TODO: Get automatically from number of domains
     num_cells = itg_data.metadata.get("num_cells")

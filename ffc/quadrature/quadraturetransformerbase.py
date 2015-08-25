@@ -339,7 +339,7 @@ class QuadratureTransformerBase(Transformer):
         key = (o, components, derivatives, self.restriction, self.avg)
         basis = self.argument_cache.get(key, None)
 
-        tdim = self.tdim # FIXME: o.domain().topological_dimension() ???
+        tdim = self.tdim
 
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
         if basis is None or self.optimise_parameters["optimisation"]:
@@ -446,7 +446,7 @@ class QuadratureTransformerBase(Transformer):
             ffc_assert(not (derivatives and is_quad_element), \
                        "Derivatives of Quadrature elements are not supported: " + repr(o))
 
-            tdim = self.tdim # FIXME: o.domain().topological_dimension() ???
+            tdim = self.tdim
 
             # Create code for function and add empty tuple to cache dict.
             function_code = {(): self.create_function(o, derivatives, component,
@@ -894,7 +894,7 @@ class QuadratureTransformerBase(Transformer):
                    "Assuming subelement mappings are equal but they differ.")
 
         # Generate FFC multi index for derivatives.
-        tdim = self.tdim # FIXME: ufl_element.domain().topological_dimension() ???
+        tdim = self.tdim
         multiindices = FFCMultiIndex([list(range(tdim))]*len(derivatives)).indices
 
         return (component, local_elem, local_comp, local_offset, ffc_element, transformation, multiindices)
