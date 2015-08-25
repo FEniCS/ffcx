@@ -117,7 +117,7 @@ def _create_fiat_element(ufl_element):
     # Get element data
     family = ufl_element.family()
     domain, = ufl_element.domains() # Assuming single domain
-    cellname = domain.cell().cellname() # Assuming single cell in domain
+    cellname = domain.ufl_cell().cellname() # Assuming single cell in domain
     degree = ufl_element.degree()
 
     # Check that FFC supports this element

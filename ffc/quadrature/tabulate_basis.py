@@ -160,7 +160,7 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
     avg_elements = { "cell": [], "facet": [] }
 
     integral_type = itg_data.integral_type
-    cell = itg_data.domain.cell()
+    cell = itg_data.domain.ufl_cell()
     cellname = cell.cellname()
     tdim = itg_data.domain.topological_dimension()
 
@@ -197,7 +197,7 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
 
         # Insert elements for x and J
         domain = integral.domain() # FIXME: For all domains to be sure? Better to rewrite though.
-        x_element = domain.coordinate_element()
+        x_element = domain.ufl_coordinate_element()
         if x_element not in ufl_elements:
             if integral_type == "custom":
                 # FIXME: Not yet implemented, in progress
