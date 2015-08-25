@@ -159,7 +159,7 @@ def prepare_input_arguments(forms, object_names, reserved_objects):
 
         # Standard case: create default Coefficient in trial space and
         # label it __discrete_primal_solution
-        V = arguments[1].element()
+        V = arguments[1].ufl_element()
         u = Coefficient(V)
         object_names[id(u)] = "__discrete_primal_solution"
 

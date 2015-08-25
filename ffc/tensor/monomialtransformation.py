@@ -289,9 +289,9 @@ class TransformedMonomial:
 
             # Extract dimensions
             sdim = fiat_element.space_dimension()
-            domain, = ufl_element.domains() # Assuming single domain
-            gdim = domain.geometric_dimension()
-            tdim = domain.topological_dimension()
+            cell = ufl_element.cell()
+            gdim = cell.geometric_dimension()
+            tdim = cell.topological_dimension()
 
             # Extract basis function index and coefficients
             if isinstance(f.function, Argument):
@@ -440,7 +440,8 @@ class TransformedMonomial:
                 # KBO: Is this the right place to add, and do we only have
                 # scalar components in the tensor representation at this stage
                 # in the representation?
-                comp_map, comp_num = build_component_numbering(f.element().value_shape(), f.element().symmetry())
+                ufl_element = f.element()
+                comp_map, comp_num = build_component_numbering(ufl_element.value_shape(), ufl_element.symmetry())
                 comp = comp_map[(int(c),)]
                 index = MonomialIndex(index_type=MonomialIndex.FIXED,
                                       index_range=[comp],

@@ -59,14 +59,14 @@ def get_data(ufl_element):
         deriv_order = element.degree()
 
     # Get coordinates of the reference cell.
-    domain, = ufl_element.domains()
-    ref_coords = reference_cell(domain.ufl_cell().cellname()).get_vertices()
+    cell = ufl_element.cell()
+    ref_coords = reference_cell(cell.cellname()).get_vertices()
 
     # Get the locations of the fiat element dofs.
     elem_points =  [list(L.pt_dict.keys())[0] for L in element.dual_basis()]
 
     # Add some random points.
-    geo_dim = domain.geometric_dimension()
+    geo_dim = cell.geometric_dimension()
     points = elem_points + random_points[geo_dim]
 
     return (element, points, geo_dim, ref_coords, deriv_order)

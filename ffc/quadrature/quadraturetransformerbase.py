@@ -854,7 +854,7 @@ class QuadratureTransformerBase(Transformer):
         "Helper function for both Coefficient and Argument."
 
         # Get UFL element.
-        ufl_element = ufl_function.element()
+        ufl_element = ufl_function.ufl_element()
 
         # Get subelement and the relative (flattened) component (in case we have mixed elements).
         local_comp, local_elem = ufl_element.extract_component(component)
@@ -929,7 +929,7 @@ class QuadratureTransformerBase(Transformer):
                    "Currently, Argument part is not supporte: " + repr(ufl_argument))
 
         # Get element counter and loop index.
-        element_counter = self.element_map[1 if avg else self.points][ufl_argument.element()]
+        element_counter = self.element_map[1 if avg else self.points][ufl_argument.ufl_element()]
         loop_index = indices[ufl_argument.number()]
 
         # Offset element space dimension in case of negative restriction,
@@ -1006,7 +1006,7 @@ class QuadratureTransformerBase(Transformer):
         f_ip = "0" if (avg or self.points == 1) else format["integration points"]
 
         # Get the element counter.
-        element_counter = self.element_map[1 if avg else self.points][ufl_function.element()]
+        element_counter = self.element_map[1 if avg else self.points][ufl_function.ufl_element()]
 
         # Get current cell entity, with current restriction considered
         entity = self._get_current_entity()
@@ -1132,7 +1132,7 @@ class QuadratureTransformerBase(Transformer):
                 function_count = len(self.function_data)
                 data = (function_count, loop_index_range,
                         self._count_operations(function_expr),
-                        psi_name, used_nzcs, ufl_function.element())
+                        psi_name, used_nzcs, ufl_function.ufl_element())
                 self.function_data[function_expr] = data
             function_symbol_name = format["function value"](data[0])
 

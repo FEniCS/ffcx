@@ -128,8 +128,7 @@ def _compute_psi(v, table, num_points, integral_type):
     # later when we sum over these dimensions.
 
     # Get topological dimension of cell
-    domain, = v.element.domains() # Assuming single domain
-    tdim = domain.topological_dimension()
+    tdim = v.element.cell().topological_dimension()
 
     # Get indices and shapes for components
     if len(v.components) ==  0:

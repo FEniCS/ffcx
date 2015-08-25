@@ -111,8 +111,8 @@ def _compute_element_ir(ufl_element, element_id, element_numbers):
 
     # Create FIAT element
     element = create_element(ufl_element)
-    domain, = ufl_element.domains() # Assuming single domain
-    cellname = domain.ufl_cell().cellname()
+    cell = ufl_element.cell()
+    cellname = cell.cellname()
 
     # Store id
     ir = {"id": element_id}
@@ -120,8 +120,8 @@ def _compute_element_ir(ufl_element, element_id, element_numbers):
     # Compute data for each function
     ir["signature"] = ufl_element.reconstruction_signature()
     ir["cell_shape"] = cellname
-    ir["topological_dimension"] = domain.topological_dimension()
-    ir["geometric_dimension"] = domain.geometric_dimension()
+    ir["topological_dimension"] = cell.topological_dimension()
+    ir["geometric_dimension"] = cell.geometric_dimension()
     ir["space_dimension"] = element.space_dimension()
     ir["value_rank"] = len(ufl_element.value_shape())
     ir["value_dimension"] = ufl_element.value_shape()
@@ -140,8 +140,7 @@ def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
 
     # Create FIAT element
     element = create_element(ufl_element)
-    domain, = ufl_element.domains() # Assuming single domain
-    cell = domain.ufl_cell()
+    cell = ufl_element.cell()
     cellname = cell.cellname()
 
     # Precompute repeatedly used items
@@ -154,8 +153,8 @@ def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
     # Compute data for each function
     ir["signature"] = "FFC dofmap for " + ufl_element.reconstruction_signature()
     ir["needs_mesh_entities"] = _needs_mesh_entities(element)
-    ir["topological_dimension"] = domain.topological_dimension()
-    ir["geometric_dimension"] = domain.geometric_dimension()
+    ir["topological_dimension"] = cell.topological_dimension()
+    ir["geometric_dimension"] = cell.geometric_dimension()
     ir["global_dimension"] = _global_dimension(element)
     ir["num_element_dofs"] = element.space_dimension()
     ir["num_facet_dofs"] = len(facet_dofs[0])
@@ -291,9 +290,9 @@ def _generate_physical_offsets(ufl_element, offset=0):
 
     # Refer to reference if gdim == tdim. This is a hack to support
     # more stuff (in particular restricted elements)
-    domain, = ufl_element.domains() # Assuming single domain
-    gdim = domain.geometric_dimension()
-    tdim = domain.topological_dimension()
+    cell = ufl_element.cell()
+    gdim = cell.geometric_dimension()
+    tdim = cell.topological_dimension()
     if (gdim == tdim):
         return _generate_reference_offsets(create_element(ufl_element))
 
@@ -325,13 +324,13 @@ def _evaluate_dof(ufl_element, element):
     # value size. This of course only matters for elements that have
     # different physical and reference value shapes and sizes.
 
-    domain, = ufl_element.domains() # Assuming single domain
+    cell = ufl_element.cell()
 
     return {"mappings": element.mapping(),
             "reference_value_size": _value_size(element),
             "physical_value_size": _value_size(ufl_element),
-            "geometric_dimension": domain.geometric_dimension(),
-            "topological_dimension": domain.topological_dimension(),
+            "geometric_dimension": cell.geometric_dimension(),
+            "topological_dimension": cell.topological_dimension(),
             "dofs": [L.pt_dict if L else None for L in element.dual_basis()],
             "physical_offsets": _generate_physical_offsets(ufl_element)}
 
@@ -359,8 +358,8 @@ def _extract_elements(element):
 def _evaluate_basis(ufl_element, element):
     "Compute intermediate representation for evaluate_basis."
 
-    domain, = ufl_element.domains() # Assuming single domain
-    cellname = domain.ufl_cell().cellname()
+    cell = ufl_element.cell()
+    cellname = cell.cellname()
 
     # Handle Mixed and EnrichedElements by extracting 'sub' elements.
     elements = _extract_elements(element)
@@ -384,8 +383,8 @@ def _evaluate_basis(ufl_element, element):
     data = {"reference_value_size": _value_size(element),
             "physical_value_size": _value_size(ufl_element),
             "cellname" : cellname,
-            "topological_dimension" : domain.topological_dimension(),
-            "geometric_dimension" : domain.geometric_dimension(),
+            "topological_dimension" : cell.topological_dimension(),
+            "geometric_dimension" : cell.geometric_dimension(),
             "space_dimension" : element.space_dimension(),
             "needs_oriented": needs_oriented_jacobian(element),
             "max_degree": max([e.degree() for e in elements])
@@ -437,11 +436,11 @@ def _tabulate_coordinates(ufl_element, element):
     if uses_integral_moments(element) or not element.dual_basis()[0]:
         return {}
 
-    domain, = ufl_element.domains() # Assuming single domain
+    cell = ufl_element.cell()
 
     data = {}
-    data["tdim"] = domain.topological_dimension()
-    data["gdim"] = domain.geometric_dimension()
+    data["tdim"] = cell.topological_dimension()
+    data["gdim"] = cell.geometric_dimension()
     data["points"] = [sorted(L.pt_dict.keys())[0] for L in element.dual_basis()]
     return data
 
@@ -514,12 +513,12 @@ def _interpolate_vertex_values(ufl_element, element):
         if isinstance(e, DiscontinuousLagrangeTrace):
             return "Function is not implemented for DiscontinuousLagrangeTrace."
 
-    domain, = ufl_element.domains() # Assuming single domain
-    cellname = domain.ufl_cell().cellname()
+    cell = ufl_element.cell()
+    cellname = cell.cellname()
 
     ir = {}
-    ir["geometric_dimension"] = domain.geometric_dimension()
-    ir["topological_dimension"] = domain.topological_dimension()
+    ir["geometric_dimension"] = cell.geometric_dimension()
+    ir["topological_dimension"] = cell.topological_dimension()
 
     # Check whether computing the Jacobian is necessary
     mappings = element.mapping()

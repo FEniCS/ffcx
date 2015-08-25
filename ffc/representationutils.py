@@ -59,9 +59,9 @@ def transform_component(component, offset, ufl_element):
     # This code is used for tensor/monomialtransformation.py and
     # quadrature/quadraturetransformerbase.py.
 
-    domain, = ufl_element.domains() # Assuming single domain
-    gdim = domain.geometric_dimension()
-    tdim = domain.topological_dimension()
+    cell = ufl_element.cell()
+    gdim = cell.geometric_dimension()
+    tdim = cell.topological_dimension()
 
     # Do nothing if we are not in a special case: The special cases
     # occur if we have piola mapped elements (for which value_shape !=

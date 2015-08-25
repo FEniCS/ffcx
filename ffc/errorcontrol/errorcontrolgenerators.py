@@ -252,16 +252,18 @@ class UFLErrorControlGenerator(ErrorControlGenerator):
         from ufl.algorithms.elementtransformations import tear, increase_order
 
         # Primal trial element space
-        self._V = self.u.element()
+        self._V = self.u.ufl_element() # TODO: Use u.ufl_function_space()
+
+        # Extract domain
+        domain = self.u.ufl_domain()
 
         # Primal test space == Dual trial space
-        Vhat = self.weak_residual.arguments()[0].element()
+        Vhat = self.weak_residual.arguments()[0].ufl_element()
 
         # Discontinuous version of primal trial element space
         self._dV = tear(self._V)
 
-        # Extract domain and geometric dimension
-        domain, = self._V.domains()
+        # Extract geometric dimension
         gdim = domain.geometric_dimension()
 
         # Coefficient representing improved dual
