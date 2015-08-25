@@ -63,7 +63,7 @@ class ValueNumberer(MultiFunction):
 
     def form_argument(self, v, i):
         "Create new symbols for expressions that represent new values."
-        symmetry = v.element().symmetry()
+        symmetry = v.ufl_element().symmetry()
 
         if False and symmetry:
             # FIXME: Ignoring symmetries for now, handle by creating only
@@ -92,7 +92,7 @@ class ValueNumberer(MultiFunction):
         """
         # (1) mt.terminal.ufl_shape defines a core indexing space UNLESS mt.reference_value,
         #     in which case the reference value shape of the element must be used.
-        # (2) mt.terminal.element().symmetry() defines core symmetries
+        # (2) mt.terminal.ufl_element().symmetry() defines core symmetries
         # (3) averaging and restrictions define distinct symbols, no additional symmetries
         # (4) two or more grad/reference_grad defines distinct symbols with additional symmetries
 
@@ -110,7 +110,7 @@ class ValueNumberer(MultiFunction):
 
         # Get base shape without the derivative axes
         if mt.reference_value:
-            base_shape = mt.terminal.element().reference_value_shape()
+            base_shape = mt.terminal.ufl_element().reference_value_shape()
         else:
             base_shape = mt.terminal.ufl_shape
         base_components = compute_indices(base_shape)
@@ -127,7 +127,7 @@ class ValueNumberer(MultiFunction):
             d_components = [()]
 
         if isinstance(mt.terminal, FormArgument):
-            element = mt.terminal.element()
+            element = mt.terminal.ufl_element()
             symmetry = element.symmetry()
             if symmetry and mt.reference_value:
                 ffc_assert(element.value_shape() == element.reference_value_shape(),

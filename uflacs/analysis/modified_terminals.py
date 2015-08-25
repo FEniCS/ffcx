@@ -206,7 +206,7 @@ def analyse_modified_terminal(expr):
 
     # Get the (reference or global) shape of the core terminal
     if reference_value:
-        tshape = t.element().reference_value_shape()
+        tshape = t.ufl_element().reference_value_shape()
     else:
         tshape = t.ufl_shape
 
@@ -218,9 +218,9 @@ def analyse_modified_terminal(expr):
 
     # Flatten component
     if isinstance(t, FormArgument):
-        symmetry = t.element().symmetry()
+        symmetry = t.ufl_element().symmetry()
         if symmetry and reference_value:
-            ffc_assert(t.element().value_shape() == t.element().reference_value_shape(),
+            ffc_assert(t.ufl_element().value_shape() == t.ufl_element().reference_value_shape(),
                        "The combination of element symmetries and "
                        "Piola mapped elements is not currently handled.")
     else:

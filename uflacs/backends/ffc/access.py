@@ -137,7 +137,7 @@ class FFCAccessBackend(MultiFunction):
     def _constant_coefficient(self, e, mt, tabledata):
         # Map component to flat index
         vi2si, si2vi = build_component_numbering(mt.terminal.ufl_shape,
-                                                 mt.terminal.element().symmetry())
+                                                 mt.terminal.ufl_element().symmetry())
         num_flat_components = len(si2vi)
         ffc_assert(mt.flat_component == vi2si[mt.component], "Incompatible component flattening!")
 

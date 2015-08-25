@@ -44,7 +44,7 @@ def extract_terminal_elements(terminal_data):
         if isinstance(t, FormArgument):
             # Add element for function and its coordinates
             elements.append(t.domain().ufl_coordinate_element())
-            elements.append(t.element())
+            elements.append(t.ufl_element())
 
         elif isinstance(t, GeometricQuantity):
             # Add element for coordinate field of domain
@@ -96,7 +96,7 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
 
         # Add to element tables for FormArguments and relevant GeometricQuantities
         if isinstance(t, FormArgument):
-            element = t.element()
+            element = t.ufl_element()
 
         elif isinstance(t, SpatialCoordinate):
             element = t.domain().ufl_coordinate_element()
