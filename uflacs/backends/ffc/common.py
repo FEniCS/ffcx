@@ -60,7 +60,7 @@ class FFCBackendSymbols(object):
         return self.S(basename)
 
     def coefficient_dof_access(self, coefficient, dof_number):
-        # TODO: Add domain_number = self.ir["domain_numbering"][coefficient.domain().domain_key()]
+        # TODO: Add domain_number = self.ir["domain_numbering"][coefficient.ufl_domain().domain_key()]
         # TODO: Flatten dofs array and use CRS lookup table.
         # TODO: Apply integral specific renumbering.
         c = self.coefficient_numbering[coefficient] # coefficient.count()
