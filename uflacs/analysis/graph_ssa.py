@@ -23,7 +23,7 @@ from ufl.classes import (GeometricQuantity, ConstantValue,
                          Argument, Coefficient,
                          Grad, Restricted, Indexed,
                          MathFunction)
-
+from ufl.checks import is_cellwise_constant
 from ffc.log import error
 from uflacs.datastructures.arrays import int_array
 from uflacs.datastructures.crs import rows_to_crs
@@ -50,13 +50,13 @@ def default_partition_seed(expr, rank):
         return p
 
     elif isinstance(expr, Coefficient):
-        if expr.is_cellwise_constant():  # This is crap, doesn't include grad modifier
+        if is_cellwise_constant(expr):  # This is crap, doesn't include grad modifier
             return 0
         else:
             return 2
 
     elif isinstance(expr, GeometricQuantity):
-        if expr.is_cellwise_constant():  # This is crap, doesn't include grad modifier
+        if is_cellwise_constant(expr):  # This is crap, doesn't include grad modifier
             return 0
         else:
             return 1

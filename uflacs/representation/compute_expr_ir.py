@@ -20,6 +20,7 @@
 
 
 from ufl import product
+from ufl.checks import is_cellwise_constant
 from uflacs.analysis.modified_terminals import is_modified_terminal, analyse_modified_terminal
 
 from uflacs.analysis.graph import build_graph
@@ -113,7 +114,7 @@ def compute_expr_ir(expressions, parameters):
 
     # Build piecewise/varying markers for factorized_vertices
     spatially_dependent_terminal_indices = [i for i in modified_terminal_indices
-                                            if not V[i].is_cellwise_constant()]
+                                            if not is_cellwise_constant(V[i])]
     varying, num_spatial = mark_image(inverse_dependencies,
                                       spatially_dependent_terminal_indices)
     piecewise = 1 - varying

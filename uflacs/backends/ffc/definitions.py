@@ -21,6 +21,7 @@
 from six.moves import xrange as range
 
 from ufl.corealg.multifunction import MultiFunction
+from ufl.checks import is_cellwise_constant
 
 from ffc.log import error
 from ffc.log import ffc_assert
@@ -76,7 +77,7 @@ class FFCDefinitionsBackend(MultiFunction):
         L = self.language
 
         code = []
-        if mt.terminal.is_cellwise_constant():
+        if is_cellwise_constant(mt.terminal):
             # For a constant coefficient we reference the dofs directly, so no definition needed
             pass
         else:
