@@ -22,7 +22,7 @@ The total shape is the regular shape tuple plus the index shape tuple.
 The index shape tuple is the tuple of index dimensions of the free indices
 of the expression, sorted by the count of the free indices.
 
-The total shape of a tensor valued expression A and A[*indices(A.rank())]
+The total shape of a tensor valued expression A and A[*indices(len(A.ufl_shape))]
 is therefore the same.
 """
 

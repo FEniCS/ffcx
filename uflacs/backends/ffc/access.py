@@ -21,7 +21,7 @@
 import ufl
 from ufl.permutation import build_component_numbering
 from ufl.corealg.multifunction import MultiFunction
-
+from ufl.checks import is_cellwise_constant
 from ffc.log import error
 from ffc.log import ffc_assert
 
@@ -128,7 +128,7 @@ class FFCAccessBackend(MultiFunction):
 
     def coefficient(self, e, mt, tabledata, num_points):
         t = mt.terminal
-        if t.is_cellwise_constant():
+        if is_cellwise_constant(t):
             access = self._constant_coefficient(e, mt, tabledata)
         else:
             access = self._varying_coefficient(e, mt, tabledata)
