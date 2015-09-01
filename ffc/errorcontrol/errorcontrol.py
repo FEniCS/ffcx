@@ -131,10 +131,11 @@ def prepare_input_arguments(forms, object_names, reserved_objects):
     u = reserved_objects.get("unknown", None)
 
     if __is_nonlinear(forms):
-        (F, M) = forms
-
         # Check that unknown is defined
-        assert (u), "Can't extract 'unknown'. The Coefficient representing the unknown must be labelled by 'unknown' for nonlinear problems."
+        if u is None:
+            error("Can't extract 'unknown'. The Coefficient representing the unknown must be labelled by 'unknown' for nonlinear problems.")
+
+        (F, M) = forms
 
         # Check that forms have the expected rank
         assert(len(F.arguments()) == 1)
@@ -146,7 +147,7 @@ def prepare_input_arguments(forms, object_names, reserved_objects):
     elif __is_linear(forms):
         # Throw error if unknown is given, don't quite know what to do
         # with this case yet
-        if u:
+        if u is not None:
             error("'unknown' defined: not implemented for linear problems")
 
         (a, L, M) = forms
@@ -159,7 +160,7 @@ def prepare_input_arguments(forms, object_names, reserved_objects):
 
         # Standard case: create default Coefficient in trial space and
         # label it __discrete_primal_solution
-        V = arguments[1].ufl_element()
+        V = arguments[1].ufl_function_space()
         u = Coefficient(V)
         object_names[id(u)] = "__discrete_primal_solution"
 

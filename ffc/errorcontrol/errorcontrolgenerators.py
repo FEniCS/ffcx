@@ -246,32 +246,33 @@ class UFLErrorControlGenerator(ErrorControlGenerator):
         # coefficients are defined matters and should be considered
         # fixed.
 
-        from ufl import FiniteElement, Coefficient
+        from ufl import FiniteElement, FunctionSpace, Coefficient
         from ufl.algorithms.elementtransformations import tear, increase_order
 
         # Primal trial element space
-        self._V = self.u.ufl_element() # TODO: Use u.ufl_function_space()
+        self._V = self.u.ufl_function_space()
 
         # Extract domain
         domain = self.u.ufl_domain()
 
         # Primal test space == Dual trial space
-        Vhat = self.weak_residual.arguments()[0].ufl_element()
+        Vhat = self.weak_residual.arguments()[0].ufl_function_space()
 
         # Discontinuous version of primal trial element space
-        self._dV = tear(self._V)
+        self._dV = FunctionSpace(domain, tear(self._V.ufl_element()))
 
         # Extract geometric dimension
         gdim = domain.geometric_dimension()
 
         # Coefficient representing improved dual
-        E = increase_order(Vhat)
+        E = FunctionSpace(domain, increase_order(Vhat.ufl_element()))
         self._Ez_h = Coefficient(E)
         self.ec_names[id(self._Ez_h)] = "__improved_dual"
 
         # Coefficient representing cell bubble function
-        B = FiniteElement("B", domain, gdim + 1)
-        self._b_T = Coefficient(B)
+        Belm = FiniteElement("B", domain.ufl_cell(), gdim + 1)
+        Bfs = FunctionSpace(domain, Belm)
+        self._b_T = Coefficient(Bfs)
         self.ec_names[id(self._b_T)] = "__cell_bubble"
 
         # Coefficient representing strong cell residual
@@ -279,8 +280,9 @@ class UFLErrorControlGenerator(ErrorControlGenerator):
         self.ec_names[id(self._R_T)] = "__cell_residual"
 
         # Coefficient representing cell cone function
-        C = FiniteElement("DG", domain, gdim)
-        self._b_e = Coefficient(C)
+        Celm = FiniteElement("DG", domain.ufl_cell(), gdim)
+        Cfs = FunctionSpace(domain, Celm)
+        self._b_e = Coefficient(Cfs)
         self.ec_names[id(self._b_e)] = "__cell_cone"
 
         # Coefficient representing strong facet residual
@@ -292,4 +294,4 @@ class UFLErrorControlGenerator(ErrorControlGenerator):
         self.ec_names[id(self._z_h)] = "__discrete_dual_solution"
 
         # Piecewise constants for assembling indicators
-        self._DG0 = FiniteElement("DG", domain, 0)
+        self._DG0 = FunctionSpace(domain, FiniteElement("DG", domain.ufl_cell(), 0))
