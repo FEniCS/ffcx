@@ -62,7 +62,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
     def scalar_nary(self, o, ops):
         ffc_assert(o.ufl_shape == (), "Expecting scalar.")
         sops = [op[0] for op in ops]
-        return [o.reconstruct(*sops)]
+        return [o._ufl_expr_reconstruct_(*sops)]
 
     # Unary scalar functions
     math_function = scalar_nary
@@ -76,22 +76,22 @@ class ReconstructScalarSubexpressions(MultiFunction):
 
     def condition(self, o, ops):
         sops = [op[0] for op in ops]
-        return [o.reconstruct(*sops)]
+        return [o._ufl_expr_reconstruct_(*sops)]
 
     def conditional(self, o, ops):
         sops = [op[0] for op in ops]
-        return [o.reconstruct(*sops)]
+        return [o._ufl_expr_reconstruct_(*sops)]
 
     def division(self, o, ops):
         ffc_assert(len(ops) == 2, "Expecting two operands.")
         ffc_assert(len(ops[1]) == 1, "Expecting scalar divisor.")
         b, = ops[1]
-        return [o.reconstruct(a, b) for a in ops[0]]
+        return [o._ufl_expr_reconstruct_(a, b) for a in ops[0]]
 
     def sum(self, o, ops):
         ffc_assert(len(ops) == 2, "Expecting two operands.")
         ffc_assert(len(ops[0]) == len(ops[1]), "Expecting scalar divisor.")
-        return [o.reconstruct(a, b) for a, b in zip(ops[0], ops[1])]
+        return [o._ufl_expr_reconstruct_(a, b) for a, b in zip(ops[0], ops[1])]
 
     def product(self, o, ops):
         ffc_assert(len(ops) == 2, "Expecting two operands.")
