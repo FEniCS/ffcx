@@ -118,7 +118,7 @@ def _compute_element_ir(ufl_element, element_id, element_numbers):
     ir = {"id": element_id}
 
     # Compute data for each function
-    ir["signature"] = ufl_element.reconstruction_signature()
+    ir["signature"] = repr(ufl_element)
     ir["cell_shape"] = cellname
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
@@ -151,7 +151,7 @@ def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
     ir = {"id": element_id}
 
     # Compute data for each function
-    ir["signature"] = "FFC dofmap for " + ufl_element.reconstruction_signature()
+    ir["signature"] = "FFC dofmap for " + repr(ufl_element)
     ir["needs_mesh_entities"] = _needs_mesh_entities(element)
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
