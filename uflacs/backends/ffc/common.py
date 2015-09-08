@@ -47,7 +47,7 @@ class FFCBackendSymbols(object):
     def quadrature_loop_index(self):
         "Reusing a single index name for all quadrature loops, assumed not to be nested."
         # If we want to use num_points-specific names for any symbols, this need num_points as well (or some other scope id).
-        #return self.S("iq" + str(num_points))
+        #return self.S("iq%d" % (num_points,))
         return self.S("iq")
 
     def coefficient_dof_sum_index(self):
@@ -56,8 +56,9 @@ class FFCBackendSymbols(object):
 
     def coefficient_value_access(self, coefficient,):
         c = self.coefficient_numbering[coefficient] # coefficient.count()
-        basename = "w" + str(c)
-        return self.S(basename)
+        # If we want to use num_points-specific names for any symbols, this need num_points as well (or some other scope id).
+        #return self.S("w%d_%d" % (c, num_points))
+        return self.S("w%d" % c)
 
     def coefficient_dof_access(self, coefficient, dof_number):
         # TODO: Add domain_number = self.ir["domain_numbering"][coefficient.ufl_domain().domain_key()]
@@ -67,20 +68,24 @@ class FFCBackendSymbols(object):
         #return self.L.ArrayAccess(names.w, (c, dof_number))
         return self.S("w")[c, dof_number]
 
-    def domain_dof_access(self, gdim, vertex, component, restriction):
+    def domain_dof_access(self, dof, component, gdim, num_scalar_dofs, restriction, interleaved_components):
         # TODO: Add domain number as argument here, and {domain_offset} to array indexing:
         # domain_offset = self.ir["domain_offsets"][domain_number]
         vc = self.S("vertex_coordinates" + self.restriction_postfix[restriction])
-        return vc[gdim*vertex + component]
-        #return L.ArrayAccess(vc, L.Add(L.Mul(gdim, vertex), component))
+        if interleaved_components:
+            #return L.ArrayAccess(vc, L.Add(L.Mul(gdim, dof), component))
+            return vc[gdim*dof + component]
+        else:
+            #return L.ArrayAccess(vc, L.Add(L.Mul(num_scalar_dofs, component), dof))
+            return vc[num_scalar_dofs*component + dof]
 
-    def domain_dofs_access(self, gdim, num_vertices, restriction):
+    def domain_dofs_access(self, gdim, num_scalar_dofs, restriction, interleaved_components):
         # TODO: Add domain number as argument here, and {domain_offset} to array indexing:
         # FIXME: Handle restriction here
         # domain_offset = self.ir["domain_offsets"][domain_number]
-        return [self.domain_dof_access(gdim, vertex, component, restriction)
+        return [self.domain_dof_access(dof, component, gdim, num_scalar_dofs, restriction, interleaved_components)
                 for component in range(gdim)
-                for vertex in range(num_vertices)]
+                for dof in range(num_scalar_dofs)]
 
 
 # TODO: This is not used much anymore, integrate in backend class, and use L.Symbol

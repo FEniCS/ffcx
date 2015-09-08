@@ -42,6 +42,10 @@ class FFCDefinitionsBackend(MultiFunction):
         self.language = language
         self.parameters = parameters
 
+        # FIXME: Make this configurable for easy experimentation with dolfin!
+        # Coordinate dofs for each component are interleaved? Must match dolfin.
+        self.interleaved_components = True # parameters["interleaved_coordinate_component_dofs"]
+
         # Configure definitions behaviour
         if self.ir["integral_type"] in ("custom", "vertex"):
             self.physical_coordinates_known = True
@@ -124,50 +128,68 @@ class FFCDefinitionsBackend(MultiFunction):
         If reference facet coordinates are given:
           x = sum_k xdof_k xphi_k(Xf)
         """
+        if self.physical_coordinates_known:
+            return []
+        else:
+            return self._define_spatial_coordinate(e, mt, tabledata, access)
+
+    def _define_spatial_coordinate(self, e, mt, tabledata, access):
+        """Return definition code for x(X).
+
+        x = sum_k xdof_k xphi_k(X)
+        """
+        # FIXME: Share code with _define_jacobian
+        # access here is e.g. x0, component 0 of x
+
         L = self.language
         code = []
 
-        if self.physical_coordinates_known:
-            pass
-        else:
-            # FIXME: Generalize this code to work with arbitrary domain.ufl_coordinate_element()
-            ffc_assert(mt.terminal.ufl_domain().ufl_coordinates() is None,
-                       "Assuming coefficient field symbolically inserted before this point.")
-            # Reference coordinates are known, no coordinate field, so we compute
-            # this component as linear combination of vertex_coordinates "dofs" and table
+        coordinate_element = mt.terminal.ufl_domain().ufl_coordinate_element()
+        degree = coordinate_element.degree()
 
-            cell = mt.terminal.ufl_domain().ufl_cell()
-            gdim = cell.geometric_dimension()
+        # Reference coordinates are known, no coordinate field, so we compute
+        # this component as linear combination of vertex_coordinates "dofs" and table
+
+        cell = mt.terminal.ufl_domain().ufl_cell()
+        gdim = cell.geometric_dimension()
+
+        uname, begin, end = tabledata
+        num_scalar_dofs = end - begin
+
+        if degree == 1:
             num_vertices = cell.num_vertices()
+            ffc_assert(num_scalar_dofs == num_vertices, "For a linear element, should have dofs == vertices.")
 
-            uname, begin, end = tabledata
-
-            # access here is e.g. x0, component 0 of x
-
-            ffc_assert(0 <= begin <= end <= num_vertices * gdim,
-                       "Assuming linear element for affine simplices here.")
-            entity = format_entity_name(self.ir["entitytype"], mt.restriction)
+        entity = format_entity_name(self.ir["entitytype"], mt.restriction)
+        coefficient_dof = self.symbols.coefficient_dof_sum_index()
+        if coordinate_element.degree() > 0:
             iq = self.symbols.quadrature_loop_index()
+        else:
+            iq = 0
 
-            if 0:  # Generated loop version:
-                vertex = self.symbols.coefficient_dof_sum_index()
-                table_access = L.ArrayAccess(uname, (entity, iq, vertex))
-                dof_access = self.symbols.domain_dof_access(gdim, vertex, mt.flat_component, mt.restriction)
-                prod = L.Mul(dof_access, table_access)
+        if 0:
+            # Generated loop version:
+            table_access = L.ArrayAccess(uname, (entity, iq, coefficient_dof))
+            dof_access = self.symbols.domain_dof_access(coefficient_dof, mt.flat_component,
+                                                        gdim, num_scalar_dofs,
+                                                        mt.restriction, self.interleaved_components)
+            prod = L.Mul(dof_access, table_access)
+            accumulate = [L.AssignAdd(access, prod)]
 
-                # Loop to accumulate linear combination of dofs and tables
-                code += [L.VariableDecl("double", access, 0.0)]
-                code += [L.ForRange(vertex, begin, end, body=[L.AssignAdd(access, prod)])]
+            # Loop to accumulate linear combination of dofs and tables
+            code += [L.VariableDecl("double", access, 0.0)]
+            code += [L.ForRange(coefficient_dof, begin, end, body=accumulate)]
+        else:
+            # Inlined version (we know this is bounded by a small number)
+            dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction, self.interleaved_components)
+            prods = []
+            for idof in range(begin, end):
+                ind = (entity, iq, L.Sub(idof, begin))
+                table_access = L.ArrayAccess(uname, ind)
+                prods += [L.Mul(dof_access[idof], table_access)]
 
-            else:  # Inlined version (we know this is bounded by a small number)
-                dof_access = self.symbols.domain_dofs_access(gdim, num_vertices, mt.restriction)
-                prods = []
-                for idof in range(begin, end):
-                    table_access = L.ArrayAccess(uname, (entity, iq, L.Sub(idof, begin)))
-                    prods += [L.Mul(dof_access[idof], table_access)]
-
-                # Inlined loop to accumulate linear combination of dofs and tables
-                code += [L.VariableDecl("const double", access, L.Sum(prods))]
+            # Inlined loop to accumulate linear combination of dofs and tables
+            code += [L.VariableDecl("const double", access, L.Sum(prods))]
 
         return code
 
@@ -197,51 +219,59 @@ class FFCDefinitionsBackend(MultiFunction):
 
         J = sum_k xdof_k grad_X xphi_k(X)
         """
-        L = self.language
+        # FIXME: Share code with _define_spatial_coordinate
+        # access here is e.g. J_0, component 0 of J
 
-        # FIXME: Generalize this code to work with arbitrary domain.ufl_coordinate_element()
-        ffc_assert(mt.terminal.ufl_domain().ufl_coordinates() is None,
-                   "Assuming coefficient field symbolically inserted before this point.")
+        L = self.language
+        code = []
+
+        coordinate_element = mt.terminal.ufl_domain().ufl_coordinate_element()
+        degree = coordinate_element.degree()
+
         # Reference coordinates are known, no coordinate field, so we compute
         # this component as linear combination of vertex_coordinates "dofs" and table
 
         cell = mt.terminal.ufl_domain().ufl_cell()
         gdim = cell.geometric_dimension()
-        num_vertices = cell.num_vertices()
 
         uname, begin, end = tabledata
+        num_scalar_dofs = end - begin
 
-        # access here is e.g. J_0, component 0 of J
+        if degree == 1:
+            num_vertices = cell.num_vertices()
+            ffc_assert(num_scalar_dofs == num_vertices, "For a linear element, should have dofs == vertices.")
 
-        ffc_assert(0 <= (end - begin) <= num_vertices,
-                   "Assuming linear element for affine simplices here.")
         entity = format_entity_name(self.ir["entitytype"], mt.restriction)
-        vertex = self.symbols.coefficient_dof_sum_index()
-        iq = 0
+        coefficient_dof = self.symbols.coefficient_dof_sum_index()
+        if degree > 1:
+            iq = self.symbols.quadrature_loop_index()
+        else:
+            iq = 0
 
-        code = []
-        if 1:
+        if 0:
+            # Generated loop version:
+            table_access = L.ArrayAccess(uname, (entity, iq, coefficient_dof))
+            dof_access = self.symbols.domain_dof_access(coefficient_dof, mt.flat_component,
+                                                        gdim, num_scalar_dofs,
+                                                        mt.restriction, self.interleaved_components)
+            prod = L.Mul(dof_access, table_access)
+            accumulate = L.AssignAdd(access, prod)
+
+            # Loop to accumulate linear combination of dofs and tables
+            code += [L.VariableDecl("double", access, 0.0)]
+            code += [L.ForRange(coefficient_dof, begin, end, body=accumulate)]
+        else:
             # Inlined version:
             prods = []
-            dof_access = self.symbols.domain_dofs_access(gdim, num_vertices, mt.restriction)
+            dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction, self.interleaved_components)
             for idof in range(begin, end):
-                ind = (entity, 0, L.Sub(idof, begin))
+                ind = (entity, iq, L.Sub(idof, begin))
                 table_access = L.ArrayAccess(uname, ind)
                 prods += [L.Mul(dof_access[idof], table_access)]
 
             # Inlined loop to accumulate linear combination of dofs and tables
             code += [L.VariableDecl("const double", access, L.Sum(prods))]
 
-        else:
-            # Generated loop version:
-            table_access = L.ArrayAccess(uname, iq, (entity, vertex))
-            dof_access = self.symbols.domain_dof_access(gdim, vertex, mt.flat_component, mt.restriction)
-            prod = L.Mul(dof_access, table_access)
-            accumulate = L.AssignAdd(access, prod)
-
-            # Loop to accumulate linear combination of dofs and tables
-            code += [L.VariableDecl("double", access, 0.0)]
-            code += [L.ForRange(vertex, begin, end, body=accumulate)]
 
         return code
 
