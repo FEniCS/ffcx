@@ -132,11 +132,12 @@ def _analyze_form(form, parameters):
         # Temporary workaround to let uflacs have a different preprocessing pipeline
         # than the legacy representations quadrature and tensor. This approach imposes
         # a limitation that e.g. uflacs and tensor representation cannot be mixed in the same form.
+        from ufl.classes import Jacobian
         form_data = compute_form_data(form,
                                       do_apply_function_pullbacks=True,
                                       do_apply_integral_scaling=True,
                                       do_apply_geometry_lowering=True,
-                                      preserve_geometry_types=(),
+                                      preserve_geometry_types=(Jacobian,),
                                       do_apply_restrictions=True,
                                       )
     else:
