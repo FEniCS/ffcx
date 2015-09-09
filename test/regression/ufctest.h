@@ -371,7 +371,7 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id,
     printer.print_scalar("num_entity_dofs", dofmap.num_entity_dofs(d), d);
 
   // tabulate_dofs
-  dofmap.tabulate_dofs(dofs, num_entities, c);
+  dofmap.tabulate_dofs(dofs, num_entities, c.entity_indices);
   printer.print_array("tabulate_dofs", dofmap.num_element_dofs(), dofs);
 
   // tabulate_facet_dofs
