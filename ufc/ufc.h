@@ -230,7 +230,7 @@ namespace ufc
     /// Tabulate the local-to-global mapping of dofs on a cell
     virtual void tabulate_dofs(std::size_t* dofs,
                                const std::vector<std::size_t>& num_global_entities,
-                               const cell& c) const = 0;
+                               const std::vector<std::vector<std::size_t>>& entity_indices) const = 0;
 
     /// Tabulate the local-to-local mapping from facet dofs to cell dofs
     virtual void tabulate_facet_dofs(std::size_t* dofs,

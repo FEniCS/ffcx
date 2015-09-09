@@ -133,7 +133,7 @@ format.update({
 
 # Geometry related variable names (from code snippets).
 format.update({
-    "entity index":       "c.entity_indices",
+    "entity index":       "entity_indices",
     "num entities":       "num_global_entities",
     "cell":               lambda s: "ufc::%s" % s,
     "J":                  lambda i, j, m, n: "J[%d]" % _flatten(i, j, m, n),
