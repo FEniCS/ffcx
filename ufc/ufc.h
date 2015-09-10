@@ -414,6 +414,13 @@ namespace ufc
     virtual std::size_t original_coefficient_position(std::size_t i) const = 0;
 
 
+    /// Create a new finite element for parameterization of coordinates
+    virtual finite_element* create_coordinate_finite_element() const = 0;
+
+    /// Create a new dofmap for parameterization of coordinates
+    virtual dofmap* create_coordinate_dofmap() const = 0;
+
+
     /// Create a new finite element for argument function 0 <= i < r+n
     virtual finite_element* create_finite_element(std::size_t i) const = 0;
 

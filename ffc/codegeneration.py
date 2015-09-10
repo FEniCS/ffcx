@@ -256,6 +256,8 @@ def _generate_form_code(ir, prefix, parameters):
     code["rank"] = ret(ir["rank"])
     code["num_coefficients"] = ret(ir["num_coefficients"])
 
+    code["create_coordinate_finite_element"] = _create_coordinate_finite_element(prefix, ir)
+    code["create_coordinate_dofmap"] = _create_coordinate_dofmap(prefix, ir)
     code["create_finite_element"] = _create_finite_element(prefix, ir)
     code["create_dofmap"] = _create_dofmap(prefix, ir)
 
@@ -493,6 +495,22 @@ def _create_foo(prefix, class_name, postfix, arg, numbers=None):
     cases = [ret(create(name)) for name in class_names]
     default = ret(0)
     return format["switch"](arg, cases, default=default, numbers=numbers)
+
+def _create_coordinate_finite_element(prefix, ir):
+    ret = format["return"]
+    create = format["create foo"]
+    postfix = ir["create_coordinate_finite_element"]
+    name, = ["%s_%s_%d" % (prefix.lower(), "finite_element", i)
+            for i in postfix]
+    return ret(create(name))
+
+def _create_coordinate_dofmap(prefix, ir):
+    ret = format["return"]
+    create = format["create foo"]
+    postfix = ir["create_coordinate_dofmap"]
+    name, = ["%s_%s_%d" % (prefix.lower(), "dofmap", i)
+            for i in postfix]
+    return ret(create(name))
 
 def _create_finite_element(prefix, ir):
     f_i = format["argument sub"]

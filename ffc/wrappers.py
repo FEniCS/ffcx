@@ -83,7 +83,7 @@ def _encapsulate(prefix, object_names, analysis, parameters):
         # Check if all elements are equal
         elements = []
         for form_data in form_datas:
-            elements += form_data.elements[:form_data.rank]
+            elements += form_data.argument_elements
         common_space = all_equal(elements)
 
     return (capsules, common_space)

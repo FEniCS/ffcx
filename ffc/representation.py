@@ -241,8 +241,11 @@ def _compute_form_ir(form_data, form_id, element_numbers):
     ir["num_coefficients"] = len(form_data.reduced_coefficients)
     ir["original_coefficient_positions"] = form_data.original_coefficient_positions
 
-    ir["create_finite_element"] = [element_numbers[e] for e in form_data.elements]
-    ir["create_dofmap"] = [element_numbers[e] for e in form_data.elements]
+    coordinate_element = form_data.original_form.ufl_domain().ufl_coordinate_element()
+    ir["create_coordinate_finite_element"] = [element_numbers[e] for e in form_data.coordinate_elements]
+    ir["create_coordinate_dofmap"] = [element_numbers[e] for e in form_data.coordinate_elements]
+    ir["create_finite_element"] = [element_numbers[e] for e in form_data.argument_elements + form_data.coefficient_elements]
+    ir["create_dofmap"] = [element_numbers[e] for e in form_data.argument_elements + form_data.coefficient_elements]
 
     for integral_type in ufc_integral_types:
         ir["max_%s_subdomain_id" % integral_type] = _max_foo_subdomain_id(integral_type, form_data)

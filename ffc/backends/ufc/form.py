@@ -61,6 +61,18 @@ public:
   }
 
 
+  /// Create a new finite element for parameterization of coordinates
+  virtual ufc::finite_element* create_coordinate_finite_element() const
+  {
+%(create_coordinate_finite_element)s
+  }
+
+  /// Create a new dofmap for parameterization of coordinates
+  virtual ufc::dofmap* create_coordinate_dofmap() const
+  {
+%(create_coordinate_dofmap)s
+  }
+
   /// Create a new finite element for argument function i
   virtual ufc::finite_element* create_finite_element(std::size_t i) const
   {
@@ -240,6 +252,12 @@ public:
   virtual std::size_t original_coefficient_position(std::size_t i) const;
 
 
+  /// Create a new finite element for parameterization of coordinates
+  virtual ufc::finite_element* create_coordinate_finite_element() const;
+
+  /// Create a new dofmap for parameterization of coordinates
+  virtual ufc::dofmap* create_coordinate_dofmap() const;
+
   /// Create a new finite element for argument function i
   virtual ufc::finite_element* create_finite_element(std::size_t i) const;
 
@@ -350,6 +368,18 @@ std::size_t %(classname)s::original_coefficient_position(std::size_t i) const
 %(original_coefficient_position)s
 }
 
+
+/// Create a new finite element for parameterization of coordinates
+virtual ufc::finite_element* %(classname)s::create_coordinate_finite_element() const
+{
+%(create_coordinate_finite_element)s
+}
+
+/// Create a new dofmap for parameterization of coordinates
+virtual ufc::dofmap* %(classname)s::create_coordinate_dofmap() const
+{
+%(create_coordinate_dofmap)s
+}
 
 /// Create a new finite element for argument function i
 ufc::finite_element* %(classname)s::create_finite_element(std::size_t i) const
