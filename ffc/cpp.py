@@ -293,27 +293,18 @@ format.update({
 
 # Class names
 format.update({
-    "classname finite_element": lambda prefix, i:\
-               "%s_finite_element_%d" % (prefix.lower(), i),
-
-    "classname dofmap":  lambda prefix, i: "%s_dofmap_%d" % (prefix.lower(), i),
-
-    "classname cell_integral":  lambda prefix, form_id, sub_domain:\
-               "%s_cell_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
-
-    "classname exterior_facet_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_exterior_facet_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
-
-    "classname interior_facet_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_interior_facet_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
-
-    "classname vertex_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_vertex_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
-
-    "classname custom_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_custom_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
-
-    "classname form": lambda prefix, i: "%s_form_%d" % (prefix.lower(), i)
+    "classname finite_element":
+        lambda prefix, i:
+            "%s_finite_element_%d" % (prefix.lower(), i),
+    "classname dofmap":
+        lambda prefix, i:
+            "%s_dofmap_%d" % (prefix.lower(), i),
+    "classname integral":
+        lambda prefix, integral_type, form_id, subdomain_id:
+            "%s_%s_integral_%d_%s" % (prefix.lower(), integral_type, form_id, subdomain_id),
+    "classname form":
+        lambda prefix, i:
+            "%s_form_%d" % (prefix.lower(), i)
 })
 
 # Helper functions for formatting

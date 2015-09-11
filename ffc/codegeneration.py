@@ -484,14 +484,14 @@ def _tabulate_entity_dofs(ir):
 #--- Utility functions ---
 
 
-def _create_foo(prefix, class_name, postfix, arg, numbers=None):
+def _create_foo(prefix, classname, postfix, arg, numbers=None):
     "Generate code for create_<foo>."
     ret = format["return"]
     create = format["create foo"]
 
-    class_names = ["%s_%s_%d" % (prefix.lower(), class_name, i)
+    classnames = ["%s_%s_%d" % (prefix.lower(), classname, i)
                    for i in postfix]
-    cases = [ret(create(name)) for name in class_names]
+    cases = [ret(create(name)) for name in classnames]
     default = ret(0)
     return format["switch"](arg, cases, default=default, numbers=numbers)
 
@@ -530,9 +530,9 @@ def _create_sub_dofmap(prefix, ir):
 def _create_foo_integral(ir, integral_type, prefix):
     "Generate code for create_<foo>_integral."
     f_i = format["argument subdomain"]
-    class_name = integral_type + "_integral_" + str(ir["id"])
+    classname = integral_type + "_integral_" + str(ir["id"]) # NB! Form id, not integral id.
     postfix = ir["create_" + integral_type + "_integral"]
-    return _create_foo(prefix, class_name, postfix, f_i, numbers=postfix)
+    return _create_foo(prefix, classname, postfix, f_i, numbers=postfix)
 
 def _has_foo_integrals(ir, integral_type):
     ret = format["return"]
@@ -548,8 +548,8 @@ def _create_default_foo_integral(ir, integral_type, prefix):
         return ret(0)
     else:
         create = format["create foo"]
-        class_name = integral_type + "_integral_" + str(ir["id"])
-        name = "%s_%s_%s" % (prefix.lower(), class_name, postfix)
+        classname = integral_type + "_integral_" + str(ir["id"]) # NB! Form id, not integral id.
+        name = "%s_%s_%s" % (prefix.lower(), classname, postfix)
         return ret(create(name))
 
 

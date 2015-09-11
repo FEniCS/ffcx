@@ -83,30 +83,30 @@ def compute_ir(analysis, parameters):
 
     # Compute representation of elements
     info("Computing representation of %d elements" % len(elements))
-    ir_elements = [_compute_element_ir(e, i, element_numbers) \
-                       for (i, e) in enumerate(elements)]
+    ir_elements = [_compute_element_ir(e, element_numbers)
+                   for e in elements]
 
     # Compute representation of dofmaps
     info("Computing representation of %d dofmaps" % len(elements))
-    ir_dofmaps = [_compute_dofmap_ir(e, i, element_numbers)
-                      for (i, e) in enumerate(elements)]
+    ir_dofmaps = [_compute_dofmap_ir(e, element_numbers)
+                  for e in elements]
 
     # Compute and flatten representation of integrals
     info("Computing representation of integrals")
-    irs = [_compute_integral_ir(fd, i, element_numbers, parameters) \
-               for (i, fd) in enumerate(form_datas)]
+    irs = [_compute_integral_ir(fd, i, element_numbers, parameters)
+           for (i, fd) in enumerate(form_datas)]
     ir_integrals = [ir for ir in chain(*irs) if not ir is None]
 
     # Compute representation of forms
     info("Computing representation of forms")
-    ir_forms = [_compute_form_ir(fd, i, element_numbers) \
-                    for (i, fd) in enumerate(form_datas)]
+    ir_forms = [_compute_form_ir(fd, i, element_numbers)
+                for (i, fd) in enumerate(form_datas)]
 
     end()
 
     return ir_elements, ir_dofmaps, ir_integrals, ir_forms
 
-def _compute_element_ir(ufl_element, element_id, element_numbers):
+def _compute_element_ir(ufl_element, element_numbers):
     "Compute intermediate representation of element."
 
     # Create FIAT element
@@ -115,6 +115,7 @@ def _compute_element_ir(ufl_element, element_id, element_numbers):
     cellname = cell.cellname()
 
     # Store id
+    element_id = element_numbers[ufl_element]
     ir = {"id": element_id}
 
     # Compute data for each function
@@ -135,7 +136,7 @@ def _compute_element_ir(ufl_element, element_id, element_numbers):
 
     return ir
 
-def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
+def _compute_dofmap_ir(ufl_element, element_numbers):
     "Compute intermediate representation of dofmap."
 
     # Create FIAT element
@@ -148,6 +149,7 @@ def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
     facet_dofs = _tabulate_facet_dofs(element, cell)
 
     # Store id
+    element_id = element_numbers[ufl_element]
     ir = {"id": element_id}
 
     # Compute data for each function
