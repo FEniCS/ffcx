@@ -1,4 +1,4 @@
-# Copyright (C) 2008-2009 Martin Sandve Alnes
+# Copyright (C) 2008-2015 Martin Sandve Alnes
 #
 # This file is part of DOLFIN.
 #
@@ -16,8 +16,6 @@
 # along with DOLFIN. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Marie E. Rognes
-#
-# Last changed: 2011-02-21
 
 class UFCFormNames:
     "Encapsulation of the names related to a generated UFC form."

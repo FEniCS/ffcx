@@ -80,7 +80,7 @@ def _encapsulate(prefix, object_names, analysis, parameters):
         capsules = [_encapsule_form(prefix, object_names, form_data, i, element_map) for
                     (i, form_data) in enumerate(form_datas)]
 
-        # Check if all elements are equal
+        # Check if all argument elements are equal
         elements = []
         for form_data in form_datas:
             elements += form_data.argument_elements
@@ -90,7 +90,8 @@ def _encapsulate(prefix, object_names, analysis, parameters):
 
 
 def _encapsule_form(prefix, object_names, form_data, i, element_map, superclassname=None):
-    element_numbers = [element_map[e] for e in form_data.elements]
+    # TODO: Include coefficient elements?
+    element_numbers = [element_map[e] for e in form_data.argument_elements + form_data.coefficient_elements]
 
     if superclassname is None:
         superclassname = "Form"
