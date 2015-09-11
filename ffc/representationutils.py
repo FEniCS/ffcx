@@ -172,7 +172,7 @@ def initialize_integral_code(ir, prefix, parameters):
     code = {}
     code["class_type"] = ir["integral_type"] + "_integral"
     code["restrict"] = parameters["restrict_keyword"]
-    code["classname"] = format["classname " + ir["integral_type"] + "_integral"](prefix, ir["form_id"], ir["subdomain_id"])
+    code["classname"] = format["classname integral"](prefix, ir["integral_type"], ir["form_id"], ir["subdomain_id"])
     code["members"] = ""
     code["constructor"] = format["do nothing"]
     code["constructor_arguments"] = ""

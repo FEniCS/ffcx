@@ -488,9 +488,8 @@ def _create_foo(prefix, classname, postfix, arg, numbers=None):
     "Generate code for create_<foo>."
     ret = format["return"]
     create = format["create foo"]
-
-    classnames = ["%s_%s_%d" % (prefix.lower(), classname, i)
-                   for i in postfix]
+    wrap = format["classname wrapped"]
+    classnames = [wrap(prefix, classname, i) for i in postfix]
     cases = [ret(create(name)) for name in classnames]
     default = ret(0)
     return format["switch"](arg, cases, default=default, numbers=numbers)

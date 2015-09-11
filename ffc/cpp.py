@@ -292,19 +292,24 @@ format.update({
     })
 
 # Class names
+def _wrapped_classname(prefix, basename, postfix):
+    return "%s_%s_%s" % (prefix.lower(), basename, str(postfix).lower())
 format.update({
+    "classname wrapped":
+        lambda prefix, basename, postfix:
+            _wrapped_classname(prefix, basename, postfix),
     "classname finite_element":
-        lambda prefix, i:
-            "%s_finite_element_%d" % (prefix.lower(), i),
+        lambda prefix, element_number:
+            _wrapped_classname(prefix, "finite_element", element_number),
     "classname dofmap":
-        lambda prefix, i:
-            "%s_dofmap_%d" % (prefix.lower(), i),
+        lambda prefix, element_number:
+            _wrapped_classname(prefix, "dofmap", element_number),
     "classname integral":
         lambda prefix, integral_type, form_id, subdomain_id:
-            "%s_%s_integral_%d_%s" % (prefix.lower(), integral_type, form_id, subdomain_id),
+            _wrapped_classname(prefix, integral_type + "_integral_" + str(form_id).lower(), subdomain_id),
     "classname form":
-        lambda prefix, i:
-            "%s_form_%d" % (prefix.lower(), i)
+        lambda prefix, form_id:
+            _wrapped_classname(prefix, "form", form_id),
 })
 
 # Helper functions for formatting
