@@ -169,16 +169,6 @@ namespace ufc
                                            int cell_orientation,
                                            const cell& c) const = 0;
 
-    /// Map coordinate xhat from reference cell to coordinate x in cell
-    virtual void map_from_reference_cell(double* x,
-                                         const double* xhat,
-                                         const cell& c) const = 0;
-
-    /// Map from coordinate x in cell to coordinate xhat in reference cell
-    virtual void map_to_reference_cell(double* xhat,
-                                       const double* x,
-                                       const cell& c) const = 0;
-
     /// Return the number of sub elements (for a mixed element)
     virtual std::size_t num_sub_elements() const = 0;
 

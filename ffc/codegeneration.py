@@ -130,9 +130,8 @@ def _generate_element_code(ir, prefix, parameters):
     code["evaluate_dofs"] = evaluate_dofs_code
     code["interpolate_vertex_values"] \
         = interpolate_vertex_values(ir["interpolate_vertex_values"])
-    code["map_from_reference_cell"] \
-        = _not_implemented("map_from_reference_cell")
-    code["map_to_reference_cell"] = _not_implemented("map_to_reference_cell")
+    #code["map_from_reference_cell"] = _not_implemented("map_from_reference_cell")
+    #code["map_to_reference_cell"] = _not_implemented("map_to_reference_cell")
     code["num_sub_elements"] = ret(ir["num_sub_elements"])
     code["create_sub_element"] = _create_sub_element(prefix, ir)
     code["create"] = ret(create(code["classname"]))

@@ -174,22 +174,6 @@ public:
 %(interpolate_vertex_values)s
   }
 
-  /// Map coordinate xhat from reference cell to coordinate x in cell
-  virtual void map_from_reference_cell(double* x,
-                                       const double* xhat,
-                                       const ufc::cell& c) const
-  {
-%(map_from_reference_cell)s
-  }
-
-  /// Map from coordinate x in cell to coordinate xhat in reference cell
-  virtual void map_to_reference_cell(double* xhat,
-                                     const double* x,
-                                     const ufc::cell& c) const
-  {
-%(map_to_reference_cell)s
-  }
-
   /// Return the number of sub elements (for a mixed element)
   virtual std::size_t num_sub_elements() const
   {
@@ -334,16 +318,6 @@ public:
                                          int cell_orientation,
                                          const ufc::cell& c) const;
 
-  /// Map coordinate xhat from reference cell to coordinate x in cell
-  virtual void map_from_reference_cell(double* x,
-                                       const double* xhat,
-                                       const ufc::cell& c) const;
-
-  /// Map from coordinate x in cell to coordinate xhat in reference cell
-  virtual void map_to_reference_cell(double* xhat,
-                                     const double* x,
-                                     const ufc::cell& c) const;
-
   /// Return the number of sub elements (for a mixed element)
   virtual std::size_t num_sub_elements() const;
 
@@ -480,22 +454,6 @@ void %(classname)s::interpolate_vertex_values(double* vertex_values,
                                               const ufc::cell& c) const
 {
 %(interpolate_vertex_values)s
-}
-
-/// Map coordinate xhat from reference cell to coordinate x in cell
-void %(classname)s::map_from_reference_cell(double* x,
-                                            const double* xhat,
-                                            const ufc::cell& c) const
-{
-%(map_from_reference_cell)s
-}
-
-/// Map from coordinate x in cell to coordinate xhat in reference cell
-void %(classname)s::map_to_reference_cell(double* xhat,
-                                          const double* x,
-                                          const ufc::cell& c) const
-{
-%(map_to_reference_cell)s
 }
 
 /// Return the number of sub elements (for a mixed element)
