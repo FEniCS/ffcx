@@ -34,6 +34,7 @@ from ufl.finiteelement import MixedElement, EnrichedElement
 from ufl.algorithms import estimate_total_polynomial_degree
 from ufl.algorithms import sort_elements
 from ufl.algorithms import compute_form_data
+from ufl.algorithms.analysis import extract_sub_elements
 
 # FFC modules
 from ffc.log import log, info, begin, end, warning, debug, error, ffc_assert, warning_blue
@@ -58,11 +59,9 @@ def analyze_forms(forms, parameters):
                                      parameters) for form in forms)
 
     # Extract unique elements accross all forms
-    unique_elements = []
+    unique_elements = set()
     for form_data in form_datas:
-        for element in form_data.unique_sub_elements:
-            if not element in unique_elements:
-                unique_elements.append(element)
+        unique_elements.update(form_data.unique_sub_elements)
 
     # Sort elements
     unique_elements = sort_elements(unique_elements)
@@ -78,16 +77,8 @@ def analyze_elements(elements, parameters):
 
     begin("Compiler stage 1: Analyzing form(s)")
 
-    # Extract unique elements
-    unique_elements = []
-    element_numbers = {}
-    for element in elements:
-        # Get all (unique) nested elements.
-        for e in _get_nested_elements(element):
-            # Check if element is present
-            if not e in element_numbers:
-                element_numbers[e] = len(unique_elements)
-                unique_elements.append(e)
+    # Extract unique (sub)elements
+    unique_elements = set(extract_sub_elements(elements))
 
     # Sort elements
     unique_elements = sort_elements(unique_elements)
@@ -112,13 +103,6 @@ def _compute_element_numbers(elements):
     for (i, element) in enumerate(elements):
         element_numbers[element] = i
     return element_numbers
-
-def _get_nested_elements(element):
-    "Get unique nested elements (including self)."
-    nested_elements = [element]
-    for e in element.sub_elements():
-        nested_elements += _get_nested_elements(e)
-    return set(nested_elements)
 
 def _analyze_form(form, parameters):
     "Analyze form, returning form data."
@@ -287,7 +271,7 @@ def _attach_integral_metadata(form_data, parameters):
     # FIXME: This modifies the elements depending on the form compiler parameters,
     #        this is a serious breach of the immutability of ufl objects, since the
     #        element quad scheme is part of the signature and hash of the element...
-    for element in form_data.sub_elements:
+    for element in form_data.unique_sub_elements:
         if element.family() == "Quadrature":
             element._quad_scheme = scheme
 
