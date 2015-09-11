@@ -67,19 +67,16 @@ def _encapsulate(prefix, object_names, analysis, parameters):
     # Special case: single element
     if num_form_datas == 0:
         capsules = _encapsule_element(prefix, elements)
-
     # Special case: with error control
-    elif (parameters["error_control"] and num_form_datas == 11):
-        capsules = [_encapsule_form(prefix, object_names, form_data, i, element_map) for
-                    (i, form_data) in enumerate(form_datas[:num_form_datas-1])]
+    elif parameters["error_control"] and num_form_datas == 11:
+        capsules = [_encapsule_form(prefix, object_names, form_data, i, element_map)
+                    for (i, form_data) in enumerate(form_datas[:num_form_datas-1])]
         capsules += [_encapsule_form(prefix, object_names, form_datas[-1], num_form_datas-1,
                                      element_map, "GoalFunctional")]
-
     # Otherwise: generate standard capsules for each form
     else:
         capsules = [_encapsule_form(prefix, object_names, form_data, i, element_map) for
                     (i, form_data) in enumerate(form_datas)]
-
         # Check if all argument elements are equal
         elements = []
         for form_data in form_datas:

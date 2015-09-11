@@ -49,6 +49,7 @@ from ffc.compiler import compile_form
 from ffc.jitobject import JITObject
 from ffc.quadratureelement import default_quadrature_degree
 from ffc.backends.ufc import build_ufc_module
+from ffc.cpp import format
 
 # Special Options for JIT-compilation
 FFC_PARAMETERS_JIT = default_parameters()
@@ -153,9 +154,9 @@ def jit_form(form, parameters=None):
                     if os.path.isfile(cppfile):
                         os.unlink(cppfile)
 
-    # Extract compiled form
+    # Construct instance of compiled form
     check_swig_version(module)
-    compiled_form = _extract_form(module, module_name)
+    compiled_form = _instantiate_form(module, module_name)
     return compiled_form, module, module_name
 
 def jit_element(element, parameters=None):
@@ -177,9 +178,7 @@ def jit_element(element, parameters=None):
 
     # Compile form
     compiled_form, module, prefix = jit_form(form, parameters)
-
-    form_data = compute_form_data(form)
-    return _extract_element_and_dofmap(module, prefix, form_data)
+    return _instantiate_element_and_dofmap(module, prefix)
 
 def _check_parameters(form, parameters):
     "Check parameters and add any missing parameters"
@@ -204,16 +203,14 @@ def _check_parameters(form, parameters):
 
     return parameters
 
-def _extract_form(module, prefix):
-    "Extract form from module."
-    return getattr(module, prefix + "_form_0")()
+def _instantiate_form(module, prefix):
+    "Extract the form from module with only one form."
+    classname = format["classname form"](prefix, 0)
+    return getattr(module, classname)()
 
-def _extract_element_and_dofmap(module, prefix, form_data):
-    """
-    Extract element and dofmap from module. Code will be generated for
-    all unique elements (including sub elements) and to get the top
-    level element we need to extract the last element.
-    """
-    i = len(form_data.unique_sub_elements) - 1
-    return (getattr(module, prefix + ("_finite_element_%d" % i))(),
-            getattr(module, prefix + ("_dofmap_%d" % i))())
+def _instantiate_element_and_dofmap(module, prefix):
+    """Extract element and dofmap from module."""
+    form = _instantiate_form(module, prefix)
+    fe = form.create_finite_element(0)
+    dm = form.create_dofmap(0)
+    return (fe, dm)
