@@ -122,13 +122,13 @@ namespace ufc
     virtual void evaluate_basis(std::size_t i,
                                 double* values,
                                 const double* x,
-                                const double* vertex_coordinates,
+                                const double* coordinate_dofs,
                                 int cell_orientation) const = 0;
 
     /// Evaluate all basis functions at given point x in cell
     virtual void evaluate_basis_all(double* values,
                                     const double* x,
-                                    const double* vertex_coordinates,
+                                    const double* coordinate_dofs,
                                     int cell_orientation) const = 0;
 
     /// Evaluate order n derivatives of basis function i at given point x in cell
@@ -136,14 +136,14 @@ namespace ufc
                                             std::size_t n,
                                             double* values,
                                             const double* x,
-                                            const double* vertex_coordinates,
+                                            const double* coordinate_dofs,
                                             int cell_orientation) const = 0;
 
     /// Evaluate order n derivatives of all basis functions at given point x in cell
     virtual void evaluate_basis_derivatives_all(std::size_t n,
                                                 double* values,
                                                 const double* x,
-                                                const double* vertex_coordinates,
+                                                const double* coordinate_dofs,
                                                 int cell_orientation) const = 0;
 
     // FIXME: cell argument only included here so we can pass it to the eval function...
@@ -151,21 +151,21 @@ namespace ufc
     /// Evaluate linear functional for dof i on the function f
     virtual double evaluate_dof(std::size_t i,
                                 const function& f,
-                                const double* vertex_coordinates,
+                                const double* coordinate_dofs,
                                 int cell_orientation,
                                 const cell& c) const = 0;
 
     /// Evaluate linear functionals for all dofs on the function f
     virtual void evaluate_dofs(double* values,
                                const function& f,
-                               const double* vertex_coordinates,
+                               const double* coordinate_dofs,
                                int cell_orientation,
                                const cell& c) const = 0;
 
     /// Interpolate vertex values from dof values
     virtual void interpolate_vertex_values(double* vertex_values,
                                            const double* dof_values,
-                                           const double* vertex_coordinates,
+                                           const double* coordinate_dofs,
                                            int cell_orientation,
                                            const cell& c) const = 0;
 
@@ -232,7 +232,7 @@ namespace ufc
 
     /// Tabulate the coordinates of all dofs on a cell
     virtual void tabulate_coordinates(double* dof_coordinates,
-                                      const double* vertex_coordinates) const = 0;
+                                      const double* coordinate_dofs) const = 0;
 
     /// Return the number of sub dofmaps (for a mixed element)
     virtual std::size_t num_sub_dofmaps() const = 0;
@@ -273,7 +273,7 @@ namespace ufc
     /// Tabulate the tensor for the contribution from a local cell
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
-                                 const double* vertex_coordinates,
+                                 const double* coordinate_dofs,
                                  int cell_orientation) const = 0;
 
   };
@@ -291,7 +291,7 @@ namespace ufc
     /// Tabulate the tensor for the contribution from a local exterior facet
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
-                                 const double* vertex_coordinates,
+                                 const double* coordinate_dofs,
                                  std::size_t facet,
                                  int cell_orientation) const = 0;
 
@@ -310,8 +310,8 @@ namespace ufc
     /// Tabulate the tensor for the contribution from a local interior facet
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
-                                 const double* vertex_coordinates_0,
-                                 const double* vertex_coordinates_1,
+                                 const double* coordinate_dofs_0,
+                                 const double* coordinate_dofs_1,
                                  std::size_t facet_0,
                                  std::size_t facet_1,
                                  int cell_orientation_0,
@@ -334,7 +334,7 @@ namespace ufc
     /// Tabulate the tensor for the contribution from the local vertex
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
-                                 const double* vertex_coordinates,
+                                 const double* coordinate_dofs,
                                  std::size_t vertex,
                                  int cell_orientation) const = 0;
 
@@ -360,7 +360,7 @@ namespace ufc
     /// Tabulate the tensor for the contribution from a custom domain
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
-                                 const double* vertex_coordinates,
+                                 const double* coordinate_dofs,
                                  std::size_t num_quadrature_points,
                                  const double* quadrature_points,
                                  const double* quadrature_weights,

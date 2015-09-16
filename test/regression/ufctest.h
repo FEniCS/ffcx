@@ -46,47 +46,47 @@ double time()
 }
 
 // Function for creating "random" vertex coordinates
-std::vector<double> test_vertex_coordinates(int gdim)
+std::vector<double> test_coordinate_dofs(int gdim)
 {
   // Generate some "random" coordinates
-  std::vector<double> vertex_coordinates;
+  std::vector<double> coordinate_dofs;
   if (gdim == 1)
   {
-    vertex_coordinates.resize(4);
-    vertex_coordinates[0]  = 0.903;
-    vertex_coordinates[1]  = 0.561;
-    vertex_coordinates[2]  = 0.987;
-    vertex_coordinates[3]  = 0.123;
+    coordinate_dofs.resize(4);
+    coordinate_dofs[0]  = 0.903;
+    coordinate_dofs[1]  = 0.561;
+    coordinate_dofs[2]  = 0.987;
+    coordinate_dofs[3]  = 0.123;
   }
   else if (gdim == 2)
   {
-    vertex_coordinates.resize(8);
-    vertex_coordinates[0]  = 0.903;
-    vertex_coordinates[1]  = 0.341;
-    vertex_coordinates[2]  = 0.561;
-    vertex_coordinates[3]  = 0.767;
-    vertex_coordinates[4]  = 0.987;
-    vertex_coordinates[5]  = 0.783;
-    vertex_coordinates[6]  = 0.123;
-    vertex_coordinates[7] = 0.561;
+    coordinate_dofs.resize(8);
+    coordinate_dofs[0]  = 0.903;
+    coordinate_dofs[1]  = 0.341;
+    coordinate_dofs[2]  = 0.561;
+    coordinate_dofs[3]  = 0.767;
+    coordinate_dofs[4]  = 0.987;
+    coordinate_dofs[5]  = 0.783;
+    coordinate_dofs[6]  = 0.123;
+    coordinate_dofs[7] = 0.561;
   }
   else if (gdim == 3)
   {
-    vertex_coordinates.resize(12);
-    vertex_coordinates[0]  = 0.903;
-    vertex_coordinates[1]  = 0.341;
-    vertex_coordinates[2]  = 0.457;
-    vertex_coordinates[3]  = 0.561;
-    vertex_coordinates[4]  = 0.767;
-    vertex_coordinates[5]  = 0.833;
-    vertex_coordinates[6]  = 0.987;
-    vertex_coordinates[7]  = 0.783;
-    vertex_coordinates[8]  = 0.191;
-    vertex_coordinates[9]  = 0.123;
-    vertex_coordinates[10] = 0.561;
-    vertex_coordinates[11] = 0.667;
+    coordinate_dofs.resize(12);
+    coordinate_dofs[0]  = 0.903;
+    coordinate_dofs[1]  = 0.341;
+    coordinate_dofs[2]  = 0.457;
+    coordinate_dofs[3]  = 0.561;
+    coordinate_dofs[4]  = 0.767;
+    coordinate_dofs[5]  = 0.833;
+    coordinate_dofs[6]  = 0.987;
+    coordinate_dofs[7]  = 0.783;
+    coordinate_dofs[8]  = 0.191;
+    coordinate_dofs[9]  = 0.123;
+    coordinate_dofs[10] = 0.561;
+    coordinate_dofs[11] = 0.667;
   }
-  return vertex_coordinates;
+  return coordinate_dofs;
 }
 
 // Class for creating "random" ufc::cell objects
@@ -186,8 +186,8 @@ void test_finite_element(ufc::finite_element& element, int id, Printer& printer)
 
   // Prepare arguments
   test_cell c(element.cell_shape(), element.geometric_dimension());
-  const std::vector<double> vertex_coordinates
-    = test_vertex_coordinates(element.geometric_dimension());
+  const std::vector<double> coordinate_dofs
+    = test_coordinate_dofs(element.geometric_dimension());
   std::size_t value_size = 1;
   for (std::size_t i = 0; i < element.value_rank(); i++)
     value_size *= element.value_dimension(i);
@@ -234,13 +234,13 @@ void test_finite_element(ufc::finite_element& element, int id, Printer& printer)
   for (std::size_t i = 0; i < element.space_dimension(); i++)
   {
     element.evaluate_basis(i, values, coordinates,
-                           vertex_coordinates.data(), 1);
+                           coordinate_dofs.data(), 1);
     printer.print_array("evaluate_basis:", value_size, values, i);
   }
 
   // evaluate_basis all
   element.evaluate_basis_all(values, coordinates,
-                             vertex_coordinates.data(), 1);
+                             coordinate_dofs.data(), 1);
   printer.print_array("evaluate_basis_all",
                       element.space_dimension()*value_size, values);
 
@@ -256,7 +256,7 @@ void test_finite_element(ufc::finite_element& element, int id, Printer& printer)
                                          n,
                                          values,
                                          coordinates,
-                                         vertex_coordinates.data(),
+                                         coordinate_dofs.data(),
                                          1);
       printer.print_array("evaluate_basis_derivatives",
                           value_size*num_derivatives, values, i, n);
@@ -272,7 +272,7 @@ void test_finite_element(ufc::finite_element& element, int id, Printer& printer)
     element.evaluate_basis_derivatives_all(n,
                                            values,
                                            coordinates,
-                                           vertex_coordinates.data(),
+                                           coordinate_dofs.data(),
                                            1);
     printer.print_array("evaluate_basis_derivatives_all",
                         element.space_dimension()*value_size*num_derivatives,
@@ -283,19 +283,19 @@ void test_finite_element(ufc::finite_element& element, int id, Printer& printer)
   for (std::size_t i = 0; i < element.space_dimension(); i++)
   {
     dof_values[i] = element.evaluate_dof(i, f,
-                                         vertex_coordinates.data(),
+                                         coordinate_dofs.data(),
                                          1, c);
     printer.print_scalar("evaluate_dof", dof_values[i], i);
   }
 
   // evaluate_dofs
-  element.evaluate_dofs(values, f, vertex_coordinates.data(), 1, c);
+  element.evaluate_dofs(values, f, coordinate_dofs.data(), 1, c);
   printer.print_array("evaluate_dofs", element.space_dimension(), values);
 
   // interpolate_vertex_values
   element.interpolate_vertex_values(vertex_values,
                                     dof_values,
-                                    vertex_coordinates.data(),
+                                    coordinate_dofs.data(),
                                     1,
                                     c);
   printer.print_array("interpolate_vertex_values",
@@ -336,8 +336,8 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id,
   num_entities[3] = 10004;
 
   test_cell c(cell_shape, dofmap.geometric_dimension());
-  const std::vector<double> vertex_coordinates
-    = test_vertex_coordinates(dofmap.geometric_dimension());
+  const std::vector<double> coordinate_dofs
+    = test_coordinate_dofs(dofmap.geometric_dimension());
   std::size_t n = dofmap.num_element_dofs();
   std::size_t* dofs = new std::size_t[n];
   for (std::size_t i = 0; i < n; i++)
@@ -398,7 +398,7 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id,
   }
 
   // tabulate_coordinates
-  dofmap.tabulate_coordinates(coordinates.data(), vertex_coordinates.data());
+  dofmap.tabulate_coordinates(coordinates.data(), coordinate_dofs.data());
   printer.print_vector("tabulate_coordinates", coordinates);
 
   // num_sub_dofmaps
@@ -432,13 +432,13 @@ void test_cell_integral(ufc::cell_integral& integral,
 
   // Prepare arguments
   test_cell c(cell_shape, gdim);
-  const std::vector<double> vertex_coordinates = test_vertex_coordinates(gdim);
+  const std::vector<double> coordinate_dofs = test_coordinate_dofs(gdim);
   double* A = new double[tensor_size];
   for(std::size_t i = 0; i < tensor_size; i++)
     A[i] = 0.0;
 
   // Call tabulate_tensor
-  integral.tabulate_tensor(A, w, vertex_coordinates.data(), c.orientation);
+  integral.tabulate_tensor(A, w, coordinate_dofs.data(), c.orientation);
   printer.print_array("tabulate_tensor", tensor_size, A);
 
   // Benchmark tabulate tensor
@@ -450,7 +450,7 @@ void test_cell_integral(ufc::cell_integral& integral,
       double t0 = time();
       for (std::size_t i = 0; i < num_reps; i++)
       {
-        integral.tabulate_tensor(A, w, vertex_coordinates.data(),
+        integral.tabulate_tensor(A, w, coordinate_dofs.data(),
                                  c.orientation);
       }
       double dt = time() - t0;
@@ -485,7 +485,7 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
 
   // Prepare arguments
   test_cell c(cell_shape, gdim);
-  const std::vector<double> vertex_coordinates = test_vertex_coordinates(gdim);
+  const std::vector<double> coordinate_dofs = test_coordinate_dofs(gdim);
   std::size_t num_facets = c.topological_dimension + 1;
   double* A = new double[tensor_size];
 
@@ -495,7 +495,7 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
     for(std::size_t i = 0; i < tensor_size; i++)
       A[i] = 0.0;
 
-    integral.tabulate_tensor(A, w, vertex_coordinates.data(), facet,
+    integral.tabulate_tensor(A, w, coordinate_dofs.data(), facet,
                              c.orientation);
     printer.print_array("tabulate_tensor", tensor_size, A, facet);
   }
@@ -508,7 +508,7 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
     {
       double t0 = time();
       for (std::size_t i = 0; i < num_reps; i++)
-        integral.tabulate_tensor(A, w, vertex_coordinates.data(), 0,
+        integral.tabulate_tensor(A, w, coordinate_dofs.data(), 0,
                                  c.orientation);
       double dt = time() - t0;
       if (dt > minimum_timing)
@@ -544,10 +544,10 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
   // Prepare arguments
   test_cell c0(cell_shape, gdim, 0);
   test_cell c1(cell_shape, gdim, 1);
-  const std::vector<double> vertex_coordinates0
-    = test_vertex_coordinates(gdim);
-  const std::vector<double> vertex_coordinates1
-    = test_vertex_coordinates(gdim);
+  const std::vector<double> coordinate_dofs0
+    = test_coordinate_dofs(gdim);
+  const std::vector<double> coordinate_dofs1
+    = test_coordinate_dofs(gdim);
   std::size_t num_facets = c0.topological_dimension + 1;
   double* A = new double[macro_tensor_size];
 
@@ -561,8 +561,8 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
 
       integral.tabulate_tensor(A,
                                w,
-                               vertex_coordinates0.data(),
-                               vertex_coordinates1.data(),
+                               coordinate_dofs0.data(),
+                               coordinate_dofs1.data(),
                                facet0, facet1,
                                c0.orientation,
                                c1.orientation);
@@ -581,8 +581,8 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
       for (std::size_t i = 0; i < num_reps; i++)
       {
         integral.tabulate_tensor(A, w,
-                                 vertex_coordinates0.data(),
-                                 vertex_coordinates1.data(), 0, 0,
+                                 coordinate_dofs0.data(),
+                                 coordinate_dofs1.data(), 0, 0,
                                  c0.orientation,
                                  c1.orientation);
       }
@@ -620,7 +620,7 @@ void test_vertex_integral(ufc::vertex_integral& integral,
 
   // Prepare arguments
   test_cell c(cell_shape, gdim);
-  const std::vector<double> vertex_coordinates = test_vertex_coordinates(gdim);
+  const std::vector<double> coordinate_dofs = test_coordinate_dofs(gdim);
   std::size_t num_vertices = c.topological_dimension + 1;
   double* A = new double[tensor_size];
 
@@ -630,7 +630,7 @@ void test_vertex_integral(ufc::vertex_integral& integral,
     for(std::size_t i = 0; i < tensor_size; i++)
       A[i] = 0.0;
 
-    integral.tabulate_tensor(A, w, vertex_coordinates.data(), vertex,
+    integral.tabulate_tensor(A, w, coordinate_dofs.data(), vertex,
                              c.orientation);
     printer.print_array("tabulate_tensor", tensor_size, A, vertex);
   }
@@ -643,7 +643,7 @@ void test_vertex_integral(ufc::vertex_integral& integral,
     {
       double t0 = time();
       for (std::size_t i = 0; i < num_reps; i++)
-        integral.tabulate_tensor(A, w, vertex_coordinates.data(), 0,
+        integral.tabulate_tensor(A, w, coordinate_dofs.data(), 0,
                                  c.orientation);
       double dt = time() - t0;
       if (dt > minimum_timing)

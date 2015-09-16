@@ -408,7 +408,7 @@ def _tabulate_coordinates(ir):
     component = format["component"]
     precision = format["float"]
     assign = format["assign"]
-    f_x = format["vertex_coordinates"]
+    f_x = format["coordinate_dofs"]
     coordinates = format["argument coordinates"]
 
     # Extract coordinates and cell dimension
