@@ -71,7 +71,7 @@ class FFCBackendSymbols(object):
     def domain_dof_access(self, dof, component, gdim, num_scalar_dofs, restriction, interleaved_components):
         # TODO: Add domain number as argument here, and {domain_offset} to array indexing:
         # domain_offset = self.ir["domain_offsets"][domain_number]
-        vc = self.S("vertex_coordinates" + self.restriction_postfix[restriction])
+        vc = self.S("coordinate_dofs" + self.restriction_postfix[restriction])
         if interleaved_components:
             #return L.ArrayAccess(vc, L.Add(L.Mul(gdim, dof), component))
             return vc[gdim*dof + component]
@@ -97,7 +97,7 @@ class Names:
         self.facet = "facet"
 
         # Geometry names
-        self.vertex_coordinates = "vertex_coordinates"
+        self.coordinate_dofs = "coordinate_dofs"
         self.xi = "xi"
         self.x = "x"
         self.J = "J"
