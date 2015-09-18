@@ -13,12 +13,12 @@ def test_mock_interval(gtest):
     pre = """
     mock_cell mc;
     mc.fill_reference_interval(1);
-    double * vertex_coordinates = mc.vertex_coordinates;
+    double * coordinate_dofs = mc.coordinate_dofs;
     """
 
     post = """
-    ASSERT_EQ(vertex_coordinates[0*mc.geometric_dimension + 0], 0.0);
-    ASSERT_EQ(vertex_coordinates[1*mc.geometric_dimension + 0], 2.0);
+    ASSERT_EQ(coordinate_dofs[0*mc.geometric_dimension + 0], 0.0);
+    ASSERT_EQ(coordinate_dofs[1*mc.geometric_dimension + 0], 2.0);
     """
 
     code = """
@@ -31,16 +31,16 @@ def test_mock_triangle(gtest):
     pre = """
     mock_cell mc;
     mc.fill_reference_triangle(2);
-    double * vertex_coordinates = mc.vertex_coordinates;
+    double * coordinate_dofs = mc.coordinate_dofs;
     """
 
     post = """
-    ASSERT_EQ(vertex_coordinates[0*mc.geometric_dimension + 0], 0.0);
-    ASSERT_EQ(vertex_coordinates[0*mc.geometric_dimension + 1], 0.0);
-    ASSERT_EQ(vertex_coordinates[1*mc.geometric_dimension + 0], 2.0);
-    ASSERT_EQ(vertex_coordinates[1*mc.geometric_dimension + 1], 0.0);
-    ASSERT_EQ(vertex_coordinates[2*mc.geometric_dimension + 0], 0.0);
-    ASSERT_EQ(vertex_coordinates[2*mc.geometric_dimension + 1], 3.0);
+    ASSERT_EQ(coordinate_dofs[0*mc.geometric_dimension + 0], 0.0);
+    ASSERT_EQ(coordinate_dofs[0*mc.geometric_dimension + 1], 0.0);
+    ASSERT_EQ(coordinate_dofs[1*mc.geometric_dimension + 0], 2.0);
+    ASSERT_EQ(coordinate_dofs[1*mc.geometric_dimension + 1], 0.0);
+    ASSERT_EQ(coordinate_dofs[2*mc.geometric_dimension + 0], 0.0);
+    ASSERT_EQ(coordinate_dofs[2*mc.geometric_dimension + 1], 3.0);
     """
 
     code = """
@@ -54,22 +54,22 @@ def test_mock_tetrahedron(gtest):
     pre = """
     mock_cell mc;
     mc.fill_reference_tetrahedron(3);
-    double * vertex_coordinates = mc.vertex_coordinates;
+    double * coordinate_dofs = mc.coordinate_dofs;
     """
 
     post = """
-    ASSERT_EQ(vertex_coordinates[0*mc.geometric_dimension + 0], 2.0);
-    ASSERT_EQ(vertex_coordinates[0*mc.geometric_dimension + 1], 3.0);
-    ASSERT_EQ(vertex_coordinates[0*mc.geometric_dimension + 2], 4.0);
-    ASSERT_EQ(vertex_coordinates[1*mc.geometric_dimension + 0], 3.0);
-    ASSERT_EQ(vertex_coordinates[1*mc.geometric_dimension + 1], 3.0);
-    ASSERT_EQ(vertex_coordinates[1*mc.geometric_dimension + 2], 4.0);
-    ASSERT_EQ(vertex_coordinates[2*mc.geometric_dimension + 0], 2.0);
-    ASSERT_EQ(vertex_coordinates[2*mc.geometric_dimension + 1], 4.0);
-    ASSERT_EQ(vertex_coordinates[2*mc.geometric_dimension + 2], 4.0);
-    ASSERT_EQ(vertex_coordinates[3*mc.geometric_dimension + 0], 2.0);
-    ASSERT_EQ(vertex_coordinates[3*mc.geometric_dimension + 1], 3.0);
-    ASSERT_EQ(vertex_coordinates[3*mc.geometric_dimension + 2], 5.0);
+    ASSERT_EQ(coordinate_dofs[0*mc.geometric_dimension + 0], 2.0);
+    ASSERT_EQ(coordinate_dofs[0*mc.geometric_dimension + 1], 3.0);
+    ASSERT_EQ(coordinate_dofs[0*mc.geometric_dimension + 2], 4.0);
+    ASSERT_EQ(coordinate_dofs[1*mc.geometric_dimension + 0], 3.0);
+    ASSERT_EQ(coordinate_dofs[1*mc.geometric_dimension + 1], 3.0);
+    ASSERT_EQ(coordinate_dofs[1*mc.geometric_dimension + 2], 4.0);
+    ASSERT_EQ(coordinate_dofs[2*mc.geometric_dimension + 0], 2.0);
+    ASSERT_EQ(coordinate_dofs[2*mc.geometric_dimension + 1], 4.0);
+    ASSERT_EQ(coordinate_dofs[2*mc.geometric_dimension + 2], 4.0);
+    ASSERT_EQ(coordinate_dofs[3*mc.geometric_dimension + 0], 2.0);
+    ASSERT_EQ(coordinate_dofs[3*mc.geometric_dimension + 1], 3.0);
+    ASSERT_EQ(coordinate_dofs[3*mc.geometric_dimension + 2], 5.0);
     """
 
     code = """
@@ -83,18 +83,18 @@ def test_mock_quadrilateral(gtest):
     pre = """
     mock_cell mc;
     mc.fill_reference_quadrilateral(2);
-    double * vertex_coordinates = mc.vertex_coordinates;
+    double * coordinate_dofs = mc.coordinate_dofs;
     """
 
     post = """
-    ASSERT_EQ(vertex_coordinates[0*mc.geometric_dimension + 0], 2.0 + 2.0*0.0 + 3.0*0.0);
-    ASSERT_EQ(vertex_coordinates[0*mc.geometric_dimension + 1], 3.0 + 4.0*0.0 + 5.0*0.0);
-    ASSERT_EQ(vertex_coordinates[1*mc.geometric_dimension + 0], 2.0 + 2.0*1.0 + 3.0*0.0);
-    ASSERT_EQ(vertex_coordinates[1*mc.geometric_dimension + 1], 3.0 + 4.0*1.0 + 5.0*0.0);
-    ASSERT_EQ(vertex_coordinates[2*mc.geometric_dimension + 0], 2.0 + 2.0*1.0 + 3.0*1.0);
-    ASSERT_EQ(vertex_coordinates[2*mc.geometric_dimension + 1], 3.0 + 4.0*1.0 + 5.0*1.0);
-    ASSERT_EQ(vertex_coordinates[3*mc.geometric_dimension + 0], 2.0 + 2.0*0.0 + 3.0*1.0);
-    ASSERT_EQ(vertex_coordinates[3*mc.geometric_dimension + 1], 3.0 + 4.0*0.0 + 5.0*1.0);
+    ASSERT_EQ(coordinate_dofs[0*mc.geometric_dimension + 0], 2.0 + 2.0*0.0 + 3.0*0.0);
+    ASSERT_EQ(coordinate_dofs[0*mc.geometric_dimension + 1], 3.0 + 4.0*0.0 + 5.0*0.0);
+    ASSERT_EQ(coordinate_dofs[1*mc.geometric_dimension + 0], 2.0 + 2.0*1.0 + 3.0*0.0);
+    ASSERT_EQ(coordinate_dofs[1*mc.geometric_dimension + 1], 3.0 + 4.0*1.0 + 5.0*0.0);
+    ASSERT_EQ(coordinate_dofs[2*mc.geometric_dimension + 0], 2.0 + 2.0*1.0 + 3.0*1.0);
+    ASSERT_EQ(coordinate_dofs[2*mc.geometric_dimension + 1], 3.0 + 4.0*1.0 + 5.0*1.0);
+    ASSERT_EQ(coordinate_dofs[3*mc.geometric_dimension + 0], 2.0 + 2.0*0.0 + 3.0*1.0);
+    ASSERT_EQ(coordinate_dofs[3*mc.geometric_dimension + 1], 3.0 + 4.0*0.0 + 5.0*1.0);
     """
 
     code = """
@@ -110,23 +110,23 @@ def test_mock_hexahedron(gtest):
     pre = """
     mock_cell mc;
     mc.fill_reference_hexahedron(3);
-    double * vertex_coordinates = mc.vertex_coordinates;
+    double * coordinate_dofs = mc.coordinate_dofs;
     """
 
     post = """
-    ASSERT_EQ(vertex_coordinates[0*mc.geometric_dimension + 0], 5.0 * (0.0 + 2.0));
-    ASSERT_EQ(vertex_coordinates[0*mc.geometric_dimension + 1], 6.0 * (0.0 + 3.0));
-    ASSERT_EQ(vertex_coordinates[0*mc.geometric_dimension + 2], 7.0 * (0.0 + 4.0));
-    ASSERT_EQ(vertex_coordinates[1*mc.geometric_dimension + 0], 5.0 * (1.0 + 2.0));
-    ASSERT_EQ(vertex_coordinates[1*mc.geometric_dimension + 1], 6.0 * (0.0 + 3.0));
-    ASSERT_EQ(vertex_coordinates[1*mc.geometric_dimension + 2], 7.0 * (0.0 + 4.0));
-    ASSERT_EQ(vertex_coordinates[2*mc.geometric_dimension + 0], 5.0 * (1.0 + 2.0));
-    ASSERT_EQ(vertex_coordinates[2*mc.geometric_dimension + 1], 6.0 * (1.0 + 3.0));
-    ASSERT_EQ(vertex_coordinates[2*mc.geometric_dimension + 2], 7.0 * (0.0 + 4.0));
+    ASSERT_EQ(coordinate_dofs[0*mc.geometric_dimension + 0], 5.0 * (0.0 + 2.0));
+    ASSERT_EQ(coordinate_dofs[0*mc.geometric_dimension + 1], 6.0 * (0.0 + 3.0));
+    ASSERT_EQ(coordinate_dofs[0*mc.geometric_dimension + 2], 7.0 * (0.0 + 4.0));
+    ASSERT_EQ(coordinate_dofs[1*mc.geometric_dimension + 0], 5.0 * (1.0 + 2.0));
+    ASSERT_EQ(coordinate_dofs[1*mc.geometric_dimension + 1], 6.0 * (0.0 + 3.0));
+    ASSERT_EQ(coordinate_dofs[1*mc.geometric_dimension + 2], 7.0 * (0.0 + 4.0));
+    ASSERT_EQ(coordinate_dofs[2*mc.geometric_dimension + 0], 5.0 * (1.0 + 2.0));
+    ASSERT_EQ(coordinate_dofs[2*mc.geometric_dimension + 1], 6.0 * (1.0 + 3.0));
+    ASSERT_EQ(coordinate_dofs[2*mc.geometric_dimension + 2], 7.0 * (0.0 + 4.0));
     // ...
-    ASSERT_EQ(vertex_coordinates[7*mc.geometric_dimension + 0], 5.0 * (0.0 + 2.0));
-    ASSERT_EQ(vertex_coordinates[7*mc.geometric_dimension + 1], 6.0 * (1.0 + 3.0));
-    ASSERT_EQ(vertex_coordinates[7*mc.geometric_dimension + 2], 7.0 * (1.0 + 4.0));
+    ASSERT_EQ(coordinate_dofs[7*mc.geometric_dimension + 0], 5.0 * (0.0 + 2.0));
+    ASSERT_EQ(coordinate_dofs[7*mc.geometric_dimension + 1], 6.0 * (1.0 + 3.0));
+    ASSERT_EQ(coordinate_dofs[7*mc.geometric_dimension + 2], 7.0 * (1.0 + 4.0));
     """
 
     code = """

@@ -13,7 +13,7 @@
     struct mock_cell
     {
         // These coordinates are all that generated code should care about, the rest is to support the tests
-        double vertex_coordinates[8*3]; // Worst case hexahedron: 8 vertices in 3d
+        double coordinate_dofs[8*3]; // Worst case hexahedron: 8 vertices in 3d
 
         // Dimensions needed for generic cell transformations
         size_t geometric_dimension;
@@ -32,110 +32,110 @@
             this->geometric_dimension = geometric_dimension;
             this->topological_dimension = topological_dimension;
             this->num_vertices = num_vertices;
-            for (int i=0; i<sizeof(vertex_coordinates)/sizeof(vertex_coordinates[0]); ++i)
-                vertex_coordinates[i] = 0.0;
+            for (int i=0; i<sizeof(coordinate_dofs)/sizeof(coordinate_dofs[0]); ++i)
+                coordinate_dofs[i] = 0.0;
         }
 
         void fill_reference_interval(size_t geometric_dimension)
         {
             init_dimensions(geometric_dimension, 1, 2);
 
-            // Fill in vertex_coordinates for reference cell
-            vertex_coordinates[0*geometric_dimension + 0] = 0.0;
-            vertex_coordinates[1*geometric_dimension + 0] = 1.0;
+            // Fill in coordinate_dofs for reference cell
+            coordinate_dofs[0*geometric_dimension + 0] = 0.0;
+            coordinate_dofs[1*geometric_dimension + 0] = 1.0;
         }
 
         void fill_reference_triangle(size_t geometric_dimension)
         {
             init_dimensions(geometric_dimension, 2, 3);
 
-            // Fill in vertex_coordinates for reference cell
-            vertex_coordinates[0*geometric_dimension + 0] = 0.0;
-            vertex_coordinates[0*geometric_dimension + 1] = 0.0;
+            // Fill in coordinate_dofs for reference cell
+            coordinate_dofs[0*geometric_dimension + 0] = 0.0;
+            coordinate_dofs[0*geometric_dimension + 1] = 0.0;
 
-            vertex_coordinates[1*geometric_dimension + 0] = 1.0;
-            vertex_coordinates[1*geometric_dimension + 1] = 0.0;
+            coordinate_dofs[1*geometric_dimension + 0] = 1.0;
+            coordinate_dofs[1*geometric_dimension + 1] = 0.0;
 
-            vertex_coordinates[2*geometric_dimension + 0] = 0.0;
-            vertex_coordinates[2*geometric_dimension + 1] = 1.0;
+            coordinate_dofs[2*geometric_dimension + 0] = 0.0;
+            coordinate_dofs[2*geometric_dimension + 1] = 1.0;
         }
 
         void fill_reference_tetrahedron(size_t geometric_dimension)
         {
             init_dimensions(geometric_dimension, 3, 4);
 
-            // Fill in vertex_coordinates for reference cell
-            vertex_coordinates[0*geometric_dimension + 0] = 0.0;
-            vertex_coordinates[0*geometric_dimension + 1] = 0.0;
-            vertex_coordinates[0*geometric_dimension + 2] = 0.0;
+            // Fill in coordinate_dofs for reference cell
+            coordinate_dofs[0*geometric_dimension + 0] = 0.0;
+            coordinate_dofs[0*geometric_dimension + 1] = 0.0;
+            coordinate_dofs[0*geometric_dimension + 2] = 0.0;
 
-            vertex_coordinates[1*geometric_dimension + 0] = 1.0;
-            vertex_coordinates[1*geometric_dimension + 1] = 0.0;
-            vertex_coordinates[1*geometric_dimension + 2] = 0.0;
+            coordinate_dofs[1*geometric_dimension + 0] = 1.0;
+            coordinate_dofs[1*geometric_dimension + 1] = 0.0;
+            coordinate_dofs[1*geometric_dimension + 2] = 0.0;
 
-            vertex_coordinates[2*geometric_dimension + 0] = 0.0;
-            vertex_coordinates[2*geometric_dimension + 1] = 1.0;
-            vertex_coordinates[2*geometric_dimension + 2] = 0.0;
+            coordinate_dofs[2*geometric_dimension + 0] = 0.0;
+            coordinate_dofs[2*geometric_dimension + 1] = 1.0;
+            coordinate_dofs[2*geometric_dimension + 2] = 0.0;
 
-            vertex_coordinates[3*geometric_dimension + 0] = 0.0;
-            vertex_coordinates[3*geometric_dimension + 1] = 0.0;
-            vertex_coordinates[3*geometric_dimension + 2] = 1.0;
+            coordinate_dofs[3*geometric_dimension + 0] = 0.0;
+            coordinate_dofs[3*geometric_dimension + 1] = 0.0;
+            coordinate_dofs[3*geometric_dimension + 2] = 1.0;
         }
 
         void fill_reference_quadrilateral(size_t geometric_dimension)
         {
             init_dimensions(geometric_dimension, 2, 4);
 
-            // Fill in vertex_coordinates for reference cell
-            vertex_coordinates[0*geometric_dimension + 0] = 0.0;
-            vertex_coordinates[0*geometric_dimension + 1] = 0.0;
+            // Fill in coordinate_dofs for reference cell
+            coordinate_dofs[0*geometric_dimension + 0] = 0.0;
+            coordinate_dofs[0*geometric_dimension + 1] = 0.0;
 
-            vertex_coordinates[1*geometric_dimension + 0] = 1.0;
-            vertex_coordinates[1*geometric_dimension + 1] = 0.0;
+            coordinate_dofs[1*geometric_dimension + 0] = 1.0;
+            coordinate_dofs[1*geometric_dimension + 1] = 0.0;
 
-            vertex_coordinates[2*geometric_dimension + 0] = 1.0;
-            vertex_coordinates[2*geometric_dimension + 1] = 1.0;
+            coordinate_dofs[2*geometric_dimension + 0] = 1.0;
+            coordinate_dofs[2*geometric_dimension + 1] = 1.0;
 
-            vertex_coordinates[3*geometric_dimension + 0] = 0.0;
-            vertex_coordinates[3*geometric_dimension + 1] = 1.0;
+            coordinate_dofs[3*geometric_dimension + 0] = 0.0;
+            coordinate_dofs[3*geometric_dimension + 1] = 1.0;
         }
 
         void fill_reference_hexahedron(size_t geometric_dimension)
         {
             init_dimensions(geometric_dimension, 3, 8);
 
-            // Fill in vertex_coordinates for reference cell
-            vertex_coordinates[0*geometric_dimension + 0] = 0.0;
-            vertex_coordinates[0*geometric_dimension + 1] = 0.0;
-            vertex_coordinates[0*geometric_dimension + 2] = 0.0;
+            // Fill in coordinate_dofs for reference cell
+            coordinate_dofs[0*geometric_dimension + 0] = 0.0;
+            coordinate_dofs[0*geometric_dimension + 1] = 0.0;
+            coordinate_dofs[0*geometric_dimension + 2] = 0.0;
 
-            vertex_coordinates[1*geometric_dimension + 0] = 1.0;
-            vertex_coordinates[1*geometric_dimension + 1] = 0.0;
-            vertex_coordinates[1*geometric_dimension + 2] = 0.0;
+            coordinate_dofs[1*geometric_dimension + 0] = 1.0;
+            coordinate_dofs[1*geometric_dimension + 1] = 0.0;
+            coordinate_dofs[1*geometric_dimension + 2] = 0.0;
 
-            vertex_coordinates[2*geometric_dimension + 0] = 1.0;
-            vertex_coordinates[2*geometric_dimension + 1] = 1.0;
-            vertex_coordinates[2*geometric_dimension + 2] = 0.0;
+            coordinate_dofs[2*geometric_dimension + 0] = 1.0;
+            coordinate_dofs[2*geometric_dimension + 1] = 1.0;
+            coordinate_dofs[2*geometric_dimension + 2] = 0.0;
 
-            vertex_coordinates[3*geometric_dimension + 0] = 0.0;
-            vertex_coordinates[3*geometric_dimension + 1] = 1.0;
-            vertex_coordinates[3*geometric_dimension + 2] = 0.0;
+            coordinate_dofs[3*geometric_dimension + 0] = 0.0;
+            coordinate_dofs[3*geometric_dimension + 1] = 1.0;
+            coordinate_dofs[3*geometric_dimension + 2] = 0.0;
 
-            vertex_coordinates[4*geometric_dimension + 0] = 0.0;
-            vertex_coordinates[4*geometric_dimension + 1] = 0.0;
-            vertex_coordinates[4*geometric_dimension + 2] = 1.0;
+            coordinate_dofs[4*geometric_dimension + 0] = 0.0;
+            coordinate_dofs[4*geometric_dimension + 1] = 0.0;
+            coordinate_dofs[4*geometric_dimension + 2] = 1.0;
 
-            vertex_coordinates[5*geometric_dimension + 0] = 1.0;
-            vertex_coordinates[5*geometric_dimension + 1] = 0.0;
-            vertex_coordinates[5*geometric_dimension + 2] = 1.0;
+            coordinate_dofs[5*geometric_dimension + 0] = 1.0;
+            coordinate_dofs[5*geometric_dimension + 1] = 0.0;
+            coordinate_dofs[5*geometric_dimension + 2] = 1.0;
 
-            vertex_coordinates[6*geometric_dimension + 0] = 1.0;
-            vertex_coordinates[6*geometric_dimension + 1] = 1.0;
-            vertex_coordinates[6*geometric_dimension + 2] = 1.0;
+            coordinate_dofs[6*geometric_dimension + 0] = 1.0;
+            coordinate_dofs[6*geometric_dimension + 1] = 1.0;
+            coordinate_dofs[6*geometric_dimension + 2] = 1.0;
 
-            vertex_coordinates[7*geometric_dimension + 0] = 0.0;
-            vertex_coordinates[7*geometric_dimension + 1] = 1.0;
-            vertex_coordinates[7*geometric_dimension + 2] = 1.0;
+            coordinate_dofs[7*geometric_dimension + 0] = 0.0;
+            coordinate_dofs[7*geometric_dimension + 1] = 1.0;
+            coordinate_dofs[7*geometric_dimension + 2] = 1.0;
         }
 
         // Scale cell coordinates
@@ -145,7 +145,7 @@
             {
                 for (size_t j=0; j<geometric_dimension; ++j)
                 {
-                    vertex_coordinates[i*geometric_dimension + j] *= factor;
+                    coordinate_dofs[i*geometric_dimension + j] *= factor;
                 }
             }
         }
@@ -157,7 +157,7 @@
             {
                 for (size_t j=0; j<geometric_dimension; ++j)
                 {
-                    vertex_coordinates[i*geometric_dimension + j] *= factors[j];
+                    coordinate_dofs[i*geometric_dimension + j] *= factors[j];
                 }
             }
         }
@@ -187,7 +187,7 @@
             {
                 for (size_t j=0; j<geometric_dimension; ++j)
                 {
-                    vertex_coordinates[i*geometric_dimension + j] += x[j];
+                    coordinate_dofs[i*geometric_dimension + j] += x[j];
                 }
             }
         }
@@ -203,12 +203,12 @@
                     result[j] = x0[j];
                     for (size_t k=0; k<geometric_dimension; ++k)
                     {
-                         result[j] += A[geometric_dimension*j + k] * vertex_coordinates[i*geometric_dimension + k];
+                         result[j] += A[geometric_dimension*j + k] * coordinate_dofs[i*geometric_dimension + k];
                     }
                 }
                 for (size_t j=0; j<geometric_dimension; ++j)
                 {
-                    vertex_coordinates[i*geometric_dimension + j] = result[j];
+                    coordinate_dofs[i*geometric_dimension + j] = result[j];
                 }
             }
         }

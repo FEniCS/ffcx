@@ -29,7 +29,7 @@ def test_interval_tabten_x_given(gtest):
     void tabulate_tensor(
         double* A,
         const double * const * w,
-        const double * vertex_coordinates,
+        const double * coordinate_dofs,
         std::size_t num_points,
         const double * const * points
         ) const;
@@ -40,7 +40,7 @@ def test_interval_tabten_x_given(gtest):
     mock_cell mc;
     mc.fill_reference_interval(1);
 
-    double * vertex_coordinates = mc.vertex_coordinates;
+    double * coordinate_dofs = mc.coordinate_dofs;
     double A[1] = { 0.0 };
     std::size_t num_points = 1;
     double points[1] = { 1.2 };
@@ -69,7 +69,7 @@ def test_interval_tabten_dg0_given(gtest):
     void tabulate_tensor(
         double* A,
         const double * const * w,
-        const double * vertex_coordinates,
+        const double * coordinate_dofs,
         std::size_t num_points,
         const double * const * points
         ) const;
@@ -81,8 +81,8 @@ def test_interval_tabten_dg0_given(gtest):
     pre = """
     mock_cell mc;
     mc.fill_reference_interval(1);
-    mc.vertex_coordinates[0*mc.geometric_dimension + 0] = 0.1;
-    mc.vertex_coordinates[1*mc.geometric_dimension + 0] = 0.2;
+    mc.coordinate_dofs[0*mc.geometric_dimension + 0] = 0.1;
+    mc.coordinate_dofs[1*mc.geometric_dimension + 0] = 0.2;
 
     double A[1];
     memset(A, 0, sizeof(A));
@@ -90,7 +90,7 @@ def test_interval_tabten_dg0_given(gtest):
     double w[2][2] = { { 1.2, 0.0 }, // second value here is unused
                        { 2.0, 3.0 } };
 
-    double * vertex_coordinates = mc.vertex_coordinates;
+    double * coordinate_dofs = mc.coordinate_dofs;
     std::size_t num_points = 1;
     double points[1] = { 0.15 };
 
@@ -123,7 +123,7 @@ def xtest_interval_tabten_geometry_mappings(gtest):
     void tabulate_tensor(
         double* A,
         const double * const * w,
-        const double * vertex_coordinates
+        const double * coordinate_dofs
         ) const;
     """
     pass
@@ -136,10 +136,10 @@ def xtest_interval_geometry_expressions(gtest):
     pre = """
     mock_cell mc;
     mc.fill_reference_interval(1);
-    mc.vertex_coordinates[0*mc.geometric_dimension + 0] = 0.2;
-    mc.vertex_coordinates[1*mc.geometric_dimension + 0] = 0.1;
+    mc.coordinate_dofs[0*mc.geometric_dimension + 0] = 0.2;
+    mc.coordinate_dofs[1*mc.geometric_dimension + 0] = 0.1;
 
-    double * vertex_coordinates = mc.vertex_coordinates;
+    double * coordinate_dofs = mc.coordinate_dofs;
     double A[1];
     memset(A, 0, sizeof(A));
 
@@ -193,7 +193,7 @@ def test_tabulate_tensor_interval_facet(gtest):
     void tabulate_tensor(
         double* A,
         const double * const * w,
-        const double * vertex_coordinates,
+        const double * coordinate_dofs,
         unsigned int facet) const;
 
     """
@@ -201,15 +201,15 @@ def test_tabulate_tensor_interval_facet(gtest):
     pre = """
     mock_cell mc;
     mc.fill_reference_interval(1);
-    mc.vertex_coordinates[0*mc.geometric_dimension + 0] = 0.1;
-    mc.vertex_coordinates[1*mc.geometric_dimension + 0] = 0.2;
+    mc.coordinate_dofs[0*mc.geometric_dimension + 0] = 0.1;
+    mc.coordinate_dofs[1*mc.geometric_dimension + 0] = 0.2;
 
     double A[1];
     memset(A, 0, sizeof(A));
 
     double w[1][2] = { { 2.0, 3.0 } };
 
-    double * vertex_coordinates = mc.vertex_coordinates;
+    double * coordinate_dofs = mc.coordinate_dofs;
 
     unsigned int facet = 0;
     """
@@ -228,8 +228,8 @@ def test_tabulate_tensor_interval_facet(gtest):
     void tabulate_tensor(
         double* A,
         const double * const * w,
-        const double * vertex_coordinates0,
-        const double * vertex_coordinates1,
+        const double * coordinate_dofs0,
+        const double * coordinate_dofs1,
         unsigned int facet0,
         unsigned int facet1) const;
     """
@@ -237,13 +237,13 @@ def test_tabulate_tensor_interval_facet(gtest):
     pre = """
     mock_cell mc0;
     mc0.fill_reference_interval(1);
-    mc0.vertex_coordinates[0*mc0.geometric_dimension + 0] = 0.1;
-    mc0.vertex_coordinates[1*mc0.geometric_dimension + 0] = 0.2;
+    mc0.coordinate_dofs[0*mc0.geometric_dimension + 0] = 0.1;
+    mc0.coordinate_dofs[1*mc0.geometric_dimension + 0] = 0.2;
 
     mock_cell mc1;
     mc1.fill_reference_interval(1);
-    mc1.vertex_coordinates[0*mc1.geometric_dimension + 0] = 0.2;
-    mc1.vertex_coordinates[1*mc1.geometric_dimension + 0] = 0.3;
+    mc1.coordinate_dofs[0*mc1.geometric_dimension + 0] = 0.2;
+    mc1.coordinate_dofs[1*mc1.geometric_dimension + 0] = 0.3;
 
     double A[2];
     memset(A, 0, sizeof(A));
@@ -251,8 +251,8 @@ def test_tabulate_tensor_interval_facet(gtest):
     double w[1][4] = { { 2.0, 3.0,
                          4.0, 5.0 } };
 
-    double * vertex_coordinates0 = mc0.vertex_coordinates;
-    double * vertex_coordinates1 = mc1.vertex_coordinates;
+    double * coordinate_dofs0 = mc0.coordinate_dofs;
+    double * coordinate_dofs1 = mc1.coordinate_dofs;
 
     unsigned int facet0 = 1;
     unsigned int facet1 = 0;

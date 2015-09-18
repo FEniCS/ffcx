@@ -148,7 +148,7 @@ class FFCDefinitionsBackend(MultiFunction):
         degree = coordinate_element.degree()
 
         # Reference coordinates are known, no coordinate field, so we compute
-        # this component as linear combination of vertex_coordinates "dofs" and table
+        # this component as linear combination of coordinate_dofs "dofs" and table
 
         cell = mt.terminal.ufl_domain().ufl_cell()
         gdim = cell.geometric_dimension()
@@ -234,7 +234,7 @@ class FFCDefinitionsBackend(MultiFunction):
         degree = coordinate_element.degree()
 
         # Reference coordinates are known, no coordinate field, so we compute
-        # this component as linear combination of vertex_coordinates "dofs" and table
+        # this component as linear combination of coordinate_dofs "dofs" and table
 
         cell = mt.terminal.ufl_domain().ufl_cell()
         gdim = cell.geometric_dimension()
