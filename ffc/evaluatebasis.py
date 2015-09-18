@@ -404,6 +404,9 @@ def _compute_basisvalues(data, dof_data):
     code += [f_comment("Array of basisvalues")]
     code += [f_decl(f_double, f_component(f_basisvalue, num_mem), f_tensor([0.0]*num_mem))]
 
+    # Declare helper variables, will be removed if not used.
+    code += ["", f_comment("Declare helper variables")] # Keeping this here to avoid changing references
+
     # Get the element cell name
     element_cellname = data["cellname"]
 
