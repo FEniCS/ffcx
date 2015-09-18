@@ -358,7 +358,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, gdim, tdim, g
     f_I         = format["ip constant"]
     f_loop      = format["generate loop"]
     f_ip_coords = format["generate ip coordinates"]
-    f_coords    = format["vertex_coordinates"]
+    f_coords    = format["coordinate_dofs"]
     f_double    = format["float declaration"]
     f_decl      = format["declaration"]
     f_X         = format["ip coordinates"]

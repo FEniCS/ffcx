@@ -40,7 +40,7 @@
 #    dof_values[i] = 0.0;
 
 #  // Create vertex coordinates and fill with some arbitrary data
-#  double vertex_coordinates[24] = {0.90, 0.34, 0.45,
+#  double coordinate_dofs[24] = {0.90, 0.34, 0.45,
 #                                   0.56, 0.76, 0.83,
 #                                   0.98, 0.78, 0.19,
 #                                   0.12, 0.56, 0.66,
@@ -55,7 +55,7 @@
 #  // Loop element space dimension and call evaluate_basis.
 #  for (unsigned int i = 0; i < element.space_dimension(); i++)
 #  {
-#    element.evaluate_basis(i, dof_values, coordinates, vertex_coordinates, 0);
+#    element.evaluate_basis(i, dof_values, coordinates, coordinate_dofs, 0);
 #    // Print values
 #    for (unsigned int j = 0; j < N; j++)
 #      std::cout << dof_values[j] << " ";
@@ -109,12 +109,12 @@ int main(int argc, char* argv[])
     dof_values[i] = 0.0;
 
   %(cell_ref_coords)s
-  double vertex_coordinates[%(num_coords)d*%(dim)d];
+  double coordinate_dofs[%(num_coords)d*%(dim)d];
   int k = 0;
   for (int i = 0; i < %(num_coords)d; i++)
   {
     for (int j = 0; j < %(dim)d; j++)
-      vertex_coordinates[k++] = cell_ref_coords[i][j];
+      coordinate_dofs[k++] = cell_ref_coords[i][j];
   }
 
   // Random points where we want to evaluate the basis functions
@@ -139,7 +139,7 @@ int main(int argc, char* argv[])
       // Loop element space dimension and call evaluate_basis.
       for (unsigned int i = 0; i < element.space_dimension(); i++)
       {
-        element.evaluate_basis(i, dof_values, coordinates, vertex_coordinates, 0);
+        element.evaluate_basis(i, dof_values, coordinates, coordinate_dofs, 0);
 
         // Print values
         for (unsigned int j = 0; j < num_dof_vals; j++)
@@ -161,7 +161,7 @@ int main(int argc, char* argv[])
       // Loop element space dimension and call evaluate_basis.
       for (unsigned int i = 0; i < element.space_dimension(); i++)
       {
-        element.evaluate_basis_derivatives(i, n, dof_values, coordinates, vertex_coordinates, 0);
+        element.evaluate_basis_derivatives(i, n, dof_values, coordinates, coordinate_dofs, 0);
 
         // Print values
         for (unsigned int j = 0; j < num_dof_vals; j++)

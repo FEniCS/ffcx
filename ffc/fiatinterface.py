@@ -210,10 +210,10 @@ def map_facet_points(points, facet):
 
     # Extract vertex coordinates from cell and map of facet index to
     # indicent vertex indices
-    vertex_coordinates = fiat_cell.get_vertices()
+    coordinate_dofs = fiat_cell.get_vertices()
     facet_vertices = fiat_cell.get_topology()[dim-1]
 
-    #vertex_coordinates = \
+    #coordinate_dofs = \
     #    {1: ((0.,), (1.,)),
     #     2: ((0., 0.), (1., 0.), (0., 1.)),
     #     3: ((0., 0., 0.), (1., 0., 0.),(0., 1., 0.), (0., 0., 1))}
@@ -224,7 +224,7 @@ def map_facet_points(points, facet):
     #     3: ((1, 2, 3), (0, 2, 3), (0, 1, 3), (0, 1, 2))}
 
     # Compute coordinates and map the points
-    coordinates = [vertex_coordinates[v] for v in facet_vertices[facet]]
+    coordinates = [coordinate_dofs[v] for v in facet_vertices[facet]]
     new_points = []
     for point in points:
         w = (1.0 - sum(point),) + tuple(point)

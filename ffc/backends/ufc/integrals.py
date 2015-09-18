@@ -33,7 +33,7 @@ public:
   /// Tabulate the tensor for the contribution from a local cell
   virtual void tabulate_tensor(double* %(restrict)s A,
                                const double * const * %(restrict)s w,
-                               const double* %(restrict)s vertex_coordinates,
+                               const double* %(restrict)s coordinate_dofs,
                                int cell_orientation) const
   {
 %(tabulate_tensor)s
@@ -63,7 +63,7 @@ public:
   /// Tabulate the tensor for the contribution from a local cell
   virtual void tabulate_tensor(double* %(restrict)s A,
                                const double * const * %(restrict)s w,
-                               const double* %(restrict)s vertex_coordinates,
+                               const double* %(restrict)s coordinate_dofs,
                                int cell_orientation) const;
 
 };
@@ -91,7 +91,7 @@ const std::vector<bool> & %(classname)s::enabled_coefficients() const
 /// Tabulate the tensor for the contribution from a local cell
 void %(classname)s::tabulate_tensor(double* %(restrict)s A,
                                     const double * const * %(restrict)s w,
-                                    const double* %(restrict)s vertex_coordinates,
+                                    const double* %(restrict)s coordinate_dofs,
                                     int cell_orientation) const
 {
 %(tabulate_tensor)s
@@ -128,7 +128,7 @@ public:
   /// Tabulate the tensor for the contribution from a local exterior facet
   virtual void tabulate_tensor(double* %(restrict)s A,
                                const double * const * %(restrict)s w,
-                               const double* %(restrict)s vertex_coordinates,
+                               const double* %(restrict)s coordinate_dofs,
                                std::size_t facet,
                                int cell_orientation) const
   {
@@ -159,7 +159,7 @@ public:
   /// Tabulate the tensor for the contribution from a local exterior facet
   virtual void tabulate_tensor(double* %(restrict)s A,
                                const double * const * %(restrict)s w,
-                               const double* %(restrict)s vertex_coordinates,
+                               const double* %(restrict)s coordinate_dofs,
                                std::size_t facet,
                                int cell_orientation) const;
 
@@ -188,7 +188,7 @@ const std::vector<bool> & %(classname)s::enabled_coefficients() const
 /// Tabulate the tensor for the contribution from a local exterior facet
 void %(classname)s::tabulate_tensor(double* %(restrict)s A,
                                     const double * const * %(restrict)s w,
-                                    const double* %(restrict)s vertex_coordinates,
+                                    const double* %(restrict)s coordinate_dofs,
                                     std::size_t facet,
                                     int cell_orientation) const
 {
@@ -226,8 +226,8 @@ public:
   /// Tabulate the tensor for the contribution from a local interior facet
   virtual void tabulate_tensor(double* %(restrict)s A,
                                const double * const * %(restrict)s w,
-                               const double* %(restrict)s vertex_coordinates_0,
-                               const double* %(restrict)s vertex_coordinates_1,
+                               const double* %(restrict)s coordinate_dofs_0,
+                               const double* %(restrict)s coordinate_dofs_1,
                                std::size_t facet_0,
                                std::size_t facet_1,
                                int cell_orientation_0,
@@ -260,8 +260,8 @@ public:
   /// Tabulate the tensor for the contribution from a local interior facet
   virtual void tabulate_tensor(double* %(restrict)s A,
                                const double * const * %(restrict)s w,
-                               const double* %(restrict)s vertex_coordinates_0,
-                               const double* %(restrict)s vertex_coordinates_1,
+                               const double* %(restrict)s coordinate_dofs_0,
+                               const double* %(restrict)s coordinate_dofs_1,
                                std::size_t facet_0,
                                std::size_t facet_1,
                                int cell_orientation_0,
@@ -292,8 +292,8 @@ const std::vector<bool> & %(classname)s::enabled_coefficients() const
 /// Tabulate the tensor for the contribution from a local interior facet
 void %(classname)s::tabulate_tensor(double* %(restrict)s A,
                                     const double * const * %(restrict)s w,
-                                    const double* %(restrict)s vertex_coordinates_0,
-                                    const double* %(restrict)s vertex_coordinates_1,
+                                    const double* %(restrict)s coordinate_dofs_0,
+                                    const double* %(restrict)s coordinate_dofs_1,
                                     std::size_t facet_0,
                                     std::size_t facet_1,
                                     int cell_orientation_0,
@@ -332,7 +332,7 @@ public:
   /// Tabulate the tensor for the contribution from the local vertex
   virtual void tabulate_tensor(double* %(restrict)s A,
                                const double * const * %(restrict)s w,
-                               const double* %(restrict)s vertex_coordinates,
+                               const double* %(restrict)s coordinate_dofs,
                                std::size_t vertex,
                                int cell_orientation) const
   {
@@ -362,7 +362,7 @@ public:
   /// Tabulate the tensor for the contribution from the local vertex
   virtual void tabulate_tensor(double* %(restrict)s A,
                                const double * const * %(restrict)s w,
-                               const double* %(restrict)s vertex_coordinates,
+                               const double* %(restrict)s coordinate_dofs,
                                std::size_t vertex,
                                int cell_orientation) const;
 
@@ -391,7 +391,7 @@ const std::vector<bool> & %(classname)s::enabled_coefficients() const
 /// Tabulate the tensor for the contribution from the local vertex
 void %(classname)s::tabulate_tensor(double* %(restrict)s A,
                                     const double * const * %(restrict)s w,
-                                    const double* %(restrict)s vertex_coordinates,
+                                    const double* %(restrict)s coordinate_dofs,
                                     std::size_t vertex,
                                     int cell_orientation) const
 {
@@ -436,7 +436,7 @@ public:
   /// Tabulate the tensor for the contribution from a custom domain
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
-                               const double* vertex_coordinates,
+                               const double* coordinate_dofs,
                                std::size_t num_quadrature_points,
                                const double* quadrature_points,
                                const double* quadrature_weights,
@@ -474,7 +474,7 @@ public:
   /// Tabulate the tensor for the contribution from a custom domain
   virtual void tabulate_tensor(double* A,
                                const double * const * w,
-                               const double* vertex_coordinates,
+                               const double* coordinate_dofs,
                                std::size_t num_quadrature_points,
                                const double* quadrature_points,
                                const double* quadrature_weights,
@@ -512,7 +512,7 @@ std::size_t %(classname)s::num_cells() const
 /// Tabulate the tensor for the contribution from a custom domain
 void %(classname)s::tabulate_tensor(double* A,
                                     const double * const * w,
-                                    const double* vertex_coordinates,
+                                    const double* coordinate_dofs,
                                     std::size_t num_quadrature_points,
                                     const double* quadrature_points,
                                     const double* quadrature_weights,

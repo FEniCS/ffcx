@@ -152,7 +152,7 @@ format.update({
     "z coordinate":       "Z",
     "ip coordinates":     lambda i, j: "X%d[%d]" % (i, j),
     "affine map table":   lambda i, j: "FEA%d_f%d" % (i, j),
-    "vertex_coordinates": lambda r=None: "vertex_coordinates%s" % _choose_map(r)
+    "coordinate_dofs": lambda r=None: "coordinate_dofs%s" % _choose_map(r)
 })
 
 # UFC function arguments and class members (names)
@@ -211,10 +211,10 @@ format.update({
                                   % (i, format["argument basis num"], format["argument basis num"], j),
     "dereference pointer":        lambda n: "*%s" % n,
     "reference variable":         lambda n: "&%s" % n,
-    "call basis":                 lambda i, s: "_evaluate_basis(%s, %s, x, vertex_coordinates, cell_orientation);" % (i, s),
-    "call basis_all":             "_evaluate_basis_all(values, x, vertex_coordinates, cell_orientation);",
-    "call basis_derivatives":     lambda i, s: "_evaluate_basis_derivatives(%s, n, %s, x, vertex_coordinates, cell_orientation);" % (i, s),
-    "call basis_derivatives_all": lambda i, s: "_evaluate_basis_derivatives_all(n, %s, x, vertex_coordinates, cell_orientation);" % s,
+    "call basis":                 lambda i, s: "_evaluate_basis(%s, %s, x, coordinate_dofs, cell_orientation);" % (i, s),
+    "call basis_all":             "_evaluate_basis_all(values, x, coordinate_dofs, cell_orientation);",
+    "call basis_derivatives":     lambda i, s: "_evaluate_basis_derivatives(%s, n, %s, x, coordinate_dofs, cell_orientation);" % (i, s),
+    "call basis_derivatives_all": lambda i, s: "_evaluate_basis_derivatives_all(n, %s, x, coordinate_dofs, cell_orientation);" % s,
 
     # quadrature code generators
     "integration points":   "ip",
@@ -288,7 +288,7 @@ format.update({
     "eval_derivs_init":         eval_derivs_init,
     "eval_derivs":              eval_derivs,
     "eval_derivs_copy":         eval_derivs_copy,
-    "extract_cell_coordinates": lambda offset, r : "const double* vertex_coordinates_%d = vertex_coordinates + %d;" % (r, offset)
+    "extract_cell_coordinates": lambda offset, r : "const double* coordinate_dofs_%d = coordinate_dofs + %d;" % (r, offset)
     })
 
 # Class names

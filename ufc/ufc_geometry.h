@@ -606,63 +606,63 @@ inline void compute_reference_facet_to_reference_cell_coordinates_tetrahedron(do
 
 /// Compute Jacobian J for interval embedded in R^1
 inline void compute_jacobian_interval_1d(double J[UFC_GDIM_1*UFC_TDIM_1],
-                                         const double vertex_coordinates[2])
+                                         const double coordinate_dofs[2])
 {
-  J[0] = vertex_coordinates[1] - vertex_coordinates[0];
+  J[0] = coordinate_dofs[1] - coordinate_dofs[0];
 }
 
 /// Compute Jacobian J for interval embedded in R^2
 inline void compute_jacobian_interval_2d(double J[UFC_GDIM_2*UFC_TDIM_1],
-                                         const double vertex_coordinates[4])
+                                         const double coordinate_dofs[4])
 {
-  J[0] = vertex_coordinates[2] - vertex_coordinates[0];
-  J[1] = vertex_coordinates[3] - vertex_coordinates[1];
+  J[0] = coordinate_dofs[2] - coordinate_dofs[0];
+  J[1] = coordinate_dofs[3] - coordinate_dofs[1];
 }
 
 /// Compute Jacobian J for interval embedded in R^3
 inline void compute_jacobian_interval_3d(double J[UFC_GDIM_3*UFC_TDIM_1],
-                                         const double vertex_coordinates[6])
+                                         const double coordinate_dofs[6])
 {
-  J[0] = vertex_coordinates[3] - vertex_coordinates[0];
-  J[1] = vertex_coordinates[4] - vertex_coordinates[1];
-  J[2] = vertex_coordinates[5] - vertex_coordinates[2];
+  J[0] = coordinate_dofs[3] - coordinate_dofs[0];
+  J[1] = coordinate_dofs[4] - coordinate_dofs[1];
+  J[2] = coordinate_dofs[5] - coordinate_dofs[2];
 }
 
 /// Compute Jacobian J for triangle embedded in R^2
 inline void compute_jacobian_triangle_2d(double J[UFC_GDIM_2*UFC_TDIM_2],
-                                         const double vertex_coordinates[6])
+                                         const double coordinate_dofs[6])
 {
-  J[0] = vertex_coordinates[2] - vertex_coordinates[0];
-  J[1] = vertex_coordinates[4] - vertex_coordinates[0];
-  J[2] = vertex_coordinates[3] - vertex_coordinates[1];
-  J[3] = vertex_coordinates[5] - vertex_coordinates[1];
+  J[0] = coordinate_dofs[2] - coordinate_dofs[0];
+  J[1] = coordinate_dofs[4] - coordinate_dofs[0];
+  J[2] = coordinate_dofs[3] - coordinate_dofs[1];
+  J[3] = coordinate_dofs[5] - coordinate_dofs[1];
 }
 
 /// Compute Jacobian J for triangle embedded in R^3
 inline void compute_jacobian_triangle_3d(double J[UFC_GDIM_3*UFC_TDIM_2],
-                                         const double vertex_coordinates[9])
+                                         const double coordinate_dofs[9])
 {
-  J[0] = vertex_coordinates[3] - vertex_coordinates[0];
-  J[1] = vertex_coordinates[6] - vertex_coordinates[0];
-  J[2] = vertex_coordinates[4] - vertex_coordinates[1];
-  J[3] = vertex_coordinates[7] - vertex_coordinates[1];
-  J[4] = vertex_coordinates[5] - vertex_coordinates[2];
-  J[5] = vertex_coordinates[8] - vertex_coordinates[2];
+  J[0] = coordinate_dofs[3] - coordinate_dofs[0];
+  J[1] = coordinate_dofs[6] - coordinate_dofs[0];
+  J[2] = coordinate_dofs[4] - coordinate_dofs[1];
+  J[3] = coordinate_dofs[7] - coordinate_dofs[1];
+  J[4] = coordinate_dofs[5] - coordinate_dofs[2];
+  J[5] = coordinate_dofs[8] - coordinate_dofs[2];
 }
 
 /// Compute Jacobian J for tetrahedron embedded in R^3
 inline void compute_jacobian_tetrahedron_3d(double J[UFC_GDIM_3*UFC_TDIM_3],
-                                            const double vertex_coordinates[12])
+                                            const double coordinate_dofs[12])
 {
-  J[0] = vertex_coordinates[3]  - vertex_coordinates[0];
-  J[1] = vertex_coordinates[6]  - vertex_coordinates[0];
-  J[2] = vertex_coordinates[9]  - vertex_coordinates[0];
-  J[3] = vertex_coordinates[4]  - vertex_coordinates[1];
-  J[4] = vertex_coordinates[7]  - vertex_coordinates[1];
-  J[5] = vertex_coordinates[10] - vertex_coordinates[1];
-  J[6] = vertex_coordinates[5]  - vertex_coordinates[2];
-  J[7] = vertex_coordinates[8]  - vertex_coordinates[2];
-  J[8] = vertex_coordinates[11] - vertex_coordinates[2];
+  J[0] = coordinate_dofs[3]  - coordinate_dofs[0];
+  J[1] = coordinate_dofs[6]  - coordinate_dofs[0];
+  J[2] = coordinate_dofs[9]  - coordinate_dofs[0];
+  J[3] = coordinate_dofs[4]  - coordinate_dofs[1];
+  J[4] = coordinate_dofs[7]  - coordinate_dofs[1];
+  J[5] = coordinate_dofs[10] - coordinate_dofs[1];
+  J[6] = coordinate_dofs[5]  - coordinate_dofs[2];
+  J[7] = coordinate_dofs[8]  - coordinate_dofs[2];
+  J[8] = coordinate_dofs[11] - coordinate_dofs[2];
 }
 
 //--- Computation of Jacobian inverses --- // TODO: Remove this when ffc is updated to use the NEW ones below
@@ -915,7 +915,7 @@ inline void new_compute_jacobian_inverse_tetrahedron_3d(double K[UFC_TDIM_3*UFC_
 
 /// Compute edge scaling factors for triangle embedded in R^2
 inline void compute_edge_scaling_factors_triangle_2d(double dx[2],
-                                                     const double vertex_coordinates[6],
+                                                     const double coordinate_dofs[6],
                                                      std::size_t facet)
 {
   // Get vertices on edge
@@ -923,8 +923,8 @@ inline void compute_edge_scaling_factors_triangle_2d(double dx[2],
   const unsigned int v1 = triangle_facet_vertices[facet][1];
 
   // Compute scale factor (length of edge scaled by length of reference interval)
-  dx[0] = vertex_coordinates[2*v1 + 0] - vertex_coordinates[2*v0 + 0];
-  dx[1] = vertex_coordinates[2*v1 + 1] - vertex_coordinates[2*v0 + 1];
+  dx[0] = coordinate_dofs[2*v1 + 0] - coordinate_dofs[2*v0 + 0];
+  dx[1] = coordinate_dofs[2*v1 + 1] - coordinate_dofs[2*v0 + 1];
 }
 
 /// Compute facet scaling factor for triangle embedded in R^2
@@ -936,7 +936,7 @@ inline void compute_facet_scaling_factor_triangle_2d(double & det,
 
 /// Compute edge scaling factors for triangle embedded in R^3
 inline void compute_edge_scaling_factors_triangle_3d(double dx[3],
-                                                     const double vertex_coordinates[9],
+                                                     const double coordinate_dofs[9],
                                                      std::size_t facet)
 {
   // Get vertices on edge
@@ -944,9 +944,9 @@ inline void compute_edge_scaling_factors_triangle_3d(double dx[3],
   const unsigned int v1 = triangle_facet_vertices[facet][1];
 
   // Compute scale factor (length of edge scaled by length of reference interval)
-  dx[0] = vertex_coordinates[3*v1 + 0] - vertex_coordinates[3*v0 + 0];
-  dx[1] = vertex_coordinates[3*v1 + 1] - vertex_coordinates[3*v0 + 1];
-  dx[2] = vertex_coordinates[3*v1 + 2] - vertex_coordinates[3*v0 + 2];
+  dx[0] = coordinate_dofs[3*v1 + 0] - coordinate_dofs[3*v0 + 0];
+  dx[1] = coordinate_dofs[3*v1 + 1] - coordinate_dofs[3*v0 + 1];
+  dx[2] = coordinate_dofs[3*v1 + 2] - coordinate_dofs[3*v0 + 2];
 }
 
 /// Compute facet scaling factor for triangle embedded in R^3
@@ -958,7 +958,7 @@ inline void compute_facet_scaling_factor_triangle_3d(double & det,
 
 /// Compute face scaling factors for tetrahedron embedded in R^3
 inline void compute_face_scaling_factors_tetrahedron_3d(double a[3],
-                                                        const double vertex_coordinates[12],
+                                                        const double coordinate_dofs[12],
                                                         std::size_t facet)
 {
   // Get vertices on face
@@ -967,26 +967,26 @@ inline void compute_face_scaling_factors_tetrahedron_3d(double a[3],
   const unsigned int v2 = tetrahedron_facet_vertices[facet][2];
 
   // Compute scale factor (area of face scaled by area of reference triangle)
-  a[0] = (vertex_coordinates[3*v0 + 1]*vertex_coordinates[3*v1 + 2]  +
-          vertex_coordinates[3*v0 + 2]*vertex_coordinates[3*v2 + 1]  +
-          vertex_coordinates[3*v1 + 1]*vertex_coordinates[3*v2 + 2]) -
-         (vertex_coordinates[3*v2 + 1]*vertex_coordinates[3*v1 + 2]  +
-          vertex_coordinates[3*v2 + 2]*vertex_coordinates[3*v0 + 1]  +
-          vertex_coordinates[3*v1 + 1]*vertex_coordinates[3*v0 + 2]);
+  a[0] = (coordinate_dofs[3*v0 + 1]*coordinate_dofs[3*v1 + 2]  +
+          coordinate_dofs[3*v0 + 2]*coordinate_dofs[3*v2 + 1]  +
+          coordinate_dofs[3*v1 + 1]*coordinate_dofs[3*v2 + 2]) -
+         (coordinate_dofs[3*v2 + 1]*coordinate_dofs[3*v1 + 2]  +
+          coordinate_dofs[3*v2 + 2]*coordinate_dofs[3*v0 + 1]  +
+          coordinate_dofs[3*v1 + 1]*coordinate_dofs[3*v0 + 2]);
 
-  a[1] = (vertex_coordinates[3*v0 + 2]*vertex_coordinates[3*v1 + 0]  +
-          vertex_coordinates[3*v0 + 0]*vertex_coordinates[3*v2 + 2]  +
-          vertex_coordinates[3*v1 + 2]*vertex_coordinates[3*v2 + 0]) -
-         (vertex_coordinates[3*v2 + 2]*vertex_coordinates[3*v1 + 0]  +
-          vertex_coordinates[3*v2 + 0]*vertex_coordinates[3*v0 + 2]  +
-          vertex_coordinates[3*v1 + 2]*vertex_coordinates[3*v0 + 0]);
+  a[1] = (coordinate_dofs[3*v0 + 2]*coordinate_dofs[3*v1 + 0]  +
+          coordinate_dofs[3*v0 + 0]*coordinate_dofs[3*v2 + 2]  +
+          coordinate_dofs[3*v1 + 2]*coordinate_dofs[3*v2 + 0]) -
+         (coordinate_dofs[3*v2 + 2]*coordinate_dofs[3*v1 + 0]  +
+          coordinate_dofs[3*v2 + 0]*coordinate_dofs[3*v0 + 2]  +
+          coordinate_dofs[3*v1 + 2]*coordinate_dofs[3*v0 + 0]);
 
-  a[2] = (vertex_coordinates[3*v0 + 0]*vertex_coordinates[3*v1 + 1]  +
-          vertex_coordinates[3*v0 + 1]*vertex_coordinates[3*v2 + 0]  +
-          vertex_coordinates[3*v1 + 0]*vertex_coordinates[3*v2 + 1]) -
-         (vertex_coordinates[3*v2 + 0]*vertex_coordinates[3*v1 + 1]  +
-          vertex_coordinates[3*v2 + 1]*vertex_coordinates[3*v0 + 0]  +
-          vertex_coordinates[3*v1 + 0]*vertex_coordinates[3*v0 + 1]);
+  a[2] = (coordinate_dofs[3*v0 + 0]*coordinate_dofs[3*v1 + 1]  +
+          coordinate_dofs[3*v0 + 1]*coordinate_dofs[3*v2 + 0]  +
+          coordinate_dofs[3*v1 + 0]*coordinate_dofs[3*v2 + 1]) -
+         (coordinate_dofs[3*v2 + 0]*coordinate_dofs[3*v1 + 1]  +
+          coordinate_dofs[3*v2 + 1]*coordinate_dofs[3*v0 + 0]  +
+          coordinate_dofs[3*v1 + 0]*coordinate_dofs[3*v0 + 1]);
 }
 
 /// Compute facet scaling factor for tetrahedron embedded in R^3
@@ -1000,36 +1000,36 @@ inline void compute_facet_scaling_factor_tetrahedron_3d(double & det,
 
 /// Compute facet direction for interval embedded in R^1
 inline void compute_facet_normal_direction_interval_1d(bool & direction,
-                                                       const double vertex_coordinates[2],
+                                                       const double coordinate_dofs[2],
                                                        std::size_t facet)
 {
   direction = facet == 0
-    ? vertex_coordinates[0] > vertex_coordinates[1]
-    : vertex_coordinates[1] > vertex_coordinates[0];
+    ? coordinate_dofs[0] > coordinate_dofs[1]
+    : coordinate_dofs[1] > coordinate_dofs[0];
 }
 
 /// Compute facet direction for triangle embedded in R^2
 inline void compute_facet_normal_direction_triangle_2d(bool & direction,
-                                                       const double vertex_coordinates[6],
+                                                       const double coordinate_dofs[6],
                                                        const double dx[2],
                                                        std::size_t facet)
 {
   const unsigned int v0 = triangle_facet_vertices[facet][0];
-  direction = dx[1]*(vertex_coordinates[2*facet    ] - vertex_coordinates[2*v0    ])
-            - dx[0]*(vertex_coordinates[2*facet + 1] - vertex_coordinates[2*v0 + 1])
+  direction = dx[1]*(coordinate_dofs[2*facet    ] - coordinate_dofs[2*v0    ])
+            - dx[0]*(coordinate_dofs[2*facet + 1] - coordinate_dofs[2*v0 + 1])
             < 0;
 }
 
 /// Compute facet direction for tetrahedron embedded in R^3
 inline void compute_facet_normal_direction_tetrahedron_3d(bool & direction,
-                                                          const double vertex_coordinates[9],
+                                                          const double coordinate_dofs[9],
                                                           const double a[3],
                                                           std::size_t facet)
 {
   const unsigned int v0 = tetrahedron_facet_vertices[facet][0];
-  direction = a[0]*(vertex_coordinates[3*facet    ] - vertex_coordinates[3*v0    ])
-            + a[1]*(vertex_coordinates[3*facet + 1] - vertex_coordinates[3*v0 + 1])
-            + a[2]*(vertex_coordinates[3*facet + 2] - vertex_coordinates[3*v0 + 2])
+  direction = a[0]*(coordinate_dofs[3*facet    ] - coordinate_dofs[3*v0    ])
+            + a[1]*(coordinate_dofs[3*facet + 1] - coordinate_dofs[3*v0 + 1])
+            + a[2]*(coordinate_dofs[3*facet + 2] - coordinate_dofs[3*v0 + 2])
             < 0;
 }
 
@@ -1045,18 +1045,18 @@ inline void compute_facet_normal_interval_1d(double n[UFC_GDIM_1],
 
 /// Compute facet normal for interval embedded in R^2
 inline void compute_facet_normal_interval_2d(double n[UFC_GDIM_2],
-                                             const double vertex_coordinates[4],
+                                             const double coordinate_dofs[4],
                                              std::size_t facet)
 {
   if (facet == 0)
   {
-    n[0] = vertex_coordinates[0] - vertex_coordinates[2];
-    n[1] = vertex_coordinates[1] - vertex_coordinates[3];
+    n[0] = coordinate_dofs[0] - coordinate_dofs[2];
+    n[1] = coordinate_dofs[1] - coordinate_dofs[3];
   }
   else
   {
-    n[0] = vertex_coordinates[2] - vertex_coordinates[0];
-    n[1] = vertex_coordinates[3] - vertex_coordinates[1];
+    n[0] = coordinate_dofs[2] - coordinate_dofs[0];
+    n[1] = coordinate_dofs[3] - coordinate_dofs[1];
   }
   const double n_length = std::sqrt(n[0]*n[0] + n[1]*n[1]);
   n[0] /= n_length;
@@ -1065,20 +1065,20 @@ inline void compute_facet_normal_interval_2d(double n[UFC_GDIM_2],
 
 /// Compute facet normal for interval embedded in R^3
 inline void compute_facet_normal_interval_3d(double n[UFC_GDIM_3],
-                                             const double vertex_coordinates[6],
+                                             const double coordinate_dofs[6],
                                              std::size_t facet)
 {
   if (facet == 0)
   {
-    n[0] = vertex_coordinates[0] - vertex_coordinates[3];
-    n[1] = vertex_coordinates[1] - vertex_coordinates[4];
-    n[1] = vertex_coordinates[2] - vertex_coordinates[5];
+    n[0] = coordinate_dofs[0] - coordinate_dofs[3];
+    n[1] = coordinate_dofs[1] - coordinate_dofs[4];
+    n[1] = coordinate_dofs[2] - coordinate_dofs[5];
   }
   else
   {
-    n[0] = vertex_coordinates[3] - vertex_coordinates[0];
-    n[1] = vertex_coordinates[4] - vertex_coordinates[1];
-    n[1] = vertex_coordinates[5] - vertex_coordinates[2];
+    n[0] = coordinate_dofs[3] - coordinate_dofs[0];
+    n[1] = coordinate_dofs[4] - coordinate_dofs[1];
+    n[1] = coordinate_dofs[5] - coordinate_dofs[2];
   }
   const double n_length = std::sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
   n[0] /= n_length;
@@ -1100,7 +1100,7 @@ inline void compute_facet_normal_triangle_2d(double n[UFC_GDIM_2],
 
 /// Compute facet normal for triangle embedded in R^3
 inline void compute_facet_normal_triangle_3d(double n[UFC_GDIM_3],
-                                             const double vertex_coordinates[6],
+                                             const double coordinate_dofs[6],
                                              std::size_t facet)
 {
   // Compute facet normal for triangles in 3D
@@ -1111,13 +1111,13 @@ inline void compute_facet_normal_triangle_3d(double n[UFC_GDIM_3],
   const unsigned int vertex2 = triangle_facet_vertices[facet][1];
 
   // Define vectors n = (p2 - p0) and t = normalized (p2 - p1)
-  n[0] = vertex_coordinates[3*vertex2 + 0] - vertex_coordinates[3*vertex0 + 0];
-  n[1] = vertex_coordinates[3*vertex2 + 1] - vertex_coordinates[3*vertex0 + 1];
-  n[2] = vertex_coordinates[3*vertex2 + 2] - vertex_coordinates[3*vertex0 + 2];
+  n[0] = coordinate_dofs[3*vertex2 + 0] - coordinate_dofs[3*vertex0 + 0];
+  n[1] = coordinate_dofs[3*vertex2 + 1] - coordinate_dofs[3*vertex0 + 1];
+  n[2] = coordinate_dofs[3*vertex2 + 2] - coordinate_dofs[3*vertex0 + 2];
 
-  double t0 = vertex_coordinates[3*vertex2 + 0] - vertex_coordinates[3*vertex1 + 0];
-  double t1 = vertex_coordinates[3*vertex2 + 1] - vertex_coordinates[3*vertex1 + 1];
-  double t2 = vertex_coordinates[3*vertex2 + 2] - vertex_coordinates[3*vertex1 + 2];
+  double t0 = coordinate_dofs[3*vertex2 + 0] - coordinate_dofs[3*vertex1 + 0];
+  double t1 = coordinate_dofs[3*vertex2 + 1] - coordinate_dofs[3*vertex1 + 1];
+  double t2 = coordinate_dofs[3*vertex2 + 2] - coordinate_dofs[3*vertex1 + 2];
   const double t_length = std::sqrt(t0*t0 + t1*t1 + t2*t2);
   t0 /= t_length;
   t1 /= t_length;
@@ -1178,13 +1178,13 @@ inline void compute_circumradius_interval_3d(double & circumradius,
 
 /// Compute circumradius for triangle embedded in R^2
 inline void compute_circumradius_triangle_2d(double & circumradius,
-                                             const double vertex_coordinates[6],
+                                             const double coordinate_dofs[6],
                                              const double J[UFC_GDIM_2*UFC_TDIM_2],
                                              double volume)
 {
   // Compute circumradius of triangle in 2D
-  const double v1v2  = std::sqrt(  (vertex_coordinates[4] - vertex_coordinates[2])*(vertex_coordinates[4] - vertex_coordinates[2])
-                                 + (vertex_coordinates[5] - vertex_coordinates[3])*(vertex_coordinates[5] - vertex_coordinates[3]) );
+  const double v1v2  = std::sqrt(  (coordinate_dofs[4] - coordinate_dofs[2])*(coordinate_dofs[4] - coordinate_dofs[2])
+                                 + (coordinate_dofs[5] - coordinate_dofs[3])*(coordinate_dofs[5] - coordinate_dofs[3]) );
   const double v0v2  = std::sqrt(J[3]*J[3] + J[1]*J[1]);
   const double v0v1  = std::sqrt(J[0]*J[0] + J[2]*J[2]);
 
@@ -1193,14 +1193,14 @@ inline void compute_circumradius_triangle_2d(double & circumradius,
 
 /// Compute circumradius for triangle embedded in R^3
 inline void compute_circumradius_triangle_3d(double & circumradius,
-                                             const double vertex_coordinates[9],
+                                             const double coordinate_dofs[9],
                                              const double J[UFC_GDIM_3*UFC_TDIM_2],
                                              double volume)
 {
   // Compute circumradius of triangle in 3D
-  const double v1v2  = std::sqrt(   (vertex_coordinates[6] - vertex_coordinates[3])*(vertex_coordinates[6] - vertex_coordinates[3])
-                                  + (vertex_coordinates[7] - vertex_coordinates[4])*(vertex_coordinates[7] - vertex_coordinates[4])
-                                  + (vertex_coordinates[8] - vertex_coordinates[5])*(vertex_coordinates[8] - vertex_coordinates[5]));
+  const double v1v2  = std::sqrt(   (coordinate_dofs[6] - coordinate_dofs[3])*(coordinate_dofs[6] - coordinate_dofs[3])
+                                  + (coordinate_dofs[7] - coordinate_dofs[4])*(coordinate_dofs[7] - coordinate_dofs[4])
+                                  + (coordinate_dofs[8] - coordinate_dofs[5])*(coordinate_dofs[8] - coordinate_dofs[5]));
   const double v0v2 = std::sqrt( J[3]*J[3] + J[1]*J[1] + J[5]*J[5]);
   const double v0v1 = std::sqrt( J[0]*J[0] + J[2]*J[2] + J[4]*J[4]);
 
@@ -1209,23 +1209,23 @@ inline void compute_circumradius_triangle_3d(double & circumradius,
 
 /// Compute circumradius for tetrahedron embedded in R^3
 inline void compute_circumradius_tetrahedron_3d(double & circumradius,
-                                                const double vertex_coordinates[12],
+                                                const double coordinate_dofs[12],
                                                 const double J[UFC_GDIM_3*UFC_TDIM_3],
                                                 double volume)
 {
   // Compute circumradius
-  const double v1v2  = std::sqrt(   (vertex_coordinates[6] - vertex_coordinates[3])*(vertex_coordinates[6] - vertex_coordinates[3])
-                                  + (vertex_coordinates[7] - vertex_coordinates[4])*(vertex_coordinates[7] - vertex_coordinates[4])
-                                  + (vertex_coordinates[8] - vertex_coordinates[5])*(vertex_coordinates[8] - vertex_coordinates[5]) );
+  const double v1v2  = std::sqrt(   (coordinate_dofs[6] - coordinate_dofs[3])*(coordinate_dofs[6] - coordinate_dofs[3])
+                                  + (coordinate_dofs[7] - coordinate_dofs[4])*(coordinate_dofs[7] - coordinate_dofs[4])
+                                  + (coordinate_dofs[8] - coordinate_dofs[5])*(coordinate_dofs[8] - coordinate_dofs[5]) );
   const double v0v2  = std::sqrt(J[1]*J[1] + J[4]*J[4] + J[7]*J[7]);
   const double v0v1  = std::sqrt(J[0]*J[0] + J[3]*J[3] + J[6]*J[6]);
   const double v0v3  = std::sqrt(J[2]*J[2] + J[5]*J[5] + J[8]*J[8]);
-  const double v1v3  = std::sqrt(   (vertex_coordinates[ 9] - vertex_coordinates[3])*(vertex_coordinates[ 9] - vertex_coordinates[3])
-                                  + (vertex_coordinates[10] - vertex_coordinates[4])*(vertex_coordinates[10] - vertex_coordinates[4])
-                                  + (vertex_coordinates[11] - vertex_coordinates[5])*(vertex_coordinates[11] - vertex_coordinates[5]) );
-  const double v2v3  = std::sqrt(   (vertex_coordinates[ 9] - vertex_coordinates[6])*(vertex_coordinates[ 9] - vertex_coordinates[6])
-                                  + (vertex_coordinates[10] - vertex_coordinates[7])*(vertex_coordinates[10] - vertex_coordinates[7])
-                                  + (vertex_coordinates[11] - vertex_coordinates[8])*(vertex_coordinates[11] - vertex_coordinates[8]) );
+  const double v1v3  = std::sqrt(   (coordinate_dofs[ 9] - coordinate_dofs[3])*(coordinate_dofs[ 9] - coordinate_dofs[3])
+                                  + (coordinate_dofs[10] - coordinate_dofs[4])*(coordinate_dofs[10] - coordinate_dofs[4])
+                                  + (coordinate_dofs[11] - coordinate_dofs[5])*(coordinate_dofs[11] - coordinate_dofs[5]) );
+  const double v2v3  = std::sqrt(   (coordinate_dofs[ 9] - coordinate_dofs[6])*(coordinate_dofs[ 9] - coordinate_dofs[6])
+                                  + (coordinate_dofs[10] - coordinate_dofs[7])*(coordinate_dofs[10] - coordinate_dofs[7])
+                                  + (coordinate_dofs[11] - coordinate_dofs[8])*(coordinate_dofs[11] - coordinate_dofs[8]) );
   const  double la   = v1v2*v0v3;
   const  double lb   = v0v2*v1v3;
   const  double lc   = v0v1*v2v3;
@@ -1240,7 +1240,7 @@ inline void compute_circumradius_tetrahedron_3d(double & circumradius,
 /// Compute min edge length in facet of tetrahedron embedded in R^3
 inline void compute_min_facet_edge_length_tetrahedron_3d(double & min_edge_length,
                                                          unsigned int facet,
-                                                         const double vertex_coordinates[3*4])
+                                                         const double coordinate_dofs[3*4])
 {
   // TODO: Extract compute_facet_edge_lengths_tetrahedron_3d(), reuse between min/max functions
   double edge_lengths_sqr[3];
@@ -1248,9 +1248,9 @@ inline void compute_min_facet_edge_length_tetrahedron_3d(double & min_edge_lengt
   {
     const unsigned int vertex0 = tetrahedron_facet_edge_vertices[facet][edge][0];
     const unsigned int vertex1 = tetrahedron_facet_edge_vertices[facet][edge][1];
-    edge_lengths_sqr[edge] = (vertex_coordinates[3*vertex1 + 0] - vertex_coordinates[3*vertex0 + 0])*(vertex_coordinates[3*vertex1 + 0] - vertex_coordinates[3*vertex0 + 0])
-                           + (vertex_coordinates[3*vertex1 + 1] - vertex_coordinates[3*vertex0 + 1])*(vertex_coordinates[3*vertex1 + 1] - vertex_coordinates[3*vertex0 + 1])
-                           + (vertex_coordinates[3*vertex1 + 2] - vertex_coordinates[3*vertex0 + 2])*(vertex_coordinates[3*vertex1 + 2] - vertex_coordinates[3*vertex0 + 2]);
+    edge_lengths_sqr[edge] = (coordinate_dofs[3*vertex1 + 0] - coordinate_dofs[3*vertex0 + 0])*(coordinate_dofs[3*vertex1 + 0] - coordinate_dofs[3*vertex0 + 0])
+                           + (coordinate_dofs[3*vertex1 + 1] - coordinate_dofs[3*vertex0 + 1])*(coordinate_dofs[3*vertex1 + 1] - coordinate_dofs[3*vertex0 + 1])
+                           + (coordinate_dofs[3*vertex1 + 2] - coordinate_dofs[3*vertex0 + 2])*(coordinate_dofs[3*vertex1 + 2] - coordinate_dofs[3*vertex0 + 2]);
   }
   min_edge_length = std::sqrt(std::min(std::min(edge_lengths_sqr[1], edge_lengths_sqr[1]), edge_lengths_sqr[2]));
 }
@@ -1260,7 +1260,7 @@ inline void compute_min_facet_edge_length_tetrahedron_3d(double & min_edge_lengt
 /// Compute max edge length in facet of tetrahedron embedded in R^3
 inline void compute_max_facet_edge_length_tetrahedron_3d(double & max_edge_length,
                                                          unsigned int facet,
-                                                         const double vertex_coordinates[12])
+                                                         const double coordinate_dofs[12])
 {
   // TODO: Extract compute_facet_edge_lengths_tetrahedron_3d(), reuse between min/max functions
   double edge_lengths_sqr[3];
@@ -1268,9 +1268,9 @@ inline void compute_max_facet_edge_length_tetrahedron_3d(double & max_edge_lengt
   {
     const unsigned int vertex0 = tetrahedron_facet_edge_vertices[facet][edge][0];
     const unsigned int vertex1 = tetrahedron_facet_edge_vertices[facet][edge][1];
-    edge_lengths_sqr[edge] = (vertex_coordinates[3*vertex1 + 0] - vertex_coordinates[3*vertex0 + 0])*(vertex_coordinates[3*vertex1 + 0] - vertex_coordinates[3*vertex0 + 0])
-                           + (vertex_coordinates[3*vertex1 + 1] - vertex_coordinates[3*vertex0 + 1])*(vertex_coordinates[3*vertex1 + 1] - vertex_coordinates[3*vertex0 + 1])
-                           + (vertex_coordinates[3*vertex1 + 2] - vertex_coordinates[3*vertex0 + 2])*(vertex_coordinates[3*vertex1 + 2] - vertex_coordinates[3*vertex0 + 2]);
+    edge_lengths_sqr[edge] = (coordinate_dofs[3*vertex1 + 0] - coordinate_dofs[3*vertex0 + 0])*(coordinate_dofs[3*vertex1 + 0] - coordinate_dofs[3*vertex0 + 0])
+                           + (coordinate_dofs[3*vertex1 + 1] - coordinate_dofs[3*vertex0 + 1])*(coordinate_dofs[3*vertex1 + 1] - coordinate_dofs[3*vertex0 + 1])
+                           + (coordinate_dofs[3*vertex1 + 2] - coordinate_dofs[3*vertex0 + 2])*(coordinate_dofs[3*vertex1 + 2] - coordinate_dofs[3*vertex0 + 2]);
   }
   max_edge_length = std::sqrt(std::max(std::max(edge_lengths_sqr[0], edge_lengths_sqr[1]), edge_lengths_sqr[2]));
 }
