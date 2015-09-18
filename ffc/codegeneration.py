@@ -26,6 +26,8 @@ UFC function from an (optimized) intermediate representation (OIR).
 # Modified by Mehdi Nikbakht 2010
 # Modified by Martin Alnaes, 2013-2015
 
+from ufl import product
+
 # FFC modules
 from ffc.log import info, begin, end, debug_code
 from ffc.cpp import format, indent
@@ -113,25 +115,32 @@ def _generate_element_code(ir, prefix, parameters):
     code["constructor_arguments"] = ""
     code["initializer_list"] = ""
     code["destructor"] = do_nothing
+
     code["signature"] = ret('"%s"' % ir["signature"])
     code["cell_shape"] = ret(format["cell"](ir["cell_shape"]))
     code["topological_dimension"] = ret(ir["topological_dimension"])
     code["geometric_dimension"] = ret(ir["geometric_dimension"])
     code["space_dimension"] = ret(ir["space_dimension"])
-    code["value_rank"] = ret(ir["value_rank"])
+
+    code["value_rank"] = ret(len(ir["value_dimension"]))
     code["value_dimension"] = _value_dimension(ir["value_dimension"])
+    code["value_size"] = ret(product(ir["value_dimension"]))
+    code["reference_value_rank"] = ret(len(ir["reference_value_dimension"]))
+    code["reference_value_dimension"] = _value_dimension(ir["reference_value_dimension"])
+    code["reference_value_size"] = ret(product(ir["reference_value_dimension"]))
+
     code["evaluate_basis"] = _evaluate_basis(ir["evaluate_basis"])
     code["evaluate_basis_all"] = _evaluate_basis_all(ir["evaluate_basis"])
     code["evaluate_basis_derivatives"] \
         = _evaluate_basis_derivatives(ir["evaluate_basis"])
     code["evaluate_basis_derivatives_all"] \
         = _evaluate_basis_derivatives_all(ir["evaluate_basis"])
+
     code["evaluate_dof"] = evaluate_dof_code
     code["evaluate_dofs"] = evaluate_dofs_code
     code["interpolate_vertex_values"] \
         = interpolate_vertex_values(ir["interpolate_vertex_values"])
-    #code["map_from_reference_cell"] = _not_implemented("map_from_reference_cell")
-    #code["map_to_reference_cell"] = _not_implemented("map_to_reference_cell")
+
     code["num_sub_elements"] = ret(ir["num_sub_elements"])
     code["create_sub_element"] = _create_sub_element(prefix, ir)
     code["create"] = ret(create(code["classname"]))
