@@ -25,6 +25,9 @@ def test_cnode_expression_precedence():
     assert str(Mul(Add(1, 2), Add(3, 4))) == "(1 + 2) * (3 + 4)"
 
 def test_cnode_expressions():
+    A = Symbol("A")
+    B = Symbol("B")
+
     # Literals
     assert str(Literal(123)) == "123"
     assert str(Literal(0.0)) == "0.0"
@@ -33,11 +36,24 @@ def test_cnode_expressions():
 
     # Variables
     # TODO: VariableAccess
+
+    # Arrays
     assert str(ArrayAccess("A", (1,))) == "A[1]"
-    assert str(ArrayAccess("A", (1,2))) == "A[1][2]"
-    assert str(ArrayAccess("A", (1,2,3))) == "A[1][2][3]"
-    assert str(ArrayAccess(ArrayDecl("double", "A", (2,)), (1,))) == "A[1]"
-    assert str(ArrayAccess(ArrayDecl("double", "A", (2,3)), (1,2))) == "A[1][2]"
+    assert str(ArrayAccess(A, (1,2))) == "A[1][2]"
+    assert str(A[1,2,3]) == "A[1][2][3]"
+    assert str(ArrayAccess(ArrayDecl("double", "A", (2,)), 1)) == "A[1]"
+    assert str(ArrayDecl("double", A, (2,3))[1,2]) == "A[1][2]"
+
+    # FlattenedArray
+    n = Symbol("n")
+    decl = ArrayDecl("double", A, (4,))
+    assert str(FlattenedArray(decl, (2,), 3)[0]) == "A[3 + 0 * 2]"
+    assert str(FlattenedArray(decl, (2,))[0]) == "A[0 * 2]"
+    decl = ArrayDecl("double", A, (2,3,4))
+    flattened = FlattenedArray(decl, (7,8*n,n-1))
+    assert str(flattened[0,n,n*7]) == "A[0 * 7 + n * (8 * n) + n * 7 * (n - 1)]"
+    assert str(flattened[0,n][n*7]) == "A[0 * 7 + n * (8 * n) + n * 7 * (n - 1)]"
+    assert str(flattened[0][n][n*7]) == "A[0 * 7 + n * (8 * n) + n * 7 * (n - 1)]"
 
     # Unary operators
     assert str(Pos(1)) == "+1"
@@ -69,6 +85,12 @@ def test_cnode_expressions():
     assert str(BitAnd(1, 2)) == "1 & 2"
     assert str(BitXor(1, 2)) == "1 ^ 2"
     assert str(BitOr(1, 2)) == "1 | 2"
+
+    # Binary operators translated from python
+    assert str(A + B) == "A + B"
+    assert str(A * B) == "A * B"
+    assert str(A / B) == "A / B"
+    assert str(A - B) == "A - B"
 
     # Ternary operator
     assert str(Conditional(1, 2, 3)) == "1 ? 2 : 3"
@@ -217,6 +239,19 @@ def test_cnode_loop_statements():
     # Using assigns as both statements and expressions
     assert str(While(LT(AssignAdd("x", 4.0), 17.0), AssignAdd("A", "y"))) == "while ((x += 4.0) < 17.0)\n{\n    A += y;\n}"
     assert str(ForRange("i", 3, 7, AssignAdd("A", "i"))) == "for (int i = 3; i < 7; ++i)\n{\n    A += i;\n}"
+
+def test_cnode_loop_helpers():
+    i = Symbol("i")
+    j = Symbol("j")
+    A = Symbol("A")
+    B = Symbol("B")
+    C = Symbol("C")
+    src = A[i + 4*j]
+    dst = 2.0 * B[j] * C[i]
+    ranges = [(i, 0, 2), (j, 1, 3)]
+    assert str(assign_loop(src, dst, ranges)) == "for (int i = 0; i < 2; ++i)\n{\n    for (int j = 1; j < 3; ++j)\n    {\n        A[i + 4 * j] = 2.0 * B[j] * C[i];\n    }\n}"
+    assert str(scale_loop(src, dst, ranges)) == "for (int i = 0; i < 2; ++i)\n{\n    for (int j = 1; j < 3; ++j)\n    {\n        A[i + 4 * j] *= 2.0 * B[j] * C[i];\n    }\n}"
+    assert str(accumulate_loop(src, dst, ranges)) == "for (int i = 0; i < 2; ++i)\n{\n    for (int j = 1; j < 3; ++j)\n    {\n        A[i + 4 * j] += 2.0 * B[j] * C[i];\n    }\n}"
 
 def test_cnode_switch_statements():
     assert str(Switch("x", [])) == "switch (x)\n{\n}"

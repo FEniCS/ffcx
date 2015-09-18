@@ -39,6 +39,39 @@ from uflacs.language.precedence import PRECEDENCE
 """
 
 
+############## Some helper functions
+
+def assign_loop(src, dst, ranges):
+    """Generate a nested loop over a list of ranges, assigning dst to src in the innermost loop.
+
+    Ranges is a list on the format [(index, begin, end),...].
+    """
+    code = Assign(src, dst)
+    for i, b, e in reversed(ranges):
+        code = ForRange(i, b, e, code)
+    return code
+
+def accumulate_loop(src, dst, ranges):
+    """Generate a nested loop over a list of ranges, adding dst to src in the innermost loop.
+
+    Ranges is a list on the format [(index, begin, end),...].
+    """
+    code = AssignAdd(src, dst)
+    for i, b, e in reversed(ranges):
+        code = ForRange(i, b, e, code)
+    return code
+
+def scale_loop(src, dst, ranges):
+    """Generate a nested loop over a list of ranges, multiplying dst with src in the innermost loop.
+
+    Ranges is a list on the format [(index, begin, end),...].
+    """
+    code = AssignMul(src, dst)
+    for i, b, e in reversed(ranges):
+        code = ForRange(i, b, e, code)
+    return code
+
+
 ############## CNode core
 
 class CNode(object):
@@ -74,20 +107,32 @@ class CExpr(CNode):
             raise
         return s
 
+    def __getitem__(self, indices):
+        return ArrayAccess(self, indices)
+
     def __add__(self, other):
         return Add(self, other)
+
+    def __radd__(self, other):
+        return Add(other, self)
 
     def __sub__(self, other):
         return Sub(self, other)
 
+    def __rsub__(self, other):
+        return Sub(other, self)
+
     def __mul__(self, other):
         return Mul(self, other)
+
+    def __rmul__(self, other):
+        return Mul(other, self)
 
     def __div__(self, other):
         return Div(self, other)
 
-    def __getitem__(self, indices):
-        return ArrayAccess(self, indices)
+    def __rdiv__(self, other):
+        return Div(other, self)
 
 class CExprOperator(CExpr):
     """Base class for all C expression operator."""
@@ -114,6 +159,9 @@ class Literal(CExprTerminal):
 
     def ce_format(self):
         return format_value(self.value)
+
+    def __eq__(self, other):
+        return isinstance(other, Literal) and self.value == other.value
 
     def __nonzero__(self):
         return bool(self.value)
@@ -439,6 +487,42 @@ class AssignBitOr(AssignOp):
     op = "|="
 
 ############## CExpr operators
+
+class FlattenedArray(object):
+    """Syntax carrying object only, will get translated on __getitem__ to ArrayAccess."""
+    __slots__ = ("array", "strides", "offset")
+    def __init__(self, array, strides, offset=None):
+        # Typecheck array argument
+        if isinstance(array, ArrayDecl):
+            self.array = array.symbol
+        elif isinstance(array, Symbol):
+            self.array = array
+        else:
+            assert isinstance(array, str)
+            self.array = Symbol(array)
+
+        # Allow expressions or literals as strides and offset
+        if not isinstance(strides, (list, tuple)):
+            strides = (strides,)
+        self.strides = tuple(as_cexpr(i) for i in strides)
+        self.offset = None if offset is None else as_cexpr(offset)
+
+    def __getitem__(self, indices):
+        if not isinstance(indices, (list,tuple)):
+            indices = (indices,)
+        n = len(indices)
+        i, s = (indices[0], self.strides[0])
+        if self.offset is None:
+            flat = i*s
+        else:
+            flat = self.offset + i*s
+        for i, s in zip(indices[1:n], self.strides[1:n]):
+            flat = flat + i*s
+        if n == len(self.strides):
+            return ArrayAccess(self.array, flat)
+        else:
+            return FlattenedArray(self.array, self.strides[n:], offset=flat)
+
 
 class ArrayAccess(CExprOperator):
     __slots__ = ("array", "indices")
@@ -809,9 +893,15 @@ class ArrayDecl(CStatement):
         self.sizes = tuple(sizes)
 
         # NB! No type checking, assuming nested lists of literal values. Not applying as_cexpr.
-        if values is not None:
-            values = values
         self.values = values
+
+    def __getitem__(self, indices):
+        """Allow using array declaration object as the array when indexed.
+
+        A = ArrayDecl("int", "A", (2,3))
+        code = [A, Assign(A[0,0], 1.0)]
+        """
+        return ArrayAccess(self, indices)
 
     def cs_format(self):
         brackets = ''.join("[%d]" % n for n in self.sizes)
