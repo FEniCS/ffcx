@@ -423,25 +423,25 @@ std::size_t %(classname)s::value_dimension(std::size_t i) const
 }
 
 /// Return the number of components of the value space
-virtual std::size_t %(classname)s::value_size() const
+std::size_t %(classname)s::value_size() const
 {
 %(value_size)s
 }
 
 /// Return the rank of the reference value space
-virtual std::size_t %(classname)s::reference_value_rank() const
+std::size_t %(classname)s::reference_value_rank() const
 {
 %(reference_value_rank)s
 }
 
 /// Return the dimension of the reference value space for axis i
-virtual std::size_t %(classname)s::reference_value_dimension(std::size_t i) const
+std::size_t %(classname)s::reference_value_dimension(std::size_t i) const
 {
 %(reference_value_dimension)s
 }
 
 /// Return the number of components of the reference value space
-virtual std::size_t %(classname)s::reference_value_size() const
+std::size_t %(classname)s::reference_value_size() const
 {
 %(reference_value_size)s
 }
