@@ -134,6 +134,18 @@ class CExpr(CNode):
     def __rdiv__(self, other):
         return Div(other, self)
 
+    def __truediv__(self, other):
+        return Div(self, other)
+
+    def __rtruediv__(self, other):
+        return Div(other, self)
+
+    def __floordiv__(self, other):
+        return NotImplemented
+
+    def __rfloordiv__(self, other):
+        return NotImplemented
+
 class CExprOperator(CExpr):
     """Base class for all C expression operator."""
     __slots__ = ("children",)
