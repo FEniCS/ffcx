@@ -303,9 +303,9 @@ void test_finite_element(ufc::finite_element& element, int id, Printer& printer)
                       vertex_values);
 
   // tabulate_coordinates
-  std::size_t n = element.space_dimension();
   element.tabulate_dof_coordinates(coordinates, coordinate_dofs.data());
-  printer.print_vector("tabulate_dof_coordinates", coordinates.data());
+  printer.print_array("tabulate_dof_coordinates", c.geometric_dimension,
+                      coordinates);
 
   // num_sub_dof_elements
   printer.print_scalar("num_sub_elements", element.num_sub_elements());
