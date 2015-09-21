@@ -70,6 +70,7 @@ def pick_representation(representation):
 
 not_implemented = None
 
+
 def compute_ir(analysis, parameters):
     "Compute intermediate representation."
 
@@ -106,6 +107,7 @@ def compute_ir(analysis, parameters):
 
     return ir_elements, ir_dofmaps, ir_integrals, ir_forms
 
+
 def _compute_element_ir(ufl_element, element_numbers):
     "Compute intermediate representation of element."
 
@@ -128,13 +130,17 @@ def _compute_element_ir(ufl_element, element_numbers):
     ir["value_dimension"] = ufl_element.value_shape()
     ir["evaluate_basis"] = _evaluate_basis(ufl_element, element)
     ir["evaluate_dof"] = _evaluate_dof(ufl_element, element)
-    ir["interpolate_vertex_values"] = _interpolate_vertex_values(ufl_element, element)
+    ir["interpolate_vertex_values"] = _interpolate_vertex_values(ufl_element,
+                                                                 element)
+    ir["tabulate_dof_coordinates"] = _tabulate_dof_coordinates(ufl_element,
+                                                               element)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = _create_sub_foo(ufl_element, element_numbers)
 
     #debug_ir(ir, "finite_element")
 
     return ir
+
 
 def _compute_dofmap_ir(ufl_element, element_numbers):
     "Compute intermediate representation of dofmap."
@@ -164,13 +170,11 @@ def _compute_dofmap_ir(ufl_element, element_numbers):
     ir["tabulate_dofs"] = _tabulate_dofs(element, cell)
     ir["tabulate_facet_dofs"] = facet_dofs
     ir["tabulate_entity_dofs"] = (element.entity_dofs(), num_dofs_per_entity)
-    ir["tabulate_coordinates"] = _tabulate_coordinates(ufl_element, element)
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
     ir["create_sub_dofmap"] = _create_sub_foo(ufl_element, element_numbers)
 
-    #debug_ir(ir, "dofmap")
-
     return ir
+
 
 def _global_dimension(element):
     "Compute intermediate representation for global_dimension."
@@ -191,6 +195,7 @@ def _global_dimension(element):
     element = MixedElement(elements)
     return (_num_dofs_per_entity(element), num_reals)
 
+
 def _needs_mesh_entities(element):
     "Compute intermediate representation for needs_mesh_entities."
 
@@ -202,6 +207,7 @@ def _needs_mesh_entities(element):
     else:
         return [d > 0 for d in num_dofs_per_entity]
 
+
 def _compute_integral_ir(form_data, form_id, element_numbers, parameters):
     "Compute intermediate represention for form integrals."
 
@@ -211,7 +217,8 @@ def _compute_integral_ir(form_data, form_id, element_numbers, parameters):
     for itg_data in form_data.integral_data:
 
         # Select representation
-        # TODO: Is it possible to detach this metadata from IntegralData? It's a bit strange from the ufl side.
+        # TODO: Is it possible to detach this metadata from
+        # IntegralData? It's a bit strange from the ufl side.
         r = pick_representation(itg_data.metadata["representation"])
 
         # Compute representation
@@ -225,6 +232,7 @@ def _compute_integral_ir(form_data, form_id, element_numbers, parameters):
         irs.append(ir)
 
     return irs
+
 
 def _compute_form_ir(form_data, form_id, element_numbers):
     "Compute intermediate representation of form."
@@ -257,6 +265,7 @@ def _compute_form_ir(form_data, form_id, element_numbers):
 
     return ir
 
+
 #--- Computation of intermediate representation for non-trivial functions ---
 
 # FIXME: Move to FiniteElement/MixedElement
@@ -273,6 +282,7 @@ def _value_size(element):
         return 1
     return product(shape)
 
+
 def _generate_reference_offsets(element, offset=0):
     """Generate offsets: i.e value offset for each basis function
     relative to a reference element representation."""
@@ -287,6 +297,7 @@ def _generate_reference_offsets(element, offset=0):
     else:
         offsets = [offset]*element.space_dimension()
     return offsets
+
 
 def _generate_physical_offsets(ufl_element, offset=0):
     """Generate offsets: i.e value offset for each basis function
@@ -315,6 +326,7 @@ def _generate_physical_offsets(ufl_element, offset=0):
         raise NotImplementedError("This element combination is not implemented")
     return offsets
 
+
 def _evaluate_dof(ufl_element, element):
     "Compute intermediate representation of evaluate_dof."
 
@@ -339,6 +351,7 @@ def _evaluate_dof(ufl_element, element):
             "dofs": [L.pt_dict if L else None for L in element.dual_basis()],
             "physical_offsets": _generate_physical_offsets(ufl_element)}
 
+
 def _extract_elements(element):
 
     new_elements = []
@@ -359,6 +372,7 @@ def _extract_elements(element):
 #         return shape[0]
 #     else:
 #         error("Tensor valued elements are not supported yet: %d " % shape)
+
 
 def _evaluate_basis(ufl_element, element):
     "Compute intermediate representation for evaluate_basis."
@@ -435,8 +449,9 @@ def _evaluate_basis(ufl_element, element):
 
     return data
 
-def _tabulate_coordinates(ufl_element, element):
-    "Compute intermediate representation of tabulate_coordinates."
+
+def _tabulate_dof_coordinates(ufl_element, element):
+    "Compute intermediate representation of tabulate_dof_coordinates."
 
     if uses_integral_moments(element) or not element.dual_basis()[0]:
         return {}
@@ -448,6 +463,7 @@ def _tabulate_coordinates(ufl_element, element):
     data["gdim"] = cell.geometric_dimension()
     data["points"] = [sorted(L.pt_dict.keys())[0] for L in element.dual_basis()]
     return data
+
 
 def _tabulate_dofs(element, cell):
     "Compute intermediate representation of tabulate_dofs."
@@ -477,6 +493,7 @@ def _tabulate_dofs(element, cell):
     fakes = [isinstance(e, SpaceOfReals) for e in elements]
 
     return (dofs_per_element, num_dofs_per_element, need_offset, fakes)
+
 
 def _tabulate_facet_dofs(element, cell):
     "Compute intermediate representation of tabulate_facet_dofs."
@@ -604,6 +621,7 @@ def all_elements(element):
 
     return [element]
 
+
 def _num_dofs_per_entity(element):
     """
     Compute list of integers representing the number of dofs
@@ -636,6 +654,7 @@ def __compute_incidence(D):
 
     return incidence
 
+
 def __compute_sub_simplices(D, d):
     """Compute vertices for all sub simplices of dimension d (code
     taken from Exterior)."""
@@ -665,12 +684,14 @@ def __compute_sub_simplices(D, d):
 
     return sub_simplices
 
+
 def uses_integral_moments(element):
     "True if element uses integral moments for its degrees of freedom."
 
     integrals = set(["IntegralMoment", "FrobeniusIntegralMoment"])
     tags = set([L.get_type_tag() for L in element.dual_basis() if L])
     return len(integrals & tags) > 0
+
 
 def needs_oriented_jacobian(element):
     # Check whether this element needs an oriented jacobian

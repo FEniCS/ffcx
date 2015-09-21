@@ -130,6 +130,8 @@ def _generate_element_code(ir, prefix, parameters):
     code["evaluate_dofs"] = evaluate_dofs_code
     code["interpolate_vertex_values"] \
         = interpolate_vertex_values(ir["interpolate_vertex_values"])
+    code["tabulate_dof_coordinates"] \
+        = _tabulate_dof_coordinates(ir["tabulate_dof_coordinates"])
     #code["map_from_reference_cell"] = _not_implemented("map_from_reference_cell")
     #code["map_to_reference_cell"] = _not_implemented("map_to_reference_cell")
     code["num_sub_elements"] = ret(ir["num_sub_elements"])
@@ -172,7 +174,6 @@ def _generate_dofmap_code(ir, prefix, parameters):
     code["needs_mesh_entities"] \
         = _needs_mesh_entities(ir["needs_mesh_entities"])
     code["topological_dimension"] = ret(ir["topological_dimension"])
-    code["geometric_dimension"] = ret(ir["geometric_dimension"])
     code["global_dimension"] = _global_dimension(ir["global_dimension"])
     code["num_element_dofs"] = ret(ir["num_element_dofs"])
     code["num_facet_dofs"] = ret(ir["num_facet_dofs"])
@@ -184,8 +185,6 @@ def _generate_dofmap_code(ir, prefix, parameters):
         = _tabulate_facet_dofs(ir["tabulate_facet_dofs"])
     code["tabulate_entity_dofs"] \
         = _tabulate_entity_dofs(ir["tabulate_entity_dofs"])
-    code["tabulate_coordinates"] \
-        = _tabulate_coordinates(ir["tabulate_coordinates"])
     code["num_sub_dofmaps"] = ret(ir["num_sub_dofmaps"])
     code["create_sub_dofmap"] = _create_sub_dofmap(prefix, ir)
     code["create"] = ret(create(code["classname"]))
@@ -194,6 +193,7 @@ def _generate_dofmap_code(ir, prefix, parameters):
     _postprocess_code(code, parameters)
 
     return code
+
 
 def _generate_integral_code(ir, prefix, parameters):
     "Generate code for integrals from intermediate representation."
@@ -395,12 +395,12 @@ def _tabulate_dofs(ir):
     return "\n".join(code)
 
 
-def _tabulate_coordinates(ir):
-    "Generate code for tabulate_coordinates."
+def _tabulate_dof_coordinates(ir):
+    "Generate code for tabulate_dof_coordinates."
 
-    # Raise error if tabulate_coordinates is ill-defined
+    # Raise error if tabulate_dof_coordinates is ill-defined
     if not ir:
-        msg = "tabulate_coordinates is not defined for this element"
+        msg = "tabulate_dof_coordinates is not defined for this element"
         return format["exception"](msg)
 
     # Extract formats:
@@ -494,6 +494,7 @@ def _create_foo(prefix, classname, postfix, arg, numbers=None):
     default = ret(0)
     return format["switch"](arg, cases, default=default, numbers=numbers)
 
+
 def _create_coordinate_finite_element(prefix, ir):
     ret = format["return"]
     create = format["create foo"]
@@ -501,6 +502,7 @@ def _create_coordinate_finite_element(prefix, ir):
     name, = ["%s_%s_%d" % (prefix.lower(), "finite_element", i)
             for i in postfix]
     return ret(create(name))
+
 
 def _create_coordinate_dofmap(prefix, ir):
     ret = format["return"]
@@ -510,17 +512,22 @@ def _create_coordinate_dofmap(prefix, ir):
             for i in postfix]
     return ret(create(name))
 
+
 def _create_finite_element(prefix, ir):
     f_i = format["argument sub"]
-    return _create_foo(prefix, "finite_element", ir["create_finite_element"], f_i)
+    return _create_foo(prefix, "finite_element", ir["create_finite_element"],
+                       f_i)
+
 
 def _create_dofmap(prefix, ir):
     f_i = format["argument sub"]
     return _create_foo(prefix, "dofmap", ir["create_dofmap"], f_i)
 
+
 def _create_sub_element(prefix, ir):
     f_i = format["argument sub"]
     return _create_foo(prefix, "finite_element", ir["create_sub_element"], f_i)
+
 
 def _create_sub_dofmap(prefix, ir):
     f_i = format["argument sub"]
@@ -533,11 +540,13 @@ def _create_foo_integral(ir, integral_type, prefix):
     postfix = ir["create_" + integral_type + "_integral"]
     return _create_foo(prefix, classname, postfix, f_i, numbers=postfix)
 
+
 def _has_foo_integrals(ir, integral_type):
     ret = format["return"]
     b = format["bool"]
     i = ir["has_%s_integrals" % integral_type]
     return ret(b(i))
+
 
 def _create_default_foo_integral(ir, integral_type, prefix):
     "Generate code for create_default_<foo>_integral."

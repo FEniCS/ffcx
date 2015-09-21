@@ -174,6 +174,13 @@ public:
 %(interpolate_vertex_values)s
   }
 
+  /// Tabulate the coordinates of all dofs
+  virtual void tabulate_dof_coordinates(double* dof_coordinates,
+                                        const double* coordinate_dofs) const
+  {
+%(tabulate_dof_coordinates)s
+  }
+
   /// Return the number of sub elements (for a mixed element)
   virtual std::size_t num_sub_elements() const
   {
@@ -318,6 +325,10 @@ public:
                                          int cell_orientation,
                                          const ufc::cell& c) const;
 
+  /// Tabulate the coordinates of all dofs
+  virtual void tabulate_dof_coordinates(double* coordinates,
+                                        const double* coordinate_dofs) const;
+
   /// Return the number of sub elements (for a mixed element)
   virtual std::size_t num_sub_elements() const;
 
@@ -454,6 +465,13 @@ void %(classname)s::interpolate_vertex_values(double* vertex_values,
                                               const ufc::cell& c) const
 {
 %(interpolate_vertex_values)s
+}
+
+/// Tabulate the coordinates of all dofs on a cell
+void %(classname)s::tabulate_dof_coordinates(double* dof_coordinates,
+                                             const double* coordinate_dofs) const
+{
+%(tabulate_dof_coordinates)s
 }
 
 /// Return the number of sub elements (for a mixed element)

@@ -41,12 +41,6 @@ public:
 %(topological_dimension)s
   }
 
-  /// Return the geometric dimension of the associated cell shape
-  virtual std::size_t geometric_dimension() const
-  {
-%(geometric_dimension)s
-  }
-
   /// Return the dimension of the global finite element function space
   virtual std::size_t global_dimension(const std::vector<std::size_t>&
                                        num_global_entities) const
@@ -94,12 +88,6 @@ public:
 %(tabulate_entity_dofs)s
   }
 
-  /// Tabulate the coordinates of all dofs on a cell
-  virtual void tabulate_coordinates(double* dof_coordinates,
-                                    const double* coordinate_dofs) const
-  {
-%(tabulate_coordinates)s
-  }
 
   /// Return the number of sub dofmaps (for a mixed element)
   virtual std::size_t num_sub_dofmaps() const
@@ -145,9 +133,6 @@ public:
   /// Return the topological dimension of the associated cell shape
   virtual std::size_t topological_dimension() const;
 
-  /// Return the geometric dimension of the associated cell shape
-  virtual std::size_t geometric_dimension() const;
-
   /// Return the dimension of the global finite element function space
   virtual std::size_t global_dimension(const std::vector<std::size_t>&
                                        num_global_entities) const;
@@ -173,10 +158,6 @@ public:
   /// Tabulate the local-to-local mapping of dofs on entity (d, i)
   virtual void tabulate_entity_dofs(std::size_t* dofs,
                                     std::size_t d, std::size_t i) const;
-
-  /// Tabulate the coordinates of all dofs on a cell
-  virtual void tabulate_coordinates(double* coordinates,
-                                    const double* coordinate_dofs) const;
 
   /// Return the number of sub dofmaps (for a mixed element)
   virtual std::size_t num_sub_dofmaps() const;
@@ -219,12 +200,6 @@ bool %(classname)s::needs_mesh_entities(std::size_t d) const
 std::size_t %(classname)s::topological_dimension() const
 {
 %(topological_dimension)s
-}
-
-/// Return the geometric dimension of the associated cell shape
-std::size_t %(classname)s::geometric_dimension() const
-{
-%(geometric_dimension)s
 }
 
 /// Return the dimension of the global finite element function space
@@ -272,13 +247,6 @@ void %(classname)s::tabulate_entity_dofs(std::size_t* dofs,
                                   std::size_t d, std::size_t i) const
 {
 %(tabulate_entity_dofs)s
-}
-
-/// Tabulate the coordinates of all dofs on a cell
-void %(classname)s::tabulate_coordinates(double* dof_coordinates,
-                                         const double* coordinate_dofs) const
-{
-%(tabulate_coordinates)s
 }
 
 /// Return the number of sub dofmaps (for a mixed element)

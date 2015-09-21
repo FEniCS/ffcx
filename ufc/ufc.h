@@ -169,6 +169,10 @@ namespace ufc
                                            int cell_orientation,
                                            const cell& c) const = 0;
 
+    /// Tabulate the coordinates of all dofs on a cell
+    virtual void tabulate_dof_coordinates(double* dof_coordinates,
+                                          const double* coordinate_dofs) const = 0;
+
     /// Return the number of sub elements (for a mixed element)
     virtual std::size_t num_sub_elements() const = 0;
 
@@ -199,9 +203,6 @@ namespace ufc
     /// Return the topological dimension of the associated cell shape
     virtual std::size_t topological_dimension() const = 0;
 
-    /// Return the geometric dimension of the associated cell shape
-    virtual std::size_t geometric_dimension() const = 0;
-
     /// Return the dimension of the global finite element function space
     virtual std::size_t global_dimension(const std::vector<std::size_t>&
                                          num_global_mesh_entities) const = 0;
@@ -229,10 +230,6 @@ namespace ufc
     /// Tabulate the local-to-local mapping of dofs on entity (d, i)
     virtual void tabulate_entity_dofs(std::size_t* dofs,
                                       std::size_t d, std::size_t i) const = 0;
-
-    /// Tabulate the coordinates of all dofs on a cell
-    virtual void tabulate_coordinates(double* dof_coordinates,
-                                      const double* coordinate_dofs) const = 0;
 
     /// Return the number of sub dofmaps (for a mixed element)
     virtual std::size_t num_sub_dofmaps() const = 0;

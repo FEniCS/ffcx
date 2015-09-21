@@ -302,6 +302,11 @@ void test_finite_element(ufc::finite_element& element, int id, Printer& printer)
                       (c.topological_dimension + 1)*value_size,
                       vertex_values);
 
+  // tabulate_coordinates
+  std::size_t n = element.space_dimension();
+  element.tabulate_dof_coordinates(coordinates, coordinate_dofs.data());
+  printer.print_vector("tabulate_dof_coordinates", coordinates.data());
+
   // num_sub_dof_elements
   printer.print_scalar("num_sub_elements", element.num_sub_elements());
 
@@ -335,13 +340,14 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id,
   num_entities[2] = 10003;
   num_entities[3] = 10004;
 
-  test_cell c(cell_shape, dofmap.geometric_dimension());
+  //test_cell c(cell_shape, dofmap.geometric_dimension());
+  //const std::vector<double> coordinate_dofs
+  //  = test_coordinate_dofs(dofmap.geometric_dimension());
+  test_cell c(cell_shape, dofmap.topological_dimension());
   const std::vector<double> coordinate_dofs
-    = test_coordinate_dofs(dofmap.geometric_dimension());
+    = test_coordinate_dofs(dofmap.topological_dimension());
   std::size_t n = dofmap.num_element_dofs();
-  std::size_t* dofs = new std::size_t[n];
-  for (std::size_t i = 0; i < n; i++)
-    dofs[i] = 0;
+  std::vector<std::size_t> dofs(n, 0);
 
   std::size_t num_facets = c.topological_dimension + 1;
   std::vector<double> coordinates(n*c.geometric_dimension);
@@ -360,9 +366,6 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id,
   // num_element_dofs
   printer.print_scalar("num_element_dofs", dofmap.num_element_dofs());
 
-  // geometric_dimension
-  printer.print_scalar("geometric_dimension", dofmap.geometric_dimension());
-
   // num_facet_dofs
   printer.print_scalar("num_facet_dofs", dofmap.num_facet_dofs());
 
@@ -371,15 +374,15 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id,
     printer.print_scalar("num_entity_dofs", dofmap.num_entity_dofs(d), d);
 
   // tabulate_dofs
-  dofmap.tabulate_dofs(dofs, num_entities, c.entity_indices);
-  printer.print_array("tabulate_dofs", dofmap.num_element_dofs(), dofs);
+  dofmap.tabulate_dofs(dofs.data(), num_entities, c.entity_indices);
+  printer.print_array("tabulate_dofs", dofmap.num_element_dofs(), dofs.data());
 
   // tabulate_facet_dofs
   for (std::size_t facet = 0; facet < num_facets; facet++)
   {
-    dofmap.tabulate_facet_dofs(dofs, facet);
-    printer.print_array("tabulate_facet_dofs", dofmap.num_facet_dofs(), dofs,
-                        facet);
+    dofmap.tabulate_facet_dofs(dofs.data(), facet);
+    printer.print_array("tabulate_facet_dofs", dofmap.num_facet_dofs(),
+                        dofs.data(), facet);
   }
 
   // tabulate_entity_dofs
@@ -391,15 +394,11 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id,
                                {4, 6, 4, 1}}; // tetrahedron
     for (std::size_t i = 0; i < num_entities[c.topological_dimension][d]; i++)
     {
-      dofmap.tabulate_entity_dofs(dofs, d, i);
+      dofmap.tabulate_entity_dofs(dofs.data(), d, i);
       printer.print_array("tabulate_entity_dofs", dofmap.num_entity_dofs(d),
-                          dofs, d, i);
+                          dofs.data(), d, i);
     }
   }
-
-  // tabulate_coordinates
-  dofmap.tabulate_coordinates(coordinates.data(), coordinate_dofs.data());
-  printer.print_vector("tabulate_coordinates", coordinates);
 
   // num_sub_dofmaps
   printer.print_scalar("num_sub_dofmaps", dofmap.num_sub_dofmaps());
@@ -411,9 +410,6 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id,
     test_dofmap(*sub_dofmap, cell_shape, i, printer);
     delete sub_dofmap;
   }
-
-  // Cleanup
-  delete [] dofs;
 
   printer.end();
 }
