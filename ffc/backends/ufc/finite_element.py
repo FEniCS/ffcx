@@ -64,6 +64,30 @@ public:
 %(value_dimension)s
   }
 
+  /// Return the number of components of the value space
+  virtual std::size_t value_size() const
+  {
+%(value_size)s
+  }
+
+  /// Return the rank of the reference value space
+  virtual std::size_t reference_value_rank() const
+  {
+%(reference_value_rank)s
+  }
+
+  /// Return the dimension of the reference value space for axis i
+  virtual std::size_t reference_value_dimension(std::size_t i) const
+  {
+%(reference_value_dimension)s
+  }
+
+  /// Return the number of components of the reference value space
+  virtual std::size_t reference_value_size() const
+  {
+%(reference_value_size)s
+  }
+
   /// Evaluate basis function i at given point x in cell (actual implementation)
   static void _evaluate_basis(std::size_t i,
                               double* values,
@@ -236,6 +260,18 @@ public:
   /// Return the dimension of the value space for axis i
   virtual std::size_t value_dimension(std::size_t i) const;
 
+  /// Return the number of components of the value space
+  virtual std::size_t value_size() const;
+
+  /// Return the rank of the reference value space
+  virtual std::size_t reference_value_rank() const;
+
+  /// Return the dimension of the reference value space for axis i
+  virtual std::size_t reference_value_dimension(std::size_t i) const;
+
+  /// Return the number of components of the reference value space
+  virtual std::size_t reference_value_size() const;
+
   /// Evaluate basis function i at given point x in cell (actual implementation)
   static void _evaluate_basis(std::size_t i,
                               double* values,
@@ -395,6 +431,30 @@ std::size_t %(classname)s::value_rank() const
 std::size_t %(classname)s::value_dimension(std::size_t i) const
 {
 %(value_dimension)s
+}
+
+/// Return the number of components of the value space
+std::size_t %(classname)s::value_size() const
+{
+%(value_size)s
+}
+
+/// Return the rank of the reference value space
+std::size_t %(classname)s::reference_value_rank() const
+{
+%(reference_value_rank)s
+}
+
+/// Return the dimension of the reference value space for axis i
+std::size_t %(classname)s::reference_value_dimension(std::size_t i) const
+{
+%(reference_value_dimension)s
+}
+
+/// Return the number of components of the reference value space
+std::size_t %(classname)s::reference_value_size() const
+{
+%(reference_value_size)s
 }
 
 /// Evaluate basis function i at given point x in cell
