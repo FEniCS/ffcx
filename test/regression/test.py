@@ -43,8 +43,9 @@ from ufctest import generate_test_code
 from instant.output import get_status_output
 import time
 
-# Parameters
-debug = False # TODO: Can make this a cmdline argument, and start crashing programs in debugger automatically?
+# Parameters TODO: Can make this a cmdline argument, and start
+# crashing programs in debugger automatically?
+debug = False
 output_tolerance = 1.e-6
 demo_directory = "../../../../demo"
 bench_directory = "../../../../bench"
@@ -62,10 +63,12 @@ ext_quad = [\
 "-r quadrature -O -fprecompute_basis_const -feliminate_zeros",
 ]
 
-# Extended uflacs tests (to be extended with optimisation parameters later)
+# Extended uflacs tests (to be extended with optimisation parameters
+# later)
 ext_uflacs = [\
 "-r uflacs",
 ]
+
 
 _command_timings = []
 def run_command(command):
@@ -87,6 +90,7 @@ def run_command(command):
     print(output)
     return False
 
+
 def log_error(message):
     "Log error message."
     global logfile
@@ -94,11 +98,13 @@ def log_error(message):
         logfile = open("../../error.log", "w")
     logfile.write(message + "\n")
 
+
 def clean_output(output_directory):
     "Clean out old output directory"
     if os.path.isdir(output_directory):
         shutil.rmtree(output_directory)
     os.mkdir(output_directory)
+
 
 def generate_test_cases(bench, only_forms):
     "Generate form files for all test cases."
@@ -127,11 +133,13 @@ def generate_test_cases(bench, only_forms):
     # Generate form files for elements
     if not bench:
         from elements import elements
-        info("Generating form files for extra elements (%d elements)" % len(elements))
+        info("Generating form files for extra elements (%d elements)"
+             % len(elements))
         for (i, element) in enumerate(elements):
             open("X_Element%d.ufl" % i, "w").write("element = %s" % element)
 
     end()
+
 
 def generate_code(args, only_forms):
     "Generate code for all test cases."
@@ -146,16 +154,14 @@ def generate_code(args, only_forms):
 
     # TODO: Parse additional options from .ufl file? I.e. grep for
     # some sort of tag like '#ffc: <flags>'.
-    special = {
-        "AdaptivePoisson.ufl": "-e",
-        }
+    special = { "AdaptivePoisson.ufl": "-e", }
 
     # Iterate over all files
     for f in form_files:
         options = special.get(f, "")
 
         cmd = ("ffc %s %s -f precision=8 -fconvert_exceptions_to_warnings %s"
-               % (options, " ".join(args), f))
+        % (options, " ".join(args), f))
 
         # Generate code
         ok = run_command(cmd)
@@ -175,7 +181,8 @@ def validate_code(reference_dir):
     header_files = [f for f in os.listdir(".") if f.endswith(".h")]
     header_files.sort()
 
-    begin("Validating generated code (%d header files found)" % len(header_files))
+    begin("Validating generated code (%d header files found)"
+          % len(header_files))
 
     # Iterate over all files
     for f in header_files:
@@ -231,13 +238,15 @@ def build_programs(bench, permissive):
     boost_dir = os.getenv("BOOST_DIR", default)
     boost_is_found = False
     for inc_dir in ["", "include"]:
-        if os.path.isfile(os.path.join(boost_dir, inc_dir, "boost", "version.hpp")):
+        if os.path.isfile(os.path.join(boost_dir, inc_dir, "boost",
+                                       "version.hpp")):
             boost_inc_dir = os.path.join(boost_dir, inc_dir)
             break
     libdir_multiarch = "lib/" + sysconfig.get_config_vars().get("MULTIARCH", "")
     for lib_dir in ["", "lib", libdir_multiarch, "lib64"]:
         for ext in [".so", "-mt.so", ".dylib", "-mt.dylib"]:
-            _lib = os.path.join(boost_dir, lib_dir, "lib" + boost_math_tr1_lib + ext)
+            _lib = os.path.join(boost_dir, lib_dir, "lib" + boost_math_tr1_lib
+                                + ext)
             if os.path.isfile(_lib):
                 if "-mt" in _lib:
                     boost_math_tr1_lib += "-mt"
@@ -255,7 +264,7 @@ set the environment variable BOOST_DIR.
     ufc_cflags += " -I%s -L%s" % (boost_inc_dir, boost_lib_dir)
 
     # Set compiler options
-    compiler_options = "%s -Wall" % ufc_cflags
+    compiler_options = "%s -Wall " % ufc_cflags
     if not permissive:
         compiler_options += " -Werror -pedantic"
     if bench:
@@ -289,6 +298,7 @@ set the environment variable BOOST_DIR.
 
     end()
 
+
 def run_programs(bench):
     "Run generated programs."
 
@@ -316,13 +326,15 @@ def run_programs(bench):
 
     end()
 
+
 def validate_programs(reference_dir):
     "Validate generated programs against references."
 
     # Get a list of all files
     output_files = sorted(f for f in os.listdir(".") if f.endswith(".json"))
 
-    begin("Validating generated programs (%d .json program output files found)" % len(output_files))
+    begin("Validating generated programs (%d .json program output files found)"
+          % len(output_files))
 
     # Iterate over all files
     for fj in output_files:
@@ -332,7 +344,8 @@ def validate_programs(reference_dir):
             generated_json_output = open(fj).read()
             if "nan" in generated_json_output:
                 info_red("Found nan in generated json output, replacing with 999 to be able to parse as python dict.")
-                generated_json_output = generated_json_output.replace("nan", "999")
+                generated_json_output = generated_json_output.replace("nan",
+                                                                      "999")
         else:
             generated_json_output = "{}"
 
@@ -369,6 +382,7 @@ def validate_programs(reference_dir):
             print_recdiff(json_diff, printer=log_error)
 
     end()
+
 
 def main(args):
     "Run all regression tests."
@@ -485,7 +499,8 @@ def main(args):
 
     # Print results
     if print_timing:
-        timings = '\n'.join("%10.2e s  %s" % (t, name) for (name, t) in _command_timings)
+        timings = '\n'.join("%10.2e s  %s" % (t, name) for (name, t)
+                            in _command_timings)
         info_green("Timing of all commands executed:")
         info(timings)
     if logfile is None:
@@ -495,6 +510,7 @@ def main(args):
         info_red("Regression tests failed")
         info("Error messages stored in error.log")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
