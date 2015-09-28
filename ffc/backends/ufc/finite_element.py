@@ -17,73 +17,73 @@ public:
   }
 
   /// Destructor
-  virtual ~%(classname)s()
+  ~%(classname)s() override
   {
 %(destructor)s
   }
 
   /// Return a string identifying the finite element
-  virtual const char* signature() const
+  const char* signature() const final override
   {
 %(signature)s
   }
 
   /// Return the cell shape
-  virtual ufc::shape cell_shape() const
+  ufc::shape cell_shape() const final override
   {
 %(cell_shape)s
   }
 
   /// Return the topological dimension of the cell shape
-  virtual std::size_t topological_dimension() const
+  std::size_t topological_dimension() const final override
   {
 %(topological_dimension)s
   }
 
   /// Return the geometric dimension of the cell shape
-  virtual std::size_t geometric_dimension() const
+  std::size_t geometric_dimension() const final override
   {
 %(geometric_dimension)s
   }
 
   /// Return the dimension of the finite element function space
-  virtual std::size_t space_dimension() const
+  std::size_t space_dimension() const final override
   {
 %(space_dimension)s
   }
 
   /// Return the rank of the value space
-  virtual std::size_t value_rank() const
+  std::size_t value_rank() const final override
   {
 %(value_rank)s
   }
 
   /// Return the dimension of the value space for axis i
-  virtual std::size_t value_dimension(std::size_t i) const
+  std::size_t value_dimension(std::size_t i) const final override
   {
 %(value_dimension)s
   }
 
   /// Return the number of components of the value space
-  virtual std::size_t value_size() const
+  std::size_t value_size() const final override
   {
 %(value_size)s
   }
 
   /// Return the rank of the reference value space
-  virtual std::size_t reference_value_rank() const
+  std::size_t reference_value_rank() const final override
   {
 %(reference_value_rank)s
   }
 
   /// Return the dimension of the reference value space for axis i
-  virtual std::size_t reference_value_dimension(std::size_t i) const
+  std::size_t reference_value_dimension(std::size_t i) const final override
   {
 %(reference_value_dimension)s
   }
 
   /// Return the number of components of the reference value space
-  virtual std::size_t reference_value_size() const
+  std::size_t reference_value_size() const final override
   {
 %(reference_value_size)s
   }
@@ -99,11 +99,11 @@ public:
   }
 
   /// Evaluate basis function i at given point x in cell (non-static member function)
-  virtual void evaluate_basis(std::size_t i,
-                              double* values,
-                              const double* x,
-                              const double* coordinate_dofs,
-                              int cell_orientation) const
+  void evaluate_basis(std::size_t i,
+                      double* values,
+                      const double* x,
+                      const double* coordinate_dofs,
+                      int cell_orientation) const final override
   {
     _evaluate_basis(i, values, x, coordinate_dofs, cell_orientation);
   }
@@ -118,10 +118,10 @@ public:
   }
 
   /// Evaluate all basis functions at given point x in cell (non-static member function)
-  virtual void evaluate_basis_all(double* values,
-                                  const double* x,
-                                  const double* coordinate_dofs,
-                                  int cell_orientation) const
+  void evaluate_basis_all(double* values,
+                          const double* x,
+                          const double* coordinate_dofs,
+                          int cell_orientation) const final override
   {
     _evaluate_basis_all(values, x, coordinate_dofs, cell_orientation);
   }
@@ -138,12 +138,12 @@ public:
   }
 
   /// Evaluate order n derivatives of basis function i at given point x in cell (non-static member function)
-  virtual void evaluate_basis_derivatives(std::size_t i,
-                                          std::size_t n,
-                                          double* values,
-                                          const double* x,
-                                          const double* coordinate_dofs,
-                                          int cell_orientation) const
+  void evaluate_basis_derivatives(std::size_t i,
+                                  std::size_t n,
+                                  double* values,
+                                  const double* x,
+                                  const double* coordinate_dofs,
+                                  int cell_orientation) const final override
   {
     _evaluate_basis_derivatives(i, n, values, x, coordinate_dofs, cell_orientation);
   }
@@ -159,66 +159,66 @@ public:
   }
 
   /// Evaluate order n derivatives of all basis functions at given point x in cell (non-static member function)
-  virtual void evaluate_basis_derivatives_all(std::size_t n,
-                                              double* values,
-                                              const double* x,
-                                              const double* coordinate_dofs,
-                                              int cell_orientation) const
+  void evaluate_basis_derivatives_all(std::size_t n,
+                                      double* values,
+                                      const double* x,
+                                      const double* coordinate_dofs,
+                                      int cell_orientation) const final override
   {
     _evaluate_basis_derivatives_all(n, values, x, coordinate_dofs, cell_orientation);
   }
 
   /// Evaluate linear functional for dof i on the function f
-  virtual double evaluate_dof(std::size_t i,
-                              const ufc::function& f,
-                              const double* coordinate_dofs,
-                              int cell_orientation,
-                              const ufc::cell& c) const
+  double evaluate_dof(std::size_t i,
+                      const ufc::function& f,
+                      const double* coordinate_dofs,
+                      int cell_orientation,
+                      const ufc::cell& c) const final override
   {
 %(evaluate_dof)s
   }
 
   /// Evaluate linear functionals for all dofs on the function f
-  virtual void evaluate_dofs(double* values,
+  void evaluate_dofs(double* values,
                              const ufc::function& f,
                              const double* coordinate_dofs,
                              int cell_orientation,
-                             const ufc::cell& c) const
+                             const ufc::cell& c) const final override
   {
 %(evaluate_dofs)s
   }
 
   /// Interpolate vertex values from dof values
-  virtual void interpolate_vertex_values(double* vertex_values,
-                                         const double* dof_values,
-                                         const double* coordinate_dofs,
-                                         int cell_orientation,
-                                         const ufc::cell& c) const
+  void interpolate_vertex_values(double* vertex_values,
+                                 const double* dof_values,
+                                 const double* coordinate_dofs,
+                                 int cell_orientation,
+                                 const ufc::cell& c) const final override
   {
 %(interpolate_vertex_values)s
   }
 
   /// Tabulate the coordinates of all dofs
-  virtual void tabulate_dof_coordinates(double* dof_coordinates,
-                                        const double* coordinate_dofs) const
+  void tabulate_dof_coordinates(double* dof_coordinates,
+                                const double* coordinate_dofs) const final override
   {
 %(tabulate_dof_coordinates)s
   }
 
   /// Return the number of sub elements (for a mixed element)
-  virtual std::size_t num_sub_elements() const
+  std::size_t num_sub_elements() const final override
   {
 %(num_sub_elements)s
   }
 
   /// Create a new finite element for sub element i (for a mixed element)
-  virtual ufc::finite_element* create_sub_element(std::size_t i) const
+  ufc::finite_element* create_sub_element(std::size_t i) const final override
   {
 %(create_sub_element)s
   }
 
   /// Create a new class instance
-  virtual ufc::finite_element* create() const
+  ufc::finite_element* create() const final override
   {
 %(create)s
   }
@@ -237,40 +237,40 @@ public:
   %(classname)s(%(constructor_arguments)s);
 
   /// Destructor
-  virtual ~%(classname)s();
+  ~%(classname)s() override;
 
   /// Return a string identifying the finite element
-  virtual const char* signature() const;
+  const char* signature() const final override;
 
   /// Return the cell shape
-  virtual ufc::shape cell_shape() const;
+  ufc::shape cell_shape() const final override;
 
   /// Return the topological dimension of the cell shape
-  virtual std::size_t topological_dimension() const;
+  std::size_t topological_dimension() const final override;
 
   /// Return the geometric dimension of the cell shape
-  virtual std::size_t geometric_dimension() const;
+  std::size_t geometric_dimension() const final override;
 
   /// Return the dimension of the finite element function space
-  virtual std::size_t space_dimension() const;
+  std::size_t space_dimension() const final override;
 
   /// Return the rank of the value space
-  virtual std::size_t value_rank() const;
+  std::size_t value_rank() const final override;
 
   /// Return the dimension of the value space for axis i
-  virtual std::size_t value_dimension(std::size_t i) const;
+  std::size_t value_dimension(std::size_t i) const final override;
 
   /// Return the number of components of the value space
-  virtual std::size_t value_size() const;
+  std::size_t value_size() const final override;
 
   /// Return the rank of the reference value space
-  virtual std::size_t reference_value_rank() const;
+  std::size_t reference_value_rank() const final override;
 
   /// Return the dimension of the reference value space for axis i
-  virtual std::size_t reference_value_dimension(std::size_t i) const;
+  std::size_t reference_value_dimension(std::size_t i) const final override;
 
   /// Return the number of components of the reference value space
-  virtual std::size_t reference_value_size() const;
+  std::size_t reference_value_size() const final override;
 
   /// Evaluate basis function i at given point x in cell (actual implementation)
   static void _evaluate_basis(std::size_t i,
@@ -280,11 +280,11 @@ public:
                               int cell_orientation);
 
   /// Evaluate basis function i at given point x in cell (non-static member function)
-  virtual void evaluate_basis(std::size_t i,
-                              double* values,
-                              const double* x,
-                              const double* coordinate_dofs,
-                              int cell_orientation) const
+  void evaluate_basis(std::size_t i,
+                      double* values,
+                      const double* x,
+                      const double* coordinate_dofs,
+                      int cell_orientation) const final override
   {
     _evaluate_basis(i, values, x, coordinate_dofs, cell_orientation);
   }
@@ -296,10 +296,10 @@ public:
                                   int cell_orientation);
 
   /// Evaluate all basis functions at given point x in cell (non-static member function)
-  virtual void evaluate_basis_all(double* values,
-                                  const double* x,
-                                  const double* coordinate_dofs,
-                                  int cell_orientation) const
+  void evaluate_basis_all(double* values,
+                          const double* x,
+                          const double* coordinate_dofs,
+                          int cell_orientation) const final override
   {
     _evaluate_basis_all(values, x, coordinate_dofs, cell_orientation);
   }
@@ -313,12 +313,12 @@ public:
                                           int cell_orientation);
 
   /// Evaluate order n derivatives of basis function i at given point x in cell (non-static member function)
-  virtual void evaluate_basis_derivatives(std::size_t i,
-                                          std::size_t n,
-                                          double* values,
-                                          const double* x,
-                                          const double* coordinate_dofs,
-                                          int cell_orientation) const
+  void evaluate_basis_derivatives(std::size_t i,
+                                  std::size_t n,
+                                  double* values,
+                                  const double* x,
+                                  const double* coordinate_dofs,
+                                  int cell_orientation) const final override
   {
     _evaluate_basis_derivatives(i, n, values, x, coordinate_dofs, cell_orientation);
   }
@@ -331,48 +331,48 @@ public:
                                               int cell_orientation);
 
   /// Evaluate order n derivatives of all basis functions at given point x in cell (non-static member function)
-  virtual void evaluate_basis_derivatives_all(std::size_t n,
-                                              double* values,
-                                              const double* x,
-                                              const double* coordinate_dofs,
-                                              int cell_orientation) const
+  void evaluate_basis_derivatives_all(std::size_t n,
+                                      double* values,
+                                      const double* x,
+                                      const double* coordinate_dofs,
+                                      int cell_orientation) const final override
   {
     _evaluate_basis_derivatives_all(n, values, x, coordinate_dofs, cell_orientation);
   }
 
   /// Evaluate linear functional for dof i on the function f
-  virtual double evaluate_dof(std::size_t i,
-                              const ufc::function& f,
-                              const double* coordinate_dofs,
-                              int cell_orientation,
-                              const ufc::cell& c) const;
+  double evaluate_dof(std::size_t i,
+                      const ufc::function& f,
+                      const double* coordinate_dofs,
+                      int cell_orientation,
+                      const ufc::cell& c) const final override;
 
   /// Evaluate linear functionals for all dofs on the function f
-  virtual void evaluate_dofs(double* values,
-                             const ufc::function& f,
-                             const double* coordinate_dofs,
-                             int cell_orientation,
-                             const ufc::cell& c) const;
+  void evaluate_dofs(double* values,
+                     const ufc::function& f,
+                     const double* coordinate_dofs,
+                     int cell_orientation,
+                     const ufc::cell& c) const final override;
 
   /// Interpolate vertex values from dof values
-  virtual void interpolate_vertex_values(double* vertex_values,
-                                         const double* dof_values,
-                                         const double* coordinate_dofs,
-                                         int cell_orientation,
-                                         const ufc::cell& c) const;
+  void interpolate_vertex_values(double* vertex_values,
+                                 const double* dof_values,
+                                 const double* coordinate_dofs,
+                                 int cell_orientation,
+                                 const ufc::cell& c) const final override;
 
   /// Tabulate the coordinates of all dofs
-  virtual void tabulate_dof_coordinates(double* coordinates,
-                                        const double* coordinate_dofs) const;
+  void tabulate_dof_coordinates(double* coordinates,
+                                const double* coordinate_dofs) const final override;
 
   /// Return the number of sub elements (for a mixed element)
-  virtual std::size_t num_sub_elements() const;
+  std::size_t num_sub_elements() const final override;
 
   /// Create a new finite element for sub element i (for a mixed element)
-  virtual ufc::finite_element* create_sub_element(std::size_t i) const;
+  ufc::finite_element* create_sub_element(std::size_t i) const final override;
 
   /// Create a new class instance
-  virtual ufc::finite_element* create() const;
+  ufc::finite_element* create() const final override;
 
 };
 """
