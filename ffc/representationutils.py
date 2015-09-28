@@ -171,7 +171,6 @@ def initialize_integral_code(ir, prefix, parameters):
     "Representation independent default initialization of code dict for integral from intermediate representation."
     code = {}
     code["class_type"] = ir["integral_type"] + "_integral"
-    code["restrict"] = parameters["restrict_keyword"]
     code["classname"] = format["classname integral"](prefix, ir["integral_type"], ir["form_id"], ir["subdomain_id"])
     code["members"] = ""
     code["constructor"] = format["do nothing"]

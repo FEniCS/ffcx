@@ -23,7 +23,7 @@ public:
   }
 
   /// Return a string identifying the finite element
-  const char* signature() const final override
+  const char * signature() const final override
   {
 %(signature)s
   }
@@ -90,9 +90,9 @@ public:
 
   /// Evaluate basis function i at given point x in cell (actual implementation)
   static void _evaluate_basis(std::size_t i,
-                              double* values,
-                              const double* x,
-                              const double* coordinate_dofs,
+                              double * values,
+                              const double * x,
+                              const double * coordinate_dofs,
                               int cell_orientation)
   {
 %(evaluate_basis)s
@@ -100,27 +100,27 @@ public:
 
   /// Evaluate basis function i at given point x in cell (non-static member function)
   void evaluate_basis(std::size_t i,
-                      double* values,
-                      const double* x,
-                      const double* coordinate_dofs,
+                      double * values,
+                      const double * x,
+                      const double * coordinate_dofs,
                       int cell_orientation) const final override
   {
     _evaluate_basis(i, values, x, coordinate_dofs, cell_orientation);
   }
 
   /// Evaluate all basis functions at given point x in cell (actual implementation)
-  static void _evaluate_basis_all(double* values,
-                                  const double* x,
-                                  const double* coordinate_dofs,
+  static void _evaluate_basis_all(double * values,
+                                  const double * x,
+                                  const double * coordinate_dofs,
                                   int cell_orientation)
   {
 %(evaluate_basis_all)s
   }
 
   /// Evaluate all basis functions at given point x in cell (non-static member function)
-  void evaluate_basis_all(double* values,
-                          const double* x,
-                          const double* coordinate_dofs,
+  void evaluate_basis_all(double * values,
+                          const double * x,
+                          const double * coordinate_dofs,
                           int cell_orientation) const final override
   {
     _evaluate_basis_all(values, x, coordinate_dofs, cell_orientation);
@@ -129,9 +129,9 @@ public:
   /// Evaluate order n derivatives of basis function i at given point x in cell (actual implementation)
   static void _evaluate_basis_derivatives(std::size_t i,
                                           std::size_t n,
-                                          double* values,
-                                          const double* x,
-                                          const double* coordinate_dofs,
+                                          double * values,
+                                          const double * x,
+                                          const double * coordinate_dofs,
                                           int cell_orientation)
   {
 %(evaluate_basis_derivatives)s
@@ -140,9 +140,9 @@ public:
   /// Evaluate order n derivatives of basis function i at given point x in cell (non-static member function)
   void evaluate_basis_derivatives(std::size_t i,
                                   std::size_t n,
-                                  double* values,
-                                  const double* x,
-                                  const double* coordinate_dofs,
+                                  double * values,
+                                  const double * x,
+                                  const double * coordinate_dofs,
                                   int cell_orientation) const final override
   {
     _evaluate_basis_derivatives(i, n, values, x, coordinate_dofs, cell_orientation);
@@ -150,9 +150,9 @@ public:
 
   /// Evaluate order n derivatives of all basis functions at given point x in cell (actual implementation)
   static void _evaluate_basis_derivatives_all(std::size_t n,
-                                              double* values,
-                                              const double* x,
-                                              const double* coordinate_dofs,
+                                              double * values,
+                                              const double * x,
+                                              const double * coordinate_dofs,
                                               int cell_orientation)
   {
 %(evaluate_basis_derivatives_all)s
@@ -160,9 +160,9 @@ public:
 
   /// Evaluate order n derivatives of all basis functions at given point x in cell (non-static member function)
   void evaluate_basis_derivatives_all(std::size_t n,
-                                      double* values,
-                                      const double* x,
-                                      const double* coordinate_dofs,
+                                      double * values,
+                                      const double * x,
+                                      const double * coordinate_dofs,
                                       int cell_orientation) const final override
   {
     _evaluate_basis_derivatives_all(n, values, x, coordinate_dofs, cell_orientation);
@@ -171,7 +171,7 @@ public:
   /// Evaluate linear functional for dof i on the function f
   double evaluate_dof(std::size_t i,
                       const ufc::function& f,
-                      const double* coordinate_dofs,
+                      const double * coordinate_dofs,
                       int cell_orientation,
                       const ufc::cell& c) const final override
   {
@@ -179,9 +179,9 @@ public:
   }
 
   /// Evaluate linear functionals for all dofs on the function f
-  void evaluate_dofs(double* values,
+  void evaluate_dofs(double * values,
                              const ufc::function& f,
-                             const double* coordinate_dofs,
+                             const double * coordinate_dofs,
                              int cell_orientation,
                              const ufc::cell& c) const final override
   {
@@ -189,9 +189,9 @@ public:
   }
 
   /// Interpolate vertex values from dof values
-  void interpolate_vertex_values(double* vertex_values,
-                                 const double* dof_values,
-                                 const double* coordinate_dofs,
+  void interpolate_vertex_values(double * vertex_values,
+                                 const double * dof_values,
+                                 const double * coordinate_dofs,
                                  int cell_orientation,
                                  const ufc::cell& c) const final override
   {
@@ -199,8 +199,8 @@ public:
   }
 
   /// Tabulate the coordinates of all dofs
-  void tabulate_dof_coordinates(double* dof_coordinates,
-                                const double* coordinate_dofs) const final override
+  void tabulate_dof_coordinates(double * dof_coordinates,
+                                const double * coordinate_dofs) const final override
   {
 %(tabulate_dof_coordinates)s
   }
@@ -212,13 +212,13 @@ public:
   }
 
   /// Create a new finite element for sub element i (for a mixed element)
-  ufc::finite_element* create_sub_element(std::size_t i) const final override
+  ufc::finite_element * create_sub_element(std::size_t i) const final override
   {
 %(create_sub_element)s
   }
 
   /// Create a new class instance
-  ufc::finite_element* create() const final override
+  ufc::finite_element * create() const final override
   {
 %(create)s
   }
@@ -240,7 +240,7 @@ public:
   ~%(classname)s() override;
 
   /// Return a string identifying the finite element
-  const char* signature() const final override;
+  const char * signature() const final override;
 
   /// Return the cell shape
   ufc::shape cell_shape() const final override;
@@ -274,31 +274,31 @@ public:
 
   /// Evaluate basis function i at given point x in cell (actual implementation)
   static void _evaluate_basis(std::size_t i,
-                              double* values,
-                              const double* x,
-                              const double* coordinate_dofs,
+                              double * values,
+                              const double * x,
+                              const double * coordinate_dofs,
                               int cell_orientation);
 
   /// Evaluate basis function i at given point x in cell (non-static member function)
   void evaluate_basis(std::size_t i,
-                      double* values,
-                      const double* x,
-                      const double* coordinate_dofs,
+                      double * values,
+                      const double * x,
+                      const double * coordinate_dofs,
                       int cell_orientation) const final override
   {
     _evaluate_basis(i, values, x, coordinate_dofs, cell_orientation);
   }
 
   /// Evaluate all basis functions at given point x in cell (actual implementation)
-  static void _evaluate_basis_all(double* values,
-                                  const double* x,
-                                  const double* coordinate_dofs,
+  static void _evaluate_basis_all(double * values,
+                                  const double * x,
+                                  const double * coordinate_dofs,
                                   int cell_orientation);
 
   /// Evaluate all basis functions at given point x in cell (non-static member function)
-  void evaluate_basis_all(double* values,
-                          const double* x,
-                          const double* coordinate_dofs,
+  void evaluate_basis_all(double * values,
+                          const double * x,
+                          const double * coordinate_dofs,
                           int cell_orientation) const final override
   {
     _evaluate_basis_all(values, x, coordinate_dofs, cell_orientation);
@@ -307,17 +307,17 @@ public:
   /// Evaluate order n derivatives of basis function i at given point x in cell (actual implementation)
   static void _evaluate_basis_derivatives(std::size_t i,
                                           std::size_t n,
-                                          double* values,
-                                          const double* x,
-                                          const double* coordinate_dofs,
+                                          double * values,
+                                          const double * x,
+                                          const double * coordinate_dofs,
                                           int cell_orientation);
 
   /// Evaluate order n derivatives of basis function i at given point x in cell (non-static member function)
   void evaluate_basis_derivatives(std::size_t i,
                                   std::size_t n,
-                                  double* values,
-                                  const double* x,
-                                  const double* coordinate_dofs,
+                                  double * values,
+                                  const double * x,
+                                  const double * coordinate_dofs,
                                   int cell_orientation) const final override
   {
     _evaluate_basis_derivatives(i, n, values, x, coordinate_dofs, cell_orientation);
@@ -325,16 +325,16 @@ public:
 
   /// Evaluate order n derivatives of all basis functions at given point x in cell (actual implementation)
   static void _evaluate_basis_derivatives_all(std::size_t n,
-                                              double* values,
-                                              const double* x,
-                                              const double* coordinate_dofs,
+                                              double * values,
+                                              const double * x,
+                                              const double * coordinate_dofs,
                                               int cell_orientation);
 
   /// Evaluate order n derivatives of all basis functions at given point x in cell (non-static member function)
   void evaluate_basis_derivatives_all(std::size_t n,
-                                      double* values,
-                                      const double* x,
-                                      const double* coordinate_dofs,
+                                      double * values,
+                                      const double * x,
+                                      const double * coordinate_dofs,
                                       int cell_orientation) const final override
   {
     _evaluate_basis_derivatives_all(n, values, x, coordinate_dofs, cell_orientation);
@@ -343,36 +343,36 @@ public:
   /// Evaluate linear functional for dof i on the function f
   double evaluate_dof(std::size_t i,
                       const ufc::function& f,
-                      const double* coordinate_dofs,
+                      const double * coordinate_dofs,
                       int cell_orientation,
                       const ufc::cell& c) const final override;
 
   /// Evaluate linear functionals for all dofs on the function f
-  void evaluate_dofs(double* values,
+  void evaluate_dofs(double * values,
                      const ufc::function& f,
-                     const double* coordinate_dofs,
+                     const double * coordinate_dofs,
                      int cell_orientation,
                      const ufc::cell& c) const final override;
 
   /// Interpolate vertex values from dof values
-  void interpolate_vertex_values(double* vertex_values,
-                                 const double* dof_values,
-                                 const double* coordinate_dofs,
+  void interpolate_vertex_values(double * vertex_values,
+                                 const double * dof_values,
+                                 const double * coordinate_dofs,
                                  int cell_orientation,
                                  const ufc::cell& c) const final override;
 
   /// Tabulate the coordinates of all dofs
-  void tabulate_dof_coordinates(double* coordinates,
-                                const double* coordinate_dofs) const final override;
+  void tabulate_dof_coordinates(double * coordinates,
+                                const double * coordinate_dofs) const final override;
 
   /// Return the number of sub elements (for a mixed element)
   std::size_t num_sub_elements() const final override;
 
   /// Create a new finite element for sub element i (for a mixed element)
-  ufc::finite_element* create_sub_element(std::size_t i) const final override;
+  ufc::finite_element * create_sub_element(std::size_t i) const final override;
 
   /// Create a new class instance
-  ufc::finite_element* create() const final override;
+  ufc::finite_element * create() const final override;
 
 };
 """
@@ -392,7 +392,7 @@ finite_element_implementation= """\
 }
 
 /// Return a string identifying the finite element
-const char* %(classname)s::signature() const
+const char * %(classname)s::signature() const
 {
 %(signature)s
 }
@@ -459,18 +459,18 @@ std::size_t %(classname)s::reference_value_size() const
 
 /// Evaluate basis function i at given point x in cell
 void %(classname)s::_evaluate_basis(std::size_t i,
-                                    double* values,
-                                    const double* x,
-                                    const double* coordinate_dofs,
+                                    double * values,
+                                    const double * x,
+                                    const double * coordinate_dofs,
                                     int cell_orientation)
 {
 %(evaluate_basis)s
 }
 
 /// Evaluate all basis functions at given point x in cell
-void %(classname)s::_evaluate_basis_all(double* values,
-                                        const double* x,
-                                        const double* coordinate_dofs,
+void %(classname)s::_evaluate_basis_all(double * values,
+                                        const double * x,
+                                        const double * coordinate_dofs,
                                         int cell_orientation)
 {
 %(evaluate_basis_all)s
@@ -479,9 +479,9 @@ void %(classname)s::_evaluate_basis_all(double* values,
 /// Evaluate order n derivatives of basis function i at given point x in cell
 void %(classname)s::_evaluate_basis_derivatives(std::size_t i,
                                                 std::size_t n,
-                                                double* values,
-                                                const double* x,
-                                                const double* coordinate_dofs,
+                                                double * values,
+                                                const double * x,
+                                                const double * coordinate_dofs,
                                                 int cell_orientation)
 {
 %(evaluate_basis_derivatives)s
@@ -489,9 +489,9 @@ void %(classname)s::_evaluate_basis_derivatives(std::size_t i,
 
 /// Evaluate order n derivatives of all basis functions at given point x in cell
 void %(classname)s::_evaluate_basis_derivatives_all(std::size_t n,
-                                                    double* values,
-                                                    const double* x,
-                                                    const double* coordinate_dofs,
+                                                    double * values,
+                                                    const double * x,
+                                                    const double * coordinate_dofs,
                                                     int cell_orientation)
 {
 %(evaluate_basis_derivatives_all)s
@@ -500,7 +500,7 @@ void %(classname)s::_evaluate_basis_derivatives_all(std::size_t n,
 /// Evaluate linear functional for dof i on the function f
 double %(classname)s::evaluate_dof(std::size_t i,
                                    const ufc::function& f,
-                                   const double* coordinate_dofs,
+                                   const double * coordinate_dofs,
                                    int cell_orientation,
                                    const ufc::cell& c) const
 {
@@ -508,9 +508,9 @@ double %(classname)s::evaluate_dof(std::size_t i,
 }
 
 /// Evaluate linear functionals for all dofs on the function f
-void %(classname)s::evaluate_dofs(double* values,
+void %(classname)s::evaluate_dofs(double * values,
                                   const ufc::function& f,
-                                  const double* coordinate_dofs,
+                                  const double * coordinate_dofs,
                                   int cell_orientation,
                                   const ufc::cell& c) const
 {
@@ -518,9 +518,9 @@ void %(classname)s::evaluate_dofs(double* values,
 }
 
 /// Interpolate vertex values from dof values
-void %(classname)s::interpolate_vertex_values(double* vertex_values,
-                                              const double* dof_values,
-                                              const double* coordinate_dofs,
+void %(classname)s::interpolate_vertex_values(double * vertex_values,
+                                              const double * dof_values,
+                                              const double * coordinate_dofs,
                                               int cell_orientation,
                                               const ufc::cell& c) const
 {
@@ -528,8 +528,8 @@ void %(classname)s::interpolate_vertex_values(double* vertex_values,
 }
 
 /// Tabulate the coordinates of all dofs on a cell
-void %(classname)s::tabulate_dof_coordinates(double* dof_coordinates,
-                                             const double* coordinate_dofs) const
+void %(classname)s::tabulate_dof_coordinates(double * dof_coordinates,
+                                             const double * coordinate_dofs) const
 {
 %(tabulate_dof_coordinates)s
 }
@@ -541,13 +541,13 @@ std::size_t %(classname)s::num_sub_elements() const
 }
 
 /// Create a new finite element for sub element i (for a mixed element)
-ufc::finite_element* %(classname)s::create_sub_element(std::size_t i) const
+ufc::finite_element * %(classname)s::create_sub_element(std::size_t i) const
 {
 %(create_sub_element)s
 }
 
 /// Create a new class instance
-ufc::finite_element* %(classname)s::create() const
+ufc::finite_element * %(classname)s::create() const
 {
 %(create)s
 }

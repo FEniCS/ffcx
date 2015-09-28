@@ -36,7 +36,7 @@ public:
   }
 
   /// Return a string identifying the form
-  const char* signature() const final override
+  const char * signature() const final override
   {
 %(signature)s
   }
@@ -62,25 +62,25 @@ public:
 
 
   /// Create a new finite element for parameterization of coordinates
-  ufc::finite_element* create_coordinate_finite_element() const final override
+  ufc::finite_element * create_coordinate_finite_element() const final override
   {
 %(create_coordinate_finite_element)s
   }
 
   /// Create a new dofmap for parameterization of coordinates
-  ufc::dofmap* create_coordinate_dofmap() const final override
+  ufc::dofmap * create_coordinate_dofmap() const final override
   {
 %(create_coordinate_dofmap)s
   }
 
   /// Create a new finite element for argument function i
-  ufc::finite_element* create_finite_element(std::size_t i) const final override
+  ufc::finite_element * create_finite_element(std::size_t i) const final override
   {
 %(create_finite_element)s
   }
 
   /// Create a new dofmap for argument function i
-  ufc::dofmap* create_dofmap(std::size_t i) const final override
+  ufc::dofmap * create_dofmap(std::size_t i) const final override
   {
 %(create_dofmap)s
   }
@@ -149,62 +149,62 @@ public:
 
 
   /// Create a new cell integral on sub domain subdomain_id
-  ufc::cell_integral* create_cell_integral(std::size_t subdomain_id) const final override
+  ufc::cell_integral * create_cell_integral(std::size_t subdomain_id) const final override
   {
 %(create_cell_integral)s
   }
 
   /// Create a new exterior facet integral on sub domain subdomain_id
-  ufc::exterior_facet_integral* create_exterior_facet_integral(std::size_t subdomain_id) const final override
+  ufc::exterior_facet_integral * create_exterior_facet_integral(std::size_t subdomain_id) const final override
   {
 %(create_exterior_facet_integral)s
   }
 
   /// Create a new interior facet integral on sub domain subdomain_id
-  ufc::interior_facet_integral* create_interior_facet_integral(std::size_t subdomain_id) const final override
+  ufc::interior_facet_integral * create_interior_facet_integral(std::size_t subdomain_id) const final override
   {
 %(create_interior_facet_integral)s
   }
 
   /// Create a new vertex integral on sub domain subdomain_id
-  ufc::vertex_integral* create_vertex_integral(std::size_t subdomain_id) const final override
+  ufc::vertex_integral * create_vertex_integral(std::size_t subdomain_id) const final override
   {
 %(create_vertex_integral)s
   }
 
   /// Create a new custom integral on sub domain subdomain_id
-  ufc::custom_integral* create_custom_integral(std::size_t subdomain_id) const final override
+  ufc::custom_integral * create_custom_integral(std::size_t subdomain_id) const final override
   {
 %(create_custom_integral)s
   }
 
 
   /// Create a new cell integral on everywhere else
-  ufc::cell_integral* create_default_cell_integral() const final override
+  ufc::cell_integral * create_default_cell_integral() const final override
   {
 %(create_default_cell_integral)s
   }
 
   /// Create a new exterior facet integral on everywhere else
-  ufc::exterior_facet_integral* create_default_exterior_facet_integral() const final override
+  ufc::exterior_facet_integral * create_default_exterior_facet_integral() const final override
   {
 %(create_default_exterior_facet_integral)s
   }
 
   /// Create a new interior facet integral on everywhere else
-  ufc::interior_facet_integral* create_default_interior_facet_integral() const final override
+  ufc::interior_facet_integral * create_default_interior_facet_integral() const final override
   {
 %(create_default_interior_facet_integral)s
   }
 
   /// Create a new vertex integral on everywhere else
-  ufc::vertex_integral* create_default_vertex_integral() const final override
+  ufc::vertex_integral * create_default_vertex_integral() const final override
   {
 %(create_default_vertex_integral)s
   }
 
   /// Create a new custom integral on everywhere else
-  ufc::custom_integral* create_default_custom_integral() const final override
+  ufc::custom_integral * create_default_custom_integral() const final override
   {
 %(create_default_custom_integral)s
   }
@@ -239,7 +239,7 @@ public:
   ~%(classname)s() override;
 
   /// Return a string identifying the form
-  const char* signature() const final override;
+  const char * signature() const final override;
 
 
   /// Return the rank of the global tensor (r)
@@ -253,16 +253,16 @@ public:
 
 
   /// Create a new finite element for parameterization of coordinates
-  ufc::finite_element* create_coordinate_finite_element() const final override;
+  ufc::finite_element * create_coordinate_finite_element() const final override;
 
   /// Create a new dofmap for parameterization of coordinates
-  ufc::dofmap* create_coordinate_dofmap() const final override;
+  ufc::dofmap * create_coordinate_dofmap() const final override;
 
   /// Create a new finite element for argument function i
-  ufc::finite_element* create_finite_element(std::size_t i) const final override;
+  ufc::finite_element * create_finite_element(std::size_t i) const final override;
 
   /// Create a new dofmap for argument function i
-  ufc::dofmap* create_dofmap(std::size_t i) const final override;
+  ufc::dofmap * create_dofmap(std::size_t i) const final override;
 
 
   /// Return the number of cell domains
@@ -298,35 +298,35 @@ public:
 
 
   /// Create a new cell integral on sub domain i
-  ufc::cell_integral* create_cell_integral(std::size_t i) const final override;
+  ufc::cell_integral * create_cell_integral(std::size_t i) const final override;
 
   /// Create a new exterior facet integral on sub domain i
-  ufc::exterior_facet_integral* create_exterior_facet_integral(std::size_t i) const final override;
+  ufc::exterior_facet_integral * create_exterior_facet_integral(std::size_t i) const final override;
 
   /// Create a new interior facet integral on sub domain i
-  ufc::interior_facet_integral* create_interior_facet_integral(std::size_t i) const final override;
+  ufc::interior_facet_integral * create_interior_facet_integral(std::size_t i) const final override;
 
   /// Create a new vertex integral on sub domain i
-  ufc::vertex_integral* create_vertex_integral(std::size_t i) const final override;
+  ufc::vertex_integral * create_vertex_integral(std::size_t i) const final override;
 
   /// Create a new custom integral on sub domain i
-  ufc::custom_integral* create_custom_integral(std::size_t i) const final override;
+  ufc::custom_integral * create_custom_integral(std::size_t i) const final override;
 
 
   /// Create a new cell integral on everywhere else
-  ufc::cell_integral* create_default_cell_integral() const final override;
+  ufc::cell_integral * create_default_cell_integral() const final override;
 
   /// Create a new exterior facet integral on everywhere else
-  ufc::exterior_facet_integral* create_default_exterior_facet_integral() const final override;
+  ufc::exterior_facet_integral * create_default_exterior_facet_integral() const final override;
 
   /// Create a new interior facet integral on everywhere else
-  ufc::interior_facet_integral* create_default_interior_facet_integral() const final override;
+  ufc::interior_facet_integral * create_default_interior_facet_integral() const final override;
 
   /// Create a new vertex integral on everywhere else
-  ufc::vertex_integral* create_default_vertex_integral() const final override;
+  ufc::vertex_integral * create_default_vertex_integral() const final override;
 
   /// Create a new custom integral on everywhere else
-  ufc::custom_integral* create_default_custom_integral() const final override;
+  ufc::custom_integral * create_default_custom_integral() const final override;
 };
 """
 
@@ -344,7 +344,7 @@ form_implementation = """\
 }
 
 /// Return a string identifying the form
-const char* %(classname)s::signature() const
+const char * %(classname)s::signature() const
 {
 %(signature)s
 }
@@ -370,25 +370,25 @@ std::size_t %(classname)s::original_coefficient_position(std::size_t i) const
 
 
 /// Create a new finite element for parameterization of coordinates
-ufc::finite_element* %(classname)s::create_coordinate_finite_element() const
+ufc::finite_element * %(classname)s::create_coordinate_finite_element() const
 {
 %(create_coordinate_finite_element)s
 }
 
 /// Create a new dofmap for parameterization of coordinates
-ufc::dofmap* %(classname)s::create_coordinate_dofmap() const
+ufc::dofmap * %(classname)s::create_coordinate_dofmap() const
 {
 %(create_coordinate_dofmap)s
 }
 
 /// Create a new finite element for argument function i
-ufc::finite_element* %(classname)s::create_finite_element(std::size_t i) const
+ufc::finite_element * %(classname)s::create_finite_element(std::size_t i) const
 {
 %(create_finite_element)s
 }
 
 /// Create a new dofmap for argument function i
-ufc::dofmap* %(classname)s::create_dofmap(std::size_t i) const
+ufc::dofmap * %(classname)s::create_dofmap(std::size_t i) const
 {
 %(create_dofmap)s
 }
@@ -457,62 +457,62 @@ bool %(classname)s::has_custom_integrals() const
 
 
 /// Create a new cell integral on sub domain subdomain_id
-ufc::cell_integral* %(classname)s::create_cell_integral(std::size_t subdomain_id) const
+ufc::cell_integral * %(classname)s::create_cell_integral(std::size_t subdomain_id) const
 {
 %(create_cell_integral)s
 }
 
 /// Create a new exterior facet integral on sub domain subdomain_id
-ufc::exterior_facet_integral* %(classname)s::create_exterior_facet_integral(std::size_t subdomain_id) const
+ufc::exterior_facet_integral * %(classname)s::create_exterior_facet_integral(std::size_t subdomain_id) const
 {
 %(create_exterior_facet_integral)s
 }
 
 /// Create a new interior facet integral on sub domain subdomain_id
-ufc::interior_facet_integral* %(classname)s::create_interior_facet_integral(std::size_t subdomain_id) const
+ufc::interior_facet_integral * %(classname)s::create_interior_facet_integral(std::size_t subdomain_id) const
 {
 %(create_interior_facet_integral)s
 }
 
 /// Create a new vertex integral on sub domain subdomain_id
-ufc::vertex_integral* %(classname)s::create_vertex_integral(std::size_t subdomain_id) const
+ufc::vertex_integral * %(classname)s::create_vertex_integral(std::size_t subdomain_id) const
 {
 %(create_vertex_integral)s
 }
 
 /// Create a new custom integral on sub domain subdomain_id
-ufc::custom_integral* %(classname)s::create_custom_integral(std::size_t subdomain_id) const
+ufc::custom_integral * %(classname)s::create_custom_integral(std::size_t subdomain_id) const
 {
 %(create_custom_integral)s
 }
 
 
 /// Create a new cell integral on everywhere else
-ufc::cell_integral* %(classname)s::create_default_cell_integral() const
+ufc::cell_integral * %(classname)s::create_default_cell_integral() const
 {
 %(create_default_cell_integral)s
 }
 
 /// Create a new exterior facet integral on everywhere else
-ufc::exterior_facet_integral* %(classname)s::create_default_exterior_facet_integral() const
+ufc::exterior_facet_integral * %(classname)s::create_default_exterior_facet_integral() const
 {
 %(create_default_exterior_facet_integral)s
 }
 
 /// Create a new interior facet integral on everywhere else
-ufc::interior_facet_integral* %(classname)s::create_default_interior_facet_integral() const
+ufc::interior_facet_integral * %(classname)s::create_default_interior_facet_integral() const
 {
 %(create_default_interior_facet_integral)s
 }
 
 /// Create a new vertex integral on everywhere else
-ufc::vertex_integral* %(classname)s::create_default_vertex_integral() const
+ufc::vertex_integral * %(classname)s::create_default_vertex_integral() const
 {
 %(create_default_vertex_integral)s
 }
 
 /// Create a new custom integral on everywhere else
-ufc::custom_integral* %(classname)s::create_default_custom_integral() const
+ufc::custom_integral * %(classname)s::create_default_custom_integral() const
 {
 %(create_default_custom_integral)s
 }

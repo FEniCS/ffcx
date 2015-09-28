@@ -23,8 +23,8 @@ public:
   }
 
   /// Evaluate function at given point in cell
-  void evaluate(double* values,
-                const double* coordinates,
+  void evaluate(double * values,
+                const double * coordinates,
                 const ufc::cell& c) const final override
   {
 %(evaluate)s
@@ -47,8 +47,8 @@ public:
   ~%(classname)s() override;
 
   /// Evaluate function at given point in cell
-  void evaluate(double* values,
-                const double* coordinates,
+  void evaluate(double * values,
+                const double * coordinates,
                 const ufc::cell& c) const final override;
 
 };
@@ -68,8 +68,8 @@ function_implementation = """\
 }
 
 /// Evaluate function at given point in cell
-void %(classname)s::evaluate(double* values,
-                             const double* coordinates,
+void %(classname)s::evaluate(double * values,
+                             const double * coordinates,
                              const ufc::cell& c) const
 {
 %(evaluate)s

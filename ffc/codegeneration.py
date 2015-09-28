@@ -580,7 +580,7 @@ def _indent_code(code):
     for key in code:
         if not key in ("classname", "members", "constructor_arguments",
                        "initializer_list", "additional_includes_set",
-                       "restrict", "class_type"):
+                       "class_type"):
             code[key] = indent(code[key], 4)
 
 

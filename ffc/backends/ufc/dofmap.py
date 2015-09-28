@@ -24,7 +24,7 @@ public:
   }
 
   /// Return a string identifying the dofmap
-  const char* signature() const final override
+  const char * signature() const final override
   {
 %(signature)s
   }
@@ -67,7 +67,7 @@ public:
   }
 
   /// Tabulate the local-to-global mapping of dofs on a cell
-  void tabulate_dofs(std::size_t* dofs,
+  void tabulate_dofs(std::size_t * dofs,
                      const std::vector<std::size_t>& num_global_entities,
                      const std::vector<std::vector<std::size_t>>& entity_indices) const final override
   {
@@ -75,14 +75,14 @@ public:
   }
 
   /// Tabulate the local-to-local mapping from facet dofs to cell dofs
-  void tabulate_facet_dofs(std::size_t* dofs,
+  void tabulate_facet_dofs(std::size_t * dofs,
                            std::size_t facet) const final override
   {
 %(tabulate_facet_dofs)s
   }
 
   /// Tabulate the local-to-local mapping of dofs on entity (d, i)
-  void tabulate_entity_dofs(std::size_t* dofs,
+  void tabulate_entity_dofs(std::size_t * dofs,
                             std::size_t d, std::size_t i) const final override
   {
 %(tabulate_entity_dofs)s
@@ -96,13 +96,13 @@ public:
   }
 
   /// Create a new dofmap for sub dofmap i (for a mixed element)
-  ufc::dofmap* create_sub_dofmap(std::size_t i) const final override
+  ufc::dofmap * create_sub_dofmap(std::size_t i) const final override
   {
 %(create_sub_dofmap)s
   }
 
   /// Create a new class instance
-  ufc::dofmap* create() const final override
+  ufc::dofmap * create() const final override
   {
 %(create)s
   }
@@ -125,7 +125,7 @@ public:
   ~%(classname)s() override;
 
   /// Return a string identifying the dofmap
-  const char* signature() const final override;
+  const char * signature() const final override;
 
   /// Return true iff mesh entities of topological dimension d are needed
   bool needs_mesh_entities(std::size_t d) const final override;
@@ -147,26 +147,26 @@ public:
   std::size_t num_entity_dofs(std::size_t d) const final override;
 
   /// Tabulate the local-to-global mapping of dofs on a cell
-  void tabulate_dofs(std::size_t* dofs,
+  void tabulate_dofs(std::size_t * dofs,
                      const std::vector<std::size_t>& num_global_entities,
                      const std::vector<std::vector<std::size_t>>& entity_indices) const final override;
 
   /// Tabulate the local-to-local mapping from facet dofs to cell dofs
-  void tabulate_facet_dofs(std::size_t* dofs,
+  void tabulate_facet_dofs(std::size_t * dofs,
                            std::size_t facet) const final override;
 
   /// Tabulate the local-to-local mapping of dofs on entity (d, i)
-  void tabulate_entity_dofs(std::size_t* dofs,
+  void tabulate_entity_dofs(std::size_t * dofs,
                             std::size_t d, std::size_t i) const final override;
 
   /// Return the number of sub dofmaps (for a mixed element)
   std::size_t num_sub_dofmaps() const final override;
 
   /// Create a new dofmap for sub dofmap i (for a mixed element)
-  ufc::dofmap* create_sub_dofmap(std::size_t i) const final override;
+  ufc::dofmap * create_sub_dofmap(std::size_t i) const final override;
 
   /// Create a new class instance
-  ufc::dofmap* create() const final override;
+  ufc::dofmap * create() const final override;
 
 };
 """
@@ -185,7 +185,7 @@ dofmap_implementation = """\
 }
 
 /// Return a string identifying the dofmap
-const char* %(classname)s::signature() const
+const char * %(classname)s::signature() const
 {
 %(signature)s
 }
@@ -228,7 +228,7 @@ std::size_t %(classname)s::num_entity_dofs(std::size_t d) const
 }
 
 /// Tabulate the local-to-global mapping of dofs on a cell
-void %(classname)s::tabulate_dofs(std::size_t* dofs,
+void %(classname)s::tabulate_dofs(std::size_t * dofs,
                                   const std::vector<std::size_t>& num_global_entities,
                                   const std::vector<std::vector<std::size_t>>& entity_indices) const
 {
@@ -236,14 +236,14 @@ void %(classname)s::tabulate_dofs(std::size_t* dofs,
 }
 
 /// Tabulate the local-to-local mapping from facet dofs to cell dofs
-void %(classname)s::tabulate_facet_dofs(std::size_t* dofs,
+void %(classname)s::tabulate_facet_dofs(std::size_t * dofs,
                                         std::size_t facet) const
 {
 %(tabulate_facet_dofs)s
 }
 
 /// Tabulate the local-to-local mapping of dofs on entity (d, i)
-void %(classname)s::tabulate_entity_dofs(std::size_t* dofs,
+void %(classname)s::tabulate_entity_dofs(std::size_t * dofs,
                                   std::size_t d, std::size_t i) const
 {
 %(tabulate_entity_dofs)s
@@ -256,13 +256,13 @@ std::size_t %(classname)s::num_sub_dofmaps() const
 }
 
 /// Create a new dofmap for sub dofmap i (for a mixed element)
-ufc::dofmap* %(classname)s::create_sub_dofmap(std::size_t i) const
+ufc::dofmap * %(classname)s::create_sub_dofmap(std::size_t i) const
 {
 %(create_sub_dofmap)s
 }
 
 /// Create a new class instance
-ufc::dofmap* %(classname)s::create() const
+ufc::dofmap * %(classname)s::create() const
 {
 %(create)s
 }
