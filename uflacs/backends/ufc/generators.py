@@ -281,7 +281,7 @@ class ufc_dofmap(ufc_generator):
 
     def create_sub_dofmap(self, L, ir):
         i = L.Symbol("i")
-        classnames = ir["create_sub_dofmap"] # FIXME: ffc provides element ids
+        classnames = ir["create_sub_dofmap"] # FIXME: ffc provides element ids, not classname
         return generate_return_new_switch(L, i, classnames)
 
 
@@ -359,7 +359,7 @@ class ufc_finite_element(ufc_generator):
 
     def create_sub_element(self, L, ir):
         i = L.Symbol("i")
-        classnames = ir["create_sub_element"] # FIXME: ffc provides element ids
+        classnames = ir["create_sub_element"] # FIXME: ffc provides element ids, not classname
         return generate_return_new_switch(L, i, classnames)
 
 
