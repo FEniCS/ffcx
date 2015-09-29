@@ -4,7 +4,7 @@ import re
 from string import Formatter
 
 from ufl import product
-from ffc.log import error
+from ffc.log import error, warning
 from ffc.backends.ufc import *
 
 from uflacs.language.format_lines import format_indented_lines
@@ -46,19 +46,19 @@ class ufc_generator(object):
     if there is no self.<keyword>.
     """
     def __init__(self, header_template, implementation_template):
-        self.header_template = header_template
-        self.implementation_template = implementation_template
+        self._header_template = header_template
+        self._implementation_template = implementation_template
 
         r = re.compile(r"%\(([a-zA-Z0-9_]*)\)")
-        self.header_keywords = set(r.findall(self.header_template))
-        self.implementation_keywords = set(r.findall(self.implementation_template))
+        self._header_keywords = set(r.findall(self._header_template))
+        self._implementation_keywords = set(r.findall(self._implementation_template))
 
-        self.keywords = sorted(self.header_keywords | self.implementation_keywords)
+        self._keywords = sorted(self._header_keywords | self._implementation_keywords)
 
-    def generate(self, L, ir):
+    def generate_snippets(self, L, ir):
         # Generate code snippets for each keyword found in templates
         snippets = {}
-        for kw in self.keywords:
+        for kw in self._keywords:
             # Try self.<keyword>(L, ir) if available, otherwise use ir[keyword]
             if hasattr(self, kw):
                 method = getattr(self, kw)
@@ -72,26 +72,72 @@ class ufc_generator(object):
                     error("Missing template keyword '%s' in ir for '%s'." % (kw, self.__class__.__name__))
             snippets[kw] = value
 
+        # Error checking (can detect some bugs early when changing the interface)
+        valueonly = {"classname"}
+        attrs = set(name for name in dir(self) if not name.startswith("_"))
+        base_attrs = set(name for name in dir(ufc_generator) if not name.startswith("_"))
+        base_attrs.add("generate_snippets")
+        base_attrs.add("generate")
+        unused = attrs - set(self._keywords) - base_attrs
+        missing = set(self._keywords) - attrs - valueonly
+        if unused:
+            warning("*** Unused generator functions:\n%s" % ('\n'.join(map(str,sorted(unused))),))
+        if missing:
+            warning("*** Missing generator functions:\n%s" % ('\n'.join(map(str,sorted(missing))),))
+
+        return snippets
+
+    def generate(self, L, ir):
         # Return composition of templates with generated snippets
-        h = self.header_template % snippets
-        cpp = self.implementation_template % snippets
+        snippets = self.generate_snippets(L, ir)
+        h = self._header_template % snippets
+        cpp = self._implementation_template % snippets
         return h, cpp
+
+    def members(self, L, ir):
+        "Override in classes that need members."
+        assert not ir.get("")
+        return "members"
+
+    def constructor(self, L, ir):
+        "Override in classes that need constructor."
+        assert not ir.get("constructor")
+        return ""
+
+    def constructor_arguments(self, L, ir):
+        "Override in classes that need constructor."
+        assert not ir.get("constructor_arguments")
+        return ""
+
+    def initializer_list(self, L, ir):
+        "Override in classes that need constructor."
+        assert not ir.get("")
+        return ""
+
+    def destructor(self, L, ir):
+        "Override in classes that need destructor."
+        assert not ir.get("destructor")
+        return ""
 
     def signature(self, L, ir):
         "Default implementation of returning signature string fetched from ir."
-        return L.Return(L.LiteralString(ir["signature"]))
+        value = ir["signature"]
+        return L.Return(L.LiteralString(value))
 
     def topological_dimension(self, L, ir):
         "Default implementation of returning topological dimension fetched from ir."
-        return L.Return(L.LiteralInt(ir["topological_dimension"]))
+        value = ir["topological_dimension"]
+        return L.Return(L.LiteralInt(value))
 
     def geometric_dimension(self, L, ir):
         "Default implementation of returning geometric dimension fetched from ir."
-        return L.Return(L.LiteralInt(ir["geometric_dimension"]))
+        value = ir["geometric_dimension"]
+        return L.Return(L.LiteralInt(value))
 
     def create(self, L, ir):
         "Default implementation of creating a new object of the same type."
-        return L.Return(L.New(ir["classname"]))
+        classname = ir["classname"]
+        return L.Return(L.New(classname))
 
 def add_ufc_form_integral_methods(cls):
     """This function generates methods on the class it decorates, for each integral type.
@@ -122,29 +168,24 @@ class ufc_form(ufc_generator):
     def __init__(self):
         ufc_generator.__init__(self, form_header, form_implementation)
 
-    def constructor(self, L, ir):
-        return ""
-
-    def destructor(self, L, ir):
-        return ""
-
     def num_coefficients(self, L, ir):
         value = ir["num_coefficients"]
-        return L.Return(value)
+        return L.Return(L.LiteralInt(value))
 
     def rank(self, L, ir):
         value = ir["rank"]
-        return L.Return(value)
+        return L.Return(L.LiteralInt(value))
 
-    def original_coefficient_position(self, L, ir):
+    # TODO: missing 's' in ufc signature:
+    def original_coefficient_position(self, L, ir): # FIXME: port this
         # Input args
         i = L.Symbol("i")
-        positions = ir["original_coefficient_position"] # FIXME: Sync with what ffc ir provides
+        positions = ir["original_coefficient_positions"]
         code = "FIXME"
         return code
 
     def create_coordinate_finite_element(self, L, ir):
-        classname = ir["create_coordinate_finite_element"] # FIXME: Sync with what ffc ir provides
+        classname = ir["create_coordinate_finite_element"] # FIXME: ffc provides element id, not classname
         return L.Return(L.New(classname))
         # TODO: Use factory functions instead, here and in all create_* functions:
         #classname = ir["coordinate_finite_element_classname"] # Not in FFC
@@ -152,40 +193,38 @@ class ufc_form(ufc_generator):
         #return L.Return(L.Call(factoryname))
 
     def create_coordinate_dofmap(self, L, ir):
-        classname = ir["create_coordinate_dofmap"] # FIXME: Sync with what ffc ir provides
+        classname = ir["create_coordinate_dofmap"] # FIXME: ffc provides element id, not classname
         return L.Return(L.New(classname))
 
     def create_finite_element(self, L, ir):
         i = L.Symbol("i")
-        classnames = ir["create_finite_element"] # FIXME: Sync with what ffc ir provides
+        classnames = ir["create_finite_element"] # FIXME: ffc provides element id, not classname
         return generate_return_new_switch(L, i, classnames)
 
     def create_dofmap(self, L, ir):
         i = L.Symbol("i")
-        classnames = ir["create_dofmap"] # FIXME: Sync with what ffc ir provides
+        classnames = ir["create_dofmap"] # FIXME: ffc provides element id, not classname
         return generate_return_new_switch(L, i, classnames)
 
     def _max_foo_subdomain_id(self, L, ir, integral_type, declname):
         "Return implementation of ufc::form::%(declname)s()."
-        value = ir[declname] # FIXME: Sync with what ffc ir provides
+        value = ir[declname]
         return L.Return(L.LiteralInt(value))
 
     def _has_foo_integrals(self, L, ir, integral_type, declname):
         "Return implementation of ufc::form::%(declname)s()."
-        value = ir[declname] # FIXME: Sync with what ffc ir provides
+        value = ir[declname]
         return L.Return(L.LiteralBool(value))
 
-    def _create_foo_integral(self, L, ir, integral_type, declname): # FIXME:
+    def _create_foo_integral(self, L, ir, integral_type, declname):
         "Return implementation of ufc::form::%(declname)s()."
         subdomain_id = L.Symbol("subdomain_id")
-        classnames = ir[declname] # FIXME: Sync with what ffc ir provides
-        print "In _create_foo_integral, or ", declname, "for ", integral_type, "classnames is ", classnames
+        classnames = ir[declname] # FIXME: ffc provides element id, not classname
         return generate_return_new_switch(L, subdomain_id, classnames)
 
     def _create_default_foo_integral(self, L, ir, integral_type, declname):
         "Return implementation of ufc::form::%(declname)s()."
-        classname = ir[declname] # FIXME: Sync with what ffc ir provides
-        print "In _create_default_foo_integral, or ", declname, "for ", integral_type, "classname is ", classname
+        classname = ir[declname] # FIXME: ffc provides element id, not classname
         if classname:
             return L.Return(L.New(classname))
         else:
@@ -332,8 +371,14 @@ class ufc_integral(ufc_generator):
         ufc_generator.__init__(self, integral_header, integral_implementation)
 
     def enabled_coefficients(self, L, ir):
-        enabled = ir["enabled_coefficients"] # FIXME: Sync with what ffc ir provides
-        code = "FIXME"
+        enabled_coefficients = ir["enabled_coefficients"]
+        initializer_list = ", ".join("true" if enabled else "false"
+                                     for enabled in enabled_coefficients)
+        code = L.StatementList([
+            # Cheating a bit with verbatim:
+            L.VerbatimStatement("static const std::vector<bool> enabled({%s});" % initializer_list),
+            L.Return(L.Symbol("enabled")),
+            ])
         return code
 
     def tabulate_tensor(self, L, ir):
@@ -359,7 +404,8 @@ class ufc_custom_integral(ufc_integral):
         ufc_integral.__init__(self, "custom")
 
     def num_cells(self, L, ir):
-        return L.Return(L.LiteralInt(ir["num_cells"]))
+        value = ir["num_cells"]
+        return L.Return(L.LiteralInt(value))
 
 class ufc_vertex_integral(ufc_integral):
     def __init__(self):
