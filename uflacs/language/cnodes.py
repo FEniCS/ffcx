@@ -29,7 +29,8 @@ from uflacs.language.precedence import PRECEDENCE
 - Memzero statement
 - Extend ArrayDecl and ArrayAccess with support for
   flattened but conceptually multidimensional arrays,
-  maybe even with padding
+  maybe even with padding (FlattenedArray possibly covers what we need)
+- ArrayDecl using std::array
 - Function declaration
 - TypeDef
 - Type
@@ -159,21 +160,81 @@ class CExprTerminal(CExpr):
 
 ############## CExprTerminal types
 
-class Literal(CExprTerminal):
+class CExprLiteral(CExprTerminal):
     "A float or int literal value."
     __slots__ = ("value",)
     precedence = PRECEDENCE.LITERAL
 
+class Null(CExprLiteral):
+    "A null pointer literal."
+    __slots__ = ("value",)
+    precedence = PRECEDENCE.LITERAL
+
+    def ce_format(self):
+        # C or old C++ version
+        #return "NULL"
+        # C++11 version
+        return "nullptr"
+
+    def __eq__(self, other):
+        return isinstance(other, Null)
+
+class LiteralFloat(CExprLiteral):
+    "A floating point literal value."
+    __slots__ = ("value",)
+    precedence = PRECEDENCE.LITERAL
+
     def __init__(self, value):
-        global number_types
-        assert isinstance(value, number_types)
+        assert isinstance(value, (float, int, numpy.number))
         self.value = value
 
     def ce_format(self):
-        return format_value(self.value)
+        return format_float(self.value)
 
     def __eq__(self, other):
-        return isinstance(other, Literal) and self.value == other.value
+        return isinstance(other, LiteralFloat) and self.value == other.value
+
+    def __nonzero__(self):
+        return bool(self.value)
+
+    def __float__(self):
+        return float(self.value)
+
+class LiteralInt(CExprLiteral):
+    "An integer literal value."
+    __slots__ = ("value",)
+    precedence = PRECEDENCE.LITERAL
+
+    def __init__(self, value):
+        assert isinstance(value, (int, numpy.number))
+        self.value = value
+
+    def ce_format(self):
+        return str(self.value)
+
+    def __eq__(self, other):
+        return isinstance(other, LiteralInt) and self.value == other.value
+
+    def __nonzero__(self):
+        return bool(self.value)
+
+    def __int__(self):
+        return int(self.value)
+
+class LiteralBool(CExprLiteral):
+    "A boolean literal value."
+    __slots__ = ("value",)
+    precedence = PRECEDENCE.LITERAL
+
+    def __init__(self, value):
+        assert isinstance(value, (bool,))
+        self.value = value
+
+    def ce_format(self):
+        return "true" if self.value else "false"
+
+    def __eq__(self, other):
+        return isinstance(other, LiteralBool) and self.value == other.value
 
     def __nonzero__(self):
         return bool(self.value)
@@ -181,14 +242,22 @@ class Literal(CExprTerminal):
     def __bool__(self):
         return bool(self.value)
 
-    def __int__(self):
-        return int(self.value)
+class LiteralString(CExprLiteral):
+    "A boolean literal value."
+    __slots__ = ("value",)
+    precedence = PRECEDENCE.LITERAL
 
-    def __float__(self):
-        return float(self.value)
+    def __init__(self, value):
+        assert isinstance(value, (str,))
+        assert '"' not in value
+        self.value = value
 
-    def __complex__(self):
-        return complex(self.value)
+    def ce_format(self):
+        return '"%s"' % (self.value,)
+
+    def __eq__(self, other):
+        return isinstance(other, LiteralString) and self.value == other.value
+
 
 class Symbol(CExprTerminal):
     "A named symbol."
@@ -215,6 +284,15 @@ class VerbatimExpr(CExprTerminal):
 
     def ce_format(self):
         return self.codestring
+
+class New(CExpr):
+    __slots__ = ("typename",)
+    def __init__(self, typename):
+        assert isinstance(typename, str)
+        self.typename = typename
+
+    def ce_format(self):
+        return "new %s()" % (self.typename,)
 
 
 ############## CExprOperator base classes
@@ -563,7 +641,7 @@ class ArrayAccess(CExprOperator):
         if isinstance(array, ArrayDecl):
             if len(self.indices) != len(array.sizes):
                 raise ValueError("Invalid number of indices.")
-            ints = (int,Literal)
+            ints = (int, LiteralInt)
             if any((isinstance(i, ints) and isinstance(d, ints) and int(i) >= int(d))
                    for i, d in zip(self.indices, array.sizes)):
                 raise ValueError("Index value >= array dimension.")
@@ -630,14 +708,14 @@ def as_cexpr(node):
     """
     global number_types
     if isinstance(node, CExpr):
-        # No-op
         return node
-    elif isinstance(node, number_types):
-        # Wrap literal number types
-        return Literal(node)
+    elif isinstance(node, (int, numpy.integer)):
+        return LiteralInt(node)
+    elif isinstance(node, (float, numpy.floating)):
+        return LiteralFloat(node)
     elif isinstance(node, str):
         # Treat string as a symbol
-        # TODO: Using VerbatimExpr would be another option?
+        # TODO: Using LiteralString or VerbatimExpr would be other options, is this too ambiguous?
         return Symbol(node)
     else:
         raise RuntimeError("Unexpected CExpr type %s:\n%s" % (type(node), str(node)))
@@ -879,7 +957,7 @@ def build_initializer_lists(values, sizes, level=0, formatter=format_value):
         return lines
 
 def _is_zero(values):
-    if isinstance(values, (int,float,Literal)):
+    if isinstance(values, (int, float, LiteralFloat, LiteralInt)):
         return float(values) == 0.0
     else:
         return numpy.count_nonzero(values) == 0
@@ -916,15 +994,22 @@ class ArrayDecl(CStatement):
         return ArrayAccess(self, indices)
 
     def cs_format(self):
+        # C style
         brackets = ''.join("[%d]" % n for n in self.sizes)
         decl = self.typename + " " + self.symbol.name + brackets
 
+        # C++11 style with std::array # TODO: Enable this, needs #include <array>
+        #typename = self.typename
+        #for dim in reversed(self.sizes):
+        #    typename = "std::array<%s, %s>" % (typename, dim)
+        #decl = "%s %s" % (typename, self.symbol.name)
+
         if self.values is None:
-            # No initial values
+            # Undefined initial values
             return decl + ";"
         elif _is_zero(self.values):
-            # By the standard, this initializes the entire array to bitwise 0
-            return decl + " = { 0 };"
+            # Zero initial values
+            return decl + " = {};"
         else:
             # Construct initializer lists for arbitrary multidimensional array values
             initializer_lists = build_initializer_lists(self.values, self.sizes)

@@ -60,20 +60,22 @@ def format_float(x):
 
 _ints = (int, numpy.integer)
 _floats = (float, numpy.floating)
-def format_value(snippets):
-    """Format a simple value.
+def format_value(value):
+    """Format a literal value as s tring.
 
-    - int or float: Formatted according to current configuration.
+    - float: Formatted according to current precision configuration.
 
-    - str: Used directly.
+    - int: Formatted as regular base 10 int literal.
+
+    - str: Wrapped in "quotes".
 
     """
     global _floats, _ints
-    if isinstance(snippets, _floats):
-        return format_float(float(snippets))
-    elif isinstance(snippets, _ints):
-        return str(int(snippets))
-    elif isinstance(snippets, str):
-        return snippets
+    if isinstance(value, _floats):
+        return format_float(float(value))
+    elif isinstance(value, _ints):
+        return str(int(value))
+    elif isinstance(value, str):
+        return '"' + value + '"'
     else:
-        raise RuntimeError("Unexpected type %s:\n%s" % (type(snippets), str(snippets)))
+        raise RuntimeError("Unexpected type %s:\n%s" % (type(value), str(value)))

@@ -21,6 +21,7 @@ packages = [
     "uflacs.representation",
     "uflacs.backends",
     "uflacs.backends.ffc",
+    "uflacs.backends.ufc",
     ]
 
 
