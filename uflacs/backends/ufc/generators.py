@@ -201,100 +201,118 @@ class ufc_dofmap(ufc_generator):
         nme = ir["needs_mesh_entities"]
         cases = [(L.LiteralInt(dim), L.Return(L.LiteralBool(need)))
                  for dim, need in enumerate(nme)]
-        return L.Switch(d, cases)
+        default = L.Return(L.LiteralBool(False))
+        return L.Switch(d, cases, default=default, autoscope=False, autobreak=False)
+
+    def global_dimension(self, L, ir): # FIXME: port this
+        value = ir["global_dimension"] # FIXME: This is not an int
+        code = "FIXME"
+        return code
 
     def num_element_dofs(self, L, ir):
         value = ir["num_element_dofs"]
         return L.Return(L.LiteralInt(value))
 
-    def num_entity_dofs(self, L, ir): # FIXME:
-        d = L.Symbol("d")
-        values = ir["num_entity_dofs"] # FIXME: Sync with what ffc ir provides
-        return L.Switch(d, [(i, L.Return(L.LiteralInt(value))) for i, value in enumerate(values)])
-
-    def num_facet_dofs(self, L, ir): # FIXME:
+    def num_facet_dofs(self, L, ir):
         value = ir["num_facet_dofs"]
-        return L.Return(L.LiteralInt(value)) # Switch?
+        return L.Return(L.LiteralInt(value))
 
-    def num_sub_dofmaps(self, L, ir): # FIXME:
+    def num_entity_dofs(self, L, ir):
+        d = L.Symbol("d")
+        values = ir["num_entity_dofs"]
+        cases = [(i, L.Return(L.LiteralInt(value))) for i, value in enumerate(values)]
+        default = L.Return(L.LiteralInt(0))
+        return L.Switch(d, cases, default=default)
+
+    def tabulate_dofs(self, L, ir): # FIXME: port this
+        code = "FIXME"
+        return code
+
+    def tabulate_facet_dofs(self, L, ir): # FIXME: port this
+        code = "FIXME"
+        return code
+
+    def tabulate_entity_dofs(self, L, ir): # FIXME: port this
+        code = "FIXME"
+        return code
+
+    def num_sub_dofmaps(self, L, ir):
         value = ir["num_sub_dofmaps"]
-        return L.Return(L.LiteralInt(value)) # Switch?
+        return L.Return(L.LiteralInt(value))
 
-    def create_sub_dofmap(self, L, ir): # FIXME:
+    def create_sub_dofmap(self, L, ir):
         i = L.Symbol("i")
-        classnames = ir["create_sub_dofmap"] # FIXME: Sync with what ffc ir provides
+        classnames = ir["create_sub_dofmap"] # FIXME: ffc provides element ids
         return generate_return_new_switch(L, i, classnames)
-
-    def tabulate_dofs(self, L, ir): # FIXME:
-        code = "FIXME"
-        return code
-
-    def tabulate_entity_dofs(self, L, ir): # FIXME:
-        code = "FIXME"
-        return code
-
-    def tabulate_facet_dofs(self, L, ir): # FIXME:
-        code = "FIXME"
-        return code
 
 
 class ufc_finite_element(ufc_generator):
     def __init__(self):
         ufc_generator.__init__(self, finite_element_header, finite_element_implementation)
 
+    def cell_shape(self, L, ir):
+        name = ir["cell_shape"]
+        return L.Return(L.Symbol(name))
+
+    def space_dimension(self, L, ir):
+        value = ir["space_dimension"]
+        return L.Return(L.LiteralInt(value))
+
     def value_rank(self, L, ir):
-        sh = ir["value_shape"]
+        sh = ir["value_dimension"]
         return L.Return(L.LiteralInt(len(sh)))
 
     def value_size(self, L, ir):
-        sh = ir["value_shape"]
+        sh = ir["value_dimension"]
         return L.Return(L.LiteralInt(product(sh)))
 
     def value_dimension(self, L, ir):
         i = L.Symbol("i")
-        sh = ir["value_shape"]
+        sh = ir["value_dimension"]
         cases = [(L.LiteralInt(j), L.Return(L.LiteralInt(k))) for j, k in enumerate(sh)]
-        return L.Switch(i, cases)
+        default = L.Return(L.LiteralInt(0))
+        return L.Switch(i, cases, default=default, autoscope=False, autobreak=False)
 
     def reference_value_rank(self, L, ir):
-        sh = ir["reference_value_shape"]
+        sh = ir["reference_value_dimension"]
         return L.Return(L.LiteralInt(len(sh)))
 
     def reference_value_size(self, L, ir):
-        sh = ir["reference_value_shape"]
+        sh = ir["reference_value_dimension"]
         return L.Return(L.LiteralInt(product(sh)))
 
     def reference_value_dimension(self, L, ir):
         i = L.Symbol("i")
-        sh = ir["reference_value_shape"]
+        sh = ir["reference_value_dimension"]
         cases = [(L.LiteralInt(j), L.Return(L.LiteralInt(k))) for j, k in enumerate(sh)]
-        return L.Switch(i, cases)
+        default = L.Return(L.LiteralInt(0))
+        return L.Switch(i, cases, default=default, autoscope=False, autobreak=False)
 
-    def tabulate_dof_coordinates(self, L, ir): # FIXME:
+    def evaluate_basis(self, L, ir): # FIXME: port this
+        return "FIXME" + ir["evaluate_basis"]
+
+    def evaluate_basis_derivatives(self, L, ir): # FIXME: port this
+        return "FIXME" + ir["evaluate_basis_derivatives"]
+
+    def evaluate_basis_all(self, L, ir): # FIXME: port this
+        return "FIXME" + ir["evaluate_basis_all"]
+
+    def evaluate_basis_derivatives_all(self, L, ir): # FIXME: port this
+        return "FIXME" + ir["evaluate_basis_derivatives_all"]
+
+    def evaluate_dof(self, L, ir): # FIXME: port this
+        return "FIXME" + ir["evaluate_dof"]
+
+    def evaluate_dofs(self, L, ir): # FIXME: port this
+        return "FIXME" + ir["evaluate_dofs"]
+
+    def interpolate_vertex_values(self, L, ir): # FIXME: port this
+        return "FIXME" + ir["interpolate_vertex_values"]
+
+    def tabulate_dof_coordinates(self, L, ir): # FIXME: port this
         coords = ir["tabulate_dof_coordinates"]
         code = "FIXME" + str(coords)
         return code
-
-    def evaluate_basis(self, L, ir): # FIXME:
-        return "FIXME" + ir["evaluate_basis"]
-
-    def evaluate_basis_derivatives(self, L, ir): # FIXME:
-        return "FIXME" + ir["evaluate_basis_derivatives"]
-
-    def evaluate_basis_all(self, L, ir): # FIXME:
-        return "FIXME" + ir["evaluate_basis_all"]
-
-    def evaluate_basis_derivatives_all(self, L, ir): # FIXME:
-        return "FIXME" + ir["evaluate_basis_derivatives_all"]
-
-    def evaluate_dof(self, L, ir): # FIXME:
-        return "FIXME" + ir["evaluate_dof"]
-
-    def evaluate_dofs(self, L, ir): # FIXME:
-        return "FIXME" + ir["evaluate_dofs"]
-
-    def interpolate_vertex_values(self, L, ir): # FIXME:
-        return "FIXME" + ir["interpolate_vertex_values"]
 
     def num_sub_elements(self, L, ir):
         n = ir["num_sub_elements"]
@@ -302,7 +320,7 @@ class ufc_finite_element(ufc_generator):
 
     def create_sub_element(self, L, ir):
         i = L.Symbol("i")
-        classnames = ir["create_sub_element"] # FIXME: Sync with what ffc ir provides
+        classnames = ir["create_sub_element"] # FIXME: ffc provides element ids
         return generate_return_new_switch(L, i, classnames)
 
 
