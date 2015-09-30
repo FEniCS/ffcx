@@ -38,6 +38,7 @@ def basic_class_properties(classname):
         "initializer_list": "",
         "destructor": "",
         "members": "",
+        "preamble": "",
         }
     return ir
 
@@ -128,8 +129,25 @@ def mock_integral_ir():
         })
     return ir
 
+def mock_domain_ir():
+    ir = basic_class_properties("mock_domain_classname")
+    ir.update({
+        "signature": "mock_domain_signature",
+        "cell_shape": "mock_cell_shape",
+        "geometric_dimension": 3,
+        "topological_dimension": 2,
+        "create_coordinate_finite_element": "mock_coordinate_finite_element_classname",
+        "create_coordinate_dofmap": "mock_coordinate_dofmap_classname",
+        })
+    return ir
 
 
+
+
+def compile_mock_domain():
+    ir = mock_domain_ir()
+    gen = ufc_domain()
+    return gen.generate(L, ir)
 
 def compile_mock_form():
     ir = mock_form_ir()
@@ -156,6 +174,11 @@ def compile_mock_all():
     mocks += [compile_mock_form(), compile_mock_dofmap(), compile_mock_finite_element()]
     return '\n\n'.join(mocks)
 
+
+def test_mock_domain():
+    h, cpp = compile_mock_domain()
+    print h
+    print cpp
 
 def test_mock_form():
     h, cpp = compile_mock_form()

@@ -59,7 +59,7 @@ class %(classname)s
   /// Compute physical coordinates x from reference coordinates X, the inverse of compute_reference_coordinates
   %(pre)svoid compute_physical_coordinates(
       double * x, std::size_t num_points,
-      const double * X, const double * K,
+      const double * X,
       const double * coordinate_dofs, int cell_orientation) const %(post)s
 %(compute_physical_coordinates)s
   /// Compute reference coordinates X from physical coordinates x, the inverse of compute_physical_coordinates

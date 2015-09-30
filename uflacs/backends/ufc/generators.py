@@ -96,10 +96,15 @@ class ufc_generator(object):
         cpp = self._implementation_template % snippets
         return h, cpp
 
+    def preamble(self, L, ir):
+        "Override in classes that need additional declarations inside class."
+        assert not ir.get("preamble")
+        return ""
+
     def members(self, L, ir):
         "Override in classes that need members."
-        assert not ir.get("")
-        return "members"
+        assert not ir.get("members")
+        return ""
 
     def constructor(self, L, ir):
         "Override in classes that need constructor."
@@ -126,6 +131,11 @@ class ufc_generator(object):
         value = ir["signature"]
         return L.Return(L.LiteralString(value))
 
+    def create(self, L, ir):
+        "Default implementation of creating a new object of the same type."
+        classname = ir["classname"]
+        return L.Return(L.New(classname))
+
     def topological_dimension(self, L, ir):
         "Default implementation of returning topological dimension fetched from ir."
         value = ir["topological_dimension"]
@@ -135,11 +145,6 @@ class ufc_generator(object):
         "Default implementation of returning geometric dimension fetched from ir."
         value = ir["geometric_dimension"]
         return L.Return(L.LiteralInt(value))
-
-    def create(self, L, ir):
-        "Default implementation of creating a new object of the same type."
-        classname = ir["classname"]
-        return L.Return(L.New(classname))
 
 def add_ufc_form_integral_methods(cls):
     """This function generates methods on the class it decorates, for each integral type.
@@ -412,3 +417,210 @@ class ufc_custom_integral(ufc_integral):
 class ufc_vertex_integral(ufc_integral):
     def __init__(self):
         ufc_integral.__init__(self, "vertex")
+
+
+def flat_array(L, name, dims):
+    return L.FlattenedArray(L.Symbol(name), dims=dims)
+
+class ufc_domain(ufc_generator):
+    def __init__(self):
+        ufc_generator.__init__(self, "", domain_implementation)
+
+    def cell_shape(self, L, ir):
+        name = ir["cell_shape"]
+        return L.Return(L.Symbol(name))
+
+    def topological_dimension(self, L, ir):
+        "Default implementation of returning topological dimension fetched from ir."
+        value = ir["topological_dimension"]
+        return L.Return(L.LiteralInt(value))
+
+    def geometric_dimension(self, L, ir):
+        "Default implementation of returning geometric dimension fetched from ir."
+        value = ir["geometric_dimension"]
+        return L.Return(L.LiteralInt(value))
+
+    def create_coordinate_finite_element(self, L, ir):
+        classname = ir["create_coordinate_finite_element"] # FIXME: ffc passes class id not name
+        return L.Return(L.New(classname))
+
+    def create_coordinate_dofmap(self, L, ir):
+        classname = ir["create_coordinate_dofmap"] # FIXME: ffc passes class id not name
+        return L.Return(L.New(classname))
+
+    def compute_physical_coordinates(self, L, ir):
+        # Dimensions
+        gdim = ir["geometric_dimension"]
+        tdim = ir["topological_dimension"]
+        num_points = L.Symbol("num_points")
+
+        # Loop indices
+        ip = L.Symbol("ip")
+        i = L.Symbol("i")
+        j = L.Symbol("j")
+
+        # Input cell data
+        coordinate_dofs = L.Symbol("coordinate_dofs")
+        cell_orientation = L.Symbol("cell_orientation")
+
+        # Output geometry
+        x = flat_array(L, "x", (num_points, gdim))[ip]
+
+        # Input geometry
+        X = flat_array(L, "X", (num_points, tdim))[ip]
+
+        # Assign to x[ip][i]
+        body = L.Assign(x[i], 0) # FIXME:
+
+        # Carry out for each component i
+        body = L.ForRange(i, 0, gdim, body=body)
+
+        # Carry out for all points
+        return L.ForRange(ip, 0, num_points, body=body)
+
+    def compute_reference_coordinates(self, L, ir):
+        # Dimensions
+        gdim = ir["geometric_dimension"]
+        tdim = ir["topological_dimension"]
+        num_points = L.Symbol("num_points")
+
+        # Loop indices
+        ip = L.Symbol("ip")
+        i = L.Symbol("i")
+        j = L.Symbol("j")
+
+        # Input cell data
+        coordinate_dofs = L.Symbol("coordinate_dofs")
+        cell_orientation = L.Symbol("cell_orientation")
+
+        # Output geometry
+        X = flat_array(L, "X", (num_points, tdim))[ip]
+
+        # Input geometry
+        x = flat_array(L, "x", (num_points, gdim))[ip]
+
+        # Assign to X[j]
+        body = L.Assign(X[j], 0) # FIXME:
+
+        # Carry out for each component j
+        body = L.ForRange(j, 0, tdim, body=body)
+
+        # Carry out for all points
+        return L.ForRange(ip, 0, num_points, body=body)
+
+    def compute_jacobians(self, L, ir):
+        # Dimensions
+        gdim = ir["geometric_dimension"]
+        tdim = ir["topological_dimension"]
+        num_points = L.Symbol("num_points")
+
+        # Loop indices
+        ip = L.Symbol("ip")
+        i = L.Symbol("i")
+        j = L.Symbol("j")
+
+        # Input cell data
+        coordinate_dofs = L.Symbol("coordinate_dofs")
+        cell_orientation = L.Symbol("cell_orientation")
+
+        # Output geometry
+        J = flat_array(L, "J", (num_points, gdim, tdim))[ip]
+
+        # Input geometry
+        X = flat_array(L, "X", (num_points, tdim))[ip]
+
+        # Assign to J[i][j]
+        body = L.Assign(J[i][j], 0) # FIXME:
+
+        # Carry out for each component i,j
+        body = L.ForRange(j, 0, tdim, body=body)
+        body = L.ForRange(i, 0, gdim, body=body)
+
+        # Carry out for all points
+        return L.ForRange(ip, 0, num_points, body=body)
+
+    def compute_jacobian_determinants(self, L, ir):
+        # Dimensions
+        gdim = ir["geometric_dimension"]
+        tdim = ir["topological_dimension"]
+        num_points = L.Symbol("num_points")
+
+        # Loop indices
+        ip = L.Symbol("ip")
+        i = L.Symbol("i")
+        j = L.Symbol("j")
+
+        # Output geometry
+        detJ = L.Symbol("detJ")[ip]
+
+        # Input geometry
+        J = flat_array(L, "J", (num_points, gdim, tdim))[ip]
+
+        # Assign to detJ
+        body = L.Assign(detJ, 0) # FIXME:
+
+        # Carry out for all points
+        return L.ForRange(ip, 0, num_points, body=body)
+
+    def compute_jacobian_inverses(self, L, ir):
+        # Dimensions
+        gdim = ir["geometric_dimension"]
+        tdim = ir["topological_dimension"]
+        num_points = L.Symbol("num_points")
+
+        # Loop indices
+        ip = L.Symbol("ip")
+        i = L.Symbol("i")
+        j = L.Symbol("j")
+
+        # Input cell data
+        coordinate_dofs = L.Symbol("coordinate_dofs")
+        cell_orientation = L.Symbol("cell_orientation")
+
+        # Output geometry
+        print("Declaring K")
+        K = flat_array(L, "K", (num_points, tdim, gdim))[ip]
+        print("Done declaring K")
+
+        # Input geometry
+        J = flat_array(L, "J", (num_points, gdim, tdim))[ip]
+        detJ = L.Symbol("detJ")[ip]
+
+        # Assign to K[j][i]
+        body = L.Assign(K[j][i], 0) # FIXME:
+
+        # Carry out for each component j,i
+        body = L.ForRange(i, 0, gdim, body=body)
+        body = L.ForRange(j, 0, tdim, body=body)
+
+        # Carry out for all points
+        return L.ForRange(ip, 0, num_points, body=body)
+
+    def compute_geometry(self, L, ir):
+        # Output geometry
+        x = L.Symbol("x")
+        J = L.Symbol("J")
+        detJ = L.Symbol("detJ")
+        K = L.Symbol("K")
+
+        # Dimensions
+        num_points = L.Symbol("num_points")
+
+        # Input geometry
+        X = L.Symbol("X")
+
+        # Input cell data
+        coordinate_dofs = L.Symbol("coordinate_dofs")
+        cell_orientation = L.Symbol("cell_orientation")
+
+        # All arguments
+        args = (x, J, detJ, K, num_points, X, coordinate_dofs, cell_orientation)
+
+        # Just chain calls to other functions here
+        code = [
+            L.Call("compute_physical_coordinates", (x, num_points, X, coordinate_dofs, cell_orientation)),
+            L.Call("compute_jacobians", (J, num_points, X, coordinate_dofs, cell_orientation)),
+            L.Call("compute_jacobian_determinants", (detJ, num_points, J)),
+            L.Call("compute_jacobian_inverses", (K, num_points, J, detJ)),
+            ]
+        return L.StatementList(code)

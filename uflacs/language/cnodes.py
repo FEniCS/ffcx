@@ -581,7 +581,9 @@ class AssignBitOr(AssignOp):
 class FlattenedArray(object):
     """Syntax carrying object only, will get translated on __getitem__ to ArrayAccess."""
     __slots__ = ("array", "strides", "offset")
-    def __init__(self, array, strides, offset=None):
+    def __init__(self, array, dummy=None, dims=None, strides=None, offset=None):
+        assert dummy is None, "Please use keyword arguments for strides or dims."
+
         # Typecheck array argument
         if isinstance(array, ArrayDecl):
             self.array = array.symbol
@@ -591,10 +593,30 @@ class FlattenedArray(object):
             assert isinstance(array, str)
             self.array = Symbol(array)
 
-        # Allow expressions or literals as strides and offset
-        if not isinstance(strides, (list, tuple)):
-            strides = (strides,)
-        self.strides = tuple(as_cexpr(i) for i in strides)
+        # Allow expressions or literals as strides or dims and offset
+        if strides is None:
+            assert dims is not None, "Please provide either strides or dims."
+            assert isinstance(dims, (list, tuple))
+            print("dims =", list(map(str,dims)), list(map(type,dims)))
+            dims = tuple(as_cexpr(i) for i in dims)
+            print("dims =", list(map(str,dims)), list(map(type,dims)))
+            n = len(dims)
+            literal_one = LiteralInt(1)
+            strides = [literal_one]*n
+            for i in range(n-2, -1, -1):
+                s = strides[i+1]
+                d = dims[i+1]
+                if d == literal_one:
+                    strides[i] = s
+                elif s == literal_one:
+                    strides[i] = d
+                else:
+                    strides[i] = s * d
+            print("strides =", list(map(str,strides)), list(map(type,strides)))
+        else:
+            assert isinstance(strides, (list, tuple))
+            strides = tuple(as_cexpr(i) for i in strides)
+        self.strides = strides
         self.offset = None if offset is None else as_cexpr(offset)
 
     def __getitem__(self, indices):
@@ -602,16 +624,23 @@ class FlattenedArray(object):
             indices = (indices,)
         n = len(indices)
         i, s = (indices[0], self.strides[0])
+        literal_one = LiteralInt(1)
         if self.offset is None:
-            flat = i*s
+            if s == literal_one:
+                flat = i
+            else:
+                flat = i*s
         else:
-            flat = self.offset + i*s
+            if s == literal_one:
+                flat = self.offset + i
+            else:
+                flat = self.offset + i*s
         for i, s in zip(indices[1:n], self.strides[1:n]):
             flat = flat + i*s
         if n == len(self.strides):
             return ArrayAccess(self.array, flat)
         else:
-            return FlattenedArray(self.array, self.strides[n:], offset=flat)
+            return FlattenedArray(self.array, strides=self.strides[n:], offset=flat)
 
 
 class ArrayAccess(CExprOperator):
@@ -681,6 +710,7 @@ class Conditional(CExprOperator):
 class Call(CExprOperator):
     __slots__ = ("function", "arguments")
     precedence = PRECEDENCE.CALL
+    sideeffect = True
 
     def __init__(self, function, arguments=None):
         # Note: This will wrap a str as a Symbol
