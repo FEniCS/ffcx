@@ -20,7 +20,7 @@ from __future__ import print_function # used in some debugging
 
 import numpy
 
-from uflacs.language.format_value import format_value
+from uflacs.language.format_value import format_value, format_float
 from uflacs.language.format_lines import format_indented_lines, Indented
 from uflacs.language.precedence import PRECEDENCE
 
@@ -597,9 +597,7 @@ class FlattenedArray(object):
         if strides is None:
             assert dims is not None, "Please provide either strides or dims."
             assert isinstance(dims, (list, tuple))
-            print("dims =", list(map(str,dims)), list(map(type,dims)))
             dims = tuple(as_cexpr(i) for i in dims)
-            print("dims =", list(map(str,dims)), list(map(type,dims)))
             n = len(dims)
             literal_one = LiteralInt(1)
             strides = [literal_one]*n
@@ -611,8 +609,7 @@ class FlattenedArray(object):
                 elif s == literal_one:
                     strides[i] = d
                 else:
-                    strides[i] = s * d
-            print("strides =", list(map(str,strides)), list(map(type,strides)))
+                    strides[i] = d * s
         else:
             assert isinstance(strides, (list, tuple))
             strides = tuple(as_cexpr(i) for i in strides)
@@ -629,12 +626,12 @@ class FlattenedArray(object):
             if s == literal_one:
                 flat = i
             else:
-                flat = i*s
+                flat = s * i
         else:
             if s == literal_one:
                 flat = self.offset + i
             else:
-                flat = self.offset + i*s
+                flat = self.offset + s * i
         for i, s in zip(indices[1:n], self.strides[1:n]):
             flat = flat + i*s
         if n == len(self.strides):

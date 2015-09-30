@@ -134,7 +134,7 @@ def mock_domain_ir():
     ir.update({
         "signature": "mock_domain_signature",
         "cell_shape": "mock_cell_shape",
-        "geometric_dimension": 3,
+        "geometric_dimension": 2,
         "topological_dimension": 2,
         "create_coordinate_finite_element": "mock_coordinate_finite_element_classname",
         "create_coordinate_dofmap": "mock_coordinate_dofmap_classname",
