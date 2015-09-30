@@ -8,6 +8,7 @@ from ffc.log import error, warning
 from ffc.backends.ufc import *
 
 from uflacs.language.format_lines import format_indented_lines
+from uflacs.backends.ufc.templates import *
 
 #__all__ = (["ufc_form", "ufc_dofmap", "ufc_finite_element", "ufc_integral"]
 #           + ["ufc_%s_integral" % integral_type for integral_type in integral_types])
@@ -36,6 +37,7 @@ def generate_return_new_switch(L, i, classnames):
         code = []
     code.append(L.Return(L.Null()))
     return L.StatementList(code)
+
 
 class ufc_generator(object):
     """Common functionality for code generators producing ufc classes.
