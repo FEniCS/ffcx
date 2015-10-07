@@ -112,11 +112,11 @@ def test_format_variable_decl():
     assert str(code) == expected
 
 def test_literal_cexpr_value_conversion():
-    assert bool(Literal(1)) == True
-    assert bool(Literal(0)) == False
-    assert int(Literal(2)) == 2
-    assert float(Literal(2.0)) == 2.0
-    assert complex(Literal(2.0+4.0j)) == 2.0+4.0j
+    assert bool(LiteralBool(True)) == True
+    assert bool(LiteralBool(False)) == False
+    assert int(LiteralInt(2)) == 2
+    assert float(LiteralFloat(2.0)) == 2.0
+    #assert complex(LiteralFloat(2.0+4.0j)) == 2.0+4.0j
 
 def test_format_array_decl():
     expected = "double foo[3];"
@@ -163,8 +163,6 @@ def test_format_array_def():
     expected = "double foo[3] = { 1.0, 2.0, 3.0 };"
     code = ArrayDecl("double", "foo", 3, [1.0, 2.0, 3.0])
     assert str(code) == expected
-    code = ArrayDecl("double", "foo", (3,), ["1.0", 2.0, "3.0"])
-    assert str(code) == expected
 
     expected = """double foo[2][3] =
     { { 1.0, 2.0, 3.0 },
@@ -182,13 +180,13 @@ def test_format_array_def():
     assert str(code) == expected
 
 def test_format_array_def_zero():
-    expected = "double foo[3] = { 0 };"
+    expected = "double foo[3] = {};"
     code = ArrayDecl("double", "foo", 3, [0.0, 0.0, 0.0])
     assert str(code) == expected
     code = ArrayDecl("double", "foo", (3,), [0.0, 0.0, 0.0])
     assert str(code) == expected
 
-    expected = "double foo[2][3] = { 0 };"
+    expected = "double foo[2][3] = {};"
     code = ArrayDecl("double", "foo", (2, 3), [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
     assert str(code) == expected
 
@@ -242,12 +240,12 @@ def test_for_loop():
     assert actual == expected
 
 def test_for_range():
-    code = ForRange("i", "0", "3", [])
+    code = ForRange("i", 0, 3, [])
     actual = str(code)
     expected = "for (int i = 0; i < 3; ++i)\n{\n}"
     assert actual == expected
 
-    code = ForRange("i", "0", "3", body=["ting;", "tang;"])
+    code = ForRange("i", 0, 3, body=["ting;", "tang;"])
     actual = str(code)
     expected = "for (int i = 0; i < 3; ++i)\n{\n    ting;\n    tang;\n}"
     assert actual == expected

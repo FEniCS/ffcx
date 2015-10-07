@@ -622,18 +622,13 @@ class FlattenedArray(object):
         n = len(indices)
         i, s = (indices[0], self.strides[0])
         literal_one = LiteralInt(1)
-        if self.offset is None:
-            if s == literal_one:
-                flat = i
-            else:
-                flat = s * i
-        else:
-            if s == literal_one:
-                flat = self.offset + i
-            else:
-                flat = self.offset + s * i
+
+        flat = (i if s == literal_one else s * i)
+        if self.offset is not None:
+            flat = self.offset + flat
         for i, s in zip(indices[1:n], self.strides[1:n]):
-            flat = flat + i*s
+            flat = flat + (i if s == literal_one else s * i)
+
         if n == len(self.strides):
             return ArrayAccess(self.array, flat)
         else:
@@ -935,7 +930,7 @@ class VariableDecl(CStatement):
             code += " = " + self.value.ce_format()
         return code + ";"
 
-def build_1d_initializer_list(values, formatter=format_value):
+def build_1d_initializer_list(values, formatter=str):
     '''Return a list containing a single line formatted like "{ 0.0, 1.0, 2.0 }"'''
     tokens = ["{ "]
     if numpy.product(values.shape) > 0:
@@ -948,7 +943,7 @@ def build_1d_initializer_list(values, formatter=format_value):
     tokens += " }"
     return "".join(tokens)
 
-def build_initializer_lists(values, sizes, level=0, formatter=format_value):
+def build_initializer_lists(values, sizes, level=0, formatter=str):
     """Return a list of lines with initializer lists for a multidimensional array.
 
     Example output:

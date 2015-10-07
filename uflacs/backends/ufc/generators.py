@@ -424,6 +424,13 @@ class ufc_vertex_integral(ufc_integral):
 def flat_array(L, name, dims):
     return L.FlattenedArray(L.Symbol(name), dims=dims)
 
+def flat_array_decl(L, name, dims, values=None, dtype="double"):
+    size = product(dims)
+    s = L.Symbol(name)
+    decl = L.ArrayDecl(dtype, s, size, values=values)
+    arr = L.FlattenedArray(decl, dims=dims)
+    return decl, arr
+
 
 ### Inline math expressions:
 
@@ -563,29 +570,115 @@ class ufc_domain(ufc_generator):
         tdim = ir["topological_dimension"]
         num_points = L.Symbol("num_points")
 
+        # Computing table one point at a time instead of using
+        # num_points will allow skipping dynamic allocation
+        one_point = 1
+
         # Loop indices
-        ip = L.Symbol("ip")
-        i = L.Symbol("i")
-        j = L.Symbol("j")
+        ip = L.Symbol("ip") # point
+        i = L.Symbol("i")   # gdim
+        j = L.Symbol("j")   # tdim
+        k = L.Symbol("k")   # iteration
 
         # Input cell data
         coordinate_dofs = L.Symbol("coordinate_dofs")
         cell_orientation = L.Symbol("cell_orientation")
 
         # Output geometry
-        X = flat_array(L, "X", (num_points, tdim))[ip]
+        X = flat_array(L, "X", (num_points, tdim))
 
         # Input geometry
-        x = flat_array(L, "x", (num_points, gdim))[ip]
+        x = flat_array(L, "x", (num_points, gdim))
 
-        # Assign to X[j]
-        body = L.Assign(X[j], 0) # FIXME: Newton loop to invert x(X)
+        # Find X=Xk such that xk(Xk) = x or F(Xk) = xk(Xk) - x = 0.
+        # Newtons method is then:
+        #   X0 = cell midpoint
+        #   dF/dX dX = -F
+        #   Xk = Xk + dX
+        # Note that
+        #   dF/dX = dx/dX = J
+        # giving
+        #   inverse(dF/dX) = K
+        # such that dX = -K*(xk(Xk) - x)
 
-        # Carry out for each component j
-        body = L.ForRange(j, 0, tdim, body=body)
+        # TODO: Implement:
+        # Newtons method is then:
+        # for each ip:
+        #   xgoal = x[ip]
+        #   X0 = cell midpoint
+        #   until convergence:
+        #       K = K(Xk)
+        #       dX = K*(xk(Xk) - x)
+        #       Xk -= dX
+        #   X[ip] = Xk
+
+        # TODO: Use cell midpoint instead of 0.0.
+        initial_X_value = 0.0
+
+        # Intermediate arrays declared in point loop
+        Xk = L.Symbol("Xk")
+        Xk_decl = L.ArrayDecl("double", Xk, (tdim,), values=initial_X_value)
+        xgoal = L.Symbol("xgoal")
+        xgoal_decl = L.ArrayDecl("double", xgoal, (gdim,), values=[x[ip][iv] for iv in range(gdim)])
+
+        # Intermediate arrays declared in newton loop
+        dX = L.Symbol("dX")
+        dX_decl = L.ArrayDecl("double", dX, (tdim,), values=0.0) # Initialized to zero here!
+
+        # Intermediate arrays to hold results of compute_geometry call
+        xk = L.Symbol("xk")
+        J = L.Symbol("J")
+        detJ = L.Symbol("detJ")
+        K = L.Symbol("K")
+        xk_decl = L.ArrayDecl("double", xk, (gdim,))
+        J_decl = L.ArrayDecl("double", J, (gdim*tdim,))
+        detJ_decl = L.ArrayDecl("double", detJ, (1,))
+        K_decl = L.ArrayDecl("double", K, (tdim*gdim,))
+
+        # Compute K = J^-1 for one point (J and detJ are only used as
+        # intermediate storage inside compute_geometry, not used out here)
+        comp_geom = L.Call("compute_geometry",
+                           (xk, J, detJ, K, one_point, Xk, coordinate_dofs, cell_orientation))
+
+        # Compute dX[j] = sum_i K_ji * (x(Xk)_i - x_i)
+        K = L.FlattenedArray(K, dims=(tdim, gdim))
+        comp_dX = L.ForRange(j, 0, tdim, body=
+                             L.ForRange(i, 0, gdim, body=
+                                        L.AssignAdd(dX[j], K[j,i]*(xk[i] - xgoal[i]))))
+
+        # Update Xk -= dX
+        update_Xk = L.ForRange(j, 0, tdim, body=L.AssignSub(Xk[j], dX[j]))
+
+        newton_body = [
+            xk_decl, J_decl, detJ_decl, K_decl,
+            comp_geom,
+            dX_decl,
+            comp_dX,
+            update_Xk
+            ]
+
+        # declare xgoal = x[ip]
+        # declare Xk = initial value
+        newton_init = [
+            xgoal_decl,
+            Xk_decl,
+            ]
+
+        # Loop until convergence
+        # TODO: Test convergence criteria
+        num_iter = 3
+        newton_loop = L.ForRange(k, 0, num_iter, body=newton_body)
+
+        # X[ip] = Xk
+        newton_finish = [
+            L.ForRange(j, 0, tdim, body=L.Assign(X[ip][j], Xk[j]))
+            ]
+
+        # Join pieces
+        code = L.StatementList([newton_init, newton_loop, newton_finish])
 
         # Carry out for all points
-        return L.ForRange(ip, 0, num_points, body=body)
+        return L.ForRange(ip, 0, num_points, body=code)
 
     def compute_jacobians(self, L, ir):
         # FIXME: Get data for scalar coordinate subelement:

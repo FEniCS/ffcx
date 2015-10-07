@@ -29,10 +29,10 @@ def test_cnode_expressions():
     B = Symbol("B")
 
     # Literals
-    assert str(Literal(123)) == "123"
-    assert str(Literal(0.0)) == "0.0"
-    assert str(Literal(1.0)) == "1.0"
-    assert str(Literal(12.3)) == "12.3" #1.23e+01"
+    assert str(LiteralInt(123)) == "123"
+    assert str(LiteralFloat(0.0)) == "0.0"
+    assert str(LiteralFloat(1.0)) == "1.0"
+    assert str(LiteralFloat(12.3)) == "12.3" #1.23e+01"
 
     # Variables
     # TODO: VariableAccess
@@ -47,13 +47,13 @@ def test_cnode_expressions():
     # FlattenedArray
     n = Symbol("n")
     decl = ArrayDecl("double", A, (4,))
-    assert str(FlattenedArray(decl, (2,), 3)[0]) == "A[3 + 0 * 2]"
-    assert str(FlattenedArray(decl, (2,))[0]) == "A[0 * 2]"
+    assert str(FlattenedArray(decl, strides=(2,), offset=3)[0]) == "A[3 + 2 * 0]"
+    assert str(FlattenedArray(decl, strides=(2,))[0]) == "A[2 * 0]"
     decl = ArrayDecl("double", A, (2,3,4))
-    flattened = FlattenedArray(decl, (7,8*n,n-1))
-    assert str(flattened[0,n,n*7]) == "A[0 * 7 + n * (8 * n) + n * 7 * (n - 1)]"
-    assert str(flattened[0,n][n*7]) == "A[0 * 7 + n * (8 * n) + n * 7 * (n - 1)]"
-    assert str(flattened[0][n][n*7]) == "A[0 * 7 + n * (8 * n) + n * 7 * (n - 1)]"
+    flattened = FlattenedArray(decl, strides=(7,8*n,n-1))
+    assert str(flattened[0,n,n*7]) == "A[7 * 0 + 8 * n * n + (n - 1) * (n * 7)]"
+    assert str(flattened[0,n][n*7]) == "A[7 * 0 + 8 * n * n + (n - 1) * (n * 7)]"
+    assert str(flattened[0][n][n*7]) == "A[7 * 0 + 8 * n * n + (n - 1) * (n * 7)]"
 
     # Unary operators
     assert str(Pos(1)) == "+1"
