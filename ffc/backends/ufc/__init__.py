@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Code generation format strings for UFC (Unified Form-assembly Code) v. 1.7.0dev
 
 Three format strings are defined for each of the following UFC classes:
@@ -5,6 +6,7 @@ Three format strings are defined for each of the following UFC classes:
     function
     finite_element
     dofmap
+    domain
     cell_integral
     exterior_facet_integral
     interior_facet_integral
@@ -27,17 +29,18 @@ For more information about UFC and the FEniCS Project, visit
 
 """
 
-# -*- coding: utf-8 -*-
-__author__  = "Martin Sandve Alnaes, Anders Logg, Kent-Andre Mardal, Ola Skavhaug, and Hans Petter Langtangen"
-__date__    = "2015-07-28"
+__author__  = "Martin Sandve Alnæs, Anders Logg, Kent-Andre Mardal, Ola Skavhaug, and Hans Petter Langtangen"
+__date__    = "2015-10-07"
 __version__ = "1.7.0dev"
 __license__ = "This code is released into the public domain"
 
 from .function import *
 from .finite_element import *
 from .dofmap import *
+from .domain import *
 from .integrals import *
 from .form import *
+from .factory import *
 from .build import build_ufc_module
 
 templates = {"function_header":                          function_header,
@@ -49,6 +52,9 @@ templates = {"function_header":                          function_header,
              "dofmap_header":                            dofmap_header,
              "dofmap_implementation":                    dofmap_implementation,
              "dofmap_combined":                          dofmap_combined,
+             "domain_header":                            domain_header,
+             "domain_implementation":                    domain_implementation,
+             "domain_combined":                          domain_combined,
              "cell_integral_header":                     cell_integral_header,
              "cell_integral_implementation":             cell_integral_implementation,
              "cell_integral_combined":                   cell_integral_combined,
@@ -66,4 +72,7 @@ templates = {"function_header":                          function_header,
              "custom_integral_combined":                 custom_integral_combined,
              "form_header":                              form_header,
              "form_implementation":                      form_implementation,
-             "form_combined":                            form_combined}
+             "form_combined":                            form_combined,
+             "factory_header":                           factory_header,
+             "factory_implementation":                   factory_implementation,
+             }

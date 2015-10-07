@@ -265,6 +265,8 @@ def _generate_form_code(ir, prefix, parameters):
 
     code["create_coordinate_finite_element"] = _create_coordinate_finite_element(prefix, ir)
     code["create_coordinate_dofmap"] = _create_coordinate_dofmap(prefix, ir)
+    code["create_domain"] = _create_domain(prefix, ir)
+
     code["create_finite_element"] = _create_finite_element(prefix, ir)
     code["create_dofmap"] = _create_dofmap(prefix, ir)
 
@@ -491,7 +493,6 @@ def _tabulate_entity_dofs(ir):
 
 #--- Utility functions ---
 
-
 def _create_foo(prefix, classname, postfix, arg, numbers=None):
     "Generate code for create_<foo>."
     ret = format["return"]
@@ -502,7 +503,6 @@ def _create_foo(prefix, classname, postfix, arg, numbers=None):
     default = ret(0)
     return format["switch"](arg, cases, default=default, numbers=numbers)
 
-
 def _create_coordinate_finite_element(prefix, ir):
     ret = format["return"]
     create = format["create foo"]
@@ -510,7 +510,6 @@ def _create_coordinate_finite_element(prefix, ir):
     name, = ["%s_%s_%d" % (prefix.lower(), "finite_element", i)
             for i in postfix]
     return ret(create(name))
-
 
 def _create_coordinate_dofmap(prefix, ir):
     ret = format["return"]
@@ -520,22 +519,25 @@ def _create_coordinate_dofmap(prefix, ir):
             for i in postfix]
     return ret(create(name))
 
+def _create_domain(prefix, ir):
+    ret = format["return"]
+    create = format["create foo"]
+    postfix = ir["create_domain"]
+    name, = ["%s_%s_%d" % (prefix.lower(), "domain", i)
+            for i in postfix]
+    return "return nullptr;" #ret(create(name)) # FIXME: Must actually generate class first
 
 def _create_finite_element(prefix, ir):
     f_i = format["argument sub"]
-    return _create_foo(prefix, "finite_element", ir["create_finite_element"],
-                       f_i)
-
+    return _create_foo(prefix, "finite_element", ir["create_finite_element"], f_i)
 
 def _create_dofmap(prefix, ir):
     f_i = format["argument sub"]
     return _create_foo(prefix, "dofmap", ir["create_dofmap"], f_i)
 
-
 def _create_sub_element(prefix, ir):
     f_i = format["argument sub"]
     return _create_foo(prefix, "finite_element", ir["create_sub_element"], f_i)
-
 
 def _create_sub_dofmap(prefix, ir):
     f_i = format["argument sub"]
@@ -548,13 +550,11 @@ def _create_foo_integral(ir, integral_type, prefix):
     postfix = ir["create_" + integral_type + "_integral"]
     return _create_foo(prefix, classname, postfix, f_i, numbers=postfix)
 
-
 def _has_foo_integrals(ir, integral_type):
     ret = format["return"]
     b = format["bool"]
     i = ir["has_%s_integrals" % integral_type]
     return ret(b(i))
-
 
 def _create_default_foo_integral(ir, integral_type, prefix):
     "Generate code for create_default_<foo>_integral."
@@ -568,12 +568,10 @@ def _create_default_foo_integral(ir, integral_type, prefix):
         name = "%s_%s_%s" % (prefix.lower(), classname, postfix)
         return ret(create(name))
 
-
 def _postprocess_code(code, parameters):
     "Postprocess generated code."
     _indent_code(code)
     _remove_code(code, parameters)
-
 
 def _indent_code(code):
     "Indent code that should be indented."
@@ -582,7 +580,6 @@ def _indent_code(code):
                        "initializer_list", "additional_includes_set",
                        "class_type"):
             code[key] = indent(code[key], 4)
-
 
 def _remove_code(code, parameters):
     "Remove code that should not be generated."

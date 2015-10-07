@@ -60,7 +60,6 @@ public:
 %(original_coefficient_position)s
   }
 
-
   /// Create a new finite element for parameterization of coordinates
   ufc::finite_element * create_coordinate_finite_element() const final override
   {
@@ -71,6 +70,12 @@ public:
   ufc::dofmap * create_coordinate_dofmap() const final override
   {
 %(create_coordinate_dofmap)s
+   }
+
+  /// Create a new geometric domain
+  ufc::domain * create_domain() const final override
+  {
+%(create_domain)s
   }
 
   /// Create a new finite element for argument function i
@@ -258,6 +263,9 @@ public:
   /// Create a new dofmap for parameterization of coordinates
   ufc::dofmap * create_coordinate_dofmap() const final override;
 
+  /// Create a new geometric domain
+  ufc::domain * create_domain() const final override;
+
   /// Create a new finite element for argument function i
   ufc::finite_element * create_finite_element(std::size_t i) const final override;
 
@@ -379,6 +387,12 @@ ufc::finite_element * %(classname)s::create_coordinate_finite_element() const
 ufc::dofmap * %(classname)s::create_coordinate_dofmap() const
 {
 %(create_coordinate_dofmap)s
+}
+
+/// Create a new geometric domain
+ufc::domain * %(classname)s::create_domain() const
+{
+%(create_domain)s
 }
 
 /// Create a new finite element for argument function i

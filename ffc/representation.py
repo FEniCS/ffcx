@@ -251,9 +251,11 @@ def _compute_form_ir(form_data, form_id, element_numbers):
     ir["num_coefficients"] = len(form_data.reduced_coefficients)
     ir["original_coefficient_positions"] = form_data.original_coefficient_positions
 
+    # FIXME: Create classnames with signatures and not element numbers
     coordinate_element = form_data.original_form.ufl_domain().ufl_coordinate_element()
     ir["create_coordinate_finite_element"] = [element_numbers[e] for e in form_data.coordinate_elements]
     ir["create_coordinate_dofmap"] = [element_numbers[e] for e in form_data.coordinate_elements]
+    ir["create_domain"] = [0] # Using naming <prefix>_domain_0
     ir["create_finite_element"] = [element_numbers[e] for e in form_data.argument_elements + form_data.coefficient_elements]
     ir["create_dofmap"] = [element_numbers[e] for e in form_data.argument_elements + form_data.coefficient_elements]
 

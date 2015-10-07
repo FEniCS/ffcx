@@ -254,6 +254,69 @@ namespace ufc
 
   };
 
+  /// A representation of a geometric domain parameterized by a local basis on each cell
+  class domain
+  {
+  public:
+    virtual ~domain() {}
+
+    /// Return domain signature string
+    virtual const char * signature() const = 0;
+
+    /// Create object of the same type
+    virtual domain * create() const = 0;
+
+    /// Return geometric dimension of the domain
+    virtual std::size_t geometric_dimension() const = 0;
+
+    /// Return topological dimension of the domain
+    virtual std::size_t topological_dimension() const = 0;
+
+    /// Return cell shape of the domain
+    virtual shape cell_shape() const = 0;
+
+    /// Create finite_element object representing the coordinate parameterization
+    virtual finite_element * create_coordinate_finite_element() const = 0;
+
+    /// Create dofmap object representing the coordinate parameterization
+    virtual dofmap * create_coordinate_dofmap() const = 0;
+
+    /// Compute physical coordinates x from reference coordinates X, the inverse of compute_reference_coordinates
+    virtual void compute_physical_coordinates(
+        double * x, std::size_t num_points,
+        const double * X,
+        const double * coordinate_dofs, int cell_orientation) const = 0;
+
+    /// Compute reference coordinates X from physical coordinates x, the inverse of compute_physical_coordinates
+    virtual void compute_reference_coordinates(
+        double * X, std::size_t num_points,
+        const double * x,
+        const double * coordinate_dofs, int cell_orientation) const = 0;
+
+    /// Compute Jacobian of coordinate mapping J = dx/dX at reference coordinates X
+    virtual void compute_jacobians(
+        double * J, std::size_t num_points,
+        const double * X,
+        const double * coordinate_dofs, int cell_orientation) const = 0;
+
+    /// Compute determinants of (pseudo-)Jacobians J
+    virtual void compute_jacobian_determinants(
+        double * detJ, std::size_t num_points,
+        const double * J) const = 0;
+
+    /// Compute (pseudo-)inverses K of (pseudo-)Jacobians J
+    virtual void compute_jacobian_inverses(
+        double * K, std::size_t num_points,
+        const double * J, const double * detJ) const = 0;
+
+    /// Combined (for convenience) computation of x, J, detJ, K from X and coordinate_dofs on a cell
+    virtual void compute_geometry(
+        double * x, double * J, double * detJ, double * K, std::size_t num_points,
+        const double * X,
+        const double * coordinate_dofs, int cell_orientation) const = 0;
+
+  };
+
   /// This class defines the shared interface for classes implementing
   /// the tabulation of a tensor corresponding to the local contribution
   /// to a form from an integral.
@@ -419,6 +482,8 @@ namespace ufc
     /// Create a new dofmap for parameterization of coordinates
     virtual dofmap * create_coordinate_dofmap() const = 0;
 
+    /// Create a new geometric domain
+    virtual domain * create_domain() const = 0;
 
     /// Create a new finite element for argument function 0 <= i < r+n
     virtual finite_element * create_finite_element(std::size_t i) const = 0;
