@@ -183,11 +183,10 @@ class ufc_form(ufc_generator):
         value = ir["rank"]
         return L.Return(L.LiteralInt(value))
 
-    # TODO: missing 's' in ufc signature:
     def original_coefficient_position(self, L, ir): # FIXME: port this
         # Input args
         i = L.Symbol("i")
-        positions = ir["original_coefficient_positions"]
+        positions = ir["original_coefficient_positions"] # TODO: remove 's' in ir key
         code = "FIXME"
         return code
 
@@ -250,10 +249,21 @@ class ufc_dofmap(ufc_generator):
         default = L.Return(L.LiteralBool(False))
         return L.Switch(d, cases, default=default, autoscope=False, autobreak=False)
 
-    def global_dimension(self, L, ir): # FIXME: port this
-        value = ir["global_dimension"] # FIXME: This is not an int
-        code = "FIXME"
-        return code
+    def global_dimension(self, L, ir):
+        # A list of num dofs per entity
+        num_entity_dofs, num_global_dofs = ir["global_dimension"][0] # FIXME: Mock this
+
+        # Input array
+        entities = L.Symbol("num_global_entities")
+
+        # Accumulate number of dofs per entity times given number of entities in mesh
+        dimension = sum(L.LiteralInt(num)*entities[dim] for dim, num in enumerate(num_entity_dofs) if num > 0)
+
+        # Add global dofs if any
+        if num_global_dofs:
+            dimension = dimension + L.LiteralInt(num_global_dofs)
+
+        return L.Return(dimension)
 
     def num_element_dofs(self, L, ir):
         value = ir["num_element_dofs"]
@@ -271,16 +281,123 @@ class ufc_dofmap(ufc_generator):
         return L.Switch(d, cases, default=default)
 
     def tabulate_dofs(self, L, ir): # FIXME: port this
-        code = "FIXME"
-        return code
+        ir = ir["tabulate_dofs"]
 
-    def tabulate_facet_dofs(self, L, ir): # FIXME: port this
-        code = "FIXME"
-        return code
+        # Prefetch formats
+        #add = format["addition"]
+        #iadd = format["iadd"]
+        #multiply = format["multiply"]
+        #assign = format["assign"]
+        #component = format["component"]
 
-    def tabulate_entity_dofs(self, L, ir): # FIXME: port this
-        code = "FIXME"
-        return code
+        #"entity index":       "entity_indices",
+        #"num entities":       "num_global_entities",
+        #"uint declaration":               "unsigned int",
+        #"argument dofs":              "dofs",
+
+        entity_indices = L.Symbol("entity_indices")
+        num_entities_format = L.Symbol("num_global_entities")
+        dofs_variable = L.Symbol("dofs")
+
+        if ir is None: # What is this supposed to mean?
+            return L.Assign(dofs_variable[0], 0)
+
+        # Extract representation
+        (dofs_per_element, num_dofs_per_element, need_offset, fakes) = ir
+
+        # Collect code pieces in list
+        code = []
+
+        # Declare offset if needed
+        if need_offset:
+            offset = L.Symbol("offset")
+            code.append(L.VariableDecl("std::size_t", offset, value=0))
+        else:
+            offset = 0
+
+        # Generate code for each element
+        i = 0
+        for (no, num_dofs) in enumerate(dofs_per_element):
+
+            # Handle fakes (Space of reals)
+            if fakes[no] and num_dofs_per_element[no] == 1:
+                code.append(L.Assign(dofs_variable[i], offset))
+                if need_offset:
+                    code.append(L.AssignAdd(offset, 1))
+                i += 1
+                continue
+
+            # Generate code for each degree of freedom for each dimension
+            for (dim, num) in enumerate(num_dofs):
+
+                # Ignore if no dofs for this dimension
+                if not num[0]:
+                    continue
+
+                for (k, dofs) in enumerate(num):
+                    v = len(num[k]) * entity_indices[dim, k]
+                    for (j, dof) in enumerate(dofs):
+                        code.append(L.Assign(dofs_variable[dof+i], offset + v + j))
+
+                # Update offset corresponding to mesh entity:
+                if need_offset:
+                    code.append(L.AssignAdd(offset, len(num[0]) * num_entities_format[dim]))
+
+            i += num_dofs_per_element[no]
+
+        return L.StatementList(code)
+
+    def tabulate_facet_dofs(self, L, ir):
+        all_facet_dofs = ir["tabulate_facet_dofs"]
+
+        # Input arguments
+        facet = L.Symbol("facet")
+        dofs = L.Symbol("dofs")
+
+        # For each facet, copy all_facet_dofs[facet][:] into output argument array dofs[:]
+        cases = []
+        for facet, single_facet_dofs in enumerate(all_facet_dofs):
+            assigns = L.StatementList([L.Assign(dofs[i], dof) for (i, dof) in enumerate(single_facet_dofs)])
+            cases.append((facet, assigns))
+
+        return L.Switch(facet, cases, autoscope=False)
+
+    def tabulate_entity_dofs(self, L, ir):
+        entity_dofs, num_dofs_per_entity = ir["tabulate_entity_dofs"]
+
+        # Output argument array
+        dofs = L.Symbol("dofs")
+
+        # Input arguments
+        d = L.Symbol("d")
+        i = L.Symbol("i")
+
+        # TODO: Removed check for (d <= tdim + 1)
+        tdim = len(num_dofs_per_entity) - 1
+
+        # Generate cases for each dimension:
+        all_cases = []
+        for j in range(tdim + 1):
+            # Ignore if no entities for this dimension
+            if num_dofs_per_entity[j] == 0:
+                continue
+
+            # Add check that given entity is valid:
+            num_entities = len(entity_dofs[j])
+
+            # Generate cases for each mesh entity
+            cases = []
+            for entity in range(num_entities):
+                casebody = L.StatementList([L.Assign(dofs[j], dof)
+                                            for (j, dof) in enumerate(entity_dofs[j][entity])])
+                cases.append((entity, casebody))
+
+            # Generate inner switch
+            # TODO: Removed check for (i <= num_entities-1)
+            inner_switch = L.Switch(i, cases, autoscoping=False)
+            all_cases.append((j, inner_switch))
+
+        return L.Switch(d, all_cases, autoscoping=False)
 
     def num_sub_dofmaps(self, L, ir):
         value = ir["num_sub_dofmaps"]
@@ -510,7 +627,7 @@ def det_expr(A, m, n):
 
 class ufc_domain(ufc_generator):
     def __init__(self):
-        ufc_generator.__init__(self, "", domain_implementation)
+        ufc_generator.__init__(self, domain_header, domain_implementation)
 
     def cell_shape(self, L, ir):
         name = ir["cell_shape"]
