@@ -251,7 +251,7 @@ class ufc_dofmap(ufc_generator):
 
     def global_dimension(self, L, ir):
         # A list of num dofs per entity
-        num_entity_dofs, num_global_dofs = ir["global_dimension"][0] # FIXME: Mock this
+        num_entity_dofs, num_global_dofs = ir["global_dimension"]
 
         # Input array
         entities = L.Symbol("num_global_entities")
@@ -280,30 +280,34 @@ class ufc_dofmap(ufc_generator):
         default = L.Return(L.LiteralInt(0))
         return L.Switch(d, cases, default=default)
 
-    def tabulate_dofs(self, L, ir): # FIXME: port this
-        ir = ir["tabulate_dofs"]
+    def tabulate_dofs(self, L, ir):
 
-        # Prefetch formats
-        #add = format["addition"]
-        #iadd = format["iadd"]
-        #multiply = format["multiply"]
-        #assign = format["assign"]
-        #component = format["component"]
-
-        #"entity index":       "entity_indices",
-        #"num entities":       "num_global_entities",
-        #"uint declaration":               "unsigned int",
-        #"argument dofs":              "dofs",
-
+        # Input arguments
         entity_indices = L.Symbol("entity_indices")
-        num_entities_format = L.Symbol("num_global_entities")
+        num_mesh_entities = L.Symbol("num_global_entities")
+
+        # Output arguments
         dofs_variable = L.Symbol("dofs")
 
+
+        ir = ir["tabulate_dofs"]
         if ir is None: # What is this supposed to mean?
             return L.Assign(dofs_variable[0], 0)
 
         # Extract representation
-        (dofs_per_element, num_dofs_per_element, need_offset, fakes) = ir
+        #(dofs_per_element, num_dofs_per_element, need_offset, fakes) = ir # names from original ffc code
+        (subelement_dofs, num_dofs_per_subelement, need_offset, is_subelement_real) = ir
+
+        #len(is_subelement_real) == len(subelement_dofs) == len(num_dofs_per_subelement) == number of combined (flattened) subelements?
+        #is_subelement_real[subelement_number] is bool, is subelement Real?
+        #num_dofs_per_subelement[subelement_number] is int, number of dofs for each (flattened) subelement
+        #subelement_dofs[subelement_number] is list of entity_dofs for each (flattened) subelement
+        #len(entity_dofs) == tdim+1
+        #len(entity_dofs[cell_entity_dim]) == "num_cell_entities[dim]" (i.e. 3 vertices, 3 edges, 1 face for triangle)
+        #len(entity_dofs[cell_entity_dim][entity_index[dim][k]]) == number of dofs for this entity
+        #num = entity_dofs[dim]
+
+        #entity_dofs =? entity_dofs[d][i][:] # dofs on entity (d,i)
 
         # Collect code pieces in list
         code = []
@@ -316,34 +320,47 @@ class ufc_dofmap(ufc_generator):
             offset = 0
 
         # Generate code for each element
-        i = 0
-        for (no, num_dofs) in enumerate(dofs_per_element):
+        subelement_offset = 0
+        for (subelement_index, entity_dofs) in enumerate(subelement_dofs):
 
-            # Handle fakes (Space of reals)
-            if fakes[no] and num_dofs_per_element[no] == 1:
-                code.append(L.Assign(dofs_variable[i], offset))
+            # Handle is_subelement_real (Space of reals)
+            if is_subelement_real[subelement_index]:
+                assert num_dofs_per_subelement[subelement_index] == 1
+                code.append(L.Assign(dofs_variable[subelement_offset], offset))
                 if need_offset:
                     code.append(L.AssignAdd(offset, 1))
-                i += 1
+                subelement_offset += 1
                 continue
 
             # Generate code for each degree of freedom for each dimension
-            for (dim, num) in enumerate(num_dofs):
+            for (cell_entity_dim, dofs_on_cell_entity) in enumerate(entity_dofs):
+                num_dofs_per_mesh_entity = len(dofs_on_cell_entity[0])
+                assert all(num_dofs_per_mesh_entity == len(dofs)
+                           for dofs in dofs_on_cell_entity)
 
                 # Ignore if no dofs for this dimension
-                if not num[0]:
+                if num_dofs_per_mesh_entity == 0:
                     continue
 
-                for (k, dofs) in enumerate(num):
-                    v = len(num[k]) * entity_indices[dim, k]
+                # For each cell entity of this dimension
+                for (cell_entity_index, dofs) in enumerate(dofs_on_cell_entity):
+                    # dofs is a list of the local dofs that live on this cell entity
+
+                    # find offset for this particular mesh entity
+                    entity_offset = len(dofs) * entity_indices[cell_entity_dim, cell_entity_index]
+
                     for (j, dof) in enumerate(dofs):
-                        code.append(L.Assign(dofs_variable[dof+i], offset + v + j))
+                        # dof is the local dof index on the subelement
+                        # j is the local index of dof among the dofs on this particular cell/mesh entity
+                        local_dof_index = subelement_offset + dof
+                        global_dof_index = offset + entity_offset + j
+                        code.append(L.Assign(dofs_variable[local_dof_index], global_dof_index))
 
                 # Update offset corresponding to mesh entity:
                 if need_offset:
-                    code.append(L.AssignAdd(offset, len(num[0]) * num_entities_format[dim]))
+                    code.append(L.AssignAdd(offset, num_dofs_per_mesh_entity * num_mesh_entities[cell_entity_dim]))
 
-            i += num_dofs_per_element[no]
+            subelement_offset += num_dofs_per_subelement[subelement_index]
 
         return L.StatementList(code)
 
@@ -377,27 +394,26 @@ class ufc_dofmap(ufc_generator):
 
         # Generate cases for each dimension:
         all_cases = []
-        for j in range(tdim + 1):
-            # Ignore if no entities for this dimension
-            if num_dofs_per_entity[j] == 0:
-                continue
+        for dim in range(tdim + 1):
 
-            # Add check that given entity is valid:
-            num_entities = len(entity_dofs[j])
+            # Ignore if no entities for this dimension
+            if num_dofs_per_entity[dim] == 0:
+                continue
 
             # Generate cases for each mesh entity
             cases = []
-            for entity in range(num_entities):
-                casebody = L.StatementList([L.Assign(dofs[j], dof)
-                                            for (j, dof) in enumerate(entity_dofs[j][entity])])
-                cases.append((entity, casebody))
+            for entity in range(len(entity_dofs[dim])):
+                casebody = []
+                for (j, dof) in enumerate(entity_dofs[dim][entity]):
+                    casebody += [L.Assign(dofs[j], dof)]
+                cases.append((entity, L.StatementList(casebody)))
 
             # Generate inner switch
             # TODO: Removed check for (i <= num_entities-1)
-            inner_switch = L.Switch(i, cases, autoscoping=False)
-            all_cases.append((j, inner_switch))
+            inner_switch = L.Switch(i, cases, autoscope=False)
+            all_cases.append((dim, inner_switch))
 
-        return L.Switch(d, all_cases, autoscoping=False)
+        return L.Switch(d, all_cases, autoscope=False)
 
     def num_sub_dofmaps(self, L, ir):
         value = ir["num_sub_dofmaps"]

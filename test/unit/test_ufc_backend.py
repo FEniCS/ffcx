@@ -54,6 +54,7 @@ def mock_form_ir():
     ir.update({
         "create_coordinate_finite_element": "mock_coordinate_finite_element_classname",
         "create_coordinate_dofmap": "mock_coordinate_dofmap_classname",
+        "create_domain": "mock_domain_classname",
         "create_finite_element": ["mock_finite_element_classname_%d" % (i,) for i in range(ir["num_coefficients"])],
         "create_dofmap": ["mock_dofmap_classname_%d" % (i,) for i in range(ir["num_coefficients"])],
         })
@@ -87,7 +88,10 @@ def mock_dofmap_ir():
         "signature": "mock element signature",
         "geometric_dimension": 3,
         "topological_dimension": 2,
-        "global_dimension": "    mock global_dimension body();",
+        "global_dimension": ([3,2,1], 4),
+        "tabulate_dofs": ([[[(0,),(1,),(2,)],[(3,),(4,),(5,)],[(6,)]], None], [7, 1], True, [False, True]),
+        "tabulate_facet_dofs": [[0,1,2], [1,2,3], [0,2,3]],
+        "tabulate_entity_dofs": ([[(0,),(1,),(2,)],[(3,),(4,),(5,)],[(6,)]], [1,1,1]),
         "needs_mesh_entities": [True, False, True],
         "num_element_dofs": 7,
         "num_entity_dofs": [3,0,1],
@@ -220,7 +224,6 @@ form:
 original_coefficient_position
 
 dofmap:
-global_dimension
 tabulate_dofs
 tabulate_facet_dofs
 tabulate_entity_dofs
