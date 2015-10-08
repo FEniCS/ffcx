@@ -48,7 +48,7 @@ def mock_form_ir():
         "signature": "mock form signature",
         "rank": 2,
         "num_coefficients": 3,
-        "original_coefficient_positions": [0, 2],
+        "original_coefficient_position": [0, 2],
         })
 
     ir.update({
@@ -219,15 +219,8 @@ def test_mock_extract_function():
     print extract_function(name, cpp)
     print
 
-"""Missing:
-form:
-original_coefficient_position
-
-dofmap:
-tabulate_dofs
-tabulate_facet_dofs
-tabulate_entity_dofs
-
+"""
+Missing:
 finite_element:
 evaluate_basis*
 evaluate_dof

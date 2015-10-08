@@ -40,11 +40,20 @@ class ufc_form(ufc_generator):
         value = ir["rank"]
         return L.Return(L.LiteralInt(value))
 
-    def original_coefficient_position(self, L, ir): # FIXME: port this
-        # Input args
+    def original_coefficient_position(self, L, ir):
         i = L.Symbol("i")
-        positions = ir["original_coefficient_positions"] # TODO: remove 's' in ir key
-        code = "FIXME"
+
+        positions = ir["original_coefficient_position"]
+
+        position = L.Symbol("position")
+
+        # Throwing a lot into the 'typename' string here but no plans for building a full C++ type system
+        typename = "static const std::vector<std::size_t>"
+        initializer_list = L.VerbatimExpr("{" + ", ".join(str(i) for i in positions) + "}")
+        code = L.StatementList([
+            L.VariableDecl(typename, position, value=initializer_list),
+            L.Return(position[i]),
+            ])
         return code
 
     def create_coordinate_finite_element(self, L, ir):
