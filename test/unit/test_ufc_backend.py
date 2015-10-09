@@ -111,7 +111,7 @@ def mock_finite_element_ir():
         "value_dimension": (3,3),
         "reference_value_dimension": (2,2),
         "space_dimension": 6,
-        "tabulate_dof_coordinates": [(0.0, 0.0), (0.0, 1.0), (1.0, 0.0)],
+        "tabulate_dof_coordinates": { "gdim": 3, "tdim": 2, "points": [(0.0, 0.0), (0.0, 1.0), (1.0, 0.0)] },
         "evaluate_basis": "fixme",
         "evaluate_basis_derivatives": "fixme",
         "evaluate_basis_all": "fixme",
@@ -221,11 +221,12 @@ def test_mock_extract_function():
 
 """
 Missing:
+
 finite_element:
 evaluate_basis*
 evaluate_dof
 interpolate_vertex_values
-tabulate_dof_coordinates
+Ok? tabulate_dof_coordinates
 
 integrals:
 tabulate_tensor

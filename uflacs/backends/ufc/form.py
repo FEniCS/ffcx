@@ -79,35 +79,23 @@ class ufc_form(ufc_generator):
         return generate_return_new_switch(L, i, classnames)
 
     def _max_foo_subdomain_id(self, L, ir, integral_type, declname):
-        """Return implementation of ufc::form::%(declname)s().
-
-        This is extended to a number of functions by add_ufc_form_integral_methods.
-        """
+        "Return implementation of ufc::form::%(declname)s()."
         value = ir[declname]
         return L.Return(L.LiteralInt(value))
 
     def _has_foo_integrals(self, L, ir, integral_type, declname):
-        """Return implementation of ufc::form::%(declname)s().
-
-        This is extended to a number of functions by add_ufc_form_integral_methods.
-        """
+        "Return implementation of ufc::form::%(declname)s()."
         value = ir[declname]
         return L.Return(L.LiteralBool(value))
 
     def _create_foo_integral(self, L, ir, integral_type, declname):
-        """Return implementation of ufc::form::%(declname)s().
-
-        This is extended to a number of functions by add_ufc_form_integral_methods.
-        """
+        "Return implementation of ufc::form::%(declname)s()."
         subdomain_id = L.Symbol("subdomain_id")
         classnames = ir[declname] # FIXME: ffc provides element id, not classname
         return generate_return_new_switch(L, subdomain_id, classnames)
 
     def _create_default_foo_integral(self, L, ir, integral_type, declname):
-        """Return implementation of ufc::form::%(declname)s().
-
-        This is extended to a number of functions by add_ufc_form_integral_methods.
-        """
+        "Return implementation of ufc::form::%(declname)s()."
         classname = ir[declname] # FIXME: ffc provides element id, not classname
         if classname:
             return L.Return(L.New(classname))
