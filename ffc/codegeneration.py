@@ -259,7 +259,7 @@ def _generate_form_code(ir, prefix, parameters):
     code["destructor"] = do_nothing
 
     code["signature"] = ret('"%s"' % ir["signature"])
-    code["original_coefficient_position"] = _generate_original_coefficient_position(ir["original_coefficient_positions"])
+    code["original_coefficient_position"] = _generate_original_coefficient_position(ir["original_coefficient_position"])
     code["rank"] = ret(ir["rank"])
     code["num_coefficients"] = ret(ir["num_coefficients"])
 

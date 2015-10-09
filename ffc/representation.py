@@ -249,7 +249,7 @@ def _compute_form_ir(form_data, form_id, element_numbers):
 
     ir["rank"] = len(form_data.original_form.arguments())
     ir["num_coefficients"] = len(form_data.reduced_coefficients)
-    ir["original_coefficient_positions"] = form_data.original_coefficient_positions
+    ir["original_coefficient_position"] = form_data.original_coefficient_positions
 
     # FIXME: Create classnames with signatures and not element numbers
     coordinate_element = form_data.original_form.ufl_domain().ufl_coordinate_element()
@@ -332,6 +332,7 @@ def _generate_physical_offsets(ufl_element, offset=0):
 def _evaluate_dof(ufl_element, element):
     "Compute intermediate representation of evaluate_dof."
 
+    # (This comment is no longer true, ufl_element.reference_value_shape() is available).
     # With regard to reference_value_size vs physical_value_size: Note
     # that 'element' is the FFC/FIAT representation of the finite
     # element, while 'ufl_element' is the UFL representation. In
