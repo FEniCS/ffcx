@@ -52,6 +52,9 @@ class FFCDefinitionsBackend(MultiFunction):
         else:
             self.physical_coordinates_known = False
 
+        # Need this for custom integrals
+        #classname = make_classname(prefix, "finite_element", ir["element_numbers"][ufl_element])
+
         coefficient_numbering = ir["uflacs"]["coefficient_numbering"]
         self.symbols = FFCBackendSymbols(self.language, coefficient_numbering)
 

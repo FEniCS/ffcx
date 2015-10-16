@@ -46,6 +46,9 @@ class FFCAccessBackend(MultiFunction):
         # Configure definitions behaviour
         self.physical_coordinates_known = self.ir["integral_type"] == "quadrature"
 
+        # Need this for custom integrals
+        #classname = make_classname(prefix, "finite_element", ir["element_numbers"][ufl_element])
+
         coefficient_numbering = self.ir["uflacs"]["coefficient_numbering"]
         self.symbols = FFCBackendSymbols(self.language, coefficient_numbering)
 

@@ -34,7 +34,7 @@ class FFCBackend(object):
         self.definitions = FFCDefinitionsBackend(ir, self.language, parameters)
         self.access = FFCAccessBackend(ir, self.language, parameters)
 
-def generate_tabulate_tensor_code(ir, parameters):
+def generate_tabulate_tensor_code(ir, prefix, parameters):
 
     # Create FFC C++ backend
     backend = FFCBackend(ir, parameters)
