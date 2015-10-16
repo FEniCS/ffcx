@@ -251,10 +251,11 @@ def _compute_form_ir(form_data, form_id, element_numbers):
     ir["num_coefficients"] = len(form_data.reduced_coefficients)
     ir["original_coefficient_position"] = form_data.original_coefficient_positions
 
-    # FIXME: Create classnames with signatures and not element numbers
+    # FIXME: Create classnames with unique signatures and not small integer element numbers
+    domain_number = 0 # Using naming <prefix>_domain_0
     ir["create_coordinate_finite_element"] = [element_numbers[e] for e in form_data.coordinate_elements]
     ir["create_coordinate_dofmap"] = [element_numbers[e] for e in form_data.coordinate_elements]
-    ir["create_domain"] = [0] # Using naming <prefix>_domain_0
+    ir["create_domain"] = [domain_number]
     ir["create_finite_element"] = [element_numbers[e] for e in form_data.argument_elements + form_data.coefficient_elements]
     ir["create_dofmap"] = [element_numbers[e] for e in form_data.argument_elements + form_data.coefficient_elements]
 
@@ -278,10 +279,7 @@ def _value_size(element):
     dimensional tensor field is the product of the value_shape of the
     field. Recall that all mixed elements are flattened.
     """
-    shape = element.value_shape()
-    if shape == ():
-        return 1
-    return product(shape)
+    return product(element.value_shape())
 
 
 def _generate_reference_offsets(element, offset=0):

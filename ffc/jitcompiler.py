@@ -49,7 +49,6 @@ from ffc.compiler import compile_form
 from ffc.jitobject import JITObject
 from ffc.quadratureelement import default_quadrature_degree
 from ffc.backends.ufc import build_ufc_module
-from ffc.cpp import format
 
 # Special Options for JIT-compilation
 FFC_PARAMETERS_JIT = default_parameters()
@@ -203,9 +202,11 @@ def _check_parameters(form, parameters):
 
     return parameters
 
+from ffc.cpp import make_classname
 def _instantiate_form(module, prefix):
     "Extract the form from module with only one form."
-    classname = format["classname form"](prefix, 0)
+    form_id = 0
+    classname = make_classname(prefix, "form", form_id)
     return getattr(module, classname)()
 
 def _instantiate_element_and_dofmap(module, prefix):

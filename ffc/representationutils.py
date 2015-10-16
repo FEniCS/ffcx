@@ -27,7 +27,7 @@ from ufl.measure import integral_type_to_measure_name
 from ufl.cell import cellname2facetname
 
 from ffc.fiatinterface import create_element
-from ffc.cpp import format
+from ffc.cpp import make_integral_classname
 from ffc.log import error
 
 from ffc.quadrature_schemes import create_quadrature
@@ -171,12 +171,12 @@ def initialize_integral_code(ir, prefix, parameters):
     "Representation independent default initialization of code dict for integral from intermediate representation."
     code = {}
     code["class_type"] = ir["integral_type"] + "_integral"
-    code["classname"] = format["classname integral"](prefix, ir["integral_type"], ir["form_id"], ir["subdomain_id"])
+    code["classname"] = make_integral_classname(prefix, ir["integral_type"], ir["form_id"], ir["subdomain_id"])
     code["members"] = ""
-    code["constructor"] = format["do nothing"]
+    code["constructor"] = ""
     code["constructor_arguments"] = ""
     code["initializer_list"] = ""
-    code["destructor"] = format["do nothing"]
+    code["destructor"] = ""
     code["enabled_coefficients"] = generate_enabled_coefficients(ir["enabled_coefficients"])
     #code["additional_includes_set"] = set() #ir["additional_includes_set"]
     return code

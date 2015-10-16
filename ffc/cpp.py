@@ -28,6 +28,17 @@ import re, numpy, platform
 from ffc.log import debug, error
 from six.moves import zip
 
+# ufc class names
+def make_classname(prefix, basename, signature):
+    s = prefix.lower() + "_" if prefix else ""
+    return "%s%s_%s" % (s, basename, str(signature).lower())
+
+def make_integral_basename(integral_type, form_id):
+    return "%s_integral_%s" % (integral_type, str(form_id).lower())
+
+def make_integral_classname(prefix, integral_type, form_id, subdomain_id):
+    return make_classname(prefix, make_integral_basename(integral_type, form_id), subdomain_id)
+
 # Mapping of restrictions
 _fixed_map = {None: "", "+": "_0", "-": "_1"}
 _choose_map = lambda r: _fixed_map[r] if r in _fixed_map else "_%s" % str(r)
@@ -290,27 +301,6 @@ format.update({
     "eval_derivs_copy":         eval_derivs_copy,
     "extract_cell_coordinates": lambda offset, r : "const double* coordinate_dofs_%d = coordinate_dofs + %d;" % (r, offset)
     })
-
-# Class names
-def _wrapped_classname(prefix, basename, postfix):
-    return "%s_%s_%s" % (prefix.lower(), basename, str(postfix).lower())
-format.update({
-    "classname wrapped":
-        lambda prefix, basename, postfix:
-            _wrapped_classname(prefix, basename, postfix),
-    "classname finite_element":
-        lambda prefix, element_number:
-            _wrapped_classname(prefix, "finite_element", element_number),
-    "classname dofmap":
-        lambda prefix, element_number:
-            _wrapped_classname(prefix, "dofmap", element_number),
-    "classname integral":
-        lambda prefix, integral_type, form_id, subdomain_id:
-            _wrapped_classname(prefix, integral_type + "_integral_" + str(form_id).lower(), subdomain_id),
-    "classname form":
-        lambda prefix, form_id:
-            _wrapped_classname(prefix, "form", form_id),
-})
 
 # Helper functions for formatting
 

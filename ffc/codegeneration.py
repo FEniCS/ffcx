@@ -30,7 +30,7 @@ from ufl import product
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
-from ffc.cpp import format, indent
+from ffc.cpp import format, indent, make_classname, make_integral_basename, make_integral_classname
 from ffc.cpp import set_exception_handling
 
 # FFC code generation modules
@@ -99,7 +99,6 @@ def _generate_element_code(ir, prefix, parameters):
 
     # Prefetch formatting to speedup code generation
     ret = format["return"]
-    classname = format["classname finite_element"]
     do_nothing = format["do nothing"]
     create = format["create foo"]
 
@@ -109,7 +108,7 @@ def _generate_element_code(ir, prefix, parameters):
 
     # Generate code
     code = {}
-    code["classname"] = classname(prefix, ir["id"])
+    code["classname"] = make_classname(prefix, "finite_element", ir["id"])
     code["members"] = ""
     code["constructor"] = do_nothing
     code["constructor_arguments"] = ""
@@ -161,7 +160,6 @@ def _generate_dofmap_code(ir, prefix, parameters):
 
     # Prefetch formatting to speedup code generation
     ret = format["return"]
-    classname = format["classname dofmap"]
     declare = format["declaration"]
     assign = format["assign"]
     do_nothing = format["do nothing"]
@@ -172,7 +170,7 @@ def _generate_dofmap_code(ir, prefix, parameters):
 
     # Generate code
     code = {}
-    code["classname"] = classname(prefix, ir["id"])
+    code["classname"] = make_classname(prefix, "dofmap", ir["id"])
     code["members"] = ""
     code["constructor"] = do_nothing
     code["constructor_arguments"] = ""
@@ -245,12 +243,11 @@ def _generate_form_code(ir, prefix, parameters):
 
     # Prefetch formatting to speedup code generation
     ret = format["return"]
-    classname = format["classname form"]
     do_nothing = format["do nothing"]
 
     # Generate code
     code = {}
-    code["classname"] = classname(prefix, ir["id"])
+    code["classname"] = make_classname(prefix, "form", ir["id"])
     code["members"] = ""
 
     code["constructor"] = do_nothing
@@ -493,12 +490,11 @@ def _tabulate_entity_dofs(ir):
 
 #--- Utility functions ---
 
-def _create_foo(prefix, classname, postfix, arg, numbers=None):
+def _create_foo(prefix, basename, postfixes, arg, numbers=None):
     "Generate code for create_<foo>."
     ret = format["return"]
     create = format["create foo"]
-    wrap = format["classname wrapped"]
-    classnames = [wrap(prefix, classname, i) for i in postfix]
+    classnames = [make_classname(prefix, basename, i) for i in postfixes]
     cases = [ret(create(name)) for name in classnames]
     default = ret(0)
     return format["switch"](arg, cases, default=default, numbers=numbers)
@@ -506,26 +502,26 @@ def _create_foo(prefix, classname, postfix, arg, numbers=None):
 def _create_coordinate_finite_element(prefix, ir):
     ret = format["return"]
     create = format["create foo"]
-    postfix = ir["create_coordinate_finite_element"]
-    name, = ["%s_%s_%d" % (prefix.lower(), "finite_element", i)
-            for i in postfix]
-    return ret(create(name))
+    element_ids = ir["create_coordinate_finite_element"]
+    assert len(element_ids) == 1 # list of length 1 until we support multiple domains
+    classname = make_classname(prefix, "finite_element", element_ids[0])
+    return ret(create(classname))
 
 def _create_coordinate_dofmap(prefix, ir):
     ret = format["return"]
     create = format["create foo"]
-    postfix = ir["create_coordinate_dofmap"]
-    name, = ["%s_%s_%d" % (prefix.lower(), "dofmap", i)
-            for i in postfix]
-    return ret(create(name))
+    element_ids = ir["create_coordinate_dofmap"]
+    assert len(element_ids) == 1 # list of length 1 until we support multiple domains
+    classname = make_classname(prefix, "dofmap", element_ids[0])
+    return ret(create(classname))
 
 def _create_domain(prefix, ir):
     ret = format["return"]
     create = format["create foo"]
-    postfix = ir["create_domain"]
-    name, = ["%s_%s_%d" % (prefix.lower(), "domain", i)
-            for i in postfix]
-    return "return nullptr;" #ret(create(name)) # FIXME: Must actually generate class first
+    domain_ids = ir["create_domain"]
+    assert len(domain_ids) == 1 # list of length 1 until we support multiple domains
+    classname = make_classname(prefix, "domain", domain_ids[0])
+    return "return nullptr;" #ret(create(name)) # FIXME: Must actually generate class first (work in progress)
 
 def _create_finite_element(prefix, ir):
     f_i = format["argument sub"]
@@ -546,9 +542,10 @@ def _create_sub_dofmap(prefix, ir):
 def _create_foo_integral(ir, integral_type, prefix):
     "Generate code for create_<foo>_integral."
     f_i = format["argument subdomain"]
-    classname = integral_type + "_integral_" + str(ir["id"]) # NB! Form id, not integral id.
+    form_id = ir["id"]
+    basename = make_integral_basename(integral_type, form_id)
     postfix = ir["create_" + integral_type + "_integral"]
-    return _create_foo(prefix, classname, postfix, f_i, numbers=postfix)
+    return _create_foo(prefix, basename, postfix, f_i, numbers=postfix)
 
 def _has_foo_integrals(ir, integral_type):
     ret = format["return"]
@@ -564,9 +561,10 @@ def _create_default_foo_integral(ir, integral_type, prefix):
         return ret(0)
     else:
         create = format["create foo"]
-        classname = integral_type + "_integral_" + str(ir["id"]) # NB! Form id, not integral id.
-        name = "%s_%s_%s" % (prefix.lower(), classname, postfix)
-        return ret(create(name))
+        form_id = ir["id"]
+        subdomain_id = postfix
+        classname = make_integral_classname(prefix, integral_type, form_id, subdomain_id)
+        return ret(create(classname))
 
 def _postprocess_code(code, parameters):
     "Postprocess generated code."

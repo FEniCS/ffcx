@@ -67,6 +67,7 @@ def _encapsulate(prefix, object_names, analysis, parameters):
     # Special case: single element
     if num_form_datas == 0:
         capsules = _encapsule_element(prefix, elements)
+
     # Special case: with error control
     elif parameters["error_control"] and num_form_datas == 11:
         capsules = [_encapsule_form(prefix, object_names, form_data, i, element_map)
@@ -95,13 +96,10 @@ def _encapsule_form(prefix, object_names, form_data, i, element_map, superclassn
 
     form_names = UFCFormNames(
         object_names.get(id(form_data.original_form), "%d" % i),
-        [object_names.get(id(obj), "w%d" % j)
-         for j, obj in enumerate(form_data.reduced_coefficients)],
-        format["classname form"](prefix, i),
-        [format["classname finite_element"](prefix, j)
-         for j in element_numbers],
-        [format["classname dofmap"](prefix, j)
-         for j in element_numbers],
+        [object_names.get(id(obj), "w%d" % j) for j, obj in enumerate(form_data.reduced_coefficients)],
+        make_classname(prefix, "form", i),
+        [make_classname(prefix, "finite_element", j) for j in element_numbers],
+        [make_classname(prefix, "dofmap", j) for j in element_numbers],
         superclassname)
 
     return form_names
@@ -109,6 +107,6 @@ def _encapsule_form(prefix, object_names, form_data, i, element_map, superclassn
 def _encapsule_element(prefix, elements):
     element_number = len(elements) - 1
     args = ("0",
-            [format["classname finite_element"](prefix, element_number)],
-            [format["classname dofmap"](prefix, element_number)])
+            [make_classname(prefix, "finite_element", element_number)],
+            [make_classname(prefix, "dofmap", element_number)])
     return UFCElementNames(*args)
