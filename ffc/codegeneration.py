@@ -106,9 +106,11 @@ def _generate_element_code(ir, prefix, parameters):
     (evaluate_dof_code, evaluate_dofs_code) \
         = evaluate_dof_and_dofs(ir["evaluate_dof"])
 
+    element_number = ir["id"]
+
     # Generate code
     code = {}
-    code["classname"] = make_classname(prefix, "finite_element", ir["id"])
+    code["classname"] = make_classname(prefix, "finite_element", element_number)
     code["members"] = ""
     code["constructor"] = do_nothing
     code["constructor_arguments"] = ""
@@ -168,9 +170,11 @@ def _generate_dofmap_code(ir, prefix, parameters):
     f_d = format["argument dimension"]
     create = format["create foo"]
 
+    element_number = ir["id"]
+
     # Generate code
     code = {}
-    code["classname"] = make_classname(prefix, "dofmap", ir["id"])
+    code["classname"] = make_classname(prefix, "dofmap", element_number)
     code["members"] = ""
     code["constructor"] = do_nothing
     code["constructor_arguments"] = ""
@@ -245,9 +249,11 @@ def _generate_form_code(ir, prefix, parameters):
     ret = format["return"]
     do_nothing = format["do nothing"]
 
+    form_id = ir["id"]
+
     # Generate code
     code = {}
-    code["classname"] = make_classname(prefix, "form", ir["id"])
+    code["classname"] = make_classname(prefix, "form", form_id)
     code["members"] = ""
 
     code["constructor"] = do_nothing
@@ -502,17 +508,15 @@ def _create_foo(prefix, basename, postfixes, arg, numbers=None):
 def _create_coordinate_finite_element(prefix, ir):
     ret = format["return"]
     create = format["create foo"]
-    element_ids = ir["create_coordinate_finite_element"]
-    assert len(element_ids) == 1 # list of length 1 until we support multiple domains
-    classname = make_classname(prefix, "finite_element", element_ids[0])
+    element_number, = ir["create_coordinate_finite_element"]
+    classname = make_classname(prefix, "finite_element", element_number)
     return ret(create(classname))
 
 def _create_coordinate_dofmap(prefix, ir):
     ret = format["return"]
     create = format["create foo"]
-    element_ids = ir["create_coordinate_dofmap"]
-    assert len(element_ids) == 1 # list of length 1 until we support multiple domains
-    classname = make_classname(prefix, "dofmap", element_ids[0])
+    element_number, = ir["create_coordinate_dofmap"]
+    classname = make_classname(prefix, "dofmap", element_numbers)
     return ret(create(classname))
 
 def _create_domain(prefix, ir):

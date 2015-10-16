@@ -117,8 +117,7 @@ def _compute_element_ir(ufl_element, element_numbers):
     cellname = cell.cellname()
 
     # Store id
-    element_id = element_numbers[ufl_element]
-    ir = {"id": element_id}
+    ir = {"id": element_numbers[ufl_element]}
 
     # Compute data for each function
     ir["signature"] = repr(ufl_element)
@@ -155,8 +154,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers):
     facet_dofs = _tabulate_facet_dofs(element, cell)
 
     # Store id
-    element_id = element_numbers[ufl_element]
-    ir = {"id": element_id}
+    ir = {"id": element_numbers[ufl_element]}
 
     # Compute data for each function
     ir["signature"] = "FFC dofmap for " + repr(ufl_element)
