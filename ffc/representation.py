@@ -80,7 +80,7 @@ def compute_ir(analysis, parameters):
     set_float_formatting(int(parameters["precision"]))
 
     # Extract data from analysis
-    form_datas, elements, element_numbers = analysis
+    form_datas, elements, element_numbers, domains = analysis
 
     # Compute representation of elements
     info("Computing representation of %d elements" % len(elements))
@@ -91,6 +91,11 @@ def compute_ir(analysis, parameters):
     info("Computing representation of %d dofmaps" % len(elements))
     ir_dofmaps = [_compute_dofmap_ir(e, element_numbers)
                   for e in elements]
+
+    # Compute representation of domains
+    info("Computing representation of %d domains" % len(elements))
+    ir_domains = [_compute_domain_ir(e, element_numbers)
+                  for e in domains]
 
     # Compute and flatten representation of integrals
     info("Computing representation of integrals")
@@ -105,7 +110,7 @@ def compute_ir(analysis, parameters):
 
     end()
 
-    return ir_elements, ir_dofmaps, ir_integrals, ir_forms
+    return ir_elements, ir_dofmaps, ir_domains, ir_integrals, ir_forms
 
 
 def _compute_element_ir(ufl_element, element_numbers):
@@ -171,6 +176,13 @@ def _compute_dofmap_ir(ufl_element, element_numbers):
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
     ir["create_sub_dofmap"] = _create_sub_foo(ufl_element, element_numbers)
 
+    return ir
+
+
+def _compute_domain_ir(ufl_domain, element_numbers):
+    "Compute intermediate representation of domain."
+    ir = {}
+    # FIXME
     return ir
 
 

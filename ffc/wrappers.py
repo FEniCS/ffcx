@@ -59,7 +59,9 @@ def _generate_dolfin_wrapper(analysis, prefix, object_names, parameters):
 def _encapsulate(prefix, object_names, analysis, parameters):
 
     # Extract data from analysis
-    form_datas, elements, element_map = analysis
+    form_datas, elements, element_map, domains = analysis
+
+    # FIXME: Encapsulate domains?
 
     num_form_datas = len(form_datas)
     common_space = False

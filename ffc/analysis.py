@@ -69,9 +69,12 @@ def analyze_forms(forms, parameters):
     # Compute element numbers
     element_numbers = _compute_element_numbers(unique_elements)
 
+    # Extract domains
+    domains = () # FIXME: Get domains from form_datas
+
     end()
 
-    return form_datas, unique_elements, element_numbers
+    return form_datas, unique_elements, element_numbers, domains
 
 def analyze_elements(elements, parameters):
 
@@ -93,9 +96,12 @@ def analyze_elements(elements, parameters):
     for element in unique_elements:
         if element.family() == "Quadrature":
             element._quad_scheme = scheme
+
     end()
 
-    return (), unique_elements, element_numbers
+    domains = ()
+    form_datas = ()
+    return form_datas, unique_elements, element_numbers, domains
 
 def _compute_element_numbers(elements):
     "Build map from elements to element numbers."

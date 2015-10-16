@@ -44,7 +44,7 @@ def format_code(code, wrapper_code, prefix, parameters):
     begin("Compiler stage 5: Formatting code")
 
     # Extract code
-    code_elements, code_dofmaps, code_integrals, code_forms = code
+    code_elements, code_dofmaps, code_domains, code_integrals, code_forms = code
 
     # Header and implementation code
     code_h = ""
@@ -68,6 +68,11 @@ def format_code(code, wrapper_code, prefix, parameters):
     for code_dofmap in code_dofmaps:
         code_h += _format_h("dofmap", code_dofmap, parameters)
         code_c += _format_c("dofmap", code_dofmap, parameters)
+
+    # Generate code for domains
+    for code_domain in code_domains:
+        code_h += _format_h("domain", code_domain, parameters)
+        code_c += _format_c("domain", code_domain, parameters)
 
     # Generate code for integrals
     for code_integral in code_integrals:
