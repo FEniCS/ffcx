@@ -80,7 +80,7 @@ def compute_ir(analysis, parameters):
     set_float_formatting(int(parameters["precision"]))
 
     # Extract data from analysis
-    form_datas, elements, element_numbers, domains = analysis
+    form_datas, elements, element_numbers, coordinate_elements = analysis
 
     # Compute representation of elements
     info("Computing representation of %d elements" % len(elements))
@@ -92,10 +92,10 @@ def compute_ir(analysis, parameters):
     ir_dofmaps = [_compute_dofmap_ir(e, element_numbers)
                   for e in elements]
 
-    # Compute representation of domains
-    info("Computing representation of %d domains" % len(elements))
-    ir_domains = [_compute_domain_ir(e, element_numbers)
-                  for e in domains]
+    # Compute representation of coordinate mappings
+    info("Computing representation of %d coordinate mappings" % len(coordinate_elements))
+    ir_compute_coordinate_mappings = [_compute_coordinate_mapping_ir(e, element_numbers)
+                                      for e in coordinate_elements]
 
     # Compute and flatten representation of integrals
     info("Computing representation of integrals")
@@ -110,7 +110,7 @@ def compute_ir(analysis, parameters):
 
     end()
 
-    return ir_elements, ir_dofmaps, ir_domains, ir_integrals, ir_forms
+    return ir_elements, ir_dofmaps, ir_compute_coordinate_mappings, ir_integrals, ir_forms
 
 
 def _compute_element_ir(ufl_element, element_numbers):
@@ -179,10 +179,25 @@ def _compute_dofmap_ir(ufl_element, element_numbers):
     return ir
 
 
-def _compute_domain_ir(ufl_domain, element_numbers):
-    "Compute intermediate representation of domain."
-    ir = {}
+def _compute_coordinate_mapping_ir(ufl_coordinate_element, element_numbers):
+    "Compute intermediate representation of coordinate mapping."
+
     # FIXME
+
+    # Create FIAT element
+    element = create_element(ufl_coordinate_element)
+    cell = ufl_coordinate_element.cell()
+    cellname = cell.cellname()
+
+    # Store id
+    ir = {"id": element_numbers[ufl_coordinate_element]}
+
+    # Compute data for each function (FIXME: add what's needed for coordinate_mapping generation)
+    ir["signature"] = "FFC coordinate_mapping from " + repr(ufl_coordinate_element)
+    ir["cellname"] = cellname
+    ir["topological_dimension"] = cell.topological_dimension()
+    ir["geometric_dimension"] = cell.geometric_dimension() # FIXME: Or ufl_coordinate_element.value_size()?
+
     return ir
 
 
@@ -265,7 +280,7 @@ def _compute_form_ir(form_data, form_id, element_numbers):
     domain_number = 0 # Using naming <prefix>_domain_0
     ir["create_coordinate_finite_element"] = [element_numbers[e] for e in form_data.coordinate_elements]
     ir["create_coordinate_dofmap"] = [element_numbers[e] for e in form_data.coordinate_elements]
-    ir["create_domain"] = [domain_number]
+    ir["create_coordinate_mapping"] = [domain_number]
     ir["create_finite_element"] = [element_numbers[e] for e in form_data.argument_elements + form_data.coefficient_elements]
     ir["create_dofmap"] = [element_numbers[e] for e in form_data.argument_elements + form_data.coefficient_elements]
 

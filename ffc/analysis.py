@@ -28,6 +28,7 @@ form representation type.
 # Modified by Martin Alnaes, 2013-2014
 
 import os
+from itertools import chain
 
 # UFL modules
 from ufl.finiteelement import MixedElement, EnrichedElement
@@ -69,12 +70,12 @@ def analyze_forms(forms, parameters):
     # Compute element numbers
     element_numbers = _compute_element_numbers(unique_elements)
 
-    # Extract domains
-    domains = () # FIXME: Get domains from form_datas
+    # Extract coordinate elements
+    unique_coordinate_elements = sorted(set(chain(*[form_data.coordinate_elements for form_data in form_datas])))
 
     end()
 
-    return form_datas, unique_elements, element_numbers, domains
+    return form_datas, unique_elements, element_numbers, unique_coordinate_elements
 
 def analyze_elements(elements, parameters):
 
@@ -99,9 +100,9 @@ def analyze_elements(elements, parameters):
 
     end()
 
-    domains = ()
     form_datas = ()
-    return form_datas, unique_elements, element_numbers, domains
+    unique_coordinate_elements = ()
+    return form_datas, unique_elements, element_numbers, unique_coordinate_elements
 
 def _compute_element_numbers(elements):
     "Build map from elements to element numbers."

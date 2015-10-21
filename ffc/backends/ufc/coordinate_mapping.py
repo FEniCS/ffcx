@@ -3,9 +3,9 @@
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2006-2015.
 
-domain_header = """\
-/// A representation of a geometric domain parameterized by a local basis on each cell
-class %(classname)s: public ufc::domain
+coordinate_mapping_header = """\
+/// A representation of a coordinate mapping parameterized by a local finite element basis on each cell
+class %(classname)s: public ufc::coordinate_mapping
 {%(members)s
 public:
 
@@ -15,19 +15,19 @@ public:
   /// Destructor
   ~%(classname)s() override;
 
-  /// Return domain signature string
+  /// Return coordinate_mapping signature string
   const char * signature() const final override;
 
   /// Create object of the same type
-  domain * create() const final override;
+  coordinate_mapping * create() const final override;
 
-  /// Return geometric dimension of the domain
+  /// Return geometric dimension of the coordinate_mapping
   std::size_t geometric_dimension() const final override;
 
-  /// Return topological dimension of the domain
+  /// Return topological dimension of the coordinate_mapping
   std::size_t topological_dimension() const final override;
 
-  /// Return cell shape of the domain
+  /// Return cell shape of the coordinate_mapping
   shape cell_shape() const final override;
 
   /// Create finite_element object representing the coordinate parameterization
@@ -72,9 +72,9 @@ public:
 };
 """
 
-domain_implementation = """\
+coordinate_mapping_implementation = """\
 /// Constructor
-%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::domain()%(initializer_list)s
+%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::coordinate_mapping()%(initializer_list)s
 {
 %(constructor)s
 }
@@ -85,31 +85,31 @@ domain_implementation = """\
 %(destructor)s
 }
 
-/// Return domain signature string
+/// Return coordinate_mapping signature string
 const char * %(classname)s::signature() const final override
 {
 %(signature)s
 }
 
 /// Create object of the same type
-domain * %(classname)s::create() const final override
+coordinate_mapping * %(classname)s::create() const final override
 {
 %(create)s
 }
 
-/// Return geometric dimension of the domain
+/// Return geometric dimension of the coordinate_mapping
 std::size_t %(classname)s::geometric_dimension() const final override
 {
 %(geometric_dimension)s
 }
 
-/// Return topological dimension of the domain
+/// Return topological dimension of the coordinate_mapping
 std::size_t %(classname)s::topological_dimension() const final override
 {
 %(topological_dimension)s
 }
 
-/// Return cell shape of the domain
+/// Return cell shape of the coordinate_mapping
 shape %(classname)s::cell_shape() const final override
 {
 %(cell_shape)s
@@ -180,14 +180,14 @@ void %(classname)s::compute_geometry(
 }
 """
 
-domain_combined = """\
+coordinate_mapping_combined = """\
 /// A representation of a geometric domain parameterized by a local basis on each cell
-class %(classname)s: public ufc::domain
+class %(classname)s: public ufc::coordinate_mapping
 {%(members)s
 public:
 
   /// Constructor
-  %(classname)s(%(constructor_arguments)s) : ufc::domain()%(initializer_list)s
+  %(classname)s(%(constructor_arguments)s) : ufc::coordinate_mapping()%(initializer_list)s
   {
 %(constructor)s
   }
@@ -198,31 +198,31 @@ public:
 %(destructor)s
   }
 
-  /// Return domain signature string
+  /// Return coordinate_mapping signature string
   const char * signature() const final override
   {
 %(signature)s
   }
 
   /// Create object of the same type
-  domain * create() const final override
+  coordinate_mapping * create() const final override
   {
 %(create)s
   }
 
-  /// Return geometric dimension of the domain
+  /// Return geometric dimension of the coordinate_mapping
   std::size_t geometric_dimension() const final override
   {
 %(geometric_dimension)s
   }
 
-  /// Return topological dimension of the domain
+  /// Return topological dimension of the coordinate_mapping
   std::size_t topological_dimension() const final override
   {
 %(topological_dimension)s
   }
 
-  /// Return cell shape of the domain
+  /// Return cell shape of the coordinate_mapping
   shape cell_shape() const final override
   {
 %(cell_shape)s

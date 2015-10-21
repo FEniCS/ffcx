@@ -254,25 +254,25 @@ namespace ufc
 
   };
 
-  /// A representation of a geometric domain parameterized by a local basis on each cell
-  class domain
+  /// A representation of a coordinate mapping parameterized by a local finite element basis on each cell
+  class coordinate_mapping
   {
   public:
-    virtual ~domain() {}
+    virtual ~coordinate_mapping() {}
 
-    /// Return domain signature string
+    /// Return coordinate_mapping signature string
     virtual const char * signature() const = 0;
 
     /// Create object of the same type
-    virtual domain * create() const = 0;
+    virtual coordinate_mapping * create() const = 0;
 
-    /// Return geometric dimension of the domain
+    /// Return geometric dimension of the coordinate_mapping
     virtual std::size_t geometric_dimension() const = 0;
 
-    /// Return topological dimension of the domain
+    /// Return topological dimension of the coordinate_mapping
     virtual std::size_t topological_dimension() const = 0;
 
-    /// Return cell shape of the domain
+    /// Return cell shape of the coordinate_mapping
     virtual shape cell_shape() const = 0;
 
     /// Create finite_element object representing the coordinate parameterization
@@ -482,8 +482,8 @@ namespace ufc
     /// Create a new dofmap for parameterization of coordinates
     virtual dofmap * create_coordinate_dofmap() const = 0;
 
-    /// Create a new geometric domain
-    virtual domain * create_domain() const = 0;
+    /// Create a new coordinate mapping
+    virtual coordinate_mapping * create_coordinate_mapping() const = 0;
 
     /// Create a new finite element for argument function 0 <= i < r+n
     virtual finite_element * create_finite_element(std::size_t i) const = 0;

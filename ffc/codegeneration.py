@@ -63,7 +63,7 @@ def generate_code(ir, prefix, parameters):
     set_exception_handling(parameters["convert_exceptions_to_warnings"])
 
     # Extract representations
-    ir_elements, ir_dofmaps, ir_domains, ir_integrals, ir_forms = ir
+    ir_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
 
     # Generate code for elements
     info("Generating code for %d element(s)" % len(ir_elements))
@@ -75,10 +75,10 @@ def generate_code(ir, prefix, parameters):
     code_dofmaps = [_generate_dofmap_code(ir, prefix, parameters)
                     for ir in ir_dofmaps]
 
-    # Generate code for domains
-    info("Generating code for %d domain(s)" % len(ir_domains))
-    code_domains = [_generate_domain_code(ir, prefix, parameters)
-                    for ir in ir_domains]
+    # Generate code for coordinate_mappings
+    info("Generating code for %d coordinate_mapping(s)" % len(ir_coordinate_mappings))
+    code_coordinate_mappings = [_generate_coordinate_mapping_code(ir, prefix, parameters)
+                                for ir in ir_coordinate_mappings]
 
     # Generate code for integrals
     info("Generating code for integrals")
@@ -92,7 +92,7 @@ def generate_code(ir, prefix, parameters):
 
     end()
 
-    return code_elements, code_dofmaps, code_domains, code_integrals, code_forms
+    return code_elements, code_dofmaps, code_coordinate_mappings, code_integrals, code_forms
 
 
 def _generate_element_code(ir, prefix, parameters):
@@ -210,20 +210,21 @@ def _generate_dofmap_code(ir, prefix, parameters):
     return code
 
 
-def _generate_domain_code(ir, prefix, parameters):
-    "Generate code for domain from intermediate representation."
+def _generate_coordinate_mapping_code(ir, prefix, parameters):
+    "Generate code for coordinate_mapping from intermediate representation."
 
     # Skip code generation if ir is None
     if ir is None:
         return None
 
-    domain_number = ir["id"]
+    coordinate_mapping_number = ir["id"]
 
     # Generate code
     code = {}
-    code["classname"] = make_classname(prefix, "domain", domain_number)
+    code["classname"] = make_classname(prefix, "coordinate_mapping", coordinate_mapping_number)
 
-    # FIXME: Implement domain generation (work in progress in uflacs repository)
+    # FIXME: Implement coordinate_mapping generation (work in progress in uflacs repository)
+    # FIXME: Get code dict from current work in uflacs
 
     return code
 
@@ -291,7 +292,7 @@ def _generate_form_code(ir, prefix, parameters):
 
     code["create_coordinate_finite_element"] = _create_coordinate_finite_element(prefix, ir)
     code["create_coordinate_dofmap"] = _create_coordinate_dofmap(prefix, ir)
-    code["create_domain"] = _create_domain(prefix, ir)
+    code["create_coordinate_mapping"] = _create_coordinate_mapping(prefix, ir)
 
     code["create_finite_element"] = _create_finite_element(prefix, ir)
     code["create_dofmap"] = _create_dofmap(prefix, ir)
@@ -542,12 +543,12 @@ def _create_coordinate_dofmap(prefix, ir):
     classname = make_classname(prefix, "dofmap", element_number)
     return ret(create(classname))
 
-def _create_domain(prefix, ir):
+def _create_coordinate_mapping(prefix, ir):
     ret = format["return"]
     create = format["create foo"]
-    domain_ids = ir["create_domain"]
-    assert len(domain_ids) == 1 # list of length 1 until we support multiple domains
-    classname = make_classname(prefix, "domain", domain_ids[0])
+    coordinate_mapping_ids = ir["create_coordinate_mapping"]
+    assert len(coordinate_mapping_ids) == 1 # list of length 1 until we support multiple domains
+    classname = make_classname(prefix, "coordinate_mapping", coordinate_mapping_ids[0])
     return "return nullptr;" #ret(create(classname)) # FIXME: Must actually generate class first (work in progress)
 
 def _create_finite_element(prefix, ir):
