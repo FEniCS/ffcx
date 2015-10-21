@@ -99,19 +99,19 @@ class FFCAccessBackend(MultiFunction):
         assert not (mt.global_derivatives or mt.local_derivatives)
         # NB! UFL doesn't retain float/int type information for zeros...
         L = self.language
-        return L.Literal(0.0)
+        return L.LiteralFloat(0.0)
 
     def int_value(self, e, mt, tabledata, num_points):
         # We shouldn't have derivatives of constants left at this point
         assert not (mt.global_derivatives or mt.local_derivatives)
         L = self.language
-        return L.Literal(int(e))
+        return L.LiteralInt(int(e))
 
     def float_value(self, e, mt, tabledata, num_points):
         # We shouldn't have derivatives of constants left at this point
         assert not (mt.global_derivatives or mt.local_derivatives)
         L = self.language
-        return L.Literal(float(e))
+        return L.LiteralFloat(float(e))
 
     def argument(self, e, mt, tabledata, num_points):
         L = self.language
