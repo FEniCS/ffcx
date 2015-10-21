@@ -31,8 +31,11 @@ def generate_integral_code(ir, prefix, parameters):
     # Generate tabulate_tensor body using uflacs algorithms
     uflacs_code = generate_tabulate_tensor_code(ir, prefix, parameters)
 
-    code["num_cells"] = ret(ir["num_cells"])
     code["tabulate_tensor"] = uflacs_code["tabulate_tensor"]
+
+    # TODO: Use code generation utils here for consistency
+    if ir.get("num_cells") is not None:
+        code["num_cells"] = "  return %d;" % (ir["num_cells"],)
 
     code["additional_includes_set"] = set()
     code["additional_includes_set"].update(ir.get("additional_includes_set",()))
