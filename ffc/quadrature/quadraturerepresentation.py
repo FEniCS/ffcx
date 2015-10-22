@@ -183,7 +183,7 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type,
             transformer.update_vertex(i)
             terms[i] = _transform_integrals(transformer, integrals_dict, integral_type)
 
-    elif integral_type == "custom":
+    elif integral_type in ("custom", "cutcell", "interface", "overlap"):
 
         # Compute transformed integrals: same as for cell integrals
         info("Transforming custom integral")

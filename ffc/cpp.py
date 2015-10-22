@@ -618,7 +618,7 @@ def _generate_cell_volume(tdim, gdim, integral_type, r=None):
     elif integral_type == "interior_facet":
         code = volume % {"restriction": _choose_map("+")}
         code += volume % {"restriction": _choose_map("-")}
-    elif integral_type == "custom":
+    elif integral_type in ("custom", "cutcell", "interface", "overlap"):
         code = volume % {"restriction": _choose_map(r)}
     else:
         error("Unsupported integral_type: %s" % str(integral_type))
@@ -636,7 +636,7 @@ def _generate_circumradius(tdim, gdim, integral_type, r=None):
     elif integral_type == "interior_facet":
         code = radius % {"restriction": _choose_map("+")}
         code += radius % {"restriction": _choose_map("-")}
-    elif integral_type == "custom":
+    elif integral_type in ("custom", "cutcell", "interface", "overlap"):
         code = radius % {"restriction": _choose_map(r)}
     else:
         error("Unsupported integral_type: %s" % str(integral_type))

@@ -10,6 +10,10 @@ Three format strings are defined for each of the following UFC classes:
     cell_integral
     exterior_facet_integral
     interior_facet_integral
+    custom_integral
+    cutcell_integral
+    interface_integral
+    overlap_integral
     form
 
 The strings are named '<classname>_header', '<classname>_implementation',
@@ -64,12 +68,21 @@ templates = {"function_header":                          function_header,
              "interior_facet_integral_header":           interior_facet_integral_header,
              "interior_facet_integral_implementation":   interior_facet_integral_implementation,
              "interior_facet_integral_combined":         interior_facet_integral_combined,
-             "vertex_integral_header":                    vertex_integral_header,
-             "vertex_integral_implementation":            vertex_integral_implementation,
-             "vertex_integral_combined":                  vertex_integral_combined,
+             "vertex_integral_header":                   vertex_integral_header,
+             "vertex_integral_implementation":           vertex_integral_implementation,
+             "vertex_integral_combined":                 vertex_integral_combined,
              "custom_integral_header":                   custom_integral_header,
              "custom_integral_implementation":           custom_integral_implementation,
              "custom_integral_combined":                 custom_integral_combined,
+             "cutcell_integral_header":                  cutcell_integral_header,
+             "cutcell_integral_implementation":          cutcell_integral_implementation,
+             "cutcell_integral_combined":                cutcell_integral_combined,
+             "interface_integral_header":                interface_integral_header,
+             "interface_integral_implementation":        interface_integral_implementation,
+             "interface_integral_combined":              interface_integral_combined,
+             "overlap_integral_header":                  overlap_integral_header,
+             "overlap_integral_implementation":          overlap_integral_implementation,
+             "overlap_integral_combined":                overlap_integral_combined,
              "form_header":                              form_header,
              "form_implementation":                      form_implementation,
              "form_combined":                            form_combined,

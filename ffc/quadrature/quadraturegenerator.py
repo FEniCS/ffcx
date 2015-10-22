@@ -233,7 +233,13 @@ def _tabulate_tensor(ir, prefix, parameters):
         jacobi_code += "\n"
         jacobi_code += "\n\n" + format["facet determinant"](tdim, gdim) # FIXME: This is not defined in a point???
 
-    elif integral_type == "custom":
+    elif integral_type in ("custom", "cutcell", "interface", "overlap"):
+
+        # Set number of cells
+        if not integral_type == "custom":
+            num_cells = {"cutcell":   1,
+                         "interface": 2,
+                         "overlap":   2}[integral_type]
 
         # Warning that more than two cells in only partly supported.
         # The missing piece is to couple multiple cells to
@@ -296,7 +302,7 @@ def _tabulate_tensor(ir, prefix, parameters):
     # restructure this function.
 
     # Add common code except for custom integrals
-    if integral_type != "custom":
+    if not integral_type in ("custom", "cutcell", "interface", "overlap"):
         common += _tabulate_weights([quadrature_weights[p] for p in sorted(used_weights)])
 
         # Add common code for updating tables
