@@ -441,6 +441,86 @@ namespace ufc
 
   };
 
+  /// This class defines the interface for the tabulation of the
+  /// tensor corresponding to the local contribution to a form from
+  /// the integral over a cut cell defined in terms of a set of
+  /// quadrature points and weights.
+  class cutcell_integral: public integral
+  {
+  public:
+
+    /// Constructor
+    cutcell_integral() {}
+
+    /// Destructor
+    virtual ~cutcell_integral() {};
+
+    /// Tabulate the tensor for the contribution from a cutcell domain
+    virtual void tabulate_tensor(double * A,
+                                 const double * const * w,
+                                 const double * coordinate_dofs,
+                                 std::size_t num_quadrature_points,
+                                 const double * quadrature_points,
+                                 const double * quadrature_weights,
+                                 int cell_orientation) const = 0;
+
+  };
+
+  /// This class defines the interface for the tabulation of the
+  /// tensor corresponding to the local contribution to a form from
+  /// the integral over a cut cell defined in terms of a set of
+  /// quadrature points and weights.
+  class interface_integral: public integral
+  {
+  public:
+
+    /// Constructor
+    interface_integral() {}
+
+    /// Destructor
+    virtual ~interface_integral() {};
+
+    /// Tabulate the tensor for the contribution from an interface domain
+    virtual void tabulate_tensor(double * A,
+                                 const double * const * w,
+                                 const double * coordinate_dofs,
+                                 std::size_t num_quadrature_points,
+                                 const double * quadrature_points,
+                                 const double * quadrature_weights,
+                                 const double * facet_normals,
+                                 int cell_orientation) const = 0;
+
+  };
+
+  /// This class defines the interface for the tabulation of the
+  /// tensor corresponding to the local contribution to a form from
+  /// the integral over the overlapped portion of a cell defined in
+  /// terms of a set of quadrature points and weights.
+  class overlap_integral: public integral
+  {
+  public:
+
+    /// Constructor
+    overlap_integral() {}
+
+    /// Destructor
+    virtual ~overlap_integral() {};
+
+    /// Return the number of cells involved in evaluation of the integral
+    virtual std::size_t num_cells() const = 0;
+
+    /// Tabulate the tensor for the contribution from an overlap domain
+    virtual void tabulate_tensor(double * A,
+                                 const double * const * w,
+                                 const double * coordinate_dofs,
+                                 std::size_t num_quadrature_points,
+                                 const double * quadrature_points,
+                                 const double * quadrature_weights,
+                                 const double * facet_normals,
+                                 int cell_orientation) const = 0;
+
+  };
+
   /// This class defines the interface for the assembly of the global
   /// tensor corresponding to a form with r + n arguments, that is, a
   /// mapping
