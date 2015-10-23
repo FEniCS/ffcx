@@ -78,6 +78,10 @@ class ufc_form(ufc_generator):
         classnames = ir["create_dofmap"] # FIXME: ffc provides element id, not classname
         return generate_return_new_switch(L, i, classnames)
 
+    def create_coordinate_mapping(self, L, ir):
+        classname = ir["create_coordinate_mapping"] # FIXME: ffc provides element id, not classname
+        return L.Return(L.New(classname))
+
     def _max_foo_subdomain_id(self, L, ir, integral_type, declname):
         "Return implementation of ufc::form::%(declname)s()."
         value = ir[declname]

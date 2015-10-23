@@ -54,7 +54,7 @@ def mock_form_ir():
     ir.update({
         "create_coordinate_finite_element": "mock_coordinate_finite_element_classname",
         "create_coordinate_dofmap": "mock_coordinate_dofmap_classname",
-        "create_domain": "mock_domain_classname",
+        "create_coordinate_mapping": "mock_coordinate_mapping_classname",
         "create_finite_element": ["mock_finite_element_classname_%d" % (i,) for i in range(ir["num_coefficients"])],
         "create_dofmap": ["mock_dofmap_classname_%d" % (i,) for i in range(ir["num_coefficients"])],
         })
@@ -133,10 +133,10 @@ def mock_integral_ir():
         })
     return ir
 
-def mock_domain_ir():
-    ir = basic_class_properties("mock_domain_classname")
+def mock_coordinate_mapping_ir():
+    ir = basic_class_properties("mock_coordinate_mapping_classname")
     ir.update({
-        "signature": "mock_domain_signature",
+        "signature": "mock_coordinate_mapping_signature",
         "cell_shape": "mock_cell_shape",
         "geometric_dimension": 2,
         "topological_dimension": 2,
@@ -148,9 +148,9 @@ def mock_domain_ir():
 
 
 
-def compile_mock_domain():
-    ir = mock_domain_ir()
-    gen = ufc_domain()
+def compile_mock_coordinate_mapping():
+    ir = mock_coordinate_mapping_ir()
+    gen = ufc_coordinate_mapping()
     return gen.generate(L, ir)
 
 def compile_mock_form():
@@ -179,8 +179,8 @@ def compile_mock_all():
     return '\n\n'.join(mocks)
 
 
-def test_mock_domain():
-    h, cpp = compile_mock_domain()
+def test_mock_coordinate_mapping():
+    h, cpp = compile_mock_coordinate_mapping()
     print h
     print cpp
 

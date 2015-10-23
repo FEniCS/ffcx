@@ -50,17 +50,21 @@ class ufc_generator(object):
         # Generate code snippets for each keyword found in templates
         snippets = {}
         for kw in self._keywords:
-            # Try self.<keyword>(L, ir) if available, otherwise use ir[keyword]
-            if hasattr(self, kw):
-                method = getattr(self, kw)
-                value = method(L, ir)
-                if isinstance(value, L.CStatement):
-                    value = L.Indented(value.cs_format())
-                    value = format_indented_lines(value)
-            else:
-                value = ir.get(kw)
-                if value is None:
-                    error("Missing template keyword '%s' in ir for '%s'." % (kw, self.__class__.__name__))
+            # Check that attribute self.<keyword> is available
+            if not hasattr(self, kw):
+                error("Missing handler for keyword '%s' in class %s." % (kw, self.__class__.__name__))
+
+            # Could check for existence of keyword in ir too but I'd
+            # rather redesign so ir contains better defined entries:
+            #if kw not in ir:
+            #    error("Missing entry for keyword '%s' in ir for class %s." % (kw, self.__class__.__name__))
+
+            # Call self.<keyword>(L, ir) to get value
+            method = getattr(self, kw)
+            value = method(L, ir)
+            if isinstance(value, L.CStatement):
+                value = L.Indented(value.cs_format())
+                value = format_indented_lines(value)
             snippets[kw] = value
 
         # Error checking (can detect some bugs early when changing the interface)
@@ -78,47 +82,48 @@ class ufc_generator(object):
 
         return snippets
 
-    def generate(self, L, ir):
-        # Return composition of templates with generated snippets
-        snippets = self.generate_snippets(L, ir)
+    def generate(self, L, ir, snippets=None):
+        "Return composition of templates with generated snippets."
+        if snippets is None:
+            snippets = self.generate_snippets(L, ir)
         h = self._header_template % snippets
         cpp = self._implementation_template % snippets
         return h, cpp
 
-    #def preamble(self, L, ir):
-    #    "Override in classes that need additional declarations inside class."
-    #    assert not ir.get("preamble")
-    #    return ""
+    def classname(self, L, ir):
+        "Return classname."
+        classname = ir["classname"]
+        return classname
 
     def members(self, L, ir):
-        "Override in classes that need members."
+        "Return empty string. Override in classes that need members."
         assert not ir.get("members")
         return ""
 
     def constructor(self, L, ir):
-        "Override in classes that need constructor."
+        "Return empty string. Override in classes that need constructor."
         assert not ir.get("constructor")
         return ""
 
     def constructor_arguments(self, L, ir):
-        "Override in classes that need constructor."
+        "Return empty string. Override in classes that need constructor."
         assert not ir.get("constructor_arguments")
         return ""
 
     def initializer_list(self, L, ir):
-        "Override in classes that need constructor."
-        assert not ir.get("")
+        "Return empty string. Override in classes that need constructor."
+        assert not ir.get("initializer_list")
         return ""
 
     def destructor(self, L, ir):
-        "Override in classes that need destructor."
+        "Return empty string. Override in classes that need destructor."
         assert not ir.get("destructor")
         return ""
 
     def signature(self, L, ir):
         "Default implementation of returning signature string fetched from ir."
-        value = ir["signature"]
-        return L.Return(L.LiteralString(value))
+        sig = ir["signature"]
+        return L.Return(L.LiteralString(sig))
 
     def create(self, L, ir):
         "Default implementation of creating a new object of the same type."
@@ -127,10 +132,10 @@ class ufc_generator(object):
 
     def topological_dimension(self, L, ir):
         "Default implementation of returning topological dimension fetched from ir."
-        value = ir["topological_dimension"]
-        return L.Return(L.LiteralInt(value))
+        tdim = ir["topological_dimension"]
+        return L.Return(L.LiteralInt(tdim))
 
     def geometric_dimension(self, L, ir):
         "Default implementation of returning geometric dimension fetched from ir."
-        value = ir["geometric_dimension"]
-        return L.Return(L.LiteralInt(value))
+        gdim = ir["geometric_dimension"]
+        return L.Return(L.LiteralInt(gdim))
