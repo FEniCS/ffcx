@@ -1,13 +1,10 @@
 
-from uflacs.backends.ufc.generator import ufc_generator, integral_name_templates, ufc_integral_types
-import uflacs.backends.ufc.templates
+from uflacs.backends.ufc.generator import ufc_generator, ufc_integral_types
 
 class ufc_integral(ufc_generator):
     def __init__(self, integral_type):
         assert integral_type in ufc_integral_types
-        integral_header = getattr(uflacs.backends.ufc.templates, "%s_integral_header" % integral_type)
-        integral_implementation = getattr(uflacs.backends.ufc.templates, "%s_integral_implementation" % integral_type)
-        ufc_generator.__init__(self, integral_header, integral_implementation)
+        ufc_generator.__init__(self, integral_type + "_integral")
 
     def enabled_coefficients(self, L, ir):
         enabled_coefficients = ir["enabled_coefficients"]

@@ -1,6 +1,5 @@
 
 from uflacs.backends.ufc.generator import ufc_generator
-from uflacs.backends.ufc.templates import coordinate_mapping_header, coordinate_mapping_implementation
 
 ### Code generation utilities:
 
@@ -85,7 +84,7 @@ def det_expr(A, m, n):
 
 class ufc_coordinate_mapping(ufc_generator):
     def __init__(self):
-        ufc_generator.__init__(self, coordinate_mapping_header, coordinate_mapping_implementation)
+        ufc_generator.__init__(self, "coordinate_mapping")
 
     def cell_shape(self, L, ir):
         name = ir["cell_shape"]

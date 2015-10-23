@@ -1,19 +1,23 @@
 
 from uflacs.backends.ufc.generator import ufc_generator, integral_name_templates, ufc_integral_types
-from uflacs.backends.ufc.templates import form_header, form_implementation
 from uflacs.backends.ufc.utils import generate_return_new_switch
 
 def add_ufc_form_integral_methods(cls):
-    """This function generates methods on the class it decorates, for each integral type.
+    """This function generates methods on the class it decorates,
+    for each integral name template and for each integral type.
 
-    This allows implementing e.g. create_###_integrals once in the decorated class,
-    while
+    This allows implementing e.g. create_###_integrals once in the
+    decorated class as '_create_foo_integrals', and this function will
+    expand that implementation into 'create_cell_integrals',
+    'create_exterior_facet_integrals', etc.
+
+    Name templates are taken from 'integral_name_templates' and 'ufc_integral_types'.
     """
     # The dummy name "foo" is chosen for familiarity for ffc developers
-    impl_type = "foo"
+    dummy_integral_type = "foo"
 
     for template in integral_name_templates:
-        implname = "_" + (template % (impl_type,))
+        implname = "_" + (template % (dummy_integral_type,))
         impl = getattr(cls, implname)
         for integral_type in ufc_integral_types:
             declname = template % (integral_type,)
@@ -30,7 +34,7 @@ def add_ufc_form_integral_methods(cls):
 @add_ufc_form_integral_methods
 class ufc_form(ufc_generator):
     def __init__(self):
-        ufc_generator.__init__(self, form_header, form_implementation)
+        ufc_generator.__init__(self, "form")
 
     def num_coefficients(self, L, ir):
         value = ir["num_coefficients"]
@@ -84,22 +88,26 @@ class ufc_form(ufc_generator):
 
     def _max_foo_subdomain_id(self, L, ir, integral_type, declname):
         "Return implementation of ufc::form::%(declname)s()."
-        value = ir[declname]
-        return L.Return(L.LiteralInt(value))
+        # e.g. max_subdomain_id = ir["max_cell_subdomain_id"]
+        max_subdomain_id = ir[declname]
+        return L.Return(L.LiteralInt(max_subdomain_id))
 
     def _has_foo_integrals(self, L, ir, integral_type, declname):
         "Return implementation of ufc::form::%(declname)s()."
-        value = ir[declname]
-        return L.Return(L.LiteralBool(value))
+        # e.g. has_integrals = ir["has_cell_integrals"]
+        has_integrals = ir[declname]
+        return L.Return(L.LiteralBool(has_integrals))
 
     def _create_foo_integral(self, L, ir, integral_type, declname):
         "Return implementation of ufc::form::%(declname)s()."
         subdomain_id = L.Symbol("subdomain_id")
+        # e.g. classname = ir["create_cell_integral"]
         classnames = ir[declname] # FIXME: ffc provides element id, not classname
         return generate_return_new_switch(L, subdomain_id, classnames)
 
     def _create_default_foo_integral(self, L, ir, integral_type, declname):
         "Return implementation of ufc::form::%(declname)s()."
+        # e.g. classname = ir["create_default_cell_integral"]
         classname = ir[declname] # FIXME: ffc provides element id, not classname
         if classname:
             return L.Return(L.New(classname))

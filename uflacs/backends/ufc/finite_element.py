@@ -1,9 +1,7 @@
 
 from ufl import product
 from uflacs.backends.ufc.generator import ufc_generator
-from uflacs.backends.ufc.templates import finite_element_header, finite_element_implementation
 from uflacs.backends.ufc.utils import generate_return_new_switch
-
 
 def affine_weights(dim): # FIXME: This is used where we still assume an affine mesh. Get rid of all places that use it.
     "Compute coefficents for mapping from reference to physical element"
@@ -17,7 +15,7 @@ def affine_weights(dim): # FIXME: This is used where we still assume an affine m
 
 class ufc_finite_element(ufc_generator):
     def __init__(self):
-        ufc_generator.__init__(self, finite_element_header, finite_element_implementation)
+        ufc_generator.__init__(self, "finite_element")
 
     def cell_shape(self, L, ir):
         name = ir["cell_shape"]

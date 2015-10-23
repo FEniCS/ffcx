@@ -1,11 +1,10 @@
 
 from uflacs.backends.ufc.generator import ufc_generator
-from uflacs.backends.ufc.templates import dofmap_header, dofmap_implementation
 from uflacs.backends.ufc.utils import generate_return_new_switch
 
 class ufc_dofmap(ufc_generator):
     def __init__(self):
-        ufc_generator.__init__(self, dofmap_header, dofmap_implementation)
+        ufc_generator.__init__(self, "dofmap")
 
     def needs_mesh_entities(self, L, ir):
         d = L.Symbol("d")
