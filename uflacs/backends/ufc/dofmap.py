@@ -1,3 +1,23 @@
+# -*- coding: utf-8 -*-
+# Copyright (C) 2009-2015 Anders Logg and Martin Sandve Alnæs
+#
+# This file is part of UFLACS.
+#
+# UFLACS is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# UFLACS is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
+
+# Note: Most of the code in this file is a direct translation from the old implementation in FFC
+
 
 from uflacs.backends.ufc.generator import ufc_generator
 from uflacs.backends.ufc.utils import generate_return_new_switch

@@ -1,10 +1,19 @@
-"""Backend for generating UFC code directly without going through FFC.
+# -*- coding: utf-8 -*-
+# Copyright (C) 2015-2015 Martin Sandve Alnæs
+#
+# This file is part of UFLACS.
+#
+# UFLACS is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# UFLACS is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
-UFC TODOs:
-- Use std::array internally in generated code (create C/C++ language split?)
-
-- Drop the header-only version and use split version in headerfile-only
-
-- Add integral type enum
-- Use integral type enum to reduce number of form::foo functions
-"""
+"""Backend for generating UFC code."""
