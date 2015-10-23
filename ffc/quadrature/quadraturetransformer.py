@@ -33,6 +33,7 @@ def firstkey(d):
 # UFL common.
 from ufl.utils.stacks import StackDict, Stack
 from ufl.utils.sorting import sorted_by_key
+from ufl import custom_integral_types
 
 # UFL Classes.
 from ufl.classes import FixedIndex
@@ -681,7 +682,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         # Add transformation if needed.
         transforms = []
-        if self.integral_type == "custom":
+        if self.integral_type in custom_integral_types:
             for i, direction in enumerate(derivatives):
                 # Custom integrals to not need transforms, so in place
                 # of the transform, we insert an identity matrix
@@ -778,7 +779,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
             weight += format["component"]("", format["integration points"])
 
         # Update sets of used variables.
-        if integral_type in ("vertex", "custom"):
+        if integral_type in (("vertex",) + custom_integral_types):
             trans_set = set()
             value = format["mul"]([val, weight])
         else:

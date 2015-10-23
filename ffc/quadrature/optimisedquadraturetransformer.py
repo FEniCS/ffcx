@@ -31,6 +31,7 @@ def firstkey(d):
 # UFL common.
 from ufl import product
 from ufl.utils.sorting import sorted_by_key
+from ufl import custom_integral_types
 
 # UFL Classes.
 from ufl.classes import FixedIndex
@@ -551,7 +552,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Add transformation if needed.
         transforms = []
-        if not self.integral_type == "custom":
+        if not self.integral_type in custom_integral_types:
             for i, direction in enumerate(derivatives):
                 ref = multi[i]
                 t = f_transform("JINV", ref, direction, tdim, gdim, self.restriction)
@@ -625,7 +626,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         weight = self._create_symbol(weight, ACCESS)[()]
 
         # Create value.
-        if integral_type in ("vertex", "custom"):
+        if integral_type in (("vertex",) + custom_integral_types):
             trans_set = set()
             value = create_product([val, weight])
         else:

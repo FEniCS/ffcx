@@ -28,6 +28,7 @@ import numpy
 # UFL modules
 from ufl.utils.sorting import sorted_by_key
 from ufl.utils.derivativetuples import compute_derivative_tuples
+from ufl import custom_integral_types
 
 # FFC modules
 from ffc.log import info, debug, ffc_assert, error, warning
@@ -233,7 +234,7 @@ def _tabulate_tensor(ir, prefix, parameters):
         jacobi_code += "\n"
         jacobi_code += "\n\n" + format["facet determinant"](tdim, gdim) # FIXME: This is not defined in a point???
 
-    elif integral_type in ("custom", "cutcell", "interface", "overlap"):
+    elif integral_type in custom_integral_types:
 
         # Set number of cells
         if not integral_type == "custom":
@@ -302,7 +303,7 @@ def _tabulate_tensor(ir, prefix, parameters):
     # restructure this function.
 
     # Add common code except for custom integrals
-    if not integral_type in ("custom", "cutcell", "interface", "overlap"):
+    if not integral_type in custom_integral_types:
         common += _tabulate_weights([quadrature_weights[p] for p in sorted(used_weights)])
 
         # Add common code for updating tables

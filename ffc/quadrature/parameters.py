@@ -20,6 +20,9 @@
 # Modified by Anders Logg 2009, 2014
 # Modified by Martin Alnaes 2013-2014
 
+# UFL modules
+from ufl import custom_integral_types
+
 # FFC modules
 from ffc.log import warning
 
@@ -34,7 +37,7 @@ def parse_optimise_parameters(parameters, itg_data):
 
 
     # Set optimized parameters
-    if parameters["optimize"] and itg_data.integral_type == "custom":
+    if parameters["optimize"] and itg_data.integral_type in custom_integral_types:
         warning("Optimization not available for custom integrals, skipping optimization.")
     elif parameters["optimize"]:
         optimise_parameters["ignore ones"]        = True

@@ -24,6 +24,9 @@
 # Python modules
 import re, numpy, platform
 
+# UFL modules
+from ufl import custom_integral_types
+
 # FFC modules
 from ffc.log import debug, error
 from six.moves import zip
@@ -618,7 +621,7 @@ def _generate_cell_volume(tdim, gdim, integral_type, r=None):
     elif integral_type == "interior_facet":
         code = volume % {"restriction": _choose_map("+")}
         code += volume % {"restriction": _choose_map("-")}
-    elif integral_type in ("custom", "cutcell", "interface", "overlap"):
+    elif integral_type in custom_integral_types:
         code = volume % {"restriction": _choose_map(r)}
     else:
         error("Unsupported integral_type: %s" % str(integral_type))
@@ -636,7 +639,7 @@ def _generate_circumradius(tdim, gdim, integral_type, r=None):
     elif integral_type == "interior_facet":
         code = radius % {"restriction": _choose_map("+")}
         code += radius % {"restriction": _choose_map("-")}
-    elif integral_type in ("custom", "cutcell", "interface", "overlap"):
+    elif integral_type in custom_integral_types:
         code = radius % {"restriction": _choose_map(r)}
     else:
         error("Unsupported integral_type: %s" % str(integral_type))
