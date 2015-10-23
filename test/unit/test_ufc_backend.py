@@ -207,17 +207,16 @@ def test_mock_integral():
 
 def test_foo():
     ir = mock_form_ir()
-    print ufc_form.create_cell_integral.__doc__
-    print ufc_form().create_cell_integral(L, ir)
+    assert "cell_integral" in ufc_form.create_cell_integral.__doc__
+    assert "return" in str(ufc_form().create_cell_integral(L, ir))
 
 def test_mock_extract_function():
-    h, cpp = compile_mock_integral("cell")
-    name = "enabled_coefficients"
-    print
-    print
-    print name
+    h, cpp = compile_mock_coordinate_mapping()
+    name = "compute_reference_coordinates"
+    print "/// Extracted", name, ":"
+    print "/// begin"
     print extract_function(name, cpp)
-    print
+    print "/// end"
 
 """
 Missing:

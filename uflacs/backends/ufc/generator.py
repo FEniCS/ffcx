@@ -104,7 +104,7 @@ class ufc_generator(object):
 
         # Error checking (can detect some bugs early when changing the ufc interface)
         # Get all attributes of subclass class (skip "_foo")
-        attrs = set(name for name in dir(self) if not name.startswith("_"))
+        attrs = set(name for name in dir(self) if not (name.startswith("_") or name.startswith("generate")))
         # Get all attributes of this base class (skip "_foo" and "generate*")
         base_attrs = set(name for name in dir(ufc_generator) if not (name.startswith("_") or name.startswith("generate")))
         # The template keywords should not contain any names not among the class attributes

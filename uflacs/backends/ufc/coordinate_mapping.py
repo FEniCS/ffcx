@@ -232,7 +232,12 @@ class ufc_coordinate_mapping(ufc_generator):
         J = L.Symbol("J")
         detJ = L.Symbol("detJ")
         K = L.Symbol("K")
+
+        # Symbol for ufc_geometry cell midpoint definition
         mp = L.Symbol("%s_midpoint" % cellname)
+
+        dX2 = L.Symbol("dX2")
+        epsilon = L.LiteralFloat(1e-14) # L.Symbol("epsilon") # TODO: Choose good convergence criteria
 
         # Wrap K as flattened array for convenient indexing Kf[j,i]
         Kf = L.FlattenedArray(K, dims=(tdim, gdim))
@@ -240,39 +245,59 @@ class ufc_coordinate_mapping(ufc_generator):
         # declare xgoal = x[ip]
         # declare Xk = initial value
         newton_init = [
-            # Declare xgoal to hold the current x coordinate value
+            L.Comment("Declare xgoal to hold the current x coordinate value"),
             L.ArrayDecl("const double", xgoal, (gdim,), values=[x[ip][iv] for iv in range(gdim)]),
-            # Declare Xk iterate with initial value equal to reference cell midpoint
+            L.Comment("Declare Xk iterate with initial value equal to reference cell midpoint"),
             L.ArrayDecl("double", Xk, (tdim,), values=[mp[c] for c in range(tdim)]),
             ]
 
-        newton_body = [
-            # Declare intermediate arrays to hold results of compute_geometry call
+        part1 = [
+            L.Comment("Declare intermediate arrays to hold results of compute_geometry call"),
             L.ArrayDecl("double", xk, (gdim,)),
             L.ArrayDecl("double", J, (gdim*tdim,)),
             L.ArrayDecl("double", detJ, (1,)),
             L.ArrayDecl("double", K, (tdim*gdim,)),
 
-            # Compute K = J^-1 for one point (J and detJ are only used as
-            # intermediate storage inside compute_geometry, not used out here)
+            L.Comment("Compute K = J^-1 for one point, (J and detJ are only used as"),
+            L.Comment("intermediate storage inside compute_geometry, not used out here"),
             L.Call("compute_geometry",
                    (xk, J, detJ, K, one_point,
                     Xk, coordinate_dofs, cell_orientation)),
+            ]
 
-            # Declare dX increment to be computed, initialized to zero
+        part2a = [
+            L.Comment("Declare dX increment to be computed, initialized to zero"),
             L.ArrayDecl("double", dX, (tdim,), values=0.0),
 
-            # Compute dX[j] = sum_i K_ji * (x(Xk)_i - x_i)
+            L.Comment("Compute dX[j] = sum_i K_ji * (x(Xk)_i - x_i)"),
             L.ForRange(j, 0, tdim, body=
                        L.ForRange(i, 0, gdim, body=
                                   L.AssignAdd(dX[j], Kf[j,i]*(xk[i] - xgoal[i])))),
 
-            # Update Xk -= dX
+            L.Comment("Update Xk -= dX"),
             L.ForRange(j, 0, tdim, body=L.AssignSub(Xk[j], dX[j])),
+
+            # TODO: If we set epsilon strict and break _before_ Xk -= dX, we can output consistent (J, detJ, K) together with X
+            L.Comment("Compute |dX|^2"),
+            L.VariableDecl("double", dX2, value=0.0),
+            L.ForRange(j, 0, tdim, body=L.AssignAdd(dX2, dX[j]*dX[j])),
+
+            L.Comment("Break if converged"),
+            L.If(L.LT(dX2, epsilon), L.Break()),
             ]
 
+        part2b = [
+            L.Comment("Compute Xk[j] -= sum_i K_ji * (x(Xk)_i - x_i)"),
+            L.ForRange(j, 0, tdim, body=
+                       L.ForRange(i, 0, gdim, body=
+                                  L.AssignSub(Xk[j], Kf[j,i]*(xk[i] - xgoal[i])))),
+            ]
+
+        newton_body = part1 + part2a  # Use if |dX| is needed
+        #newton_body = part1 + part2b # Use for fixed iteration number
+
         # Loop until convergence
-        num_iter = degree # TODO: Add better convergence criteria? Break if |dX| < epsilon?
+        num_iter = degree # TODO: Check if this is a good convergence criteria, add break if |dX| < epsilon?
         newton_loop = L.ForRange(k, 0, num_iter, body=newton_body)
 
         # X[ip] = Xk
