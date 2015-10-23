@@ -117,48 +117,48 @@ static const double hexahedron_vertices[UFC_NUM_VERTICES_IN_HEXAHEDRON][UFC_TDIM
   };
 */
 
-/// --- Local reference cell barycenter by UFC conventions ---
+/// --- Local reference cell midpoint by UFC conventions ---
 
-static const double interval_barycenter[UFC_TDIM_1] = {
+static const double interval_midpoint[UFC_TDIM_1] = {
   0.5
   };
 
-static const double triangle_barycenter[UFC_TDIM_2] = {
+static const double triangle_midpoint[UFC_TDIM_2] = {
   1.0/3.0, 1.0/3.0
   };
 
-static const double tetrahedron_barycenter[UFC_TDIM_3] = {
+static const double tetrahedron_midpoint[UFC_TDIM_3] = {
   0.25, 0.25, 0.25
   };
 
 // FIXME: Insert quad conventions here
 /*
-static const double quadrilateral_barycenter[UFC_TDIM_2] = {
+static const double quadrilateral_midpoint[UFC_TDIM_2] = {
   0.5, 0.5
   };
 */
 
 // FIXME: Insert quad conventions here
 /*
-static const double hexahedron_barycenter[UFC_TDIM_3] = {
+static const double hexahedron_midpoint[UFC_TDIM_3] = {
   0.5, 0.5, 0.5
   };
 */
 
-/// --- Local reference cell facet barycenters by UFC conventions ---
+/// --- Local reference cell facet midpoints by UFC conventions ---
 
-static const double interval_facet_barycenter[UFC_NUM_FACETS_IN_INTERVAL][UFC_TDIM_1] = {
+static const double interval_facet_midpoint[UFC_NUM_FACETS_IN_INTERVAL][UFC_TDIM_1] = {
   {0.0},
   {1.0}
   };
 
-static const double triangle_facet_barycenter[UFC_NUM_FACETS_IN_TRIANGLE][UFC_TDIM_2] = {
+static const double triangle_facet_midpoint[UFC_NUM_FACETS_IN_TRIANGLE][UFC_TDIM_2] = {
   {0.5, 0.5},
   {0.0, 0.5},
   {0.5, 0.0}
   };
 
-static const double tetrahedron_facet_barycenter[UFC_NUM_FACETS_IN_TETRAHEDRON][UFC_TDIM_3] = {
+static const double tetrahedron_facet_midpoint[UFC_NUM_FACETS_IN_TETRAHEDRON][UFC_TDIM_3] = {
   {0.5, 0.5, 0.5},
   {0.0, 1.0/3.0, 1.0/3.0},
   {1.0/3.0, 0.0, 1.0/3.0},
@@ -167,7 +167,7 @@ static const double tetrahedron_facet_barycenter[UFC_NUM_FACETS_IN_TETRAHEDRON][
 
 // FIXME: Insert quad conventions here
 /*
-static const double quadrilateral_facet_barycenter[UFC_NUM_FACETS_IN_QUADRILATERAL][UFC_TDIM_2] = {
+static const double quadrilateral_facet_midpoint[UFC_NUM_FACETS_IN_QUADRILATERAL][UFC_TDIM_2] = {
   {0.0, 0.0},
   {0.0, 0.0},
   {0.0, 0.0},
@@ -177,7 +177,7 @@ static const double quadrilateral_facet_barycenter[UFC_NUM_FACETS_IN_QUADRILATER
 
 // FIXME: Insert quad conventions here
 /*
-static const double hexahedron_facet_barycenter[UFC_NUM_FACETS_IN_HEXAHEDRON][UFC_TDIM_3] = {
+static const double hexahedron_facet_midpoint[UFC_NUM_FACETS_IN_HEXAHEDRON][UFC_TDIM_3] = {
   {0.0, 0.5, 0.5},
   {0.0, 0.5, 0.5},
   {0.0, 0.5, 0.5},
