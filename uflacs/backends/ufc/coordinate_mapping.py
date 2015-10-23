@@ -49,7 +49,7 @@ def __pdet_23(L, A):
 
 def pdet_mn(A, m, n):
     """Compute the pseudo-determinant of A: sqrt(det(A.T*A))."""
-    # TODO: This would be more usable if it didn't make up variable names...
+    # TODO: This would be more reusable if it didn't make up variable names...
     # Build A^T*A matrix
     i = L.Symbol("i")
     j = L.Symbol("j")

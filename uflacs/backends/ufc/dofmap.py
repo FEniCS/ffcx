@@ -6,6 +6,11 @@ class ufc_dofmap(ufc_generator):
     def __init__(self):
         ufc_generator.__init__(self, "dofmap")
 
+    def topological_dimension(self, L, ir):
+        "Default implementation of returning topological dimension fetched from ir."
+        tdim = ir["topological_dimension"]
+        return L.Return(L.LiteralInt(tdim))
+
     def needs_mesh_entities(self, L, ir):
         d = L.Symbol("d")
         nme = ir["needs_mesh_entities"]

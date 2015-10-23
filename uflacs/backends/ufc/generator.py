@@ -73,11 +73,6 @@ class ufc_generator(object):
             if not hasattr(self, kw):
                 error("Missing handler for keyword '%s' in class %s." % (kw, self.__class__.__name__))
 
-            # Could check for existence of keyword in ir too but I'd
-            # rather redesign so ir contains better defined entries:
-            #if kw not in ir:
-            #    error("Missing entry for keyword '%s' in ir for class %s." % (kw, self.__class__.__name__))
-
             # Call self.<keyword>(L, ir) to get value
             method = getattr(self, kw)
             value = method(L, ir)
@@ -118,8 +113,7 @@ class ufc_generator(object):
 
     def classname(self, L, ir):
         "Return classname."
-        classname = ir["classname"]
-        return classname
+        return ir["classname"]
 
     def members(self, L, ir):
         "Return empty string. Override in classes that need members."
@@ -160,13 +154,3 @@ class ufc_generator(object):
         "Default implementation of creating a new object of the same type."
         classname = ir["classname"]
         return L.Return(L.New(classname))
-
-    def topological_dimension(self, L, ir):
-        "Default implementation of returning topological dimension fetched from ir."
-        tdim = ir["topological_dimension"]
-        return L.Return(L.LiteralInt(tdim))
-
-    def geometric_dimension(self, L, ir):
-        "Default implementation of returning geometric dimension fetched from ir."
-        gdim = ir["geometric_dimension"]
-        return L.Return(L.LiteralInt(gdim))
