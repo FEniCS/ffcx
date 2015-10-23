@@ -506,9 +506,6 @@ namespace ufc
     /// Destructor
     virtual ~overlap_integral() {};
 
-    /// Return the number of cells involved in evaluation of the integral
-    virtual std::size_t num_cells() const = 0;
-
     /// Tabulate the tensor for the contribution from an overlap domain
     virtual void tabulate_tensor(double * A,
                                  const double * const * w,
@@ -516,7 +513,6 @@ namespace ufc
                                  std::size_t num_quadrature_points,
                                  const double * quadrature_points,
                                  const double * quadrature_weights,
-                                 const double * facet_normals,
                                  int cell_orientation) const = 0;
 
   };
@@ -587,6 +583,15 @@ namespace ufc
     /// Return the upper bound on subdomain ids for custom integrals
     virtual std::size_t max_custom_subdomain_id() const = 0;
 
+    /// Return the upper bound on subdomain ids for cutcell integrals
+    virtual std::size_t max_cutcell_subdomain_id() const = 0;
+
+    /// Return the upper bound on subdomain ids for interface integrals
+    virtual std::size_t max_interface_subdomain_id() const = 0;
+
+    /// Return the upper bound on subdomain ids for overlap integrals
+    virtual std::size_t max_overlap_subdomain_id() const = 0;
+
 
     /// Return whether form has any cell integrals
     virtual bool has_cell_integrals() const = 0;
@@ -602,6 +607,15 @@ namespace ufc
 
     /// Return whether form has any custom integrals
     virtual bool has_custom_integrals() const = 0;
+
+    /// Return whether form has any cutcell integrals
+    virtual bool has_cutcell_integrals() const = 0;
+
+    /// Return whether form has any interface integrals
+    virtual bool has_interface_integrals() const = 0;
+
+    /// Return whether form has any overlap integrals
+    virtual bool has_overlap_integrals() const = 0;
 
 
     /// Create a new cell integral on sub domain subdomain_id
@@ -621,6 +635,15 @@ namespace ufc
     /// Create a new custom integral on sub domain subdomain_id
     virtual custom_integral * create_custom_integral(std::size_t subdomain_id) const = 0;
 
+    /// Create a new cutcell integral on sub domain subdomain_id
+    virtual cutcell_integral * create_cutcell_integral(std::size_t subdomain_id) const = 0;
+
+    /// Create a new interface integral on sub domain subdomain_id
+    virtual interface_integral * create_interface_integral(std::size_t subdomain_id) const = 0;
+
+    /// Create a new overlap integral on sub domain subdomain_id
+    virtual overlap_integral * create_overlap_integral(std::size_t subdomain_id) const = 0;
+
 
     /// Create a new cell integral on everywhere else
     virtual cell_integral * create_default_cell_integral() const = 0;
@@ -638,6 +661,15 @@ namespace ufc
 
     /// Create a new custom integral on everywhere else
     virtual custom_integral * create_default_custom_integral() const = 0;
+
+    /// Create a new cutcell integral on everywhere else
+    virtual cutcell_integral * create_default_cutcell_integral() const = 0;
+
+    /// Create a new interface integral on everywhere else
+    virtual interface_integral * create_default_interface_integral() const = 0;
+
+    /// Create a new overlap integral on everywhere else
+    virtual overlap_integral * create_default_overlap_integral() const = 0;
 
   };
 

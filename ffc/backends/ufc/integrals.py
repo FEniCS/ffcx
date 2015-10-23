@@ -771,7 +771,6 @@ public:
                        std::size_t num_quadrature_points,
                        const double * quadrature_points,
                        const double * quadrature_weights,
-                       const double * facet_normals,
                        int cell_orientation) const final override
   {
 %(tabulate_tensor)s

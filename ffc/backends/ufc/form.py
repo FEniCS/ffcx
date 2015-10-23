@@ -41,7 +41,6 @@ public:
 %(signature)s
   }
 
-
   /// Return the rank of the global tensor (r)
   std::size_t rank() const final override
   {
@@ -90,7 +89,6 @@ public:
 %(create_dofmap)s
   }
 
-
   /// Return the number of cell domains
   std::size_t max_cell_subdomain_id() const final override
   {
@@ -121,6 +119,23 @@ public:
 %(max_custom_subdomain_id)s
   }
 
+  /// Return the number of cutcell domains
+  std::size_t max_cutcell_subdomain_id() const final override
+  {
+%(max_cutcell_subdomain_id)s
+  }
+
+  /// Return the number of interface domains
+  std::size_t max_interface_subdomain_id() const final override
+  {
+%(max_interface_subdomain_id)s
+  }
+
+  /// Return the number of overlap domains
+  std::size_t max_overlap_subdomain_id() const final override
+  {
+%(max_overlap_subdomain_id)s
+  }
 
   /// Return whether the form has any cell integrals
   bool has_cell_integrals() const final override
@@ -152,6 +167,23 @@ public:
 %(has_custom_integrals)s
   }
 
+  /// Return whether the form has any cutcell integrals
+  bool has_cutcell_integrals() const final override
+  {
+%(has_cutcell_integrals)s
+  }
+
+  /// Return whether the form has any interface integrals
+  bool has_interface_integrals() const final override
+  {
+%(has_interface_integrals)s
+  }
+
+  /// Return whether the form has any overlap integrals
+  bool has_overlap_integrals() const final override
+  {
+%(has_overlap_integrals)s
+  }
 
   /// Create a new cell integral on sub domain subdomain_id
   ufc::cell_integral * create_cell_integral(std::size_t subdomain_id) const final override
@@ -183,6 +215,23 @@ public:
 %(create_custom_integral)s
   }
 
+  /// Create a new cutcell integral on sub domain subdomain_id
+  ufc::cutcell_integral * create_cutcell_integral(std::size_t subdomain_id) const final override
+  {
+%(create_cutcell_integral)s
+  }
+
+  /// Create a new interface integral on sub domain subdomain_id
+  ufc::interface_integral * create_interface_integral(std::size_t subdomain_id) const final override
+  {
+%(create_interface_integral)s
+  }
+
+  /// Create a new overlap integral on sub domain subdomain_id
+  ufc::overlap_integral * create_overlap_integral(std::size_t subdomain_id) const final override
+  {
+%(create_overlap_integral)s
+  }
 
   /// Create a new cell integral on everywhere else
   ufc::cell_integral * create_default_cell_integral() const final override
@@ -212,6 +261,24 @@ public:
   ufc::custom_integral * create_default_custom_integral() const final override
   {
 %(create_default_custom_integral)s
+  }
+
+  /// Create a new cutcell integral on everywhere else
+  ufc::cutcell_integral * create_default_cutcell_integral() const final override
+  {
+%(create_default_cutcell_integral)s
+  }
+
+  /// Create a new interface integral on everywhere else
+  ufc::interface_integral * create_default_interface_integral() const final override
+  {
+%(create_default_interface_integral)s
+  }
+
+  /// Create a new overlap integral on everywhere else
+  ufc::overlap_integral * create_default_overlap_integral() const final override
+  {
+%(create_default_overlap_integral)s
   }
 
 };
@@ -246,7 +313,6 @@ public:
   /// Return a string identifying the form
   const char * signature() const final override;
 
-
   /// Return the rank of the global tensor (r)
   std::size_t rank() const final override;
 
@@ -255,7 +321,6 @@ public:
 
   /// Return original coefficient position for each coefficient (0 <= i < n)
   std::size_t original_coefficient_position(std::size_t i) const final override;
-
 
   /// Create a new finite element for parameterization of coordinates
   ufc::finite_element * create_coordinate_finite_element() const final override;
@@ -272,7 +337,6 @@ public:
   /// Create a new dofmap for argument function i
   ufc::dofmap * create_dofmap(std::size_t i) const final override;
 
-
   /// Return the number of cell domains
   std::size_t max_cell_subdomain_id() const final override;
 
@@ -288,6 +352,14 @@ public:
   /// Return the number of custom domains
   std::size_t max_custom_subdomain_id() const final override;
 
+  /// Return the number of cutcell domains
+  std::size_t max_cutcell_subdomain_id() const final override;
+
+  /// Return the number of interface domains
+  std::size_t max_interface_subdomain_id() const final override;
+
+  /// Return the number of overlap domains
+  std::size_t max_overlap_subdomain_id() const final override;
 
   /// Return whether the form has any cell integrals
   bool has_cell_integrals() const final override;
@@ -304,6 +376,14 @@ public:
   /// Return whether the form has any custom integrals
   bool has_custom_integrals() const final override;
 
+  /// Return whether the form has any cutcell integrals
+  bool has_cutcell_integrals() const final override;
+
+  /// Return whether the form has any interface integrals
+  bool has_interface_integrals() const final override;
+
+  /// Return whether the form has any overlap integrals
+  bool has_overlap_integrals() const final override;
 
   /// Create a new cell integral on sub domain i
   ufc::cell_integral * create_cell_integral(std::size_t i) const final override;
@@ -320,6 +400,14 @@ public:
   /// Create a new custom integral on sub domain i
   ufc::custom_integral * create_custom_integral(std::size_t i) const final override;
 
+  /// Create a new cutcell integral on sub domain i
+  ufc::cutcell_integral * create_cutcell_integral(std::size_t i) const final override;
+
+  /// Create a new interface integral on sub domain i
+  ufc::interface_integral * create_interface_integral(std::size_t i) const final override;
+
+  /// Create a new overlap integral on sub domain i
+  ufc::overlap_integral * create_overlap_integral(std::size_t i) const final override;
 
   /// Create a new cell integral on everywhere else
   ufc::cell_integral * create_default_cell_integral() const final override;
@@ -335,6 +423,16 @@ public:
 
   /// Create a new custom integral on everywhere else
   ufc::custom_integral * create_default_custom_integral() const final override;
+
+  /// Create a new cutcell integral on everywhere else
+  ufc::cutcell_integral * create_default_cutcell_integral() const final override;
+
+  /// Create a new interface integral on everywhere else
+  ufc::interface_integral * create_default_interface_integral() const final override;
+
+  /// Create a new overlap integral on everywhere else
+  ufc::overlap_integral * create_default_overlap_integral() const final override;
+
 };
 """
 
@@ -357,7 +455,6 @@ const char * %(classname)s::signature() const
 %(signature)s
 }
 
-
 /// Return the rank of the global tensor (r)
 std::size_t %(classname)s::rank() const
 {
@@ -375,7 +472,6 @@ std::size_t %(classname)s::original_coefficient_position(std::size_t i) const
 {
 %(original_coefficient_position)s
 }
-
 
 /// Create a new finite element for parameterization of coordinates
 ufc::finite_element * %(classname)s::create_coordinate_finite_element() const
@@ -407,7 +503,6 @@ ufc::dofmap * %(classname)s::create_dofmap(std::size_t i) const
 %(create_dofmap)s
 }
 
-
 /// Return the number of cell domains
 std::size_t %(classname)s::max_cell_subdomain_id() const
 {
@@ -438,6 +533,23 @@ std::size_t %(classname)s::max_custom_subdomain_id() const
 %(max_custom_subdomain_id)s
 }
 
+/// Return the number of cutcell domains
+std::size_t %(classname)s::max_cutcell_subdomain_id() const
+{
+%(max_cutcell_subdomain_id)s
+}
+
+/// Return the number of interface domains
+std::size_t %(classname)s::max_interface_subdomain_id() const
+{
+%(max_interface_subdomain_id)s
+}
+
+/// Return the number of overlap domains
+std::size_t %(classname)s::max_overlap_subdomain_id() const
+{
+%(max_overlap_subdomain_id)s
+}
 
 /// Return whether the form has any cell integrals
 bool %(classname)s::has_cell_integrals() const
@@ -469,6 +581,23 @@ bool %(classname)s::has_custom_integrals() const
 %(has_custom_integrals)s
 }
 
+/// Return whether the form has any cutcell integrals
+bool %(classname)s::has_cutcell_integrals() const
+{
+%(has_cutcell_integrals)s
+}
+
+/// Return whether the form has any interface integrals
+bool %(classname)s::has_interface_integrals() const
+{
+%(has_interface_integrals)s
+}
+
+/// Return whether the form has any overlap integrals
+bool %(classname)s::has_overlap_integrals() const
+{
+%(has_overlap_integrals)s
+}
 
 /// Create a new cell integral on sub domain subdomain_id
 ufc::cell_integral * %(classname)s::create_cell_integral(std::size_t subdomain_id) const
@@ -500,6 +629,23 @@ ufc::custom_integral * %(classname)s::create_custom_integral(std::size_t subdoma
 %(create_custom_integral)s
 }
 
+/// Create a new cutcell integral on sub domain subdomain_id
+ufc::cutcell_integral * %(classname)s::create_cutcell_integral(std::size_t subdomain_id) const
+{
+%(create_cutcell_integral)s
+}
+
+/// Create a new interface integral on sub domain subdomain_id
+ufc::interface_integral * %(classname)s::create_interface_integral(std::size_t subdomain_id) const
+{
+%(create_interface_integral)s
+}
+
+/// Create a new overlap integral on sub domain subdomain_id
+ufc::overlap_integral * %(classname)s::create_overlap_integral(std::size_t subdomain_id) const
+{
+%(create_overlap_integral)s
+}
 
 /// Create a new cell integral on everywhere else
 ufc::cell_integral * %(classname)s::create_default_cell_integral() const
@@ -531,4 +677,21 @@ ufc::custom_integral * %(classname)s::create_default_custom_integral() const
 %(create_default_custom_integral)s
 }
 
+/// Create a new cutcell integral on everywhere else
+ufc::cutcell_integral * %(classname)s::create_default_cutcell_integral() const
+{
+%(create_default_cutcell_integral)s
+}
+
+/// Create a new interface integral on everywhere else
+ufc::interface_integral * %(classname)s::create_default_interface_integral() const
+{
+%(create_default_interface_integral)s
+}
+
+/// Create a new overlap integral on everywhere else
+ufc::overlap_integral * %(classname)s::create_default_overlap_integral() const
+{
+%(create_default_overlap_integral)s
+}
 """

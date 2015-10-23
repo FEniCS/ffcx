@@ -51,7 +51,14 @@ from ffc.quadratureelement import QuadratureElement
 from ffc.cpp import set_float_formatting
 
 # List of supported integral types
-ufc_integral_types = ["cell", "exterior_facet", "interior_facet", "vertex", "custom"]
+ufc_integral_types = ("cell",
+                      "exterior_facet",
+                      "interior_facet",
+                      "vertex",
+                      "custom",
+                      "cutcell",
+                      "interface",
+                      "overlap")
 
 def pick_representation(representation):
     "Return one of the specialized code generation modules from a representation string."
