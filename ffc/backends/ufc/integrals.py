@@ -764,12 +764,6 @@ public:
 %(enabled_coefficients)s
   }
 
-  /// Return the number of cells involved in evaluation of the integral
-  std::size_t num_cells() const final override
-  {
-%(num_cells)s
-  }
-
   /// Tabulate the tensor for the contribution from an overlap domain
   void tabulate_tensor(double * A,
                        const double * const * w,
