@@ -165,13 +165,25 @@ class ufc_coordinate_mapping(ufc_generator):
         return L.ForRange(ip, 0, num_points, body=body)
 
     def compute_reference_coordinates(self, L, ir):
+        if 0: # TODO: Special case for affine case
+            return self._compute_reference_coordinates_affine(L, ir)
+        else:
+            return self._compute_reference_coordinates_newton(L, ir)
+
+    def _compute_reference_coordinates_affine(self, L, ir):
+        FIXME
+
+    def _compute_reference_coordinates_newton(self, L, ir):
         # Dimensions
         gdim = ir["geometric_dimension"]
         tdim = ir["topological_dimension"]
+        cellname = ir["cell_shape"]
         num_points = L.Symbol("num_points")
 
-        # Computing table one point at a time instead of using
-        # num_points will allow skipping dynamic allocation
+        degree = 1 # ir["element_degree"] # FIXME: Not currently available
+
+        # Computing table one point at a time instead of vectorized
+        # over num_points will allow skipping dynamic allocation
         one_point = 1
 
         # Loop indices
@@ -212,75 +224,66 @@ class ufc_coordinate_mapping(ufc_generator):
         #       Xk -= dX
         #   X[ip] = Xk
 
-        # TODO: Use cell midpoint instead of 0.0.
-        initial_X_value = 0.0
-
-        # Intermediate arrays declared in point loop
+        # Symbols for arrays used below
         Xk = L.Symbol("Xk")
-        Xk_decl = L.ArrayDecl("double", Xk, (tdim,), values=initial_X_value)
         xgoal = L.Symbol("xgoal")
-        xgoal_decl = L.ArrayDecl("double", xgoal, (gdim,), values=[x[ip][iv] for iv in range(gdim)])
-
-        # Intermediate arrays declared in newton loop
         dX = L.Symbol("dX")
-        dX_decl = L.ArrayDecl("double", dX, (tdim,), values=0.0) # Initialized to zero here!
-
-        # Intermediate arrays to hold results of compute_geometry call
         xk = L.Symbol("xk")
         J = L.Symbol("J")
         detJ = L.Symbol("detJ")
         K = L.Symbol("K")
-        xk_decl = L.ArrayDecl("double", xk, (gdim,))
-        J_decl = L.ArrayDecl("double", J, (gdim*tdim,))
-        detJ_decl = L.ArrayDecl("double", detJ, (1,))
-        K_decl = L.ArrayDecl("double", K, (tdim*gdim,))
+        mp = L.Symbol("%s_midpoint" % cellname)
 
-        # Compute K = J^-1 for one point (J and detJ are only used as
-        # intermediate storage inside compute_geometry, not used out here)
-        comp_geom = L.Call("compute_geometry",
-                           (xk, J, detJ, K, one_point, Xk, coordinate_dofs, cell_orientation))
-
-        # Compute dX[j] = sum_i K_ji * (x(Xk)_i - x_i)
-        K = L.FlattenedArray(K, dims=(tdim, gdim))
-        comp_dX = L.ForRange(j, 0, tdim, body=
-                             L.ForRange(i, 0, gdim, body=
-                                        L.AssignAdd(dX[j], K[j,i]*(xk[i] - xgoal[i]))))
-
-        # Update Xk -= dX
-        update_Xk = L.ForRange(j, 0, tdim, body=L.AssignSub(Xk[j], dX[j]))
-
-        newton_body = [
-            xk_decl, J_decl, detJ_decl, K_decl,
-            comp_geom,
-            dX_decl,
-            comp_dX,
-            update_Xk
-            ]
+        # Wrap K as flattened array for convenient indexing Kf[j,i]
+        Kf = L.FlattenedArray(K, dims=(tdim, gdim))
 
         # declare xgoal = x[ip]
         # declare Xk = initial value
         newton_init = [
-            xgoal_decl,
-            Xk_decl,
+            # Declare xgoal to hold the current x coordinate value
+            L.ArrayDecl("const double", xgoal, (gdim,), values=[x[ip][iv] for iv in range(gdim)]),
+            # Declare Xk iterate with initial value equal to reference cell midpoint
+            L.ArrayDecl("double", Xk, (tdim,), values=[mp[c] for c in range(tdim)]),
+            ]
+
+        newton_body = [
+            # Declare intermediate arrays to hold results of compute_geometry call
+            L.ArrayDecl("double", xk, (gdim,)),
+            L.ArrayDecl("double", J, (gdim*tdim,)),
+            L.ArrayDecl("double", detJ, (1,)),
+            L.ArrayDecl("double", K, (tdim*gdim,)),
+
+            # Compute K = J^-1 for one point (J and detJ are only used as
+            # intermediate storage inside compute_geometry, not used out here)
+            L.Call("compute_geometry",
+                   (xk, J, detJ, K, one_point,
+                    Xk, coordinate_dofs, cell_orientation)),
+
+            # Declare dX increment to be computed, initialized to zero
+            L.ArrayDecl("double", dX, (tdim,), values=0.0),
+
+            # Compute dX[j] = sum_i K_ji * (x(Xk)_i - x_i)
+            L.ForRange(j, 0, tdim, body=
+                       L.ForRange(i, 0, gdim, body=
+                                  L.AssignAdd(dX[j], Kf[j,i]*(xk[i] - xgoal[i])))),
+
+            # Update Xk -= dX
+            L.ForRange(j, 0, tdim, body=L.AssignSub(Xk[j], dX[j])),
             ]
 
         # Loop until convergence
-        # TODO: Test convergence criteria
-        num_iter = 3
+        num_iter = degree # TODO: Add better convergence criteria? Break if |dX| < epsilon?
         newton_loop = L.ForRange(k, 0, num_iter, body=newton_body)
 
         # X[ip] = Xk
-        newton_finish = [
-            L.ForRange(j, 0, tdim, body=L.Assign(X[ip][j], Xk[j]))
-            ]
+        newton_finish = L.ForRange(j, 0, tdim, body=L.Assign(X[ip][j], Xk[j]))
 
-        # Join pieces
-        code = L.StatementList([newton_init, newton_loop, newton_finish])
+        # Carry out newton loop for each point
+        code = L.ForRange(ip, 0, num_points,
+                          body=L.StatementList([newton_init, newton_loop, newton_finish]))
+        return code
 
-        # Carry out for all points
-        return L.ForRange(ip, 0, num_points, body=code)
-
-    def compute_jacobians(self, L, ir):
+    def compute_jacobians(self, L, ir): # FIXME: Finish implementation of this, then mirror solution in compute_physical_coordinates
         # FIXME: Get data for scalar coordinate subelement:
         num_scalar_dofs = 3 # ir["num_scalar_coordinate_element_dofs"]
         scalar_coordinate_element_classname = "fixmecec" # ir["scalar_coordinate_element_classname"]
