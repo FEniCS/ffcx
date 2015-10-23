@@ -219,12 +219,33 @@ def _generate_coordinate_mapping_code(ir, prefix, parameters):
 
     coordinate_mapping_number = ir["id"]
 
+    # FIXME: Get code dict from current work in uflacs
+
     # Generate code
     code = {}
     code["classname"] = make_classname(prefix, "coordinate_mapping", coordinate_mapping_number)
 
-    # FIXME: Implement coordinate_mapping generation (work in progress in uflacs repository)
-    # FIXME: Get code dict from current work in uflacs
+    code["members"] = ""
+    code["constructor"] = ""
+    code["constructor_arguments"] = ""
+    code["initializer_list"] = ""
+    code["destructor"] = ""
+    code["create"] = "return nullptr;"
+
+    code["signature"] = 'return "fixme";'
+    code["cell_shape"] = "return ufc::triangle;"
+    code["topological_dimension"] = "return 2;"
+    code["geometric_dimension"] = "return 3;"
+
+    code["create_coordinate_finite_element"] = "return nullptr;"
+    code["create_coordinate_dofmap"] = "return nullptr;"
+
+    code["compute_physical_coordinates"] = ""
+    code["compute_reference_coordinates"] = ""
+    code["compute_jacobians"] = ""
+    code["compute_jacobian_determinants"] = ""
+    code["compute_jacobian_inverses"] = ""
+    code["compute_geometry"] = ""
 
     return code
 

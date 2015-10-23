@@ -182,21 +182,30 @@ def _compute_dofmap_ir(ufl_element, element_numbers):
 def _compute_coordinate_mapping_ir(ufl_coordinate_element, element_numbers):
     "Compute intermediate representation of coordinate mapping."
 
-    # FIXME
-
-    # Create FIAT element
-    element = create_element(ufl_coordinate_element)
     cell = ufl_coordinate_element.cell()
     cellname = cell.cellname()
+
+    # Create FIAT element
+    #element = create_element(ufl_coordinate_element)
 
     # Store id
     ir = {"id": element_numbers[ufl_coordinate_element]}
 
     # Compute data for each function (FIXME: add what's needed for coordinate_mapping generation)
     ir["signature"] = "FFC coordinate_mapping from " + repr(ufl_coordinate_element)
-    ir["cellname"] = cellname
+    ir["cell_shape"] = cellname
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension() # FIXME: Or ufl_coordinate_element.value_size()?
+
+    ir["create_coordinate_finite_element"] = element_numbers[ufl_coordinate_element] # FIXME: Use classname instead
+    ir["create_coordinate_dofmap"] = element_numbers[ufl_coordinate_element] # FIXME: Use classname instead
+
+    ir["compute_physical_coordinates"] = None # unused, corresponds to function name
+    ir["compute_reference_coordinates"] = None # unused, corresponds to function name
+    ir["compute_jacobians"] = None # unused, corresponds to function name
+    ir["compute_jacobian_determinants"] = None # unused, corresponds to function name
+    ir["compute_jacobian_inverses"] = None # unused, corresponds to function name
+    ir["compute_geometry"] = None # unused, corresponds to function name
 
     return ir
 

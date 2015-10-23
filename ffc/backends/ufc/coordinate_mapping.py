@@ -28,13 +28,13 @@ public:
   std::size_t topological_dimension() const final override;
 
   /// Return cell shape of the coordinate_mapping
-  shape cell_shape() const final override;
+  ufc::shape cell_shape() const final override;
 
   /// Create finite_element object representing the coordinate parameterization
-  finite_element * create_coordinate_finite_element() const final override;
+  ufc::finite_element * create_coordinate_finite_element() const final override;
 
   /// Create dofmap object representing the coordinate parameterization
-  dofmap * create_coordinate_dofmap() const final override;
+  ufc::dofmap * create_coordinate_dofmap() const final override;
 
   /// Compute physical coordinates x from reference coordinates X, the inverse of compute_reference_coordinates
   void compute_physical_coordinates(
@@ -110,19 +110,19 @@ std::size_t %(classname)s::topological_dimension() const final override
 }
 
 /// Return cell shape of the coordinate_mapping
-shape %(classname)s::cell_shape() const final override
+ufc::shape %(classname)s::cell_shape() const final override
 {
 %(cell_shape)s
 }
 
 /// Create finite_element object representing the coordinate parameterization
-finite_element * %(classname)s::create_coordinate_finite_element() const final override
+ufc::finite_element * %(classname)s::create_coordinate_finite_element() const final override
 {
 %(create_coordinate_finite_element)s
 }
 
 /// Create dofmap object representing the coordinate parameterization
-dofmap * %(classname)s::create_coordinate_dofmap() const final override
+ufc::dofmap * %(classname)s::create_coordinate_dofmap() const final override
 {
 %(create_coordinate_dofmap)s
 }
@@ -223,19 +223,19 @@ public:
   }
 
   /// Return cell shape of the coordinate_mapping
-  shape cell_shape() const final override
+  ufc::shape cell_shape() const final override
   {
 %(cell_shape)s
   }
 
   /// Create finite_element object representing the coordinate parameterization
-  finite_element * create_coordinate_finite_element() const final override
+  ufc::finite_element * create_coordinate_finite_element() const final override
   {
 %(create_coordinate_finite_element)s
   }
 
   /// Create dofmap object representing the coordinate parameterization
-  dofmap * create_coordinate_dofmap() const final override
+  ufc::dofmap * create_coordinate_dofmap() const final override
   {
 %(create_coordinate_dofmap)s
   }
