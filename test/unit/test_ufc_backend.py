@@ -1,4 +1,5 @@
 
+import numpy
 
 from uflacs.backends.ufc.generators import *
 
@@ -138,10 +139,14 @@ def mock_coordinate_mapping_ir():
     ir.update({
         "signature": "mock_coordinate_mapping_signature",
         "cell_shape": "mock_cell_shape",
-        "geometric_dimension": 2,
+        "geometric_dimension": 3,
         "topological_dimension": 2,
         "create_coordinate_finite_element": "mock_coordinate_finite_element_classname",
         "create_coordinate_dofmap": "mock_coordinate_dofmap_classname",
+        "tables": {"x0": numpy.ones((5,)), # FIXME: Realistic dimensions
+                   "xm": numpy.ones((5,)),
+                   "J0": numpy.ones((2,5)),
+                   "Jm": numpy.ones((2,5)),}
         })
     return ir
 
@@ -205,13 +210,22 @@ def test_mock_integral():
         print h
         print cpp
 
-def test_foo():
+def test_foo_integral_properties():
     ir = mock_form_ir()
     assert "cell_integral" in ufc_form.create_cell_integral.__doc__
     assert "return" in str(ufc_form().create_cell_integral(L, ir))
 
 def test_mock_extract_function():
     h, cpp = compile_mock_coordinate_mapping()
+    name = "compute_reference_coordinates"
+    print "/// Extracted", name, ":"
+    print "/// begin"
+    print extract_function(name, cpp)
+    print "/// end"
+
+def test_debug_by_printing_extracted_function():
+    h, cpp = compile_mock_coordinate_mapping()
+    #name = "compute_reference_coordinates"
     name = "compute_reference_coordinates"
     print "/// Extracted", name, ":"
     print "/// begin"

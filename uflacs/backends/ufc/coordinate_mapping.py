@@ -48,55 +48,29 @@ def det_nn(A, n):
         ns = list(range(n))
         return codet_nn(A, ns, ns)
 
-def __pdet_m1(L, A, m):
-    # Special case 1xm for simpler expression
-    i = L.Symbol("i")
-    A2 = A[i,0]*A[i,0] # TODO: Translate to code
+def pdet_m1(L, A, m):
+    # Special inlined case 1xm for simpler expression
+    A2 = A[0,0]*A[0,0]
+    for i in range(1, m):
+        A2 = A2 + A[i,0]*A[i,0]
     return L.Call("sqrt", A2)
 
-def __pdet_23(L, A):
-    # Special case 2x3 for simpler expression
-    i = L.Symbol("i")
+def generate_compute_ATA(L, ATA, A, m, n, index_prefix=""):
+    "Generate code to declare and compute ATA[i,j] = sum_k A[k,i]*A[k,j] with given A shaped (m,n)."
+    # Loop indices
+    i = L.Symbol(index_prefix + "i")
+    j = L.Symbol(index_prefix + "j")
+    k = L.Symbol(index_prefix + "k")
 
-    # TODO: Translate to code:
-    c = cross_expr(A[:,0], A[:,1])
-    c2 = c[i]*c[i]
-
-    return L.Call("sqrt", c2)
-
-def pdet_mn(A, m, n):
-    """Compute the pseudo-determinant of A: sqrt(det(A.T*A))."""
-    # TODO: This would be more reusable if it didn't make up variable names...
     # Build A^T*A matrix
-    i = L.Symbol("i")
-    j = L.Symbol("j")
-    k = L.Symbol("k")
-    ATA = L.ArrayDecl("double", "ATA", shape=(n, n), values=0)
-    body = L.AssignAdd(ATA[i, j], A[k, i] * A[k, j])
-    body = L.ForRange(k, 0, m, body=body)
-    body = L.ForRange(j, 0, n, body=body)
-    body = L.ForRange(i, 0, n, body=body)
-
-    # Take determinant and square root
-    return L.Call("sqrt", det_nn(ATA, n))
-
-def pdet_expr(A, m, n):
-    """Compute the pseudo-determinant of A: sqrt(det(A.T*A))."""
-    if n == 1:
-        return pdet_mn(A, m, n)
-        #return pdet_m1(A, m)
-    elif m == 3 and n == 2:
-        return pdet_mn(A, m, n)
-        #return pdet_32(A)
-    else:
-        return pdet_mn(A, m, n)
-
-def det_expr(A, m, n):
-    "Compute the (pseudo-)determinant of A."
-    if m == n:
-        return det_nn(A, m)
-    else:
-        return pdet_expr(A, m, n)
+    code = [
+        L.ArrayDecl("double", ATA, sizes=(n, n), values=0),
+        L.ForRange(i, 0, n, body=
+            L.ForRange(j, 0, n, body=
+                L.ForRange(k, 0, m, body=
+                    L.AssignAdd(ATA[i, j], A[k, i] * A[k, j])))),
+        ]
+    return L.StatementList(code)
 
 
 class ufc_coordinate_mapping(ufc_generator):
@@ -165,7 +139,7 @@ class ufc_coordinate_mapping(ufc_generator):
         return L.ForRange(ip, 0, num_points, body=body)
 
     def compute_reference_coordinates(self, L, ir): # FIXME: Get element degree from ir
-        if 0: # TODO: Special case for affine case
+        if 1: # TODO: Special case for affine case
             return self._compute_reference_coordinates_affine(L, ir)
         else:
             return self._compute_reference_coordinates_newton(L, ir)
@@ -183,21 +157,82 @@ class ufc_coordinate_mapping(ufc_generator):
         j = L.Symbol("j")   # tdim
         k = L.Symbol("k")   # sum iteration
 
-        # Input cell data
-        coordinate_dofs = L.Symbol("coordinate_dofs")
-        cell_orientation = L.Symbol("cell_orientation")
-
         # Output geometry
         X = flat_array(L, "X", (num_points, tdim))
 
         # Input geometry
         x = flat_array(L, "x", (num_points, gdim))
 
-        # FIXME: Compute K at any coordinate (midpoint or X=0, doesn't matter)
-        x0 = L.Symbol("x0")
-        x = dx/dX X + x0 = J X + x0
-        X = K (x - x0)
+        # Input cell data
+        coordinate_dofs = L.Symbol("coordinate_dofs")
+        cell_orientation = L.Symbol("cell_orientation")
 
+        # Tables of coordinate basis function values and derivatives at
+        # X=0 and X=midpoint available through ir. This is useful in
+        # several geometry functions.
+        tables = ir["tables"]
+
+        # Table symbols
+        phi_X0 = L.Symbol("phi_X0")
+        dphi_X0 = L.Symbol("dphi_X0")
+
+        # Interpret and check the table shapes
+        # FIXME: Massage tables in ffc such that 1 point-dim is gone
+        x_table = tables["x0"]
+        J_table = tables["J0"]
+        assert len(x_table.shape)
+        num_dofs, = x_table.shape # Number of dofs for a scalar component FIXME: Add to ir and compare here instead
+        assert J_table.shape == (tdim,) + x_table.shape
+
+        # Table declarations
+        table_decls = [
+            L.ArrayDecl("static const double", phi_X0, sizes=x_table.shape, values=tables["x0"]),
+            L.ArrayDecl("static const double", dphi_X0, sizes=J_table.shape, values=tables["J0"]),
+            ]
+
+        # This is the assumed shape of coordinate_dofs below
+        xdofs = L.FlattenedArray(coordinate_dofs, dims=(num_dofs, gdim))
+
+        # Compute x0 = x(X=0) (optimized by precomputing basis at X=0)
+        x0 = L.Symbol("x0")
+        compute_x0 = [
+            L.ArrayDecl("double", x0, sizes=(gdim,), values=0),
+            L.ForRange(i, 0, gdim, body=
+                L.ForRange(k, 0, num_dofs, body=
+                    L.AssignAdd(x0[i], xdofs[k, i] * phi_X0[k]))),
+            ]
+
+        # Compute J0 = J(X=0) (optimized by precomputing basis at X=0)
+        J0 = L.Symbol("J0")
+        compute_J0 = [
+            L.ArrayDecl("double", J0, sizes=(gdim*tdim,), values=0),
+            L.ForRange(i, 0, gdim, body=
+                L.ForRange(j, 0, tdim, body=
+                    L.ForRange(k, 0, num_dofs, body=
+                        L.AssignAdd(J0[i*tdim + j], xdofs[k, i] * dphi_X0[j, k])))),
+            ]
+
+        # Compute K0 = inv(J0) (and intermediate value det(J0))
+        detJ0 = L.Symbol("detJ0")
+        K0 = L.Symbol("K0")
+        compute_K0 = [
+            L.ArrayDecl("double", detJ0, sizes=(1,)),
+            L.Call("compute_jacobian_determinants", (detJ0, 1, J0)),
+            L.ArrayDecl("double", K0, sizes=(tdim*gdim,)),
+            L.Call("compute_jacobian_inverses", (K0, 1, J0, detJ0)),
+            ]
+
+        # Compute X = K0*(x-x0) for each physical point x
+        compute_X = [
+            L.ForRange(ip, 0, num_points, body=
+                L.ForRange(j, 0, tdim, body=
+                    L.ForRange(i, 0, gdim, body=
+                        L.AssignAdd(X[ip, j], K0[j, i]*(x[ip, i] - x0[i]))))),
+            ]
+
+        # Stitch it together
+        code = L.StatementList(table_decls + compute_x0 + compute_J0 + compute_K0 + compute_X)
+        return code
 
     def _compute_reference_coordinates_newton(self, L, ir): # FIXME: Get degree of mapping. Otherwise looks mostly ok on inspection. TODO: Test and determine stopping criteria to use.
         # Dimensions
@@ -394,7 +429,6 @@ class ufc_coordinate_mapping(ufc_generator):
         body = L.StatementList([define_element, dphi_decl, point_loop])
         return body
 
-
     def compute_jacobian_determinants(self, L, ir): # Looks good on inspection. TODO: Test!
         # Dimensions
         gdim = ir["geometric_dimension"]
@@ -403,8 +437,6 @@ class ufc_coordinate_mapping(ufc_generator):
 
         # Loop indices
         ip = L.Symbol("ip")
-        i = L.Symbol("i")
-        j = L.Symbol("j")
 
         # Output geometry
         detJ = L.Symbol("detJ")[ip]
@@ -412,8 +444,19 @@ class ufc_coordinate_mapping(ufc_generator):
         # Input geometry
         J = flat_array(L, "J", (num_points, gdim, tdim))[ip]
 
-        # Assign to detJ
-        body = L.Assign(detJ, det_expr(J, gdim, tdim)) # TODO: Call Eigen instead?
+        # Assign det expression to detJ # TODO: Call Eigen instead?
+        if gdim == tdim:
+            body = L.Assign(detJ, det_nn(J, gdim))
+        elif tdim == 1:
+            body = L.Assign(detJ, pdet_m1(A, gdim))
+        #elif tdim == 2 and gdim == 3:
+        #    body = L.Assign(detJ, pdet_32(A)) # Possible optimization not implemented here
+        else:
+            JTJ = L.Symbol("JTJ")
+            body = L.StatementList([
+                generate_compute_ATA(L, JTJ, J, gdim, tdim),
+                L.Assign(detJ, L.Call("sqrt", det_nn(JTJ, tdim))),
+                ])
 
         # Carry out for all points
         loop = L.ForRange(ip, 0, num_points, body=body)
