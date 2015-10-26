@@ -125,7 +125,7 @@ class ufc_coordinate_mapping(ufc_generator):
         classname = ir["create_coordinate_dofmap"] # FIXME: ffc passes class id not name
         return L.Return(L.New(classname))
 
-    def compute_physical_coordinates(self, L, ir):
+    def compute_physical_coordinates(self, L, ir): # FIXME: Fix jacobian implementation first then mirror solutions here.
         if 1: return L.Comment("FIXME")
 
         # Dimensions
@@ -164,16 +164,42 @@ class ufc_coordinate_mapping(ufc_generator):
         # Carry out for all points
         return L.ForRange(ip, 0, num_points, body=body)
 
-    def compute_reference_coordinates(self, L, ir):
+    def compute_reference_coordinates(self, L, ir): # FIXME: Get element degree from ir
         if 0: # TODO: Special case for affine case
             return self._compute_reference_coordinates_affine(L, ir)
         else:
             return self._compute_reference_coordinates_newton(L, ir)
 
-    def _compute_reference_coordinates_affine(self, L, ir):
-        FIXME
+    def _compute_reference_coordinates_affine(self, L, ir): # FIXME: Implement affine specialization
+        # Dimensions
+        gdim = ir["geometric_dimension"]
+        tdim = ir["topological_dimension"]
+        cellname = ir["cell_shape"]
+        num_points = L.Symbol("num_points")
 
-    def _compute_reference_coordinates_newton(self, L, ir):
+        # Loop indices
+        ip = L.Symbol("ip") # point
+        i = L.Symbol("i")   # gdim
+        j = L.Symbol("j")   # tdim
+        k = L.Symbol("k")   # sum iteration
+
+        # Input cell data
+        coordinate_dofs = L.Symbol("coordinate_dofs")
+        cell_orientation = L.Symbol("cell_orientation")
+
+        # Output geometry
+        X = flat_array(L, "X", (num_points, tdim))
+
+        # Input geometry
+        x = flat_array(L, "x", (num_points, gdim))
+
+        # FIXME: Compute K at any coordinate (midpoint or X=0, doesn't matter)
+        x0 = L.Symbol("x0")
+        x = dx/dX X + x0 = J X + x0
+        X = K (x - x0)
+
+
+    def _compute_reference_coordinates_newton(self, L, ir): # FIXME: Get degree of mapping. Otherwise looks mostly ok on inspection. TODO: Test and determine stopping criteria to use.
         # Dimensions
         gdim = ir["geometric_dimension"]
         tdim = ir["topological_dimension"]
@@ -369,7 +395,7 @@ class ufc_coordinate_mapping(ufc_generator):
         return body
 
 
-    def compute_jacobian_determinants(self, L, ir):
+    def compute_jacobian_determinants(self, L, ir): # Looks good on inspection. TODO: Test!
         # Dimensions
         gdim = ir["geometric_dimension"]
         tdim = ir["topological_dimension"]
@@ -395,7 +421,7 @@ class ufc_coordinate_mapping(ufc_generator):
         code = loop #[defines, loop]
         return code
 
-    def compute_jacobian_inverses(self, L, ir):
+    def compute_jacobian_inverses(self, L, ir): # FIXME: Not working yet. Call ufc_geometry function or eigen?
         # Dimensions
         gdim = ir["geometric_dimension"]
         tdim = ir["topological_dimension"]
@@ -425,7 +451,7 @@ class ufc_coordinate_mapping(ufc_generator):
         # Carry out for all points
         return L.ForRange(ip, 0, num_points, body=body)
 
-    def compute_geometry(self, L, ir):
+    def compute_geometry(self, L, ir): # Output looks good on inspection. TODO: Test!
         # Output geometry
         x = L.Symbol("x")
         J = L.Symbol("J")

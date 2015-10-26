@@ -195,6 +195,8 @@ class FFCDefinitionsBackend(MultiFunction):
                 ind = (entity, iq, L.Sub(idof, begin))
                 table_access = L.ArrayAccess(uname, ind)
                 prods += [L.Mul(dof_access[idof], table_access)]
+                # TODO: Shorter notation possible here and elsewhere if symbols are L.Symbols and not strings:
+                #prods += [dof_access[idof] * uname[entity, iq, idof - begin]]
 
             # Inlined loop to accumulate linear combination of dofs and tables
             code += [L.VariableDecl("const double", access, L.Sum(prods))]
