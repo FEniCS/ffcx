@@ -179,14 +179,57 @@ def _compute_dofmap_ir(ufl_element, element_numbers):
     return ir
 
 
+_midpoints = {
+    "interval": (0.5,),
+    "triangle_midpoint": (1.0/3.0, 1.0/3.0),
+    "tetrahedron_midpoint": (0.25, 0.25, 0.25),
+    "quadrilateral_midpoint": (0.5, 0.5),
+    "hexahedron_midpoint": (0.5, 0.5, 0.5),
+    }
+def cell_midpoint(cell):
+    # TODO: Is this defined somewhere more central where we can get it from?
+    return _midpoints[cell.cellname()]
+
+def tabulate_coordinate_mapping_basis(ufl_element):
+    # TODO: Move this function to a table generation module?
+
+    # Get scalar element, assuming coordinates are represented
+    # with a VectorElement of scalar subelements
+    selement = ufl_element.sub_elements()[0]
+
+    fiat_element = create_element(selement)
+    cell = selement.ufl_cell()
+    tdim = cell.topological_dimension()
+
+    tables = {}
+
+    # Get points
+    origo = (0.0,)*tdim
+    midpoint = cell_midpoint(cell)
+
+    # Get basis values at cell origo
+    tables["x0"] = fiat_element.tabulate(0, [origo])
+
+    # Get basis values at cell midpoint
+    tables["xm"] = fiat_element.tabulate(0, [midpoint])
+
+    # Get basis derivative values at cell origo
+    tables["J0"] = fiat_element.tabulate(1, [origo])
+
+    # Get basis derivative values at cell midpoint
+    tables["Jm"] = fiat_element.tabulate(1, [midpoint])
+
+    return tables
+
 def _compute_coordinate_mapping_ir(ufl_coordinate_element, element_numbers):
     "Compute intermediate representation of coordinate mapping."
 
     cell = ufl_coordinate_element.cell()
     cellname = cell.cellname()
+    assert ufl_coordinate_element.value_size() == cell.geometric_dimension()
 
-    # Create FIAT element
-    #element = create_element(ufl_coordinate_element)
+    # Compute element values via fiat element
+    tables = tabulate_coordinate_mapping_basis(ufl_coordinate_element)
 
     # Store id
     ir = {"id": element_numbers[ufl_coordinate_element]}
@@ -195,10 +238,13 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element, element_numbers):
     ir["signature"] = "FFC coordinate_mapping from " + repr(ufl_coordinate_element)
     ir["cell_shape"] = cellname
     ir["topological_dimension"] = cell.topological_dimension()
-    ir["geometric_dimension"] = cell.geometric_dimension() # FIXME: Or ufl_coordinate_element.value_size()?
+    ir["geometric_dimension"] = ufl_coordinate_element.value_size()
 
     ir["create_coordinate_finite_element"] = element_numbers[ufl_coordinate_element] # FIXME: Use classname instead
     ir["create_coordinate_dofmap"] = element_numbers[ufl_coordinate_element] # FIXME: Use classname instead
+
+    # Store tables (NB! breaks pattern of using keys == code keywords)
+    ir["tables"] = tables
 
     ir["compute_physical_coordinates"] = None # unused, corresponds to function name
     ir["compute_reference_coordinates"] = None # unused, corresponds to function name
