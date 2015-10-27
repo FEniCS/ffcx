@@ -43,6 +43,14 @@ def generate_accumulation_loop(dst, expr, indices):
         body = L.ForRange(index, begin, end, body=body)
     return body
 
+def cross_expr(a, b):
+    def cr(i, j):
+        return a[i]*b[j] - a[j]*b[i]
+    return [cr(1, 2), cr(2, 0), cr(0, 1)]
+
+def generate_cross_decl(c, a, b):
+    return L.ArrayDecl("double", c, values=cross_expr(a, b))
+
 ### Inline math expressions:
 
 def det_22(B, i, j, k, l):
@@ -74,6 +82,72 @@ def pdet_m1(L, A, m):
     for i in range(1, m):
         A2 = A2 + A[i,0]*A[i,0]
     return L.Call("sqrt", A2)
+
+def adj_expr_2x2(A):
+    return [[ A[1, 1], -A[0, 1]],
+            [-A[1, 0],  A[0, 0]]]
+
+def adj_expr_3x3(A):
+    return [[A[2, 2]*A[1, 1] - A[1, 2]*A[2, 1],
+             A[0, 2]*A[2, 1] - A[0, 1]*A[2, 2],
+             A[0, 1]*A[1, 2] - A[0, 2]*A[1, 1]],
+            [A[1, 2]*A[2, 0] - A[2, 2]*A[1, 0],
+             A[2, 2]*A[0, 0] - A[0, 2]*A[2, 0],
+             A[0, 2]*A[1, 0] - A[1, 2]*A[0, 0]],
+            [A[1, 0]*A[2, 1] - A[2, 0]*A[1, 1],
+             A[0, 1]*A[2, 0] - A[0, 0]*A[2, 1],
+             A[0, 0]*A[1, 1] - A[0, 1]*A[1, 0]]]
+
+def generate_assign_inverse(L, K, J, detJ, gdim, tdim):
+    if gdim == tdim:
+        if gdim == 1:
+            return L.Assign(K[0, 0], L.LiteralFloat(1.0) / J[0, 0])
+        elif gdim == 2:
+            adj_values = adj_expr_2x2(J)
+        elif gdim == 3:
+            adj_values = adj_expr_3x3(J)
+        else:
+            error("Not implemented.")
+        return L.StatementList([L.Assign(K[j,i], adj_values[j][i] / detJ)
+                                for j in range(tdim) for i in range(gdim)])
+    else:
+        if tdim == 1:
+            # Simpler special case for embedded 1d
+            prods = [J[i,0]*J[i,0] for i in range(gdim)]
+            s = sum(prods[1:], prods[0])
+            return L.StatementList([L.Assign(K[0,i], J[i,0] / s)
+                                    for i in range(gdim)])
+        else:
+            # Generic formulation of Penrose-Moore pseudo-inverse of J: (J.T*J)^-1 * J.T
+            i = L.Symbol("i")
+            j = L.Symbol("j")
+            k = L.Symbol("k")
+            JTJ = L.Symbol("JTJ")
+            JTJf = L.FlattenedArray(JTJ, dims=(tdim, tdim))
+            detJTJ = detJ*detJ
+            JTJinv = L.Symbol("JTJinv")
+            JTJinvf = L.FlattenedArray(JTJinv, dims=(tdim, tdim))
+            code = [
+                L.Comment("Compute J^T J"),
+                L.ArrayDecl("double", JTJ, (tdim*tdim,), values=0),
+                L.ForRange(k, 0, tdim, body=
+                    L.ForRange(j, 0, tdim, body=
+                        L.ForRange(i, 0, gdim, body=
+                            L.AssignAdd(JTJf[k, j], J[i, k] * J[i, j])))),
+                L.Comment("Compute inverse(J^T J)"),
+                L.ArrayDecl("double", JTJinv, (tdim*tdim,)),
+                generate_assign_inverse(L, JTJinvf, JTJf, detJTJ, tdim, tdim),
+                L.Comment("Compute K = inverse(J^T J) * J"),
+                L.ForRange(k, 0, tdim, body=
+                    L.ForRange(i, 0, gdim, body=
+                            L.Assign(K[k, i], L.LiteralFloat(0.0)))),
+                L.ForRange(k, 0, tdim, body=
+                    L.ForRange(i, 0, gdim, body=
+                        L.ForRange(j, 0, tdim, body=
+                            L.AssignAdd(K[k, i], JTJinvf[k, j] * J[i, j])))),
+                ]
+            return L.StatementList(code)
+
 
 class ufc_coordinate_mapping(ufc_generator):
     def __init__(self):
@@ -525,7 +599,7 @@ class ufc_coordinate_mapping(ufc_generator):
         code = loop #[defines, loop]
         return code
 
-    def compute_jacobian_inverses(self, L, ir): # FIXME: Not working yet. Call ufc_geometry function or eigen?
+    def compute_jacobian_inverses(self, L, ir): # TODO: Test! Cover all combinations of gdim,tdim=1,2,3!
         # Dimensions
         gdim = ir["geometric_dimension"]
         tdim = ir["topological_dimension"]
@@ -533,8 +607,6 @@ class ufc_coordinate_mapping(ufc_generator):
 
         # Loop indices
         ip = L.Symbol("ip")
-        i = L.Symbol("i")
-        j = L.Symbol("j")
 
         # Output geometry
         K = L.FlattenedArray(L.Symbol("K"), dims=(num_points, tdim, gdim))
@@ -544,10 +616,7 @@ class ufc_coordinate_mapping(ufc_generator):
         detJ = L.Symbol("detJ")
 
         # Assign to K[j][i] for each component j,i
-        # FIXME: compute K[ip] from  J[ip], detJ[ip]
-        body = L.Assign(K[ip][j][i], 0.0) # FIXME: Call Eigen?
-        body = L.ForRange(i, 0, gdim, body=body)
-        body = L.ForRange(j, 0, tdim, body=body)
+        body = generate_assign_inverse(L, K[ip], J[ip], detJ[ip], gdim, tdim)
 
         # Carry out for all points
         return L.ForRange(ip, 0, num_points, body=body)
