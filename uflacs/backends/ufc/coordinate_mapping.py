@@ -238,7 +238,8 @@ class ufc_coordinate_mapping(ufc_generator):
         code = L.StatementList(table_decls + compute_x0 + compute_J0 + compute_K0 + compute_X)
         return code
 
-    def _compute_reference_coordinates_newton(self, L, ir): # FIXME: Get degree of mapping. Otherwise looks mostly ok on inspection. TODO: Test and determine stopping criteria to use.
+    # Looks mostly ok on inspection. TODO: Test and determine stopping criteria to use.
+    def _compute_reference_coordinates_newton(self, L, ir):
         """Solves x(X) = x0 for X.
 
         Find X such that, given x0,
@@ -312,7 +313,6 @@ class ufc_coordinate_mapping(ufc_generator):
         #   inverse(dF/dX) = K
         # such that dX = -K*(xk(Xk) - x)
 
-        # TODO: Implement:
         # Newtons method is then:
         # for each ip:
         #   xgoal = x[ip]
@@ -335,6 +335,8 @@ class ufc_coordinate_mapping(ufc_generator):
         # Symbol for ufc_geometry cell midpoint definition
         mp = L.Symbol("%s_midpoint" % cellname)
 
+        # Variables for stopping criteria
+        max_iter = degree # TODO: Check if this is a good convergence criteria
         dX2 = L.Symbol("dX2")
         epsilon = L.LiteralFloat(1e-14) # L.Symbol("epsilon") # TODO: Choose good convergence criteria
 
@@ -368,36 +370,34 @@ class ufc_coordinate_mapping(ufc_generator):
             L.Comment("Declare dX increment to be computed, initialized to zero"),
             L.ArrayDecl("double", dX, (tdim,), values=0.0),
 
-            L.Comment("Compute dX[j] = sum_i K_ji * (x(Xk)_i - x_i)"),
+            L.Comment("Compute dX[j] = sum_i K_ji * (x_i - x(Xk)_i)"),
             L.ForRange(j, 0, tdim, body=
                        L.ForRange(i, 0, gdim, body=
-                                  L.AssignAdd(dX[j], Kf[j,i]*(xk[i] - xgoal[i])))),
+                                  L.AssignAdd(dX[j], Kf[j,i]*(xgoal[i] - xk[i])))),
 
-            L.Comment("Update Xk -= dX"),
-            L.ForRange(j, 0, tdim, body=L.AssignSub(Xk[j], dX[j])),
-
-            # TODO: If we set epsilon strict and break _before_ Xk -= dX, we can output consistent (J, detJ, K) together with X
             L.Comment("Compute |dX|^2"),
             L.VariableDecl("double", dX2, value=0.0),
             L.ForRange(j, 0, tdim, body=L.AssignAdd(dX2, dX[j]*dX[j])),
 
-            L.Comment("Break if converged"),
+            L.Comment("Break if converged (before X += dX such that X,J,detJ,K are consistent)"),
             L.If(L.LT(dX2, epsilon), L.Break()),
+
+            L.Comment("Update Xk += dX"),
+            L.ForRange(j, 0, tdim, body=L.AssignAdd(Xk[j], dX[j])),
             ]
 
         part2b = [
-            L.Comment("Compute Xk[j] -= sum_i K_ji * (x(Xk)_i - x_i)"),
+            L.Comment("Compute Xk[j] += sum_i K_ji * (x_i - x(Xk)_i)"),
             L.ForRange(j, 0, tdim, body=
                        L.ForRange(i, 0, gdim, body=
-                                  L.AssignSub(Xk[j], Kf[j,i]*(xk[i] - xgoal[i])))),
+                                  L.AssignAdd(Xk[j], Kf[j,i]*(xgoal[i] - xk[i])))),
             ]
 
         newton_body = part1 + part2a  # Use if |dX| is needed
         #newton_body = part1 + part2b # Use for fixed iteration number
 
         # Loop until convergence
-        num_iter = degree # TODO: Check if this is a good convergence criteria, add break if |dX| < epsilon?
-        newton_loop = L.ForRange(k, 0, num_iter, body=newton_body)
+        newton_loop = L.ForRange(k, 0, max_iter, body=newton_body)
 
         # X[ip] = Xk
         newton_finish = L.ForRange(j, 0, tdim, body=L.Assign(X[ip][j], Xk[j]))
