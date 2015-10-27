@@ -207,17 +207,24 @@ def tabulate_coordinate_mapping_basis(ufl_element):
     origo = (0.0,)*tdim
     midpoint = cell_midpoint(cell)
 
+    # Tabulate basis
+    t0 = fiat_element.tabulate(1, [origo])
+    tm = fiat_element.tabulate(1, [midpoint])
+
     # Get basis values at cell origo
-    tables["x0"] = fiat_element.tabulate(0, [origo])
+    tables["x0"] = t0[(0,0)][:,0]
 
     # Get basis values at cell midpoint
-    tables["xm"] = fiat_element.tabulate(0, [midpoint])
+    tables["xm"] = tm[(0,0)][:,0]
+
+    # Single direction derivatives, e.g. [(1,0), (0,1)] in 2d
+    derivatives = [(0,)*i + (1,) + (0,)*(tdim-1-i) for i in range(tdim)]
 
     # Get basis derivative values at cell origo
-    tables["J0"] = fiat_element.tabulate(1, [origo])
+    tables["J0"] = numpy.asarray([t0[d][:,0] for d in derivatives])
 
     # Get basis derivative values at cell midpoint
-    tables["Jm"] = fiat_element.tabulate(1, [midpoint])
+    tables["Jm"] = numpy.asarray([tm[d][:,0] for d in derivatives])
 
     return tables
 
@@ -234,14 +241,14 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element, element_numbers):
     # Store id
     ir = {"id": element_numbers[ufl_coordinate_element]}
 
-    # Compute data for each function (FIXME: add what's needed for coordinate_mapping generation)
+    # Compute data for each function
     ir["signature"] = "FFC coordinate_mapping from " + repr(ufl_coordinate_element)
     ir["cell_shape"] = cellname
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = ufl_coordinate_element.value_size()
 
-    ir["create_coordinate_finite_element"] = element_numbers[ufl_coordinate_element] # FIXME: Use classname instead
-    ir["create_coordinate_dofmap"] = element_numbers[ufl_coordinate_element] # FIXME: Use classname instead
+    ir["create_coordinate_finite_element"] = element_numbers[ufl_coordinate_element] # FIXME: Use classname instead (or in addition)
+    ir["create_coordinate_dofmap"] = element_numbers[ufl_coordinate_element] # FIXME: Use classname instead (or in addition)
 
     ir["compute_physical_coordinates"] = None # currently unused, corresponds to function name
     ir["compute_reference_coordinates"] = None # currently unused, corresponds to function name
@@ -253,9 +260,13 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element, element_numbers):
     # NB! The entries below breaks the pattern of using ir keywords == code keywords,
     # which I personally don't find useful anyway (martinal).
 
-    # Store tables
+    # Store tables and other coordinate element data
     ir["tables"] = tables
     ir["coordinate_element_degree"] = ufl_coordinate_element.degree()
+    ir["num_scalar_coordinate_element_dofs"] = tables["x0"].shape[0]
+
+    # FIXME: Get filename for scalar subelement of coordinate element and pass here:
+    #ir["scalar_coordinate_finite_element_classname"] = element_numbers[ufl_coordinate_element.sub_elements()[0]]
 
     return ir
 
