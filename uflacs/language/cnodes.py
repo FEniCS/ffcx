@@ -111,6 +111,9 @@ class CExpr(CNode):
     def __getitem__(self, indices):
         return ArrayAccess(self, indices)
 
+    def __neg__(self):
+        return Neg(self)
+
     def __add__(self, other):
         return Add(self, other)
 
