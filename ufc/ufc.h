@@ -285,24 +285,25 @@ namespace ufc
     virtual void compute_physical_coordinates(
         double * x, std::size_t num_points,
         const double * X,
-        const double * coordinate_dofs, int cell_orientation) const = 0;
+        const double * coordinate_dofs) const = 0;
 
     /// Compute reference coordinates X from physical coordinates x, the inverse of compute_physical_coordinates
     virtual void compute_reference_coordinates(
         double * X, std::size_t num_points,
         const double * x,
-        const double * coordinate_dofs, int cell_orientation) const = 0;
+        const double * coordinate_dofs, double cell_orientation) const = 0;
 
     /// Compute Jacobian of coordinate mapping J = dx/dX at reference coordinates X
     virtual void compute_jacobians(
         double * J, std::size_t num_points,
         const double * X,
-        const double * coordinate_dofs, int cell_orientation) const = 0;
+        const double * coordinate_dofs) const = 0;
 
     /// Compute determinants of (pseudo-)Jacobians J
     virtual void compute_jacobian_determinants(
         double * detJ, std::size_t num_points,
-        const double * J) const = 0;
+        const double * J,
+        double cell_orientation) const = 0;
 
     /// Compute (pseudo-)inverses K of (pseudo-)Jacobians J
     virtual void compute_jacobian_inverses(
@@ -313,7 +314,7 @@ namespace ufc
     virtual void compute_geometry(
         double * x, double * J, double * detJ, double * K, std::size_t num_points,
         const double * X,
-        const double * coordinate_dofs, int cell_orientation) const = 0;
+        const double * coordinate_dofs, double cell_orientation) const = 0;
 
   };
 

@@ -243,15 +243,19 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element, element_numbers):
     ir["create_coordinate_finite_element"] = element_numbers[ufl_coordinate_element] # FIXME: Use classname instead
     ir["create_coordinate_dofmap"] = element_numbers[ufl_coordinate_element] # FIXME: Use classname instead
 
-    # Store tables (NB! breaks pattern of using keys == code keywords)
-    ir["tables"] = tables
+    ir["compute_physical_coordinates"] = None # currently unused, corresponds to function name
+    ir["compute_reference_coordinates"] = None # currently unused, corresponds to function name
+    ir["compute_jacobians"] = None # currently unused, corresponds to function name
+    ir["compute_jacobian_determinants"] = None # currently unused, corresponds to function name
+    ir["compute_jacobian_inverses"] = None # currently unused, corresponds to function name
+    ir["compute_geometry"] = None # currently unused, corresponds to function name
 
-    ir["compute_physical_coordinates"] = None # unused, corresponds to function name
-    ir["compute_reference_coordinates"] = None # unused, corresponds to function name
-    ir["compute_jacobians"] = None # unused, corresponds to function name
-    ir["compute_jacobian_determinants"] = None # unused, corresponds to function name
-    ir["compute_jacobian_inverses"] = None # unused, corresponds to function name
-    ir["compute_geometry"] = None # unused, corresponds to function name
+    # NB! The entries below breaks the pattern of using ir keywords == code keywords,
+    # which I personally don't find useful anyway (martinal).
+
+    # Store tables
+    ir["tables"] = tables
+    ir["coordinate_element_degree"] = ufl_coordinate_element.degree()
 
     return ir
 

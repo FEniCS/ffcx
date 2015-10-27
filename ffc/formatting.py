@@ -70,7 +70,7 @@ def format_code(code, wrapper_code, prefix, parameters):
         code_c += _format_c("dofmap", code_dofmap, parameters)
 
     # Generate code for coordinate_mappings
-    code_coordinate_mappings = [] # FIXME: Disabled until implemented properly
+    #code_coordinate_mappings = [] # FIXME: Disabled until implemented properly
     for code_coordinate_mapping in code_coordinate_mappings:
         code_h += _format_h("coordinate_mapping", code_coordinate_mapping, parameters)
         code_c += _format_c("coordinate_mapping", code_coordinate_mapping, parameters)
