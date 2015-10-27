@@ -229,8 +229,8 @@ def test_mock_extract_function():
 def test_debug_by_printing_extracted_function():
     h, cpp = compile_mock_coordinate_mapping()
     #name = "compute_reference_coordinates"
-    name = "compute_physical_coordinates"
-    #name = "compute_jacobians"
+    #name = "compute_physical_coordinates"
+    name = "compute_jacobians"
     print "/// Extracted", name, ":"
     print "/// begin"
     print extract_function(name, cpp)

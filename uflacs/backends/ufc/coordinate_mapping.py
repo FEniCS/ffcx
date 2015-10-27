@@ -29,7 +29,7 @@ def generate_compute_ATA(L, ATA, A, m, n, index_prefix=""):
 
     # Build A^T*A matrix
     code = [
-        L.ArrayDecl("double", ATA, sizes=(n, n), values=0),
+        L.ArrayDecl("double", ATA, (n, n), values=0),
         L.ForRange(i, 0, n, body=
             L.ForRange(j, 0, n, body=
                 L.ForRange(k, 0, m, body=
@@ -141,15 +141,14 @@ class ufc_coordinate_mapping(ufc_generator):
 
         # Symbols for local basis values table
         phi_sym = L.Symbol("phi")
-        phi_dims = (num_dofs,) # FIXME: Match evaluate_reference_basis array layout
-        phi = L.FlattenedArray(phi_sym, dims=phi_dims)
+        phi = L.FlattenedArray(phi_sym, dims=(num_dofs,)) # FIXME: Match evaluate_reference_basis array layout
 
         # Arguments to evaluate_reference_basis
         args = (phi_sym, one_point, L.AddressOf(X[ip, 0])) # FIXME: Match evaluate_reference_basis signature
 
         # For each point, compute basis values and accumulate into the right x
         code = L.StatementList(define_element + [
-            L.ArrayDecl("double", phi_sym, sizes=phi_dims),
+            L.ArrayDecl("double", phi_sym, (one_point*num_dofs,)),
             L.ForRange(ip, 0, num_points, body=L.StatementList([
                 L.Comment("Compute basis values of coordinate element"),
                 L.Call(func, args),
@@ -470,15 +469,14 @@ class ufc_coordinate_mapping(ufc_generator):
 
         # Symbols for local basis derivatives table
         dphi_sym = L.Symbol("dphi")
-        dphi_dims = (tdim, num_dofs) # FIXME: Match array layout of evaluate_reference_basis_derivatives
-        dphi = L.FlattenedArray(dphi_sym, dims=dphi_dims)
+        dphi = L.FlattenedArray(dphi_sym, dims=(tdim, num_dofs)) # FIXME: Match array layout of evaluate_reference_basis_derivatives
 
         # Arguments to evaluate_reference_basis_derivatives
         args = (dphi_sym, one_point, L.AddressOf(X[ip, 0])) # FIXME: Match evaluate_reference_basis_derivatives signature
 
         # For each point, compute basis derivatives and accumulate into the right J
         code = L.StatementList(define_element + [
-            L.ArrayDecl("double", dphi_sym, sizes=dphi_dims),
+            L.ArrayDecl("double", dphi_sym, (one_point*tdim*num_dofs,)),
             L.ForRange(ip, 0, num_points, body=L.StatementList([
                 L.Comment("Compute basis derivatives of coordinate element"),
                 L.Call(func, args),
