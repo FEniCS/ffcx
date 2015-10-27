@@ -143,6 +143,7 @@ def mock_coordinate_mapping_ir():
         "topological_dimension": 2,
         "create_coordinate_finite_element": "mock_coordinate_finite_element_classname",
         "create_coordinate_dofmap": "mock_coordinate_dofmap_classname",
+        "scalar_coordinate_element_classname": "mock_scalar_coordinate_finite_element_classname",
         "tables": {"x0": numpy.ones((5,)), # FIXME: Realistic dimensions
                    "xm": numpy.ones((5,)),
                    "J0": numpy.ones((2,5)),
