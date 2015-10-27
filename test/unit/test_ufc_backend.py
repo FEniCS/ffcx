@@ -143,8 +143,10 @@ def mock_coordinate_mapping_ir():
         "topological_dimension": 2,
         "create_coordinate_finite_element": "mock_coordinate_finite_element_classname",
         "create_coordinate_dofmap": "mock_coordinate_dofmap_classname",
-        "scalar_coordinate_element_classname": "mock_scalar_coordinate_finite_element_classname",
-        "tables": {"x0": numpy.ones((5,)), # FIXME: Realistic dimensions
+        "scalar_coordinate_finite_element_classname": "mock_scalar_coordinate_finite_element_classname",
+        "coordinate_element_degree": 2,
+        "num_scalar_coordinate_element_dofs": 5,
+        "tables": {"x0": numpy.ones((5,)),
                    "xm": numpy.ones((5,)),
                    "J0": numpy.ones((2,5)),
                    "Jm": numpy.ones((2,5)),}
@@ -227,7 +229,8 @@ def test_mock_extract_function():
 def test_debug_by_printing_extracted_function():
     h, cpp = compile_mock_coordinate_mapping()
     #name = "compute_reference_coordinates"
-    name = "compute_reference_coordinates"
+    name = "compute_physical_coordinates"
+    #name = "compute_jacobians"
     print "/// Extracted", name, ":"
     print "/// begin"
     print extract_function(name, cpp)

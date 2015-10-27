@@ -101,8 +101,9 @@ class ufc_coordinate_mapping(ufc_generator):
         classname = ir["create_coordinate_dofmap"] # FIXME: ffc passes class id not name
         return L.Return(L.New(classname))
 
-    def compute_physical_coordinates(self, L, ir): # FIXME: Fix jacobian implementation first then mirror solutions here.
-        if 1: return L.Comment("FIXME")
+    def compute_physical_coordinates(self, L, ir): # FIXME: Implement evaluate_reference_basis
+        num_dofs = ir["num_scalar_coordinate_element_dofs"]
+        scalar_coordinate_element_classname = ir["scalar_coordinate_finite_element_classname"]
 
         # Dimensions
         gdim = ir["geometric_dimension"]
@@ -113,11 +114,10 @@ class ufc_coordinate_mapping(ufc_generator):
         ip = L.Symbol("ip")
         i = L.Symbol("i")
         j = L.Symbol("j")
-        dof = L.Symbol("dof")
+        d = L.Symbol("d")
 
         # Input cell data
-        coordinate_dofs = L.Symbol("coordinate_dofs")
-        cell_orientation = L.Symbol("cell_orientation")
+        coordinate_dofs = L.FlattenedArray(L.Symbol("coordinate_dofs"), dims=(num_dofs, gdim))
 
         # Output geometry
         x = L.FlattenedArray(L.Symbol("x"), dims=(num_points, gdim))
@@ -125,20 +125,41 @@ class ufc_coordinate_mapping(ufc_generator):
         # Input geometry
         X = L.FlattenedArray(L.Symbol("X"), dims=(num_points, tdim))
 
-        # FIXME: Almost exactly like jacobian implementation, solve issues there first
-        num_dofs = 3
-        phi = L.Symbol("phi") # FIXME: Compute basis functions in reference coordinates
+        # Computing table one point at a time instead of using
+        # num_points will allow skipping dynamic allocation
+        one_point = 1
 
-        body = L.ForRange(i, 0, gdim, body=L.StatementList([
-            # Assign to x[ip][i]
-            L.Assign(x[ip][i], 0),
-            L.ForRange(dof, 0, num_dofs, body=
-                L.AssignAdd(x[i], coordinate_dofs[dof*gdim + i] * phi[ip,dof])
-                )
-            ]))
+        # FIXME: Use correct approach and function name to compute basis values here
+        if 1:
+            # Call static function on element class
+            define_element = []
+            func = "%s::_evaluate_reference_basis" % (scalar_coordinate_element_classname,)
+        else:
+            # Define scalar finite element instance (stateless, so placing this on the stack is free)
+            define_element = [L.VariableDecl(scalar_coordinate_element_classname, "element")]
+            func = "element.evaluate_reference_basis"
 
-        # Carry out for all points
-        return L.ForRange(ip, 0, num_points, body=body)
+        # Symbols for local basis values table
+        phi_sym = L.Symbol("phi")
+        phi_dims = (num_dofs,) # FIXME: Match evaluate_reference_basis array layout
+        phi = L.FlattenedArray(phi_sym, dims=phi_dims)
+
+        # Arguments to evaluate_reference_basis
+        args = (phi_sym, one_point, L.AddressOf(X[ip, 0])) # FIXME: Match evaluate_reference_basis signature
+
+        # For each point, compute basis values and accumulate into the right x
+        code = L.StatementList(define_element + [
+            L.ArrayDecl("double", phi_sym, sizes=phi_dims),
+            L.ForRange(ip, 0, num_points, body=L.StatementList([
+                L.Comment("Compute basis values of coordinate element"),
+                L.Call(func, args),
+                L.Comment("Compute x"),
+                L.ForRange(i, 0, gdim, body=
+                    L.ForRange(d, 0, num_dofs, body=
+                        L.AssignAdd(x[ip, i], coordinate_dofs[d, i]*phi[d]))),
+                ]))
+            ])
+        return code
 
     def compute_reference_coordinates(self, L, ir):
         degree = ir["coordinate_element_degree"]
@@ -149,12 +170,15 @@ class ufc_coordinate_mapping(ufc_generator):
             # General case with newton loop to solve F(X) = x(X) - x0 = 0
             return self._compute_reference_coordinates_newton(L, ir)
 
-    def _compute_reference_coordinates_affine(self, L, ir):
+    def _compute_reference_coordinates_affine(self, L, ir): # TODO: Test!
         # Dimensions
         gdim = ir["geometric_dimension"]
         tdim = ir["topological_dimension"]
         cellname = ir["cell_shape"]
         num_points = L.Symbol("num_points")
+
+        # Number of dofs for a scalar component
+        num_dofs = ir["num_scalar_coordinate_element_dofs"]
 
         # Loop indices
         ip = L.Symbol("ip") # point
@@ -169,10 +193,7 @@ class ufc_coordinate_mapping(ufc_generator):
         x = L.FlattenedArray(L.Symbol("x"), dims=(num_points, gdim))
 
         # Input cell data
-        coordinate_dofs = L.Symbol("coordinate_dofs")
-
-        # Number of dofs for a scalar component
-        num_dofs = ir["num_scalar_coordinate_element_dofs"]
+        coordinate_dofs = L.FlattenedArray(L.Symbol("coordinate_dofs"), dims=(num_dofs, gdim))
 
         # Tables of coordinate basis function values and derivatives at
         # X=0 and X=midpoint available through ir. This is useful in
@@ -195,16 +216,13 @@ class ufc_coordinate_mapping(ufc_generator):
             L.ArrayDecl("static const double", dphi_X0, sizes=J_table.shape, values=tables["J0"]),
             ]
 
-        # This is the assumed shape of coordinate_dofs below
-        xdofs = L.FlattenedArray(coordinate_dofs, dims=(num_dofs, gdim))
-
         # Compute x0 = x(X=0) (optimized by precomputing basis at X=0)
         x0 = L.Symbol("x0")
         compute_x0 = [
             L.ArrayDecl("double", x0, sizes=(gdim,), values=0),
             L.ForRange(i, 0, gdim, body=
                 L.ForRange(k, 0, num_dofs, body=
-                    L.AssignAdd(x0[i], xdofs[k, i] * phi_X0[k]))),
+                    L.AssignAdd(x0[i], coordinate_dofs[k, i] * phi_X0[k]))),
             ]
 
         # Compute J0 = J(X=0) (optimized by precomputing basis at X=0)
@@ -214,7 +232,7 @@ class ufc_coordinate_mapping(ufc_generator):
             L.ForRange(i, 0, gdim, body=
                 L.ForRange(j, 0, tdim, body=
                     L.ForRange(k, 0, num_dofs, body=
-                        L.AssignAdd(J0[i*tdim + j], xdofs[k, i] * dphi_X0[j, k])))),
+                        L.AssignAdd(J0[i*tdim + j], coordinate_dofs[k, i] * dphi_X0[j, k])))),
             ]
 
         # Compute K0 = inv(J0) (and intermediate value det(J0))
@@ -239,8 +257,7 @@ class ufc_coordinate_mapping(ufc_generator):
         code = L.StatementList(table_decls + compute_x0 + compute_J0 + compute_K0 + compute_X)
         return code
 
-    # Looks mostly ok on inspection. TODO: Test and determine stopping criteria to use.
-    def _compute_reference_coordinates_newton(self, L, ir):
+    def _compute_reference_coordinates_newton(self, L, ir): # TODO: Test! TODO: Determine stopping criteria to use.
         """Solves x(X) = x0 for X.
 
         Find X such that, given x0,
@@ -357,6 +374,8 @@ class ufc_coordinate_mapping(ufc_generator):
             L.ArrayDecl("double", Xk, (tdim,), values=[mp[c] for c in range(tdim)]),
             ]
 
+        # TODO: Use ir["tables"]["xm|Jm"] to compute x(Xm) and J(Xm) for an optimized first iteration
+
         part1 = [
             L.Comment("Declare intermediate arrays to hold results of compute_geometry call"),
             L.ArrayDecl("double", xk, (gdim,)),
@@ -411,7 +430,7 @@ class ufc_coordinate_mapping(ufc_generator):
                           body=L.StatementList([newton_init, newton_loop, newton_finish]))
         return code
 
-    def compute_jacobians(self, L, ir): # FIXME: Finish implementation of this, then mirror solution in compute_physical_coordinates
+    def compute_jacobians(self, L, ir): # FIXME: Implement evaluate_reference_basis_derivatives
         num_dofs = ir["num_scalar_coordinate_element_dofs"]
         scalar_coordinate_element_classname = ir["scalar_coordinate_finite_element_classname"]
 
@@ -427,7 +446,6 @@ class ufc_coordinate_mapping(ufc_generator):
         d = L.Symbol("d")
 
         # Input cell data
-        # FIXME: Double check block structure of coordinate dofs
         coordinate_dofs = L.FlattenedArray(L.Symbol("coordinate_dofs"), dims=(num_dofs, gdim))
 
         # Output geometry
@@ -436,39 +454,42 @@ class ufc_coordinate_mapping(ufc_generator):
         # Input geometry
         X = L.FlattenedArray(L.Symbol("X"), dims=(num_points, tdim))
 
-        # Declare basis derivatives table
-        dphi = L.Symbol("dphi")
-        dphi_dims = (tdim, num_dofs) # FIXME: Array layout to match eval_ref_bas_deriv
-        dphi_decl = L.ArrayDecl("double", dphi, sizes=dphi_dims)
-
         # Computing table one point at a time instead of using
         # num_points will allow skipping dynamic allocation
         one_point = 1
 
-        # Define scalar finite element instance (stateless, so placing this on the stack is free)
-        # FIXME: To do this we'll need to #include the element header. Find a solution with dijitso!!
-        #        When that's fixed, we have a solution for custom integrals as well.
-        define_element = "%s element;" % (scalar_coordinate_element_classname,)
-        func = "element.evaluate_reference_basis_derivatives" # FIXME: Use correct function to compute basis derivatives here
+        # FIXME: Use correct approach and function name to compute basis derivatives here
+        if 1:
+            # Call static function on element class
+            define_element = []
+            func = "%s::_evaluate_reference_basis_derivatives" % (scalar_coordinate_element_classname,)
+        else:
+            # Define scalar finite element instance (stateless, so placing this on the stack is free)
+            define_element = [L.VariableDecl(scalar_coordinate_element_classname, "element")]
+            func = "element.evaluate_reference_basis_derivatives"
 
-        # Compute basis derivatives table
-        compute_dphi = L.Call(func, (dphi, one_point, L.AddressOf(X[ip, 0]))) # FIXME: eval_ref_bas_deriv signature
+        # Symbols for local basis derivatives table
+        dphi_sym = L.Symbol("dphi")
+        dphi_dims = (tdim, num_dofs) # FIXME: Match array layout of evaluate_reference_basis_derivatives
+        dphi = L.FlattenedArray(dphi_sym, dims=dphi_dims)
 
-        # Make table more accessible with dimensions
-        dphi = L.FlattenedArray(dphi, dims=dphi_dims)
+        # Arguments to evaluate_reference_basis_derivatives
+        args = (dphi_sym, one_point, L.AddressOf(X[ip, 0])) # FIXME: Match evaluate_reference_basis_derivatives signature
 
-        # Assign to J[ip][i][j] for each component i,j
-        J_loop = L.AssignAdd(J[ip, i, j], coordinate_dofs[d, i]*dphi[j, d]) # FIXME: Array layout of dphi to match eval_ref_bas_deriv
-        J_loop = L.ForRange(d, 0, num_dofs, body=J_loop)
-        J_loop = L.ForRange(j, 0, tdim, body=J_loop)
-        J_loop = L.ForRange(i, 0, gdim, body=J_loop)
-
-        # Carry out computation of dphi and J accumulation for each point
-        point_body = L.StatementList([compute_dphi, J_loop])
-        point_loop = L.ForRange(ip, 0, num_points, body=point_body)
-
-        body = L.StatementList([define_element, dphi_decl, point_loop])
-        return body
+        # For each point, compute basis derivatives and accumulate into the right J
+        code = L.StatementList(define_element + [
+            L.ArrayDecl("double", dphi_sym, sizes=dphi_dims),
+            L.ForRange(ip, 0, num_points, body=L.StatementList([
+                L.Comment("Compute basis derivatives of coordinate element"),
+                L.Call(func, args),
+                L.Comment("Compute J"),
+                L.ForRange(i, 0, gdim, body=
+                    L.ForRange(j, 0, tdim, body=
+                        L.ForRange(d, 0, num_dofs, body=
+                            L.AssignAdd(J[ip, i, j], coordinate_dofs[d, i]*dphi[j, d]))))
+                ]))
+            ])
+        return code
 
     def compute_jacobian_determinants(self, L, ir): # Looks good on inspection. TODO: Test!
         # Dimensions
@@ -516,10 +537,6 @@ class ufc_coordinate_mapping(ufc_generator):
         ip = L.Symbol("ip")
         i = L.Symbol("i")
         j = L.Symbol("j")
-
-        # Input cell data
-        coordinate_dofs = L.Symbol("coordinate_dofs")
-        cell_orientation = L.Symbol("cell_orientation")
 
         # Output geometry
         K = L.FlattenedArray(L.Symbol("K"), dims=(num_points, tdim, gdim))
