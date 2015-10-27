@@ -292,6 +292,12 @@ namespace ufc
         double * X, std::size_t num_points,
         const double * x,
         const double * coordinate_dofs, double cell_orientation) const = 0;
+    /// Compute X, J, detJ, K from physical coordinates x on a cell // TODO: Can compute all this at no extra cost
+    //virtual void compute_reference_geometry(
+    //    double * X, double * J, double * detJ, double * K, std::size_t num_points,
+    //    const double * x,
+    //    const double * coordinate_dofs, double cell_orientation,
+    //    std::size_t iterations, double tolerance) const = 0;
 
     /// Compute Jacobian of coordinate mapping J = dx/dX at reference coordinates X
     virtual void compute_jacobians(
