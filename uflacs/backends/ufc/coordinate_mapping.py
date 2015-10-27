@@ -336,9 +336,13 @@ class ufc_coordinate_mapping(ufc_generator):
         mp = L.Symbol("%s_midpoint" % cellname)
 
         # Variables for stopping criteria
-        max_iter = degree # TODO: Check if this is a good convergence criteria
+        # TODO: Check if these are good convergence criteria, e.g. is epsilon=1e-6 and iterations=degree sufficient?
+        max_iter = L.LiteralInt(2*degree)
+        epsilon = L.LiteralFloat(1e-14)
+        # TODO: Could also easily make criteria input if desired
+        #max_iter = L.Symbol("iterations")
+        #epsilon = L.Symbol("epsilon")
         dX2 = L.Symbol("dX2")
-        epsilon = L.LiteralFloat(1e-14) # L.Symbol("epsilon") # TODO: Choose good convergence criteria
 
         # Wrap K as flattened array for convenient indexing Kf[j,i]
         Kf = L.FlattenedArray(K, dims=(tdim, gdim))
