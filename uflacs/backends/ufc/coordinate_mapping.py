@@ -20,8 +20,28 @@ from uflacs.backends.ufc.generator import ufc_generator
 
 ### Code generation utilities:
 
-def flat_array(L, name, dims):
-    return L.FlattenedArray(L.Symbol(name), dims=dims)
+def generate_compute_ATA(L, ATA, A, m, n, index_prefix=""):
+    "Generate code to declare and compute ATA[i,j] = sum_k A[k,i]*A[k,j] with given A shaped (m,n)."
+    # Loop indices
+    i = L.Symbol(index_prefix + "i")
+    j = L.Symbol(index_prefix + "j")
+    k = L.Symbol(index_prefix + "k")
+
+    # Build A^T*A matrix
+    code = [
+        L.ArrayDecl("double", ATA, sizes=(n, n), values=0),
+        L.ForRange(i, 0, n, body=
+            L.ForRange(j, 0, n, body=
+                L.ForRange(k, 0, m, body=
+                    L.AssignAdd(ATA[i, j], A[k, i] * A[k, j])))),
+        ]
+    return L.StatementList(code)
+
+def generate_accumulation_loop(dst, expr, indices):
+    body = L.AssignAdd(dst, expr)
+    for index, begin, end in reversed(indices):
+        body = L.ForRange(index, begin, end, body=body)
+    return body
 
 ### Inline math expressions:
 
@@ -54,24 +74,6 @@ def pdet_m1(L, A, m):
     for i in range(1, m):
         A2 = A2 + A[i,0]*A[i,0]
     return L.Call("sqrt", A2)
-
-def generate_compute_ATA(L, ATA, A, m, n, index_prefix=""):
-    "Generate code to declare and compute ATA[i,j] = sum_k A[k,i]*A[k,j] with given A shaped (m,n)."
-    # Loop indices
-    i = L.Symbol(index_prefix + "i")
-    j = L.Symbol(index_prefix + "j")
-    k = L.Symbol(index_prefix + "k")
-
-    # Build A^T*A matrix
-    code = [
-        L.ArrayDecl("double", ATA, sizes=(n, n), values=0),
-        L.ForRange(i, 0, n, body=
-            L.ForRange(j, 0, n, body=
-                L.ForRange(k, 0, m, body=
-                    L.AssignAdd(ATA[i, j], A[k, i] * A[k, j])))),
-        ]
-    return L.StatementList(code)
-
 
 class ufc_coordinate_mapping(ufc_generator):
     def __init__(self):
@@ -138,13 +140,16 @@ class ufc_coordinate_mapping(ufc_generator):
         # Carry out for all points
         return L.ForRange(ip, 0, num_points, body=body)
 
-    def compute_reference_coordinates(self, L, ir): # FIXME: Get element degree from ir
-        if 1: # TODO: Special case for affine case
+    def compute_reference_coordinates(self, L, ir):
+        degree = ir["coordinate_element_degree"]
+        if degree == 1:
+            # Special case optimized for affine mesh (possibly room for further optimization)
             return self._compute_reference_coordinates_affine(L, ir)
         else:
+            # General case with newton loop to solve F(X) = x(X) - x0 = 0
             return self._compute_reference_coordinates_newton(L, ir)
 
-    def _compute_reference_coordinates_affine(self, L, ir): # FIXME: Implement affine specialization
+    def _compute_reference_coordinates_affine(self, L, ir):
         # Dimensions
         gdim = ir["geometric_dimension"]
         tdim = ir["topological_dimension"]
@@ -158,14 +163,13 @@ class ufc_coordinate_mapping(ufc_generator):
         k = L.Symbol("k")   # sum iteration
 
         # Output geometry
-        X = flat_array(L, "X", (num_points, tdim))
+        X = L.FlattenedArray(L.Symbol("X"), dims=(num_points, tdim))
 
         # Input geometry
-        x = flat_array(L, "x", (num_points, gdim))
+        x = L.FlattenedArray(L.Symbol("x"), dims=(num_points, gdim))
 
         # Input cell data
         coordinate_dofs = L.Symbol("coordinate_dofs")
-        cell_orientation = L.Symbol("cell_orientation")
 
         # Tables of coordinate basis function values and derivatives at
         # X=0 and X=midpoint available through ir. This is useful in
@@ -235,13 +239,47 @@ class ufc_coordinate_mapping(ufc_generator):
         return code
 
     def _compute_reference_coordinates_newton(self, L, ir): # FIXME: Get degree of mapping. Otherwise looks mostly ok on inspection. TODO: Test and determine stopping criteria to use.
+        """Solves x(X) = x0 for X.
+
+        Find X such that, given x0,
+
+          F(X) = x(X) - x0 = 0
+
+        Newton iteration is:
+
+          X^0 = midpoint of reference cell
+          until convergence:
+              dF/dX(X^k) dX^k = -F(X^k)
+              X^{k+1} = X^k + dX^k
+
+        The Jacobian is just the usual Jacobian of the geometry mapping:
+
+            dF/dX = dx/dX = J
+
+        and its inverse is the usual K = J^-1.
+
+        Because J is small, we can invert it directly and rewrite
+
+            Jk dX = -(xk - x0) = x0 - xk
+
+        into
+
+            Xk = midpoint of reference cell
+            for k in range(maxiter):
+                xk = x(Xk)
+                Jk = J(Xk)
+                Kk = inverse(Jk)
+                dX = Kk (x0 - xk)
+                Xk += dX
+                if dX sufficiently small: break
+        """
         # Dimensions
         gdim = ir["geometric_dimension"]
         tdim = ir["topological_dimension"]
         cellname = ir["cell_shape"]
         num_points = L.Symbol("num_points")
 
-        degree = 1 # ir["element_degree"] # FIXME: Not currently available
+        degree = ir["coordinate_element_degree"]
 
         # Computing table one point at a time instead of vectorized
         # over num_points will allow skipping dynamic allocation
@@ -258,10 +296,10 @@ class ufc_coordinate_mapping(ufc_generator):
         cell_orientation = L.Symbol("cell_orientation")
 
         # Output geometry
-        X = flat_array(L, "X", (num_points, tdim))
+        X = L.FlattenedArray(L.Symbol("X"), dims=(num_points, tdim))
 
         # Input geometry
-        x = flat_array(L, "x", (num_points, gdim))
+        x = L.FlattenedArray(L.Symbol("x"), dims=(num_points, gdim))
 
         # Find X=Xk such that xk(Xk) = x or F(Xk) = xk(Xk) - x = 0.
         # Newtons method is then:
@@ -386,14 +424,14 @@ class ufc_coordinate_mapping(ufc_generator):
         d = L.Symbol("d")
 
         # Input cell data
-        coordinate_dofs = flat_array(L, "coordinate_dofs", (num_scalar_dofs, gdim)) # FIXME: Correct block structure of dofs?
-        cell_orientation = L.Symbol("cell_orientation") # need this?
+        # FIXME: Double check block structure of coordinate dofs
+        coordinate_dofs = L.FlattenedArray(L.Symbol("coordinate_dofs"), dims=(num_scalar_dofs, gdim))
 
         # Output geometry
-        J = flat_array(L, "J", (num_points, gdim, tdim))
+        J = L.FlattenedArray(L.Symbol("J"), dims=(num_points, gdim, tdim))
 
         # Input geometry
-        X = flat_array(L, "X", (num_points, tdim))
+        X = L.FlattenedArray(L.Symbol("X"), dims=(num_points, tdim))
 
         # Declare basis derivatives table
         dphi = L.Symbol("dphi")
@@ -442,20 +480,21 @@ class ufc_coordinate_mapping(ufc_generator):
         detJ = L.Symbol("detJ")[ip]
 
         # Input geometry
-        J = flat_array(L, "J", (num_points, gdim, tdim))[ip]
+        J = L.FlattenedArray(L.Symbol("J"), dims=(num_points, gdim, tdim))
+        cell_orientation = L.Symbol("cell_orientation")
 
         # Assign det expression to detJ # TODO: Call Eigen instead?
         if gdim == tdim:
-            body = L.Assign(detJ, det_nn(J, gdim))
+            body = L.Assign(detJ, det_nn(J[ip], gdim))
         elif tdim == 1:
-            body = L.Assign(detJ, pdet_m1(A, gdim))
+            body = L.Assign(detJ, cell_orientation*pdet_m1(A, gdim))
         #elif tdim == 2 and gdim == 3:
-        #    body = L.Assign(detJ, pdet_32(A)) # Possible optimization not implemented here
+        #    body = L.Assign(detJ, cell_orientation*pdet_32(A)) # Possible optimization not implemented here
         else:
             JTJ = L.Symbol("JTJ")
             body = L.StatementList([
-                generate_compute_ATA(L, JTJ, J, gdim, tdim),
-                L.Assign(detJ, L.Call("sqrt", det_nn(JTJ, tdim))),
+                generate_compute_ATA(L, JTJ, J[ip], gdim, tdim),
+                L.Assign(detJ, cell_orientation*L.Call("sqrt", det_nn(JTJ, tdim))),
                 ])
 
         # Carry out for all points
@@ -480,14 +519,15 @@ class ufc_coordinate_mapping(ufc_generator):
         cell_orientation = L.Symbol("cell_orientation")
 
         # Output geometry
-        K = flat_array(L, "K", (num_points, tdim, gdim))[ip]
+        K = L.FlattenedArray(L.Symbol("K"), dims=(num_points, tdim, gdim))
 
         # Input geometry
-        J = flat_array(L, "J", (num_points, gdim, tdim))[ip]
-        detJ = L.Symbol("detJ")[ip]
+        J = L.FlattenedArray(L.Symbol("J"), dims=(num_points, gdim, tdim))
+        detJ = L.Symbol("detJ")
 
         # Assign to K[j][i] for each component j,i
-        body = L.Assign(K[j][i], 0.0) # FIXME: Call Eigen?
+        # FIXME: compute K[ip] from  J[ip], detJ[ip]
+        body = L.Assign(K[ip][j][i], 0.0) # FIXME: Call Eigen?
         body = L.ForRange(i, 0, gdim, body=body)
         body = L.ForRange(j, 0, tdim, body=body)
 
