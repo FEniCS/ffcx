@@ -50,7 +50,7 @@ def _not_implemented(function_name, return_null=False):
     return body
 
 
-def generate_code(ir, prefix, parameters):
+def generate_code(ir, parameters):
     "Generate code from intermediate representation."
 
     begin("Compiler stage 4: Generating code")
@@ -67,27 +67,27 @@ def generate_code(ir, prefix, parameters):
 
     # Generate code for elements
     info("Generating code for %d element(s)" % len(ir_elements))
-    code_elements = [_generate_element_code(ir, prefix, parameters)
+    code_elements = [_generate_element_code(ir, parameters)
                      for ir in ir_elements]
 
     # Generate code for dofmaps
     info("Generating code for %d dofmap(s)" % len(ir_dofmaps))
-    code_dofmaps = [_generate_dofmap_code(ir, prefix, parameters)
+    code_dofmaps = [_generate_dofmap_code(ir, parameters)
                     for ir in ir_dofmaps]
 
     # Generate code for coordinate_mappings
     info("Generating code for %d coordinate_mapping(s)" % len(ir_coordinate_mappings))
-    code_coordinate_mappings = [_generate_coordinate_mapping_code(ir, prefix, parameters)
+    code_coordinate_mappings = [_generate_coordinate_mapping_code(ir, parameters)
                                 for ir in ir_coordinate_mappings]
 
     # Generate code for integrals
     info("Generating code for integrals")
-    code_integrals = [_generate_integral_code(ir, prefix, parameters)
+    code_integrals = [_generate_integral_code(ir, parameters)
                       for ir in ir_integrals]
 
     # Generate code for forms
     info("Generating code for forms")
-    code_forms = [_generate_form_code(ir, prefix, parameters)
+    code_forms = [_generate_form_code(ir, parameters)
                   for ir in ir_forms]
 
     end()
@@ -95,7 +95,7 @@ def generate_code(ir, prefix, parameters):
     return code_elements, code_dofmaps, code_coordinate_mappings, code_integrals, code_forms
 
 
-def _generate_element_code(ir, prefix, parameters):
+def _generate_element_code(ir, parameters):
     "Generate code for finite element from intermediate representation."
 
     # Skip code generation if ir is None
@@ -149,7 +149,7 @@ def _generate_element_code(ir, prefix, parameters):
     code["tabulate_dof_coordinates"] \
         = _tabulate_dof_coordinates(ir["tabulate_dof_coordinates"])
     code["num_sub_elements"] = ret(ir["num_sub_elements"])
-    code["create_sub_element"] = _create_sub_element(prefix, ir)
+    code["create_sub_element"] = _create_sub_element(ir)
     code["create"] = ret(create(code["classname"]))
 
     # Postprocess code
@@ -158,7 +158,7 @@ def _generate_element_code(ir, prefix, parameters):
     return code
 
 
-def _generate_dofmap_code(ir, prefix, parameters):
+def _generate_dofmap_code(ir, parameters):
     "Generate code for dofmap from intermediate representation."
 
     # Skip code generation if ir is None
@@ -201,7 +201,7 @@ def _generate_dofmap_code(ir, prefix, parameters):
     code["tabulate_entity_dofs"] \
         = _tabulate_entity_dofs(ir["tabulate_entity_dofs"])
     code["num_sub_dofmaps"] = ret(ir["num_sub_dofmaps"])
-    code["create_sub_dofmap"] = _create_sub_dofmap(prefix, ir)
+    code["create_sub_dofmap"] = _create_sub_dofmap(ir)
     code["create"] = ret(create(code["classname"]))
 
     # Postprocess code
@@ -210,7 +210,7 @@ def _generate_dofmap_code(ir, prefix, parameters):
     return code
 
 
-def _generate_coordinate_mapping_code(ir, prefix, parameters):
+def _generate_coordinate_mapping_code(ir, parameters):
     "Generate code for coordinate_mapping from intermediate representation."
 
     # Skip code generation if ir is None
@@ -250,7 +250,7 @@ def _generate_coordinate_mapping_code(ir, prefix, parameters):
     return code
 
 
-def _generate_integral_code(ir, prefix, parameters):
+def _generate_integral_code(ir, parameters):
     "Generate code for integrals from intermediate representation."
 
     # Skip code generation if ir is None
@@ -261,7 +261,8 @@ def _generate_integral_code(ir, prefix, parameters):
     r = pick_representation(ir["representation"])
 
     # Generate code
-    code = r.generate_integral_code(ir, prefix, parameters)
+    prefix = ir["prefix"]
+    code = r.generate_integral_code(ir, prefix, parameters) # TODO: Drop prefix argument and get from ir
 
     # Indent code (unused variables should already be removed)
     # FIXME: Remove this quick hack
@@ -283,7 +284,7 @@ def _generate_original_coefficient_position(original_coefficient_positions):
     return code
 
 
-def _generate_form_code(ir, prefix, parameters):
+def _generate_form_code(ir, parameters):
     "Generate code for form from intermediate representation."
 
     # Skip code generation if ir is None
@@ -295,6 +296,7 @@ def _generate_form_code(ir, prefix, parameters):
     do_nothing = format["do nothing"]
 
     form_id = ir["id"]
+    prefix = ir["prefix"]
 
     # Generate code
     code = {}
@@ -311,12 +313,12 @@ def _generate_form_code(ir, prefix, parameters):
     code["rank"] = ret(ir["rank"])
     code["num_coefficients"] = ret(ir["num_coefficients"])
 
-    code["create_coordinate_finite_element"] = _create_coordinate_finite_element(prefix, ir)
-    code["create_coordinate_dofmap"] = _create_coordinate_dofmap(prefix, ir)
-    code["create_coordinate_mapping"] = _create_coordinate_mapping(prefix, ir)
+    code["create_coordinate_finite_element"] = _create_coordinate_finite_element(ir)
+    code["create_coordinate_dofmap"] = _create_coordinate_dofmap(ir)
+    code["create_coordinate_mapping"] = _create_coordinate_mapping(ir)
 
-    code["create_finite_element"] = _create_finite_element(prefix, ir)
-    code["create_dofmap"] = _create_dofmap(prefix, ir)
+    code["create_finite_element"] = _create_finite_element(ir)
+    code["create_dofmap"] = _create_dofmap(ir)
 
     for integral_type in ufc_integral_types:
         code["max_%s_subdomain_id" % integral_type] = ret(ir["max_%s_subdomain_id" % integral_type])
@@ -550,21 +552,21 @@ def _create_bar(arg, classnames):
     default = ret(0)
     return format["switch"](arg, cases, default=default, numbers=numbers)
 
-def _create_coordinate_finite_element(prefix, ir):
+def _create_coordinate_finite_element(ir):
     ret = format["return"]
     create = format["create foo"]
     classnames = ir["create_coordinate_finite_element"]
     assert len(classnames) == 1 # list of length 1 until we support multiple domains
     return ret(create(classnames[0]))
 
-def _create_coordinate_dofmap(prefix, ir):
+def _create_coordinate_dofmap(ir):
     ret = format["return"]
     create = format["create foo"]
     classnames = ir["create_coordinate_dofmap"]
     assert len(classnames) == 1 # list of length 1 until we support multiple domains
     return ret(create(classnames[0]))
 
-def _create_coordinate_mapping(prefix, ir):
+def _create_coordinate_mapping(ir):
     ret = format["return"]
     create = format["create foo"]
     classnames = ir["create_coordinate_mapping"]
@@ -572,25 +574,31 @@ def _create_coordinate_mapping(prefix, ir):
     #return ret(create(classnames[0]))
     return ret("nullptr") # FIXME: Disabled until we generate a functional class (work in progress)
 
-def _create_finite_element(prefix, ir):
+def _create_finite_element(ir):
     f_i = format["argument sub"]
     classnames = ir["create_finite_element"]
     return _create_bar(f_i, classnames)
 
-def _create_dofmap(prefix, ir):
+def _create_dofmap(ir):
     f_i = format["argument sub"]
     classnames = ir["create_dofmap"]
     return _create_bar(f_i, classnames)
 
-def _create_sub_element(prefix, ir):
+def _create_sub_element(ir):
     f_i = format["argument sub"]
     classnames = ir["create_sub_element"]
     return _create_bar(f_i, classnames)
 
-def _create_sub_dofmap(prefix, ir):
+def _create_sub_dofmap(ir):
     f_i = format["argument sub"]
     classnames = ir["create_sub_dofmap"]
     return _create_bar(f_i, classnames)
+
+def _has_foo_integrals(ir, integral_type):
+    ret = format["return"]
+    b = format["bool"]
+    i = ir["has_%s_integrals" % integral_type]
+    return ret(b(i))
 
 def _create_foo_integral(ir, integral_type, prefix):
     "Generate code for create_<foo>_integral."
@@ -604,12 +612,6 @@ def _create_foo_integral(ir, integral_type, prefix):
     cases = [ret(create(name)) for name in classnames]
     default = ret(0)
     return format["switch"](f_i, cases, default=default, numbers=subdomain_ids)
-
-def _has_foo_integrals(ir, integral_type):
-    ret = format["return"]
-    b = format["bool"]
-    i = ir["has_%s_integrals" % integral_type]
-    return ret(b(i))
 
 def _create_default_foo_integral(ir, integral_type, prefix):
     "Generate code for create_default_<foo>_integral."

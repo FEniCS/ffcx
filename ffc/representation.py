@@ -330,6 +330,9 @@ def _compute_integral_ir(form_data, form_id, prefix, element_numbers, parameters
         # Build classname
         ir["classname"] = make_integral_classname(prefix, itg_data.integral_type, form_id, itg_data.subdomain_id)
 
+        # Storing prefix here for reconstruction of classnames on code generation side
+        ir["prefix"] = prefix
+
         # Append representation
         irs.append(ir)
 
@@ -341,6 +344,9 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers):
 
     # Store id
     ir = {"id": form_id}
+
+    # Storing prefix here for reconstruction of classnames on code generation side
+    ir["prefix"] = prefix
 
     # Compute common data
     ir["classname"] = make_classname(prefix, "form", form_id)
@@ -377,7 +383,8 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers):
 
         ir["create_%s_integral" % integral_type] = _create_foo_integral(integral_type, form_data)
         #    return [itg_data.subdomain_id for itg_data in form_data.integral_data
-        #            if itg_data.integral_type == integral_type and isinstance(itg_data.subdomain_id, int)]
+        #            if (itg_data.integral_type == integral_type and
+        #                isinstance(itg_data.subdomain_id, int))]
 
         ir["create_default_%s_integral" % integral_type] = _create_default_foo_integral(integral_type, form_data)
 
