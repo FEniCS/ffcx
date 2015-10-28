@@ -46,6 +46,8 @@ def basic_class_properties(classname):
 def mock_form_ir():
     ir = basic_class_properties("mock_form_classname")
     ir.update({
+        "id": 0,
+        "prefix": "Foo",
         "signature": "mock form signature",
         "rank": 2,
         "num_coefficients": 3,
@@ -53,9 +55,9 @@ def mock_form_ir():
         })
 
     ir.update({
-        "create_coordinate_finite_element": "mock_coordinate_finite_element_classname",
-        "create_coordinate_dofmap": "mock_coordinate_dofmap_classname",
-        "create_coordinate_mapping": "mock_coordinate_mapping_classname",
+        "create_coordinate_finite_element": ["mock_coordinate_finite_element_classname"],
+        "create_coordinate_dofmap": ["mock_coordinate_dofmap_classname"],
+        "create_coordinate_mapping": ["mock_coordinate_mapping_classname"],
         "create_finite_element": ["mock_finite_element_classname_%d" % (i,) for i in range(ir["num_coefficients"])],
         "create_dofmap": ["mock_dofmap_classname_%d" % (i,) for i in range(ir["num_coefficients"])],
         })
@@ -128,6 +130,7 @@ def mock_finite_element_ir():
 def mock_integral_ir():
     ir = basic_class_properties("mock_integral_classname")
     ir.update({
+        "prefix": "Foo",
         "enabled_coefficients": [True, False, True],
         "tabulate_tensor": "    mock_body_of_tabulate_tensor();",
         "num_cells": 1,

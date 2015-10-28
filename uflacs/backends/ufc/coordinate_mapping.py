@@ -168,11 +168,11 @@ class ufc_coordinate_mapping(ufc_generator):
         return L.Return(L.LiteralInt(value))
 
     def create_coordinate_finite_element(self, L, ir):
-        classname = ir["create_coordinate_finite_element"] # FIXME: ffc passes class id not name
+        classname = ir["create_coordinate_finite_element"]
         return L.Return(L.New(classname))
 
     def create_coordinate_dofmap(self, L, ir):
-        classname = ir["create_coordinate_dofmap"] # FIXME: ffc passes class id not name
+        classname = ir["create_coordinate_dofmap"]
         return L.Return(L.New(classname))
 
     def compute_physical_coordinates(self, L, ir): # FIXME: Implement evaluate_reference_basis

@@ -1,9 +1,11 @@
 
 # TODO: Move to uflacs.language utils?
-def generate_return_new_switch(L, i, classnames):
+def generate_return_new_switch(L, i, classnames, args=None):
     if classnames:
         cases = []
-        for j, classname in enumerate(classnames):
+        if args is None:
+            args = list(range(len(classnames)))
+        for j, classname in zip(args, classnames):
             if classname:
                 cases.append((j, L.Return(L.New(classname))))
         code = [L.Switch(i, cases, autobreak=False, autoscope=False)]

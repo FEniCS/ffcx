@@ -201,5 +201,5 @@ class ufc_finite_element(ufc_generator):
 
     def create_sub_element(self, L, ir):
         i = L.Symbol("i")
-        classnames = ir["create_sub_element"] # FIXME: ffc provides element ids, not classname
+        classnames = ir["create_sub_element"]
         return generate_return_new_switch(L, i, classnames)
