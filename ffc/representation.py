@@ -139,7 +139,8 @@ def _compute_element_ir(ufl_element, prefix, element_numbers):
     ir["tabulate_dof_coordinates"] = _tabulate_dof_coordinates(ufl_element,
                                                                element)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
-    ir["create_sub_element"] = _create_sub_foo(ufl_element, element_numbers)
+    ir["create_sub_element"] = [make_classname(prefix, "finite_element", element_numbers[e])
+                                for e in ufl_element.sub_elements()]
 
     #debug_ir(ir, "finite_element")
 
@@ -175,7 +176,8 @@ def _compute_dofmap_ir(ufl_element, prefix, element_numbers):
     ir["tabulate_facet_dofs"] = facet_dofs
     ir["tabulate_entity_dofs"] = (element.entity_dofs(), num_dofs_per_entity)
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
-    ir["create_sub_dofmap"] = _create_sub_foo(ufl_element, element_numbers)
+    ir["create_sub_dofmap"] = [make_classname(prefix, "dofmap", element_numbers[e])
+                               for e in ufl_element.sub_elements()]
 
     return ir
 
@@ -249,8 +251,8 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element, prefix, element_numbe
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = ufl_coordinate_element.value_size()
 
-    ir["create_coordinate_finite_element"] = element_numbers[ufl_coordinate_element] # FIXME: Use classname instead (or in addition)
-    ir["create_coordinate_dofmap"] = element_numbers[ufl_coordinate_element] # FIXME: Use classname instead (or in addition)
+    ir["create_coordinate_finite_element"] = make_classname(prefix, "finite_element", element_numbers[ufl_coordinate_element])
+    ir["create_coordinate_dofmap"] = make_classname(prefix, "dofmap", element_numbers[ufl_coordinate_element])
 
     ir["compute_physical_coordinates"] = None # currently unused, corresponds to function name
     ir["compute_reference_coordinates"] = None # currently unused, corresponds to function name
@@ -268,8 +270,6 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element, prefix, element_numbe
     ir["num_scalar_coordinate_element_dofs"] = tables["x0"].shape[0]
 
     # Get classnames for coordinate element and its scalar subelement:
-    ir["coordinate_finite_element_classname"] = make_classname(prefix, "finite_element", element_numbers[ufl_coordinate_element])
-    ir["coordinate_dofmap_classname"] = make_classname(prefix, "dofmap", element_numbers[ufl_coordinate_element])
     ir["scalar_coordinate_finite_element_classname"] = make_classname(prefix, "finite_element", element_numbers[ufl_coordinate_element.sub_elements()[0]])
 
     return ir
@@ -357,16 +357,28 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers):
     #               remember to use these classnames in codegeneration.py instead of calling make_classname.
     # FIXME: Next: change element classnames to use unique signatures instead of small integer element numbers
 
-    ir["create_coordinate_finite_element"] = [element_numbers[e] for e in form_data.coordinate_elements]
-    ir["create_coordinate_dofmap"] = [element_numbers[e] for e in form_data.coordinate_elements]
-    ir["create_coordinate_mapping"] = [element_numbers[e] for e in form_data.coordinate_elements]
-    ir["create_finite_element"] = [element_numbers[e] for e in form_data.argument_elements + form_data.coefficient_elements]
-    ir["create_dofmap"] = [element_numbers[e] for e in form_data.argument_elements + form_data.coefficient_elements]
+    # TODO: Remove these and access through coordinate_mapping instead in dolfin, when in place
+    ir["create_coordinate_finite_element"] = [make_classname(prefix, "finite_element", element_numbers[e])
+                                              for e in form_data.coordinate_elements]
+    ir["create_coordinate_dofmap"] = [make_classname(prefix, "dofmap", element_numbers[e])
+                                      for e in form_data.coordinate_elements]
+
+    ir["create_coordinate_mapping"] = [make_classname(prefix, "coordinate_mapping", element_numbers[e])
+                                       for e in form_data.coordinate_elements]
+
+    ir["create_finite_element"] = [make_classname(prefix, "finite_element", element_numbers[e])
+                                   for e in form_data.argument_elements + form_data.coefficient_elements]
+    ir["create_dofmap"] = [make_classname(prefix, "dofmap", element_numbers[e])
+                           for e in form_data.argument_elements + form_data.coefficient_elements]
 
     for integral_type in ufc_integral_types:
         ir["max_%s_subdomain_id" % integral_type] = _max_foo_subdomain_id(integral_type, form_data)
         ir["has_%s_integrals" % integral_type] = _has_foo_integrals(integral_type, form_data)
+
         ir["create_%s_integral" % integral_type] = _create_foo_integral(integral_type, form_data)
+        #    return [itg_data.subdomain_id for itg_data in form_data.integral_data
+        #            if itg_data.integral_type == integral_type and isinstance(itg_data.subdomain_id, int)]
+
         ir["create_default_%s_integral" % integral_type] = _create_default_foo_integral(integral_type, form_data)
 
     return ir
@@ -684,15 +696,6 @@ def _interpolate_vertex_values(ufl_element, element):
 
     return ir
 
-def _create_sub_foo(ufl_element, element_numbers):
-    "Compute intermediate representation of create_sub_element/dofmap."
-    return [element_numbers[e] for e in ufl_element.sub_elements()]
-
-def _create_foo_integral(integral_type, form_data):
-    "Compute intermediate representation of create_foo_integral."
-    return [itg_data.subdomain_id for itg_data in form_data.integral_data
-           if itg_data.integral_type == integral_type and isinstance(itg_data.subdomain_id, int)]
-
 def _max_foo_subdomain_id(integral_type, form_data):
     "Compute intermediate representation of max_foo_subdomain_id."
     return form_data.num_sub_domains.get(integral_type, 0) # TODO: Rename in form_data
@@ -703,11 +706,17 @@ def _has_foo_integrals(integral_type, form_data):
          or _create_default_foo_integral(integral_type, form_data) is not None)
     return bool(v)
 
+def _create_foo_integral(integral_type, form_data):
+    "Compute intermediate representation of create_foo_integral."
+    return [itg_data.subdomain_id for itg_data in form_data.integral_data
+           if (itg_data.integral_type == integral_type and
+               isinstance(itg_data.subdomain_id, int))]
+
 def _create_default_foo_integral(integral_type, form_data):
     "Compute intermediate representation of create_default_foo_integral."
     itg_data = [itg_data for itg_data in form_data.integral_data
-                if (itg_data.subdomain_id == "otherwise" and
-                    itg_data.integral_type == integral_type)]
+                if (itg_data.integral_type == integral_type and
+                    itg_data.subdomain_id == "otherwise")]
     ffc_assert(len(itg_data) in (0,1), "Expecting at most one default integral of each type.")
     return "otherwise" if itg_data else None
 
