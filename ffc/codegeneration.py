@@ -115,7 +115,7 @@ def _generate_element_code(ir, prefix, parameters):
 
     # Generate code
     code = {}
-    code["classname"] = make_classname(prefix, "finite_element", element_number)
+    code["classname"] = ir["classname"]
     code["members"] = ""
     code["constructor"] = do_nothing
     code["constructor_arguments"] = ""
@@ -179,7 +179,7 @@ def _generate_dofmap_code(ir, prefix, parameters):
 
     # Generate code
     code = {}
-    code["classname"] = make_classname(prefix, "dofmap", element_number)
+    code["classname"] = ir["classname"]
     code["members"] = ""
     code["constructor"] = do_nothing
     code["constructor_arguments"] = ""
@@ -223,7 +223,7 @@ def _generate_coordinate_mapping_code(ir, prefix, parameters):
 
     # Generate code
     code = {}
-    code["classname"] = make_classname(prefix, "coordinate_mapping", coordinate_mapping_number)
+    code["classname"] = ir["classname"]
 
     code["members"] = ""
     code["constructor"] = ""
@@ -298,7 +298,7 @@ def _generate_form_code(ir, prefix, parameters):
 
     # Generate code
     code = {}
-    code["classname"] = make_classname(prefix, "form", form_id)
+    code["classname"] = ir["classname"]
     code["members"] = ""
 
     code["constructor"] = do_nothing
