@@ -579,6 +579,7 @@ class AssignBitOr(AssignOp):
     __slots__ = ()
     op = "|="
 
+
 ############## CExpr operators
 
 class FlattenedArray(object):

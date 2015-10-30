@@ -85,6 +85,12 @@ class ufc_finite_element(ufc_generator):
         default = L.Return(L.LiteralInt(0))
         return L.Switch(i, cases, default=default, autoscope=False, autobreak=False)
 
+    def evaluate_reference_basis(self, L, ir): # FIXME: NEW implement!
+        return "FIXME" + ir["evaluate_reference_basis"]
+
+    def evaluate_reference_basis_derivatives(self, L, ir): # FIXME: NEW implement!
+        return "FIXME" + ir["evaluate_reference_basis_derivatives"]
+
     def evaluate_basis(self, L, ir): # FIXME: Get rid of this
         return "FIXME" + ir["evaluate_basis"]
 
@@ -113,10 +119,12 @@ class ufc_finite_element(ufc_generator):
           f = M fhat;  nu(f) = nu(M fhat) = nuhat(M^-1 f) = sum_i w_i M^-1 f(x_i)
 
           // Get fixed set of points on reference element
-          element->tabulate_dof_evaluation_points(reference_points)
+          num_points = element->num_dof_evaluation_points();
+          double X[num_points*tdim];
+          element->tabulate_dof_evaluation_points(X);
 
           // Compute geometry in these points
-          domain->compute_geometry(reference_points, points, J, detJ, K, coordinate_dofs)
+          domain->compute_geometry(reference_points, num_point, X, J, detJ, K, coordinate_dofs, cell_orientation);
 
           // Computed by dolfin
           for ip
