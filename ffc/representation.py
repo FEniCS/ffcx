@@ -575,7 +575,6 @@ def _evaluate_basis(ufl_element, fiat_element):
             dof_data = {
                 "coeffs" : coefficients,
                 "mapping" : mappings[dof],
-                "offset" : reference_offsets[dof], # TODO: Remove this key
                 "physical_offset" : physical_offsets[dof],
                 "reference_offset" : reference_offsets[dof],
                 }
