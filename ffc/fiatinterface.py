@@ -165,12 +165,10 @@ def _create_fiat_element(ufl_element):
         else:
             element = ElementClass(fiat_cell, degree)
 
-    # Consistency check between UFL and FIAT elements. This will not hold for elements
-    # where the reference value shape is different from the global value shape, i.e.
-    # RT elements on a triangle in 3D.
-    #ffc_assert(element.value_shape() == ufl_element.value_shape(),
-    #           "Something went wrong in the construction of FIAT element from UFL element." + \
-    #           "Shapes are %s and %s." % (element.value_shape(), ufl_element.value_shape()))
+    # Consistency check between UFL and FIAT elements.
+    ffc_assert(element.value_shape() == ufl_element.reference_value_shape(),
+               "Something went wrong in the construction of FIAT element from UFL element." +
+               "Shapes are %s and %s." % (element.value_shape(), ufl_element.reference_value_shape()))
 
     return element
 

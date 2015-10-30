@@ -116,7 +116,7 @@ def _compute_element_ir(ufl_element, prefix, element_numbers):
     "Compute intermediate representation of element."
 
     # Create FIAT element
-    element = create_element(ufl_element)
+    fiat_element = create_element(ufl_element)
     cell = ufl_element.cell()
     cellname = cell.cellname()
 
@@ -129,15 +129,15 @@ def _compute_element_ir(ufl_element, prefix, element_numbers):
     ir["cell_shape"] = cellname
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
-    ir["space_dimension"] = element.space_dimension()
+    ir["space_dimension"] = fiat_element.space_dimension()
     ir["value_dimension"] = ufl_element.value_shape()
     ir["reference_value_dimension"] = ufl_element.reference_value_shape()
-    ir["evaluate_basis"] = _evaluate_basis(ufl_element, element)
-    ir["evaluate_dof"] = _evaluate_dof(ufl_element, element)
+    ir["evaluate_basis"] = _evaluate_basis(ufl_element, fiat_element)
+    ir["evaluate_dof"] = _evaluate_dof(ufl_element, fiat_element)
     ir["interpolate_vertex_values"] = _interpolate_vertex_values(ufl_element,
-                                                                 element)
+                                                                 fiat_element)
     ir["tabulate_dof_coordinates"] = _tabulate_dof_coordinates(ufl_element,
-                                                               element)
+                                                               fiat_element)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = [make_classname(prefix, "finite_element", element_numbers[e])
                                 for e in ufl_element.sub_elements()]
@@ -151,13 +151,13 @@ def _compute_dofmap_ir(ufl_element, prefix, element_numbers):
     "Compute intermediate representation of dofmap."
 
     # Create FIAT element
-    element = create_element(ufl_element)
+    fiat_element = create_element(ufl_element)
     cell = ufl_element.cell()
     cellname = cell.cellname()
 
     # Precompute repeatedly used items
-    num_dofs_per_entity = _num_dofs_per_entity(element)
-    facet_dofs = _tabulate_facet_dofs(element, cell)
+    num_dofs_per_entity = _num_dofs_per_entity(fiat_element)
+    facet_dofs = _tabulate_facet_dofs(fiat_element, cell)
 
     # Store id
     ir = {"id": element_numbers[ufl_element]}
@@ -165,16 +165,16 @@ def _compute_dofmap_ir(ufl_element, prefix, element_numbers):
 
     # Compute data for each function
     ir["signature"] = "FFC dofmap for " + repr(ufl_element)
-    ir["needs_mesh_entities"] = _needs_mesh_entities(element)
+    ir["needs_mesh_entities"] = _needs_mesh_entities(fiat_element)
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
-    ir["global_dimension"] = _global_dimension(element)
-    ir["num_element_dofs"] = element.space_dimension()
+    ir["global_dimension"] = _global_dimension(fiat_element)
+    ir["num_element_dofs"] = fiat_element.space_dimension()
     ir["num_facet_dofs"] = len(facet_dofs[0])
     ir["num_entity_dofs"] = num_dofs_per_entity
-    ir["tabulate_dofs"] = _tabulate_dofs(element, cell)
+    ir["tabulate_dofs"] = _tabulate_dofs(fiat_element, cell)
     ir["tabulate_facet_dofs"] = facet_dofs
-    ir["tabulate_entity_dofs"] = (element.entity_dofs(), num_dofs_per_entity)
+    ir["tabulate_entity_dofs"] = (fiat_element.entity_dofs(), num_dofs_per_entity)
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
     ir["create_sub_dofmap"] = [make_classname(prefix, "dofmap", element_numbers[e])
                                for e in ufl_element.sub_elements()]
@@ -276,33 +276,33 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element, prefix, element_numbe
     return ir
 
 
-def _global_dimension(element):
+def _global_dimension(fiat_element):
     "Compute intermediate representation for global_dimension."
 
-    if not isinstance(element, MixedElement):
-        if isinstance(element, SpaceOfReals):
+    if not isinstance(fiat_element, MixedElement):
+        if isinstance(fiat_element, SpaceOfReals):
             return ([], 1)
-        return (_num_dofs_per_entity(element), 0)
+        return (_num_dofs_per_entity(fiat_element), 0)
 
     elements = []
     reals = []
     num_reals = 0
-    for (i, e) in enumerate(element.elements()):
+    for (i, e) in enumerate(fiat_element.elements()):
         if not isinstance(e, SpaceOfReals):
             elements += [e]
         else:
             num_reals += 1
-    element = MixedElement(elements)
-    return (_num_dofs_per_entity(element), num_reals)
+    fiat_element = MixedElement(elements)
+    return (_num_dofs_per_entity(fiat_element), num_reals)
 
 
-def _needs_mesh_entities(element):
+def _needs_mesh_entities(fiat_element):
     "Compute intermediate representation for needs_mesh_entities."
 
     # Note: The dof map for Real elements does not depend on the mesh
 
-    num_dofs_per_entity = _num_dofs_per_entity(element)
-    if isinstance(element, SpaceOfReals):
+    num_dofs_per_entity = _num_dofs_per_entity(fiat_element)
+    if isinstance(fiat_element, SpaceOfReals):
         return [False for d in num_dofs_per_entity]
     else:
         return [d > 0 for d in num_dofs_per_entity]
@@ -364,7 +364,7 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers):
     #               remember to use these classnames in codegeneration.py instead of calling make_classname.
     # FIXME: Next: change element classnames to use unique signatures instead of small integer element numbers
 
-    # TODO: Remove these and access through coordinate_mapping instead in dolfin, when in place
+    # TODO: Remove these two and access through coordinate_mapping instead in dolfin, when that's in place
     ir["create_coordinate_finite_element"] = [make_classname(prefix, "finite_element", element_numbers[e])
                                               for e in form_data.coordinate_elements]
     ir["create_coordinate_dofmap"] = [make_classname(prefix, "dofmap", element_numbers[e])
@@ -372,21 +372,15 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers):
 
     ir["create_coordinate_mapping"] = [make_classname(prefix, "coordinate_mapping", element_numbers[e])
                                        for e in form_data.coordinate_elements]
-
     ir["create_finite_element"] = [make_classname(prefix, "finite_element", element_numbers[e])
                                    for e in form_data.argument_elements + form_data.coefficient_elements]
     ir["create_dofmap"] = [make_classname(prefix, "dofmap", element_numbers[e])
                            for e in form_data.argument_elements + form_data.coefficient_elements]
 
     for integral_type in ufc_integral_types:
-        ir["max_%s_subdomain_id" % integral_type] = _max_foo_subdomain_id(integral_type, form_data)
+        ir["max_%s_subdomain_id" % integral_type] = form_data.max_subdomain_ids.get(integral_type, 0)
         ir["has_%s_integrals" % integral_type] = _has_foo_integrals(integral_type, form_data)
-
         ir["create_%s_integral" % integral_type] = _create_foo_integral(integral_type, form_data)
-        #    return [itg_data.subdomain_id for itg_data in form_data.integral_data
-        #            if (itg_data.integral_type == integral_type and
-        #                isinstance(itg_data.subdomain_id, int))]
-
         ir["create_default_%s_integral" % integral_type] = _create_default_foo_integral(integral_type, form_data)
 
     return ir
@@ -394,104 +388,126 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers):
 
 #--- Computation of intermediate representation for non-trivial functions ---
 
-# FIXME: Move to FiniteElement/MixedElement
-def _value_size(element):
-    """Compute value size of element, aka the number of components.
-
-    The value size of a scalar field is 1, the value size of a vector
-    field (is the number of components), the value size of a higher
-    dimensional tensor field is the product of the value_shape of the
-    field. Recall that all mixed elements are flattened.
-    """
-    return product(element.value_shape())
-
-
-def _generate_reference_offsets(element, offset=0):
+def _generate_reference_offsets(fiat_element, offset=0):
     """Generate offsets: i.e value offset for each basis function
     relative to a reference element representation."""
-    offsets = []
 
-    if isinstance(element, MixedElement):
-        for e in element.elements():
+    if isinstance(fiat_element, MixedElement):
+        offsets = []
+        for e in fiat_element.elements():
             offsets += _generate_reference_offsets(e, offset)
-            offset += _value_size(e)
+            # NB! This is the fiat element and therefore value_shape means reference_value_shape
+            offset += product(e.value_shape())
+        return offsets
 
-    elif isinstance(element, EnrichedElement):
-        for e in element.elements():
+    elif isinstance(fiat_element, EnrichedElement):
+        offsets = []
+        for e in fiat_element.elements():
             offsets += _generate_reference_offsets(e, offset)
+        return offsets
 
     else:
-        offsets = [offset]*element.space_dimension()
-
-    return offsets
+        return [offset]*fiat_element.space_dimension()
 
 
 def _generate_physical_offsets(ufl_element, offset=0):
     """Generate offsets: i.e value offset for each basis function
     relative to a physical element representation."""
-    offsets = []
-
-    # Refer to reference if gdim == tdim. This is a hack to support
-    # more stuff (in particular restricted elements)
     cell = ufl_element.cell()
     gdim = cell.geometric_dimension()
     tdim = cell.topological_dimension()
 
+    # Refer to reference if gdim == tdim. This is a hack to support
+    # more stuff (in particular restricted elements)
     if gdim == tdim:
         return _generate_reference_offsets(create_element(ufl_element))
 
     if isinstance(ufl_element, ufl.MixedElement):
+        offsets = []
         for e in ufl_element.sub_elements():
             offsets += _generate_physical_offsets(e, offset)
+            # e is a ufl element, so value_size means the physical value size
             offset += e.value_size()
+        return offsets
 
     elif isinstance(ufl_element, ufl.EnrichedElement):
-        for e in ufl_element._elements:
+        offsets = []
+        for e in ufl_element._elements: # TODO: Avoid private member access
             offsets += _generate_physical_offsets(e, offset)
+        return offsets
 
     elif isinstance(ufl_element, ufl.FiniteElement):
-        element = create_element(ufl_element)
-        offsets = [offset]*element.space_dimension()
+        fiat_element = create_element(ufl_element)
+        return [offset]*fiat_element.space_dimension()
 
     else:
         raise NotImplementedError("This element combination is not implemented")
 
-    return offsets
+
+def _generate_offsets(ufl_element, reference_offset=0, physical_offset=0):
+    """Generate offsets: i.e value offset for each basis function
+    relative to a physical element representation."""
+    cell = ufl_element.cell()
+    gdim = cell.geometric_dimension()
+    tdim = cell.topological_dimension()
+
+    if isinstance(ufl_element, ufl.MixedElement):
+        offsets = []
+        for e in ufl_element.sub_elements():
+            offsets += _generate_offsets(e, reference_offset, physical_offset)
+            # e is a ufl element, so value_size means the physical value size
+            reference_offset += e.reference_value_size()
+            physical_offset += e.value_size()
+        return offsets
+
+    elif isinstance(ufl_element, ufl.EnrichedElement):
+        offsets = []
+        for e in ufl_element._elements: # TODO: Avoid private member access
+            offsets += _generate_offsets(e, reference_offset, physical_offset)
+        return offsets
+
+    elif isinstance(ufl_element, ufl.FiniteElement):
+        fiat_element = create_element(ufl_element)
+        return [(reference_offset, physical_offset)]*fiat_element.space_dimension()
+
+    else:
+        # TODO: Support RestrictedElement, QuadratureElement, TensorProductElement, etc.!
+        #       and replace _generate_{physical|reference}_offsets with this function.
+        raise NotImplementedError("This element combination is not implemented")
 
 
-def _evaluate_dof(ufl_element, element):
+def _evaluate_dof(ufl_element, fiat_element):
     "Compute intermediate representation of evaluate_dof."
     cell = ufl_element.cell()
-    return {"mappings": element.mapping(),
+    return {"mappings": fiat_element.mapping(),
             "reference_value_size": ufl_element.reference_value_size(),
             "physical_value_size": ufl_element.value_size(),
             "geometric_dimension": cell.geometric_dimension(),
             "topological_dimension": cell.topological_dimension(),
-            "dofs": [L.pt_dict if L else None for L in element.dual_basis()],
+            "dofs": [L.pt_dict if L else None for L in fiat_element.dual_basis()],
             "physical_offsets": _generate_physical_offsets(ufl_element)}
 
 
-def _extract_elements(element):
-
+def _extract_elements(fiat_element):
     new_elements = []
-    if isinstance(element, (MixedElement, EnrichedElement)):
-        for e in element.elements():
+    if isinstance(fiat_element, (MixedElement, EnrichedElement)):
+        for e in fiat_element.elements():
             new_elements += _extract_elements(e)
     else:
-        new_elements.append(element)
+        new_elements.append(fiat_element)
     return new_elements
 
 
-def _evaluate_basis(ufl_element, element):
+def _evaluate_basis(ufl_element, fiat_element):
     "Compute intermediate representation for evaluate_basis."
-
     cell = ufl_element.cell()
     cellname = cell.cellname()
 
     # Handle Mixed and EnrichedElements by extracting 'sub' elements.
-    elements = _extract_elements(element)
-    offsets = _generate_reference_offsets(element) # Must check?
-    mappings = element.mapping()
+    elements = _extract_elements(fiat_element)
+    physical_offsets = _generate_physical_offsets(ufl_element)
+    reference_offsets = _generate_reference_offsets(fiat_element)
+    mappings = fiat_element.mapping()
 
     # This function is evidently not implemented for TensorElements
     for e in elements:
@@ -512,8 +528,8 @@ def _evaluate_basis(ufl_element, element):
             "cellname" : cellname,
             "topological_dimension" : cell.topological_dimension(),
             "geometric_dimension" : cell.geometric_dimension(),
-            "space_dimension" : element.space_dimension(),
-            "needs_oriented": needs_oriented_jacobian(element),
+            "space_dimension" : fiat_element.space_dimension(),
+            "needs_oriented": needs_oriented_jacobian(fiat_element),
             "max_degree": max([e.degree() for e in elements])
             }
 
@@ -559,7 +575,9 @@ def _evaluate_basis(ufl_element, element):
             dof_data = {
                 "coeffs" : coefficients,
                 "mapping" : mappings[dof],
-                "offset" : offsets[dof],
+                "offset" : reference_offsets[dof], # TODO: Remove this key
+                "physical_offset" : physical_offsets[dof],
+                "reference_offset" : reference_offsets[dof],
                 }
             # Still storing element data in dd to avoid rewriting dependent code
             dof_data.update(subelement_data)
@@ -648,11 +666,11 @@ def _tabulate_facet_dofs(element, cell):
         facet_dofs[facet].sort()
     return facet_dofs
 
-def _interpolate_vertex_values(ufl_element, element):
+def _interpolate_vertex_values(ufl_element, fiat_element):
     "Compute intermediate representation of interpolate_vertex_values."
 
     # Check for QuadratureElement
-    for e in all_elements(element):
+    for e in all_elements(fiat_element):
         if isinstance(e, QuadratureElement):
             return "Function is not supported/implemented for QuadratureElement."
         if isinstance(e, DiscontinuousLagrangeTrace):
@@ -660,15 +678,17 @@ def _interpolate_vertex_values(ufl_element, element):
 
     cell = ufl_element.cell()
     cellname = cell.cellname()
+    tdim = cell.topological_dimension()
+    gdim = cell.geometric_dimension()
 
     ir = {}
-    ir["geometric_dimension"] = cell.geometric_dimension()
-    ir["topological_dimension"] = cell.topological_dimension()
+    ir["geometric_dimension"] = gdim
+    ir["topological_dimension"] = tdim
 
     # Check whether computing the Jacobian is necessary
-    mappings = element.mapping()
+    mappings = fiat_element.mapping()
     ir["needs_jacobian"] = any("piola" in m for m in mappings) or any("pullback as metric" in m for m in mappings)
-    ir["needs_oriented"] = needs_oriented_jacobian(element)
+    ir["needs_oriented"] = needs_oriented_jacobian(fiat_element)
 
     # See note in _evaluate_dofs
     ir["reference_value_size"] = ufl_element.reference_value_size()
@@ -679,23 +699,27 @@ def _interpolate_vertex_values(ufl_element, element):
     vertices = fiat_cell.get_vertices()
 
     # Compute data for each constituent element
-    extract = lambda values: values[sorted(values.keys())[0]].transpose()
-    all_fiat_elm = all_elements(element)
-    ir["element_data"] = [{
-                           # See note in _evaluate_dofs
-                           "reference_value_size": _value_size(e),
-                           "physical_value_size": _value_size(e), # FIXME: Get from corresponding ufl element
-                           "basis_values": extract(e.tabulate(0, vertices)),
-                           "mapping": e.mapping()[0],
-                           "space_dim": e.space_dimension()}
-                          for e in all_fiat_elm]
+    all_fiat_elm = all_elements(fiat_element)
+    ir["element_data"] = [
+        {
+           # NB! value_shape of fiat element e means reference_value_shape
+           "reference_value_size": product(e.value_shape()),
+
+           # FIXME: THIS IS A BUG:
+           "physical_value_size": product(e.value_shape()), # FIXME: Get from corresponding ufl element?
+
+           "basis_values": e.tabulate(0, vertices)[(0,)*tdim].transpose(),
+           "mapping": e.mapping()[0],
+           "space_dim": e.space_dimension(),
+        }
+        for e in all_fiat_elm]
 
     # FIXME: Temporary hack!
     if len(ir["element_data"]) == 1:
         ir["element_data"][0]["physical_value_size"] = ir["physical_value_size"]
 
     # Consistency check, related to note in _evaluate_dofs
-    # This will fail for e.g. (RT1 x DG0) on a manifold
+    # This will fail for e.g. (RT1 x DG0) on a manifold because of the above bug
     if sum(data["physical_value_size"] for data in ir["element_data"]) != ir["physical_value_size"]:
         ir = "Failed to set physical value size correctly for subelements."
     elif sum(data["reference_value_size"] for data in ir["element_data"]) != ir["reference_value_size"]:
@@ -703,13 +727,9 @@ def _interpolate_vertex_values(ufl_element, element):
 
     return ir
 
-def _max_foo_subdomain_id(integral_type, form_data):
-    "Compute intermediate representation of max_foo_subdomain_id."
-    return form_data.num_sub_domains.get(integral_type, 0) # TODO: Rename in form_data
-
 def _has_foo_integrals(integral_type, form_data):
     "Compute intermediate representation of has_foo_integrals."
-    v = (form_data.num_sub_domains.get(integral_type,0) > 0
+    v = (form_data.max_subdomain_ids.get(integral_type,0) > 0
          or _create_default_foo_integral(integral_type, form_data) is not None)
     return bool(v)
 
@@ -729,27 +749,19 @@ def _create_default_foo_integral(integral_type, form_data):
 
 #--- Utility functions ---
 
-# FIXME: KBO: This could go somewhere else, like in UFL?
-#        MSA: There is probably something related in ufl somewhere,
-#        but I don't understand quite what this does.
-#        In particular it does not cover sub-sub-elements? Is that a bug?
-# Also look at function naming, use single '_' for utility functions.
-def all_elements(element):
+def all_elements(fiat_element):
+    if isinstance(fiat_element, MixedElement):
+        return fiat_element.elements()
+    return [fiat_element]
 
-    if isinstance(element, MixedElement):
-        return element.elements()
-
-    return [element]
-
-
-def _num_dofs_per_entity(element):
+def _num_dofs_per_entity(fiat_element):
     """
     Compute list of integers representing the number of dofs
     associated with a single mesh entity.
 
     Example: Lagrange of degree 3 on triangle: [1, 2, 1]
     """
-    entity_dofs = element.entity_dofs()
+    entity_dofs = fiat_element.entity_dofs()
     return [len(entity_dofs[e][0]) for e in range(len(entity_dofs.keys()))]
 
 # These two are copied from old ffc
@@ -805,16 +817,15 @@ def __compute_sub_simplices(D, d):
     return sub_simplices
 
 
-def uses_integral_moments(element):
+def uses_integral_moments(fiat_element):
     "True if element uses integral moments for its degrees of freedom."
-
     integrals = set(["IntegralMoment", "FrobeniusIntegralMoment"])
-    tags = set([L.get_type_tag() for L in element.dual_basis() if L])
+    tags = set([L.get_type_tag() for L in fiat_element.dual_basis() if L])
     return len(integrals & tags) > 0
 
 
-def needs_oriented_jacobian(element):
+def needs_oriented_jacobian(fiat_element):
     # Check whether this element needs an oriented jacobian
     # (only contravariant piolas and pullback as metric seem to need it)
-    return ("contravariant piola" in element.mapping() or
-            "pullback as metric" in element.mapping())
+    return ("contravariant piola" in fiat_element.mapping() or
+            "pullback as metric" in fiat_element.mapping())

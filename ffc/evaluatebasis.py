@@ -259,7 +259,9 @@ def _compute_values(data, dof_data):
 
     # Get dof data.
     num_components = dof_data["num_components"]
-    offset = dof_data["offset"]
+    reference_offset = dof_data["reference_offset"]
+    physical_offset = dof_data["physical_offset"]
+    offset = physical_offset
 
     lines = []
     if data["reference_value_size"] != 1:

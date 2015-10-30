@@ -689,7 +689,9 @@ def _transform_derivatives(data, dof_data):
 
     # Get number of components and offset.
     num_components = dof_data["num_components"]
-    offset = dof_data["offset"]
+    reference_offset = dof_data["reference_offset"]
+    physical_offset = dof_data["physical_offset"]
+    offset = physical_offset
 
     mapping = dof_data["mapping"]
     if "piola" in mapping:
