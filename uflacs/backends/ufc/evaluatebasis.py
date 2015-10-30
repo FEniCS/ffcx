@@ -18,32 +18,6 @@ TODO: Add these to ufc::finite_element:
 
 """
 
-import math
-
-def symbols():
-    x = L.Symbol("x")
-    X = L.Symbol("X")
-    J = L.Symbol("J")
-    K = L.Symbol("K")
-    detJ = L.Symbol("detJ")
-    phi = L.Symbol("phi")
-    M = L.Symbol("M")
-    f = L.Symbol("f")
-    F = L.Symbol("F")
-
-
-def foo(fiat_element):
-    data = {
-      "embedded_degree" : fiat_element.degree(),
-      "coeffs" : fiat_element.get_coeffs(),
-      "num_components" : num_components,
-      "dmats" : fiat_element.dmats(),
-      "mapping" : mappings[dof],
-      "offset" : offsets[dof],
-      "num_expansion_members": fiat_element.get_num_members(fiat_element.degree())
-      }
-
-
 ''' /// FUTURE SPLIT IMPLEMENTATION OF EVALUATE_BASIS:
     /// Evaluate basis function i at given point x in cell
     virtual void evaluate_basis(std::size_t i,
@@ -98,6 +72,8 @@ def foo(fiat_element):
     }
 '''
 
+import math
+
 def generate_evaluate_reference_basis(data):
     """Generate code to evaluate element basisfunctions at an arbitrary point on the reference element.
 
@@ -125,7 +101,8 @@ def generate_evaluate_reference_basis(data):
     reference_value_size = data["reference_value_size"]
 
     # Output values
-    values = L.Symbol("values")
+    reference_values = L.Symbol("reference_values")
+    ref_values = L.FlattenedArray(reference_values, dims=(num_points, num_dofs, reference_value_size))
 
     # Input geometry
     num_points = L.Symbol("num_points")
@@ -164,8 +141,8 @@ def generate_evaluate_reference_basis(data):
 
     # Reset values[:] to 0
     reset_values_code = [
-        L.ForRange(k, 0, reference_value_size, body=
-            L.Assign(values[k], 0.0))
+        L.ForRange(k, 0, num_points*num_dofs*reference_value_size, body=
+            L.Assign(reference_values[k], 0.0))
         ]
 
 
@@ -198,8 +175,8 @@ def generate_evaluate_reference_basis(data):
         num_components = dof_data["num_components"]
         num_members = dof_data["num_expansion_members"]
 
-        # In ffc representation, this is extracted per dof:
-        offset = dof_data["offset"]
+        # In ffc representation, this is extracted per dof (but will coincide for some dofs of piola mapped elements):
+        reference_offset = dof_data["reference_offset"]
 
         # Select the right basisvalues for this dof
         basisvalues = basisvalues_for_degree[embedded_degree]
@@ -207,24 +184,21 @@ def generate_evaluate_reference_basis(data):
         # Select the right coefficients for this dof
         coefficients = coefficients_for_dof[idof]
 
-        # FIXME: values indexing must involve ip and idof!
-        #values[ip][num_dofs][reference_value_size]
-
         # Generate basis accumulation loop
         if num_components > 1:
             accumulation_code += [
                 L.ForRange(c, 0, num_components, body=
                     L.ForRange(r, 0, num_members, body=
-                        L.AssignAdd(values[offset + c], coefficients[c][r] * basisvalues[r])))
+                        L.AssignAdd(ref_values[ip][idof][reference_offset + c], coefficients[c][r] * basisvalues[r])))
                 ]
         elif num_members > 1:
             accumulation_code += [
                 L.ForRange(r, 0, num_members, body=
-                    L.AssignAdd(values[offset], coefficients[0][r] * basisvalues[r]))
+                    L.AssignAdd(ref_values[ip][idof][reference_offset], coefficients[0][r] * basisvalues[r]))
                 ]
         else:
             accumulation_code += [
-                L.AssignAdd(values[offset], coefficients[0][0] * basisvalues[0]))
+                L.AssignAdd(ref_values[ip][idof][reference_offset], coefficients[0][0] * basisvalues[0]))
                 ]
 
         # FIXME: Move this mapping to its own ufc function e.g. finite_element::apply_element_mapping(reference_values, J, K)
@@ -234,7 +208,6 @@ def generate_evaluate_reference_basis(data):
     code = L.StatementList(
         tables_code +
         reset_values_code +
-        basisvalues_code +
         L.ForRange(ip, 0, num_points, body=L.Statementlist([
             fiat_coordinate_mapping,
             basisvalues_code,
