@@ -169,8 +169,8 @@ def _evaluate_basis(data):
 
     # Create code for all basis values (dofs).
     dof_cases = []
-    for dof in data["dof_data"]:
-        dof_cases.append(_generate_dof_code(data, dof))
+    for dof_data in data["dofs_data"]:
+        dof_cases.append(_generate_dof_code(data, dof_data))
     code += [format["switch"](format["argument basis num"], dof_cases)]
 
     # Remove unused variables (from transformations and mappings) in code.
@@ -238,7 +238,6 @@ def _compute_values(data, dof_data):
     f_coefficients  = format["coefficients"]
     f_basisvalues   = format["basisvalues"]
     f_r             = format["free indices"][0]
-#    f_dof           = format["local dof"]
     f_deref_pointer = format["dereference pointer"]
     f_detJ          = format["det(J)"]
     f_inv           = format["inverse"]

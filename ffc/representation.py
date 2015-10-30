@@ -236,7 +236,8 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element, prefix, element_numbe
 
     cell = ufl_coordinate_element.cell()
     cellname = cell.cellname()
-    assert ufl_coordinate_element.value_size() == cell.geometric_dimension()
+
+    assert ufl_coordinate_element.value_shape() == (cell.geometric_dimension(),)
 
     # Compute element values via fiat element
     tables = _tabulate_coordinate_mapping_basis(ufl_coordinate_element)
@@ -409,15 +410,19 @@ def _generate_reference_offsets(element, offset=0):
     """Generate offsets: i.e value offset for each basis function
     relative to a reference element representation."""
     offsets = []
+
     if isinstance(element, MixedElement):
         for e in element.elements():
             offsets += _generate_reference_offsets(e, offset)
             offset += _value_size(e)
+
     elif isinstance(element, EnrichedElement):
         for e in element.elements():
             offsets += _generate_reference_offsets(e, offset)
+
     else:
         offsets = [offset]*element.space_dimension()
+
     return offsets
 
 
@@ -431,41 +436,32 @@ def _generate_physical_offsets(ufl_element, offset=0):
     cell = ufl_element.cell()
     gdim = cell.geometric_dimension()
     tdim = cell.topological_dimension()
-    if (gdim == tdim):
+
+    if gdim == tdim:
         return _generate_reference_offsets(create_element(ufl_element))
 
     if isinstance(ufl_element, ufl.MixedElement):
         for e in ufl_element.sub_elements():
             offsets += _generate_physical_offsets(e, offset)
             offset += e.value_size()
+
     elif isinstance(ufl_element, ufl.EnrichedElement):
         for e in ufl_element._elements:
             offsets += _generate_physical_offsets(e, offset)
+
     elif isinstance(ufl_element, ufl.FiniteElement):
         element = create_element(ufl_element)
         offsets = [offset]*element.space_dimension()
+
     else:
         raise NotImplementedError("This element combination is not implemented")
+
     return offsets
 
 
 def _evaluate_dof(ufl_element, element):
     "Compute intermediate representation of evaluate_dof."
-
-    # (This comment is no longer true, ufl_element.reference_value_shape() is available).
-    # With regard to reference_value_size vs physical_value_size: Note
-    # that 'element' is the FFC/FIAT representation of the finite
-    # element, while 'ufl_element' is the UFL representation. In
-    # particular, UFL only knows about physical dimensions, so the
-    # value shape of the 'ufl_element' (which is used to compute the
-    # _value_size) will be correspond to the value size in physical
-    # space. FIAT however only knows about the reference element, and
-    # so the FIAT value shape of the 'element' will be the reference
-    # value size. This of course only matters for elements that have
-    # different physical and reference value shapes and sizes.
-
     cell = ufl_element.cell()
-
     return {"mappings": element.mapping(),
             "reference_value_size": ufl_element.reference_value_size(),
             "physical_value_size": ufl_element.value_size(),
@@ -484,17 +480,6 @@ def _extract_elements(element):
     else:
         new_elements.append(element)
     return new_elements
-
-# def _num_components(element):
-#     """Compute the number of components of element, like _value_size, but
-#     does not support tensor elements."""
-#     shape = element.value_shape()
-#     if shape == ():
-#         return 1
-#     elif len(shape) == 1:
-#         return shape[0]
-#     else:
-#         error("Tensor valued elements are not supported yet: %d " % shape)
 
 
 def _evaluate_basis(ufl_element, element):
@@ -534,41 +519,56 @@ def _evaluate_basis(ufl_element, element):
 
     # Loop element and space dimensions to generate dof data.
     dof = 0
-    dof_data = []
+    dofs_data = []
     for e in elements:
-        for i in range(e.space_dimension()):
-            num_components = _value_size(e)
-            coefficients = []
-            coeffs = e.get_coeffs()
+        num_components = product(e.value_shape())
+        coeffs = e.get_coeffs()
+        num_expansion_members = e.get_num_members(e.degree())
+        dmats = e.dmats()
 
-            if (num_components > 1) and (len(e.value_shape()) == 1):
+        # Extracted parts of dd below that are common for the element here.
+        # These dict entries are added to each dof_data dict for each dof,
+        # because that's what the code generation implementation expects.
+        # If the code generation needs this structure to be optimized in the
+        # future, we can store this data for each subelement instead of for each dof.
+        subelement_data = {
+            "embedded_degree" : e.degree(),
+            "num_components" : num_components,
+            "dmats" : dmats,
+            "num_expansion_members": num_expansion_members,
+            }
+        value_rank = len(e.value_shape())
+
+        for i in range(e.space_dimension()):
+            if num_components == 1:
+                coefficients = [coeffs[i]]
+            elif value_rank == 1:
                 # Handle coefficients for vector valued basis elements
                 # [Raviart-Thomas, Brezzi-Douglas-Marini (BDM)].
-                for c in range(num_components):
-                    coefficients.append(coeffs[i][c])
-            elif (num_components > 1) and (len(e.value_shape()) == 2):
+                coefficients = [coeffs[i][c]
+                                for c in range(num_components)]
+            elif value_rank == 2:
                 # Handle coefficients for tensor valued basis elements.
                 # [Regge]
-                for p in range(e.value_shape()[0]):
-                    for q in range(e.value_shape()[1]):
-                        coefficients.append(coeffs[i][p][q])
+                coefficients = [coeffs[i][p][q]
+                                for p in range(e.value_shape()[0])
+                                for q in range(e.value_shape()[1])]
             else:
-                coefficients.append(coeffs[i])
+                error("Unknown situation with num_components > 1")
 
-            dof_data.append(
-              {
-              "embedded_degree" : e.degree(),
-              "coeffs" : coefficients,
-              "num_components" : num_components,
-              "dmats" : e.dmats(),
-              "mapping" : mappings[dof],
-              "offset" : offsets[dof],
-              "num_expansion_members": e.get_num_members(e.degree())
-              })
+            dof_data = {
+                "coeffs" : coefficients,
+                "mapping" : mappings[dof],
+                "offset" : offsets[dof],
+                }
+            # Still storing element data in dd to avoid rewriting dependent code
+            dof_data.update(subelement_data)
 
+            # This list will hold one dd dict for each dof
+            dofs_data.append(dof_data)
             dof += 1
 
-    data["dof_data"] = dof_data
+    data["dofs_data"] = dofs_data
 
     return data
 

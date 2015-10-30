@@ -222,8 +222,8 @@ def _evaluate_basis_derivatives(data):
 
     # Create code for all basis values (dofs).
     dof_cases = []
-    for dof in data["dof_data"]:
-        dof_cases.append(_generate_dof_code(data, dof))
+    for dof_data in data["dofs_data"]:
+        dof_cases.append(_generate_dof_code(data, dof_data))
     code += [format["switch"](format["argument basis num"], dof_cases)]
     code = remove_unused("\n".join(code))
     #code = "\n".join(code)
