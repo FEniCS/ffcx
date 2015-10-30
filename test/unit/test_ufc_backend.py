@@ -104,8 +104,45 @@ def mock_dofmap_ir():
         })
     return ir
 
+def mock_evaluate_basis_ir():
+    dofs_data = [
+        {
+        "embedded_degree": 5,
+        "num_components": 2,
+        "num_expansion_members": 7,
+        "coeffs": [list(range(20, 27)), list(range(30,37))],
+        "reference_offset": 3,
+        "physical_offset": 5,
+        },
+        {
+        "embedded_degree": 1,
+        "num_components": 2,
+        "num_expansion_members": 7,
+        "coeffs": [list(range(7)), list(range(10,17))],
+        "reference_offset": 3,
+        "physical_offset": 5,
+        }
+        ]
+    data = {
+        "cellname": "triangle",
+        "geometric_dimension": 3,
+        "topological_dimension": 2,
+        "reference_value_size": 3,
+        "physical_value_size": 2,
+        "dofs_data": dofs_data,
+        }
+    return data
+
+def test_mock_evaluate_basis():
+    from uflacs.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
+    import uflacs.language.cnodes as L
+    data = mock_evaluate_basis_ir()
+    code = generate_evaluate_reference_basis(L, data)
+    print code
+
 def mock_finite_element_ir():
     ir = basic_class_properties("mock_finite_element_classname")
+    ebir = mock_evaluate_basis_ir()
     ir.update({
         "signature": "mock element signature",
         "cell_shape": "mock_cell_shape",
@@ -115,10 +152,10 @@ def mock_finite_element_ir():
         "reference_value_dimension": (2,2),
         "space_dimension": 6,
         "tabulate_dof_coordinates": { "gdim": 3, "tdim": 2, "points": [(0.0, 0.0), (0.0, 1.0), (1.0, 0.0)] },
-        "evaluate_basis": "fixme",
-        "evaluate_basis_derivatives": "fixme",
-        "evaluate_basis_all": "fixme",
-        "evaluate_basis_derivatives_all": "fixme",
+        "evaluate_basis": ebir,
+        "evaluate_basis_derivatives": ebir,
+        "evaluate_basis_all": ebir,
+        "evaluate_basis_derivatives_all": ebir,
         "evaluate_dof": "fixme",
         "evaluate_dofs": "fixme",
         "interpolate_vertex_values": "fixme",

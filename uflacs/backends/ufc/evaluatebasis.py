@@ -74,7 +74,7 @@ TODO: Add these to ufc::finite_element:
 
 import math
 
-def generate_evaluate_reference_basis(data):
+def generate_evaluate_reference_basis(L, data):
     """Generate code to evaluate element basisfunctions at an arbitrary point on the reference element.
 
     The value(s) of the basisfunction is/are computed as in FIAT as
@@ -99,14 +99,15 @@ def generate_evaluate_reference_basis(data):
     #gdim = data["geometric_dimension"]
     tdim = data["topological_dimension"]
     reference_value_size = data["reference_value_size"]
-
-    # Output values
-    reference_values = L.Symbol("reference_values")
-    ref_values = L.FlattenedArray(reference_values, dims=(num_points, num_dofs, reference_value_size))
+    num_dofs = len(data["dofs_data"])
 
     # Input geometry
     num_points = L.Symbol("num_points")
     X = L.Symbol("X")
+
+    # Output values
+    reference_values = L.Symbol("reference_values")
+    ref_values = L.FlattenedArray(reference_values, dims=(num_points, num_dofs, reference_value_size))
 
     # NB! This symbol refers to the FIAT reference coordinate!
     Y = L.Symbol("Y")
@@ -160,7 +161,7 @@ def generate_evaluate_reference_basis(data):
 
         if embedded_degree not in basisvalues_for_degree:
             basisvalues = L.Symbol("basisvalues%d" % embedded_degree)
-            bfcode = _generate_compute_basisvalues(basisvalues, Y, element_cellname, embedded_degree, num_members)
+            bfcode = _generate_compute_basisvalues(L, basisvalues, Y, element_cellname, embedded_degree, num_members)
             basisvalues_code += [L.StatementList(bfcode)]
 
             # Store symbol reference for this degree
@@ -169,7 +170,6 @@ def generate_evaluate_reference_basis(data):
 
     # Accumulate products of basisvalues and coefficients into values
     accumulation_code = []
-    num_dofs = len(data["dofs_data"])
     for idof, dof_data in enumerate(data["dofs_data"]):
         embedded_degree = dof_data["embedded_degree"]
         num_components = dof_data["num_components"]
@@ -189,43 +189,47 @@ def generate_evaluate_reference_basis(data):
             accumulation_code += [
                 L.ForRange(c, 0, num_components, body=
                     L.ForRange(r, 0, num_members, body=
-                        L.AssignAdd(ref_values[ip][idof][reference_offset + c], coefficients[c][r] * basisvalues[r])))
+                        L.AssignAdd(ref_values[ip, idof, reference_offset + c],
+                                    coefficients[c,r] * basisvalues[r])))
                 ]
         elif num_members > 1:
             accumulation_code += [
                 L.ForRange(r, 0, num_members, body=
-                    L.AssignAdd(ref_values[ip][idof][reference_offset], coefficients[0][r] * basisvalues[r]))
+                    L.AssignAdd(ref_values[ip, idof, reference_offset], coefficients[0, r] * basisvalues[r]))
                 ]
         else:
             accumulation_code += [
-                L.AssignAdd(ref_values[ip][idof][reference_offset], coefficients[0][0] * basisvalues[0]))
+                L.AssignAdd(ref_values[ip, idof, reference_offset], coefficients[0, 0] * basisvalues[0])
                 ]
 
         # FIXME: Move this mapping to its own ufc function e.g. finite_element::apply_element_mapping(reference_values, J, K)
-        #code += _generate_apply_mapping_to_computed_values(dof_data) # Only works for affine (no-op)
+        #code += _generate_apply_mapping_to_computed_values(L, dof_data) # Only works for affine (no-op)
 
     # Stitch it all together
     code = L.StatementList(
         tables_code +
         reset_values_code +
-        L.ForRange(ip, 0, num_points, body=L.Statementlist([
+        [L.ForRange(ip, 0, num_points, body=L.StatementList([
+            L.Comment("Map from UFC reference coordinate X to FIAT reference coordinate Y"),
             fiat_coordinate_mapping,
+            L.Comment("Compute basisvalues for each relevant embedded degree"),
             basisvalues_code,
+            L.Comment("Accumulate products of coefficients and basisvalues"),
             accumulation_code,
-            ])))
+            ]))])
     return code
 
 
-def _generate_compute_basisvalues(basisvalues, Y, element_cellname, embedded_degree, num_members):
+def _generate_compute_basisvalues(L, basisvalues, Y, element_cellname, embedded_degree, num_members):
     """From FIAT_NEW.expansions."""
 
     # Branch off to cell specific implementations
     if element_cellname == "interval":
-        code = _generate_compute_interval_basisvalues(basisvalues, Y, embedded_degree, num_members)
+        code = _generate_compute_interval_basisvalues(L, basisvalues, Y, embedded_degree, num_members)
     elif element_cellname == "triangle":
-        code = _generate_compute_triangle_basisvalues(basisvalues, Y, embedded_degree, num_members)
+        code = _generate_compute_triangle_basisvalues(L, basisvalues, Y, embedded_degree, num_members)
     elif element_cellname == "tetrahedron":
-        code = _generate_compute_tetrahedron_basisvalues(basisvalues, Y, embedded_degree, num_members)
+        code = _generate_compute_tetrahedron_basisvalues(L, basisvalues, Y, embedded_degree, num_members)
     else:
         error()
 
@@ -237,7 +241,7 @@ def _jrc(a, b, n):
     cn = float((n+a) * (n+b) * (2*n+2+a+b)) / float((n+1) * (n+1+a+b) * (2*n+a+b))
     return (an, bn, cn)
 
-def _generate_compute_interval_basisvalues(basisvalues, Y, embedded_degree, num_members):
+def _generate_compute_interval_basisvalues(L, basisvalues, Y, embedded_degree, num_members):
     # FIAT_NEW.expansions.LineExpansionSet.
 
     # Create zero-initialized array for with basisvalues
@@ -291,7 +295,7 @@ def _generate_compute_interval_basisvalues(basisvalues, Y, embedded_degree, num_
                         body=L.AssignMul(basisvalues[p], L.Sqrt(0.5 + p)))]
     return code
 
-def _generate_compute_triangle_basisvalues(basisvalues, Y, embedded_degree, num_members):
+def _generate_compute_triangle_basisvalues(L, basisvalues, Y, embedded_degree, num_members):
     # FIAT_NEW.expansions.TriangleExpansionSet.
 
     def _idx2d(p, q):
@@ -392,7 +396,7 @@ def _generate_compute_triangle_basisvalues(basisvalues, Y, embedded_degree, num_
 
     return code
 
-def _generate_compute_tetrahedron_basisvalues(basisvalues, Y, embedded_degree, num_members):
+def _generate_compute_tetrahedron_basisvalues(L, basisvalues, Y, embedded_degree, num_members):
     # FIAT_NEW.expansions.TetrahedronExpansionSet.
 
     # FIAT_NEW code (compute index function) TetrahedronExpansionSet.
@@ -540,7 +544,7 @@ def _generate_compute_tetrahedron_basisvalues(basisvalues, Y, embedded_degree, n
     return code
 
 
-def _generate_apply_mapping_to_computed_values(dof_data):
+def _generate_apply_mapping_to_computed_values(L, dof_data):
     mapping = dof_data["mapping"]
     num_components = dof_data["num_components"]
     reference_offset = dof_data["reference_offset"]
@@ -558,7 +562,7 @@ def _generate_apply_mapping_to_computed_values(dof_data):
             code += [
                 L.ForRange(ip, 0, num_points, body=
                     L.Assign(physical_values[ip][physical_offset],
-                             reference_values[ip][reference_offset]))),
+                             reference_values[ip][reference_offset])),
                 ]
         else:
             code += [
@@ -574,7 +578,7 @@ def _generate_apply_mapping_to_computed_values(dof_data):
 
     return code
 
-def __ffc_implementation_of__generate_apply_mapping_to_computed_values():
+def __ffc_implementation_of__generate_apply_mapping_to_computed_values(L):
     # Apply transformation if applicable.
     mapping = dof_data["mapping"]
     num_components = dof_data["num_components"]

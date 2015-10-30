@@ -86,30 +86,37 @@ class ufc_finite_element(ufc_generator):
         return L.Switch(i, cases, default=default, autoscope=False, autobreak=False)
 
     def evaluate_reference_basis(self, L, ir): # FIXME: NEW implement!
-        return "FIXME" + ir["evaluate_reference_basis"]
+        from uflacs.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
+        return generate_evaluate_reference_basis(ir["evaluate_reference_basis"])
 
     def evaluate_reference_basis_derivatives(self, L, ir): # FIXME: NEW implement!
-        return "FIXME" + ir["evaluate_reference_basis_derivatives"]
+        data = ir["evaluate_reference_basis_derivatives"]
+        return "FIXME"
 
     def evaluate_basis(self, L, ir): # FIXME: Get rid of this
-        return "FIXME" + ir["evaluate_basis"]
+        data = ir["evaluate_basis"]
+        return "FIXME"
 
     def evaluate_basis_derivatives(self, L, ir): # FIXME: Get rid of this
         # FIXME: port this, then translate into reference version
-        return "FIXME" + ir["evaluate_basis_derivatives"]
+        data = ir["evaluate_basis_derivatives"]
+        return "FIXME"
 
     def evaluate_dof(self, L, ir): # FIXME: Get rid of this
         # FIXME: port this, then translate into reference version
-        return "FIXME" + ir["evaluate_dof"]
+        data = ir["evaluate_dof"]
+        return "FIXME"
 
 
     def evaluate_basis_all(self, L, ir):
         # FIXME: port this, then translate into reference version
-        return "FIXME" + ir["evaluate_basis_all"]
+        data = ir["evaluate_basis_all"]
+        return "FIXME"
 
     def evaluate_basis_derivatives_all(self, L, ir):
         # FIXME: port this, then translate into reference version
-        return "FIXME" + ir["evaluate_basis_derivatives_all"]
+        data = ir["evaluate_basis_derivatives_all"]
+        return "FIXME"
 
     def evaluate_dofs(self, L, ir):
         # FIXME: port this, then translate into reference version
