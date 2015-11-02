@@ -222,8 +222,8 @@ def _evaluate_basis_derivatives(data):
 
     # Create code for all basis values (dofs).
     dof_cases = []
-    for dof in data["dof_data"]:
-        dof_cases.append(_generate_dof_code(data, dof))
+    for dof_data in data["dofs_data"]:
+        dof_cases.append(_generate_dof_code(data, dof_data))
     code += [format["switch"](format["argument basis num"], dof_cases)]
     code = remove_unused("\n".join(code))
     #code = "\n".join(code)
@@ -689,7 +689,9 @@ def _transform_derivatives(data, dof_data):
 
     # Get number of components and offset.
     num_components = dof_data["num_components"]
-    offset = dof_data["offset"]
+    reference_offset = dof_data["reference_offset"]
+    physical_offset = dof_data["physical_offset"]
+    offset = reference_offset # physical_offset # FIXME: Should be physical offset but that breaks tests
 
     mapping = dof_data["mapping"]
     if "piola" in mapping:

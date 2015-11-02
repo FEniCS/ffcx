@@ -64,7 +64,7 @@ def integrate(monomial,
                         facet0, facet1)
 
     # Compute table Psi for each factor
-    psis = [_compute_psi(v, table, len(points), integral_type) \
+    psis = [_compute_psi(v, table, len(points)) \
                 for v in monomial.arguments]
 
     # Compute product of all Psis
@@ -109,7 +109,7 @@ def _init_table(arguments, integral_type, points, facet0, facet1):
 
     return table
 
-def _compute_psi(v, table, num_points, integral_type):
+def _compute_psi(v, table, num_points):
     "Compute the table Psi for the given basis function v."
 
     # We just need to pick the values for Psi from the table, which is
@@ -157,8 +157,8 @@ def _compute_psi(v, table, num_points, integral_type):
 
     # Iterate over derivative indices
     dlists = build_indices([index.index_range for index in dindex]) or [[]]
+    etable = table[(v.element, v.restriction)]
     if len(cindex) > 0:
-        etable = table[(v.element, v.restriction)]
         for component in range(len(cindex[0].index_range)):
             for dlist in dlists:
                 # Translate derivative multiindex to lookup tuple
@@ -167,7 +167,6 @@ def _compute_psi(v, table, num_points, integral_type):
                 Psi[component][tuple(dlist)] = \
                     etable[dtuple][:, cindex[0].index_range[component], :]
     else:
-        etable = table[(v.element, v.restriction)]
         for dlist in dlists:
             # Translate derivative multiindex to lookup tuple
             dtuple = _multiindex_to_tuple(dlist, tdim)

@@ -156,7 +156,7 @@ def compile_form(forms, object_names=None, prefix="Form", parameters=None):
 
     # Stage 2: intermediate representation
     cpu_time = time()
-    ir = compute_ir(analysis, parameters)
+    ir = compute_ir(analysis, prefix, parameters)
     _print_timing(2, time() - cpu_time)
 
     # Stage 3: optimization
@@ -166,7 +166,7 @@ def compile_form(forms, object_names=None, prefix="Form", parameters=None):
 
     # Stage 4: code generation
     cpu_time = time()
-    code = generate_code(oir, prefix, parameters)
+    code = generate_code(oir, parameters)
     _print_timing(4, time() - cpu_time)
 
     # Stage 4.1: generate wrappers
@@ -204,7 +204,7 @@ def compile_element(elements, prefix="Element", parameters=None):
 
     # Stage 2: intermediate representation
     cpu_time = time()
-    ir = compute_ir(analysis, parameters)
+    ir = compute_ir(analysis, prefix, parameters)
     _print_timing(2, time() - cpu_time)
 
     # Stage 3: optimization
@@ -214,7 +214,7 @@ def compile_element(elements, prefix="Element", parameters=None):
 
     # Stage 4: code generation
     cpu_time = time()
-    code = generate_code(oir, prefix, parameters)
+    code = generate_code(oir, parameters)
     _print_timing(4, time() - cpu_time)
 
     # Stage 4.1: generate wrappers

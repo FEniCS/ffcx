@@ -44,7 +44,7 @@ def format_code(code, wrapper_code, prefix, parameters):
     begin("Compiler stage 5: Formatting code")
 
     # Extract code
-    code_elements, code_dofmaps, code_integrals, code_forms = code
+    code_elements, code_dofmaps, code_coordinate_mappings, code_integrals, code_forms = code
 
     # Header and implementation code
     code_h = ""
@@ -68,6 +68,12 @@ def format_code(code, wrapper_code, prefix, parameters):
     for code_dofmap in code_dofmaps:
         code_h += _format_h("dofmap", code_dofmap, parameters)
         code_c += _format_c("dofmap", code_dofmap, parameters)
+
+    # Generate code for coordinate_mappings
+    code_coordinate_mappings = [] # FIXME: This disables output of generated coordinate_mapping class, until implemented properly
+    for code_coordinate_mapping in code_coordinate_mappings:
+        code_h += _format_h("coordinate_mapping", code_coordinate_mapping, parameters)
+        code_c += _format_c("coordinate_mapping", code_coordinate_mapping, parameters)
 
     # Generate code for integrals
     for code_integral in code_integrals:

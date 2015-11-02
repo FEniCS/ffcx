@@ -59,7 +59,9 @@ def _generate_dolfin_wrapper(analysis, prefix, object_names, parameters):
 def _encapsulate(prefix, object_names, analysis, parameters):
 
     # Extract data from analysis
-    form_datas, elements, element_map = analysis
+    form_datas, elements, element_map, domains = analysis
+
+    # FIXME: Encapsulate domains?
 
     num_form_datas = len(form_datas)
     common_space = False
@@ -88,7 +90,6 @@ def _encapsulate(prefix, object_names, analysis, parameters):
 
 
 def _encapsule_form(prefix, object_names, form_data, i, element_map, superclassname=None):
-    # TODO: Include coefficient elements?
     element_numbers = [element_map[e] for e in form_data.argument_elements + form_data.coefficient_elements]
 
     if superclassname is None:
@@ -105,7 +106,7 @@ def _encapsule_form(prefix, object_names, form_data, i, element_map, superclassn
     return form_names
 
 def _encapsule_element(prefix, elements):
-    element_number = len(elements) - 1
+    element_number = len(elements) - 1 # eh? this doesn't make any sense
     args = ("0",
             [make_classname(prefix, "finite_element", element_number)],
             [make_classname(prefix, "dofmap", element_number)])

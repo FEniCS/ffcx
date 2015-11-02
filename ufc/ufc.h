@@ -254,25 +254,25 @@ namespace ufc
 
   };
 
-  /// A representation of a geometric domain parameterized by a local basis on each cell
-  class domain
+  /// A representation of a coordinate mapping parameterized by a local finite element basis on each cell
+  class coordinate_mapping
   {
   public:
-    virtual ~domain() {}
+    virtual ~coordinate_mapping() {}
 
-    /// Return domain signature string
+    /// Return coordinate_mapping signature string
     virtual const char * signature() const = 0;
 
     /// Create object of the same type
-    virtual domain * create() const = 0;
+    virtual coordinate_mapping * create() const = 0;
 
-    /// Return geometric dimension of the domain
+    /// Return geometric dimension of the coordinate_mapping
     virtual std::size_t geometric_dimension() const = 0;
 
-    /// Return topological dimension of the domain
+    /// Return topological dimension of the coordinate_mapping
     virtual std::size_t topological_dimension() const = 0;
 
-    /// Return cell shape of the domain
+    /// Return cell shape of the coordinate_mapping
     virtual shape cell_shape() const = 0;
 
     /// Create finite_element object representing the coordinate parameterization
@@ -285,24 +285,31 @@ namespace ufc
     virtual void compute_physical_coordinates(
         double * x, std::size_t num_points,
         const double * X,
-        const double * coordinate_dofs, int cell_orientation) const = 0;
+        const double * coordinate_dofs) const = 0;
 
     /// Compute reference coordinates X from physical coordinates x, the inverse of compute_physical_coordinates
     virtual void compute_reference_coordinates(
         double * X, std::size_t num_points,
         const double * x,
-        const double * coordinate_dofs, int cell_orientation) const = 0;
+        const double * coordinate_dofs, double cell_orientation) const = 0;
+    /// Compute X, J, detJ, K from physical coordinates x on a cell // TODO: Can compute all this at no extra cost
+    //virtual void compute_reference_geometry(
+    //    double * X, double * J, double * detJ, double * K, std::size_t num_points,
+    //    const double * x,
+    //    const double * coordinate_dofs, double cell_orientation,
+    //    std::size_t iterations, double tolerance) const = 0;
 
     /// Compute Jacobian of coordinate mapping J = dx/dX at reference coordinates X
     virtual void compute_jacobians(
         double * J, std::size_t num_points,
         const double * X,
-        const double * coordinate_dofs, int cell_orientation) const = 0;
+        const double * coordinate_dofs) const = 0;
 
     /// Compute determinants of (pseudo-)Jacobians J
     virtual void compute_jacobian_determinants(
         double * detJ, std::size_t num_points,
-        const double * J) const = 0;
+        const double * J,
+        double cell_orientation) const = 0;
 
     /// Compute (pseudo-)inverses K of (pseudo-)Jacobians J
     virtual void compute_jacobian_inverses(
@@ -313,7 +320,7 @@ namespace ufc
     virtual void compute_geometry(
         double * x, double * J, double * detJ, double * K, std::size_t num_points,
         const double * X,
-        const double * coordinate_dofs, int cell_orientation) const = 0;
+        const double * coordinate_dofs, double cell_orientation) const = 0;
 
   };
 
@@ -482,8 +489,8 @@ namespace ufc
     /// Create a new dofmap for parameterization of coordinates
     virtual dofmap * create_coordinate_dofmap() const = 0;
 
-    /// Create a new geometric domain
-    virtual domain * create_domain() const = 0;
+    /// Create a new coordinate mapping
+    virtual coordinate_mapping * create_coordinate_mapping() const = 0;
 
     /// Create a new finite element for argument function 0 <= i < r+n
     virtual finite_element * create_finite_element(std::size_t i) const = 0;
