@@ -130,15 +130,6 @@ def _create_fiat_element(ufl_element):
         constant = _create_fiat_element(dg0_element)
         element = SpaceOfReals(constant)
 
-    # Handle the specialized time elements
-    elif family == "Lobatto" :
-        from ffc.timeelements import LobattoElement as FFCLobattoElement
-        element = FFCLobattoElement(ufl_element.degree())
-
-    elif family == "Radau" :
-        from ffc.timeelements import RadauElement as FFCRadauElement
-        element = FFCRadauElement(ufl_element.degree())
-
     # FIXME: AL: Should this really be here?
     # Handle QuadratureElement
     elif family == "Quadrature":
