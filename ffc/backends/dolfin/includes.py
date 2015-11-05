@@ -20,6 +20,7 @@ dolfin_includes = """\
 #include <dolfin/function/FunctionSpace.h>
 #include <dolfin/function/GenericFunction.h>
 #include <dolfin/function/CoefficientAssigner.h>
+#include <dolfin/function/MultiMeshCoefficientAssigner.h>
 #include <dolfin/adaptivity/ErrorControl.h>
 #include <dolfin/adaptivity/GoalFunctional.h>"""
 #-------------------------------------------------------------------------------
@@ -29,6 +30,12 @@ snippets = {"shared_ptr_space":
             "referenced_space":
                 ("const dolfin::FunctionSpace& %s",
                  "    _function_spaces[%d] = reference_to_no_delete_pointer(%s);"),
+            "multimesh_shared_ptr_space":
+                ("std::shared_ptr<const dolfin::MultiMeshFunctionSpace> %s",
+                 None),
+            "multimesh_referenced_space":
+                ("const dolfin::MultiMeshFunctionSpace& %s",
+                 None),
             "shared_ptr_mesh":
                 ("std::shared_ptr<const dolfin::Mesh> mesh",
                  "    _mesh = mesh;"),
