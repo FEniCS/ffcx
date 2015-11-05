@@ -17,9 +17,9 @@
 #
 # Based on original implementation by Martin Alnes and Anders Logg
 #
-# Modified by Anders Logg 2011
+# Modified by Anders Logg 2015
 #
-# Last changed: 2011-11-15
+# Last changed: 2015-11-05
 
 from .includes import snippets
 from .functionspace import *
@@ -38,11 +38,20 @@ def generate_form(form, classname):
         Name of Form class.
     """
 
+    blocks = []
+
     # Generate code for Form_x_FunctionSpace_y subclasses
     wrap = apply_function_space_template
-    blocks = [wrap("%s_FunctionSpace_%d" % (classname, i),
-                   form.ufc_finite_element_classnames[i],
-                   form.ufc_dofmap_classnames[i]) for i in range(form.rank)]
+    blocks += [wrap("%s_FunctionSpace_%d" % (classname, i),
+                    form.ufc_finite_element_classnames[i],
+                    form.ufc_dofmap_classnames[i]) for i in range(form.rank)]
+
+    # Generate code for Form_x_MultiMeshFunctionSpace_y subclasses
+    wrap = apply_multimesh_function_space_template
+    blocks += [wrap("%s_MultiMeshFunctionSpace_%d" % (classname, i),
+                    "%s_FunctionSpace_%d" % (classname, i),
+                    form.ufc_finite_element_classnames[i],
+                    form.ufc_dofmap_classnames[i]) for i in range(form.rank)]
 
     # Add typedefs CoefficientSpace_z -> Form_x_FunctionSpace_y
     blocks += ["typedef CoefficientSpace_%s %s_FunctionSpace_%d;\n"

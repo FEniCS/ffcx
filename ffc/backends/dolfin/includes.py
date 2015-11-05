@@ -1,5 +1,6 @@
-
 # Based on original implementation by Martin Alnes and Anders Logg
+#
+# Modified by Anders Logg 2015
 
 __all__ = ["dolfin_tag", "stl_includes", "dolfin_includes", "snippets"]
 
@@ -41,6 +42,8 @@ snippets = {"shared_ptr_space":
                 ("const dolfin::GenericFunction& %s",
                  "    this->%s = %s;"),
             "functionspace":
-                ("TestSpace", "TrialSpace")
+                ("TestSpace", "TrialSpace"),
+            "multimeshfunctionspace":
+                ("MultiMeshTestSpace", "MultiMeshTrialSpace")
             }
 #-------------------------------------------------------------------------------

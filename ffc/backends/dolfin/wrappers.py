@@ -17,7 +17,9 @@
 #
 # Based on original implementation by Martin Alnes and Anders Logg
 #
-# Last changed: 2012-12-05
+# Modified by Anders Logg 2015
+#
+# Last changed: 2015-11-05
 
 from . import includes as incl
 from .functionspace import *
@@ -127,6 +129,7 @@ def generate_namespace_typedefs(forms, common_function_space, error_control):
         for i, form in enumerate(forms):
             if form.rank:
                 pairs += [("Form_%s::TestSpace" % form.name, "FunctionSpace")]
+                pairs += [("Form_%s::MultiMeshTestSpace" % form.name, "MultiMeshFunctionSpace")]
                 break
 
     # Add specialized typedefs when adding error control wrapppers
@@ -148,4 +151,3 @@ def error_control_pairs(forms):
     return [("Form_%s" % forms[8].name, "BilinearForm"),
             ("Form_%s" % forms[9].name, "LinearForm"),
             ("Form_%s" % forms[10].name, "GoalFunctional")]
-
