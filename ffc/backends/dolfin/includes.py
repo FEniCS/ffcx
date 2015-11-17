@@ -14,10 +14,14 @@ stl_includes = """\
 dolfin_includes = """\
 // DOLFIN includes
 #include <dolfin/common/NoDeleter.h>
+#include <dolfin/mesh/Mesh.h>
+#include <dolfin/mesh/MultiMesh.h>
 #include <dolfin/fem/FiniteElement.h>
 #include <dolfin/fem/DofMap.h>
 #include <dolfin/fem/Form.h>
+#include <dolfin/fem/MultiMeshForm.h>
 #include <dolfin/function/FunctionSpace.h>
+#include <dolfin/function/MultiMeshFunctionSpace.h>
 #include <dolfin/function/GenericFunction.h>
 #include <dolfin/function/CoefficientAssigner.h>
 #include <dolfin/function/MultiMeshCoefficientAssigner.h>

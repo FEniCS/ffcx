@@ -134,7 +134,7 @@ public:
   //--- Constructors for multimesh function space, 2 different versions ---
 
   // Create multimesh function space (reference version)
-  %(classname)s(const dolfin::MultiMesh& multimesh): dolfin::MultiMeshFunctionSpace()
+  %(classname)s(const dolfin::MultiMesh& multimesh): dolfin::MultiMeshFunctionSpace(multimesh)
   {
     // Create and add standard function spaces
     for (std::size_t part = 0; part < multimesh.num_parts(); part++)
@@ -148,7 +148,7 @@ public:
   }
 
   // Create multimesh function space (shared pointer version)
-  %(classname)s(std::shared_ptr<const dolfin::MultiMesh> multimesh): dolfin::MultiMeshFunctionSpace()
+  %(classname)s(std::shared_ptr<const dolfin::MultiMesh> multimesh): dolfin::MultiMeshFunctionSpace(multimesh)
   {
     // Create and add standard function spaces
     for (std::size_t part = 0; part < multimesh->num_parts(); part++)
