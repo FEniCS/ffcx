@@ -33,14 +33,13 @@ from six.moves import zip
 
 # ufc class names
 def make_classname(prefix, basename, signature):
-    s = prefix.lower() + "_" if prefix else ""
-    return "%s%s_%s" % (s, basename, str(signature).lower())
-
-def make_integral_basename(integral_type, form_id):
-    return "%s_integral_%s" % (integral_type, str(form_id).lower())
+    pre = prefix.lower() + "_" if prefix else ""
+    sig = str(signature).lower()
+    return "%s%s_%s" % (pre, basename, sig)
 
 def make_integral_classname(prefix, integral_type, form_id, subdomain_id):
-    return make_classname(prefix, make_integral_basename(integral_type, form_id), subdomain_id)
+    basename = "%s_integral_%s" % (integral_type, str(form_id).lower())
+    return make_classname(prefix, basename, subdomain_id)
 
 # Mapping of restrictions
 _fixed_map = {None: "", "+": "_0", "-": "_1"}

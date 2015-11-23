@@ -28,7 +28,7 @@ from uflacs.backends.ffc.representation import compute_uflacs_integral_ir
 def compute_integral_ir(itg_data,
                         form_data,
                         form_id,
-                        element_numbers, # FIXME: Not used, what's this for?
+                        element_numbers,
                         parameters):
     "Compute intermediate represention of integral."
 
@@ -46,6 +46,9 @@ def compute_integral_ir(itg_data,
     # Tabulate quadrature points and basis function values in these points
     integrals_dict, psi_tables, quadrature_rules = \
         tabulate_basis(sorted_integrals, form_data, itg_data)
+
+    # Store element numbers, needed for classnames
+    ir["element_numbers"] = element_numbers
 
     # Delegate to flacs to build its intermediate representation and add to ir
     uflacs_ir = compute_uflacs_integral_ir(psi_tables, ir["entitytype"], integrals_dict, form_data, parameters)

@@ -160,18 +160,22 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
     integrals = {}
     avg_elements = { "cell": [], "facet": [] }
 
+    # Get some useful variables in short form
     integral_type = itg_data.integral_type
     cell = itg_data.domain.ufl_cell()
     cellname = cell.cellname()
     tdim = itg_data.domain.topological_dimension()
 
-    # Loop the quadrature points and tabulate the basis values.
+    # Create canonical ordering of quadrature rules
     rules = sorted(sorted_integrals.keys())
+
+    # Loop the quadrature points and tabulate the basis values.
     for degree, scheme in rules:
 
         # --------- Creating quadrature rule
         # Make quadrature rule and get points and weights.
         (points, weights) = create_quadrature_points_and_weights(integral_type, cell, degree, scheme)
+
         # The TOTAL number of weights/points
         len_weights = None if weights is None else len(weights)
 
@@ -182,7 +186,6 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
 
 
         # --------- Store integral
-
         # Add the integral with the number of points as a key to the return integrals.
         integral = sorted_integrals[(degree, scheme)]
         ffc_assert(len_weights not in integrals, \

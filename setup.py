@@ -231,16 +231,6 @@ def run_install():
     # Generate config files
     generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS)
 
-    # Setup extension module for FFC time elements
-    numpy_include_dir = numpy.get_include()
-    ext_module_time = Extension("ffc_time_ext.time_elements_ext",
-                                sources=["ffc_time_ext/time_elements_interface.cpp",
-                                         "ffc_time_ext/time_elements.cpp",
-                                         "ffc_time_ext/LobattoQuadrature.cpp",
-                                         "ffc_time_ext/RadauQuadrature.cpp",
-                                         "ffc_time_ext/Legendre.cpp"],
-                                include_dirs = [numpy_include_dir])
-
     # Setup extension module for UFC
     swig_options = ["-c++", "-shadow", "-modern",
                     "-modernargs", "-fastdispatch",
@@ -264,8 +254,8 @@ def run_install():
           author           = AUTHORS,
           classifiers      = [_f for _f in CLASSIFIERS.split('\n') if _f],
           license          = "LGPL version 3 or later",
-          author_email     = "fenics@fenicsproject.org",
-          maintainer_email = "fenics@fenicsproject.org",
+          author_email     = "fenics-dev@googlegroups.com",
+          maintainer_email = "fenics-dev@googlegroups.com",
           url              = "http://fenicsproject.org/",
           platforms        = ["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
           packages         = ["ffc",
@@ -281,7 +271,7 @@ def run_install():
                               "ufc": "ufc"},
           scripts          = scripts,
           include_dirs     = [numpy.get_include()],
-          ext_modules      = [ext_module_time, ext_module_ufc],
+          ext_modules      = [ext_module_ufc],
           cmdclass         = {"build": my_build, "build_ext": my_build_ext},
           data_files       = [(os.path.join("share", "man", "man1"),
                                [os.path.join("doc", "man", "man1", "ffc.1.gz")]),

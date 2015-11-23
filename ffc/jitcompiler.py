@@ -155,8 +155,9 @@ def jit_form(form, parameters=None):
 
     # Construct instance of compiled form
     check_swig_version(module)
-    compiled_form = _instantiate_form(module, module_name)
-    return compiled_form, module, module_name
+    prefix = module_name
+    compiled_form = _instantiate_form(module, prefix)
+    return compiled_form, module, prefix
 
 def jit_element(element, parameters=None):
     "Just-in-time compile the given element"

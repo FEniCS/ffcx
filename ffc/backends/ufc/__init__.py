@@ -34,14 +34,14 @@ For more information about UFC and the FEniCS Project, visit
 """
 
 __author__  = "Martin Sandve Alnæs, Anders Logg, Kent-Andre Mardal, Ola Skavhaug, and Hans Petter Langtangen"
-__date__    = "2015-10-07"
+__date__    = "2015-10-21"
 __version__ = "1.7.0dev"
 __license__ = "This code is released into the public domain"
 
 from .function import *
 from .finite_element import *
 from .dofmap import *
-from .domain import *
+from .coordinate_mapping import *
 from .integrals import *
 from .form import *
 from .factory import *
@@ -56,9 +56,9 @@ templates = {"function_header":                          function_header,
              "dofmap_header":                            dofmap_header,
              "dofmap_implementation":                    dofmap_implementation,
              "dofmap_combined":                          dofmap_combined,
-             "domain_header":                            domain_header,
-             "domain_implementation":                    domain_implementation,
-             "domain_combined":                          domain_combined,
+             "coordinate_mapping_header":                coordinate_mapping_header,
+             "coordinate_mapping_implementation":        coordinate_mapping_implementation,
+             "coordinate_mapping_combined":              coordinate_mapping_combined,
              "cell_integral_header":                     cell_integral_header,
              "cell_integral_implementation":             cell_integral_implementation,
              "cell_integral_combined":                   cell_integral_combined,

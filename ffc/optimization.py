@@ -44,14 +44,14 @@ def optimize_ir(ir, parameters):
         return ir
 
     # Extract representations
-    ir_elements, ir_dofmaps, ir_integrals, ir_forms = ir
+    ir_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
 
     # Iterate over integrals
     oir_integrals = [_optimize_integral_ir(ir, parameters) for ir in ir_integrals]
 
     end()
 
-    return ir_elements, ir_dofmaps, oir_integrals, ir_forms
+    return ir_elements, ir_dofmaps, ir_coordinate_mappings, oir_integrals, ir_forms
 
 def _optimize_integral_ir(ir, parameters):
     "Compute optimized intermediate represention of integral."
