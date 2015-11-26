@@ -205,7 +205,8 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
         if x_element not in ufl_elements:
             if integral_type in custom_integral_types:
                 # FIXME: Not yet implemented, in progress
-                warning("Vector elements not yet supported in custom integrals so element for coordinate function x will not be generated.")
+                #warning("Vector elements not yet supported in custom integrals so element for coordinate function x will not be generated.")
+                pass
             else:
                 ufl_elements.append(x_element)
 
