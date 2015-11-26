@@ -303,7 +303,7 @@ def _tabulate_tensor(ir, prefix, parameters):
     # restructure this function.
 
     # Add common code except for custom integrals
-    if not integral_type in custom_integral_types:
+    if integral_type not in custom_integral_types:
         common += _tabulate_weights([quadrature_weights[p] for p in sorted(used_weights)])
 
         # Add common code for updating tables
