@@ -25,6 +25,7 @@ import numpy
 
 from ufl.measure import integral_type_to_measure_name
 from ufl.cell import cellname2facetname
+from ufl import custom_integral_types
 
 from ffc.fiatinterface import create_element
 from ffc.cpp import make_integral_classname
@@ -41,7 +42,7 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
         (points, weights) = create_quadrature(facet_cellname, degree, rule)
     elif integral_type == "vertex":
         (points, weights) = ([()], numpy.array([1.0,])) # TODO: Will be fixed
-    elif integral_type == "custom":
+    elif integral_type in custom_integral_types:
         (points, weights) = (None, None)
     else:
         error("Unknown integral type: " + str(integral_type))
@@ -128,9 +129,9 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
                    "vertex":         "vertex",
                    #"point":          "vertex", # TODO: Not sure, clarify here what 'entity_type' refers to?
                    "custom":         "cell",
-                   #"overlap":        "cell",
-                   #"interface":      "cell", # FIXME: set this to the same as "custom" but not sure here...
-                   #"cutcell":        "cell",
+                   "cutcell":        "cell",
+                   "interface":      "cell",
+                   "overlap":        "cell",
                    }[itg_data.integral_type]
 
     # Extract data

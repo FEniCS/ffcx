@@ -26,6 +26,7 @@ import numpy, itertools, collections
 # UFL modules
 from ufl.classes import Form, Integral
 from ufl.sorting import sorted_expr_sum
+from ufl import custom_integral_types
 
 # FFC modules
 from ffc.log import ffc_assert, info, error, warning
@@ -183,7 +184,7 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type,
             transformer.update_vertex(i)
             terms[i] = _transform_integrals(transformer, integrals_dict, integral_type)
 
-    elif integral_type == "custom":
+    elif integral_type in custom_integral_types:
 
         # Compute transformed integrals: same as for cell integrals
         info("Transforming custom integral")

@@ -21,6 +21,7 @@ transformers to translate UFL expressions."""
 # Modified by Martin Alnaes, 2013
 # Modified by Garth N. Wells, 2013
 # Modified by Lizao Li, 2015
+# Modified by Anders Logg, 2015
 
 # Python modules.
 from six.moves import zip
@@ -30,6 +31,7 @@ from numpy import shape, array
 from ufl.classes import FixedIndex, Index
 from ufl.utils.stacks import StackDict, Stack
 from ufl.permutation import build_component_numbering
+from ufl import custom_integral_types
 
 # UFL Algorithms.
 from ufl.algorithms import Transformer
@@ -943,7 +945,7 @@ class QuadratureTransformerBase(Transformer):
 
         # Create basis access, we never need to map the entry in the basis table
         # since we will either loop the entire space dimension or the non-zeros.
-        if self.restriction in ("+", "-") and self.integral_type == "custom" and offset != "":
+        if self.restriction in ("+", "-") and self.integral_type in custom_integral_types and offset != "":
             # Special case access for custom integrals (all basis functions stored in flattened array)
             basis_access = format["component"]("", [f_ip, format["add"]([loop_index, offset])])
         else:
@@ -958,7 +960,7 @@ class QuadratureTransformerBase(Transformer):
 
         # If domain type is custom, then special-case set loop index
         # range since table is empty
-        if self.integral_type == "custom":
+        if self.integral_type in custom_integral_types:
             loop_index_range = ffc_element.space_dimension() # different from `space_dimension`...
 
         basis = ""
@@ -1028,7 +1030,7 @@ class QuadratureTransformerBase(Transformer):
 
         # If domain type is custom, then special-case set loop index
         # range since table is empty
-        if self.integral_type == "custom":
+        if self.integral_type in custom_integral_types:
             loop_index_range = ffc_element.space_dimension()
 
         # Create loop index

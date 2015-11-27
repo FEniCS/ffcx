@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Anders Logg, 2009.
+# Modified by Anders Logg, 2009, 2015
 # Modified by Martin Alnaes, 2013-2014
 
 import numpy, itertools
@@ -27,6 +27,7 @@ import ufl
 from ufl.cell import Cell, num_cell_entities
 from ufl.classes import ReferenceGrad, Grad, CellAvg, FacetAvg
 from ufl.algorithms import extract_unique_elements, extract_type, extract_elements
+from ufl import custom_integral_types
 
 # FFC modules
 from ffc.log import ffc_assert, info, error, warning
@@ -65,7 +66,7 @@ def domain_to_entity_dim(integral_type, tdim):
         entity_dim = tdim - 1
     elif integral_type == "vertex":
         entity_dim = 0
-    elif integral_type == "custom":
+    elif integral_type in custom_integral_types:
         entity_dim = tdim
     else:
         error("Unknown integral_type: %s" % integral_type)
@@ -202,9 +203,10 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
         domain = integral.ufl_domain() # FIXME: For all domains to be sure? Better to rewrite though.
         x_element = domain.ufl_coordinate_element()
         if x_element not in ufl_elements:
-            if integral_type == "custom":
+            if integral_type in custom_integral_types:
                 # FIXME: Not yet implemented, in progress
-                warning("Vector elements not yet supported in custom integrals so element for coordinate function x will not be generated.")
+                #warning("Vector elements not yet supported in custom integrals so element for coordinate function x will not be generated.")
+                pass
             else:
                 ufl_elements.append(x_element)
 

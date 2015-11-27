@@ -522,3 +522,322 @@ void %(classname)s::tabulate_tensor(double * A,
 %(tabulate_tensor)s
 }
 """
+
+cutcell_integral_combined = """\
+/// This class defines the interface for the tabulation of the
+/// tensor corresponding to the local contribution to a form from
+/// the integral over a cut cell defined in terms of a set of
+/// quadrature points and weights.
+
+class %(classname)s: public ufc::cutcell_integral
+{%(members)s
+public:
+
+  /// Constructor
+  %(classname)s(%(constructor_arguments)s) : ufc::cutcell_integral()%(initializer_list)s
+  {
+%(constructor)s
+  }
+
+  /// Destructor
+  ~%(classname)s() override
+  {
+%(destructor)s
+  }
+
+  /// Tabulate which form coefficients are used by this integral
+  const std::vector<bool> & enabled_coefficients() const final override
+  {
+%(enabled_coefficients)s
+  }
+
+  /// Tabulate the tensor for the contribution from a cutcell domain
+  void tabulate_tensor(double * A,
+                       const double * const * w,
+                       const double * coordinate_dofs,
+                       std::size_t num_quadrature_points,
+                       const double * quadrature_points,
+                       const double * quadrature_weights,
+                       int cell_orientation) const final override
+  {
+%(tabulate_tensor)s
+  }
+
+};
+"""
+
+cutcell_integral_header = """\
+/// This class defines the interface for the tabulation of the
+/// tensor corresponding to the local contribution to a form from
+/// the integral over a cut cell defined in terms of a set of
+/// quadrature points and weights.
+
+class %(classname)s: public ufc::cutcell_integral
+{%(members)s
+public:
+
+  /// Constructor
+  %(classname)s(%(constructor_arguments)s);
+
+  /// Destructor
+  ~%(classname)s() override;
+
+  /// Tabulate which form coefficients are used by this integral
+  const std::vector<bool> & enabled_coefficients() const final override;
+
+  /// Tabulate the tensor for the contribution from a cutcell domain
+  void tabulate_tensor(double * A,
+                       const double * const * w,
+                       const double * coordinate_dofs,
+                       std::size_t num_quadrature_points,
+                       const double * quadrature_points,
+                       const double * quadrature_weights,
+                       int cell_orientation) const final override;
+
+};
+"""
+
+cutcell_integral_implementation = """\
+/// Constructor
+%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::cutcell_integral()%(initializer_list)s
+{
+%(constructor)s
+}
+
+/// Destructor
+%(classname)s::~%(classname)s()
+{
+%(destructor)s
+}
+
+/// Tabulate which form coefficients are used by this integral
+const std::vector<bool> & %(classname)s::enabled_coefficients() const
+{
+%(enabled_coefficients)s
+}
+
+/// Tabulate the tensor for the contribution from a cutcell domain
+void %(classname)s::tabulate_tensor(double * A,
+                                    const double * const * w,
+                                    const double * coordinate_dofs,
+                                    std::size_t num_quadrature_points,
+                                    const double * quadrature_points,
+                                    const double * quadrature_weights,
+                                    int cell_orientation) const
+{
+%(tabulate_tensor)s
+}
+"""
+
+interface_integral_combined = """\
+/// This class defines the interface for the tabulation of the
+/// tensor corresponding to the local contribution to a form from
+/// the integral over an interface cutting through a pair of cells.
+
+class %(classname)s: public ufc::interface_integral
+{%(members)s
+public:
+
+  /// Constructor
+  %(classname)s(%(constructor_arguments)s) : ufc::interface_integral()%(initializer_list)s
+  {
+%(constructor)s
+  }
+
+  /// Destructor
+  ~%(classname)s() override
+  {
+%(destructor)s
+  }
+
+  /// Tabulate which form coefficients are used by this integral
+  const std::vector<bool> & enabled_coefficients() const final override
+  {
+%(enabled_coefficients)s
+  }
+
+  /// Tabulate the tensor for the contribution from an interface domain
+  void tabulate_tensor(double * A,
+                       const double * const * w,
+                       const double * coordinate_dofs,
+                       std::size_t num_quadrature_points,
+                       const double * quadrature_points,
+                       const double * quadrature_weights,
+                       const double * facet_normals,
+                       int cell_orientation) const final override
+  {
+%(tabulate_tensor)s
+  }
+
+};
+"""
+
+interface_integral_header = """\
+/// This class defines the interface for the tabulation of the
+/// tensor corresponding to the local contribution to a form from
+/// the integral over an interface cutting through a pair of cells.
+
+class %(classname)s: public ufc::interface_integral
+{%(members)s
+public:
+
+  /// Constructor
+  %(classname)s(%(constructor_arguments)s);
+
+  /// Destructor
+  ~%(classname)s() override;
+
+  /// Tabulate which form coefficients are used by this integral
+  const std::vector<bool> & enabled_coefficients() const final override;
+
+  /// Tabulate the tensor for the contribution from an interface domain
+  void tabulate_tensor(double * A,
+                       const double * const * w,
+                       const double * coordinate_dofs,
+                       std::size_t num_quadrature_points,
+                       const double * quadrature_points,
+                       const double * quadrature_weights,
+                       const double * facet_normals,
+                       int cell_orientation) const final override;
+
+};
+"""
+
+interface_integral_implementation = """\
+/// Constructor
+%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::interface_integral()%(initializer_list)s
+{
+%(constructor)s
+}
+
+/// Destructor
+%(classname)s::~%(classname)s()
+{
+%(destructor)s
+}
+
+/// Tabulate which form coefficients are used by this integral
+const std::vector<bool> & %(classname)s::enabled_coefficients() const
+{
+%(enabled_coefficients)s
+}
+
+/// Tabulate the tensor for the contribution from an interface domain
+void %(classname)s::tabulate_tensor(double * A,
+                                    const double * const * w,
+                                    const double * coordinate_dofs,
+                                    std::size_t num_quadrature_points,
+                                    const double * quadrature_points,
+                                    const double * quadrature_weights,
+                                    const double * facet_normals,
+                                    int cell_orientation) const
+{
+%(tabulate_tensor)s
+}
+"""
+
+overlap_integral_combined = """\
+/// This class defines the interface for the tabulation of the
+/// tensor corresponding to the local contribution to a form from
+/// the integral over the overlapped portion of a cell defined in
+/// terms of a set of quadrature points and weights.
+
+class %(classname)s: public ufc::overlap_integral
+{%(members)s
+public:
+
+  /// Constructor
+  %(classname)s(%(constructor_arguments)s) : ufc::overlap_integral()%(initializer_list)s
+  {
+%(constructor)s
+  }
+
+  /// Destructor
+  ~%(classname)s() override
+  {
+%(destructor)s
+  }
+
+  /// Tabulate which form coefficients are used by this integral
+  const std::vector<bool> & enabled_coefficients() const final override
+  {
+%(enabled_coefficients)s
+  }
+
+  /// Tabulate the tensor for the contribution from an overlap domain
+  void tabulate_tensor(double * A,
+                       const double * const * w,
+                       const double * coordinate_dofs,
+                       std::size_t num_quadrature_points,
+                       const double * quadrature_points,
+                       const double * quadrature_weights,
+                       int cell_orientation) const final override
+  {
+%(tabulate_tensor)s
+  }
+
+};
+"""
+
+overlap_integral_header = """\
+/// This class defines the interface for the tabulation of the
+/// tensor corresponding to the local contribution to a form from
+/// the integral over the overlapped portion of a cell defined in
+/// terms of a set of quadrature points and weights.
+
+class %(classname)s: public ufc::overlap_integral
+{%(members)s
+public:
+
+  /// Constructor
+  %(classname)s(%(constructor_arguments)s);
+
+  /// Destructor
+  ~%(classname)s() override;
+
+  /// Tabulate which form coefficients are used by this integral
+  const std::vector<bool> & enabled_coefficients() const final override;
+
+  /// Tabulate the tensor for the contribution from an overlap domain
+  void tabulate_tensor(double * A,
+                       const double * const * w,
+                       const double * coordinate_dofs,
+                       std::size_t num_quadrature_points,
+                       const double * quadrature_points,
+                       const double * quadrature_weights,
+                       int cell_orientation) const final override;
+
+};
+"""
+
+overlap_integral_implementation = """\
+/// Constructor
+%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::overlap_integral()%(initializer_list)s
+{
+%(constructor)s
+}
+
+/// Destructor
+%(classname)s::~%(classname)s()
+{
+%(destructor)s
+}
+
+/// Tabulate which form coefficients are used by this integral
+const std::vector<bool> & %(classname)s::enabled_coefficients() const
+{
+%(enabled_coefficients)s
+}
+
+/// Tabulate the tensor for the contribution from an overlap domain
+void %(classname)s::tabulate_tensor(double * A,
+                                    const double * const * w,
+                                    const double * coordinate_dofs,
+                                    std::size_t num_quadrature_points,
+                                    const double * quadrature_points,
+                                    const double * quadrature_weights,
+                                    int cell_orientation) const
+{
+%(tabulate_tensor)s
+}
+"""
