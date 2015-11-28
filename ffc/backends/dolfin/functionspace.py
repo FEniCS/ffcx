@@ -56,7 +56,7 @@ def extract_coefficient_spaces(forms):
     names.sort()
     return [spaces[name] for name in names]
 #-------------------------------------------------------------------------------
-def generate_typedefs(form, classname):
+def generate_typedefs(form, classname, error_control):
     """Generate typedefs for test, trial and coefficient spaces
     relative to a function space."""
 
@@ -65,8 +65,9 @@ def generate_typedefs(form, classname):
     # Generate typedef data for test/trial spaces
     pairs += [("%s_FunctionSpace_%d" % (classname, i),
               snippets["functionspace"][i]) for i in range(form.rank)]
-    pairs += [("%s_MultiMeshFunctionSpace_%d" % (classname, i),
-              snippets["multimeshfunctionspace"][i]) for i in range(form.rank)]
+    if not error_control: # FIXME: Issue #91
+        pairs += [("%s_MultiMeshFunctionSpace_%d" % (classname, i),
+                   snippets["multimeshfunctionspace"][i]) for i in range(form.rank)]
 
     # Generate typedefs for coefficient spaces
     pairs += [("%s_FunctionSpace_%d" % (classname, form.rank + i),

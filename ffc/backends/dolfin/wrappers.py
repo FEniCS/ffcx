@@ -86,7 +86,7 @@ def generate_dolfin_namespace(prefix, forms, common_function_space=False,
     code = [apply_function_space_template(*space) for space in spaces]
 
     # Generate code for forms
-    code += [generate_form(form, "Form_%s" % form.name) for form in forms]
+    code += [generate_form(form, "Form_%s" % form.name, error_control) for form in forms]
 
     # Generate namespace typedefs (Bilinear/Linear & Test/Trial/Function)
     code += [generate_namespace_typedefs(forms, common_function_space,
@@ -120,20 +120,23 @@ def generate_namespace_typedefs(forms, common_function_space, error_control):
         forms_of_rank = [form for form in forms if form.rank == rank]
         if len(forms_of_rank) == 1:
             pairs += [("Form_%s" % forms_of_rank[0].name, aliases[rank])]
-            pairs += [("MultiMeshForm_%s" % forms_of_rank[0].name,
-                       "MultiMesh" + aliases[rank])]
+            if not error_control: # FIXME: Issue #91
+                pairs += [("MultiMeshForm_%s" % forms_of_rank[0].name,
+                           "MultiMesh" + aliases[rank])]
             if aliases[rank] in extra_aliases:
                 extra_alias = extra_aliases[aliases[rank]]
                 pairs += [("Form_%s" % forms_of_rank[0].name, extra_alias)]
-                pairs += [("MultiMeshForm_%s" % forms_of_rank[0].name,
-                           "MultiMesh" + extra_alias)]
+                if not error_control: # FIXME: Issue #91
+                    pairs += [("MultiMeshForm_%s" % forms_of_rank[0].name,
+                               "MultiMesh" + extra_alias)]
 
     # Keepin' it simple: Add typedef for FunctionSpace if term applies
     if common_function_space:
         for i, form in enumerate(forms):
             if form.rank:
                 pairs += [("Form_%s::TestSpace" % form.name, "FunctionSpace")]
-                pairs += [("Form_%s::MultiMeshTestSpace" % form.name, "MultiMeshFunctionSpace")]
+                if not error_control: # FIXME: Issue #91
+                    pairs += [("Form_%s::MultiMeshTestSpace" % form.name, "MultiMeshFunctionSpace")]
                 break
 
     # Add specialized typedefs when adding error control wrapppers

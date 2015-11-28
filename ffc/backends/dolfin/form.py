@@ -28,7 +28,7 @@ from .goalfunctional import generate_update_ec
 __all__ = ["generate_form"]
 
 #-------------------------------------------------------------------------------
-def generate_form(form, classname):
+def generate_form(form, classname, error_control):
     """Generate dolfin wrapper code associated with a form including
     code for function spaces used in form and typedefs
 
@@ -48,10 +48,11 @@ def generate_form(form, classname):
 
     # Generate code for Form_x_MultiMeshFunctionSpace_y subclasses
     wrap = apply_multimesh_function_space_template
-    blocks += [wrap("%s_MultiMeshFunctionSpace_%d" % (classname, i),
-                    "%s_FunctionSpace_%d" % (classname, i),
-                    form.ufc_finite_element_classnames[i],
-                    form.ufc_dofmap_classnames[i]) for i in range(form.rank)]
+    if not error_control: # FIXME: Issue #91
+        blocks += [wrap("%s_MultiMeshFunctionSpace_%d" % (classname, i),
+                        "%s_FunctionSpace_%d" % (classname, i),
+                        form.ufc_finite_element_classnames[i],
+                        form.ufc_dofmap_classnames[i]) for i in range(form.rank)]
 
     # Add typedefs CoefficientSpace_z -> Form_x_FunctionSpace_y
     blocks += ["typedef CoefficientSpace_%s %s_FunctionSpace_%d;\n"
@@ -59,12 +60,12 @@ def generate_form(form, classname):
                for i in range(form.num_coefficients)]
 
     # Generate Form subclass
-    blocks += [generate_form_class(form, classname)]
+    blocks += [generate_form_class(form, classname, error_control)]
 
     # Return code
     return "\n".join(blocks)
 #-------------------------------------------------------------------------------
-def generate_form_class(form, classname):
+def generate_form_class(form, classname, error_control):
     "Generate dolfin wrapper code for a single Form class."
 
     # Generate constructors
@@ -75,7 +76,7 @@ def generate_form_class(form, classname):
     (number, name) = generate_coefficient_map_data(form)
 
     # Generate typedefs for FunctionSpace subclasses for Coefficients
-    typedefs = ["  // Typedefs", generate_typedefs(form, classname), ""]
+    typedefs = ["  // Typedefs", generate_typedefs(form, classname, error_control), ""]
 
     # Member variables for coefficients
     members = ["  dolfin::CoefficientAssigner %s;" % coefficient
@@ -91,8 +92,9 @@ def generate_form_class(form, classname):
     code += apply_form_template(classname, constructors, number, name,
                                 additionals, form.superclassname)
     code += "\n"
-    code += apply_multimesh_form_template(classname, multimesh_constructors, number, name,
-                                          additionals, form.superclassname)
+    if not error_control:
+        code += apply_multimesh_form_template(classname, multimesh_constructors, number, name,
+                                              additionals, form.superclassname)
 
     # Return code
     return code
@@ -276,6 +278,10 @@ def generate_multimesh_constructor(form, classname, space_tag, coefficient_tag=N
     body += "    }\n\n"
     body += "    // Build multimesh form\n"
     body += "    build();\n"
+
+    # FIXME: Issue #91
+    if form.rank == 0:
+        body = ""
 
     # Create body for assigning coefficients
     body += "\n    /// Assign coefficients"
