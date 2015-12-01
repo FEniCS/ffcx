@@ -22,11 +22,13 @@ from __future__ import print_function # used in some debugging
 
 from six import itervalues, iterkeys, iteritems
 from six.moves import xrange as range
-from ufl import as_ufl
+from ufl import as_ufl, conditional
 from ufl.classes import Argument
 from ufl.classes import Division
 from ufl.classes import Product
 from ufl.classes import Sum
+from ufl.classes import Conditional
+from ufl.classes import Zero
 
 from ffc.log import ffc_assert, error
 
@@ -96,13 +98,24 @@ def build_argument_dependencies(dependencies, arg_indices):
     return A
 
 
+class Factors(object): # TODO: Refactor code in this file by using a class like this
+    def __init__(self):
+        self.FV = []
+        self.e2fi = {}
+
+    def add(self, expr):
+        add_to_fv(expr, self.FV, self.e2fi)
+
+
 def add_to_fv(expr, FV, e2fi):
+    "Add expression expr to factor vector FV and expr->FVindex mapping e2fi."
     fi = e2fi.get(expr)
     if fi is None:
         fi = len(e2fi)
         FV.append(expr)
         e2fi[expr] = fi
     return fi
+
 
 # Reuse these empty objects where appropriate to save memory
 noargs = {}
@@ -131,18 +144,6 @@ def handle_sum(i, v, deps, F, FV, sv2fv, e2fi):
     ffc_assert(len(deps) == 2, "Assuming binary sum here. This can be fixed if needed.")
     fac0 = F[deps[0]]
     fac1 = F[deps[1]]
-
-    # This assertion would fail for combined matrix+vector factorization
-    if 0 and len(fac0) != len(fac1):
-        print('\n' * 5)
-        print(i, deps)
-        print(str(v))
-        print(repr(v))
-        print(str(v.ufl_operands[0]))
-        print(str(v.ufl_operands[1]))
-        print(fac0)
-        print(fac1)
-        print('\n' * 5)
 
     argkeys = sorted(set(iterkeys(fac0)) | set(iterkeys(fac1)))
 
@@ -185,10 +186,6 @@ def handle_product(i, v, deps, F, FV, sv2fv, e2fi):
         assert f1 * f0 == v
         fi = add_to_fv(v, FV, e2fi)
         assert FV[fi] == v
-        if 0:
-            print("NON*NON:", i, str(v))
-            print("        ", fi)
-            print("        ", factors)
 
     elif not fac0:  # non-arg * arg
         f0 = FV[sv2fv[deps[0]]]
@@ -197,9 +194,6 @@ def handle_product(i, v, deps, F, FV, sv2fv, e2fi):
         for k1, fi1 in iteritems(fac1):
             # Record products of non-arg operand with each factor of arg-dependent operand
             factors[k1] = add_to_fv(f0 * FV[fi1], FV, e2fi)
-        if 0:
-            print("NON*ARG:", i, str(v))
-            print("        ", factors)
 
     elif not fac1:  # arg * non-arg
         f1 = FV[sv2fv[deps[1]]]
@@ -208,9 +202,6 @@ def handle_product(i, v, deps, F, FV, sv2fv, e2fi):
         for k0, fi0 in iteritems(fac0):
             # Record products of non-arg operand with each factor of arg-dependent operand
             factors[k0] = add_to_fv(f1 * FV[fi0], FV, e2fi)
-        if 0:
-            print("ARG*NON:", i, str(v))
-            print("        ", factors)
 
     else:  # arg * arg
         fi = None
@@ -220,9 +211,7 @@ def handle_product(i, v, deps, F, FV, sv2fv, e2fi):
                 # Record products of each factor of arg-dependent operand
                 argkey = tuple(sorted(k0 + k1))  # sort key for canonical representation
                 factors[argkey] = add_to_fv(FV[fi0] * FV[fi1], FV, e2fi)
-        if 0:
-            print("ARG*ARG:", i, str(v))
-            print("        ", factors)
+
     return fi, factors
 
 
@@ -247,16 +236,52 @@ def handle_division(i, v, deps, F, FV, sv2fv, e2fi):
     return fi, factors
 
 
-def handle_operator(i, v, deps, F, FV, sv2fv, e2fi):
-    # TODO: Check something?
-    facs = [F[deps[j]] for j in range(len(deps))]
-    if any(facs):
-        # TODO: Can this happen?
-        error("Assuming that a {0} cannot be applied to arguments. If this is wrong please report a bug..".format(type(v)))
-    else:
+def handle_conditional(i, v, deps, F, FV, sv2fv, e2fi):
+    fac0 = F[deps[0]]
+    fac1 = F[deps[1]]
+    fac2 = F[deps[2]]
+    assert not fac0, "Cannot have argument in condition."
+
+    if not (fac1 or fac2):  # non-arg ? non-arg : non-arg
         # Record non-argument subexpression
         fi = add_to_fv(v, FV, e2fi)
         factors = noargs
+    else:
+        f0 = FV[sv2fv[deps[0]]]
+        f1 = FV[sv2fv[deps[1]]]
+        f2 = FV[sv2fv[deps[2]]]
+
+        # Term conditional(c, argument, non-argument) is not legal
+        assert fac1 or isinstance(f1, Zero)
+        assert fac2 or isinstance(f2, Zero)
+        assert () not in fac1
+        assert () not in fac2
+
+        # In general, can decompose like this:
+        #    conditional(c, sum_i fi*ui, sum_j fj*uj) -> sum_i conditional(c, fi, 0)*ui + sum_j conditional(c, 0, fj)*uj
+        # Handling factors from true and false value separately for generality:
+        # conditional(c, sum_k fk*uk, 0) ->  sum_k conditional(c, fk, 0)*uk
+        fi = None
+        factors = {}
+        for k1, fi1 in iteritems(fac1):
+            # Record products of non-arg conditional with each factor of arg-dependent operand
+            factors[k1] = add_to_fv(conditional(f0, FV[fi1], f2), FV, e2fi)
+        # conditional(c, 0, sum_k fk*uk) ->  sum_k conditional(c, 0, fk)*uk
+        fi = None
+        factors = {}
+        for k2, fi2 in iteritems(fac2):
+            # Record products of non-arg conditional with each factor of arg-dependent operand
+            factors[k2] = add_to_fv(conditional(f0, f1, FV[fi2]), FV, e2fi)
+    return fi, factors
+
+
+def handle_operator(i, v, deps, F, FV, sv2fv, e2fi):
+    # Error checking
+    if any(F[deps[j]] for j in range(len(deps))):
+        error("Assuming that a {0} cannot be applied to arguments. If this is wrong please report a bug.".format(type(v)))
+    # Record non-argument subexpression
+    fi = add_to_fv(v, FV, e2fi)
+    factors = noargs
     return fi, factors
 
 
@@ -292,10 +317,6 @@ def collect_argument_factors(SV, dependencies, arg_indices):
         of course in a different technical representation.
 
     """
-    # TODO: What did this comment refer to? It's probably deprecated now:
-    # Instead of argdeps being a list of argument vertex indices v (indirectly) depends on,
-    # it should be a mapping { combo: factors } to handle e.g. (u + fu')(gv + v')
-
     # Extract argument component subgraph
     AV = [SV[j] for j in arg_indices]
     av2sv = arg_indices
@@ -323,6 +344,7 @@ def collect_argument_factors(SV, dependencies, arg_indices):
     for i, v in enumerate(SV):
         deps = dependencies[i]
 
+        # These handlers insert values in sv2fv and F
         if not len(deps):
             fi, factors = handle_modified_terminal(i, v, F, FV, e2fi, arg_indices, AV, sv2av)
         elif isinstance(v, Sum):
@@ -331,10 +353,11 @@ def collect_argument_factors(SV, dependencies, arg_indices):
             fi, factors = handle_product(i, v, deps, F, FV, sv2fv, e2fi)
         elif isinstance(v, Division):
             fi, factors = handle_division(i, v, deps, F, FV, sv2fv, e2fi)
+        elif isinstance(v, Conditional):
+            fi, factors = handle_conditional(i, v, deps, F, FV, sv2fv, e2fi)
         else:  # All other operators
             fi, factors = handle_operator(i, v, deps, F, FV, sv2fv, e2fi)
 
-        # print 'fac:', i, factors
         if fi is not None:
             sv2fv[i] = fi
         F[i] = factors
@@ -403,18 +426,6 @@ def rebuild_scalar_graph_from_factorization(AV, FV, IM):
 
     # Rebuild dependencies
     dependencies = compute_dependencies(se2i, SV)
-
-    if 0:
-        print('\n' * 10)
-        print('AV:')
-        print('\n'.join('  {}: {}'.format(i, s) for i, s in enumerate(AV)))
-        print('FV:')
-        print('\n'.join('  {}: {}'.format(i, s) for i, s in enumerate(FV)))
-        print('IM:')
-        print('\n'.join('  {}: {}'.format(i, IM[i]) for i in sorted(iterkeys(IM))))
-        print('SV:')
-        print('\n'.join('  {}: {}'.format(i, s) for i, s in enumerate(SV)))
-        print('\n' * 10)
 
     return SV, se2i, dependencies
 
