@@ -132,6 +132,7 @@ class ufc_form(ufc_generator):
 
     def _create_foo_integral(self, L, ir, integral_type, declname):
         "Return implementation of ufc::form::%(declname)s()."
+        #print("CREATE_FOO_INTEGRAL", id(ir), ir)
         form_id = ir["id"]
         prefix = ir["prefix"]
         subdomain_id = L.Symbol("subdomain_id")
