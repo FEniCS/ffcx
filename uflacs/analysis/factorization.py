@@ -257,21 +257,22 @@ def handle_conditional(i, v, deps, F, FV, sv2fv, e2fi):
         assert () not in fac1
         assert () not in fac2
 
+        fi = None
+        factors = {}
+
+        # FIXME: This code adds multiple new subexpressions to the graph, this breaks assumptions elsewhere. Fix that elsewhere.
+
+        mas = set(fac1.keys()) | set(fac2.keys())
+
         # In general, can decompose like this:
         #    conditional(c, sum_i fi*ui, sum_j fj*uj) -> sum_i conditional(c, fi, 0)*ui + sum_j conditional(c, 0, fj)*uj
-        # Handling factors from true and false value separately for generality:
-        # conditional(c, sum_k fk*uk, 0) ->  sum_k conditional(c, fk, 0)*uk
-        fi = None
-        factors = {}
-        for k1, fi1 in iteritems(fac1):
-            # Record products of non-arg conditional with each factor of arg-dependent operand
-            factors[k1] = add_to_fv(conditional(f0, FV[fi1], f2), FV, e2fi)
-        # conditional(c, 0, sum_k fk*uk) ->  sum_k conditional(c, 0, fk)*uk
-        fi = None
-        factors = {}
-        for k2, fi2 in iteritems(fac2):
-            # Record products of non-arg conditional with each factor of arg-dependent operand
-            factors[k2] = add_to_fv(conditional(f0, f1, FV[fi2]), FV, e2fi)
+        for k in mas:
+            fi1 = fac1.get(k)
+            fi2 = fac2.get(k)
+            f1 = 0.0 if fi1 is None else FV[fi1]
+            f2 = 0.0 if fi2 is None else FV[fi2]
+            factors[k] = add_to_fv(conditional(f0, f1, f2), FV, e2fi)
+
     return fi, factors
 
 
