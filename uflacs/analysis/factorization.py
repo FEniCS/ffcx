@@ -251,7 +251,7 @@ def handle_conditional(i, v, deps, F, FV, sv2fv, e2fi):
         f1 = FV[sv2fv[deps[1]]]
         f2 = FV[sv2fv[deps[2]]]
 
-        # Term conditional(c, argument, non-argument) is not legal
+        # Term conditional(c, argument, non-argument) is not legal unless non-argument is 0.0
         assert fac1 or isinstance(f1, Zero)
         assert fac2 or isinstance(f2, Zero)
         assert () not in fac1
@@ -260,19 +260,23 @@ def handle_conditional(i, v, deps, F, FV, sv2fv, e2fi):
         fi = None
         factors = {}
 
-        # FIXME: This code adds multiple new subexpressions to the graph, this breaks assumptions elsewhere. Fix that elsewhere.
+        # FIXME: This code adds multiple new subexpressions to the graph, check if this breaks assumptions elsewhere.
 
         mas = set(fac1.keys()) | set(fac2.keys())
+
+        z = as_ufl(0.0)
+        zfi = add_to_fv(z, FV, e2fi)
 
         # In general, can decompose like this:
         #    conditional(c, sum_i fi*ui, sum_j fj*uj) -> sum_i conditional(c, fi, 0)*ui + sum_j conditional(c, 0, fj)*uj
         for k in mas:
             fi1 = fac1.get(k)
             fi2 = fac2.get(k)
-            f1 = 0.0 if fi1 is None else FV[fi1]
-            f2 = 0.0 if fi2 is None else FV[fi2]
+            f1 = z if fi1 is None else FV[fi1]
+            f2 = z if fi2 is None else FV[fi2]
             factors[k] = add_to_fv(conditional(f0, f1, f2), FV, e2fi)
 
+    print("In handle_conditional:", v, fi, factors, FV)
     return fi, factors
 
 
