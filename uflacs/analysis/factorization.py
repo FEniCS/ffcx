@@ -260,8 +260,6 @@ def handle_conditional(i, v, deps, F, FV, sv2fv, e2fi):
         fi = None
         factors = {}
 
-        # FIXME: This code adds multiple new subexpressions to the graph, check if this breaks assumptions elsewhere.
-
         mas = set(fac1.keys()) | set(fac2.keys())
 
         z = as_ufl(0.0)
@@ -276,7 +274,6 @@ def handle_conditional(i, v, deps, F, FV, sv2fv, e2fi):
             f2 = z if fi2 is None else FV[fi2]
             factors[k] = add_to_fv(conditional(f0, f1, f2), FV, e2fi)
 
-    print("In handle_conditional:", v, fi, factors, FV)
     return fi, factors
 
 
