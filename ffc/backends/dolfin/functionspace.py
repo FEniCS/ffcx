@@ -83,18 +83,8 @@ class %(classname)s: public dolfin::FunctionSpace
 {
 public:
 
-  //--- Constructors for standard function space, 2 different versions ---
+  //--- Constructor for standard function space
 
-  // Create standard function space (reference version)
-  %(classname)s(const dolfin::Mesh& mesh):
-    dolfin::FunctionSpace(dolfin::reference_to_no_delete_pointer(mesh),
-                          std::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(std::shared_ptr<ufc::finite_element>(new %(ufc_finite_element_classname)s()))),
-                          std::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(std::shared_ptr<ufc::dofmap>(new %(ufc_dofmap_classname)s()), mesh)))
-  {
-    // Do nothing
-  }
-
-  // Create standard function space (shared pointer version)
   %(classname)s(std::shared_ptr<const dolfin::Mesh> mesh):
     dolfin::FunctionSpace(mesh,
                           std::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(std::shared_ptr<ufc::finite_element>(new %(ufc_finite_element_classname)s()))),
@@ -103,19 +93,8 @@ public:
     // Do nothing
   }
 
-  //--- Constructors for constrained function space, 2 different versions ---
+  //--- Constructor for constrained function space
 
-  // Create constrained function space (reference version)
-  %(classname)s(const dolfin::Mesh& mesh, const dolfin::SubDomain& constrained_domain):
-    dolfin::FunctionSpace(dolfin::reference_to_no_delete_pointer(mesh),
-                          std::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(std::shared_ptr<ufc::finite_element>(new %(ufc_finite_element_classname)s()))),
-                          std::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(std::shared_ptr<ufc::dofmap>(new %(ufc_dofmap_classname)s()), mesh,
-                              dolfin::reference_to_no_delete_pointer(constrained_domain))))
-  {
-    // Do nothing
-  }
-
-  // Create constrained function space (shared pointer version)
   %(classname)s(std::shared_ptr<const dolfin::Mesh> mesh, std::shared_ptr<const dolfin::SubDomain> constrained_domain):
     dolfin::FunctionSpace(mesh,
                           std::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(std::shared_ptr<ufc::finite_element>(new %(ufc_finite_element_classname)s()))),
