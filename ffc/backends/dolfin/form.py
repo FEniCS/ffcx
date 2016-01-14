@@ -140,11 +140,11 @@ def generate_form_constructors(form, classname):
     combinations of references/shared pointers etc."""
 
     coeffs = ("shared_ptr_coefficient",)
-    spaces = ("shared_ptr_space", "referenced_space")
+    spaces = ("shared_ptr_space",)
 
     # Treat functionals a little special
     if form.rank == 0:
-        spaces = ("referenced_mesh", "shared_ptr_mesh")
+        spaces = ("shared_ptr_mesh",)
 
     # Generate permutations of constructors
     constructors = []
@@ -174,7 +174,8 @@ def generate_multimesh_form_constructors(form, classname):
     for space in spaces:
         constructors += [generate_multimesh_constructor(form, classname, space)]
         if form.num_coefficients > 0:
-            constructors += [generate_multimesh_constructor(form, classname, space, coeff)
+            constructors += [generate_multimesh_constructor(form, classname,
+                                                            space, coeff)
                              for coeff in coeffs]
 
     # Return joint constructor code
@@ -233,7 +234,8 @@ def generate_constructor(form, classname, space_tag, coefficient_tag=None):
     return code
 
 
-def generate_multimesh_constructor(form, classname, space_tag, coefficient_tag=None):
+def generate_multimesh_constructor(form, classname, space_tag,
+                                   coefficient_tag=None):
     "Generate a single Form constructor according to the given parameters."
 
     # Extract correct code snippets
@@ -390,8 +392,8 @@ def apply_form_template(classname, constructors, number, name, members,
     return form_class_template % args
 
 
-def apply_multimesh_form_template(classname, constructors, number, name, members,
-                        superclass):
+def apply_multimesh_form_template(classname, constructors, number, name,
+                                  members, superclass):
     members = members.replace("CoefficientAssigner",
                               "MultiMeshCoefficientAssigner") # hack
     args = {"classname": classname,

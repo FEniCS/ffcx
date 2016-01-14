@@ -73,10 +73,15 @@ update_ec_template = """
     std::shared_ptr<dolfin::Form> eta_T;            // Indicator form
 
     // Some handy views
-    const dolfin::FunctionSpace& Vhat(*(a.function_space(0))); // Primal test
-    const dolfin::FunctionSpace& V(*(a.function_space(1)));    // Primal trial
-    assert(V.mesh());
-    const dolfin::Mesh& mesh(*V.mesh());
+    assert(a.function_space(0));
+    const auto Vhat = a.function_space(0); // Primal test
+
+    assert(a.function_space(0));
+    const auto V = a.function_space(1);    // Primal trial
+
+    assert(V->mesh());
+    const auto mesh = V->mesh();
+
     std::string name;
 
     // Initialize dual forms
@@ -130,7 +135,6 @@ update_ec_template = """
     _ec.reset(new dolfin::ErrorControl(a_star, L_star, residual,
                                        a_R_T, L_R_T, a_R_dT, L_R_dT, eta_T,
                                        %(linear)s));
-
   }
 """
 #-------------------------------------------------------------------------------
