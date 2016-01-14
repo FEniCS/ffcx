@@ -27,7 +27,7 @@ from .goalfunctional import generate_update_ec
 
 __all__ = ["generate_form"]
 
-#-------------------------------------------------------------------------------
+
 def generate_form(form, classname, error_control):
     """Generate dolfin wrapper code associated with a form including
     code for function spaces used in form and typedefs
@@ -64,7 +64,8 @@ def generate_form(form, classname, error_control):
 
     # Return code
     return "\n".join(blocks)
-#-------------------------------------------------------------------------------
+
+
 def generate_form_class(form, classname, error_control):
     "Generate dolfin wrapper code for a single Form class."
 
@@ -98,7 +99,8 @@ def generate_form_class(form, classname, error_control):
 
     # Return code
     return code
-#-------------------------------------------------------------------------------
+
+
 def generate_coefficient_map_data(form):
     """Generate data for code for the functions
     Form::coefficient_number and Form::coefficient_name."""
@@ -131,13 +133,14 @@ dolfin::dolfin_error("generated code for class %s",
     name += '    }\n\n    %s\n    return "unnamed";' % message
 
     return (num, name)
-#-------------------------------------------------------------------------------
+
+
 def generate_form_constructors(form, classname):
     """Generate the dolfin::Form constructors for different
     combinations of references/shared pointers etc."""
 
-    coeffs = ("referenced_coefficient", "shared_ptr_coefficient")
-    spaces = ("referenced_space", "shared_ptr_space")
+    coeffs = ("shared_ptr_coefficient",)
+    spaces = ("shared_ptr_space", "referenced_space")
 
     # Treat functionals a little special
     if form.rank == 0:
@@ -154,11 +157,12 @@ def generate_form_constructors(form, classname):
     # Return joint constructor code
     return "\n\n".join(constructors)
 
+
 def generate_multimesh_form_constructors(form, classname):
     """Generate the dolfin::MultiMeshForm constructors for different
     combinations of references/shared pointers etc."""
 
-    coeffs = ("referenced_coefficient", "shared_ptr_coefficient")
+    coeffs = ("referenced_coefficient", "shared_ptr_ref_coefficient")
     spaces = ("multimesh_referenced_space", "multimesh_shared_ptr_space")
 
     # Treat functionals a little special
@@ -176,7 +180,7 @@ def generate_multimesh_form_constructors(form, classname):
     # Return joint constructor code
     return "\n\n".join(constructors)
 
-#-------------------------------------------------------------------------------
+
 def generate_constructor(form, classname, space_tag, coefficient_tag=None):
     "Generate a single Form constructor according to the given parameters."
 
@@ -227,6 +231,7 @@ def generate_constructor(form, classname, space_tag, coefficient_tag=None):
             }
     code = form_constructor_template % args
     return code
+
 
 def generate_multimesh_constructor(form, classname, space_tag, coefficient_tag=None):
     "Generate a single Form constructor according to the given parameters."
@@ -299,7 +304,8 @@ def generate_multimesh_constructor(form, classname, space_tag, coefficient_tag=N
             }
     code = multimesh_form_constructor_template % args
     return code
-#-------------------------------------------------------------------------------
+
+
 form_class_template = """\
 class %(classname)s: public dolfin::%(superclass)s
 {
@@ -353,7 +359,8 @@ public:
 %(members)s
 };
 """
-#-------------------------------------------------------------------------------
+
+
 # Template code for Form constructor
 form_constructor_template = """\
   // Constructor
@@ -370,7 +377,8 @@ multimesh_form_constructor_template = """\
   {
 %(body)s
   }"""
-#-------------------------------------------------------------------------------
+
+
 def apply_form_template(classname, constructors, number, name, members,
                         superclass):
     args = {"classname": classname,
@@ -380,6 +388,7 @@ def apply_form_template(classname, constructors, number, name, members,
             "coefficient_name": name,
             "members": members}
     return form_class_template % args
+
 
 def apply_multimesh_form_template(classname, constructors, number, name, members,
                         superclass):
@@ -392,4 +401,3 @@ def apply_multimesh_form_template(classname, constructors, number, name, members
             "coefficient_name": name,
             "members": members}
     return multimesh_form_class_template % args
-#-------------------------------------------------------------------------------

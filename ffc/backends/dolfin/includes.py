@@ -48,6 +48,9 @@ snippets = {"shared_ptr_space":
                  "    _mesh = reference_to_no_delete_pointer(mesh);"),
             "shared_ptr_coefficient":
                 ("std::shared_ptr<const dolfin::GenericFunction> %s",
+                 "    this->%s = %s;"),
+            "shared_ptr_ref_coefficient":
+                ("std::shared_ptr<const dolfin::GenericFunction> %s",
                  "    this->%s = *%s;"),
             "referenced_coefficient":
                 ("const dolfin::GenericFunction& %s",
