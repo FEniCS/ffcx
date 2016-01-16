@@ -206,10 +206,10 @@ def generate_constructor(form, classname, space_tag, coefficient_tag=None):
         assignments += [assign %(name, name) for name in form.coefficient_names]
 
     # Add assignment of _ufc_form variable
-    line = "\n    _ufc_form = std::shared_ptr<const ufc::form>(new %s());"
+    line = "\n    _ufc_form = std::make_shared<const %s>();"
     # FIXME: To match old generated code only
     if form.rank == 0 and coefficient_tag is None:
-        line =  "    _ufc_form = std::shared_ptr<const ufc::form>(new %s());"
+        line =  "    _ufc_form = std::make_shared<const %s>();"
     assignments += [line % form.ufc_form_classname]
 
     # Construct list for initialization of Coefficient references
