@@ -130,6 +130,12 @@ namespace ufc
     /// Return the number of components of the reference value space
     virtual std::size_t reference_value_size() const = 0;
 
+    /// Return the maximum polynomial degree of the finite element function space
+    virtual std::size_t degree() const = 0;
+
+    /// Return the family of the finite element function space
+    virtual std::string family() const = 0;
+
     /// Evaluate basis function i at given point x in cell
     virtual void evaluate_basis(std::size_t i,
                                 double * values,

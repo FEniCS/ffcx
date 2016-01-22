@@ -137,8 +137,12 @@ def _compute_element_ir(ufl_element, prefix, element_numbers):
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
     ir["space_dimension"] = fiat_element.space_dimension()
-    ir["value_dimension"] = ufl_element.value_shape()
-    ir["reference_value_dimension"] = ufl_element.reference_value_shape()
+    ir["value_shape"] = ufl_element.value_shape()
+    ir["reference_value_shape"] = ufl_element.reference_value_shape()
+
+    ir["degree"] = ufl_element.degree()
+    ir["family"] = ufl_element.family()
+
     ir["evaluate_basis"] = _evaluate_basis(ufl_element, fiat_element)
     ir["evaluate_dof"] = _evaluate_dof(ufl_element, fiat_element)
     ir["interpolate_vertex_values"] = _interpolate_vertex_values(ufl_element,
