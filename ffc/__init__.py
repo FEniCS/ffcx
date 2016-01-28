@@ -10,6 +10,7 @@ The interface consists of the following functions:
   compile_element    - Compilation of finite elements
   jit                - Just-In-Time compilation of forms and elements
   default_parameters - Default parameter values for FFC
+  ufc_signature      - Signature of UFC interface (SHA-1 hash of ufc.h)
 """
 
 __version__ = "1.7.0dev"
@@ -19,6 +20,9 @@ from ffc.compiler import compile_form, compile_element
 
 # Import JIT compiler
 from ffc.jitcompiler import jit
+
+# Import UFC signature
+from ffc.ufc_signature import ufc_signature
 
 # Import default parameters
 from .parameters import default_parameters

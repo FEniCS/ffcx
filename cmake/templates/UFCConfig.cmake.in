@@ -28,5 +28,8 @@ set(UFC_SWIG_EXECUTABLE "@SWIG_EXECUTABLE")
 # Version
 set(UFC_VERSION_STRING "@FULLVERSION")
 
+# Signature (SHA-1 hash of ufc.h)
+set(UFC_SIGNATURE "@UFC_SIGNATURE")
+
 # The location of the UseUFC.cmake file
 set(UFC_USE_FILE "@INSTALL_PREFIX/share/ufc/UseUFC.cmake")

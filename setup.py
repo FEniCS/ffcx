@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys, platform, re, subprocess, string, numpy, tempfile, shutil
+import os, sys, platform, re, subprocess, string, numpy, tempfile, shutil, hashlib
 from distutils import sysconfig, spawn
 from distutils.core import setup, Extension
 from distutils.command import build_ext
@@ -75,6 +75,11 @@ def get_swig_executable():
 
     return swig_executable
 
+def get_ufc_signature():
+    """Compute SHA-1 hash of ufc.h"""
+    with open(os.path.join('ufc', 'ufc.h'), 'rb') as f:
+        return hashlib.sha1(f.read()).hexdigest()
+
 def create_windows_batch_files(scripts):
     """Create Windows batch files, to get around problem that we
     cannot run Python scripts in the prompt without the .py
@@ -135,6 +140,12 @@ def generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
     INSTALL_PREFIX = get_installation_prefix()
     PYTHON_LIBRARY = os.environ.get("PYTHON_LIBRARY", find_python_library())
     MAJOR, MINOR, MICRO = VERSION.split(".")
+    UFC_SIGNATURE = get_ufc_signature
+
+    # Generate ufc_signature.py
+    write_config_file(os.path.join("ffc", "ufc_signature.py.in"),
+                      os.path.join("ffc", "ufc_signature.py"),
+                      variables=dict(UFC_SIGNATURE=UFC_SIGNATURE))
 
     # Generate UFCConfig.cmake
     write_config_file(os.path.join("cmake", "templates", "UFCConfig.cmake.in"),
@@ -145,7 +156,8 @@ def generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
                                      PYTHON_LIBRARY=PYTHON_LIBRARY,
                                      PYTHON_EXECUTABLE=sys.executable,
                                      SWIG_EXECUTABLE=SWIG_EXECUTABLE,
-                                     FULLVERSION=VERSION))
+                                     FULLVERSION=VERSION,
+                                     UFC_SIGNATURE=UFC_SIGNATURE))
 
     # Generate UFCConfigVersion.cmake
     write_config_file(os.path.join("cmake", "templates", \

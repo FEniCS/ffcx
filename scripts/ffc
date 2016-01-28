@@ -50,9 +50,8 @@ from ffc.log import set_level
 from ffc.log import DEBUG
 from ffc.log import ERROR
 from ffc.parameters import default_parameters
-from ffc import __version__ as FFC_VERSION
+from ffc import __version__ as FFC_VERSION, ufc_signature
 from ffc.backends.ufc import __version__ as UFC_VERSION
-from ffc.jitobject import ufc_signature as UFC_SIGNATURE
 from ffc.compiler import compile_form, compile_element
 from ffc.errorcontrol import compile_with_error_control
 
@@ -66,7 +65,7 @@ def info_version():
 This is FFC, the FEniCS Form Compiler, version {0}.
 UFC backend version {1}, signature {2}.
 For further information, visit http://www.fenics.org/ffc/.
-""".format(FFC_VERSION, UFC_VERSION, UFC_SIGNATURE))
+""".format(FFC_VERSION, UFC_VERSION, ufc_signature()))
 
 def info_usage():
     "Print usage information."
@@ -113,7 +112,7 @@ def main(argv):
 
     # Check for --signature
     if ("-S", "") in opts or ("--signature", "") in opts:
-        print(UFC_SIGNATURE)
+        print(ufc_signature())
         return 0
 
     # Check that we get at least one file
