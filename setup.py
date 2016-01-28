@@ -85,9 +85,11 @@ def get_git_commit_hash():
     or "unknown"
     """
     try:
-        return subprocess.check_output(['git', 'rev-parse', 'HEAD'])
+        hash = subprocess.check_output(['git', 'rev-parse', 'HEAD'])
     except:
         return "unknown"
+    else:
+        return hash.strip()
 
 def create_windows_batch_files(scripts):
     """Create Windows batch files, to get around problem that we
