@@ -80,6 +80,15 @@ def get_ufc_signature():
     with open(os.path.join('ufc', 'ufc.h'), 'rb') as f:
         return hashlib.sha1(f.read()).hexdigest()
 
+def get_git_commit_hash():
+    """Return git commit hash of currently checked out revision
+    or "unknown"
+    """
+    try:
+        return subprocess.check_output(['git', 'rev-parse', 'HEAD'])
+    except:
+        return "unknown"
+
 def create_windows_batch_files(scripts):
     """Create Windows batch files, to get around problem that we
     cannot run Python scripts in the prompt without the .py
@@ -141,11 +150,17 @@ def generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
     PYTHON_LIBRARY = os.environ.get("PYTHON_LIBRARY", find_python_library())
     MAJOR, MINOR, MICRO = VERSION.split(".")
     UFC_SIGNATURE = get_ufc_signature()
+    GIT_COMMIT_HASH = get_git_commit_hash()
 
     # Generate ufc_signature.py
     write_config_file(os.path.join("ffc", "ufc_signature.py.in"),
                       os.path.join("ffc", "ufc_signature.py"),
                       variables=dict(UFC_SIGNATURE=UFC_SIGNATURE))
+
+    # Generate git_commit_hash.py
+    write_config_file(os.path.join("ffc", "git_commit_hash.py.in"),
+                      os.path.join("ffc", "git_commit_hash.py"),
+                      variables=dict(GIT_COMMIT_HASH=GIT_COMMIT_HASH))
 
     # Generate UFCConfig.cmake
     write_config_file(os.path.join("cmake", "templates", "UFCConfig.cmake.in"),

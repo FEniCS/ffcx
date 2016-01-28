@@ -14,6 +14,7 @@ The interface consists of the following functions:
 """
 
 __version__ = "1.7.0dev"
+from ffc.git_commit_hash import git_commit_hash
 
 # Import compiler functions
 from ffc.compiler import compile_form, compile_element
