@@ -25,7 +25,8 @@ import ufl
 from ufl.utils.sorting import canonicalize_metadata
 
 # FFC modules.
-from ffc import __version__ as FFC_VERSION, ufc_signature
+from ffc import __version__ as FFC_VERSION
+from ffc.ufc_signature import ufc_signature
 from ffc.parameters import compilation_relevant_parameters
 
 # UFC modules.
