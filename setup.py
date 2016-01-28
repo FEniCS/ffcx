@@ -140,7 +140,7 @@ def generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
     INSTALL_PREFIX = get_installation_prefix()
     PYTHON_LIBRARY = os.environ.get("PYTHON_LIBRARY", find_python_library())
     MAJOR, MINOR, MICRO = VERSION.split(".")
-    UFC_SIGNATURE = get_ufc_signature
+    UFC_SIGNATURE = get_ufc_signature()
 
     # Generate ufc_signature.py
     write_config_file(os.path.join("ffc", "ufc_signature.py.in"),
