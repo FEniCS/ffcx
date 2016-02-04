@@ -88,6 +88,13 @@ std::vector<double> test_coordinate_dofs(int gdim)
   return coordinate_dofs;
 }
 
+// Function for creating "random" vertex coordinates
+std::pair<std::vector<double>, std::vector<double>> test_coordinate_dof_pair(int gdim, int facet0, int facet1)
+{
+  // FIXME: Return pair of cell coordinates there facet0 of cell 0 cooresponds to facet1 of cell 1
+  return {test_coordinate_dofs(gdim), test_coordinate_dofs(gdim)};
+}
+
 // Class for creating "random" ufc::cell objects
 class test_cell : public ufc::cell
 {
@@ -130,11 +137,11 @@ public:
     this->orientation = 1;
 
     // Generate some "random" entity indices
-    entity_indices.resize(4);
-    for (std::size_t i = 0; i < 4; i++)
+    entity_indices.resize(topological_dimension+1);
+    for (std::size_t i = 0; i <= topological_dimension; i++)
     {
-      entity_indices[i].resize(6);
-      for (std::size_t j = 0; j < 6; j++)
+      entity_indices[i].resize(12); // hack: sufficient for any cell entities list, 12 edges of hex
+      for (std::size_t j = 0; j < entity_indices[i].size(); j++)
         entity_indices[i][j] = i*j + offset;
     }
   }
@@ -142,6 +149,7 @@ public:
   ~test_cell() {}
 
 };
+
 
 // Class for creating a "random" ufc::function object
 class test_function : public ufc::function
@@ -200,8 +208,6 @@ void test_finite_element(ufc::finite_element& element, int id, Printer& printer)
   std::vector<double> vertex_values((c.topological_dimension + 1)*value_size,
                                     0.0);
 
-  std::cout << "Test geometric dim " << element.geometric_dimension()
-            << ",  " << c.geometric_dimension << std::endl;
   std::vector<double> coordinates(c.geometric_dimension);
   for (std::size_t i = 0; i < c.geometric_dimension; i++)
     coordinates[i] = 0.1*static_cast<double>(i);
@@ -212,8 +218,6 @@ void test_finite_element(ufc::finite_element& element, int id, Printer& printer)
 
   // cell_shape
   printer.print_scalar("cell_shape", element.cell_shape());
-
-  std::cout << "Test A" << std::endl;
 
   // space_dimension
   printer.print_scalar("space_dimension", element.space_dimension());
@@ -232,8 +236,6 @@ void test_finite_element(ufc::finite_element& element, int id, Printer& printer)
                            coordinate_dofs.data(), 1);
     printer.print_array("evaluate_basis:", value_size, values.data(), i);
   }
-
-  std::cout << "Test B" << std::endl;
 
 // evaluate_basis all
   element.evaluate_basis_all(values.data(), coordinates.data(),
@@ -259,8 +261,6 @@ void test_finite_element(ufc::finite_element& element, int id, Printer& printer)
     }
   }
 
-  std::cout << "Test  C" << std::endl;
-
   // evaluate_basis_derivatives_all
   for (std::size_t n = 0; n <= max_derivative; n++)
   {
@@ -277,7 +277,6 @@ void test_finite_element(ufc::finite_element& element, int id, Printer& printer)
                         values.data(), n);
   }
 
-  std::cout << "Test  D" << std::endl;
   // evaluate_dof
   for (std::size_t i = 0; i < element.space_dimension(); i++)
   {
@@ -286,8 +285,6 @@ void test_finite_element(ufc::finite_element& element, int id, Printer& printer)
                                          1, c);
     printer.print_scalar("evaluate_dof", dof_values[i], i);
   }
-
-  std::cout << "Test  D2" << std::endl;
 
 // evaluate_dofs
   element.evaluate_dofs(values.data(), f, coordinate_dofs.data(), 1, c);
@@ -301,8 +298,6 @@ void test_finite_element(ufc::finite_element& element, int id, Printer& printer)
                                     1,
                                     c);
   printer.print_vector("interpolate_vertex_values", vertex_values);
-
-  std::cout << "Test  E" << std::endl;
 
   // tabulate_coordinates
   std::vector<double>
@@ -323,8 +318,6 @@ void test_finite_element(ufc::finite_element& element, int id, Printer& printer)
   }
 
   printer.end();
-
-  std::cout << "End element test" << std::endl;
 }
 
 // Function for testing ufc::element objects
@@ -341,11 +334,7 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id,
   num_entities[3] = 10004;
 
   //test_cell c(cell_shape, dofmap.geometric_dimension());
-  //const std::vector<double> coordinate_dofs
-  //  = test_coordinate_dofs(dofmap.geometric_dimension());
   test_cell c(cell_shape, dofmap.topological_dimension());
-  const std::vector<double> coordinate_dofs
-    = test_coordinate_dofs(dofmap.topological_dimension());
   std::size_t n = dofmap.num_element_dofs();
   std::vector<std::size_t> dofs(n, 0);
 
@@ -531,12 +520,8 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
   printer.begin("interior_facet_integral", id);
 
   // Prepare arguments
-  test_cell c0(cell_shape, gdim, 0);
-  test_cell c1(cell_shape, gdim, 1);
-  const std::vector<double> coordinate_dofs0
-    = test_coordinate_dofs(gdim);
-  const std::vector<double> coordinate_dofs1
-    = test_coordinate_dofs(gdim);
+  test_cell c0(cell_shape, gdim);
+  //test_cell c1(cell_shape, gdim);
   std::size_t num_facets = c0.topological_dimension + 1;
   std::vector<double> A(macro_tensor_size);
 
@@ -545,16 +530,18 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
   {
     for (std::size_t facet1 = 0; facet1 < num_facets; facet1++)
     {
+      const std::pair<std::vector<double>, std::vector<double>> coordinate_dofs
+        = test_coordinate_dof_pair(gdim, facet0, facet1);
+
       for(std::size_t i = 0; i < macro_tensor_size; i++)
         A[i] = 0.0;
 
       integral.tabulate_tensor(A.data(),
                                w,
-                               coordinate_dofs0.data(),
-                               coordinate_dofs1.data(),
+                               coordinate_dofs.first.data(),
+                               coordinate_dofs.second.data(),
                                facet0, facet1,
-                               c0.orientation,
-                               c1.orientation);
+                               1, 1);
       printer.print_array("tabulate_tensor", macro_tensor_size, A.data(),
                           facet0, facet1);
     }
@@ -563,6 +550,9 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
   // Benchmark tabulate tensor
   if (bench)
   {
+    const std::pair<std::vector<double>, std::vector<double>> coordinate_dofs
+      = test_coordinate_dof_pair(gdim, 0, 0);
+
     printer.begin("timing");
     for (std::size_t num_reps = initial_num_reps;; num_reps *= 2)
     {
@@ -570,10 +560,10 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
       for (std::size_t i = 0; i < num_reps; i++)
       {
         integral.tabulate_tensor(A.data(), w,
-                                 coordinate_dofs0.data(),
-                                 coordinate_dofs1.data(), 0, 0,
-                                 c0.orientation,
-                                 c1.orientation);
+                                 coordinate_dofs.first.data(),
+                                 coordinate_dofs.second.data(),
+                                 0, 0,
+                                 1, 1);
       }
 
       double dt = time() - t0;
@@ -656,7 +646,6 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
   // Compute size of tensors
   int tensor_size = 1;
   int macro_tensor_size = 1;
-  std::cout << "Test 0" << std::endl;
   for (std::size_t i = 0; i < form.rank(); i++)
   {
     std::unique_ptr<ufc::finite_element> element(form.create_finite_element(i));
@@ -666,7 +655,6 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
     macro_tensor_size *= 2*element->space_dimension();
   }
 
-  std::cout << "Test 1" << std::endl;
   // Prepare dummy coefficients
   double** w = 0;
   if (form.num_coefficients() > 0)
@@ -687,12 +675,10 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
   }
 
   // Get cell shape
-  std::unique_ptr<ufc::finite_element> element(form.create_finite_element(0));
+  std::unique_ptr<ufc::finite_element> element(form.create_coordinate_finite_element());
   ufc::shape cell_shape = element->cell_shape();
   std::size_t gdim = element->geometric_dimension();
   element.reset();
-
-  std::cout << "Test 2" << std::endl;
 
 // signature
   //printer.print_scalar("signature", form.signature());
