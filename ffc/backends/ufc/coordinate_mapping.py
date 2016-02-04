@@ -3,8 +3,7 @@
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2006-2015.
 
-coordinate_mapping_header = """\
-/// Documentation for the ufc::coordinate_mapping interface can be found in ufc.h
+coordinate_mapping_header = """
 class %(classname)s: public ufc::coordinate_mapping
 {%(members)s
 public:
@@ -58,7 +57,7 @@ public:
 };
 """
 
-coordinate_mapping_implementation = """\
+coordinate_mapping_implementation = """
 %(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::coordinate_mapping()%(initializer_list)s
 {
 %(constructor)s
@@ -152,8 +151,7 @@ void %(classname)s::compute_geometry(
 }
 """
 
-coordinate_mapping_combined = """\
-/// Documentation for the ufc::coordinate_mapping interface can be found in ufc.h
+coordinate_mapping_combined = """
 class %(classname)s: public ufc::coordinate_mapping
 {%(members)s
 public:
