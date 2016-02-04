@@ -88,6 +88,18 @@ public:
 %(reference_value_size)s
   }
 
+  /// Return the maximum polynomial degree of the finite element function space
+  std::size_t degree() const final override
+  {
+%(degree)s
+  }
+
+  /// Return the family of the finite element function space
+  std::string family() const final override
+  {
+%(family)s
+  }
+
   /// Evaluate basis function i at given point x in cell (actual implementation)
   static void _evaluate_basis(std::size_t i,
                               double * values,
@@ -272,6 +284,12 @@ public:
   /// Return the number of components of the reference value space
   std::size_t reference_value_size() const final override;
 
+  /// Return the maximum polynomial degree of the finite element function space
+  std::size_t degree() const final override;
+
+  /// Return the family of the finite element function space
+  std::string family() const final override;
+
   /// Evaluate basis function i at given point x in cell (actual implementation)
   static void _evaluate_basis(std::size_t i,
                               double * values,
@@ -455,6 +473,18 @@ std::size_t %(classname)s::reference_value_dimension(std::size_t i) const
 std::size_t %(classname)s::reference_value_size() const
 {
 %(reference_value_size)s
+}
+
+/// Return the maximum polynomial degree of the finite element function space
+std::size_t %(classname)s::degree() const
+{
+%(degree)s
+}
+
+/// Return the family of the finite element function space
+std::string %(classname)s::family() const
+{
+%(family)s
 }
 
 /// Evaluate basis function i at given point x in cell

@@ -128,12 +128,15 @@ def _generate_element_code(ir, parameters):
     code["geometric_dimension"] = ret(ir["geometric_dimension"])
     code["space_dimension"] = ret(ir["space_dimension"])
 
-    code["value_rank"] = ret(len(ir["value_dimension"]))
-    code["value_dimension"] = _value_dimension(ir["value_dimension"])
-    code["value_size"] = ret(product(ir["value_dimension"]))
-    code["reference_value_rank"] = ret(len(ir["reference_value_dimension"]))
-    code["reference_value_dimension"] = _value_dimension(ir["reference_value_dimension"])
-    code["reference_value_size"] = ret(product(ir["reference_value_dimension"]))
+    code["value_rank"] = ret(len(ir["value_shape"]))
+    code["value_dimension"] = _value_dimension(ir["value_shape"])
+    code["value_size"] = ret(product(ir["value_shape"]))
+    code["reference_value_rank"] = ret(len(ir["reference_value_shape"]))
+    code["reference_value_dimension"] = _value_dimension(ir["reference_value_shape"])
+    code["reference_value_size"] = ret(product(ir["reference_value_shape"]))
+
+    code["degree"] = ret(ir["degree"])
+    code["family"] = ret('"%s"' % (ir["family"],))
 
     code["evaluate_basis"] = _evaluate_basis(ir["evaluate_basis"])
     code["evaluate_basis_all"] = _evaluate_basis_all(ir["evaluate_basis"])
