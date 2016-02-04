@@ -148,6 +148,8 @@ def mock_finite_element_ir():
         "cell_shape": "mock_cell_shape",
         "geometric_dimension": 3,
         "topological_dimension": 2,
+        "degree": 2,
+        "family": "Lagrange",
         "value_dimension": (3,3),
         "reference_value_dimension": (2,2),
         "space_dimension": 6,
