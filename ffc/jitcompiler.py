@@ -27,7 +27,6 @@ It uses Instant to wrap the generated code into a Python module."""
 # Python modules
 import os, sys
 import instant
-import ufc
 
 # UFL modules
 from ufl import TestFunction, ds, dx
@@ -75,6 +74,7 @@ def jit(ufl_object, parameters=None):
 
 def check_swig_version(compiled_module):
     # Check swig version of compiled module
+    import ufc
     if compiled_module and compiled_module.swigversion != ufc.__swigversion__:
         error("Incompatible swig versions detected. UFC swig "\
               "version is not the same as extension module swig "\
