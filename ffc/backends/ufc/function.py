@@ -3,26 +3,21 @@
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2006-2015
 
-function_combined = """\
-/// This class defines the interface for a general tensor-valued function.
-
+function_combined = """
 class %(classname)s: public ufc::function
 {%(members)s
 public:
 
-  /// Constructor
   %(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::function()%(initializer_list)s
   {
 %(constructor)s
   }
 
-  /// Destructor
   ~%(classname)s() override
   {
 %(destructor)s
   }
 
-  /// Evaluate function at given point in cell
   void evaluate(double * values,
                 const double * coordinates,
                 const ufc::cell& c) const final override
@@ -33,20 +28,15 @@ public:
 };
 """
 
-function_header = """\
-/// This class defines the interface for a general tensor-valued function.
-
+function_header = """
 class %(classname)s: public ufc::function
 {%(members)s
 public:
 
-  /// Constructor
   %(classname)s(%(constructor_arguments)s);
 
-  /// Destructor
   ~%(classname)s() override;
 
-  /// Evaluate function at given point in cell
   void evaluate(double * values,
                 const double * coordinates,
                 const ufc::cell& c) const final override;
@@ -54,20 +44,17 @@ public:
 };
 """
 
-function_implementation = """\
-/// Constructor
+function_implementation = """
 %(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::function()%(initializer_list)s
 {
 %(constructor)s
 }
 
-/// Destructor
 %(classname)s::~%(classname)s()
 {
 %(destructor)s
 }
 
-/// Evaluate function at given point in cell
 void %(classname)s::evaluate(double * values,
                              const double * coordinates,
                              const ufc::cell& c) const
