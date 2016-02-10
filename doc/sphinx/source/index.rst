@@ -23,19 +23,22 @@ To install FFC::
 Help and support
 ----------------
 
-Send help requests and questions to fenics-support@fenicsproject.org,
-and send feature requests and questions to fenics@fenicsproject.org
+Send help requests and questions to fenics-support@googlegroups.com,
+and send feature requests and questions to
+fenics-dev@googlegroups.com.
 
 
 Development and reporting bugs
 ------------------------------
 
 The git source repository for FFC is located at
-https://bitbucket.org/fenics-project/ffc. For general UFL development
-questions and to make feature requests, use fenics@fenicsproject.org.
+https://bitbucket.org/fenics-project/ffc.
 
 Bugs can be registered at
-https://bitbucket.org/fenics-project/ffc/issues.
+https://bitbucket.org/fenics-project/ffc/issues.  For general FFC
+development questions and to make feature requests, use
+fenics-dev@googlegroups.com.
+
 
 
 Documentation
