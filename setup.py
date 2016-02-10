@@ -104,7 +104,7 @@ def write_config_file(infile, outfile, variables={}):
     finally:
         a.close()
 
-        
+
 def find_python_library():
     "Return the full path to the Python library (empty string if not found)"
     pyver = sysconfig.get_python_version()
@@ -256,10 +256,16 @@ def run_ufc_install():
 def run_install():
     "Run installation"
 
+    # Check if we're building inside a 'Read the Docs' container
+    on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+    on_rtd = True
+
     # Hack to skip ufc and avoid swig dependency on install
     # so readthedocs can install without the ufc wrapper
     if "--skip-ufc" in sys.argv:
         sys.argv.remove("--skip-ufc")
+        skip_ufc_module = True
+    elif on_rtd:
         skip_ufc_module = True
     else:
         skip_ufc_module = False
