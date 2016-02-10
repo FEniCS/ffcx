@@ -10,7 +10,7 @@ finite element variational forms. From a high-level description of the
 form, it generates efficient low-level C++ code that can be used to
 assemble the corresponding discrete operator (tensor). In particular,
 a bilinear form may be assembled into a matrix and a linear form may
-be assembled into a vector
+be assembled into a vector.
 
 
 Installation
