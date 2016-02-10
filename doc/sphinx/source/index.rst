@@ -14,11 +14,11 @@ It is part of the FEniCS Project (http://fenicsproject.org).
 Installing
 ----------
 
-Either install to default python location as root::
+Either install to default Python location as root::
 
   sudo python setup.py install
 
-Or install to your own python path directory::
+Or install to your own Python path directory::
 
   python setup.py install --prefix=/path/to/my/own/site-packages
 
@@ -26,20 +26,20 @@ Or install to your own python path directory::
 Help and support
 ----------------
 
-Send help requests and questions to fenics-support@fenicsproject.org,
-and send feature requests and questions to fenics@fenicsproject.org.
+Send help requests and questions to fenics-support@googlegroups.com,
+and send feature requests and questions to
+fenics-dev@googlegroups.com.
 
 
 Development and reporting bugs
 ------------------------------
 
 The git source repository for UFLACS is located at
-https://bitbucket.org/fenics-project/uflacsa. For general UFLACS
-development questions and to make feature requests, use
-fenics@fenicsproject.org.
+https://bitbucket.org/fenics-project/uflacsa.  Bugs can be registered
+at https://bitbucket.org/fenics-project/uflacs/issues.
 
-Bugs can be registered at
-https://bitbucket.org/fenics-project/uflacs/issues.
+For general UFLACS development questions and to make feature requests,
+use fenics@fenicsproject.org.
 
 
 Documentation
