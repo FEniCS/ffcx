@@ -258,7 +258,6 @@ def run_install():
 
     # Check if we're building inside a 'Read the Docs' container
     on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-    on_rtd = True
 
     # Hack to skip ufc and avoid swig dependency on install
     # so readthedocs can install without the ufc wrapper
@@ -281,6 +280,30 @@ def run_install():
     else:
         cmdclass, ext_modules = run_ufc_install()
 
+    # FFC data files
+    data_files = [(os.path.join("share", "man", "man1"),
+                  [os.path.join("doc", "man", "man1", "ffc.1.gz")])]
+
+    # Add UFC data files
+    if not skip_ufc_module:
+        data_files_ufc = [(os.path.join("include"),
+                           [os.path.join("ufc", "ufc.h"),
+                            os.path.join("ufc", "ufc_geometry.h")]),
+                          (os.path.join("share", "ufc"),
+                           [os.path.join("cmake", "templates", \
+                                         "UFCConfig.cmake"),
+                            os.path.join("cmake", "templates", \
+                                         "UFCConfigVersion.cmake"),
+                            os.path.join("cmake", "templates", \
+                                         "UseUFC.cmake")]),
+                          (os.path.join("lib", "pkgconfig"),
+                           [os.path.join("cmake", "templates", "ufc-1.pc")]),
+                          (os.path.join("include", "swig"),
+                           [os.path.join("ufc", "ufc.i"),
+                            os.path.join("ufc", "ufc_shared_ptr_classes.i")])]
+
+        data_files = data_files + data_files_ufc
+
     # Call distutils to perform installation
     setup(name             = "FFC",
           description      = "The FEniCS Form Compiler",
@@ -291,7 +314,8 @@ def run_install():
           author_email     = "fenics-dev@googlegroups.com",
           maintainer_email = "fenics-dev@googlegroups.com",
           url              = "http://fenicsproject.org/",
-          platforms        = ["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
+          platforms        = ["Windows", "Linux", "Solaris", "Mac OS-X",
+                              "Unix"],
           packages         = ["ffc",
                               "ffc.quadrature",
                               "ffc.tensor",
@@ -307,23 +331,7 @@ def run_install():
           include_dirs     = [numpy.get_include()],
           ext_modules      = ext_modules,
           cmdclass         = cmdclass,
-          data_files       = [(os.path.join("share", "man", "man1"),
-                               [os.path.join("doc", "man", "man1", "ffc.1.gz")]),
-                              (os.path.join("include"),
-                               [os.path.join("ufc", "ufc.h"),
-                                os.path.join("ufc", "ufc_geometry.h")]),
-                              (os.path.join("share", "ufc"),
-                               [os.path.join("cmake", "templates", \
-                                             "UFCConfig.cmake"),
-                                os.path.join("cmake", "templates", \
-                                             "UFCConfigVersion.cmake"),
-                                os.path.join("cmake", "templates", \
-                                             "UseUFC.cmake")]),
-                              (os.path.join("lib", "pkgconfig"),
-                               [os.path.join("cmake", "templates", "ufc-1.pc")]),
-                              (os.path.join("include", "swig"),
-                               [os.path.join("ufc", "ufc.i"),
-                                os.path.join("ufc", "ufc_shared_ptr_classes.i")])])
+          data_files       = data_files)
 
 
 if __name__ == "__main__":
