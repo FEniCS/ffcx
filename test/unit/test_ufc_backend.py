@@ -138,7 +138,7 @@ def test_mock_evaluate_basis():
     import uflacs.language.cnodes as L
     data = mock_evaluate_basis_ir()
     code = generate_evaluate_reference_basis(L, data)
-    print code
+    print(code)
 
 def mock_finite_element_ir():
     ir = basic_class_properties("mock_finite_element_classname")
@@ -148,6 +148,8 @@ def mock_finite_element_ir():
         "cell_shape": "mock_cell_shape",
         "geometric_dimension": 3,
         "topological_dimension": 2,
+        "degree": 2,
+        "family": "Lagrange",
         "value_dimension": (3,3),
         "reference_value_dimension": (2,2),
         "space_dimension": 6,
@@ -229,29 +231,29 @@ def compile_mock_all():
 
 def test_mock_coordinate_mapping():
     h, cpp = compile_mock_coordinate_mapping()
-    print h
-    print cpp
+    print(h)
+    print(cpp)
 
 def test_mock_form():
     h, cpp = compile_mock_form()
-    print h
-    print cpp
+    print(h)
+    print(cpp)
 
 def test_mock_dofmap():
     h, cpp = compile_mock_dofmap()
-    print h
-    print cpp
+    print(h)
+    print(cpp)
 
 def test_mock_finite_element():
     h, cpp = compile_mock_finite_element()
-    print h
-    print cpp
+    print(h)
+    print(cpp)
 
 def test_mock_integral():
     for integral_type in ufc_integral_types:
         h, cpp = compile_mock_integral(integral_type)
-        print h
-        print cpp
+        print(h)
+        print(cpp)
 
 def test_foo_integral_properties():
     ir = mock_form_ir()
@@ -261,10 +263,10 @@ def test_foo_integral_properties():
 def test_mock_extract_function():
     h, cpp = compile_mock_coordinate_mapping()
     name = "compute_reference_coordinates"
-    print "/// Extracted", name, ":"
-    print "/// begin"
-    print extract_function(name, cpp)
-    print "/// end"
+    print("/// Extracted", name, ":")
+    print("/// begin")
+    print(extract_function(name, cpp))
+    print("/// end")
 
 def test_debug_by_printing_extracted_function():
     h, cpp = compile_mock_coordinate_mapping()
@@ -272,10 +274,10 @@ def test_debug_by_printing_extracted_function():
     #name = "compute_physical_coordinates"
     #name = "compute_jacobians"
     name = "compute_jacobian_inverses"
-    print "/// Extracted", name, ":"
-    print "/// begin"
-    print extract_function(name, cpp)
-    print "/// end"
+    print("/// Extracted", name, ":")
+    print("/// begin")
+    print(extract_function(name, cpp))
+    print("/// end")
 
 """
 Missing:

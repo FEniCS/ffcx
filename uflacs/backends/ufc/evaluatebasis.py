@@ -592,8 +592,8 @@ def __ffc_implementation_of__generate_apply_mapping_to_computed_values(L):
         code += ["", f_comment("Using contravariant Piola transform to map values back to the physical element")]
 
         # Get temporary values before mapping.
-        code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))\
-                  for i in range(num_components)]
+        code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))
+                 for i in range(num_components)]
 
         # Create names for inner product.
         basis_col = [f_tmp_ref(j) for j in range(tdim)]
@@ -614,8 +614,8 @@ def __ffc_implementation_of__generate_apply_mapping_to_computed_values(L):
     elif mapping == "covariant piola":
         code += ["", f_comment("Using covariant Piola transform to map values back to the physical element")]
         # Get temporary values before mapping.
-        code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))\
-                  for i in range(num_components)]
+        code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))
+                 for i in range(num_components)]
         # Create names for inner product.
         tdim = data["topological_dimension"]
         gdim = data["geometric_dimension"]
@@ -632,8 +632,8 @@ def __ffc_implementation_of__generate_apply_mapping_to_computed_values(L):
     elif mapping == "pullback as metric":
         code += ["", f_comment("Using metric pullback to map values back to the physical element")]
         # Get temporary values before mapping.
-        code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))\
-                  for i in range(num_components)]
+        code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))
+                 for i in range(num_components)]
         # Create names for inner product.
         tdim = data["topological_dimension"]
         gdim = data["geometric_dimension"]

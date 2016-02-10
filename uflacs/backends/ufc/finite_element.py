@@ -38,14 +38,20 @@ class ufc_finite_element(ufc_generator):
         ufc_generator.__init__(self, "finite_element")
 
     def topological_dimension(self, L, ir):
-        "Default implementation of returning topological dimension fetched from ir."
         tdim = ir["topological_dimension"]
         return L.Return(L.LiteralInt(tdim))
 
     def geometric_dimension(self, L, ir):
-        "Default implementation of returning geometric dimension fetched from ir."
         gdim = ir["geometric_dimension"]
         return L.Return(L.LiteralInt(gdim))
+
+    def degree(self, L, ir):
+        degree = ir["degree"]
+        return L.Return(L.LiteralInt(degree))
+
+    def family(self, L, ir):
+        family = ir["family"]
+        return L.Return(L.LiteralString(family))
 
     def cell_shape(self, L, ir):
         name = ir["cell_shape"]

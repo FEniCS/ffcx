@@ -33,9 +33,8 @@ from uflacs.backends.ufc.templates import *
 #           + ["ufc_%s_integral" % integral_type for integral_type in integral_types])
 
 
-# These are all the integral types directly supported in ufc.
-# TODO: Get these from somewhere for more automation.
-ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "custom")
+# These are all the integral types directly supported in ufc
+from ffc.representation import ufc_integral_types
 
 
 # These are the method names in ufc::form that are specialized for each integral type
