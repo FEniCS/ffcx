@@ -11,7 +11,7 @@ master branch.
 Updating the API documentation
 ==============================
 
-If the UFL API is changed, the script::
+If the FFC API is changed, the script::
 
     ./generate-apidoc
 
