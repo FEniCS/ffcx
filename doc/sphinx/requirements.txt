@@ -1,1 +1,2 @@
 numpy
+-e git+https://bitbucket.org/fenics-project/ufl.git#egg=ufl
