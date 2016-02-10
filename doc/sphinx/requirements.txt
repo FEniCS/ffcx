@@ -2,3 +2,4 @@ numpy
 -e git+https://bitbucket.org/fenics-project/fiat.git#egg=fiat
 -e git+https://bitbucket.org/fenics-project/instant.git#egg=instant
 -e git+https://bitbucket.org/fenics-project/ufl.git#egg=ufl
+-e git+https://bitbucket.org/fenics-project/uflacs.git#egg=uflacs
