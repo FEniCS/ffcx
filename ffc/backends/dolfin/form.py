@@ -17,9 +17,9 @@
 #
 # Based on original implementation by Martin Alnes and Anders Logg
 #
-# Modified by Anders Logg 2011
+# Modified by Anders Logg 2015
 #
-# Last changed: 2011-11-15
+# Last changed: 2015-11-05
 
 from .includes import snippets
 from .functionspace import *
@@ -27,8 +27,8 @@ from .goalfunctional import generate_update_ec
 
 __all__ = ["generate_form"]
 
-#-------------------------------------------------------------------------------
-def generate_form(form, classname):
+
+def generate_form(form, classname, error_control):
     """Generate dolfin wrapper code associated with a form including
     code for function spaces used in form and typedefs
 
@@ -38,11 +38,21 @@ def generate_form(form, classname):
         Name of Form class.
     """
 
+    blocks = []
+
     # Generate code for Form_x_FunctionSpace_y subclasses
     wrap = apply_function_space_template
-    blocks = [wrap("%s_FunctionSpace_%d" % (classname, i),
-                   form.ufc_finite_element_classnames[i],
-                   form.ufc_dofmap_classnames[i]) for i in range(form.rank)]
+    blocks += [wrap("%s_FunctionSpace_%d" % (classname, i),
+                    form.ufc_finite_element_classnames[i],
+                    form.ufc_dofmap_classnames[i]) for i in range(form.rank)]
+
+    # Generate code for Form_x_MultiMeshFunctionSpace_y subclasses
+    wrap = apply_multimesh_function_space_template
+    if not error_control: # FIXME: Issue #91
+        blocks += [wrap("%s_MultiMeshFunctionSpace_%d" % (classname, i),
+                        "%s_FunctionSpace_%d" % (classname, i),
+                        form.ufc_finite_element_classnames[i],
+                        form.ufc_dofmap_classnames[i]) for i in range(form.rank)]
 
     # Add typedefs CoefficientSpace_z -> Form_x_FunctionSpace_y
     blocks += ["typedef CoefficientSpace_%s %s_FunctionSpace_%d;\n"
@@ -50,22 +60,24 @@ def generate_form(form, classname):
                for i in range(form.num_coefficients)]
 
     # Generate Form subclass
-    blocks += [generate_form_class(form, classname)]
+    blocks += [generate_form_class(form, classname, error_control)]
 
     # Return code
     return "\n".join(blocks)
-#-------------------------------------------------------------------------------
-def generate_form_class(form, classname):
+
+
+def generate_form_class(form, classname, error_control):
     "Generate dolfin wrapper code for a single Form class."
 
     # Generate constructors
     constructors = generate_form_constructors(form, classname)
+    multimesh_constructors = generate_multimesh_form_constructors(form, classname)
 
     # Generate data for coefficient assignments
     (number, name) = generate_coefficient_map_data(form)
 
     # Generate typedefs for FunctionSpace subclasses for Coefficients
-    typedefs = ["  // Typedefs", generate_typedefs(form, classname), ""]
+    typedefs = ["  // Typedefs", generate_typedefs(form, classname, error_control), ""]
 
     # Member variables for coefficients
     members = ["  dolfin::CoefficientAssigner %s;" % coefficient
@@ -77,12 +89,18 @@ def generate_form_class(form, classname):
     additionals = "\n".join(typedefs + ["  // Coefficients"] + members)
 
     # Wrap functions in class body
-    code = apply_form_template(classname, constructors, number, name,
-                               additionals, form.superclassname)
+    code = ""
+    code += apply_form_template(classname, constructors, number, name,
+                                additionals, form.superclassname)
+    code += "\n"
+    if not error_control:
+        code += apply_multimesh_form_template(classname, multimesh_constructors, number, name,
+                                              additionals, form.superclassname)
 
     # Return code
     return code
-#-------------------------------------------------------------------------------
+
+
 def generate_coefficient_map_data(form):
     """Generate data for code for the functions
     Form::coefficient_number and Form::coefficient_name."""
@@ -115,17 +133,18 @@ dolfin::dolfin_error("generated code for class %s",
     name += '    }\n\n    %s\n    return "unnamed";' % message
 
     return (num, name)
-#-------------------------------------------------------------------------------
+
+
 def generate_form_constructors(form, classname):
     """Generate the dolfin::Form constructors for different
     combinations of references/shared pointers etc."""
 
-    coeffs = ("referenced_coefficient", "shared_ptr_coefficient")
-    spaces = ("referenced_space", "shared_ptr_space")
+    coeffs = ("shared_ptr_coefficient",)
+    spaces = ("shared_ptr_space",)
 
     # Treat functionals a little special
     if form.rank == 0:
-        spaces = ("referenced_mesh", "shared_ptr_mesh")
+        spaces = ("shared_ptr_mesh",)
 
     # Generate permutations of constructors
     constructors = []
@@ -138,7 +157,31 @@ def generate_form_constructors(form, classname):
     # Return joint constructor code
     return "\n\n".join(constructors)
 
-#-------------------------------------------------------------------------------
+
+def generate_multimesh_form_constructors(form, classname):
+    """Generate the dolfin::MultiMeshForm constructors for different
+    combinations of references/shared pointers etc."""
+
+    coeffs = ("referenced_coefficient", "shared_ptr_ref_coefficient")
+    spaces = ("multimesh_referenced_space", "multimesh_shared_ptr_space")
+
+    # Treat functionals a little special
+    if form.rank == 0:
+        spaces = ("referenced_mesh", "shared_ptr_mesh")
+
+    # Generate permutations of constructors
+    constructors = []
+    for space in spaces:
+        constructors += [generate_multimesh_constructor(form, classname, space)]
+        if form.num_coefficients > 0:
+            constructors += [generate_multimesh_constructor(form, classname,
+                                                            space, coeff)
+                             for coeff in coeffs]
+
+    # Return joint constructor code
+    return "\n\n".join(constructors)
+
+
 def generate_constructor(form, classname, space_tag, coefficient_tag=None):
     "Generate a single Form constructor according to the given parameters."
 
@@ -163,10 +206,10 @@ def generate_constructor(form, classname, space_tag, coefficient_tag=None):
         assignments += [assign %(name, name) for name in form.coefficient_names]
 
     # Add assignment of _ufc_form variable
-    line = "\n    _ufc_form = std::shared_ptr<const ufc::form>(new %s());"
+    line = "\n    _ufc_form = std::make_shared<const %s>();"
     # FIXME: To match old generated code only
     if form.rank == 0 and coefficient_tag is None:
-        line =  "    _ufc_form = std::shared_ptr<const ufc::form>(new %s());"
+        line =  "    _ufc_form = std::make_shared<const %s>();"
     assignments += [line % form.ufc_form_classname]
 
     # Construct list for initialization of Coefficient references
@@ -189,7 +232,82 @@ def generate_constructor(form, classname, space_tag, coefficient_tag=None):
             }
     code = form_constructor_template % args
     return code
-#-------------------------------------------------------------------------------
+
+
+def generate_multimesh_constructor(form, classname, space_tag,
+                                   coefficient_tag=None):
+    "Generate a single Form constructor according to the given parameters."
+
+    # Extract correct code snippets
+    (argument, dummy) = snippets[space_tag]
+
+    # Construct list of arguments
+    name = "V%d"
+    if form.rank > 0:
+        arguments = [argument % (name % i) for i in reversed(range(form.rank))]
+        spaces = [name % i for i in reversed(range(form.rank))]
+    else:
+        arguments = [argument]
+        spaces = ""
+
+    # Add coefficients to argument/assignment lists if specified
+    assignments = []
+    if coefficient_tag is not None:
+        (argument, assign) = snippets[coefficient_tag]
+        arguments += [argument % name for name in form.coefficient_names]
+        if form.rank > 0: # FIXME: To match old generated code only
+            assignments += [""]
+        assignments += [assign %(name, name) for name in form.coefficient_names]
+
+    # Construct list for initialization of Coefficient references
+    initializers = ["%s(*this, %d)" % (name, number)
+                    for (number, name) in enumerate(form.coefficient_names)]
+
+    # Join lists together
+    arguments = ", ".join(arguments)
+    initializers = ", " + ", ".join(initializers) if initializers else ""
+    spaces = ", ".join(spaces)
+
+    # Set access method
+    if space_tag == "multimesh_shared_ptr_space":
+        access = "->"
+    else:
+        access = "."
+
+    # Create body for building multimesh function space
+    body = ""
+    body += "    // Create and add standard forms\n"
+    body += "    std::size_t num_parts = V0%snum_parts(); // assume all equal and pick first\n" % access
+    body += "    for (std::size_t part = 0; part < num_parts; part++)\n"
+    body += "    {\n"
+    body += "      std::shared_ptr<const dolfin::Form> a(new %s(%s));\n" % (classname, ", ".join("V%d%spart(part)" % (i, access) for i in reversed(range(form.rank))))
+    body += "      add(a);\n"
+    body += "    }\n\n"
+    body += "    // Build multimesh form\n"
+    body += "    build();\n"
+
+    # FIXME: Issue #91
+    if form.rank == 0:
+        body = ""
+
+    # Create body for assigning coefficients
+    body += "\n    /// Assign coefficients"
+    body += "\n".join(assignments) + "\n"
+
+    # Wrap code into template
+    args = {"classname": classname,
+            "rank": form.rank,
+            "num_coefficients": form.num_coefficients,
+            "arguments": arguments,
+            "spaces": spaces,
+            "initializers": initializers,
+            "body": body,
+            "superclass": form.superclassname
+            }
+    code = multimesh_form_constructor_template % args
+    return code
+
+
 form_class_template = """\
 class %(classname)s: public dolfin::%(superclass)s
 {
@@ -216,7 +334,35 @@ public:
 %(members)s
 };
 """
-#-------------------------------------------------------------------------------
+
+multimesh_form_class_template = """\
+class MultiMesh%(classname)s: public dolfin::MultiMesh%(superclass)s
+{
+public:
+
+%(constructors)s
+
+  // Destructor
+  ~MultiMesh%(classname)s()
+  {}
+
+  /// Return the number of the coefficient with this name
+  virtual std::size_t coefficient_number(const std::string& name) const
+  {
+%(coefficient_number)s
+  }
+
+  /// Return the name of the coefficient with this number
+  virtual std::string coefficient_name(std::size_t i) const
+  {
+%(coefficient_name)s
+  }
+
+%(members)s
+};
+"""
+
+
 # Template code for Form constructor
 form_constructor_template = """\
   // Constructor
@@ -225,7 +371,16 @@ form_constructor_template = """\
   {
 %(body)s
   }"""
-#-------------------------------------------------------------------------------
+
+multimesh_form_constructor_template = """\
+  // Constructor
+  MultiMesh%(classname)s(%(arguments)s):
+    dolfin::MultiMesh%(superclass)s(%(spaces)s)%(initializers)s
+  {
+%(body)s
+  }"""
+
+
 def apply_form_template(classname, constructors, number, name, members,
                         superclass):
     args = {"classname": classname,
@@ -235,4 +390,16 @@ def apply_form_template(classname, constructors, number, name, members,
             "coefficient_name": name,
             "members": members}
     return form_class_template % args
-#-------------------------------------------------------------------------------
+
+
+def apply_multimesh_form_template(classname, constructors, number, name,
+                                  members, superclass):
+    members = members.replace("CoefficientAssigner",
+                              "MultiMeshCoefficientAssigner") # hack
+    args = {"classname": classname,
+            "superclass": superclass,
+            "constructors": constructors,
+            "coefficient_number": number,
+            "coefficient_name": name,
+            "members": members}
+    return multimesh_form_class_template % args

@@ -39,3 +39,7 @@ install_manifest.txt
 # SWIG generated files
 /ufc/ufc.py
 /ufc/ufc_wrap.cpp
+
+# Test output and log
+/test/regression/output/
+/test/regression/error.log

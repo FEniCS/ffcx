@@ -39,6 +39,7 @@ Topic :: Scientific/Engineering :: Mathematics
 Topic :: Software Development :: Libraries
 """
 
+
 def get_installation_prefix():
     "Get installation prefix"
 
@@ -54,9 +55,9 @@ def get_installation_prefix():
             prefix = arg.split("=")[1]
     return os.path.abspath(os.path.expanduser(prefix))
 
+
 def get_swig_executable():
     "Get SWIG executable"
-
     # Find SWIG executable
     swig_executable = None
     swig_minimum_version = "3.0.3"
@@ -75,6 +76,7 @@ def get_swig_executable():
 
     return swig_executable
 
+
 def create_windows_batch_files(scripts):
     """Create Windows batch files, to get around problem that we
     cannot run Python scripts in the prompt without the .py
@@ -89,6 +91,7 @@ def create_windows_batch_files(scripts):
     scripts.extend(batch_files)
     return scripts
 
+
 def write_config_file(infile, outfile, variables={}):
     "Write config file based on template"
     class AtTemplate(string.Template):
@@ -101,6 +104,7 @@ def write_config_file(infile, outfile, variables={}):
     finally:
         a.close()
 
+        
 def find_python_library():
     "Return the full path to the Python library (empty string if not found)"
     pyver = sysconfig.get_python_version()
@@ -127,6 +131,7 @@ def find_python_library():
         if libpython is not None:
             break
     return libpython or ""
+
 
 def generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
     "Generate and install configuration files"
@@ -169,6 +174,7 @@ def generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
                                      INSTALL_PREFIX=INSTALL_PREFIX,
                                      CXX_FLAGS=CXX_FLAGS))
 
+
 def has_cxx_flag(cc, flag):
     "Return True if compiler supports given flag"
     tmpdir = tempfile.mkdtemp(prefix="ffc-build-")
@@ -195,14 +201,8 @@ def has_cxx_flag(cc, flag):
             devnull.close()
         shutil.rmtree(tmpdir)
 
-def run_install():
-    "Run installation"
 
-    # Create batch files for Windows if necessary
-    scripts = SCRIPTS
-    if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
-        scripts = create_windows_batch_files(scripts)
-
+def run_ufc_install():
     # Subclass extension building command to ensure that distutils to
     # finds the correct SWIG executable
     SWIG_EXECUTABLE = get_swig_executable()
@@ -216,6 +216,8 @@ def run_install():
         def run(self):
             self.run_command('build_ext')
             build.run(self)
+
+    cmdclass = {"build": my_build, "build_ext": my_build_ext}
 
     # Check that compiler supports C++11 features
     cc = new_compiler()
@@ -238,7 +240,8 @@ def run_install():
                     "-noproxydel", "-fastproxy",
                     "-fastinit", "-fastunpack",
                     "-fastquery", "-nobuildnone"]
-    if sys.version_info[0] > 2: swig_options.insert(0, "-py3")
+    if sys.version_info[0] > 2:
+        swig_options.insert(0, "-py3")
     ext_module_ufc = Extension("ufc._ufc",
                                sources=[os.path.join("ufc", "ufc.i")],
                                depends=[os.path.join("ufc", "ufc.h"),
@@ -246,6 +249,31 @@ def run_install():
                                swig_opts=swig_options,
                                extra_compile_args=CXX_FLAGS.split(),
                                include_dirs=[os.path.join("ufc")])
+    ext_modules = [ext_module_ufc]
+    return cmdclass, ext_modules
+
+
+def run_install():
+    "Run installation"
+
+    # Hack to skip ufc and avoid swig dependency on install
+    # so readthedocs can install without the ufc wrapper
+    if "--skip-ufc" in sys.argv:
+        sys.argv.remove("--skip-ufc")
+        skip_ufc_module = True
+    else:
+        skip_ufc_module = False
+
+    # Create batch files for Windows if necessary
+    scripts = SCRIPTS
+    if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
+        scripts = create_windows_batch_files(scripts)
+
+    if skip_ufc_module:
+        cmdclass = {}
+        ext_modules = []
+    else:
+        cmdclass, ext_modules = run_ufc_install()
 
     # Call distutils to perform installation
     setup(name             = "FFC",
@@ -254,8 +282,8 @@ def run_install():
           author           = AUTHORS,
           classifiers      = [_f for _f in CLASSIFIERS.split('\n') if _f],
           license          = "LGPL version 3 or later",
-          author_email     = "fenics@fenicsproject.org",
-          maintainer_email = "fenics@fenicsproject.org",
+          author_email     = "fenics-dev@googlegroups.com",
+          maintainer_email = "fenics-dev@googlegroups.com",
           url              = "http://fenicsproject.org/",
           platforms        = ["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
           packages         = ["ffc",
@@ -271,8 +299,8 @@ def run_install():
                               "ufc": "ufc"},
           scripts          = scripts,
           include_dirs     = [numpy.get_include()],
-          ext_modules      = [ext_module_ufc],
-          cmdclass         = {"build": my_build, "build_ext": my_build_ext},
+          ext_modules      = ext_modules,
+          cmdclass         = cmdclass,
           data_files       = [(os.path.join("share", "man", "man1"),
                                [os.path.join("doc", "man", "man1", "ffc.1.gz")]),
                               (os.path.join("include"),
@@ -290,6 +318,7 @@ def run_install():
                               (os.path.join("include", "swig"),
                                [os.path.join("ufc", "ufc.i"),
                                 os.path.join("ufc", "ufc_shared_ptr_classes.i")])])
+
 
 if __name__ == "__main__":
     run_install()

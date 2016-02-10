@@ -17,11 +17,15 @@
 #
 # Based on original implementation by Martin Alnes and Anders Logg
 #
-# Last changed: 2012-11-14
+# Modified by Anders Logg 2015
+#
+# Last changed: 2015-11-05
 
 from .includes import snippets
 
-__all__ = ["apply_function_space_template", "extract_coefficient_spaces",
+__all__ = ["apply_function_space_template",
+           "apply_multimesh_function_space_template",
+           "extract_coefficient_spaces",
            "generate_typedefs"]
 
 #-------------------------------------------------------------------------------
@@ -52,13 +56,18 @@ def extract_coefficient_spaces(forms):
     names.sort()
     return [spaces[name] for name in names]
 #-------------------------------------------------------------------------------
-def generate_typedefs(form, classname):
+def generate_typedefs(form, classname, error_control):
     """Generate typedefs for test, trial and coefficient spaces
     relative to a function space."""
 
+    pairs = []
+
     # Generate typedef data for test/trial spaces
-    pairs = [("%s_FunctionSpace_%d" % (classname, i),
+    pairs += [("%s_FunctionSpace_%d" % (classname, i),
               snippets["functionspace"][i]) for i in range(form.rank)]
+    if not error_control: # FIXME: Issue #91
+        pairs += [("%s_MultiMeshFunctionSpace_%d" % (classname, i),
+                   snippets["multimeshfunctionspace"][i]) for i in range(form.rank)]
 
     # Generate typedefs for coefficient spaces
     pairs += [("%s_FunctionSpace_%d" % (classname, form.rank + i),
@@ -74,43 +83,22 @@ class %(classname)s: public dolfin::FunctionSpace
 {
 public:
 
-  //--- Constructors for standard function space, 2 different versions ---
+  //--- Constructor for standard function space
 
-  // Create standard function space (reference version)
-  %(classname)s(const dolfin::Mesh& mesh):
-    dolfin::FunctionSpace(dolfin::reference_to_no_delete_pointer(mesh),
-                          std::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(std::shared_ptr<ufc::finite_element>(new %(ufc_finite_element_classname)s()))),
-                          std::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(std::shared_ptr<ufc::dofmap>(new %(ufc_dofmap_classname)s()), mesh)))
-  {
-    // Do nothing
-  }
-
-  // Create standard function space (shared pointer version)
   %(classname)s(std::shared_ptr<const dolfin::Mesh> mesh):
     dolfin::FunctionSpace(mesh,
-                          std::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(std::shared_ptr<ufc::finite_element>(new %(ufc_finite_element_classname)s()))),
-                          std::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(std::shared_ptr<ufc::dofmap>(new %(ufc_dofmap_classname)s()), *mesh)))
+                          std::make_shared<const dolfin::FiniteElement>(std::make_shared<%(ufc_finite_element_classname)s>()),
+                          std::make_shared<const dolfin::DofMap>(std::make_shared<%(ufc_dofmap_classname)s>(), *mesh))
   {
     // Do nothing
   }
 
-  //--- Constructors for constrained function space, 2 different versions ---
+  //--- Constructor for constrained function space
 
-  // Create standard function space (reference version)
-  %(classname)s(const dolfin::Mesh& mesh, const dolfin::SubDomain& constrained_domain):
-    dolfin::FunctionSpace(dolfin::reference_to_no_delete_pointer(mesh),
-                          std::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(std::shared_ptr<ufc::finite_element>(new %(ufc_finite_element_classname)s()))),
-                          std::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(std::shared_ptr<ufc::dofmap>(new %(ufc_dofmap_classname)s()), mesh,
-                              dolfin::reference_to_no_delete_pointer(constrained_domain))))
-  {
-    // Do nothing
-  }
-
-  // Create standard function space (shared pointer version)
   %(classname)s(std::shared_ptr<const dolfin::Mesh> mesh, std::shared_ptr<const dolfin::SubDomain> constrained_domain):
     dolfin::FunctionSpace(mesh,
-                          std::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(std::shared_ptr<ufc::finite_element>(new %(ufc_finite_element_classname)s()))),
-                          std::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(std::shared_ptr<ufc::dofmap>(new %(ufc_dofmap_classname)s()), *mesh, constrained_domain)))
+                          std::make_shared<const dolfin::FiniteElement>(std::make_shared<%(ufc_finite_element_classname)s>()),
+                          std::make_shared<const dolfin::DofMap>(std::make_shared<%(ufc_dofmap_classname)s>(), *mesh, constrained_domain))
   {
     // Do nothing
   }
@@ -118,8 +106,54 @@ public:
 };
 """
 #-------------------------------------------------------------------------------
+multimesh_function_space_template = """\
+class %(classname)s: public dolfin::MultiMeshFunctionSpace
+{
+public:
+
+  //--- Constructors for multimesh function space, 2 different versions ---
+
+  // Create multimesh function space (reference version)
+  %(classname)s(const dolfin::MultiMesh& multimesh): dolfin::MultiMeshFunctionSpace(multimesh)
+  {
+    // Create and add standard function spaces
+    for (std::size_t part = 0; part < multimesh.num_parts(); part++)
+    {
+      std::shared_ptr<const dolfin::FunctionSpace> V(new %(single_name)s(multimesh.part(part)));
+      add(V);
+    }
+
+    // Build multimesh function space
+    build();
+  }
+
+  // Create multimesh function space (shared pointer version)
+  %(classname)s(std::shared_ptr<const dolfin::MultiMesh> multimesh): dolfin::MultiMeshFunctionSpace(multimesh)
+  {
+    // Create and add standard function spaces
+    for (std::size_t part = 0; part < multimesh->num_parts(); part++)
+    {
+      std::shared_ptr<const dolfin::FunctionSpace> V(new %(single_name)s(multimesh->part(part)));
+      add(V);
+    }
+
+    // Build multimesh function space
+    build();
+  }
+
+};
+"""
+#-------------------------------------------------------------------------------
+
 def apply_function_space_template(name, element_name, dofmap_name):
     args = {"classname": name,
             "ufc_finite_element_classname": element_name,
             "ufc_dofmap_classname": dofmap_name }
     return function_space_template % args
+
+def apply_multimesh_function_space_template(name, single_name, element_name, dofmap_name):
+    args = {"classname": name,
+            "single_name": single_name,
+            "ufc_finite_element_classname": element_name,
+            "ufc_dofmap_classname": dofmap_name }
+    return multimesh_function_space_template % args

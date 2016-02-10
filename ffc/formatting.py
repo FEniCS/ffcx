@@ -37,7 +37,6 @@ from ffc.cpp import format
 from ffc.backends.ufc import templates
 from ffc.parameters import compilation_relevant_parameters
 
-
 def format_code(code, wrapper_code, prefix, parameters):
     "Format given code in UFC format. Returns two strings with header and source file contents."
 
