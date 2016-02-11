@@ -78,7 +78,7 @@ public:
 %(degree)s
   }
 
-  std::string family() const final override
+  const char * family() const final override
   {
 %(family)s
   }
@@ -239,7 +239,7 @@ public:
 
   std::size_t degree() const final override;
 
-  std::string family() const final override;
+  const char * family() const final override;
 
   static void _evaluate_basis(std::size_t i,
                               double * values,
@@ -402,7 +402,7 @@ std::size_t %(classname)s::degree() const
 %(degree)s
 }
 
-std::string %(classname)s::family() const
+const char * %(classname)s::family() const
 {
 %(family)s
 }

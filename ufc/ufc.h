@@ -134,7 +134,7 @@ namespace ufc
     virtual std::size_t degree() const = 0;
 
     /// Return the family of the finite element function space
-    virtual std::string family() const = 0;
+    virtual const char * family() const = 0;
 
     /// Evaluate basis function i at given point x in cell
     virtual void evaluate_basis(std::size_t i,
