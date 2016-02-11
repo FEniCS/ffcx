@@ -86,7 +86,11 @@ def get_git_commit_hash():
     """
     try:
         hash = subprocess.check_output(['git', 'rev-parse', 'HEAD'])
-    except:
+    except (OSError, subprocess.CalledProcessError) as e:
+        print('Retrieving git commit hash did not succeed with exception:')
+        print('"%s"' % str(e))
+        print()
+        print('Stored git commit hash will be set to "unknown"!')
         return "unknown"
     else:
         return hash.strip()
