@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys, platform, re, subprocess, string, numpy, tempfile, shutil
+import os, sys, platform, re, subprocess, string, numpy, tempfile, shutil, hashlib
 from distutils import sysconfig, spawn
 from distutils.core import setup, Extension
 from distutils.command import build_ext
@@ -42,7 +42,6 @@ Topic :: Software Development :: Libraries
 
 def get_installation_prefix():
     "Get installation prefix"
-
     prefix = sys.prefix
     for arg in sys.argv[1:]:
         if "--user" in arg:
@@ -75,6 +74,28 @@ def get_swig_executable():
     print("Found SWIG: %s (version %s)" % (swig_executable, swig_version))
 
     return swig_executable
+
+
+def get_ufc_signature():
+    """Compute SHA-1 hash of ufc.h"""
+    with open(os.path.join('ufc', 'ufc.h'), 'rb') as f:
+        return hashlib.sha1(f.read()).hexdigest()
+
+
+def get_git_commit_hash():
+    """Return git commit hash of currently checked out revision
+    or "unknown"
+    """
+    try:
+        hash = subprocess.check_output(['git', 'rev-parse', 'HEAD'])
+    except (OSError, subprocess.CalledProcessError) as e:
+        print('Retrieving git commit hash did not succeed with exception:')
+        print('"%s"' % str(e))
+        print()
+        print('Stored git commit hash will be set to "unknown"!')
+        return "unknown"
+    else:
+        return hash.strip()
 
 
 def create_windows_batch_files(scripts):
@@ -140,6 +161,18 @@ def generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
     INSTALL_PREFIX = get_installation_prefix()
     PYTHON_LIBRARY = os.environ.get("PYTHON_LIBRARY", find_python_library())
     MAJOR, MINOR, MICRO = VERSION.split(".")
+    UFC_SIGNATURE = get_ufc_signature()
+    GIT_COMMIT_HASH = get_git_commit_hash()
+
+    # Generate ufc_signature.py
+    write_config_file(os.path.join("ffc", "ufc_signature.py.in"),
+                      os.path.join("ffc", "ufc_signature.py"),
+                      variables=dict(UFC_SIGNATURE=UFC_SIGNATURE))
+
+    # Generate git_commit_hash.py
+    write_config_file(os.path.join("ffc", "git_commit_hash.py.in"),
+                      os.path.join("ffc", "git_commit_hash.py"),
+                      variables=dict(GIT_COMMIT_HASH=GIT_COMMIT_HASH))
 
     # Generate UFCConfig.cmake
     write_config_file(os.path.join("cmake", "templates", "UFCConfig.cmake.in"),
@@ -150,7 +183,8 @@ def generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
                                      PYTHON_LIBRARY=PYTHON_LIBRARY,
                                      PYTHON_EXECUTABLE=sys.executable,
                                      SWIG_EXECUTABLE=SWIG_EXECUTABLE,
-                                     FULLVERSION=VERSION))
+                                     FULLVERSION=VERSION,
+                                     UFC_SIGNATURE=UFC_SIGNATURE))
 
     # Generate UFCConfigVersion.cmake
     write_config_file(os.path.join("cmake", "templates", \

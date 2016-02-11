@@ -2,6 +2,8 @@
  - Generalize ufc interface to non-affine parameterized coordinates
  - Add ufc::coordinate_mapping class
  - Make ufc interface depend on C++11 features requiring gcc version >= 4.8
+ - Add function ufc_signature() to the form compiler interface
+ - Add function git_commit_hash()
 1.6.0 [2015-07-28]
  - Rename and modify a number of UFC interface functions. See docstrings in ufc.h for details.
  - Bump required SWIG version to 3.0.3

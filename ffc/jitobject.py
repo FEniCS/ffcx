@@ -26,17 +26,12 @@ from ufl.utils.sorting import canonicalize_metadata
 
 # FFC modules.
 from ffc import __version__ as FFC_VERSION
+from ffc.ufc_signature import ufc_signature
 from ffc.parameters import compilation_relevant_parameters
 
 # UFC modules.
 from ffc.backends import ufc
 
-# Compute signature of all ufc headers combined
-ufc_signature = sha1(''.join(getattr(ufc, header)
-                             for header in
-                             (k for k in sorted(vars(ufc).keys())
-                              if k.endswith("_header"))).encode('utf-8')
-                              ).hexdigest()
 
 class JITObject:
     """This class is a wrapper for a compiled object in the context of
@@ -85,7 +80,7 @@ class JITObject:
         signatures = [form_signature,
                       parameters_signature,
                       ffc_signature,
-                      ufc_signature]
+                      ufc_signature()]
         string = ";".join(signatures)
 
         self._signature = sha1(string.encode('utf-8')).hexdigest()
