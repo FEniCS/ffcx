@@ -168,22 +168,36 @@ def _extract_common_quadrature_degree(integral_metadatas):
 def _autoselect_quadrature_degree(integral_metadata, integral, form_data):
     # Automatic selection of quadrature degree
     qd = integral_metadata["quadrature_degree"]
+    pd = integral_metadata["estimated_polynomial_degree"]
+
     # Special case: handling -1 as "auto" for quadrature_degree
-    if qd in ("auto", -1):
-        qd = _auto_select_quadrature_degree(integral.integrand(),
-                                            form_data.unique_sub_elements,
-                                            form_data.element_replace_map)
+    if qd == -1:
+        qd = "auto"
+
+    # TODO: Add other options here
+    if qd == "auto":
+        qd = pd
         info("quadrature_degree: auto --> %d" % qd)
+    if isinstance(qd, int):
+        if qd >= 0:
+            info("quadrature_degree: %d" % qd)
+        else:
+            error("Illegal negative quadrature degree %s " % (qd,))
     else:
-        qd = int(qd)
-        info("quadrature_degree: %d" % qd)
-    # Validate degree
-    if not qd >= 0:
-        info("Valid choices are nonnegative integers or 'auto'.")
-        error("Illegal quadrature degree for integral: " + str(qd))
+        error("Invalid quadrature_degree {}." % (qd,))
+
     tdim = integral.ufl_domain().topological_dimension()
     _check_quadrature_degree(qd, tdim)
     return qd
+
+
+def _check_quadrature_degree(degree, top_dim):
+    """Check that quadrature degree does not result in a unreasonable high
+    number of integration points."""
+    num_points = ((degree + 1 + 1) // 2)**top_dim
+    if num_points >= 100:
+        warning_blue("WARNING: The number of integration points for each cell will be: %d" % num_points)
+        warning_blue("         Consider using the option 'quadrature_degree' to reduce the number of points")
 
 
 
@@ -388,33 +402,3 @@ def _auto_select_representation(integral, elements, function_replace_map):
         return "tensor"
     else:
         return "quadrature"
-
-
-def _auto_select_quadrature_degree(integrand, elements, element_replace_map):
-    "Automatically select a suitable quadrature degree for integrand."
-    # TODO: Move this to form preprocessing, as part of integral_data?
-
-    # Use quadrature element degree if any is found
-    quadrature_degrees = [e.degree() for e in elements if e.family() == "Quadrature"]
-    if quadrature_degrees:
-        debug("Found quadrature element(s) with the following degree(s): " + str(quadrature_degrees))
-        ffc_assert(min(quadrature_degrees) == max(quadrature_degrees), \
-                   "All QuadratureElements in an integrand must have the same degree: %s" \
-                   % str(quadrature_degrees))
-        debug("Selecting quadrature degree based on quadrature element: " + str(quadrature_degrees[0]))
-        return quadrature_degrees[0]
-
-    # Otherwise estimate total degree of integrand
-    q = estimate_total_polynomial_degree(integrand, default_quadrature_degree, element_replace_map)
-    debug("Selecting quadrature degree based on total polynomial degree of integrand: " + str(q))
-
-    return q
-
-
-def _check_quadrature_degree(degree, top_dim):
-    """Check that quadrature degree does not result in a unreasonable high
-    number of integration points."""
-    num_points = ((degree + 1 + 1) // 2)**top_dim
-    if num_points >= 100:
-        warning_blue("WARNING: The number of integration points for each cell will be: %d" % num_points)
-        warning_blue("         Consider using the option 'quadrature_degree' to reduce the number of points")
