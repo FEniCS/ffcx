@@ -375,11 +375,6 @@ def run_install():
           ext_modules      = ext_modules,
           cmdclass         = cmdclass,
           data_files       = data_files,
-          dependency_links = [
-              "git+https://bitbucket.org/fenics-project/fiat.git#egg=fiat",
-              "git+https://bitbucket.org/fenics-project/ufl.git#egg=ufl",
-              "git+https://bitbucket.org/fenics-project/instant.git#egg=instant",
-              "git+https://bitbucket.org/fenics-project/uflacs.git#egg=uflacs"],
           install_requires = ["numpy", "six", "fiat", "ufl", "instant", "uflacs"])
 
 
