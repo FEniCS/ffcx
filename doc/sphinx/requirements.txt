@@ -1,3 +1,4 @@
+numpy
+-e git+https://bitbucket.org/fenics-project/fiat.git#egg=fiat
 -e git+https://bitbucket.org/fenics-project/ufl.git#egg=ufl
 -e git+https://bitbucket.org/fenics-project/ffc.git#egg=ffc
-numpy
