@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
+
 import sys
 import re
 
@@ -47,6 +51,10 @@ setup(name="uflacs",
       classifiers=classifiers,
       packages=packages,
       package_dir={"uflacs": "uflacs"},
-#     data_files=[(os.path.join("share", "man", "man1"),
-#                  [os.path.join("doc", "man", "man1", "uflacs.1.gz")])]
+      dependency_links = [
+          "git+https://bitbucket.org/fenics-project/ufl.git#egg=ufl",
+          "git+https://bitbucket.org/fenics-project/ffc.git#egg=ffc"],
+      install_requires = ["numpy", "six", "ffc", "ufl", ],
+      #data_files=[(os.path.join("share", "man", "man1"),
+      #             [os.path.join("doc", "man", "man1", "uflacs.1.gz")])]
     )
