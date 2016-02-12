@@ -1,1 +1,1 @@
--e git+https://bitbucket.org/fenics-project/ffc.git@garth/read-the-docs#egg=ffc
+-e git+https://bitbucket.org/fenics-project/ffc.git@0502158682f117d2599149f0d53e6cd41411da89#egg=ffc
