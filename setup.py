@@ -375,7 +375,9 @@ def run_install():
           ext_modules      = ext_modules,
           cmdclass         = cmdclass,
           data_files       = data_files,
-          install_requires = ["numpy", "six", "fiat", "ufl", "instant", "uflacs"])
+          install_requires = ["numpy", "six", "fiat==1.7.0dev",
+                              "ufl==1.7.0dev", "instant==1.7.0dev",
+                              "uflacs==1.7.0dev"])
 
 
 if __name__ == "__main__":
