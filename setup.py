@@ -160,25 +160,31 @@ def find_python_library():
     return libpython or ""
 
 
-def generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
-    "Generate and install configuration files"
+def generate_git_config_files():
+    "Generate and install git-related files"
+
+    # Get git commit hash
+    GIT_COMMIT_HASH = get_git_commit_hash()
+
+    # Generate git_commit_hash.py
+    write_config_file(os.path.join("ffc", "git_commit_hash.py.in"),
+                      os.path.join("ffc", "git_commit_hash.py"),
+                      variables=dict(GIT_COMMIT_HASH=GIT_COMMIT_HASH))
+
+
+def generate_ufc_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
+    "Generate and install UFC configuration files"
 
     # Get variables
     INSTALL_PREFIX = get_installation_prefix()
     PYTHON_LIBRARY = os.environ.get("PYTHON_LIBRARY", find_python_library())
     MAJOR, MINOR, MICRO = VERSION.split(".")
     UFC_SIGNATURE = get_ufc_signature()
-    GIT_COMMIT_HASH = get_git_commit_hash()
 
     # Generate ufc_signature.py
     write_config_file(os.path.join("ffc", "ufc_signature.py.in"),
                       os.path.join("ffc", "ufc_signature.py"),
                       variables=dict(UFC_SIGNATURE=UFC_SIGNATURE))
-
-    # Generate git_commit_hash.py
-    write_config_file(os.path.join("ffc", "git_commit_hash.py.in"),
-                      os.path.join("ffc", "git_commit_hash.py"),
-                      variables=dict(GIT_COMMIT_HASH=GIT_COMMIT_HASH))
 
     # Generate UFCConfig.cmake
     write_config_file(os.path.join("cmake", "templates", "UFCConfig.cmake.in"),
@@ -271,7 +277,7 @@ def run_ufc_install():
         CXX_FLAGS += " -std=c++0x"
 
     # Generate config files
-    generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS)
+    generate_ufc_config_files(SWIG_EXECUTABLE, CXX_FLAGS)
 
     # Setup extension module for UFC
     swig_options = ["-c++", "-shadow", "-modern",
@@ -316,6 +322,9 @@ def run_install():
     scripts = SCRIPTS
     if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
         scripts = create_windows_batch_files(scripts)
+
+    # Generate git config file from template
+    generate_git_config_files()
 
     if skip_ufc_module:
         cmdclass = {}
