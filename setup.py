@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys, platform, re, subprocess, string, numpy, tempfile, shutil, hashlib
+import os, sys, platform, re, subprocess, string, tempfile, shutil, hashlib
 from distutils import sysconfig, spawn
 from distutils.core import setup, Extension
 from distutils.command import build_ext
@@ -295,6 +295,7 @@ def run_install():
 
     # Hack to skip ufc and avoid swig dependency on install
     # so readthedocs can install without the ufc wrapper
+    numpy_include_dir = None
     if "--skip-ufc" in sys.argv:
         sys.argv.remove("--skip-ufc")
         skip_ufc_module = True
@@ -302,6 +303,8 @@ def run_install():
         skip_ufc_module = True
     else:
         skip_ufc_module = False
+        import numpy
+        numpy_include_dir = numpy.get_include()
 
     # Create batch files for Windows if necessary
     scripts = SCRIPTS
@@ -362,7 +365,7 @@ def run_install():
           package_dir      = {"ffc": "ffc",
                               "ufc": "ufc"},
           scripts          = scripts,
-          include_dirs     = [numpy.get_include()],
+          include_dirs     = [numpy_include_dir],
           ext_modules      = ext_modules,
           cmdclass         = cmdclass,
           data_files       = data_files)
