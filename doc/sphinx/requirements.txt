@@ -1,5 +1,1 @@
-numpy
-git+https://bitbucket.org/fenics-project/instant.git
-git+https://bitbucket.org/fenics-project/ufl.git
-git+https://bitbucket.org/fenics-project/ffc.git
-git+https://bitbucket.org/fenics-project/ufl.git
+-e git+https://bitbucket.org/fenics-project/ffc.git#egg=ffc
