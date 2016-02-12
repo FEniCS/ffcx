@@ -1,8 +1,15 @@
 #!/usr/bin/env python
 
 import os, sys, platform, re, subprocess, string, numpy, tempfile, shutil, hashlib
+
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
+
 from distutils import sysconfig, spawn
-from distutils.core import setup, Extension
+from distutils.core import Extension
+#from distutils.core import setup, Extension
 from distutils.command import build_ext
 from distutils.command.build import build
 from distutils.ccompiler import new_compiler
@@ -365,7 +372,14 @@ def run_install():
           include_dirs     = [numpy.get_include()],
           ext_modules      = ext_modules,
           cmdclass         = cmdclass,
-          data_files       = data_files)
+          data_files       = data_files,
+          dependency_links = [
+              "git+https://bitbucket.org/fenics-project/fiat.git#egg=FIAT",
+              "git+https://bitbucket.org/fenics-project/ufl.git#egg=ufl",
+              "git+https://bitbucket.org/fenics-project/instant.git#egg=instant",
+              "git+https://bitbucket.org/fenics-project/uflacs.git#egg=uflacs",
+          ],
+          install_requires = ["numpy", "six", "FIAT", "ufl", "instant", "uflacs"])
 
 
 if __name__ == "__main__":
