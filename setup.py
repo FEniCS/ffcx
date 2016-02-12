@@ -51,10 +51,7 @@ setup(name="uflacs",
       classifiers=classifiers,
       packages=packages,
       package_dir={"uflacs": "uflacs"},
-      dependency_links = [
-          "git+https://bitbucket.org/fenics-project/ufl.git#egg=ufl",
-          "git+https://bitbucket.org/fenics-project/ffc.git#egg=ffc"],
-      install_requires = ["numpy", "six", "ffc", "ufl", ],
+      install_requires = ["numpy", "six", "ufl==1.7.0dev"],
       #data_files=[(os.path.join("share", "man", "man1"),
       #             [os.path.join("doc", "man", "man1", "uflacs.1.gz")])]
     )
