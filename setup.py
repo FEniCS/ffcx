@@ -160,8 +160,8 @@ def find_python_library():
     return libpython or ""
 
 
-def generate_git_config_files():
-    "Generate and install git-related files"
+def generate_git_hash_file():
+    "Generate module with git hash"
 
     # Get git commit hash
     GIT_COMMIT_HASH = get_git_commit_hash()
@@ -172,6 +172,17 @@ def generate_git_config_files():
                       variables=dict(GIT_COMMIT_HASH=GIT_COMMIT_HASH))
 
 
+def generate_ufc_signature_file():
+    "Generate module with UFC signature"
+
+    UFC_SIGNATURE = get_ufc_signature()
+
+    # Generate ufc_signature.py
+    write_config_file(os.path.join("ffc", "ufc_signature.py.in"),
+                      os.path.join("ffc", "ufc_signature.py"),
+                      variables=dict(UFC_SIGNATURE=UFC_SIGNATURE))
+
+
 def generate_ufc_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
     "Generate and install UFC configuration files"
 
@@ -180,11 +191,6 @@ def generate_ufc_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
     PYTHON_LIBRARY = os.environ.get("PYTHON_LIBRARY", find_python_library())
     MAJOR, MINOR, MICRO = VERSION.split(".")
     UFC_SIGNATURE = get_ufc_signature()
-
-    # Generate ufc_signature.py
-    write_config_file(os.path.join("ffc", "ufc_signature.py.in"),
-                      os.path.join("ffc", "ufc_signature.py"),
-                      variables=dict(UFC_SIGNATURE=UFC_SIGNATURE))
 
     # Generate UFCConfig.cmake
     write_config_file(os.path.join("cmake", "templates", "UFCConfig.cmake.in"),
@@ -323,8 +329,11 @@ def run_install():
     if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
         scripts = create_windows_batch_files(scripts)
 
-    # Generate git config file from template
-    generate_git_config_files()
+    # Generate module with git hash from template
+    generate_git_hash_file()
+
+    # Generate module with UFC signature from template
+    generate_ufc_signature_file()
 
     if skip_ufc_module:
         cmdclass = {}
