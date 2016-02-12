@@ -377,8 +377,7 @@ def run_install():
               "git+https://bitbucket.org/fenics-project/fiat.git#egg=FIAT",
               "git+https://bitbucket.org/fenics-project/ufl.git#egg=ufl",
               "git+https://bitbucket.org/fenics-project/instant.git#egg=instant",
-              "git+https://bitbucket.org/fenics-project/uflacs.git#egg=uflacs",
-          ],
+              "git+https://bitbucket.org/fenics-project/uflacs.git#egg=uflacs"],
           install_requires = ["numpy", "six", "FIAT", "ufl", "instant", "uflacs"])
 
 
