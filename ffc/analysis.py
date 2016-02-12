@@ -77,9 +77,10 @@ def analyze_forms(forms, parameters):
 
     return form_datas, unique_elements, element_numbers, unique_coordinate_elements
 
+
 def analyze_elements(elements, parameters):
 
-    begin("Compiler stage 1: Analyzing form(s)")
+    begin("Compiler stage 1: Analyzing elements(s)")
 
     # Extract unique (sub)elements
     unique_elements = set(extract_sub_elements(elements))
@@ -91,12 +92,11 @@ def analyze_elements(elements, parameters):
     element_numbers = _compute_element_numbers(unique_elements)
 
     # Update scheme for QuadratureElements
-    scheme = parameters["quadrature_rule"]
-    if scheme == "auto":
-        scheme = "default"
     for element in unique_elements:
         if element.family() == "Quadrature":
-            element._quad_scheme = scheme
+            qs = element.quadrature_scheme()
+            if qs is None:
+                error("Missing quad_scheme in quadrature element.")
 
     end()
 
@@ -104,12 +104,14 @@ def analyze_elements(elements, parameters):
     unique_coordinate_elements = ()
     return form_datas, unique_elements, element_numbers, unique_coordinate_elements
 
+
 def _compute_element_numbers(elements):
     "Build map from elements to element numbers."
     element_numbers = {}
     for (i, element) in enumerate(elements):
         element_numbers[element] = i
     return element_numbers
+
 
 def _analyze_form(form, parameters):
     "Analyze form, returning form data."
@@ -261,11 +263,11 @@ def _determine_representation(integral_metadatas, ida, form_data):
 
 def _attach_integral_metadata(form_data, parameters):
     "Attach integral metadata"
-    # TODO: A nicer data flow would avoid modifying the form_data.
+    # TODO: A nicer data flow would avoid modifying the form_data at all.
 
     # Recognized metadata keys
     metadata_keys = ("representation", "quadrature_degree", "quadrature_rule")
-    metadata_parameters = {key: parameters[key] for key in metadata_keys}
+    metadata_parameters = {key: parameters[key] for key in metadata_keys if key in parameters}
 
     # Iterate over integral collections
     quad_schemes = []
@@ -301,6 +303,13 @@ def _attach_integral_metadata(form_data, parameters):
         ida.metadata["quadrature_rule"] = qr
         ida.metadata["quadrature_degree"] = qd
 
+        # Add common num_cells (I believe this must be equal but I'm not that into this work)
+        num_cells = set(md.get("num_cells") for md in integral_metadatas)
+        if len(num_cells) != 1:
+            error("Found integrals with different num_cells metadata on same subdomain: %s" % (str(list(num_cells)),))
+        num_cells, = num_cells
+        ida.metadata["num_cells"] = num_cells
+
         # Reconstruct integrals to avoid modifying the input integral,
         # which would affect the signature computation if the
         # integral was used again in the user program.
@@ -312,23 +321,24 @@ def _attach_integral_metadata(form_data, parameters):
         # Collect all quad schemes
         quad_schemes.extend([md["quadrature_rule"] for md in integral_metadatas])
 
-    # Update scheme for QuadratureElements
-    # FIXME: This modifies the elements depending on the form compiler parameters,
-    #        this is a serious breach of the immutability of ufl objects, since the
-    #        element quad scheme is part of the signature and hash of the element...
-    _attach_quadrature_scheme_to_elements(quad_schemes, form_data)
+    # Validate consistency of schemes for QuadratureElements
+    # TODO: Can loosen up this a bit, only needs to be consistent
+    # with the integrals that the elements are used in
+    _validate_quadrature_schemes_of_elements(quad_schemes, form_data.unique_sub_elements)
 
 
-def _attach_quadrature_scheme_to_elements(quad_schemes, form_data):
+def _validate_quadrature_schemes_of_elements(quad_schemes, elements): #form_data):
     # Update scheme for QuadratureElements
     if quad_schemes and all_equal(quad_schemes):
         scheme = quad_schemes[0]
     else:
         scheme = "canonical"
         info("Quadrature rule must be equal within each sub domain, using %s rule." % scheme)
-    for element in form_data.unique_sub_elements:
+    for element in elements:
         if element.family() == "Quadrature":
-            element._quad_scheme = scheme  # FIXME: Instead require that these are actually equal
+            qs = element.quadrature_scheme()
+            if qs != scheme:
+                error("Quadrature element must have specified quadrature scheme (%s) equal to the integral (%s)." % (qs, scheme))
 
 
 def _get_sub_elements(element):
@@ -399,6 +409,7 @@ def _auto_select_quadrature_degree(integrand, elements, element_replace_map):
     debug("Selecting quadrature degree based on total polynomial degree of integrand: " + str(q))
 
     return q
+
 
 def _check_quadrature_degree(degree, top_dim):
     """Check that quadrature degree does not result in a unreasonable high
