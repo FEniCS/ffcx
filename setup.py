@@ -345,21 +345,24 @@ def run_install():
     data_files = [(os.path.join("share", "man", "man1"),
                   [os.path.join("doc", "man", "man1", "ffc.1.gz")])]
 
-    # Add UFC data files
+    # Add UFC data files (need to use complete path because setuptools
+    # installs into the Python package directory, not --prefix). This
+    # can be fixed when Swig, etc are removed from FFC).
+    INSTALL_PREFIX = get_installation_prefix()
     if not skip_ufc_module:
-        data_files_ufc = [(os.path.join("include"),
+        data_files_ufc = [(os.path.join(INSTALL_PREFIX, "include"),
                            [os.path.join("ufc", "ufc.h"),
                             os.path.join("ufc", "ufc_geometry.h")]),
-                          (os.path.join("share", "ufc"),
+                          (os.path.join(INSTALL_PREFIX, "share", "ufc"),
                            [os.path.join("cmake", "templates", \
                                          "UFCConfig.cmake"),
                             os.path.join("cmake", "templates", \
                                          "UFCConfigVersion.cmake"),
                             os.path.join("cmake", "templates", \
                                          "UseUFC.cmake")]),
-                          (os.path.join("lib", "pkgconfig"),
+                          (os.path.join(INSTALL_PREFIX, "lib", "pkgconfig"),
                            [os.path.join("cmake", "templates", "ufc-1.pc")]),
-                          (os.path.join("include", "swig"),
+                          (os.path.join(INSTALL_PREFIX, "include", "swig"),
                            [os.path.join("ufc", "ufc.i"),
                             os.path.join("ufc", "ufc_shared_ptr_classes.i")])]
 
