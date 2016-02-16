@@ -388,8 +388,19 @@ def run_install():
                               "ffc.backends",
                               "ffc.backends.dolfin",
                               "ffc.backends.ufc",
+                              "uflacs",
+                              "uflacs.analysis",
+                              "uflacs.backends",
+                              "uflacs.backends.ffc",
+                              "uflacs.backends.ufc",
+                              "uflacs.datastructures",
+                              "uflacs.elementtables",
+                              "uflacs.generation",
+                              "uflacs.language",
+                              "uflacs.representation",
                               "ufc"],
           package_dir      = {"ffc": "ffc",
+                              "uflacs": "uflacs",
                               "ufc": "ufc"},
           scripts          = scripts,
           include_dirs     = [numpy_include_dir],
@@ -397,8 +408,7 @@ def run_install():
           cmdclass         = cmdclass,
           data_files       = data_files,
           install_requires = ["numpy", "six", "fiat==1.7.0dev",
-                              "ufl==1.7.0dev", "instant==1.7.0dev",
-                              "uflacs==1.7.0dev"])
+                              "ufl==1.7.0dev", "instant==1.7.0dev"])
 
 
 if __name__ == "__main__":

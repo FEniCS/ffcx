@@ -19,7 +19,7 @@ UFCINCDIR=`pkg-config ufc-1 --cflags`
 #UFCINCDIR=-I${UFC_INCLUDE_DIR}
 
 # Configure gtest
-GTEST_DIR?=../../libs/gtest-1.7.0
+GTEST_DIR?=../../../libs/gtest-1.7.0
 GTESTINCDIR=-I${GTEST_DIR}/include
 GTESTLIBS=-L${GTEST_DIR}/lib -lgtest -lpthread
 
