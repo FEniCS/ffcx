@@ -48,3 +48,12 @@ install_manifest.txt
 /test/regression/ffc-reference-data/
 /test/regression/output/
 /test/unit/tmp/
+
+*.pyc
+*.py~
+/build
+/tests/cpp_tests.log
+/tests/generated/
+/tests/generatedtmp/
+/tests/python_tests.log
+__pycache__

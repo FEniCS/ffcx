@@ -1,0 +1,21 @@
+Test structure:
+
+  unit/          - unit tests of internal components of uflacs
+  crosslanguage/ - unit tests which produce C++ tests of generated code which is then executed by gtest
+  system/        - tests that use external software with uflacs, in particular integration with dolfin
+
+Build gtest:
+
+  cd ../libs/gtest-1.7.0/   # This is a copy of the Google Test Framework.
+  mkdir lib
+  cd lib
+  cmake ..
+  make
+
+Running examples:
+
+  cd test/
+  py.test
+  py.test unit
+  py.test system
+  py.test crosslanguage
