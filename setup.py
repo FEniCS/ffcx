@@ -408,7 +408,8 @@ def run_install():
           cmdclass         = cmdclass,
           data_files       = data_files,
           install_requires = ["numpy", "six", "fiat==1.7.0dev",
-                              "ufl==1.7.0dev", "instant==1.7.0dev"])
+                              "ufl==1.7.0dev", "instant==1.7.0dev"],
+          zip_safe = False)
 
 
 if __name__ == "__main__":
