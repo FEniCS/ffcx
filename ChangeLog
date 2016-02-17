@@ -1,4 +1,5 @@
 1.7.0 [201x-xx-xx]
+ - Merge UFLACS into FFC
  - Generalize ufc interface to non-affine parameterized coordinates
  - Add ufc::coordinate_mapping class
  - Make ufc interface depend on C++11 features requiring gcc version >= 4.8
