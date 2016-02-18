@@ -111,6 +111,14 @@ ffc.formatting module
     :undoc-members:
     :show-inheritance:
 
+ffc.git_commit_hash module
+--------------------------
+
+.. automodule:: ffc.git_commit_hash
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 ffc.interpolatevertexvalues module
 ----------------------------------
 
@@ -211,6 +219,14 @@ ffc.restrictedelement module
 ----------------------------
 
 .. automodule:: ffc.restrictedelement
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+ffc.ufc_signature module
+------------------------
+
+.. automodule:: ffc.ufc_signature
     :members:
     :undoc-members:
     :show-inheritance:

@@ -26,4 +26,6 @@ SPHINX_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 SPHINX_SOURCE_DIR=$SPHINX_DIR/source
 
 # Generate .rst files ready for autodoc
-sphinx-apidoc -f -o $SPHINX_SOURCE_DIR/api-doc $SPHINX_DIR/../../ffc
+#sphinx-apidoc -f -o $SPHINX_SOURCE_DIR/api-doc $SPHINX_DIR/../../ffc $SPHINX_DIR/../../uflacs
+sphinx-apidoc -f -o $SPHINX_SOURCE_DIR/api-doc $SPHINX_DIR/../../ ffc uflacs
+#sphinx-apidoc -f -o $SPHINX_SOURCE_DIR/api-doc $SPHINX_DIR/../../uflacs

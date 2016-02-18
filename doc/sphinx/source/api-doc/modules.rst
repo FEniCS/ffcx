@@ -5,3 +5,6 @@ ffc
    :maxdepth: 4
 
    ffc
+   setup
+   ufc
+   uflacs
