@@ -48,6 +48,7 @@ Documentation
    :titlesonly:
 
    api-doc/ffc
+   api-doc/uflacs
    releases
 
 
