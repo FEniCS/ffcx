@@ -40,19 +40,18 @@ License along with this program. If not, see
 Dependencies
 ------------
 
-#.  Python, version 2.7 or later
+#. Python, version 2.7 or later
 
-#.  The latest version of FIAT, Instant and UFL
+#. The latest version of FIAT, Instant and UFL
 
-    You need to have FIAT, Instant and UFL installed. They are available
-    from the web page: https://bitbucket.org/fenics-project/.
+   You need to have FIAT, Instant and UFL installed. They are
+   available from the web page: https://bitbucket.org/fenics-project/.
 
 #. The Python NumPy module
 
 #. The Python Six module
 
-#. SWIG, version 2.0.0 or later for Python 2 and version 3.0.3 or
-   later for Python 3
+#. SWIG, version 3.0.3 or higher
 
 
 Notes
@@ -60,5 +59,5 @@ Notes
 
 From February 2014, the code generation interface UFC is distributed
 as part of FFC, and the UFC repository has been merged into the FFC
-repository. From this point onwards, UFC version numbers are reset
-to the same version numbers as for FFC.
+repository. From this point onwards, UFC version numbers are reset to
+the same version numbers as for FFC.
