@@ -10,7 +10,7 @@ except ImportError:
 from distutils import sysconfig, spawn
 from distutils.core import Extension
 from distutils.command import build_ext
-from distutils.command.build import build
+from distutils.command import build_py
 from distutils.ccompiler import new_compiler
 from distutils.version import LooseVersion
 
@@ -262,14 +262,14 @@ def run_ufc_install():
         def find_swig(self):
             return SWIG_EXECUTABLE
 
-    # Subclass the build command to ensure that build_ext produces
-    # ufc.py before build_py tries to copy it.
-    class my_build(build):
+    # Subclass the build_py command to ensure that build_ext produces
+    # ufc.py before build_py (or something else) tries to copy it
+    class my_build_py(build_py.build_py):
         def run(self):
             self.run_command('build_ext')
-            build.run(self)
+            build_py.build_py.run(self)
 
-    cmdclass = {"build": my_build, "build_ext": my_build_ext}
+    cmdclass = {"build_py": my_build_py, "build_ext": my_build_ext}
 
     # Check that compiler supports C++11 features
     cc = new_compiler()
