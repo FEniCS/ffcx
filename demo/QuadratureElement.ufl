@@ -1,4 +1,4 @@
-# Copyright (C) 2008 Kristian B. Oelgaard
+# Copyright (C) 2008-2016 Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -15,17 +15,21 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# First added:  2008-03-31
-# Last changed: 2014-03-04
-#
 # The linearised bilinear form a(u, v) and linear form L(v) for
 # the nonlinear equation -div (1 + u) grad u = f (nonlinear Poisson)
 #
 # Compile this form with FFC: ffc QuadratureElement.ufl
 
+# Configure measure with specific quadrature rule
+scheme = "default"
+degree = 3
+dx = Measure("dx")
+dx = dx(degree=degree, rule=scheme)
+
+# Configure quadrature elements with compatible rule
 element = FiniteElement("Lagrange", triangle, 2)
-QE      = FiniteElement("Quadrature", triangle, 3)
-sig     = VectorElement("Quadrature", triangle, 3)
+QE      = FiniteElement("Quadrature", triangle, degree, quad_scheme=scheme)
+sig     = VectorElement("Quadrature", triangle, degree, quad_scheme=scheme)
 
 u    = TrialFunction(element)
 v    = TestFunction(element)
