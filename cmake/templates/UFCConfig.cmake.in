@@ -13,6 +13,12 @@ set(UFC_INCLUDE_DIRS "@INSTALL_PREFIX/include")
 # Compiler flags
 set(UFC_CXX_FLAGS "@CXX_FLAGS")
 
+# 3rd party include directories
+set(UFC_3RD_PARTY_INCLUDE_DIRS "@BOOST_INCLUDE_DIR")
+
+# 3rd party libraries
+set(UFC_3RD_PARTY_LIBRARIES "@BOOST_MATH_LIBRARY")
+
 # Python include directories
 set(UFC_PYTHON_INCLUDE_DIRS "@PYTHON_INCLUDE_DIR")
 
