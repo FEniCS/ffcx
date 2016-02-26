@@ -131,6 +131,24 @@ def write_config_file(infile, outfile, variables={}):
     finally:
         a.close()
 
+def find_library(package_name, lib_names):
+    "Return the full path to the library (empty string if not found)"
+    search_dirs = [
+        "%s%slib" % (os.environ.get("%s_DIR" % package_name.upper(), ""), os.path.sep),
+        "%s" % sysconfig.get_config_vars().get("LIBDIR", ""),
+        "/usr/lib/%s" % sysconfig.get_config_vars().get("MULTIARCH", ""),
+        "/usr/local/lib",
+        "/opt/local/lib",
+        "/usr/lib",
+        "/usr/lib64",
+        ]
+    lib = None
+    cc = new_compiler()
+    for name in lib_names:
+        lib = cc.find_library_file(search_dirs, name)
+        if lib is not None:
+            break
+    return lib or ""
 
 def find_python_library():
     "Return the full path to the Python library (empty string if not found)"
@@ -142,23 +160,28 @@ def find_python_library():
         "python%su" % pyver,
         "python%s" % pyver,
         ]
-    dirs = [
-        "%s/lib" % os.environ.get("PYTHON_DIR", ""),
-        "%s" % sysconfig.get_config_vars().get("LIBDIR", ""),
-        "/usr/lib/%s" % sysconfig.get_config_vars().get("MULTIARCH", ""),
-        "/usr/local/lib",
-        "/opt/local/lib",
-        "/usr/lib",
-        "/usr/lib64",
-        ]
-    libpython = None
-    cc = new_compiler()
-    for name in libpython_names:
-        libpython = cc.find_library_file(dirs, name)
-        if libpython is not None:
-            break
-    return libpython or ""
+    return find_library("python", libpython_names)
 
+def find_boost_math_library():
+    "Return the full path to the Boost math library (empty string if not found)"
+    return find_library("boost", ["boost_math_tr1", "boost_math_tr1-mt"])
+
+def find_include_dir(package_name, header_file):
+    "Return the path to the given header file (empty string if not found)"
+    search_dirs = [
+        "%s%sinclude" % (os.environ.get("%s_DIR" % package_name.upper(), ""), os.path.sep),
+        "/usr/local/include",
+        "/opt/local/include",
+        "/usr/include",
+        ]
+    for inc_dir in search_dirs:
+        if os.path.isfile(os.path.join(inc_dir, header_file)):
+            return inc_dir
+    return ""
+
+def find_boost_include_dir():
+    "Return the path to the Boost include dir (empty string if not found)"
+    return find_include_dir("boost", os.path.join("boost", "version.hpp"))
 
 def generate_git_hash_file():
     "Generate module with git hash"
@@ -202,7 +225,9 @@ def generate_ufc_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
                                      PYTHON_EXECUTABLE=sys.executable,
                                      SWIG_EXECUTABLE=SWIG_EXECUTABLE,
                                      FULLVERSION=VERSION,
-                                     UFC_SIGNATURE=UFC_SIGNATURE))
+                                     UFC_SIGNATURE=UFC_SIGNATURE,
+                                     BOOST_INCLUDE_DIR=find_boost_include_dir(),
+                                     BOOST_MATH_LIBRARY=find_boost_math_library()))
 
     # Generate UFCConfigVersion.cmake
     write_config_file(os.path.join("cmake", "templates", \
