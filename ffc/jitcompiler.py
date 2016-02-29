@@ -65,6 +65,14 @@ def jit(ufl_object, parameters=None):
       parameters : A set of parameters
     """
 
+    if parameters is None:
+        parameters = {}
+    else:
+        parameters = dict(parameters)
+
+    # Always split into .h and .cpp files
+    parameters["split"] = True
+
     # Check if we get an element or a form
     if isinstance(ufl_object, FiniteElementBase):
         return jit_element(ufl_object, parameters)
@@ -126,7 +134,8 @@ def jit_form(form, parameters=None):
                 # Generate code
                 compile_form(form,
                              prefix=module_name,
-                             parameters=parameters)
+                             parameters=parameters,
+                             jit=True)
 
                 # Build module using Instant (through UFC)
                 debug("Compiling and linking Python extension module, this may take some time.")
@@ -208,11 +217,13 @@ def _instantiate_form(module, prefix):
     "Extract the form from module with only one form."
     form_id = 0
     classname = make_classname(prefix, "form", form_id)
-    return getattr(module, classname)()
+    return getattr(module, "create_" + classname)()
 
 def _instantiate_element_and_dofmap(module, prefix):
     """Extract element and dofmap from module."""
-    form = _instantiate_form(module, prefix)
-    fe = form.create_finite_element(0)
-    dm = form.create_dofmap(0)
+    element_number = 0
+    fe_classname = make_classname(prefix, "finite_element", element_number)
+    dm_classname = make_classname(prefix, "dofmap", element_number)
+    fe = getattr(module, "create_" + fe_classname)()
+    dm = getattr(module, "create_" + dm_classname)()
     return (fe, dm)

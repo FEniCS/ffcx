@@ -129,7 +129,7 @@ from ffc.codegeneration import generate_code
 from ffc.formatting import format_code, write_code
 from ffc.wrappers import generate_wrapper_code
 
-def compile_form(forms, object_names=None, prefix="Form", parameters=None):
+def compile_form(forms, object_names=None, prefix="Form", parameters=None, jit=False):
     """This function generates UFC code for a given UFL form or list
     of UFL forms."""
 
@@ -176,13 +176,13 @@ def compile_form(forms, object_names=None, prefix="Form", parameters=None):
 
     # Stage 5: format code
     cpu_time = time()
-    code_h, code_c = format_code(code, wrapper_code, prefix, parameters)
+    code_h, code_c = format_code(code, wrapper_code, prefix, parameters, jit)
     write_code(code_h, code_c, prefix, parameters) # FIXME: Don't write to file in this function (issue #72)
     _print_timing(5, time() - cpu_time)
 
     info_green("FFC finished in %g seconds.", time() - cpu_time_0)
 
-def compile_element(elements, prefix="Element", parameters=None):
+def compile_element(elements, prefix="Element", parameters=None, jit=False):
     """This function generates UFC code for a given UFL element or
     list of UFL elements."""
 
@@ -225,7 +225,7 @@ def compile_element(elements, prefix="Element", parameters=None):
 
     # Stage 5: format code
     cpu_time = time()
-    code_h, code_c = format_code(code, wrapper_code, prefix, parameters)
+    code_h, code_c = format_code(code, wrapper_code, prefix, parameters, jit)
     write_code(code_h, code_c, prefix, parameters) # FIXME: Don't write to file in this function (issue #72)
     _print_timing(5, time() - cpu_time)
 
