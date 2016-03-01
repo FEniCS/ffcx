@@ -124,3 +124,14 @@ visibility_snippet = """
     #define DLL_EXPORT __attribute__ ((visibility ("default")))
 #endif
 """
+
+factory_decl = """
+extern "C" %(basename)s * create_%(publicname)s();
+"""
+
+factory_impl = """
+extern "C" DLL_EXPORT %(basename)s * create_%(publicname)s()
+{
+ return new %(privatename)s();
+}
+"""

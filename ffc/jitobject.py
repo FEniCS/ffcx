@@ -42,7 +42,7 @@ class JITObject:
 
     def __init__(self, form, parameters):
         "Create JITObject for given form and parameters"
-        assert(isinstance(form, ufl.Form))
+        assert isinstance(form, ufl.Form) or isinstance(form, ufl.FiniteElementBase)
 
         # Store data
         self.form = form
@@ -70,7 +70,10 @@ class JITObject:
             return self._signature
 
         # Get signature from form
-        form_signature = self.form.signature()
+        if isinstance(self.form, ufl.Form):
+            form_signature = self.form.signature()
+        elif isinstance(self.form, ufl.FiniteElementBase):
+            form_signature = repr(self.form)
 
         # Compute other relevant signatures
         parameters_signature = _parameters_signature(self.parameters)

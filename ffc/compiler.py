@@ -194,7 +194,7 @@ def compile_element(elements, prefix="Element", parameters=None, jit=False):
     # Check input arguments
     elements = _check_elements(elements)
     if not elements:
-        return
+        return []
     parameters = _check_parameters(parameters)
 
     # Stage 1: analysis

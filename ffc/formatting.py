@@ -33,8 +33,8 @@ import os
 from ffc.log import info, error, begin, end, dstr
 from ffc import __version__ as FFC_VERSION
 from ffc.backends.ufc import __version__ as UFC_VERSION
-from ffc.cpp import format
-from ffc.backends.ufc import templates, visibility_snippet
+from ffc.cpp import format, make_classname
+from ffc.backends.ufc import templates, visibility_snippet, factory_decl, factory_impl
 from ffc.parameters import compilation_relevant_parameters
 
 def format_code(code, wrapper_code, prefix, parameters, jit=False):
@@ -88,6 +88,30 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
     for code_form in code_forms:
         code_h += _format_h("form", code_form, parameters, jit)
         code_c += _format_c("form", code_form, parameters, jit)
+
+    if jit and not code_forms:
+        kind = "finite_element"
+        pub = make_classname(prefix, kind, "main")
+        code_h += factory_decl % {
+            "basename": "ufc::%s" % kind,
+            "publicname": pub,
+            }
+        code_c += factory_impl % {
+            "basename": "ufc::%s" % kind,
+            "publicname": pub,
+            "privatename": code_elements[-1]["classname"]
+            }
+        kind = "dofmap"
+        pub = make_classname(prefix, kind, "main")
+        code_h += factory_decl % {
+            "basename": "ufc::%s" % kind,
+            "publicname": pub,
+            }
+        code_c += factory_impl % {
+            "basename": "ufc::%s" % kind,
+            "publicname": pub,
+            "privatename": code_dofmaps[-1]["classname"]
+            }
 
     # Add wrappers
     if wrapper_code:
