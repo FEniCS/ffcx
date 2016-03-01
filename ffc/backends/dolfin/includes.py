@@ -26,7 +26,8 @@ dolfin_includes = """\
 #include <dolfin/function/CoefficientAssigner.h>
 #include <dolfin/function/MultiMeshCoefficientAssigner.h>
 #include <dolfin/adaptivity/ErrorControl.h>
-#include <dolfin/adaptivity/GoalFunctional.h>"""
+#include <dolfin/adaptivity/GoalFunctional.h>
+#include <dolfin/la/GenericVector.h>"""
 #-------------------------------------------------------------------------------
 snippets = {"shared_ptr_space":
                 ("std::shared_ptr<const dolfin::FunctionSpace> %s",
