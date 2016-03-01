@@ -45,18 +45,20 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
     # Extract code
     code_elements, code_dofmaps, code_coordinate_mappings, code_integrals, code_forms = code
 
+    # Generate code for comment on top of file
+    code_h_pre = _generate_comment(parameters) + "\n"
+    code_c_pre = _generate_comment(parameters) + "\n"
+
+    # Generate code for header
+    code_h_pre += format["header_h"] % {"prefix_upper": prefix.upper()}
+    code_c_pre += format["header_c"] % {"prefix": prefix}
+
+    # Add includes // TODO: move to cpp file if possible
+    code_h_pre += _generate_additional_includes(code_integrals)  + "\n"
+
     # Header and implementation code
     code_h = ""
     code_c = ""
-
-    # Generate code for comment on top of file
-    code_h += _generate_comment(parameters) + "\n"
-    code_c += _generate_comment(parameters) + "\n"
-
-    # Generate code for header
-    code_h += format["header_h"] % {"prefix_upper": prefix.upper()}
-    code_h += _generate_additional_includes(code_integrals)  + "\n"
-    code_c += format["header_c"] % {"prefix": prefix}
 
     if jit:
         code_c += visibility_snippet
@@ -93,6 +95,11 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
 
     # Generate code for footer
     code_h += format["footer"]
+
+    # Add headers to body
+    code_h = code_h_pre + code_h
+    if code_c:
+        code_c = code_c_pre + code_c
 
     end()
 
