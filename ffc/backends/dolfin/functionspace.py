@@ -19,7 +19,7 @@
 #
 # Modified by Anders Logg 2015
 #
-# Last changed: 2015-11-05
+# Last changed: 2016-03-02
 
 from .includes import snippets
 
@@ -83,8 +83,7 @@ class %(classname)s: public dolfin::FunctionSpace
 {
 public:
 
-  //--- Constructor for standard function space
-
+  // Constructor for standard function space
   %(classname)s(std::shared_ptr<const dolfin::Mesh> mesh):
     dolfin::FunctionSpace(mesh,
                           std::make_shared<const dolfin::FiniteElement>(std::make_shared<%(ufc_finite_element_classname)s>()),
@@ -93,8 +92,7 @@ public:
     // Do nothing
   }
 
-  //--- Constructor for constrained function space
-
+  // Constructor for constrained function space
   %(classname)s(std::shared_ptr<const dolfin::Mesh> mesh, std::shared_ptr<const dolfin::SubDomain> constrained_domain):
     dolfin::FunctionSpace(mesh,
                           std::make_shared<const dolfin::FiniteElement>(std::make_shared<%(ufc_finite_element_classname)s>()),
@@ -111,23 +109,7 @@ class %(classname)s: public dolfin::MultiMeshFunctionSpace
 {
 public:
 
-  //--- Constructors for multimesh function space, 2 different versions ---
-
-  // Create multimesh function space (reference version)
-  %(classname)s(const dolfin::MultiMesh& multimesh): dolfin::MultiMeshFunctionSpace(multimesh)
-  {
-    // Create and add standard function spaces
-    for (std::size_t part = 0; part < multimesh.num_parts(); part++)
-    {
-      std::shared_ptr<const dolfin::FunctionSpace> V(new %(single_name)s(multimesh.part(part)));
-      add(V);
-    }
-
-    // Build multimesh function space
-    build();
-  }
-
-  // Create multimesh function space (shared pointer version)
+  // Constructor for multimesh function space
   %(classname)s(std::shared_ptr<const dolfin::MultiMesh> multimesh): dolfin::MultiMeshFunctionSpace(multimesh)
   {
     // Create and add standard function spaces

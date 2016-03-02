@@ -19,7 +19,7 @@
 #
 # Modified by Anders Logg 2015
 #
-# Last changed: 2015-11-05
+# Last changed: 2016-03-02
 
 from .includes import snippets
 from .functionspace import *
@@ -139,6 +139,8 @@ def generate_form_constructors(form, classname):
     """Generate the dolfin::Form constructors for different
     combinations of references/shared pointers etc."""
 
+    # FIXME: This can be simplied now that we don't create reference version
+
     coeffs = ("shared_ptr_coefficient",)
     spaces = ("shared_ptr_space",)
 
@@ -162,12 +164,14 @@ def generate_multimesh_form_constructors(form, classname):
     """Generate the dolfin::MultiMeshForm constructors for different
     combinations of references/shared pointers etc."""
 
-    coeffs = ("referenced_coefficient", "shared_ptr_ref_coefficient")
-    spaces = ("multimesh_referenced_space", "multimesh_shared_ptr_space")
+    # FIXME: This can be simplied now that we don't create reference version
+
+    coeffs = ("shared_ptr_ref_coefficient",)
+    spaces = ("multimesh_shared_ptr_space",)
 
     # Treat functionals a little special
     if form.rank == 0:
-        spaces = ("referenced_mesh", "shared_ptr_mesh")
+        spaces = ("shared_ptr_mesh",)
 
     # Generate permutations of constructors
     constructors = []
