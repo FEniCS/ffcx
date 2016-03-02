@@ -166,7 +166,7 @@ def generate_multimesh_form_constructors(form, classname):
 
     # FIXME: This can be simplied now that we don't create reference version
 
-    coeffs = ("shared_ptr_ref_coefficient",)
+    coeffs = ("shared_ptr_coefficient",)
     spaces = ("multimesh_shared_ptr_space",)
 
     # Treat functionals a little special
