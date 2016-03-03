@@ -75,12 +75,20 @@ class ReconstructScalarSubexpressions(MultiFunction):
     atan_2 = scalar_nary
 
     def condition(self, o, ops):
+        # A condition is always scalar, so len(op) == 1
         sops = [op[0] for op in ops]
         return [o._ufl_expr_reconstruct_(*sops)]
 
     def conditional(self, o, ops):
-        sops = [op[0] for op in ops]
-        return [o._ufl_expr_reconstruct_(*sops)]
+        # A condition can be non scalar
+        symbols = []
+        n = len(ops[1])
+        ffc_assert(len(ops[0]) == 1, "Condition should be scalar.")
+        ffc_assert(n == len(ops[2]), "Conditional branches should have same shape.")
+        for i in range(len(ops[1])):
+            sops = (ops[0][0], ops[1][i], ops[2][i])
+            symbols.append(o._ufl_expr_reconstruct_(*sops))
+        return symbols
 
     def division(self, o, ops):
         ffc_assert(len(ops) == 2, "Expecting two operands.")
