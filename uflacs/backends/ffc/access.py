@@ -75,7 +75,8 @@ class FFCAccessBackend(MultiFunction):
         return self.symbols.quadrature_loop_index()
 
     def argument_loop_index(self, iarg):
-        return "{name}{num}".format(name=names.ia, num=iarg)
+        L = self.language
+        return L.Symbol("{name}{num}".format(name=names.ia, num=iarg))
 
     def element_tensor_name(self):
         return names.A

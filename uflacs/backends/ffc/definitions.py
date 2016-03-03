@@ -280,7 +280,9 @@ class FFCDefinitionsBackend(MultiFunction):
         else:
             # Inlined version:
             dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction, self.interleaved_components)
-            value = L.Sum([dof_access[idof] * uname[entity][iq][idof - begin]
+            basis = uname[entity]
+            basis = uname[entity][iq]
+            value = L.Sum([dof_access[idof] * basis[idof - begin]
                            for idof in range(begin, end)])
             # Inlined loop to accumulate linear combination of dofs and tables
             code = [

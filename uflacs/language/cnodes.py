@@ -645,13 +645,14 @@ class ArrayAccess(CExprOperator):
 
     def __init__(self, array, indices):
         # Typecheck array argument
-        if isinstance(array, ArrayDecl):
-            self.array = array.symbol
-        elif isinstance(array, Symbol):
+        if isinstance(array, str):
+            array = Symbol(array)
+        if isinstance(array, Symbol):
             self.array = array
+        elif isinstance(array, ArrayDecl):
+            self.array = array.symbol
         else:
-            assert isinstance(array, str)
-            self.array = Symbol(array)
+            raise ValueError("Unexpected array type %s." % (type(array).__name__,))
 
         # Allow expressions or literals as indices
         if not isinstance(indices, (list, tuple)):
@@ -670,6 +671,14 @@ class ArrayAccess(CExprOperator):
             if any((isinstance(i, ints) and isinstance(d, ints) and int(i) >= int(d))
                    for i, d in zip(self.indices, array.sizes)):
                 raise ValueError("Index value >= array dimension.")
+
+    def __getitem__(self, indices):
+        "Handling nested expr[i][j]."
+        if isinstance(indices, list):
+            indices = tuple(indices)
+        elif not isinstance(indices, tuple):
+            indices = (indices,)
+        return ArrayAccess(self.array, self.indices + indices)
 
     def ce_format(self):
         s = self.array.ce_format()
