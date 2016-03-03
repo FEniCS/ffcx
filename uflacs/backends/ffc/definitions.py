@@ -91,8 +91,12 @@ class FFCDefinitionsBackend(MultiFunction):
             # No need to store basis function value in its own variable,
             # just get table value directly
             code += [L.VariableDecl("double", access, 0.0)]
+
             uname, begin, end = tabledata
+            uname = L.Symbol(uname)
+
             entity = format_entity_name(self.ir["entitytype"], mt.restriction)
+            entity = L.Symbol(entity)
 
             # Empty loop needs to be skipped as zero tables may not be generated
             # FIXME: assert begin < end instead, and remove at earlier
@@ -103,13 +107,11 @@ class FFCDefinitionsBackend(MultiFunction):
             iq = self.symbols.quadrature_loop_index()
             idof = self.symbols.coefficient_dof_sum_index()
 
-            dof = L.Sub(idof, begin)
-            table_access = L.ArrayAccess(uname, (entity, iq, dof))
+            table_access = uname[entity][iq][idof - begin]
 
             dof_access = self.symbols.coefficient_dof_access(mt.terminal, idof)
 
-            prod = L.Mul(dof_access, table_access)
-            body = [L.AssignAdd(access, prod)]
+            body = [L.AssignAdd(access, dof_access * table_access)]
 
             # Loop to accumulate linear combination of dofs and tables
             code += [L.ForRange(idof, begin, end, body=body)]
@@ -157,6 +159,7 @@ class FFCDefinitionsBackend(MultiFunction):
         gdim = cell.geometric_dimension()
 
         uname, begin, end = tabledata
+        uname = L.Symbol(uname)
 
         if degree == 1:
             num_vertices = cell.num_vertices()
@@ -169,6 +172,8 @@ class FFCDefinitionsBackend(MultiFunction):
             num_scalar_dofs = end - begin
 
         entity = format_entity_name(self.ir["entitytype"], mt.restriction)
+        entity = L.Symbol(entity)
+
         coefficient_dof = self.symbols.coefficient_dof_sum_index()
         if coordinate_element.degree() > 0:
             iq = self.symbols.quadrature_loop_index()
@@ -177,12 +182,11 @@ class FFCDefinitionsBackend(MultiFunction):
 
         if 0:
             # Generated loop version:
-            table_access = L.ArrayAccess(uname, (entity, iq, coefficient_dof))
+            table_access = uname[entity][iq][coefficient_dof]
             dof_access = self.symbols.domain_dof_access(coefficient_dof, mt.flat_component,
                                                         gdim, num_scalar_dofs,
                                                         mt.restriction, self.interleaved_components)
-            prod = L.Mul(dof_access, table_access)
-            accumulate = [L.AssignAdd(access, prod)]
+            accumulate = [L.AssignAdd(access, dof_access * table_access)]
 
             # Loop to accumulate linear combination of dofs and tables
             code += [L.VariableDecl("double", access, 0.0)]
@@ -190,13 +194,8 @@ class FFCDefinitionsBackend(MultiFunction):
         else:
             # Inlined version (we know this is bounded by a small number)
             dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction, self.interleaved_components)
-            prods = []
-            for idof in range(begin, end):
-                ind = (entity, iq, L.Sub(idof, begin))
-                table_access = L.ArrayAccess(uname, ind)
-                prods += [L.Mul(dof_access[idof], table_access)]
-                # TODO: Shorter notation possible here and elsewhere if symbols are L.Symbols and not strings:
-                #prods += [dof_access[idof] * uname[entity, iq, idof - begin]]
+            prods = [dof_access[idof] * uname[entity][iq][idof - begin]
+                     for idof in range(begin, end)]
 
             # Inlined loop to accumulate linear combination of dofs and tables
             code += [L.VariableDecl("const double", access, L.Sum(prods))]
@@ -245,6 +244,7 @@ class FFCDefinitionsBackend(MultiFunction):
         gdim = cell.geometric_dimension()
 
         uname, begin, end = tabledata
+        uname = L.Symbol(uname)
 
         if degree == 1:
             num_vertices = cell.num_vertices()
@@ -257,6 +257,8 @@ class FFCDefinitionsBackend(MultiFunction):
             num_scalar_dofs = end - begin
 
         entity = format_entity_name(self.ir["entitytype"], mt.restriction)
+        entity = L.Symbol(entity)
+
         coefficient_dof = self.symbols.coefficient_dof_sum_index()
         if degree > 1:
             iq = self.symbols.quadrature_loop_index()
@@ -265,12 +267,11 @@ class FFCDefinitionsBackend(MultiFunction):
 
         if 0:
             # Generated loop version:
-            table_access = L.ArrayAccess(uname, (entity, iq, coefficient_dof))
+            table_access = uname[entity][iq][coefficient_dof]
             dof_access = self.symbols.domain_dof_access(coefficient_dof, mt.flat_component,
                                                         gdim, num_scalar_dofs,
                                                         mt.restriction, self.interleaved_components)
-            prod = L.Mul(dof_access, table_access)
-            accumulate = L.AssignAdd(access, prod)
+            accumulate = L.AssignAdd(access, dof_access * table_access)
 
             # Loop to accumulate linear combination of dofs and tables
             code += [L.VariableDecl("double", access, 0.0)]
@@ -279,14 +280,11 @@ class FFCDefinitionsBackend(MultiFunction):
             # Inlined version:
             prods = []
             dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction, self.interleaved_components)
-            for idof in range(begin, end):
-                ind = (entity, iq, L.Sub(idof, begin))
-                table_access = L.ArrayAccess(uname, ind)
-                prods += [L.Mul(dof_access[idof], table_access)]
+            prods = [dof_access[idof] * uname[entity][iq][idof - begin]
+                     for idof in range(begin, end)]
 
             # Inlined loop to accumulate linear combination of dofs and tables
             code += [L.VariableDecl("const double", access, L.Sum(prods))]
-
 
         return code
 
