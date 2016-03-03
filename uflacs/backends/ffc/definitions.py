@@ -232,7 +232,6 @@ class FFCDefinitionsBackend(MultiFunction):
         # access here is e.g. J_0, component 0 of J
 
         L = self.language
-        code = []
 
         coordinate_element = mt.terminal.ufl_domain().ufl_coordinate_element()
         degree = coordinate_element.degree()
@@ -271,20 +270,22 @@ class FFCDefinitionsBackend(MultiFunction):
             dof_access = self.symbols.domain_dof_access(coefficient_dof, mt.flat_component,
                                                         gdim, num_scalar_dofs,
                                                         mt.restriction, self.interleaved_components)
-            accumulate = L.AssignAdd(access, dof_access * table_access)
 
             # Loop to accumulate linear combination of dofs and tables
-            code += [L.VariableDecl("double", access, 0.0)]
-            code += [L.ForRange(coefficient_dof, begin, end, body=accumulate)]
+            code = [
+                L.VariableDecl("double", access, 0.0),
+                L.ForRange(coefficient_dof, begin, end,
+                           body=[L.AssignAdd(access, dof_access * table_access)])
+                ]
         else:
             # Inlined version:
-            prods = []
             dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction, self.interleaved_components)
-            prods = [dof_access[idof] * uname[entity][iq][idof - begin]
-                     for idof in range(begin, end)]
-
+            value = L.Sum([dof_access[idof] * uname[entity][iq][idof - begin]
+                           for idof in range(begin, end)])
             # Inlined loop to accumulate linear combination of dofs and tables
-            code += [L.VariableDecl("const double", access, L.Sum(prods))]
+            code = [
+                L.VariableDecl("const double", access, value)
+                ]
 
         return code
 
