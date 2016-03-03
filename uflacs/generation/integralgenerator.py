@@ -23,7 +23,7 @@ from six.moves import zip
 from six.moves import xrange as range
 
 from ufl import product
-from ufl.classes import ConstantValue
+from ufl.classes import ConstantValue, Condition
 
 from ffc.log import error
 
@@ -276,6 +276,7 @@ class IntegralGenerator(object):
 
             if is_modified_terminal(v):
                 mt = analyse_modified_terminal(v)
+
                 # Backend specific modified terminal translation
                 vaccess = self.backend.access(mt.terminal, mt, table_ranges[i], num_points)
                 vdef = self.backend.definitions(mt.terminal, mt, table_ranges[i], vaccess)
@@ -290,35 +291,37 @@ class IntegralGenerator(object):
                 # Mapping UFL operator to target language
                 vexpr = self.backend.ufl_to_language(v, *vops)
 
-                # No definitions needed
-                vdef = None
-
                 # TODO: Let optimized ir provide mapping of vertex indices to
                 # variable indices, marking which subexpressions to store in variables
                 # and in what order:
                 #j = variable_id[i]
-                # Currently instead creating a new intermediate for each subexpression:
-                j = len(intermediates)
 
-                if j is None:
+                # Currently instead creating a new intermediate for each subexpression except boolean conditions
+                if isinstance(v, Condition):
+                    # Inline the conditions x < y, condition values
+                    # 'x' and 'y' may still be stored in intermediates.
+                    # This removes the need to handle boolean intermediate variables.
+                    # With tensor-valued conditionals it may not be optimal but we
+                    # let the C++ compiler take responsibility for optimizing those cases.
+                    j = None
+                else:
+                    j = len(intermediates)
+
+                if j is not None:
+                    # Record assignment of vexpr to intermediate variable
+                    vaccess = L.ArrayAccess(name, j)
+                    intermediates.append(L.Assign(vaccess, vexpr))
+                else:
                     # Access the inlined expression
                     vaccess = vexpr
-                else:
-                    # Access intermediate variable
-                    vaccess = L.ArrayAccess(name, j)
-                    # Record assignment of vexpr to intermediate variable
-                    intermediates.append(L.Assign(vaccess, vexpr))
 
             # Store access node for future reference
             vaccesses[v] = vaccess
 
-        parts = []
-        # Compute all terminals first
-        parts += definitions
+        # Join terminal computation, array of intermediate expressions, and intermediate computations
+        parts = [definitions]
         if intermediates:
-            # Declare array large enough to hold all subexpressions we've emitted
             parts += [L.ArrayDecl("double", name, len(intermediates))]
-            # Then add all computations
             parts += intermediates
         return parts
 
@@ -371,23 +374,20 @@ class IntegralGenerator(object):
 
                 store_this_in_variable = True # TODO: Don't store all subexpressions
                 if store_this_in_variable:
-                    # Count intermediates so we get a new vname each time
-                    vaccess = L.ArrayAccess(name, len(intermediates))
-                    # Store assignments of operator results in list
+                    # Record assignment of vexpr to intermediate variable
+                    j = len(intermediates)
+                    vaccess = L.ArrayAccess(name, j)
                     intermediates.append(L.Assign(vaccess, vexpr))
                 else:
-                    # Store the inlined expression
+                    # Access the inlined expression
                     vaccess = vexpr
 
             # Store access string, either a variable symbol or an inlined expression
             self.ast_variables[i] = vaccess
 
-        parts = []
-        # Compute all terminals first
-        parts += definitions
-        # Then add all computations
+        # Join terminal computation, array of intermediate expressions, and intermediate computations
+        parts = [definitions]
         if intermediates:
-            # Declare array large enough to hold all subexpressions we've emitted
             parts += [L.ArrayDecl("double", name, len(intermediates))]
             parts += intermediates
         return parts
