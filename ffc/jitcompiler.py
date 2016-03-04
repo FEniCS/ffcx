@@ -44,7 +44,7 @@ from ffc.log import set_prefix
 from ffc.log import INFO
 from ffc.parameters import default_parameters
 from ffc.mixedelement import MixedElement
-from ffc.compiler import compile_form
+from ffc.compiler import compile_form, compile_element
 from ffc.jitobject import JITObject
 from ffc.quadratureelement import default_quadrature_degree
 from ffc.backends.ufc import build_ufc_module
@@ -56,21 +56,6 @@ FFC_PARAMETERS_JIT["no-evaluate_basis_derivatives"] = True
 # Set debug level for Instant
 instant.set_log_level("warning")
 
-def jit(ufl_object, parameters=None):
-    """Just-in-time compile the given form or element
-
-    Parameters:
-
-      ufl_object : The UFL object to be compiled
-      parameters : A set of parameters
-    """
-
-    # Check if we get an element or a form
-    if isinstance(ufl_object, FiniteElementBase):
-        return jit_element(ufl_object, parameters)
-    else:
-        return jit_form(ufl_object, parameters)
-
 
 def check_swig_version(compiled_module):
     # Check swig version of compiled module
@@ -81,12 +66,24 @@ def check_swig_version(compiled_module):
               "version: '%s' != '%s' " % \
               (ufc.__swigversion__, compiled_module.swigversion))
 
-def jit_form(form, parameters=None):
-    "Just-in-time compile the given form."
+
+def jit(ufl_object, parameters=None):
+    """Just-in-time compile the given form or element
+
+    Parameters:
+
+      ufl_object : The UFL object to be compiled
+      parameters : A set of parameters
+    """
+    form = ufl_object
 
     # Check that we get a Form
-    if not isinstance(form, Form):
-        error("Unable to convert object to a UFL form: %s" % repr(form))
+    if isinstance(form, Form):
+        kind = "form"
+    elif isinstance(form, FiniteElementBase):
+        kind = "element"
+    else:
+        error("Expecting a UFL form or element: %s" % repr(form))
 
     # Check parameters
     parameters = _check_parameters(form, parameters)
@@ -99,7 +96,7 @@ def jit_form(form, parameters=None):
     jit_object = JITObject(form, parameters)
 
     # Set prefix for generated code
-    module_name = "ffc_form_" + jit_object.signature()
+    module_name = "ffc_%s_%s" % (kind, jit_object.signature())
 
     # Use Instant cache if possible
     cache_dir = parameters["cache_dir"] or None
@@ -124,9 +121,16 @@ def jit_form(form, parameters=None):
                     "Calling FFC just-in-time (JIT) compiler, this may take some time.")
 
                 # Generate code
-                compile_form(form,
-                             prefix=module_name,
-                             parameters=parameters)
+                if kind == "form":
+                    compile_form(form,
+                                 prefix=module_name,
+                                 parameters=parameters,
+                                 jit=True)
+                elif kind == "element":
+                    compile_element(form,
+                                    prefix=module_name,
+                                    parameters=parameters,
+                                    jit=True)
 
                 # Build module using Instant (through UFC)
                 debug("Compiling and linking Python extension module, this may take some time.")
@@ -142,43 +146,25 @@ def jit_form(form, parameters=None):
                     hfile,
                     source_directory = os.curdir,
                     signature = module_name,
-                    sources = [cppfile] if parameters["split"] else [],
+                    sources = [cppfile],
                     cppargs = cppargs,
                     cache_dir = cache_dir)
 
                 # Remove code
                 if os.path.isfile(hfile):
                     os.unlink(hfile)
-                if parameters["split"] :
-                    if os.path.isfile(cppfile):
-                        os.unlink(cppfile)
+                if os.path.isfile(cppfile):
+                    os.unlink(cppfile)
 
     # Construct instance of compiled form
     check_swig_version(module)
     prefix = module_name
-    compiled_form = _instantiate_form(module, prefix)
-    return compiled_form, module, prefix
+    if kind == "form":
+        compiled_form = _instantiate_form(module, prefix)
+        return compiled_form, module, prefix
+    elif kind == "element":
+        return _instantiate_element_and_dofmap(module, prefix)
 
-def jit_element(element, parameters=None):
-    "Just-in-time compile the given element"
-
-    # FIXME: We need a new solution for this.
-
-    # Check that we get an element
-    if not isinstance(element, FiniteElementBase):
-        error("Expecting a finite element.")
-
-    # Create simplest possible dummy form
-    v = TestFunction(element)
-    ii = (0,)*len(v.ufl_shape)
-    if element.family() == "Discontinuous Lagrange Trace":
-        form = v[ii]*ds
-    else:
-        form = v[ii]*dx
-
-    # Compile form
-    compiled_form, module, prefix = jit_form(form, parameters)
-    return _instantiate_element_and_dofmap(module, prefix)
 
 def _check_parameters(form, parameters):
     "Check parameters and add any missing parameters"
@@ -208,11 +194,12 @@ def _instantiate_form(module, prefix):
     "Extract the form from module with only one form."
     form_id = 0
     classname = make_classname(prefix, "form", form_id)
-    return getattr(module, classname)()
+    return getattr(module, "create_" + classname)()
 
 def _instantiate_element_and_dofmap(module, prefix):
     """Extract element and dofmap from module."""
-    form = _instantiate_form(module, prefix)
-    fe = form.create_finite_element(0)
-    dm = form.create_dofmap(0)
+    fe_classname = make_classname(prefix, "finite_element", "main")
+    dm_classname = make_classname(prefix, "dofmap", "main")
+    fe = getattr(module, "create_" + fe_classname)()
+    dm = getattr(module, "create_" + dm_classname)()
     return (fe, dm)
