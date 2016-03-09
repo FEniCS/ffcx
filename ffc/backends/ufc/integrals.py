@@ -78,10 +78,6 @@ void %(classname)s::tabulate_tensor(double * A,
 }
 """
 
-cell_integral_jit_header = ""
-
-cell_integral_jit_implementation = cell_integral_header + cell_integral_implementation
-
 exterior_facet_integral_combined = """
 class %(classname)s: public ufc::exterior_facet_integral
 {%(members)s
@@ -159,10 +155,6 @@ void %(classname)s::tabulate_tensor(double * A,
 %(tabulate_tensor)s
 }
 """
-
-exterior_facet_integral_jit_header = ""
-
-exterior_facet_integral_jit_implementation = exterior_facet_integral_header + exterior_facet_integral_implementation
 
 interior_facet_integral_combined = """
 class %(classname)s: public ufc::interior_facet_integral
@@ -251,10 +243,6 @@ void %(classname)s::tabulate_tensor(double * A,
 }
 """
 
-interior_facet_integral_jit_header = ""
-
-interior_facet_integral_jit_implementation = interior_facet_integral_header + interior_facet_integral_implementation
-
 vertex_integral_combined = """
 class %(classname)s: public ufc::vertex_integral
 {%(members)s
@@ -332,10 +320,6 @@ void %(classname)s::tabulate_tensor(double * A,
 %(tabulate_tensor)s
 }
 """
-
-vertex_integral_jit_header = ""
-
-vertex_integral_jit_implementation = vertex_integral_header + vertex_integral_implementation
 
 custom_integral_combined = """\
 class %(classname)s: public ufc::custom_integral
@@ -436,10 +420,6 @@ void %(classname)s::tabulate_tensor(double * A,
 }
 """
 
-custom_integral_jit_header = ""
-
-custom_integral_jit_implementation = custom_integral_header + custom_integral_implementation
-
 cutcell_integral_combined = """
 class %(classname)s: public ufc::cutcell_integral
 {%(members)s
@@ -523,10 +503,6 @@ void %(classname)s::tabulate_tensor(double * A,
 %(tabulate_tensor)s
 }
 """
-
-cutcell_integral_jit_header = ""
-
-cutcell_integral_jit_implementation = cutcell_integral_header + cutcell_integral_implementation
 
 interface_integral_combined = """
 class %(classname)s: public ufc::interface_integral
@@ -615,10 +591,6 @@ void %(classname)s::tabulate_tensor(double * A,
 }
 """
 
-interface_integral_jit_header = ""
-
-interface_integral_jit_implementation = interface_integral_header + interface_integral_implementation
-
 overlap_integral_combined = """
 class %(classname)s: public ufc::overlap_integral
 {%(members)s
@@ -702,7 +674,3 @@ void %(classname)s::tabulate_tensor(double * A,
 %(tabulate_tensor)s
 }
 """
-
-overlap_integral_jit_header = ""
-
-overlap_integral_jit_implementation = overlap_integral_header + overlap_integral_implementation

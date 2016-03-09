@@ -61,27 +61,6 @@ def get_installation_prefix():
     return os.path.abspath(os.path.expanduser(prefix))
 
 
-def get_swig_executable():
-    "Get SWIG executable"
-    # Find SWIG executable
-    swig_executable = None
-    swig_minimum_version = "3.0.3"
-    for executable in ["swig", "swig3.0"]:
-        swig_executable = spawn.find_executable(executable)
-        if swig_executable is not None:
-            # Check that SWIG version is ok
-            output = subprocess.check_output([swig_executable, "-version"]).decode('utf-8')
-            swig_version = re.findall(r"SWIG Version ([0-9.]+)", output)[0]
-            if LooseVersion(swig_version) >= LooseVersion(swig_minimum_version):
-                break
-            swig_executable = None
-    if swig_executable is None:
-        raise OSError("Unable to find SWIG version %s or higher." % swig_minimum_version)
-    print("Found SWIG: %s (version %s)" % (swig_executable, swig_version))
-
-    return swig_executable
-
-
 def get_ufc_signature():
     """Compute SHA-1 hash of ufc.h"""
     with open(os.path.join('ufc', 'ufc.h'), 'rb') as f:
@@ -206,7 +185,7 @@ def generate_ufc_signature_file():
                       variables=dict(UFC_SIGNATURE=UFC_SIGNATURE))
 
 
-def generate_ufc_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
+def generate_ufc_config_files():
     "Generate and install UFC configuration files"
 
     # Get variables
@@ -214,6 +193,17 @@ def generate_ufc_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
     PYTHON_LIBRARY = os.environ.get("PYTHON_LIBRARY", find_python_library())
     MAJOR, MINOR, MICRO = VERSION.split(".")
     UFC_SIGNATURE = get_ufc_signature()
+
+    # Check that compiler supports C++11 features
+    cc = new_compiler()
+    CXX = os.environ.get("CXX")
+    if CXX:
+        cc.set_executables(compiler_so=CXX, compiler=CXX, compiler_cxx=CXX)
+    CXX_FLAGS = os.environ.get("CXXFLAGS", "")
+    if has_cxx_flag(cc, "-std=c++11"):
+        CXX_FLAGS += " -std=c++11"
+    elif has_cxx_flag(cc, "-std=c++0x"):
+        CXX_FLAGS += " -std=c++0x"
 
     # Generate UFCConfig.cmake
     write_config_file(os.path.join("cmake", "templates", "UFCConfig.cmake.in"),
@@ -223,7 +213,6 @@ def generate_ufc_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
                                      PYTHON_INCLUDE_DIR=sysconfig.get_python_inc(),
                                      PYTHON_LIBRARY=PYTHON_LIBRARY,
                                      PYTHON_EXECUTABLE=sys.executable,
-                                     SWIG_EXECUTABLE=SWIG_EXECUTABLE,
                                      FULLVERSION=VERSION,
                                      UFC_SIGNATURE=UFC_SIGNATURE,
                                      BOOST_INCLUDE_DIR=find_boost_include_dir(),
@@ -279,75 +268,11 @@ def has_cxx_flag(cc, flag):
         shutil.rmtree(tmpdir)
 
 
-def run_ufc_install():
-    # Subclass extension building command to ensure that distutils to
-    # finds the correct SWIG executable
-    SWIG_EXECUTABLE = get_swig_executable()
-    class my_build_ext(build_ext.build_ext):
-        def find_swig(self):
-            return SWIG_EXECUTABLE
-
-    # Subclass the build_py command to ensure that build_ext produces
-    # ufc.py before build_py (or something else) tries to copy it
-    class my_build_py(build_py.build_py):
-        def run(self):
-            self.run_command('build_ext')
-            build_py.build_py.run(self)
-
-    cmdclass = {"build_py": my_build_py, "build_ext": my_build_ext}
-
-    # Check that compiler supports C++11 features
-    cc = new_compiler()
-    CXX = os.environ.get("CXX")
-    if CXX:
-        cc.set_executables(compiler_so=CXX, compiler=CXX, compiler_cxx=CXX)
-    CXX_FLAGS = os.environ.get("CXXFLAGS", "")
-    if has_cxx_flag(cc, "-std=c++11"):
-        CXX_FLAGS += " -std=c++11"
-    elif has_cxx_flag(cc, "-std=c++0x"):
-        CXX_FLAGS += " -std=c++0x"
-
-    # Generate config files
-    generate_ufc_config_files(SWIG_EXECUTABLE, CXX_FLAGS)
-
-    # Setup extension module for UFC
-    swig_options = ["-c++", "-shadow", "-modern",
-                    "-modernargs", "-fastdispatch",
-                    "-fvirtual", "-nosafecstrings",
-                    "-noproxydel", "-fastproxy",
-                    "-fastinit", "-fastunpack",
-                    "-fastquery", "-nobuildnone"]
-    if sys.version_info[0] > 2:
-        swig_options.insert(0, "-py3")
-    ext_module_ufc = Extension("ufc._ufc",
-                               sources=[os.path.join("ufc", "ufc.i")],
-                               depends=[os.path.join("ufc", "ufc.h"),
-                                        os.path.join("ufc", "ufc_geometry.h")],
-                               swig_opts=swig_options,
-                               extra_compile_args=CXX_FLAGS.split(),
-                               include_dirs=[os.path.join("ufc")])
-    ext_modules = [ext_module_ufc]
-    return cmdclass, ext_modules
-
-
 def run_install():
     "Run installation"
 
     # Check if we're building inside a 'Read the Docs' container
     on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-
-    # Hack to skip ufc and avoid swig dependency on install
-    # so readthedocs can install without the ufc wrapper
-    numpy_include_dir = None
-    if "--skip-ufc" in sys.argv:
-        sys.argv.remove("--skip-ufc")
-        skip_ufc_module = True
-    elif on_rtd:
-        skip_ufc_module = True
-    else:
-        skip_ufc_module = False
-        import numpy
-        numpy_include_dir = numpy.get_include()
 
     # Create batch files for Windows if necessary
     scripts = SCRIPTS
@@ -360,11 +285,8 @@ def run_install():
     # Generate module with UFC signature from template
     generate_ufc_signature_file()
 
-    if skip_ufc_module:
-        cmdclass = {}
-        ext_modules = []
-    else:
-        cmdclass, ext_modules = run_ufc_install()
+    # Generate config files
+    generate_ufc_config_files()
 
     # FFC data files
     data_files = [(os.path.join("share", "man", "man1"),
@@ -374,8 +296,7 @@ def run_install():
     # installs into the Python package directory, not --prefix). This
     # can be fixed when Swig, etc are removed from FFC).
     INSTALL_PREFIX = get_installation_prefix()
-    if not skip_ufc_module:
-        data_files_ufc = [(os.path.join(INSTALL_PREFIX, "include"),
+    data_files_ufc = [(os.path.join(INSTALL_PREFIX, "include"),
                            [os.path.join("ufc", "ufc.h"),
                             os.path.join("ufc", "ufc_geometry.h")]),
                           (os.path.join(INSTALL_PREFIX, "share", "ufc"),
@@ -386,12 +307,9 @@ def run_install():
                             os.path.join("cmake", "templates", \
                                          "UseUFC.cmake")]),
                           (os.path.join(INSTALL_PREFIX, "lib", "pkgconfig"),
-                           [os.path.join("cmake", "templates", "ufc-1.pc")]),
-                          (os.path.join(INSTALL_PREFIX, "include", "swig"),
-                           [os.path.join("ufc", "ufc.i"),
-                            os.path.join("ufc", "ufc_shared_ptr_classes.i")])]
+                           [os.path.join("cmake", "templates", "ufc-1.pc")])]
 
-        data_files = data_files + data_files_ufc
+    data_files = data_files + data_files_ufc
 
     # Call distutils to perform installation
     setup(name             = "FFC",
@@ -428,9 +346,6 @@ def run_install():
                               "uflacs": "uflacs",
                               "ufc": "ufc"},
           scripts          = scripts,
-          include_dirs     = [numpy_include_dir],
-          ext_modules      = ext_modules,
-          cmdclass         = cmdclass,
           data_files       = data_files,
           install_requires = ["numpy", "six", "fiat==1.7.0dev",
                               "ufl==1.7.0dev", "instant==1.7.0dev"],
