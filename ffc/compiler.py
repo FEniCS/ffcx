@@ -126,7 +126,7 @@ from ffc.analysis import analyze_forms, analyze_elements
 from ffc.representation import compute_ir
 from ffc.optimization import optimize_ir
 from ffc.codegeneration import generate_code
-from ffc.formatting import format_code, write_code
+from ffc.formatting import format_code
 from ffc.wrappers import generate_wrapper_code
 
 def compile_form(forms, object_names=None, prefix="Form", parameters=None, jit=False):
@@ -143,8 +143,7 @@ def compile_form(forms, object_names=None, prefix="Form", parameters=None, jit=F
     if not forms:
         return
     if prefix != os.path.basename(prefix):
-        prefix = os.path.basename(prefix)
-        warning("Invalid prefix, modified to {}.".format(prefix))
+        error("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix))
     if object_names is None:
         object_names = {}
     parameters = _check_parameters(parameters)
@@ -177,10 +176,12 @@ def compile_form(forms, object_names=None, prefix="Form", parameters=None, jit=F
     # Stage 5: format code
     cpu_time = time()
     code_h, code_c = format_code(code, wrapper_code, prefix, parameters, jit)
-    write_code(code_h, code_c, prefix, parameters) # FIXME: Don't write to file in this function (issue #72)
     _print_timing(5, time() - cpu_time)
 
     info_green("FFC finished in %g seconds.", time() - cpu_time_0)
+
+    return code_h, code_c
+
 
 def compile_element(elements, prefix="Element", parameters=None, jit=False):
     """This function generates UFC code for a given UFL element or
@@ -194,7 +195,8 @@ def compile_element(elements, prefix="Element", parameters=None, jit=False):
     # Check input arguments
     elements = _check_elements(elements)
     if not elements:
-        return []
+        return "", ""
+    object_names = {}
     parameters = _check_parameters(parameters)
 
     # Stage 1: analysis
@@ -219,17 +221,19 @@ def compile_element(elements, prefix="Element", parameters=None, jit=False):
 
     # Stage 4.1: generate wrappers
     cpu_time = time()
-    object_names = {}
     wrapper_code = generate_wrapper_code(analysis, prefix, object_names, parameters)
     _print_timing(4.1, time() - cpu_time)
 
     # Stage 5: format code
     cpu_time = time()
     code_h, code_c = format_code(code, wrapper_code, prefix, parameters, jit)
-    write_code(code_h, code_c, prefix, parameters) # FIXME: Don't write to file in this function (issue #72)
     _print_timing(5, time() - cpu_time)
 
     info_green("FFC finished in %g seconds.", time() - cpu_time_0)
+
+    # TODO: If prefix and parameters are determined properly outside
+    #   this function they don't need to be returned here...
+    return code_h, code_c
 
 def _check_forms(forms):
     "Initial check of forms."
