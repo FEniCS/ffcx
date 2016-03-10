@@ -81,12 +81,6 @@ def extract_declarations(h_files):
 #define SWIG_SHARED_PTR_NAMESPACE std
 %include <std_shared_ptr.i>
 
-// Declare which classes should be stored using shared_ptr
-%include "swig/ufc_shared_ptr_classes.i"
-
-// Import types from ufc
-%import(module="ufc") "ufc.h"
-
 // Swig shared_ptr macro declarations
 """
 

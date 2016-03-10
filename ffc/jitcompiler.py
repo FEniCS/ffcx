@@ -57,16 +57,6 @@ FFC_PARAMETERS_JIT["no-evaluate_basis_derivatives"] = True
 instant.set_log_level("warning")
 
 
-def check_swig_version(compiled_module):
-    # Check swig version of compiled module
-    import ufc
-    if compiled_module and compiled_module.swigversion != ufc.__swigversion__:
-        error("Incompatible swig versions detected. UFC swig "\
-              "version is not the same as extension module swig "\
-              "version: '%s' != '%s' " % \
-              (ufc.__swigversion__, compiled_module.swigversion))
-
-
 def jit(ufl_object, parameters=None):
     """Just-in-time compile the given form or element
 
@@ -157,7 +147,6 @@ def jit(ufl_object, parameters=None):
                     os.unlink(cppfile)
 
     # Construct instance of compiled form
-    check_swig_version(module)
     prefix = module_name
     if kind == "form":
         compiled_form = _instantiate_form(module, prefix)
