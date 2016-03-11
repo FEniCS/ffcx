@@ -53,6 +53,7 @@ from ffc.parameters import default_parameters
 from ffc import __version__ as FFC_VERSION, ufc_signature
 from ffc.backends.ufc import __version__ as UFC_VERSION
 from ffc.compiler import compile_form, compile_element
+from ffc.formatting import write_code
 from ffc.errorcontrol import compile_with_error_control
 
 
@@ -189,25 +190,29 @@ def main(argv):
             error("Expecting a UFL form file (.ufl).")
             return 1
 
-        # Do additional stuff if in error-control mode
-        if parameters["error_control"]:
-            return compile_with_error_control(ufd.forms, ufd.object_names,
-                                              ufd.reserved_objects, prefix,
-                                              parameters)
-
-        # Catch exceptions only when not in debug mode
-        if parameters["log_level"] <= DEBUG:
-            if len(ufd.forms) > 0:
-                compile_form(ufd.forms, ufd.object_names, prefix, parameters)
+        # Compile
+        try:
+            if parameters["error_control"]:
+                # Do additional stuff if in error-control mode
+                code_h, code_c = \
+                    compile_with_error_control(ufd.forms, ufd.object_names,
+                                         ufd.reserved_objects, prefix,
+                                         parameters)
+            elif len(ufd.forms) > 0:
+                # Compile forms
+                code_h, code_c = \
+                    compile_form(ufd.forms, ufd.object_names, prefix=prefix, parameters=parameters)
             else:
-                compile_element(ufd.elements, prefix, parameters)
-        else:
-            try:
-                if len(ufd.forms) > 0:
-                    compile_form(ufd.forms, ufd.object_names, prefix, parameters)
-                else:
-                    compile_element(ufd.elements, prefix, parameters)
-            except Exception as exception:
+                # Compile elements
+                code_h, code_c = \
+                    compile_element(ufd.elements, prefix=prefix, parameters=parameters)
+            # Write to file
+            write_code(code_h, code_c, prefix, parameters)
+        except Exception as exception:
+            # Catch exceptions only when not in debug mode
+            if parameters["log_level"] <= DEBUG:
+                raise
+            else:
                 info("")
                 error(str(exception))
                 error("To get more information about this error, rerun FFC with --verbose.")

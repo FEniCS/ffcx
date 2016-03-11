@@ -25,6 +25,7 @@ from ufl import Coefficient
 
 from ffc.log import info, error
 from ffc.compiler import compile_form
+from ffc.formatting import write_code
 
 __all__ = ["compile_with_error_control"]
 
@@ -82,9 +83,9 @@ def compile_with_error_control(forms, object_names, reserved_objects,
 
     # Compile error control and input (pde + goal) forms as normal
     forms = generator.primal_forms()
-    compile_form(ec_forms + forms, object_names, prefix, parameters)
+    code_h, code_c = compile_form(ec_forms + forms, object_names, prefix, parameters)
 
-    return 0
+    return code_h, code_c
 
 def prepare_input_arguments(forms, object_names, reserved_objects):
     """

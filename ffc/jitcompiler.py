@@ -45,6 +45,7 @@ from ffc.log import INFO
 from ffc.parameters import default_parameters
 from ffc.mixedelement import MixedElement
 from ffc.compiler import compile_form, compile_element
+from ffc.formatting import write_code
 from ffc.jitobject import JITObject
 from ffc.quadratureelement import default_quadrature_degree
 from ffc.backends.ufc import build_ufc_module
@@ -65,28 +66,27 @@ def jit(ufl_object, parameters=None):
       ufl_object : The UFL object to be compiled
       parameters : A set of parameters
     """
-    form = ufl_object
-
     # Check that we get a Form
-    if isinstance(form, Form):
+    if isinstance(ufl_object, Form):
         kind = "form"
-    elif isinstance(form, FiniteElementBase):
+    elif isinstance(ufl_object, FiniteElementBase):
         kind = "element"
     else:
-        error("Expecting a UFL form or element: %s" % repr(form))
+        error("Expecting a UFL form or element: %s" % repr(ufl_object))
 
     # Check parameters
-    parameters = _check_parameters(form, parameters)
+    parameters = _check_parameters(parameters)
 
     # Set log level
     set_level(parameters["log_level"])
     set_prefix(parameters["log_prefix"])
 
     # Wrap input
-    jit_object = JITObject(form, parameters)
+    jit_object = JITObject(ufl_object, parameters)
 
     # Set prefix for generated code
     module_name = "ffc_%s_%s" % (kind, jit_object.signature())
+    prefix = module_name
 
     # Use Instant cache if possible
     cache_dir = parameters["cache_dir"] or None
@@ -112,15 +112,13 @@ def jit(ufl_object, parameters=None):
 
                 # Generate code
                 if kind == "form":
-                    compile_form(form,
-                                 prefix=module_name,
-                                 parameters=parameters,
-                                 jit=True)
+                    code_h, code_c = compile_form(ufl_object, prefix=module_name,
+                                                  parameters=parameters, jit=True)
                 elif kind == "element":
-                    compile_element(form,
-                                    prefix=module_name,
-                                    parameters=parameters,
-                                    jit=True)
+                    code_h, code_c = compile_element(ufl_object, prefix=module_name,
+                                                     parameters=parameters, jit=True)
+                # Write to file
+                write_code(code_h, code_c, module_name, parameters)
 
                 # Build module using Instant (through UFC)
                 debug("Compiling and linking Python extension module, this may take some time.")
@@ -147,7 +145,6 @@ def jit(ufl_object, parameters=None):
                     os.unlink(cppfile)
 
     # Construct instance of compiled form
-    prefix = module_name
     if kind == "form":
         compiled_form = _instantiate_form(module, prefix)
         return compiled_form, module, prefix
@@ -155,12 +152,8 @@ def jit(ufl_object, parameters=None):
         return _instantiate_element_and_dofmap(module, prefix)
 
 
-def _check_parameters(form, parameters):
+def _check_parameters(parameters):
     "Check parameters and add any missing parameters"
-
-    # Form can not be a list
-    if isinstance(form, list):
-        error("JIT compiler requires a single form (not a list of forms).")
 
     # Copy parameters
     if parameters is None:
