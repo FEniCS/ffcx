@@ -31,6 +31,38 @@ from uflacs.backends.ffc.common import FFCBackendSymbols
 from uflacs.backends.ffc.common import format_entity_name, ufc_restriction_postfix
 
 
+from ufl.cell import num_cell_entities
+
+def num_coordinate_component_dofs(coordinate_element):
+    """Get the number of dofs for a coordinate component for this degree.
+
+    This is a local hack that works for Lagrange 1-3, better
+    would be to get this passed by ffc from fiat through the ir.
+    The table data is to messy to figure out a clean design for that quickly.
+    """
+    degree = coordinate_element.degree()
+    cell = coordinate_element.cell()
+    tdim = cell.topological_dimension()
+    cellname = cell.cellname()
+    d = 0
+    for entity_dim in range(tdim+1):
+        # n = dofs per cell entity
+        if entity_dim == 0:
+            n = 1
+        elif entity_dim == 1:
+            n = degree - 1
+        elif entity_dim == 2:
+            n = (degree - 2)*(degree - 1) // 2
+        elif entity_dim == 3:
+            n = (degree - 3)*(degree - 2)*(degree - 1) // 6
+        else:
+            error("Entity dimension out of range")
+        # Accumulate
+        num_entities = num_cell_entities[cellname][entity_dim]
+        d += num_entities * n
+    return d
+
+
 class FFCDefinitionsBackend(MultiFunction):
     """FFC specific code definitions."""
 
@@ -65,61 +97,111 @@ class FFCDefinitionsBackend(MultiFunction):
 
     def initial(self):
         "Return code inserted at beginning of kernel."
-        code = []
-        return code
+        return []
 
     def expr(self, t, mt, tabledata, access):
         error("Unhandled type {0}".format(type(t)))
 
     # === Generate code definitions ===
 
+    def quadrature_weight(self, e, mt, tabledata, access):
+        return []
+
     def constant_value(self, e, mt, tabledata, access):
-        return None
+        return []
 
     def argument(self, t, mt, tabledata, access):
-        code = []
-        return code
+        return []
 
     def coefficient(self, t, mt, tabledata, access):
         L = self.language
 
-        code = []
+        # For a constant coefficient we reference the dofs directly, so no definition needed
         if is_cellwise_constant(mt.terminal):
-            # For a constant coefficient we reference the dofs directly, so no definition needed
-            pass
-        else:
-            # No need to store basis function value in its own variable,
-            # just get table value directly
-            code += [L.VariableDecl("double", access, 0.0)]
+            return []
 
-            uname, begin, end = tabledata
-            uname = L.Symbol(uname)
+        # No need to store basis function value in its own variable,
+        # just get table value directly
+        uname, begin, end = tabledata
+        uname = L.Symbol(uname)
 
-            entity = format_entity_name(self.ir["entitytype"], mt.restriction)
-            entity = L.Symbol(entity)
+        # Empty loop needs to be skipped as zero tables may not be generated
+        # FIXME: assert begin < end instead, and remove at earlier
+        #        stage so dependent code can also be removed
+        if begin >= end:
+            return []
 
-            # Empty loop needs to be skipped as zero tables may not be generated
-            # FIXME: assert begin < end instead, and remove at earlier
-            #        stage so dependent code can also be removed
-            if begin >= end:
-                return code
+        # Get various symbols
+        entity = self.symbols.entity(self.ir["entitytype"], mt.restriction)
+        iq = self.symbols.quadrature_loop_index()
+        idof = self.symbols.coefficient_dof_sum_index()
+        dof_access = self.symbols.coefficient_dof_access(mt.terminal, idof)
+        table_access = uname[entity][iq][idof - begin]
 
-            iq = self.symbols.quadrature_loop_index()
-            idof = self.symbols.coefficient_dof_sum_index()
-
-            table_access = uname[entity][iq][idof - begin]
-
-            dof_access = self.symbols.coefficient_dof_access(mt.terminal, idof)
-
-            body = [L.AssignAdd(access, dof_access * table_access)]
-
-            # Loop to accumulate linear combination of dofs and tables
-            code += [L.ForRange(idof, begin, end, body=body)]
-
+        # Loop to accumulate linear combination of dofs and tables
+        code = [
+            L.VariableDecl("double", access, 0.0),
+            L.ForRange(idof, begin, end,
+                       body=[L.AssignAdd(access, dof_access * table_access)])
+            ]
         return code
 
-    def quadrature_weight(self, e, mt, tabledata, access):
-        return []
+    def _define_coordinate_dofs_lincomb(self, e, mt, tabledata, access):
+        "Define something (x or J) linear combination of coordinate dofs with given table data."
+
+        L = self.language
+
+        # Get properties of domain
+        domain = mt.terminal.ufl_domain()
+        tdim = domain.topological_dimension()
+        gdim = domain.geometric_dimension()
+        coordinate_element = domain.ufl_coordinate_element()
+        degree = coordinate_element.degree()
+        num_scalar_dofs = num_coordinate_component_dofs(coordinate_element)
+
+        # Reference coordinates are known, no coordinate field, so we compute
+        # this component as linear combination of coordinate_dofs "dofs" and table
+
+        uname, begin, end = tabledata
+        uname = L.Symbol(uname)
+        assert end - begin <= num_scalar_dofs
+
+        entity = self.symbols.entity(self.ir["entitytype"], mt.restriction)
+
+        if is_cellwise_constant(mt.expr):
+            iq = 0
+        else:
+            iq = self.symbols.quadrature_loop_index()
+
+        if 0:  # FIXME: Make an option to test
+            # Generated loop version:
+            coefficient_dof = self.symbols.coefficient_dof_sum_index()
+            dof_access = self.symbols.domain_dof_access(coefficient_dof, mt.flat_component,
+                                                        gdim, num_scalar_dofs,
+                                                        mt.restriction, self.interleaved_components)
+            table_access = uname[entity][iq][coefficient_dof]
+
+            # Loop to accumulate linear combination of dofs and tables
+            code = [
+                L.VariableDecl("double", access, 0.0),
+                L.ForRange(coefficient_dof, begin, end,
+                           body=[L.AssignAdd(access, dof_access * table_access)])
+                ]
+        else:
+            # Inlined version (we know this is bounded by a small number)
+            dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs,
+                                                         mt.restriction,
+                                                         self.interleaved_components)
+
+            value = L.Sum([dof_access[idof] * uname[entity][iq][idof - begin]
+                           for idof in range(begin, end)])
+
+            # Inlined loop to accumulate linear combination of dofs and tables
+            code = [
+                L.VariableDecl("const double", access, value)
+                ]
+
+        return code
 
     def spatial_coordinate(self, e, mt, tabledata, access):
         """Return definition code for the physical spatial coordinates.
@@ -136,71 +218,7 @@ class FFCDefinitionsBackend(MultiFunction):
         if self.physical_coordinates_known:
             return []
         else:
-            return self._define_spatial_coordinate(e, mt, tabledata, access)
-
-    def _define_spatial_coordinate(self, e, mt, tabledata, access):
-        """Return definition code for x(X).
-
-        x = sum_k xdof_k xphi_k(X)
-        """
-        # FIXME: Share code with _define_jacobian
-        # access here is e.g. x0, component 0 of x
-
-        L = self.language
-        code = []
-
-        coordinate_element = mt.terminal.ufl_domain().ufl_coordinate_element()
-        degree = coordinate_element.degree()
-
-        # Reference coordinates are known, no coordinate field, so we compute
-        # this component as linear combination of coordinate_dofs "dofs" and table
-
-        cell = mt.terminal.ufl_domain().ufl_cell()
-        gdim = cell.geometric_dimension()
-
-        uname, begin, end = tabledata
-        uname = L.Symbol(uname)
-
-        if degree == 1:
-            num_vertices = cell.num_vertices()
-            # FIXME: This assertion fails if we use num_scalar_dofs=end-begin
-            #ffc_assert(num_scalar_dofs <= num_vertices,
-            #           "For a linear element, should have dofs(%d) == vertices(%d). (Note: comp=%d, begin=%d, end=%d)." % (
-            #               num_scalar_dofs, num_vertices, mt.flat_component, begin, end))
-            num_scalar_dofs = num_vertices
-        else:
-            num_scalar_dofs = end - begin
-
-        entity = format_entity_name(self.ir["entitytype"], mt.restriction)
-        entity = L.Symbol(entity)
-
-        coefficient_dof = self.symbols.coefficient_dof_sum_index()
-        if coordinate_element.degree() > 0:
-            iq = self.symbols.quadrature_loop_index()
-        else:
-            iq = 0
-
-        if 0:
-            # Generated loop version:
-            table_access = uname[entity][iq][coefficient_dof]
-            dof_access = self.symbols.domain_dof_access(coefficient_dof, mt.flat_component,
-                                                        gdim, num_scalar_dofs,
-                                                        mt.restriction, self.interleaved_components)
-            accumulate = [L.AssignAdd(access, dof_access * table_access)]
-
-            # Loop to accumulate linear combination of dofs and tables
-            code += [L.VariableDecl("double", access, 0.0)]
-            code += [L.ForRange(coefficient_dof, begin, end, body=accumulate)]
-        else:
-            # Inlined version (we know this is bounded by a small number)
-            dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction, self.interleaved_components)
-            prods = [dof_access[idof] * uname[entity][iq][idof - begin]
-                     for idof in range(begin, end)]
-
-            # Inlined loop to accumulate linear combination of dofs and tables
-            code += [L.VariableDecl("const double", access, L.Sum(prods))]
-
-        return code
+            return self._define_coordinate_dofs_lincomb(e, mt, tabledata, access)
 
     def cell_coordinate(self, e, mt, tabledata, access):
         """Return definition code for the reference spatial coordinates.
@@ -218,102 +236,14 @@ class FFCDefinitionsBackend(MultiFunction):
         return []
 
     def jacobian(self, e, mt, tabledata, access):
-        if self.physical_coordinates_known:
-            return []
-        else:
-            return self._define_jacobian(e, mt, tabledata, access)
-
-    def _define_jacobian(self, e, mt, tabledata, access):
         """Return definition code for the Jacobian of x(X).
 
         J = sum_k xdof_k grad_X xphi_k(X)
         """
-        # FIXME: Share code with _define_spatial_coordinate
-        # access here is e.g. J_0, component 0 of J
-
-        L = self.language
-
-        coordinate_element = mt.terminal.ufl_domain().ufl_coordinate_element()
-        degree = coordinate_element.degree()
-
-        # Reference coordinates are known, no coordinate field, so we compute
-        # this component as linear combination of coordinate_dofs "dofs" and table
-
-        cell = mt.terminal.ufl_domain().ufl_cell()
-        gdim = cell.geometric_dimension()
-
-        uname, begin, end = tabledata
-        uname = L.Symbol(uname)
-
-        if degree == 1:
-            num_vertices = cell.num_vertices()
-            # FIXME: This assertion fails if we use num_scalar_dofs=end-begin
-            #ffc_assert(num_scalar_dofs <= num_vertices,
-            #           "For a linear element, should have dofs(%d) == vertices(%d). (Note: comp=%d, begin=%d, end=%d)." % (
-            #               num_scalar_dofs, num_vertices, mt.flat_component, begin, end))
-            num_scalar_dofs = num_vertices
+        if self.physical_coordinates_known:
+            return []
         else:
-            num_scalar_dofs = end - begin
-
-        entity = format_entity_name(self.ir["entitytype"], mt.restriction)
-        entity = L.Symbol(entity)
-
-        coefficient_dof = self.symbols.coefficient_dof_sum_index()
-        if degree > 1:
-            iq = self.symbols.quadrature_loop_index()
-        else:
-            iq = 0
-
-        if 0:
-            # Generated loop version:
-            table_access = uname[entity][iq][coefficient_dof]
-            dof_access = self.symbols.domain_dof_access(coefficient_dof, mt.flat_component,
-                                                        gdim, num_scalar_dofs,
-                                                        mt.restriction, self.interleaved_components)
-
-            # Loop to accumulate linear combination of dofs and tables
-            code = [
-                L.VariableDecl("double", access, 0.0),
-                L.ForRange(coefficient_dof, begin, end,
-                           body=[L.AssignAdd(access, dof_access * table_access)])
-                ]
-        else:
-            # Inlined version:
-            dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction, self.interleaved_components)
-            basis = uname[entity]
-            basis = uname[entity][iq]
-            value = L.Sum([dof_access[idof] * basis[idof - begin]
-                           for idof in range(begin, end)])
-            # Inlined loop to accumulate linear combination of dofs and tables
-            code = [
-                L.VariableDecl("const double", access, value)
-                ]
-
-        return code
-
-    def reference_cell_volume(self, e, mt, tabledata, access):
-        # Constant table defined in ufc_geometry.h
-        return []
-
-    def reference_facet_volume(self, e, mt, tabledata, access):
-        # Constant table defined in ufc_geometry.h
-        return []
-
-    def reference_normal(self, e, mt, tabledata, access):
-        # Constant table defined in ufc_geometry.h
-        return []
-
-    def cell_facet_jacobian(self, e, mt, tabledata, access):
-        # Constant table defined in ufc_geometry.h
-        return []
-
-    def cell_edge_vectors(self, e, mt, tabledata, access):
-        # Constant table defined in ufc_geometry.h
-        return []
-
-    def facet_edge_vectors(self, e, mt, tabledata, access):
-        # Constant table defined in ufc_geometry.h
-        return []
+            return self._define_coordinate_dofs_lincomb(e, mt, tabledata, access)
 
     def cell_orientation(self, e, mt, tabledata, access):
         # Would be nicer if cell_orientation was a double variable input,
@@ -322,13 +252,25 @@ class FFCDefinitionsBackend(MultiFunction):
         L = self.language
         co = "cell_orientation" + ufc_restriction_postfix(mt.restriction)
         expr = L.VerbatimExpr("(" + co + " == 1) ? -1.0: +1.0;")
-        return [L.VariableDecl("const double", access, expr)]
+        code = [
+            L.VariableDecl("const double", access, expr)
+            ]
+        return code
 
-    def facet_orientation(self, e, mt, tabledata, access):
-        # Constant table defined in ufc_geometry.h
+    def _expect_table(self, e, mt, tabledata, access):
+        "These quantities refer to constant tables defined in ufc_geometry.h."
+        # TODO: Inject const static table here instead?
         return []
+    reference_cell_volume = _expect_table
+    reference_facet_volume = _expect_table
+    reference_normal = _expect_table
+    cell_facet_jacobian = _expect_table
+    cell_edge_vectors = _expect_table
+    facet_edge_vectors = _expect_table
+    facet_orientation = _expect_table
 
     def _expect_symbolic_lowering(self, e, mt, tabledata, access):
+        "These quantities are expected to be replaced in symbolic preprocessing."
         error("Expecting {0} to be replaced in symbolic preprocessing.".format(type(e)))
     facet_normal = _expect_symbolic_lowering
     cell_normal = _expect_symbolic_lowering

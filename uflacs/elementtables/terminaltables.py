@@ -88,25 +88,44 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
         gc = mt.component
         fc = mt.flat_component
 
-        if gd and rv:
-            error("Global derivatives of reference values not defined.")
-        if ld and not rv:
-            #import IPython; IPython.embed()
-            error("Local derivatives of global values not defined.")
-
         # Add to element tables for FormArguments and relevant GeometricQuantities
         if isinstance(t, FormArgument):
+            if rv:
+                if gd:
+                    error("Global derivatives of reference values not defined.")
+            else:
+                if ld:
+                    error("Local derivatives of global values not defined.")
             element = t.ufl_element()
 
         elif isinstance(t, SpatialCoordinate):
+            if rv:
+                error("Not expecting reference value of x.")
+            if gd:
+                error("Not expecting global derivatives of x.")
+                
+            # TODO: Only need table for component element, does that matter?
             element = t.ufl_domain().ufl_coordinate_element()
 
+            if ld:
+                # Actually the Jacobian, translate component gc to x element context
+                fc, ld = gc
+                ld = (ld,)
+
         elif isinstance(t, Jacobian):
+            if rv:
+                error("Not expecting reference value of J.")
+            if gd:
+                error("Not expecting global derivatives of J.")
+
+            # TODO: Only need table for component element, does that matter?
             element = t.ufl_domain().ufl_coordinate_element()
+
             fc = gc[0]
             ld = tuple(sorted((gc[1],) + ld))
             #fc, ld = gc
             #ld = (ld,)
+
         else:
             continue
 
@@ -135,7 +154,6 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
         # Extract the values of the table from ffc table format
         table = tables.get(name)
         if table is None:
-            #import IPython; IPython.embed()
             table = get_ffc_table_values(psi_tables, entitytype, num_points,
                                          element, fc, local_derivatives)
             tables[name] = table
