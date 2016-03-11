@@ -54,7 +54,7 @@ bench_directory = "../../../../bench"
 logfile = None
 
 # Extended quadrature tests (optimisations)
-ext_quad = [\
+ext_quad = [
 "-r quadrature -O -feliminate_zeros",
 "-r quadrature -O -fsimplify_expressions",
 "-r quadrature -O -fprecompute_ip_const",
@@ -65,19 +65,18 @@ ext_quad = [\
 
 # Extended uflacs tests (to be extended with optimisation parameters
 # later)
-ext_uflacs = [\
+ext_uflacs = [
 "-r uflacs",
 ]
 
 known_uflacs_failures = set([
-    "CustomIntegral",
-    "CustomMixedIntegral",
-    "CustomVectorIntegral"
-    "Metadata",
-
-    "AdaptivePoisson",
-    "PoissonDG",
-    "Biharmonic",
+    "CustomIntegral.ufl",
+    "CustomMixedIntegral.ufl",
+    "CustomVectorIntegral.ufl",
+    "MetaData.ufl",
+    "AdaptivePoisson.ufl",
+    "PoissonDG.ufl",
+    "Biharmonic.ufl",
     ])
 
 _command_timings = []
@@ -400,32 +399,48 @@ def main(args):
     "Run all regression tests."
 
     # Check command-line arguments TODO: Use argparse
-    generate_only  = "--generate-only" in args
-    fast           = "--fast" in args
-    bench          = "--bench" in args
+    use_auto       = "--skip-auto" not in args
+    use_uflacs     = "--skip-uflacs" not in args
     use_quad       = "--skip-quad" not in args
     use_ext_quad   = "--ext-quad" in args
-    use_ext_uflacs = "--ext-uflacs" in args
+
+    skip_download  = "--skip-download" in args
+    skip_run       = "--skip-run" in args
+    skip_code_diff = "--skip-code-diff" in args
+    skip_validate  = "--skip-validate" in args
+    bench          = "--bench" in args
+
     permissive     = "--permissive" in args
     tolerant       = "--tolerant" in args
     print_timing   = "--print-timing" in args
-    skip_download  = "--skip-download" in args
-    ignore_code_diff = "--ignore-code-diff" in args
+    show_help      = "--help" in args
 
     flags = (
-        "--generate-only",
-        "--fast",
-        "--bench",
+        "--skip-auto",
+        "--skip-uflacs",
         "--skip-quad",
         "--ext-quad",
-        "--ext-uflacs",
+        "--skip-download",
+        "--skip-run",
+        "--skip-code-diff",
+        "--skip-validate",
+        "--bench",
         "--permissive",
         "--tolerant",
         "--print-timing",
-        "--skip-download",
-        "--ignore-code-diff",
+        "--help",
         )
     args = [arg for arg in args if not arg in flags]
+
+    if show_help:
+        info("Valid arguments:\n" + "\n".join(flags))
+        return 0
+    
+    if bench or not skip_validate:
+        skip_run = False
+    if bench:
+        skip_code_diff = True
+        skip_validate = True
 
     # Extract .ufl names from args
     only_forms = set([arg for arg in args if arg.endswith(".ufl")])
@@ -451,17 +466,16 @@ def main(args):
     clean_output(output_directory)
     os.chdir(output_directory)
 
-    # Adjust which test cases (combinations of compile arguments) to
-    # run here
-    test_cases = ["-r auto"]
-    if use_quad and (not bench and not fast):
+    # Adjust which test cases (combinations of compile arguments) to run here
+    test_cases = []
+    if use_auto:
+        test_cases += ["-r auto"]
+    if use_uflacs:
+        test_cases += ["-r uflacs"]
+    if use_quad:
         test_cases += ["-r quadrature", "-r quadrature -O"]
     if use_ext_quad:
         test_cases += ext_quad
-    if use_ext_uflacs:
-        test_cases = ext_uflacs
-        test_cases += ["-r quadrature"]
-        #test_cases += ["-r quadrature -O"]
 
     _permissive = permissive
 
@@ -477,7 +491,7 @@ def main(args):
         # Workarounds for partial feature completeness in uflacs
         if "uflacs" in argument and not only_forms:
             skip_forms = known_uflacs_failures
-            info("Skipping forms known to fail with uflacs:", sorted(skip_forms))
+            info("Skipping forms known to fail with uflacs:\n" + "\n".join(sorted(skip_forms)))
         else:
             skip_forms = set()
 
@@ -494,7 +508,7 @@ def main(args):
         generate_code(args + [argument], only_forms, skip_forms)
 
         # Location of reference directories
-        reference_directory =  os.path.abspath("../../ffc-reference-data/")
+        reference_directory = os.path.abspath("../../ffc-reference-data/")
         code_reference_dir = os.path.join(reference_directory, sub_directory)
 
         # Note: We use the r_auto references for all test cases. This
@@ -504,19 +518,22 @@ def main(args):
 
         # Validate code by comparing to code generated with this set
         # of compiler parameters
-        if not bench and (argument not in ext_quad) and not ignore_code_diff:
+        if skip_code_diff or (argument in ext_quad):
+            info("Skipping code diff validation")
+        else:
             validate_code(code_reference_dir)
 
         # Build and run programs and validate output to common
         # reference
-        if fast or generate_only:
-            info("Skipping program validation")
-        elif bench:
-            build_programs(bench, permissive)
-            run_programs(bench)
+        if skip_run:
+            info("Skipping program execution")
         else:
             build_programs(bench, permissive)
             run_programs(bench)
+
+        if skip_validate:
+            info("Skipping program output validation")
+        else:
             validate_programs(output_reference_dir)
 
         # Go back up
