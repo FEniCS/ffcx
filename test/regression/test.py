@@ -479,7 +479,10 @@ def main(args):
 
     _permissive = permissive
 
+    test_case_timings = {}
+
     for argument in test_cases:
+        test_case_timings[argument] = time.time()
 
         begin("Running regression tests with %s" % argument)
 
@@ -530,23 +533,28 @@ def main(args):
         else:
             build_programs(bench, permissive)
             run_programs(bench)
-
-        if skip_validate:
-            info("Skipping program output validation")
-        else:
-            validate_programs(output_reference_dir)
+            # Validate output to common reference results
+            if skip_validate:
+                info("Skipping program output validation")
+            else:
+                validate_programs(output_reference_dir)
 
         # Go back up
         os.chdir(os.path.pardir)
 
         end()
+        test_case_timings[argument] = time.time() - test_case_timings[argument]
 
     # Print results
     if print_timing:
+        info_green("Timing of all commands executed:")
         timings = '\n'.join("%10.2e s  %s" % (t, name) for (name, t)
                             in _command_timings)
-        info_green("Timing of all commands executed:")
         info(timings)
+
+    for argument in test_cases:
+        info("Total time for %s: %d s" % (argument, test_case_timings[argument]))
+
     if logfile is None:
         info_green("Regression tests OK")
         return 0
