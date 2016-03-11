@@ -494,7 +494,7 @@ def main(args):
         # Workarounds for partial feature completeness in uflacs
         if "uflacs" in argument and not only_forms:
             skip_forms = known_uflacs_failures
-            info("Skipping forms known to fail with uflacs:\n" + "\n".join(sorted(skip_forms)))
+            info_blue("Skipping forms known to fail with uflacs:\n" + "\n".join(sorted(skip_forms)))
         else:
             skip_forms = set()
 
@@ -522,20 +522,20 @@ def main(args):
         # Validate code by comparing to code generated with this set
         # of compiler parameters
         if skip_code_diff or (argument in ext_quad):
-            info("Skipping code diff validation")
+            info_blue("Skipping code diff validation")
         else:
             validate_code(code_reference_dir)
 
         # Build and run programs and validate output to common
         # reference
         if skip_run:
-            info("Skipping program execution")
+            info_blue("Skipping program execution")
         else:
             build_programs(bench, permissive)
             run_programs(bench)
             # Validate output to common reference results
             if skip_validate:
-                info("Skipping program output validation")
+                info_blue("Skipping program output validation")
             else:
                 validate_programs(output_reference_dir)
 
