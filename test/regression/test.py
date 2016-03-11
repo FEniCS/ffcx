@@ -69,6 +69,16 @@ ext_uflacs = [\
 "-r uflacs",
 ]
 
+known_uflacs_failures = set([
+    "CustomIntegral",
+    "CustomMixedIntegral",
+    "CustomVectorIntegral"
+    "Metadata",
+
+    "AdaptivePoisson",
+    "PoissonDG",
+    "Biharmonic",
+    ])
 
 _command_timings = []
 def run_command(command):
@@ -106,7 +116,7 @@ def clean_output(output_directory):
     os.mkdir(output_directory)
 
 
-def generate_test_cases(bench, only_forms):
+def generate_test_cases(bench, only_forms, skip_forms):
     "Generate form files for all test cases."
 
     begin("Generating test cases")
@@ -118,7 +128,8 @@ def generate_test_cases(bench, only_forms):
         form_directory = demo_directory
 
     # Make list of form files
-    form_files = [f for f in os.listdir(form_directory) if f.endswith(".ufl")]
+    form_files = [f for f in os.listdir(form_directory)
+                  if f.endswith(".ufl") and f not in skip_forms]
     if only_forms:
         form_files = [f for f in form_files if f in only_forms]
     form_files.sort()
@@ -141,11 +152,12 @@ def generate_test_cases(bench, only_forms):
     end()
 
 
-def generate_code(args, only_forms):
+def generate_code(args, only_forms, skip_forms):
     "Generate code for all test cases."
 
     # Get a list of all files
-    form_files = [f for f in os.listdir(".") if f.endswith(".ufl")]
+    form_files = [f for f in os.listdir(".")
+                  if f.endswith(".ufl") and f not in skip_forms]
     if only_forms:
         form_files = [f for f in form_files if f in only_forms]
     form_files.sort()
@@ -451,6 +463,8 @@ def main(args):
         test_cases += ["-r quadrature"]
         #test_cases += ["-r quadrature -O"]
 
+    _permissive = permissive
+
     for argument in test_cases:
 
         begin("Running regression tests with %s" % argument)
@@ -460,11 +474,24 @@ def main(args):
         clean_output(sub_directory)
         os.chdir(sub_directory)
 
+        # Workarounds for partial feature completeness in uflacs
+        if "uflacs" in argument and not only_forms:
+            skip_forms = known_uflacs_failures
+            info("Skipping forms known to fail with uflacs:", sorted(skip_forms))
+        else:
+            skip_forms = set()
+
+        # uflacs needs permissive, a few variables are generated but not used
+        if "uflacs" in argument:
+            permissive = True
+        else:
+            permissive = _permissive
+
         # Generate test cases
-        generate_test_cases(bench, only_forms)
+        generate_test_cases(bench, only_forms, skip_forms)
 
         # Generate code
-        generate_code(args + [argument], only_forms)
+        generate_code(args + [argument], only_forms, skip_forms)
 
         # Location of reference directories
         reference_directory =  os.path.abspath("../../ffc-reference-data/")
