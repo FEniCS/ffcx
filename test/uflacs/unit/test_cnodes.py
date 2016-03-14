@@ -126,21 +126,21 @@ def test_cnode_variable_declarations():
     assert str(VariableDecl("double", "x", Mul("y", 3.0))) == "double x = y * 3.0;"
 
 def test_1d_initializer_list():
-    fmt = lambda v,s: format_indented_lines(build_initializer_lists(v, s))
+    fmt = lambda v,s: format_indented_lines(build_initializer_lists(v, s, 0, str))
     assert fmt([], (0,)) == "{  }"
     assert fmt([1], (1,)) == "{ 1 }"
     assert fmt([1,2], (2,)) == "{ 1, 2 }"
     assert fmt([1,2,3], (3,)) == "{ 1, 2, 3 }"
 
 def test_nd_initializer_list_oneitem():
-    fmt = lambda v,s: format_indented_lines(build_initializer_lists(v, s))
+    fmt = lambda v,s: format_indented_lines(build_initializer_lists(v, s, 0, str))
     assert fmt([1], (1,)) == "{ 1 }"
     assert fmt([[1]], (1,1)) == "{ { 1 } }"
     assert fmt([[[1]]], (1,1,1)) == "{ { { 1 } } }"
     assert fmt([[[[1]]]], (1,1,1,1)) == "{ { { { 1 } } } }"
 
 def test_nd_initializer_list_twoitems():
-    fmt = lambda v,s: format_indented_lines(build_initializer_lists(v, s))
+    fmt = lambda v,s: format_indented_lines(build_initializer_lists(v, s, 0, str))
     assert fmt([1,2], (2,)) == "{ 1, 2 }"
     assert fmt([[1,2]], (1,2)) == "{ { 1, 2 } }"
     assert fmt([[[1,2]]], (1,1,2)) == "{ { { 1, 2 } } }"
@@ -150,13 +150,13 @@ def test_nd_initializer_list_twoitems():
     assert fmt([[[1], [2]]], (1,2,1)) == "{ { { 1 },\n    { 2 } } }"
 
 def test_nd_initializer_list_twobytwoitems():
-    fmt = lambda v,s: format_indented_lines(build_initializer_lists(v, s))
+    fmt = lambda v,s: format_indented_lines(build_initializer_lists(v, s, 0, str))
     assert fmt([[1,2],[3,4]], (2,2)) == "{ { 1, 2 },\n  { 3, 4 } }"
     assert fmt([[[1,2],[3,4]]], (1,2,2)) == "{ { { 1, 2 },\n    { 3, 4 } } }"
     assert fmt([[[[1,2],[3,4]]]], (1,1,2,2)) == "{ { { { 1, 2 },\n      { 3, 4 } } } }"
 
 def test_2d_initializer_list():
-    assert format_indented_lines(build_initializer_lists([[1,2,3], [4,5,6]], (2,3))) == "{ { 1, 2, 3 },\n  { 4, 5, 6 } }"
+    assert format_indented_lines(build_initializer_lists([[1,2,3], [4,5,6]], (2,3), 0, str)) == "{ { 1, 2, 3 },\n  { 4, 5, 6 } }"
 
     values = [ [[1], [2]],  [[3], [4]],  [[5], [6]] ]
     reference = """\
@@ -166,7 +166,7 @@ def test_2d_initializer_list():
     { 4 } },
   { { 5 },
     { 6 } } }"""
-    assert format_indented_lines(build_initializer_lists(values, (3,2,1))) == reference
+    assert format_indented_lines(build_initializer_lists(values, (3,2,1), 0, str)) == reference
 
 def test_2d_numpy_initializer_list():
     import numpy
@@ -174,7 +174,7 @@ def test_2d_numpy_initializer_list():
     array = numpy.asarray(values)
     sh = (2,3)
     assert array.shape == sh
-    fmt = lambda v,s: format_indented_lines(build_initializer_lists(v, s))
+    fmt = lambda v,s: format_indented_lines(build_initializer_lists(v, s, 0, str))
     assert fmt(values, sh) == "{ { 1, 2, 3 },\n  { 4, 5, 6 } }"
     assert fmt(array, sh) == "{ { 1, 2, 3 },\n  { 4, 5, 6 } }"
 
