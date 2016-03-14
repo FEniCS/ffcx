@@ -31,7 +31,7 @@ from ufl import product
 # FFC modules
 from ffc.log import info, begin, end, debug_code
 from ffc.cpp import format, indent, make_integral_classname
-from ffc.cpp import set_exception_handling
+from ffc.cpp import set_exception_handling, set_float_formatting
 
 # FFC code generation modules
 from ffc.evaluatebasis import _evaluate_basis, _evaluate_basis_all
@@ -39,7 +39,6 @@ from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives
 from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives_all
 from ffc.evaluatedof import evaluate_dof_and_dofs, affine_weights
 from ffc.interpolatevertexvalues import interpolate_vertex_values
-
 from ffc.representation import pick_representation, ufc_integral_types
 
 # Errors issued for non-implemented functions
@@ -55,11 +54,8 @@ def generate_code(ir, parameters):
 
     begin("Compiler stage 4: Generating code")
 
-    # FIXME: Document option -fconvert_exceptions_to_warnings
-    # FIXME: Remove option epsilon and just rely on precision?
-
     # Set code generation parameters
-#    set_float_formatting(int(parameters["precision"]))
+    set_float_formatting(int(parameters["precision"]))
     set_exception_handling(parameters["convert_exceptions_to_warnings"])
 
     # Extract representations

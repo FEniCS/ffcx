@@ -49,7 +49,8 @@ from ffc.mixedelement import MixedElement
 from ffc.enrichedelement import EnrichedElement, SpaceOfReals
 from ffc.fiatinterface import DiscontinuousLagrangeTrace
 from ffc.quadratureelement import QuadratureElement
-from ffc.cpp import set_float_formatting, make_classname, make_integral_classname
+from ffc.cpp import set_float_formatting
+from ffc.cpp import make_classname, make_integral_classname
 
 # List of supported integral types
 ufc_integral_types = ("cell",
@@ -82,7 +83,7 @@ def compute_ir(analysis, prefix, parameters):
 
     begin("Compiler stage 2: Computing intermediate representation")
 
-    # Set code generation parameters
+    # Set code generation parameters (why here? formatting shouldn't happen in representation...)
     set_float_formatting(int(parameters["precision"]))
 
     # Extract data from analysis

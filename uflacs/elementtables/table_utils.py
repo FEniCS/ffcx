@@ -164,7 +164,7 @@ def get_ffc_table_values(tables, entitytype, num_points, element, flat_component
         # Assign block of values for this entity
         res[entity,:,:] = arr
 
-    # Clamp almost-zeros to zero
+    # Clamp almost-zeros to zero  # FIXME: Use parameters["epsilon"] from ffc for this tolerance
     zero_clamp_tolerance = default_tolerance
     res[np.where(np.abs(res) < zero_clamp_tolerance)] = 0.0
     return res
