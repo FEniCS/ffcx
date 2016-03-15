@@ -1047,7 +1047,7 @@ class ArrayDecl(CStatement):
             return decl + " = {};"
         else:
             # Construct initializer lists for arbitrary multidimensional array values
-            initializer_lists = build_initializer_lists(self.values, self.sizes, 0, format_float)  # TODO: Assuming values are floats
+            initializer_lists = build_initializer_lists(self.values, self.sizes, 0, format_value)
             if len(initializer_lists) == 1:
                 return decl + " = " + initializer_lists[0] + ";"
             else:

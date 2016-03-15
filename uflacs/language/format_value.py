@@ -113,5 +113,7 @@ def format_value(value):
         return str(int(value))
     elif isinstance(value, str):
         return '"' + value + '"'
+    elif hasattr(value, "ce_format"):
+        return value.ce_format()
     else:
         raise RuntimeError("Unexpected type %s:\n%s" % (type(value), str(value)))
