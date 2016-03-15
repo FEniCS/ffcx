@@ -27,7 +27,7 @@ _float_fmt = "%r"
 
 def set_float_precision(precision, threshold=None):
     "Configure float formatting precision and zero threshold."
-    global _float_precision, _float_fmt
+    global _float_precision, _float_threshold, _float_fmt
     if threshold is None:
         threshold = 10.0**-(precision-1)  # Matching FFC behaviour, I'd like to drop the -1 here
     _float_precision = precision
