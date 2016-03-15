@@ -83,7 +83,8 @@ def compute_ir(analysis, prefix, parameters):
 
     begin("Compiler stage 2: Computing intermediate representation")
 
-    # Set code generation parameters (why here? formatting shouldn't happen in representation...)
+    # Set code generation parameters (this is not actually a 'formatting'
+    # parameter, used for table value clamping as well)
     set_float_formatting(int(parameters["precision"]))
 
     # Extract data from analysis

@@ -19,7 +19,7 @@
 """The FFC specific backend to the UFLACS form compiler algorithms."""
 
 from six import iteritems
-
+import numpy as np
 from ufl.algorithms import replace
 from ufl.utils.sorting import sorted_by_count
 
@@ -39,6 +39,9 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
     p = default_parameters()
     p.update(parameters)
     parameters = p
+    # FIXME: Should be epsilon from ffc parameters
+    from uflacs.language.format_value import get_float_threshold
+    epsilon = get_float_threshold()
 
     uflacs_ir = {}
     # uflacs_ir["name"] = form_data.name
@@ -94,10 +97,11 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
         # (currently build here means extract from ffc psi_tables)
         #print '\n'.join([str(mt.expr) for mt in terminal_data])
         tables, terminal_table_names = build_element_tables(psi_tables, num_points,
-                                                            entitytype, terminal_data)
+                                                            entitytype, terminal_data,
+                                                            epsilon)
 
         # Optimize tables and get table name and dofrange for each modified terminal
-        unique_tables, terminal_table_ranges = optimize_element_tables(tables, terminal_table_names)
+        unique_tables, terminal_table_ranges = optimize_element_tables(tables, terminal_table_names, epsilon)
         expr_ir["unique_tables"] = unique_tables
 
         # Modify ranges for restricted form arguments (not geometry!)

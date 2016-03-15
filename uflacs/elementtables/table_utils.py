@@ -26,10 +26,8 @@ from six.moves import map
 from six.moves import xrange as range
 import numpy as np
 
-default_tolerance = 1e-14
 
-
-def equal_tables(a, b, eps=default_tolerance):
+def equal_tables(a, b, eps):
     "Compare tables to be equal within a tolerance."
     a = np.asarray(a)
     b = np.asarray(b)
@@ -43,7 +41,7 @@ def equal_tables(a, b, eps=default_tolerance):
     return all(scalars_equal(a[i], b[i], eps) for i in range(a.shape[0]))
 
 
-def strip_table_zeros(table, eps=default_tolerance):
+def strip_table_zeros(table, eps):
     "Strip zero columns from table. Returns column range (begin,end) and the new compact table."
     # Get shape of table and number of columns, defined as the last axis
     table = np.asarray(table)
@@ -68,7 +66,7 @@ def strip_table_zeros(table, eps=default_tolerance):
     return begin, end, table[..., begin:end]
 
 
-def build_unique_tables(tables):
+def build_unique_tables(tables, eps):
     """Given a list or dict of tables, return a list of unique tables
     and a dict of unique table indices for each input table key."""
     unique = []
@@ -81,7 +79,7 @@ def build_unique_tables(tables):
         t = tables[k]
         found = -1
         for i, u in enumerate(unique):
-            if equal_tables(u, t):
+            if equal_tables(u, t, eps):
                 found = i
                 break
         if found == -1:
@@ -91,7 +89,7 @@ def build_unique_tables(tables):
     return unique, mapping
 
 
-def build_unique_tables2(tables):
+def build_unique_tables2(tables, eps):
     """Given a list or dict of tables, return a list of unique tables
     and a dict of unique table indices for each input table key."""
     unique = []
@@ -106,7 +104,7 @@ def build_unique_tables2(tables):
         t = tables[k]
         found = -1
         for i, u in enumerate(unique):
-            if equal_tables(u, t):
+            if equal_tables(u, t, eps):
                 found = i
                 break
         if found == -1:
@@ -117,7 +115,7 @@ def build_unique_tables2(tables):
     return unique, mapping
 
 
-def get_ffc_table_values(tables, entitytype, num_points, element, flat_component, derivative_counts):
+def get_ffc_table_values(tables, entitytype, num_points, element, flat_component, derivative_counts, epsilon):
     """Extract values from ffc element table.
 
     Returns a 3D numpy array with axes
@@ -164,9 +162,8 @@ def get_ffc_table_values(tables, entitytype, num_points, element, flat_component
         # Assign block of values for this entity
         res[entity,:,:] = arr
 
-    # Clamp almost-zeros to zero  # FIXME: Use parameters["epsilon"] from ffc for this tolerance
-    zero_clamp_tolerance = default_tolerance
-    res[np.where(np.abs(res) < zero_clamp_tolerance)] = 0.0
+    # Clamp almost-zeros to zero
+    res[np.where(np.abs(res) < epsilon)] = 0.0
     return res
 
 
@@ -228,9 +225,10 @@ def generate_psi_table_name(element_counter, flat_component, derivative_counts, 
 
 
 def _examples(tables):
+    eps = 1e-14
     name = generate_psi_table_name(counter, flat_component, derivative_counts, averaged, entitytype, None)
-    values = get_ffc_table_values(tables, entitytype, num_points, element, flat_component, derivative_counts)
+    values = get_ffc_table_values(tables, entitytype, num_points, element, flat_component, derivative_counts, eps)
 
-    begin, end, table = strip_table_zeros(table)
+    begin, end, table = strip_table_zeros(table, eps)
     all_zeros = table.shape[-1] == 0
-    all_ones = equal_tables(table, np.ones(table.shape))
+    all_ones = equal_tables(table, np.ones(table.shape), eps)

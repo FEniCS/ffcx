@@ -38,7 +38,7 @@ def test_strip_table_zeros():
     # Can strip entire table:
     a = np.zeros((2, 3))
     e = np.zeros((2, 0))
-    begin, end, b = strip_table_zeros(a)
+    begin, end, b = strip_table_zeros(a, default_tolerance)
     assert begin == a.shape[-1]
     assert end == a.shape[-1]
     assert begin == end # This is a way to check for all-zero table
@@ -47,7 +47,7 @@ def test_strip_table_zeros():
     # Can keep entire nonzero table:
     a = np.ones((2, 3))
     e = np.ones((2, 3))
-    begin, end, b = strip_table_zeros(a)
+    begin, end, b = strip_table_zeros(a, default_tolerance)
     assert begin == 0
     assert end == a.shape[-1]
     assert begin != end
@@ -57,7 +57,7 @@ def test_strip_table_zeros():
     a = np.ones((2, 3))
     a[:, 0] = 0.0
     e = np.ones((2, 2))
-    begin, end, b = strip_table_zeros(a)
+    begin, end, b = strip_table_zeros(a, default_tolerance)
     assert begin == 1
     assert end == a.shape[-1]
     assert begin != end
@@ -67,7 +67,7 @@ def test_strip_table_zeros():
     a = np.ones((2, 3))
     a[:, 2] = 0.0
     e = np.ones((2, 2))
-    begin, end, b = strip_table_zeros(a)
+    begin, end, b = strip_table_zeros(a, default_tolerance)
     assert begin == 0
     assert end == a.shape[-1]-1
     assert begin != end
@@ -80,7 +80,7 @@ def test_strip_table_zeros():
     a[:, 3] = 0.0
     a[:, 4] = 0.0
     e = np.ones((2, 1))
-    begin, end, b = strip_table_zeros(a)
+    begin, end, b = strip_table_zeros(a, default_tolerance)
     assert begin == 2
     assert end == a.shape[-1]-2
     assert begin != end
@@ -93,7 +93,7 @@ def test_strip_table_zeros():
     a[..., 3] = 0.0
     a[..., 4] = 0.0
     e = np.ones((1,))
-    begin, end, b = strip_table_zeros(a)
+    begin, end, b = strip_table_zeros(a, default_tolerance)
     assert begin == 2
     assert end == a.shape[-1]-2
     assert begin != end
@@ -106,7 +106,7 @@ def test_strip_table_zeros():
     a[..., 3] = 0.0
     a[..., 4] = 0.0
     e = np.ones((3, 2, 1))
-    begin, end, b = strip_table_zeros(a)
+    begin, end, b = strip_table_zeros(a, default_tolerance)
     assert begin == 2
     assert end == a.shape[-1]-2
     assert begin != end
@@ -121,7 +121,7 @@ def test_unique_tables_some_equal():
         np.ones((2,))*2,
         np.ones((2,))*2,
         ]
-    unique, mapping = build_unique_tables(tables)
+    unique, mapping = build_unique_tables(tables, default_tolerance)
     expected_unique = [
         np.zeros((2,)),
         np.ones((2,)),
@@ -138,7 +138,7 @@ def test_unique_tables_some_equal():
 
 def test_unique_tables_all_equal():
     tables = [np.ones((3, 5))*2.0]*6
-    unique, mapping = build_unique_tables(tables)
+    unique, mapping = build_unique_tables(tables, default_tolerance)
     expected_unique = [tables[0]]
     expected_mapping = dict((i, v) for i, v in enumerate([0]*6))
     assert mapping == expected_mapping
@@ -153,7 +153,7 @@ def test_unique_tables_all_different():
         np.ones((2, 3, 4)),
         np.ones((2, 3, 4, 5)),
         ]
-    unique, mapping = build_unique_tables(tables)
+    unique, mapping = build_unique_tables(tables, default_tolerance)
     expected_unique = tables
     expected_mapping = dict((i, i) for i in range(len(tables)))
     assert mapping == expected_mapping
@@ -170,7 +170,7 @@ def test_unique_tables_string_keys():
         'e': np.ones((2,))*2,
         'f': np.ones((2,))*2,
         }
-    unique, mapping = build_unique_tables(tables)
+    unique, mapping = build_unique_tables(tables, default_tolerance)
     expected_unique = [
         np.zeros((2,)),
         np.ones((2,)),
@@ -208,7 +208,7 @@ def test_get_ffc_table_values_scalar_cell():
                         }
                     }
                 }
-                table = get_ffc_table_values(ffc_tables, entitytype, num_points, element, component, derivatives)
+                table = get_ffc_table_values(ffc_tables, entitytype, num_points, element, component, derivatives, default_tolerance)
                 assert equal_tables(table[0, ...], np.transpose(arr), default_tolerance)
 
 def test_get_ffc_table_values_vector_facet():
@@ -250,7 +250,7 @@ def test_get_ffc_table_values_vector_facet():
                 }
                 # Tables use flattened component, so we can loop over them as integers:
                 for component in range(num_components):
-                    table = get_ffc_table_values(ffc_tables, entitytype, num_points, element, component, derivatives)
+                    table = get_ffc_table_values(ffc_tables, entitytype, num_points, element, component, derivatives, default_tolerance)
                     for i in range(num_facets):
                         #print table[i,...]
                         assert equal_tables(table[i, ...], np.transpose(arrays[i][:, component,:]), default_tolerance)

@@ -20,7 +20,7 @@
 
 from six import iteritems, iterkeys
 from six.moves import xrange as range
-
+import numpy as np
 import ufl
 from ufl import product
 from ufl.utils.derivativetuples import derivative_listing_to_counts
@@ -62,7 +62,7 @@ def build_element_counter_map(elements):
     return element_counter_map
 
 
-def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
+def build_element_tables(psi_tables, num_points, entitytype, terminal_data, epsilon):
     """Build the element tables needed for a list of modified terminals.
 
     Concepts:
@@ -155,7 +155,7 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
         table = tables.get(name)
         if table is None:
             table = get_ffc_table_values(psi_tables, entitytype, num_points,
-                                         element, fc, local_derivatives)
+                                         element, fc, local_derivatives, epsilon)
             tables[name] = table
 
         # Store table name with modified terminal
@@ -164,7 +164,7 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data):
     return tables, terminal_table_names
 
 
-def optimize_element_tables(tables, terminal_table_names):
+def optimize_element_tables(tables, terminal_table_names, eps):
     """Optimize tables.
 
     Input:
@@ -182,12 +182,12 @@ def optimize_element_tables(tables, terminal_table_names):
     stripped_tables = {}
     table_ranges = {}
     for name, table in iteritems(tables):
-        begin, end, stripped_table = strip_table_zeros(table)
+        begin, end, stripped_table = strip_table_zeros(table, eps)
         stripped_tables[name] = stripped_table
         table_ranges[name] = (begin, end)
 
     # Build unique table mapping
-    unique_tables_list, table_name_to_unique_index = build_unique_tables(stripped_tables)
+    unique_tables_list, table_name_to_unique_index = build_unique_tables(stripped_tables, eps)
 
     # Build mapping of constructed table names to unique names,
     # pick first constructed name

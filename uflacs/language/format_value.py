@@ -40,6 +40,14 @@ def set_float_precision(precision, threshold=None):
     #info("Setting float precision to %d in uflacs." % (precision,))
 
 
+def get_float_precision():
+    return _float_precision
+
+
+def get_float_threshold():
+    return _float_threshold
+
+
 def reset_float_precision():
     "Set float precision and zero threshold back to default."
     set_float_precision(15)
@@ -47,24 +55,6 @@ def reset_float_precision():
 
 # Execute default on startup
 reset_float_precision()
-
-
-_p0 = re.compile("0+e")
-_p1 = re.compile("e\\+00$")
-_p2 = re.compile("\\.$")
-def format_float1(x):
-    "Format a float value according to set_float_precision."
-    global _float_threshold, _float_fmt, _p0, _p1, _p2
-    if _float_threshold is not None and abs(x) < _float_threshold:
-        return "0.0"
-    else:
-        s = (_float_fmt % x).strip()
-        s = _p0.sub("e", s)
-        s = _p1.sub("", s)
-        s = _p2.sub(".0", s)
-        if "." not in s and "e" not in s:
-            s = s + ".0"
-        return s
 
 
 _subs = (
