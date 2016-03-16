@@ -260,7 +260,7 @@ def handle_conditional(i, v, deps, F, FV, sv2fv, e2fi):
         fi = None
         factors = {}
 
-        mas = set(fac1.keys()) | set(fac2.keys())
+        mas = sorted(set(fac1.keys()) | set(fac2.keys()))
 
         z = as_ufl(0.0)
         zfi = add_to_fv(z, FV, e2fi)

@@ -61,11 +61,6 @@ comment_dolfin = """\
 header_h = """\
 #ifndef __%(prefix_upper)s_H
 #define __%(prefix_upper)s_H
-
-#include <cmath>
-#include <stdexcept>
-#include <fstream>
-#include <ufc.h>
 """
 
 header_c = """\

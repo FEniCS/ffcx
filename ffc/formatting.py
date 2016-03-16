@@ -185,10 +185,15 @@ def _generate_comment(parameters):
     return comment
 
 def _generate_additional_includes(codes):
+    # FIXME: Avoid adding includes we don't need
     s = set()
+    s.add("#include <ufc.h>")
+    s.add("#include <cmath>")
+    s.add("#include <stdexcept>")
+    s.add("#include <fstream>")
     for code in codes:
         if "additional_includes_set" in code:
             s.update(code["additional_includes_set"])
     if s:
-        return "\n".join(list(s)) + "\n"
+        return "\n".join(sorted(s)) + "\n"
     return ""
