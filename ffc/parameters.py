@@ -17,6 +17,12 @@
 
 from ffc.log import INFO
 
+
+# Comments from other places in code:
+# FIXME: Document option -fconvert_exceptions_to_warnings
+# FIXME: Remove option epsilon and just rely on precision?
+
+
 FFC_PARAMETERS = {
   "format":                         "ufc",   # code generation format
   "representation":                 "auto",  # form representation / code
@@ -46,6 +52,7 @@ FFC_PARAMETERS = {
   "log_prefix":                     "",      # log prefix
   "error_control":                  False,   # with error control
 }
+
 
 def default_parameters():
     "Return (a copy of) the default parameter values for FFC."

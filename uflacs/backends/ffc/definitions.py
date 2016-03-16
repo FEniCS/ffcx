@@ -164,6 +164,8 @@ class FFCDefinitionsBackend(MultiFunction):
 
         uname, begin, end = tabledata
         uname = L.Symbol(uname)
+        #if not ( end - begin <= num_scalar_dofs):
+        #    import IPython; IPython.embed()
         assert end - begin <= num_scalar_dofs
 
         entity = self.symbols.entity(self.ir["entitytype"], mt.restriction)
