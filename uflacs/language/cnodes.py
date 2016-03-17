@@ -943,7 +943,7 @@ class VariableDecl(CStatement):
             code += " = " + self.value.ce_format()
         return code + ";"
 
-def build_1d_initializer_list(values, formatter=str):
+def build_1d_initializer_list(values, formatter):
     '''Return a list containing a single line formatted like "{ 0.0, 1.0, 2.0 }"'''
     tokens = ["{ "]
     if numpy.product(values.shape) > 0:
@@ -956,7 +956,7 @@ def build_1d_initializer_list(values, formatter=str):
     tokens += " }"
     return "".join(tokens)
 
-def build_initializer_lists(values, sizes, level=0, formatter=str):
+def build_initializer_lists(values, sizes, level, formatter):
     """Return a list of lines with initializer lists for a multidimensional array.
 
     Example output:
@@ -976,7 +976,7 @@ def build_initializer_lists(values, sizes, level=0, formatter=str):
         return [build_1d_initializer_list(values, formatter)]
     else:
         # Render all sublists
-        parts = [build_initializer_lists(val, sizes[1:], level+1) for val in values]
+        parts = [build_initializer_lists(val, sizes[1:], level+1, formatter) for val in values]
         # Add comma after last line in each part except the last one
         for part in parts[:-1]:
             part[-1] += ","
@@ -1047,7 +1047,7 @@ class ArrayDecl(CStatement):
             return decl + " = {};"
         else:
             # Construct initializer lists for arbitrary multidimensional array values
-            initializer_lists = build_initializer_lists(self.values, self.sizes)
+            initializer_lists = build_initializer_lists(self.values, self.sizes, 0, format_value)
             if len(initializer_lists) == 1:
                 return decl + " = " + initializer_lists[0] + ";"
             else:

@@ -43,6 +43,7 @@ def basic_class_properties(classname):
         }
     return ir
 
+
 def mock_form_ir():
     ir = basic_class_properties("mock_form_classname")
     ir.update({

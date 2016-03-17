@@ -697,10 +697,16 @@ def set_float_formatting(precision):
     # Set machine precision
     format["epsilon"] = 10.0*eval("1e-%s" % precision)
 
+    # Hack to propagate precision to uflacs internals...
+    import uflacs.language.format_value
+    uflacs.language.format_value.set_float_precision(precision)
+
+
 def set_exception_handling(convert_exceptions_to_warnings):
     "Set handling of exceptions."
     if convert_exceptions_to_warnings:
         format["exception"] = format["warning"]
+
 
 # Declarations to examine
 types = [["double"],
