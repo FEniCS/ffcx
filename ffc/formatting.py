@@ -53,8 +53,10 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
     code_h_pre += format["header_h"] % {"prefix_upper": prefix.upper()}
     code_c_pre += format["header_c"] % {"prefix": prefix}
 
-    # Add includes // TODO: move to cpp file if possible
-    code_h_pre += _generate_additional_includes(code_integrals)  + "\n"
+    # Add includes
+    includes_h, includes_c = _generate_additional_includes(code)
+    code_h_pre += includes_h
+    code_c_pre += includes_c
 
     # Header and implementation code
     code_h = ""
@@ -184,11 +186,22 @@ def _generate_comment(parameters):
 
     return comment
 
-def _generate_additional_includes(codes):
+def _generate_additional_includes(code):
     s = set()
-    for code in codes:
-        if "additional_includes_set" in code:
-            s.update(code["additional_includes_set"])
+    s.add("#include <ufc.h>")
+
+    for code_foo in code:
+        # FIXME: Avoid adding these includes if we don't need them
+        #s.add("#include <cmath>")
+        s.add("#include <stdexcept>")
+
+        for c in code_foo:
+            s.update(c.get("additional_includes_set", ()))
+
     if s:
-        return "\n".join(list(s)) + "\n"
-    return ""
+        includes = "\n".join(sorted(s)) + "\n"
+    else:
+        includes = ""
+
+    # TODO: move includes to cpp file if possible
+    return includes, ""

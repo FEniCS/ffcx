@@ -87,19 +87,19 @@ def _map_indexed_components(tensor, indexed, multiindex):
     d1 = [None] * ni1
     p2 = [None] * r2
     assert len(sh2) == nmui
-    p2ks = set()
+    #p2ks = set()
     for k, i in enumerate(multiindex):
         if isinstance(i, FixedIndex):
             p2[k] = int(i)
-            p2ks.add(k)
+            #p2ks.add(k)
     for c1, p1 in enumerate(perm1):
         for k, i in enumerate(multiindex):
             if isinstance(i, Index):
                 p2[k] = p1[multiindex_to_ind1_map[k]]
-                p2ks.add(k)
+                #p2ks.add(k)
         for k, i in enumerate(ind2_to_ind1_map):
             p2[nmui + k] = p1[i]
-            p2ks.add(nmui + k)
+            #p2ks.add(nmui + k)
         c2 = flatten_multiindex(p2, str2)
         d1[c1] = c2
 

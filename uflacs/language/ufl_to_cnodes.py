@@ -74,12 +74,14 @@ class UFL2CNodesMixin(object):
     def sqrt(self, o, op):
         return self._cmath("sqrt", op)
 
-    #def cbrt(self, o, op):
+    #def cbrt(self, o, op):  # Not in UFL
     #    return self._cmath("cbrt", op)
 
+    # cmath also has log10 etc
     def ln(self, o, op):
         return self._cmath("log", op)
 
+    # cmath also has exp2 etc
     def exp(self, o, op):
         return self._cmath("exp", op)
 
@@ -107,31 +109,30 @@ class UFL2CNodesMixin(object):
             name = "std::" + name
         return self.L.Call(name, (y, x))
 
-    #def acos(self, o, op): # C++11 stl has this function
-    #    return self._cmath("acos", op)
+    def acos(self, o, op):
+        return self._cmath("acos", op)
 
-    #def asin(self, o, op): # C++11 stl has this function
-    #    return self._cmath("asin", op)
+    def asin(self, o, op):
+        return self._cmath("asin", op)
 
-    #def atan(self, o, op): # C++11 stl has this function
-    #    return self._cmath("atan", op)
+    def atan(self, o, op):
+        return self._cmath("atan", op)
 
-    #def acosh(self, o, op): # C++11 stl has this function
+    #def acosh(self, o, op):  # Not in UFL
     #    return self._cmath("acosh", op)
 
-    #def asinh(self, o, op): # C++11 stl has this function
+    #def asinh(self, o, op):  # Not in UFL
     #    return self._cmath("asinh", op)
 
-    #def atanh(self, o, op): # C++11 stl has this function
+    #def atanh(self, o, op):  # Not in UFL
     #    return self._cmath("atanh", op)
 
     def erf(self, o, op):
-        # C++11 stl has this function
         return self._cmath("erf", op)
 
-    def erfc(self, o, op): # Not in UFL
-        # C++11 stl has this function
-        return self._cmath("erfc", op)
+    #def erfc(self, o, op):  # Not in UFL
+    #    # C++11 stl has this function
+    #    return self._cmath("erfc", op)
 
     def abs(self, o, op):
         #return Call("fabs", op) # C version

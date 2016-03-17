@@ -540,50 +540,62 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     def sqrt(self, o, *operands):
         #print("\n\nVisiting Sqrt: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        self.additional_includes_set.add("#include <cmath>")
         return self._math_function(operands, format["sqrt"])
 
     def exp(self, o, *operands):
         #print("\n\nVisiting Exp: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        self.additional_includes_set.add("#include <cmath>")
         return self._math_function(operands, format["exp"])
 
     def ln(self, o, *operands):
         #print("\n\nVisiting Ln: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        self.additional_includes_set.add("#include <cmath>")
         return self._math_function(operands, format["ln"])
 
     def cos(self, o, *operands):
         #print("\n\nVisiting Cos: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        self.additional_includes_set.add("#include <cmath>")
         return self._math_function(operands, format["cos"])
 
     def sin(self, o, *operands):
         #print("\n\nVisiting Sin: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        self.additional_includes_set.add("#include <cmath>")
         return self._math_function(operands, format["sin"])
 
     def tan(self, o, *operands):
         #print("\n\nVisiting Tan: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        self.additional_includes_set.add("#include <cmath>")
         return self._math_function(operands, format["tan"])
 
     def cosh(self, o, *operands):
         #print("\n\nVisiting Cosh: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        self.additional_includes_set.add("#include <cmath>")
         return self._math_function(operands, format["cosh"])
 
     def sinh(self, o, *operands):
         #print("\n\nVisiting Sinh: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        self.additional_includes_set.add("#include <cmath>")
         return self._math_function(operands, format["sinh"])
 
     def tanh(self, o, *operands):
         #print("\n\nVisiting Tanh: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        self.additional_includes_set.add("#include <cmath>")
         return self._math_function(operands, format["tanh"])
 
     def acos(self, o, *operands):
         #print("\n\nVisiting Acos: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        self.additional_includes_set.add("#include <cmath>")
         return self._math_function(operands, format["acos"])
 
     def asin(self, o, *operands):
         #print("\n\nVisiting Asin: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        self.additional_includes_set.add("#include <cmath>")
         return self._math_function(operands, format["asin"])
 
     def atan(self, o, *operands):
         #print("\n\nVisiting Atan: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        self.additional_includes_set.add("#include <cmath>")
         return self._math_function(operands, format["atan"])
 
     def atan_2(self, o, *operands):
@@ -593,6 +605,7 @@ class QuadratureTransformerBase(Transformer):
 
     def erf(self, o, *operands):
         #print("\n\nVisiting Erf: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        self.additional_includes_set.add("#include <cmath>")
         return self._math_function(operands, format["erf"])
 
     def bessel_i(self, o, *operands):

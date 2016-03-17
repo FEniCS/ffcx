@@ -49,27 +49,49 @@ class IntegralGenerator(object):
         else:
             self._A_shape = self.ir["prim_idims"]
 
-        # TODO: Populate these with only what's needed
-        self._using_names = set()
-        self._includes = {
-            "#include <cstring>",
-            "#include <cmath>",
-            "#include <boost/math/special_functions.hpp>",
-            }
+        #self._using_names = set()
+        #self._includes = set()
+        self._ufl_names = set()
 
         # Backend specific plugin with attributes
         # - language: for translating ufl operators to target language
-        # - definintions: for defining backend specific variables
+        # - definitions: for defining backend specific variables
         # - access: for accessing backend specific variables
         self.backend = backend
 
     def generate_using_statements(self):
         L = self.backend.language
-        return [L.Using(name) for name in sorted(self._using_names)]
+        return []  # [L.Using(name) for name in sorted(self._using_names)]
 
     def get_includes(self):
-        includes = set(self._includes)
+        includes = set()  # self._includes)
+
+        includes.add("#include <cstring>")  # for using memset
+        #includes.add("#include <algorithm>")  # for using std::fill instead of memset
+
+        cmath_names = set((
+                "abs", "sign", "pow", "sqrt",
+                "exp", "ln",
+                "cos", "sin", "tan",
+                "acos", "asin", "atan", "atan_2",
+                "cosh", "sinh", "tanh",
+                "acosh", "asinh", "atanh",
+                "erf", "erfc",
+            ))
+
+        boost_math_names = set((
+            "bessel_j", "bessel_y", "bessel_i", "bessel_k",
+            ))
+
+        # Only return the necessary headers
+        if cmath_names & self._ufl_names:
+            includes.add("#include <cmath>")
+
+        if boost_math_names & self._ufl_names:
+            includes.add("#include <boost/math/special_functions.hpp>")
+
         includes.update(self.backend.definitions.get_includes())
+
         return sorted(includes)
 
     def generate(self):
@@ -289,6 +311,7 @@ class IntegralGenerator(object):
                 vops = [vaccesses[op] for op in v.ufl_operands]
 
                 # Mapping UFL operator to target language
+                self._ufl_names.add(v._ufl_handler_name_)
                 vexpr = self.backend.ufl_to_language(v, *vops)
 
                 # TODO: Let optimized ir provide mapping of vertex indices to
