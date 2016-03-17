@@ -33,8 +33,9 @@ class FFCBackendSymbols(object):
 
     # FIXME: Used in access: weights, points, ia, A, w, x, J
 
-    def entity(self, foo):
-        return self.S("entity")
+    def entity(self, entitytype, restriction):
+        "Entity index."
+        return self.S(format_entity_name(entitytype, restriction))
 
     def x(self, quadloop):
         "Physical coordinates."
