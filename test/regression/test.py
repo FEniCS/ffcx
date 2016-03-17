@@ -222,18 +222,7 @@ def validate_code(reference_dir):
 
     end()
 
-def build_programs(bench, permissive):
-    "Build test programs for all test cases."
-
-    # Get a list of all files
-    header_files = [f for f in os.listdir(".") if f.endswith(".h")]
-    header_files.sort()
-
-    begin("Building test programs (%d header files found)" % len(header_files))
-
-    # Get UFC flags
-    ufc_cflags = get_status_output("pkg-config --cflags ufc-1")[1].strip()
-
+def find_boost_cflags():
     # Get Boost dir (code copied from ufc/src/utils/python/ufc_utils/build.py)
     # Set a default directory for the boost installation
     if sys.platform == "darwin":
@@ -266,13 +255,33 @@ def build_programs(bench, permissive):
     if boost_inc_dir != "" and boost_lib_dir != "":
         boost_is_found = True
 
-    if not boost_is_found:
-        raise OSError("""The Boost library was not found.
+    if boost_is_found:
+        boost_cflags = " -I%s -L%s" % (boost_inc_dir, boost_lib_dir)
+        boost_linkflags = "-l%s" % boost_math_tr1_lib
+    else:
+        boost_cflags = ""
+        boost_linkflags = ""
+        info_red("""The Boost library was not found.
 If Boost is installed in a nonstandard location,
 set the environment variable BOOST_DIR.
+Forms using bessel functions will fail to build.
 """)
+    return boost_cflags, boost_linkflags
+    
+def build_programs(bench, permissive):
+    "Build test programs for all test cases."
 
-    ufc_cflags += " -I%s -L%s" % (boost_inc_dir, boost_lib_dir)
+    # Get a list of all files
+    header_files = [f for f in os.listdir(".") if f.endswith(".h")]
+    header_files.sort()
+
+    begin("Building test programs (%d header files found)" % len(header_files))
+
+    # Get UFC flags
+    ufc_cflags = get_status_output("pkg-config --cflags ufc-1")[1].strip()
+    boost_cflags, boost_linkflags = find_boost_cflags()
+    ufc_cflags += boost_cflags
+    linker_options = boost_linkflags
 
     # Set compiler options
     compiler_options = "%s -Wall " % ufc_cflags
@@ -297,8 +306,8 @@ set the environment variable BOOST_DIR.
 
         # Compile test code
         prefix = f.split(".h")[0]
-        command = "g++ %s -o %s.bin %s.cpp -l%s" % \
-                  (compiler_options, prefix, prefix, boost_math_tr1_lib)
+        command = "g++ %s -o %s.bin %s.cpp %s" % \
+                  (compiler_options, prefix, prefix, linker_options)
         ok = run_command(command)
 
         # Check status
