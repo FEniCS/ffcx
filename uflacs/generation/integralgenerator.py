@@ -293,6 +293,7 @@ class IntegralGenerator(object):
         vaccesses = self.vaccesses[num_points]
 
         partition_indices = [i for i, p in enumerate(partition) if p]
+
         for i in partition_indices:
             v = V[i]
 
