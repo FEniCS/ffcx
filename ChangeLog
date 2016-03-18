@@ -1,4 +1,5 @@
 1.7.0 [201x-xx-xx]
+ - Add function get_ufc_include to get path to ufc.h
  - Merge UFLACS into FFC
  - Generalize ufc interface to non-affine parameterized coordinates
  - Add ufc::coordinate_mapping class

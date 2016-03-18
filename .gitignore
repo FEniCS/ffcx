@@ -16,6 +16,7 @@
 *.dylib
 /ffc/git_commit_hash.py
 /ffc/ufc_signature.py
+/ffc/ufc_include.py
 
 # CMake and Make files
 CMakeCache.txt
