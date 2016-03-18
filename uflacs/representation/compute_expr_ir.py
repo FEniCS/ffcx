@@ -18,7 +18,6 @@
 
 """Algorithms for the representation phase of the form compilation."""
 
-
 from ufl import product
 from ufl.checks import is_cellwise_constant
 from uflacs.analysis.modified_terminals import is_modified_terminal, analyse_modified_terminal
@@ -199,3 +198,4 @@ def old_code_useful_for_optimization():
     expr_oir["target_registers"] = target_registers
     return expr_oir
 """
+

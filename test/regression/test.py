@@ -82,22 +82,25 @@ known_uflacs_failures = set([
 _command_timings = []
 def run_command(command):
     "Run command and collect errors in log file."
-    # Debugging:
-    #print "IN DIRECTORY:", os.path.abspath(os.curdir)
-    #print "RUNNING COMMAND:", command
+    global _command_timings
+    global logfile
+
     t1 = time.time()
     (status, output) = get_status_output(command)
     t2 = time.time()
-    global _command_timings
     _command_timings.append((command, t2-t1))
+
     if status == 0:
+        verbose = False  # FIXME: Set from --verbose
+        if verbose:
+            print(output)
         return True
-    global logfile
-    if logfile is None:
-        logfile = open("../../error.log", "w")
-    logfile.write(output + "\n")
-    print(output)
-    return False
+    else:
+        if logfile is None:
+            logfile = open("../../error.log", "w")
+        logfile.write(output + "\n")
+        print(output)
+        return False
 
 
 def log_error(message):

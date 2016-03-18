@@ -18,8 +18,6 @@
 
 """Algorithms for factorizing argument dependent monomials."""
 
-from __future__ import print_function # used in some debugging
-
 from six import itervalues, iterkeys, iteritems
 from six.moves import xrange as range
 from ufl import as_ufl, conditional
@@ -64,12 +62,17 @@ def _build_argument_indices_from_arg_sets(V, arg_sets):
     def arg_ordering_key(i):
         "Return a key for sorting argument vertex indices based on the properties of the modified terminal."
         mt = analyse_modified_terminal(arg_ordering_key.V[i])
-        assert isinstance(mt.terminal, Argument)
-        assert mt.terminal.number() >= 0
-        return (mt.terminal.number(), mt.terminal.part(),
-                mt.reference_value, mt.component,
-                mt.global_derivatives, mt.local_derivatives,
-                mt.restriction, mt.averaged)
+        arg = mt.terminal
+        assert isinstance(arg, Argument)
+        assert arg.number() >= 0
+        return (arg.number(),
+                arg.part(),
+                mt.reference_value,
+                mt.component,
+                mt.global_derivatives,
+                mt.local_derivatives,
+                mt.restriction,
+                mt.averaged)
     arg_ordering_key.V = V
     ordered_arg_indices = sorted(arg_indices, key=arg_ordering_key)
 
@@ -188,29 +191,33 @@ def handle_product(i, v, deps, F, FV, sv2fv, e2fi):
         assert FV[fi] == v
 
     elif not fac0:  # non-arg * arg
+        # Record products of non-arg operand with each factor of arg-dependent operand
         f0 = FV[sv2fv[deps[0]]]
-        fi = None
         factors = {}
-        for k1, fi1 in iteritems(fac1):
-            # Record products of non-arg operand with each factor of arg-dependent operand
+        for k1 in sorted(fac1):
+            fi1 = fac1[k1]
             factors[k1] = add_to_fv(f0 * FV[fi1], FV, e2fi)
+        fi = None
 
     elif not fac1:  # arg * non-arg
+        # Record products of non-arg operand with each factor of arg-dependent operand
         f1 = FV[sv2fv[deps[1]]]
-        fi = None
         factors = {}
-        for k0, fi0 in iteritems(fac0):
-            # Record products of non-arg operand with each factor of arg-dependent operand
-            factors[k0] = add_to_fv(f1 * FV[fi0], FV, e2fi)
+        for k0 in sorted(fac0):
+            f0 = FV[fac0[k0]]
+            factors[k0] = add_to_fv(f1 * f0, FV, e2fi)
+        fi = None
 
     else:  # arg * arg
-        fi = None
+        # Record products of each factor of arg-dependent operand
         factors = {}
-        for k0, fi0 in iteritems(fac0):
-            for k1, fi1 in iteritems(fac1):
-                # Record products of each factor of arg-dependent operand
+        for k0 in sorted(fac0):
+            f0 = FV[fac0[k0]]
+            for k1 in sorted(fac1):
+                f1 = FV[fac1[k1]]
                 argkey = tuple(sorted(k0 + k1))  # sort key for canonical representation
-                factors[argkey] = add_to_fv(FV[fi0] * FV[fi1], FV, e2fi)
+                factors[argkey] = add_to_fv(f0 * f1, FV, e2fi)
+        fi = None
 
     return fi, factors
 
@@ -221,17 +228,18 @@ def handle_division(i, v, deps, F, FV, sv2fv, e2fi):
     assert not fac1, "Cannot divide by arguments."
 
     if fac0:  # arg / non-arg
+        # Record products of non-arg operand with each factor of arg-dependent operand
         f1 = FV[sv2fv[deps[1]]]
-        fi = None
         factors = {}
-        for k0, fi0 in iteritems(fac0):
-            # Record products of non-arg operand with each factor of arg-dependent operand
-            factors[k0] = add_to_fv(FV[fi0] / f1, FV, e2fi)
+        for k0 in sorted(fac0):
+            f0 = FV[fac0[k0]]
+            factors[k0] = add_to_fv(f0 / f1, FV, e2fi)
+        fi = None
 
     else:  # non-arg / non-arg
         # Record non-argument subexpression
-        fi = add_to_fv(v, FV, e2fi)
         factors = noargs
+        fi = add_to_fv(v, FV, e2fi)
 
     return fi, factors
 
@@ -260,13 +268,12 @@ def handle_conditional(i, v, deps, F, FV, sv2fv, e2fi):
         fi = None
         factors = {}
 
-        mas = sorted(set(fac1.keys()) | set(fac2.keys()))
-
         z = as_ufl(0.0)
         zfi = add_to_fv(z, FV, e2fi)
 
         # In general, can decompose like this:
         #    conditional(c, sum_i fi*ui, sum_j fj*uj) -> sum_i conditional(c, fi, 0)*ui + sum_j conditional(c, 0, fj)*uj
+        mas = sorted(set(fac1.keys()) | set(fac2.keys()))
         for k in mas:
             fi1 = fac1.get(k)
             fi2 = fac2.get(k)
