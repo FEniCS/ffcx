@@ -26,7 +26,7 @@ from ffc.jitcompiler import jit
 from ffc.ufc_signature import ufc_signature
 
 # Import default parameters
-from .parameters import default_parameters
+from .parameters import default_parameters, default_jit_parameters
 
 # Import plotting
 from .plot import *

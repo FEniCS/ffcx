@@ -29,7 +29,7 @@ FFC_PARAMETERS = {
                                              # generation strategy
   "quadrature_rule":                "auto",  # quadrature rule used for
                                              # integration of element tensors
-  "quadrature_degree":              "auto",  # quadrature degree used for
+  "quadrature_degree":              -1,      # quadrature degree used for
                                              # computing integrals
   "precision":                      15,      # precision used when writing
                                              # numbers
@@ -47,7 +47,7 @@ FFC_PARAMETERS = {
   "cpp_optimize":                   True,    # optimization for the JIT compiler
   "cpp_optimize_flags":             "-O2",   # optimization flags for the JIT compiler
   "optimize":                       False,   # optimise the code generation
-  "log_level":                      INFO,    # log level, displaying only
+  "log_level":                      INFO+5,  # log level, displaying only
                                              # messages with level >= log_level
   "log_prefix":                     "",      # log prefix
   "error_control":                  False,   # with error control
@@ -63,6 +63,12 @@ def default_parameters():
     r = os.environ.get("FFC_FORCE_REPRESENTATION")
     if r: parameters["representation"] = r
 
+    return parameters
+
+
+def default_jit_parameters():
+    parameters = default_parameters()
+    parameters["no-evaluate_basis_derivatives"] = True
     return parameters
 
 

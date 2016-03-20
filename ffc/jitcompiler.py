@@ -42,7 +42,7 @@ from ffc.log import error
 from ffc.log import set_level
 from ffc.log import set_prefix
 from ffc.log import INFO
-from ffc.parameters import default_parameters
+from ffc.parameters import default_jit_parameters
 from ffc.mixedelement import MixedElement
 from ffc.compiler import compile_form, compile_element
 from ffc.formatting import write_code
@@ -51,8 +51,7 @@ from ffc.quadratureelement import default_quadrature_degree
 from ffc.backends.ufc import build_ufc_module
 
 # Special Options for JIT-compilation
-FFC_PARAMETERS_JIT = default_parameters()
-FFC_PARAMETERS_JIT["no-evaluate_basis_derivatives"] = True
+FFC_PARAMETERS_JIT = default_jit_parameters()
 
 # Set debug level for Instant
 instant.set_log_level("warning")
