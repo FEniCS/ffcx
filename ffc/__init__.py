@@ -25,6 +25,9 @@ from ffc.jitcompiler import jit
 # Import UFC signature
 from ffc.ufc_signature import ufc_signature
 
+# Import UFC include dir function
+from ffc.ufc_include import get_ufc_include
+
 # Import default parameters
 from .parameters import default_parameters
 

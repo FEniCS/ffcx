@@ -288,6 +288,11 @@ def run_install():
     # Generate config files
     generate_ufc_config_files()
 
+    # Generate ufc_include.py
+    write_config_file(os.path.join("ffc", "ufc_include.py.in"),
+                      os.path.join("ffc", "ufc_include.py"),
+                      variables=dict(INSTALL_PREFIX=get_installation_prefix()))
+
     # FFC data files
     data_files = [(os.path.join("share", "man", "man1"),
                   [os.path.join("doc", "man", "man1", "ffc.1.gz")])]
