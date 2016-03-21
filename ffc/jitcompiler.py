@@ -42,7 +42,7 @@ from ffc.log import error
 from ffc.log import set_level
 from ffc.log import set_prefix
 from ffc.log import INFO
-from ffc.parameters import default_jit_parameters
+from ffc.parameters import validate_jit_parameters
 from ffc.mixedelement import MixedElement
 from ffc.compiler import compile_form, compile_element
 from ffc.formatting import write_code
@@ -50,8 +50,6 @@ from ffc.jitobject import JITObject
 from ffc.quadratureelement import default_quadrature_degree
 from ffc.backends.ufc import build_ufc_module
 
-# Special Options for JIT-compilation
-FFC_PARAMETERS_JIT = default_jit_parameters()
 
 # Set debug level for Instant
 instant.set_log_level("warning")
@@ -74,7 +72,7 @@ def jit(ufl_object, parameters=None):
         error("Expecting a UFL form or element: %s" % repr(ufl_object))
 
     # Check parameters
-    parameters = _check_parameters(parameters)
+    parameters = validate_jit_parameters(parameters)
 
     # Set log level
     set_level(parameters["log_level"])
@@ -150,25 +148,6 @@ def jit(ufl_object, parameters=None):
     elif kind == "element":
         return _instantiate_element_and_dofmap(module, prefix)
 
-
-def _check_parameters(parameters):
-    "Check parameters and add any missing parameters"
-
-    # Copy parameters
-    if parameters is None:
-        parameters = {}
-    else:
-        parameters = parameters.copy()
-
-    # Add defaults for missing parameters
-    for key in FFC_PARAMETERS_JIT:
-        if not key in parameters:
-            parameters[key] = FFC_PARAMETERS_JIT[key]
-
-    # Don't postfix form names
-    parameters["form_postfix"] = False
-
-    return parameters
 
 from ffc.cpp import make_classname
 def _instantiate_form(module, prefix):

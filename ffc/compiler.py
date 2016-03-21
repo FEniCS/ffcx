@@ -119,9 +119,7 @@ import os
 
 # FFC modules
 from ffc.log import info, info_green, warning
-from ffc.parameters import default_parameters
-
-# FFC modules
+from ffc.parameters import validate_parameters
 from ffc.analysis import analyze_forms, analyze_elements
 from ffc.representation import compute_ir
 from ffc.optimization import optimize_ir
@@ -141,12 +139,15 @@ def compile_form(forms, object_names=None, prefix="Form", parameters=None, jit=F
     # Check input arguments
     forms = _check_forms(forms)
     if not forms:
-        return
+        return "", ""
     if prefix != os.path.basename(prefix):
         error("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix))
     if object_names is None:
         object_names = {}
-    parameters = _check_parameters(parameters)
+
+    # Note that jit will always pass parameters so this is
+    # only for commandline and direct call from python
+    parameters = validate_parameters(parameters)
 
     # Stage 1: analysis
     cpu_time = time()
@@ -196,8 +197,12 @@ def compile_element(elements, prefix="Element", parameters=None, jit=False):
     elements = _check_elements(elements)
     if not elements:
         return "", ""
+
     object_names = {}
-    parameters = _check_parameters(parameters)
+
+    # Note that jit will always pass parameters so this is
+    # only for commandline and direct call from python
+    parameters = validate_parameters(parameters)
 
     # Stage 1: analysis
     cpu_time = time()
@@ -246,22 +251,6 @@ def _check_elements(elements):
     if not isinstance(elements, (list, tuple)):
         elements = (elements,)
     return elements
-
-def _check_parameters(parameters):
-    "Initial check of parameters."
-    if parameters is None:
-        parameters = default_parameters()
-    if "blas" in parameters:
-        warning("BLAS mode unavailable (will return in a future version).")
-    if "quadrature_points" in parameters:
-        warning("Option 'quadrature_points' has been replaced by 'quadrature_degree'.")
-
-    # HACK
-    import os
-    r = os.environ.get("FFC_FORCE_REPRESENTATION")
-    if r: parameters["representation"] = r
-
-    return parameters
 
 def _print_timing(stage, timing):
     "Print timing results."
