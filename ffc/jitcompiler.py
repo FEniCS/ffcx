@@ -122,7 +122,41 @@ def jit_build_with_instant(ufl_object, module_name, parameters):
 
 
 def jit_build_with_dijitso(ufl_object, module_name, parameters):
-    module = None  # FIXME
+    import dijitso
+
+    def _generate(ufl_object, module_name, signature, parameters):
+        # Write a message
+        log(INFO + 5,
+            "Calling FFC just-in-time (JIT) compiler, this may take some time.")
+        code_h, code_c = jit_generate(ufl_object, module_name, parameters)
+        dependencies = ()
+        return code_h, code_c, dependencies
+
+    # Translating the C++ flags from ffc parameters to dijitso
+    # to get equivalent behaviour to instant code
+    if parameters["cpp_optimize"]:
+        build_params = {
+            "cxxflags_opt": tuple(parameters["cpp_optimize_flags"].split()),
+            "debug": False
+            }
+    else:
+        build_params = {
+            "cxxflags_debug": ("-O0",),
+            "debug": True
+            }
+
+    if parameters["cache_dir"]:
+        cache_params = { "cache_dir": cache_dir }
+    else:
+        cache_params = {}
+
+    params = dijitso.validate_params({
+        "cache": cache_params,
+        "build": build_params,
+        "generator": parameters,
+        })
+
+    module, signature = dijitso.jit(ufl_object, module_name, params, generate)
     return module
 
 
