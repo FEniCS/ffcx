@@ -4,7 +4,7 @@
 # command-line arguments and wraps the given form file code in a
 # Python module which is then executed.
 
-# Copyright (C) 2004-2014 Anders Logg
+# Copyright (C) 2004-2016 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -45,10 +45,8 @@ from ufl.algorithms import load_ufl_file
 import ufl
 
 # FFC modules.
-from ffc.log import info
 from ffc.log import set_level
-from ffc.log import DEBUG
-from ffc.log import ERROR
+from ffc.log import DEBUG, INFO, ERROR
 from ffc.parameters import default_parameters
 from ffc import __version__ as FFC_VERSION, ufc_signature
 from ffc.backends.ufc import __version__ as UFC_VERSION
@@ -57,14 +55,14 @@ from ffc.formatting import write_code
 from ffc.errorcontrol import compile_with_error_control
 
 
-def error(msg):
+def print_error(msg):
     "Print error message (cannot use log system at top level)."
     print("\n".join(["*** FFC: " + line for line in msg.split("\n")]))
 
 
 def info_version():
     "Print version number."
-    info("""\
+    print("""\
 This is FFC, the FEniCS Form Compiler, version {0}.
 UFC backend version {1}, signature {2}.
 For further information, visit http://www.fenics.org/ffc/.
@@ -74,7 +72,7 @@ For further information, visit http://www.fenics.org/ffc/.
 def info_usage():
     "Print usage information."
     info_version()
-    info("""Usage: ffc [OPTION]... input.form
+    print("""Usage: ffc [OPTION]... input.form
 
 For information about the FFC command-line interface, refer to
 the FFC man page which may invoked by 'man ffc' (if installed).
@@ -89,10 +87,6 @@ def main(argv):
     # PYHTONPATH
     sys.path.append(getcwd())
 
-    # Get parameters and set log level (such that info_usage() will work)
-    parameters = default_parameters()
-    set_level(parameters["log_level"])
-
     # Get command-line arguments
     try:
         opts, args = getopt.getopt(argv, "hVSvsl:r:f:Oo:q:ep",
@@ -102,7 +96,7 @@ def main(argv):
              "profile"])
     except getopt.GetoptError:
         info_usage()
-        error("Illegal command-line arguments.")
+        print_error("Illegal command-line arguments.")
         return 1
 
     # Check for --help
@@ -122,13 +116,20 @@ def main(argv):
 
     # Check that we get at least one file
     if len(args) == 0:
-        error("Missing file.")
+        print_error("Missing file.")
         return 1
+
+    # Get parameters and choose INFO as default for script
+    parameters = default_parameters()
+    parameters["log_level"] = INFO
+
+    # Set default value (not part of in parameters[])
+    enable_profile = False
 
     # Parse command-line parameters
     for opt, arg in opts:
         if opt in ("-v", "--verbose"):
-             parameters["log_level"] = DEBUG
+            parameters["log_level"] = DEBUG
         elif opt in ("-s", "--silent"):
             parameters["log_level"] = ERROR
         elif opt in ("-l", "--language"):
@@ -154,9 +155,9 @@ def main(argv):
         elif opt in ("-e", "--error-control"):
             parameters["error_control"] = True
         elif opt in ("-p", "--profile"):
-            parameters["profile"] = True
+            enable_profile = True
 
-    # Set log_level again in case -d or -s was used on the command line
+    # Set log_level
     set_level(parameters["log_level"])
 
     # Set UFL precision
@@ -171,59 +172,57 @@ def main(argv):
         # Get filename prefix and suffix
         prefix, suffix = os.path.splitext(os.path.basename(filename))
         suffix = suffix.replace(os.path.extsep, "")
+
         # Remove weird characters (file system allows more than the C preprocessor)
         prefix = re.subn("[^{}]".format(string.ascii_letters + string.digits + "_"), "!", prefix)[0]
         prefix = re.subn("!+", "_", prefix)[0]
 
+        # Check file suffix
+        if suffix != "ufl":
+            print_error("Expecting a UFL form file (.ufl).")
+            return 1
+
         # Turn on profiling
-        if parameters.get("profile"):
+        if enable_profile:  #parameters.get("profile"):
             pr = cProfile.Profile()
             pr.enable()
 
-        # Check file suffix and load ufl file
-        if suffix == "ufl":
-            ufd = load_ufl_file(filename)
-        elif suffix == "form":
-            error("Old style .form files are no longer supported. Use form2ufl to convert to UFL format.")
-            return 1
-        else:
-            error("Expecting a UFL form file (.ufl).")
-            return 1
+        # Load UFL file
+        ufd = load_ufl_file(filename)
 
         # Compile
         try:
             if parameters["error_control"]:
-                # Do additional stuff if in error-control mode
                 code_h, code_c = \
                     compile_with_error_control(ufd.forms, ufd.object_names,
                                          ufd.reserved_objects, prefix,
                                          parameters)
             elif len(ufd.forms) > 0:
-                # Compile forms
                 code_h, code_c = \
                     compile_form(ufd.forms, ufd.object_names, prefix=prefix, parameters=parameters)
             else:
-                # Compile elements
                 code_h, code_c = \
                     compile_element(ufd.elements, prefix=prefix, parameters=parameters)
+
             # Write to file
             write_code(code_h, code_c, prefix, parameters)
+
         except Exception as exception:
             # Catch exceptions only when not in debug mode
             if parameters["log_level"] <= DEBUG:
                 raise
             else:
-                info("")
-                error(str(exception))
-                error("To get more information about this error, rerun FFC with --verbose.")
+                print("")
+                print_error(str(exception))
+                print_error("To get more information about this error, rerun FFC with --verbose.")
                 return 1
 
         # Turn off profiling and write status to file
-        if parameters.get("profile"):
+        if enable_profile:
             pr.disable()
             pfn = "ffc_{0}.profile".format(prefix)
             pr.dump_stats(pfn)
-            info("Wrote profiling info to file {0}".format(pfn))
+            print("Wrote profiling info to file {0}".format(pfn))
             #pr.print_stats()
 
     return 0

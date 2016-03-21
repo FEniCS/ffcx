@@ -22,12 +22,11 @@ from hashlib import sha1
 
 # UFL modules.
 import ufl
-from ufl.utils.sorting import canonicalize_metadata
 
 # FFC modules.
 from ffc import __version__ as FFC_VERSION
 from ffc.ufc_signature import ufc_signature
-from ffc.parameters import compilation_relevant_parameters
+from ffc.parameters import compute_jit_parameters_signature
 
 # UFC modules.
 from ffc.backends import ufc
@@ -40,12 +39,12 @@ class JITObject:
     single instance of an application (at runtime). The signature is
     persistent and may be used for caching modules on disk."""
 
-    def __init__(self, form, parameters):
+    def __init__(self, ufl_object, parameters):
         "Create JITObject for given form and parameters"
-        assert isinstance(form, ufl.Form) or isinstance(form, ufl.FiniteElementBase)
+        assert isinstance(ufl_object, (ufl.Form, ufl.FiniteElementBase))
 
         # Store data
-        self.form = form
+        self.ufl_object = ufl_object
         self.parameters = parameters
         self._hash = None
         self._signature = None
@@ -70,19 +69,18 @@ class JITObject:
             return self._signature
 
         # Get signature from form
-        if isinstance(self.form, ufl.Form):
-            form_signature = self.form.signature()
-        elif isinstance(self.form, ufl.FiniteElementBase):
-            form_signature = repr(self.form)
+        if isinstance(self.ufl_object, ufl.Form):
+            form_signature = self.ufl_object.signature()
+        elif isinstance(self.ufl_object, ufl.FiniteElementBase):
+            form_signature = repr(self.ufl_object)
 
-        # Compute other relevant signatures
-        parameters_signature = _parameters_signature(self.parameters)
-        ffc_signature = str(FFC_VERSION)
+        # Compute deterministic string of relevant parameters
+        parameters_signature = compute_jit_parameters_signature(self.parameters)
 
         # Build common signature
         signatures = [form_signature,
                       parameters_signature,
-                      ffc_signature,
+                      str(FFC_VERSION),
                       ufc_signature()]
         string = ";".join(signatures)
 
@@ -96,7 +94,3 @@ class JITObject:
 
         return self._signature
 
-def _parameters_signature(parameters):
-    "Return parameters signature (some parameters must be ignored)."
-    parameters = compilation_relevant_parameters(parameters)
-    return str(canonicalize_metadata(parameters))

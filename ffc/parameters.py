@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
+import os
 from ffc.log import INFO
 
 
@@ -23,13 +24,13 @@ from ffc.log import INFO
 # FIXME: Remove option epsilon and just rely on precision?
 
 
-FFC_PARAMETERS = {
+_FFC_GENERATE_PARAMETERS = {
   "format":                         "ufc",   # code generation format
   "representation":                 "auto",  # form representation / code
                                              # generation strategy
   "quadrature_rule":                "auto",  # quadrature rule used for
                                              # integration of element tensors
-  "quadrature_degree":              "auto",  # quadrature degree used for
+  "quadrature_degree":              -1,      # quadrature degree used for
                                              # computing integrals
   "precision":                      15,      # precision used when writing
                                              # numbers
@@ -41,17 +42,40 @@ FFC_PARAMETERS = {
                                              # "LinearForm" or BilinearForm
   "convert_exceptions_to_warnings": False,   # convert all exceptions to warning
                                              # in generated code
-  "cache_dir":                      "",      # cache dir used by Instant
-  "output_dir":                     ".",     # output directory for generated
-                                             # code
+  "error_control":                  False,   # with error control
+  "optimize":                       False,   # optimise the code generation
+  }
+_FFC_BUILD_PARAMETERS = {
   "cpp_optimize":                   True,    # optimization for the JIT compiler
   "cpp_optimize_flags":             "-O2",   # optimization flags for the JIT compiler
-  "optimize":                       False,   # optimise the code generation
-  "log_level":                      INFO,    # log level, displaying only
+  }
+_FFC_CACHE_PARAMETERS = {
+  "cache_dir":                      "",      # cache dir used by Instant
+  "output_dir":                     ".",     # output directory for generated code
+  }
+_FFC_LOG_PARAMETERS = {
+  "log_level":                      INFO+5,  # log level, displaying only
                                              # messages with level >= log_level
   "log_prefix":                     "",      # log prefix
-  "error_control":                  False,   # with error control
 }
+FFC_PARAMETERS = {}
+FFC_PARAMETERS.update(_FFC_BUILD_PARAMETERS)
+FFC_PARAMETERS.update(_FFC_CACHE_PARAMETERS)
+FFC_PARAMETERS.update(_FFC_LOG_PARAMETERS)
+FFC_PARAMETERS.update(_FFC_GENERATE_PARAMETERS)
+
+
+def split_parameters(parameters):
+    """Split a parameters dict into groups based on what parameters are used for.
+
+    """
+    params = {
+        "cache":     {k: parameters[k] for k in _FFC_CACHE_PARAMETERS.keys()},
+        "build":     {k: parameters[k] for k in _FFC_BUILD_PARAMETERS.keys()},
+        "generate":  {k: parameters[k] for k in _FFC_GENERATE_PARAMETERS.keys()},
+        "log":       {k: parameters[k] for k in _FFC_LOG_PARAMETERS.keys()},
+        }
+    return params
 
 
 def default_parameters():
@@ -59,24 +83,64 @@ def default_parameters():
     parameters = FFC_PARAMETERS.copy()
 
     # HACK
-    import os
     r = os.environ.get("FFC_FORCE_REPRESENTATION")
-    if r: parameters["representation"] = r
+    if r:
+        parameters["representation"] = r
 
     return parameters
+
+
+def default_jit_parameters():
+    parameters = default_parameters()
+
+    # TODO: This is not in the above parameters dict.
+    #       There are other parameters like this.
+    #       This is confusing, which parameters are available? What ar the defaults?
+    # Skip evaluation of basis derivatives in elements by default because it's costly
+    # FIXME: Make this False when we have elements generated once instead of for each form
+    parameters["no-evaluate_basis_derivatives"] = True
+
+    # Don't postfix form names
+    parameters["form_postfix"] = False
+
+    return parameters
+
+
+def validate_parameters(parameters):
+    "Initial check of parameters."
+    p = default_parameters()
+    if parameters is not None:
+        p.update(parameters)
+    return p
+
+
+def validate_jit_parameters(parameters):
+    "Check parameters and add any missing parameters"
+    p = default_jit_parameters()
+    if parameters is not None:
+        p.update(parameters)
+    return p
 
 
 def compilation_relevant_parameters(parameters):
-    parameters = parameters.copy()
-    ignores = ["log_prefix", "log_level", "cache_dir", "output_dir"]
-    for ignore in ignores:
-        assert ignore in FFC_PARAMETERS
-        if ignore in parameters:
-            del parameters[ignore]
+    p = parameters.copy()
+    for k in _FFC_LOG_PARAMETERS:
+        del p[k]
+    for k in _FFC_CACHE_PARAMETERS:
+        del p[k]
 
-    # HACK
-    import os
-    r = os.environ.get("FFC_FORCE_REPRESENTATION")
-    if r: parameters["representation"] = r
+    # This doesn't work because some parameters may not be among the defaults above.
+    # That is somewhat confusing but we'll just have to live with it at least for now.
+    #sp = split_parameters(parameters)
+    #p = {}
+    #p.update(sp["generate"])
+    #p.update(sp["build"])
 
-    return parameters
+    return p
+
+
+def compute_jit_parameters_signature(parameters):
+    "Return parameters signature (some parameters must be ignored)."
+    from ufl.utils.sorting import canonicalize_metadata
+    parameters = compilation_relevant_parameters(parameters)
+    return str(canonicalize_metadata(parameters))

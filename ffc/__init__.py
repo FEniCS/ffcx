@@ -29,7 +29,7 @@ from ffc.ufc_signature import ufc_signature
 from ffc.ufc_include import get_ufc_include
 
 # Import default parameters
-from .parameters import default_parameters
+from .parameters import default_parameters, default_jit_parameters
 
 # Import plotting
 from .plot import *
