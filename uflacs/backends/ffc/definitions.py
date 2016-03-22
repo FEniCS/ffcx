@@ -126,10 +126,12 @@ class FFCDefinitionsBackend(MultiFunction):
         uname = L.Symbol(uname)
 
         # Empty loop needs to be skipped as zero tables may not be generated
-        # FIXME: assert begin < end instead, and remove at earlier
-        #        stage so dependent code can also be removed
+        # FIXME: remove at earlier stage so dependent code can also be removed
         if begin >= end:
-            return []
+            code = [
+                L.VariableDecl("double", access, 0.0),
+                ]
+            return code
 
         # Get various symbols
         entity = self.symbols.entity(self.ir["entitytype"], mt.restriction)
