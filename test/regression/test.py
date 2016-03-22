@@ -75,8 +75,6 @@ known_uflacs_failures = set([
     "CustomVectorIntegral.ufl",
     "MetaData.ufl",
     "AdaptivePoisson.ufl",
-    "PoissonDG.ufl",
-    "Biharmonic.ufl",
     ])
 
 _command_timings = []
