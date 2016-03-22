@@ -49,7 +49,7 @@ from ffc.formatting import write_code
 from ffc.jitobject import JITObject
 from ffc.quadratureelement import default_quadrature_degree
 from ffc.backends.ufc import build_ufc_module
-
+from ffc.ufc_include import get_ufc_include
 
 # Set debug level for Instant
 instant.set_log_level("warning")
@@ -145,6 +145,9 @@ def jit_build_with_dijitso(ufl_object, module_name, parameters):
             "debug": True
             }
 
+    # Add path to UFC include dir
+    build_params["include_dirs"] = get_ufc_include()
+
     if parameters["cache_dir"]:
         cache_params = { "cache_dir": cache_dir }
     else:
@@ -156,7 +159,7 @@ def jit_build_with_dijitso(ufl_object, module_name, parameters):
         "generator": parameters,
         })
 
-    module, signature = dijitso.jit(ufl_object, module_name, params, generate)
+    module, signature = dijitso.jit(ufl_object, module_name, params, _generate)
     return module
 
 
@@ -191,8 +194,11 @@ def jit(ufl_object, parameters=None):
     module_name = "ffc_%s_%s" % (kind, jit_object.signature())
 
     # Inspect cache and generate+build if necessary
-    module = jit_build_with_instant(ufl_object, module_name, parameters)
-    #module = jit_build_with_dijitso(ufl_object, module_name, parameters)
+    use_ctypes = os.environ.get("FFC_USE_CTYPES")
+    if not use_ctypes:
+        module = jit_build_with_instant(ufl_object, module_name, parameters)
+    else:
+        module = jit_build_with_dijitso(ufl_object, module_name, parameters)
 
     # Construct instance of compiled form
     if isinstance(ufl_object, Form):
