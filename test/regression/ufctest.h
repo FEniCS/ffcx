@@ -54,8 +54,9 @@ std::vector<double> test_coordinate_dofs(int gdim)
     coordinate_dofs.resize(4);
     coordinate_dofs[0]  = 0.903;
     coordinate_dofs[1]  = 0.561;
-    coordinate_dofs[2]  = 0.987;
-    coordinate_dofs[3]  = 0.123;
+    // Huh? Only 2 vertices for interval, is this for tdim=1,gdim=2?
+//    coordinate_dofs[2]  = 0.987;
+//    coordinate_dofs[3]  = 0.123;
   }
   else if (gdim == 2)
   {
@@ -66,8 +67,9 @@ std::vector<double> test_coordinate_dofs(int gdim)
     coordinate_dofs[3]  = 0.767;
     coordinate_dofs[4]  = 0.987;
     coordinate_dofs[5]  = 0.783;
-    coordinate_dofs[6]  = 0.123;
-    coordinate_dofs[7] = 0.561;
+    // Huh? Only 4 vertices for triangle, is this for quads?
+//    coordinate_dofs[6]  = 0.123;
+//    coordinate_dofs[7] = 0.561;
   }
   else if (gdim == 3)
   {
@@ -91,8 +93,48 @@ std::vector<double> test_coordinate_dofs(int gdim)
 // Function for creating "random" vertex coordinates
 std::pair<std::vector<double>, std::vector<double>> test_coordinate_dof_pair(int gdim, int facet0, int facet1)
 {
-  // FIXME: Return pair of cell coordinates there facet0 of cell 0 cooresponds to facet1 of cell 1
-  return {test_coordinate_dofs(gdim), test_coordinate_dofs(gdim)};
+  // For simplices only.
+
+  // Return pair of cell coordinates there facet0 of cell 0 cooresponds to facet1 of cell 1
+  int num_vertices = gdim+1;
+  std::vector<double> c0 = test_coordinate_dofs(gdim);
+  std::vector<double> c1(gdim*num_vertices);
+  std::vector<double> m(gdim);
+
+  for (int i=0; i<gdim; ++i)
+    m[i] = 0.0;
+
+  int k = 0;
+  int j0 = 0;
+  int j1 = 0;
+  while (k < num_vertices-1)
+  {
+    // Skip the vertex that has vertex index == facet index, this is _not_ part of the facet.
+    if (j0 == facet0)
+      ++j0;
+    if (j1 == facet1)
+      ++j1;
+
+    // Copy vertex and accumulate midpoint
+    for (int i=0; i<gdim; ++i)
+      m[i] += (c1[gdim*j1 + i] = c0[gdim*j0 + i]);
+
+    // Skip to next vertex
+    ++j0;
+    ++j1;
+    ++k;
+  }
+  // Scale midpoint
+  for (int i=0; i<gdim; ++i)
+    m[i] /= (num_vertices-1.0);
+
+  // Place last vertex (not on facet) on the opposite side of facet
+  j0 = facet0;  // Simplex specific rule
+  j1 = facet1;
+  for (int i=0; i<gdim; ++i)
+    c1[gdim*j1 + i] = 2.0*m[i] - c0[gdim*j0 + i];
+
+  return {c0, c1};
 }
 
 // Class for creating "random" ufc::cell objects
