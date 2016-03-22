@@ -230,8 +230,14 @@ def _autoselect_quadrature_rule(integral_metadata, integral, form_data):
     return qr
 
 
-def _determine_representation(integral_metadatas, ida, form_data):
+def _determine_representation(integral_metadatas, ida, form_data, parameters):
     "Determine one unique representation considering all integrals together."
+
+    # Hack because uflacs and quadrature/tensor cannot coincide in same form because of compute_form_data differences.
+    r = parameters["representation"]
+    if r == "uflacs":
+        warning("representation:    ignoring metadata and using '%s' set by parameters" % r)
+        return r
 
     # Hack to override representation with environment variable
     forced_r = os.environ.get("FFC_FORCE_REPRESENTATION")
@@ -299,7 +305,7 @@ def _attach_integral_metadata(form_data, parameters):
             integral_metadatas[i].update(integral.metadata() or {})
 
         # Determine representation, must be equal for all integrals on same subdomain
-        r = _determine_representation(integral_metadatas, ida, form_data)
+        r = _determine_representation(integral_metadatas, ida, form_data, parameters)
         for i, integral in enumerate(ida.integrals):
             integral_metadatas[i]["representation"] = r
         ida.metadata["representation"] = r
