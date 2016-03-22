@@ -73,7 +73,6 @@ known_uflacs_failures = set([
     "CustomIntegral.ufl",
     "CustomMixedIntegral.ufl",
     "CustomVectorIntegral.ufl",
-    "MetaData.ufl",
     "AdaptivePoisson.ufl",
     ])
 
