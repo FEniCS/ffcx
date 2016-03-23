@@ -202,23 +202,34 @@ def jit(ufl_object, parameters=None):
 
     # Construct instance of compiled form
     if isinstance(ufl_object, Form):
-        compiled_form = _instantiate_form(module, module_name)
+        compiled_form = _instantiate_form(module, module_name, use_ctypes)
         return compiled_form, module, module_name
     elif isinstance(ufl_object, FiniteElementBase):
-        return _instantiate_element_and_dofmap(module, module_name)
+        return _instantiate_element_and_dofmap(module, module_name, use_ctypes)
 
 
 from ffc.cpp import make_classname
-def _instantiate_form(module, prefix):
+def _instantiate_form(module, prefix, use_ctypes):
     "Extract the form from module with only one form."
     form_id = 0
     classname = make_classname(prefix, "form", form_id)
-    return getattr(module, "create_" + classname)()
+    if use_ctypes:
+        import dijitso
+        form = dijitso.extract_factory_function(module, "create_" + classname)()
+        return form
+    else:
+        return getattr(module, "create_" + classname)()
 
-def _instantiate_element_and_dofmap(module, prefix):
+def _instantiate_element_and_dofmap(module, prefix, use_ctypes):
     """Extract element and dofmap from module."""
     fe_classname = make_classname(prefix, "finite_element", "main")
     dm_classname = make_classname(prefix, "dofmap", "main")
-    fe = getattr(module, "create_" + fe_classname)()
-    dm = getattr(module, "create_" + dm_classname)()
+    if use_ctypes:
+        import dijitso
+        fe = dijitso.extract_factory_function(module, "create_" + fe_classname)()
+        dm = dijitso.extract_factory_function(module, "create_" + dm_classname)()
+    else:
+        fe = getattr(module, "create_" + fe_classname)()
+        dm = getattr(module, "create_" + dm_classname)()
+
     return (fe, dm)
