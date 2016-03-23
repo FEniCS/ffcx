@@ -49,10 +49,118 @@ from ffc.formatting import write_code
 from ffc.jitobject import JITObject
 from ffc.quadratureelement import default_quadrature_degree
 from ffc.backends.ufc import build_ufc_module
-
+from ffc.ufc_include import get_ufc_include
 
 # Set debug level for Instant
 instant.set_log_level("warning")
+
+
+def jit_generate(ufl_object, module_name, parameters):
+    "Generate code and return as strings."
+    if isinstance(ufl_object, Form):
+        code_h, code_c = compile_form(ufl_object, prefix=module_name,
+                                      parameters=parameters, jit=True)
+    elif isinstance(ufl_object, FiniteElementBase):
+        code_h, code_c = compile_element(ufl_object, prefix=module_name,
+                                         parameters=parameters, jit=True)
+    return code_h, code_c
+
+
+def jit_build_with_instant(ufl_object, module_name, parameters):
+    # Use Instant cache if possible
+    cache_dir = parameters.get("cache_dir")
+    module = instant.import_module(module_name, cache_dir=cache_dir)
+    if module:
+        debug("Reusing form from cache.")
+        return module
+
+    if parameters["cpp_optimize"]:
+        cppargs = parameters["cpp_optimize_flags"].split()
+    else:
+        cppargs = ["-O0"]
+
+    # Take lock to serialise file removal.
+    # Need to add "_0" to lock as instant.import_module acquire
+    # lock with name: module_name
+    with instant.file_lock(instant.get_default_cache_dir(),
+                           module_name + "_0") as lock:
+
+        # Retry Instant cache. The module may have been created while we waited
+        # for the lock, even if it didn't exist before.
+        module = instant.import_module(module_name, cache_dir=cache_dir)
+        if module:
+            debug("Reusing form from cache.")
+            return module
+
+        # Write a message
+        log(INFO + 5,
+            "Calling FFC just-in-time (JIT) compiler, this may take some time.")
+        code_h, code_c = jit_generate(ufl_object, module_name, parameters)
+
+        # Write to file
+        write_code(code_h, code_c, module_name, parameters)
+
+        # Build module using Instant
+        debug("Compiling and linking Python extension module, this may take some time.")
+        hfile   = module_name + ".h"
+        cppfile = module_name + ".cpp"
+        module = build_ufc_module(
+            hfile,
+            source_directory = os.curdir,
+            signature = module_name,
+            sources = [cppfile],
+            cppargs = cppargs,
+            cache_dir = cache_dir)
+
+        # Remove code
+        if os.path.isfile(hfile):
+            os.unlink(hfile)
+        if os.path.isfile(cppfile):
+            os.unlink(cppfile)
+
+    return module
+
+
+def jit_build_with_dijitso(ufl_object, module_name, parameters):
+    import dijitso
+
+    def _generate(ufl_object, module_name, signature, parameters):
+        # Write a message
+        log(INFO + 5,
+            "Calling FFC just-in-time (JIT) compiler, this may take some time.")
+        code_h, code_c = jit_generate(ufl_object, module_name, parameters)
+        dependencies = ()
+        return code_h, code_c, dependencies
+
+    # Translating the C++ flags from ffc parameters to dijitso
+    # to get equivalent behaviour to instant code
+    if parameters["cpp_optimize"]:
+        build_params = {
+            "cxxflags_opt": tuple(parameters["cpp_optimize_flags"].split()),
+            "debug": False
+            }
+    else:
+        build_params = {
+            "cxxflags_debug": ("-O0",),
+            "debug": True
+            }
+
+    # Add path to UFC include dir
+    build_params["include_dirs"] = get_ufc_include()
+
+    if parameters["cache_dir"]:
+        cache_params = { "cache_dir": cache_dir }
+    else:
+        cache_params = {}
+
+    params = dijitso.validate_params({
+        "cache": cache_params,
+        "build": build_params,
+        "generator": parameters,
+        })
+
+    module, signature = dijitso.jit(ufl_object, module_name, params, _generate)
+    return module
 
 
 def jit(ufl_object, parameters=None):
@@ -63,17 +171,18 @@ def jit(ufl_object, parameters=None):
       ufl_object : The UFL object to be compiled
       parameters : A set of parameters
     """
-    # Check that we get a Form
+    # Check that we get a form or element
     if isinstance(ufl_object, Form):
         kind = "form"
     elif isinstance(ufl_object, FiniteElementBase):
         kind = "element"
     else:
-        error("Expecting a UFL form or element: %s" % repr(ufl_object))
+        error("Expecting a UFL form or element, got: %s" % repr(ufl_object))
 
     # Check parameters
     parameters = validate_jit_parameters(parameters)
 
+    # FIXME: Setting the log level here becomes a permanent side effect...
     # Set log level
     set_level(parameters["log_level"])
     set_prefix(parameters["log_prefix"])
@@ -83,70 +192,20 @@ def jit(ufl_object, parameters=None):
 
     # Set prefix for generated code
     module_name = "ffc_%s_%s" % (kind, jit_object.signature())
-    prefix = module_name
 
-    # Use Instant cache if possible
-    cache_dir = parameters["cache_dir"] or None
-    module = instant.import_module(module_name, cache_dir=cache_dir)
-    if module:
-        debug("Reusing form from cache.")
+    # Inspect cache and generate+build if necessary
+    use_ctypes = os.environ.get("FFC_USE_CTYPES")
+    if not use_ctypes:
+        module = jit_build_with_instant(ufl_object, module_name, parameters)
     else:
-        # Take lock to serialise file removal.
-        # Need to add "_0" to lock as instant.import_module acquire
-        # lock with name: module_name
-        with instant.file_lock(instant.get_default_cache_dir(),
-                               module_name + "_0") as lock:
-
-            # Retry Instant cache. The module may have been created while we waited
-            # for the lock, even if it didn't exist before.
-            module = instant.import_module(module_name, cache_dir=cache_dir)
-            if module:
-                debug("Reusing form from cache.")
-            else:
-                # Write a message
-                log(INFO + 5,
-                    "Calling FFC just-in-time (JIT) compiler, this may take some time.")
-
-                # Generate code
-                if kind == "form":
-                    code_h, code_c = compile_form(ufl_object, prefix=module_name,
-                                                  parameters=parameters, jit=True)
-                elif kind == "element":
-                    code_h, code_c = compile_element(ufl_object, prefix=module_name,
-                                                     parameters=parameters, jit=True)
-                # Write to file
-                write_code(code_h, code_c, module_name, parameters)
-
-                # Build module using Instant (through UFC)
-                debug("Compiling and linking Python extension module, this may take some time.")
-                hfile   = module_name + ".h"
-                cppfile = module_name + ".cpp"
-
-                if parameters["cpp_optimize"]:
-                    cppargs = parameters["cpp_optimize_flags"].split()
-                else:
-                    cppargs = ["-O0"]
-
-                module = build_ufc_module(
-                    hfile,
-                    source_directory = os.curdir,
-                    signature = module_name,
-                    sources = [cppfile],
-                    cppargs = cppargs,
-                    cache_dir = cache_dir)
-
-                # Remove code
-                if os.path.isfile(hfile):
-                    os.unlink(hfile)
-                if os.path.isfile(cppfile):
-                    os.unlink(cppfile)
+        module = jit_build_with_dijitso(ufl_object, module_name, parameters)
 
     # Construct instance of compiled form
-    if kind == "form":
-        compiled_form = _instantiate_form(module, prefix)
-        return compiled_form, module, prefix
-    elif kind == "element":
-        return _instantiate_element_and_dofmap(module, prefix)
+    if isinstance(ufl_object, Form):
+        compiled_form = _instantiate_form(module, module_name)
+        return compiled_form, module, module_name
+    elif isinstance(ufl_object, FiniteElementBase):
+        return _instantiate_element_and_dofmap(module, module_name)
 
 
 from ffc.cpp import make_classname
