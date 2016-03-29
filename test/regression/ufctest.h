@@ -150,21 +150,21 @@ public:
     // Store dimensions
     switch (cell_shape)
     {
-    case ufc::interval:
+    case ufc::shape::interval:
       topological_dimension = 1;
       if (gdim == 0)
         geometric_dimension = 1;
       else
         geometric_dimension = gdim;
       break;
-    case ufc::triangle:
+    case ufc::shape::triangle:
       topological_dimension = 2;
       if (gdim == 0)
         geometric_dimension = 2;
       else
         geometric_dimension = gdim;
       break;
-    case ufc::tetrahedron:
+    case ufc::shape::tetrahedron:
       topological_dimension = 3;
       if (gdim == 0)
         geometric_dimension = 3;
@@ -259,7 +259,7 @@ void test_finite_element(ufc::finite_element& element, int id, Printer& printer)
   //printer.print_scalar("signature", element.signature());
 
   // cell_shape
-  printer.print_scalar("cell_shape", element.cell_shape());
+  printer.print_scalar("cell_shape", static_cast<int>(element.cell_shape()));
 
   // space_dimension
   printer.print_scalar("space_dimension", element.space_dimension());
