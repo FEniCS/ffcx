@@ -33,7 +33,7 @@ namespace ufc
 {
 
   /// Valid cell shapes
-  enum shape {interval, triangle, quadrilateral, tetrahedron, hexahedron};
+  enum class shape {interval, triangle, quadrilateral, tetrahedron, hexahedron};
 
   /// This class defines the data structure for a cell in a mesh.
   class cell
@@ -41,9 +41,8 @@ namespace ufc
   public:
 
     /// Constructor
-    cell(): cell_shape(interval),
-            topological_dimension(0), geometric_dimension(0),
-            index(0), local_facet(-1), mesh_identifier(-1) {}
+     cell() : cell_shape(shape::interval), topological_dimension(0),
+      geometric_dimension(0), index(0), local_facet(-1), mesh_identifier(-1) {}
 
     /// Destructor
     virtual ~cell() {}
@@ -689,4 +688,3 @@ namespace ufc
 }
 
 #endif
-

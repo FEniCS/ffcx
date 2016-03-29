@@ -148,7 +148,7 @@ format.update({
 format.update({
     "entity index":       "entity_indices",
     "num entities":       "num_global_entities",
-    "cell":               lambda s: "ufc::%s" % s,
+    "cell":               lambda s: "ufc::shape::%s" % s,
     "J":                  lambda i, j, m, n: "J[%d]" % _flatten(i, j, m, n),
     "inv(J)":             lambda i, j, m, n: "K[%d]" % _flatten(i, j, m, n),
     "det(J)":             lambda r=None: "detJ%s" % _choose_map(r),
