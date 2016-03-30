@@ -232,7 +232,7 @@ def _generate_coordinate_mapping_code(ir, parameters):
     code["create"] = "return nullptr;"
 
     code["signature"] = 'return "fixme";'
-    code["cell_shape"] = "return ufc::triangle;"
+    code["cell_shape"] = "return ufc::shape::triangle;"
     code["topological_dimension"] = "return 2;"
     code["geometric_dimension"] = "return 3;"
 
