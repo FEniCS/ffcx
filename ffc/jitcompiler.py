@@ -68,7 +68,7 @@ def jit_generate(ufl_object, module_name, parameters):
 
 def jit_build_with_instant(ufl_object, module_name, parameters):
     # Use Instant cache if possible
-    cache_dir = parameters.get("cache_dir")
+    cache_dir = parameters.get("cache_dir") or None  # Important that this is None and not "", use "." for curdir
     module = instant.import_module(module_name, cache_dir=cache_dir)
     if module:
         debug("Reusing form from cache.")
@@ -148,7 +148,9 @@ def jit_build_with_dijitso(ufl_object, module_name, parameters):
     # Add path to UFC include dir
     build_params["include_dirs"] = get_ufc_include()
 
-    if parameters["cache_dir"]:
+    # FFC default is "", use "." to point to curdir
+    cache_dir = parameters.get("cache_dir") or None
+    if cache_dir:
         cache_params = { "cache_dir": cache_dir }
     else:
         cache_params = {}
