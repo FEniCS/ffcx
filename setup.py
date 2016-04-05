@@ -7,12 +7,9 @@ try:
 except ImportError:
     from distutils.core import setup
 
-from distutils import sysconfig, spawn
-from distutils.core import Extension
-from distutils.command import build_ext
-from distutils.command import build_py
+from distutils import sysconfig
+from distutils.command.install_lib import install_lib
 from distutils.ccompiler import new_compiler
-from distutils.version import LooseVersion
 
 if sys.version_info < (2, 7):
     print("Python 2.7 or higher required, please upgrade.")
@@ -288,10 +285,16 @@ def run_install():
     # Generate config files
     generate_ufc_config_files()
 
-    # Generate ufc_include.py
-    write_config_file(os.path.join("ffc", "ufc_include.py.in"),
-                      os.path.join("ffc", "ufc_include.py"),
-                      variables=dict(INSTALL_PREFIX=get_installation_prefix()))
+    class my_install_lib(install_lib):
+        def run(self):
+            if not self.dry_run:
+                # Generate ufc_include.py
+                write_config_file(os.path.join("ffc", "ufc_include.py.in"),
+                                  os.path.join("ffc", "ufc_include.py"),
+                                  variables=dict(INSTALL_PREFIX=get_installation_prefix()))
+
+            # distutils uses old-style classes, so no super()
+            install_lib.run(self)
 
     # FFC data files
     data_files = [(os.path.join("share", "man", "man1"),
@@ -351,6 +354,7 @@ def run_install():
                               "uflacs": "uflacs",
                               "ufc": "ufc"},
           scripts          = scripts,
+          cmdclass         = {'install_lib': my_install_lib},
           data_files       = data_files,
           install_requires = ["numpy", "six", "fiat==1.7.0dev",
                               "ufl==1.7.0dev", "instant==1.7.0dev"],
