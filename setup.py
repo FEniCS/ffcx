@@ -4,11 +4,12 @@ import os, sys, platform, re, subprocess, string, tempfile, shutil, hashlib
 
 try:
     from setuptools import setup
+    from setuptools.command.install import install
 except ImportError:
     from distutils.core import setup
+    from distutils.command.install import install
 
 from distutils import sysconfig
-from distutils.command.install_lib import install_lib
 from distutils.ccompiler import new_compiler
 
 if sys.version_info < (2, 7):
@@ -285,7 +286,7 @@ def run_install():
     # Generate config files
     generate_ufc_config_files()
 
-    class my_install_lib(install_lib):
+    class my_install(install):
         def run(self):
             if not self.dry_run:
                 # Generate ufc_include.py
@@ -294,7 +295,7 @@ def run_install():
                                   variables=dict(INSTALL_PREFIX=get_installation_prefix()))
 
             # distutils uses old-style classes, so no super()
-            install_lib.run(self)
+            install.run(self)
 
     # FFC data files
     data_files = [(os.path.join("share", "man", "man1"),
@@ -354,7 +355,7 @@ def run_install():
                               "uflacs": "uflacs",
                               "ufc": "ufc"},
           scripts          = scripts,
-          cmdclass         = {'install_lib': my_install_lib},
+          cmdclass         = {'install': my_install},
           data_files       = data_files,
           install_requires = ["numpy", "six", "fiat==1.7.0dev",
                               "ufl==1.7.0dev", "instant==1.7.0dev"],
