@@ -1,4 +1,4 @@
-1.7.0 [201x-xx-xx]
+2016.1.0 [2016-06-xx]
  - Add function get_ufc_include to get path to ufc.h
  - Merge UFLACS into FFC
  - Generalize ufc interface to non-affine parameterized coordinates

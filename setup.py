@@ -43,7 +43,6 @@ Topic :: Scientific/Engineering :: Mathematics
 Topic :: Software Development :: Libraries
 """
 
-
 def get_installation_prefix():
     "Get installation prefix"
     prefix = sys.prefix
@@ -58,12 +57,10 @@ def get_installation_prefix():
             prefix = arg.split("=")[1]
     return os.path.abspath(os.path.expanduser(prefix))
 
-
 def get_ufc_signature():
     """Compute SHA-1 hash of ufc.h"""
     with open(os.path.join('ufc', 'ufc.h'), 'rb') as f:
         return hashlib.sha1(f.read()).hexdigest()
-
 
 def get_git_commit_hash():
     """Return git commit hash of currently checked out revision
@@ -80,7 +77,6 @@ def get_git_commit_hash():
     else:
         return hash.strip()
 
-
 def create_windows_batch_files(scripts):
     """Create Windows batch files, to get around problem that we
     cannot run Python scripts in the prompt without the .py
@@ -94,7 +90,6 @@ def create_windows_batch_files(scripts):
         batch_files.append(batch_file)
     scripts.extend(batch_files)
     return scripts
-
 
 def write_config_file(infile, outfile, variables={}):
     "Write config file based on template"
@@ -171,7 +166,6 @@ def generate_git_hash_file():
                       os.path.join("ffc", "git_commit_hash.py"),
                       variables=dict(GIT_COMMIT_HASH=GIT_COMMIT_HASH))
 
-
 def generate_ufc_signature_file():
     "Generate module with UFC signature"
 
@@ -181,7 +175,6 @@ def generate_ufc_signature_file():
     write_config_file(os.path.join("ffc", "ufc_signature.py.in"),
                       os.path.join("ffc", "ufc_signature.py"),
                       variables=dict(UFC_SIGNATURE=UFC_SIGNATURE))
-
 
 def generate_ufc_config_files():
     "Generate and install UFC configuration files"
@@ -238,7 +231,6 @@ def generate_ufc_config_files():
                                      INSTALL_PREFIX=INSTALL_PREFIX,
                                      CXX_FLAGS=CXX_FLAGS))
 
-
 def has_cxx_flag(cc, flag):
     "Return True if compiler supports given flag"
     tmpdir = tempfile.mkdtemp(prefix="ffc-build-")
@@ -264,7 +256,6 @@ def has_cxx_flag(cc, flag):
         if devnull is not None:
             devnull.close()
         shutil.rmtree(tmpdir)
-
 
 def run_install():
     "Run installation"
@@ -357,10 +348,9 @@ def run_install():
           scripts          = scripts,
           cmdclass         = {'install': my_install},
           data_files       = data_files,
-          install_requires = ["numpy", "six", "fiat==1.7.0dev",
-                              "ufl==1.7.0dev", "instant==1.7.0dev"],
+          install_requires = ["numpy", "six", "fiat==2016.1.0",
+                              "ufl==2016.1.0", "instant==2016.1.0"],
           zip_safe = False)
-
 
 if __name__ == "__main__":
     run_install()
