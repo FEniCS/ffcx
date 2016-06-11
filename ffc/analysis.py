@@ -33,14 +33,12 @@ from itertools import chain
 from ufl.form import Form
 from ufl.integral import Integral
 from ufl.finiteelement import MixedElement, EnrichedElement, VectorElement
-from ufl.algorithms import estimate_total_polynomial_degree
 from ufl.algorithms import sort_elements
 from ufl.algorithms import compute_form_data
 from ufl.algorithms.analysis import extract_sub_elements
 
 # FFC modules
-from ffc.log import log, info, begin, end, warning, debug, error, ffc_assert, warning_blue
-from ffc.quadratureelement import default_quadrature_degree
+from ffc.log import info, begin, end, warning, debug, error, ffc_assert, warning_blue
 from ffc.utils import all_equal
 from ffc.tensor import estimate_cost
 
@@ -144,6 +142,15 @@ def _analyze_form(form, parameters):
                                       do_apply_geometry_lowering=True,
                                       preserve_geometry_types=(Jacobian,),
                                       do_apply_restrictions=True,
+                                      )
+    elif r == "tsfc":
+        # Same workaround for tsfc
+        form_data = compute_form_data(form,
+                                      do_apply_function_pullbacks=True,
+                                      do_apply_integral_scaling=True,
+                                      do_apply_geometry_lowering=True,
+                                      do_apply_restrictions=True,
+                                      do_estimate_degrees=True,
                                       )
     else:
         ffc_assert(r == "legacy", "Unexpected representation family "
