@@ -23,7 +23,7 @@ import gem.impero_utils as impero_utils
 
 from tsfc import fem, ufl_utils
 from tsfc.coffee import generate as generate_coffee
-from tsfc.kernel_interface import KernelBuilder, needs_cell_orientations
+from ffc.tsfcrepr.kernel_interface import KernelBuilder, needs_cell_orientations
 from tsfc.quadrature import create_quadrature, QuadratureRule
 
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
@@ -54,6 +54,7 @@ def compute_integral_ir(integral_data,
     cell = integral_data.domain.ufl_cell()
     arguments = form_data.preprocessed_form.arguments()
 
+    assert len(arguments) <= 2
     argument_indices = tuple(gem.Index(name=name) for arg, name in zip(arguments, ['j', 'k']))
     quadrature_indices = []
 
@@ -64,10 +65,10 @@ def compute_integral_ir(integral_data,
     if ufl_utils.is_element_affine(mesh.ufl_coordinate_element()):
         # For affine mesh geometries we prefer code generation that
         # composes well with optimisations.
-        builder.set_coordinates(coordinates, "coords", mode='list_tensor')
+        builder.set_coordinates(coordinates, "coordinate_dofs", mode='list_tensor')
     else:
         # Otherwise we use the approach that might be faster (?)
-        builder.set_coordinates(coordinates, "coords")
+        builder.set_coordinates(coordinates, "coordinate_dofs")
 
     builder.set_coefficients(integral_data, form_data)
 
@@ -100,6 +101,7 @@ def compute_integral_ir(integral_data,
                              type(quad_rule))
 
         integrand = ufl_utils.replace_coordinates(integral.integrand(), coordinates)
+        # FIXME
         integrand = ufl_utils.split_coefficients(integrand, builder.coefficient_split)
         quadrature_index = gem.Index(name='ip')
         quadrature_indices.append(quadrature_index)
