@@ -1,3 +1,20 @@
+# Copyright (C) 2016 Miklos Homolya, Jan Blechta
+#
+# This file is part of FFC and contains snippets originally from tsfc.
+#
+# FFC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# FFC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with FFC. If not, see <http://www.gnu.org/licenses/>.
+
 from __future__ import absolute_import
 
 import numpy
@@ -345,7 +362,7 @@ def prepare_arguments(arguments, indices, interior_facet=False):
         indices = (0,)
     expression = gem.Indexed(gem.Variable("AA", shape), indices)
 
-    prepare = coffee.Decl(SCALAR_TYPE,
+    reshape = coffee.Decl(SCALAR_TYPE,
                           coffee.Symbol("(&%s)" % expression.children[0].name,
                                         rank=shape),
                           init="*reinterpret_cast<%s (*)%s>(%s)" %
@@ -354,8 +371,11 @@ def prepare_arguments(arguments, indices, interior_facet=False):
                                funarg.sym.gencode()
                               )
                           )
+    zero = coffee.FlatBlock("memset(%s, 0, %d * sizeof(*%s));"%
+        (funarg.sym.gencode(), numpy.product(shape), funarg.sym.gencode()))
+    prepare = [reshape, zero]
 
-    return funarg, [prepare], [expression], []
+    return funarg, prepare, [expression], []
 
 
 def coffee_for(index, extent, body):
