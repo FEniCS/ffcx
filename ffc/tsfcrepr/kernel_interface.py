@@ -218,7 +218,7 @@ class KernelBuilder(KernelBuilderBase):
                     split = [Coefficient(FunctionSpace(coefficient.ufl_domain(), element))
                              for element in coefficient.ufl_element().sub_elements()]
                     coefficients.extend(split)
-                    self.coefficient_split[coefficient] = split
+                    self.coefficient_split[coefficient] = split # Used in PyOp2, not in UFC
                 else:
                     coefficients.append(coefficient)
                 # This is which coefficient in the original form the
