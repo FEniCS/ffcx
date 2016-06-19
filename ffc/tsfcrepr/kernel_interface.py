@@ -276,7 +276,7 @@ def prepare_coefficients(coefficients, coefficient_numbers, name, mode=None,
     assert len(coefficients) == len(coefficient_numbers)
 
     # FIXME: hack; is actual number really needed?
-    num_coefficients = max(coefficient_numbers) + 1
+    num_coefficients = max(coefficient_numbers) + 1 if coefficient_numbers else 0
     funarg = coffee.Decl(SCALAR_TYPE, coffee.Symbol(name),
                          pointers=[("const",), ()],
                          qualifiers=["const"])
@@ -332,10 +332,8 @@ def prepare_coordinates(coefficient, name, mode=None, interior_facet=False):
                          pointers=[("",)],
                          qualifiers=["const"])
 
-    # Translate UFC/DOLFIN coords into P1 dofs
-    # FIXME: Implement higher-orders, see strange scheme in
-    #            dolfin/mesh/Cell.h:get_coordinate_dofs,
-    #        maybe fetching P2 dofs from ufc_element will be needed!
+    # Translate coords from XYZXYZXYZXYZ into XXXXYYYYZZZZ
+    # NOTE: See dolfin/mesh/Cell.h:get_coordinate_dofs for ordering scheme
     gdim = coefficient.ufl_element().cell().geometric_dimension()
     assert len(shape) == 1 and shape[0] % gdim == 0
     num_nodes = shape[0] / gdim
