@@ -301,38 +301,18 @@ def prepare_coordinates(coefficient, name, mode=None, interior_facet=False):
                          pointers=[("",)],
                          qualifiers=["const"])
 
-    i = gem.Index()
-    expression = gem.ComponentTensor(
-        gem.Indexed(gem.Variable(name+"_dofs", shape), (i,)),
-        (i,))
-
     # Translate UFC/DOLFIN coords into P1 dofs
     # FIXME: Implement higher-orders, see strange scheme in
     #            dolfin/mesh/Cell.h:get_coordinate_dofs,
     #        maybe fetching P2 dofs from ufc_element will be needed!
-    # FIXME: Can do it without copying? Rather offsetting expression indices?
-    #        Something like
-    #            expression = gem.ComponentTensor(
-    #                gem.Indexed(gem.Variable(name, shape), (i+j*gdim,),),
-    #                   (i*num_nodes+j,))
-    #        Or using integer division/remainder on single index?
-    new_name = expression.children[0].children[0].name
     gdim = coefficient.ufl_element().cell().geometric_dimension()
     assert len(shape) == 1 and shape[0] % gdim == 0
     num_nodes = shape[0] / gdim
-    i, j = gem.Index(), gem.Index()
-    prepare = [coffee.Decl(SCALAR_TYPE, coffee.Symbol(new_name, rank=shape)),
-               coffee_for(i, gdim,
-                   coffee_for(j, num_nodes,
-                       coffee.Assign(
-                           coffee.Symbol(new_name, rank=(i,), offset=((num_nodes, j),)),
-                           coffee.Symbol(name,     rank=(j,), offset=((gdim,      i),))
-                       )
-                   )
-               )
-              ]
+    variable = gem.Variable(name, (num_nodes * gdim,))
+    indices = numpy.arange(num_nodes * gdim).reshape(num_nodes, gdim).transpose().flatten()
+    expression = gem.ListTensor([gem.Indexed(variable, (i,)) for i in indices])
 
-    return funarg, prepare, expression
+    return funarg, [], expression
 
 
 def prepare_arguments(arguments, indices, interior_facet=False):
