@@ -283,12 +283,26 @@ def prepare_coefficients(coefficients, coefficient_numbers, name, mode=None,
     expressions = []
     i = gem.Index()
     for j, coefficient in enumerate(coefficients):
-        fiat_element = create_element(coefficient.ufl_element())
-        shape = (fiat_element.space_dimension(),)
-        expression = gem.ComponentTensor(
-            gem.Indexed(gem.Variable(name, (num_coefficients,) + shape),
-                        (coefficient_numbers[j], i)),
-            (i,))
+        if coefficient.ufl_element().family() == 'Real':
+            if coefficient.ufl_shape == ():
+                # Scalar constant/real - needs one dummy index
+                expression = gem.Indexed(gem.Variable(name, (num_coefficients,) + (1,)),
+                                         (coefficient_numbers[j], 0,))
+            else:
+                # Mixed/vector constant/real
+                shape = coefficient.ufl_shape
+                expression = gem.ComponentTensor(
+                    gem.Indexed(gem.Variable(name, (num_coefficients,) + shape),
+                                (coefficient_numbers[j], i)),
+                    (i,))
+        else:
+            # Everything else
+            fiat_element = create_element(coefficient.ufl_element())
+            shape = (fiat_element.space_dimension(),)
+            expression = gem.ComponentTensor(
+                gem.Indexed(gem.Variable(name, (num_coefficients,) + shape),
+                            (coefficient_numbers[j], i)),
+                (i,))
         expressions.append(expression)
 
     return funarg, [], expressions
