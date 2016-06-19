@@ -21,7 +21,8 @@ import gem
 import gem.optimise as opt
 import gem.impero_utils as impero_utils
 
-from tsfc import fem, ufl_utils
+from ffc.tsfcrepr import fem
+from tsfc import ufl_utils
 from tsfc.coffee import generate as generate_coffee
 from ffc.tsfcrepr.kernel_interface import KernelBuilder, needs_cell_orientations
 from tsfc.quadrature import create_quadrature, QuadratureRule
@@ -72,6 +73,8 @@ def compute_integral_ir(integral_data,
 
     builder.set_coefficients(integral_data, form_data)
 
+    builder.set_facets()
+
     # Map from UFL FiniteElement objects to Index instances.  This is
     # so we reuse Index instances when evaluating the same coefficient
     # multiple times with the same table.  Occurs, for example, if we
@@ -89,6 +92,7 @@ def compute_integral_ir(integral_data,
 
         # Check if the integral has a quad degree attached, otherwise use
         # the estimated polynomial degree attached by compute_form_data
+        # FIXME
         quadrature_degree = params.get("quadrature_degree",
                                        params["estimated_polynomial_degree"])
         #quad_rule = params.get("quadrature_rule",
@@ -108,7 +112,8 @@ def compute_integral_ir(integral_data,
         ir = fem.process(integral_type, cell, quad_rule.points,
                          quad_rule.weights, quadrature_index,
                          argument_indices, integrand,
-                         builder.coefficient_mapper, index_cache)
+                         builder.coefficient_mapper, index_cache,
+                         builder.facet_mapper)
         if parameters.get("unroll_indexsum"):
             ir = opt.unroll_indexsum(ir, max_extent=parameters["unroll_indexsum"])
         irs.append([(gem.IndexSum(expr, quadrature_index)
@@ -139,9 +144,7 @@ def compute_integral_ir(integral_data,
             index_names.append((quadrature_index, 'ip_%d' % i))
 
     body = generate_coffee(impero_c, index_names, ir, argument_indices)
-
-    kernel_name = "%s_%s_integral_%s" % ("Form", integral_type, integral_data.subdomain_id)
-    kernel = builder.construct_kernel(kernel_name, body)
+    kernel = builder.construct_kernel("tabulate_tensor", body)
 
     # Store tsfc generated part separately
     IR["tsfc"] = kernel
