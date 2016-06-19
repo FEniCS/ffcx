@@ -275,14 +275,15 @@ def prepare_coefficients(coefficients, coefficient_numbers, name, mode=None,
     """
     assert len(coefficients) == len(coefficient_numbers)
 
-    num_coefficients = len(coefficients)
+    # FIXME: hack; is actual number really needed?
+    num_coefficients = max(coefficient_numbers) + 1
     funarg = coffee.Decl(SCALAR_TYPE, coffee.Symbol(name),
                          pointers=[("const",), ()],
                          qualifiers=["const"])
 
     expressions = []
-    i = gem.Index()
     for j, coefficient in enumerate(coefficients):
+        i = gem.Index()
         if coefficient.ufl_element().family() == 'Real':
             if coefficient.ufl_shape == ():
                 # Scalar constant/real - needs one dummy index
