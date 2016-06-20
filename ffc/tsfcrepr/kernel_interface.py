@@ -20,6 +20,7 @@ from __future__ import absolute_import
 import numpy
 import six
 import os
+from itertools import chain, product
 
 import coffee.base as coffee
 
@@ -141,14 +142,14 @@ class KernelBuilderBase(object):
         :arg coefficient: :class:`ufl.Coefficient`
         :arg name: coefficient name
         :arg mode: see :func:`prepare_coefficient`
-        :returns: COFFEE function argument for the coefficient
+        :returns: COFFEE function arguments for the coefficient
         """
-        funarg, prepare, expression = prepare_coordinates(
+        funargs, prepare, expression = prepare_coordinates(
             coefficient, name, mode=mode,
             interior_facet=self.interior_facet)
         self.apply_glue(prepare)
         self.coefficient_map[coefficient] = expression
-        return funarg
+        return funargs
 
     def facets(self, integral_type):
         """Prepare facets. Adds glue code for facets
@@ -172,7 +173,7 @@ class KernelBuilder(KernelBuilderBase):
 
         self.kernel = Kernel(integral_type=integral_type, subdomain_id=subdomain_id)
         self.local_tensor = None
-        self.coordinates_arg = None
+        self.coordinates_args = []
         self.coefficient_args = []
         self.coefficient_split = {}
 
@@ -193,7 +194,7 @@ class KernelBuilder(KernelBuilderBase):
         :arg name: coordinate coefficient name
         :arg mode: see :func:`prepare_coefficient`
         """
-        self.coordinates_arg = self.coordinates(coefficient, name, mode)
+        self.coordinates_args = self.coordinates(coefficient, name, mode)
 
     def set_facets(self):
         """Prepare the facets.
@@ -245,7 +246,7 @@ class KernelBuilder(KernelBuilderBase):
         """
         args = [self.local_tensor]
         args.extend(self.coefficient_args)
-        args.append(self.coordinates_arg)
+        args.extend(self.coordinates_args)
         args.extend(self.facet_args)
         if self.kernel.oriented:
             args.append(cell_orientations_coffee_arg)
@@ -281,6 +282,7 @@ def prepare_coefficients(coefficients, coefficient_numbers, name, mode=None,
                          pointers=[("const",), ()],
                          qualifiers=["const"])
 
+    # FIXME for interior facets
     expressions = []
     for j, coefficient in enumerate(coefficients):
         i = gem.Index()
@@ -325,23 +327,38 @@ def prepare_coordinates(coefficient, name, mode=None, interior_facet=False):
          expression - GEM expression referring to the Coefficient
                       values
     """
+    if not interior_facet:
+        funargs = [coffee.Decl(SCALAR_TYPE, coffee.Symbol(name),
+                               pointers=[("",)],
+                               qualifiers=["const"])]
+    else:
+        funargs = [coffee.Decl(SCALAR_TYPE, coffee.Symbol(name+"_0"),
+                               pointers=[("",)],
+                               qualifiers=["const"]),
+                   coffee.Decl(SCALAR_TYPE, coffee.Symbol(name+"_1"),
+                               pointers=[("",)],
+                               qualifiers=["const"])]
+
     fiat_element = create_element(coefficient.ufl_element())
-
     shape = (fiat_element.space_dimension(),)
-    funarg = coffee.Decl(SCALAR_TYPE, coffee.Symbol(name),
-                         pointers=[("",)],
-                         qualifiers=["const"])
-
-    # Translate coords from XYZXYZXYZXYZ into XXXXYYYYZZZZ
-    # NOTE: See dolfin/mesh/Cell.h:get_coordinate_dofs for ordering scheme
     gdim = coefficient.ufl_element().cell().geometric_dimension()
     assert len(shape) == 1 and shape[0] % gdim == 0
     num_nodes = shape[0] / gdim
-    variable = gem.Variable(name, (num_nodes * gdim,))
-    indices = numpy.arange(num_nodes * gdim).reshape(num_nodes, gdim).transpose().flatten()
-    expression = gem.ListTensor([gem.Indexed(variable, (i,)) for i in indices])
 
-    return funarg, [], expression
+    # Translate coords from XYZXYZXYZXYZ into XXXXYYYYZZZZ
+    # NOTE: See dolfin/mesh/Cell.h:get_coordinate_dofs for ordering scheme
+    if not interior_facet:
+        variable = gem.Variable(name, shape)
+        indices = numpy.arange(num_nodes * gdim).reshape(num_nodes, gdim).transpose().flatten()
+        expression = gem.ListTensor([gem.Indexed(variable, (i,)) for i in indices])
+    else:
+        variable0 = gem.Variable(name+"_0", shape)
+        variable1 = gem.Variable(name+"_1", shape)
+        indices = numpy.arange(num_nodes * gdim).reshape(num_nodes, gdim).transpose().flatten()
+        expression = gem.ListTensor([[gem.Indexed(variable0, (i,)) for i in indices],
+                                     [gem.Indexed(variable1, (i,)) for i in indices]])
+
+    return funargs, [], expression
 
 
 def prepare_facets(integral_type):
@@ -366,6 +383,7 @@ def prepare_facets(integral_type):
             funargs.append(coffee.Decl("std::size_t", coffee.Symbol("facet_1")))
             expressions.append(gem.VariableIndex(gem.Variable("facet_0", ())))
             expressions.append(gem.VariableIndex(gem.Variable("facet_1", ())))
+
     return funargs, [], expressions
 
 
@@ -386,18 +404,24 @@ def prepare_arguments(arguments, indices, interior_facet=False):
          finalise    - list of COFFEE nodes to be appended to the
                        kernel body
     """
-    elements = tuple(create_element(arg.ufl_element()) for arg in arguments)
-
-    shape = tuple(element.space_dimension() for element in elements)
     funarg = coffee.Decl(SCALAR_TYPE, coffee.Symbol("A"), pointers=[()])
 
+    elements = tuple(create_element(arg.ufl_element()) for arg in arguments)
+    shape = tuple(element.space_dimension() for element in elements)
     if len(arguments) == 0:
         shape = (1,)
         indices = (0,)
-    expression = gem.Indexed(gem.Variable("AA", shape), indices)
+    if interior_facet:
+        restrictions = len(shape)*(2,)
+        shape = tuple(j for i in zip(shape, restrictions) for j in i)
+        indices = tuple(product(*chain(*(((i,), (0, 1)) for i in indices))))
+    else:
+        indices = (indices,)
+
+    expressions = [gem.Indexed(gem.Variable("AA", shape), i) for i in indices]
 
     reshape = coffee.Decl(SCALAR_TYPE,
-                          coffee.Symbol("(&%s)" % expression.children[0].name,
+                          coffee.Symbol("(&%s)" % expressions[0].children[0].name,
                                         rank=shape),
                           init="*reinterpret_cast<%s (*)%s>(%s)" %
                               (SCALAR_TYPE,
@@ -409,7 +433,7 @@ def prepare_arguments(arguments, indices, interior_facet=False):
         (funarg.sym.gencode(), numpy.product(shape), funarg.sym.gencode(), os.linesep))
     prepare = [zero, reshape]
 
-    return funarg, prepare, [expression], []
+    return funarg, prepare, expressions, []
 
 
 def coffee_for(index, extent, body):
@@ -433,5 +457,6 @@ def needs_cell_orientations(ir):
     return True
 
 
+# FIXME for interior facets
 cell_orientations_coffee_arg = coffee.Decl("int", coffee.Symbol("cell_orientation"))
 """COFFEE function argument for cell orientations"""
