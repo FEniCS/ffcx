@@ -19,6 +19,8 @@ if sys.version_info < (2, 7):
 VERSION = re.findall('__version__ = "(.*)"',
                      open('ffc/__init__.py', 'r').read())[0]
 
+URL = "https://bitbucket.org/fenics-project/ffc/"
+
 SCRIPTS = [os.path.join("scripts", "ffc")]
 
 AUTHORS = """\
@@ -42,6 +44,11 @@ Programming Language :: Python
 Topic :: Scientific/Engineering :: Mathematics
 Topic :: Software Development :: Libraries
 """
+
+def tarball():
+    if "dev" in VERSION:
+        return None
+    return URL + "downloads/ffc-%s.tar.gz" % VERSION
 
 def get_installation_prefix():
     "Get installation prefix"
@@ -320,7 +327,8 @@ def run_install():
           license          = "LGPL version 3 or later",
           author_email     = "fenics-dev@googlegroups.com",
           maintainer_email = "fenics-dev@googlegroups.com",
-          url              = "http://fenicsproject.org/",
+          url              = URL,
+          download_url     = tarball(),
           platforms        = ["Windows", "Linux", "Solaris", "Mac OS-X",
                               "Unix"],
           packages         = ["ffc",
