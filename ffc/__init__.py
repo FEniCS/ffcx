@@ -13,7 +13,7 @@ The interface consists of the following functions:
   ufc_signature      - Signature of UFC interface (SHA-1 hash of ufc.h)
 """
 
-__version__ = "2016.1.0"
+__version__ = "2016.2.0.dev0"
 from ffc.git_commit_hash import git_commit_hash
 
 # Import compiler functions

@@ -19,6 +19,6 @@
 """This is UFLACS, the UFL Analyser and Compiler System."""
 
 __author__ = u"Martin Sandve Alnæs"
-__version__ = "2016.1.0"
+__version__ = "2016.2.0.dev0"
 __date__ = '2016-06-23'
 __licence__ = 'LGPL v3'
