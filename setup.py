@@ -189,7 +189,6 @@ def generate_ufc_config_files():
     # Get variables
     INSTALL_PREFIX = get_installation_prefix()
     PYTHON_LIBRARY = os.environ.get("PYTHON_LIBRARY", find_python_library())
-    MAJOR, MINOR, MICRO = VERSION.split(".")
     UFC_SIGNATURE = get_ufc_signature()
 
     # Check that compiler supports C++11 features
@@ -222,7 +221,9 @@ def generate_ufc_config_files():
                       os.path.join("cmake", "templates", \
                                    "UFCConfigVersion.cmake"),
                       variables=dict(FULLVERSION=VERSION,
-                                     MAJOR=MAJOR, MINOR=MINOR, MICRO=MICRO))
+                                     MAJOR=VERSION.split(".")[0],
+                                     MINOR=VERSION.split(".")[1],
+                                     MICRO=VERSION.split(".")[2]))
 
     # Generate UseUFC.cmake
     write_config_file(os.path.join("cmake", "templates", "UseUFC.cmake.in"),
