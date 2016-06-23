@@ -1,7 +1,7 @@
-// This is UFC (Unified Form-assembly Code) v. 2016.1.0dev.
+// This is UFC (Unified Form-assembly Code) v. 2016.1.0.
 // This code is released into the public domain.
 //
-// The FEniCS Project (http://www.fenicsproject.org/) 2006-2015.
+// The FEniCS Project (http://www.fenicsproject.org/) 2006-2016.
 
 #ifndef __UFC_H
 #define __UFC_H
@@ -9,7 +9,7 @@
 #define UFC_VERSION_MAJOR 2016
 #define UFC_VERSION_MINOR 1
 #define UFC_VERSION_MAINTENANCE 0
-#define UFC_VERSION_RELEASE 0
+#define UFC_VERSION_RELEASE 1
 
 #include <vector>
 #include <cstddef>
@@ -23,7 +23,7 @@
 #if UFC_VERSION_RELEASE
 const char UFC_VERSION[] = EVALUATOR(UFC_VERSION_MAJOR, UFC_VERSION_MINOR, UFC_VERSION_MAINTENANCE);
 #else
-const char UFC_VERSION[] = EVALUATOR(UFC_VERSION_MAJOR, UFC_VERSION_MINOR, UFC_VERSION_MAINTENANCE) "dev";
+const char UFC_VERSION[] = EVALUATOR(UFC_VERSION_MAJOR, UFC_VERSION_MINOR, UFC_VERSION_MAINTENANCE) ".dev0";
 #endif
 
 #undef CONCAT

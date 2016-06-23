@@ -1,7 +1,7 @@
-# Code generation format strings for UFC (Unified Form-assembly Code) v. 2016.1.0dev.
+# Code generation format strings for UFC (Unified Form-assembly Code) v. 2016.1.0.
 # This code is released into the public domain.
 #
-# The FEniCS Project (http://www.fenicsproject.org/) 2006-2015
+# The FEniCS Project (http://www.fenicsproject.org/) 2006-2016
 
 cell_integral_combined = """
 class %(classname)s: public ufc::cell_integral

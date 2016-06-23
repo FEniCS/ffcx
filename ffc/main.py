@@ -65,7 +65,7 @@ def info_version():
     print("""\
 This is FFC, the FEniCS Form Compiler, version {0}.
 UFC backend version {1}, signature {2}.
-For further information, visit http://www.fenics.org/ffc/.
+For further information, visit https://bitbucket.org/fenics-project/ffc/.
 """.format(FFC_VERSION, UFC_VERSION, ufc_signature()))
 
 

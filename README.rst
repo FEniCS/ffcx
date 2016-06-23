@@ -51,8 +51,6 @@ Dependencies
 
 #. The Python Six module
 
-#. SWIG, version 3.0.3 or higher
-
 
 Notes
 -----

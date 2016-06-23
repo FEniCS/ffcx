@@ -34,8 +34,8 @@ For more information about UFC and the FEniCS Project, visit
 """
 
 __author__  = "Martin Sandve Alnæs, Anders Logg, Kent-Andre Mardal, Ola Skavhaug, and Hans Petter Langtangen"
-__date__    = "2015-10-21"
-__version__ = "2016.1.0dev"
+__date__    = "2016-06-23"
+__version__ = "2016.1.0"
 __license__ = "This code is released into the public domain"
 
 from .function import *
