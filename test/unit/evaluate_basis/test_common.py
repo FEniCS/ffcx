@@ -36,6 +36,7 @@ def xcomb(items, n):
             for cc in xcomb(items[:i]+items[i+1:],n-1):
                 yield [items[i]]+cc
 
+
 # Global log file
 def log_error(message, log_file):
     "Log error message."
@@ -43,7 +44,9 @@ def log_error(message, log_file):
     log.write("\n" + "-"*79 + "\n" + message + "\n" + "-"*79 + "\n")
     log.close()
 
-def print_results(num_tests, ffc_fail, gcc_fail, run_fail, dif_cri, dif_acc, correct):
+
+def print_results(num_tests, ffc_fail, gcc_fail, run_fail, dif_cri, dif_acc,
+                  correct):
     "Check print summary."
 
     num_ffc = len(ffc_fail)
@@ -88,6 +91,7 @@ def print_results(num_tests, ffc_fail, gcc_fail, run_fail, dif_cri, dif_acc, cor
         return 0
     return 1
 
+
 def compile_element(ufl_element, ffc_fail, log_file):
     "Create UFL form file with a single element in it and compile it with FFC"
     f = open("test.ufl", "w")
@@ -99,6 +103,7 @@ def compile_element(ufl_element, ffc_fail, log_file):
         log_error("element: %s,\n%s\n" % (str(ufl_element), output), log_file)
         ffc_fail.append(str(ufl_element))
     return error
+
 
 def get_element_name(ufl_element):
     "Extract relevant element name from header file."
@@ -117,8 +122,8 @@ def get_element_name(ufl_element):
         raise RuntimeError("No finite element class found")
     return name.split()[1][:-1]
 
-def compile_gcc_code(ufl_element, code, gcc_fail, log_file):
 
+def compile_gcc_code(ufl_element, code, gcc_fail, log_file):
     # Write code.
     f = open("evaluate_basis.cpp", "w")
     f.write(code)
@@ -128,7 +133,7 @@ def compile_gcc_code(ufl_element, code, gcc_fail, log_file):
     ufc_cflags = get_status_output("pkg-config --cflags ufc-1")[1].strip()
 
     # Compile g++ code
-    c = "g++ %s -Wall -Werror -o evaluate_basis evaluate_basis.cpp" % ufc_cflags
+    c = "g++ %s -Wall -Werror -o evaluate_basis_code evaluate_basis.cpp" % ufc_cflags
     f = open("compile.sh", "w")
     f.write(c + "\n")
     f.close()
@@ -141,12 +146,16 @@ def compile_gcc_code(ufl_element, code, gcc_fail, log_file):
             print("FAIL")
             exit(1)
         return error
+    else:
+        return None
+
 
 def run_code(ufl_element, deriv_order, run_fail, log_file):
     "Compute values of basis functions for given element."
 
     # Run compiled code and get values
-    error, output = get_status_output(".%sevaluate_basis %d" % (os.path.sep, deriv_order))
+    error, output = get_status_output(".%sevaluate_basis_code %d" % (os.path.sep,
+                                                                deriv_order))
     if error:
         info_red("Runtime error (segmentation fault?).")
         log_error("element: %s,\n%s\n" % (str(ufl_element), output), log_file)
@@ -191,4 +200,3 @@ def verify_values(ufl_element, ref_values, ffc_values, dif_cri, dif_acc, correct
         log_error("\n".join(errors), log_file)
 
     return num_tests
-
