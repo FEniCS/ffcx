@@ -10,4 +10,4 @@ pipelines:
           - pip install pytest
           - pip install --verbose .
           - cd test/unit
-          - py.test ./evaluate_basis/test_against_fiat_new.py
+          - py.test -s ./evaluate_basis/test_against_fiat_new.py
