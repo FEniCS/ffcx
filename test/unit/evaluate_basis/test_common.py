@@ -131,19 +131,12 @@ def compile_gcc_code(ufl_element, code, gcc_fail, log_file):
 
     # Get UFC flags
     import subprocess
-    #os.environ['PKG_CONFIG_PATH'] = '$HOME/.local/lib/pkgconfig:$PKG_CONFIG_PATH'
-    #ufc_cflags = get_status_output("pkg-config --cflags ufc-1")[1].strip()
-    #print(os.getenv('HOME'))
     pkg_path = os.getenv('HOME') + "/.local/lib/pkgconfig:$PKG_CONFIG_PATH"
     ufc_cflags = subprocess.check_output('pkg-config --cflags ufc-1',
                                  env={"PKG_CONFIG_PATH": pkg_path}, shell=True)
-    #get_status_output("pkg-config --cflags ufc-1")[1].strip()
-
-    #print("**UFC: {}".format(ufc_cflags))
-    #print(type(ufc_cflags))
 
     # Compile g++ code
-    c = "g++ %s -Wall -Werror -o evaluate_basis_test_code evaluate_basis.cpp" % ufc_cflags
+    c = "g++ {} -Wall -Werror -o evaluate_basis_test_code evaluate_basis.cpp".format(ufc_cflags)
     print(c)
     f = open("compile.sh", "w")
     f.write(c + "\n")

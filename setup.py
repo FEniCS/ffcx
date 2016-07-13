@@ -297,6 +297,7 @@ def run_install():
             if not self.dry_run:
                 # Generate ufc_include.py
                 print("Get prefix 1")
+                print(os.path.join("ffc", "ufc_include.py"))
                 write_config_file(os.path.join("ffc", "ufc_include.py.in"),
                                   os.path.join("ffc", "ufc_include.py"),
                                   variables=dict(INSTALL_PREFIX=get_installation_prefix()))
