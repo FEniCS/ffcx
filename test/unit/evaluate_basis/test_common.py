@@ -129,6 +129,7 @@ def compile_gcc_code(ufl_element, code, gcc_fail, log_file):
     f.write(code)
     f.close()
 
+    # FIXME: Use ffc.include to get UFC.h path
     # Get UFC flags
     import subprocess
     pkg_path = os.getenv('HOME') + "/.local/lib/pkgconfig:$PKG_CONFIG_PATH"
@@ -137,7 +138,6 @@ def compile_gcc_code(ufl_element, code, gcc_fail, log_file):
 
     # Compile g++ code
     c = "g++ {} -Wall -Werror -o evaluate_basis_test_code evaluate_basis.cpp".format(ufc_cflags)
-    print(c)
     f = open("compile.sh", "w")
     f.write(c + "\n")
     f.close()

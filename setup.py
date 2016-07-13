@@ -45,15 +45,16 @@ Topic :: Scientific/Engineering :: Mathematics
 Topic :: Software Development :: Libraries
 """
 
+
 def tarball():
     if "dev" in VERSION:
         return None
     return URL + "downloads/ffc-%s.tar.gz" % VERSION
 
+
 def get_installation_prefix():
     "Get installation prefix"
     prefix = sys.prefix
-    print("Getting prefix . . .")
     for arg in sys.argv[1:]:
         if "--user" in arg:
             import site
@@ -64,16 +65,15 @@ def get_installation_prefix():
             break
         elif "--prefix=" in arg or "--home=" in arg or "--root=" in arg or "--install-base=" in arg:
             prefix = arg.split("=")[1]
-    print("!!!!")
-    print(prefix)
-    print(os.path.abspath(os.path.expanduser(prefix)))
-    print("----------------")
+
     return os.path.abspath(os.path.expanduser(prefix))
+
 
 def get_ufc_signature():
     """Compute SHA-1 hash of ufc.h"""
     with open(os.path.join('ufc', 'ufc.h'), 'rb') as f:
         return hashlib.sha1(f.read()).hexdigest()
+
 
 def get_git_commit_hash():
     """Return git commit hash of currently checked out revision
@@ -90,6 +90,7 @@ def get_git_commit_hash():
     else:
         return hash.strip()
 
+
 def create_windows_batch_files(scripts):
     """Create Windows batch files, to get around problem that we
     cannot run Python scripts in the prompt without the .py
@@ -104,6 +105,7 @@ def create_windows_batch_files(scripts):
     scripts.extend(batch_files)
     return scripts
 
+
 def write_config_file(infile, outfile, variables={}):
     "Write config file based on template"
     class AtTemplate(string.Template):
@@ -116,10 +118,12 @@ def write_config_file(infile, outfile, variables={}):
     finally:
         a.close()
 
+
 def find_library(package_name, lib_names):
     "Return the full path to the library (empty string if not found)"
     search_dirs = [
-        "%s%slib" % (os.environ.get("%s_DIR" % package_name.upper(), ""), os.path.sep),
+        "%s%slib" % (os.environ.get("%s_DIR" % package_name.upper(), ""),
+                     os.path.sep),
         "%s" % sysconfig.get_config_vars().get("LIBDIR", ""),
         "/usr/lib/%s" % sysconfig.get_config_vars().get("MULTIARCH", ""),
         "/usr/local/lib",
@@ -135,6 +139,7 @@ def find_library(package_name, lib_names):
             break
     return lib or ""
 
+
 def find_python_library():
     "Return the full path to the Python library (empty string if not found)"
     pyver = sysconfig.get_python_version()
@@ -147,14 +152,17 @@ def find_python_library():
         ]
     return find_library("python", libpython_names)
 
+
 def find_boost_math_library():
     "Return the full path to the Boost math library (empty string if not found)"
     return find_library("boost", ["boost_math_tr1", "boost_math_tr1-mt"])
 
+
 def find_include_dir(package_name, header_file):
     "Return the path to the given header file (empty string if not found)"
     search_dirs = [
-        "%s%sinclude" % (os.environ.get("%s_DIR" % package_name.upper(), ""), os.path.sep),
+        "%s%sinclude" % (os.environ.get("%s_DIR" % package_name.upper(), ""),
+                         os.path.sep),
         "/usr/local/include",
         "/opt/local/include",
         "/usr/include",
@@ -164,9 +172,11 @@ def find_include_dir(package_name, header_file):
             return inc_dir
     return ""
 
+
 def find_boost_include_dir():
     "Return the path to the Boost include dir (empty string if not found)"
     return find_include_dir("boost", os.path.join("boost", "version.hpp"))
+
 
 def generate_git_hash_file():
     "Generate module with git hash"
@@ -179,6 +189,7 @@ def generate_git_hash_file():
                       os.path.join("ffc", "git_commit_hash.py"),
                       variables=dict(GIT_COMMIT_HASH=GIT_COMMIT_HASH))
 
+
 def generate_ufc_signature_file():
     "Generate module with UFC signature"
 
@@ -189,11 +200,11 @@ def generate_ufc_signature_file():
                       os.path.join("ffc", "ufc_signature.py"),
                       variables=dict(UFC_SIGNATURE=UFC_SIGNATURE))
 
+
 def generate_ufc_config_files():
     "Generate and install UFC configuration files"
 
     # Get variables
-    print("Get prefix 0")
     INSTALL_PREFIX = get_installation_prefix()
     PYTHON_LIBRARY = os.environ.get("PYTHON_LIBRARY", find_python_library())
     UFC_SIGNATURE = get_ufc_signature()
@@ -223,9 +234,9 @@ def generate_ufc_config_files():
                                      BOOST_MATH_LIBRARY=find_boost_math_library()))
 
     # Generate UFCConfigVersion.cmake
-    write_config_file(os.path.join("cmake", "templates", \
+    write_config_file(os.path.join("cmake", "templates",
                                    "UFCConfigVersion.cmake.in"),
-                      os.path.join("cmake", "templates", \
+                      os.path.join("cmake", "templates",
                                    "UFCConfigVersion.cmake"),
                       variables=dict(FULLVERSION=VERSION,
                                      MAJOR=VERSION.split(".")[0],
@@ -245,6 +256,7 @@ def generate_ufc_config_files():
                       variables=dict(FULLVERSION=VERSION,
                                      INSTALL_PREFIX=INSTALL_PREFIX,
                                      CXX_FLAGS=CXX_FLAGS))
+
 
 def has_cxx_flag(cc, flag):
     "Return True if compiler supports given flag"
@@ -272,6 +284,7 @@ def has_cxx_flag(cc, flag):
             devnull.close()
         shutil.rmtree(tmpdir)
 
+
 def run_install():
     "Run installation"
 
@@ -296,8 +309,6 @@ def run_install():
         def run(self):
             if not self.dry_run:
                 # Generate ufc_include.py
-                print("Get prefix 1")
-                print(os.path.join("ffc", "ufc_include.py"))
                 write_config_file(os.path.join("ffc", "ufc_include.py.in"),
                                   os.path.join("ffc", "ufc_include.py"),
                                   variables=dict(INSTALL_PREFIX=get_installation_prefix()))
@@ -312,20 +323,19 @@ def run_install():
     # Add UFC data files (need to use complete path because setuptools
     # installs into the Python package directory, not --prefix). This
     # can be fixed when Swig, etc are removed from FFC).
-    print("Get prefix 2")
     INSTALL_PREFIX = get_installation_prefix()
     data_files_ufc = [(os.path.join(INSTALL_PREFIX, "include"),
-                           [os.path.join("ufc", "ufc.h"),
-                            os.path.join("ufc", "ufc_geometry.h")]),
-                          (os.path.join(INSTALL_PREFIX, "share", "ufc"),
-                           [os.path.join("cmake", "templates", \
-                                         "UFCConfig.cmake"),
-                            os.path.join("cmake", "templates", \
-                                         "UFCConfigVersion.cmake"),
-                            os.path.join("cmake", "templates", \
-                                         "UseUFC.cmake")]),
-                          (os.path.join(INSTALL_PREFIX, "lib", "pkgconfig"),
-                           [os.path.join("cmake", "templates", "ufc-1.pc")])]
+                       [os.path.join("ufc", "ufc.h"),
+                        os.path.join("ufc", "ufc_geometry.h")]),
+                      (os.path.join(INSTALL_PREFIX, "share", "ufc"),
+                       [os.path.join("cmake", "templates",
+                                     "UFCConfig.cmake"),
+                        os.path.join("cmake", "templates",
+                                     "UFCConfigVersion.cmake"),
+                        os.path.join("cmake", "templates",
+                                     "UseUFC.cmake")]),
+                      (os.path.join(INSTALL_PREFIX, "lib", "pkgconfig"),
+                       [os.path.join("cmake", "templates", "ufc-1.pc")])]
 
     data_files = data_files + data_files_ufc
 
