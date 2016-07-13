@@ -60,11 +60,12 @@ def get_installation_prefix():
             import site
             prefix = site.getuserbase()
             break
-        elif arg in ("--prefix", "--home", "--root", "--install-base"):
+        elif arg in ("--prefix", "--home", "--install-base"):
             prefix = sys.argv[sys.argv.index(arg) + 1]
             break
-        elif "--prefix=" in arg or "--home=" in arg or "--root=" in arg or "--install-base=" in arg:
+        elif "--prefix=" in arg or "--home=" in arg or "--install-base=" in arg:
             prefix = arg.split("=")[1]
+            break
 
     return os.path.abspath(os.path.expanduser(prefix))
 
