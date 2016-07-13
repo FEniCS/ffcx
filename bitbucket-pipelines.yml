@@ -9,5 +9,6 @@ pipelines:
           - pip install git+https://bitbucket.org/fenics-project/instant.git@master
           - pip install pytest
           - pip install --verbose .
-          - cd test/unit
-          - py.test -s ./evaluate_basis/test_against_fiat_new.py
+          - cd test
+          - py.test -v ./unit/evaluate_basis/test_against_fiat_new.py
+          - py.test -v ./uflacs/unit/
