@@ -9,5 +9,5 @@ pipelines:
           - pip install git+https://bitbucket.org/fenics-project/instant.git@master
           - pip install pytest
           - pip install -e .
-          - cd test/
+          - cd test/unit
           - py.test .
