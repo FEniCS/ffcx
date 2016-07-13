@@ -12,3 +12,15 @@ pipelines:
           - cd test
           - py.test -v ./unit/evaluate_basis/test_against_fiat_new.py
           - py.test -v ./uflacs/unit/
+  branches:
+    next:
+      - step:
+          script:
+            - pip install git+https://bitbucket.org/fenics-project/fiat.git@next
+            - pip install git+https://bitbucket.org/fenics-project/ufl.git@next
+            - pip install git+https://bitbucket.org/fenics-project/instant.git@next
+            - pip install pytest
+            - pip install --verbose .
+            - cd test
+            - py.test -v ./unit/evaluate_basis/test_against_fiat_new.py
+            - py.test -v ./uflacs/unit/
