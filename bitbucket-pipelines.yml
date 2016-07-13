@@ -8,6 +8,6 @@ pipelines:
           - pip install git+https://bitbucket.org/fenics-project/ufl.git@master
           - pip install git+https://bitbucket.org/fenics-project/instant.git@master
           - pip install pytest
-          - pip install -e --verbose .
+          - pip install --verbose .
           - cd test/unit
           - py.test ./evaluate_basis/test_against_fiat_new.py
