@@ -10,4 +10,4 @@ pipelines:
           - pip install pytest
           - pip install -e .
           - cd test/unit
-          - py.test .
+          - py.test ./evaluate_basis/test_against_fiat_new.py
