@@ -1,3 +1,4 @@
+ - Add experimental Bitbucket pipelines
 2016.1.0 [2016-06-23]
  - Add function get_ufc_include to get path to ufc.h
  - Merge UFLACS into FFC
