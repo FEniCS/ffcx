@@ -53,6 +53,7 @@ def tarball():
 def get_installation_prefix():
     "Get installation prefix"
     prefix = sys.prefix
+    print("Getting prefix . . .")
     for arg in sys.argv[1:]:
         if "--user" in arg:
             import site
@@ -63,7 +64,10 @@ def get_installation_prefix():
             break
         elif "--prefix=" in arg or "--home=" in arg or "--root=" in arg or "--install-base=" in arg:
             prefix = arg.split("=")[1]
-
+    print("!!!!")
+    print(prefix)
+    print(os.path.abspath(os.path.expanduser(prefix)))
+    print("----------------")
     return os.path.abspath(os.path.expanduser(prefix))
 
 def get_ufc_signature():
@@ -189,6 +193,7 @@ def generate_ufc_config_files():
     "Generate and install UFC configuration files"
 
     # Get variables
+    print("Get prefix 0")
     INSTALL_PREFIX = get_installation_prefix()
     PYTHON_LIBRARY = os.environ.get("PYTHON_LIBRARY", find_python_library())
     UFC_SIGNATURE = get_ufc_signature()
@@ -291,6 +296,7 @@ def run_install():
         def run(self):
             if not self.dry_run:
                 # Generate ufc_include.py
+                print("Get prefix 1")
                 write_config_file(os.path.join("ffc", "ufc_include.py.in"),
                                   os.path.join("ffc", "ufc_include.py"),
                                   variables=dict(INSTALL_PREFIX=get_installation_prefix()))
@@ -305,6 +311,7 @@ def run_install():
     # Add UFC data files (need to use complete path because setuptools
     # installs into the Python package directory, not --prefix). This
     # can be fixed when Swig, etc are removed from FFC).
+    print("Get prefix 2")
     INSTALL_PREFIX = get_installation_prefix()
     data_files_ufc = [(os.path.join(INSTALL_PREFIX, "include"),
                            [os.path.join("ufc", "ufc.h"),

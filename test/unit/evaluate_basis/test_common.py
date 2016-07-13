@@ -130,14 +130,26 @@ def compile_gcc_code(ufl_element, code, gcc_fail, log_file):
     f.close()
 
     # Get UFC flags
-    ufc_cflags = get_status_output("pkg-config --cflags ufc-1")[1].strip()
+    import subprocess
+    #os.environ['PKG_CONFIG_PATH'] = '$HOME/.local/lib/pkgconfig:$PKG_CONFIG_PATH'
+    #ufc_cflags = get_status_output("pkg-config --cflags ufc-1")[1].strip()
+    #print(os.getenv('HOME'))
+    pkg_path = os.getenv('HOME') + "/.local/lib/pkgconfig:$PKG_CONFIG_PATH"
+    ufc_cflags = subprocess.check_output('pkg-config --cflags ufc-1',
+                                 env={"PKG_CONFIG_PATH": pkg_path}, shell=True)
+    #get_status_output("pkg-config --cflags ufc-1")[1].strip()
+
+    #print("**UFC: {}".format(ufc_cflags))
+    #print(type(ufc_cflags))
 
     # Compile g++ code
-    c = "g++ %s -Wall -Werror -o evaluate_basis_code evaluate_basis.cpp" % ufc_cflags
+    c = "g++ %s -Wall -Werror -o evaluate_basis_test_code evaluate_basis.cpp" % ufc_cflags
+    print(c)
     f = open("compile.sh", "w")
     f.write(c + "\n")
     f.close()
     error, output = get_status_output(c)
+    print(output)
     if error:
         info_red("GCC compilation failed.")
         log_error("element: %s,\n%s\n" % (str(ufl_element), output), log_file)
@@ -154,7 +166,7 @@ def run_code(ufl_element, deriv_order, run_fail, log_file):
     "Compute values of basis functions for given element."
 
     # Run compiled code and get values
-    error, output = get_status_output(".%sevaluate_basis_code %d" % (os.path.sep,
+    error, output = get_status_output(".%sevaluate_basis_test_code %d" % (os.path.sep,
                                                                 deriv_order))
     if error:
         info_red("Runtime error (segmentation fault?).")
