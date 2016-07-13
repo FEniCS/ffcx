@@ -56,12 +56,14 @@ def get_installation_prefix():
     for arg in sys.argv[1:]:
         if "--user" in arg:
             import site
-            prefix = site.USER_BASE
+            prefix = site.getuserbase()
+            break
         elif arg in ("--prefix", "--home", "--root", "--install-base"):
-            prefix = sys.argv[sys.argv.index(arg)+1]
-        elif "--prefix=" in arg or "--home=" in arg or \
-          "--root=" in arg or "--install-base=" in arg:
+            prefix = sys.argv[sys.argv.index(arg) + 1]
+            break
+        elif "--prefix=" in arg or "--home=" in arg or "--root=" in arg or "--install-base=" in arg:
             prefix = arg.split("=")[1]
+
     return os.path.abspath(os.path.expanduser(prefix))
 
 def get_ufc_signature():
@@ -357,7 +359,7 @@ def run_install():
           scripts          = scripts,
           cmdclass         = {'install': my_install},
           data_files       = data_files,
-          install_requires = ["numpy", "six", "fiat==2016.2.0.dev0",
+          install_requires = ["numpy", "six", "FIAT==2016.2.0.dev0",
                               "ufl==2016.2.0.dev0", "instant==2016.2.0.dev0"],
           zip_safe = False)
 
