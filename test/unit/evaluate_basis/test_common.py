@@ -129,20 +129,16 @@ def compile_gcc_code(ufl_element, code, gcc_fail, log_file):
     f.write(code)
     f.close()
 
-    # FIXME: Use ffc.include to get UFC.h path
-    # Get UFC flags
-    import subprocess
-    pkg_path = os.getenv('HOME') + "/.local/lib/pkgconfig:$PKG_CONFIG_PATH"
-    ufc_cflags = subprocess.check_output('pkg-config --cflags ufc-1',
-                                 env={"PKG_CONFIG_PATH": pkg_path}, shell=True)
+    # Get location of UFC file
+    import ffc.ufc_include
+    ufc_include_path = ffc.ufc_include.get_ufc_include()
 
     # Compile g++ code
-    c = "g++ {} -Wall -Werror -o evaluate_basis_test_code evaluate_basis.cpp".format(ufc_cflags)
+    c = "g++ -I{} -std=c++11 -Wall -Werror -o evaluate_basis_test_code evaluate_basis.cpp".format(ufc_include_path)
     f = open("compile.sh", "w")
     f.write(c + "\n")
     f.close()
     error, output = get_status_output(c)
-    print(output)
     if error:
         info_red("GCC compilation failed.")
         log_error("element: %s,\n%s\n" % (str(ufl_element), output), log_file)
