@@ -378,8 +378,11 @@ def run_install():
           scripts          = scripts,
           cmdclass         = {'install': my_install},
           data_files       = data_files,
-          install_requires = ["numpy", "six", "FIAT==2016.2.0.dev0",
-                              "ufl==2016.2.0.dev0", "instant==2016.2.0.dev0"],
+          install_requires = ["numpy",
+                              "six",
+                              "fiat==%s" % VERSION,
+                              "ufl==%s" % VERSION,
+                              "instant==%s" % VERSION],
           zip_safe = False)
 
 if __name__ == "__main__":
