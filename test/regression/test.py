@@ -419,6 +419,7 @@ def main(args):
     use_auto = "--skip-auto" not in args
     use_uflacs = "--skip-uflacs" not in args
     use_quad = "--skip-quad" not in args
+    use_tsfc = "--skip-tsfc" not in args
     use_ext_quad = "--ext-quad" in args
 
     skip_download = "--skip-download" in args
@@ -436,6 +437,7 @@ def main(args):
         "--skip-auto",
         "--skip-uflacs",
         "--skip-quad",
+        "--skip-tsfc",
         "--ext-quad",
         "--skip-download",
         "--skip-run",
@@ -492,6 +494,8 @@ def main(args):
         test_cases += ["-r uflacs"]
     if use_quad:
         test_cases += ["-r quadrature", "-r quadrature -O"]
+    if use_tsfc:
+        test_cases += ["-r tsfc"]
     if use_ext_quad:
         test_cases += ext_quad
 
