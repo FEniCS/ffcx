@@ -30,8 +30,9 @@ from ffc.fiatinterface import create_element, reference_cell
 
 from instant.output import get_status_output
 
-from .cppcode import evaluate_basis_code_fiat
-from .test_common import compile_gcc_code, run_code, xcomb, get_element_name,\
+# Local imports
+from cppcode import evaluate_basis_code_fiat
+from test_common import compile_gcc_code, run_code, xcomb, get_element_name,\
     compile_element
 
 tol = 1e-14
