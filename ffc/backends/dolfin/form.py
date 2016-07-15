@@ -171,7 +171,7 @@ def generate_multimesh_form_constructors(form, classname):
 
     # Treat functionals a little special
     if form.rank == 0:
-        spaces = ("shared_ptr_mesh",)
+        spaces = ("shared_ptr_multimesh",)
 
     # Generate permutations of constructors
     constructors = []
@@ -244,7 +244,6 @@ def generate_multimesh_constructor(form, classname, space_tag,
 
     # Extract correct code snippets
     (argument, dummy) = snippets[space_tag]
-
     # Construct list of arguments
     name = "V%d"
     if form.rank > 0:
@@ -252,7 +251,7 @@ def generate_multimesh_constructor(form, classname, space_tag,
         spaces = [name % i for i in reversed(range(form.rank))]
     else:
         arguments = [argument]
-        spaces = ""
+        spaces = "mesh"
 
     # Add coefficients to argument/assignment lists if specified
     assignments = []
@@ -270,7 +269,10 @@ def generate_multimesh_constructor(form, classname, space_tag,
     # Join lists together
     arguments = ", ".join(arguments)
     initializers = ", " + ", ".join(initializers) if initializers else ""
-    spaces = ", ".join(spaces)
+
+    # Ignore if functional
+    if form.rank!=0:
+        spaces = ", ".join(spaces)
 
     # Set access method
     if space_tag == "multimesh_shared_ptr_space":
@@ -285,14 +287,23 @@ def generate_multimesh_constructor(form, classname, space_tag,
     body += "    for (std::size_t part = 0; part < num_parts; part++)\n"
     body += "    {\n"
     body += "      std::shared_ptr<const dolfin::Form> a(new %s(%s));\n" % (classname, ", ".join("V%d%spart(part)" % (i, access) for i in reversed(range(form.rank))))
-    body += "      add(a);\n"
-    body += "    }\n\n"
+    body += "    add(a);\n\n"
+    body += "    }\n"
     body += "    // Build multimesh form\n"
     body += "    build();\n"
 
     # FIXME: Issue #91
     if form.rank == 0:
         body = ""
+        body += "    // Creating a form for each part of the mesh\n"
+        body += "    for (std::size_t i=0; i< mesh->num_parts(); i++)\n"
+        body += "    {\n"
+        body += "      std::shared_ptr<const dolfin::Form> a(new %s(mesh->part(i))); " % (classname)
+        body += "      add(a);"
+        body += "    }\n"
+        body += "    // Build multimesh form\n"
+        body += "    build();\n"
+
 
     # Create body for assigning coefficients
     body += "\n    /// Assign coefficients"
