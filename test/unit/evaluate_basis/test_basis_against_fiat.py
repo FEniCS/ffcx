@@ -15,10 +15,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
+import pytest
 import os
 import numpy
 import time
-import pytest
 
 from ufl import FiniteElement, MixedElement
 from ffc.mixedelement import MixedElement as FFCMixedElement
