@@ -24,7 +24,7 @@ import gem.impero_utils as impero_utils
 from ffc.tsfcrepr import fem
 from tsfc import ufl_utils
 from tsfc.coffee import generate as generate_coffee
-from ffc.tsfcrepr.kernel_interface import KernelBuilder, needs_cell_orientations
+from ffc.tsfcrepr.kernel_interface import KernelBuilder
 from tsfc.quadrature import create_quadrature, QuadratureRule
 
 
@@ -72,6 +72,8 @@ def compile_integral(integral_data, form_data, prefix, parameters):
 
     builder.set_facets()
 
+    builder.set_cell_orientations()
+
     # Map from UFL FiniteElement objects to Index instances.  This is
     # so we reuse Index instances when evaluating the same coefficient
     # multiple times with the same table.  Occurs, for example, if we
@@ -108,7 +110,8 @@ def compile_integral(integral_data, form_data, prefix, parameters):
                          quad_rule.weights, quadrature_index,
                          argument_indices, integrand,
                          builder.coefficient_mapper, index_cache,
-                         builder.facet_mapper)
+                         builder.facet_mapper,
+                         builder.cell_orientations_mapper)
         if parameters.get("unroll_indexsum"):
             ir = opt.unroll_indexsum(ir, max_extent=parameters["unroll_indexsum"])
         irs.append([(gem.IndexSum(expr, quadrature_index)
@@ -121,10 +124,6 @@ def compile_integral(integral_data, form_data, prefix, parameters):
 
     # Need optimised roots for COFFEE
     ir = opt.remove_componenttensors(ir)
-
-    # Look for cell orientations in the IR
-    if needs_cell_orientations(ir):
-        builder.require_cell_orientations()
 
     impero_c = impero_utils.compile_gem(return_variables, ir,
                                         tuple(quadrature_indices) + argument_indices,

@@ -33,23 +33,21 @@ from tsfc.coffee import SCALAR_TYPE
 
 
 class Kernel(object):
-    __slots__ = ("ast", "integral_type", "oriented", "subdomain_id",
+    __slots__ = ("ast", "integral_type", "subdomain_id",
                  "coefficient_numbers", "__weakref__")
     """A compiled Kernel object.
 
     :kwarg ast: The COFFEE ast for the kernel.
     :kwarg integral_type: The type of integral.
-    :kwarg oriented: Does the kernel require cell_orientations.
     :kwarg subdomain_id: What is the subdomain id for this kernel.
     :kwarg coefficient_numbers: A list of which coefficients from the
         form the kernel needs.
     """
-    def __init__(self, ast=None, integral_type=None, oriented=False,
+    def __init__(self, ast=None, integral_type=None,
                  subdomain_id=None, coefficient_numbers=()):
         # Defaults
         self.ast = ast
         self.integral_type = integral_type
-        self.oriented = oriented
         self.subdomain_id = subdomain_id
         self.coefficient_numbers = coefficient_numbers
         super(Kernel, self).__init__()
@@ -163,6 +161,18 @@ class KernelBuilderBase(object):
         self.facet_mapper = expressions
         return funargs
 
+    def cell_orientations(self, integral_type):
+        """Prepare cell orientations. Adds glue code for cell orienatations
+        and stores cell orientations expression.
+
+        :arg integral_type
+        :returns: list of COFFEE function arguments for cell orientations
+        """
+        funargs, prepare, expressions = prepare_cell_orientations(integral_type)
+        self.apply_glue(prepare)
+        self.cell_orientations_mapper = expressions
+        return funargs
+
 
 class KernelBuilder(KernelBuilderBase):
     """Helper class for building a :class:`Kernel` object."""
@@ -176,6 +186,7 @@ class KernelBuilder(KernelBuilderBase):
         self.coordinates_args = []
         self.coefficient_args = []
         self.coefficient_split = {}
+        self.cell_orientations_args = []
 
     def set_arguments(self, arguments, indices):
         """Process arguments.
@@ -200,6 +211,11 @@ class KernelBuilder(KernelBuilderBase):
         """Prepare the facets.
         """
         self.facet_args = self.facets(self.kernel.integral_type)
+
+    def set_cell_orientations(self):
+        """Prepare the cell orientations.
+        """
+        self.cell_orientations_args = self.cell_orientations(self.kernel.integral_type)
 
     def set_coefficients(self, integral_data, form_data):
         """Prepare the coefficients of the form.
@@ -230,10 +246,6 @@ class KernelBuilder(KernelBuilderBase):
         self.coefficient_args.append(self.coefficients(coefficients, coefficient_numbers, "w"))
         self.kernel.coefficient_numbers = tuple(coefficient_numbers)
 
-    def require_cell_orientations(self):
-        """Set that the kernel requires cell orientations."""
-        self.kernel.oriented = True
-
     def construct_kernel(self, name, body):
         """Construct a fully built :class:`Kernel`.
 
@@ -248,8 +260,7 @@ class KernelBuilder(KernelBuilderBase):
         args.extend(self.coefficient_args)
         args.extend(self.coordinates_args)
         args.extend(self.facet_args)
-        if self.kernel.oriented:
-            args.append(cell_orientations_coffee_arg)
+        args.extend(self.cell_orientations_args)
 
         self.kernel.ast = KernelBuilderBase.construct_kernel(self, name, args, body)
         return self.kernel
@@ -387,6 +398,32 @@ def prepare_facets(integral_type):
     return funargs, [], expressions
 
 
+def prepare_cell_orientations(integral_type):
+    """Bridges the kernel interface and the GEM abstraction for
+    cell orientations.
+
+    :arg integral_type
+    :returns: (funarg, prepare, expression)
+         funargs    - list of :class:`coffee.Decl` function argument
+         prepare    - list of COFFEE nodes to be prepended to the
+                      kernel body
+         expressions- list of GEM expressions referring to facets
+    """
+    funargs = []
+    expressions = []
+
+    if integral_type in ["interior_facet", "interior_facet_vert"]:
+            funargs.append(coffee.Decl("int", coffee.Symbol("cell_orientation_0")))
+            funargs.append(coffee.Decl("int", coffee.Symbol("cell_orientation_1")))
+            expressions.append(gem.Variable("cell_orientation_0", ()))
+            expressions.append(gem.Variable("cell_orientation_1", ()))
+    else:
+            funargs.append(coffee.Decl("int", coffee.Symbol("cell_orientation")))
+            expressions.append(gem.Variable("cell_orientation", ()))
+
+    return funargs, [], expressions
+
+
 def prepare_arguments(arguments, indices, interior_facet=False):
     """Bridges the kernel interface and the GEM abstraction for
     Arguments.  Vector Arguments are rearranged here for interior
@@ -434,29 +471,3 @@ def prepare_arguments(arguments, indices, interior_facet=False):
     prepare = [zero, reshape]
 
     return funarg, prepare, expressions, []
-
-
-def coffee_for(index, extent, body):
-    """Helper function to make a COFFEE loop.
-
-    :arg index: :class:`coffee.Symbol` loop index
-    :arg extent: loop extent (integer)
-    :arg body: loop body (COFFEE node)
-    :returns: COFFEE loop
-    """
-    return coffee.For(coffee.Decl("int", index, init=0),
-                      coffee.Less(index, extent),
-                      coffee.Incr(index, 1),
-                      body)
-
-
-def needs_cell_orientations(ir):
-    """Does a multi-root GEM expression DAG references cell
-    orientations?"""
-    # cell orientation always needed in UFC
-    return True
-
-
-# FIXME for interior facets
-cell_orientations_coffee_arg = coffee.Decl("int", coffee.Symbol("cell_orientation"))
-"""COFFEE function argument for cell orientations"""

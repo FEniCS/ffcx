@@ -1,6 +1,6 @@
 # Copyright (C) 2016 Miklos Homolya, Lawrence Mitchell, Jan Blechta
 #
-# This file is part of FFC and contains snippets originally from tsfc.
+# This file is part of FFC and is originally from tsfc.
 #
 # FFC is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -36,7 +36,7 @@ from tsfc.fiatinterface import create_element, as_fiat_cell
 from tsfc.modified_terminals import analyse_modified_terminal
 from tsfc import compat
 from tsfc import ufl2gem
-from tsfc import geometric
+from ffc.tsfcrepr import geometric
 from tsfc.ufl_utils import (CollectModifiedTerminals,
                             ModifiedTerminalMixin, PickRestriction,
                             spanning_degree, simplify_abs)
@@ -153,6 +153,7 @@ class FacetManager(object):
         self.integral_type = integral_type
         self.ufl_cell = ufl_cell
 
+        # FIXME: Move Firedrake values when 'facets is None' to kernel interface
         if integral_type in ['exterior_facet', 'exterior_facet_vert']:
             self.facet = {None: facets[0] if facets else gem.VariableIndex(gem.Indexed(gem.Variable('facet', (1,)), (0,)))}
         elif integral_type in ['interior_facet', 'interior_facet_vert']:
@@ -212,7 +213,8 @@ class Translator(MultiFunction, ModifiedTerminalMixin, ufl2gem.Mixin):
     """Contains all the context necessary to translate UFL into GEM."""
 
     def __init__(self, tabulation_manager, weights, quadrature_index,
-                 argument_indices, coefficient_mapper, index_cache):
+                 argument_indices, coefficient_mapper, index_cache,
+                 cell_orientations):
         MultiFunction.__init__(self)
         ufl2gem.Mixin.__init__(self)
         integral_type = tabulation_manager.integral_type
@@ -227,10 +229,14 @@ class Translator(MultiFunction, ModifiedTerminalMixin, ufl2gem.Mixin):
         self.facet_manager = facet_manager
         self.select_facet = facet_manager.select_facet
 
-        if self.integral_type.startswith("interior_facet"):
-            self.cell_orientations = gem.Variable("cell_orientations", (2, 1))
+        if cell_orientations is None:
+            # FIXME: Move Firedrake values to kernel interface
+            if self.integral_type.startswith("interior_facet"):
+                self.cell_orientations = gem.Variable("cell_orientations", (2, 1))
+            else:
+                self.cell_orientations = gem.Variable("cell_orientations", (1, 1))
         else:
-            self.cell_orientations = gem.Variable("cell_orientations", (1, 1))
+            self.cell_orientations = cell_orientations
 
     def modified_terminal(self, o):
         """Overrides the modified terminal handler from
@@ -355,7 +361,7 @@ def _translate_constantvalue(terminal, mt, params):
 
 def process(integral_type, cell, points, weights, quadrature_index,
             argument_indices, integrand, coefficient_mapper, index_cache,
-            facets=None):
+            facets=None, cell_orientations=None):
     # Abs-simplification
     integrand = simplify_abs(integrand)
 
@@ -388,5 +394,6 @@ def process(integral_type, cell, points, weights, quadrature_index,
     # lowering finite element specific nodes
     translator = Translator(tabulation_manager, weights,
                             quadrature_index, argument_indices,
-                            coefficient_mapper, index_cache)
+                            coefficient_mapper, index_cache,
+                            cell_orientations)
     return map_expr_dags(translator, expressions)
