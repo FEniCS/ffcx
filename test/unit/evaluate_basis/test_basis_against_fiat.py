@@ -15,36 +15,23 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
+import pytest
 import os
 import numpy
 import time
-import pytest
 
 from ufl import FiniteElement, MixedElement
-
-from ffc.log import push_level, pop_level, CRITICAL, INFO
-from ffc.log import info, error, debug, info_blue, info_green
 from ffc.mixedelement import MixedElement as FFCMixedElement
-
 from ffc.fiatinterface import create_element, reference_cell
-
 from instant.output import get_status_output
 
-from .cppcode import evaluate_basis_code_fiat
-from .test_common import compile_gcc_code, run_code, xcomb, get_element_name,\
-    compile_element
+# Local imports
+from cppcode import evaluate_basis_code_fiat
 
+# Tolerances
 tol = 1e-14
 crit_tol = 1e-8
-
-ffc_fail = []
-gcc_fail = []
-run_fail = []
-dif_cri = []
-dif_acc = []
-correct = []
-
-log_file = "fiat_errors.log"
+#crit_tol = 1e-16
 
 # Some random points
 random_points = {1: [(0.114,), (0.349,), (0.986,)],
@@ -85,9 +72,6 @@ single_elements = [{"family": "Lagrange",
                     "shapes": ["triangle", "tetrahedron"],
                     "orders": [0, 1, 2, 3]}]
 
-# import json
-# with open('data.txt', 'w') as outfile:
-#    json.dump(single_elements, outfile, indent=4)
 
 # Create some mixed elements
 dg0_tri = FiniteElement("DG", "triangle", 0)
@@ -111,8 +95,77 @@ ned1_tet = FiniteElement("N1curl", "tetrahedron", 1)
 reg0_tet = FiniteElement("Regge", "tetrahedron", 0)
 
 
+def compile_gcc_code(ufl_element, code):
+    # Write code to file
+    f = open("evaluate_basis.cpp", "w")
+    f.write(code)
+    f.close()
+
+    # Get location of UFC file
+    import ffc.ufc_include
+    ufc_include_path = ffc.ufc_include.get_ufc_include()
+
+    # Compile c++ code
+    c = "c++ -I{} -std=c++11 -Wall -Werror -o evaluate_basis_test_code evaluate_basis.cpp".format(ufc_include_path)
+    f = open("compile.sh", "w")
+    f.write(c + "\n")
+    f.close()
+    error, output = get_status_output(c)
+    if error:
+        RuntimeError("C++ code compilation failed for element: {}. Ouput: {}".format(str(ufl_element), output))
+
+def run_code(ufl_element, deriv_order):
+    "Compute values of basis functions for given element."
+
+    # Run compiled code and get values
+    error, output = get_status_output(".%sevaluate_basis_test_code %d" % (os.path.sep,
+                                                                deriv_order))
+    if error:
+        RuntimeError("Could not run compiled code for element: {}. Output: {}".format(str(ufl_element), output))
+
+    values = [[float(value) for value in line.strip().split(" ") if value] for line in output.strip().split("\n")]
+    return numpy.array(values)
+
+
+def get_element_name(ufl_element):
+    "Extract relevant element name from header file."
+    f = open("test.h")
+    lines = f.readlines()
+    f.close()
+
+    signature = repr(ufl_element)
+    name = None
+    for e, l in enumerate(lines):
+        if "class" in l and "finite_element" in l:
+            name = l
+        if signature in l:
+            break
+    if name is None:
+        raise RuntimeError("No finite element class found")
+    return name.split()[1][:-1]
+
+
+def generate_element(ufl_element):
+    "Create UFL form file with a single element in it and compile it with FFC"
+    f = open("test.ufl", "w")
+    f.write("element = " + repr(ufl_element))
+    f.close()
+    error, output = get_status_output("ffc test.ufl")
+    if error:
+        RuntimeError("FFC compilation failed for element: {}. Ouput: {}".format(str(ufl_element), output))
+
+
 def matrix(points):
     return "{%s};" % ", ".join(["{%s}" % ", ".join([str(c) for c in p]) for p in points])
+
+
+def xcomb(items, n):
+    "Create n-tuples with combinations of items."
+    if n == 0: yield []
+    else:
+        for i in range(len(items)):
+            for cc in xcomb(items[:i] + items[i + 1:], n - 1):
+                yield [items[i]] + cc
 
 
 # Create combinations in pairs
@@ -145,20 +198,18 @@ mixed_elements = [MixedElement([dg0_tri]*4),
                   MixedElement([cg1_tet, cg1_tet, cg1_tet, reg0_tet])] + mix_tri + mix_tet
 
 
-def to_fiat_tuple(comb, geo_dim):
+def to_fiat_tuple(comb, gdim):
     """Convert a list of combinations of derivatives to a fiat tuple of
     derivatives.  FIAT expects a list with the number of derivatives
     in each spatial direction.  E.g., in 2D: u_{xyy} --> [0, 1, 1] in
     FFC --> (1, 2) in FIAT.
 
     """
-    new_comb = [0]*geo_dim
+    new_comb = [0]*gdim
     if comb == []:
         return tuple(new_comb)
-
-    for i in range(geo_dim):
+    for i in range(gdim):
         new_comb[i] = comb.count(i)
-
     return tuple(new_comb)
 
 
@@ -170,7 +221,6 @@ def compute_derivative_combinations(deriv_order, geo_dim):
 
     num_derivatives = geo_dim**deriv_order
     combinations = [[0]*deriv_order for n in range(num_derivatives)]
-
     for i in range(1, num_derivatives):
         for k in range(i):
             j = deriv_order - 1
@@ -232,16 +282,12 @@ def get_ffc_values(ufl_element):
                "points": matrix(points),
                "cell_ref_coords": "double cell_ref_coords[{}][{}] = {}".format(num_coords, geo_dim, matrix(ref_coords)),
                "num_coords": num_coords}
-    error = compile_gcc_code(ufl_element, evaluate_basis_code_fiat % options,
-                             gcc_fail, log_file)
-    print(error)
-    assert not error
+    compile_gcc_code(ufl_element, evaluate_basis_code_fiat % options)
 
     # Loop over derivative order and compute values
     ffc_values = {}
     for n in range(deriv_order + 1):
-        values = run_code(ufl_element, n, run_fail, log_file)
-        assert values is not None
+        values = run_code(ufl_element, n)
         ffc_values[n] = values
 
     return ffc_values
@@ -305,68 +351,48 @@ def get_fiat_values(ufl_element):
     return return_values
 
 
-def verify_values(ufl_element, ref_values, ffc_values, dif_cri, dif_acc, correct,
-                  log_file):
+def verify_values(ufl_element, ref_values, ffc_values):
     "Check the values from evaluate_basis*() against some reference values."
 
     num_tests = len(ffc_values)
     if num_tests != len(ref_values):
         raise RuntimeError("The number of computed values is not equal to the number of reference values.")
 
-    errors = [str(ufl_element)]
     for deriv_order in range(num_tests):
-        s = ""
-        if deriv_order == 0:
-            s = "  evaluate_basis"
-        else:
-            s = "  evaluate_basis_derivatives, order = %d" % deriv_order
+        s = "evaluate_basis_derivatives, order = %d" % deriv_order
         e = abs(ffc_values[deriv_order] - ref_values[deriv_order])
         error = e.max()
-        if error > tol:
-            if error > crit_tol:
-                m = "%s failed: error = %s (crit_tol: %s)" % (s, str(error), str(crit_tol))
-                info_red(m)
-                dif_cri.append(str(ufl_element))
-                s = s + "\n" + m
-                raise RuntimeError("%s failed: error = %s (crit_tol: %s)" % (s, str(error), str(crit_tol)))
-            else:
-                m = "%s ok: error = %s (tol: %s)" % (s, str(error), str(tol))
-                info_blue(m)
-                dif_acc.append(str(ufl_element))
-                s = s + "\n" + m
-            errors.append(s)
-        else:
-            info_green("%s OK" % s)
-            correct.append(str(ufl_element))
 
-    # Log errors if any
-    #if len(errors) > 1:
-    #    log_error("\n".join(errors), log_file)
+        # Check that error is below critical tolerance
+        assert not error > crit_tol, "{} failed, error={} (crit_tol: {})".format(s, error, crit_tol)
+
+        # Print message if error is greater than tolerance
+        if error > tol:
+            print("{} ok: error={} (tol: {})".format(s, error, tol))
 
     return num_tests
 
 
+# Test over different element types
 @pytest.mark.parametrize("ufl_element", mixed_elements)
 def test_element(ufl_element):
     "Test FFC elements against FIAT"
 
-    info("\nVerifying element: {}".format(str(ufl_element)))
+    print("\nVerifying element: {}".format(str(ufl_element)))
 
-    # Compile element
-    error = compile_element(ufl_element, ffc_fail, log_file)
-    assert not error
+    # Generate element
+    generate_element(ufl_element)
 
     # Get FFC values
     t = time.time()
     ffc_values = get_ffc_values(ufl_element)
     if ffc_values is None:
         return
-    debug("  time to compute FFC values: %f" % (time.time() - t))
+    #debug("  time to compute FFC values: %f" % (time.time() - t))
 
     # Get FIAT values that are formatted in the same way as the values
     # from evaluate_basis and evaluate_basis_derivatives.
     fiat_values = get_fiat_values(ufl_element)
 
     # Compare FIAT and FFC values
-    verify_values(ufl_element, fiat_values, ffc_values, dif_cri,
-                  dif_acc, correct, log_file)
+    verify_values(ufl_element, fiat_values, ffc_values)

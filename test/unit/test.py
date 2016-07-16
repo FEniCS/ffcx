@@ -1,6 +1,4 @@
-from misc.test import *
-from symbolics.test import *
-from evaluate_basis.test import *
+import pytest
 
 if __name__ == "__main__":
-    unittest.main()
+    pytest.main()
