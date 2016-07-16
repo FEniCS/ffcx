@@ -10,7 +10,7 @@ pipelines:
           - pip install pytest
           - pip install --verbose .
           - cd test
-          - py.test -v ./unit/evaluate_basis/test_against_fiat_new.py
+          - py.test -v ./unit/
           - py.test -v ./uflacs/unit/
   branches:
     next:
@@ -22,5 +22,5 @@ pipelines:
             - pip install pytest
             - pip install --verbose .
             - cd test
-            - py.test -v ./unit/evaluate_basis/test_against_fiat_new.py
+            - py.test -v ./unit/
             - py.test -v ./uflacs/unit/
