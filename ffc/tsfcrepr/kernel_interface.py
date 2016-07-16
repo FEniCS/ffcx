@@ -296,27 +296,45 @@ def prepare_coefficients(coefficients, coefficient_numbers, name, mode=None,
     # FIXME for interior facets
     expressions = []
     for j, coefficient in enumerate(coefficients):
-        i = gem.Index()
         if coefficient.ufl_element().family() == 'Real':
-            if coefficient.ufl_shape == ():
+            shape = coefficient.ufl_shape
+            if shape == ():
                 # Scalar constant/real - needs one dummy index
                 expression = gem.Indexed(gem.Variable(name, (num_coefficients,) + (1,)),
                                          (coefficient_numbers[j], 0,))
+                # FIXME: It seems that Reals are not restricted in gem but are in UFL.
+                #if interior_facet:
+                #    i = gem.Index()
+                #    expression = gem.ComponentTensor(
+                #        gem.Indexed(gem.Variable(name, (num_coefficients,) + (2,)),
+                #                    (coefficient_numbers[j], i,)),
+                #        (i,))
             else:
-                # Mixed/vector constant/real
-                shape = coefficient.ufl_shape
+                # Mixed/vector/tensor constant/real
+                # FIXME: Tensor case is incorrect. Gem wants shaped expression, UFC requires flattened.
+                indices = tuple(gem.Index() for i in six.moves.xrange(len(shape)))
                 expression = gem.ComponentTensor(
                     gem.Indexed(gem.Variable(name, (num_coefficients,) + shape),
-                                (coefficient_numbers[j], i)),
-                    (i,))
+                                (coefficient_numbers[j],) + indices),
+                    indices)
         else:
             # Everything else
+            i = gem.Index()
             fiat_element = create_element(coefficient.ufl_element())
             shape = (fiat_element.space_dimension(),)
             expression = gem.ComponentTensor(
                 gem.Indexed(gem.Variable(name, (num_coefficients,) + shape),
                             (coefficient_numbers[j], i)),
                 (i,))
+            if interior_facet:
+                num_dofs = shape[0]
+                variable = gem.Variable(name, (num_coefficients, 2*num_dofs))
+                # TODO: Seems that this reordering could be done using reinterpret_cast
+                expression = gem.ListTensor([[gem.Indexed(variable, (coefficient_numbers[j], i))
+                                              for i in six.moves.xrange(       0,   num_dofs)],
+                                             [gem.Indexed(variable, (coefficient_numbers[j], i))
+                                              for i in six.moves.xrange(num_dofs, 2*num_dofs)]])
+
         expressions.append(expression)
 
     return funarg, [], expressions
@@ -358,14 +376,13 @@ def prepare_coordinates(coefficient, name, mode=None, interior_facet=False):
 
     # Translate coords from XYZXYZXYZXYZ into XXXXYYYYZZZZ
     # NOTE: See dolfin/mesh/Cell.h:get_coordinate_dofs for ordering scheme
+    indices = numpy.arange(num_nodes * gdim).reshape(num_nodes, gdim).transpose().flatten()
     if not interior_facet:
         variable = gem.Variable(name, shape)
-        indices = numpy.arange(num_nodes * gdim).reshape(num_nodes, gdim).transpose().flatten()
         expression = gem.ListTensor([gem.Indexed(variable, (i,)) for i in indices])
     else:
         variable0 = gem.Variable(name+"_0", shape)
         variable1 = gem.Variable(name+"_1", shape)
-        indices = numpy.arange(num_nodes * gdim).reshape(num_nodes, gdim).transpose().flatten()
         expression = gem.ListTensor([[gem.Indexed(variable0, (i,)) for i in indices],
                                      [gem.Indexed(variable1, (i,)) for i in indices]])
 
@@ -449,9 +466,8 @@ def prepare_arguments(arguments, indices, interior_facet=False):
         shape = (1,)
         indices = (0,)
     if interior_facet:
-        restrictions = len(shape)*(2,)
-        shape = tuple(j for i in zip(shape, restrictions) for j in i)
-        indices = tuple(product(*chain(*(((i,), (0, 1)) for i in indices))))
+        shape = tuple(j for i in zip(len(shape)*(2,), shape) for j in i)
+        indices = tuple(product(*chain(*(((0, 1), (i,)) for i in indices))))
     else:
         indices = (indices,)
 
