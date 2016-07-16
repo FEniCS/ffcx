@@ -5,7 +5,7 @@ pipelines:
     - step:
         script:
           - apt-get update
-          - apt-get install -y python-pip python-setuptool python-wheel git cmake g++ swig make --no-install-recommends
+          - apt-get install -y python-pip python-setuptools python-wheel git cmake g++ swig make --no-install-recommends
           - pip install git+https://bitbucket.org/fenics-project/fiat.git@master
           - pip install git+https://bitbucket.org/fenics-project/ufl.git@master
           - pip install git+https://bitbucket.org/fenics-project/instant.git@master
