@@ -105,8 +105,8 @@ def compile_gcc_code(ufl_element, code):
     import ffc.ufc_include
     ufc_include_path = ffc.ufc_include.get_ufc_include()
 
-    # Compile g++ code
-    c = "g++ -I{} -std=c++11 -Wall -Werror -o evaluate_basis_test_code evaluate_basis.cpp".format(ufc_include_path)
+    # Compile c++ code
+    c = "c++ -I{} -std=c++11 -Wall -Werror -o evaluate_basis_test_code evaluate_basis.cpp".format(ufc_include_path)
     f = open("compile.sh", "w")
     f.write(c + "\n")
     f.close()
