@@ -4,6 +4,8 @@ pipelines:
   default:
     - step:
         script:
+          - apt-get update
+          - apt-get install -y g++ cmake --no-install-recommends
           - pip install git+https://bitbucket.org/fenics-project/fiat.git@master
           - pip install git+https://bitbucket.org/fenics-project/ufl.git@master
           - pip install git+https://bitbucket.org/fenics-project/instant.git@master
