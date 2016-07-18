@@ -19,9 +19,9 @@
 # Last changed: 2010-01-18
 
 from __future__ import print_function
+import subprocess
 from cppcode import evaluate_basis_code
 from ufl import FiniteElement, MixedElement
-from instant.output import get_status_output
 
 import sys, os, pickle, numpy, shutil
 
@@ -133,16 +133,18 @@ def check_results(values, reference):
         print("\n*** Difference in values were found for the following elements:\n" + "\n".join(diffs))
     return 1
 
+
 def compile_element(ufl_element):
     "Create UFL form file with a single element in it and compile it with FFC"
     f = open("test.ufl", "w")
     if isinstance(ufl_element, (FiniteElement, MixedElement)):
         f.write("element = " + repr(ufl_element))
     f.close()
-    error, out = get_status_output("ffc test.ufl")
+    error = subprocess.call("ffc test.ufl", shell=True)
     if error:
         ffc_failed.append(repr(ufl_element))
     return error
+
 
 def get_element_name(ufl_element):
     "Extract relevant element name from header file."
