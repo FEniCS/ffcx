@@ -12,8 +12,8 @@ pipelines:
           - pip install pytest
           - pip install --verbose .
           - cd test
-          - py.test -v ./unit/
-          - py.test -v ./uflacs/unit/
+          - py.test -v ./unit
+          - py.test -v ./uflacs
   branches:
     next:
       - step:
@@ -27,4 +27,4 @@ pipelines:
             - pip install --verbose .
             - cd test
             - py.test -v ./unit/
-            - py.test -v ./uflacs/unit/
+            - py.test -v ./uflacs
