@@ -8,7 +8,6 @@ import os
 import inspect
 from collections import defaultdict
 import subprocess
-from instant.output import get_status_output
 
 # TODO: For a generic framework, this needs to change somewhat:
 _supportcode = '''
@@ -177,24 +176,28 @@ class GTestContext:
 
 
     def build(self):
-        s, o = get_status_output("make")
-        if s:
-            self.info("Building '{0}' FAILED (code {1}, headers: {2})".format(self._binary_filename,
-                                                                              s, self._test_header_names))
-            self.info("Build output:")
-            self.info(o)
-        else:
+        try:
+            subprocess.check_output("make", shell=True)
             self.info("Building ok.")
+        except subprocess.CalledProcessError, e:
+            self.info("Building '{0}' FAILED (code {1}, headers: {2})".format(self._binary_filename,
+                                                                              e.returncode, self._test_header_names))
+            self.info("Build output:")
+            self.info(e.output)
+
 
     def run(self):
-        s, o = get_status_output(self._binary_filename)
-        if s:
-            self.info("Gtest running FAILED with code {0}!".format(s))
-        else:
+        try:
+            out = subprocess.check_output(self._binary_filename, shell=True)
             self.info("Gtest running ok!")
-        with open(self._gtest_log, "w") as f:
-            f.write(o)
-        self.info(o)
+            with open(self._gtest_log, "w") as f:
+                f.write(out)
+            self.info(out)
+        except subprocess.CalledProcessError as e:
+            self.info("Gtest running FAILED with code {0}!".format(e.returncode))
+            with open(self._gtest_log, "w") as f:
+                f.write(e.output)
+            self.info(e.output)
 
     def finalize(self):
         # Write generated test code to files, build and run, all from
