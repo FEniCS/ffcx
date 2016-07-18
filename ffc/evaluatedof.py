@@ -94,9 +94,20 @@ def evaluate_dof_and_dofs(ir):
     dof_cases = ["%s\n%s" % (c, ret(r)) for (c, r) in cases]
     dof_code = reqs + format["switch"](f_i, dof_cases, ret(format["float"](0.0)))
 
+    # Construct dict with eval code as keys to remove duplicate eval code
+    cases_opt = {case[0]: [] for case in cases}
+    for i, (evl, res) in enumerate(cases):
+        cases_opt[evl].append((i, res))
+
     # Combine each case with assignments for evaluate_dofs
-    dofs_cases = "\n".join("%s\n%s" % (c, format["assign"](component(f_values, i), r))
-                           for (i, (c, r)) in enumerate(cases))
+    # FIXME: dict iteration order is undefined, need defined order
+    # FIXME: iteritems works in Py3?
+    dofs_cases = ""
+    for evl, results in cases_opt.iteritems():
+        dofs_cases += "\n" + evl
+        for i, res in results:
+            dofs_cases += "\n" + format["assign"](component(f_values, i), res)
+
     dofs_code = reqs + dofs_cases
 
     return (dof_code, dofs_code)
