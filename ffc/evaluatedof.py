@@ -98,7 +98,7 @@ def evaluate_dof_and_dofs(ir):
     dof_code = reqs + format["switch"](f_i, dof_cases, ret(format["float"](0.0)))
 
     # Construct dict with eval code as keys to remove duplicate eval code
-    cases_opt = OrderedDict({case[0]: [] for case in cases})
+    cases_opt = OrderedDict((case[0], []) for case in cases)
     for i, (evl, res) in enumerate(cases):
         cases_opt[evl].append((i, res))
 
