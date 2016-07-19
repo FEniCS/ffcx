@@ -105,9 +105,10 @@ def evaluate_dof_and_dofs(ir):
     # Combine each case with assignments for evaluate_dofs
     dofs_code = reqs
     for evl, results in six.iteritems(cases_opt):
-        dofs_code += "\n" + evl
+        dofs_code += evl + "\n"
         for i, res in results:
-            dofs_code += "\n" + format["assign"](component(f_values, i), res)
+            dofs_code += format["assign"](component(f_values, i), res) + "\n"
+    dofs_code = dofs_code.rstrip("\n")
 
     return (dof_code, dofs_code)
 
