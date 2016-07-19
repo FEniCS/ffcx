@@ -42,6 +42,7 @@ install_manifest.txt
 # Local build files
 /build
 /bench/bench.log
+/doc/sphinx/build
 
 # Tests
 **/.cache/
