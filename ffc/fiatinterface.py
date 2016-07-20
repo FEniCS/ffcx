@@ -163,10 +163,10 @@ def _create_fiat_element(ufl_element):
 
     return element
 
-def create_quadrature(shape, num_points):
+def create_quadrature(shape, degree, scheme="default"):
     """
-    Generate quadrature rule (points, weights) for given shape with
-    num_points points in each direction.
+    Generate quadrature rule (points, weights) for given shape
+    that will integrate an polynomial of order 'degree' exactly.
     """
 
     if isinstance(shape, int) and shape == 0:
@@ -175,7 +175,39 @@ def create_quadrature(shape, num_points):
     if shape in cellname2dim and cellname2dim[shape] == 0:
         return ([()], array([1.0,]))
 
-    quad_rule = FIAT.make_quadrature(reference_cell(shape), num_points)
+    if scheme == "vertex":
+        # The vertex scheme, i.e., averaging the function value in the vertices
+        # and multiplying with the simplex volume, is only of order 1 and
+        # inferior to other generic schemes in terms of error reduction.
+        # Equation systems generated with the vertex scheme have some
+        # properties that other schemes lack, e.g., the mass matrix is
+        # a simple diagonal matrix. This may be prescribed in certain cases.
+        #
+        if degree > 1:
+            from warnings import warn
+            warn(("Explicitly selected vertex quadrature (degree 1), "
+                 +"but requested degree is %d.") % degree)
+        if shape == "tetrahedron":
+            return (array([ [0.0, 0.0, 0.0],
+                            [1.0, 0.0, 0.0],
+                            [0.0, 1.0, 0.0],
+                            [0.0, 0.0, 1.0] ]),
+                    array([1.0/24.0, 1.0/24.0, 1.0/24.0, 1.0/24.0])
+                    )
+        elif shape == "triangle":
+            return (array([ [0.0, 0.0],
+                            [1.0, 0.0],
+                            [0.0, 1.0] ]),
+                    array([1.0/6.0, 1.0/6.0, 1.0/6.0])
+                    )
+        else:
+            # Trapezoidal rule.
+            return (array([ [0.0, 0.0],
+                            [0.0, 1.0] ]),
+                    array([1.0/2.0, 1.0/2.0])
+                    )
+
+    quad_rule = FIAT.create_quadrature(reference_cell(shape), degree, scheme)
     return quad_rule.get_points(), quad_rule.get_weights()
 
 def map_facet_points(points, facet):
