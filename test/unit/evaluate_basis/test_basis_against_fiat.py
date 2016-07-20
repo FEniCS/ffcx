@@ -151,9 +151,6 @@ def generate_element(ufl_element):
     f = open("test.ufl", "w")
     f.write("element = " + repr(ufl_element))
     f.close()
-    error, output = get_status_output("ffc test.ufl")
-    if error:
-        RuntimeError("FFC compilation failed for element: {}. Ouput: {}".format(str(ufl_element), output))
     try:
         subprocess.check_output("ffc test.ufl", shell=True)
     except subprocess.CalledProcessError, e:
