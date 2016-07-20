@@ -25,7 +25,7 @@ import ufl
 
 # FFC modules.
 from ffc import __version__ as FFC_VERSION
-from ffc.ufc_signature import ufc_signature
+from ffc.ufc_config import get_ufc_signature
 from ffc.parameters import compute_jit_parameters_signature
 
 # UFC modules.
@@ -81,7 +81,7 @@ class JITObject:
         signatures = [form_signature,
                       parameters_signature,
                       str(FFC_VERSION),
-                      ufc_signature()]
+                      get_ufc_signature()]
         string = ";".join(signatures)
 
         self._signature = sha1(string.encode('utf-8')).hexdigest()

@@ -49,7 +49,7 @@ from ffc.formatting import write_code
 from ffc.jitobject import JITObject
 from ffc.quadratureelement import default_quadrature_degree
 from ffc.backends.ufc import build_ufc_module
-from ffc.ufc_include import get_ufc_include
+from ffc.ufc_config import get_ufc_include
 
 # Set debug level for Instant
 instant.set_log_level("warning")
