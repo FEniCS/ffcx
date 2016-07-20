@@ -18,12 +18,12 @@
 import pytest
 import os
 import numpy
+import subprocess
 import time
 
 from ufl import FiniteElement, MixedElement
 from ffc.mixedelement import MixedElement as FFCMixedElement
 from ffc.fiatinterface import create_element, reference_cell
-from instant.output import get_status_output
 
 # Local imports
 from cppcode import evaluate_basis_code_fiat
@@ -110,18 +110,19 @@ def compile_gcc_code(ufl_element, code):
     f = open("compile.sh", "w")
     f.write(c + "\n")
     f.close()
-    error, output = get_status_output(c)
-    if error:
-        RuntimeError("C++ code compilation failed for element: {}. Ouput: {}".format(str(ufl_element), output))
+    subprocess.check_call(c, shell=True)
+
 
 def run_code(ufl_element, deriv_order):
     "Compute values of basis functions for given element."
 
     # Run compiled code and get values
-    error, output = get_status_output(".%sevaluate_basis_test_code %d" % (os.path.sep,
-                                                                deriv_order))
-    if error:
-        RuntimeError("Could not run compiled code for element: {}. Output: {}".format(str(ufl_element), output))
+    c = ".%sevaluate_basis_test_code %d" % (os.path.sep,deriv_order)
+    try:
+        output = subprocess.check_output(c, shell=True)
+    except subprocess.CalledProcessError, e:
+        print("Could not run compiled code for element: {}".format(str(ufl_element)))
+        raise
 
     values = [[float(value) for value in line.strip().split(" ") if value] for line in output.strip().split("\n")]
     return numpy.array(values)
@@ -150,9 +151,11 @@ def generate_element(ufl_element):
     f = open("test.ufl", "w")
     f.write("element = " + repr(ufl_element))
     f.close()
-    error, output = get_status_output("ffc test.ufl")
-    if error:
-        RuntimeError("FFC compilation failed for element: {}. Ouput: {}".format(str(ufl_element), output))
+    try:
+        subprocess.check_output("ffc test.ufl", shell=True)
+    except subprocess.CalledProcessError, e:
+        print("FFC compilation failed for element: {}. Ouput: {}".format(str(ufl_element), e.output))
+        raise
 
 
 def matrix(points):

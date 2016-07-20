@@ -9,11 +9,12 @@ pipelines:
           - pip install git+https://bitbucket.org/fenics-project/fiat.git@master
           - pip install git+https://bitbucket.org/fenics-project/ufl.git@master
           - pip install git+https://bitbucket.org/fenics-project/instant.git@master
+          - pip install git+https://bitbucket.org/fenics-project/dijitso.git@master
           - pip install pytest
           - pip install --verbose .
           - cd test
-          - py.test -v ./unit/
-          - py.test -v ./uflacs/unit/
+          - py.test -v ./unit
+          - py.test -v ./uflacs
   branches:
     next:
       - step:
@@ -23,8 +24,9 @@ pipelines:
             - pip install git+https://bitbucket.org/fenics-project/fiat.git@next
             - pip install git+https://bitbucket.org/fenics-project/ufl.git@next
             - pip install git+https://bitbucket.org/fenics-project/instant.git@next
+            - pip install git+https://bitbucket.org/fenics-project/dijitso.git@master
             - pip install pytest
             - pip install --verbose .
             - cd test
             - py.test -v ./unit/
-            - py.test -v ./uflacs/unit/
+            - py.test -v ./uflacs
