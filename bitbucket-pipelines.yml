@@ -9,6 +9,7 @@ pipelines:
           - pip install git+https://bitbucket.org/fenics-project/fiat.git@master
           - pip install git+https://bitbucket.org/fenics-project/ufl.git@master
           - pip install git+https://bitbucket.org/fenics-project/instant.git@master
+          - pip install git+https://bitbucket.org/fenics-project/dijitso.git@master
           - pip install pytest
           - pip install --verbose .
           - cd test
@@ -23,6 +24,7 @@ pipelines:
             - pip install git+https://bitbucket.org/fenics-project/fiat.git@next
             - pip install git+https://bitbucket.org/fenics-project/ufl.git@next
             - pip install git+https://bitbucket.org/fenics-project/instant.git@next
+            - pip install git+https://bitbucket.org/fenics-project/dijitso.git@master
             - pip install pytest
             - pip install --verbose .
             - cd test
