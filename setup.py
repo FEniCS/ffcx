@@ -92,6 +92,20 @@ def get_git_commit_hash():
         return hash.strip()
 
 
+def get_cxx_flags():
+    """Return flags needed for compilation of UFC C++11 program"""
+    cc = new_compiler()
+    CXX = os.environ.get("CXX")
+    if CXX:
+        cc.set_executables(compiler_so=CXX, compiler=CXX, compiler_cxx=CXX)
+    CXX_FLAGS = os.environ.get("CXXFLAGS", "")
+    if has_cxx_flag(cc, "-std=c++11"):
+        CXX_FLAGS += " -std=c++11"
+    elif has_cxx_flag(cc, "-std=c++0x"):
+        CXX_FLAGS += " -std=c++0x"
+    return CXX_FLAGS
+
+
 def create_windows_batch_files(scripts):
     """Create Windows batch files, to get around problem that we
     cannot run Python scripts in the prompt without the .py
@@ -179,47 +193,28 @@ def find_boost_include_dir():
     return find_include_dir("boost", os.path.join("boost", "version.hpp"))
 
 
-def generate_git_hash_file():
+def generate_git_hash_file(GIT_COMMIT_HASH):
     "Generate module with git hash"
-
-    # Get git commit hash
-    GIT_COMMIT_HASH = get_git_commit_hash()
-
-    # Generate git_commit_hash.py
     write_config_file(os.path.join("ffc", "git_commit_hash.py.in"),
                       os.path.join("ffc", "git_commit_hash.py"),
                       variables=dict(GIT_COMMIT_HASH=GIT_COMMIT_HASH))
 
 
-def generate_ufc_signature_file():
+def generate_ufc_config_py_file(INSTALL_PREFIX, CXX_FLAGS, UFC_SIGNATURE):
     "Generate module with UFC signature"
-
-    UFC_SIGNATURE = get_ufc_signature()
-
-    # Generate ufc_signature.py
-    write_config_file(os.path.join("ffc", "ufc_signature.py.in"),
-                      os.path.join("ffc", "ufc_signature.py"),
-                      variables=dict(UFC_SIGNATURE=UFC_SIGNATURE))
+    write_config_file(os.path.join("ffc", "ufc_config.py.in"),
+                      os.path.join("ffc", "ufc_config.py"),
+                      variables=dict(INSTALL_PREFIX=INSTALL_PREFIX,
+                                     CXX_FLAGS=CXX_FLAGS,
+                                     UFC_SIGNATURE=UFC_SIGNATURE))
 
 
-def generate_ufc_config_files():
+
+def generate_ufc_config_files(INSTALL_PREFIX, CXX_FLAGS, UFC_SIGNATURE):
     "Generate and install UFC configuration files"
 
     # Get variables
-    INSTALL_PREFIX = get_installation_prefix()
     PYTHON_LIBRARY = os.environ.get("PYTHON_LIBRARY", find_python_library())
-    UFC_SIGNATURE = get_ufc_signature()
-
-    # Check that compiler supports C++11 features
-    cc = new_compiler()
-    CXX = os.environ.get("CXX")
-    if CXX:
-        cc.set_executables(compiler_so=CXX, compiler=CXX, compiler_cxx=CXX)
-    CXX_FLAGS = os.environ.get("CXXFLAGS", "")
-    if has_cxx_flag(cc, "-std=c++11"):
-        CXX_FLAGS += " -std=c++11"
-    elif has_cxx_flag(cc, "-std=c++0x"):
-        CXX_FLAGS += " -std=c++0x"
 
     # Generate UFCConfig.cmake
     write_config_file(os.path.join("cmake", "templates", "UFCConfig.cmake.in"),
@@ -289,6 +284,12 @@ def has_cxx_flag(cc, flag):
 def run_install():
     "Run installation"
 
+    # Get common variables
+    INSTALL_PREFIX = get_installation_prefix()
+    CXX_FLAGS = get_cxx_flags()
+    UFC_SIGNATURE = get_ufc_signature()
+    GIT_COMMIT_HASH = get_git_commit_hash()
+
     # Check if we're building inside a 'Read the Docs' container
     on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
@@ -298,21 +299,17 @@ def run_install():
         scripts = create_windows_batch_files(scripts)
 
     # Generate module with git hash from template
-    generate_git_hash_file()
-
-    # Generate module with UFC signature from template
-    generate_ufc_signature_file()
+    generate_git_hash_file(GIT_COMMIT_HASH)
 
     # Generate config files
-    generate_ufc_config_files()
+    generate_ufc_config_files(INSTALL_PREFIX, CXX_FLAGS, UFC_SIGNATURE)
 
     class my_install(install):
         def run(self):
             if not self.dry_run:
-                # Generate ufc_include.py
-                write_config_file(os.path.join("ffc", "ufc_include.py.in"),
-                                  os.path.join("ffc", "ufc_include.py"),
-                                  variables=dict(INSTALL_PREFIX=get_installation_prefix()))
+                # Generate ufc_config.py
+                generate_ufc_config_py_file(INSTALL_PREFIX, CXX_FLAGS,
+                                            UFC_SIGNATURE)
 
             # distutils uses old-style classes, so no super()
             install.run(self)
@@ -324,7 +321,6 @@ def run_install():
     # Add UFC data files (need to use complete path because setuptools
     # installs into the Python package directory, not --prefix). This
     # can be fixed when Swig, etc are removed from FFC).
-    INSTALL_PREFIX = get_installation_prefix()
     data_files_ufc = [(os.path.join(INSTALL_PREFIX, "include"),
                        [os.path.join("ufc", "ufc.h"),
                         os.path.join("ufc", "ufc_geometry.h")]),
