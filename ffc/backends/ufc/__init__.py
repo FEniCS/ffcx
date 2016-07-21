@@ -45,7 +45,6 @@ from .coordinate_mapping import *
 from .integrals import *
 from .form import *
 from .factory import *
-from .build import build_ufc_module
 
 templates = {"function_header":                          function_header,
              "function_implementation":                  function_implementation,

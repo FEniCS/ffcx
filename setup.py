@@ -382,7 +382,7 @@ def run_install():
                               "six",
                               "fiat==%s" % VERSION,
                               "ufl==%s" % VERSION,
-                              "instant==%s" % VERSION],
+                              "dijitso==%s" % VERSION],
           zip_safe = False)
 
 if __name__ == "__main__":
