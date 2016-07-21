@@ -112,7 +112,7 @@ def create_windows_batch_files(scripts):
     for script in scripts:
         batch_file = script + ".bat"
         f = open(batch_file, "w")
-        f.write("python \"%%~dp0\%s\" %%*\n" % os.path.split(script)[1])
+        f.write(sys.executable + " \"%%~dp0\%s\" %%*\n" % os.path.split(script)[1])
         f.close()
         batch_files.append(batch_file)
     scripts.extend(batch_files)

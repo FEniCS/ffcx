@@ -82,9 +82,9 @@ the FFC man page which may invoked by 'man ffc' (if installed).
 def main(argv):
     "Main function."
 
-    # Append current directory to path, such that the *_debug module created by
-    # ufl_load_file can be found when FFC  compiles a form which is not in the
-    # PYHTONPATH
+    # Append current directory to path, such that the *_debug module
+    # created by ufl_load_file can be found when FFC compiles a form
+    # which is not in the PYHTONPATH
     sys.path.append(getcwd())
 
     # Get command-line arguments
@@ -173,7 +173,8 @@ def main(argv):
         prefix, suffix = os.path.splitext(os.path.basename(filename))
         suffix = suffix.replace(os.path.extsep, "")
 
-        # Remove weird characters (file system allows more than the C preprocessor)
+        # Remove weird characters (file system allows more than the C
+        # preprocessor)
         prefix = re.subn("[^{}]".format(string.ascii_letters + string.digits + "_"), "!", prefix)[0]
         prefix = re.subn("!+", "_", prefix)[0]
 
@@ -193,16 +194,18 @@ def main(argv):
         # Compile
         try:
             if parameters["error_control"]:
-                code_h, code_c = \
-                    compile_with_error_control(ufd.forms, ufd.object_names,
-                                         ufd.reserved_objects, prefix,
-                                         parameters)
+                code_h, code_c = compile_with_error_control(ufd.forms,
+                                                            ufd.object_names,
+                                                            ufd.reserved_objects,
+                                                            prefix,
+                                                            parameters)
             elif len(ufd.forms) > 0:
-                code_h, code_c = \
-                    compile_form(ufd.forms, ufd.object_names, prefix=prefix, parameters=parameters)
+                code_h, code_c = compile_form(ufd.forms, ufd.object_names,
+                                              prefix=prefix,
+                                              parameters=parameters)
             else:
-                code_h, code_c = \
-                    compile_element(ufd.elements, prefix=prefix, parameters=parameters)
+                code_h, code_c = compile_element(ufd.elements, prefix=prefix,
+                                                 parameters=parameters)
 
             # Write to file
             write_code(code_h, code_c, prefix, parameters)
@@ -223,6 +226,5 @@ def main(argv):
             pfn = "ffc_{0}.profile".format(prefix)
             pr.dump_stats(pfn)
             print("Wrote profiling info to file {0}".format(pfn))
-            #pr.print_stats()
 
     return 0
