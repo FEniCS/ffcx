@@ -34,7 +34,6 @@ from ffc.log import ffc_assert, info, error, warning
 from ffc.utils import product
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import map_facet_points, reference_cell_vertices
-from ffc.quadrature_schemes import create_quadrature
 from ffc.representationutils import create_quadrature_points_and_weights
 
 def _find_element_derivatives(expr, elements, element_replace_map):

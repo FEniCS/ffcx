@@ -32,7 +32,6 @@ import time
 from ffc.log import info, debug, error
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import map_facet_points
-from ffc.quadrature_schemes import create_quadrature
 from ffc.representationutils import create_quadrature_points_and_weights
 
 # FFC tensor representation modules

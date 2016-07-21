@@ -31,7 +31,7 @@ from ffc.fiatinterface import create_element
 from ffc.cpp import make_integral_classname
 from ffc.log import error
 
-from ffc.quadrature_schemes import create_quadrature
+from ffc.fiatinterface import create_quadrature
 
 def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     "Create quadrature rule and return points and weights."
