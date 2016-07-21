@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Tests of table manipulation utilities.
 """

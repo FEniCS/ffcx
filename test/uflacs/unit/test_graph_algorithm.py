@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Tests of graph representation of expressions.
 """

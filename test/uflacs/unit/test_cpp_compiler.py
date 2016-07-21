@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Tests of generic C++ compilation code.
 """

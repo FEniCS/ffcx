@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import os, sys, platform, re, subprocess, string, tempfile, shutil, hashlib
 
 try:
