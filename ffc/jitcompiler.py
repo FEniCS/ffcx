@@ -1,5 +1,5 @@
 """This module provides a just-in-time (JIT) form compiler.
-It uses Instant to wrap the generated code into a Python module."""
+It uses dijitso to wrap the generated code into a Python module."""
 
 # Copyright (C) 2007-2015 Anders Logg
 #
@@ -26,7 +26,7 @@ It uses Instant to wrap the generated code into a Python module."""
 
 # Python modules
 import os, sys
-import instant
+import dijitso
 
 # UFL modules
 from ufl import TestFunction, ds, dx
@@ -48,11 +48,7 @@ from ffc.compiler import compile_form, compile_element
 from ffc.formatting import write_code
 from ffc.jitobject import JITObject
 from ffc.quadratureelement import default_quadrature_degree
-from ffc.backends.ufc import build_ufc_module
-from ffc.ufc_include import get_ufc_include
-
-# Set debug level for Instant
-instant.set_log_level("warning")
+from ffc.ufc_config import get_ufc_include
 
 
 def jit_generate(ufl_object, module_name, parameters):
@@ -66,63 +62,7 @@ def jit_generate(ufl_object, module_name, parameters):
     return code_h, code_c
 
 
-def jit_build_with_instant(ufl_object, module_name, parameters):
-    # Use Instant cache if possible
-    cache_dir = parameters.get("cache_dir") or None  # Important that this is None and not "", use "." for curdir
-    module = instant.import_module(module_name, cache_dir=cache_dir)
-    if module:
-        debug("Reusing form from cache.")
-        return module
-
-    if parameters["cpp_optimize"]:
-        cppargs = parameters["cpp_optimize_flags"].split()
-    else:
-        cppargs = ["-O0"]
-
-    # Take lock to serialise file removal.
-    # Need to add "_0" to lock as instant.import_module acquire
-    # lock with name: module_name
-    with instant.file_lock(instant.get_default_cache_dir(),
-                           module_name + "_0") as lock:
-
-        # Retry Instant cache. The module may have been created while we waited
-        # for the lock, even if it didn't exist before.
-        module = instant.import_module(module_name, cache_dir=cache_dir)
-        if module:
-            debug("Reusing form from cache.")
-            return module
-
-        # Write a message
-        log(INFO + 5,
-            "Calling FFC just-in-time (JIT) compiler, this may take some time.")
-        code_h, code_c = jit_generate(ufl_object, module_name, parameters)
-
-        # Write to file
-        write_code(code_h, code_c, module_name, parameters)
-
-        # Build module using Instant
-        debug("Compiling and linking Python extension module, this may take some time.")
-        hfile   = module_name + ".h"
-        cppfile = module_name + ".cpp"
-        module = build_ufc_module(
-            hfile,
-            source_directory = os.curdir,
-            signature = module_name,
-            sources = [cppfile],
-            cppargs = cppargs,
-            cache_dir = cache_dir)
-
-        # Remove code
-        if os.path.isfile(hfile):
-            os.unlink(hfile)
-        if os.path.isfile(cppfile):
-            os.unlink(cppfile)
-
-    return module
-
-
 def jit_build_with_dijitso(ufl_object, module_name, parameters):
-    import dijitso
 
     def _generate(ufl_object, module_name, signature, parameters):
         # Write a message
@@ -196,42 +136,30 @@ def jit(ufl_object, parameters=None):
     module_name = "ffc_%s_%s" % (kind, jit_object.signature())
 
     # Inspect cache and generate+build if necessary
-    use_ctypes = os.environ.get("FFC_USE_CTYPES")
-    if not use_ctypes:
-        module = jit_build_with_instant(ufl_object, module_name, parameters)
-    else:
-        module = jit_build_with_dijitso(ufl_object, module_name, parameters)
+    module = jit_build_with_dijitso(ufl_object, module_name, parameters)
 
     # Construct instance of compiled form
     if isinstance(ufl_object, Form):
-        compiled_form = _instantiate_form(module, module_name, use_ctypes)
+        compiled_form = _instantiate_form(module, module_name)
         return compiled_form, module, module_name
     elif isinstance(ufl_object, FiniteElementBase):
-        return _instantiate_element_and_dofmap(module, module_name, use_ctypes)
+        return _instantiate_element_and_dofmap(module, module_name)
 
 
 from ffc.cpp import make_classname
-def _instantiate_form(module, prefix, use_ctypes):
+def _instantiate_form(module, prefix):
     "Extract the form from module with only one form."
     form_id = 0
     classname = make_classname(prefix, "form", form_id)
-    if use_ctypes:
-        import dijitso
-        form = dijitso.extract_factory_function(module, "create_" + classname)()
-        return form
-    else:
-        return getattr(module, "create_" + classname)()
+    form = dijitso.extract_factory_function(module, "create_" + classname)()
+    return form
 
-def _instantiate_element_and_dofmap(module, prefix, use_ctypes):
+
+def _instantiate_element_and_dofmap(module, prefix):
     """Extract element and dofmap from module."""
     fe_classname = make_classname(prefix, "finite_element", "main")
     dm_classname = make_classname(prefix, "dofmap", "main")
-    if use_ctypes:
-        import dijitso
-        fe = dijitso.extract_factory_function(module, "create_" + fe_classname)()
-        dm = dijitso.extract_factory_function(module, "create_" + dm_classname)()
-    else:
-        fe = getattr(module, "create_" + fe_classname)()
-        dm = getattr(module, "create_" + dm_classname)()
+    fe = dijitso.extract_factory_function(module, "create_" + fe_classname)()
+    dm = dijitso.extract_factory_function(module, "create_" + dm_classname)()
 
     return (fe, dm)

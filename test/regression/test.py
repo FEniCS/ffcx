@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """This script compiles and verifies the output for all form files
 found in the 'demo' directory. The verification is performed in two
 steps. First, the generated code is compared with stored references.
@@ -36,12 +35,12 @@ option --bench.
 # FIXME: Need to add many more test cases. Quite a few DOLFIN forms
 # failed after the FFC tests passed.
 
-import os, sys, shutil, difflib, sysconfig
+import os, sys, shutil, difflib, sysconfig, subprocess, time
 from numpy import array, shape, abs, max, isnan
 from ffc.log import begin, end, info, info_red, info_green, info_blue
+from ffc import get_ufc_include, get_ufc_cxx_flags
 from ufctest import generate_test_code
-from instant.output import get_status_output
-import time
+
 
 # Parameters TODO: Can make this a cmdline argument, and start
 # crashing programs in debugger automatically?
@@ -82,20 +81,21 @@ def run_command(command):
     global logfile
 
     t1 = time.time()
-    (status, output) = get_status_output(command)
-    t2 = time.time()
-    _command_timings.append((command, t2-t1))
-
-    if status == 0:
+    try:
+        output = subprocess.check_output(command, shell=True)
+        t2 = time.time()
+        _command_timings.append((command, t2-t1))
         verbose = False  # FIXME: Set from --verbose
         if verbose:
             print(output)
         return True
-    else:
+    except subprocess.CalledProcessError as e:
+        t2 = time.time()
+        _command_timings.append((command, t2-t1))
         if logfile is None:
             logfile = open("../../error.log", "w")
         logfile.write(output + "\n")
-        print(output)
+        print(e.output)
         return False
 
 
@@ -266,7 +266,8 @@ set the environment variable BOOST_DIR.
 Forms using bessel functions will fail to build.
 """)
     return boost_cflags, boost_linkflags
-    
+
+
 def build_programs(bench, permissive):
     "Build test programs for all test cases."
 
@@ -277,7 +278,7 @@ def build_programs(bench, permissive):
     begin("Building test programs (%d header files found)" % len(header_files))
 
     # Get UFC flags
-    ufc_cflags = get_status_output("pkg-config --cflags ufc-1")[1].strip()
+    ufc_cflags = "-I" + get_ufc_include() + " " + " ".join(get_ufc_cxx_flags())
     boost_cflags, boost_linkflags = find_boost_cflags()
     ufc_cflags += boost_cflags
     linker_options = boost_linkflags
@@ -443,7 +444,7 @@ def main(args):
     if show_help:
         info("Valid arguments:\n" + "\n".join(flags))
         return 0
-    
+
     if bench or not skip_validate:
         skip_run = False
     if bench:
@@ -458,12 +459,13 @@ def main(args):
     if skip_download:
         info_blue("Skipping reference data download")
     else:
-        failure, output = get_status_output("./scripts/download")
-        print(output)
-        if failure:
-            info_red("Download reference data failed")
-        else:
+        try:
+            output = subprocess.check_output("./scripts/download", shell=True)
+            print(output)
             info_green("Download reference data ok")
+        except subprocess.CalledProcessError as e:
+            print(e.output)
+            info_red("Download reference data failed")
 
     if tolerant:
         global output_tolerance

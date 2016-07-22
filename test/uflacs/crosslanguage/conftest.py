@@ -9,6 +9,8 @@ import inspect
 from collections import defaultdict
 import subprocess
 
+from ffc import get_ufc_include, get_ufc_cxx_flags
+
 # TODO: For a generic framework, this needs to change somewhat:
 _supportcode = '''
 #include <ufc.h>
@@ -164,26 +166,36 @@ class GTestContext:
             # Configure gtest using cmake
             error = subprocess.call("cmake ..", cwd=build_dir, shell=True)
             if error:
-                RuntimeError("Could not call make successfully to build gtest")
+                raise RuntimeError("Could not call CMake successfully to build gtest")
 
             # Build gtest library
             err = subprocess.call("make", cwd=build_dir, shell=True)
             if error:
-                print("Could not call make successfully to build gtest")
+                raise RuntimeError("Could not call make successfully to build gtest")
 
         else:
-            RuntimeError("Cannot find gtest source")
+            raise RuntimeError("Cannot find gtest source")
 
 
     def build(self):
+        # Prepare command
+        UFC_INCLUDE_DIR = get_ufc_include()
+        UFC_CXX_FLAGS = " ".join(["-g", "-O0"] + get_ufc_cxx_flags())
+        cmd = ['make', 'UFC_INCLUDE_DIR="%s"' % UFC_INCLUDE_DIR, 'CXXFLAGS="%s"' % UFC_CXX_FLAGS]
+        self.info("Running command: " + " ".join(cmd))
+        cmd = " ".join(cmd) # Why needed?
+
+        # Execute
         try:
-            subprocess.check_output("make", shell=True)
+            out = subprocess.check_output(cmd, shell=True)
+            self.info(out)
             self.info("Building ok.")
         except subprocess.CalledProcessError, e:
             self.info("Building '{0}' FAILED (code {1}, headers: {2})".format(self._binary_filename,
                                                                               e.returncode, self._test_header_names))
             self.info("Build output:")
             self.info(e.output)
+            pytest.fail()
 
 
     def run(self):
@@ -198,6 +210,7 @@ class GTestContext:
             with open(self._gtest_log, "w") as f:
                 f.write(e.output)
             self.info(e.output)
+            pytest.fail()
 
     def finalize(self):
         # Write generated test code to files, build and run, all from

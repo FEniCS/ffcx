@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Tests of algorithm for factorization of integrand w.r.t. Argument terms.
 """

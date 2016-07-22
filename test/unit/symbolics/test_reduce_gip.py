@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright (C) 2010 Kristian B. Oelgaard
 #
 # This file is part of FFC.

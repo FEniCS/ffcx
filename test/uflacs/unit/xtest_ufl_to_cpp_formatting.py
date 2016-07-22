@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Tests of ufl to C++ expression formatting rules.
 

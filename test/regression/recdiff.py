@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 class DiffMarkerType:
@@ -15,6 +14,7 @@ DiffMissing = DiffMarkerType("<value missing>")
 DiffEqual = DiffMarkerType("<equal>")
 
 _default_recdiff_tolerance = 1e-6
+
 
 def recdiff_dict(data1, data2, tolerance=_default_recdiff_tolerance):
     keys1 = set(data1.keys())
@@ -58,8 +58,10 @@ def recdiff(data1, data2, tolerance=_default_recdiff_tolerance):
     else:
         return DiffEqual if data1 == data2 else (data1, data2)
 
+
 def _print(line):
     print(line)
+
 
 def print_recdiff(diff, indent=0, printer=_print, prekey=""):
 
@@ -172,6 +174,7 @@ def main(a, b, tolerance=_default_recdiff_tolerance):
     b = eval(open(b).read())
     d = recdiff(a, b, float(tolerance))
     print_recdiff(d)
+
 
 if __name__ == "__main__":
     import sys

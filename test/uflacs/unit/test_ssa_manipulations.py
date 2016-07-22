@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Tests of manipulations of the ssa form of expressions.
 """

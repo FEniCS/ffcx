@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Tests of CNode formatting.
 """

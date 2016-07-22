@@ -16,7 +16,7 @@ TESTSUPPORTDIR=cppsupport
 TESTMAINSRC=${TESTSRCDIR}/main.cpp
 
 # Configure ufc
-UFC_INCLUDE_DIR=../../../ufc
+UFC_INCLUDE_DIR?=../../../ufc
 #UFCINCDIR=`pkg-config ufc-1 --cflags`
 UFCINCDIR=-I${UFC_INCLUDE_DIR}
 
@@ -26,7 +26,7 @@ GTESTINCDIR=-I${GTEST_DIR}/include
 GTESTLIBS=-L${GTEST_DIR}/lib -lgtest -lpthread
 
 # Flags set for easy debugging # TODO: Allow overriding
-CXXFLAGS=-g -O0 -std=c++11
+CXXFLAGS?=-g -O0 -std=c++11
 
 .PHONY: clean
 
