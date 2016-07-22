@@ -94,7 +94,7 @@ def run_command(command):
         _command_timings.append((command, t2-t1))
         if logfile is None:
             logfile = open("../../error.log", "w")
-        logfile.write(output + "\n")
+        logfile.write(e.output + "\n")
         print(e.output)
         return False
 
