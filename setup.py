@@ -288,9 +288,6 @@ def run_install():
     UFC_SIGNATURE = get_ufc_signature()
     GIT_COMMIT_HASH = get_git_commit_hash()
 
-    # Check if we're building inside a 'Read the Docs' container
-    on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-
     # Create batch files for Windows if necessary
     scripts = SCRIPTS
     if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
