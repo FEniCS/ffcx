@@ -19,6 +19,17 @@ the subdirectory ``doc/manual/`` of this source tree, or try out the
 demos available in the subdirectory ``src/demo/`` of this source tree.
 
 
+Documentation
+-------------
+
+The FFC documentation can be viewed at
+http://fenics-ffc.readthedocs.org/.
+
+.. image:: https://readthedocs.org/projects/fenics-ffc/badge/?version=latest
+   :target: http://fenics.readthedocs.io/projects/ffc/en/latest/?badge=latest
+   :alt: Documentation Status
+
+
 Copyright
 ---------
 
@@ -35,14 +46,12 @@ Dependencies
 ------------
 
 #. Python, version 2.7 or later
-
 #. The latest version of FIAT, Instant and UFL
 
    You need to have FIAT, Instant and UFL installed. They are
    available from the web page: https://bitbucket.org/fenics-project/.
 
 #. The Python NumPy module
-
 #. The Python Six module
 
 
