@@ -21,8 +21,13 @@ FFC requires Python version 2.7 or later and depends on the
 following Python packages:
 
 * NumPy
-* SymPy
 * six
+
+FFC also depends on the following FEniCS Python packages:
+
+* FIAT
+* UFL
+* dijitso
 
 These packages will be automatically installed as part of the
 installation of FFC, if not already present on your system.
