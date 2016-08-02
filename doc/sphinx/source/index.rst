@@ -23,6 +23,7 @@ Documentation
 
 .. toctree::
    :titlesonly:
+   :maxdepth: 1
 
    installation
    manual
