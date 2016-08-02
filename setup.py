@@ -1,11 +1,18 @@
-import os, sys, platform, re, subprocess, string, tempfile, shutil, hashlib
+# -*- coding: utf-8 -*-
+from __future__ import print_function
 
-try:
-    from setuptools import setup
-    from setuptools.command.install import install
-except ImportError:
-    from distutils.core import setup
-    from distutils.command.install import install
+import os
+import sys
+import platform
+import re
+import subprocess
+import string
+import tempfile
+import shutil
+import hashlib
+
+from setuptools import setup
+from setuptools.command.install import install
 
 from distutils import sysconfig
 from distutils.ccompiler import new_compiler
@@ -111,9 +118,8 @@ def create_windows_batch_files(scripts):
     batch_files = []
     for script in scripts:
         batch_file = script + ".bat"
-        f = open(batch_file, "w")
-        f.write(sys.executable + " \"%%~dp0\%s\" %%*\n" % os.path.split(script)[1])
-        f.close()
+        with open(batch_file, "w") as f:
+            f.write(sys.executable + " \"%%~dp0\%s\" %%*\n" % os.path.split(script)[1])
         batch_files.append(batch_file)
     scripts.extend(batch_files)
     return scripts
@@ -125,11 +131,8 @@ def write_config_file(infile, outfile, variables={}):
         delimiter = "@"
     s = AtTemplate(open(infile, "r").read())
     s = s.substitute(**variables)
-    a = open(outfile, "w")
-    try:
+    with open(outfile, "w") as a:
         a.write(s)
-    finally:
-        a.close()
 
 
 def find_library(package_name, lib_names):
@@ -207,7 +210,6 @@ def generate_ufc_config_py_file(INSTALL_PREFIX, CXX_FLAGS, UFC_SIGNATURE):
                                      UFC_SIGNATURE=UFC_SIGNATURE))
 
 
-
 def generate_ufc_config_files(INSTALL_PREFIX, CXX_FLAGS, UFC_SIGNATURE):
     "Generate and install UFC configuration files"
 
@@ -259,9 +261,8 @@ def has_cxx_flag(cc, flag):
     try:
         try:
             fname = os.path.join(tmpdir, "flagname.cpp")
-            f = open(fname, "w")
-            f.write("int main() { return 0;}")
-            f.close()
+            with open(fname, "w") as f:
+                f.write("int main() { return 0; }")
             # Redirect stderr to /dev/null to hide any error messages
             # from the compiler.
             devnull = open(os.devnull, 'w')
@@ -332,49 +333,48 @@ def run_install():
     data_files = data_files + data_files_ufc
 
     # Call distutils to perform installation
-    setup(name             = "FFC",
-          description      = "The FEniCS Form Compiler",
-          version          = VERSION,
-          author           = AUTHORS,
-          classifiers      = [_f for _f in CLASSIFIERS.split('\n') if _f],
-          license          = "LGPL version 3 or later",
-          author_email     = "fenics-dev@googlegroups.com",
-          maintainer_email = "fenics-dev@googlegroups.com",
-          url              = URL,
-          download_url     = tarball(),
-          platforms        = ["Windows", "Linux", "Solaris", "Mac OS-X",
-                              "Unix"],
-          packages         = ["ffc",
-                              "ffc.quadrature",
-                              "ffc.tensor",
-                              "ffc.uflacsrepr",
-                              "ffc.errorcontrol",
-                              "ffc.backends",
-                              "ffc.backends.dolfin",
-                              "ffc.backends.ufc",
-                              "uflacs",
-                              "uflacs.analysis",
-                              "uflacs.backends",
-                              "uflacs.backends.ffc",
-                              "uflacs.backends.ufc",
-                              "uflacs.datastructures",
-                              "uflacs.elementtables",
-                              "uflacs.generation",
-                              "uflacs.language",
-                              "uflacs.representation",
-                              "ufc"],
-          package_dir      = {"ffc": "ffc",
-                              "uflacs": "uflacs",
-                              "ufc": "ufc"},
-          scripts          = scripts,
-          cmdclass         = {'install': my_install},
-          data_files       = data_files,
-          install_requires = ["numpy",
-                              "six",
-                              "fiat==%s" % VERSION,
-                              "ufl==%s" % VERSION,
-                              "dijitso==%s" % VERSION],
-          zip_safe = False)
+    setup(name="FFC",
+          description="The FEniCS Form Compiler",
+          version=VERSION,
+          author=AUTHORS,
+          classifiers=[_f for _f in CLASSIFIERS.split('\n') if _f],
+          license="LGPL version 3 or later",
+          author_email="fenics-dev@googlegroups.com",
+          maintainer_email="fenics-dev@googlegroups.com",
+          url=URL,
+          download_url=tarball(),
+          platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
+          packages=["ffc",
+                    "ffc.quadrature",
+                    "ffc.tensor",
+                    "ffc.uflacsrepr",
+                    "ffc.errorcontrol",
+                    "ffc.backends",
+                    "ffc.backends.dolfin",
+                    "ffc.backends.ufc",
+                    "uflacs",
+                    "uflacs.analysis",
+                    "uflacs.backends",
+                    "uflacs.backends.ffc",
+                    "uflacs.backends.ufc",
+                    "uflacs.datastructures",
+                    "uflacs.elementtables",
+                    "uflacs.generation",
+                    "uflacs.language",
+                    "uflacs.representation",
+                    "ufc"],
+          package_dir={"ffc": "ffc",
+                       "uflacs": "uflacs",
+                       "ufc": "ufc"},
+          scripts=scripts,
+          cmdclass={'install': my_install},
+          data_files=data_files,
+          install_requires=["numpy",
+                            "six",
+                            "fiat==%s" % VERSION,
+                            "ufl==%s" % VERSION,
+                            "dijitso==%s" % VERSION],
+          zip_safe=False)
 
 if __name__ == "__main__":
     run_install()
