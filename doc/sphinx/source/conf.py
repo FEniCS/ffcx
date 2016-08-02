@@ -296,3 +296,30 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'https://docs.python.org/': None}
+
+
+
+def run_apidoc(_):
+    from sphinx.apidoc import main
+
+    # Get location of Sphinx files
+    sphinx_source_dir = os.path.abspath(os.path.dirname(__file__))
+    repo_dir = os.path.abspath(os.path.join(sphinx_source_dir, os.path.pardir,
+                                            os.path.pardir, os.path.pardir))
+    apidoc_dir = os.path.join(sphinx_source_dir, "api-doc")
+
+    # Include these modules
+    modules = ['ffc', 'uflacs']
+
+    for module in modules:
+        # Generate .rst files ready for autodoc
+        module_dir = os.path.join(repo_dir, module)
+        main(["-f",             # Overwrite existing files
+              "-d", "1",        # Maximum depth of submodules to show in the TOC
+              "-o", apidoc_dir, # Directory to place all output
+              module_dir        # Module directory
+             ]
+        )
+
+def setup(app):
+    app.connect('builder-inited', run_apidoc)
