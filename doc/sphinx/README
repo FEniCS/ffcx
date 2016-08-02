@@ -2,10 +2,11 @@
 Sphinx documentation
 ====================
 
-FFC is documented using Sphinx and reStructured text. The
-documnentation is hosted at http://fenics-ffc.readthedocs.org/. The
-online documentation is automatically updated upon pushes to the FFC
-master branch.
+FFC is documented using Sphinx and reStructured text.
+The documentation is hosted at http://fenics-ffc.readthedocs.org/.
+
+The online documentation is automatically updated upon pushes to the
+FFC master branch.
 
 
 Updating the API documentation
