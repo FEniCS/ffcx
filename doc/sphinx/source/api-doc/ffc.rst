@@ -111,14 +111,6 @@ ffc.formatting module
     :undoc-members:
     :show-inheritance:
 
-ffc.git_commit_hash module
---------------------------
-
-.. automodule:: ffc.git_commit_hash
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 ffc.interpolatevertexvalues module
 ----------------------------------
 
@@ -147,6 +139,14 @@ ffc.log module
 --------------
 
 .. automodule:: ffc.log
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+ffc.main module
+---------------
+
+.. automodule:: ffc.main
     :members:
     :undoc-members:
     :show-inheritance:
@@ -183,14 +183,6 @@ ffc.plot module
     :undoc-members:
     :show-inheritance:
 
-ffc.quadrature_schemes module
------------------------------
-
-.. automodule:: ffc.quadrature_schemes
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 ffc.quadratureelement module
 ----------------------------
 
@@ -219,14 +211,6 @@ ffc.restrictedelement module
 ----------------------------
 
 .. automodule:: ffc.restrictedelement
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-ffc.ufc_signature module
-------------------------
-
-.. automodule:: ffc.ufc_signature
     :members:
     :undoc-members:
     :show-inheritance:

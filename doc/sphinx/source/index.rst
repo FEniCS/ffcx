@@ -1,57 +1,36 @@
-.. title:: FEniCS Form Compiler
+.. title:: FFC
 
 
-FEniCS Form Compiler (FFC)
-==========================
+=============================
+FFC: The FEniCS Form Compiler
+=============================
 
-This is the documentation for the FEniCS Form Compiler (FFC) from the
-FEniCS Project (http://fenicsproject.org).  FFC is a compiler for
-finite element variational forms. From a high-level description of the
-form, it generates efficient low-level C++ code that can be used to
-assemble the corresponding discrete operator (tensor). In particular,
-a bilinear form may be assembled into a matrix and a linear form may
-be assembled into a vector.
+FFC is a compiler for finite element variational forms. From a
+high-level description of the form, it generates efficient low-level
+C++ code that can be used to assemble the corresponding discrete
+operator (tensor). In particular, a bilinear form may be assembled
+into a matrix and a linear form may be assembled into a vector.  FFC
+may be used either from the command line (by invoking the ``ffc``
+command) or as a Python module (``import ffc``).
 
+FFC is part of the FEniCS Project.
 
-Installation
-------------
-
-To install FFC::
-
-  TODO
-
-Help and support
-----------------
-
-Send help requests and questions to fenics-support@googlegroups.com,
-and send feature requests and questions to
-fenics-dev@googlegroups.com.
-
-
-Development and reporting bugs
-------------------------------
-
-The git source repository for FFC is located at
-https://bitbucket.org/fenics-project/ffc.
-
-Bugs can be registered at
-https://bitbucket.org/fenics-project/ffc/issues.  For general FFC
-development questions and to make feature requests, use
-fenics-dev@googlegroups.com.
-
+For more information, visit http://www.fenicsproject.org
 
 
 Documentation
--------------
+=============
 
 .. toctree::
    :titlesonly:
 
-   api-doc/ffc
-   api-doc/uflacs
+   installation
+   manual
+   API reference (FFC) <api-doc/ffc>
+   API reference (FFC) <api-doc/uflacs>
    releases
 
+[FIXME: These links don't belong here, should go under API reference somehow.]
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`

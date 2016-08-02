@@ -4,14 +4,6 @@ ffc.backends.ufc package
 Submodules
 ----------
 
-ffc.backends.ufc.build module
------------------------------
-
-.. automodule:: ffc.backends.ufc.build
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 ffc.backends.ufc.coordinate_mapping module
 ------------------------------------------
 
