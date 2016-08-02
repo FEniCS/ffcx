@@ -943,6 +943,7 @@ class VariableDecl(CStatement):
             code += " = " + self.value.ce_format()
         return code + ";"
 
+
 def build_1d_initializer_list(values, formatter):
     '''Return a list containing a single line formatted like "{ 0.0, 1.0, 2.0 }"'''
     tokens = ["{ "]
@@ -956,12 +957,14 @@ def build_1d_initializer_list(values, formatter):
     tokens += " }"
     return "".join(tokens)
 
+
 def build_initializer_lists(values, sizes, level, formatter):
     """Return a list of lines with initializer lists for a multidimensional array.
 
-    Example output:
-    { { 0.0, 0.1 },
-      { 1.0, 1.1 } }
+    Example output::
+
+        { { 0.0, 0.1 },
+          { 1.0, 1.1 } }
     """
     values = numpy.asarray(values)
     assert numpy.product(values.shape) == numpy.product(sizes)

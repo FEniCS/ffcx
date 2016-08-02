@@ -1,3 +1,6 @@
+"""Work in progress translation of FFC evaluatebasis code to uflacs CNodes format."""
+
+
 """
 TODO: Add these to ufc::finite_element:
 
