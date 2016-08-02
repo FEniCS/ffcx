@@ -125,6 +125,7 @@ class ufc_finite_element(ufc_generator):
         return "FIXME"
 
     def evaluate_dofs(self, L, ir):
+        """Generate code for evaluate_dofs."""
         # FIXME: port this, then translate into reference version
         """
         - evaluate_dof needs to be split into invert_mapping + evaluate_dof or similar?

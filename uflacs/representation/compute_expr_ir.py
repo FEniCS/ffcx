@@ -64,18 +64,19 @@ def build_scalar_graph(expressions):
 def compute_expr_ir(expressions, parameters):
     """FIXME: Refactoring in progress!
 
-    TODO: assuming more symbolic preprocessing
-    - Make caller apply pullback mappings for vector element functions
-
     TODO:
-    Work for later:
-    - Apply some suitable renumbering of vertices and corresponding arrays prior to returning
-    - Allocate separate registers for each partition
-      (but e.g. argument[iq][i0] may need to be accessible in other loops)
-    - Improve register allocation algorithm
+    Work for later::
 
-    - Take a list of expressions as input to compile several expressions in one joined graph
-      (e.g. to compile a,L,M together for nonlinear problems)
+        - Apply some suitable renumbering of vertices and corresponding arrays prior to returning
+
+        - Allocate separate registers for each partition
+          (but e.g. argument[iq][i0] may need to be accessible in other loops)
+
+        - Improve register allocation algorithm
+
+        - Take a list of expressions as input to compile several expressions in one joined graph
+          (e.g. to compile a,L,M together for nonlinear problems)
+
     """
     # Wrap in list if we only get one expression
     if not isinstance(expressions, list):
