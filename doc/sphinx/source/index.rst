@@ -28,7 +28,7 @@ Documentation
    installation
    manual
    API reference (FFC) <api-doc/ffc>
-   API reference (FFC) <api-doc/uflacs>
+   API reference (UFLACS) <api-doc/uflacs>
    releases
 
 [FIXME: These links don't belong here, should go under API reference somehow.]
