@@ -16,8 +16,8 @@ Summary of changes
 - Make ufc interface depend on C++11 features requiring gcc version >= 4.8
 
 
-Detailed ChangeLog
-==================
+Detailed changes
+================
 
 .. note:: At the time of release, make a verbatim copy of the
           ChangeLog here (and remove this note).
