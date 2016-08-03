@@ -248,8 +248,7 @@ class MonomialArgument:
             d0 = ""
             d1 = ""
         else:
-            d0 = "(" + " ".join("d/dX_%s" % str(d) for d in self.derivatives) +
-            " "
+            d0 = "(" + " ".join("d/dX_%s" % str(d) for d in self.derivatives) + " "
             d1 = ")"
         if self.restriction is None:
             r = ""
