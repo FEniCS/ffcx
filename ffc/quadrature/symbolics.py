@@ -23,12 +23,6 @@ from ufl.utils.sorting import sorted_by_key
 from ffc.log import error
 from ffc.cpp import format
 
-from .floatvalue import FloatValue
-from .symbol import Symbol
-from .product import Product
-from .sumobj import Sum
-from .fraction import Fraction
-
 # TODO: Use proper errors, not just RuntimeError.
 # TODO: Change all if value == 0.0 to something more safe.
 
@@ -243,3 +237,10 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
 
     # Where did the values go?
     error("Values disappeared.")
+
+
+from .floatvalue import FloatValue
+from .symbol import Symbol
+from .product import Product
+from .sumobj import Sum
+from .fraction import Fraction
