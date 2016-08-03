@@ -33,6 +33,7 @@ from ffc.representation import compute_ir
 from ffc.optimization import optimize_ir
 from ffc.codegeneration import generate_code
 
+
 def compute_tensor_representation(form):
     """Compute tensor representation for given form. This function may
     be useful for those (Hi Matt!) that want to access the FFC tensor
@@ -41,7 +42,7 @@ def compute_tensor_representation(form):
     # Set parameters
     parameters = default_parameters()
     parameters["representation"] = "tensor"
-    #parameters["optimize"] = "optimize"
+    # parameters["optimize"] = "optimize"
 
     # The below steps basically duplicate the compiler process but
     # skip the code formatting step. Instead, we extract the relevant
@@ -75,13 +76,16 @@ def compute_tensor_representation(form):
     for i in ir_integrals:
         if i["integral_type"] == "cell":
             t = [A0.A0 for (A0, GK, dummy) in i["AK"]]
-            if len(t) == 1: t = t[0]
+            if len(t) == 1:
+                t = t[0]
         elif i["integral_type"] == "exterior_facet":
             t = [A0.A0 for j in i["AK"] for (A0, GK, dummy) in j]
-            if len(t) == 1: t = t[0]
+            if len(t) == 1:
+                t = t[0]
         elif i["integral_type"] == "interior_facet":
             t = [A0.A0 for j in i["AK"] for k in j for (A0, GK, dummy) in k]
-            if len(t) == 1: t = t[0]
+            if len(t) == 1:
+                t = t[0]
         else:
             raise RuntimeError("Unhandled domain type: %s" % str(i["integral_type"]))
         reference_tensors.append(t)

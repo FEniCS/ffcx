@@ -25,18 +25,19 @@
 from ffc.cpp import format, remove_unused
 
 # Extract code manipulation formats
-inner =     format["inner product"]
+inner = format["inner product"]
 component = format["component"]
-assign =    format["assign"]
-multiply =  format["multiply"]
+assign = format["assign"]
+multiply = format["multiply"]
 
 # Extract formats for the Jacobians
-J =       format["J"]
-Jinv =    format["inv(J)"]
+J = format["J"]
+Jinv = format["inv(J)"]
 invdetJ = format["inverse"](format["det(J)"](None))
 
-f_dof_values =    format["argument dof values"]
+f_dof_values = format["argument dof values"]
 f_vertex_values = format["argument vertex values"]
+
 
 def interpolate_vertex_values(ir):
     "Generate code for interpolate_vertex_values."
@@ -105,7 +106,8 @@ def _interpolate_vertex_values_element(data, gdim, tdim, total_value_size,
         # Create code for each vertex x_j
         for (j, values_at_vertex) in enumerate(vertex_values):
 
-            if value_size == 1: values_at_vertex = [values_at_vertex]
+            if value_size == 1:
+                values_at_vertex = [values_at_vertex]
 
             # Map basis functions using appropriate mapping
             components = change_of_variables(values_at_vertex, k)
@@ -117,7 +119,7 @@ def _interpolate_vertex_values_element(data, gdim, tdim, total_value_size,
             value = inner(dof_values, components)
 
             # Assign value to correct vertex
-            index = j*total_value_size + (k + value_offset)
+            index = j * total_value_size + (k + value_offset)
             code.append(assign(component(f_vertex_values, index), value))
 
     return "\n".join(code)
@@ -156,7 +158,7 @@ def _change_variables(mapping, gdim, tdim, space_dim):
       g(x) = K^T G(X)              i.e   g_i(x) = K^T_ij G_j(X) = K_ji G_j(X)
 
     'pullback as metric' mapping for f:
-    
+
       g_il(x) = K_{ji} G_{jk} K_{kl}
 
     """

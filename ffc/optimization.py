@@ -32,6 +32,7 @@ representation.
 from ffc.log import info, begin, end
 from ffc.representation import pick_representation
 
+
 def optimize_ir(ir, parameters):
     "Optimize intermediate form representation."
 
@@ -52,6 +53,7 @@ def optimize_ir(ir, parameters):
     end()
 
     return ir_elements, ir_dofmaps, ir_coordinate_mappings, oir_integrals, ir_forms
+
 
 def _optimize_integral_ir(ir, parameters):
     "Compute optimized intermediate represention of integral."

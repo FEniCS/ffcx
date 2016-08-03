@@ -55,34 +55,35 @@ from ufl.permutation import build_component_numbering
 __all__ = ["evaluate_dof_and_dofs", "affine_weights"]
 
 # Prefetch formats:
-comment =   format["comment"]
-declare =   format["declaration"]
-assign =    format["assign"]
+comment = format["comment"]
+declare = format["declaration"]
+assign = format["assign"]
 component = format["component"]
-iadd =      format["iadd"]
-inner =     format["inner product"]
-add =       format["addition"]
-multiply =  format["multiply"]
-J =         format["J"]
-Jinv =      format["inv(J)"]
-detJ =      format["det(J)"](None)
-ret =       format["return"]
-f_i =       format["argument dof num"]
-f_values =  format["argument values"]
-f_double =  format["float declaration"]
-f_vals =    format["dof vals"]
-f_result =  format["dof result"]
-f_y =       format["dof physical coordinates"]
-f_x =       format["coordinate_dofs"]
-f_int =     format["int declaration"]
-f_X =       format["dof X"]
-f_D =       format["dof D"]
-f_W =       format["dof W"]
-f_copy =    format["dof copy"]
-f_r, f_s =  format["free indices"][:2]
-f_loop =    format["generate loop"]
+iadd = format["iadd"]
+inner = format["inner product"]
+add = format["addition"]
+multiply = format["multiply"]
+J = format["J"]
+Jinv = format["inv(J)"]
+detJ = format["det(J)"](None)
+ret = format["return"]
+f_i = format["argument dof num"]
+f_values = format["argument values"]
+f_double = format["float declaration"]
+f_vals = format["dof vals"]
+f_result = format["dof result"]
+f_y = format["dof physical coordinates"]
+f_x = format["coordinate_dofs"]
+f_int = format["int declaration"]
+f_X = format["dof X"]
+f_D = format["dof D"]
+f_W = format["dof W"]
+f_copy = format["dof copy"]
+f_r, f_s = format["free indices"][:2]
+f_loop = format["generate loop"]
 
 map_onto_physical = format["map onto physical"]
+
 
 def evaluate_dof_and_dofs(ir):
     "Generate code for evaluate_dof and evaluate_dof."
@@ -101,6 +102,7 @@ def evaluate_dof_and_dofs(ir):
 
     return (dof_code, dofs_code)
 
+
 def _generate_common_code(ir):
 
     # Define necessary geometry information based on the ir
@@ -108,7 +110,7 @@ def _generate_common_code(ir):
 
     # Extract variables
     mappings = ir["mappings"]
-    offsets  = ir["physical_offsets"]
+    offsets = ir["physical_offsets"]
     gdim = ir["geometric_dimension"]
     tdim = ir["topological_dimension"]
 
@@ -117,6 +119,7 @@ def _generate_common_code(ir):
              for (i, dof) in enumerate(ir["dofs"])]
 
     return (reqs, cases)
+
 
 def _required_declarations(ir):
     """Generate code for declaring required variables and geometry
@@ -161,6 +164,7 @@ def _required_declarations(ir):
 
     return "\n".join(code)
 
+
 def _generate_body(i, dof, mapping, gdim, tdim, offset=0, result=f_result):
     "Generate code for a single dof."
 
@@ -185,7 +189,7 @@ def _generate_body(i, dof, mapping, gdim, tdim, offset=0, result=f_result):
     # Map point onto physical element: y = F_K(x)
     code = []
     for j in range(gdim):
-        y = inner(w, [component(f_x(), (k*gdim + j,)) for k in range(tdim + 1)])
+        y = inner(w, [component(f_x(), (k * gdim + j,)) for k in range(tdim + 1)])
         code.append(assign(component(f_y, j), y))
 
     # Evaluate function at physical point
@@ -204,7 +208,7 @@ def _generate_body(i, dof, mapping, gdim, tdim, offset=0, result=f_result):
 
     # Take inner product between components and weights
     value = add([multiply([w, F[index_map[k]]]) for (w, k) in dof[x]])
-    
+
     # Assign value to result variable
     code.append(assign(result, value))
     return ("\n".join(code), result)
@@ -212,7 +216,6 @@ def _generate_body(i, dof, mapping, gdim, tdim, offset=0, result=f_result):
 
 def _generate_multiple_points_body(i, dof, mapping, gdim, tdim,
                                    offset=0, result=f_result):
-
     "Generate c++ for-loop for multiple points (integral bodies)"
 
     code = [assign(f_result, 0.0)]
@@ -245,7 +248,7 @@ def _generate_multiple_points_body(i, dof, mapping, gdim, tdim,
     code += [comment("Loop over points")]
 
     # Map the points from the reference onto the physical element
-    #assert(gdim == tdim), \
+    # assert(gdim == tdim), \
     #    "Integral moments not supported for manifolds (yet). Please fix"
     lines_r = [map_onto_physical[tdim][gdim] % {"i": i, "j": f_r}]
 
@@ -277,6 +280,7 @@ def _generate_multiple_points_body(i, dof, mapping, gdim, tdim,
 
     code = "\n".join(code)
     return code
+
 
 def _change_variables(mapping, gdim, tdim, offset):
     """Generate code for mapping function values according to
@@ -351,11 +355,12 @@ def _change_variables(mapping, gdim, tdim, offset):
                             for j in range(gdim)]) for k in range(gdim)],
                     [J(k, l, gdim, tdim) for k in range(gdim)])]
         return values
-    
+
     else:
         raise Exception("The mapping (%s) is not allowed" % mapping)
 
     return code
+
 
 def affine_weights(dim):
     "Compute coefficents for mapping from reference to physical element"

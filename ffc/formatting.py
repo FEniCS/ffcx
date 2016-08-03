@@ -37,6 +37,7 @@ from ffc.cpp import format, make_classname
 from ffc.backends.ufc import templates, visibility_snippet, factory_decl, factory_impl
 from ffc.parameters import compilation_relevant_parameters
 
+
 def format_code(code, wrapper_code, prefix, parameters, jit=False):
     "Format given code in UFC format. Returns two strings with header and source file contents."
 
@@ -76,7 +77,7 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
         code_c += _format_c("dofmap", code_dofmap, parameters, jit)
 
     # Generate code for coordinate_mappings
-    code_coordinate_mappings = [] # FIXME: This disables output of generated coordinate_mapping class, until implemented properly
+    code_coordinate_mappings = []  # FIXME: This disables output of generated coordinate_mapping class, until implemented properly
     for code_coordinate_mapping in code_coordinate_mappings:
         code_h += _format_h("coordinate_mapping", code_coordinate_mapping, parameters)
         code_c += _format_c("coordinate_mapping", code_coordinate_mapping, parameters)
@@ -97,23 +98,23 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
         code_h += factory_decl % {
             "basename": "ufc::%s" % kind,
             "publicname": pub,
-            }
+        }
         code_c += factory_impl % {
             "basename": "ufc::%s" % kind,
             "publicname": pub,
             "privatename": code_elements[-1]["classname"]
-            }
+        }
         kind = "dofmap"
         pub = make_classname(prefix, kind, "main")
         code_h += factory_decl % {
             "basename": "ufc::%s" % kind,
             "publicname": pub,
-            }
+        }
         code_c += factory_impl % {
             "basename": "ufc::%s" % kind,
             "publicname": pub,
             "privatename": code_dofmaps[-1]["classname"]
-            }
+        }
 
     # Add wrappers
     if wrapper_code:
@@ -131,11 +132,13 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
 
     return code_h, code_c
 
+
 def write_code(code_h, code_c, prefix, parameters):
     # Write file(s)
     _write_file(code_h, prefix, ".h", parameters)
     if code_c:
         _write_file(code_c, prefix, ".cpp", parameters)
+
 
 def _format_h(class_type, code, parameters, jit=False):
     "Format header code for given class type."
@@ -146,6 +149,7 @@ def _format_h(class_type, code, parameters, jit=False):
     else:
         return templates[class_type + "_combined"] % code + "\n"
 
+
 def _format_c(class_type, code, parameters, jit=False):
     "Format implementation code for given class type."
     if jit:
@@ -155,12 +159,14 @@ def _format_c(class_type, code, parameters, jit=False):
     else:
         return ""
 
+
 def _write_file(output, prefix, postfix, parameters):
     "Write generated code to file."
     filename = os.path.join(parameters["output_dir"], prefix + postfix)
     with open(filename, "w") as hfile:
         hfile.write(output)
     info("Output written to " + filename + ".")
+
 
 def _generate_comment(parameters):
     "Generate code for comment on top of file."
@@ -186,13 +192,14 @@ def _generate_comment(parameters):
 
     return comment
 
+
 def _generate_additional_includes(code):
     s = set()
     s.add("#include <ufc.h>")
 
     for code_foo in code:
         # FIXME: Avoid adding these includes if we don't need them
-        #s.add("#include <cmath>")
+        # s.add("#include <cmath>")
         s.add("#include <stdexcept>")
 
         for c in code_foo:
