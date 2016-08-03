@@ -331,7 +331,7 @@ public:
 };
 """
 
-finite_element_implementation= """
+finite_element_implementation = """
 %(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::finite_element()%(initializer_list)s
 {
 %(constructor)s

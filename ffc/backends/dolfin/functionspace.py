@@ -28,7 +28,7 @@ __all__ = ["apply_function_space_template",
            "extract_coefficient_spaces",
            "generate_typedefs"]
 
-#-------------------------------------------------------------------------------
+
 def extract_coefficient_spaces(forms):
     """Extract a list of tuples
 
@@ -52,10 +52,10 @@ def extract_coefficient_spaces(forms):
 
     # Return coefficient spaces sorted alphabetically by coefficient
     # name
-    names = list(spaces.keys())
-    names.sort()
+    names = sorted(spaces.keys())
     return [spaces[name] for name in names]
-#-------------------------------------------------------------------------------
+
+
 def generate_typedefs(form, classname, error_control):
     """Generate typedefs for test, trial and coefficient spaces
     relative to a function space."""
@@ -65,7 +65,7 @@ def generate_typedefs(form, classname, error_control):
     # Generate typedef data for test/trial spaces
     pairs += [("%s_FunctionSpace_%d" % (classname, i),
               snippets["functionspace"][i]) for i in range(form.rank)]
-    if not error_control: # FIXME: Issue #91
+    if not error_control:  # FIXME: Issue #91
         pairs += [("%s_MultiMeshFunctionSpace_%d" % (classname, i),
                    snippets["multimeshfunctionspace"][i]) for i in range(form.rank)]
 
@@ -77,7 +77,8 @@ def generate_typedefs(form, classname, error_control):
     # Combine data to typedef code
     code = "\n".join("  typedef %s %s;" % (to, fro) for (to, fro) in pairs)
     return code
-#-------------------------------------------------------------------------------
+
+
 function_space_template = """\
 class %(classname)s: public dolfin::FunctionSpace
 {
@@ -103,7 +104,8 @@ public:
 
 };
 """
-#-------------------------------------------------------------------------------
+
+
 multimesh_function_space_template = """\
 class %(classname)s: public dolfin::MultiMeshFunctionSpace
 {
@@ -125,17 +127,19 @@ public:
 
 };
 """
-#-------------------------------------------------------------------------------
+
 
 def apply_function_space_template(name, element_name, dofmap_name):
     args = {"classname": name,
             "ufc_finite_element_classname": element_name,
-            "ufc_dofmap_classname": dofmap_name }
+            "ufc_dofmap_classname": dofmap_name}
     return function_space_template % args
 
-def apply_multimesh_function_space_template(name, single_name, element_name, dofmap_name):
+
+def apply_multimesh_function_space_template(name, single_name, element_name,
+                                            dofmap_name):
     args = {"classname": name,
             "single_name": single_name,
             "ufc_finite_element_classname": element_name,
-            "ufc_dofmap_classname": dofmap_name }
+            "ufc_dofmap_classname": dofmap_name}
     return multimesh_function_space_template % args

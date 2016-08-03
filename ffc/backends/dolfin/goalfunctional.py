@@ -19,7 +19,7 @@
 
 __all__ = ["generate_update_ec"]
 
-#-------------------------------------------------------------------------------
+
 attach_coefficient_template = """
     // Attach coefficients from %(from)s to %(to)s
     for (std::size_t i = 0; i < %(from)s.num_coefficients(); i++)
@@ -40,14 +40,16 @@ attach_coefficient_template = """
       %(to)s->set_coefficient(name, %(from)s.coefficient(i));
     }
     """
-#-------------------------------------------------------------------------------
+
+
 attach_domains_template = """
     // Attach subdomains from %(from)s to %(to)s
     %(to)s->dx = %(from)s.cell_domains();
     %(to)s->ds = %(from)s.exterior_facet_domains();
     %(to)s->dS = %(from)s.interior_facet_domains();
 """
-#-------------------------------------------------------------------------------
+
+
 update_ec_template = """
   /// Initialize all error control forms, attach coefficients and
   /// (re-)set error control
@@ -137,7 +139,8 @@ update_ec_template = """
                                        %(linear)s));
   }
 """
-#-------------------------------------------------------------------------------
+
+
 def _attach(tos, froms):
 
     if not isinstance(froms, tuple):
@@ -150,34 +153,35 @@ def _attach(tos, froms):
     domains = attach_domains_template % {"to": tos[-1], "from": froms[-1]}
     return coeffs + domains
 
-#-------------------------------------------------------------------------------
+
 def generate_maps(linear):
     """
     NB: This depends on the ordering of the forms
     """
-    maps = {"a_star":           "Form_%d" % 0,
-            "L_star":           "Form_%d" % 1,
-            "residual":         "Form_%d" % 2,
-            "a_R_T":            "Form_%d" % 3,
-            "L_R_T":            "Form_%d" % 4,
-            "a_R_dT":           "Form_%d" % 5,
-            "L_R_dT":           "Form_%d" % 6,
-            "eta_T":            "Form_%d" % 7,
-            "V_Ez_h":           "CoefficientSpace_%s" % "__improved_dual",
-            "V_R_T":            "Form_%d::TestSpace" % 4,
-            "V_b_T":            "CoefficientSpace_%s" % "__cell_bubble",
-            "V_R_dT":           "Form_%d::TestSpace" % 6,
-            "V_b_e":            "CoefficientSpace_%s" % "__cell_cone",
-            "V_eta_T":          "Form_%d::TestSpace" % 7,
-            "attach_a_star":    _attach("a_star", "a"),
-            "attach_L_star":    _attach("L_star", "(*this)"),
-            "attach_residual":  _attach(("residual",)*2, ("a", "L")),
-            "attach_L_R_T":     _attach(("L_R_T",)*2, ("a", "L")),
-            "attach_L_R_dT":    _attach(("L_R_dT",)*2, ("a", "L")),
-            "linear":           "true" if linear else "false"
+    maps = {"a_star": "Form_%d" % 0,
+            "L_star": "Form_%d" % 1,
+            "residual": "Form_%d" % 2,
+            "a_R_T": "Form_%d" % 3,
+            "L_R_T": "Form_%d" % 4,
+            "a_R_dT": "Form_%d" % 5,
+            "L_R_dT": "Form_%d" % 6,
+            "eta_T": "Form_%d" % 7,
+            "V_Ez_h": "CoefficientSpace_%s" % "__improved_dual",
+            "V_R_T": "Form_%d::TestSpace" % 4,
+            "V_b_T": "CoefficientSpace_%s" % "__cell_bubble",
+            "V_R_dT": "Form_%d::TestSpace" % 6,
+            "V_b_e": "CoefficientSpace_%s" % "__cell_cone",
+            "V_eta_T": "Form_%d::TestSpace" % 7,
+            "attach_a_star": _attach("a_star", "a"),
+            "attach_L_star": _attach("L_star", "(*this)"),
+            "attach_residual": _attach(("residual",) * 2, ("a", "L")),
+            "attach_L_R_T": _attach(("L_R_T",) * 2, ("a", "L")),
+            "attach_L_R_dT": _attach(("L_R_dT",) * 2, ("a", "L")),
+            "linear": "true" if linear else "false"
             }
     return maps
-#-------------------------------------------------------------------------------
+
+
 def generate_update_ec(form):
 
     linear = "__discrete_primal_solution" in form.coefficient_names

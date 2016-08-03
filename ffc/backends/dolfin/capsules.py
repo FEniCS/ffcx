@@ -17,8 +17,11 @@
 #
 # Modified by Marie E. Rognes
 
+
 class UFCFormNames:
+
     "Encapsulation of the names related to a generated UFC form."
+
     def __init__(self, name, coefficient_names, ufc_form_classname,
                  ufc_finite_element_classnames, ufc_dofmap_classnames,
                  superclassname='Form'):
@@ -42,14 +45,14 @@ class UFCFormNames:
         assert len(coefficient_names) <= len(ufc_dofmap_classnames)
         assert len(ufc_finite_element_classnames) == len(ufc_dofmap_classnames)
 
-        self.num_coefficients              = len(coefficient_names)
-        self.rank                          = len(ufc_finite_element_classnames) - self.num_coefficients
-        self.name                          = name
-        self.coefficient_names             = coefficient_names
-        self.ufc_form_classname            = ufc_form_classname
+        self.num_coefficients = len(coefficient_names)
+        self.rank = len(ufc_finite_element_classnames) - self.num_coefficients
+        self.name = name
+        self.coefficient_names = coefficient_names
+        self.ufc_form_classname = ufc_form_classname
         self.ufc_finite_element_classnames = ufc_finite_element_classnames
-        self.ufc_dofmap_classnames        = ufc_dofmap_classnames
-        self.superclassname                = superclassname
+        self.ufc_dofmap_classnames = ufc_dofmap_classnames
+        self.superclassname = superclassname
 
     def __str__(self):
         s = "UFCFormNames instance:\n"
@@ -62,8 +65,11 @@ class UFCFormNames:
         s += "ufc_dofmap_classnames:    %s\n" % str(self.ufc_dofmap_classnames)
         return s
 
+
 class UFCElementNames:
+
     "Encapsulation of the names related to a generated UFC element."
+
     def __init__(self, name,
                  ufc_finite_element_classnames,
                  ufc_dofmap_classnames):
@@ -72,9 +78,9 @@ class UFCElementNames:
         """
         assert len(ufc_finite_element_classnames) == len(ufc_dofmap_classnames)
 
-        self.name                          = name
+        self.name = name
         self.ufc_finite_element_classnames = ufc_finite_element_classnames
-        self.ufc_dofmap_classnames        = ufc_dofmap_classnames
+        self.ufc_dofmap_classnames = ufc_dofmap_classnames
 
     def __str__(self):
         s = "UFCFiniteElementNames instance:\n"

@@ -29,7 +29,9 @@ from .monomialintegration import integrate
 from .monomialtransformation import MonomialIndex
 from .multiindex import create_multiindex
 
+
 class ReferenceTensor:
+
     """
     This class represents the reference tensor for a monomial term of
     a multilinear form.
@@ -53,14 +55,14 @@ class ReferenceTensor:
                             cell)
 
         # Extract indices
-        primary_indices   = monomial.extract_unique_indices(MonomialIndex.PRIMARY)
+        primary_indices = monomial.extract_unique_indices(MonomialIndex.PRIMARY)
         secondary_indices = monomial.extract_unique_indices(MonomialIndex.SECONDARY)
-        internal_indices  = monomial.extract_unique_indices(MonomialIndex.INTERNAL)
+        internal_indices = monomial.extract_unique_indices(MonomialIndex.INTERNAL)
 
         # Create multiindices
-        self.primary_multi_index   = create_multiindex(primary_indices)
+        self.primary_multi_index = create_multiindex(primary_indices)
         self.secondary_multi_index = create_multiindex(secondary_indices)
-        self.internal_multi_index  = create_multiindex(internal_indices)
+        self.internal_multi_index = create_multiindex(internal_indices)
 
         # Store monomial
         self.monomial = monomial
