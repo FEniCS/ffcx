@@ -23,8 +23,10 @@
 # FFC quadrature modules.
 from .symbolics import create_float
 
+
 class Expr(object):
     __slots__ = ("val", "t", "_prec", "_repr", "_hash")
+
     def __init__(self):
         """An Expr object contains:
 
@@ -62,7 +64,8 @@ class Expr(object):
         return True
 
     def __lt__(self, other):
-        """<, compare precedence and _repr if two objects have the same precedence."""
+        """<, compare precedence and _repr if two objects have the same
+precedence."""
         if not isinstance(other, Expr):
             return False
         if self._prec < other._prec:
@@ -81,7 +84,8 @@ class Expr(object):
             return self._repr > other._repr
         return False
 
-    # Public functions (for FloatValue, other classes should overload as needed)
+    # Public functions (for FloatValue, other classes should overload
+    # as needed)
     def expand(self):
         """Expand the expression.
         (FloatValue and Symbol are expanded by construction)."""
@@ -94,13 +98,15 @@ class Expr(object):
         return set()
 
     def get_var_occurrences(self):
-        """Determine the number of times all variables occurs in the expression.
-        Returns a dictionary of variables and the number of times they occur.
-        Works for FloatValue and Symbol."""
+        """Determine the number of times all variables occurs in the
+        expression.  Returns a dictionary of variables and the number
+        of times they occur.  Works for FloatValue and Symbol.
+
+        """
         # There is only one float value (if it is not -1 or 1).
         if self.val == 1.0 or self.val == -1.0:
             return {}
-        return {self:1}
+        return {self: 1}
 
     def ops(self):
         """Return number of operations to compute the expression.
@@ -110,24 +116,29 @@ class Expr(object):
         return 0
 
     def reduce_ops(self):
-        """Reduce number of operations to evaluate the expression.
-        There is nothing to be done for FloatValue and Symbol."""
+        """Reduce number of operations to evaluate the expression.  There is
+        nothing to be done for FloatValue and Symbol.
+
+        """
         # Nothing to be done.
         return self
 
     def reduce_var(self, var):
-        """Reduce the expression by another variable by using division.
-        This works for FloatValue, Symbol and Product."""
+        """Reduce the expression by another variable by using division.  This
+        works for FloatValue, Symbol and Product.
+
+        """
         return self/var
 
     def reduce_vartype(self, var_type):
-        """Reduce expression with given var_type. It returns a tuple
-        (found, remain), where 'found' is an expression that only has variables
-        of type == var_type. If no variables are found, found=(). The 'remain'
-        part contains the leftover after division by 'found' such that:
-        self = found*remain.
-        Works for FloatValue and Symbol."""
+        """Reduce expression with given var_type. It returns a tuple (found,
+        remain), where 'found' is an expression that only has
+        variables of type == var_type. If no variables are found,
+        found=(). The 'remain' part contains the leftover after
+        division by 'found' such that: self = found*remain.  Works for
+        FloatValue and Symbol.
+
+        """
         if self.t == var_type:
             return [(self, create_float(1))]
         return [((), self)]
-

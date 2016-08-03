@@ -26,27 +26,27 @@ from ufl import custom_integral_types
 # FFC modules
 from ffc.log import warning
 
+
 def parse_optimise_parameters(parameters, itg_data):
 
     # Initialize parameters
-    optimise_parameters = {"eliminate zeros":     False,
-                           "optimisation":        False,
-                           "ignore ones":         False,
-                           "remove zero terms":   False,
-                           "ignore zero tables":  False}
-
+    optimise_parameters = {"eliminate zeros": False,
+                           "optimisation": False,
+                           "ignore ones": False,
+                           "remove zero terms": False,
+                           "ignore zero tables": False}
 
     # Set optimized parameters
     if parameters["optimize"] and itg_data.integral_type in custom_integral_types:
         warning("Optimization not available for custom integrals, skipping optimization.")
     elif parameters["optimize"]:
-        optimise_parameters["ignore ones"]        = True
-        optimise_parameters["remove zero terms"]  = True
+        optimise_parameters["ignore ones"] = True
+        optimise_parameters["remove zero terms"] = True
         optimise_parameters["ignore zero tables"] = True
 
-        # Do not include this in below if/else clause since we want to be
-        # able to switch on this optimisation in addition to the other
-        # optimisations.
+        # Do not include this in below if/else clause since we want to
+        # be able to switch on this optimisation in addition to the
+        # other optimisations.
         if "eliminate_zeros" in parameters:
             optimise_parameters["eliminate zeros"] = True
 
@@ -59,10 +59,10 @@ def parse_optimise_parameters(parameters, itg_data):
         # The current default optimisation (for -O) is equal to
         # '-feliminate_zeros -fsimplify_expressions'.
         else:
-            # If '-O -feliminate_zeros' was given on the command line, do not
-            # simplify expressions
-            if not "eliminate_zeros" in parameters:
+            # If '-O -feliminate_zeros' was given on the command line,
+            # do not simplify expressions
+            if "eliminate_zeros" not in parameters:
                 optimise_parameters["eliminate zeros"] = True
-                optimise_parameters["optimisation"]    = "simplify_expressions"
+                optimise_parameters["optimisation"] = "simplify_expressions"
 
     return optimise_parameters

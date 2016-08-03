@@ -21,29 +21,22 @@
 # Modified by Anders Logg 2009, 2013
 # Modified by Lizao Li, 2015
 
-# Python modules.
-from numpy import shape
-
-from six import iteritems, iterkeys
+from six import iterkeys
 from six.moves import xrange as range
 from six import advance_iterator as next
-def firstkey(d):
-    return next(iterkeys(d))
 
 # UFL common.
-from ufl.utils.stacks import StackDict, Stack
 from ufl.utils.sorting import sorted_by_key
 from ufl import custom_integral_types
 
 # UFL Classes.
-from ufl.classes import FixedIndex
 from ufl.classes import IntValue
 from ufl.classes import FloatValue
 from ufl.classes import Coefficient
 from ufl.classes import Operator
 
 # FFC modules.
-from ffc.log import info, debug, error, ffc_assert
+from ffc.log import error, ffc_assert
 from ffc.cpp import format
 
 # Utility and optimisation functions for quadraturegenerator.
@@ -52,7 +45,13 @@ from ffc.quadrature.quadratureutils import create_permutations
 from ffc.quadrature.reduce_operations import operation_count
 from ffc.quadrature.symbolics import IP
 
+
+def firstkey(d):
+    return next(iterkeys(d))
+
+
 class QuadratureTransformer(QuadratureTransformerBase):
+
     "Transform UFL representation to quadrature code."
 
     def __init__(self, *args):
@@ -67,13 +66,13 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # AlgebraOperators (algebra.py).
     # -------------------------------------------------------------------------
     def sum(self, o, *operands):
-        #print("Visiting Sum: " + "\noperands: \n" + "\n".join(map(repr, operands)))
+        # print("Visiting Sum: " + "\noperands: \n" + "\n".join(map(repr, operands)))
 
         # Prefetch formats to speed up code generation.
-        f_group  = format["grouping"]
-        f_add    = format["add"]
-        f_mult   = format["multiply"]
-        f_float  = format["floating point"]
+        f_group = format["grouping"]
+        f_add = format["add"]
+        f_mult = format["multiply"]
+        f_float = format["floating point"]
         code = {}
 
         # Loop operands that has to be summed and sort according to map (j,k).
@@ -90,7 +89,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         for key, val in sorted_by_key(code):
 
             # Exclude all zero valued terms from sum
-            value = [v for v in val if not v is None]
+            value = [v for v in val if v is not None]
 
             if len(value) > 1:
                 # NOTE: Since we no longer call expand_indices, the following
@@ -130,7 +129,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         return code
 
     def product(self, o, *operands):
-        #print("Visiting Product with operands: \n" + "\n".join(map(repr,operands)))
+        # print("Visiting Product with operands: \n" + "\n".join(map(repr,operands)))
 
         # Prefetch formats to speed up code generation.
         f_mult = format["multiply"]
@@ -148,13 +147,13 @@ class QuadratureTransformer(QuadratureTransformerBase):
                 not_permute.append(op[()])
 
         # Create permutations.
-        #print("\npermute: " + repr(permute))
-        #print("\nnot_permute: " + repr(not_permute))
+        # print("\npermute: " + repr(permute))
+        # print("\nnot_permute: " + repr(not_permute))
         permutations = create_permutations(permute)
-        #print("\npermutations: " + repr(permutations))
+        # print("\npermutations: " + repr(permutations))
 
         # Create code.
-        code ={}
+        code = {}
         if permutations:
             for key, val in sorted(permutations.items()):
                 # Sort key in order to create a unique key.
@@ -209,20 +208,20 @@ class QuadratureTransformer(QuadratureTransformerBase):
         return code
 
     def division(self, o, *operands):
-        #print("Visiting Division with operands: \n" + "\n".join(map(repr,operands)))
+        # print("Visiting Division with operands: \n" + "\n".join(map(repr,operands)))
 
         # Prefetch formats to speed up code generation.
-        f_div      = format["div"]
+        f_div = format["div"]
         f_grouping = format["grouping"]
 
-        ffc_assert(len(operands) == 2, \
+        ffc_assert(len(operands) == 2,
                    "Expected exactly two operands (numerator and denominator): " + repr(operands))
 
         # Get the code from the operands.
         numerator_code, denominator_code = operands
 
         # TODO: Are these safety checks needed? Need to check for None?
-        ffc_assert(() in denominator_code and len(denominator_code) == 1, \
+        ffc_assert(() in denominator_code and len(denominator_code) == 1,
                    "Only support function type denominator: " + repr(denominator_code))
 
         code = {}
@@ -244,7 +243,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         return code
 
     def power(self, o):
-        #print("\n\nVisiting Power: " + repr(o))
+        # print("\n\nVisiting Power: " + repr(o))
 
         # Get base and exponent.
         base, expo = o.ufl_operands
@@ -270,25 +269,25 @@ class QuadratureTransformer(QuadratureTransformerBase):
             error("power does not support this exponent: " + repr(expo))
 
     def abs(self, o, *operands):
-        #print("\n\nVisiting Abs: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
+        # print("\n\nVisiting Abs: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
 
         # Prefetch formats to speed up code generation.
         f_abs = format["absolute value"]
 
         # TODO: Are these safety checks needed? Need to check for None?
-        ffc_assert(len(operands) == 1 and () in operands[0] and len(operands[0]) == 1, \
+        ffc_assert(len(operands) == 1 and () in operands[0] and len(operands[0]) == 1,
                    "Abs expects one operand of function type: " + repr(operands))
 
         # Take absolute value of operand.
-        return {():f_abs(operands[0][()])}
+        return {(): f_abs(operands[0][()])}
 
     def min_value(self, o, *operands):
         f_min = format["min value"]
-        return {():f_min(operands[0][()], operands[1][()])}
+        return {(): f_min(operands[0][()], operands[1][()])}
 
     def max_value(self, o, *operands):
         f_max = format["max value"]
-        return {():f_max(operands[0][()], operands[1][()])}
+        return {(): f_max(operands[0][()], operands[1][()])}
 
     # -------------------------------------------------------------------------
     # Condition, Conditional (conditional.py).
@@ -298,8 +297,8 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # Get condition expression and do safety checks.
         # Might be a bit too strict?
         cond, = operands
-        ffc_assert(len(cond) == 1 and firstkey(cond) == (),\
-            "Condition for NotCondition should only be one function: " + repr(cond))
+        ffc_assert(len(cond) == 1 and firstkey(cond) == (),
+                   "Condition for NotCondition should only be one function: " + repr(cond))
         return {(): format["not"](cond[()])}
 
     def binary_condition(self, o, *operands):
@@ -307,16 +306,16 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # Get LHS and RHS expressions and do safety checks.
         # Might be a bit too strict?
         lhs, rhs = operands
-        ffc_assert(len(lhs) == 1 and firstkey(lhs) == (),\
-            "LHS of Condition should only be one function: " + repr(lhs))
-        ffc_assert(len(rhs) == 1 and firstkey(rhs) == (),\
-            "RHS of Condition should only be one function: " + repr(rhs))
+        ffc_assert(len(lhs) == 1 and firstkey(lhs) == (),
+                   "LHS of Condition should only be one function: " + repr(lhs))
+        ffc_assert(len(rhs) == 1 and firstkey(rhs) == (),
+                   "RHS of Condition should only be one function: " + repr(rhs))
 
         # Map names from UFL to cpp.py.
-        name_map = {"==":"is equal", "!=":"not equal",\
-                    "<":"less than", ">":"greater than",\
-                    "<=":"less equal", ">=":"greater equal",\
-                    "&&":"and", "||": "or"}
+        name_map = {"==": "is equal", "!=": "not equal",
+                    "<": "less than", ">": "greater than",
+                    "<=": "less equal", ">=": "greater equal",
+                    "&&": "and", "||": "or"}
 
         # Get values and test for None
         l_val = lhs[()]
@@ -332,12 +331,12 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         # Get condition and return values; and do safety check.
         cond, true, false = operands
-        ffc_assert(len(cond) == 1 and firstkey(cond) == (),\
-            "Condtion should only be one function: " + repr(cond))
-        ffc_assert(len(true) == 1 and firstkey(true) == (),\
-            "True value of Condtional should only be one function: " + repr(true))
-        ffc_assert(len(false) == 1 and firstkey(false) == (),\
-            "False value of Condtional should only be one function: " + repr(false))
+        ffc_assert(len(cond) == 1 and firstkey(cond) == (),
+                   "Condtion should only be one function: " + repr(cond))
+        ffc_assert(len(true) == 1 and firstkey(true) == (),
+                   "True value of Condtional should only be one function: " + repr(true))
+        ffc_assert(len(false) == 1 and firstkey(false) == (),
+                   "False value of Condtional should only be one function: " + repr(false))
 
         # Get values and test for None
         t_val = true[()]
@@ -351,60 +350,60 @@ class QuadratureTransformer(QuadratureTransformerBase):
         expr = format["evaluate conditional"](cond[()], t_val, f_val)
         num = len(self.conditionals)
         name = format["conditional"](num)
-        if not expr in self.conditionals:
+        if expr not in self.conditionals:
             self.conditionals[expr] = (IP, operation_count(expr, format), num)
         else:
             num = self.conditionals[expr][2]
             name = format["conditional"](num)
-        return {():name}
+        return {(): name}
 
     # -------------------------------------------------------------------------
     # FacetNormal, CellVolume, Circumradius, FacetArea (geometry.py).
     # -------------------------------------------------------------------------
-    def cell_coordinate(self, o): # FIXME
+    def cell_coordinate(self, o):  # FIXME
         error("This object should be implemented by the child class.")
 
-    def facet_coordinate(self, o): # FIXME
+    def facet_coordinate(self, o):  # FIXME
         error("This object should be implemented by the child class.")
 
-    def cell_origin(self, o): # FIXME
+    def cell_origin(self, o):  # FIXME
         error("This object should be implemented by the child class.")
 
-    def facet_origin(self, o): # FIXME
+    def facet_origin(self, o):  # FIXME
         error("This object should be implemented by the child class.")
 
-    def cell_facet_origin(self, o): # FIXME
+    def cell_facet_origin(self, o):  # FIXME
         error("This object should be implemented by the child class.")
 
-    def jacobian(self, o): # FIXME
+    def jacobian(self, o):  # FIXME
         error("This object should be implemented by the child class.")
 
-    def jacobian_determinant(self, o): # FIXME
+    def jacobian_determinant(self, o):  # FIXME
         error("This object should be implemented by the child class.")
 
-    def jacobian_inverse(self, o): # FIXME
+    def jacobian_inverse(self, o):  # FIXME
         error("This object should be implemented by the child class.")
 
-    def facet_jacobian(self, o): # FIXME
+    def facet_jacobian(self, o):  # FIXME
         error("This object should be implemented by the child class.")
 
-    def facet_jacobian_determinant(self, o): # FIXME
+    def facet_jacobian_determinant(self, o):  # FIXME
         error("This object should be implemented by the child class.")
 
-    def facet_jacobian_inverse(self, o): # FIXME
+    def facet_jacobian_inverse(self, o):  # FIXME
         error("This object should be implemented by the child class.")
 
-    def cell_facet_jacobian(self, o): # FIXME
+    def cell_facet_jacobian(self, o):  # FIXME
         error("This object should be implemented by the child class.")
 
-    def cell_facet_jacobian_determinant(self, o): # FIXME
+    def cell_facet_jacobian_determinant(self, o):  # FIXME
         error("This object should be implemented by the child class.")
 
-    def cell_facet_jacobian_inverse(self, o): # FIXME
+    def cell_facet_jacobian_inverse(self, o):  # FIXME
         error("This object should be implemented by the child class.")
 
     def facet_normal(self, o):
-        #print("Visiting FacetNormal:")
+        # print("Visiting FacetNormal:")
 
         # Get the component
         components = self.component()
@@ -414,15 +413,15 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         # Handle 1D as a special case.
         # FIXME: KBO: This has to change for mD elements in R^n : m < n
-        if self.gdim == 1: # FIXME: MSA: UFL uses shape (1,) now, can we remove the special case here then?
+        if self.gdim == 1:  # FIXME: MSA: UFL uses shape (1,) now, can we remove the special case here then?
             normal_component = format["normal component"](self.restriction, "")
         else:
             normal_component = format["normal component"](self.restriction, components[0])
         self.trans_set.add(normal_component)
 
-        return {():normal_component}
+        return {(): normal_component}
 
-    def cell_normal(self, o): # FIXME
+    def cell_normal(self, o):  # FIXME
         error("This object should be implemented by the child class.")
 
     def cell_volume(self, o):
@@ -430,14 +429,14 @@ class QuadratureTransformer(QuadratureTransformerBase):
         volume = format["cell volume"](self.restriction)
         self.trans_set.add(volume)
 
-        return {():volume}
+        return {(): volume}
 
     def circumradius(self, o):
         # FIXME: KBO: This has to change for higher order elements
         circumradius = format["circumradius"](self.restriction)
         self.trans_set.add(circumradius)
 
-        return {():circumradius}
+        return {(): circumradius}
 
     def facet_area(self, o):
         # FIXME: KBO: This has to change for higher order elements
@@ -448,7 +447,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         area = format["facet area"]
         self.trans_set.add(area)
 
-        return {():area}
+        return {(): area}
 
     def min_facet_edge_length(self, o):
         # FIXME: this has no meaning for cell integrals. (Need check in FFC or UFL).
@@ -460,7 +459,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         edgelen = format["min facet edge length"](self.restriction)
         self.trans_set.add(edgelen)
 
-        return {():edgelen}
+        return {(): edgelen}
 
     def max_facet_edge_length(self, o):
         # FIXME: this has no meaning for cell integrals. (Need check in FFC or UFL).
@@ -472,12 +471,12 @@ class QuadratureTransformer(QuadratureTransformerBase):
         edgelen = format["max facet edge length"](self.restriction)
         self.trans_set.add(edgelen)
 
-        return {():edgelen}
+        return {(): edgelen}
 
-    def cell_orientation(self, o): # FIXME
+    def cell_orientation(self, o):  # FIXME
         error("This object should be implemented by the child class.")
 
-    def quadrature_weight(self, o): # FIXME
+    def quadrature_weight(self, o):  # FIXME
         error("This object should be implemented by the child class.")
 
     # -------------------------------------------------------------------------
@@ -488,12 +487,12 @@ class QuadratureTransformer(QuadratureTransformerBase):
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Prefetch formats to speed up code generation.
-        f_group         = format["grouping"]
-        f_add           = format["add"]
-        f_mult          = format["multiply"]
-        f_transform     = format["transform"]
-        f_detJ          = format["det(J)"]
-        f_inv           = format["inverse"]
+        f_group = format["grouping"]
+        f_add = format["add"]
+        f_mult = format["multiply"]
+        f_transform = format["transform"]
+        f_detJ = format["det(J)"]
+        f_inv = format["inverse"]
 
         # Reset code
         code = {}
@@ -508,18 +507,24 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     deriv = []
 
                 # Create mapping and basis name.
-                #print "component = ", component
-                mapping, basis = self._create_mapping_basis(component, deriv, avg, ufl_argument, ffc_element)
-                if not mapping in code:
+                # print "component = ", component
+                mapping, basis = self._create_mapping_basis(component, deriv,
+                                                            avg, ufl_argument,
+                                                            ffc_element)
+                if mapping not in code:
                     code[mapping] = []
 
                 if basis is not None:
                     # Add transformation
-                    code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
+                    code[mapping].append(self.__apply_transform(basis,
+                                                                derivatives,
+                                                                multi, tdim,
+                                                                gdim))
 
         # Handle non-affine mappings.
         else:
-            ffc_assert(avg is None, "Taking average is not supported for non-affine mappings.")
+            ffc_assert(avg is None,
+                       "Taking average is not supported for non-affine mappings.")
 
             # Loop derivatives and get multi indices.
             for multi in multiindices:
@@ -531,7 +536,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     for c in range(tdim):
                         # Create mapping and basis name.
                         mapping, basis = self._create_mapping_basis(c + local_offset, deriv, avg, ufl_argument, ffc_element)
-                        if not mapping in code:
+                        if mapping not in code:
                             code[mapping] = []
                         if basis is not None:
                             # Multiply basis by appropriate transform.
@@ -550,18 +555,20 @@ class QuadratureTransformer(QuadratureTransformerBase):
                 elif transformation == "pullback as metric":
                     # g_ij = (Jinv)_ki G_kl (Jinv)lj
                     i = local_comp // tdim
-                    j = local_comp %  tdim
+                    j = local_comp % tdim
                     for k in range(tdim):
                         for l in range(tdim):
                             # Create mapping and basis name.
                             mapping, basis = self._create_mapping_basis(
                                 k * tdim + l + local_offset,
                                 deriv, avg, ufl_argument, ffc_element)
-                            if not mapping in code:
+                            if mapping not in code:
                                 code[mapping] = []
                             if basis is not None:
-                                J1 = f_transform("JINV", k, i, tdim, gdim, self.restriction)
-                                J2 = f_transform("JINV", l, j, tdim, gdim, self.restriction)
+                                J1 = f_transform("JINV", k, i, tdim, gdim,
+                                                 self.restriction)
+                                J2 = f_transform("JINV", l, j, tdim, gdim,
+                                                 self.restriction)
                                 self.trans_set.add(J1)
                                 self.trans_set.add(J2)
                                 basis = f_mult([J1, basis, J2])
@@ -592,10 +599,10 @@ class QuadratureTransformer(QuadratureTransformerBase):
         ffc_assert(ufl_function in self._function_replace_values, "Expecting ufl_function to have been mapped prior to this call.")
 
         # Prefetch formats to speed up code generation.
-        f_mult          = format["multiply"]
-        f_transform     = format["transform"]
-        f_detJ          = format["det(J)"]
-        f_inv           = format["inverse"]
+        f_mult = format["multiply"]
+        f_transform = format["transform"]
+        f_detJ = format["det(J)"]
+        f_inv = format["inverse"]
 
         # Reset code
         code = []
@@ -648,7 +655,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                 elif transformation == "pullback as metric":
                     # g_ij = (Jinv)_ki G_kl (Jinv)lj
                     i = local_comp // tdim
-                    j = local_comp %  tdim
+                    j = local_comp % tdim
                     for k in range(tdim):
                         for l in range(tdim):
                             # Create mapping and basis name.
@@ -675,10 +682,9 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     # Helper functions for Argument and Coefficient
     # -------------------------------------------------------------------------
-    def __apply_transform(self, function, derivatives, multi, tdim, gdim): # XXX UFLACS REUSE
+    def __apply_transform(self, function, derivatives, multi, tdim, gdim):  # XXX UFLACS REUSE
         "Apply transformation (from derivatives) to basis or function."
-        f_mult          = format["multiply"]
-        f_transform     = format["transform"]
+        f_transform = format["transform"]
 
         # Add transformation if needed.
         transforms = []
@@ -709,21 +715,21 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # Helper functions for transformation of UFL objects in base class
     # -------------------------------------------------------------------------
     def _create_symbol(self, symbol, domain):
-        return {():symbol}
+        return {(): symbol}
 
     def _create_product(self, symbols):
         return format["multiply"](symbols)
 
     def _format_scalar_value(self, value):
-        #print("format_scalar_value: %d" % value)
+        # print("format_scalar_value: %d" % value)
         if value is None:
-            return {():None}
+            return {(): None}
         # TODO: Handle value < 0 better such that we don't have + -2 in the code.
-        return {():format["floating point"](value)}
+        return {(): format["floating point"](value)}
 
     def _math_function(self, operands, format_function):
         # TODO: Are these safety checks needed?
-        ffc_assert(len(operands) == 1 and () in operands[0] and len(operands[0]) == 1, \
+        ffc_assert(len(operands) == 1 and () in operands[0] and len(operands[0]) == 1,
                    "MathFunctions expect one operand of function type: " + repr(operands))
         # Use format function on value of operand.
         new_operand = {}
@@ -740,17 +746,17 @@ class QuadratureTransformer(QuadratureTransformerBase):
             x1 = format["floating point"](0.0)
         if x2 is None:
             x2 = format["floating point"](0.0)
-        return {():format_function(x1, x2)}
+        return {(): format_function(x1, x2)}
 
     def _bessel_function(self, operands, format_function):
         # TODO: Are these safety checks needed?
-        ffc_assert(len(operands) == 2,\
-          "BesselFunctions expect two operands of function type: " + repr(operands))
+        ffc_assert(len(operands) == 2,
+                   "BesselFunctions expect two operands of function type: " + repr(operands))
         nu, x = operands
-        ffc_assert(len(nu) == 1 and () in nu,\
-          "Expecting one operand of function type as first argument to BesselFunction : " + repr(nu))
-        ffc_assert(len(x) == 1 and () in x,\
-          "Expecting one operand of function type as second argument to BesselFunction : " + repr(x))
+        ffc_assert(len(nu) == 1 and () in nu,
+                   "Expecting one operand of function type as first argument to BesselFunction : " + repr(nu))
+        ffc_assert(len(x) == 1 and () in x,
+                   "Expecting one operand of function type as second argument to BesselFunction : " + repr(x))
         nu = nu[()]
         x = x[()]
         if nu is None:
@@ -762,7 +768,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         # NOTE: Order of nu and x is reversed compared to the UFL and C++
         # function calls because of how Symbol treats exponents.
         # this will change once quadrature optimisations has been cleaned up.
-        return {():format_function(x, nu)}
+        return {(): format_function(x, nu)}
 
     # -------------------------------------------------------------------------
     # Helper functions for code_generation()
