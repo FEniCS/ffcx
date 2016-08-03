@@ -33,14 +33,14 @@ def test_Elasticity_Term():
                       Symbol('Jinv_00', GEO), Symbol('Jinv_21', GEO)]),
              Product([Symbol('FE0_C2_D001_0_j', BASIS), Symbol('FE0_C2_D001_0_k', BASIS),
                       Symbol('Jinv_00', GEO), Symbol('Jinv_21', GEO)])
-        ])
+             ])
     ])
 
     expr_exp = expr.expand()
     expr_red = expr_exp.reduce_ops()
 
     det, W1, Jinv_00, Jinv_21, FE0_C2_D001_0_j, FE0_C2_D001_0_k = [0.123 + i for i in range(6)]
-    assert round(eval(str(expr)) -  eval(str(expr_exp)), 10) == 0.0
+    assert round(eval(str(expr)) - eval(str(expr_exp)), 10) == 0.0
     assert round(eval(str(expr)) - eval(str(expr_red)), 10) == 0.0
     assert expr.ops() == 10
     assert expr_exp.ops() == 6
@@ -55,4 +55,4 @@ def test_Elasticity_Term():
     opt_code = optimise_code(expr, ip_consts, geo_consts, trans_set)
 
     G = [eval(str(list(geo_consts.items())[0][0]))]
-    assert round(eval(str(expr)) -  eval(str(opt_code))) == 0.0
+    assert round(eval(str(expr)) - eval(str(opt_code))) == 0.0

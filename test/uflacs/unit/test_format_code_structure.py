@@ -9,6 +9,7 @@ Some of this is C++ specific, some is more generic.
 import pytest
 from uflacs.language.cnodes import *
 
+
 def test_format_basics():
     # Reproduce a string
     assert format_indented_lines("string") == "string"
@@ -124,7 +125,7 @@ def test_literal_cexpr_value_conversion():
     assert bool(LiteralBool(False)) == False
     assert int(LiteralInt(2)) == 2
     assert float(LiteralFloat(2.0)) == 2.0
-    #assert complex(LiteralFloat(2.0+4.0j)) == 2.0+4.0j
+    # assert complex(LiteralFloat(2.0+4.0j)) == 2.0+4.0j
 
 
 def test_format_array_decl():
@@ -186,7 +187,7 @@ def test_format_array_def():
       { { 1.0, 2.0, 3.0 },
         { 6.0, 5.0, 4.0 } } };"""
     code = ArrayDecl("double", "foo", (2, 2, 3), [[[1.0, 2.0, 3.0], [6.0, 5.0, 4.0]],
-                                                [[1.0, 2.0, 3.0], [6.0, 5.0, 4.0]]])
+                                                  [[1.0, 2.0, 3.0], [6.0, 5.0, 4.0]]])
     assert str(code) == expected
 
 

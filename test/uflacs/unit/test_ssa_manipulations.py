@@ -12,24 +12,25 @@ from ufl.permutation import compute_indices
 from uflacs.analysis.graph import build_graph
 
 # Tests need this but it has been removed. Rewrite tests!
-#from uflacs.analysis.graph_rebuild import rebuild_scalar_e2i
+# from uflacs.analysis.graph_rebuild import rebuild_scalar_e2i
 
-#from uflacs.analysis.graph_rebuild import rebuild_expression_from_graph
+# from uflacs.analysis.graph_rebuild import rebuild_expression_from_graph
 
-#from uflacs.analysis.indexing import (map_indexed_arg_components,
+# from uflacs.analysis.indexing import (map_indexed_arg_components,
 #                                        map_indexed_arg_components2,
 #                                        map_component_tensor_arg_components)
-#from uflacs.analysis.graph_symbols import (map_list_tensor_symbols,
+# from uflacs.analysis.graph_symbols import (map_list_tensor_symbols,
 #                                             map_transposed_symbols, get_node_symbols)
-#from uflacs.analysis.graph_dependencies import (compute_dependencies,
+# from uflacs.analysis.graph_dependencies import (compute_dependencies,
 #                                                mark_active,
 #                                                mark_image)
-#from uflacs.analysis.graph_ssa import (mark_partitions,
+# from uflacs.analysis.graph_ssa import (mark_partitions,
 #                                       compute_dependency_count,
 #                                       invert_dependencies,
 #                                       default_cache_score_policy,
 #                                       compute_cache_scores,
 #                                       allocate_registers)
+
 
 def xtest_dependency_construction():
     cell = triangle
@@ -55,8 +56,8 @@ def xtest_dependency_construction():
                    v[0],
                    v[1],
                    w[0, 1],
-                   w[0, 0]+w[1, 1],
-                   (2*v+w[1,:])[i]*v[i],
+                   w[0, 0] + w[1, 1],
+                   (2 * v + w[1, :])[i] * v[i],
                    ]
 
     for expr in expressions:
@@ -69,7 +70,7 @@ def xtest_dependency_construction():
         dependencies = compute_dependencies(e2i, V)
 
         max_symbol = len(V)
-        targets = (max_symbol-1,)
+        targets = (max_symbol - 1,)
         active, num_active = mark_active(max_symbol, dependencies, targets)
 
         partitions = mark_partitions(V, active, dependencies, {})

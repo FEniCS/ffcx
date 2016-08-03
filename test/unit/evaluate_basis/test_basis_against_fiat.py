@@ -31,7 +31,7 @@ from cppcode import evaluate_basis_code_fiat
 # Tolerances
 tol = 1e-14
 crit_tol = 1e-8
-#crit_tol = 1e-16
+# crit_tol = 1e-16
 
 # Some random points
 random_points = {1: [(0.114,), (0.349,), (0.986,)],
@@ -106,7 +106,6 @@ def compile_gcc_code(ufl_element, code):
     ufc_include_path = ffc.ufc_config.get_ufc_include()
     ufc_cxx_flags = ffc.ufc_config.get_ufc_cxx_flags()
 
-
     # Compile c++ code
     c = "c++ -I{} {} -Wall -Werror -o evaluate_basis_test_code evaluate_basis.cpp".format(ufc_include_path, " ".join(ufc_cxx_flags))
     f = open("compile.sh", "w")
@@ -119,10 +118,10 @@ def run_code(ufl_element, deriv_order):
     "Compute values of basis functions for given element."
 
     # Run compiled code and get values
-    c = ".%sevaluate_basis_test_code %d" % (os.path.sep,deriv_order)
+    c = ".%sevaluate_basis_test_code %d" % (os.path.sep, deriv_order)
     try:
         output = subprocess.check_output(c, shell=True)
-    except subprocess.CalledProcessError, e:
+    except subprocess.CalledProcessError as e:
         print("Could not run compiled code for element: {}".format(str(ufl_element)))
         raise
 
@@ -155,7 +154,7 @@ def generate_element(ufl_element):
     f.close()
     try:
         subprocess.check_output("ffc test.ufl", shell=True)
-    except subprocess.CalledProcessError, e:
+    except subprocess.CalledProcessError as e:
         print("FFC compilation failed for element: {}. Ouput: {}".format(str(ufl_element), e.output))
         raise
 
@@ -166,7 +165,8 @@ def matrix(points):
 
 def xcomb(items, n):
     "Create n-tuples with combinations of items."
-    if n == 0: yield []
+    if n == 0:
+        yield []
     else:
         for i in range(len(items)):
             for cc in xcomb(items[:i] + items[i + 1:], n - 1):
@@ -181,9 +181,9 @@ mix_tet = [MixedElement(e) for e in xcomb([dg0_tet, dg1_tet, cg1_tet, cr1_tet,
                                            rt1_tet, drt2_tet, bdm1_tet,
                                            ned1_tet, reg0_tet], 2)]
 
-mixed_elements = [MixedElement([dg0_tri]*4),
-                  MixedElement([cg1_tri]*3),
-                  MixedElement([bdm1_tri]*2),
+mixed_elements = [MixedElement([dg0_tri] * 4),
+                  MixedElement([cg1_tri] * 3),
+                  MixedElement([bdm1_tri] * 2),
                   MixedElement([dg1_tri, cg1_tri, cr1_tri, rt1_tri, bdm1_tri,
                                 ned1_tri]),
                   MixedElement([MixedElement([rt1_tri, cr1_tri]), cg1_tri,
@@ -191,8 +191,8 @@ mixed_elements = [MixedElement([dg0_tri]*4),
                   MixedElement([ned1_tri, dg1_tri, MixedElement([rt1_tri,
                                                                  cr1_tri])]),
                   MixedElement([drt2_tri, cg1_tri]),
-                  MixedElement([dg0_tet]*4), MixedElement([cg1_tet]*3),
-                  MixedElement([bdm1_tet]*2),
+                  MixedElement([dg0_tet] * 4), MixedElement([cg1_tet] * 3),
+                  MixedElement([bdm1_tet] * 2),
                   MixedElement([dg1_tet, cg1_tet, cr1_tet, rt1_tet, bdm1_tet,
                                 ned1_tet]),
                   MixedElement([MixedElement([rt1_tet, cr1_tet]), cg1_tet,
@@ -210,7 +210,7 @@ def to_fiat_tuple(comb, gdim):
     FFC --> (1, 2) in FIAT.
 
     """
-    new_comb = [0]*gdim
+    new_comb = [0] * gdim
     if comb == []:
         return tuple(new_comb)
     for i in range(gdim):
@@ -222,10 +222,10 @@ def compute_derivative_combinations(deriv_order, geo_dim):
     "Compute combinations of derivatives in spatial directions (like code snippet)."
 
     if deriv_order == 0:
-        return [(0,)*geo_dim]
+        return [(0,) * geo_dim]
 
     num_derivatives = geo_dim**deriv_order
-    combinations = [[0]*deriv_order for n in range(num_derivatives)]
+    combinations = [[0] * deriv_order for n in range(num_derivatives)]
     for i in range(1, num_derivatives):
         for k in range(i):
             j = deriv_order - 1
@@ -393,7 +393,7 @@ def test_element(ufl_element):
     ffc_values = get_ffc_values(ufl_element)
     if ffc_values is None:
         return
-    #debug("  time to compute FFC values: %f" % (time.time() - t))
+    # debug("  time to compute FFC values: %f" % (time.time() - t))
 
     # Get FIAT values that are formatted in the same way as the values
     # from evaluate_basis and evaluate_basis_derivatives.

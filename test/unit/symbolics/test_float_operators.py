@@ -77,13 +77,13 @@ def test_Float_Operators():
 
     # Test FloatValue '*', only need one because all other cases are
     # handled by 'other'
-    assert str(f2*f2) == '%s' % format["float"](4)
+    assert str(f2 * f2) == '%s' % format["float"](4)
 
     # Test FloatValue '/'
-    assert str(fm3/f2) == str(FloatValue(-1.5))
-    assert str(f2/y) == str(F0)
-    assert str(fm3/p0) == str(F1)
-    assert str(fm3/S1) == str(F2)
+    assert str(fm3 / f2) == str(FloatValue(-1.5))
+    assert str(f2 / y) == str(F0)
+    assert str(fm3 / p0) == str(F1)
+    assert str(fm3 / S1) == str(F2)
 
     # Silence output
     push_level(CRITICAL)

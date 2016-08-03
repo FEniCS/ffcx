@@ -88,16 +88,16 @@ def testProductOperators():
     assert str(p0 * p1) == '%s*x*x*y' % f_2
 
     # Test Product '/'
-    assert str(Product([f0, x])/x) == '%s' % f_0
-    assert str(p0/S0) == '%s*x/(x + y)' % f_2
-    assert p1/y == x
-    assert p1/p2 == Fraction(Product([p1, FloatValue(0.5)]), z)
-    assert p1/z == Fraction(p1, z)
-    assert p0/Product([f2, p1]) == Fraction(f1, y)
-    assert p1/p0 == Product([FloatValue(0.5), y])
-    assert p1/p1 == f1
-    assert p1/p3 == Fraction(f1, z)
-    assert str(p1/p3) == '%s/z' % format["float"](1)
+    assert str(Product([f0, x]) / x) == '%s' % f_0
+    assert str(p0 / S0) == '%s*x/(x + y)' % f_2
+    assert p1 / y == x
+    assert p1 / p2 == Fraction(Product([p1, FloatValue(0.5)]), z)
+    assert p1 / z == Fraction(p1, z)
+    assert p0 / Product([f2, p1]) == Fraction(f1, y)
+    assert p1 / p0 == Product([FloatValue(0.5), y])
+    assert p1 / p1 == f1
+    assert p1 / p3 == Fraction(f1, z)
+    assert str(p1 / p3) == '%s/z' % format["float"](1)
 
     with pytest.raises(Exception):
         truediv(p0, f0)

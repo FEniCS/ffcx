@@ -27,15 +27,15 @@ set_float_formatting(FFC_PARAMETERS['precision'])
 
 
 def testRealExamples():
-    p = Product([ Symbol('FE0_C1_D01[ip][k]', BASIS),
-                  Sum([
-                      Symbol('Jinv_10', GEO),
+    p = Product([Symbol('FE0_C1_D01[ip][k]', BASIS),
+                 Sum([
+                     Symbol('Jinv_10', GEO),
                       Symbol('w[4][0]', GEO)
-                  ]),
-                  Sum([
-                      Symbol('Jinv_10', GEO),
+                     ]),
+        Sum([
+            Symbol('Jinv_10', GEO),
                       Symbol('w[4][0]', GEO)
-                  ])
+        ])
     ])
 
     br = p.reduce_vartype(BASIS)

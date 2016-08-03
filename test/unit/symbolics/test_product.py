@@ -24,6 +24,7 @@ from ffc.cpp import format, set_float_formatting
 from ffc.parameters import FFC_PARAMETERS
 set_float_formatting(FFC_PARAMETERS['precision'])
 
+
 def testProduct():
     "Test simple product instance."
 
@@ -62,7 +63,7 @@ def testProduct():
     assert repr(p0) == "Product([FloatValue(%s)])" % f_0
     assert repr(p1) == "Product([Symbol('x', BASIS)])"
     assert repr(p3) == "Product([FloatValue(%s), Symbol('x', BASIS), Symbol('y', GEO)])"\
-                     % format["float"](3)
+        % format["float"](3)
     assert repr(p6) == "Product([FloatValue(-%s), Symbol('x', BASIS), Symbol('y', GEO)])" % f_1
     assert repr(p7) == "Product([Symbol('x', BASIS), Symbol('y', GEO)])"
     assert repr(p8) == "Product([Symbol('x', BASIS), Symbol('z', GEO)])"
@@ -102,7 +103,7 @@ def testProduct():
 
     # Test hash
     l = [p3]
-    d = {p3:0}
+    d = {p3: 0}
     p10 = Product([f1, s0, s1])
 
     assert p3 in l

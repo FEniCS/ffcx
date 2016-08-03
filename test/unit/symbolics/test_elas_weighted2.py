@@ -64,9 +64,9 @@ def testElasWeighted2():
                         Symbol('Jinv_01', GEO),
                         Sum([
                             Product([
-                            Symbol('FE0_C1_D01_ip_k', BASIS),
-                                Symbol('w0', GEO)
-                        ]),
+                                    Symbol('FE0_C1_D01_ip_k', BASIS),
+                                    Symbol('w0', GEO)
+                                    ]),
                             Product([
                                 Symbol('FE0_C1_D01_ip_k', BASIS),
                                 Symbol('w1', GEO)

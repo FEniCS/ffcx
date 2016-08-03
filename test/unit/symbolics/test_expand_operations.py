@@ -61,9 +61,9 @@ def testExpandOperations():
     # Special fractions
     F4 = Fraction(P0, F0)
     F5 = Fraction(Fraction(s0, P0), P0)
-    F6 = Fraction( Fraction( Fraction(s1, s0), Fraction(s1, s2)), Fraction( Fraction(s2, s0), Fraction(s1, s0)) )
+    F6 = Fraction(Fraction(Fraction(s1, s0), Fraction(s1, s2)), Fraction(Fraction(s2, s0), Fraction(s1, s0)))
     F7 = Fraction(s1, Product([s1, Symbol("x", GEO)]))
-    F8 = Fraction( Sum([sx, Fraction(sy, sx)]), FloatValue(2))
+    F8 = Fraction(Sum([sx, Fraction(sy, sx)]), FloatValue(2))
 
     F4x = F4.expand()
     F5x = F5.expand()
@@ -151,24 +151,24 @@ def testExpandOperations():
     E1 = Sum([P0, E0])
     E2 = Fraction(Sum([Product([f1])]), f2)
     E3 = Sum([F0, F0])
-    E4 = Product([ Sum([ Product([sx, Sum([sy, Product([ Sum([sy, Product([sy, sz]), sy])]), sy])]),
-                         Product([sx, Sum([ Product([sy, sz]), sy])])])])
+    E4 = Product([Sum([Product([sx, Sum([sy, Product([Sum([sy, Product([sy, sz]), sy])]), sy])]),
+                       Product([sx, Sum([Product([sy, sz]), sy])])])])
     P4 = Product([s1, Sum([s0, s1])])
     P5 = Product([s0, E0])
     P6 = Product([s1])
     S4 = Sum([s1])
 
     # Create 'real' term that caused me trouble
-    P00 = Product([Symbol("Jinv_00", GEO)]*2)
-    P01 = Product([Symbol("Jinv_01", GEO)]*2)
+    P00 = Product([Symbol("Jinv_00", GEO)] * 2)
+    P01 = Product([Symbol("Jinv_01", GEO)] * 2)
     P20 = Product([Symbol("Jinv_00", GEO),
-                   Product([f1, Symbol("Jinv_20", GEO)]) ])
+                   Product([f1, Symbol("Jinv_20", GEO)])])
     P21 = Product([Symbol("Jinv_01", GEO),
-                   Product([f1, Symbol("Jinv_21", GEO)]) ])
+                   Product([f1, Symbol("Jinv_21", GEO)])])
     PS0 = Product([Symbol("Jinv_22", GEO),
                    Sum([P00, P01])])
-    PS1 = Product([ Product([f0, Symbol("Jinv_02", GEO)]),
-                    Sum([P20, P21])])
+    PS1 = Product([Product([f0, Symbol("Jinv_02", GEO)]),
+                   Sum([P20, P21])])
     SP = Sum([PS0, PS1])
 
     PFx = PF.expand()
@@ -183,7 +183,7 @@ def testExpandOperations():
     S4x = S4.expand()
     SPx = SP.expand()
 
-    Jinv_00, Jinv_01, Jinv_10, Jinv_02, Jinv_20, Jinv_22, Jinv_21, W1, det = [1,2,3,4,5,6,7,8,9]
+    Jinv_00, Jinv_01, Jinv_10, Jinv_02, Jinv_20, Jinv_22, Jinv_21, W1, det = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
     assert round(eval(str(SP)) - eval(str(SPx)), 10) == 0.0
     assert round(eval(str(E0)) - eval(str(E0x)), 10) == 0.0
