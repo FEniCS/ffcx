@@ -321,8 +321,8 @@ def _compute_values(data, dof_data):
             value = f_group(f_inner(inv_jacobian_column, basis_col))
             name = f_component(f_values, i + offset)
             code += [f_assign(name, value)]
-    elif mapping == "pullback as metric":
-        code += ["", f_comment("Using metric pullback to map values back to the physical element")]
+    elif mapping == "pullback as covariant 2-tensor":
+        code += ["", f_comment("Pullback of a matrix-valued funciton as covariant 2-tensor mapping values back to the physical element")]
         # Get temporary values before mapping.
         code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))\
                   for i in range(num_components)]

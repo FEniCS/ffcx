@@ -141,7 +141,7 @@ def _required_declarations(ir):
     # Check whether Jacobians are necessary.
     needs_inverse_jacobian = any(["contravariant piola" in m
                                   for m in ir["mappings"]])
-    needs_jacobian = any(["covariant piola" in m for m in ir["mappings"]]) or any(["pullback as metric" in m for m in ir["mappings"]])
+    needs_jacobian = any(["covariant piola" in m for m in ir["mappings"]]) or any(["pullback as covariant 2-tensor" in m for m in ir["mappings"]])
 
     # Check if Jacobians are needed
     if not (needs_jacobian or needs_inverse_jacobian):
@@ -309,7 +309,7 @@ def _change_variables(mapping, gdim, tdim, offset):
 
       G(X) = J^T g(x)          i.e  G_i(X) = J^T_ij g(x) = J_ji g_j(x)
 
-    'pullback as metric' mapping for g:
+    'pullback as covariant 2-tensor' mapping for g:
 
       G(X) = J^T g(x) J     i.e. G_il(X) = J_ji g_jk(x) J_kl
     """
@@ -340,8 +340,8 @@ def _change_variables(mapping, gdim, tdim, offset):
             values += [inner(jacobian_column, components)]
         return values
 
-    elif mapping == "pullback as metric":
-        # physical to reference pullback as a metric
+    elif mapping == "pullback as covariant 2-tensor":
+        # physical to reference pullback as a covariant 2-tensor
         values = []
         for i in range(tdim):
             for l in range(tdim):
@@ -351,7 +351,7 @@ def _change_variables(mapping, gdim, tdim, offset):
                             for j in range(gdim)]) for k in range(gdim)],
                     [J(k, l, gdim, tdim) for k in range(gdim)])]
         return values
-    
+
     else:
         raise Exception("The mapping (%s) is not allowed" % mapping)
 

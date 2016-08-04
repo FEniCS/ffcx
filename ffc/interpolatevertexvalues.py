@@ -155,8 +155,8 @@ def _change_variables(mapping, gdim, tdim, space_dim):
 
       g(x) = K^T G(X)              i.e   g_i(x) = K^T_ij G_j(X) = K_ji G_j(X)
 
-    'pullback as metric' mapping for f:
-    
+    'pullback as covariant 2-tensor' mapping for f:
+
       g_il(x) = K_{ji} G_{jk} K_{kl}
 
     """
@@ -171,7 +171,7 @@ def _change_variables(mapping, gdim, tdim, space_dim):
         change_of_variables = lambda G, i: [inner([Jinv(j, i, tdim, gdim) for j in range(tdim)],
                                                   [G[j][index] for j in range(tdim)])
                                             for index in range(space_dim)]
-    elif mapping == "pullback as metric":
+    elif mapping == "pullback as covariant 2-tensor":
         change_of_variables = lambda G, i: [
             inner([inner([Jinv(j, i // tdim, tdim, gdim) for j in range(tdim)],
                          [G[j][k][index] for j in range(tdim)])

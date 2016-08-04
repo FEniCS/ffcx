@@ -547,7 +547,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                                 basis = f_mult([detJ, dXdx, basis])
                             # Add transformation if needed.
                             code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
-                elif transformation == "pullback as metric":
+                elif transformation == "pullback as covariant 2-tensor":
                     # g_ij = (Jinv)_ki G_kl (Jinv)lj
                     i = local_comp // tdim
                     j = local_comp %  tdim
@@ -645,7 +645,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
                             # Add transformation if needed.
                             code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
-                elif transformation == "pullback as metric":
+                elif transformation == "pullback as covariant 2-tensor":
                     # g_ij = (Jinv)_ki G_kl (Jinv)lj
                     i = local_comp // tdim
                     j = local_comp %  tdim

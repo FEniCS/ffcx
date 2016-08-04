@@ -631,8 +631,8 @@ def _compute_reference_derivatives(data, dof_data):
             value = f_group(f_add(inner))
             name = f_component(f_derivatives+_p, f_matrix_index(i, f_r, f_num_derivs(_t)))
             lines += [f_assign(name, value)]
-    elif mapping == "pullback as metric":
-        lines += ["", f_comment("Using metric pullback to map values back to the physical element")]
+    elif mapping == "pullback as covariant 2-tensor":
+        code += ["", f_comment("Pullback of a matrix-valued funciton as covariant 2-tensor mapping values back to the physical element")]
         lines += [f_const_double(f_tmp(i),
                                 f_component(f_derivatives,
                                             f_matrix_index(i, f_r, f_num_derivs(_t))))
