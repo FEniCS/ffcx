@@ -24,6 +24,7 @@ from ffc.cpp import format, set_float_formatting
 from ffc.parameters import FFC_PARAMETERS
 set_float_formatting(FFC_PARAMETERS["precision"])
 
+
 def testFloat():
     "Test simple FloatValue instance."
     f0 = FloatValue(1.5)
@@ -52,7 +53,7 @@ def testFloat():
 
     # Test hash
     l = [f0]
-    d = {f0:0}
+    d = {f0: 0}
     assert f0 in l
     assert f0 in d
     assert f4 in l

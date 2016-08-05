@@ -39,6 +39,7 @@ from .multiindex import build_indices
 from .monomialextraction import MonomialException
 from .monomialtransformation import MonomialIndex
 
+
 def integrate(monomial,
               integral_type,
               facet0, facet1,
@@ -63,8 +64,8 @@ def integrate(monomial,
                         facet0, facet1)
 
     # Compute table Psi for each factor
-    psis = [_compute_psi(v, table, len(points)) \
-                for v in monomial.arguments]
+    psis = [_compute_psi(v, table, len(points))
+            for v in monomial.arguments]
 
     # Compute product of all Psis
     A0 = _compute_product(psis, monomial.float_value * weights)
@@ -76,6 +77,7 @@ def integrate(monomial,
     debug("Shape of reference tensor: " + str(numpy.shape(A0)))
 
     return A0
+
 
 def _init_table(arguments, integral_type, points, facet0, facet1):
     """Initialize table of basis functions and their derivatives at
@@ -108,6 +110,7 @@ def _init_table(arguments, integral_type, points, facet0, facet1):
 
     return table
 
+
 def _compute_psi(v, table, num_points):
     "Compute the table Psi for the given basis function v."
 
@@ -130,7 +133,7 @@ def _compute_psi(v, table, num_points):
     tdim = v.element.cell().topological_dimension()
 
     # Get indices and shapes for components
-    if len(v.components) ==  0:
+    if len(v.components) == 0:
         cindex = []
         cshape = []
     elif len(v.components) == 1:
@@ -152,7 +155,7 @@ def _compute_psi(v, table, num_points):
     shapes = cshape + dshape + vshape + [num_points]
 
     # Initialize tensor Psi: component, derivatives, basis function, points
-    Psi = numpy.zeros(shapes, dtype = numpy.float)
+    Psi = numpy.zeros(shapes, dtype=numpy.float)
 
     # Iterate over derivative indices
     dlists = build_indices([index.index_range for index in dindex]) or [[]]
@@ -180,8 +183,8 @@ def _compute_psi(v, table, num_points):
     # Remove fixed indices
     for i in range(num_indices[0]):
         Psi = Psi[0, ...]
-    indices = [index for index in indices \
-                   if not index.index_type == MonomialIndex.FIXED]
+    indices = [index for index in indices
+               if not index.index_type == MonomialIndex.FIXED]
 
     # Put quadrature points first
     rank = Psi.ndim
@@ -191,6 +194,7 @@ def _compute_psi(v, table, num_points):
     bpart = [i.index_id for i in indices if i.index_type == MonomialIndex.INTERNAL]
 
     return (Psi, indices, bpart)
+
 
 def _compute_product(psis, weights):
     "Compute special product of list of Psis."
@@ -202,7 +206,7 @@ def _compute_product(psis, weights):
 
     # Initialize zero reference tensor (will be rearranged later)
     (shape, indices) = _compute_shape(psis)
-    A0 = numpy.zeros(shape, dtype= numpy.float)
+    A0 = numpy.zeros(shape, dtype=numpy.float)
 
     # Initialize list of internal multiindices
     bshape = _compute_internal_shape(psis)
@@ -216,7 +220,7 @@ def _compute_product(psis, weights):
             # Compute outer products of subtables for current (q, b)
             B = weights[q]
             for (Psi, index, bpart) in psis:
-                B = numpy.multiply.outer(B, Psi[ tuple([q] + [b[i] for i in bpart])])
+                B = numpy.multiply.outer(B, Psi[tuple([q] + [b[i] for i in bpart])])
 
             # Add product to reference tensor
             numpy.add(A0, B, A0)
@@ -227,19 +231,21 @@ def _compute_product(psis, weights):
 
     return A0
 
+
 def _compute_rearrangement(indices):
     """
     Compute rearrangement tuple for given list of Indices, so that the
     tuple reorders the given list of Indices with fixed, primary,
     secondary and internal Indices in rising order.
     """
-    fixed     = _find_indices(indices, MonomialIndex.FIXED)
-    internal  = _find_indices(indices, MonomialIndex.INTERNAL)
-    primary   = _find_indices(indices, MonomialIndex.PRIMARY)
+    fixed = _find_indices(indices, MonomialIndex.FIXED)
+    internal = _find_indices(indices, MonomialIndex.INTERNAL)
+    primary = _find_indices(indices, MonomialIndex.PRIMARY)
     secondary = _find_indices(indices, MonomialIndex.SECONDARY)
     assert len(fixed + internal + primary + secondary) == len(indices)
-    return (tuple(fixed + internal + primary + secondary), \
+    return (tuple(fixed + internal + primary + secondary),
             (len(fixed), len(internal), len(primary), len(secondary)))
+
 
 def _compute_shape(psis):
     "Compute shape of reference tensor from given list of tables."
@@ -250,6 +256,7 @@ def _compute_shape(psis):
         indices += index[num_internal:]
     return (shape, indices)
 
+
 def _compute_internal_shape(psis):
     """
     Compute shape for internal indices from given list of tables.
@@ -258,7 +265,8 @@ def _compute_internal_shape(psis):
     """
     # First find the number of different internal indices (check maximum)
     bs = [b for (Psi, index, bpart) in psis for b in bpart]
-    if len(bs) == 0: return []
+    if len(bs) == 0:
+        return []
     bmax = max(bs)
     # Find the dimension for each internal index
     bshape = [0 for i in range(bmax + 1)]
@@ -270,11 +278,13 @@ def _compute_internal_shape(psis):
         error("Unable to compute the shape for each internal index.")
     return bshape
 
+
 def _find_indices(indices, index_type):
     "Return sorted list of positions for given index type."
     pos = [i for i in range(len(indices)) if indices[i].index_type == index_type]
     val = [indices[i].index_id for i in range(len(indices)) if indices[i].index_type == index_type]
     return [pos[i] for i in numpy.argsort(val)]
+
 
 def _multiindex_to_tuple(dindex, cell_dimension):
     """

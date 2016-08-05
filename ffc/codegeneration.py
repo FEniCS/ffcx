@@ -42,6 +42,8 @@ from ffc.interpolatevertexvalues import interpolate_vertex_values
 from ffc.representation import pick_representation, ufc_integral_types
 
 # Errors issued for non-implemented functions
+
+
 def _not_implemented(function_name, return_null=False):
     body = format["exception"]("%s not yet implemented." % function_name)
     if return_null:
@@ -261,7 +263,7 @@ def _generate_integral_code(ir, parameters):
 
     # Generate code
     prefix = ir["prefix"]
-    code = r.generate_integral_code(ir, prefix, parameters) # TODO: Drop prefix argument and get from ir
+    code = r.generate_integral_code(ir, prefix, parameters)  # TODO: Drop prefix argument and get from ir
 
     # Indent code (unused variables should already be removed)
     # FIXME: Remove this quick hack
@@ -279,7 +281,7 @@ def _generate_original_coefficient_position(original_coefficient_positions):
     code = '\n'.join([
         "static const std::vector<std::size_t> position({%s});"
         % initializer_list, "return position[i];",
-        ])
+    ])
     return code
 
 
@@ -331,6 +333,7 @@ def _generate_form_code(ir, parameters):
     return code
 
 #--- Code generation for non-trivial functions ---
+
 
 def _value_dimension(ir):
     "Generate code for value_dimension."
@@ -441,7 +444,7 @@ def _tabulate_dofs(ir):
                 v = multiply([len(num[k]), component(entity_index, (dim, k))])
                 for (j, dof) in enumerate(dofs):
                     value = add([offset_name, v, j])
-                    code.append(assign(component(dofs_variable, dof+i), value))
+                    code.append(assign(component(dofs_variable, dof + i), value))
 
             # Update offset corresponding to mesh entity:
             if need_offset:
@@ -484,11 +487,11 @@ def _tabulate_dof_coordinates(ir):
         w = coefficients(coordinate)
         for j in range(gdim):
             # Compute physical coordinate
-            coords = [component(f_x(), (k*gdim + j,)) for k in range(tdim + 1)]
+            coords = [component(f_x(), (k * gdim + j,)) for k in range(tdim + 1)]
             value = inner_product(w, coords)
 
             # Assign coordinate
-            code.append(assign(component(coordinates, (i*gdim + j)), value))
+            code.append(assign(component(coordinates, (i * gdim + j)), value))
 
     return "\n".join(code)
 
@@ -510,7 +513,7 @@ def _tabulate_entity_dofs(ir):
     dim = len(num_dofs_per_entity)
     excpt = format["exception"]("%s is larger than dimension (%d)"
                                 % (f_d, dim - 1))
-    code = [format["if"]("%s > %d" % (f_d, dim-1), excpt)]
+    code = [format["if"]("%s > %d" % (f_d, dim - 1), excpt)]
 
     # Generate cases for each dimension:
     all_cases = ["" for d in range(dim)]
@@ -551,53 +554,62 @@ def _create_bar(arg, classnames):
     default = ret(0)
     return format["switch"](arg, cases, default=default, numbers=numbers)
 
+
 def _create_coordinate_finite_element(ir):
     ret = format["return"]
     create = format["create foo"]
     classnames = ir["create_coordinate_finite_element"]
-    assert len(classnames) == 1 # list of length 1 until we support multiple domains
+    assert len(classnames) == 1  # list of length 1 until we support multiple domains
     return ret(create(classnames[0]))
+
 
 def _create_coordinate_dofmap(ir):
     ret = format["return"]
     create = format["create foo"]
     classnames = ir["create_coordinate_dofmap"]
-    assert len(classnames) == 1 # list of length 1 until we support multiple domains
+    assert len(classnames) == 1  # list of length 1 until we support multiple domains
     return ret(create(classnames[0]))
+
 
 def _create_coordinate_mapping(ir):
     ret = format["return"]
     create = format["create foo"]
     classnames = ir["create_coordinate_mapping"]
-    assert len(classnames) == 1 # list of length 1 until we support multiple domains
-    #return ret(create(classnames[0]))
-    return ret("nullptr") # FIXME: Disabled until we generate a functional class (work in progress)
+    assert len(classnames) == 1  # list of length 1 until we support multiple domains
+    # return ret(create(classnames[0]))
+    return ret("nullptr")  # FIXME: Disabled until we generate a functional class (work in progress)
+
 
 def _create_finite_element(ir):
     f_i = format["argument sub"]
     classnames = ir["create_finite_element"]
     return _create_bar(f_i, classnames)
 
+
 def _create_dofmap(ir):
     f_i = format["argument sub"]
     classnames = ir["create_dofmap"]
     return _create_bar(f_i, classnames)
+
 
 def _create_sub_element(ir):
     f_i = format["argument sub"]
     classnames = ir["create_sub_element"]
     return _create_bar(f_i, classnames)
 
+
 def _create_sub_dofmap(ir):
     f_i = format["argument sub"]
     classnames = ir["create_sub_dofmap"]
     return _create_bar(f_i, classnames)
+
 
 def _has_foo_integrals(ir, integral_type):
     ret = format["return"]
     b = format["bool"]
     i = ir["has_%s_integrals" % integral_type]
     return ret(b(i))
+
 
 def _create_foo_integral(ir, integral_type, prefix):
     "Generate code for create_<foo>_integral."
@@ -612,6 +624,7 @@ def _create_foo_integral(ir, integral_type, prefix):
     default = ret(0)
     return format["switch"](f_i, cases, default=default, numbers=subdomain_ids)
 
+
 def _create_default_foo_integral(ir, integral_type, prefix):
     "Generate code for create_default_<foo>_integral."
     ret = format["return"]
@@ -624,10 +637,12 @@ def _create_default_foo_integral(ir, integral_type, prefix):
         classname = make_integral_classname(prefix, integral_type, form_id, subdomain_id)
         return ret(create(classname))
 
+
 def _postprocess_code(code, parameters):
     "Postprocess generated code."
     _indent_code(code)
     _remove_code(code, parameters)
+
 
 def _indent_code(code):
     "Indent code that should be indented."
@@ -636,6 +651,7 @@ def _indent_code(code):
                        "initializer_list", "additional_includes_set",
                        "class_type"):
             code[key] = indent(code[key], 4)
+
 
 def _remove_code(code, parameters):
     "Remove code that should not be generated."

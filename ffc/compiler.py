@@ -127,6 +127,7 @@ from ffc.codegeneration import generate_code
 from ffc.formatting import format_code
 from ffc.wrappers import generate_wrapper_code
 
+
 def compile_form(forms, object_names=None, prefix="Form", parameters=None, jit=False):
     """This function generates UFC code for a given UFL form or list
     of UFL forms."""
@@ -240,17 +241,20 @@ def compile_element(elements, prefix="Element", parameters=None, jit=False):
     #   this function they don't need to be returned here...
     return code_h, code_c
 
+
 def _check_forms(forms):
     "Initial check of forms."
     if not isinstance(forms, (list, tuple)):
         forms = (forms,)
     return forms
 
+
 def _check_elements(elements):
     "Initial check of elements."
     if not isinstance(elements, (list, tuple)):
         elements = (elements,)
     return elements
+
 
 def _print_timing(stage, timing):
     "Print timing results."

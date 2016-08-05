@@ -14,6 +14,7 @@ import uflacs
 from uflacs.codeutils.cpp_expr_formatting_rules import CppFormattingRules
 from uflacs.codeutils.expr_formatter import ExprFormatter
 
+
 def expr2cpp(expr, variables=None):
     "This is a test specific function for formatting ufl to C++."
 
@@ -38,6 +39,7 @@ def expr2cpp(expr, variables=None):
     code = expr_formatter.visit(expr)
     return code
 
+
 def test_cpp_formatting_of_literals():
     # Test literals
     assert expr2cpp(ufl.as_ufl(2)) == "2"
@@ -51,6 +53,7 @@ def test_cpp_formatting_of_literals():
     assert expr2cpp(ufl.PermutationSymbol(3)[1, 2, 3]) == "1"
     assert expr2cpp(ufl.PermutationSymbol(3)[2, 1, 3]) == "-1"
     assert expr2cpp(ufl.PermutationSymbol(3)[1, 1, 3]) == "0"
+
 
 def test_cpp_formatting_of_geometry():
     # Test geometry quantities (faked for testing!)
@@ -67,6 +70,7 @@ def test_cpp_formatting_of_geometry():
     Kr = ufl.Circumradius(ufl.triangle)
     assert expr2cpp(Kr) == "circumradius"
 
+
 def test_cpp_formatting_of_form_arguments():
     # Test form arguments (faked for testing!)
     V = ufl.FiniteElement("CG", ufl.triangle, 1)
@@ -77,18 +81,19 @@ def test_cpp_formatting_of_form_arguments():
 
     V = ufl.VectorElement("CG", ufl.triangle, 1)
     f = ufl.Coefficient(V, count=1)
-    assert expr2cpp(f[0]) == "w0[0]" # Renumbered to 0...
+    assert expr2cpp(f[0]) == "w0[0]"  # Renumbered to 0...
     v = ufl.Argument(V, number=3)
-    assert expr2cpp(v[1]) == "v3[1]" # NOT renumbered to 0...
+    assert expr2cpp(v[1]) == "v3[1]"  # NOT renumbered to 0...
 
     V = ufl.TensorElement("CG", ufl.triangle, 1)
     f = ufl.Coefficient(V, count=2)
-    assert expr2cpp(f[1, 0]) == "w0[1][0]" # Renumbered to 0...
+    assert expr2cpp(f[1, 0]) == "w0[1][0]"  # Renumbered to 0...
     v = ufl.Argument(V, number=3)
-    assert expr2cpp(v[0, 1]) == "v3[0][1]" # NOT renumbered to 0...
+    assert expr2cpp(v[0, 1]) == "v3[0][1]"  # NOT renumbered to 0...
 
     # TODO: Test mixed functions
     # TODO: Test tensor functions with symmetries
+
 
 def test_cpp_formatting_of_arithmetic():
     x, y = ufl.SpatialCoordinate(ufl.triangle)
@@ -96,9 +101,10 @@ def test_cpp_formatting_of_arithmetic():
     assert expr2cpp(x + 3) == "3 + x[0]"
     assert expr2cpp(x * 2) == "2 * x[0]"
     assert expr2cpp(x / 2) == "x[0] / 2"
-    assert expr2cpp(x*x) == "pow(x[0], 2)" # TODO: Will gcc optimize this to x*x for us?
+    assert expr2cpp(x * x) == "pow(x[0], 2)"  # TODO: Will gcc optimize this to x*x for us?
     assert expr2cpp(x**3) == "pow(x[0], 3)"
     # TODO: Test all basic operators
+
 
 def test_cpp_formatting_of_cmath():
     x, y = ufl.SpatialCoordinate(ufl.triangle)
@@ -113,6 +119,7 @@ def test_cpp_formatting_of_cmath():
     assert expr2cpp(ufl.asin(x)) == "asin(x[0])"
     assert expr2cpp(ufl.acos(x)) == "acos(x[0])"
     assert expr2cpp(ufl.atan(x)) == "atan(x[0])"
+
 
 def test_cpp_formatting_of_derivatives():
     xx = ufl.SpatialCoordinate(ufl.triangle)
@@ -129,22 +136,24 @@ def test_cpp_formatting_of_derivatives():
     f = ufl.Coefficient(V, count=0)
     assert expr2cpp(f.dx(0)) == "d1_w0[0]"
     v = ufl.Argument(V, number=3)
-    assert expr2cpp(v.dx(1)) == "d1_v3[1]" # NOT renumbered to 0...
+    assert expr2cpp(v.dx(1)) == "d1_v3[1]"  # NOT renumbered to 0...
     # TODO: Test more derivatives
     # TODO: Test variable derivatives using diff
+
 
 def test_cpp_formatting_of_conditionals():
     x, y = ufl.SpatialCoordinate(ufl.triangle)
     # Test conditional expressions
     assert expr2cpp(ufl.conditional(ufl.lt(x, 2), y, 3)) \
         == "x[0] < 2 ? x[1]: 3"
-    assert expr2cpp(ufl.conditional(ufl.gt(x, 2), 4+y, 3)) \
+    assert expr2cpp(ufl.conditional(ufl.gt(x, 2), 4 + y, 3)) \
         == "x[0] > 2 ? 4 + x[1]: 3"
     assert expr2cpp(ufl.conditional(ufl.And(ufl.le(x, 2), ufl.ge(y, 4)), 7, 8)) \
         == "x[0] <= 2 && x[1] >= 4 ? 7: 8"
     assert expr2cpp(ufl.conditional(ufl.Or(ufl.eq(x, 2), ufl.ne(y, 4)), 7, 8)) \
         == "x[0] == 2 || x[1] != 4 ? 7: 8"
     # TODO: Some tests of nested conditionals with correct precedences?
+
 
 def test_cpp_formatting_precedence_handling():
     x, y = ufl.SpatialCoordinate(ufl.triangle)
@@ -172,8 +181,8 @@ def test_cpp_formatting_precedence_handling():
 
     # Test precedence handling with highest level types
     assert expr2cpp(ufl.sin(x)) == "sin(x[0])"
-    assert expr2cpp(ufl.cos(x+2)) == "cos(2 + x[0])"
-    assert expr2cpp(ufl.tan(x/2)) == "tan(x[0] / 2)"
+    assert expr2cpp(ufl.cos(x + 2)) == "cos(2 + x[0])"
+    assert expr2cpp(ufl.tan(x / 2)) == "tan(x[0] / 2)"
     assert expr2cpp(ufl.acos(x + 3 * y)) == "acos(x[0] + 3 * x[1])"
     assert expr2cpp(ufl.asin(ufl.atan(x**4))) == "asin(atan(pow(x[0], 4)))"
     assert expr2cpp(ufl.sin(y) + ufl.tan(x)) == "sin(x[1]) + tan(x[0])"
@@ -184,6 +193,7 @@ def test_cpp_formatting_precedence_handling():
     assert expr2cpp(2 * (x + 3) * y) == "x[1] * (2 * (3 + x[0]))"
     assert expr2cpp(2 * (x + 3)**4 * y) == "x[1] * (2 * pow(3 + x[0], 4))"
     # TODO: More tests covering all types and more combinations!
+
 
 def test_cpp_formatting_with_variables():
     x, y = ufl.SpatialCoordinate(ufl.triangle)

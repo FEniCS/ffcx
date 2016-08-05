@@ -64,16 +64,19 @@ supported_families = ("Brezzi-Douglas-Marini",
 # Cache for computed elements
 _cache = {}
 
+
 def reference_cell(dim):
     if isinstance(dim, int):
         return FIAT.ufc_simplex(dim)
     else:
         return FIAT.ufc_simplex(cellname2dim[dim])
 
+
 def reference_cell_vertices(dim):
     "Return dict of coordinates of reference cell vertices for this 'dim'."
     cell = reference_cell(dim)
     return cell.get_vertices()
+
 
 def create_element(ufl_element):
 
@@ -110,6 +113,7 @@ def create_element(ufl_element):
     _cache[element_signature] = element
 
     return element
+
 
 def _create_fiat_element(ufl_element):
     "Create FIAT element corresponding to given finite element."
@@ -163,6 +167,7 @@ def _create_fiat_element(ufl_element):
 
     return element
 
+
 def create_quadrature(shape, degree, scheme="default"):
     """
     Generate quadrature rule (points, weights) for given shape
@@ -170,10 +175,10 @@ def create_quadrature(shape, degree, scheme="default"):
     """
 
     if isinstance(shape, int) and shape == 0:
-        return ([()], array([1.0,]))
+        return ([()], array([1.0, ]))
 
     if shape in cellname2dim and cellname2dim[shape] == 0:
-        return ([()], array([1.0,]))
+        return ([()], array([1.0, ]))
 
     if scheme == "vertex":
         # The vertex scheme, i.e., averaging the function value in the vertices
@@ -186,29 +191,30 @@ def create_quadrature(shape, degree, scheme="default"):
         if degree > 1:
             from warnings import warn
             warn(("Explicitly selected vertex quadrature (degree 1), "
-                 +"but requested degree is %d.") % degree)
+                 + "but requested degree is %d.") % degree)
         if shape == "tetrahedron":
-            return (array([ [0.0, 0.0, 0.0],
-                            [1.0, 0.0, 0.0],
-                            [0.0, 1.0, 0.0],
-                            [0.0, 0.0, 1.0] ]),
-                    array([1.0/24.0, 1.0/24.0, 1.0/24.0, 1.0/24.0])
+            return (array([[0.0, 0.0, 0.0],
+                           [1.0, 0.0, 0.0],
+                           [0.0, 1.0, 0.0],
+                           [0.0, 0.0, 1.0]]),
+                    array([1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0])
                     )
         elif shape == "triangle":
-            return (array([ [0.0, 0.0],
-                            [1.0, 0.0],
-                            [0.0, 1.0] ]),
-                    array([1.0/6.0, 1.0/6.0, 1.0/6.0])
+            return (array([[0.0, 0.0],
+                           [1.0, 0.0],
+                           [0.0, 1.0]]),
+                    array([1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0])
                     )
         else:
             # Trapezoidal rule.
-            return (array([ [0.0, 0.0],
-                            [0.0, 1.0] ]),
-                    array([1.0/2.0, 1.0/2.0])
+            return (array([[0.0, 0.0],
+                           [0.0, 1.0]]),
+                    array([1.0 / 2.0, 1.0 / 2.0])
                     )
 
     quad_rule = FIAT.create_quadrature(reference_cell(shape), degree, scheme)
     return quad_rule.get_points(), quad_rule.get_weights()
+
 
 def map_facet_points(points, facet):
     """
@@ -232,15 +238,15 @@ def map_facet_points(points, facet):
     # Extract vertex coordinates from cell and map of facet index to
     # indicent vertex indices
     coordinate_dofs = fiat_cell.get_vertices()
-    facet_vertices = fiat_cell.get_topology()[dim-1]
+    facet_vertices = fiat_cell.get_topology()[dim - 1]
 
-    #coordinate_dofs = \
+    # coordinate_dofs = \
     #    {1: ((0.,), (1.,)),
     #     2: ((0., 0.), (1., 0.), (0., 1.)),
     #     3: ((0., 0., 0.), (1., 0., 0.),(0., 1., 0.), (0., 0., 1))}
 
     # Facet vertices
-    #facet_vertices = \
+    # facet_vertices = \
     #    {2: ((1, 2), (0, 2), (0, 1)),
     #     3: ((1, 2, 3), (0, 2, 3), (0, 1, 3), (0, 1, 2))}
 
@@ -249,10 +255,11 @@ def map_facet_points(points, facet):
     new_points = []
     for point in points:
         w = (1.0 - sum(point),) + tuple(point)
-        x = tuple(sum([w[i]*array(coordinates[i]) for i in range(len(w))]))
+        x = tuple(sum([w[i] * array(coordinates[i]) for i in range(len(w))]))
         new_points += [x]
 
     return new_points
+
 
 def _extract_elements(ufl_element, restriction_domain=None):
     "Recursively extract un-nested list of (component) elements."
@@ -276,6 +283,7 @@ def _extract_elements(ufl_element, restriction_domain=None):
 
     return elements
 
+
 def _create_restricted_element(ufl_element):
     "Create an FFC representation for an UFL RestrictedElement."
 
@@ -298,6 +306,7 @@ def _create_restricted_element(ufl_element):
 
     error("Cannot create restricted element from %s" % str(ufl_element))
 
+
 def _indices(element, restriction_domain, tdim):
     "Extract basis functions indices that correspond to restriction_domain."
 
@@ -313,7 +322,7 @@ def _indices(element, restriction_domain, tdim):
     # the topological degree of the restriction_domain and of all lower
     # dimensions.
     if restriction_domain == "facet":
-        rdim = tdim-1
+        rdim = tdim - 1
     elif restriction_domain == "face":
         rdim = 2
     elif restriction_domain == "edge":

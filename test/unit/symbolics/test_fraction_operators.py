@@ -79,7 +79,7 @@ def testFractionOperators():
     assert str(F1 * x) == 'x*x/y'
     assert str(F1 * p1) == 'x*x'
     assert str(F1 * S0) == '(x + x*x/y)'
-    assert repr(F1 * S0) == repr(Sum([x, Fraction( Product([x, x]), y)]) )
+    assert repr(F1 * S0) == repr(Sum([x, Fraction(Product([x, x]), y)]))
     assert str(F1 * F0) == '%s*x/(y*y)' % f_2
 
     # Test Fraction '/'
@@ -91,4 +91,4 @@ def testFractionOperators():
     assert str(F0 / S0) == '%s/(x*y + y*y)' % f_2
 
     with pytest.raises(Exception):
-        truediv(F0/F0)
+        truediv(F0 / F0)

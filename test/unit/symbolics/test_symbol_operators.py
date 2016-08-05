@@ -80,19 +80,19 @@ def testSymbolOperators():
 
     # Test Symbol '*', only need to test float, symbol and product. Sum and
     # fraction are handled by 'other'
-    assert str(x*f2) == '%s*x' % f_2
-    assert str(x*y) == 'x*y'
-    assert str(x*p1) == 'x*x*y'
+    assert str(x * f2) == '%s*x' % f_2
+    assert str(x * y) == 'x*y'
+    assert str(x * p1) == 'x*x*y'
 
     # Test Symbol '/'
-    assert str(x/f2) == '%s*x' % f_0_5
-    assert str(x/x) == '%s' % f_1
-    assert str(x/y) == 'x/y'
-    assert str(x/S0) == 'x/(x + y)'
-    assert str(x/p0) == '%s' % f_0_5
-    assert str(y/p1) == '%s/x' % f_1
-    assert str(z/p0) == '%s*z/x' % f_0_5
-    assert str(z/p1) == 'z/(x*y)'
+    assert str(x / f2) == '%s*x' % f_0_5
+    assert str(x / x) == '%s' % f_1
+    assert str(x / y) == 'x/y'
+    assert str(x / S0) == 'x/(x + y)'
+    assert str(x / p0) == '%s' % f_0_5
+    assert str(y / p1) == '%s/x' % f_1
+    assert str(z / p0) == '%s*z/x' % f_0_5
+    assert str(z / p1) == 'z/(x*y)'
     with pytest.raises(Exception):
         truediv(x, F0)
     with pytest.raises(Exception):

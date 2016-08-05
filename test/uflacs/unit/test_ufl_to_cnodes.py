@@ -6,6 +6,7 @@ from ufl import as_ufl
 import uflacs.language
 from uflacs.language.ufl_to_cnodes import UFL2CNodesTranslator
 
+
 def test_ufl_to_cnodes():
 
     L = uflacs.language.cnodes
@@ -20,11 +21,11 @@ def test_ufl_to_cnodes():
     z = L.Symbol("z")
 
     examples = [
-        (f+g, (x,y), "x + y"),
-        #(f-g, (x,y), "x - y"), # - is not currently a UFL operator
-        (f*g, (x,y), "x * y"),
-        (f/g, (x,y), "x / y"),
-        (f**g, (x,y), "std::pow(x, y)"),
+        (f + g, (x, y), "x + y"),
+        # (f-g, (x,y), "x - y"), # - is not currently a UFL operator
+        (f * g, (x, y), "x * y"),
+        (f / g, (x, y), "x / y"),
+        (f**g, (x, y), "std::pow(x, y)"),
         (exp(f), (x,), "std::exp(x)"),
         (ln(f), (x,), "std::log(x)"),
         (abs(f), (x,), "std::abs(x)"),
@@ -41,23 +42,23 @@ def test_ufl_to_cnodes():
         (tanh(f), (x,), "std::tanh(x)"),
         (erf(f), (x,), "std::erf(x)"),
         #(erfc(f), (x,), "std::erfc(x)"),
-        (min_value(f,g), (x,y), "std::min(x, y)"),
-        (max_value(f,g), (x,y), "std::max(x, y)"),
-        (bessel_I(1, g), (x,y), "boost::math::cyl_bessel_i(x, y)"),
-        (bessel_J(1, g), (x,y), "boost::math::cyl_bessel_j(x, y)"),
-        (bessel_K(1, g), (x,y), "boost::math::cyl_bessel_k(x, y)"),
-        (bessel_Y(1, g), (x,y), "boost::math::cyl_neumann(x, y)"),
-        (f < g, (x,y), "x < y"),
-        (f > g, (x,y), "x > y"),
-        (f <= g, (x,y), "x <= y"),
-        (f >= g, (x,y), "x >= y"),
-        (eq(f, g), (x,y), "x == y"),
-        (ne(f, g), (x,y), "x != y"),
-        (And(f<g, f>g), (x,y), "x && y"),
-        (Or(f<g, f>g), (x,y), "x || y"),
-        (Not(f<g), (x,), "!x"),
-        (conditional(f<g,g,h), (x,y,z), "x ? y : z"),
-        ]
+        (min_value(f, g), (x, y), "std::min(x, y)"),
+        (max_value(f, g), (x, y), "std::max(x, y)"),
+        (bessel_I(1, g), (x, y), "boost::math::cyl_bessel_i(x, y)"),
+        (bessel_J(1, g), (x, y), "boost::math::cyl_bessel_j(x, y)"),
+        (bessel_K(1, g), (x, y), "boost::math::cyl_bessel_k(x, y)"),
+        (bessel_Y(1, g), (x, y), "boost::math::cyl_neumann(x, y)"),
+        (f < g, (x, y), "x < y"),
+        (f > g, (x, y), "x > y"),
+        (f <= g, (x, y), "x <= y"),
+        (f >= g, (x, y), "x >= y"),
+        (eq(f, g), (x, y), "x == y"),
+        (ne(f, g), (x, y), "x != y"),
+        (And(f < g, f > g), (x, y), "x && y"),
+        (Or(f < g, f > g), (x, y), "x || y"),
+        (Not(f < g), (x,), "!x"),
+        (conditional(f < g, g, h), (x, y, z), "x ? y : z"),
+    ]
     for expr, args, code in examples:
         # Warning: This test is subtle: translate will look at the type of expr and
         #  ignore its operands, i.e. not translating the full tree but only one level.

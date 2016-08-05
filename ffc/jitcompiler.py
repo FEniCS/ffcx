@@ -25,7 +25,8 @@ It uses dijitso to wrap the generated code into a Python module."""
 # Modified by Martin Alnaes, 2013-2015
 
 # Python modules
-import os, sys
+import os
+import sys
 import dijitso
 
 # UFL modules
@@ -78,12 +79,12 @@ def jit_build_with_dijitso(ufl_object, module_name, parameters):
         build_params = {
             "cxxflags_opt": tuple(parameters["cpp_optimize_flags"].split()),
             "debug": False
-            }
+        }
     else:
         build_params = {
             "cxxflags_debug": ("-O0",),
             "debug": True
-            }
+        }
 
     # Add path to UFC include dir
     build_params["include_dirs"] = get_ufc_include()
@@ -91,7 +92,7 @@ def jit_build_with_dijitso(ufl_object, module_name, parameters):
     # FFC default is "", use "." to point to curdir
     cache_dir = parameters.get("cache_dir") or None
     if cache_dir:
-        cache_params = { "cache_dir": cache_dir }
+        cache_params = {"cache_dir": cache_dir}
     else:
         cache_params = {}
 
@@ -99,7 +100,7 @@ def jit_build_with_dijitso(ufl_object, module_name, parameters):
         "cache": cache_params,
         "build": build_params,
         "generator": parameters,
-        })
+    })
 
     module, signature = dijitso.jit(ufl_object, module_name, params, _generate)
     return module
@@ -147,6 +148,8 @@ def jit(ufl_object, parameters=None):
 
 
 from ffc.cpp import make_classname
+
+
 def _instantiate_form(module, prefix):
     "Extract the form from module with only one form."
     form_id = 0

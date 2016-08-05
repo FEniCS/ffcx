@@ -26,6 +26,7 @@ from ufl import inner, dx, ds, dS, avg, replace, action
 
 __all__ = ["ErrorControlGenerator", "UFLErrorControlGenerator"]
 
+
 class ErrorControlGenerator:
 
     def __init__(self, module, F, M, u):
@@ -156,8 +157,8 @@ class ErrorControlGenerator:
 
         # Define forms defining linear variational problem for cell
         # residual
-        v_T = self._b_T*v
-        a_R_T = inner(v_T, R_T)*dx(self.domain)
+        v_T = self._b_T * v
+        a_R_T = inner(v_T, R_T) * dx(self.domain)
         L_R_T = replace(self.weak_residual, {v_h: v_T})
 
         return (a_R_T, L_R_T)
@@ -177,11 +178,12 @@ class ErrorControlGenerator:
 
         # Define forms defining linear variational problem for facet
         # residual
-        v_e = self._b_e*v
-        a_R_dT = ((inner(v_e('+'), R_e('+')) + inner(v_e('-'), R_e('-')))*dS(self.domain)
-                  + inner(v_e, R_e)*ds(self.domain))
-        L_R_dT = (replace(self.weak_residual, {v_h: v_e})
-                  - inner(v_e, self._R_T)*dx(self.domain))
+        v_e = self._b_e * v
+        a_R_dT = ((inner(v_e('+'), R_e('+')) +
+                   inner(v_e('-'), R_e('-'))) * dS(self.domain) +
+                  inner(v_e, R_e) * ds(self.domain))
+        L_R_dT = (replace(self.weak_residual, {v_h: v_e}) -
+                  inner(v_e, self._R_T) * dx(self.domain))
 
         return (a_R_dT, L_R_dT)
 
@@ -205,14 +207,16 @@ class ErrorControlGenerator:
 
         # Define linear form for computing error indicators
         v = self.module.TestFunction(self._DG0)
-        eta_T = (v*inner(R_T, z - z_h)*dx(self.domain)
-                 + avg(v)*(inner(R_dT('+'), (z - z_h)('+'))
-                           + inner(R_dT('-'), (z - z_h)('-')))*dS(self.domain)
-                 + v*inner(R_dT, z - z_h)*ds(self.domain))
+        eta_T = (v * inner(R_T, z - z_h) * dx(self.domain) +
+                 avg(v)*(inner(R_dT('+'), (z - z_h)('+')) +
+                         inner(R_dT('-'), (z - z_h)('-'))) * dS(self.domain) +
+                 v * inner(R_dT, z - z_h) * ds(self.domain))
 
         return eta_T
 
+
 class UFLErrorControlGenerator(ErrorControlGenerator):
+
     """
     This class provides a realization of ErrorControlGenerator for use
     with pure UFL forms
@@ -294,4 +298,5 @@ class UFLErrorControlGenerator(ErrorControlGenerator):
         self.ec_names[id(self._z_h)] = "__discrete_dual_solution"
 
         # Piecewise constants for assembling indicators
-        self._DG0 = FunctionSpace(domain, FiniteElement("DG", domain.ufl_cell(), 0))
+        self._DG0 = FunctionSpace(domain, FiniteElement("DG",
+                                                        domain.ufl_cell(), 0))
