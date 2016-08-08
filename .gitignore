@@ -54,3 +54,6 @@ __pycache__
 /test/uflacs/crosslanguage/generated
 /test/uflacs/crosslanguage/gtest.log
 /test/uflacs/crosslanguage/run_gtest
+
+# setuptools temps
+*.egg-info/
