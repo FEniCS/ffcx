@@ -48,6 +48,9 @@ FIAT (functional.pt_dict) in the intermediate representation stage.
 # First added:  2009-xx-yy
 # Last changed: 2015-03-20
 
+from collections import OrderedDict
+import six
+
 from ffc.cpp import format, remove_unused
 from ffc.utils import pick_first
 from ufl.permutation import build_component_numbering
@@ -95,10 +98,18 @@ def evaluate_dof_and_dofs(ir):
     dof_cases = ["%s\n%s" % (c, ret(r)) for (c, r) in cases]
     dof_code = reqs + format["switch"](f_i, dof_cases, ret(format["float"](0.0)))
 
+    # Construct dict with eval code as keys to remove duplicate eval code
+    cases_opt = OrderedDict((case[0], []) for case in cases)
+    for i, (evl, res) in enumerate(cases):
+        cases_opt[evl].append((i, res))
+
     # Combine each case with assignments for evaluate_dofs
-    dofs_cases = "\n".join("%s\n%s" % (c, format["assign"](component(f_values, i), r))
-                           for (i, (c, r)) in enumerate(cases))
-    dofs_code = reqs + dofs_cases
+    dofs_code = reqs
+    for evl, results in six.iteritems(cases_opt):
+        dofs_code += evl + "\n"
+        for i, res in results:
+            dofs_code += format["assign"](component(f_values, i), res) + "\n"
+    dofs_code = dofs_code.rstrip("\n")
 
     return (dof_code, dofs_code)
 
