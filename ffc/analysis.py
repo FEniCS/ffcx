@@ -124,7 +124,7 @@ def _analyze_form(form, parameters):
     # Hack to override representation with environment variable
     forced_r = os.environ.get("FFC_FORCE_REPRESENTATION")
     if forced_r:
-        warning("representation:    forced by $FFC_FORCE_REPRESENTATION to '%s'" % r)
+        warning("representation:    forced by $FFC_FORCE_REPRESENTATION to '%s'" % forced_r)
 
     # Compute form metadata
     if parameters["representation"] == "uflacs" or forced_r == "uflacs":
