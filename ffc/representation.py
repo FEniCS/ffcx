@@ -12,7 +12,8 @@ function "foo", one should only need to use the data stored
 in the intermediate representation under the key "foo".
 """
 
-# Copyright (C) 2009-2015 Anders Logg
+# Copyright (C) 2009-2016 Anders Logg, Martin Alnaes, Marie E. Rognes,
+# Kristian B. Oelgaard, and others
 #
 # This file is part of FFC.
 #
@@ -28,11 +29,6 @@ in the intermediate representation under the key "foo".
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# Modified by Marie E. Rognes 2010
-# Modified by Kristian B. Oelgaard 2010
-# Modified by Martin Alnaes, 2013-2015
-# Modified by Lizao Li 2015
 
 # Python modules
 from itertools import chain
@@ -351,6 +347,13 @@ def _compute_integral_ir(form_data, form_id, prefix, element_numbers, parameters
 
         # Storing prefix here for reconstruction of classnames on code generation side
         ir["prefix"] = prefix
+
+        # Store metadata for later reference (eg. printing as comment)
+        # NOTE: We make a commitment not to modify it!
+        ir["integrals_metadata"] = itg_data.metadata
+        ir["integral_metadata"] = [integral.metadata()
+                                   for integral in itg_data.integrals]
+
 
         # Append representation
         irs.append(ir)
