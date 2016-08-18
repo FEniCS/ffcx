@@ -39,7 +39,6 @@ def generate_form(form, classname, error_control):
     """
 
     blocks = []
-
     # Generate code for Form_x_FunctionSpace_y subclasses
     wrap = apply_function_space_template
     blocks += [wrap("%s_FunctionSpace_%d" % (classname, i),
@@ -188,7 +187,6 @@ def generate_multimesh_form_constructors(form, classname):
 
 def generate_constructor(form, classname, space_tag, coefficient_tag=None):
     "Generate a single Form constructor according to the given parameters."
-
     # Extract correct code snippets
     (argument, assign) = snippets[space_tag]
 
@@ -279,14 +277,13 @@ def generate_multimesh_constructor(form, classname, space_tag,
         access = "->"
     else:
         access = "."
-
     # Create body for building multimesh function space
     body = ""
     body += "    // Create and add standard forms\n"
     body += "    std::size_t num_parts = V0%snum_parts(); // assume all equal and pick first\n" % access
     body += "    for (std::size_t part = 0; part < num_parts; part++)\n"
     body += "    {\n"
-    body += "      std::shared_ptr<const dolfin::Form> a(new %s(%s));\n" % (classname, ", ".join("V%d%spart(part)" % (i, access) for i in reversed(range(form.rank))))
+    body += "      std::shared_ptr<dolfin::Form> a(new %s(%s));\n" % (classname, ", ".join("V%d%spart(part)" % (i, access) for i in reversed(range(form.rank))))
     body += "    add(a);\n\n"
     body += "    }\n"
     body += "    // Build multimesh form\n"
@@ -298,7 +295,7 @@ def generate_multimesh_constructor(form, classname, space_tag,
         body += "    // Creating a form for each part of the mesh\n"
         body += "    for (std::size_t i=0; i< mesh->num_parts(); i++)\n"
         body += "    {\n"
-        body += "      std::shared_ptr<const dolfin::Form> a(new %s(mesh->part(i))); " % (classname)
+        body += "      std::shared_ptr<dolfin::Form> a(new %s(mesh->part(i))); " % (classname)
         body += "      add(a);"
         body += "    }\n"
         body += "    // Build multimesh form\n"
