@@ -18,6 +18,7 @@
 
 """Collection of exposed parameters available to tune form compiler algorithms."""
 
+
 def default_parameters():
     return {
         "enable_profiling": False,

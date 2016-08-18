@@ -32,7 +32,7 @@ __all__ = ["generate_dolfin_code"]
 # the same name in multiple forms, it is indeed the same coefficient:
 parameters = {"use_common_coefficient_names": True}
 
-#-------------------------------------------------------------------------------
+
 def generate_dolfin_code(prefix, header, forms,
                          common_function_space=False, add_guards=False,
                          error_control=False):
@@ -70,7 +70,7 @@ def generate_dolfin_code(prefix, header, forms,
     # Return code
     return "\n".join(code)
 
-#-------------------------------------------------------------------------------
+
 def generate_dolfin_namespace(prefix, forms, common_function_space=False,
                               error_control=False):
 
@@ -98,7 +98,7 @@ def generate_dolfin_namespace(prefix, forms, common_function_space=False,
     # Return code
     return code
 
-#-------------------------------------------------------------------------------
+
 def generate_single_function_space(prefix, space):
     code = apply_function_space_template("FunctionSpace",
                                          space.ufc_finite_element_classnames[0],
@@ -106,7 +106,7 @@ def generate_single_function_space(prefix, space):
     code = "\nnamespace %s\n{\n\n%s\n}" % (prefix, code)
     return code
 
-#-------------------------------------------------------------------------------
+
 def generate_namespace_typedefs(forms, common_function_space, error_control):
 
     # Generate typedefs as (fro, to) pairs of strings
@@ -115,18 +115,19 @@ def generate_namespace_typedefs(forms, common_function_space, error_control):
     # Add typedef for Functional/LinearForm/BilinearForm if only one
     # is present of each
     aliases = ["Functional", "LinearForm", "BilinearForm"]
-    extra_aliases = {"LinearForm": "ResidualForm", "BilinearForm": "JacobianForm"}
+    extra_aliases = {"LinearForm": "ResidualForm",
+                     "BilinearForm": "JacobianForm"}
     for rank in sorted(range(len(aliases)), reverse=True):
         forms_of_rank = [form for form in forms if form.rank == rank]
         if len(forms_of_rank) == 1:
             pairs += [("Form_%s" % forms_of_rank[0].name, aliases[rank])]
-            if not error_control: # FIXME: Issue #91
+            if not error_control:  # FIXME: Issue #91
                 pairs += [("MultiMeshForm_%s" % forms_of_rank[0].name,
                            "MultiMesh" + aliases[rank])]
             if aliases[rank] in extra_aliases:
                 extra_alias = extra_aliases[aliases[rank]]
                 pairs += [("Form_%s" % forms_of_rank[0].name, extra_alias)]
-                if not error_control: # FIXME: Issue #91
+                if not error_control:  # FIXME: Issue #91
                     pairs += [("MultiMeshForm_%s" % forms_of_rank[0].name,
                                "MultiMesh" + extra_alias)]
 
@@ -135,8 +136,9 @@ def generate_namespace_typedefs(forms, common_function_space, error_control):
         for i, form in enumerate(forms):
             if form.rank:
                 pairs += [("Form_%s::TestSpace" % form.name, "FunctionSpace")]
-                if not error_control: # FIXME: Issue #91
-                    pairs += [("Form_%s::MultiMeshTestSpace" % form.name, "MultiMeshFunctionSpace")]
+                if not error_control:  # FIXME: Issue #91
+                    pairs += [("Form_%s::MultiMeshTestSpace" % form.name,
+                               "MultiMeshFunctionSpace")]
                 break
 
     # Add specialized typedefs when adding error control wrapppers
@@ -151,7 +153,7 @@ def generate_namespace_typedefs(forms, common_function_space, error_control):
         return ""
     return "// Class typedefs\n" + typedefs + "\n"
 
-#-------------------------------------------------------------------------------
+
 def error_control_pairs(forms):
     assert (len(forms) == 11), "Expecting 11 error control forms"
 

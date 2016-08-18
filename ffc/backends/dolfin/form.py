@@ -48,7 +48,7 @@ def generate_form(form, classname, error_control):
 
     # Generate code for Form_x_MultiMeshFunctionSpace_y subclasses
     wrap = apply_multimesh_function_space_template
-    if not error_control: # FIXME: Issue #91
+    if not error_control:  # FIXME: Issue #91
         blocks += [wrap("%s_MultiMeshFunctionSpace_%d" % (classname, i),
                         "%s_FunctionSpace_%d" % (classname, i),
                         form.ufc_finite_element_classnames[i],
@@ -111,7 +111,7 @@ def generate_coefficient_map_data(form):
 dolfin::dolfin_error("generated code for class %s",
                          "access coefficient data",
                          "There are no coefficients");''' % form.superclassname
-        num  = "\n    %s\n    return 0;" % message
+        num = "\n    %s\n    return 0;" % message
         name = '\n    %s\n    return "unnamed";' % message
         return (num, name)
 
@@ -129,7 +129,7 @@ dolfin::dolfin_error("generated code for class %s",
 dolfin::dolfin_error("generated code for class %s",
                          "access coefficient data",
                          "Invalid coefficient");''' % form.superclassname
-    num +=  "\n    %s\n    return 0;" % message
+    num += "\n    %s\n    return 0;" % message
     name += '    }\n\n    %s\n    return "unnamed";' % message
 
     return (num, name)
@@ -205,15 +205,15 @@ def generate_constructor(form, classname, space_tag, coefficient_tag=None):
     if coefficient_tag is not None:
         (argument, assign) = snippets[coefficient_tag]
         arguments += [argument % name for name in form.coefficient_names]
-        if form.rank > 0: # FIXME: To match old generated code only
+        if form.rank > 0:  # FIXME: To match old generated code only
             assignments += [""]
-        assignments += [assign %(name, name) for name in form.coefficient_names]
+        assignments += [assign % (name, name) for name in form.coefficient_names]
 
     # Add assignment of _ufc_form variable
     line = "\n    _ufc_form = std::make_shared<const %s>();"
     # FIXME: To match old generated code only
     if form.rank == 0 and coefficient_tag is None:
-        line =  "    _ufc_form = std::make_shared<const %s>();"
+        line = "    _ufc_form = std::make_shared<const %s>();"
     assignments += [line % form.ufc_form_classname]
 
     # Construct list for initialization of Coefficient references
@@ -259,9 +259,9 @@ def generate_multimesh_constructor(form, classname, space_tag,
     if coefficient_tag is not None:
         (argument, assign) = snippets[coefficient_tag]
         arguments += [argument % name for name in form.coefficient_names]
-        if form.rank > 0: # FIXME: To match old generated code only
+        if form.rank > 0:  # FIXME: To match old generated code only
             assignments += [""]
-        assignments += [assign %(name, name) for name in form.coefficient_names]
+        assignments += [assign % (name, name) for name in form.coefficient_names]
 
     # Construct list for initialization of Coefficient references
     initializers = ["%s(*this, %d)" % (name, number)
@@ -399,7 +399,7 @@ def apply_form_template(classname, constructors, number, name, members,
 def apply_multimesh_form_template(classname, constructors, number, name,
                                   members, superclass):
     members = members.replace("CoefficientAssigner",
-                              "MultiMeshCoefficientAssigner") # hack
+                              "MultiMeshCoefficientAssigner")  # hack
     args = {"classname": classname,
             "superclass": superclass,
             "constructors": constructors,

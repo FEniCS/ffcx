@@ -39,6 +39,7 @@ from ffc.representationutils import transform_component
 from ffc.tensor.monomialextraction import MonomialForm
 from ffc.tensor.monomialextraction import MonomialException
 
+
 def transform_monomial_form(monomial_form):
     "Transform monomial form to reference element."
 
@@ -60,19 +61,22 @@ def transform_monomial_form(monomial_form):
             if not isinstance(monomial, TransformedMonomial):
                 integrand.monomials[i] = TransformedMonomial(monomial)
 
+
 class MonomialIndex:
+
     """
     This class represents a monomial index. Each index has a type,
     a range and a unique id. Valid index types are listed below.
     """
 
-    FIXED     = "fixed"      # Integer index
-    PRIMARY   = "primary"    # Argument basis function index
+    FIXED = "fixed"      # Integer index
+    PRIMARY = "primary"    # Argument basis function index
     SECONDARY = "secondary"  # Index appearing both inside and outside integral
-    INTERNAL  = "internal"   # Index appearing only inside integral
-    EXTERNAL  = "external"   # Index appearing only outside integral
+    INTERNAL = "internal"   # Index appearing only inside integral
+    EXTERNAL = "external"   # Index appearing only outside integral
 
-    def __init__(self, index=None, index_type=None, index_range=None, index_id=None):
+    def __init__(self, index=None, index_type=None, index_range=None,
+                 index_id=None):
         "Create index with given type, range and id."
         if isinstance(index, MonomialIndex):
             self.index_type = index.index_type
@@ -87,7 +91,8 @@ class MonomialIndex:
         "Comparison operator."
         return self.index_id < other.index_id
 
-    def __call__(self, primary=None, secondary=None, internal=None, external=None):
+    def __call__(self, primary=None, secondary=None, internal=None,
+                 external=None):
         "Evaluate index at current index list."
 
         if self.index_type == MonomialIndex.FIXED:
@@ -136,7 +141,9 @@ class MonomialIndex:
         else:
             return "?"
 
+
 class MonomialDeterminant:
+
     "This class representes a determinant factor in a monomial."
 
     def __init__(self, power=None, restriction=None):
@@ -154,7 +161,7 @@ class MonomialDeterminant:
         if not self.restriction:
             r = ""
         else:
-            r = "(%s)" %  self.restriction
+            r = "(%s)" % self.restriction
         if self.power == 0:
             return "|det F'%s|" % r
         elif self.power == 1:
@@ -162,7 +169,9 @@ class MonomialDeterminant:
         else:
             return "|det F'%s| (det F'%s)^%s" % (r, r, str(self.power))
 
+
 class MonomialCoefficient:
+
     "This class represents a coefficient in a monomial."
 
     def __init__(self, index, number):
@@ -174,7 +183,9 @@ class MonomialCoefficient:
         "Return informal string representation (pretty-print)."
         return "c_" + str(self.index)
 
+
 class MonomialTransform:
+
     "This class represents a transform (mapping derivative) in a form."
 
     J = "J"
@@ -190,10 +201,11 @@ class MonomialTransform:
         self.restriction = restriction
         self.offset = offset
 
-        # Subtract offset for fixed indices. Note that the index subtraction
-        # creates a new index instance. This is ok here since a fixed index
-        # does not need to match any other index (being the same instance)
-        # in index summation and index extraction.
+        # Subtract offset for fixed indices. Note that the index
+        # subtraction creates a new index instance. This is ok here
+        # since a fixed index does not need to match any other index
+        # (being the same instance) in index summation and index
+        # extraction.
         if index0.index_type is MonomialIndex.FIXED:
             self.index0 = index0 - offset
         if index1.index_type is MonomialIndex.FIXED:
@@ -210,7 +222,9 @@ class MonomialTransform:
         else:
             return "dX_%s/dx_%s%s" % (str(self.index0), str(self.index1), r)
 
+
 class MonomialArgument:
+
     """
     This class represents a monomial argument, that is, a derivative of
     a scalar component of a basis function on the reference element.
@@ -243,7 +257,9 @@ class MonomialArgument:
         v = "V_" + str(self.index)
         return d0 + v + r + c + d1
 
+
 class TransformedMonomial:
+
     """
     This class represents a monomial form after transformation to the
     reference element.
@@ -326,7 +342,8 @@ class TransformedMonomial:
                     raise MonomialException("Mappings differ: " + str(mappings))
                 mapping = mappings[0]
 
-                # Get component index relative to its sub element and its sub element
+                # Get component index relative to its sub element and
+                # its sub element
                 (component_index, sub_element) = ufl_element.extract_component(component.index_range[0])
 
                 # Get offset
@@ -345,7 +362,8 @@ class TransformedMonomial:
                         "Component transform not implemented for this case. Please request this feature."
                     component, offset = transform_component(component.index_range[0], offset, ufl_element)
                     component = MonomialIndex(index_type=MonomialIndex.FIXED,
-                                              index_range=[component], index_id=None)
+                                              index_range=[component],
+                                              index_id=None)
                     components = [component, ]
 
                 # Add transforms where appropriate
@@ -384,7 +402,9 @@ class TransformedMonomial:
                 else:
                     index1 = MonomialIndex(index_range=list(range(gdim)))
                 index_map[d] = index1
-                transform = MonomialTransform(index0, index1, MonomialTransform.JINV, f.restriction, 0)
+                transform = MonomialTransform(index0, index1,
+                                              MonomialTransform.JINV,
+                                              f.restriction, 0)
 
                 self.transforms.append(transform)
                 derivatives.append(index0)
@@ -393,7 +413,8 @@ class TransformedMonomial:
             restriction = f.restriction
 
             # Create basis function
-            v = MonomialArgument(ufl_element, vindex, components, derivatives, restriction)
+            v = MonomialArgument(ufl_element, vindex, components, derivatives,
+                                 restriction)
             self.arguments.append(v)
 
         # Figure out secondary and auxiliary indices
@@ -411,13 +432,13 @@ class TransformedMonomial:
 
             if num_internal == 1 and num_external == 1:
                 i.index_type = MonomialIndex.SECONDARY
-                i.index_id   = _next_secondary_index()
+                i.index_id = _next_secondary_index()
             elif num_internal == 2 and num_external == 0:
                 i.index_type = MonomialIndex.INTERNAL
-                i.index_id   = _next_internal_index()
+                i.index_id = _next_internal_index()
             elif num_internal == 0 and num_external == 2:
                 i.index_type = MonomialIndex.EXTERNAL
-                i.index_id   = _next_external_index()
+                i.index_id = _next_external_index()
             else:
                 raise Exception("Summation index does not appear exactly twice: %s" % str(i))
 
@@ -469,7 +490,7 @@ class TransformedMonomial:
     def _extract_indices(self, index_type=None):
         "Return all indices for monomial."
         return self._extract_internal_indices(index_type) + \
-               self._extract_external_indices(index_type)
+            self._extract_external_indices(index_type)
 
     def __str__(self):
         "Return informal string representation (pretty-print)."
@@ -486,11 +507,13 @@ _current_secondary_index = 0
 _current_internal_index = 0
 _current_external_index = 0
 
+
 def _next_secondary_index():
     "Return next available secondary index."
     global _current_secondary_index
     _current_secondary_index += 1
     return _current_secondary_index - 1
+
 
 def _next_internal_index():
     "Return next available internal index."
@@ -498,11 +521,13 @@ def _next_internal_index():
     _current_internal_index += 1
     return _current_internal_index - 1
 
+
 def _next_external_index():
     "Return next available external index."
     global _current_external_index
     _current_external_index += 1
     return _current_external_index - 1
+
 
 def _reset_indices():
     "Reset all index counters."

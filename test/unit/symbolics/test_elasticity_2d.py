@@ -34,108 +34,78 @@ def testElasticity2D():
             Sum([
                 Product([
                     Sum([
-                        Product([Symbol("Jinv_00", GEO), Symbol("FE0_C0_D10_ip_j", BASIS)])
-                        ,
+                        Product([Symbol("Jinv_00", GEO), Symbol("FE0_C0_D10_ip_j", BASIS)]),
                         Product([Symbol("Jinv_10", GEO), Symbol("FE0_C0_D01_ip_j", BASIS)])
-                    ])
-                    ,
-                    FloatValue(2)
-                    ,
+                    ]),
+                    FloatValue(2),
                     Sum([
-                        Product([Symbol("Jinv_00", GEO), Symbol("FE0_C0_D10_ip_k", BASIS)])
-                        ,
+                        Product([Symbol("Jinv_00", GEO), Symbol("FE0_C0_D10_ip_k", BASIS)]),
                         Product([Symbol("Jinv_10", GEO), Symbol("FE0_C0_D01_ip_k", BASIS)])
-                    ])
-                ,
+                    ]),
                     FloatValue(2)
-            ])
-                ,
-            Product([
+                ]),
+                Product([
+                        Sum([
+                            Sum([
+                                Product([Symbol("Jinv_00", GEO), Symbol("FE0_C1_D10_ip_j", BASIS)]),
+                                Product([Symbol("Jinv_10", GEO), Symbol("FE0_C1_D01_ip_j", BASIS)])
+                                ]),
+                            Sum([
+                                Product([Symbol("Jinv_01", GEO), Symbol("FE0_C0_D10_ip_j", BASIS)]),
+                                Product([Symbol("Jinv_11", GEO), Symbol("FE0_C0_D01_ip_j", BASIS)])
+                                ])
+                            ]),
                 Sum([
                     Sum([
-                        Product([Symbol("Jinv_00", GEO), Symbol("FE0_C1_D10_ip_j", BASIS)])
-                        ,
-                        Product([Symbol("Jinv_10", GEO), Symbol("FE0_C1_D01_ip_j", BASIS)])
-                ])
-                    ,
-                    Sum([
-                        Product([Symbol("Jinv_01", GEO), Symbol("FE0_C0_D10_ip_j", BASIS)])
-                        ,
-                        Product([Symbol("Jinv_11", GEO), Symbol("FE0_C0_D01_ip_j", BASIS)])
-                    ])
-                ])
-                ,
-                Sum([
-                    Sum([
-                    Product([Symbol("Jinv_00", GEO), Symbol("FE0_C1_D10_ip_k", BASIS)])
-                                                  ,
+                        Product([Symbol("Jinv_00", GEO), Symbol("FE0_C1_D10_ip_k", BASIS)]),
                         Product([Symbol("Jinv_10", GEO), Symbol("FE0_C1_D01_ip_k", BASIS)])
-                    ])
-                    ,
+                    ]),
                     Sum([
-                        Product([Symbol("Jinv_01", GEO), Symbol("FE0_C0_D10_ip_k", BASIS)])
-                        ,
-                    Product([Symbol("Jinv_11", GEO), Symbol("FE0_C0_D01_ip_k", BASIS)])
+                        Product([Symbol("Jinv_01", GEO), Symbol("FE0_C0_D10_ip_k", BASIS)]),
+                        Product([Symbol("Jinv_11", GEO), Symbol("FE0_C0_D01_ip_k", BASIS)])
                     ])
                 ])
-            ])
-            ])
-            ,
+                ])
+            ]),
             Sum([
                 Product([
                     Sum([
-                        Product([Symbol("Jinv_01", GEO), Symbol("FE0_C1_D10_ip_j", BASIS)])
-                        ,
+                        Product([Symbol("Jinv_01", GEO), Symbol("FE0_C1_D10_ip_j", BASIS)]),
                         Product([Symbol("Jinv_11", GEO), Symbol("FE0_C1_D01_ip_j", BASIS)])
-                    ])
-                    ,
-                    FloatValue(2)
-                    ,
+                    ]),
+                    FloatValue(2),
                     Sum([
-                        Product([Symbol("Jinv_01", GEO), Symbol("FE0_C1_D10_ip_k", BASIS)])
-                        ,
+                        Product([Symbol("Jinv_01", GEO), Symbol("FE0_C1_D10_ip_k", BASIS)]),
                         Product([Symbol("Jinv_11", GEO), Symbol("FE0_C1_D01_ip_k", BASIS)])
-                    ])
-                    ,
+                    ]),
                     FloatValue(2)
-                ])
-                ,
+                ]),
                 Product([
                     Sum([
                         Sum([
-                            Product([Symbol("Jinv_01", GEO), Symbol("FE0_C0_D10_ip_j", BASIS)])
-                            ,
+                            Product([Symbol("Jinv_01", GEO), Symbol("FE0_C0_D10_ip_j", BASIS)]),
                             Product([Symbol("Jinv_11", GEO), Symbol("FE0_C0_D01_ip_j", BASIS)])
-                        ])
-                        ,
+                        ]),
                         Sum([
-                            Product([Symbol("Jinv_00", GEO), Symbol("FE0_C1_D10_ip_j", BASIS)])
-                            ,
+                            Product([Symbol("Jinv_00", GEO), Symbol("FE0_C1_D10_ip_j", BASIS)]),
                             Product([Symbol("Jinv_10", GEO), Symbol("FE0_C1_D01_ip_j", BASIS)])
                         ])
-                    ])
-                    ,
+                    ]),
                     Sum([
                         Sum([
-                            Product([Symbol("Jinv_01", GEO), Symbol("FE0_C0_D10_ip_k", BASIS)])
-                            ,
+                            Product([Symbol("Jinv_01", GEO), Symbol("FE0_C0_D10_ip_k", BASIS)]),
                             Product([Symbol("Jinv_11", GEO), Symbol("FE0_C0_D01_ip_k", BASIS)])
-                        ])
-                        ,
+                        ]),
                         Sum([
-                            Product([Symbol("Jinv_00", GEO), Symbol("FE0_C1_D10_ip_k", BASIS)])
-                            ,
+                            Product([Symbol("Jinv_00", GEO), Symbol("FE0_C1_D10_ip_k", BASIS)]),
                             Product([Symbol("Jinv_10", GEO), Symbol("FE0_C1_D01_ip_k", BASIS)])
                         ])
                     ])
                 ])
             ])
-        ])
-        ,
-        FloatValue(0.25)
-        ,
-        Symbol("W4_ip", IP)
-        ,
+        ]),
+        FloatValue(0.25),
+        Symbol("W4_ip", IP),
         Symbol("det", GEO)
     ])
 
@@ -151,11 +121,11 @@ def testElasticity2D():
     FE0_C1_D01_ip_j, FE0_C1_D10_ip_j, FE0_C1_D01_ip_k, FE0_C1_D10_ip_k = (3.12, -8.1, -45.3, 17.5)
 
     assert round(eval(str(expr)) - eval(str(expr_exp)), 8) == 0.0
-    assert round(eval(str(expr)) -  eval(str(expr_red)), 8) == 0.0
-    assert round(eval(str(expr)) -  eval(str(elasticity)), 8) == 0.0
+    assert round(eval(str(expr)) - eval(str(expr_red)), 8) == 0.0
+    assert round(eval(str(expr)) - eval(str(elasticity)), 8) == 0.0
     assert round(eval(str(expr)) - eval(str(elasticity_exp)), 8) == 0.0
     assert round(eval(str(expr)) - eval(str(elasticity_red)), 8) == 0.0
-    assert expr.ops() ==  52
+    assert expr.ops() == 52
     assert elasticity_exp_ops == 159
     assert expr_exp.ops() == 159
     assert elasticity_red_ops == 71

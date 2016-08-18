@@ -24,6 +24,7 @@ from ffc.cpp import format, set_float_formatting
 from ffc.parameters import FFC_PARAMETERS
 set_float_formatting(FFC_PARAMETERS['precision'])
 
+
 def testSum():
     "Test simple sum instance."
 
@@ -83,7 +84,7 @@ def testSum():
 
     # Test hash
     l = [S2]
-    d = {S2:0}
+    d = {S2: 0}
 
     assert S2 in l
     assert S2 in d

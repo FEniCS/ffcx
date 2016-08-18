@@ -61,7 +61,7 @@ def testNotFinished():
     e1 = s0 / S1
     e2 = S2 / S1
     e3 = _group_fractions(S3)
-    e4 = Sum([Fraction(f1*s0, a*b*c), Fraction(s0, a*b)]).expand().reduce_ops()
+    e4 = Sum([Fraction(f1 * s0, a * b * c), Fraction(s0, a * b)]).expand().reduce_ops()
 
     # Tests that pass the current implementation
     assert str(e0) == '%s/(%s*x + %s*y)' % (f_4, f_2, f_8)
@@ -78,8 +78,8 @@ def testNotFinished():
 
     # TODO: Would it be a good idea to reduce expressions
     # wrt. var_type without first expanding?
-    E0 = Product([ Sum([ Product([ Symbol('B0', BASIS), Product([Symbol('B1', BASIS), Sum([s0]), Sum([s0])]) ]),
-                         Product([Symbol('B0', BASIS), Symbol('B1', BASIS)]) ]) ])
+    E0 = Product([Sum([Product([Symbol('B0', BASIS), Product([Symbol('B1', BASIS), Sum([s0]), Sum([s0])])]),
+                       Product([Symbol('B0', BASIS), Symbol('B1', BASIS)])])])
     Er0 = E0.reduce_vartype(BASIS)
     Ex0 = E0.expand().reduce_vartype(BASIS)
     assert Ex0[0][1] != Er0[0][1].expand()

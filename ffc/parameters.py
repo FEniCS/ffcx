@@ -25,38 +25,38 @@ from ffc.log import INFO
 
 
 _FFC_GENERATE_PARAMETERS = {
-  "format":                         "ufc",   # code generation format
-  "representation":                 "auto",  # form representation / code
+    "format": "ufc",   # code generation format
+  "representation": "auto",  # form representation / code
                                              # generation strategy
-  "quadrature_rule":                "auto",  # quadrature rule used for
+  "quadrature_rule": "auto",  # quadrature rule used for
                                              # integration of element tensors
-  "quadrature_degree":              -1,      # quadrature degree used for
+  "quadrature_degree": -1,      # quadrature degree used for
                                              # computing integrals
-  "precision":                      15,      # precision used when writing
+  "precision": 15,      # precision used when writing
                                              # numbers
-  "epsilon":                        1e-14,   # machine precision, used for
+  "epsilon": 1e-14,   # machine precision, used for
                                              # dropping zero terms
-  "split":                          False,   # split generated code into .h and
+  "split": False,   # split generated code into .h and
                                              # .cpp file
-  "form_postfix":                   True,    # postfix form name with "Function",
+  "form_postfix": True,    # postfix form name with "Function",
                                              # "LinearForm" or BilinearForm
   "convert_exceptions_to_warnings": False,   # convert all exceptions to warning
                                              # in generated code
-  "error_control":                  False,   # with error control
-  "optimize":                       False,   # optimise the code generation
-  }
+  "error_control": False,   # with error control
+  "optimize": False,   # optimise the code generation
+}
 _FFC_BUILD_PARAMETERS = {
-  "cpp_optimize":                   True,    # optimization for the JIT compiler
-  "cpp_optimize_flags":             "-O2",   # optimization flags for the JIT compiler
-  }
+    "cpp_optimize": True,    # optimization for the JIT compiler
+  "cpp_optimize_flags": "-O2",   # optimization flags for the JIT compiler
+}
 _FFC_CACHE_PARAMETERS = {
-  "cache_dir":                      "",      # cache dir used by Instant
-  "output_dir":                     ".",     # output directory for generated code
-  }
+    "cache_dir": "",      # cache dir used by Instant
+  "output_dir": ".",     # output directory for generated code
+}
 _FFC_LOG_PARAMETERS = {
-  "log_level":                      INFO+5,  # log level, displaying only
+    "log_level": INFO + 5,  # log level, displaying only
                                              # messages with level >= log_level
-  "log_prefix":                     "",      # log prefix
+  "log_prefix": "",      # log prefix
 }
 FFC_PARAMETERS = {}
 FFC_PARAMETERS.update(_FFC_BUILD_PARAMETERS)
@@ -70,11 +70,11 @@ def split_parameters(parameters):
 
     """
     params = {
-        "cache":     {k: parameters[k] for k in _FFC_CACHE_PARAMETERS.keys()},
-        "build":     {k: parameters[k] for k in _FFC_BUILD_PARAMETERS.keys()},
-        "generate":  {k: parameters[k] for k in _FFC_GENERATE_PARAMETERS.keys()},
-        "log":       {k: parameters[k] for k in _FFC_LOG_PARAMETERS.keys()},
-        }
+        "cache": {k: parameters[k] for k in _FFC_CACHE_PARAMETERS.keys()},
+        "build": {k: parameters[k] for k in _FFC_BUILD_PARAMETERS.keys()},
+        "generate": {k: parameters[k] for k in _FFC_GENERATE_PARAMETERS.keys()},
+        "log": {k: parameters[k] for k in _FFC_LOG_PARAMETERS.keys()},
+    }
     return params
 
 
@@ -131,10 +131,10 @@ def compilation_relevant_parameters(parameters):
 
     # This doesn't work because some parameters may not be among the defaults above.
     # That is somewhat confusing but we'll just have to live with it at least for now.
-    #sp = split_parameters(parameters)
-    #p = {}
-    #p.update(sp["generate"])
-    #p.update(sp["build"])
+    # sp = split_parameters(parameters)
+    # p = {}
+    # p.update(sp["generate"])
+    # p.update(sp["build"])
 
     return p
 

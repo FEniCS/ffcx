@@ -22,7 +22,9 @@
 # Modified by Martin Alnaes 2013-2015
 
 # Python modules
-import re, numpy, platform
+import re
+import numpy
+import platform
 
 # UFL modules
 from ufl import custom_integral_types
@@ -32,10 +34,13 @@ from ffc.log import debug, error
 from six.moves import zip
 
 # ufc class names
+
+
 def make_classname(prefix, basename, signature):
     pre = prefix.lower() + "_" if prefix else ""
     sig = str(signature).lower()
     return "%s%s_%s" % (pre, basename, sig)
+
 
 def make_integral_classname(prefix, integral_type, form_id, subdomain_id):
     basename = "%s_integral_%s" % (integral_type, str(form_id).lower())
@@ -54,89 +59,89 @@ format = {}
 
 # Program flow
 format.update({
-    "return":         lambda v: "return %s;" % str(v),
-    "grouping":       lambda v: "(%s)" % v,
-    "block":          lambda v: "{%s}" % v,
-    "block begin":    "{",
-    "block end":      "}",
-    "list":           lambda v: format["block"](format["list separator"].join([str(l) for l in v])),
-    "switch":         lambda v, cases, default=None, numbers=None: _generate_switch(v, cases, default, numbers),
-    "exception":      lambda v: "throw std::runtime_error(\"%s\");" % v,
-    "warning":        lambda v: 'std::cerr << "*** FFC warning: " << "%s" << std::endl;' % v,
-    "comment":        lambda v: "// %s" % v,
-    "if":             lambda c, v: "if (%s)\n{\n%s\n}\n" % (c, v),
-    "loop":           lambda i, j, k: "for (unsigned int %s = %s; %s < %s; %s++)"% (i, j, i, k, i),
-    "generate loop":  lambda v, w, _indent=0: _generate_loop(v, w, _indent),
-    "is equal":       " == ",
-    "not equal":      " != ",
-    "less than":      " < ",
-    "greater than":   " > ",
-    "less equal":     " <= ",
-    "greater equal":  " >= ",
-    "and":            " && ",
-    "or":             " || ",
-    "not":            lambda v: "!(%s)" % v,
-    "do nothing":     "// Do nothing"
+    "return": lambda v: "return %s;" % str(v),
+    "grouping": lambda v: "(%s)" % v,
+    "block": lambda v: "{%s}" % v,
+    "block begin": "{",
+    "block end": "}",
+    "list": lambda v: format["block"](format["list separator"].join([str(l) for l in v])),
+    "switch": lambda v, cases, default=None, numbers=None: _generate_switch(v, cases, default, numbers),
+    "exception": lambda v: "throw std::runtime_error(\"%s\");" % v,
+    "warning": lambda v: 'std::cerr << "*** FFC warning: " << "%s" << std::endl;' % v,
+    "comment": lambda v: "// %s" % v,
+    "if": lambda c, v: "if (%s)\n{\n%s\n}\n" % (c, v),
+    "loop": lambda i, j, k: "for (unsigned int %s = %s; %s < %s; %s++)" % (i, j, i, k, i),
+    "generate loop": lambda v, w, _indent=0: _generate_loop(v, w, _indent),
+    "is equal": " == ",
+    "not equal": " != ",
+    "less than": " < ",
+    "greater than": " > ",
+    "less equal": " <= ",
+    "greater equal": " >= ",
+    "and": " && ",
+    "or": " || ",
+    "not": lambda v: "!(%s)" % v,
+    "do nothing": "// Do nothing"
 })
 
 # Declarations
 format.update({
-    "declaration":                    lambda t, n, v=None: _declaration(t, n, v),
-    "float declaration":              "double",
-    "int declaration":                "int",
-    "uint declaration":               "unsigned int",
-    "static const uint declaration":  "static const unsigned int",
+    "declaration": lambda t, n, v=None: _declaration(t, n, v),
+    "float declaration": "double",
+    "int declaration": "int",
+    "uint declaration": "unsigned int",
+    "static const uint declaration": "static const unsigned int",
     "static const float declaration": "static const double",
-    "vector table declaration":       "std::vector< std::vector<double> >",
-    "double array declaration":       "double*",
+    "vector table declaration": "std::vector< std::vector<double> >",
+    "double array declaration": "double*",
     "const double array declaration": "const double*",
-    "const float declaration":        lambda v, w: "const double %s = %s;" % (v, w),
-    "const uint declaration":         lambda v, w: "const unsigned int %s = %s;" % (v, w),
-    "dynamic array":                  lambda t, n, s: "%s *%s = new %s[%s];" % (t, n, t, s),
-    "static array":                   lambda t, n, s: "static %s %s[%d];" % (t, n, s),
-    "fixed array":                    lambda t, n, s: "%s %s[%d];" % (t, n, s),
-    "delete dynamic array":           lambda n, s=None: _delete_array(n, s),
-    "create foo":                     lambda v: "new %s()" % v
+    "const float declaration": lambda v, w: "const double %s = %s;" % (v, w),
+    "const uint declaration": lambda v, w: "const unsigned int %s = %s;" % (v, w),
+    "dynamic array": lambda t, n, s: "%s *%s = new %s[%s];" % (t, n, t, s),
+    "static array": lambda t, n, s: "static %s %s[%d];" % (t, n, s),
+    "fixed array": lambda t, n, s: "%s %s[%d];" % (t, n, s),
+    "delete dynamic array": lambda n, s=None: _delete_array(n, s),
+    "create foo": lambda v: "new %s()" % v
 })
 
 # Mathematical operators
 format.update({
-    "add":            lambda v: " + ".join(v),
-    "iadd":           lambda v, w: "%s += %s;" % (str(v), str(w)),
-    "sub":            lambda v: " - ".join(v),
-    "neg":            lambda v: "-%s" % v,
-    "mul":            lambda v: "*".join(v),
-    "imul":           lambda v, w: "%s *= %s;" % (str(v), str(w)),
-    "div":            lambda v, w: "%s/%s" % (str(v), str(w)),
-    "inverse":        lambda v: "(1.0/%s)" % v,
-    "std power":      lambda base, exp: "std::pow(%s, %s)" % (base, exp),
-    "exp":            lambda v: "std::exp(%s)" % str(v),
-    "ln":             lambda v: "std::log(%s)" % str(v),
-    "cos":            lambda v: "std::cos(%s)" % str(v),
-    "sin":            lambda v: "std::sin(%s)" % str(v),
-    "tan":            lambda v: "std::tan(%s)" % str(v),
-    "cosh":           lambda v: "std::cosh(%s)" % str(v),
-    "sinh":           lambda v: "std::sinh(%s)" % str(v),
-    "tanh":           lambda v: "std::tanh(%s)" % str(v),
-    "acos":           lambda v: "std::acos(%s)" % str(v),
-    "asin":           lambda v: "std::asin(%s)" % str(v),
-    "atan":           lambda v: "std::atan(%s)" % str(v),
-    "atan_2":         lambda v1,v2: "std::atan2(%s,%s)" % (str(v1),str(v2)),
-    "erf":            lambda v: "erf(%s)" % str(v),
-    "bessel_i":       lambda v, n: "boost::math::cyl_bessel_i(%s, %s)" % (str(n), str(v)),
-    "bessel_j":       lambda v, n: "boost::math::cyl_bessel_j(%s, %s)" % (str(n), str(v)),
-    "bessel_k":       lambda v, n: "boost::math::cyl_bessel_k(%s, %s)" % (str(n), str(v)),
-    "bessel_y":       lambda v, n: "boost::math::cyl_neumann(%s, %s)" % (str(n), str(v)),
+    "add": lambda v: " + ".join(v),
+    "iadd": lambda v, w: "%s += %s;" % (str(v), str(w)),
+    "sub": lambda v: " - ".join(v),
+    "neg": lambda v: "-%s" % v,
+    "mul": lambda v: "*".join(v),
+    "imul": lambda v, w: "%s *= %s;" % (str(v), str(w)),
+    "div": lambda v, w: "%s/%s" % (str(v), str(w)),
+    "inverse": lambda v: "(1.0/%s)" % v,
+    "std power": lambda base, exp: "std::pow(%s, %s)" % (base, exp),
+    "exp": lambda v: "std::exp(%s)" % str(v),
+    "ln": lambda v: "std::log(%s)" % str(v),
+    "cos": lambda v: "std::cos(%s)" % str(v),
+    "sin": lambda v: "std::sin(%s)" % str(v),
+    "tan": lambda v: "std::tan(%s)" % str(v),
+    "cosh": lambda v: "std::cosh(%s)" % str(v),
+    "sinh": lambda v: "std::sinh(%s)" % str(v),
+    "tanh": lambda v: "std::tanh(%s)" % str(v),
+    "acos": lambda v: "std::acos(%s)" % str(v),
+    "asin": lambda v: "std::asin(%s)" % str(v),
+    "atan": lambda v: "std::atan(%s)" % str(v),
+    "atan_2": lambda v1, v2: "std::atan2(%s,%s)" % (str(v1), str(v2)),
+    "erf": lambda v: "erf(%s)" % str(v),
+    "bessel_i": lambda v, n: "boost::math::cyl_bessel_i(%s, %s)" % (str(n), str(v)),
+    "bessel_j": lambda v, n: "boost::math::cyl_bessel_j(%s, %s)" % (str(n), str(v)),
+    "bessel_k": lambda v, n: "boost::math::cyl_bessel_k(%s, %s)" % (str(n), str(v)),
+    "bessel_y": lambda v, n: "boost::math::cyl_neumann(%s, %s)" % (str(n), str(v)),
     "absolute value": lambda v: "std::abs(%s)" % str(v),
-    "min value":      lambda l, r: "std::min(%s, %s)" % (str(l), str(r)),
-    "max value":      lambda l, r: "std::max(%s, %s)" % (str(l), str(r)),
-    "sqrt":           lambda v: "std::sqrt(%s)" % str(v),
-    "addition":       lambda v: _add(v),
-    "multiply":       lambda v: _multiply(v),
-    "power":          lambda base, exp: _power(base, exp),
-    "inner product":  lambda v, w: _inner_product(v, w),
-    "assign":         lambda v, w: "%s = %s;" % (v, str(w)),
-    "component":      lambda v, k: _component(v, k)
+    "min value": lambda l, r: "std::min(%s, %s)" % (str(l), str(r)),
+    "max value": lambda l, r: "std::max(%s, %s)" % (str(l), str(r)),
+    "sqrt": lambda v: "std::sqrt(%s)" % str(v),
+    "addition": lambda v: _add(v),
+    "multiply": lambda v: _multiply(v),
+    "power": lambda base, exp: _power(base, exp),
+    "inner product": lambda v, w: _inner_product(v, w),
+    "assign": lambda v, w: "%s = %s;" % (v, str(w)),
+    "component": lambda v, k: _component(v, k)
 })
 
 # Formatting used in tabulate_tensor
@@ -146,59 +151,59 @@ format.update({
 
 # Geometry related variable names (from code snippets).
 format.update({
-    "entity index":       "entity_indices",
-    "num entities":       "num_global_entities",
-    "cell":               lambda s: "ufc::shape::%s" % s,
-    "J":                  lambda i, j, m, n: "J[%d]" % _flatten(i, j, m, n),
-    "inv(J)":             lambda i, j, m, n: "K[%d]" % _flatten(i, j, m, n),
-    "det(J)":             lambda r=None: "detJ%s" % _choose_map(r),
-    "cell volume":        lambda r=None: "volume%s" % _choose_map(r),
-    "circumradius":       lambda r=None: "circumradius%s" % _choose_map(r),
-    "facet area":         "facet_area",
+    "entity index": "entity_indices",
+    "num entities": "num_global_entities",
+    "cell": lambda s: "ufc::shape::%s" % s,
+    "J": lambda i, j, m, n: "J[%d]" % _flatten(i, j, m, n),
+    "inv(J)": lambda i, j, m, n: "K[%d]" % _flatten(i, j, m, n),
+    "det(J)": lambda r=None: "detJ%s" % _choose_map(r),
+    "cell volume": lambda r=None: "volume%s" % _choose_map(r),
+    "circumradius": lambda r=None: "circumradius%s" % _choose_map(r),
+    "facet area": "facet_area",
     "min facet edge length": lambda r: "min_facet_edge_length",
     "max facet edge length": lambda r: "max_facet_edge_length",
-    "scale factor":       "det",
-    "transform":          lambda t, i, j, m, n, r: _transform(t, i, j, m, n, r),
-    "normal component":   lambda r, j: "n%s%s" % (_choose_map(r), j),
-    "x coordinate":       "X",
-    "y coordinate":       "Y",
-    "z coordinate":       "Z",
-    "ip coordinates":     lambda i, j: "X%d[%d]" % (i, j),
-    "affine map table":   lambda i, j: "FEA%d_f%d" % (i, j),
+    "scale factor": "det",
+    "transform": lambda t, i, j, m, n, r: _transform(t, i, j, m, n, r),
+    "normal component": lambda r, j: "n%s%s" % (_choose_map(r), j),
+    "x coordinate": "X",
+    "y coordinate": "Y",
+    "z coordinate": "Z",
+    "ip coordinates": lambda i, j: "X%d[%d]" % (i, j),
+    "affine map table": lambda i, j: "FEA%d_f%d" % (i, j),
     "coordinate_dofs": lambda r=None: "coordinate_dofs%s" % _choose_map(r)
 })
 
 # UFC function arguments and class members (names)
 format.update({
-    "element tensor":             lambda i: "A[%s]" % i,
-    "element tensor term":        lambda i, j: "A%d[%s]" % (j, i),
-    "coefficient":                lambda j, k: format["component"]("w", [j, k]),
-    "argument basis num":         "i",
-    "argument derivative order":  "n",
-    "argument values":            "values",
-    "argument coordinates":       "dof_coordinates",
-    "facet":                      lambda r: "facet%s" % _choose_map(r),
-    "vertex":                     "vertex",
-    "argument axis":              "i",
-    "argument dimension":         "d",
-    "argument entity":            "i",
-    "member global dimension":    "_global_dimension",
-    "argument dofs":              "dofs",
-    "argument dof num":           "i",
-    "argument dof values":        "dof_values",
-    "argument vertex values":     "vertex_values",
-    "argument sub":               "i", # sub element
-    "argument subdomain":         "subdomain_id", # sub domain
+    "element tensor": lambda i: "A[%s]" % i,
+    "element tensor term": lambda i, j: "A%d[%s]" % (j, i),
+    "coefficient": lambda j, k: format["component"]("w", [j, k]),
+    "argument basis num": "i",
+    "argument derivative order": "n",
+    "argument values": "values",
+    "argument coordinates": "dof_coordinates",
+    "facet": lambda r: "facet%s" % _choose_map(r),
+    "vertex": "vertex",
+    "argument axis": "i",
+    "argument dimension": "d",
+    "argument entity": "i",
+    "member global dimension": "_global_dimension",
+    "argument dofs": "dofs",
+    "argument dof num": "i",
+    "argument dof values": "dof_values",
+    "argument vertex values": "vertex_values",
+    "argument sub": "i",  # sub element
+    "argument subdomain": "subdomain_id",  # sub domain
 })
 
 # Formatting used in evaluatedof.
 format.update({
-    "dof vals":                 "vals",
-    "dof result":               "result",
-    "dof X":                    lambda i: "X_%d" % i,
-    "dof D":                    lambda i: "D_%d" % i,
-    "dof W":                    lambda i: "W_%d" % i,
-    "dof copy":                 lambda i: "copy_%d" % i,
+    "dof vals": "vals",
+    "dof result": "result",
+    "dof X": lambda i: "X_%d" % i,
+    "dof D": lambda i: "D_%d" % i,
+    "dof W": lambda i: "W_%d" % i,
+    "dof copy": lambda i: "copy_%d" % i,
     "dof physical coordinates": "y"
 })
 
@@ -207,114 +212,117 @@ format.update({
 # code generators.
 format.update({
     # evaluate_basis and evaluate_basis_derivatives
-    "tmp value":                  lambda i: "tmp%d" % i,
-    "tmp ref value":              lambda i: "tmp_ref%d" % i,
-    "local dof":                  "dof",
-    "basisvalues":                "basisvalues",
-    "coefficients":               lambda i: "coefficients%d" %(i),
-    "num derivatives":            lambda t_or_g :"num_derivatives" + t_or_g,
-    "derivative combinations":    lambda t_or_g :"combinations" + t_or_g,
-    "transform matrix":           "transform",
-    "transform Jinv":             "Jinv",
-    "dmats":                      lambda i: "dmats%s" %(i),
-    "dmats old":                  "dmats_old",
-    "reference derivatives":      "derivatives",
-    "dof values":                 "dof_values",
-    "dof map if":                 lambda i,j: "%d <= %s && %s <= %d"\
+    "tmp value": lambda i: "tmp%d" % i,
+    "tmp ref value": lambda i: "tmp_ref%d" % i,
+    "local dof": "dof",
+    "basisvalues": "basisvalues",
+    "coefficients": lambda i: "coefficients%d" % (i),
+    "num derivatives": lambda t_or_g: "num_derivatives" + t_or_g,
+    "derivative combinations": lambda t_or_g: "combinations" + t_or_g,
+    "transform matrix": "transform",
+    "transform Jinv": "Jinv",
+    "dmats": lambda i: "dmats%s" % (i),
+    "dmats old": "dmats_old",
+    "reference derivatives": "derivatives",
+    "dof values": "dof_values",
+    "dof map if":                 lambda i, j: "%d <= %s && %s <= %d"\
                                   % (i, format["argument basis num"], format["argument basis num"], j),
-    "dereference pointer":        lambda n: "*%s" % n,
-    "reference variable":         lambda n: "&%s" % n,
-    "call basis":                 lambda i, s: "_evaluate_basis(%s, %s, x, coordinate_dofs, cell_orientation);" % (i, s),
-    "call basis_all":             "_evaluate_basis_all(values, x, coordinate_dofs, cell_orientation);",
-    "call basis_derivatives":     lambda i, s: "_evaluate_basis_derivatives(%s, n, %s, x, coordinate_dofs, cell_orientation);" % (i, s),
+    "dereference pointer": lambda n: "*%s" % n,
+    "reference variable": lambda n: "&%s" % n,
+    "call basis": lambda i, s: "_evaluate_basis(%s, %s, x, coordinate_dofs, cell_orientation);" % (i, s),
+    "call basis_all": "_evaluate_basis_all(values, x, coordinate_dofs, cell_orientation);",
+    "call basis_derivatives": lambda i, s: "_evaluate_basis_derivatives(%s, n, %s, x, coordinate_dofs, cell_orientation);" % (i, s),
     "call basis_derivatives_all": lambda i, s: "_evaluate_basis_derivatives_all(n, %s, x, coordinate_dofs, cell_orientation);" % s,
 
     # quadrature code generators
-    "integration points":   "ip",
-    "first free index":     "j",
-    "second free index":    "k",
-    "geometry constant":    lambda i: "G[%d]" % i,
-    "ip constant":          lambda i: "I[%d]" % i,
-    "basis constant":       lambda i: "B[%d]" % i,
-    "conditional":          lambda i: "C[%d]" % i,
-    "evaluate conditional": lambda i,j,k: "(%s) ? %s : %s" % (i,j,k),
-#    "geometry constant":   lambda i: "G%d" % i,
-#    "ip constant":         lambda i: "I%d" % i,
-#    "basis constant":      lambda i: "B%d" % i,
-    "function value":       lambda i: "F%d" % i,
-    "nonzero columns":      lambda i: "nzc%d" % i,
-    "weight":               lambda i: "W" if i is None else "W%d" % (i),
-    "psi name":             lambda c, et, e, co, d, a: _generate_psi_name(c, et, e, co, d, a),
-    # both
-    "free indices":         ["r","s","t","u"],
-    "matrix index":         lambda i, j, range_j: _matrix_index(i, str(j), str(range_j)),
-    "quadrature point":     lambda i, gdim: "quadrature_points + %s*%d" % (i, gdim),
-    "facet_normal_custom":  lambda gdim: _generate_facet_normal_custom(gdim),
-})
+    "integration points": "ip",
+    "first free index": "j",
+    "second free index": "k",
+    "geometry constant": lambda i: "G[%d]" % i,
+    "ip constant": lambda i: "I[%d]" % i,
+    "basis constant": lambda i: "B[%d]" % i,
+    "conditional": lambda i: "C[%d]" % i,
+    "evaluate conditional": lambda i, j, k: "(%s) ? %s : %s" % (i, j, k),
+              #    "geometry constant":   lambda i: "G%d" % i,
+              #    "ip constant":         lambda i: "I%d" % i,
+              #    "basis constant":      lambda i: "B%d" % i,
+              "function value": lambda i: "F%d" % i,
+              "nonzero columns": lambda i: "nzc%d" % i,
+              "weight": lambda i: "W" if i is None else "W%d" % (i),
+              "psi name": lambda c, et, e, co, d, a: _generate_psi_name(c, et, e, co, d, a),
+              # both
+              "free indices": ["r", "s", "t", "u"],
+              "matrix index": lambda i, j, range_j: _matrix_index(i, str(j), str(range_j)),
+              "quadrature point": lambda i, gdim: "quadrature_points + %s*%d" % (i, gdim),
+              "facet_normal_custom": lambda gdim: _generate_facet_normal_custom(gdim),
+              })
 
 # Misc
 format.update({
-    "bool":             lambda v: {True: "true", False: "false"}[v],
-    "str":              lambda v: "%s" % v,
-    "int":              lambda v: "%d" % v,
-    "list separator":   ", ",
-    "block separator":  ",\n",
-    "new line":         "\\\n",
-    "tabulate tensor":  lambda m: _tabulate_tensor(m),
+    "bool": lambda v: {True: "true", False: "false"}[v],
+    "str": lambda v: "%s" % v,
+    "int": lambda v: "%d" % v,
+    "list separator": ", ",
+    "block separator": ",\n",
+    "new line": "\\\n",
+    "tabulate tensor": lambda m: _tabulate_tensor(m),
 })
 
 # Code snippets
 from ffc.codesnippets import *
 
 format.update({
-    "compute_jacobian":         lambda tdim, gdim, r=None: \
+    "compute_jacobian": lambda tdim, gdim, r=None:
                                 compute_jacobian[tdim][gdim] % {"restriction": _choose_map(r)},
-    "compute_jacobian_inverse": lambda tdim, gdim, r=None: \
+    "compute_jacobian_inverse": lambda tdim, gdim, r=None:
                                 compute_jacobian_inverse[tdim][gdim] % {"restriction": _choose_map(r)},
-    "orientation":              lambda tdim, gdim, r=None: orientation_snippet % {"restriction": _choose_map(r)} if tdim != gdim else "",
-    "facet determinant":        lambda tdim, gdim, r=None: facet_determinant[tdim][gdim] % {"restriction": _choose_map(r)},
-    "fiat coordinate map":      lambda cell, gdim: fiat_coordinate_map[cell][gdim],
-    "generate normal":          lambda tdim, gdim, i: _generate_normal(tdim, gdim, i),
-    "generate cell volume":     lambda tdim, gdim, i, r=None: _generate_cell_volume(tdim, gdim, i, r),
-    "generate circumradius":    lambda tdim, gdim, i, r=None: _generate_circumradius(tdim, gdim, i, r),
-    "generate facet area":      lambda tdim, gdim: facet_area[tdim][gdim],
+    "orientation": lambda tdim, gdim, r=None: orientation_snippet % {"restriction": _choose_map(r)} if tdim != gdim else "",
+    "facet determinant": lambda tdim, gdim, r=None: facet_determinant[tdim][gdim] % {"restriction": _choose_map(r)},
+    "fiat coordinate map": lambda cell, gdim: fiat_coordinate_map[cell][gdim],
+    "generate normal": lambda tdim, gdim, i: _generate_normal(tdim, gdim, i),
+    "generate cell volume": lambda tdim, gdim, i, r=None: _generate_cell_volume(tdim, gdim, i, r),
+    "generate circumradius": lambda tdim, gdim, i, r=None: _generate_circumradius(tdim, gdim, i, r),
+    "generate facet area": lambda tdim, gdim: facet_area[tdim][gdim],
     "generate min facet edge length": lambda tdim, gdim, r=None: min_facet_edge_length[tdim][gdim] % {"restriction": _choose_map(r)},
     "generate max facet edge length": lambda tdim, gdim, r=None: max_facet_edge_length[tdim][gdim] % {"restriction": _choose_map(r)},
-    "generate ip coordinates":  lambda g, t, num_ip, name, ip, r=None: (ip_coordinates[t][g][0], ip_coordinates[t][g][1] % \
-                                {"restriction": _choose_map(r), "ip": ip, "name": name, "num_ip": num_ip}),
-    "scale factor snippet":     scale_factor,
-    "map onto physical":        map_onto_physical,
-    "evaluate basis snippet":   eval_basis,
-    "combinations":             combinations_snippet,
-    "transform snippet":        transform_snippet,
-    "evaluate function":        evaluate_f,
-    "ufc comment":              comment_ufc,
-    "dolfin comment":           comment_dolfin,
-    "header_h":                 header_h,
-    "header_c":                 header_c,
-    "footer":                   footer,
-    "eval_basis_decl":          eval_basis_decl,
-    "eval_basis_init":          eval_basis_init,
-    "eval_basis":               eval_basis,
-    "eval_basis_copy":          eval_basis_copy,
-    "eval_derivs_decl":         eval_derivs_decl,
-    "eval_derivs_init":         eval_derivs_init,
-    "eval_derivs":              eval_derivs,
-    "eval_derivs_copy":         eval_derivs_copy,
-    "extract_cell_coordinates": lambda offset, r : "const double* coordinate_dofs_%d = coordinate_dofs + %d;" % (r, offset)
-    })
+    "generate ip coordinates": lambda g, t, num_ip, name, ip, r=None: (ip_coordinates[t][g][0], ip_coordinates[t][g][1] %
+                                                                       {"restriction": _choose_map(r), "ip": ip, "name": name, "num_ip": num_ip}),
+    "scale factor snippet": scale_factor,
+    "map onto physical": map_onto_physical,
+    "evaluate basis snippet": eval_basis,
+    "combinations": combinations_snippet,
+    "transform snippet": transform_snippet,
+    "evaluate function": evaluate_f,
+    "ufc comment": comment_ufc,
+    "dolfin comment": comment_dolfin,
+    "header_h": header_h,
+    "header_c": header_c,
+    "footer": footer,
+    "eval_basis_decl": eval_basis_decl,
+    "eval_basis_init": eval_basis_init,
+    "eval_basis": eval_basis,
+    "eval_basis_copy": eval_basis_copy,
+    "eval_derivs_decl": eval_derivs_decl,
+    "eval_derivs_init": eval_derivs_init,
+    "eval_derivs": eval_derivs,
+    "eval_derivs_copy": eval_derivs_copy,
+    "extract_cell_coordinates": lambda offset, r: "const double* coordinate_dofs_%d = coordinate_dofs + %d;" % (r, offset)
+})
 
 # Helper functions for formatting
 
+
 def _declaration(type, name, value=None):
     if value is None:
-        return "%s %s;" % (type, name);
-    return "%s %s = %s;" % (type, name, str(value));
+        return "%s %s;" % (type, name)
+    return "%s %s = %s;" % (type, name, str(value))
+
 
 def _component(var, k):
     if not isinstance(k, (list, tuple)):
         k = [k]
     return "%s" % var + "".join("[%s]" % str(i) for i in k)
+
 
 def _delete_array(name, size=None):
     if size is None:
@@ -323,6 +331,7 @@ def _delete_array(name, size=None):
     code = format["generate loop"](["delete [] %s;" % format["component"](name, f_r)], [(f_r, 0, size)])
     code.append("delete [] %s;" % name)
     return "\n".join(code)
+
 
 def _multiply(factors):
     """
@@ -366,6 +375,7 @@ def _multiply(factors):
 
     return "*".join(non_zero_factors)
 
+
 def _add(terms):
     "Generate string summing a list of strings."
 
@@ -375,12 +385,14 @@ def _add(terms):
         return format["str"](0)
     return result
 
+
 def _power(base, exponent):
     "Generate code for base^exponent."
     if exponent >= 0:
-        return _multiply(exponent*(base,))
+        return _multiply(exponent * (base,))
     else:
         return "1.0 / (%s)" % _power(base, -exponent)
+
 
 def _inner_product(v, w):
     "Generate string for v[0]*w[0] + ... + v[n]*w[n]."
@@ -389,7 +401,8 @@ def _inner_product(v, w):
     assert(len(v) == len(w)), "Sizes differ in inner-product!"
 
     # Special case, zero terms
-    if len(v) == 0: return format["float"](0)
+    if len(v) == 0:
+        return format["float"](0)
 
     # Straightforward handling when we only have strings
     if isinstance(v[0], str):
@@ -402,7 +415,7 @@ def _inner_product(v, w):
     sub = format["sub"]
     neg = format["neg"]
     mul = format["mul"]
-    fl  = format["float"]
+    fl = format["float"]
     for (c, x) in zip(v, w):
         if result:
             if abs(c - 1.0) < eps:
@@ -425,11 +438,14 @@ def _inner_product(v, w):
 
     return result
 
+
 def _transform(type, i, j, m, n, r):
     map_name = {"J": "J", "JINV": "K"}[type] + _choose_map(r)
     return (map_name + "[%d]") % _flatten(i, j, m, n)
 
 # FIXME: Input to _generate_switch should be a list of tuples (i, case)
+
+
 def _generate_switch(variable, cases, default=None, numbers=None):
     "Generate switch statement from given variable and cases"
 
@@ -459,16 +475,17 @@ def _generate_switch(variable, cases, default=None, numbers=None):
 
     return code
 
+
 def _tabulate_tensor(vals):
     "Tabulate a multidimensional tensor. (Replace tabulate_matrix and tabulate_vector)."
 
     # Prefetch formats to speed up code generation
-    f_block     = format["block"]
-    f_list_sep  = format["list separator"]
+    f_block = format["block"]
+    f_list_sep = format["list separator"]
     f_block_sep = format["block separator"]
     # FIXME: KBO: Change this to "float" once issue in set_float_formatting is fixed.
-    f_float     = format["floating point"]
-    f_epsilon   = format["epsilon"]
+    f_float = format["floating point"]
+    f_epsilon = format["epsilon"]
 
     # Create numpy array and get shape.
     tensor = numpy.array(vals)
@@ -488,14 +505,15 @@ def _tabulate_tensor(vals):
     else:
         error("Not an N-dimensional array:\n%s" % tensor)
 
+
 def _generate_loop(lines, loop_vars, _indent):
     "This function generates a loop over a vector or matrix."
 
     # Prefetch formats to speed up code generation.
-    f_loop     = format["loop"]
-    f_begin    = format["block begin"]
-    f_end      = format["block end"]
-    f_comment  = format["comment"]
+    f_loop = format["loop"]
+    f_begin = format["block begin"]
+    f_end = format["block end"]
+    f_comment = format["comment"]
 
     if not loop_vars:
         return lines
@@ -525,6 +543,7 @@ def _generate_loop(lines, loop_vars, _indent):
 
     return code
 
+
 def _matrix_index(i, j, range_j):
     "Map the indices in a matrix to an index in an array i.e., m[i][j] -> a[i*range(j)+j]"
     if i == 0:
@@ -535,6 +554,7 @@ def _matrix_index(i, j, range_j):
         irj = format["mul"]([format["str"](i), range_j])
         access = format["add"]([irj, j])
     return access
+
 
 def _generate_psi_name(counter, entity_type, entity, component, derivatives, avg):
     """Generate a name for the psi table of the form:
@@ -569,7 +589,7 @@ def _generate_psi_name(counter, entity_type, entity, component, derivatives, avg
         name += "_C%d" % component
 
     if any(derivatives):
-        name += "_D" + "".join(map(str,derivatives))
+        name += "_D" + "".join(map(str, derivatives))
 
     if avg == "cell":
         name += "_AC"
@@ -577,6 +597,7 @@ def _generate_psi_name(counter, entity_type, entity, component, derivatives, avg
         name += "_AF"
 
     return name
+
 
 def _generate_normal(tdim, gdim, integral_type, reference_normal=False):
     "Generate code for computing normal"
@@ -590,15 +611,16 @@ def _generate_normal(tdim, gdim, integral_type, reference_normal=False):
 
     # Choose restrictions
     if integral_type == "exterior_facet":
-        code = direction % {"restriction": "", "facet" : "facet"}
-        code += normal % {"direction" : "", "restriction": ""}
+        code = direction % {"restriction": "", "facet": "facet"}
+        code += normal % {"direction": "", "restriction": ""}
     elif integral_type == "interior_facet":
         code = direction % {"restriction": _choose_map("+"), "facet": "facet_0"}
-        code += normal % {"direction" : "", "restriction": _choose_map("+")}
-        code += normal % {"direction" : "!", "restriction": _choose_map("-")}
+        code += normal % {"direction": "", "restriction": _choose_map("+")}
+        code += normal % {"direction": "!", "restriction": _choose_map("-")}
     else:
         error("Unsupported integral_type: %s" % str(integral_type))
     return code
+
 
 def _generate_facet_normal_custom(gdim):
     "Generate code for setting facet normal in custom integrals"
@@ -607,6 +629,7 @@ def _generate_facet_normal_custom(gdim):
         code += "const double n_0%d =   facet_normals[%d*ip + %d];\n" % (i, gdim, i)
         code += "const double n_1%d = - facet_normals[%d*ip + %d];\n" % (i, gdim, i)
     return code
+
 
 def _generate_cell_volume(tdim, gdim, integral_type, r=None):
     "Generate code for computing cell volume."
@@ -626,6 +649,7 @@ def _generate_cell_volume(tdim, gdim, integral_type, r=None):
         error("Unsupported integral_type: %s" % str(integral_type))
     return code
 
+
 def _generate_circumradius(tdim, gdim, integral_type, r=None):
     "Generate code for computing a cell's circumradius."
 
@@ -644,15 +668,18 @@ def _generate_circumradius(tdim, gdim, integral_type, r=None):
         error("Unsupported integral_type: %s" % str(integral_type))
     return code
 
+
 def _flatten(i, j, m, n):
-    return i*n + j
+    return i * n + j
 
 # Other functions
+
 
 def indent(block, num_spaces):
     "Indent each row of the given string block with n spaces."
     indentation = " " * num_spaces
     return indentation + ("\n" + indentation).join(block.split("\n"))
+
 
 def count_ops(code):
     "Count the number of operations in code (multiply-add pairs)."
@@ -660,15 +687,16 @@ def count_ops(code):
     num_multiply = code.count("*") + code.count("/")
     return (num_add + num_multiply) // 2
 
+
 def set_float_formatting(precision):
     "Set floating point formatting based on precision."
 
     # Options for float formatting
-    #f1     = "%%.%df" % precision
-    #f2     = "%%.%de" % precision
-    f1     = "%%.%dg" % precision
-    f2     = "%%.%dg" % precision
-    f_int  = "%%.%df" % 1
+    # f1     = "%%.%df" % precision
+    # f2     = "%%.%de" % precision
+    f1 = "%%.%dg" % precision
+    f2 = "%%.%dg" % precision
+    f_int = "%%.%df" % 1
 
     eps = eval("1e-%s" % precision)
 
@@ -695,7 +723,7 @@ def set_float_formatting(precision):
     format["floating point"] = format["float"]
 
     # Set machine precision
-    format["epsilon"] = 10.0*eval("1e-%s" % precision)
+    format["epsilon"] = 10.0 * eval("1e-%s" % precision)
 
     # Hack to propagate precision to uflacs internals...
     import uflacs.language.format_value
@@ -721,7 +749,8 @@ types = [["double"],
          ["const", "unsigned", "int"]]
 
 # Special characters and delimiters
-special_characters = ["+", "-", "*", "/", "=", ".", " ", ";", "(", ")", "\\", "{", "}", "[","]", "!"]
+special_characters = ["+", "-", "*", "/", "=", ".", " ", ";", "(", ")", "\\", "{", "}", "[", "]", "!"]
+
 
 def remove_unused(code, used_set=set()):
     """
@@ -750,7 +779,7 @@ def remove_unused(code, used_set=set()):
         words = [word for word in line.split(" ") if not word == ""]
 
         # Remember line where variable is declared
-        for type in [type for type in types if " ".join(type) in " ".join(words)]: # Fewer matches than line below.
+        for type in [type for type in types if " ".join(type) in " ".join(words)]:  # Fewer matches than line below.
         # for type in [type for type in types if len(words) > len(type)]:
             variable_type = words[0:len(type)]
             variable_name = words[len(type)]
@@ -769,8 +798,7 @@ def remove_unused(code, used_set=set()):
                 # y[2]) for variables with separators
                 seps_present = [sep for sep in special_characters if sep in variable_name]
                 if seps_present:
-                    variable_name = [variable_name.split(sep)[0] for sep in seps_present]
-                    variable_name.sort()
+                    variable_name = sorted([variable_name.split(sep)[0] for sep in seps_present])
                     variable_name = variable_name[0]
 
                 variables[variable_name] = (line_number, [])
@@ -796,10 +824,11 @@ def remove_unused(code, used_set=set()):
                 used_lines.remove(line)
         if not used_lines and not variable_name in used_set:
             debug("Removing unused variable: %s" % variable_name)
-            lines[declaration_line] = None # KBO: Need to completely remove line for evaluate_basis* to work
+            lines[declaration_line] = None  # KBO: Need to completely remove line for evaluate_basis* to work
             # lines[declaration_line] = "// " + lines[declaration_line]
             removed_lines += [declaration_line]
     return "\n".join([line for line in lines if not line is None])
+
 
 def _variable_in_line(variable_name, line):
     "Check if variable name is used in line"

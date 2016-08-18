@@ -22,7 +22,6 @@
 
 # FFC modules.
 from ffc.log import error
-from ffc.cpp import format
 
 # FFC quadrature modules.
 from .symbolics import type_to_string
@@ -32,8 +31,10 @@ from .symbolics import create_sum
 from .symbolics import create_fraction
 from .expr import Expr
 
+
 class Symbol(Expr):
     __slots__ = ("v", "base_expr", "base_op", "exp", "cond")
+
     def __init__(self, variable, symbol_type, base_expr=None, base_op=0):
         """Initialise a Symbols object, it derives from Expr and contains
         the additional variables:
@@ -67,9 +68,9 @@ class Symbol(Expr):
         # Compute the representation now, such that we can use it directly
         # in the __eq__ and __ne__ methods (improves performance a bit, but
         # only when objects are cached).
-        if self.base_expr:# and self.exp is None:
-            self._repr = "Symbol('%s', %s, %s, %d)" % (self.v, type_to_string[self.t],\
-                         self.base_expr._repr, self.base_op)
+        if self.base_expr:  # and self.exp is None:
+            self._repr = "Symbol('%s', %s, %s, %d)" % (self.v, type_to_string[self.t],
+                                                       self.base_expr._repr, self.base_op)
         else:
             self._repr = "Symbol('%s', %s)" % (self.v, type_to_string[self.t])
 
@@ -90,7 +91,7 @@ class Symbol(Expr):
         # Returns x + x -> 2*x, x + 2*x -> 3*x.
         if self._repr == other._repr:
             return create_product([create_float(2), self])
-        elif other._prec == 2: # prod
+        elif other._prec == 2:  # prod
             return other.__add__(self)
         return create_sum([self, other])
 
@@ -100,7 +101,7 @@ class Symbol(Expr):
         # symbols, if other is a product, try to let product handle the addition.
         if self._repr == other._repr:
             return create_float(0)
-        elif other._prec == 2: # prod
+        elif other._prec == 2:  # prod
             if other.get_vrs() == (self,):
                 return create_product([create_float(1.0 - other.val), self]).expand()
         return create_sum([self, create_product([create_float(-1), other])])
@@ -113,11 +114,11 @@ class Symbol(Expr):
             return create_float(0)
 
         # If other is Sum or Fraction let them handle the multiply.
-        if other._prec in (3, 4): # sum or frac
+        if other._prec in (3, 4):  # sum or frac
             return other.__mul__(self)
 
         # If other is a float or symbol, create simple product.
-        if other._prec in (0, 1): # float or sym
+        if other._prec in (0, 1):  # float or sym
             return create_product([self, other])
 
         # Else add variables from product.
@@ -136,7 +137,7 @@ class Symbol(Expr):
 
         # If other is a Sum we can only return a fraction.
         # TODO: Refine this later such that x / (x + x*y) -> 1 / (1 + y)?
-        if other._prec == 3: # sum
+        if other._prec == 3:  # sum
             return create_fraction(self, other)
 
         # Handle division by FloatValue, Symbol, Product and Fraction.
@@ -145,9 +146,9 @@ class Symbol(Expr):
         denom = []
 
         # Add floatvalue, symbol and products to the list of denominators.
-        if other._prec in (0, 1): # float or sym
+        if other._prec in (0, 1):  # float or sym
             denom = [other]
-        elif other._prec == 2: # prod
+        elif other._prec == 2:  # prod
             # Need copies, so can't just do denom = other.vrs.
             denom += other.vrs
         # fraction.
@@ -166,8 +167,8 @@ class Symbol(Expr):
         for d in denom:
             # Add the inverse of a float to the numerator, remove it from
             # the denominator and continue.
-            if d._prec == 0: # float
-                num.append(create_float(1.0/other.val))
+            if d._prec == 0:  # float
+                num.append(create_float(1.0 / other.val))
                 denom.remove(d)
                 continue
 
@@ -210,7 +211,7 @@ class Symbol(Expr):
         """Determine the number of times all variables occurs in the expression.
         Returns a dictionary of variables and the number of times they occur."""
         # There is only one symbol.
-        return {self:1}
+        return {self: 1}
 
     def ops(self):
         "Returning the number of floating point operation for symbol."
@@ -219,9 +220,3 @@ class Symbol(Expr):
         if self.base_expr:
             return self.base_op + self.base_expr.ops()
         return self.base_op
-
-from .floatvalue import FloatValue
-from .product    import Product
-from .sumobj    import Sum
-from .fraction   import Fraction
-

@@ -33,33 +33,26 @@ def testPoisson():
         Sum([
             Product([
                 Sum([
-                    Product([Symbol("Jinv_00", GEO), Symbol("FE0_D10_ip_j", BASIS)])
-                    ,
+                    Product([Symbol("Jinv_00", GEO), Symbol("FE0_D10_ip_j", BASIS)]),
                     Product([Symbol("Jinv_10", GEO), Symbol("FE0_D01_ip_j", BASIS)])
                 ]),
                 Sum([
-                    Product([Symbol("Jinv_00", GEO), Symbol("FE0_D10_ip_k", BASIS)])
-                    ,
+                    Product([Symbol("Jinv_00", GEO), Symbol("FE0_D10_ip_k", BASIS)]),
                     Product([Symbol("Jinv_10", GEO), Symbol("FE0_D01_ip_k", BASIS)])
                 ])
-            ])
-            ,
+            ]),
             Product([
                 Sum([
-                    Product([Symbol("Jinv_01", GEO), Symbol("FE0_D10_ip_j", BASIS)])
-                    ,
+                    Product([Symbol("Jinv_01", GEO), Symbol("FE0_D10_ip_j", BASIS)]),
                     Product([Symbol("Jinv_11", GEO), Symbol("FE0_D01_ip_j", BASIS)])
                 ]),
                 Sum([
-                    Product([Symbol("Jinv_01", GEO), Symbol("FE0_D10_ip_k", BASIS)])
-                    ,
+                    Product([Symbol("Jinv_01", GEO), Symbol("FE0_D10_ip_k", BASIS)]),
                     Product([Symbol("Jinv_11", GEO), Symbol("FE0_D01_ip_k", BASIS)])
                 ])
             ])
-        ])
-        ,
-        Symbol("W4_ip", IP)
-        ,
+        ]),
+        Symbol("W4_ip", IP),
         Symbol("det", GEO)
     ])
 

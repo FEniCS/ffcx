@@ -52,7 +52,7 @@ def testFraction():
     pop_level()
 
     assert repr(F0) == "Fraction(FloatValue(%s), FloatValue(%s))"\
-                     % (format["float"](-1.5), format["float"](1))
+        % (format["float"](-1.5), format["float"](1))
     assert repr(F2) == "Fraction(Symbol('x', BASIS), Symbol('y', GEO))"
 
     assert str(F0) == "%s" % format["float"](-1.5)
@@ -76,7 +76,7 @@ def testFraction():
 
     # Test hash
     l = [F2]
-    d = {F2:0}
+    d = {F2: 0}
 
     assert F2 in l
     assert F2 in d

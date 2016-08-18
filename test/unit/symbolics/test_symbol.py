@@ -56,7 +56,7 @@ def testSymbol():
 
     # Test hash
     l = [s0]
-    d = {s0:0}
+    d = {s0: 0}
     s5 = Symbol('x', BASIS)
 
     assert s0 in l

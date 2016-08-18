@@ -23,15 +23,14 @@ error control
 from ufl.utils.sorting import sorted_by_key
 from ufl import Coefficient
 
-from ffc.log import info, error
+from ffc.log import error
 from ffc.compiler import compile_form
-from ffc.formatting import write_code
 
 __all__ = ["compile_with_error_control"]
 
+
 def compile_with_error_control(forms, object_names, reserved_objects,
                                prefix, parameters):
-
     """
     Compile forms and additionally generate and compile forms required
     for performing goal-oriented error control
@@ -75,7 +74,7 @@ def compile_with_error_control(forms, object_names, reserved_objects,
     ec_names = generator.ec_names
     comment = "%s are reserved error control names." % str(sorted(ec_names.values()))
     assert not (set(object_names.values()) & set(ec_names.values())), \
-               "Conflict between user defined and generated names: %s" % comment
+        "Conflict between user defined and generated names: %s" % comment
 
     # Add names generated for error control to object_names
     for (objid, name) in sorted_by_key(ec_names):
@@ -86,6 +85,7 @@ def compile_with_error_control(forms, object_names, reserved_objects,
     code_h, code_c = compile_form(ec_forms + forms, object_names, prefix, parameters)
 
     return code_h, code_c
+
 
 def prepare_input_arguments(forms, object_names, reserved_objects):
     """

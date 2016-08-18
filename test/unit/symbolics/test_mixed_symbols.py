@@ -56,7 +56,9 @@ def testMixedSymbols():
     F2 = Fraction(s0, f1)
     F3 = Fraction(f0, s1)
 
-    x = 1.2; y = 2.36; z = 6.75;
+    x = 1.2
+    y = 2.36
+    z = 6.75
     # Mixed products
     mpp0 = Product([p0, s0])
     mpp1 = Product([p1, p0])
@@ -73,20 +75,20 @@ def testMixedSymbols():
     mpf2 = Product([F2, F3])
     mpf3 = Product([F1, mpf1])
 
-    assert round(eval(str(mpp0)) - eval(str(p0))*eval(str(s0)), 10) == 0.0
-    assert round(eval(str(mpp1)) - eval(str(p1))*eval(str(p0)), 10) == 0.0
-    assert round(eval(str(mpp2)) - eval(str(p2))*eval(str(p3)), 10) == 0.0
-    assert round(eval(str(mpp3)) - eval(str(p1))*eval(str(mpp1)), 10) == 0.0
+    assert round(eval(str(mpp0)) - eval(str(p0)) * eval(str(s0)), 10) == 0.0
+    assert round(eval(str(mpp1)) - eval(str(p1)) * eval(str(p0)), 10) == 0.0
+    assert round(eval(str(mpp2)) - eval(str(p2)) * eval(str(p3)), 10) == 0.0
+    assert round(eval(str(mpp3)) - eval(str(p1)) * eval(str(mpp1)), 10) == 0.0
 
-    assert round(eval(str(mps0)) - eval(str(S0))*eval(str(s0)), 10) == 0.0
-    assert round(eval(str(mps1)) - eval(str(S1))*eval(str(S0)), 10) == 0.0
-    assert round(eval(str(mps2)) - eval(str(S2))*eval(str(S3)), 10) == 0.0
-    assert round(eval(str(mps3)) - eval(str(S1))*eval(str(mps1)), 10) == 0.0
+    assert round(eval(str(mps0)) - eval(str(S0)) * eval(str(s0)), 10) == 0.0
+    assert round(eval(str(mps1)) - eval(str(S1)) * eval(str(S0)), 10) == 0.0
+    assert round(eval(str(mps2)) - eval(str(S2)) * eval(str(S3)), 10) == 0.0
+    assert round(eval(str(mps3)) - eval(str(S1)) * eval(str(mps1)), 10) == 0.0
 
-    assert round(eval(str(mpf0)) - eval(str(F1))*eval(str(s0)), 10) == 0.0
-    assert round(eval(str(mpf1)) - eval(str(F1))*eval(str(F2)), 10) == 0.0
-    assert round(eval(str(mpf2)) - eval(str(F2))*eval(str(F3)), 10) == 0.0
-    assert round(eval(str(mpf3)) - eval(str(F1))*eval(str(mpf1)), 10) == 0.0
+    assert round(eval(str(mpf0)) - eval(str(F1)) * eval(str(s0)), 10) == 0.0
+    assert round(eval(str(mpf1)) - eval(str(F1)) * eval(str(F2)), 10) == 0.0
+    assert round(eval(str(mpf2)) - eval(str(F2)) * eval(str(F3)), 10) == 0.0
+    assert round(eval(str(mpf3)) - eval(str(F1)) * eval(str(mpf1)), 10) == 0.0
 
     assert mpp0.ops() == 2
     assert mpp1.ops() == 4
@@ -193,20 +195,20 @@ def testMixedSymbols():
     mff2 = Fraction(F2, F3)
     mff3 = Fraction(F1, mff1)
 
-    assert round(eval(str(mfp0)) - eval(str(p0))/eval(str(s0)), 10) == 0.0
-    assert round(eval(str(mfp1)) - eval(str(p1))/eval(str(p0)), 10) == 0.0
-    assert round(eval(str(mfp2)) - eval(str(p2))/eval(str(p3)), 10) == 0.0
-    assert round(eval(str(mfp3)) - eval(str(p1))/eval(str(mfp1)), 10) == 0.0
+    assert round(eval(str(mfp0)) - eval(str(p0)) / eval(str(s0)), 10) == 0.0
+    assert round(eval(str(mfp1)) - eval(str(p1)) / eval(str(p0)), 10) == 0.0
+    assert round(eval(str(mfp2)) - eval(str(p2)) / eval(str(p3)), 10) == 0.0
+    assert round(eval(str(mfp3)) - eval(str(p1)) / eval(str(mfp1)), 10) == 0.0
 
-    assert round(eval(str(mfs0)) - eval(str(S0))/eval(str(s0)), 10) == 0.0
-    assert round(eval(str(mfs1)) - eval(str(S1))/eval(str(S0)), 10) == 0.0
-    assert round(eval(str(mfs2)) - eval(str(S2))/eval(str(S3)), 10) == 0.0
-    assert round(eval(str(mfs3)) - eval(str(S1))/eval(str(mfs1)), 10) == 0.0
+    assert round(eval(str(mfs0)) - eval(str(S0)) / eval(str(s0)), 10) == 0.0
+    assert round(eval(str(mfs1)) - eval(str(S1)) / eval(str(S0)), 10) == 0.0
+    assert round(eval(str(mfs2)) - eval(str(S2)) / eval(str(S3)), 10) == 0.0
+    assert round(eval(str(mfs3)) - eval(str(S1)) / eval(str(mfs1)), 10) == 0.0
 
-    assert round(eval(str(mff0)) - eval(str(F1))/eval(str(s0)), 10) == 0.0
-    assert round(eval(str(mff1)) - eval(str(F1))/eval(str(F2)), 10) == 0.0
-    assert round(eval(str(mff2)) - eval(str(F2))/eval(str(F3)), 10) == 0.0
-    assert round(eval(str(mff3)) - eval(str(F1))/eval(str(mff1)), 10) == 0.0
+    assert round(eval(str(mff0)) - eval(str(F1)) / eval(str(s0)), 10) == 0.0
+    assert round(eval(str(mff1)) - eval(str(F1)) / eval(str(F2)), 10) == 0.0
+    assert round(eval(str(mff2)) - eval(str(F2)) / eval(str(F3)), 10) == 0.0
+    assert round(eval(str(mff3)) - eval(str(F1)) / eval(str(mff1)), 10) == 0.0
 
     assert mfp0.ops() == 2
     assert mfp1.ops() == 4

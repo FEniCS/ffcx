@@ -33,6 +33,7 @@ from ffc.backends import ufc
 
 
 class JITObject:
+
     """This class is a wrapper for a compiled object in the context of
     specific compiler parameters. A JITObject is identified either by its
     hash value or by its signature. The hash value is valid only in a
@@ -87,10 +88,9 @@ class JITObject:
         self._signature = sha1(string.encode('utf-8')).hexdigest()
 
         # Uncomment for debugging
-        #print "form_signature       =", form_signature
-        #print "parameters_signature =", parameters_signature
-        #print "ffc_signature        =", ffc_signature
-        #print "signature            =", self._signature
+        # print "form_signature       =", form_signature
+        # print "parameters_signature =", parameters_signature
+        # print "ffc_signature        =", ffc_signature
+        # print "signature            =", self._signature
 
         return self._signature
-

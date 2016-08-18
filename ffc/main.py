@@ -90,10 +90,10 @@ def main(argv):
     # Get command-line arguments
     try:
         opts, args = getopt.getopt(argv, "hVSvsl:r:f:Oo:q:ep",
-            ["help", "version", "signature", "verbose", "silent",
-             "language=", "representation=", "optimize",
-             "output-directory=", "quadrature-rule=", "error-control",
-             "profile"])
+                                   ["help", "version", "signature", "verbose", "silent",
+                                    "language=", "representation=", "optimize",
+                                    "output-directory=", "quadrature-rule=", "error-control",
+                                    "profile"])
     except getopt.GetoptError:
         info_usage()
         print_error("Illegal command-line arguments.")
@@ -184,7 +184,7 @@ def main(argv):
             return 1
 
         # Turn on profiling
-        if enable_profile:  #parameters.get("profile"):
+        if enable_profile:  # parameters.get("profile"):
             pr = cProfile.Profile()
             pr.enable()
 

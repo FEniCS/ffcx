@@ -202,8 +202,8 @@ def testReduceGIP():
     expr_red = expr_exp.reduce_ops()
 
     W9 = 9
-    F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19, F20 = [0.123 * i for i in range(1,21)]
-    G0, G1, G2, G3, G4, G5, G6, G7, G8, G9 = [2.64 + 1.0/i for i in range(20, 30)]
+    F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19, F20 = [0.123 * i for i in range(1, 21)]
+    G0, G1, G2, G3, G4, G5, G6, G7, G8, G9 = [2.64 + 1.0 / i for i in range(20, 30)]
 
     assert round(eval(str(expr)) - eval(str(expr_exp)), 10) == 0.0
     assert round(eval(str(expr)) - eval(str(expr_red)), 10) == 0.0

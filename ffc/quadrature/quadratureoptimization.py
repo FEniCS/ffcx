@@ -21,10 +21,11 @@
 from ufl.utils.sorting import sorted_by_key
 
 # FFC modules
-from ffc.log import info, error, warning
+from ffc.log import info, error
 from ffc.cpp import format
-from ffc.quadrature.symbolics import optimise_code, BASIS, IP, GEO, CONST
+from ffc.quadrature.symbolics import optimise_code, BASIS, IP, GEO
 from ffc.quadrature.symbolics import create_product, create_sum, create_symbol, create_fraction
+
 
 def optimize_integral_ir(ir, parameters):
     "Compute optimized intermediate representation of integral."
@@ -40,11 +41,11 @@ def optimize_integral_ir(ir, parameters):
     if parameters["optimisation"]:
 
         # Get parameters
-        integrals      = ir["trans_integrals"]
-        integral_type  = ir["integral_type"]
-        num_facets     = ir["num_facets"]
-        num_vertices   = ir["num_vertices"]
-        geo_consts     = ir["geo_consts"]
+        integrals = ir["trans_integrals"]
+        integral_type = ir["integral_type"]
+        num_facets = ir["num_facets"]
+        num_vertices = ir["num_vertices"]
+        geo_consts = ir["geo_consts"]
         psi_tables_map = ir["psi_tables_map"]
 
         # Optimize based on integral type
@@ -66,7 +67,7 @@ def optimize_integral_ir(ir, parameters):
                 for j in range(num_facets):
                     info("Optimising expressions for facet integral (%d, %d)" % (i, j))
                     if parameters["optimisation"] in ("precompute_ip_const", "precompute_basis_const"):
-                        _precompute_expressions(integrals[i][j], geo_consts,parameters["optimisation"])
+                        _precompute_expressions(integrals[i][j], geo_consts, parameters["optimisation"])
                     else:
                         _simplify_expression(integrals[i][j], geo_consts, psi_tables_map)
         elif integral_type == "vertex":
@@ -80,6 +81,7 @@ def optimize_integral_ir(ir, parameters):
             error("Unhandled domain type: " + str(integral_type))
 
     return ir
+
 
 def _simplify_expression(integral, geo_consts, psi_tables_map):
     for points, terms, functions, ip_consts, coordinate, conditionals in integral:
@@ -105,6 +107,7 @@ def _simplify_expression(integral, geo_consts, psi_tables_map):
             terms[loop][0][2] = psi_tables
             terms[loop][1] = new_entry_vals
 
+
 def _precompute_expressions(integral, geo_consts, optimisation):
     for points, terms, functions, ip_consts, coordinate, conditionals in integral:
         for loop, (data, entry_vals) in sorted_by_key(terms):
@@ -116,6 +119,7 @@ def _precompute_expressions(integral, geo_consts, optimisation):
                 if value.val:
                     new_entry_vals.append((entry, value, value.ops()))
             terms[loop][1] = new_entry_vals
+
 
 def _extract_variables(val, basis_consts, ip_consts, geo_consts, t_set, optimisation):
     f_G = format["geometry constant"]
@@ -217,7 +221,7 @@ def _extract_variables(val, basis_consts, ip_consts, geo_consts, t_set, optimisa
 #            new_sum = create_sum(vrs)
 #            if new_sum.t == BASIS:
 #                return new_sum
-##                return _reduce_expression(new_sum, [], basis_consts, f_B, True)
+# return _reduce_expression(new_sum, [], basis_consts, f_B, True)
 #            elif new_sum.t == IP:
 #                return _reduce_expression(new_sum, [], ip_consts, f_I, True)
 #            elif new_sum.t == GEO:
@@ -225,6 +229,7 @@ def _extract_variables(val, basis_consts, ip_consts, geo_consts, t_set, optimisa
 #        return vrs[0]
 #    else:
 #        error("Must have product or sum here: %s" % repr(new_val))
+
 
 def _reduce_expression(expr, symbols, const_dict, f_name, use_expr_type=False):
     if use_expr_type:

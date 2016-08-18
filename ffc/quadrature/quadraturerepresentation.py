@@ -21,15 +21,16 @@
 # Modified by Martin Alnaes 2013-2015
 
 # Python modules
-import numpy, itertools, collections
+import six
+import collections
 
 # UFL modules
-from ufl.classes import Form, Integral
+from ufl.classes import Integral
 from ufl.sorting import sorted_expr_sum
 from ufl import custom_integral_types
 
 # FFC modules
-from ffc.log import ffc_assert, info, error, warning
+from ffc.log import ffc_assert, info, error
 from ffc.utils import product
 from ffc.fiatinterface import create_element
 
@@ -39,7 +40,7 @@ from ffc.quadrature.parameters import parse_optimise_parameters
 
 from ffc.quadrature.quadraturetransformer import QuadratureTransformer
 from ffc.quadrature.optimisedquadraturetransformer import QuadratureTransformerOpt
-import six
+
 
 def compute_integral_ir(itg_data,
                         form_data,
@@ -56,20 +57,22 @@ def compute_integral_ir(itg_data,
     # Create and save the optisation parameters.
     ir["optimise_parameters"] = parse_optimise_parameters(parameters, itg_data)
 
-    # Sort integrals into a dict with quadrature degree and rule as key
+    # Sort integrals into a dict with quadrature degree and rule as
+    # key
     sorted_integrals = sort_integrals(itg_data.integrals,
                                       itg_data.metadata["quadrature_degree"],
                                       itg_data.metadata["quadrature_rule"])
 
-    # Tabulate quadrature points and basis function values in these points
+    # Tabulate quadrature points and basis function values in these
+    # points
     integrals_dict, psi_tables, quadrature_rules = \
         tabulate_basis(sorted_integrals, form_data, itg_data)
 
     # Save tables for quadrature weights and points
-    ir["quadrature_weights"] = quadrature_rules # TODO: Rename this ir entry to quadrature_rules
+    ir["quadrature_weights"] = quadrature_rules  # TODO: Rename this ir entry to quadrature_rules
 
-    # Create dimensions of primary indices, needed to reset the argument 'A'
-    # given to tabulate_tensor() by the assembler.
+    # Create dimensions of primary indices, needed to reset the
+    # argument 'A' given to tabulate_tensor() by the assembler.
     ir["prim_idims"] = [create_element(ufl_element).space_dimension()
                         for ufl_element in form_data.argument_elements]
 
@@ -90,39 +93,49 @@ def compute_integral_ir(itg_data,
 
     # Transform integrals.
     cell = itg_data.domain.ufl_cell()
-    ir["trans_integrals"] = _transform_integrals_by_type(ir, transformer, integrals_dict,
-                                                         itg_data.integral_type, cell)
+    ir["trans_integrals"] = _transform_integrals_by_type(ir, transformer,
+                                                         integrals_dict,
+                                                         itg_data.integral_type,
+                                                         cell)
 
     # Save tables populated by transformer
     ir["name_map"] = transformer.name_map
     ir["unique_tables"] = transformer.unique_tables  # Basis values?
 
-    # Save tables map, to extract table names for optimisation option -O.
+    # Save tables map, to extract table names for optimisation option
+    # -O.
     ir["psi_tables_map"] = transformer.psi_tables_map
     ir["additional_includes_set"] = transformer.additional_includes_set
 
-    # Insert empty data which will be populated if optimization is turned on
+    # Insert empty data which will be populated if optimization is
+    # turned on
     ir["geo_consts"] = {}
 
-    # Extract element data for psi_tables, needed for runtime quadrature.
-    # This is used by integral type custom_integral.
-    ir["element_data"] = _extract_element_data(transformer.element_map, element_numbers)
+    # Extract element data for psi_tables, needed for runtime
+    # quadrature.  This is used by integral type custom_integral.
+    ir["element_data"] = _extract_element_data(transformer.element_map,
+                                               element_numbers)
 
     return ir
 
-def sort_integrals(integrals, default_quadrature_degree, default_quadrature_rule):
-    """Sort and accumulate integrals according to the number of quadrature points needed per axis.
+
+def sort_integrals(integrals, default_quadrature_degree,
+                   default_quadrature_rule):
+    """Sort and accumulate integrals according to the number of quadrature
+points needed per axis.
 
     All integrals should be over the same (sub)domain.
+
     """
 
     if not integrals:
         return {}
 
-    # Get domain properties from first integral, assuming all are the same
-    integral_type  = integrals[0].integral_type()
-    subdomain_id   = integrals[0].subdomain_id()
-    domain         = integrals[0].ufl_domain()
+    # Get domain properties from first integral, assuming all are the
+    # same
+    integral_type = integrals[0].integral_type()
+    subdomain_id = integrals[0].subdomain_id()
+    domain = integrals[0].ufl_domain()
     ffc_assert(all(integral_type == itg.integral_type() for itg in integrals),
                "Expecting only integrals of the same type.")
     ffc_assert(all(domain == itg.ufl_domain() for itg in integrals),
@@ -132,9 +145,11 @@ def sort_integrals(integrals, default_quadrature_degree, default_quadrature_rule
 
     sorted_integrands = collections.defaultdict(list)
     for integral in integrals:
-        # Override default degree and rule if specified in integral metadata
+        # Override default degree and rule if specified in integral
+        # metadata
         integral_metadata = integral.metadata() or {}
-        degree = integral_metadata.get("quadrature_degree", default_quadrature_degree)
+        degree = integral_metadata.get("quadrature_degree",
+                                       default_quadrature_degree)
         rule = integral_metadata.get("quadrature_rule", default_quadrature_rule)
         assert isinstance(degree, int)
         # Add integrand to dictionary according to degree and rule.
@@ -146,10 +161,13 @@ def sort_integrals(integrals, default_quadrature_degree, default_quadrature_rule
     for key, integrands in list(sorted_integrands.items()):
         # Summing integrands in a canonical ordering defined by UFL
         integrand = sorted_expr_sum(integrands)
-        sorted_integrals[key] = Integral(integrand, integral_type, domain, subdomain_id, {}, None)
+        sorted_integrals[key] = Integral(integrand, integral_type, domain,
+                                         subdomain_id, {}, None)
     return sorted_integrals
 
-def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type, cell):
+
+def _transform_integrals_by_type(ir, transformer, integrals_dict,
+                                 integral_type, cell):
     num_facets = cell.num_facets()
     num_vertices = cell.num_vertices()
 
@@ -165,7 +183,8 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type,
         for i in range(num_facets):
             info("Transforming exterior facet integral %d" % i)
             transformer.update_facets(i, None)
-            terms[i] = _transform_integrals(transformer, integrals_dict, integral_type)
+            terms[i] = _transform_integrals(transformer, integrals_dict,
+                                            integral_type)
 
     elif integral_type == "interior_facet":
         # Compute transformed integrals.
@@ -174,7 +193,8 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type,
             for j in range(num_facets):
                 info("Transforming interior facet integral (%d, %d)" % (i, j))
                 transformer.update_facets(i, j)
-                terms[i][j] = _transform_integrals(transformer, integrals_dict, integral_type)
+                terms[i][j] = _transform_integrals(transformer, integrals_dict,
+                                                   integral_type)
 
     elif integral_type == "vertex":
         # Compute transformed integrals.
@@ -182,7 +202,8 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type,
         for i in range(num_vertices):
             info("Transforming vertex integral (%d)" % i)
             transformer.update_vertex(i)
-            terms[i] = _transform_integrals(transformer, integrals_dict, integral_type)
+            terms[i] = _transform_integrals(transformer, integrals_dict,
+                                            integral_type)
 
     elif integral_type in custom_integral_types:
 
@@ -195,6 +216,7 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type,
         error("Unhandled domain type: " + str(integral_type))
     return terms
 
+
 def _transform_integrals(transformer, integrals, integral_type):
     "Transform integrals from UFL expression to quadrature representation."
     transformed_integrals = []
@@ -202,8 +224,10 @@ def _transform_integrals(transformer, integrals, integral_type):
         transformer.update_points(point)
         terms = transformer.generate_terms(integral.integrand(), integral_type)
         transformed_integrals.append((point, terms, transformer.function_data,
-                                      {}, transformer.coordinate, transformer.conditionals))
+                                      {}, transformer.coordinate,
+                                      transformer.conditionals))
     return transformed_integrals
+
 
 def _extract_element_data(element_map, element_numbers):
     "Extract element data for psi_tables"
@@ -222,13 +246,13 @@ def _extract_element_data(element_map, element_numbers):
             # Get element number
             element_number = element_numbers.get(ufl_element)
             if element_number is None:
-                # FIXME: Should not be necessary, we should always know the element number
-                #warning("Missing element number, likely because vector elements are not yet supported in custom integrals.")
+                # FIXME: Should not be necessary, we should always
+                # know the element number
                 pass
 
             # Store data
-            element_data[counter] = {"value_size":      value_size,
+            element_data[counter] = {"value_size": value_size,
                                      "num_element_dofs": fiat_element.space_dimension(),
-                                     "element_number":  element_number}
+                                     "element_number": element_number}
 
     return element_data

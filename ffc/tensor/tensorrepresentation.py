@@ -38,6 +38,7 @@ from ffc.tensor.referencetensor import ReferenceTensor
 from ffc.tensor.geometrytensor import GeometryTensor
 from ffc.tensor.tensorreordering import reorder_entries
 
+
 def compute_integral_ir(itg_data,
                         form_data,
                         form_id,
@@ -65,11 +66,11 @@ def compute_integral_ir(itg_data,
 
     # Helper to simplify code below
     compute_terms = lambda i, j: _compute_terms(monomial_form,
-                                           i, j,
-                                           integral_type,
-                                           quadrature_degree,
-                                           quadrature_rule,
-                                           cell)
+                                                i, j,
+                                                integral_type,
+                                                quadrature_degree,
+                                                quadrature_rule,
+                                                cell)
 
     # Compute representation of cell tensor
     if integral_type == "cell":
@@ -95,6 +96,7 @@ def compute_integral_ir(itg_data,
     ir["AK"] = terms
 
     return ir
+
 
 def _compute_terms(monomial_form,
                    facet0, facet1,

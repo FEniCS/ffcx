@@ -30,11 +30,14 @@ import numpy
 from ffc.utils import listcopy
 from ffc.log import error
 
+
 def build_indices(dims):
     "Create a list of all index combinations."
-    if not dims: return [[]]
+    if not dims:
+        return [[]]
     ranges = listcopy(dims)
     return functools.reduce(outer_join, ranges, [[]])
+
 
 def outer_join(a, b):
     """Let a be a list of lists and b a list. We append each element
@@ -44,6 +47,7 @@ def outer_join(a, b):
         for j in range(len(b)):
             outer += [a[i] + [b[j]]]
     return outer
+
 
 def create_multiindex(indices):
     "Create multiindex for given list of indices."
@@ -59,7 +63,9 @@ def create_multiindex(indices):
 
     return MultiIndex(dims)
 
+
 class MultiIndex:
+
     """
     A MultiIndex represents a list of indices and holds the following
     data:

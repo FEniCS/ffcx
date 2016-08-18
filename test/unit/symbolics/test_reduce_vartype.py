@@ -32,7 +32,7 @@ def testReduceVarType():
     f5 = FloatValue(5)
     fm4 = FloatValue(-4)
 
-    B0 = Symbol("B0",BASIS)
+    B0 = Symbol("B0", BASIS)
     B1 = Symbol("B1", BASIS)
     Bm4 = Product([fm4, B1])
     B5 = Product([f5, B0])
@@ -50,8 +50,8 @@ def testReduceVarType():
     C0 = Symbol("C0", CONST)
     C2 = Product([f2, C0])
 
-    p0 = Product([B0,I5])
-    p1 = Product([B0,B1])
+    p0 = Product([B0, I5])
+    p1 = Product([B0, B1])
 
     S0 = Sum([B0, I5])
     S1 = Sum([p0, p1])
@@ -60,16 +60,16 @@ def testReduceVarType():
     S4 = Sum([f5, p0])
     S5 = Sum([I0, G0])
 
-    F0 = Fraction(B0,I5).expand()
-    F1 = Fraction(p1,I5).expand()
-    F2 = Fraction(G3,S2).expand()
-    F3 = Fraction(G3,S3).expand()
+    F0 = Fraction(B0, I5).expand()
+    F1 = Fraction(p1, I5).expand()
+    F2 = Fraction(G3, S2).expand()
+    F3 = Fraction(G3, S3).expand()
     F4 = Fraction(I1, Sum([I1, I0]))
     F5 = Fraction(S5, I1)
     F6 = Fraction(I0,
                   Sum([
-                      Fraction(Sum([I0,I1]), Sum([G0,G1])),
-                      Fraction(Sum([I1,I2]), Sum([G1,G2])),
+                      Fraction(Sum([I0, I1]), Sum([G0, G1])),
+                      Fraction(Sum([I1, I2]), Sum([G1, G2])),
                   ]))
 
     r0 = B0.reduce_vartype(BASIS)
@@ -99,9 +99,9 @@ def testReduceVarType():
     assert [((), B0)] == r1
 
     assert [(B0, I5)] == rp0
-    assert [(I0, B5)] ==  rp1
+    assert [(I0, B5)] == rp1
     assert [(p1, f1)] == rp2
-    assert [((), p1)] ==  rp3
+    assert [((), p1)] == rp3
 
     assert ((), I5) == rs0[0]
     assert (B0, f1) == rs0[1]
@@ -115,14 +115,14 @@ def testReduceVarType():
 
     assert [(B0, Fraction(FloatValue(0.2), I0))] == rf0
     assert [(Product([B0, B1]), Fraction(FloatValue(0.2), I0))] == rf1
-    assert [(Fraction(f1, I0),Product([FloatValue(0.2), B0]) )] == rf2
+    assert [(Fraction(f1, I0), Product([FloatValue(0.2), B0]))] == rf2
     assert [(Fraction(f1, S2), G3)] == rf3
-    assert [(Fraction(f1, B0), Fraction( G3, Sum([I5, f1])))] == rf4
+    assert [(Fraction(f1, B0), Fraction(G3, Sum([I5, f1])))] == rf4
     assert F4 == rf5[0][0]
     assert FloatValue(1) == rf5[0][1]
-    assert Fraction(I0,I1) == rf6[1][0]
+    assert Fraction(I0, I1) == rf6[1][0]
     assert f1 == rf6[1][1]
-    assert Fraction(f1,I1) == rf6[0][0]
+    assert Fraction(f1, I1) == rf6[0][0]
     assert G0 == rf6[0][1]
     assert F6 == rf7[0][0]
     assert f1 == rf7[0][1]
@@ -140,7 +140,7 @@ def testReduceVarType():
             vals.append(ip_dec)
     comb = Sum(vals).expand()
     K_11 = 1.4
-    F0   = 1.5
-    W1   = 1.9
-    det  = 2.1
+    F0 = 1.5
+    W1 = 1.9
+    det = 2.1
     assert round(eval(str(expr)) - eval(str(comb)), 10) == 0.0

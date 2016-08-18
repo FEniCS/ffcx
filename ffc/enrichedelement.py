@@ -22,7 +22,9 @@ import numpy
 from .utils import pick_first
 from .mixedelement import _combine_entity_dofs, _num_components
 
+
 class EnrichedElement:
+
     "Create the space spanned by a list of ffc elements."
 
     def __init__(self, elements):

@@ -33,7 +33,9 @@ from .log import error, info_red
 default_quadrature_degree = 1
 default_quadrature_scheme = "canonical"
 
+
 class QuadratureElement:
+
     """Write description of QuadratureElement"""
 
     def __init__(self, ufl_element):
@@ -85,7 +87,7 @@ class QuadratureElement:
 
     def mapping(self):
         "The mapping is not really affine, but it is easier to handle the code generation this way."
-        return ["affine"]*self.space_dimension()
+        return ["affine"] * self.space_dimension()
 
     def dual_basis(self):
         "Return list of PointEvaluations"
@@ -120,16 +122,17 @@ class QuadratureElement:
         # Return the identity matrix of size len(self._points) in a
         # suitable format for tensor and quadrature representations.
         values = numpy.eye(len(self._points))
-        return {(0,)*self._geometric_dimension: values}
+        return {(0,) * self._geometric_dimension: values}
+
 
 def _create_entity_dofs(fiat_cell, num_dofs):
     "This function is ripped from FIAT/discontinuous_lagrange.py"
     entity_dofs = {}
     top = fiat_cell.get_topology()
-    for dim in sorted( top ):
+    for dim in sorted(top):
         entity_dofs[dim] = {}
-        for entity in sorted( top[dim] ):
-            entity_dofs[dim][entity]=[]
+        for entity in sorted(top[dim]):
+            entity_dofs[dim][entity] = []
     entity_dofs[dim][0] = list(range(num_dofs))
     return entity_dofs
 

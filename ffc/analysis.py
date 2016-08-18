@@ -44,6 +44,7 @@ from ffc.quadratureelement import default_quadrature_degree
 from ffc.utils import all_equal
 from ffc.tensor import estimate_cost
 
+
 def analyze_forms(forms, parameters):
     """
     Analyze form(s), returning
@@ -123,7 +124,7 @@ def _analyze_form(form, parameters):
     # Hack to override representation with environment variable
     forced_r = os.environ.get("FFC_FORCE_REPRESENTATION")
     if forced_r:
-        warning("representation:    forced by $FFC_FORCE_REPRESENTATION to '%s'" % r)
+        warning("representation:    forced by $FFC_FORCE_REPRESENTATION to '%s'" % forced_r)
 
     # Compute form metadata
     if parameters["representation"] == "uflacs" or forced_r == "uflacs":
@@ -198,7 +199,6 @@ def _check_quadrature_degree(degree, top_dim):
     if num_points >= 100:
         warning_blue("WARNING: The number of integration points for each cell will be: %d" % num_points)
         warning_blue("         Consider using the option 'quadrature_degree' to reduce the number of points")
-
 
 
 def _extract_common_quadrature_rule(integral_metadatas):
@@ -347,7 +347,7 @@ def _attach_integral_metadata(form_data, parameters):
     _validate_quadrature_schemes_of_elements(quad_schemes, form_data.unique_sub_elements)
 
 
-def _validate_quadrature_schemes_of_elements(quad_schemes, elements): #form_data):
+def _validate_quadrature_schemes_of_elements(quad_schemes, elements):  # form_data):
     # Update scheme for QuadratureElements
     if quad_schemes and all_equal(quad_schemes):
         scheme = quad_schemes[0]

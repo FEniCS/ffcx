@@ -55,10 +55,10 @@ def testReduceOperations():
     assert x == xr
 
     # Test product
-    p0 = f2*x
-    p1 = y*x
-    p2 = x*f2/y
-    p3 = x*Sum([x, y])
+    p0 = f2 * x
+    p1 = y * x
+    p2 = x * f2 / y
+    p3 = x * Sum([x, y])
 
     px0 = p0.expand()
     px1 = p1.expand()
@@ -73,8 +73,8 @@ def testReduceOperations():
     F0 = Fraction(p0, y)
     F1 = Fraction(x, p0)
     F2 = Fraction(p0, p1)
-    F3 = Fraction(Sum([x*x, x*y]), y)
-    F4 = Fraction(Sum([f2*x, x*y]), a)
+    F3 = Fraction(Sum([x * x, x * y]), y)
+    F4 = Fraction(Sum([f2 * x, x * y]), a)
 
     Fx0 = F0.expand()
     Fx1 = F1.expand()
@@ -99,27 +99,27 @@ def testReduceOperations():
     S0 = Sum([x, y])
     S1 = Sum([p0, p1])
     S2 = Sum([x, p1])
-    S3 = Sum([p0, f2*y])
-    S4 = Sum([f2*p1, z*p1])
-    S5 = Sum([x, x*x, x*x*x])
-    S6 = Sum([a*x*x, b*x*x*x, c*x*x, d*x*x*x])
-    S7 = Sum([p0, p1, x*x, f2*z, y*z])
-    S8 = Sum([a*y, b*y, x*x*x*y, x*x*x*z])
-    S9 = Sum([a*y, b*y, c*y, x*x*x*y, f2*x*x, x*x*x*z])
-    S10 = Sum([f2*x*x*y, x*x*y*z])
-    S11 = Sum([f2*x*x*y*y, x*x*y*y*z])
-    S12 = Sum([f2*x*x*y*y, x*x*y*y*z, a*z, b*z, c*z])
+    S3 = Sum([p0, f2 * y])
+    S4 = Sum([f2 * p1, z * p1])
+    S5 = Sum([x, x * x, x * x * x])
+    S6 = Sum([a * x * x, b * x * x * x, c * x * x, d * x * x * x])
+    S7 = Sum([p0, p1, x * x, f2 * z, y * z])
+    S8 = Sum([a * y, b * y, x * x * x * y, x * x * x * z])
+    S9 = Sum([a * y, b * y, c * y, x * x * x * y, f2 * x * x, x * x * x * z])
+    S10 = Sum([f2 * x * x * y, x * x * y * z])
+    S11 = Sum([f2 * x * x * y * y, x * x * y * y * z])
+    S12 = Sum([f2 * x * x * y * y, x * x * y * y * z, a * z, b * z, c * z])
     S13 = Sum([Fraction(f1, x), Fraction(f1, y)])
     S14 = Sum([Fraction(fm1, x), Fraction(fm1, y)])
     S15 = Sum([Fraction(f2, x), Fraction(f2, x)])
-    S16 = Sum([Fraction(f2*x, y*z), Fraction(f0_5, y*z)])
-    S17 = Sum([(f2*x*y)/a, (x*y*z)/b])
-    S18 = Sum([(x*y)/a, (x*z)/a, f2/a, (f2*x*y)/a])
-    S19 = Sum([(f2*x)/a, (x*y)/a, z*x])
-    S20 = Product([ Sum([x, y]), Fraction(a, b), Fraction( Product([c, d]), z ) ])
-    S21 = Sum([a*x, b*x, c*x, x*y, x*z, f2*y, a*y, b*y, f2*z, a*z, b*z])
-    S22 = Sum([ FloatValue(0.5)*x/y, FloatValue(-0.5)*x/y ])
-    S23 = Sum([x*y*z, x*y*y*y*z*z*z, y*y*y*z*z*z*z, z*z*z*z*z])
+    S16 = Sum([Fraction(f2 * x, y * z), Fraction(f0_5, y * z)])
+    S17 = Sum([(f2 * x * y) / a, (x * y * z) / b])
+    S18 = Sum([(x * y) / a, (x * z) / a, f2 / a, (f2 * x * y) / a])
+    S19 = Sum([(f2 * x) / a, (x * y) / a, z * x])
+    S20 = Product([Sum([x, y]), Fraction(a, b), Fraction(Product([c, d]), z)])
+    S21 = Sum([a * x, b * x, c * x, x * y, x * z, f2 * y, a * y, b * y, f2 * z, a * z, b * z])
+    S22 = Sum([FloatValue(0.5) * x / y, FloatValue(-0.5) * x / y])
+    S23 = Sum([x * y * z, x * y * y * y * z * z * z, y * y * y * z * z * z * z, z * z * z * z * z])
 
     Sx0 = S0.expand()
     Sx1 = S1.expand()

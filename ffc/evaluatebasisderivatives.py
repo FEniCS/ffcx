@@ -20,10 +20,10 @@ representation of the code found in FIAT_NEW."""
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Anders Logg 2013
-# Modified by Lizao Li 2015
+# Modified by Lizao Li 2015, 2016
 #
 # First added:  2007-04-16
-# Last changed: 2015-03-28
+# Last changed: 2016-08-17
 
 # Python modules
 import math
@@ -34,6 +34,7 @@ from ffc.log import error, ffc_assert
 from ffc.evaluatebasis import _compute_basisvalues, _tabulate_coefficients
 from ffc.cpp import remove_unused, indent, format
 
+
 def _evaluate_basis_derivatives_all(data):
     """Like evaluate_basis, but return the values of all basis
     functions (dofs)."""
@@ -42,22 +43,22 @@ def _evaluate_basis_derivatives_all(data):
         return format["exception"]("evaluate_basis_derivatives_all: %s" % data)
 
     # Prefetch formats.
-    f_r, f_s      = format["free indices"][:2]
-    f_assign      = format["assign"]
-    f_loop        = format["generate loop"]
-    f_array       = format["dynamic array"]
-    f_dof_vals    = format["dof values"]
-    f_comment     = format["comment"]
-    f_derivs      = format["call basis_derivatives"]
-    f_values      = format["argument values"]
-    f_int         = format["int"]
-    f_num_derivs  = format["num derivatives"]
-    f_double      = format["float declaration"]
-    f_component   = format["component"]
-    f_mul         = format["mul"]
-    f_float       = format["floating point"]
-    f_index       = format["matrix index"]
-    f_del_array   = format["delete dynamic array"]
+    f_r, f_s = format["free indices"][:2]
+    f_assign = format["assign"]
+    f_loop = format["generate loop"]
+    f_array = format["dynamic array"]
+    f_dof_vals = format["dof values"]
+    f_comment = format["comment"]
+    f_derivs = format["call basis_derivatives"]
+    f_values = format["argument values"]
+    f_int = format["int"]
+    f_num_derivs = format["num derivatives"]
+    f_double = format["float declaration"]
+    f_component = format["component"]
+    f_mul = format["mul"]
+    f_float = format["floating point"]
+    f_index = format["matrix index"]
+    f_del_array = format["delete dynamic array"]
 
     # Initialise return code
     code = []
@@ -91,7 +92,7 @@ def _evaluate_basis_derivatives_all(data):
         return "\n".join(code)
 
     # Compute number of derivatives.
-    if data["topological_dimension"]==data["geometric_dimension"]:
+    if data["topological_dimension"] == data["geometric_dimension"]:
         _g = ""
     else:
         _g = "_g"
@@ -101,7 +102,7 @@ def _evaluate_basis_derivatives_all(data):
     cond = format["argument derivative order"] + format["is equal"] + format["int"](0)
     val = [format["call basis_all"]]
     val += [format["return"]("")]
-    code += [format["if"](cond, indent("\n".join(val),2))]
+    code += [format["if"](cond, indent("\n".join(val), 2))]
 
     code += _compute_num_derivatives(data["geometric_dimension"], _g)
 
@@ -112,41 +113,42 @@ def _evaluate_basis_derivatives_all(data):
 
     # Reset values.
     code += ["", f_comment("Set values equal to zero.")]
-    name    = f_component(f_values, f_index(f_r, f_s, num_vals))
+    name = f_component(f_values, f_index(f_r, f_s, num_vals))
     lines_s = [f_assign(name, f_float(0.0))]
-    loop_s  = [(f_s, 0, num_vals)]
+    loop_s = [(f_s, 0, num_vals)]
     lines_r = f_loop(lines_s, loop_s)
-    loop_r  = [(f_r, 0, space_dimension)]
-    code    += f_loop(lines_r, loop_r)
+    loop_r = [(f_r, 0, space_dimension)]
+    code += f_loop(lines_r, loop_r)
 
     # If n > max_degree, return zeros.
     code += ["", format["comment"]("If order of derivatives is greater than the maximum polynomial degree, return zeros.")]
     cond = format["argument derivative order"] + format["greater than"] + f_int(max_degree)
-    val  = format["return"]("")
-    code += [format["if"](cond, indent(val,2))]
+    val = format["return"]("")
+    code += [format["if"](cond, indent(val, 2))]
 
     # Declare helper value to hold single dof values and reset.
     code += [f_comment("Helper variable to hold values of a single dof.")]
-    nds = data["geometric_dimension"]**max_degree*physical_value_size
+    nds = data["geometric_dimension"]**max_degree * physical_value_size
     code += [format["declaration"](f_double, f_component(f_dof_vals, f_int(nds)))]
-    line  = [f_assign(f_component(f_dof_vals, f_r), f_float(0.0))]
+    line = [f_assign(f_component(f_dof_vals, f_r), f_float(0.0))]
     code += f_loop(line, [(f_r, 0, nds)])
 
     # Create loop over dofs that calls evaluate_basis_derivatives for a single dof and
     # inserts the values into the global array.
     code += ["", f_comment("Loop dofs and call evaluate_basis_derivatives.")]
-    name  = f_component(f_values, f_index(f_r, f_s, num_vals))
+    name = f_component(f_values, f_index(f_r, f_s, num_vals))
     value = f_component(f_dof_vals, f_s)
-    lines_s  = [f_assign(name, value)]
-    loop_s   = [(f_s, 0, num_vals)]
+    lines_s = [f_assign(name, value)]
+    loop_s = [(f_s, 0, num_vals)]
 
-    lines_r  = [f_derivs(f_r, f_dof_vals)]
+    lines_r = [f_derivs(f_r, f_dof_vals)]
     lines_r += f_loop(lines_s, loop_s)
-    loop_r   = [(f_r, 0, space_dimension)]
-    code    += f_loop(lines_r, loop_r)
+    loop_r = [(f_r, 0, space_dimension)]
+    code += f_loop(lines_r, loop_r)
 
     # Generate bode (no need to remove unused).
     return "\n".join(code)
+
 
 def _evaluate_basis_derivatives(data):
     """Evaluate the derivatives of an element basisfunction at a point. The values are
@@ -226,8 +228,9 @@ def _evaluate_basis_derivatives(data):
         dof_cases.append(_generate_dof_code(data, dof_data))
     code += [format["switch"](format["argument basis num"], dof_cases)]
     code = remove_unused("\n".join(code))
-    #code = "\n".join(code)
+    # code = "\n".join(code)
     return code
+
 
 def _handle_degree(max_degree):
     """Check value of argument 'n' against the maximum polynomial degree of the
@@ -242,7 +245,7 @@ def _handle_degree(max_degree):
     cond = format["argument derivative order"] + format["is equal"] + format["int"](0)
     val = [format["call basis"](format["argument dof num"], format["argument values"])]
     val += [format["return"]("")]
-    code += [format["if"](cond, indent("\n".join(val),2))]
+    code += [format["if"](cond, indent("\n".join(val), 2))]
 
     # If n > max_degree, derivatives are always zero. Since the appropriate number of
     # zeros have already been inserted into the 'values' array simply return.
@@ -252,6 +255,7 @@ def _handle_degree(max_degree):
     code += [format["if"](cond, val)]
 
     return code
+
 
 def _geometry_related_code(data, tdim, gdim, element_cellname):
     code = []
@@ -264,6 +268,7 @@ def _geometry_related_code(data, tdim, gdim, element_cellname):
     code += ["", format["fiat coordinate map"](element_cellname, gdim)]
     return code
 
+
 def _compute_num_derivatives(dimension, suffix=""):
     """Computes the number of derivatives of order 'n' as dimension()^n.
 
@@ -272,8 +277,8 @@ def _compute_num_derivatives(dimension, suffix=""):
     for the number of derivatives in phyisical coordinates.
     """
     # Prefetch formats.
-    f_int         = format["int"]
-    f_num_derivs  = format["num derivatives"](suffix)
+    f_int = format["int"]
+    f_num_derivs = format["num derivatives"](suffix)
 
     # Use loop to compute power since using std::pow() result in an
     # ambiguous call.
@@ -287,20 +292,22 @@ def _compute_num_derivatives(dimension, suffix=""):
 
     return code
 
+
 def _generate_combinations(dimension, suffix, max_degree):
     "Generate all possible combinations of derivatives of order 'n'."
 
     nds = dimension**max_degree
 
     # Use code from format.
-    code = ["", format["combinations"]\
-            % {"combinations": format["derivative combinations"](suffix),\
-               "dimension-1": dimension-1,\
-               "num_derivatives" : format["num derivatives"](suffix),\
+    code = ["", format["combinations"]
+            % {"combinations": format["derivative combinations"](suffix),
+               "dimension-1": dimension - 1,
+               "num_derivatives": format["num derivatives"](suffix),
                "n": format["argument derivative order"],
                "max_num_derivatives":format["int"](nds),
                "max_degree":format["int"](max_degree)}]
     return code
+
 
 def _generate_transform(element_cellname, gdim, tdim, max_degree):
     """Generate the transformation matrix, which is used to transform
@@ -310,24 +317,25 @@ def _generate_transform(element_cellname, gdim, tdim, max_degree):
     max_t_d = tdim**max_degree
     # Generate code to construct the inverse of the Jacobian
     if (element_cellname in ["interval", "triangle", "tetrahedron"]):
-        code = ["", format["transform snippet"][element_cellname][gdim]\
-        % {"transform": format["transform matrix"],\
-           "num_derivatives" : format["num derivatives"](""),\
-           "n": format["argument derivative order"],\
-           "combinations": format["derivative combinations"](""),\
-           "K":format["transform Jinv"],
-           "max_g_deriv":max_g_d, "max_t_deriv":max_t_d}]
+        code = ["", format["transform snippet"][element_cellname][gdim]
+                % {"transform": format["transform matrix"],
+                   "num_derivatives": format["num derivatives"](""),
+                   "n": format["argument derivative order"],
+                   "combinations": format["derivative combinations"](""),
+                   "K":format["transform Jinv"],
+                   "max_g_deriv":max_g_d, "max_t_deriv":max_t_d}]
     else:
         error("Cannot generate transform for shape: %s" % element_cellname)
 
     return code
 
+
 def _reset_values(data, suffix):
     "Reset all components of the 'values' array as it is a pointer to an array."
 
     # Prefetch formats.
-    f_assign  = format["assign"]
-    f_r       = format["free indices"][0]
+    f_assign = format["assign"]
+    f_r = format["free indices"][0]
 
     code = ["", format["comment"]("Reset values. Assuming that values is always an array.")]
 
@@ -346,6 +354,7 @@ def _reset_values(data, suffix):
     code += format["generate loop"](lines, loop_vars)
 
     return code + [""]
+
 
 def _generate_dof_code(data, dof_data):
     "Generate code for a basis."
@@ -372,18 +381,19 @@ def _generate_dof_code(data, dof_data):
 
     return code
 
+
 def _tabulate_dmats(dof_data):
     "Tabulate the derivatives of the polynomial base"
 
     code = []
 
     # Prefetch formats to speed up code generation.
-    f_table     = format["static const float declaration"]
-    f_dmats     = format["dmats"]
+    f_table = format["static const float declaration"]
+    f_dmats = format["dmats"]
     f_component = format["component"]
-    f_decl      = format["declaration"]
-    f_tensor    = format["tabulate tensor"]
-    f_new_line  = format["new line"]
+    f_decl = format["declaration"]
+    f_tensor = format["tabulate tensor"]
+    f_new_line = format["new line"]
 
     # Get derivative matrices (coefficients) of basis functions, computed by FIAT at compile time.
     derivative_matrices = dof_data["dmats"]
@@ -406,26 +416,28 @@ def _tabulate_dmats(dof_data):
 
     return code
 
+
 def _reset_dmats(shape_dmats, indices):
     "Set values in dmats equal to the identity matrix."
-    f_assign  = format["assign"]
-    f_float   = format["floating point"]
-    i,j = indices
+    f_assign = format["assign"]
+    f_float = format["floating point"]
+    i, j = indices
 
     code = [format["comment"]("Resetting dmats values to compute next derivative.")]
     dmats_old = format["component"](format["dmats"](""), [i, j])
     lines = [f_assign(dmats_old, f_float(0.0))]
-    lines += [format["if"](i + format["is equal"] + j,\
+    lines += [format["if"](i + format["is equal"] + j,
               f_assign(dmats_old, f_float(1.0)))]
     loop_vars = [(i, 0, shape_dmats[0]), (j, 0, shape_dmats[1])]
     code += format["generate loop"](lines, loop_vars)
     return code
 
+
 def _update_dmats(shape_dmats, indices):
     "Update values in dmats_old with values in dmats and set values in dmats to zero."
-    f_assign    = format["assign"]
+    f_assign = format["assign"]
     f_component = format["component"]
-    i,j = indices
+    i, j = indices
 
     code = [format["comment"]("Updating dmats_old with new values and resetting dmats.")]
     dmats = f_component(format["dmats"](""), [i, j])
@@ -434,6 +446,7 @@ def _update_dmats(shape_dmats, indices):
     loop_vars = [(i, 0, shape_dmats[0]), (j, 0, shape_dmats[1])]
     code += format["generate loop"](lines, loop_vars)
     return code
+
 
 def _compute_dmats(num_dmats, shape_dmats, available_indices, deriv_index, _t):
     "Compute values of dmats as a matrix product."
@@ -459,9 +472,10 @@ def _compute_dmats(num_dmats, shape_dmats, available_indices, deriv_index, _t):
 
     return code
 
+
 def _dmats_product(shape_dmats, index, i, indices):
     "Create product to update dmats."
-    f_loop      = format["generate loop"]
+    f_loop = format["generate loop"]
     f_component = format["component"]
     t, u = indices
     tu = t + u
@@ -472,9 +486,10 @@ def _dmats_product(shape_dmats, index, i, indices):
     name = format["iadd"](dmats, value)
     lines = f_loop([name], [(tu, 0, shape_dmats[0])])
     loop_vars = [(t, 0, shape_dmats[0]), (u, 0, shape_dmats[1])]
-    code = [format["if"](index + format["is equal"] + str(i),\
+    code = [format["if"](index + format["is equal"] + str(i),
             "\n".join(f_loop(lines, loop_vars)))]
     return code
+
 
 def _compute_reference_derivatives(data, dof_data):
     """Compute derivatives on the reference element by recursively multiply coefficients with
@@ -482,35 +497,35 @@ def _compute_reference_derivatives(data, dof_data):
     has been reached. After this take the dot product with the basisvalues."""
 
     # Prefetch formats to speed up code generation
-    f_comment       = format["comment"]
-    f_num_derivs    = format["num derivatives"]
-    f_mul           = format["mul"]
-    f_int           = format["int"]
-    f_matrix_index  = format["matrix index"]
-    f_coefficients  = format["coefficients"]
+    f_comment = format["comment"]
+    f_num_derivs = format["num derivatives"]
+    f_mul = format["mul"]
+    f_int = format["int"]
+    f_matrix_index = format["matrix index"]
+    f_coefficients = format["coefficients"]
 #    f_dof           = format["local dof"]
-    f_basisvalues   = format["basisvalues"]
-    f_const_double  = format["const float declaration"]
-    f_group         = format["grouping"]
-    f_transform     = format["transform"]
-    f_double        = format["float declaration"]
-    f_component     = format["component"]
-    f_tmp           = format["tmp ref value"]
-    f_dmats         = format["dmats"]
-    f_dmats_old     = format["dmats old"]
-    f_assign        = format["assign"]
-    f_decl          = format["declaration"]
-    f_iadd          = format["iadd"]
-    f_add           = format["add"]
-    f_tensor        = format["tabulate tensor"]
-    f_new_line      = format["new line"]
-    f_loop          = format["generate loop"]
-    f_derivatives   = format["reference derivatives"]
-    f_array         = format["dynamic array"]
-    f_float         = format["floating point"]
-    f_inv           = format["inverse"]
-    f_detJ          = format["det(J)"]
-    f_inner         = format["inner product"]
+    f_basisvalues = format["basisvalues"]
+    f_const_double = format["const float declaration"]
+    f_group = format["grouping"]
+    f_transform = format["transform"]
+    f_double = format["float declaration"]
+    f_component = format["component"]
+    f_tmp = format["tmp ref value"]
+    f_dmats = format["dmats"]
+    f_dmats_old = format["dmats old"]
+    f_assign = format["assign"]
+    f_decl = format["declaration"]
+    f_iadd = format["iadd"]
+    f_add = format["add"]
+    f_tensor = format["tabulate tensor"]
+    f_new_line = format["new line"]
+    f_loop = format["generate loop"]
+    f_derivatives = format["reference derivatives"]
+    f_array = format["dynamic array"]
+    f_float = format["floating point"]
+    f_inv = format["inverse"]
+    f_detJ = format["det(J)"]
+    f_inner = format["inner product"]
 
     f_r, f_s, f_t, f_u = format["free indices"]
 
@@ -531,7 +546,7 @@ def _compute_reference_derivatives(data, dof_data):
     # Get shape of derivative matrix (they should all have the same shape) and
     # verify that it is a square matrix.
     shape_dmats = numpy.shape(dof_data["dmats"][0])
-    ffc_assert(shape_dmats[0] == shape_dmats[1],\
+    ffc_assert(shape_dmats[0] == shape_dmats[1],
                "Something is wrong with the dmats:\n%s" % str(dof_data["dmats"]))
 
     code = [f_comment("Compute reference derivatives.")]
@@ -545,9 +560,9 @@ def _compute_reference_derivatives(data, dof_data):
     else:
         num_vals = f_mul([f_int(num_components), f_num_derivs(_t)])
 
-    nds = tdim**max_degree*num_components
+    nds = tdim**max_degree * num_components
     code += [format["declaration"](f_double, f_component(f_derivatives, f_int(nds)))]
-    line  = [f_assign(f_component(f_derivatives, f_r), f_float(0.0))]
+    line = [f_assign(f_component(f_derivatives, f_r), f_float(0.0))]
     code += f_loop(line, [(f_r, 0, nds)])
     code += [""]
 
@@ -559,9 +574,9 @@ def _compute_reference_derivatives(data, dof_data):
         _p = "_p"
         num_components_p = gdim
 
-        nds = tdim**max_degree*gdim
-        code += [format["declaration"](f_double, f_component(f_derivatives+_p, f_int(nds)))]
-        line  = [f_assign(f_component(f_derivatives+_p, f_r), f_float(0.0))]
+        nds = tdim**max_degree * gdim
+        code += [format["declaration"](f_double, f_component(f_derivatives + _p, f_int(nds)))]
+        line = [f_assign(f_component(f_derivatives + _p, f_r), f_float(0.0))]
         code += f_loop(line, [(f_r, 0, nds)])
         code += [""]
     else:
@@ -589,17 +604,17 @@ def _compute_reference_derivatives(data, dof_data):
         dmats = f_component(f_dmats(""), [f_s, f_t])
         basis = f_component(f_basisvalues, f_t)
         lines_c.append(f_iadd(name, f_mul([coeffs, dmats, basis])))
-    loop_vars_c = [(f_s, 0, shape_dmats[0]),(f_t, 0, shape_dmats[1])]
+    loop_vars_c = [(f_s, 0, shape_dmats[0]), (f_t, 0, shape_dmats[1])]
     lines += f_loop(lines_c, loop_vars_c)
 
     # Apply transformation if applicable.
     if mapping == "affine":
         pass
     elif mapping == "contravariant piola":
-        lines += ["", f_comment\
-                ("Using contravariant Piola transform to map values back to the physical element.")]
+        lines += ["", f_comment
+                  ("Using contravariant Piola transform to map values back to the physical element.")]
         # Get temporary values before mapping.
-        lines += [f_const_double(f_tmp(i),\
+        lines += [f_const_double(f_tmp(i),
                   f_component(f_derivatives, f_matrix_index(i, f_r, f_num_derivs(_t)))) for i in range(num_components)]
 
         # Create names for inner product.
@@ -612,13 +627,13 @@ def _compute_reference_derivatives(data, dof_data):
             inner = [f_mul([jacobian_row[j], basis_col[j]]) for j in range(tdim)]
             sum_ = f_group(f_add(inner))
             value = f_mul([f_inv(f_detJ(None)), sum_])
-            name = f_component(f_derivatives+_p, f_matrix_index(i, f_r, f_num_derivs(_t)))
+            name = f_component(f_derivatives + _p, f_matrix_index(i, f_r, f_num_derivs(_t)))
             lines += [f_assign(name, value)]
     elif mapping == "covariant piola":
-        lines += ["", f_comment\
-                ("Using covariant Piola transform to map values back to the physical element")]
+        lines += ["", f_comment
+                  ("Using covariant Piola transform to map values back to the physical element")]
         # Get temporary values before mapping.
-        lines += [f_const_double(f_tmp(i),\
+        lines += [f_const_double(f_tmp(i),
                   f_component(f_derivatives, f_matrix_index(i, f_r, f_num_derivs(_t)))) for i in range(num_components)]
         # Create names for inner product.
         basis_col = [f_tmp(j) for j in range(tdim)]
@@ -629,13 +644,13 @@ def _compute_reference_derivatives(data, dof_data):
             # Create inner product of basis and inverse of Jacobian.
             inner = [f_mul([inv_jacobian_column[j], basis_col[j]]) for j in range(tdim)]
             value = f_group(f_add(inner))
-            name = f_component(f_derivatives+_p, f_matrix_index(i, f_r, f_num_derivs(_t)))
+            name = f_component(f_derivatives + _p, f_matrix_index(i, f_r, f_num_derivs(_t)))
             lines += [f_assign(name, value)]
-    elif mapping == "pullback as metric":
-        lines += ["", f_comment("Using metric pullback to map values back to the physical element")]
+    elif mapping == "double covariant piola":
+        code += ["", f_comment("Using double covariant Piola transform to map values back to the physical element")]
         lines += [f_const_double(f_tmp(i),
-                                f_component(f_derivatives,
-                                            f_matrix_index(i, f_r, f_num_derivs(_t))))
+                                 f_component(f_derivatives,
+                                             f_matrix_index(i, f_r, f_num_derivs(_t))))
                   for i in range(num_components)]
         basis_col = [f_tmp(j) for j in range(num_components)]
         for p in range(num_components):
@@ -650,7 +665,7 @@ def _compute_reference_derivatives(data, dof_data):
                  for k in range(tdim)],
                 [f_transform("JINV", k, l, tdim, gdim, None)
                  for k in range(tdim)]))
-            name = f_component(f_derivatives+_p, f_matrix_index(p, f_r, f_num_derivs(_t)))
+            name = f_component(f_derivatives + _p, f_matrix_index(p, f_r, f_num_derivs(_t)))
             lines += [f_assign(name, value)]
     else:
         error("Unknown mapping: %s" % mapping)
@@ -664,23 +679,24 @@ def _compute_reference_derivatives(data, dof_data):
 
     return code + [""]
 
+
 def _transform_derivatives(data, dof_data):
     """Transform derivatives back to the physical element by applying the
     transformation matrix."""
 
     # Prefetch formats to speed up code generation.
-    f_loop        = format["generate loop"]
-    f_num_derivs  = format["num derivatives"]
+    f_loop = format["generate loop"]
+    f_num_derivs = format["num derivatives"]
     f_derivatives = format["reference derivatives"]
-    f_values      = format["argument values"]
-    f_mul         = format["mul"]
-    f_iadd        = format["iadd"]
-    f_component   = format["component"]
-    f_transform   = format["transform matrix"]
-    f_r, f_s      = format["free indices"][:2]
-    f_index       = format["matrix index"]
+    f_values = format["argument values"]
+    f_mul = format["mul"]
+    f_iadd = format["iadd"]
+    f_component = format["component"]
+    f_transform = format["transform matrix"]
+    f_r, f_s = format["free indices"][:2]
+    f_index = format["matrix index"]
 
-    if data["topological_dimension"]==data["geometric_dimension"]:
+    if data["topological_dimension"] == data["geometric_dimension"]:
         _t = ""
         _g = ""
     else:
@@ -691,7 +707,7 @@ def _transform_derivatives(data, dof_data):
     num_components = dof_data["num_components"]
     reference_offset = dof_data["reference_offset"]
     physical_offset = dof_data["physical_offset"]
-    offset = reference_offset # physical_offset # FIXME: Should be physical offset but that breaks tests
+    offset = reference_offset  # physical_offset # FIXME: Should be physical offset but that breaks tests
 
     mapping = dof_data["mapping"]
     if "piola" in mapping:
@@ -709,7 +725,7 @@ def _transform_derivatives(data, dof_data):
         access_name = f_index(offset + i, f_r, f_num_derivs(_g))
         name = f_component(f_values, access_name)
         access_val = f_index(i, f_s, f_num_derivs(_t))
-        value = f_mul([f_component(f_transform, [f_r, f_s]), f_component(f_derivatives+_p, access_val)])
+        value = f_mul([f_component(f_transform, [f_r, f_s]), f_component(f_derivatives + _p, access_val)])
         lines += [f_iadd(name, value)]
 
     loop_vars = [(f_r, 0, f_num_derivs(_g)), (f_s, 0, f_num_derivs(_t))]

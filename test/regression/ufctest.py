@@ -37,6 +37,7 @@ int main(int argc, char * argv[])
 }}
 """
 
+
 def generate_test_code(header_file):
     "Generate test code for given header file."
 

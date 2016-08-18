@@ -28,37 +28,37 @@ dolfin_includes = """\
 #include <dolfin/adaptivity/ErrorControl.h>
 #include <dolfin/adaptivity/GoalFunctional.h>
 #include <dolfin/la/GenericVector.h>"""
-#-------------------------------------------------------------------------------
+
+
 snippets = {"shared_ptr_space":
-                ("std::shared_ptr<const dolfin::FunctionSpace> %s",
-                 "    _function_spaces[%d] = %s;"),
+            ("std::shared_ptr<const dolfin::FunctionSpace> %s",
+             "    _function_spaces[%d] = %s;"),
             "referenced_space":
-                ("const dolfin::FunctionSpace& %s",
-                 "    _function_spaces[%d] = reference_to_no_delete_pointer(%s);"),
+            ("const dolfin::FunctionSpace& %s",
+             "    _function_spaces[%d] = reference_to_no_delete_pointer(%s);"),
             "multimesh_shared_ptr_space":
-                ("std::shared_ptr<const dolfin::MultiMeshFunctionSpace> %s",
-                 None),
+            ("std::shared_ptr<const dolfin::MultiMeshFunctionSpace> %s",
+             None),
             "multimesh_referenced_space":
-                ("const dolfin::MultiMeshFunctionSpace& %s",
-                 None),
+            ("const dolfin::MultiMeshFunctionSpace& %s",
+             None),
             "shared_ptr_mesh":
-                ("std::shared_ptr<const dolfin::Mesh> mesh",
-                 "    _mesh = mesh;"),
+            ("std::shared_ptr<const dolfin::Mesh> mesh",
+             "    _mesh = mesh;"),
             "referenced_mesh":
-                ("const dolfin::Mesh& mesh",
-                 "    _mesh = reference_to_no_delete_pointer(mesh);"),
+            ("const dolfin::Mesh& mesh",
+             "    _mesh = reference_to_no_delete_pointer(mesh);"),
             "shared_ptr_coefficient":
-                ("std::shared_ptr<const dolfin::GenericFunction> %s",
-                 "    this->%s = %s;"),
+            ("std::shared_ptr<const dolfin::GenericFunction> %s",
+             "    this->%s = %s;"),
             "shared_ptr_ref_coefficient":
-                ("std::shared_ptr<const dolfin::GenericFunction> %s",
-                 "    this->%s = *%s;"),
+            ("std::shared_ptr<const dolfin::GenericFunction> %s",
+             "    this->%s = *%s;"),
             "referenced_coefficient":
-                ("const dolfin::GenericFunction& %s",
-                 "    this->%s = %s;"),
+            ("const dolfin::GenericFunction& %s",
+             "    this->%s = %s;"),
             "functionspace":
-                ("TestSpace", "TrialSpace"),
+            ("TestSpace", "TrialSpace"),
             "multimeshfunctionspace":
-                ("MultiMeshTestSpace", "MultiMeshTrialSpace")
+            ("MultiMeshTestSpace", "MultiMeshTrialSpace")
             }
-#-------------------------------------------------------------------------------
