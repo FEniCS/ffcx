@@ -161,6 +161,10 @@ def _change_variables(mapping, gdim, tdim, space_dim):
 
       g_il(x) = K_{ji} G_{jk} K_{kl}
 
+    'double contravariant piola' mapping for g:
+
+      g_il(x) = (det(J))^(-2) J_ij G_jk(X) J_lk
+
     """
 
     if mapping is "affine":
@@ -179,6 +183,14 @@ def _change_variables(mapping, gdim, tdim, space_dim):
                          [G[j][k][index] for j in range(tdim)])
                    for k in range(tdim)],
                   [Jinv(k, i % tdim, tdim, gdim) for k in range(tdim)])
+            for index in range(space_dim)]
+    elif mapping == "double contravariant piola":
+        change_of_variables = lambda G, i: [
+            multiply([invdetJ, invdetJ, inner(
+                [inner([J(i // tdim, j, tdim, gdim) for j in range(tdim)],
+                         [G[j][k][index] for j in range(tdim)])
+                   for k in range(tdim)],
+                  [J(i % tdim, k, tdim, gdim) for k in range(tdim)])])
             for index in range(space_dim)]
     else:
         raise Exception("No such mapping: %s accepted" % mapping)

@@ -667,6 +667,30 @@ def _compute_reference_derivatives(data, dof_data):
                  for k in range(tdim)]))
             name = f_component(f_derivatives + _p, f_matrix_index(p, f_r, f_num_derivs(_t)))
             lines += [f_assign(name, value)]
+    elif mapping == "double contravariant piola":
+        code += ["", f_comment("Using double contravariant Piola transform to map values back to the physical element.")]
+        lines += [f_const_double(
+            f_tmp(i),
+            f_component(f_derivatives,
+                        f_matrix_index(i, f_r, f_num_derivs(_t))))
+                  for i in range(num_components)]
+        basis_col = [f_tmp(j) for j in range(num_components)]
+        for p in range(num_components):
+            # unflatten the indices
+            i = p // tdim
+            l = p % tdim
+            # g_il = (det J)^(-2) Jij G_jk Jlk
+            value = f_group(f_inner(
+                [f_inner([f_transform("J", i, j, tdim, gdim, None)
+                          for j in range(tdim)],
+                         [basis_col[j * tdim + k] for j in range(tdim)])
+                 for k in range(tdim)],
+                [f_transform("J", l, k, tdim, gdim, None)
+                 for k in range(tdim)]))
+            value = f_mul([f_inv(f_detJ(None)), f_inv(f_detJ(None)), value])
+            name = f_component(f_derivatives+_p,
+                               f_matrix_index(p, f_r, f_num_derivs(_t)))
+            lines += [f_assign(name, value)]
     else:
         error("Unknown mapping: %s" % mapping)
 
