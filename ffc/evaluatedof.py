@@ -43,10 +43,10 @@ FIAT (functional.pt_dict) in the intermediate representation stage.
 #
 # Modified by Kristian B. Oelgaard 2010-2011
 # Modified by Anders Logg 2013
-# Modified by Lizao Li 2015
+# Modified by Lizao Li 2015, 2016
 #
 # First added:  2009-xx-yy
-# Last changed: 2015-03-20
+# Last changed: 2016-08-17
 
 from collections import OrderedDict
 import six
@@ -155,7 +155,7 @@ def _required_declarations(ir):
     # Check whether Jacobians are necessary.
     needs_inverse_jacobian = any(["contravariant piola" in m
                                   for m in ir["mappings"]])
-    needs_jacobian = any(["covariant piola" in m for m in ir["mappings"]]) or any(["pullback as metric" in m for m in ir["mappings"]])
+    needs_jacobian = any(["covariant piola" in m for m in ir["mappings"]])
 
     # Check if Jacobians are needed
     if not (needs_jacobian or needs_inverse_jacobian):
@@ -324,7 +324,7 @@ def _change_variables(mapping, gdim, tdim, offset):
 
       G(X) = J^T g(x)          i.e  G_i(X) = J^T_ij g(x) = J_ji g_j(x)
 
-    'pullback as metric' mapping for g:
+    'double covariant piola' mapping for g:
 
       G(X) = J^T g(x) J     i.e. G_il(X) = J_ji g_jk(x) J_kl
     """
@@ -355,8 +355,8 @@ def _change_variables(mapping, gdim, tdim, offset):
             values += [inner(jacobian_column, components)]
         return values
 
-    elif mapping == "pullback as metric":
-        # physical to reference pullback as a metric
+    elif mapping == "double covariant piola":
+        # physical to reference pullback as a covariant 2-tensor
         values = []
         for i in range(tdim):
             for l in range(tdim):
