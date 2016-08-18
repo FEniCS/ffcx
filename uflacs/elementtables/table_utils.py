@@ -24,6 +24,7 @@ from six import itervalues, iterkeys
 from six import advance_iterator as next
 from six.moves import map
 from six.moves import xrange as range
+from ufl.permutation import build_component_numbering
 import numpy as np
 
 
@@ -156,6 +157,12 @@ def get_ffc_table_values(tables, entitytype, num_points, element, flat_component
         # Extract array for right component and order axes as (points, dofs)
         if sh == ():
             arr = np.transpose(tbl)
+        elif len(sh) == 2 and element.num_sub_elements() == 0:
+            # 2-tensor-valued elements, not a tensor product
+            # mapping flat_component back to tensor component
+            (_, f2t) = build_component_numbering(sh, element.symmetry())
+            t_comp = f2t[flat_component]
+            arr = np.transpose(tbl[:, t_comp[0], t_comp[1], :])
         else:
             arr = np.transpose(tbl[:, flat_component,:])
 

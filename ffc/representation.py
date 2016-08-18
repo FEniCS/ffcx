@@ -708,7 +708,7 @@ def _interpolate_vertex_values(ufl_element, fiat_element):
 
     # Check whether computing the Jacobian is necessary
     mappings = fiat_element.mapping()
-    ir["needs_jacobian"] = any("piola" in m for m in mappings) or any("pullback as metric" in m for m in mappings)
+    ir["needs_jacobian"] = any("piola" in m for m in mappings)
     ir["needs_oriented"] = needs_oriented_jacobian(fiat_element)
 
     # See note in _evaluate_dofs
@@ -854,6 +854,5 @@ def uses_integral_moments(fiat_element):
 
 def needs_oriented_jacobian(fiat_element):
     # Check whether this element needs an oriented jacobian
-    # (only contravariant piolas and pullback as metric seem to need it)
-    return ("contravariant piola" in fiat_element.mapping() or
-            "pullback as metric" in fiat_element.mapping())
+    # (only contravariant piolas seem to need it)
+    return "contravariant piola" in fiat_element.mapping()
