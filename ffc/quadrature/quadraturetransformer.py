@@ -19,7 +19,7 @@
 #
 # Modified by Peter Brune 2009
 # Modified by Anders Logg 2009, 2013
-# Modified by Lizao Li, 2015
+# Modified by Lizao Li, 2015, 2016
 
 # Python modules.
 from numpy import shape
@@ -547,7 +547,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                                 basis = f_mult([detJ, dXdx, basis])
                             # Add transformation if needed.
                             code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
-                elif transformation == "pullback as covariant 2-tensor":
+                elif transformation == "double covariant piola":
                     # g_ij = (Jinv)_ki G_kl (Jinv)lj
                     i = local_comp // tdim
                     j = local_comp %  tdim
@@ -624,7 +624,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                 if not any(deriv):
                     deriv = []
 
-                if 'piola' in transformation:
+                if transformation in ["covariant piola", "contravariant piola"]:
                     # Vectors
                     for c in range(tdim):
                         function_name = self._create_function_name(c + local_offset, deriv, avg, is_quad_element, ufl_function, ffc_element)
@@ -645,7 +645,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
                             # Add transformation if needed.
                             code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
-                elif transformation == "pullback as covariant 2-tensor":
+                elif transformation == "double covariant piola":
                     # g_ij = (Jinv)_ki G_kl (Jinv)lj
                     i = local_comp // tdim
                     j = local_comp %  tdim
