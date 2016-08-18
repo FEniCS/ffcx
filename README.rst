@@ -1,61 +1,44 @@
------------------------------
+=============================
 FFC: The FEniCS Form Compiler
------------------------------
+=============================
 
 FFC is a compiler for finite element variational forms. From a
 high-level description of the form, it generates efficient low-level
 C++ code that can be used to assemble the corresponding discrete
 operator (tensor). In particular, a bilinear form may be assembled
-into a matrix and a linear form may be assembled into a vector.
-
-FFC may be used either from the command line (by invoking the ``ffc``
+into a matrix and a linear form may be assembled into a vector.  FFC
+may be used either from the command line (by invoking the ``ffc``
 command) or as a Python module (``import ffc``).
 
-FFC is part of the FEniCS project (http://www.fenicsproject.org) and
-functions as a just-in-time (JIT) compiler for DOLFIN.
+FFC is part of the FEniCS Project.
 
-For further introduction to FFC, open the FFC user manual available in
-the subdirectory ``doc/manual/`` of this source tree, or try out the
-demos available in the subdirectory ``src/demo/`` of this source tree.
+For more information, visit http://www.fenicsproject.org
+
+
+Documentation
+=============
+
+The FFC documentation can be viewed at Read the Docs:
+
++--------+-------------------------------------------------------------------------------------+
+|FFC     |  .. image:: https://readthedocs.org/projects/fenics-ffc/badge/?version=latest       |
+|        |     :target: http://fenics.readthedocs.io/projects/ffc/en/latest/?badge=latest      |
+|        |     :alt: Documentation Status                                                      |
++--------+-------------------------------------------------------------------------------------+
 
 
 License
--------
+=======
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Lesser General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-Lesser General Public License for more details.
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+  GNU Lesser General Public License for more details.
 
-You should have received a copy of the GNU Lesser General Public
-License along with this program. If not, see
-<http://www.gnu.org/licenses/>.
-
-
-Dependencies
-------------
-
-#. Python, version 2.7 or later
-
-#. The latest version of FIAT, Instant and UFL
-
-   You need to have FIAT, Instant and UFL installed. They are
-   available from the web page: https://bitbucket.org/fenics-project/.
-
-#. The Python NumPy module
-
-#. The Python Six module
-
-
-Notes
------
-
-From February 2014, the code generation interface UFC is distributed
-as part of FFC, and the UFC repository has been merged into the FFC
-repository. From this point onwards, UFC version numbers are reset to
-the same version numbers as for FFC.
+  You should have received a copy of the GNU Lesser General Public License
+  along with this program. If not, see <http://www.gnu.org/licenses/>.

@@ -1,7 +1,8 @@
-Changes in FFC 1.6.0
-====================
+========================
+Changes in version 1.6.0
+========================
 
-FFC 1.6.0 was released on 2015-07-28
+FFC 1.6.0 was released on 2015-07-28.
 
 - Rename and modify a number of UFC interface functions. See
   docstrings in ufc.h for details.

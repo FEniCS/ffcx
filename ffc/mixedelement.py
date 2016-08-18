@@ -31,7 +31,9 @@ from ffc.log import error
 # UFL utils
 from ufl.utils.sequences import product
 
+
 class MixedElement:
+
     "Create a FFC mixed element from a list of FFC/FIAT elements."
 
     def __init__(self, elements):
@@ -46,7 +48,7 @@ class MixedElement:
 
     def value_shape(self):
         # Values of Tensor elements are flattened in MixedElements
-        num_comps = lambda x: numpy.prod(x) if x else 1 
+        num_comps = lambda x: numpy.prod(x) if x else 1
         return (sum(num_comps(e.value_shape()) or 1 for e in self._elements),)
 
     def entity_dofs(self):
@@ -118,6 +120,7 @@ class MixedElement:
 
 #--- Utility functions ---
 
+
 def _combine_entity_dofs(elements):
     """
     Combine the entity_dofs from a list of elements into a combined
@@ -151,6 +154,7 @@ def _combine_entity_dofs(elements):
         # Adjust offset
         offset += e.space_dimension()
     return entity_dofs
+
 
 def _num_components(element):
     "Compute number of components for element."

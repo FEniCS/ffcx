@@ -31,7 +31,8 @@ from ffc.fiatinterface import create_element
 from ffc.cpp import make_integral_classname
 from ffc.log import error
 
-from ffc.quadrature_schemes import create_quadrature
+from ffc.fiatinterface import create_quadrature
+
 
 def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     "Create quadrature rule and return points and weights."
@@ -41,12 +42,13 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
         facet_cellname = cellname2facetname[cell.cellname()]
         (points, weights) = create_quadrature(facet_cellname, degree, rule)
     elif integral_type == "vertex":
-        (points, weights) = ([()], numpy.array([1.0,])) # TODO: Will be fixed
+        (points, weights) = ([()], numpy.array([1.0, ]))  # TODO: Will be fixed
     elif integral_type in custom_integral_types:
         (points, weights) = (None, None)
     else:
         error("Unknown integral type: " + str(integral_type))
     return (points, weights)
+
 
 def transform_component(component, offset, ufl_element):
     """
@@ -69,7 +71,7 @@ def transform_component(component, offset, ufl_element):
     # ()), and if gdim != tdim)
     if gdim == tdim:
         return component, offset
-    all_mappings =  create_element(ufl_element).mapping()
+    all_mappings = create_element(ufl_element).mapping()
     special_case = (any(['piola' in m for m in all_mappings])
                     and ufl_element.num_sub_elements() > 1)
     if not special_case:
@@ -97,7 +99,7 @@ def transform_component(component, offset, ufl_element):
         if component < tot:
             break
         else:
-            tot += physical_value_dims[sub_element_number+1]
+            tot += physical_value_dims[sub_element_number + 1]
 
     # Compute the new reference offset:
     reference_offset = sum(reference_value_dims[:sub_element_number])
@@ -109,6 +111,7 @@ def transform_component(component, offset, ufl_element):
 
     return reference_component, reference_offset
 
+
 def needs_oriented_jacobian(form_data):
     # Check whether this form needs an oriented jacobian (only forms
     # involgin contravariant piola mappings seem to need it)
@@ -118,20 +121,21 @@ def needs_oriented_jacobian(form_data):
             return True
     return False
 
+
 def initialize_integral_ir(representation, itg_data, form_data, form_id):
     """Initialize a representation dict with common information that is
     expected independently of which representation is chosen."""
 
     # Mapping from recognized domain types to entity types
-    entity_type = {"cell":           "cell",
+    entity_type = {"cell": "cell",
                    "exterior_facet": "facet",
                    "interior_facet": "facet",
-                   "vertex":         "vertex",
-                   #"point":          "vertex", # TODO: Not sure, clarify here what 'entity_type' refers to?
-                   "custom":         "cell",
-                   "cutcell":        "cell",
-                   "interface":      "cell",
-                   "overlap":        "cell",
+                   "vertex": "vertex",
+                   # "point":          "vertex", # TODO: Not sure, clarify here what 'entity_type' refers to?
+                   "custom": "cell",
+                   "cutcell": "cell",
+                   "interface": "cell",
+                   "overlap": "cell",
                    }[itg_data.integral_type]
 
     # Extract data
@@ -143,20 +147,21 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
     # Set number of cells if not set TODO: Get automatically from number of domains
     num_cells = itg_data.metadata.get("num_cells")
 
-    return {"representation":        representation,
-            "integral_type":         itg_data.integral_type,
-            "subdomain_id":          itg_data.subdomain_id,
-            "form_id":               form_id,
-            "rank":                  form_data.rank,
-            "geometric_dimension":   form_data.geometric_dimension,
+    return {"representation": representation,
+            "integral_type": itg_data.integral_type,
+            "subdomain_id": itg_data.subdomain_id,
+            "form_id": form_id,
+            "rank": form_data.rank,
+            "geometric_dimension": form_data.geometric_dimension,
             "topological_dimension": tdim,
-            "entitytype":            entity_type,
-            "num_facets":            cell.num_facets(),
-            "num_vertices":          cell.num_vertices(),
-            "needs_oriented":        needs_oriented_jacobian(form_data),
-            "num_cells":             num_cells,
-            "enabled_coefficients":  itg_data.enabled_coefficients,
+            "entitytype": entity_type,
+            "num_facets": cell.num_facets(),
+            "num_vertices": cell.num_vertices(),
+            "needs_oriented": needs_oriented_jacobian(form_data),
+            "num_cells": num_cells,
+            "enabled_coefficients": itg_data.enabled_coefficients,
             }
+
 
 def generate_enabled_coefficients(enabled_coefficients):
     # TODO: I don't know how to implement this using the format dict, this will do for now:
@@ -165,8 +170,9 @@ def generate_enabled_coefficients(enabled_coefficients):
     code = '\n'.join([
         "static const std::vector<bool> enabled({%s});" % initializer_list,
         "return enabled;",
-        ])
+    ])
     return code
+
 
 def initialize_integral_code(ir, prefix, parameters):
     "Representation independent default initialization of code dict for integral from intermediate representation."
@@ -179,5 +185,5 @@ def initialize_integral_code(ir, prefix, parameters):
     code["initializer_list"] = ""
     code["destructor"] = ""
     code["enabled_coefficients"] = generate_enabled_coefficients(ir["enabled_coefficients"])
-    #code["additional_includes_set"] = set() #ir["additional_includes_set"]
+    # code["additional_includes_set"] = set() #ir["additional_includes_set"]
     return code

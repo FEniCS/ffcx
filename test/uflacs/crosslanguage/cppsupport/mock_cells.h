@@ -12,7 +12,8 @@
 //{
     struct mock_cell
     {
-        // These coordinates are all that generated code should care about, the rest is to support the tests
+        // These coordinates are all that generated code should care
+        // about, the rest is to support the tests
         double coordinate_dofs[8*3]; // Worst case hexahedron: 8 vertices in 3d
 
         // Dimensions needed for generic cell transformations
@@ -27,13 +28,17 @@
         }
 
         // Utility initialization function
-        void init_dimensions(size_t geometric_dimension, size_t topological_dimension, size_t num_vertices)
+        void init_dimensions(size_t geometric_dimension,
+                             size_t topological_dimension, size_t num_vertices)
         {
             this->geometric_dimension = geometric_dimension;
             this->topological_dimension = topological_dimension;
             this->num_vertices = num_vertices;
-            for (int i=0; i<sizeof(coordinate_dofs)/sizeof(coordinate_dofs[0]); ++i)
-                coordinate_dofs[i] = 0.0;
+            for (int i=0; i<sizeof(coordinate_dofs)/sizeof(coordinate_dofs[0]);
+                 ++i)
+            {
+              coordinate_dofs[i] = 0.0;
+            }
         }
 
         void fill_reference_interval(size_t geometric_dimension)
@@ -144,21 +149,19 @@
             for (size_t i=0; i<num_vertices; ++i)
             {
                 for (size_t j=0; j<geometric_dimension; ++j)
-                {
                     coordinate_dofs[i*geometric_dimension + j] *= factor;
-                }
             }
         }
 
-        // Scale cell coordinates differently in each geometric dimension
+        // Scale cell coordinates differently in each geometric
+        // dimension
         void scale(const double * factors)
         {
             for (size_t i=0; i<num_vertices; ++i)
             {
                 for (size_t j=0; j<geometric_dimension; ++j)
-                {
                     coordinate_dofs[i*geometric_dimension + j] *= factors[j];
-                }
+
             }
         }
 
@@ -169,26 +172,27 @@
             double t[3] = { x, 0.0, 0.0 };
             translate(t);
         }
+
         void translate(double x, double y)
         {
             assert(geometric_dimension == 2);
             double t[3] = { x, y, 0.0 };
             translate(t);
         }
+
         void translate(double x, double y, double z)
         {
             assert(geometric_dimension == 3);
             double t[3] = { x, y, z };
             translate(t);
         }
+
         void translate(const double * x)
         {
             for (size_t i=0; i<num_vertices; ++i)
             {
                 for (size_t j=0; j<geometric_dimension; ++j)
-                {
                     coordinate_dofs[i*geometric_dimension + j] += x[j];
-                }
             }
         }
 
@@ -207,9 +211,7 @@
                     }
                 }
                 for (size_t j=0; j<geometric_dimension; ++j)
-                {
                     coordinate_dofs[i*geometric_dimension + j] = result[j];
-                }
             }
         }
     };

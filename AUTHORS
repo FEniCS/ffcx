@@ -57,6 +57,7 @@ Contributors:
     email: aterrel@uchicago.edu
     www:   http://people.cs.uchicago.edu/~aterrel/
 
+
 Credits for UFC
 ===============
 
@@ -79,3 +80,21 @@ Main contributors:
     Garth N. Wells         <gnw20@cam.ac.uk>
     Marie E. Rognes        <meg@simula.no>
     Johannes Ring          <johannr@simula.no>
+
+
+Credits for UFLACS
+==================
+
+UFLACS was merged into FFC 2016-02-16.
+
+Author:
+
+    Martin Sandve Alnæs    <martinal@simula.no>
+
+Contributors:
+
+    Anders Logg            <logg@chalmers.se>
+    Garth N. Wells         <gnw20@cam.ac.uk>
+    Johannes Ring          <johannr@simula.no>
+    Matthias Liertzer      <matthias@liertzer.at>
+    Steffen Müthing        <steffen.muething@ipvs.uni-stuttgart.de>

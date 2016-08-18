@@ -25,7 +25,7 @@ import ufl
 
 # FFC modules.
 from ffc import __version__ as FFC_VERSION
-from ffc.ufc_signature import ufc_signature
+from ffc.ufc_config import get_ufc_signature
 from ffc.parameters import compute_jit_parameters_signature
 
 # UFC modules.
@@ -33,6 +33,7 @@ from ffc.backends import ufc
 
 
 class JITObject:
+
     """This class is a wrapper for a compiled object in the context of
     specific compiler parameters. A JITObject is identified either by its
     hash value or by its signature. The hash value is valid only in a
@@ -81,16 +82,15 @@ class JITObject:
         signatures = [form_signature,
                       parameters_signature,
                       str(FFC_VERSION),
-                      ufc_signature()]
+                      get_ufc_signature()]
         string = ";".join(signatures)
 
         self._signature = sha1(string.encode('utf-8')).hexdigest()
 
         # Uncomment for debugging
-        #print "form_signature       =", form_signature
-        #print "parameters_signature =", parameters_signature
-        #print "ffc_signature        =", ffc_signature
-        #print "signature            =", self._signature
+        # print "form_signature       =", form_signature
+        # print "parameters_signature =", parameters_signature
+        # print "ffc_signature        =", ffc_signature
+        # print "signature            =", self._signature
 
         return self._signature
-

@@ -1,13 +1,18 @@
-#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from __future__ import print_function
 
-import os, sys, platform, re, subprocess, string, tempfile, shutil, hashlib
+import os
+import sys
+import platform
+import re
+import subprocess
+import string
+import tempfile
+import shutil
+import hashlib
 
-try:
-    from setuptools import setup
-    from setuptools.command.install import install
-except ImportError:
-    from distutils.core import setup
-    from distutils.command.install import install
+from setuptools import setup
+from setuptools.command.install import install
 
 from distutils import sysconfig
 from distutils.ccompiler import new_compiler
@@ -33,16 +38,21 @@ CLASSIFIERS = """\
 Development Status :: 5 - Production/Stable
 Intended Audience :: Developers
 Intended Audience :: Science/Research
-License :: OSI Approved :: GNU General Public License v2 (GPLv2)
-License :: Public Domain
-Operating System :: MacOS :: MacOS X
-Operating System :: Microsoft :: Windows
+License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)
 Operating System :: POSIX
 Operating System :: POSIX :: Linux
-Programming Language :: C++
+Operating System :: MacOS :: MacOS X
+Operating System :: Microsoft :: Windows
 Programming Language :: Python
+Programming Language :: Python :: 2
+Programming Language :: Python :: 2.7
+Programming Language :: Python :: 3
+Programming Language :: Python :: 3.4
+Programming Language :: Python :: 3.5
+Programming Language :: Python :: 3.6
 Topic :: Scientific/Engineering :: Mathematics
-Topic :: Software Development :: Libraries
+Topic :: Software Development :: Libraries :: Python Modules
+Topic :: Software Development :: Code Generators
 """
 
 
@@ -92,6 +102,20 @@ def get_git_commit_hash():
         return hash.strip()
 
 
+def get_cxx_flags():
+    """Return flags needed for compilation of UFC C++11 program"""
+    cc = new_compiler()
+    CXX = os.environ.get("CXX")
+    if CXX:
+        cc.set_executables(compiler_so=CXX, compiler=CXX, compiler_cxx=CXX)
+    CXX_FLAGS = os.environ.get("CXXFLAGS", "")
+    if has_cxx_flag(cc, "-std=c++11"):
+        CXX_FLAGS += " -std=c++11"
+    elif has_cxx_flag(cc, "-std=c++0x"):
+        CXX_FLAGS += " -std=c++0x"
+    return CXX_FLAGS
+
+
 def create_windows_batch_files(scripts):
     """Create Windows batch files, to get around problem that we
     cannot run Python scripts in the prompt without the .py
@@ -99,9 +123,8 @@ def create_windows_batch_files(scripts):
     batch_files = []
     for script in scripts:
         batch_file = script + ".bat"
-        f = open(batch_file, "w")
-        f.write("python \"%%~dp0\%s\" %%*\n" % os.path.split(script)[1])
-        f.close()
+        with open(batch_file, "w") as f:
+            f.write(sys.executable + " \"%%~dp0\%s\" %%*\n" % os.path.split(script)[1])
         batch_files.append(batch_file)
     scripts.extend(batch_files)
     return scripts
@@ -113,11 +136,8 @@ def write_config_file(infile, outfile, variables={}):
         delimiter = "@"
     s = AtTemplate(open(infile, "r").read())
     s = s.substitute(**variables)
-    a = open(outfile, "w")
-    try:
+    with open(outfile, "w") as a:
         a.write(s)
-    finally:
-        a.close()
 
 
 def find_library(package_name, lib_names):
@@ -179,47 +199,27 @@ def find_boost_include_dir():
     return find_include_dir("boost", os.path.join("boost", "version.hpp"))
 
 
-def generate_git_hash_file():
+def generate_git_hash_file(GIT_COMMIT_HASH):
     "Generate module with git hash"
-
-    # Get git commit hash
-    GIT_COMMIT_HASH = get_git_commit_hash()
-
-    # Generate git_commit_hash.py
     write_config_file(os.path.join("ffc", "git_commit_hash.py.in"),
                       os.path.join("ffc", "git_commit_hash.py"),
                       variables=dict(GIT_COMMIT_HASH=GIT_COMMIT_HASH))
 
 
-def generate_ufc_signature_file():
+def generate_ufc_config_py_file(INSTALL_PREFIX, CXX_FLAGS, UFC_SIGNATURE):
     "Generate module with UFC signature"
-
-    UFC_SIGNATURE = get_ufc_signature()
-
-    # Generate ufc_signature.py
-    write_config_file(os.path.join("ffc", "ufc_signature.py.in"),
-                      os.path.join("ffc", "ufc_signature.py"),
-                      variables=dict(UFC_SIGNATURE=UFC_SIGNATURE))
+    write_config_file(os.path.join("ffc", "ufc_config.py.in"),
+                      os.path.join("ffc", "ufc_config.py"),
+                      variables=dict(INSTALL_PREFIX=INSTALL_PREFIX,
+                                     CXX_FLAGS=CXX_FLAGS,
+                                     UFC_SIGNATURE=UFC_SIGNATURE))
 
 
-def generate_ufc_config_files():
+def generate_ufc_config_files(INSTALL_PREFIX, CXX_FLAGS, UFC_SIGNATURE):
     "Generate and install UFC configuration files"
 
     # Get variables
-    INSTALL_PREFIX = get_installation_prefix()
     PYTHON_LIBRARY = os.environ.get("PYTHON_LIBRARY", find_python_library())
-    UFC_SIGNATURE = get_ufc_signature()
-
-    # Check that compiler supports C++11 features
-    cc = new_compiler()
-    CXX = os.environ.get("CXX")
-    if CXX:
-        cc.set_executables(compiler_so=CXX, compiler=CXX, compiler_cxx=CXX)
-    CXX_FLAGS = os.environ.get("CXXFLAGS", "")
-    if has_cxx_flag(cc, "-std=c++11"):
-        CXX_FLAGS += " -std=c++11"
-    elif has_cxx_flag(cc, "-std=c++0x"):
-        CXX_FLAGS += " -std=c++0x"
 
     # Generate UFCConfig.cmake
     write_config_file(os.path.join("cmake", "templates", "UFCConfig.cmake.in"),
@@ -266,9 +266,8 @@ def has_cxx_flag(cc, flag):
     try:
         try:
             fname = os.path.join(tmpdir, "flagname.cpp")
-            f = open(fname, "w")
-            f.write("int main() { return 0;}")
-            f.close()
+            with open(fname, "w") as f:
+                f.write("int main() { return 0; }")
             # Redirect stderr to /dev/null to hide any error messages
             # from the compiler.
             devnull = open(os.devnull, 'w')
@@ -289,8 +288,11 @@ def has_cxx_flag(cc, flag):
 def run_install():
     "Run installation"
 
-    # Check if we're building inside a 'Read the Docs' container
-    on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+    # Get common variables
+    INSTALL_PREFIX = get_installation_prefix()
+    CXX_FLAGS = get_cxx_flags()
+    UFC_SIGNATURE = get_ufc_signature()
+    GIT_COMMIT_HASH = get_git_commit_hash()
 
     # Create batch files for Windows if necessary
     scripts = SCRIPTS
@@ -298,21 +300,17 @@ def run_install():
         scripts = create_windows_batch_files(scripts)
 
     # Generate module with git hash from template
-    generate_git_hash_file()
-
-    # Generate module with UFC signature from template
-    generate_ufc_signature_file()
+    generate_git_hash_file(GIT_COMMIT_HASH)
 
     # Generate config files
-    generate_ufc_config_files()
+    generate_ufc_config_files(INSTALL_PREFIX, CXX_FLAGS, UFC_SIGNATURE)
 
     class my_install(install):
         def run(self):
             if not self.dry_run:
-                # Generate ufc_include.py
-                write_config_file(os.path.join("ffc", "ufc_include.py.in"),
-                                  os.path.join("ffc", "ufc_include.py"),
-                                  variables=dict(INSTALL_PREFIX=get_installation_prefix()))
+                # Generate ufc_config.py
+                generate_ufc_config_py_file(INSTALL_PREFIX, CXX_FLAGS,
+                                            UFC_SIGNATURE)
 
             # distutils uses old-style classes, so no super()
             install.run(self)
@@ -324,7 +322,6 @@ def run_install():
     # Add UFC data files (need to use complete path because setuptools
     # installs into the Python package directory, not --prefix). This
     # can be fixed when Swig, etc are removed from FFC).
-    INSTALL_PREFIX = get_installation_prefix()
     data_files_ufc = [(os.path.join(INSTALL_PREFIX, "include"),
                        [os.path.join("ufc", "ufc.h"),
                         os.path.join("ufc", "ufc_geometry.h")]),
@@ -341,46 +338,48 @@ def run_install():
     data_files = data_files + data_files_ufc
 
     # Call distutils to perform installation
-    setup(name             = "FFC",
-          description      = "The FEniCS Form Compiler",
-          version          = VERSION,
-          author           = AUTHORS,
-          classifiers      = [_f for _f in CLASSIFIERS.split('\n') if _f],
-          license          = "LGPL version 3 or later",
-          author_email     = "fenics-dev@googlegroups.com",
-          maintainer_email = "fenics-dev@googlegroups.com",
-          url              = URL,
-          download_url     = tarball(),
-          platforms        = ["Windows", "Linux", "Solaris", "Mac OS-X",
-                              "Unix"],
-          packages         = ["ffc",
-                              "ffc.quadrature",
-                              "ffc.tensor",
-                              "ffc.uflacsrepr",
-                              "ffc.errorcontrol",
-                              "ffc.backends",
-                              "ffc.backends.dolfin",
-                              "ffc.backends.ufc",
-                              "uflacs",
-                              "uflacs.analysis",
-                              "uflacs.backends",
-                              "uflacs.backends.ffc",
-                              "uflacs.backends.ufc",
-                              "uflacs.datastructures",
-                              "uflacs.elementtables",
-                              "uflacs.generation",
-                              "uflacs.language",
-                              "uflacs.representation",
-                              "ufc"],
-          package_dir      = {"ffc": "ffc",
-                              "uflacs": "uflacs",
-                              "ufc": "ufc"},
-          scripts          = scripts,
-          cmdclass         = {'install': my_install},
-          data_files       = data_files,
-          install_requires = ["numpy", "six", "FIAT==2016.2.0.dev0",
-                              "ufl==2016.2.0.dev0", "instant==2016.2.0.dev0"],
-          zip_safe = False)
+    setup(name="FFC",
+          description="The FEniCS Form Compiler",
+          version=VERSION,
+          author=AUTHORS,
+          classifiers=[_f for _f in CLASSIFIERS.split('\n') if _f],
+          license="LGPL version 3 or later",
+          author_email="fenics-dev@googlegroups.com",
+          maintainer_email="fenics-dev@googlegroups.com",
+          url=URL,
+          download_url=tarball(),
+          platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
+          packages=["ffc",
+                    "ffc.quadrature",
+                    "ffc.tensor",
+                    "ffc.uflacsrepr",
+                    "ffc.errorcontrol",
+                    "ffc.backends",
+                    "ffc.backends.dolfin",
+                    "ffc.backends.ufc",
+                    "uflacs",
+                    "uflacs.analysis",
+                    "uflacs.backends",
+                    "uflacs.backends.ffc",
+                    "uflacs.backends.ufc",
+                    "uflacs.datastructures",
+                    "uflacs.elementtables",
+                    "uflacs.generation",
+                    "uflacs.language",
+                    "uflacs.representation",
+                    "ufc"],
+          package_dir={"ffc": "ffc",
+                       "uflacs": "uflacs",
+                       "ufc": "ufc"},
+          scripts=scripts,
+          cmdclass={'install': my_install},
+          data_files=data_files,
+          install_requires=["numpy",
+                            "six",
+                            "fiat==%s" % VERSION,
+                            "ufl==%s" % VERSION,
+                            "dijitso==%s" % VERSION],
+          zip_safe=False)
 
 if __name__ == "__main__":
     run_install()

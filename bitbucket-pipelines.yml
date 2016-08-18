@@ -1,26 +1,30 @@
-image: python:2.7
+image: ubuntu:16.04
 
 pipelines:
   default:
     - step:
         script:
+          - apt-get update
+          - apt-get install -y cmake g++ git make python-dev python-pip python-setuptools python-wheel swig --no-install-recommends
           - pip install git+https://bitbucket.org/fenics-project/fiat.git@master
           - pip install git+https://bitbucket.org/fenics-project/ufl.git@master
-          - pip install git+https://bitbucket.org/fenics-project/instant.git@master
+          - pip install git+https://bitbucket.org/fenics-project/dijitso.git@master
           - pip install pytest
           - pip install --verbose .
           - cd test
-          - py.test -v ./unit/evaluate_basis/test_against_fiat_new.py
-          - py.test -v ./uflacs/unit/
+          - py.test -v ./unit
+          - py.test -v ./uflacs
   branches:
     next:
       - step:
           script:
+            - apt-get update
+            - apt-get install -y cmake g++ git make python-dev python-pip python-setuptools python-wheel swig --no-install-recommends
             - pip install git+https://bitbucket.org/fenics-project/fiat.git@next
             - pip install git+https://bitbucket.org/fenics-project/ufl.git@next
-            - pip install git+https://bitbucket.org/fenics-project/instant.git@next
+            - pip install git+https://bitbucket.org/fenics-project/dijitso.git@master
             - pip install pytest
             - pip install --verbose .
             - cd test
-            - py.test -v ./unit/evaluate_basis/test_against_fiat_new.py
-            - py.test -v ./uflacs/unit/
+            - py.test -v ./unit/
+            - py.test -v ./uflacs

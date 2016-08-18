@@ -22,11 +22,9 @@ from ffc.compiler import compile_form, compile_element
 # Import JIT compiler
 from ffc.jitcompiler import jit
 
-# Import UFC signature
-from ffc.ufc_signature import ufc_signature
-
-# Import UFC include dir function
-from ffc.ufc_include import get_ufc_include
+# Import UFC config functions
+from ffc.ufc_config import get_ufc_include, get_ufc_cxx_flags, get_ufc_signature
+from ffc.ufc_config import ufc_signature
 
 # Import default parameters
 from .parameters import default_parameters, default_jit_parameters
@@ -42,8 +40,7 @@ try:
 
     # Import list of supported elements from FIAT
     from FIAT import supported_elements
-    supported_elements = list(supported_elements.keys())
-    supported_elements.sort()
+    supported_elements = sorted(supported_elements.keys())
 
     # Append elements that we can plot
     from .plot import element_colors

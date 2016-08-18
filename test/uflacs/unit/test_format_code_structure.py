@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Tests of generic code formatting utilities,
 which focus on the overall structure of the code,
@@ -9,6 +8,7 @@ Some of this is C++ specific, some is more generic.
 
 import pytest
 from uflacs.language.cnodes import *
+
 
 def test_format_basics():
     # Reproduce a string
@@ -38,6 +38,7 @@ def test_format_basics():
     code = format_indented_lines(("hello", "world"), 2)
     assert code == "        hello\n        world"
 
+
 def test_format_indented_lines():
     # Strings and lists can be put in Indented containers
     assert format_indented_lines(Indented("hei")) == "    hei"
@@ -45,6 +46,7 @@ def test_format_indented_lines():
     assert code == "    hei\n        verden"
     code = format_indented_lines(["{", Indented("fee\nfie\nfoe"), "}"])
     assert code == "{\n    fee\n    fie\n    foe\n}"
+
 
 def xtest_format_blocks():
     # A Scope is an indented body with brackets before and after
@@ -61,6 +63,7 @@ def xtest_format_blocks():
     code = format_code(["iq = 0;", "do", (Scope("foo(iq);"), " while (iq < nq);")])
     assert code == "iq = 0;\ndo\n{\n    foo(iq);\n} while (iq < nq);"
 
+
 def xtest_format_class():
     # Making a class declaration
     assert format_code(Class('Car')) == 'class Car\n{\n};'
@@ -73,6 +76,7 @@ def xtest_format_class():
     code = format_code(Class('Car', private_body='void eval()\n{\n}'))
     assert code == 'class Car\n{\nprivate:\n    void eval()\n    {\n    }\n};'
 
+
 def xtest_format_template_argument_list():
     def t(args, mlcode, slcode):
         code = format_code(TemplateArgumentList(args, False))
@@ -82,6 +86,7 @@ def xtest_format_template_argument_list():
     t(('A',), '<\n    A\n>', '<A>')
     t(('A', 'B'), '<\n    A,\n    B\n>', '<A, B>')
 
+
 def xtest_format_templated_type():
     code = format_code(Type('Foo'))
     assert code == 'Foo'
@@ -90,10 +95,12 @@ def xtest_format_templated_type():
     code = format_code(Type('Foo', ('int', Type('Bar', ('123', 'float')))))
     assert code == 'Foo<int, Bar<123, float> >'
 
+
 def xtest_format_typedef():
     assert format_code(TypeDef('int', 'myint')) == 'typedef int myint;'
     code = format_code(TypeDef(Type('Foo', ('int', Type('Bar', ('123', 'float')))), 'Thing'))
     assert code == 'typedef Foo<int, Bar<123, float> > Thing;'
+
 
 def xtest_format_template_class():
     expected = "template<typename T, typename R>\nclass MyClass\n{\npublic:\n    void hello(int world) {}\n};"
@@ -106,17 +113,20 @@ def xtest_format_template_class():
                  template_arguments=('typename T', 'typename R'))
     assert format_code(code) == expected
 
+
 def test_format_variable_decl():
     code = VariableDecl("double", "foo")
     expected = "double foo;"
     assert str(code) == expected
+
 
 def test_literal_cexpr_value_conversion():
     assert bool(LiteralBool(True)) == True
     assert bool(LiteralBool(False)) == False
     assert int(LiteralInt(2)) == 2
     assert float(LiteralFloat(2.0)) == 2.0
-    #assert complex(LiteralFloat(2.0+4.0j)) == 2.0+4.0j
+    # assert complex(LiteralFloat(2.0+4.0j)) == 2.0+4.0j
+
 
 def test_format_array_decl():
     expected = "double foo[3];"
@@ -159,6 +169,7 @@ def test_format_array_decl():
     with pytest.raises(ValueError):
         ArrayAccess(decl, (3, -1))
 
+
 def test_format_array_def():
     expected = "double foo[3] = { 1.0, 2.0, 3.0 };"
     code = ArrayDecl("double", "foo", 3, [1.0, 2.0, 3.0])
@@ -176,8 +187,9 @@ def test_format_array_def():
       { { 1.0, 2.0, 3.0 },
         { 6.0, 5.0, 4.0 } } };"""
     code = ArrayDecl("double", "foo", (2, 2, 3), [[[1.0, 2.0, 3.0], [6.0, 5.0, 4.0]],
-                                                [[1.0, 2.0, 3.0], [6.0, 5.0, 4.0]]])
+                                                  [[1.0, 2.0, 3.0], [6.0, 5.0, 4.0]]])
     assert str(code) == expected
+
 
 def test_format_array_def_zero():
     expected = "double foo[3] = {};"
@@ -189,6 +201,7 @@ def test_format_array_def_zero():
     expected = "double foo[2][3] = {};"
     code = ArrayDecl("double", "foo", (2, 3), [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
     assert str(code) == expected
+
 
 def xtest_class_with_arrays():
     adecl = ArrayDecl('double', 'phi', (3, 5))
@@ -207,6 +220,7 @@ def xtest_class_with_arrays():
     actual = str(classcode)
     assert actual == expected
 
+
 def test_class_array_access():
     vname = 'phi'
     shape = (3, 4)
@@ -216,6 +230,7 @@ def test_class_array_access():
     acode = str(ArrayAccess(decl, component))
     assert dcode == 'double phi[3][4];'
     assert acode == 'phi[i0][2]'
+
 
 def test_while_loop():
     code = While("--k < 3", [])
@@ -228,6 +243,7 @@ def test_while_loop():
     expected = "while (--k < 3)\n{\n    ting;\n    tang;\n}"
     assert actual == expected
 
+
 def test_for_loop():
     code = For("int i = 0;", "i < 3", "++i", [])
     actual = str(code)
@@ -238,6 +254,7 @@ def test_for_loop():
     actual = str(code)
     expected = "for (int i = 0; i < 3; ++i)\n{\n    ting;\n    tang;\n}"
     assert actual == expected
+
 
 def test_for_range():
     code = ForRange("i", 0, 3, [])

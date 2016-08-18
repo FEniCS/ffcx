@@ -29,6 +29,7 @@ __all__ = ["generate_wrapper_code"]
 
 # FIXME: More clean-ups needed here.
 
+
 def generate_wrapper_code(analysis, prefix, object_names, parameters):
     "Generate code for additional wrappers."
 
@@ -38,6 +39,7 @@ def generate_wrapper_code(analysis, prefix, object_names, parameters):
 
     # Return dolfin wrapper
     return _generate_dolfin_wrapper(analysis, prefix, object_names, parameters)
+
 
 def _generate_dolfin_wrapper(analysis, prefix, object_names, parameters):
 
@@ -56,6 +58,7 @@ def _generate_dolfin_wrapper(analysis, prefix, object_names, parameters):
 
     return code
 
+
 def _encapsulate(prefix, object_names, analysis, parameters):
 
     # Extract data from analysis
@@ -73,8 +76,8 @@ def _encapsulate(prefix, object_names, analysis, parameters):
     # Special case: with error control
     elif parameters["error_control"] and num_form_datas == 11:
         capsules = [_encapsule_form(prefix, object_names, form_data, i, element_map)
-                    for (i, form_data) in enumerate(form_datas[:num_form_datas-1])]
-        capsules += [_encapsule_form(prefix, object_names, form_datas[-1], num_form_datas-1,
+                    for (i, form_data) in enumerate(form_datas[:num_form_datas - 1])]
+        capsules += [_encapsule_form(prefix, object_names, form_datas[-1], num_form_datas - 1,
                                      element_map, "GoalFunctional")]
     # Otherwise: generate standard capsules for each form
     else:
@@ -105,8 +108,9 @@ def _encapsule_form(prefix, object_names, form_data, i, element_map, superclassn
 
     return form_names
 
+
 def _encapsule_element(prefix, elements):
-    element_number = len(elements) - 1 # eh? this doesn't make any sense
+    element_number = len(elements) - 1  # eh? this doesn't make any sense
     args = ("0",
             [make_classname(prefix, "finite_element", element_number)],
             [make_classname(prefix, "dofmap", element_number)])

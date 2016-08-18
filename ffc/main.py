@@ -48,7 +48,7 @@ import ufl
 from ffc.log import set_level
 from ffc.log import DEBUG, INFO, ERROR
 from ffc.parameters import default_parameters
-from ffc import __version__ as FFC_VERSION, ufc_signature
+from ffc import __version__ as FFC_VERSION, get_ufc_signature
 from ffc.backends.ufc import __version__ as UFC_VERSION
 from ffc.compiler import compile_form, compile_element
 from ffc.formatting import write_code
@@ -66,7 +66,7 @@ def info_version():
 This is FFC, the FEniCS Form Compiler, version {0}.
 UFC backend version {1}, signature {2}.
 For further information, visit https://bitbucket.org/fenics-project/ffc/.
-""".format(FFC_VERSION, UFC_VERSION, ufc_signature()))
+""".format(FFC_VERSION, UFC_VERSION, get_ufc_signature()))
 
 
 def info_usage():
@@ -82,18 +82,18 @@ the FFC man page which may invoked by 'man ffc' (if installed).
 def main(argv):
     "Main function."
 
-    # Append current directory to path, such that the *_debug module created by
-    # ufl_load_file can be found when FFC  compiles a form which is not in the
-    # PYHTONPATH
+    # Append current directory to path, such that the *_debug module
+    # created by ufl_load_file can be found when FFC compiles a form
+    # which is not in the PYHTONPATH
     sys.path.append(getcwd())
 
     # Get command-line arguments
     try:
         opts, args = getopt.getopt(argv, "hVSvsl:r:f:Oo:q:ep",
-            ["help", "version", "signature", "verbose", "silent",
-             "language=", "representation=", "optimize",
-             "output-directory=", "quadrature-rule=", "error-control",
-             "profile"])
+                                   ["help", "version", "signature", "verbose", "silent",
+                                    "language=", "representation=", "optimize",
+                                    "output-directory=", "quadrature-rule=", "error-control",
+                                    "profile"])
     except getopt.GetoptError:
         info_usage()
         print_error("Illegal command-line arguments.")
@@ -111,7 +111,7 @@ def main(argv):
 
     # Check for --signature
     if ("-S", "") in opts or ("--signature", "") in opts:
-        print(ufc_signature())
+        print(get_ufc_signature())
         return 0
 
     # Check that we get at least one file
@@ -173,7 +173,8 @@ def main(argv):
         prefix, suffix = os.path.splitext(os.path.basename(filename))
         suffix = suffix.replace(os.path.extsep, "")
 
-        # Remove weird characters (file system allows more than the C preprocessor)
+        # Remove weird characters (file system allows more than the C
+        # preprocessor)
         prefix = re.subn("[^{}]".format(string.ascii_letters + string.digits + "_"), "!", prefix)[0]
         prefix = re.subn("!+", "_", prefix)[0]
 
@@ -183,7 +184,7 @@ def main(argv):
             return 1
 
         # Turn on profiling
-        if enable_profile:  #parameters.get("profile"):
+        if enable_profile:  # parameters.get("profile"):
             pr = cProfile.Profile()
             pr.enable()
 
@@ -193,16 +194,18 @@ def main(argv):
         # Compile
         try:
             if parameters["error_control"]:
-                code_h, code_c = \
-                    compile_with_error_control(ufd.forms, ufd.object_names,
-                                         ufd.reserved_objects, prefix,
-                                         parameters)
+                code_h, code_c = compile_with_error_control(ufd.forms,
+                                                            ufd.object_names,
+                                                            ufd.reserved_objects,
+                                                            prefix,
+                                                            parameters)
             elif len(ufd.forms) > 0:
-                code_h, code_c = \
-                    compile_form(ufd.forms, ufd.object_names, prefix=prefix, parameters=parameters)
+                code_h, code_c = compile_form(ufd.forms, ufd.object_names,
+                                              prefix=prefix,
+                                              parameters=parameters)
             else:
-                code_h, code_c = \
-                    compile_element(ufd.elements, prefix=prefix, parameters=parameters)
+                code_h, code_c = compile_element(ufd.elements, prefix=prefix,
+                                                 parameters=parameters)
 
             # Write to file
             write_code(code_h, code_c, prefix, parameters)
@@ -223,6 +226,5 @@ def main(argv):
             pfn = "ffc_{0}.profile".format(prefix)
             pr.dump_stats(pfn)
             print("Wrote profiling info to file {0}".format(pfn))
-            #pr.print_stats()
 
     return 0

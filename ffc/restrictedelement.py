@@ -21,7 +21,9 @@ import numpy
 from ufl.utils.sorting import sorted_by_key
 from ffc.log import error
 
+
 class RestrictedElement:
+
     "Create a restriction of a given FIAT element."
 
     def __init__(self, element, indices, restriction_domain):
@@ -73,6 +75,7 @@ class RestrictedElement:
 
     def restriction_domain(self):
         return self._restriction_domain
+
 
 def _extract_entity_dofs(element, indices):
     # FIXME: Readability counts

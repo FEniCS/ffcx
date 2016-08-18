@@ -26,7 +26,8 @@ import os, glob
 from utils import print_table
 
 # Test options
-test_options = ["-r tensor", "-r tensor -O", "-r quadrature", "-r quadrature -O"]
+test_options = ["-r tensor", "-r tensor -O", "-r quadrature",
+                "-r quadrature -O"]
 
 # Get list of test cases
 test_cases = sorted([f.split(".")[0] for f in glob.glob("*.ufl")])
@@ -41,7 +42,7 @@ for (j, test_option) in enumerate(test_options):
 
     # Run benchmark
     print "\nUsing options %s\n" % test_option
-    os.system("python test.py --bench %s" % test_option)
+    os.system(sys.executable + " test.py --bench %s" % test_option)
 
     # Collect results
     for (i, test_case) in enumerate(test_cases):

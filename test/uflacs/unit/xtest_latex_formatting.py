@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Tests of LaTeX formatting rules.
 """
@@ -10,12 +9,13 @@ from uflacs.codeutils.latex_expr_formatting_rules import LatexFormatter
 import ufl
 from ufl.algorithms import preprocess_expression, expand_indices
 
+
 def expr2latex(expr, variables=None):
     "This is a test specific function for formatting ufl to LaTeX."
 
-    # Preprocessing expression before applying formatting.
-    # In a compiler, one should probably assume that these
-    # have been applied and use ExprFormatter directly.
+    # Preprocessing expression before applying formatting.  In a
+    # compiler, one should probably assume that these have been
+    # applied and use ExprFormatter directly.
     expr_data = preprocess_expression(expr)
     expr = expand_indices(expr_data.preprocessed_expr)
 
@@ -23,15 +23,18 @@ def expr2latex(expr, variables=None):
     # formatting rules for generic LaTeX formatting
     latex_formatter = LatexFormatter()
 
-    # This final formatter implements a generic framework handling indices etc etc.
+    # This final formatter implements a generic framework handling
+    # indices etc etc.
     variables = variables or {}
     expr_formatter = ExprFormatter(latex_formatter, variables)
     code = expr_formatter.visit(expr)
     return code
 
+
 def assertLatexEqual(self, expr, code, variables=None):
     r = expr2latex(expr, variables)
     self.assertEqual(code, r)
+
 
 def test_latex_formatting_of_literals():
     # Test literals
@@ -46,6 +49,7 @@ def test_latex_formatting_of_literals():
     assert expr2latex(ufl.PermutationSymbol(3)[1, 2, 3]) == "1"
     assert expr2latex(ufl.PermutationSymbol(3)[2, 1, 3]) == "-1"
     assert expr2latex(ufl.PermutationSymbol(3)[1, 1, 3]) == "0"
+
 
 def test_latex_formatting_of_geometry():
     # Test geometry quantities
@@ -62,6 +66,7 @@ def test_latex_formatting_of_geometry():
     Kr = ufl.Circumradius(ufl.triangle)
     assert expr2latex(Kr) == r"K_{\text{rad}}"
 
+
 def test_latex_formatting_of_form_arguments():
     # Test form arguments (faked for testing!)
     U = ufl.FiniteElement("CG", ufl.triangle, 1)
@@ -74,26 +79,28 @@ def test_latex_formatting_of_form_arguments():
     assert expr2latex(f) == r"\overset{0}{w}"
 
     f = ufl.Coefficient(V, count=1)
-    assert expr2latex(f[0]) == r"\overset{1}{w}_{0}" # NOT renumbered to 0...
+    assert expr2latex(f[0]) == r"\overset{1}{w}_{0}"  # NOT renumbered to 0...
     v = ufl.Argument(V, number=3)
-    assert expr2latex(v[1]) == r"\overset{3}{v}_{1}" # NOT renumbered to 0...
+    assert expr2latex(v[1]) == r"\overset{3}{v}_{1}"  # NOT renumbered to 0...
 
     f = ufl.Coefficient(W, count=2)
-    assert expr2latex(f[1, 0]) == r"\overset{2}{w}_{1 0}" # NOT renumbered to 0...
+    assert expr2latex(f[1, 0]) == r"\overset{2}{w}_{1 0}"  # NOT renumbered to 0...
     v = ufl.Argument(W, number=3)
-    assert expr2latex(v[0, 1]) == r"\overset{3}{v}_{0 1}" # NOT renumbered to 0...
+    assert expr2latex(v[0, 1]) == r"\overset{3}{v}_{0 1}"  # NOT renumbered to 0...
 
     # TODO: Test mixed functions
     # TODO: Test tensor functions with symmetries
+
 
 def test_latex_formatting_of_arithmetic():
     x = ufl.SpatialCoordinate(ufl.triangle)[0]
     assert expr2latex(x + 3) == "3 + x_0"
     assert expr2latex(x * 2) == "2 x_0"
     assert expr2latex(x / 2) == r"\frac{x_0}{2}"
-    assert expr2latex(x*x) == r"{x_0}^{2}" # TODO: Will gcc optimize this to x*x for us?
+    assert expr2latex(x * x) == r"{x_0}^{2}"  # TODO: Will gcc optimize this to x*x for us?
     assert expr2latex(x**3) == r"{x_0}^{3}"
     # TODO: Test all basic operators
+
 
 def test_latex_formatting_of_cmath():
     x = ufl.SpatialCoordinate(ufl.triangle)[0]
@@ -107,6 +114,7 @@ def test_latex_formatting_of_cmath():
     assert expr2latex(ufl.asin(x)) == r"\arcsin(x_0)"
     assert expr2latex(ufl.acos(x)) == r"\arccos(x_0)"
     assert expr2latex(ufl.atan(x)) == r"\arctan(x_0)"
+
 
 def test_latex_formatting_of_derivatives():
     xx = ufl.SpatialCoordinate(ufl.triangle)
@@ -127,13 +135,15 @@ def test_latex_formatting_of_derivatives():
     # TODO: Test more derivatives
     # TODO: Test variable derivatives using diff
 
+
 def xtest_latex_formatting_of_conditionals():
     # Test conditional expressions
     assert expr2latex(ufl.conditional(ufl.lt(x, 2), y, 3)) == "x_0 < 2 ? x_1: 3"
-    assert expr2latex(ufl.conditional(ufl.gt(x, 2), 4+y, 3)) == "x_0 > 2 ? 4 + x_1: 3"
+    assert expr2latex(ufl.conditional(ufl.gt(x, 2), 4 + y, 3)) == "x_0 > 2 ? 4 + x_1: 3"
     assert expr2latex(ufl.conditional(ufl.And(ufl.le(x, 2), ufl.ge(y, 4)), 7, 8)) == "x_0 <= 2 && x_1 >= 4 ? 7: 8"
     assert expr2latex(ufl.conditional(ufl.Or(ufl.eq(x, 2), ufl.ne(y, 4)), 7, 8)) == "x_0 == 2 || x_1 != 4 ? 7: 8"
     # TODO: Some tests of nested conditionals with correct precedences?
+
 
 def test_latex_formatting_precedence_handling():
     x, y = ufl.SpatialCoordinate(ufl.triangle)
@@ -161,8 +171,8 @@ def test_latex_formatting_precedence_handling():
 
     # Test precedence handling with highest level types
     assert expr2latex(ufl.sin(x)) == r"\sin(x_0)"
-    assert expr2latex(ufl.cos(x+2)) == r"\cos(2 + x_0)"
-    assert expr2latex(ufl.tan(x/2)) == r"\tan(\frac{x_0}{2})"
+    assert expr2latex(ufl.cos(x + 2)) == r"\cos(2 + x_0)"
+    assert expr2latex(ufl.tan(x / 2)) == r"\tan(\frac{x_0}{2})"
     assert expr2latex(ufl.acos(x + 3 * y)) == r"\arccos(x_0 + 3 x_1)"
     assert expr2latex(ufl.asin(ufl.atan(x**4))) == r"\arcsin(\arctan({x_0}^{4}))"
     assert expr2latex(ufl.sin(y) + ufl.tan(x)) == r"\sin(x_1) + \tan(x_0)"
@@ -171,9 +181,12 @@ def test_latex_formatting_precedence_handling():
     assert expr2latex(3 * (2 + x)) == "3 (2 + x_0)"
     assert expr2latex((2 * x) + (3 * y)) == "2 x_0 + 3 x_1"
     assert expr2latex(2 * (x + 3) * y) == "x_1 (2 (3 + x_0))"
+
+
 def _fixme():
-    assert expr2latex(2 * (x + 3)**4 * y) == "x_1 (2 {(3 + x_0)}^{4)" # FIXME: Precedence handling fails here
+    assert expr2latex(2 * (x + 3)**4 * y) == "x_1 (2 {(3 + x_0)}^{4)"  # FIXME: Precedence handling fails here
     # TODO: More tests covering all types and more combinations!
+
 
 def test_latex_formatting_of_variables():
     x, y = ufl.SpatialCoordinate(ufl.triangle)

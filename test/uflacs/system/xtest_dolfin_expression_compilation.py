@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Tests of dolfin Expression formatting.
 """

@@ -36,8 +36,8 @@ for test in tests:
     print("Running tests: %s" % test)
     print("----------------------------------------------------------------------")
     os.chdir(os.path.join(pwd, test))
-    #failure = os.system("python test.py | tee -a %s" % logfile)
-    failure = os.system("python test.py")
+    #failure = os.system(sys.executable + " test.py | tee -a %s" % logfile)
+    failure = os.system(sys.executable + " test.py")
     if failure:
         print("Test FAILED")
         failed.append(test)

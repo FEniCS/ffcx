@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """This script compiles and verifies the output for all form files
 found in the 'demo' directory. The verification is performed in two
 steps. First, the generated code is compared with stored references.
@@ -36,12 +35,18 @@ option --bench.
 # FIXME: Need to add many more test cases. Quite a few DOLFIN forms
 # failed after the FFC tests passed.
 
-import os, sys, shutil, difflib, sysconfig
+import os
+import sys
+import shutil
+import difflib
+import sysconfig
+import subprocess
+import time
 from numpy import array, shape, abs, max, isnan
 from ffc.log import begin, end, info, info_red, info_green, info_blue
+from ffc import get_ufc_include, get_ufc_cxx_flags
 from ufctest import generate_test_code
-from instant.output import get_status_output
-import time
+
 
 # Parameters TODO: Can make this a cmdline argument, and start
 # crashing programs in debugger automatically?
@@ -55,47 +60,50 @@ logfile = None
 
 # Extended quadrature tests (optimisations)
 ext_quad = [
-"-r quadrature -O -feliminate_zeros",
-"-r quadrature -O -fsimplify_expressions",
-"-r quadrature -O -fprecompute_ip_const",
-"-r quadrature -O -fprecompute_basis_const",
-"-r quadrature -O -fprecompute_ip_const -feliminate_zeros",
-"-r quadrature -O -fprecompute_basis_const -feliminate_zeros",
+    "-r quadrature -O -feliminate_zeros",
+    "-r quadrature -O -fsimplify_expressions",
+    "-r quadrature -O -fprecompute_ip_const",
+    "-r quadrature -O -fprecompute_basis_const",
+    "-r quadrature -O -fprecompute_ip_const -feliminate_zeros",
+    "-r quadrature -O -fprecompute_basis_const -feliminate_zeros",
 ]
 
 # Extended uflacs tests (to be extended with optimisation parameters
 # later)
 ext_uflacs = [
-"-r uflacs",
+    "-r uflacs",
 ]
 
 known_uflacs_failures = set([
     "CustomIntegral.ufl",
     "CustomMixedIntegral.ufl",
     "CustomVectorIntegral.ufl",
-    ])
+])
 
 _command_timings = []
+
+
 def run_command(command):
     "Run command and collect errors in log file."
     global _command_timings
     global logfile
 
     t1 = time.time()
-    (status, output) = get_status_output(command)
-    t2 = time.time()
-    _command_timings.append((command, t2-t1))
-
-    if status == 0:
+    try:
+        output = subprocess.check_output(command, shell=True)
+        t2 = time.time()
+        _command_timings.append((command, t2 - t1))
         verbose = False  # FIXME: Set from --verbose
         if verbose:
             print(output)
         return True
-    else:
+    except subprocess.CalledProcessError as e:
+        t2 = time.time()
+        _command_timings.append((command, t2 - t1))
         if logfile is None:
             logfile = open("../../error.log", "w")
-        logfile.write(output + "\n")
-        print(output)
+        logfile.write(e.output + "\n")
+        print(e.output)
         return False
 
 
@@ -164,14 +172,14 @@ def generate_code(args, only_forms, skip_forms):
 
     # TODO: Parse additional options from .ufl file? I.e. grep for
     # some sort of tag like '#ffc: <flags>'.
-    special = { "AdaptivePoisson.ufl": "-e", }
+    special = {"AdaptivePoisson.ufl": "-e", }
 
     # Iterate over all files
     for f in form_files:
         options = special.get(f, "")
 
         cmd = ("ffc %s %s -f precision=8 -fconvert_exceptions_to_warnings %s"
-        % (options, " ".join(args), f))
+               % (options, " ".join(args), f))
 
         # Generate code
         ok = run_command(cmd)
@@ -184,12 +192,12 @@ def generate_code(args, only_forms, skip_forms):
 
     end()
 
+
 def validate_code(reference_dir):
     "Validate generated code against references."
 
     # Get a list of all files
-    header_files = [f for f in os.listdir(".") if f.endswith(".h")]
-    header_files.sort()
+    header_files = sorted([f for f in os.listdir(".") if f.endswith(".h")])
 
     begin("Validating generated code (%d header files found)"
           % len(header_files))
@@ -216,10 +224,11 @@ def validate_code(reference_dir):
             diff = "\n".join([line for line in difflib.unified_diff(reference_code.split("\n"), generated_code.split("\n"))])
             s = ("Code differs for %s, diff follows (reference first, generated second)"
                  % os.path.join(*reference_file.split(os.path.sep)[-3:]))
-            log_error("\n" + s + "\n" + len(s)*"-")
+            log_error("\n" + s + "\n" + len(s) * "-")
             log_error(diff)
 
     end()
+
 
 def find_boost_cflags():
     # Get Boost dir (code copied from ufc/src/utils/python/ufc_utils/build.py)
@@ -266,18 +275,18 @@ set the environment variable BOOST_DIR.
 Forms using bessel functions will fail to build.
 """)
     return boost_cflags, boost_linkflags
-    
+
+
 def build_programs(bench, permissive):
     "Build test programs for all test cases."
 
     # Get a list of all files
-    header_files = [f for f in os.listdir(".") if f.endswith(".h")]
-    header_files.sort()
+    header_files = sorted([f for f in os.listdir(".") if f.endswith(".h")])
 
     begin("Building test programs (%d header files found)" % len(header_files))
 
     # Get UFC flags
-    ufc_cflags = get_status_output("pkg-config --cflags ufc-1")[1].strip()
+    ufc_cflags = "-I" + get_ufc_include() + " " + " ".join(get_ufc_cxx_flags())
     boost_cflags, boost_linkflags = find_boost_cflags()
     ufc_cflags += boost_cflags
     linker_options = boost_linkflags
@@ -289,9 +298,9 @@ def build_programs(bench, permissive):
     if bench:
         info("Benchmarking activated")
         # Takes too long to build with -O2
-        #compiler_options += " -O2"
+        # compiler_options += " -O2"
         compiler_options += " -O3"
-        #compiler_options += " -O3 -fno-math-errno -march=native"
+        # compiler_options += " -O3 -fno-math-errno -march=native"
     if debug:
         info("Debugging activated")
         compiler_options += " -g -O0"
@@ -325,8 +334,7 @@ def run_programs(bench):
     bench = 'b' if bench else ''
 
     # Get a list of all files
-    test_programs = [f for f in os.listdir(".") if f.endswith(".bin")]
-    test_programs.sort()
+    test_programs = sorted([f for f in os.listdir(".") if f.endswith(".bin")])
 
     begin("Running generated programs (%d programs found)" % len(test_programs))
 
@@ -407,21 +415,21 @@ def main(args):
     "Run all regression tests."
 
     # Check command-line arguments TODO: Use argparse
-    use_auto       = "--skip-auto" not in args
-    use_uflacs     = "--skip-uflacs" not in args
-    use_quad       = "--skip-quad" not in args
-    use_ext_quad   = "--ext-quad" in args
+    use_auto = "--skip-auto" not in args
+    use_uflacs = "--skip-uflacs" not in args
+    use_quad = "--skip-quad" not in args
+    use_ext_quad = "--ext-quad" in args
 
-    skip_download  = "--skip-download" in args
-    skip_run       = "--skip-run" in args
+    skip_download = "--skip-download" in args
+    skip_run = "--skip-run" in args
     skip_code_diff = "--skip-code-diff" in args
-    skip_validate  = "--skip-validate" in args
-    bench          = "--bench" in args
+    skip_validate = "--skip-validate" in args
+    bench = "--bench" in args
 
-    permissive     = "--permissive" in args
-    tolerant       = "--tolerant" in args
-    print_timing   = "--print-timing" in args
-    show_help      = "--help" in args
+    permissive = "--permissive" in args
+    tolerant = "--tolerant" in args
+    print_timing = "--print-timing" in args
+    show_help = "--help" in args
 
     flags = (
         "--skip-auto",
@@ -437,13 +445,13 @@ def main(args):
         "--tolerant",
         "--print-timing",
         "--help",
-        )
+    )
     args = [arg for arg in args if not arg in flags]
 
     if show_help:
         info("Valid arguments:\n" + "\n".join(flags))
         return 0
-    
+
     if bench or not skip_validate:
         skip_run = False
     if bench:
@@ -458,12 +466,13 @@ def main(args):
     if skip_download:
         info_blue("Skipping reference data download")
     else:
-        failure, output = get_status_output("./scripts/download")
-        print(output)
-        if failure:
-            info_red("Download reference data failed")
-        else:
+        try:
+            output = subprocess.check_output("./scripts/download", shell=True)
+            print(output)
             info_green("Download reference data ok")
+        except subprocess.CalledProcessError as e:
+            print(e.output)
+            info_red("Download reference data failed")
 
     if tolerant:
         global output_tolerance

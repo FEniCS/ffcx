@@ -1,3 +1,3 @@
 -e git+https://bitbucket.org/fenics-project/fiat.git#egg=fiat
--e git+https://bitbucket.org/fenics-project/instant.git#egg=instant
+-e git+https://bitbucket.org/fenics-project/dijitso.git#egg=dijitso
 -e git+https://bitbucket.org/fenics-project/ufl.git#egg=ufl

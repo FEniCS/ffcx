@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Tests of table manipulation utilities.
 """
@@ -126,9 +125,9 @@ def test_unique_tables_some_equal():
         np.zeros((2,)),
         np.ones((2,)),
         np.zeros((3,)),
-        #np.ones((2,)),
+        # np.ones((2,)),
         np.ones((2,))*2,
-        #np.ones((2,))*2,
+        # np.ones((2,))*2,
         ]
     expected_mapping = dict((i, v) for i, v in enumerate([0, 1, 2, 1, 3, 3]))
     assert mapping == expected_mapping
@@ -175,11 +174,11 @@ def test_unique_tables_string_keys():
         np.zeros((2,)),
         np.ones((2,)),
         np.zeros((3,)),
-        #np.ones((2,)),
+        # np.ones((2,)),
         np.ones((2,))*2,
-        #np.ones((2,))*2,
+        # np.ones((2,))*2,
         ]
-    expected_mapping = { 'a':0, 'b':1, 'c':2, 'd':1, 'e':3, 'f':3 }
+    expected_mapping = { 'a': 0, 'b': 1, 'c': 2, 'd': 1, 'e': 3, 'f': 3 }
     assert mapping == expected_mapping
     assert len(set(itervalues(mapping))) == len(unique)
     for i, t in iteritems(tables):
@@ -252,5 +251,5 @@ def test_get_ffc_table_values_vector_facet():
                 for component in range(num_components):
                     table = get_ffc_table_values(ffc_tables, entitytype, num_points, element, component, derivatives, default_tolerance)
                     for i in range(num_facets):
-                        #print table[i,...]
+                        # print table[i,...]
                         assert equal_tables(table[i, ...], np.transpose(arrays[i][:, component,:]), default_tolerance)

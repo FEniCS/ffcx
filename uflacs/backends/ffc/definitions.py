@@ -227,15 +227,20 @@ class FFCDefinitionsBackend(MultiFunction):
     def cell_coordinate(self, e, mt, tabledata, access):
         """Return definition code for the reference spatial coordinates.
 
-        If reference coordinates are given:
-          No definition needed.
+        If reference coordinates are given::
 
-        If physical coordinates are given and domain is affine:
-          X = K*(x-x0)
+            No definition needed.
+
+        If physical coordinates are given and domain is affine::
+
+            X = K*(x-x0)
+
         This is inserted symbolically.
 
-        If physical coordinates are given and domain is non- affine:
-          Not currently supported.
+        If physical coordinates are given and domain is non- affine::
+
+            Not currently supported.
+
         """
         return []
 

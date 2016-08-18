@@ -1,4 +1,8 @@
+ - Add dependency on dijitso and remove dependency on instant
  - Add experimental Bitbucket pipelines
+ - Tidy the repo after UFC and UFLACS merge, and general spring cleanup. This
+   includes removal of instructions how to merge two repos, commit hash
+   c8389032268041fe94682790cb773663bdf27286.
 2016.1.0 [2016-06-23]
  - Add function get_ufc_include to get path to ufc.h
  - Merge UFLACS into FFC

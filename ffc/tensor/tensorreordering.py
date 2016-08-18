@@ -27,6 +27,7 @@ import numpy
 from .monomialtransformation import MonomialIndex
 from .multiindex import MultiIndex
 
+
 def reorder_entries(terms):
     """Reorder entries to compute the reference tensor for an interior
     facet from the the reduced reference tensor."""
@@ -43,9 +44,9 @@ def reorder_entries(terms):
         for i in range(len(restrictions)):
             dim = dims[i]
             if restrictions[i] == "+":
-                position = position + [slice(0, dim/2)]
+                position = position + [slice(0, dim / 2)]
             elif restrictions[i] == "-":
-                position = position + [slice(dim/2, dim)]
+                position = position + [slice(dim / 2, dim)]
             else:
                 position = position + [slice(0, dim)]
 
@@ -61,6 +62,7 @@ def reorder_entries(terms):
         A0.primary_multi_index = MultiIndex([list(range(idim)) for idim in idims])
         A0.secondary_multi_index = MultiIndex([list(range(adim)) for adim in adims])
         GK.secondary_multi_index = A0.secondary_multi_index
+
 
 def __compute_restrictions(term):
     """Compute restrictions corresponding to indices for given
@@ -99,9 +101,9 @@ def __compute_restrictions(term):
     new_adims = [i for i in adims]
     for i in range(len(new_idims)):
         if not restrictions[i] == None:
-            new_idims[i] = 2*new_idims[i]
+            new_idims[i] = 2 * new_idims[i]
     for i in range(len(new_adims)):
         if not restrictions[i + len(new_idims)] == None:
-            new_adims[i] = 2*new_adims[i]
+            new_adims[i] = 2 * new_adims[i]
 
     return (restrictions, new_idims, new_adims)

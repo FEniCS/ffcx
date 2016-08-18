@@ -34,6 +34,7 @@ from ffc.cpp import format, remove_unused, count_ops
 from ffc.tensor.monomialtransformation import MonomialIndex
 from ffc.representationutils import initialize_integral_code
 
+
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
     code = initialize_integral_code(ir, prefix, parameters)
@@ -70,7 +71,7 @@ def _tabulate_tensor(ir, parameters):
         g_code = _generate_geometry_tensors(AK, j_set, g_set, tdim, gdim)
 
         # Generate code for basic geometric quantities
-        j_code  = ""
+        j_code = ""
         j_code += format["compute_jacobian"](tdim, gdim)
         j_code += "\n"
         j_code += format["compute_jacobian_inverse"](tdim, gdim)
@@ -166,12 +167,12 @@ def _generate_tensor_contraction_standard(terms, parameters, g_set):
     """
 
     # Prefetch formats to speed up code generation
-    iadd            = format["iadd"]
-    assign          = format["assign"]
-    element_tensor  = format["element tensor"]
+    iadd = format["iadd"]
+    assign = format["assign"]
+    element_tensor = format["element tensor"]
     geometry_tensor = format["geometry tensor"]
-    zero            = format["float"](0)
-    inner_product   = format["inner product"]
+    zero = format["float"](0)
+    inner_product = format["inner product"]
 
     # True if we should add to element tensor (not used)
     incremental = False
@@ -203,7 +204,8 @@ def _generate_tensor_contraction_standard(terms, parameters, g_set):
                 a0 = A0.A0[tuple(i + a)]
 
                 # Skip small values
-                if abs(a0) < epsilon: continue
+                if abs(a0) < epsilon:
+                    continue
 
                 # Compute value
                 coefficients.append(a0)
@@ -231,10 +233,10 @@ def _generate_geometry_tensors(terms, j_set, g_set, tdim, gdim):
     "Generate code for computation of geometry tensors."
 
     # Prefetch formats to speed up code generation
-    format_add             = format["addition"]
+    format_add = format["addition"]
     format_geometry_tensor = format["geometry tensor"]
-    format_scale_factor    = format["scale factor"]
-    format_declaration     = format["const float declaration"]
+    format_scale_factor = format["scale factor"]
+    format_declaration = format["const float declaration"]
 
     # Iterate over all terms
     lines = []
@@ -255,11 +257,12 @@ def _generate_geometry_tensors(terms, j_set, g_set, tdim, gdim):
         for a in secondary_indices:
 
             # Skip code generation if term is not used
-            if not format["geometry tensor"](i, a) in g_set: continue
+            if not format["geometry tensor"](i, a) in g_set:
+                continue
 
             # Compute factorized values
-            values = [_generate_entry(GK, a, offset + j, j_set, tdim, gdim) \
-                          for (j, GK) in enumerate(GKs)]
+            values = [_generate_entry(GK, a, offset + j, j_set, tdim, gdim)
+                      for (j, GK) in enumerate(GKs)]
 
             # Sum factorized values
             name = format_geometry_tensor(i, a)
@@ -278,7 +281,7 @@ def _generate_geometry_tensors(terms, j_set, g_set, tdim, gdim):
 
     # Add scale factor
     if det_used:
-        j_set.add(format_scale_factor) # meg says: If all values vanish, det is not used.
+        j_set.add(format_scale_factor)  # meg says: If all values vanish, det is not used.
 
     return "\n".join(lines)
 
@@ -288,12 +291,12 @@ def _generate_entry(GK, a, i, j_set, tdim, gdim):
 
     # Prefetch formats to speed up code generation
     grouping = format["grouping"]
-    add      = format["addition"]
+    add = format["addition"]
     multiply = format["multiply"]
 
     # Compute product of factors outside sum
     factors = _extract_factors(GK, a, None, j_set, tdim, gdim,
-                              MonomialIndex.SECONDARY)
+                               MonomialIndex.SECONDARY)
 
     # Compute sum of products of factors inside sum
     terms = [multiply(_extract_factors(GK, a, b, j_set, tdim, gdim,
@@ -367,9 +370,9 @@ def _extract_factors(GK, a, b, j_set, tdim, gdim, index_type):
         # Add factor
         if include_index:
             # FIXME: Dimensions of J and K are transposed, what is the right thing to fix this hack?
-            if t.transform_type == "J": #MonomialTransform.J:
+            if t.transform_type == "J":  # MonomialTransform.J:
                 dim0, dim1 = gdim, tdim
-            elif t.transform_type == "JINV": #MonomialTransform.JINV:
+            elif t.transform_type == "JINV":  # MonomialTransform.JINV:
                 dim0, dim1 = tdim, gdim
             else:
                 error("Unknown transform type, fix this hack.")
