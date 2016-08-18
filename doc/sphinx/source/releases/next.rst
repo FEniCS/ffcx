@@ -14,7 +14,7 @@ Summary of changes
 - Generalize ufc interface to non-affine parameterized coordinates
 - Add ``ufc::coordinate_mapping`` class
 - Make ufc interface depend on C++11 features requiring gcc version >= 4.8
-
+- Change the mapping `pullback as metric` to `double covariant piola`
 
 Detailed changes
 ================
