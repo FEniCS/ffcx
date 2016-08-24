@@ -532,7 +532,8 @@ class QuadratureTransformer(QuadratureTransformerBase):
                 if not any(deriv):
                     deriv = []
 
-                if 'piola' in transformation:
+                if transformation in ["covariant piola",
+                                      "contravariant piola"]:
                     for c in range(tdim):
                         # Create mapping and basis name.
                         mapping, basis = self._create_mapping_basis(c + local_offset, deriv, avg, ufl_argument, ffc_element)
@@ -580,7 +581,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
                 elif transformation == "double contravariant piola":
                     # g_ij = (detJ)^(-2) J_ik G_kl J_jl
                     i = local_comp // tdim
-                    j = local_comp %  tdim
+                    j = local_comp % tdim
                     for k in range(tdim):
                         for l in range(tdim):
                             # Create mapping and basis name.
@@ -590,13 +591,14 @@ class QuadratureTransformer(QuadratureTransformerBase):
                             if mapping not in code:
                                 code[mapping] = []
                             if basis is not None:
-                                J1 = f_transform("J", i, k, tdim, gdim,
+                                J1 = f_transform("J", i, k, gdim, tdim,
                                                  self.restriction)
-                                J2 = f_transform("J", j, l, tdim, gdim,
+                                J2 = f_transform("J", j, l, gdim, tdim,
                                                  self.restriction)
-                                invdetJ = f_inv(f_detJ(self.restriction))
                                 self.trans_set.add(J1)
                                 self.trans_set.add(J2)
+                                self.trans_set.add(f_detJ(self.restriction))
+                                invdetJ = f_inv(f_detJ(self.restriction))
                                 basis = f_mult([invdetJ, invdetJ, J1, basis,
                                                 J2])
                                 # Add transformation if needed.
