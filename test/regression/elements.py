@@ -6,7 +6,9 @@ elements = ["FiniteElement('N1curl', triangle, 2)",
             "MixedElement([FiniteElement('Lagrange', triangle, 3), \
                            VectorElement('Lagrange', triangle, 3)['facet']])",
             "VectorElement('R', triangle, 0, 3)",
-
+            "FiniteElement('Regge', triangle, 2)",
+            "MixedElement([FiniteElement('HHJ', triangle, 2), \
+                           FiniteElement('CG', triangle, 3)])",
             "VectorElement('DG', %s, 1)" % interval_2D,
             "VectorElement('DG', %s, 1)" % interval_3D,
             "VectorElement('DG', %s, 1)" % triangle_3D,
