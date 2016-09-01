@@ -15,6 +15,8 @@ Summary of changes
 - Add ``ufc::coordinate_mapping`` class
 - Make ufc interface depend on C++11 features requiring gcc version >= 4.8
 - Change the mapping ``pullback as metric`` to ``double covariant piola``
+- Include comment with effective representation and integral metadata
+  to generated ``tabulate_tensor`` code
 
 
 Detailed changes
