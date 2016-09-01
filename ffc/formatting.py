@@ -33,7 +33,6 @@ import os
 from ffc.log import info, error, begin, end, dstr
 from ffc import __version__ as FFC_VERSION
 from ffc.backends.ufc import __version__ as UFC_VERSION
-from ffc.ufc_config import get_ufc_signature
 from ffc.cpp import format, make_classname
 from ffc.backends.ufc import templates, visibility_snippet, factory_decl, factory_impl
 from ffc.parameters import compilation_relevant_parameters
@@ -176,8 +175,7 @@ def _generate_comment(parameters):
     parameters = compilation_relevant_parameters(parameters)
 
     # Generate top level comment
-    args = {"ffc_version": FFC_VERSION, "ufc_version": UFC_VERSION,
-            "ufc_signature": get_ufc_signature()}
+    args = {"ffc_version": FFC_VERSION, "ufc_version": UFC_VERSION}
     if parameters["format"] == "ufc":
         comment = format["ufc comment"] % args
     elif parameters["format"] == "dolfin":
