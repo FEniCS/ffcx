@@ -67,7 +67,7 @@ def test_discontinuous_lagrange(degree, expected_dim):
                          [(0, 3), (1, 9), (2, 18), (3, 30)])
 def test_regge(degree, expected_dim):
     "Test space dimensions of generalized Regge element."
-    P = create_element(FiniteElement("REG", "triangle", degree))
+    P = create_element(FiniteElement("Regge", "triangle", degree))
     assert P.space_dimension() == expected_dim
 
 @pytest.mark.parametrize("degree, expected_dim",
