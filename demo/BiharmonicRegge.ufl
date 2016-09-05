@@ -37,5 +37,5 @@ def b(mu, v):
       - dot(dot(S(mu('+')), n('+')), n('+')) * jump(grad(v), n) * dS \
       - dot(dot(S(mu), n), n) * dot(grad(v), n) * ds
 
-a = inner(S(gamma), S(mu)) * dx - b(mu, u) + b(gamma, v)
+a = inner(S(sigma), S(tau)) * dx - b(tau, u) + b(sigma, v)
 L = f * v * dx
