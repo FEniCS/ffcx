@@ -459,37 +459,94 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                 if not any(deriv):
                     deriv = []
 
-                for c in range(tdim):
-                    # Create mapping and basis name.
-                    mapping, basis = self._create_mapping_basis(c + local_offset, deriv, avg, ufl_argument, ffc_element)
-                    if mapping not in code:
-                        code[mapping] = []
+                if transformation in ["covariant piola",
+                                      "contravariant piola"]:
+                    for c in range(tdim):
+                        # Create mapping and basis name.
+                        mapping, basis = self._create_mapping_basis(c + local_offset, deriv, avg, ufl_argument, ffc_element)
+                        if mapping not in code:
+                            code[mapping] = []
 
-                    if basis is not None:
-                        # Multiply basis by appropriate transform.
-                        if transformation == "covariant piola":
-                            dxdX = create_symbol(f_transform("JINV", c,
-                                                             local_comp, tdim,
-                                                             gdim,
-                                                             self.restriction),
-                                                 GEO)
-                            basis = create_product([dxdX, basis])
-                        elif transformation == "contravariant piola":
-                            detJ = create_fraction(create_float(1),
-                                                   create_symbol(f_detJ(self.restriction), GEO))
-                            dXdx = create_symbol(f_transform("J", local_comp,
-                                                             c, gdim, tdim,
-                                                             self.restriction),
-                                                 GEO)
-                            basis = create_product([detJ, dXdx, basis])
-                        else:
-                            error("Transformation is not supported: " + repr(transformation))
-
+                        if basis is not None:
+                            # Multiply basis by appropriate transform.
+                            if transformation == "covariant piola":
+                                dxdX = create_symbol(f_transform("JINV", c,
+                                                                 local_comp, tdim,
+                                                                 gdim,
+                                                                 self.restriction),
+                                                     GEO)
+                                basis = create_product([dxdX, basis])
+                            elif transformation == "contravariant piola":
+                                detJ = create_fraction(create_float(1),
+                                                       create_symbol(f_detJ(self.restriction), GEO))
+                                dXdx = create_symbol(f_transform("J", local_comp,
+                                                                 c, gdim, tdim,
+                                                                 self.restriction),
+                                                     GEO)
+                                basis = create_product([detJ, dXdx, basis])
                         # Add transformation if needed.
                         code[mapping].append(self.__apply_transform(basis,
                                                                     derivatives,
                                                                     multi, tdim,
                                                                     gdim))
+                elif transformation == "double covariant piola":
+                    # g_ij = (Jinv)_ki G_kl (Jinv)lj
+                    i = local_comp // tdim
+                    j = local_comp % tdim
+                    for k in range(tdim):
+                        for l in range(tdim):
+                            # Create mapping and basis name.
+                            mapping, basis = self._create_mapping_basis(
+                                k * tdim + l + local_offset,
+                                deriv, avg, ufl_argument, ffc_element)
+                            if mapping not in code:
+                                code[mapping] = []
+                            if basis is not None:
+                                J1 = create_symbol(
+                                    f_transform("JINV", k, i, tdim, gdim,
+                                                self.restriction), GEO)
+                                J2 = create_symbol(
+                                    f_transform("JINV", l, j, tdim, gdim,
+                                                 self.restriction), GEO)
+                                basis = create_product([J1, basis, J2])
+                                # Add transformation if needed.
+                                code[mapping].append(
+                                    self.__apply_transform(
+                                        basis, derivatives, multi,
+                                        tdim, gdim))
+                elif transformation == "double contravariant piola":
+                    # g_ij = (detJ)^(-2) J_ik G_kl J_jl
+                    i = local_comp // tdim
+                    j = local_comp % tdim
+                    for k in range(tdim):
+                        for l in range(tdim):
+                            # Create mapping and basis name.
+                            mapping, basis = self._create_mapping_basis(
+                                k * tdim + l + local_offset,
+                                deriv, avg, ufl_argument, ffc_element)
+                            if mapping not in code:
+                                code[mapping] = []
+                            if basis is not None:
+                                J1 = create_symbol(
+                                    f_transform("J", i, k, gdim, tdim,
+                                                self.restriction), GEO)
+                                J2 = create_symbol(
+                                    f_transform("J", j, l, gdim, tdim,
+                                                self.restriction), GEO)
+                                invdetJ = create_fraction(
+                                    create_float(1),
+                                    create_symbol(f_detJ(self.restriction),
+                                                  GEO))
+                                basis = create_product([invdetJ, invdetJ, J1,
+                                                        basis, J2])
+                                # Add transformation if needed.
+                                code[mapping].append(
+                                    self.__apply_transform(
+                                        basis, derivatives, multi,
+                                        tdim, gdim))
+                else:
+                    error("Transformation is not supported: " + repr(transformation))
+
 
         # Add sums and group if necessary.
         for key, val in list(code.items()):
@@ -543,35 +600,85 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                 if not any(deriv):
                     deriv = []
 
-                for c in range(tdim):
-                    function_name = self._create_function_name(c + local_offset, deriv, avg, is_quad_element, ufl_function, ffc_element)
-                    if function_name:
-                        # Multiply basis by appropriate transform.
-                        if transformation == "covariant piola":
-                            dxdX = create_symbol(f_transform("JINV", c,
-                                                             local_comp, tdim,
-                                                             gdim,
-                                                             self.restriction),
-                                                 GEO)
-                            function_name = create_product([dxdX, function_name])
-                        elif transformation == "contravariant piola":
-                            detJ = create_fraction(create_float(1),
-                                                   create_symbol(f_detJ(self.restriction),
-                                                                 GEO))
-                            dXdx = create_symbol(f_transform("J", local_comp,
-                                                             c, gdim, tdim,
-                                                             self.restriction),
-                                                 GEO)
-                            function_name = create_product([detJ, dXdx,
-                                                            function_name])
-                        else:
-                            error("Transformation is not supported: ",
-                                  repr(transformation))
-
-                        # Add transformation if needed.
-                        code.append(self.__apply_transform(function_name,
-                                                           derivatives, multi,
-                                                           tdim, gdim))
+                if transformation in ["covariant piola",
+                                      "contravariant piola"]:
+                    for c in range(tdim):
+                        function_name = self._create_function_name(c + local_offset, deriv, avg, is_quad_element, ufl_function, ffc_element)
+                        if function_name:
+                            # Multiply basis by appropriate transform.
+                            if transformation == "covariant piola":
+                                dxdX = create_symbol(f_transform("JINV", c,
+                                                                 local_comp, tdim,
+                                                                 gdim,
+                                                                 self.restriction),
+                                                     GEO)
+                                function_name = create_product([dxdX, function_name])
+                            elif transformation == "contravariant piola":
+                                detJ = create_fraction(create_float(1),
+                                                       create_symbol(f_detJ(self.restriction),
+                                                                     GEO))
+                                dXdx = create_symbol(f_transform("J", local_comp,
+                                                                 c, gdim, tdim,
+                                                                 self.restriction),
+                                                     GEO)
+                                function_name = create_product([detJ, dXdx,
+                                                                function_name])
+                            # Add transformation if needed.
+                            code.append(self.__apply_transform(function_name,
+                                                               derivatives, multi,
+                                                               tdim, gdim))
+                elif transformation == "double covariant piola":
+                    # g_ij = (Jinv)_ki G_kl (Jinv)lj
+                    i = local_comp // tdim
+                    j = local_comp % tdim
+                    for k in range(tdim):
+                        for l in range(tdim):
+                            # Create mapping and basis name.
+                            function_name = self._create_function_name(
+                                k * tdim + l + local_offset, deriv, avg,
+                                is_quad_element, ufl_function, ffc_element)
+                            J1 = create_symbol(
+                                f_transform("JINV", k, i, tdim, gdim,
+                                            self.restriction), GEO)
+                            J2 = create_symbol(
+                                f_transform("JINV", l, j, tdim, gdim,
+                                            self.restriction), GEO)
+                            function_name = create_product([J1, function_name,
+                                                            J2])
+                            # Add transformation if needed.
+                            code.append(self.__apply_transform(
+                                function_name, derivatives, multi, tdim, gdim))
+                elif transformation == "double contravariant piola":
+                    # g_ij = (detJ)^(-2) J_ik G_kl J_jl
+                    i = local_comp // tdim
+                    j = local_comp % tdim
+                    for k in range(tdim):
+                        for l in range(tdim):
+                            # Create mapping and basis name.
+                            function_name = self._create_function_name(
+                                k * tdim + l + local_offset,
+                                deriv, avg, is_quad_element,
+                                ufl_function, ffc_element)
+                            J1 = create_symbol(
+                                f_transform("J", i, k, tdim, gdim,
+                                            self.restriction), GEO)
+                            J2 = create_symbol(
+                                f_transform("J", j, l, tdim, gdim,
+                                            self.restriction), GEO)
+                            invdetJ = create_fraction(
+                                create_float(1),
+                                create_symbol(f_detJ(self.restriction), GEO))
+                            function_name = create_product([invdetJ, invdetJ,
+                                                            J1, function_name,
+                                                            J2])
+                            # Add transformation if needed.
+                            code.append(self.__apply_transform(function_name,
+                                                               derivatives,
+                                                               multi, tdim,
+                                                               gdim))
+                else:
+                    error("Transformation is not supported: ",
+                          repr(transformation))
 
         if not code:
             return create_float(0.0)
