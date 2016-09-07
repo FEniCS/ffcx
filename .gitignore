@@ -44,6 +44,9 @@ install_manifest.txt
 /doc/sphinx/build
 /doc/sphinx/source/api-doc
 
+# Visual Studio Code project config
+.vscode
+
 # Tests
 **/.cache/
 /test/regression/error.log

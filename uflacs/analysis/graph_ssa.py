@@ -18,15 +18,18 @@
 
 """Algorithms for working with computational graphs."""
 
+import numpy
+
 from six.moves import xrange as range
+
 from ufl.classes import (GeometricQuantity, ConstantValue,
                          Argument, Coefficient,
                          Grad, Restricted, Indexed,
                          MathFunction)
 from ufl.checks import is_cellwise_constant
 from ffc.log import error
-from uflacs.datastructures.arrays import int_array
-from uflacs.datastructures.crs import rows_to_crs
+
+from uflacs.analysis.crsarray import CRSArray
 
 
 def default_partition_seed(expr, rank):
@@ -76,7 +79,7 @@ def mark_partitions(V, active, dependencies, rank,
     Input:
     - V            - Array of expressions.
     - active       - Boolish array.
-    - dependencies - CRS with V dependencies.
+    - dependencies - CRSArray with V dependencies.
     - partition_seed - Policy for determining the partition of a terminalish.
     - partition_combiner - Policy for determinging the partition of an operator.
 
@@ -86,7 +89,7 @@ def mark_partitions(V, active, dependencies, rank,
     n = len(V)
     assert len(active) == n
     assert len(dependencies) == n
-    partitions = int_array(n)
+    partitions = numpy.zeros(n, dtype=int)
     for i, v in enumerate(V):
         deps = dependencies[i]
         if active[i]:
@@ -124,7 +127,7 @@ def build_factorized_partitions():
 def compute_dependency_count(dependencies):
     """FIXME: Test"""
     n = len(dependencies)
-    depcount = int_array(n)
+    depcount = numpy.zeros(n, dtype=int)
     for i in range(n):
         for d in dependencies[i]:
             depcount[d] += 1
@@ -139,7 +142,7 @@ def invert_dependencies(dependencies, depcount):
     for i in range(n):
         for d in dependencies[i]:
             invdeps[d] = invdeps[d] + (i,)
-    return rows_to_crs(invdeps, n, m, int)
+    return CRSArray.from_rows(invdeps, n, m, int)
 
 
 def default_cache_score_policy(vtype, ndeps, ninvdeps, partition):
@@ -171,7 +174,7 @@ def compute_cache_scores(V, active, dependencies, inverse_dependencies, partitio
     TODO: Experiment with heuristics later when we have functional code generation.
     """
     n = len(V)
-    score = int_array(n)
+    score = numpy.zeros(n, dtype=int)
     for i, v in enumerate(V):
         if active[i]:
             deps = dependencies[i]
@@ -203,9 +206,9 @@ def allocate_registers(active, partitions, targets,
     num_targets = len(targets)
 
     # Analyse scores
-    min_score = min(scores)
-    max_score = max(scores)
-    mean_score = sum(scores) // n
+    #min_score = min(scores)
+    #max_score = max(scores)
+    #mean_score = sum(scores) // n
 
     # Can allocate a number of registers up to given threshold
     num_to_allocate = max(num_targets,
@@ -237,16 +240,16 @@ def allocate_registers(active, partitions, targets,
     assert registers_used <= max(max_registers, len(targets))
 
     # Mark allocations
-    allocations = int_array(n)
+    allocations = numpy.zeros(n, dtype=int)
     allocations[:] = -1
     for r, i in enumerate(sorted(to_allocate)):
         allocations[i] = r
 
     # Possible data structures for improved register allocations
-    # register_status = int_array(max_registers)
+    # register_status = numpy.zeros(max_registers, dtype=int)
 
     # Stack/set of free registers (should wrap in stack abstraction):
-    # free_registers = int_array(max_registers)
+    # free_registers = numpy.zeros(max_registers, dtype=int)
     # num_free_registers = max_registers
     # free_registers[:] = reversed(xrange(max_registers))
 

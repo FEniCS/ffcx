@@ -18,14 +18,10 @@
 
 """Controlling algorithm for building the tabulate_tensor source structure from factorized representation."""
 
-from six import iteritems, iterkeys
-from six.moves import zip
-from six.moves import xrange as range
-
 from ufl import product
 from ufl.classes import ConstantValue, Condition
 
-from ffc.log import error
+from ffc.log import error, warning
 
 from uflacs.analysis.modified_terminals import analyse_modified_terminal, is_modified_terminal
 
@@ -37,10 +33,10 @@ class IntegralGenerator(object):
         self.ir = ir
 
         # Consistency check on quadrature rules
-        nps1 = sorted(iterkeys(ir["uflacs"]["expr_ir"]))
-        nps2 = sorted(iterkeys(ir["quadrature_rules"]))
+        nps1 = sorted(ir["uflacs"]["expr_ir"].keys())
+        nps2 = sorted(ir["quadrature_rules"].keys())
         if nps1 != nps2:
-            uflacs_warning("Got different num_points for expression irs and quadrature rules:\n{0}\n{1}".format(
+            warning("Got different num_points for expression irs and quadrature rules:\n{0}\n{1}".format(
                 nps1, nps2))
 
         # Compute shape of element tensor
@@ -65,7 +61,7 @@ class IntegralGenerator(object):
         self.backend = backend
 
     def generate_using_statements(self):
-        L = self.backend.language
+        #L = self.backend.language
         return []  # [L.Using(name) for name in sorted(self._using_names)]
 
     def get_includes(self):
@@ -368,7 +364,7 @@ class IntegralGenerator(object):
         intermediates = []
 
         # XXX FIXME: create these!
-        # C = input CRS representation of expression DAG
+        # C = input CRSArray representation of expression DAG
         # MT = input list/dict of modified terminals
 
         self.ast_variables = [None]*len(C) # FIXME: Create outside
@@ -384,7 +380,7 @@ class IntegralGenerator(object):
 
                 if isinstance(mt.terminal, ConstantValue):
                     # Format literal value for the chosen language
-                    vaccess = modified_literal_to_ast_node[tc](mt) # XXX FIXME: Implement this mapping
+                    vaccess = modified_literal_to_ast_node[tc](mt)  # XXX FIXME: Implement this mapping
                     vdef = None
                 else:
                     # Backend specific modified terminal formatting
@@ -478,7 +474,7 @@ class IntegralGenerator(object):
 
         # Find the blocks to build: (TODO: This is rather awkward,
         # having to rediscover these relations here)
-        arguments_and_factors = sorted(iteritems(expr_ir["argument_factorization"]),
+        arguments_and_factors = sorted(expr_ir["argument_factorization"].items(),
                                        key=lambda x: x[0])
         for args, factor_index in arguments_and_factors:
             if not all(tuple(dofblock[iarg]) == tuple(MATR[ma][1:3])

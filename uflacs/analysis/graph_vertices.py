@@ -18,11 +18,12 @@
 
 """Algorithms for working with graphs."""
 
+import numpy
+
 from six import iteritems
 
-from ufl.classes import Terminal, MultiIndex, Label
+from ufl.classes import MultiIndex, Label
 
-from uflacs.datastructures.arrays import object_array
 from uflacs.analysis.modified_terminals import is_modified_terminal
 
 
@@ -59,7 +60,7 @@ def count_nodes_with_unique_post_traversal(expr, e2i=None, skip_terminal_modifie
 
 def build_array_from_counts(e2i):
     nv = len(e2i)
-    V = object_array(nv)
+    V = numpy.empty(nv, dtype=object)
     for e, i in iteritems(e2i):
         V[i] = e
     return V

@@ -1,14 +1,14 @@
 """
-Tests of CRS data structure.
+Tests of CRSArray data structure.
 """
 
 from six.moves import xrange
-from uflacs.datastructures.crs import CRS
+from uflacs.analysis.crsarray import CRSArray
 
 
 def test_crs_can_have_zero_element_rows():
     rcap, ecap = 3, 1
-    A = CRS(rcap, ecap, int)
+    A = CRSArray(rcap, ecap, int)
     for i in range(rcap):
         row = []
         A.push_row(row)
@@ -20,7 +20,7 @@ def test_crs_can_have_zero_element_rows():
 
 def test_crs_can_have_one_element_rows():
     rcap, ecap = 3, 3
-    A = CRS(rcap, ecap, int)
+    A = CRSArray(rcap, ecap, int)
     for i in range(rcap):
         row = [i]
         A.push_row(row)
@@ -32,7 +32,7 @@ def test_crs_can_have_one_element_rows():
 
 def test_crs_can_have_n_element_rows():
     rcap, ecap = 5, 25
-    A = CRS(rcap, ecap, int)
+    A = CRSArray(rcap, ecap, int)
     k = 0
     for i in range(rcap):
         row = [i + 2, i + 1] + [i] * i

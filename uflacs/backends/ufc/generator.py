@@ -16,11 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
-import inspect
+#import inspect
 import re
-from string import Formatter
+#from string import Formatter
 
-from ufl import product
+#from ufl import product
 from ffc.log import error, warning
 #from ffc.backends.ufc import *
 
