@@ -28,6 +28,7 @@ public:
                        const double * coordinate_dofs,
                        int cell_orientation) const final override
   {
+%(tabulate_tensor_comment)s
 %(tabulate_tensor)s
   }
 
@@ -74,6 +75,7 @@ void %(classname)s::tabulate_tensor(double * A,
                                     const double * coordinate_dofs,
                                     int cell_orientation) const
 {
+%(tabulate_tensor_comment)s
 %(tabulate_tensor)s
 }
 """
@@ -104,6 +106,7 @@ public:
                        std::size_t facet,
                        int cell_orientation) const final override
   {
+%(tabulate_tensor_comment)s
 %(tabulate_tensor)s
   }
 
@@ -152,6 +155,7 @@ void %(classname)s::tabulate_tensor(double * A,
                                     std::size_t facet,
                                     int cell_orientation) const
 {
+%(tabulate_tensor_comment)s
 %(tabulate_tensor)s
 }
 """
@@ -185,6 +189,7 @@ public:
                        int cell_orientation_0,
                        int cell_orientation_1) const final override
   {
+%(tabulate_tensor_comment)s
 %(tabulate_tensor)s
   }
 
@@ -239,6 +244,7 @@ void %(classname)s::tabulate_tensor(double * A,
                                     int cell_orientation_0,
                                     int cell_orientation_1) const
 {
+%(tabulate_tensor_comment)s
 %(tabulate_tensor)s
 }
 """
@@ -269,6 +275,7 @@ public:
                        std::size_t vertex,
                        int cell_orientation) const final override
   {
+%(tabulate_tensor_comment)s
 %(tabulate_tensor)s
   }
 
@@ -317,6 +324,7 @@ void %(classname)s::tabulate_tensor(double * A,
                                     std::size_t vertex,
                                     int cell_orientation) const
 {
+%(tabulate_tensor_comment)s
 %(tabulate_tensor)s
 }
 """
@@ -355,6 +363,7 @@ public:
                        const double * facet_normals,
                        int cell_orientation) const final override
   {
+%(tabulate_tensor_comment)s
 %(tabulate_tensor)s
   }
 
@@ -416,6 +425,7 @@ void %(classname)s::tabulate_tensor(double * A,
                                     const double * facet_normals,
                                     int cell_orientation) const
 {
+%(tabulate_tensor_comment)s
 %(tabulate_tensor)s
 }
 """
@@ -448,6 +458,7 @@ public:
                        const double * quadrature_weights,
                        int cell_orientation) const final override
   {
+%(tabulate_tensor_comment)s
 %(tabulate_tensor)s
   }
 
@@ -500,6 +511,7 @@ void %(classname)s::tabulate_tensor(double * A,
                                     const double * quadrature_weights,
                                     int cell_orientation) const
 {
+%(tabulate_tensor_comment)s
 %(tabulate_tensor)s
 }
 """
@@ -533,6 +545,7 @@ public:
                        const double * facet_normals,
                        int cell_orientation) const final override
   {
+%(tabulate_tensor_comment)s
 %(tabulate_tensor)s
   }
 
@@ -587,6 +600,7 @@ void %(classname)s::tabulate_tensor(double * A,
                                     const double * facet_normals,
                                     int cell_orientation) const
 {
+%(tabulate_tensor_comment)s
 %(tabulate_tensor)s
 }
 """
@@ -619,6 +633,7 @@ public:
                        const double * quadrature_weights,
                        int cell_orientation) const final override
   {
+%(tabulate_tensor_comment)s
 %(tabulate_tensor)s
   }
 
@@ -671,6 +686,7 @@ void %(classname)s::tabulate_tensor(double * A,
                                     const double * quadrature_weights,
                                     int cell_orientation) const
 {
+%(tabulate_tensor_comment)s
 %(tabulate_tensor)s
 }
 """

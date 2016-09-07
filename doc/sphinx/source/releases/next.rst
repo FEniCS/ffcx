@@ -19,6 +19,9 @@ Summary of changes
 - Added Hellan-Herrmann-Johnson element as supported element
 - Add mapping ``double contravariant piola`` (this preserves normal-normal
   trace).
+- Include comment with effective representation and integral metadata
+  to generated ``tabulate_tensor`` code
+
 
 Detailed changes
 ================
