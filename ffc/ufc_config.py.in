@@ -43,5 +43,5 @@ def get_ufc_signature():
     return "@UFC_SIGNATURE"
 
 
-# ffc_signature() already introduced to FFC standard in 1.7.0dev
+# ufc_signature() already introduced to FFC standard in 1.7.0dev
 ufc_signature = get_ufc_signature

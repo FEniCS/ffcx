@@ -248,16 +248,6 @@ def generate_ufc_config_files(INSTALL_PREFIX, CXX_FLAGS, UFC_SIGNATURE):
     write_config_file(os.path.join("cmake", "templates", "UseUFC.cmake.in"),
                       os.path.join("cmake", "templates", "UseUFC.cmake"))
 
-    # FIXME: Generation of pkgconfig file may no longer be needed, so
-    # FIXME: we may consider removing this.
-
-    # Generate ufc-1.pc
-    write_config_file(os.path.join("cmake", "templates", "ufc-1.pc.in"),
-                      os.path.join("cmake", "templates", "ufc-1.pc"),
-                      variables=dict(FULLVERSION=VERSION,
-                                     INSTALL_PREFIX=INSTALL_PREFIX,
-                                     CXX_FLAGS=CXX_FLAGS))
-
 
 def has_cxx_flag(cc, flag):
     "Return True if compiler supports given flag"
@@ -331,9 +321,7 @@ def run_install():
                         os.path.join("cmake", "templates",
                                      "UFCConfigVersion.cmake"),
                         os.path.join("cmake", "templates",
-                                     "UseUFC.cmake")]),
-                      (os.path.join(INSTALL_PREFIX, "lib", "pkgconfig"),
-                       [os.path.join("cmake", "templates", "ufc-1.pc")])]
+                                     "UseUFC.cmake")])]
 
     data_files = data_files + data_files_ufc
 

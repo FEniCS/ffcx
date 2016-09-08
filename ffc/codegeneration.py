@@ -6,7 +6,8 @@ This module implements the generation of C++ code for the body of each
 UFC function from an (optimized) intermediate representation (OIR).
 """
 
-# Copyright (C) 2009-2015 Anders Logg
+# Copyright (C) 2009-2016 Anders Logg, Martin Alnaes, Marie E. Rognes,
+# Kristian B. Oelgaard, and others
 #
 # This file is part of FFC.
 #
@@ -22,14 +23,11 @@ UFC function from an (optimized) intermediate representation (OIR).
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# Modified by Mehdi Nikbakht 2010
-# Modified by Martin Alnaes, 2013-2015
 
 from ufl import product
 
 # FFC modules
-from ffc.log import info, begin, end, debug_code
+from ffc.log import info, begin, end, debug_code, dstr
 from ffc.cpp import format, indent, make_integral_classname
 from ffc.cpp import set_exception_handling, set_float_formatting
 
@@ -265,12 +263,39 @@ def _generate_integral_code(ir, parameters):
     prefix = ir["prefix"]
     code = r.generate_integral_code(ir, prefix, parameters)  # TODO: Drop prefix argument and get from ir
 
+    # Generate comment
+    code["tabulate_tensor_comment"] = _generate_tabulate_tensor_comment(ir, parameters)
+
     # Indent code (unused variables should already be removed)
     # FIXME: Remove this quick hack
     if ir["representation"] != "uflacs":
         _indent_code(code)
+    else:
+        code["tabulate_tensor_comment"] = indent(code["tabulate_tensor_comment"], 4)
 
     return code
+
+
+def _generate_tabulate_tensor_comment(ir, parameters):
+    "Generate comment for tabulate_tensor."
+
+    r = ir["representation"]
+    integrals_metadata = ir["integrals_metadata"]
+    integral_metadata = ir["integral_metadata"]
+
+    comment  = format["comment"]("This function was generated using '%s' representation" % r) + "\n"
+    comment += format["comment"]("with the following integrals metadata:") + "\n"
+    comment += format["comment"]("") + "\n"
+    comment += "\n".join([format["comment"]("  " + l) for l in dstr(integrals_metadata).split("\n")][:-1])
+    comment += "\n"
+    for i, metadata in enumerate(integral_metadata):
+        comment += format["comment"]("") + "\n"
+        comment += format["comment"]("and the following integral %d metadata:" % i) + "\n"
+        comment += format["comment"]("") + "\n"
+        comment += "\n".join([format["comment"]("  " + l) for l in dstr(metadata).split("\n")][:-1])
+        comment += "\n"
+
+    return comment
 
 
 def _generate_original_coefficient_position(original_coefficient_positions):

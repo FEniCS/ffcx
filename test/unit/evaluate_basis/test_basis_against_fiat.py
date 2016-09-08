@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
+# Modified by Lizao Li, 2016
 
 import pytest
 import os
@@ -70,6 +71,9 @@ single_elements = [{"family": "Lagrange",
                     "orders": [1, 2, 3]},
                    {"family": "Regge",
                     "shapes": ["triangle", "tetrahedron"],
+                    "orders": [0, 1, 2, 3]},
+                   {"family": "HHJ",
+                    "shapes": ["triangle"],
                     "orders": [0, 1, 2, 3]}]
 
 
@@ -83,6 +87,7 @@ drt2_tri = FiniteElement("DRT", "triangle", 2)
 bdm1_tri = FiniteElement("BDM", "triangle", 1)
 ned1_tri = FiniteElement("N1curl", "triangle", 1)
 reg0_tri = FiniteElement("Regge", "triangle", 0)
+hhj0_tri = FiniteElement("HHJ", "triangle", 0)
 
 dg0_tet = FiniteElement("DG", "tetrahedron", 0)
 dg1_tet = FiniteElement("DG", "tetrahedron", 1)
@@ -176,7 +181,7 @@ def xcomb(items, n):
 # Create combinations in pairs
 mix_tri = [MixedElement(e) for e in xcomb([dg0_tri, dg1_tri, cg1_tri, cr1_tri,
                                            rt1_tri, drt2_tri, bdm1_tri,
-                                           ned1_tri, reg0_tri], 2)]
+                                           ned1_tri, reg0_tri, hhj0_tri], 2)]
 mix_tet = [MixedElement(e) for e in xcomb([dg0_tet, dg1_tet, cg1_tet, cr1_tet,
                                            rt1_tet, drt2_tet, bdm1_tet,
                                            ned1_tet, reg0_tet], 2)]
@@ -200,7 +205,9 @@ mixed_elements = [MixedElement([dg0_tri] * 4),
                   MixedElement([ned1_tet, dg1_tet, MixedElement([rt1_tet,
                                                                  cr1_tet])]),
                   MixedElement([drt2_tet, cg1_tet]),
-                  MixedElement([cg1_tet, cg1_tet, cg1_tet, reg0_tet])] + mix_tri + mix_tet
+                  MixedElement([cg1_tet, cg1_tet, cg1_tet, reg0_tet]),
+                  MixedElement([reg0_tet] * 2),
+                  MixedElement([hhj0_tri, ned1_tri])] + mix_tri + mix_tet
 
 
 def to_fiat_tuple(comb, gdim):

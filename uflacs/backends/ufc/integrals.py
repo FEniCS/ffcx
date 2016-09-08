@@ -23,6 +23,10 @@ class ufc_integral(ufc_generator):
         code = "code generated from %s" % tt
         return code
 
+    def tabulate_tensor_comment(self, L, ir):
+        # FIXME: Copy from ffc.codegeneration._generate_tabulate_tensor_comment
+        return ""
+
 class ufc_cell_integral(ufc_integral):
     def __init__(self):
         ufc_integral.__init__(self, "cell")

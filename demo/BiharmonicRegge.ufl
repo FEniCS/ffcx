@@ -1,0 +1,41 @@
+# Copyright (C) 2016 Lizao Li
+#
+# This file is part of FFC.
+#
+# FFC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# FFC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with FFC. If not, see <http://www.gnu.org/licenses/>.
+#
+# The bilinear form a(u, v) and linear form L(v) for
+# Biharmonic equation in Regge formulation.
+#
+# Compile this form with FFC: ffc -l dolfin BiharmonicRegge.ufl
+
+REG = FiniteElement('Regge', tetrahedron, 1)
+CG =  FiniteElement('Lagrange', tetrahedron, 2)
+mixed_element = REG * CG
+
+(sigma, u) = TrialFunctions(mixed_element)
+(tau,   v) = TestFunctions(mixed_element)
+f = Coefficient(CG)
+
+def S(mu):
+    return mu - Identity(3) * tr(mu)
+
+def b(mu, v):
+    n = FacetNormal(tetrahedron)
+    return inner(S(mu), grad(grad(v))) * dx \
+      - dot(dot(S(mu('+')), n('+')), n('+')) * jump(grad(v), n) * dS \
+      - dot(dot(S(mu), n), n) * dot(grad(v), n) * ds
+
+a = inner(S(sigma), S(tau)) * dx - b(tau, u) + b(sigma, v)
+L = f * v * dx

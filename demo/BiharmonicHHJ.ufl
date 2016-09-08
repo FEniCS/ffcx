@@ -1,0 +1,39 @@
+# Copyright (C) 2016 Lizao Li
+#
+# This file is part of FFC.
+#
+# FFC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# FFC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with FFC. If not, see <http://www.gnu.org/licenses/>.
+#
+# The bilinear form a(u, v) and linear form L(v) for
+# Biharmonic equation in Hellan-Herrmann-Johnson (HHJ)
+# formulation.
+#
+# Compile this form with FFC: ffc -l dolfin BiharmonicHHJ.ufl
+
+HHJ = FiniteElement('HHJ', triangle, 2)
+CG =  FiniteElement('CG', triangle, 3)
+mixed_element = HHJ * CG
+
+(sigma, u) = TrialFunctions(mixed_element)
+(tau,   v) = TestFunctions(mixed_element)
+f = Coefficient(CG)
+
+def b(sigma, v):
+    n = FacetNormal(triangle)
+    return inner(sigma, grad(grad(v))) * dx \
+      - dot(dot(sigma('+'), n('+')), n('+')) * jump(grad(v), n) * dS \
+      - dot(dot(sigma, n), n) * dot(grad(v), n) * ds
+
+a = inner(sigma, tau) * dx - b(tau, u) + b(sigma, v)
+L = f * v * dx

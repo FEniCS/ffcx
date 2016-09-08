@@ -327,6 +327,11 @@ def _change_variables(mapping, gdim, tdim, offset):
     'double covariant piola' mapping for g:
 
       G(X) = J^T g(x) J     i.e. G_il(X) = J_ji g_jk(x) J_kl
+
+    'double contravariant piola' mapping for g:
+
+      G(X) = det(J)^2 K g(x) K^T  i.e. G_il(X)=(detJ)^2 K_ij g_jk K_lk
+
     """
 
     # meg: Various mappings must be handled both here and in
@@ -365,6 +370,18 @@ def _change_variables(mapping, gdim, tdim, offset):
                            [component(f_vals, j * tdim + k + offset)
                             for j in range(gdim)]) for k in range(gdim)],
                     [J(k, l, gdim, tdim) for k in range(gdim)])]
+        return values
+
+    elif mapping == "double contravariant piola":
+        # physical to reference using double contravariant piola
+        values = []
+        for i in range(tdim):
+            for l in range(tdim):
+                values += [multiply([detJ, detJ, inner(
+                    [inner([Jinv(i, j, gdim, tdim) for j in range(gdim)],
+                           [component(f_vals, j * tdim + k + offset)
+                            for j in range(gdim)]) for k in range(gdim)],
+                    [Jinv(l, k, gdim, tdim) for k in range(gdim)])])]
         return values
 
     else:

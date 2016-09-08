@@ -367,7 +367,9 @@ class TransformedMonomial:
                     components = [component, ]
 
                 # Add transforms where appropriate
-                if mapping == "contravariant piola":
+                if mapping == "affine":
+                    pass
+                elif mapping == "contravariant piola":
                     # phi(x) = (det J)^{-1} J Phi(X)
                     index0 = component
                     index1 = MonomialIndex(index_range=list(range(tdim))) + offset
@@ -388,6 +390,8 @@ class TransformedMonomial:
                                                   f.restriction, offset)
                     self.transforms.append(transform)
                     components[0] = index0
+                else:
+                    raise MonomialException("Don't know how to handle mapping='%s'." % mapping)
 
             # Extract derivatives / transforms
             derivatives = []

@@ -1,4 +1,0 @@
-Name: UFC
-Description: Unified Form-assembly Code
-Version: @FULLVERSION
-Cflags: -I@INSTALL_PREFIX/include @CXX_FLAGS

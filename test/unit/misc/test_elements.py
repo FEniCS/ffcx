@@ -18,6 +18,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Marie E. Rognes, 2010
+# Modified by Lizao Li, 2016
 
 
 from __future__ import print_function
@@ -60,6 +61,20 @@ def test_continuous_lagrange(degree, expected_dim):
 def test_discontinuous_lagrange(degree, expected_dim):
     "Test space dimensions of discontinuous Lagrange elements."
     P = create_element(FiniteElement("DG", "triangle", degree))
+    assert P.space_dimension() == expected_dim
+
+@pytest.mark.parametrize("degree, expected_dim",
+                         [(0, 3), (1, 9), (2, 18), (3, 30)])
+def test_regge(degree, expected_dim):
+    "Test space dimensions of generalized Regge element."
+    P = create_element(FiniteElement("Regge", "triangle", degree))
+    assert P.space_dimension() == expected_dim
+
+@pytest.mark.parametrize("degree, expected_dim",
+                         [(0, 3), (1, 9), (2, 18), (3, 30)])
+def test_hhj(degree, expected_dim):
+    "Test space dimensions of Hellan-Herrmann-Johnson element."
+    P = create_element(FiniteElement("HHJ", "triangle", degree))
     assert P.space_dimension() == expected_dim
 
 

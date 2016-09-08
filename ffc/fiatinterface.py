@@ -18,7 +18,7 @@
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009-2013.
 # Modified by Martin Alnaes, 2013
-# Modified by Lizao Li, 2015
+# Modified by Lizao Li, 2015, 2016
 
 # Python modules
 from numpy import array
@@ -59,7 +59,8 @@ supported_families = ("Brezzi-Douglas-Marini",
                       "Real",
                       "Bubble",
                       "Quadrature",
-                      "Regge")
+                      "Regge",
+                      "Hellan-Herrmann-Johnson")
 
 # Cache for computed elements
 _cache = {}

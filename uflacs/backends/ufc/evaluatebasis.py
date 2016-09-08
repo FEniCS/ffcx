@@ -656,5 +656,30 @@ def __ffc_implementation_of__generate_apply_mapping_to_computed_values(L):
             name = f_component(f_values, p + offset)
             code += [f_assign(name, value)]
 
+    elif mapping == "double contravariant piola":
+        code += ["", f_comment("Pullback of a matrix-valued funciton as contravariant 2-tensor mapping values back to the physical element")]
+        # Get temporary values before mapping.
+        code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))
+                 for i in range(num_components)]
+        # Create names for inner product.
+        tdim = data["topological_dimension"]
+        gdim = data["geometric_dimension"]
+        basis_col = [f_tmp_ref(j) for j in range(num_components)]
+        for p in range(num_components):
+            # unflatten the indices
+            i = p // tdim
+            l = p % tdim
+            # g_il = (detJ)^(-2) J_ij G_jk J_lk
+            value = f_group(f_inner(
+                [f_inner([f_trans("J", i, j, tdim, gdim, None)
+                          for j in range(tdim)],
+                         [basis_col[j * tdim + k] for j in range(tdim)])
+                 for k in range(tdim)],
+                [f_trans("J", l, k, tdim, gdim, None)
+                 for k in range(tdim)]))
+            value = f_mul([f_inv(f_detJ(None)), f_inv(f_detJ(None)), value])
+            name = f_component(f_values, p + offset)
+            code += [f_assign(name, value)]
+
     else:
         error("Unknown mapping: %s" % mapping)

@@ -532,7 +532,8 @@ class QuadratureTransformer(QuadratureTransformerBase):
                 if not any(deriv):
                     deriv = []
 
-                if 'piola' in transformation:
+                if transformation in ["covariant piola",
+                                      "contravariant piola"]:
                     for c in range(tdim):
                         # Create mapping and basis name.
                         mapping, basis = self._create_mapping_basis(c + local_offset, deriv, avg, ufl_argument, ffc_element)
@@ -577,8 +578,37 @@ class QuadratureTransformer(QuadratureTransformerBase):
                                     self.__apply_transform(
                                         basis, derivatives, multi,
                                         tdim, gdim))
+                elif transformation == "double contravariant piola":
+                    # g_ij = (detJ)^(-2) J_ik G_kl J_jl
+                    i = local_comp // tdim
+                    j = local_comp % tdim
+                    for k in range(tdim):
+                        for l in range(tdim):
+                            # Create mapping and basis name.
+                            mapping, basis = self._create_mapping_basis(
+                                k * tdim + l + local_offset,
+                                deriv, avg, ufl_argument, ffc_element)
+                            if mapping not in code:
+                                code[mapping] = []
+                            if basis is not None:
+                                J1 = f_transform("J", i, k, gdim, tdim,
+                                                 self.restriction)
+                                J2 = f_transform("J", j, l, gdim, tdim,
+                                                 self.restriction)
+                                self.trans_set.add(J1)
+                                self.trans_set.add(J2)
+                                self.trans_set.add(f_detJ(self.restriction))
+                                invdetJ = f_inv(f_detJ(self.restriction))
+                                basis = f_mult([invdetJ, invdetJ, J1, basis,
+                                                J2])
+                                # Add transformation if needed.
+                                code[mapping].append(
+                                    self.__apply_transform(
+                                        basis, derivatives, multi,
+                                        tdim, gdim))
                 else:
-                    error("Transformation is not supported: " + repr(transformation))
+                    error("Transformation is not supported: " +
+                          repr(transformation))
 
         # Add sums and group if necessary.
         for key, val in list(code.items()):
@@ -667,6 +697,31 @@ class QuadratureTransformer(QuadratureTransformerBase):
                             function_name = f_mult([J1, function_name, J2])
                             # Add transformation if needed.
                             code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
+                elif transformation == "double contravariant piola":
+                    # g_ij = (detJ)^(-2) J_ik G_kl J_jl
+                    i = local_comp // tdim
+                    j = local_comp % tdim
+                    for k in range(tdim):
+                        for l in range(tdim):
+                            # Create mapping and basis name.
+                            function_name = self._create_function_name(
+                                k * tdim + l + local_offset,
+                                deriv, avg, is_quad_element,
+                                ufl_function, ffc_element)
+                            J1 = f_transform("J", i, k, tdim, gdim,
+                                             self.restriction)
+                            J2 = f_transform("J", j, l, tdim, gdim,
+                                             self.restriction)
+                            invdetJ = f_inv(f_detJ(self.restriction))
+                            self.trans_set.add(J1)
+                            self.trans_set.add(J2)
+                            function_name = f_mult([invdetJ, invdetJ, J1,
+                                                    function_name, J2])
+                            # Add transformation if needed.
+                            code.append(self.__apply_transform(function_name,
+                                                               derivatives,
+                                                               multi, tdim,
+                                                               gdim))
                 else:
                     error("Transformation is not supported: " + repr(transformation))
 
