@@ -18,38 +18,30 @@
 
 """Tools for precomputed tables of terminal values."""
 
-from six import iteritems, iterkeys
-from six.moves import xrange as range
-import numpy as np
-import ufl
-from ufl import product
+import numpy
+
 from ufl.utils.derivativetuples import derivative_listing_to_counts
 from ufl.classes import FormArgument, GeometricQuantity, SpatialCoordinate, Jacobian
 from ufl.algorithms.analysis import unique_tuple
 
-from ffc.log import ffc_assert
+from ffc.log import error
 
-from uflacs.datastructures.arrays import object_array
-from uflacs.elementtables.table_utils import (generate_psi_table_name,
-                                              get_ffc_table_values,
-                                              strip_table_zeros,
-                                              build_unique_tables)
+from uflacs.elementtables.table_utils import generate_psi_table_name, get_ffc_table_values
+from uflacs.elementtables.table_utils import strip_table_zeros, build_unique_tables
+
 
 def extract_terminal_elements(terminal_data):
     "Extract a list of unique elements from terminal data."
     elements = []
-    xs = {}
     for mt in terminal_data:
         t = mt.terminal
         if isinstance(t, FormArgument):
             # Add element for function and its coordinates
             elements.append(t.ufl_domain().ufl_coordinate_element())
             elements.append(t.ufl_element())
-
         elif isinstance(t, GeometricQuantity):
             # Add element for coordinate field of domain
             elements.append(t.ufl_domain().ufl_coordinate_element())
-
     return unique_tuple(elements)
 
 
@@ -78,7 +70,7 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data, epsi
       terminal_table_names
     """
     element_counter_map = {}  # build_element_counter_map(extract_terminal_elements(terminal_data))
-    terminal_table_names = object_array(len(terminal_data))
+    terminal_table_names = numpy.empty(len(terminal_data), dtype=object)
     tables = {}
     for i, mt in enumerate(terminal_data):
         t = mt.terminal
@@ -136,11 +128,12 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data, epsi
             element_counter_map[element] = element_counter
 
         # Change derivatives format for table lookup
-        if gd:
-            gdim = t.ufl_domain().geometric_dimension()
-            global_derivatives = tuple(derivative_listing_to_counts(gd, gdim))
-        else:
-            global_derivatives = None
+        #if gd:
+        #    gdim = t.ufl_domain().geometric_dimension()
+        #    global_derivatives = tuple(derivative_listing_to_counts(gd, gdim))
+        #else:
+        #    global_derivatives = None
+
         if ld:
             tdim = t.ufl_domain().topological_dimension()
             local_derivatives = tuple(derivative_listing_to_counts(ld, tdim))
@@ -181,7 +174,7 @@ def optimize_element_tables(tables, terminal_table_names, eps):
     # Apply zero stripping to all tables
     stripped_tables = {}
     table_ranges = {}
-    for name, table in iteritems(tables):
+    for name, table in tables.items():
         begin, end, stripped_table = strip_table_zeros(table, eps)
         stripped_tables[name] = stripped_table
         table_ranges[name] = (begin, end)
@@ -192,7 +185,7 @@ def optimize_element_tables(tables, terminal_table_names, eps):
     # Build mapping of constructed table names to unique names,
     # pick first constructed name
     unique_table_names = {}
-    for name in sorted(iterkeys(table_name_to_unique_index)):
+    for name in sorted(table_name_to_unique_index.keys()):
         unique_index = table_name_to_unique_index[name]
         if unique_index in unique_table_names:
             continue
@@ -204,7 +197,7 @@ def optimize_element_tables(tables, terminal_table_names, eps):
 
     # Build mapping from terminal data index to compacted table data:
     # terminal data index -> (unique name, table range begin, table range end)
-    terminal_table_ranges = object_array(len(terminal_table_names))
+    terminal_table_ranges = numpy.empty(len(terminal_table_names), dtype=object)
     for i, name in enumerate(terminal_table_names):
         if name is not None:
             unique_index = table_name_to_unique_index[name]

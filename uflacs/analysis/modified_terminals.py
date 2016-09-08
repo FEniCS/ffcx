@@ -22,7 +22,7 @@ from __future__ import print_function # used in some debugging
 
 from six.moves import zip
 from ufl.permutation import build_component_numbering
-from ufl.classes import (Terminal, FormArgument,
+from ufl.classes import (FormArgument,
                          Indexed, FixedIndex,
                          ReferenceValue,
                          Grad, ReferenceGrad,
@@ -233,13 +233,9 @@ def analyse_modified_terminal(expr):
                           averaged, restriction, component, flat_component, reference_value)
 
     if local_derivatives and not reference_value:
-        print("Local derivatives of non-local value?")
-        import IPython; IPython.embed()
-        error("Local derivatives of non-local value?")
+        error("Local derivatives of non-local value is not legal.")
 
     if global_derivatives and reference_value:
-        print("Global derivatives of local value?")
-        import IPython; IPython.embed()
-        error("Global derivatives of local value?")
+        error("Global derivatives of local value is not legal.")
 
     return mt

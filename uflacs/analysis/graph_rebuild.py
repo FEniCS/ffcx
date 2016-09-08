@@ -18,8 +18,11 @@
 
 """Rebuilding UFL expressions from linearized representation of computational graph."""
 
+import numpy
+
 from six.moves import zip
 from six.moves import xrange as range
+
 from ufl import product
 from ufl.permutation import compute_indices
 
@@ -27,10 +30,8 @@ from ufl import as_vector
 from ufl.classes import MultiIndex, IndexSum, Product
 from ufl.corealg.multifunction import MultiFunction
 from ufl.utils.indexflattening import flatten_multiindex, shape_to_strides
-from ufl.utils.sorting import sorted_by_count
 
 from ffc.log import error, ffc_assert
-from uflacs.datastructures.arrays import object_array
 from uflacs.analysis.modified_terminals import is_modified_terminal
 
 
@@ -105,14 +106,10 @@ class ReconstructScalarSubexpressions(MultiFunction):
         ffc_assert(len(ops) == 2, "Expecting two operands.")
 
         # Get the simple cases out of the way
-        na = len(ops[0])
-        nb = len(ops[1])
-
-        if na == 1:  # True scalar * something
+        if len(ops[0]) == 1:  # True scalar * something
             a, = ops[0]
             return [Product(a, b) for b in ops[1]]
-
-        if nb == 1:  # Something * true scalar
+        elif len(ops[1]) == 1:  # Something * true scalar
             b, = ops[1]
             return [Product(a, b) for a in ops[0]]
 
@@ -170,7 +167,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
                 sops.append([ss[ind + j * postdim] for j in range(d)])
 
         # For each scalar output component, sum over collected subcomponents
-        # TODO: Need to split this into binary additions to work with future CRS format,
+        # TODO: Need to split this into binary additions to work with future CRSArray format,
         #       i.e. emitting more expressions than there are symbols for this node.
         results = [sum(sop) for sop in sops]
         return results
@@ -221,7 +218,7 @@ def rebuild_with_scalar_subexpressions(G):
     reconstruct_scalar_subexpressions = ReconstructScalarSubexpressions()
 
     # Array to store the scalar subexpression in for each symbol
-    W = object_array(G.total_unique_symbols)
+    W = numpy.empty(G.total_unique_symbols, dtype=object)
 
     # Iterate over each graph node in order
     for i, v in enumerate(G.V):
@@ -254,16 +251,16 @@ def rebuild_with_scalar_subexpressions(G):
             # Find symbols of operands
             sops = []
             for j, vop in enumerate(v.ufl_operands):
-                if isinstance(vop, MultiIndex):  # TODO: Store MultiIndex in G.V and allocate a symbol to it for this to work
+                # TODO: Store MultiIndex in G.V and allocate a symbol to it for this to work
+                if isinstance(vop, MultiIndex):
                     if not isinstance(v, IndexSum):
                         error("Not expecting a %s." % type(v))
-                    so = ()
+                    sops.append(())
                 else:
                     k = G.e2i[vop]
                     # TODO: Build edge datastructure and use this instead?
                     # k = G.E[i][j]
-                    so = G.V_symbols[k]
-                sops.append(so)
+                    sops.append(G.V_symbols[k])
 
             # Fetch reconstructed operand expressions
             wops = [tuple(W[k] for k in so) for so in sops]

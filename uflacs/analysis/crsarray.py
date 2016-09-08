@@ -18,20 +18,24 @@
 
 """Compressed row storage 'matrix' (actually just a non-rectangular 2d array)."""
 
-from six.moves import xrange as range
 import numpy
 
 
-class CRS(object):
+class CRSArray(object):
+    """An array of variable length dense arrays.
 
-    """A simple compressed row storage matrix.
-
-    This CRS variant doesn't have a sparsity pattern,
+    Stored efficiently with simple compressed row storage.
+    This CRS array variant doesn't have a sparsity pattern,
     as each row is simply a dense vector.
-    """
 
+    Values are stored in one flat array 'data[]',
+    and 'row_offsets[i]' contains the index to the first
+    element on row i for 0<=i<=num_rows.
+    There is no column index.
+    """
     def __init__(self, row_capacity, element_capacity, dtype):
-        self.row_offsets = numpy.zeros(row_capacity + 1, dtype=int)
+        itype = numpy.int16 if row_capacity < 2**15 else numpy.int32
+        self.row_offsets = numpy.zeros(row_capacity + 1, dtype=itype)
         self.data = numpy.zeros(element_capacity, dtype=dtype)
         self.num_rows = 0
 
@@ -57,29 +61,12 @@ class CRS(object):
         return self.num_rows
 
     def __str__(self):
-        return "[%s]" % (', '.join(str(row) for row in self),)
+        return "[%s]" % ('\n'.join(str(row) for row in self),)
 
-
-def list_to_crs(elements):
-    "Construct a diagonal CRS matrix from a list of elements of the same type."
-    n = len(elements)
-    crs = CRS(n, n, type(elements[0]))
-    for element in elements:
-        crs.push_row((element,))
-    return crs
-
-
-def rows_dict_to_crs(rows, num_rows, num_elements, dtype):
-    "Construct a CRS matrix from a dict mapping row index to row elements list."
-    crs = CRS(num_rows, num_elements, dtype)
-    for i in range(num_rows):
-        crs.push_row(rows.get(i, ()))
-    return crs
-
-
-def rows_to_crs(rows, num_rows, num_elements, dtype):
-    "Construct a CRS matrix from a list of row element lists."
-    crs = CRS(num_rows, num_elements, dtype)
-    for row in rows:
-        crs.push_row(row)
-    return crs
+    @classmethod
+    def from_rows(cls, rows, num_rows, num_elements, dtype):
+        "Construct a CRSArray from a list of row element lists."
+        crs = CRSArray(num_rows, num_elements, dtype)
+        for row in rows:
+            crs.push_row(row)
+        return crs

@@ -6,14 +6,16 @@ from __future__ import print_function
 
 # FIXME: These are all disabled, don't remember why, turn them on again!
 
+import numpy
+
 from six.moves import zip
-import uflacs
-# from uflacs.backends.toy.toy_compiler import compile_form
 
 import ufl
 from ufl import as_ufl
 from ufl import *
-from uflacs.datastructures.arrays import object_array, int_array
+
+import uflacs
+# from uflacs.backends.toy.toy_compiler import compile_form
 
 
 def format_variable(i):
@@ -39,8 +41,8 @@ def format_code_lines(expressions, expression_dependencies, want_to_cache,
     def par(c):
         return "(%s)" % (c,)
     n = len(expressions)
-    code_ref = object_array(n)
-    precedence = int_array(n)
+    code_ref = numpy.empty(n, dtype=object)
+    precedence = numpy.zeros(n, dtype=int)
     code_lines = []
     j = 0
     for i, e in enumerate(expressions):

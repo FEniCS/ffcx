@@ -1,5 +1,6 @@
 """Work in progress translation of FFC evaluatebasis code to uflacs CNodes format."""
 
+from ffc.log import error
 
 """
 TODO: Add these to ufc::finite_element:
