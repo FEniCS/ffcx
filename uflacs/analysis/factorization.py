@@ -65,17 +65,7 @@ def _build_argument_indices_from_arg_sets(V, arg_sets):
     def arg_ordering_key(i):
         "Return a key for sorting argument vertex indices based on the properties of the modified terminal."
         mt = analyse_modified_terminal(arg_ordering_key.V[i])
-        arg = mt.terminal
-        assert isinstance(arg, Argument)
-        assert arg.number() >= 0
-        return (arg.number(),
-                arg.part(),
-                mt.reference_value,
-                mt.component,
-                mt.global_derivatives,
-                mt.local_derivatives,
-                mt.restriction,
-                mt.averaged)
+        return mt.argument_ordering_key()
     arg_ordering_key.V = V
     ordered_arg_indices = sorted(arg_indices, key=arg_ordering_key)
 
@@ -92,7 +82,7 @@ def build_argument_indices(V):
 def build_argument_dependencies(dependencies, arg_indices):
     "Preliminary algorithm: build list of argument vertex indices each vertex (indirectly) depends on."
     n = len(dependencies)
-    A = [[] for i in range(n)]  # TODO: Use array
+    A = numpy.empty(n, dtype=object)
     for i, deps in enumerate(dependencies):
         argdeps = []
         for j in deps:

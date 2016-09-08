@@ -40,15 +40,22 @@ class ModifiedTerminal(object):
     The variables of this class are:
 
         expr - The original UFL expression
-
         terminal           - the underlying Terminal object
+
         global_derivatives - tuple of ints, each meaning derivative in that global direction
         local_derivatives  - tuple of ints, each meaning derivative in that local direction
         reference_value    - bool, whether this is represented in reference frame
         averaged           - None, 'facet' or 'cell'
         restriction        - None, '+' or '-'
+
         component          - tuple of ints, the global component of the Terminal
         flat_component     - single int, flattened local component of the Terminal, considering symmetry
+
+
+        Possibly other component model:
+        - global_component
+        - reference_component
+        - flat_component
 
     """
 
@@ -82,6 +89,23 @@ class ModifiedTerminal(object):
         a = self.averaged
         r = self.restriction
         return (t, rv, c, gd, ld, a, r)
+
+    def argument_ordering_key(self):
+        """Return a key for deterministic sorting of argument vertex
+        indices based on the properties of the modified terminal.
+        Used in factorization but moved here for closeness with ModifiedTerminal attributes."""
+        t = self.terminal
+        assert isinstance(t, Argument)
+        n = t.number()
+        assert n >= 0
+        p = t.part()
+        c = self.component
+        rv = self.reference_value
+        gd = self.global_derivatives
+        ld = self.local_derivatives
+        a = self.averaged
+        r = self.restriction
+        return (n, p, rv, c, gd, ld, a, r)
 
     def __hash__(self):
         return hash(self.as_tuple())
@@ -123,12 +147,16 @@ def strip_modified_terminal(v):
 
 
 def analyse_modified_terminal(expr):
-    """Analyse a so-called 'modified terminal' expression and return its properties in more compact form.
+    """Analyse a so-called 'modified terminal' expression.
 
-    A modified terminal expression is an object of a Terminal subtype, wrapped in terminal modifier types.
+    Return its properties in more compact form as a ModifiedTerminal object.
+
+    A modified terminal expression is an object of a Terminal subtype,
+    wrapped in terminal modifier types.
 
     The wrapper types can include 0-* Grad or ReferenceGrad objects,
-    and 0-1 ReferenceValue, 0-1 Restricted, 0-1 Indexed, and 0-1 FacetAvg or CellAvg objects.
+    and 0-1 ReferenceValue, 0-1 Restricted, 0-1 Indexed,
+    and 0-1 FacetAvg or CellAvg objects.
     """
     # Data to determine
     component = None

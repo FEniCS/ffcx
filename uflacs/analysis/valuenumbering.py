@@ -103,7 +103,7 @@ class ValueNumberer(MultiFunction):
 
         # FIXME: Need modified version of amt(), v is probably not scalar here. This hack works for now.
         if v.ufl_shape:
-            mt = analyse_modified_terminal(v[(0,) * len(v.ufl_shape)])
+            mt = analyse_modified_terminal(v[(0,) * len(v.ufl_shape)])  # XXX
         else:
             mt = analyse_modified_terminal(v)
 
@@ -131,15 +131,17 @@ class ValueNumberer(MultiFunction):
         else:
             d_components = [()]
 
+
         if isinstance(mt.terminal, FormArgument):
             element = mt.terminal.ufl_element()
             symmetry = element.symmetry()
             if symmetry and mt.reference_value:
-                ffc_assert(element.value_shape() == element.reference_value_shape(),
+                ffc_assert(element.value_shape() == element.reference_value_shape(),  # XXX
                            "The combination of element symmetries and "
                            "Piola mapped elements is not currently handled.")
         else:
             symmetry = {}
+
 
         symbols = []
         mapped_symbols = {}
