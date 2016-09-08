@@ -106,27 +106,24 @@ class ValueNumberer(MultiFunction):
             mt = analyse_modified_terminal(v[(0,) * len(v.ufl_shape)])  # XXX
         else:
             mt = analyse_modified_terminal(v)
-
-        domain = mt.terminal.ufl_domain()
+        # Want:
+        #   number of local or global derivatives,
+        #   domain (actually tdim/gdim for derivatives),
+        #   terminal type
+        #   element
+        #   base shape
 
         num_ld = len(mt.local_derivatives)
         num_gd = len(mt.global_derivatives)
         assert not (num_ld and num_gd)
 
-        # Get base shape without the derivative axes
-        if mt.reference_value:
-            base_shape = mt.terminal.ufl_element().reference_value_shape()
-        else:
-            base_shape = mt.terminal.ufl_shape
-        base_components = compute_indices(base_shape)
-
         if num_ld:
+            domain = mt.terminal.ufl_domain()
             tdim = domain.topological_dimension()
-            # d_components = compute_permutations(num_ld, tdim)
             d_components = compute_indices((tdim,) * num_ld)
         elif num_gd:
+            domain = mt.terminal.ufl_domain()
             gdim = domain.geometric_dimension()
-            # d_components = compute_permutations(num_gd, gdim)
             d_components = compute_indices((gdim,) * num_gd)
         else:
             d_components = [()]
@@ -135,22 +132,33 @@ class ValueNumberer(MultiFunction):
         if isinstance(mt.terminal, FormArgument):
             element = mt.terminal.ufl_element()
             symmetry = element.symmetry()
+            # Note: symmetry refers to physical shape, not reference shape,
+            # meaning the code below will only be correct if base shape equals physical shape,
+            # usually meaning the physical shape must match the reference shape.
             if symmetry and mt.reference_value:
-                ffc_assert(element.value_shape() == element.reference_value_shape(),  # XXX
+                ffc_assert(product(element.value_shape()) == product(element.reference_value_shape()),
                            "The combination of element symmetries and "
-                           "Piola mapped elements is not currently handled.")
+                           "Piola mapped elements is not supported.")
         else:
             symmetry = {}
 
+        # Get base shape without the derivative axes
+        base_components = compute_indices(mt.base_shape)
 
         symbols = []
         mapped_symbols = {}
         for bc in base_components:
             for dc in d_components:
-                # Build mapped component with symmetries from element and derivatives combined
-                mbc = symmetry.get(bc, bc)
+                if mt.reference_value:
+                    # symmetry mapping assumed applied already in convertion to reference value
+                    assert len(bc) <= 1
+                    mbc = bc
+                else:
+                    # if still dealing with physical component, apply symmetry mapping
+                    mbc = symmetry.get(bc, bc)
+
+                # Build mapped component mc with symmetries from element and derivatives combined
                 mdc = tuple(sorted(dc))
-                #c = bc + dc
                 mc = mbc + mdc
 
                 # Get existing symbol or create new and store with mapped component mc as key
@@ -160,10 +168,10 @@ class ValueNumberer(MultiFunction):
                     mapped_symbols[mc] = s
                 symbols.append(s)
 
+        # Consistency check before returning symbols
         assert not v.ufl_free_indices
         if not product(v.ufl_shape) == len(symbols):
             error("Internal error in value numbering.")
-
         return symbols
 
     # Handle modified terminals with element symmetries and second derivative symmetries!

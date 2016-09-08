@@ -83,9 +83,6 @@ class UFL2CNodesMixin(object):
 
     # === Formatting rules for cmath functions ===
 
-    def _cmath(self, name, op):
-        error("Missing implementation of _cmath in ufl 2 cnodes translation.")
-
     def math_function(self, o, op):
         return self._cmath(o._name, op)
 
@@ -155,7 +152,7 @@ class RulesForC(object):
         return self.L.Call(name, op)
 
     def power(self, o, a, b):
-        return self.L.Call("std::pow", (a, b))
+        return self.L.Call("pow", (a, b))
 
     def abs(self, o, op):
         return self.L.Call("fabs", op)

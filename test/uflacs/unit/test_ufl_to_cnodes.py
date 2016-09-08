@@ -4,7 +4,7 @@ from ufl import *
 from ufl import as_ufl
 
 import uflacs.language
-from uflacs.language.ufl_to_cnodes import UFL2CNodesTranslatorCpp
+from uflacs.language.ufl_to_cnodes import UFL2CNodesTranslatorCpp, UFL2CNodesTranslatorC
 
 
 def test_ufl_to_cnodes():

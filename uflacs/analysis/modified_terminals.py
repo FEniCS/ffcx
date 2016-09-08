@@ -22,7 +22,7 @@ from __future__ import print_function # used in some debugging
 
 from six.moves import zip
 from ufl.permutation import build_component_numbering
-from ufl.classes import (FormArgument,
+from ufl.classes import (FormArgument, Argument,
                          Indexed, FixedIndex,
                          ReferenceValue,
                          Grad, ReferenceGrad,
@@ -58,37 +58,54 @@ class ModifiedTerminal(object):
         - flat_component
 
     """
-
-    def __init__(self, expr, terminal, global_derivatives, local_derivatives, averaged,
-                 restriction, component, flat_component, reference_value):
+    def __init__(self, expr, terminal,
+                 reference_value, base_shape,
+                 component, flat_component,
+                 global_derivatives, local_derivatives,
+                 averaged, restriction):
         # The original expression
         self.expr = expr
 
         # The underlying terminal expression
         self.terminal = terminal
 
-        # Components
+        # Are we seeing the terminal in physical or reference frame
         self.reference_value = reference_value
+
+        # Get the shape of the core terminal or its reference value,
+        # this is the shape that component and flat_component refers to
+        self.base_shape = base_shape
+
+        # Components
         self.component = component
         self.flat_component = flat_component
-        self.restriction = restriction
 
         # Derivatives
         self.global_derivatives = global_derivatives
         self.local_derivatives = local_derivatives
 
-        # Evaluation method (alternative: { None, 'facet_midpoint', 'cell_midpoint', 'facet_avg', 'cell_avg' })
+        # Evaluation method (alternatives: { None, 'facet_midpoint',
+        #  'cell_midpoint', 'facet_avg', 'cell_avg' })
         self.averaged = averaged
 
+        # Restriction to one cell or the other for interior facet integrals
+        self.restriction = restriction
+
     def as_tuple(self):
-        t = self.terminal
-        c = self.component
+        """Return a tuple with sortable values that uniquely identifies this modified terminal.
+
+        Some of the derived variables are omitted.
+        """
+        t = self.terminal  # FIXME: Terminal is not sortable...
         rv = self.reference_value
+        #bs = self.base_shape
+        #c = self.component
+        fc = self.flat_component
         gd = self.global_derivatives
         ld = self.local_derivatives
         a = self.averaged
         r = self.restriction
-        return (t, rv, c, gd, ld, a, r)
+        return (t, rv, fc, gd, ld, a, r)
 
     def argument_ordering_key(self):
         """Return a key for deterministic sorting of argument vertex
@@ -99,13 +116,15 @@ class ModifiedTerminal(object):
         n = t.number()
         assert n >= 0
         p = t.part()
-        c = self.component
         rv = self.reference_value
+        #bs = self.base_shape
+        #c = self.component
+        fc = self.flat_component
         gd = self.global_derivatives
         ld = self.local_derivatives
         a = self.averaged
         r = self.restriction
-        return (n, p, rv, c, gd, ld, a, r)
+        return (n, p, rv, fc, gd, ld, a, r)
 
     def __hash__(self):
         return hash(self.as_tuple())
@@ -114,7 +133,7 @@ class ModifiedTerminal(object):
         return isinstance(other, ModifiedTerminal) and self.as_tuple() == other.as_tuple()
 
     def __lt__(self, other):
-        return self.as_tuple() < other.as_tuple()
+        return self.as_tuple() < other.as_tuple()  # FIXME: Terminal is not sortable...
 
     def __str__(self):
         s = []
@@ -171,47 +190,56 @@ def analyse_modified_terminal(expr):
     while not t._ufl_is_terminal_:
         if isinstance(t, Indexed):
             ffc_assert(component is None, "Got twice indexed terminal.")
+
             t, i = t.ufl_operands
-            ffc_assert(all(isinstance(j, FixedIndex) for j in i), "Expected only fixed indices.")
             component = [int(j) for j in i]
+
+            ffc_assert(all(isinstance(j, FixedIndex) for j in i), "Expected only fixed indices.")
 
         elif isinstance(t, ReferenceValue):
             ffc_assert(reference_value is None, "Got twice pulled back terminal!")
-            reference_value = True
+
             t, = t.ufl_operands
+            reference_value = True
 
         elif isinstance(t, ReferenceGrad):
             ffc_assert(len(component), "Got local gradient of terminal without prior indexing.")
+
+            t, = t.ufl_operands
             local_derivatives.append(component[-1])
             component = component[:-1]
-            t, = t.ufl_operands
 
         elif isinstance(t, Grad):
             ffc_assert(len(component), "Got gradient of terminal without prior indexing.")
+
+            t, = t.ufl_operands
             global_derivatives.append(component[-1])
             component = component[:-1]
-            t, = t.ufl_operands
 
         elif isinstance(t, Restricted):
             ffc_assert(restriction is None, "Got twice restricted terminal!")
+
             restriction = t._side
             t, = t.ufl_operands
 
         elif isinstance(t, CellAvg):
             ffc_assert(averaged is None, "Got twice averaged terminal!")
-            averaged = "cell"
+
             t, = t.ufl_operands
+            averaged = "cell"
 
         elif isinstance(t, FacetAvg):
             ffc_assert(averaged is None, "Got twice averaged terminal!")
-            averaged = "facet"
+
             t, = t.ufl_operands
+            averaged = "facet"
 
         elif t._ufl_terminal_modifiers_:
             error("Missing handler for terminal modifier type %s, object is %s." % (type(t), repr(t)))
 
         else:
             error("Unexpected type %s object %s." % (type(t), repr(t)))
+
 
     # Make canonical representation of derivatives
     global_derivatives = tuple(sorted(global_derivatives))
@@ -223,8 +251,14 @@ def analyse_modified_terminal(expr):
     #    reference_value = True
 
     # Make reference_value true or false
-    if reference_value is None:
-        reference_value = False
+    reference_value = reference_value or False
+
+    # Consistency check
+    if local_derivatives and not reference_value:
+        error("Local derivatives of non-local value is not legal.")
+    if global_derivatives and reference_value:
+        error("Global derivatives of local value is not legal.")
+
 
     # Make sure component is an integer tuple
     if component is None:
@@ -232,38 +266,35 @@ def analyse_modified_terminal(expr):
     else:
         component = tuple(component)
 
-    # Get the (reference or global) shape of the core terminal
+    # Get the shape of the core terminal or its reference value,
+    # this is the shape that component refers to
+    element = t.ufl_element()
     if reference_value:
-        tshape = t.ufl_element().reference_value_shape()
+        base_shape = element.reference_value_shape()
+        # Ignoring symmetry, assuming already applied in conversion to reference frame
+        assert len(base_shape) <= 1
+        symmetry = {}
     else:
-        tshape = t.ufl_shape
+        base_shape = t.ufl_shape
+        if isinstance(t, FormArgument):
+            symmetry = t.ufl_element().symmetry()
+        else:
+            symmetry = {}
 
-    # Assert that component is within the shape of the terminal
-    ffc_assert(len(component) == len(tshape),
-               "Length of component does not match rank of terminal.")
-    ffc_assert(all(c >= 0 and c < d for c, d in zip(component, tshape)),
-               "Component indices %s are outside value shape %s" % (component, tshape))
+    # Assert that component is within the shape of the (reference) terminal
+    ffc_assert(len(component) == len(base_shape),
+               "Length of component does not match rank of (reference) terminal.")
+    ffc_assert(all(c >= 0 and c < d for c, d in zip(component, base_shape)),
+               "Component indices %s are outside value shape %s" % (component, base_shape))
+
 
     # Flatten component
-    if isinstance(t, FormArgument):
-        symmetry = t.ufl_element().symmetry()
-        if symmetry and reference_value:
-            ffc_assert(t.ufl_element().value_shape() == t.ufl_element().reference_value_shape(),
-                       "The combination of element symmetries and "
-                       "Piola mapped elements is not currently handled.")
-    else:
-        symmetry = {}
-    vi2si, si2vi = build_component_numbering(tshape, symmetry)
+    vi2si, si2vi = build_component_numbering(base_shape, symmetry)
     flat_component = vi2si[component]
     # num_flat_components = len(si2vi)
 
-    mt = ModifiedTerminal(expr, t, global_derivatives, local_derivatives,
-                          averaged, restriction, component, flat_component, reference_value)
-
-    if local_derivatives and not reference_value:
-        error("Local derivatives of non-local value is not legal.")
-
-    if global_derivatives and reference_value:
-        error("Global derivatives of local value is not legal.")
-
-    return mt
+    return ModifiedTerminal(expr, t,
+                            reference_value, base_shape,
+                            component, flat_component,
+                            global_derivatives, local_derivatives,
+                            averaged, restriction)
