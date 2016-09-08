@@ -53,6 +53,11 @@ class IntegralGenerator(object):
         #self._includes = set()
         self._ufl_names = set()
 
+        # TODO: Get self.alignas, self.padlen from ir
+        sizeof_double = 8
+        self.alignas = 32
+        self.padlen = self.alignas // sizeof_double
+
         # Backend specific plugin with attributes
         # - language: for translating ufl operators to target language
         # - definitions: for defining backend specific variables
@@ -156,11 +161,15 @@ class IntegralGenerator(object):
             wname = self.backend.access.weights_array_name(num_points)
             pname = self.backend.access.points_array_name(num_points)
 
-            parts += [L.ArrayDecl("static const double", wname, num_points, weights)]
+            # Quadrature weights array
+            parts += [L.ArrayDecl("static const double", wname, num_points, weights,
+                                  alignas=self.alignas)]
+            # Quadrature points array
             if pdim > 0:
-                # Flatten array:
+                # Flatten array: (TODO: avoid flattening here, it makes padding harder)
                 points = points.reshape(product(points.shape))
-                parts += [L.ArrayDecl("static const double", pname, num_points * pdim, points)]
+                parts += [L.ArrayDecl("static const double", pname, num_points * pdim, points,
+                                      alignas=self.alignas)]
 
         return parts
 
@@ -182,7 +191,8 @@ class IntegralGenerator(object):
             for name in sorted(tables):
                 table = tables[name]
                 if product(table.shape) > 0:
-                    parts += [L.ArrayDecl("static const double", name, table.shape, table)]
+                    parts += [L.ArrayDecl("static const double", name, table.shape, table,
+                                          alignas=self.alignas, padlen=self.padlen)]
         return parts
 
     def generate_tensor_reset(self):
@@ -345,7 +355,7 @@ class IntegralGenerator(object):
         # Join terminal computation, array of intermediate expressions, and intermediate computations
         parts = [definitions]
         if intermediates:
-            parts += [L.ArrayDecl("double", name, len(intermediates))]
+            parts += [L.ArrayDecl("double", name, len(intermediates), alignas=self.alignas)]
             parts += intermediates
         return parts
 
@@ -412,7 +422,7 @@ class IntegralGenerator(object):
         # Join terminal computation, array of intermediate expressions, and intermediate computations
         parts = [definitions]
         if intermediates:
-            parts += [L.ArrayDecl("double", name, len(intermediates))]
+            parts += [L.ArrayDecl("double", name, len(intermediates), alignas=self.alignas)]
             parts += intermediates
         return parts
 

@@ -213,14 +213,3 @@ def optimize_element_tables(tables, terminal_table_names, eps):
             terminal_table_ranges[i] = (unique_name, b, e)
 
     return unique_tables, terminal_table_ranges
-
-# TODO: This seems to be unused, remove?
-def generate_element_table_definitions(L, tables):
-    "Format a dict of name->table into code."
-    code = []
-    for name in sorted(tables):
-        table = tables[name]
-        if product(table.shape) > 0:
-            code += [L.ArrayDecl("static const double",
-                                 name, table.shape, table)]
-    return code
