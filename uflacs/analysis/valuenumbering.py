@@ -202,13 +202,16 @@ class ValueNumberer(MultiFunction):
         row_symbols = [self.get_node_symbols(row) for row in v.ufl_operands]
         symbols = []
         for rowsymb in row_symbols:
-            symbols.extend(rowsymb)  # FIXME: Test that this produces the right transposition
+            symbols.extend(rowsymb)
         return symbols
 
-    def transposed(self, AT, i):
+    def __transposed(self, AT, i):  # handled by expand_compounds in ufl
         A, = AT.ufl_operands
 
-        assert not A.ufl_free_indices, "Assuming no free indices in transposed (for now), report as bug if needed."  # FIXME
+        assert A.ufl_free_indices == AT.ufl_free_indices
+        if A.ufl_free_indices:
+            error("Assuming no free indices in transposed (for now), report as bug if needed.")
+
         r, c = A.ufl_shape
 
         A_symbols = self.get_node_symbols(A)
