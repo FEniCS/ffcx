@@ -205,28 +205,6 @@ class ValueNumberer(MultiFunction):
             symbols.extend(rowsymb)
         return symbols
 
-    def __transposed(self, AT, i):  # handled by expand_compounds in ufl
-        A, = AT.ufl_operands
-
-        assert A.ufl_free_indices == AT.ufl_free_indices
-        if A.ufl_free_indices:
-            error("Assuming no free indices in transposed (for now), report as bug if needed.")
-
-        r, c = A.ufl_shape
-
-        A_symbols = self.get_node_symbols(A)
-        assert len(A_symbols) == r * c
-
-        # AT[j,i] = A[i,j]
-        # sh(A) = (r,c)
-        # sh(AT) = (c,r)
-        # AT[j*r+i] = A[i*c+j]
-        symbols = [None] * (r * c)
-        for j in range(c):
-            for i in range(r):
-                symbols[j * r + i] = A_symbols[i * c + j]
-        return symbols
-
     def variable(self, v, i):
         "Direct reuse of all symbols."
         return self.get_node_symbols(v.ufl_operands[0])
