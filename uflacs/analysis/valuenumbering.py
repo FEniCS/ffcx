@@ -101,22 +101,17 @@ class ValueNumberer(MultiFunction):
         # (3) averaging and restrictions define distinct symbols, no additional symmetries
         # (4) two or more grad/reference_grad defines distinct symbols with additional symmetries
 
-        # FIXME: Need modified version of amt(), v is probably not scalar here. This hack works for now.
+        # v is not necessary scalar here, indexing in (0,...,0) picks the first scalar component
+        # to analyse, which should be sufficient to get the base shape and derivatives
         if v.ufl_shape:
             mt = analyse_modified_terminal(v[(0,) * len(v.ufl_shape)])  # XXX
         else:
             mt = analyse_modified_terminal(v)
-        # Want:
-        #   number of local or global derivatives,
-        #   domain (actually tdim/gdim for derivatives),
-        #   terminal type
-        #   element
-        #   base shape
 
+        # Get derivatives
         num_ld = len(mt.local_derivatives)
         num_gd = len(mt.global_derivatives)
         assert not (num_ld and num_gd)
-
         if num_ld:
             domain = mt.terminal.ufl_domain()
             tdim = domain.topological_dimension()
@@ -128,36 +123,16 @@ class ValueNumberer(MultiFunction):
         else:
             d_components = [()]
 
-
-        if isinstance(mt.terminal, FormArgument):
-            element = mt.terminal.ufl_element()
-            symmetry = element.symmetry()
-            # Note: symmetry refers to physical shape, not reference shape,
-            # meaning the code below will only be correct if base shape equals physical shape,
-            # usually meaning the physical shape must match the reference shape.
-            if symmetry and mt.reference_value:
-                ffc_assert(product(element.value_shape()) == product(element.reference_value_shape()),
-                           "The combination of element symmetries and "
-                           "Piola mapped elements is not supported.")
-        else:
-            symmetry = {}
-
         # Get base shape without the derivative axes
         base_components = compute_indices(mt.base_shape)
 
+        # Build symbols with symmetric components and derivatives skipped
         symbols = []
         mapped_symbols = {}
         for bc in base_components:
             for dc in d_components:
-                if mt.reference_value:
-                    # symmetry mapping assumed applied already in convertion to reference value
-                    assert len(bc) <= 1
-                    mbc = bc
-                else:
-                    # if still dealing with physical component, apply symmetry mapping
-                    mbc = symmetry.get(bc, bc)
-
                 # Build mapped component mc with symmetries from element and derivatives combined
+                mbc = mt.base_symmetry.get(bc, bc)
                 mdc = tuple(sorted(dc))
                 mc = mbc + mdc
 

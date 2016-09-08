@@ -58,8 +58,8 @@ class ModifiedTerminal(object):
         - flat_component
 
     """
-    def __init__(self, expr, terminal,
-                 reference_value, base_shape,
+    def __init__(self, expr, terminal, reference_value,
+                 base_shape, base_symmetry,
                  component, flat_component,
                  global_derivatives, local_derivatives,
                  averaged, restriction):
@@ -75,6 +75,7 @@ class ModifiedTerminal(object):
         # Get the shape of the core terminal or its reference value,
         # this is the shape that component and flat_component refers to
         self.base_shape = base_shape
+        self.base_symmetry = base_symmetry
 
         # Components
         self.component = component
@@ -92,13 +93,15 @@ class ModifiedTerminal(object):
         self.restriction = restriction
 
     def as_tuple(self):
-        """Return a tuple with sortable values that uniquely identifies this modified terminal.
+        """Return a tuple with hashable values that uniquely identifies this modified terminal.
 
-        Some of the derived variables are omitted.
+        Some of the derived variables can be omitted here as long as
+        they are fully determined from the variables that are included here.
         """
         t = self.terminal  # FIXME: Terminal is not sortable...
         rv = self.reference_value
-        #bs = self.base_shape
+        #bs = self.base_shape 
+        #bsy = self.base_symmetry
         #c = self.component
         fc = self.flat_component
         gd = self.global_derivatives
@@ -118,6 +121,7 @@ class ModifiedTerminal(object):
         p = t.part()
         rv = self.reference_value
         #bs = self.base_shape
+        #bsy = self.base_symmetry
         #c = self.component
         fc = self.flat_component
         gd = self.global_derivatives
@@ -132,8 +136,11 @@ class ModifiedTerminal(object):
     def __eq__(self, other):
         return isinstance(other, ModifiedTerminal) and self.as_tuple() == other.as_tuple()
 
-    def __lt__(self, other):
-        return self.as_tuple() < other.as_tuple()  # FIXME: Terminal is not sortable...
+    #def __lt__(self, other):
+    #    error("Shouldn't use this?")
+    #    # FIXME: Terminal is not sortable, so the as_tuple contents
+    #    # must be changed for this to work properly
+    #    return self.as_tuple() < other.as_tuple()
 
     def __str__(self):
         s = []
@@ -268,18 +275,18 @@ def analyse_modified_terminal(expr):
 
     # Get the shape of the core terminal or its reference value,
     # this is the shape that component refers to
-    element = t.ufl_element()
-    if reference_value:
-        base_shape = element.reference_value_shape()
-        # Ignoring symmetry, assuming already applied in conversion to reference frame
-        assert len(base_shape) <= 1
-        symmetry = {}
-    else:
-        base_shape = t.ufl_shape
-        if isinstance(t, FormArgument):
-            symmetry = t.ufl_element().symmetry()
+    if isinstance(t, FormArgument):
+        element = t.ufl_element()
+        if reference_value:
+            # Ignoring symmetry, assuming already applied in conversion to reference frame
+            base_symmetry = {}
+            base_shape = element.reference_value_shape()
         else:
-            symmetry = {}
+            base_symmetry = element.symmetry()
+            base_shape = t.ufl_shape
+    else:
+        base_symmetry = {}
+        base_shape = t.ufl_shape
 
     # Assert that component is within the shape of the (reference) terminal
     ffc_assert(len(component) == len(base_shape),
@@ -289,12 +296,12 @@ def analyse_modified_terminal(expr):
 
 
     # Flatten component
-    vi2si, si2vi = build_component_numbering(base_shape, symmetry)
+    vi2si, si2vi = build_component_numbering(base_shape, base_symmetry)
     flat_component = vi2si[component]
     # num_flat_components = len(si2vi)
 
-    return ModifiedTerminal(expr, t,
-                            reference_value, base_shape,
+    return ModifiedTerminal(expr, t, reference_value,
+                            base_shape, base_symmetry,
                             component, flat_component,
                             global_derivatives, local_derivatives,
                             averaged, restriction)
