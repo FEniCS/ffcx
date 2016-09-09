@@ -20,10 +20,9 @@
 
 from ffc.log import error
 
-import ufl
-
 from ufl.corealg.multifunction import MultiFunction
-from ufl.corealg.map_dag import map_expr_dag
+#from ufl.corealg.map_dag import map_expr_dag
+
 
 # FIXME: Need to incorporate some functions as CNode types, to
 #        create seams for selecting between C and C++ behaviour:
@@ -202,6 +201,7 @@ class UFL2CNodesMixin(object):
 
     def not_condition(self, o, a):
         return self.L.Not(a)
+
 
 class UFL2CNodesTranslator(MultiFunction, UFL2CNodesMixin):
     """UFL to CNodes translator class."""

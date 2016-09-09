@@ -18,15 +18,12 @@
 
 """The FFC specific backend to the UFLACS form compiler algorithms."""
 
-from six import iteritems
-import numpy as np
+import numpy
+
 from ufl.algorithms import replace
 from ufl.utils.sorting import sorted_by_count
 
-from ffc.log import ffc_assert
-
-from uflacs.params import default_parameters
-from uflacs.datastructures.arrays import object_array
+#from uflacs.params import default_parameters
 from uflacs.analysis.modified_terminals import analyse_modified_terminal
 from uflacs.representation.compute_expr_ir import compute_expr_ir
 from uflacs.elementtables.terminaltables import build_element_tables, optimize_element_tables
@@ -36,9 +33,10 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
                                integrals_dict, form_data,
                                parameters):
     # TODO: Hack before we get default parameters properly into ffc
-    p = default_parameters()
-    p.update(parameters)
-    parameters = p
+    #p = default_parameters()
+    #p.update(parameters)
+    #parameters = p
+
     # FIXME: Should be epsilon from ffc parameters
     from uflacs.language.format_value import get_float_threshold
     epsilon = get_float_threshold()
@@ -79,7 +77,7 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
         expr = replace(expr, form_data.function_replace_map) # FIXME: Still need to apply this mapping.
 
         # Build the core uflacs ir of expressions
-        expr_ir = compute_expr_ir(expr, parameters)
+        expr_ir = compute_expr_ir(expr)
         uflacs_ir["expr_ir"][num_points] = expr_ir
 
     for num_points in sorted(integrals_dict.keys()):
@@ -127,7 +125,7 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
         expr_ir["modified_argument_table_ranges"] = terminal_table_ranges[n:]
 
         # Store table data in V indexing, this is used in integralgenerator
-        expr_ir["table_ranges"] = object_array(len(V))
+        expr_ir["table_ranges"] = numpy.empty(len(V), dtype=object)
         expr_ir["table_ranges"][expr_ir["modified_terminal_indices"]] = \
             expr_ir["modified_terminal_table_ranges"]
 

@@ -19,11 +19,14 @@
 """Algorithms for value numbering within computational graphs."""
 
 from six.moves import xrange as range
-from ffc.log import warning
+
 from ufl import product
 from ufl.permutation import compute_indices
 from ufl.corealg.multifunction import MultiFunction
 from ufl.classes import FormArgument
+
+from ffc.log import error, ffc_assert
+
 from uflacs.analysis.indexing import map_indexed_arg_components, map_component_tensor_arg_components
 from uflacs.analysis.modified_terminals import analyse_modified_terminal
 
@@ -71,7 +74,9 @@ class ValueNumberer(MultiFunction):
             actual_components = sorted(set(symmetry.values()))
             m = len(actual_components)
             actual_symbols = self.new_symbols(m)
-            symbols = mapping_of_actual_symbols_to_all_components(actual_symbols, symmetry)  # Need to implement this
+
+            # FIXME: Need to implement this!
+            symbols = mapping_of_actual_symbols_to_all_components(actual_symbols, symmetry)
 
         else:
             n = self.V_sizes[i]
@@ -143,7 +148,7 @@ class ValueNumberer(MultiFunction):
                 # Build mapped component with symmetries from element and derivatives combined
                 mbc = symmetry.get(bc, bc)
                 mdc = tuple(sorted(dc))
-                c = bc + dc
+                #c = bc + dc
                 mc = mbc + mdc
 
                 # Get existing symbol or create new and store with mapped component mc as key

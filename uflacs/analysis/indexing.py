@@ -25,7 +25,6 @@
 from six.moves import xrange as range
 
 from ufl import product
-from ufl.utils.sorting import sorted_by_count
 from ufl.permutation import compute_indices
 from ufl.utils.indexflattening import shape_to_strides, flatten_multiindex
 from ufl.classes import ComponentTensor
@@ -182,7 +181,7 @@ def __map_indexed_to_arg_components(indexed):
     sh1 = e1.ufl_shape
     sh2 = e2.ufl_shape
     fi1 = e1.ufl_free_indices
-    fi2 = e2.ufl_free_indices
+    #fi2 = e2.ufl_free_indices
     fid1 = e1.ufl_index_dimensions
     fid2 = e2.ufl_index_dimensions
 
@@ -217,7 +216,7 @@ def __map_indexed_arg_components4(indexed):
     sh1 = e1.ufl_shape
     sh2 = e2.ufl_shape
     fi1 = e1.ufl_free_indices
-    fi2 = e2.ufl_free_indices
+    #fi2 = e2.ufl_free_indices
     fid1 = e1.ufl_index_dimensions
     fid2 = e2.ufl_index_dimensions
 
@@ -259,7 +258,7 @@ def __map_component_tensor_arg_components4(component_tensor):
     sh1 = e1.ufl_shape
     sh2 = e2.ufl_shape
     fi1 = e1.ufl_free_indices
-    fi2 = e2.ufl_free_indices
+    #fi2 = e2.ufl_free_indices
     fid1 = e1.ufl_index_dimensions
     fid2 = e2.ufl_index_dimensions
 

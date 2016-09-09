@@ -893,7 +893,7 @@ class Throw(CStatement):
         self.message = message
 
     def cs_format(self):
-        assert '"' not in message
+        assert '"' not in self.message
         return "throw " + self.exception + '("' + self.message + '");'
 
 class Comment(CStatement):

@@ -11,7 +11,7 @@ import tempfile
 import shutil
 import hashlib
 
-from setuptools import setup
+from setuptools import setup, find_packages
 from setuptools.command.install import install
 
 from distutils import sysconfig
@@ -337,25 +337,7 @@ def run_install():
           url=URL,
           download_url=tarball(),
           platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
-          packages=["ffc",
-                    "ffc.quadrature",
-                    "ffc.tensor",
-                    "ffc.uflacsrepr",
-                    "ffc.errorcontrol",
-                    "ffc.backends",
-                    "ffc.backends.dolfin",
-                    "ffc.backends.ufc",
-                    "uflacs",
-                    "uflacs.analysis",
-                    "uflacs.backends",
-                    "uflacs.backends.ffc",
-                    "uflacs.backends.ufc",
-                    "uflacs.datastructures",
-                    "uflacs.elementtables",
-                    "uflacs.generation",
-                    "uflacs.language",
-                    "uflacs.representation",
-                    "ufc"],
+          packages=find_packages(".", include=("ffc*", "ufc*", "uflacs*")),
           package_dir={"ffc": "ffc",
                        "uflacs": "uflacs",
                        "ufc": "ufc"},

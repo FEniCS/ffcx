@@ -25,13 +25,9 @@ from uflacs.analysis.modified_terminals import is_modified_terminal, analyse_mod
 from uflacs.analysis.graph import build_graph
 from uflacs.analysis.graph_vertices import build_scalar_graph_vertices
 from uflacs.analysis.graph_rebuild import rebuild_with_scalar_subexpressions
-from uflacs.analysis.graph_dependencies import (compute_dependencies,
-                                                mark_active, mark_image)
-from uflacs.analysis.graph_ssa import (compute_dependency_count,
-                                       invert_dependencies,
-                                       default_cache_score_policy,
-                                       compute_cache_scores,
-                                       allocate_registers)
+from uflacs.analysis.graph_dependencies import compute_dependencies, mark_active, mark_image
+from uflacs.analysis.graph_ssa import compute_dependency_count, invert_dependencies
+#from uflacs.analysis.graph_ssa import default_cache_score_policy, compute_cache_scores, allocate_registers
 
 from uflacs.analysis.factorization import compute_argument_factorization
 
@@ -61,7 +57,7 @@ def build_scalar_graph(expressions):
     return e2i, V, target_variables
 
 
-def compute_expr_ir(expressions, parameters):
+def compute_expr_ir(expressions):
     """FIXME: Refactoring in progress!
 
     TODO:
@@ -164,8 +160,8 @@ def compute_expr_ir(expressions, parameters):
 
     # Dependency structure of graph:
     expr_ir["modified_terminal_indices"] = modified_terminal_indices  # (array) list of V-indices to modified terminals
-    #expr_ir["dependencies"] = dependencies                           # (CRS) V-index -> direct dependency V-index list
-    #expr_ir["inverse_dependencies"] = inverse_dependencies           # (CRS) V-index -> direct dependee V-index list
+    #expr_ir["dependencies"] = dependencies                           # (CRSArray) V-index -> direct dependency V-index list
+    #expr_ir["inverse_dependencies"] = inverse_dependencies           # (CRSArray) V-index -> direct dependee V-index list
 
     # Metadata about each vertex
     #expr_ir["active"] = active       # (array) V-index -> bool

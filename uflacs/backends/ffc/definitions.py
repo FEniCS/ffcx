@@ -24,14 +24,14 @@ from ufl.corealg.multifunction import MultiFunction
 from ufl.checks import is_cellwise_constant
 
 from ffc.log import error
-from ffc.log import ffc_assert
 
 from uflacs.backends.ffc.common import FFCBackendSymbols
 # FIXME: Move these to FFCBackendSymbols
-from uflacs.backends.ffc.common import format_entity_name, ufc_restriction_postfix
-
+#from uflacs.backends.ffc.common import format_entity_name
+from uflacs.backends.ffc.common import ufc_restriction_postfix
 
 from ufl.cell import num_cell_entities
+
 
 def num_coordinate_component_dofs(coordinate_element):
     """Get the number of dofs for a coordinate component for this degree.
@@ -155,10 +155,10 @@ class FFCDefinitionsBackend(MultiFunction):
 
         # Get properties of domain
         domain = mt.terminal.ufl_domain()
-        tdim = domain.topological_dimension()
+        #tdim = domain.topological_dimension()
         gdim = domain.geometric_dimension()
         coordinate_element = domain.ufl_coordinate_element()
-        degree = coordinate_element.degree()
+        #degree = coordinate_element.degree()
         num_scalar_dofs = num_coordinate_component_dofs(coordinate_element)
 
         # Reference coordinates are known, no coordinate field, so we compute

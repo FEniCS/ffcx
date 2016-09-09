@@ -18,7 +18,6 @@
 
 """FFC specific access formatting."""
 
-import ufl
 from ufl.permutation import build_component_numbering
 from ufl.corealg.multifunction import MultiFunction
 from ufl.checks import is_cellwise_constant
@@ -144,7 +143,7 @@ class FFCAccessBackend(MultiFunction):
         # Map component to flat index
         vi2si, si2vi = build_component_numbering(mt.terminal.ufl_shape,
                                                  mt.terminal.ufl_element().symmetry())
-        num_flat_components = len(si2vi)
+        #num_flat_components = len(si2vi)
         ffc_assert(mt.flat_component == vi2si[mt.component], "Incompatible component flattening!")
 
         # Offset index if on second cell in interior facet integral
