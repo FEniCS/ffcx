@@ -18,16 +18,20 @@ timings."""
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# First added:  2010-05-11
-# Last changed: 2010-05-11
 
-import os, glob
+from __future__ import print_function
+
+import os
+import glob
+import sys
 from utils import print_table
 
 # Test options
-test_options = ["-r tensor", "-r tensor -O", "-r quadrature",
-                "-r quadrature -O"]
+test_options = ["-r tensor",
+                "-r tensor -O",
+                "-r quadrature",
+                "-r quadrature -O",
+                "-r uflacs"]
 
 # Get list of test cases
 test_cases = sorted([f.split(".")[0] for f in glob.glob("*.ufl")])
@@ -41,7 +45,7 @@ table = {}
 for (j, test_option) in enumerate(test_options):
 
     # Run benchmark
-    print "\nUsing options %s\n" % test_option
+    print("\nUsing options %s\n" % test_option)
     os.system(sys.executable + " test.py --bench %s" % test_option)
 
     # Collect results
