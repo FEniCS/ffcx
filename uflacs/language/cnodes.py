@@ -944,7 +944,12 @@ class VariableDecl(CStatement):
         return code + ";"
 
 
-def build_1d_initializer_list(values, formatter):
+def leftover(size, padlen):
+    "Return minimum integer to add to size to make it divisible by padlen."
+    return (padlen - (size % padlen)) % padlen
+
+
+def build_1d_initializer_list(values, formatter, padlen=0):
     '''Return a list containing a single line formatted like "{ 0.0, 1.0, 2.0 }"'''
     tokens = ["{ "]
     if numpy.product(values.shape) > 0:
@@ -953,12 +958,18 @@ def build_1d_initializer_list(values, formatter):
         for v in fvalues[:-1]:
             tokens.append(v)
             tokens.append(sep)
-        tokens += [fvalues[-1]]
+        tokens.append(fvalues[-1])
+        if padlen:
+            # Add padding
+            zero = formatter(0)
+            for i in range(leftover(len(values), padlen)):
+                tokens.append(sep)
+                tokens.append(zero)
     tokens += " }"
     return "".join(tokens)
 
 
-def build_initializer_lists(values, sizes, level, formatter):
+def build_initializer_lists(values, sizes, level, formatter, padlen=0):
     """Return a list of lines with initializer lists for a multidimensional array.
 
     Example output::
@@ -976,10 +987,13 @@ def build_initializer_lists(values, sizes, level, formatter):
     r = len(sizes)
     assert r > 0
     if r == 1:
-        return [build_1d_initializer_list(values, formatter)]
+        return [build_1d_initializer_list(values, formatter, padlen=padlen)]
     else:
         # Render all sublists
-        parts = [build_initializer_lists(val, sizes[1:], level+1, formatter) for val in values]
+        parts = []
+        for val in values:
+            sublist = build_initializer_lists(val, sizes[1:], level+1, formatter, padlen=padlen)
+            parts.append(sublist)
         # Add comma after last line in each part except the last one
         for part in parts[:-1]:
             part[-1] += ","
@@ -1009,8 +1023,8 @@ class ArrayDecl(CStatement):
     Otherwise use nested lists of lists to represent
     multidimensional array values to initialize to.
     """
-    __slots__ = ("typename", "symbol", "sizes", "values")
-    def __init__(self, typename, symbol, sizes, values=None):
+    __slots__ = ("typename", "symbol", "sizes", "alignas", "padlen", "values")
+    def __init__(self, typename, symbol, sizes, values=None, alignas=None, padlen=0):
         assert isinstance(typename, str)
         self.typename = typename
 
@@ -1023,6 +1037,9 @@ class ArrayDecl(CStatement):
         # NB! No type checking, assuming nested lists of literal values. Not applying as_cexpr.
         self.values = values
 
+        self.alignas = alignas
+        self.padlen = padlen
+
     def __getitem__(self, indices):
         """Allow using array declaration object as the array when indexed.
 
@@ -1032,15 +1049,26 @@ class ArrayDecl(CStatement):
         return ArrayAccess(self, indices)
 
     def cs_format(self):
+        # Pad innermost array dimension
+        sizes = list(self.sizes)
+        if self.padlen:
+            sizes[-1] += leftover(sizes[-1], self.padlen)
+
         # C style
-        brackets = ''.join("[%d]" % n for n in self.sizes)
+        brackets = ''.join("[%d]" % n for n in sizes)
         decl = self.typename + " " + self.symbol.name + brackets
 
         # C++11 style with std::array # TODO: Enable this, needs #include <array>
         #typename = self.typename
-        #for dim in reversed(self.sizes):
+        #for dim in reversed(sizes):
         #    typename = "std::array<%s, %s>" % (typename, dim)
         #decl = "%s %s" % (typename, self.symbol.name)
+
+        # TODO: support aligning inner dimensions with padding
+        # C++11 style alignas prefix
+        if self.alignas:
+            align = "alignas(%d)" % int(self.alignas)
+            decl = align + " " + decl
 
         if self.values is None:
             # Undefined initial values
@@ -1050,7 +1078,8 @@ class ArrayDecl(CStatement):
             return decl + " = {};"
         else:
             # Construct initializer lists for arbitrary multidimensional array values
-            initializer_lists = build_initializer_lists(self.values, self.sizes, 0, format_value)
+            initializer_lists = build_initializer_lists(self.values, self.sizes, 0,
+                                                        format_value, padlen=self.padlen)
             if len(initializer_lists) == 1:
                 return decl + " = " + initializer_lists[0] + ";"
             else:
