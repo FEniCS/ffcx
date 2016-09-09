@@ -25,38 +25,38 @@ from ffc.log import INFO
 
 
 _FFC_GENERATE_PARAMETERS = {
-    "format": "ufc",   # code generation format
-  "representation": "auto",  # form representation / code
-                                             # generation strategy
-  "quadrature_rule": "auto",  # quadrature rule used for
-                                             # integration of element tensors
-  "quadrature_degree": -1,      # quadrature degree used for
-                                             # computing integrals
-  "precision": 15,      # precision used when writing
-                                             # numbers
-  "epsilon": 1e-14,   # machine precision, used for
-                                             # dropping zero terms
-  "split": False,   # split generated code into .h and
-                                             # .cpp file
-  "form_postfix": True,    # postfix form name with "Function",
-                                             # "LinearForm" or BilinearForm
-  "convert_exceptions_to_warnings": False,   # convert all exceptions to warning
-                                             # in generated code
-  "error_control": False,   # with error control
-  "optimize": False,   # optimise the code generation
+    "format": "ufc",           # code generation format
+    "representation": "auto",  # form representation / code
+                               # generation strategy
+    "quadrature_rule": "auto", # quadrature rule used for
+                               # integration of element tensors
+    "quadrature_degree": -1,   # quadrature degree used for
+                               # computing integrals
+    "precision": 15,           # precision used when writing
+                               # numbers
+    "epsilon": 1e-14,          # machine precision, used for
+                               # dropping zero terms
+    "split": False,            # split generated code into .h and
+                               # .cpp file
+    "form_postfix": True,      # postfix form name with "Function",
+                               # "LinearForm" or BilinearForm
+    "convert_exceptions_to_warnings": False,   # convert all exceptions to warning
+                                               # in generated code
+    "error_control": False,   # with error control
+    "optimize": False,        # optimise the code generation
 }
 _FFC_BUILD_PARAMETERS = {
-    "cpp_optimize": True,    # optimization for the JIT compiler
-  "cpp_optimize_flags": "-O2",   # optimization flags for the JIT compiler
+    "cpp_optimize": True,          # optimization for the JIT compiler
+    "cpp_optimize_flags": "-O2",   # optimization flags for the JIT compiler
 }
 _FFC_CACHE_PARAMETERS = {
-    "cache_dir": "",      # cache dir used by Instant
-  "output_dir": ".",     # output directory for generated code
+    "cache_dir": "",        # cache dir used by Instant
+    "output_dir": ".",      # output directory for generated code
 }
 _FFC_LOG_PARAMETERS = {
     "log_level": INFO + 5,  # log level, displaying only
-                                             # messages with level >= log_level
-  "log_prefix": "",      # log prefix
+                            # messages with level >= log_level
+    "log_prefix": "",       # log prefix
 }
 FFC_PARAMETERS = {}
 FFC_PARAMETERS.update(_FFC_BUILD_PARAMETERS)
@@ -144,3 +144,4 @@ def compute_jit_parameters_signature(parameters):
     from ufl.utils.sorting import canonicalize_metadata
     parameters = compilation_relevant_parameters(parameters)
     return str(canonicalize_metadata(parameters))
+
