@@ -146,9 +146,9 @@ def main(argv):
                     return 1
                 default = parameters[key]
                 if isinstance(default, int):
-                    value = int(default)
+                    value = int(value)
                 elif isinstance(default, float):
-                    value = float(default)
+                    value = float(value)
                 parameters[key] = value
             elif len(arg.split("==")) == 1:
                 key = arg.split("=")[0]
