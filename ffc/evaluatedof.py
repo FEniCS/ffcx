@@ -161,8 +161,10 @@ def _required_declarations(ir):
     if not (needs_jacobian or needs_inverse_jacobian):
         return "\n".join(code)
 
-    # Otherwise declare intermediate result variable
-    code.append(declare(f_double, f_result))
+    # Intermediate variable needed for multiple point dofs
+    needs_temporary = any(len(dof) > 1 for dof in ir["dofs"])
+    if needs_temporary:
+        code.append(declare(f_double, f_result))
 
     # Add sufficient Jacobian information. Note: same criterion for
     # needing inverse Jacobian as for needing oriented Jacobian
@@ -220,16 +222,15 @@ def _generate_body(i, dof, mapping, gdim, tdim, offset=0, result=f_result):
     # Take inner product between components and weights
     value = add([multiply([w, F[index_map[k]]]) for (w, k) in dof[x]])
 
-    # Assign value to result variable
-    code.append(assign(result, value))
-    return ("\n".join(code), result)
+    # Return eval code and value
+    return ("\n".join(code), value)
 
 
 def _generate_multiple_points_body(i, dof, mapping, gdim, tdim,
                                    offset=0, result=f_result):
     "Generate c++ for-loop for multiple points (integral bodies)"
 
-    code = [assign(f_result, 0.0)]
+    code = [assign(result, 0.0)]
     points = list(dof.keys())
     n = len(points)
 
@@ -279,7 +280,7 @@ def _generate_multiple_points_body(i, dof, mapping, gdim, tdim,
                                 component(f_D(i), (f_r, f_s))),
                       component(f_W(i), (f_r, f_s))])
     # Add value from this point to total result
-    lines_s = [iadd(f_result, value)]
+    lines_s = [iadd(result, value)]
 
     # Generate loop over s and add to r.
     loop_vars_s = [(f_s, 0, len_tokens)]
