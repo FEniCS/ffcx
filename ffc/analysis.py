@@ -146,7 +146,8 @@ def _analyze_form(form, parameters):
                                       do_apply_restrictions=True,
                                       )
     else:
-        ffc_assert(r == "legacy")
+        ffc_assert(r == "legacy", "Unexpected representation family "
+            "'%s' for form preprocessing." % r)
         form_data = compute_form_data(form)
 
     info("")
@@ -182,7 +183,8 @@ def _extract_representation_family(form, parameters):
         elif r in [None, 'auto']:
             representations.remove(r)
     ffc_assert(len(representations.intersection((
-        'quadrature', 'tensor', 'auto', None))) == 0)
+        'quadrature', 'tensor', 'auto', None))) == 0,
+        "Unexpexted representation family candidates '%s'." % representations)
 
     # Don't tolerate more representation families due to restrictions
     # in preprocessing
@@ -204,7 +206,9 @@ def _extract_representation_family(form, parameters):
         representations.add('legacy')
 
     # Return the unique choice
-    ffc_assert(len(representations) == 1)
+    ffc_assert(len(representations) == 1,
+               "Failed to extract unique representation family. "
+               "Got '%s'." % representations)
     return representations.pop()
 
 
@@ -227,10 +231,16 @@ def _validate_representation_choice(form_data,
             representations.add('legacy')
 
     # Require unique family; allow legacy only with affine meshes
-    ffc_assert(len(representations) == 1)
+    ffc_assert(len(representations) == 1,
+               "Failed to extract unique representation family. "
+               "Got '%s'." % representations)
     if _has_higher_order_geometry(form_data.preprocessed_form):
-        ffc_assert('legacy' not in representations)
-    ffc_assert(preprocessing_representation_family in representations)
+        ffc_assert('legacy' not in representations,
+            "Did not expect legacy representation for higher-order geometry.")
+    ffc_assert(preprocessing_representation_family in representations,
+        "Form has been preprocessed using '%s' representaion family, "
+        "while '%s' representations have been set for integrals."
+        % (preprocessing_representation_family, representations))
 
 
 def _has_higher_order_geometry(o):
