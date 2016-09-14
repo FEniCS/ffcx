@@ -33,9 +33,6 @@ from FIAT.trace import DiscontinuousLagrangeTrace
 
 # FFC modules
 from ffc.log import debug, error, ffc_assert
-from ffc.quadratureelement import QuadratureElement as FFCQuadratureElement
-
-
 from ffc.mixedelement import MixedElement
 from ffc.restrictedelement import RestrictedElement
 from ffc.enrichedelement import EnrichedElement, SpaceOfReals
@@ -138,7 +135,7 @@ def _create_fiat_element(ufl_element):
     # FIXME: AL: Should this really be here?
     # Handle QuadratureElement
     elif family == "Quadrature":
-        element = FFCQuadratureElement(ufl_element)
+        element = QuadratureElement(ufl_element)
 
     else:
         # Create FIAT cell
@@ -340,3 +337,6 @@ def _indices(element, restriction_domain, tdim):
         for (entity, index) in sorted_by_key(entities):
             indices += index
     return indices
+
+# Import FFC module with circular dependency
+from ffc.quadratureelement import QuadratureElement

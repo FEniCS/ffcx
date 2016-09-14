@@ -39,7 +39,6 @@ from ufl.algorithms.analysis import extract_sub_elements
 
 # FFC modules
 from ffc.log import info, begin, end, warning, debug, error, ffc_assert, warning_blue
-import ffc.quadratureelement
 from ffc.utils import all_equal
 from ffc.tensor import estimate_cost
 

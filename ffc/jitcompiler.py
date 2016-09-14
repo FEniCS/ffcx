@@ -48,7 +48,6 @@ from ffc.mixedelement import MixedElement
 from ffc.compiler import compile_form, compile_element
 from ffc.formatting import write_code
 from ffc.jitobject import JITObject
-from ffc.quadratureelement import default_quadrature_degree
 from ffc.ufc_config import get_ufc_include
 
 
