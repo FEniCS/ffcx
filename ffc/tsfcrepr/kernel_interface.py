@@ -232,6 +232,7 @@ class KernelBuilder(KernelBuilderBase):
             if integral_data.enabled_coefficients[i]:
                 coefficient = form_data.reduced_coefficients[i]
                 if type(coefficient.ufl_element()) == ufl_MixedElement:
+                    # FIXME: Is this correct? Test mixed coefficient!
                     split = [Coefficient(FunctionSpace(coefficient.ufl_domain(), element))
                              for element in coefficient.ufl_element().sub_elements()]
                     coefficients.extend(split)
@@ -242,7 +243,7 @@ class KernelBuilder(KernelBuilderBase):
                 # current coefficient is.
                 # Consider f*v*dx + g*v*ds, the full form contains two
                 # coefficients, but each integral only requires one.
-                coefficient_numbers.append(form_data.original_coefficient_positions[i])
+                coefficient_numbers.append(i)
         self.coefficient_args.append(self.coefficients(coefficients, coefficient_numbers, "w"))
         self.kernel.coefficient_numbers = tuple(coefficient_numbers)
 
