@@ -81,6 +81,22 @@ known_uflacs_failures = set([
     "MetaData.ufl",
 ])
 
+known_tsfc_failures = set([
+    "CustomIntegral.ufl",
+    "CustomMixedIntegral.ufl",
+    "CustomVectorIntegral.ufl",
+    "PointMeasure.ufl",
+    "MetaData.ufl",
+    "AdaptivePoisson.ufl",    # FIXME: is it fixable?
+    "BiharmonicHHJ.ufl",      # FIXME: might change soon
+    "Mini.ufl",               # FIXME: let's postpone refactoring enriched element
+    "MathFunctions.ufl",      # FIXME: should be easy
+    "QuadratureElement.ufl",  # FIXME: is it fixable?
+    "RestrictedElement.ufl",  # FIXME: is it fixable?
+    "TraceElement.ufl",       # FIXME: is it supported by tsfc?
+])
+
+
 _command_timings = []
 
 
@@ -513,10 +529,13 @@ def main(args):
         clean_output(sub_directory)
         os.chdir(sub_directory)
 
-        # Workarounds for partial feature completeness in uflacs
+        # Workarounds for partial feature completeness in uflacs/tsfc
         if "uflacs" in argument and not only_forms:
             skip_forms = known_uflacs_failures
             info_blue("Skipping forms known to fail with uflacs:\n" + "\n".join(sorted(skip_forms)))
+        elif "tsfc" in argument and not only_forms:
+            skip_forms = known_tsfc_failures
+            info_blue("Skipping forms known to fail with tsfc:\n" + "\n".join(sorted(skip_forms)))
         else:
             skip_forms = set()
 
