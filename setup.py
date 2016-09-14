@@ -337,7 +337,7 @@ def run_install():
           url=URL,
           download_url=tarball(),
           platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
-          packages=find_packages(".", include=("ffc*", "ufc*", "uflacs*")),
+          packages=find_packages("."),
           package_dir={"ffc": "ffc",
                        "uflacs": "uflacs",
                        "ufc": "ufc"},
