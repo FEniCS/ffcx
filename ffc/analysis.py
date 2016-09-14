@@ -173,18 +173,24 @@ def _extract_representation_family(form, parameters):
     representations = set()
     for integral in form.integrals():
         representations.add(integral.metadata().get("representation"))
-    representations.add(parameters["representation"])
 
-    # Translate quadrature/tensor to legacy and remove auto
+    # Remove auto and replace it by parameter value if it's not auto
+    for r in list(representations):
+        if r in [None, 'auto']:
+            representations.remove(r)
+            if parameters["representation"] != "auto":
+                representations.add(parameters["representation"])
+
+    # Translate quadrature/tensor to legacy
     for r in list(representations):
         if r in ['quadrature', 'tensor']:
             representations.remove(r)
             representations.add('legacy')
-        elif r in [None, 'auto']:
-            representations.remove(r)
+
+    # Sanity check
     ffc_assert(len(representations.intersection((
         'quadrature', 'tensor', 'auto', None))) == 0,
-        "Unexpexted representation family candidates '%s'." % representations)
+        "Unexpected representation family candidates '%s'." % representations)
 
     # Don't tolerate more representation families due to restrictions
     # in preprocessing
@@ -216,7 +222,11 @@ def _validate_representation_choice(form_data,
                                     preprocessing_representation_family):
     """Check that effective representations do not mix legacy and
     uflacs, implement higher-order geometry, and match employed
-    preprocessing strategy"""
+    preprocessing strategy.
+
+    This function is final check that everything is compatible due
+    to the mess in this file. Better safe than sorry...
+    """
     # Fetch all representations
     representations = set()
     for ida in form_data.integral_data:
