@@ -99,10 +99,6 @@ def analyze_elements(elements, parameters):
             if qs is None:
                 error("Missing quad_scheme in quadrature element.")
 
-    # FIXME: Should we add check for higher-order geometry and uflacs
-    #        although representation has no influence on compiling
-    #        element? Is it true? Will it remain true?
-
     end()
 
     form_datas = ()
@@ -126,11 +122,11 @@ def _analyze_form(form, parameters):
                "Form (%s) seems to be zero: cannot compile it." % str(form))
 
     # Hack to override representation with environment variable
-    # FIXME: Should forced_r override everything or just parameter?
     forced_r = os.environ.get("FFC_FORCE_REPRESENTATION")
     if forced_r:
         warning("representation:    forced by $FFC_FORCE_REPRESENTATION to '%s'" % forced_r)
         r = forced_r
+        r = "legacy" if r in ["quadrature", "tensor"] else r
     else:
         r = _extract_representation_family(form, parameters)
 
@@ -150,6 +146,7 @@ def _analyze_form(form, parameters):
                                       do_apply_restrictions=True,
                                       )
     else:
+        ffc_assert(r == "legacy")
         form_data = compute_form_data(form)
 
     info("")
