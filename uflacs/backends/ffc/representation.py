@@ -22,6 +22,7 @@ import numpy
 
 from ufl.algorithms import replace
 from ufl.utils.sorting import sorted_by_count
+from ufl.classes import FormArgument, CellCoordinate
 
 #from uflacs.params import default_parameters
 from uflacs.analysis.modified_terminals import analyse_modified_terminal
@@ -48,15 +49,21 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
     # uflacs_ir["cell"] = form_data.integration_domains[0].ufl_cell()
     # uflacs_ir["function_replace_map"] = form_data.function_replace_map
 
-    # Build coefficient numbering for UFC interface here, to avoid renumbering in UFL and application of replace mapping
+    # Build coefficient numbering for UFC interface here, to avoid
+    # renumbering in UFL and application of replace mapping
     uflacs_ir["coefficient_numbering"] = {}
     #uflacs_ir["coefficient_element"] = {}
     #uflacs_ir["coefficient_domain"] = {}
     for i, f in enumerate(sorted_by_count(form_data.function_replace_map.keys())):
         g = form_data.function_replace_map[f]
         assert i == g.count()
-        uflacs_ir["coefficient_numbering"][g] = i # USING THIS ONE BECAUSE WE'RE CALLING REPLACE BELOW
-        #uflacs_ir["coefficient_numbering"][f] = i # If we make elements and domains well formed we can avoid replace below and use this line instead
+
+        # Using this version because we're calling replace below
+        uflacs_ir["coefficient_numbering"][g] = i
+
+        # If we make elements and domains well formed we can
+        # avoid replace below and use this line instead
+        #uflacs_ir["coefficient_numbering"][f] = i
         #uflacs_ir["coefficient_element"][f] = g.ufl_element()
         #uflacs_ir["coefficient_domain"][f] = g.ufl_domain()
 
@@ -64,7 +71,6 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
     uflacs_ir["expr_ir"] = {}
     for num_points in sorted(integrals_dict.keys()):
         integral = integrals_dict[num_points]
-
         # Get integrand
         expr = integral.integrand()
 
@@ -74,7 +80,8 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
         # TODO: Doesn't replace domain coefficient!!!
         #       Merge replace functionality into change_to_reference_grad to fix?
         #       When coordinate field coefficient is removed I guess this issue will disappear?
-        expr = replace(expr, form_data.function_replace_map) # FIXME: Still need to apply this mapping.
+        # FIXME: Still need to apply this mapping:
+        expr = replace(expr, form_data.function_replace_map)
 
         # Build the core uflacs ir of expressions
         expr_ir = compute_expr_ir(expr)
@@ -94,24 +101,30 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
         # Build tables needed by all modified terminals
         # (currently build here means extract from ffc psi_tables)
         #print '\n'.join([str(mt.expr) for mt in terminal_data])
-        tables, terminal_table_names = build_element_tables(psi_tables, num_points,
-                                                            entitytype, terminal_data,
-                                                            epsilon)
+        tables, terminal_table_names = \
+            build_element_tables(psi_tables, num_points, entitytype, terminal_data, epsilon)
 
         # Optimize tables and get table name and dofrange for each modified terminal
-        unique_tables, terminal_table_ranges = optimize_element_tables(tables, terminal_table_names, epsilon)
+        unique_tables, terminal_table_ranges = \
+            optimize_element_tables(tables, terminal_table_names, epsilon)
+
         expr_ir["unique_tables"] = unique_tables
 
-        # Modify ranges for restricted form arguments (not geometry!)
-        # FIXME: Should not coordinate dofs get the same offset?
-        from ufl.classes import FormArgument
+        need_points = False
         for i, mt in enumerate(terminal_data):
+            # Modify ranges for restricted form arguments (not geometry!)
+            # FIXME: Should not coordinate dofs get the same offset?
             # TODO: Get the definition that - means added offset from somewhere
             if mt.restriction == "-" and isinstance(mt.terminal, FormArgument):
                 # offset = number of dofs before table optimization
                 offset = int(tables[terminal_table_names[i]].shape[-1])
                 (unique_name, b, e) = terminal_table_ranges[i]
                 terminal_table_ranges[i] = (unique_name, b + offset, e + offset)
+            elif isinstance(mt.terminal, CellCoordinate):
+                need_points = True
+
+        # True if quadrature points array is needed
+        expr_ir["need_points"] = need_points
 
         # Split into arguments and other terminals before storing in expr_ir
         # TODO: Some tables are associated with num_points, some are not
