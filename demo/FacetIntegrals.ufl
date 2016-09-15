@@ -27,8 +27,7 @@ element = FiniteElement("Discontinuous Lagrange", triangle, 1)
 u = TrialFunction(element)
 v = TestFunction(element)
 
-h = Constant(triangle)
-n = VectorConstant(triangle)
+n = FacetNormal(triangle)
 
 a = u*v*ds \
   + u('+')*v('-')*dS \

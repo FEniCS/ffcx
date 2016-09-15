@@ -30,11 +30,11 @@ element = FiniteElement("Discontinuous Lagrange", triangle, 1)
 # Trial and test functions
 u = TrialFunction(element)
 v = TestFunction(element)
-f = Coefficient(element)
 
-# Normal component, mesh size and right-hand side
+# Facet normal, mesh size and right-hand side
 n = FacetNormal(triangle)
-h = Constant(triangle)
+h = 2.0*Circumradius(triangle)
+f = Coefficient(element)
 
 # Compute average of mesh size
 h_avg = (h('+') + h('-'))/2.0
