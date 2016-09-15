@@ -17,7 +17,7 @@
 
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
 from ffc.representationutils import initialize_integral_ir
-from ffc.tsfcrepr.driver import compile_integral
+from tsfc.driver import compile_integral
 
 
 def compute_integral_ir(integral_data,
