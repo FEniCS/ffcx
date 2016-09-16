@@ -44,6 +44,15 @@ def equal_tables(a, b, eps):
     return all(scalars_equal(a[i], b[i], eps) for i in range(a.shape[0]))
 
 
+def clamp_table_small_integers(table, eps):
+    "Clamp almost 0,1,-1 values to integers. Returns new table."
+    # Get shape of table and number of columns, defined as the last axis
+    table = numpy.asarray(table)
+    for n in (-1, 0, 1):
+        table[numpy.where(abs(table - n) < eps)] = float(n)
+    return table
+
+
 def strip_table_zeros(table, eps):
     "Strip zero columns from table. Returns column range (begin,end) and the new compact table."
     # Get shape of table and number of columns, defined as the last axis

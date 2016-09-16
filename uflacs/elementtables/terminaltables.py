@@ -27,7 +27,7 @@ from ufl.algorithms.analysis import unique_tuple
 from ffc.log import error
 
 from uflacs.elementtables.table_utils import generate_psi_table_name, get_ffc_table_values
-from uflacs.elementtables.table_utils import strip_table_zeros, build_unique_tables
+from uflacs.elementtables.table_utils import clamp_table_small_integers, strip_table_zeros, build_unique_tables
 
 
 def extract_terminal_elements(terminal_data):
@@ -175,6 +175,9 @@ def optimize_element_tables(tables, terminal_table_names, eps):
     stripped_tables = {}
     table_ranges = {}
     for name, table in tables.items():
+        # Clamp 0, -1 and +1 values first
+        table = clamp_table_small_integers(table, eps)
+        # Then strip zeros at the ends
         begin, end, stripped_table = strip_table_zeros(table, eps)
         stripped_tables[name] = stripped_table
         table_ranges[name] = (begin, end)
