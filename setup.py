@@ -312,16 +312,17 @@ def run_install():
     # Add UFC data files (need to use complete path because setuptools
     # installs into the Python package directory, not --prefix). This
     # can be fixed when Swig, etc are removed from FFC).
-    data_files_ufc = [(os.path.join(INSTALL_PREFIX, "include"),
-                       [os.path.join("ufc", "ufc.h"),
-                        os.path.join("ufc", "ufc_geometry.h")]),
-                      (os.path.join(INSTALL_PREFIX, "share", "ufc"),
-                       [os.path.join("cmake", "templates",
-                                     "UFCConfig.cmake"),
-                        os.path.join("cmake", "templates",
-                                     "UFCConfigVersion.cmake"),
-                        os.path.join("cmake", "templates",
-                                     "UseUFC.cmake")])]
+    data_files_ufc = [
+        #(os.path.join(INSTALL_PREFIX, "include"),
+        # [os.path.join("ufc", "ufc.h"),
+        #  os.path.join("ufc", "ufc_geometry.h")]),
+        (os.path.join(INSTALL_PREFIX, "share", "ufc"),
+         [os.path.join("cmake", "templates",
+                       "UFCConfig.cmake"),
+        os.path.join("cmake", "templates",
+                     "UFCConfigVersion.cmake"),
+          os.path.join("cmake", "templates",
+                       "UseUFC.cmake")])]
 
     data_files = data_files + data_files_ufc
 
@@ -341,6 +342,9 @@ def run_install():
           package_dir={"ffc": "ffc",
                        "uflacs": "uflacs",
                        "ufc": "ufc"},
+          package_data={
+              'ufc': ['*.h'],
+          },
           scripts=scripts,
           cmdclass={'install': my_install},
           data_files=data_files,
