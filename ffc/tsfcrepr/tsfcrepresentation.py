@@ -33,6 +33,7 @@ def compute_integral_ir(integral_data,
     ir = initialize_integral_ir("tsfc", integral_data, form_data, form_id)
 
     # Store tsfc generated part separately
-    ir["tsfc"] = compile_integral(integral_data, form_data, None, parameters)
+    ir["tsfc"] = compile_integral(integral_data, form_data, None, parameters,
+                                  backend="ufc")
 
     return ir

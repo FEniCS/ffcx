@@ -30,7 +30,7 @@ import copy
 from itertools import chain
 
 # UFL modules
-from ufl.form import Form
+from ufl.classes import Form, CellVolume, FacetArea
 from ufl.integral import Integral
 from ufl.finiteelement import MixedElement, EnrichedElement, VectorElement
 from ufl.algorithms import sort_elements
@@ -150,6 +150,7 @@ def _analyze_form(form, parameters):
                                       do_apply_integral_scaling=True,
                                       do_apply_geometry_lowering=True,
                                       do_apply_restrictions=True,
+                                      preserve_geometry_types=(CellVolume,FacetArea),
                                       do_estimate_degrees=True,
                                       )
     else:
