@@ -65,7 +65,6 @@ def num_coordinate_component_dofs(coordinate_element):
 
 class FFCDefinitionsBackend(MultiFunction):
     """FFC specific code definitions."""
-
     def __init__(self, ir, language, parameters):
         MultiFunction.__init__(self)
 
@@ -74,7 +73,7 @@ class FFCDefinitionsBackend(MultiFunction):
         self.language = language
         self.parameters = parameters
 
-        # FIXME: Make this configurable for easy experimentation with dolfin!
+        # TODO: Make this configurable for easy experimentation with dolfin!
         # Coordinate dofs for each component are interleaved? Must match dolfin.
         self.interleaved_components = True # parameters["interleaved_coordinate_component_dofs"]
 
@@ -84,34 +83,41 @@ class FFCDefinitionsBackend(MultiFunction):
         else:
             self.physical_coordinates_known = False
 
-        # Need this for custom integrals
+        # FIXME: Need this for custom integrals
         #classname = make_classname(prefix, "finite_element", ir["element_numbers"][ufl_element])
 
-        coefficient_numbering = ir["uflacs"]["coefficient_numbering"]
-        self.symbols = FFCBackendSymbols(self.language, coefficient_numbering)
+        # This contains definitions of various symbol names
+        self.symbols = FFCBackendSymbols(self.language, ir["uflacs"]["coefficient_numbering"])
+
 
     def get_includes(self):
         "Return include statements to insert at top of file."
         includes = []
         return includes
 
+
     def initial(self):
         "Return code inserted at beginning of kernel."
         return []
 
+
     def expr(self, t, mt, tabledata, access):
         error("Unhandled type {0}".format(type(t)))
+
 
     # === Generate code definitions ===
 
     def quadrature_weight(self, e, mt, tabledata, access):
         return []
 
+
     def constant_value(self, e, mt, tabledata, access):
         return []
 
+
     def argument(self, t, mt, tabledata, access):
         return []
+
 
     def coefficient(self, t, mt, tabledata, access):
         L = self.language
@@ -148,9 +154,9 @@ class FFCDefinitionsBackend(MultiFunction):
             ]
         return code
 
-    def _define_coordinate_dofs_lincomb(self, e, mt, tabledata, access):
-        "Define something (x or J) linear combination of coordinate dofs with given table data."
 
+    def _define_coordinate_dofs_lincomb(self, e, mt, tabledata, access):
+        "Define x or J as a linear combination of coordinate dofs with given table data."
         L = self.language
 
         # Get properties of domain
@@ -164,20 +170,21 @@ class FFCDefinitionsBackend(MultiFunction):
         # Reference coordinates are known, no coordinate field, so we compute
         # this component as linear combination of coordinate_dofs "dofs" and table
 
+        # Find table name and dof range it corresponds to
         uname, begin, end = tabledata
         uname = L.Symbol(uname)
-        #if not ( end - begin <= num_scalar_dofs):
-        #    import IPython; IPython.embed()
         assert end - begin <= num_scalar_dofs
 
+        # Entity number
         entity = self.symbols.entity(self.ir["entitytype"], mt.restriction)
 
+        # TODO: Check if facetwise constant instead when on facets?
         if is_cellwise_constant(mt.expr):
             iq = 0
         else:
             iq = self.symbols.quadrature_loop_index()
 
-        if 0:  # FIXME: Make an option to test
+        if 0:  # TODO: Make an option to test this version for performance
             # Generated loop version:
             coefficient_dof = self.symbols.coefficient_dof_sum_index()
             dof_access = self.symbols.domain_dof_access(coefficient_dof, mt.flat_component,
@@ -207,6 +214,7 @@ class FFCDefinitionsBackend(MultiFunction):
 
         return code
 
+
     def spatial_coordinate(self, e, mt, tabledata, access):
         """Return definition code for the physical spatial coordinates.
 
@@ -223,6 +231,7 @@ class FFCDefinitionsBackend(MultiFunction):
             return []
         else:
             return self._define_coordinate_dofs_lincomb(e, mt, tabledata, access)
+
 
     def cell_coordinate(self, e, mt, tabledata, access):
         """Return definition code for the reference spatial coordinates.
@@ -244,6 +253,7 @@ class FFCDefinitionsBackend(MultiFunction):
         """
         return []
 
+
     def jacobian(self, e, mt, tabledata, access):
         """Return definition code for the Jacobian of x(X).
 
@@ -253,6 +263,7 @@ class FFCDefinitionsBackend(MultiFunction):
             return []
         else:
             return self._define_coordinate_dofs_lincomb(e, mt, tabledata, access)
+
 
     def cell_orientation(self, e, mt, tabledata, access):
         # Would be nicer if cell_orientation was a double variable input,
@@ -266,6 +277,7 @@ class FFCDefinitionsBackend(MultiFunction):
             ]
         return code
 
+
     def _expect_table(self, e, mt, tabledata, access):
         "These quantities refer to constant tables defined in ufc_geometry.h."
         # TODO: Inject const static table here instead?
@@ -277,6 +289,7 @@ class FFCDefinitionsBackend(MultiFunction):
     cell_edge_vectors = _expect_table
     facet_edge_vectors = _expect_table
     facet_orientation = _expect_table
+
 
     def _expect_symbolic_lowering(self, e, mt, tabledata, access):
         "These quantities are expected to be replaced in symbolic preprocessing."

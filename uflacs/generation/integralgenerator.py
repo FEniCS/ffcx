@@ -33,7 +33,7 @@ class IntegralGenerator(object):
         self.ir = ir
 
         # Consistency check on quadrature rules
-        nps1 = sorted(ir["uflacs"]["expr_ir"].keys())
+        nps1 = sorted(ir["uflacs"]["expr_irs"].keys())
         nps2 = sorted(ir["quadrature_rules"].keys())
         if nps1 != nps2:
             warning("Got different num_points for expression irs and quadrature rules:\n{0}\n{1}".format(
@@ -117,7 +117,7 @@ class IntegralGenerator(object):
         # we wrap each integral in a separate scope, avoiding having to
         # think about name clashes for now. This is a bit wasteful in that
         # piecewise quantities are not shared, but at least it should work.
-        expr_irs = self.ir["uflacs"]["expr_ir"]
+        expr_irs = self.ir["uflacs"]["expr_irs"]
         all_num_points = sorted(expr_irs)
 
         # Reset variables, separate sets for quadrature loop
@@ -163,7 +163,8 @@ class IntegralGenerator(object):
             parts += [L.ArrayDecl("static const double", wname, num_points, weights,
                                   alignas=self.alignas)]
             # Quadrature points array
-            if self.ir["uflacs"]["expr_ir"][num_points]["need_points"] and pdim > 0:
+            expr_ir = self.ir["uflacs"]["expr_irs"][num_points]
+            if expr_ir["need_points"] and pdim > 0:
                 # Flatten array: (TODO: avoid flattening here, it makes padding harder)
                 points = points.reshape(product(points.shape))
                 parts += [L.ArrayDecl("static const double", pname, num_points * pdim, points,
@@ -281,7 +282,7 @@ class IntegralGenerator(object):
             return parts
         assert iarg < self.ir["rank"]
 
-        expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
+        expr_ir = self.ir["uflacs"]["expr_irs"][num_points]
         # tuple(modified_argument_indices) -> code_index
         AF = expr_ir["argument_factorization"]
 
@@ -452,7 +453,7 @@ class IntegralGenerator(object):
         This mostly includes computations involving piecewise constant geometry and coefficients.
         """
         L = self.backend.language
-        expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
+        expr_ir = self.ir["uflacs"]["expr_irs"][num_points]
         arrayname = "sp{0}".format(num_points)
         parts = self.generate_partition(arrayname,
                                         expr_ir["V"],
@@ -466,7 +467,7 @@ class IntegralGenerator(object):
 
     def generate_varying_partition(self, num_points):
         L = self.backend.language
-        expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
+        expr_ir = self.ir["uflacs"]["expr_irs"][num_points]
         arrayname = "sv{0}".format(num_points)
         parts = self.generate_partition(arrayname,
                                         expr_ir["V"],
@@ -491,7 +492,7 @@ class IntegralGenerator(object):
         parts = []
         L = self.backend.language
 
-        expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
+        expr_ir = self.ir["uflacs"]["expr_irs"][num_points]
         AF = expr_ir["argument_factorization"]
         V = expr_ir["V"]
         MATR = expr_ir["modified_argument_table_ranges"]

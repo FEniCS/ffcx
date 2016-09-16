@@ -82,12 +82,10 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data, epsi
 
         # Add to element tables for FormArguments and relevant GeometricQuantities
         if isinstance(t, FormArgument):
-            if rv:
-                if gd:
-                    error("Global derivatives of reference values not defined.")
-            else:
-                if ld:
-                    error("Local derivatives of global values not defined.")
+            if gd and rv:
+                error("Global derivatives of reference values not defined.")
+            elif ld and not rv:
+                error("Local derivatives of global values not defined.")
             element = t.ufl_element()
 
         elif isinstance(t, SpatialCoordinate):
@@ -95,9 +93,10 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data, epsi
                 error("Not expecting reference value of x.")
             if gd:
                 error("Not expecting global derivatives of x.")
-                
+
             # TODO: Only need table for component element, does that matter?
             element = t.ufl_domain().ufl_coordinate_element()
+            #element = element.sub_element()
 
             if ld:
                 # Actually the Jacobian, translate component gc to x element context
@@ -112,6 +111,7 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data, epsi
 
             # TODO: Only need table for component element, does that matter?
             element = t.ufl_domain().ufl_coordinate_element()
+            #element = element.sub_element()
 
             fc = gc[0]
             ld = tuple(sorted((gc[1],) + ld))
