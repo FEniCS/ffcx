@@ -25,6 +25,7 @@ from ffc.log import error
 from ffc.log import ffc_assert
 
 from uflacs.backends.ffc.common import FFCBackendSymbols
+
 # FIXME: Move these to FFCBackendSymbols
 from uflacs.backends.ffc.common import (names,
                                         format_entity_name,
@@ -83,7 +84,8 @@ class FFCAccessBackend(MultiFunction):
     def element_tensor_entry(self, indices, shape):
         L = self.language
         flat_index = L.flattened_indices(indices, shape)
-        return L.ArrayAccess(names.A, flat_index)
+        A = L.Symbol(self.element_tensor_name())
+        return A[flat_index]
 
 
     # === Rules for all modified terminal types ===
@@ -143,15 +145,13 @@ class FFCAccessBackend(MultiFunction):
         # Map component to flat index
         vi2si, si2vi = build_component_numbering(mt.terminal.ufl_shape,
                                                  mt.terminal.ufl_element().symmetry())
-        #num_flat_components = len(si2vi)
         ffc_assert(mt.flat_component == vi2si[mt.component], "Incompatible component flattening!")
+        num_flat_components = len(si2vi)
 
         # Offset index if on second cell in interior facet integral
-        # TODO: Get the notion that '-' is the second cell from a central definition?
-        if mt.restriction == "-":
-            idof = mt.flat_component + len(si2vi)
-        else:
-            idof = mt.flat_component
+        offset = ufc_restriction_offset(mt.restriction, num_flat_components)
+        if offset:
+            idof = mt.flat_component + offset
 
         # Return direct reference to dof array
         return self.symbols.coefficient_dof_access(mt.terminal, idof)

@@ -313,7 +313,7 @@ class IntegralGenerator(object):
         return parts
 
 
-    def generate_partition(self, name, V, partition, table_ranges, num_points):
+    def generate_partition(self, symbol, V, partition, table_ranges, num_points):
         L = self.backend.language
 
         definitions = []
@@ -362,7 +362,7 @@ class IntegralGenerator(object):
 
                 if j is not None:
                     # Record assignment of vexpr to intermediate variable
-                    vaccess = L.ArrayAccess(name, j)
+                    vaccess = symbol[j]
                     intermediates.append(L.Assign(vaccess, vexpr))
                 else:
                     # Access the inlined expression
@@ -374,14 +374,14 @@ class IntegralGenerator(object):
         # Join terminal computation, array of intermediate expressions, and intermediate computations
         parts = [definitions]
         if intermediates:
-            parts += [L.ArrayDecl("double", name, len(intermediates), alignas=self.alignas)]
+            parts += [L.ArrayDecl("double", symbol, len(intermediates), alignas=self.alignas)]
             parts += intermediates
         return parts
 
 
     # TODO: Rather take list of vertices, not markers
     # XXX FIXME: Fix up this function and use it instead!
-    def alternative_generate_partition(self, name, C, MT, partition, table_ranges, num_points):
+    def alternative_generate_partition(self, symbol, C, MT, partition, table_ranges, num_points):
         L = self.backend.language
 
         definitions = []
@@ -430,7 +430,7 @@ class IntegralGenerator(object):
                 if store_this_in_variable:
                     # Record assignment of vexpr to intermediate variable
                     j = len(intermediates)
-                    vaccess = L.ArrayAccess(name, j)
+                    vaccess = symbol[j]
                     intermediates.append(L.Assign(vaccess, vexpr))
                 else:
                     # Access the inlined expression
@@ -442,7 +442,7 @@ class IntegralGenerator(object):
         # Join terminal computation, array of intermediate expressions, and intermediate computations
         parts = [definitions]
         if intermediates:
-            parts += [L.ArrayDecl("double", name, len(intermediates), alignas=self.alignas)]
+            parts += [L.ArrayDecl("double", symbol, len(intermediates), alignas=self.alignas)]
             parts += intermediates
         return parts
 
@@ -454,8 +454,8 @@ class IntegralGenerator(object):
         """
         L = self.backend.language
         expr_ir = self.ir["uflacs"]["expr_irs"][num_points]
-        arrayname = "sp{0}".format(num_points)
-        parts = self.generate_partition(arrayname,
+        arraysymbol = L.Symbol("sp{0}".format(num_points))
+        parts = self.generate_partition(arraysymbol,
                                         expr_ir["V"],
                                         expr_ir["piecewise"],
                                         expr_ir["table_ranges"],
@@ -468,8 +468,8 @@ class IntegralGenerator(object):
     def generate_varying_partition(self, num_points):
         L = self.backend.language
         expr_ir = self.ir["uflacs"]["expr_irs"][num_points]
-        arrayname = "sv{0}".format(num_points)
-        parts = self.generate_partition(arrayname,
+        arraysymbol = L.Symbol("sv{0}".format(num_points))
+        parts = self.generate_partition(arraysymbol,
                                         expr_ir["V"],
                                         expr_ir["varying"],
                                         expr_ir["table_ranges"],

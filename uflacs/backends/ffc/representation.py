@@ -28,6 +28,7 @@ from ufl.classes import FormArgument, CellCoordinate
 from uflacs.analysis.modified_terminals import analyse_modified_terminal
 from uflacs.representation.compute_expr_ir import compute_expr_ir
 from uflacs.elementtables.terminaltables import build_element_tables, optimize_element_tables
+from uflacs.backends.ffc.common import ufc_restriction_offset
 
 
 def compute_uflacs_integral_ir(psi_tables, entitytype,
@@ -125,13 +126,13 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
         unique_tables, terminal_table_ranges = \
             optimize_element_tables(tables, terminal_table_names, epsilon)
 
-        # Modify ranges for restricted form arguments (not geometry!)
+        # Modify ranges for restricted form arguments
+        # (geometry gets padded variable names instead)
         for i, mt in enumerate(terminal_data):
-            # FIXME: Should also restriction of SpatialCoordinate be offset here?
-            # The FFC convention is that "-" means added offset, "+" has offset 0
-            if mt.restriction == "-" and isinstance(mt.terminal, FormArgument):
-                # offset = number of dofs before table optimization
-                offset = int(tables[terminal_table_names[i]].shape[-1])
+            if mt.restriction and isinstance(mt.terminal, FormArgument):
+                # offset = 0 or number of dofs before table optimization
+                num_original_dofs = int(tables[terminal_table_names[i]].shape[-1])
+                offset = ufc_restriction_offset(mt.restriction, num_original_dofs)
                 (unique_name, b, e) = terminal_table_ranges[i]
                 terminal_table_ranges[i] = (unique_name, b + offset, e + offset)
 
