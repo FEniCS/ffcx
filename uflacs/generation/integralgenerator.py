@@ -182,7 +182,7 @@ class IntegralGenerator(object):
         function values in quadrature points."""
         L = self.backend.language
         parts = []
-        expr_irs = self.ir["uflacs"]["expr_ir"]
+        expr_irs = self.ir["uflacs"]["expr_irs"]
         for num_points in sorted(expr_irs):
             # Get all unique tables for this quadrature rule
             tables = expr_irs[num_points]["unique_tables"]

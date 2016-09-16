@@ -114,7 +114,7 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
         # Figure out if we need to access CellCoordinate to
         # avoid generating quadrature point table otherwise
         expr_ir["need_points"] = any(isinstance(mt.terminal, CellCoordinate)
-                                     for mt in enumerate(modified_terminals))
+                                     for mt in modified_terminals)
 
         # Build tables needed by all modified terminals
         # (currently build here means extract from ffc psi_tables)
@@ -123,7 +123,7 @@ def compute_uflacs_integral_ir(psi_tables, entitytype,
 
         # Optimize tables and get table name and dofrange for each modified terminal
         unique_tables, terminal_table_ranges = \
-            optimize_element_tables(terminal_data, tables, terminal_table_names, epsilon)
+            optimize_element_tables(tables, terminal_table_names, epsilon)
 
         # Modify ranges for restricted form arguments (not geometry!)
         for i, mt in enumerate(terminal_data):

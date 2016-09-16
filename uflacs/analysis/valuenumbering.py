@@ -149,7 +149,7 @@ class ValueNumberer(MultiFunction):
 
         # Consistency check before returning symbols
         assert not v.ufl_free_indices
-        if not product(v.ufl_shape) == len(symbols):
+        if product(v.ufl_shape) != len(symbols):
             error("Internal error in value numbering.")
         return symbols
 

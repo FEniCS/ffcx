@@ -21,6 +21,7 @@
 from ufl import product
 from ufl.checks import is_cellwise_constant
 
+from uflacs.analysis.balancing import balance_modifiers
 from uflacs.analysis.modified_terminals import is_modified_terminal, analyse_modified_terminal
 
 from uflacs.analysis.graph import build_graph
@@ -80,6 +81,9 @@ def compute_expr_ir(expressions):
     # Wrap in list if we only get one expression
     if not isinstance(expressions, list):
         expressions = [expressions]
+
+    # Some rewriting workarounds...
+    expressions = [balance_modifiers(expr) for expr in expressions]
 
     # TODO: Can we merge these three calls to something more efficient overall?
     # Build scalar list-based graph representation
