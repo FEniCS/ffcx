@@ -60,9 +60,11 @@ class IntegralGenerator(object):
         # - access: for accessing backend specific variables
         self.backend = backend
 
+
     def generate_using_statements(self):
         #L = self.backend.language
         return []  # [L.Using(name) for name in sorted(self._using_names)]
+
 
     def get_includes(self):
         includes = set()  # self._includes)
@@ -94,6 +96,7 @@ class IntegralGenerator(object):
         includes.update(self.backend.definitions.get_includes())
 
         return sorted(includes)
+
 
     def generate(self):
         """Generate entire tabulate_tensor body.
@@ -133,6 +136,7 @@ class IntegralGenerator(object):
 
         return L.StatementList(parts)
 
+
     def generate_quadrature_tables(self):
         "Generate static tables of quadrature points and weights."
         L = self.backend.language
@@ -144,8 +148,6 @@ class IntegralGenerator(object):
             return parts
 
         qrs = self.ir["quadrature_rules"]
-        if qrs:
-            parts += [L.Comment("Section for quadrature weights and points")]
 
         for num_points in sorted(qrs):
             weights = qrs[num_points][0]
@@ -161,42 +163,57 @@ class IntegralGenerator(object):
             parts += [L.ArrayDecl("static const double", wname, num_points, weights,
                                   alignas=self.alignas)]
             # Quadrature points array
-            if pdim > 0:
+            if self.ir["uflacs"]["expr_ir"][num_points]["need_points"] and pdim > 0:
                 # Flatten array: (TODO: avoid flattening here, it makes padding harder)
                 points = points.reshape(product(points.shape))
                 parts += [L.ArrayDecl("static const double", pname, num_points * pdim, points,
                                       alignas=self.alignas)]
 
+        # Add leading comment if there are any tables
+        if parts:
+            header = [L.Comment("Section for quadrature weights and points")]
+            parts = header + parts
         return parts
+
 
     def generate_element_tables(self):
         """Generate static tables with precomputed element basis
         function values in quadrature points."""
-
         L = self.backend.language
         parts = []
-        parts += [L.Comment("Section for precomputed element basis function values"),
-                  L.Comment("Table dimensions: num_entities, num_points, num_dofs")]
         expr_irs = self.ir["uflacs"]["expr_ir"]
         for num_points in sorted(expr_irs):
+            # Get all unique tables for this quadrature rule
             tables = expr_irs[num_points]["unique_tables"]
 
-            comment = "Definitions of {0} tables for {1} quadrature points".format(len(tables), num_points)
-            parts += [L.Comment(comment)]
+            # Filter out empty tables
+            # FIXME: Should filter tables at an earlier stage and use the information to simplify
+            tables = [(name, tables[name])
+                      for name in sorted(tables)
+                      if product(tables[name].shape) > 0]
 
-            for name in sorted(tables):
-                table = tables[name]
-                if product(table.shape) > 0:
+            # Produce code
+            if len(tables):
+                tmp = "Definitions of {0} tables for {1} quadrature points"
+                comment = tmp.format(len(tables), num_points)
+                parts += [L.Comment(comment)]
+                for name, table in tables:
                     parts += [L.ArrayDecl("static const double", name, table.shape, table,
                                           alignas=self.alignas, padlen=self.padlen)]
+        # Add leading comment if there are any tables
+        if parts:
+            header = [L.Comment("Section for precomputed element basis function values"),
+                      L.Comment("Table dimensions: num_entities, num_points, num_dofs")]
+            parts = header + parts
         return parts
+
 
     def generate_tensor_reset(self):
         "Generate statements for resetting the element tensor to zero."
         L = self.backend.language
 
-        # Could move this to codeutils or backend
-        def memzero(ptrname, size): # FIXME: Make CStatement Memzero
+        # TODO: Move this to language module, make CNode type
+        def memzero(ptrname, size):
             tmp = "memset({ptrname}, 0, {size} * sizeof(*{ptrname}));"
             code = tmp.format(ptrname=ptrname, size=size)
             return L.VerbatimStatement(code)
@@ -205,10 +222,12 @@ class IntegralGenerator(object):
         A_size = product(self._A_shape)
         A = self.backend.access.element_tensor_name()
 
+        # Stitch it together
         parts = []
         parts += [L.Comment("Reset element tensor")]
         parts += [memzero(A, A_size)]
         return parts
+
 
     def generate_quadrature_loops(self, num_points):
         "Generate all quadrature loops."
@@ -229,6 +248,7 @@ class IntegralGenerator(object):
             parts += [L.ForRange(iq, 0, num_points, body=body)]
         return parts
 
+
     def generate_quadrature_body(self, num_points):
         """
         """
@@ -247,6 +267,7 @@ class IntegralGenerator(object):
         parts += self.generate_quadrature_body_dofblocks(num_points)
 
         return parts
+
 
     def generate_quadrature_body_dofblocks(self, num_points, outer_dofblock=()):
         parts = []
@@ -289,6 +310,7 @@ class IntegralGenerator(object):
             idof = self.backend.access.argument_loop_index(iarg)
             parts += [L.ForRange(idof, dofrange[0], dofrange[1], body=body)]
         return parts
+
 
     def generate_partition(self, name, V, partition, table_ranges, num_points):
         L = self.backend.language
@@ -354,6 +376,7 @@ class IntegralGenerator(object):
             parts += [L.ArrayDecl("double", name, len(intermediates), alignas=self.alignas)]
             parts += intermediates
         return parts
+
 
     # TODO: Rather take list of vertices, not markers
     # XXX FIXME: Fix up this function and use it instead!
@@ -422,6 +445,7 @@ class IntegralGenerator(object):
             parts += intermediates
         return parts
 
+
     def generate_piecewise_partition(self, num_points):
         """Generate statements prior to the quadrature loop.
 
@@ -439,6 +463,7 @@ class IntegralGenerator(object):
             parts.insert(0, L.Comment("Section for piecewise constant computations"))
         return parts
 
+
     def generate_varying_partition(self, num_points):
         L = self.backend.language
         expr_ir = self.ir["uflacs"]["expr_ir"][num_points]
@@ -452,6 +477,7 @@ class IntegralGenerator(object):
             parts.insert(0, L.Comment("Section for geometrically varying computations"))
         return parts
 
+
     def generate_argument_partition(self, num_points, iarg, dofrange):
         """Generate code for the partition corresponding to arguments 0..iarg within given dofblock."""
         parts = []
@@ -459,6 +485,7 @@ class IntegralGenerator(object):
         # Should this be a single loop over i0, i1 separately
         # outside of the double loop over (i0,i1)?
         return parts
+
 
     def generate_integrand_accumulation(self, num_points, dofblock):
         parts = []
@@ -507,6 +534,7 @@ class IntegralGenerator(object):
             parts += [L.AssignAdd(A_access, L.Product(factors))]
 
         return parts
+
 
     def generate_finishing_statements(self):
         """Generate finishing statements.
