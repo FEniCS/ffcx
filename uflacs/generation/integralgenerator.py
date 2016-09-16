@@ -200,7 +200,7 @@ class IntegralGenerator(object):
                 parts += [L.Comment(comment)]
                 for name, table in tables:
                     parts += [L.ArrayDecl("static const double", name, table.shape, table,
-                                          alignas=self.alignas, padlen=self.padlen)]
+                                          alignas=self.alignas)]  # TODO: Not padding, consider when and if to do so
         # Add leading comment if there are any tables
         if parts:
             header = [L.Comment("Section for precomputed element basis function values"),
