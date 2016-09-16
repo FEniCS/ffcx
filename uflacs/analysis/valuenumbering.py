@@ -68,16 +68,20 @@ class ValueNumberer(MultiFunction):
         "Create new symbols for expressions that represent new values."
         symmetry = v.ufl_element().symmetry()
 
-        if False and symmetry:
-            # FIXME: Ignoring symmetries for now, handle by creating only
-            # some new symbols and mapping the rest using the symmetry map.
-            actual_components = sorted(set(symmetry.values()))
-            m = len(actual_components)
-            actual_symbols = self.new_symbols(m)
+        if symmetry:
+            # Build symbols with symmetric components skipped
+            symbols = []
+            mapped_symbols = {}
+            for c in compute_indices(v.ufl_shape):
+                # Build mapped component mc with symmetries from element considered
+                mc = symmetry.get(c, c)
 
-            # FIXME: Need to implement this!
-            symbols = mapping_of_actual_symbols_to_all_components(actual_symbols, symmetry)
-
+                # Get existing symbol or create new and store with mapped component mc as key
+                s = mapped_symbols.get(mc)
+                if s is None:
+                    s = self.new_symbol()
+                    mapped_symbols[mc] = s
+                symbols.append(s)
         else:
             n = self.V_sizes[i]
             symbols = self.new_symbols(n)
@@ -104,7 +108,7 @@ class ValueNumberer(MultiFunction):
         # v is not necessary scalar here, indexing in (0,...,0) picks the first scalar component
         # to analyse, which should be sufficient to get the base shape and derivatives
         if v.ufl_shape:
-            mt = analyse_modified_terminal(v[(0,) * len(v.ufl_shape)])  # XXX
+            mt = analyse_modified_terminal(v[(0,) * len(v.ufl_shape)])
         else:
             mt = analyse_modified_terminal(v)
 
