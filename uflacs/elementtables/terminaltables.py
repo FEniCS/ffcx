@@ -168,8 +168,13 @@ def optimize_element_tables(tables, terminal_table_names, eps):
       unique_tables_dict - a new and mapping from name to table values with stripped zero columns
       terminal_table_ranges - a list of (table name, begin, end) for each of the input table names
     """
-
     # Names here are a bit long and slightly messy...
+
+    # Drop tables that are not referenced from any terminals
+    unused_names = set(terminal_table_names) - set(tables)
+    unused_names.remove(None)
+    for name in unused_names:
+        del tables[name]
 
     # Apply zero stripping to all tables
     stripped_tables = {}
@@ -195,8 +200,8 @@ def optimize_element_tables(tables, terminal_table_names, eps):
         unique_table_names[unique_index] = name
 
     # Build mapping from unique table name to the table itself
-    unique_tables = dict((unique_table_names[unique_index], unique_tables_list[unique_index])
-                         for unique_index in range(len(unique_tables_list)))
+    unique_tables = { unique_table_names[unique_index]: unique_tables_list[unique_index]
+                      for unique_index in range(len(unique_tables_list)) }
 
     # Build mapping from terminal data index to compacted table data:
     # terminal data index -> (unique name, table range begin, table range end)

@@ -24,7 +24,7 @@ from ufl.checks import is_cellwise_constant
 from ffc.log import error
 from ffc.log import ffc_assert
 
-from uflacs.backends.ffc.common import FFCBackendSymbols
+from uflacs.backends.ffc.common import FFCBackendSymbols, ufc_restriction_offset
 
 # FIXME: Move these to FFCBackendSymbols
 from uflacs.backends.ffc.common import (names,
@@ -152,6 +152,8 @@ class FFCAccessBackend(MultiFunction):
         offset = ufc_restriction_offset(mt.restriction, num_flat_components)
         if offset:
             idof = mt.flat_component + offset
+        else:
+            idof = mt.flat_component
 
         # Return direct reference to dof array
         return self.symbols.coefficient_dof_access(mt.terminal, idof)
@@ -195,7 +197,9 @@ class FFCAccessBackend(MultiFunction):
         ffc_assert(not mt.local_derivatives, "Not expecting derivatives of CellCoordinates.")
         ffc_assert(not mt.averaged, "Not expecting average of CellCoordinates.")
 
-        assert not mt.restriction  # FIXME: Not used!
+        if mt.restriction:
+            error("Not expecting restricted cell coordinates, they should be symbolically"
+                  " rewritten as a mapping of the facet coordinate (quadrature point).")
 
         if self.physical_coordinates_known:
             # No special variable should exist in this case.
