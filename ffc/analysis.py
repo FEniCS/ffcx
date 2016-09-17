@@ -144,15 +144,9 @@ def _analyze_form(form, parameters):
                                       do_apply_restrictions=True,
                                       )
     elif r == "tsfc":
-        # Same workaround for tsfc
-        form_data = compute_form_data(form,
-                                      do_apply_function_pullbacks=True,
-                                      do_apply_integral_scaling=True,
-                                      do_apply_geometry_lowering=True,
-                                      do_apply_restrictions=True,
-                                      preserve_geometry_types=(CellVolume,FacetArea),
-                                      do_estimate_degrees=True,
-                                      )
+        # TSFC provides compute_form_data wrapper using correct kwargs
+        from tsfc.ufl_utils import compute_form_data as tsfc_compute_form_data
+        form_data = tsfc_compute_form_data(form)
     else:
         ffc_assert(r == "legacy", "Unexpected representation family "
             "'%s' for form preprocessing." % r)
