@@ -43,7 +43,7 @@ import sysconfig
 import subprocess
 import time
 from numpy import array, shape, abs, max, isnan
-from ffc.log import begin, end, info, info_red, info_green, info_blue
+from ffc.log import begin, end, info, info_red, info_green, info_blue, warning
 from ffc import get_ufc_include, get_ufc_cxx_flags
 from ufctest import generate_test_code
 
@@ -511,7 +511,12 @@ def main(args):
     if use_quad:
         test_cases += ["-r quadrature", "-r quadrature -O"]
     if use_tsfc:
-        test_cases += ["-r tsfc"]
+        try:
+            import tsfc
+        except ImportError:
+            warning("Failed to import tsfc. Will skip tsfc test case.")
+        else:
+            test_cases += ["-r tsfc"]
     if use_ext_quad:
         test_cases += ext_quad
 
