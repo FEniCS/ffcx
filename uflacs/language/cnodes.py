@@ -1004,6 +1004,7 @@ def build_initializer_lists(values, sizes, level, formatter, padlen=0):
         { { 0.0, 0.1 },
           { 1.0, 1.1 } }
     """
+    values = numpy.asarray(values)
     assert numpy.product(values.shape) == numpy.product(sizes)
     assert len(sizes) > 0
     assert len(values.shape) > 0
