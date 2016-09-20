@@ -187,18 +187,13 @@ class IntegralGenerator(object):
             # Get all unique tables for this quadrature rule
             tables = expr_irs[num_points]["unique_tables"]
 
-            # Filter out empty tables
-            # FIXME: Should filter tables at an earlier stage and use the information to simplify
-            tables = [(name, tables[name])
-                      for name in sorted(tables)
-                      if product(tables[name].shape) > 0]
-
             # Produce code
             if len(tables):
                 tmp = "Definitions of {0} tables for {1} quadrature points"
                 comment = tmp.format(len(tables), num_points)
                 parts += [L.Comment(comment)]
-                for name, table in tables:
+                for name in sorted(tables):
+                    table = tables[name]
                     parts += [L.ArrayDecl("static const double", name, table.shape, table,
                                           alignas=self.alignas)]  # TODO: Not padding, consider when and if to do so
         # Add leading comment if there are any tables
@@ -295,9 +290,8 @@ class IntegralGenerator(object):
             mas_full_dofblock = tuple(MATR[j][1:3] for j in mas)
             if tuple(mas_full_dofblock[:iarg]) == tuple(outer_dofblock):
                 dofrange = mas_full_dofblock[iarg]
-                # Skip empty dofranges TODO: Possible to remove these and related code earlier?
-                if dofrange[0] != dofrange[1]:
-                    dofranges.add(dofrange)
+                assert dofrange[0] != dofrange[1]
+                dofranges.add(dofrange)
         dofranges = sorted(dofranges)
 
         # Build loops for each dofrange

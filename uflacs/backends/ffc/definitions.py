@@ -122,17 +122,18 @@ class FFCDefinitionsBackend(MultiFunction):
     def coefficient(self, t, mt, tabledata, access):
         L = self.language
 
-        # For a constant coefficient we reference the dofs directly, so no definition needed
-        if is_cellwise_constant(mt.terminal):
-            return []
-
         # No need to store basis function value in its own variable,
         # just get table value directly
         uname, begin, end = tabledata
-        uname = L.Symbol(uname)
+
+        # For a constant coefficient we reference the dofs directly, so no definition needed
+        #if uname == "ones":  # FIXME
+        if is_cellwise_constant(mt.terminal):
+            return []
 
         # Empty loop needs to be skipped as zero tables may not be generated
         # FIXME: remove at earlier stage so dependent code can also be removed
+        #assert begin >= end
         if begin >= end:
             code = [
                 L.VariableDecl("double", access, 0.0),
@@ -144,6 +145,7 @@ class FFCDefinitionsBackend(MultiFunction):
         iq = self.symbols.quadrature_loop_index()
         idof = self.symbols.coefficient_dof_sum_index()
         dof_access = self.symbols.coefficient_dof_access(mt.terminal, idof)
+        uname = L.Symbol(uname)
         table_access = uname[entity][iq][idof - begin]
 
         # Loop to accumulate linear combination of dofs and tables
@@ -179,6 +181,7 @@ class FFCDefinitionsBackend(MultiFunction):
         entity = self.symbols.entity(self.ir["entitytype"], mt.restriction)
 
         # TODO: Check if facetwise constant instead when on facets?
+        #if uname == "ones":  # FIXME
         if is_cellwise_constant(mt.expr):
             iq = 0
         else:
