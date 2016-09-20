@@ -15,8 +15,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
-from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
+from ffc.log import info
 from ffc.representationutils import initialize_integral_ir
+
+from tsfc.backends import ufc as ufc_backend
 from tsfc.driver import compile_integral
 
 
@@ -34,6 +36,6 @@ def compute_integral_ir(integral_data,
 
     # Store tsfc generated part separately
     ir["tsfc"] = compile_integral(integral_data, form_data, None, parameters,
-                                  backend="ufc")
+                                  backend=ufc_backend)
 
     return ir
