@@ -20,6 +20,8 @@
 
 from ufl import product
 from ufl.checks import is_cellwise_constant
+
+from uflacs.analysis.balancing import balance_modifiers
 from uflacs.analysis.modified_terminals import is_modified_terminal, analyse_modified_terminal
 
 from uflacs.analysis.graph import build_graph
@@ -41,7 +43,7 @@ def build_scalar_graph(expressions):
     # Build the initial coarse computational graph of the expression
     G = build_graph(expressions)
 
-    assert len(expressions) == 1, "Multiple expressions in graph building needs more work from this point on."
+    assert len(expressions) == 1, "FIXME: Multiple expressions in graph building needs more work from this point on."
 
     # Build more fine grained computational graph of scalar subexpressions
     # TODO: Make it so that
@@ -49,9 +51,11 @@ def build_scalar_graph(expressions):
     #   len(nvs[k]) == value_size(expressions[k])
     scalar_expressions = rebuild_with_scalar_subexpressions(G)
 
+    # Sanity check on number of scalar symbols/components
     assert len(scalar_expressions) == sum(product(expr.ufl_shape) for expr in expressions)
 
-    # Build new list representation of graph where all vertices of V represent single scalar operations
+    # Build new list representation of graph where all vertices
+    # of V represent single scalar operations
     e2i, V, target_variables = build_scalar_graph_vertices(scalar_expressions)
 
     return e2i, V, target_variables
@@ -78,6 +82,9 @@ def compute_expr_ir(expressions):
     if not isinstance(expressions, list):
         expressions = [expressions]
 
+    # Some rewriting workarounds...
+    expressions = [balance_modifiers(expr) for expr in expressions]
+
     # TODO: Can we merge these three calls to something more efficient overall?
     # Build scalar list-based graph representation
     e2i, V, target_variables = build_scalar_graph(expressions)
@@ -92,6 +99,7 @@ def compute_expr_ir(expressions):
     # Store modified arguments in analysed form
     for i in range(len(modified_arguments)):
         modified_arguments[i] = analyse_modified_terminal(modified_arguments[i])
+
 
     # --- Various dependency analysis ---
 

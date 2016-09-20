@@ -27,7 +27,7 @@ from ufl.algorithms.analysis import unique_tuple
 from ffc.log import error
 
 from uflacs.elementtables.table_utils import generate_psi_table_name, get_ffc_table_values
-from uflacs.elementtables.table_utils import strip_table_zeros, build_unique_tables
+from uflacs.elementtables.table_utils import clamp_table_small_integers, strip_table_zeros, build_unique_tables
 
 
 def extract_terminal_elements(terminal_data):
@@ -82,12 +82,10 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data, epsi
 
         # Add to element tables for FormArguments and relevant GeometricQuantities
         if isinstance(t, FormArgument):
-            if rv:
-                if gd:
-                    error("Global derivatives of reference values not defined.")
-            else:
-                if ld:
-                    error("Local derivatives of global values not defined.")
+            if gd and rv:
+                error("Global derivatives of reference values not defined.")
+            elif ld and not rv:
+                error("Local derivatives of global values not defined.")
             element = t.ufl_element()
 
         elif isinstance(t, SpatialCoordinate):
@@ -95,9 +93,10 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data, epsi
                 error("Not expecting reference value of x.")
             if gd:
                 error("Not expecting global derivatives of x.")
-                
+
             # TODO: Only need table for component element, does that matter?
             element = t.ufl_domain().ufl_coordinate_element()
+            #element = element.sub_element()
 
             if ld:
                 # Actually the Jacobian, translate component gc to x element context
@@ -112,6 +111,7 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data, epsi
 
             # TODO: Only need table for component element, does that matter?
             element = t.ufl_domain().ufl_coordinate_element()
+            #element = element.sub_element()
 
             fc = gc[0]
             ld = tuple(sorted((gc[1],) + ld))
@@ -168,13 +168,21 @@ def optimize_element_tables(tables, terminal_table_names, eps):
       unique_tables_dict - a new and mapping from name to table values with stripped zero columns
       terminal_table_ranges - a list of (table name, begin, end) for each of the input table names
     """
-
     # Names here are a bit long and slightly messy...
+
+    # Drop tables that are not referenced from any terminals
+    unused_names = set(terminal_table_names) - set(tables)
+    unused_names.remove(None)
+    for name in unused_names:
+        del tables[name]
 
     # Apply zero stripping to all tables
     stripped_tables = {}
     table_ranges = {}
     for name, table in tables.items():
+        # Clamp 0, -1 and +1 values first
+        table = clamp_table_small_integers(table, eps)
+        # Then strip zeros at the ends
         begin, end, stripped_table = strip_table_zeros(table, eps)
         stripped_tables[name] = stripped_table
         table_ranges[name] = (begin, end)
@@ -192,8 +200,8 @@ def optimize_element_tables(tables, terminal_table_names, eps):
         unique_table_names[unique_index] = name
 
     # Build mapping from unique table name to the table itself
-    unique_tables = dict((unique_table_names[unique_index], unique_tables_list[unique_index])
-                         for unique_index in range(len(unique_tables_list)))
+    unique_tables = { unique_table_names[unique_index]: unique_tables_list[unique_index]
+                      for unique_index in range(len(unique_tables_list)) }
 
     # Build mapping from terminal data index to compacted table data:
     # terminal data index -> (unique name, table range begin, table range end)

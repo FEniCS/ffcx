@@ -18,34 +18,25 @@
 
 """Algorithms for working with multiindices."""
 
-
-# FIXME: Clean up duplicates in this module, cover with tests and profile
-
-
-from six.moves import xrange as range
-
 from ufl import product
 from ufl.permutation import compute_indices
 from ufl.utils.indexflattening import shape_to_strides, flatten_multiindex
-from ufl.classes import ComponentTensor
-from ufl.classes import FixedIndex
-from ufl.classes import Index
-from ufl.classes import Indexed
+from ufl.classes import ComponentTensor, FixedIndex, Index, Indexed
 
 
-def map_indexed_arg_components(indexed):  # FIXME: This is the one in use. Is it the best?
+def map_indexed_arg_components(indexed):
+    """Build integer list mapping between flattended components
+    of indexed expression and its underlying tensor-valued subexpression."""
+
     assert isinstance(indexed, Indexed)
-    e1 = indexed
-    e2, mi = e1.ufl_operands
-    d = _map_indexed_components(e2, e1, mi)
-    assert all(isinstance(x, int) for x in d)
-    assert len(set(d)) == len(d)
-    return d
 
+    # AKA indexed = tensor[multiindex]
+    tensor, multiindex = indexed.ufl_operands
 
-def _map_indexed_components(tensor, indexed, multiindex):
+    # AKA e1 = e2[multiindex]
+    # (this renaming is historical, but kept for consistency with all the variables *1,*2 below)
     e2 = tensor
-    e1 = indexed  # e1 = e2[multiindex]
+    e1 = indexed
 
     # Get tensor and index shape
     sh1 = e1.ufl_shape
@@ -86,55 +77,51 @@ def _map_indexed_components(tensor, indexed, multiindex):
     d1 = [None] * ni1
     p2 = [None] * r2
     assert len(sh2) == nmui
-    #p2ks = set()
     for k, i in enumerate(multiindex):
         if isinstance(i, FixedIndex):
             p2[k] = int(i)
-            #p2ks.add(k)
     for c1, p1 in enumerate(perm1):
         for k, i in enumerate(multiindex):
             if isinstance(i, Index):
                 p2[k] = p1[multiindex_to_ind1_map[k]]
-                #p2ks.add(k)
         for k, i in enumerate(ind2_to_ind1_map):
             p2[nmui + k] = p1[i]
-            #p2ks.add(nmui + k)
         c2 = flatten_multiindex(p2, str2)
         d1[c1] = c2
 
+    # Consistency checks
+    assert all(isinstance(x, int) for x in d1)
+    assert len(set(d1)) == len(d1)
     return d1
 
 
-def map_component_tensor_arg_components(component_tensor):  # FIXME: This is the one in use. Is it the best?
-    assert isinstance(component_tensor, ComponentTensor)
-    e2 = component_tensor
-    e1, mi = e2.ufl_operands
-    d = _map_component_tensor_components(e2, e1, mi)
-    assert all(isinstance(x, int) for x in d)
-    assert len(set(d)) == len(d)
-    return d
+def map_component_tensor_arg_components(tensor):
+    """Build integer list mapping between flattended components
+    of tensor and its underlying indexed subexpression."""
 
+    assert isinstance(tensor, ComponentTensor)
 
-def _map_component_tensor_components(tensor, indexed, multiindex):
+    # AKA tensor = as_tensor(indexed, multiindex)
+    indexed, multiindex = tensor.ufl_operands
+
     e1 = indexed
     e2 = tensor  # e2 = as_tensor(e1, multiindex)
     mi = [i for i in multiindex if isinstance(i, Index)]
 
-    # Get tensor and index shape
-    sh1 = e1.ufl_shape
-    sh2 = e2.ufl_shape
-    fi1 = e1.ufl_free_indices
-    fi2 = e2.ufl_free_indices
-    fid1 = e1.ufl_index_dimensions
-    fid2 = e2.ufl_index_dimensions
+    # Get tensor and index shapes
+    sh1 = e1.ufl_shape  # (sh)ape of e1
+    sh2 = e2.ufl_shape  # (sh)ape of e2
+    fi1 = e1.ufl_free_indices  # (f)ree (i)ndices of e1
+    fi2 = e2.ufl_free_indices  # ...
+    fid1 = e1.ufl_index_dimensions  # (f)ree (i)ndex (d)imensions of e1
+    fid2 = e2.ufl_index_dimensions  # ...
 
-    # Compute regular and total shape
+    # Compute total shape (tsh) of e1 and e2
     tsh1 = sh1 + fid1
     tsh2 = sh2 + fid2
-    r1 = len(tsh1)
-    r2 = len(tsh2)
+    r1 = len(tsh1)  # 'total rank' or e1
+    r2 = len(tsh2)  # ...
     str1 = shape_to_strides(tsh1)
-    # str2 = shape_to_strides(tsh2)
     assert not sh1
     assert sh2
     assert len(mi) == len(multiindex)
@@ -168,124 +155,8 @@ def _map_component_tensor_components(tensor, indexed, multiindex):
         c1 = flatten_multiindex(p1, str1)
         d2[c2] = c1
 
+    # Consistency checks
+    assert all(isinstance(x, int) for x in d2)
+    assert len(set(d2)) == len(d2)
     return d2
 
-
-def __map_indexed_to_arg_components(indexed):
-    e1 = indexed
-    assert isinstance(e1, Indexed)
-    A1, mi1 = e1.ufl_operands
-    e2 = A1
-
-    # Get tensor and index shape
-    sh1 = e1.ufl_shape
-    sh2 = e2.ufl_shape
-    fi1 = e1.ufl_free_indices
-    #fi2 = e2.ufl_free_indices
-    fid1 = e1.ufl_index_dimensions
-    fid2 = e2.ufl_index_dimensions
-
-    # Compute regular and total shape
-    tsh1 = sh1 + fid1
-    tsh2 = sh2 + fid2
-    str1 = shape_to_strides(tsh1)
-    str2 = shape_to_strides(tsh2)
-    assert product(tsh1) == product(tsh2)
-    assert (not sh1) and (fid1) and (sh2) and (not fid2)
-
-    sh_to_ind_map = [fi1.index(i.count()) for i in mi1 if isinstance(i, Index)]
-    comp1 = []
-    comp2 = []
-    for p2 in compute_indices(sh2):
-        p1 = [None] * len(p2)
-        for j, p in enumerate(p2):
-            p1[sh_to_ind_map[j]] = p
-        c1 = flatten_multiindex(p1, str1)
-        c2 = flatten_multiindex(p2, str2)
-        comp1.append(c1)
-        comp2.append(c2)
-    return tuple(comp1), tuple(comp2)
-
-
-def __map_indexed_arg_components4(indexed):
-    assert isinstance(indexed, Indexed)
-    e1 = indexed
-    e2, mi = e1.ufl_operands
-
-    # Get tensor and index shape
-    sh1 = e1.ufl_shape
-    sh2 = e2.ufl_shape
-    fi1 = e1.ufl_free_indices
-    #fi2 = e2.ufl_free_indices
-    fid1 = e1.ufl_index_dimensions
-    fid2 = e2.ufl_index_dimensions
-
-    # Compute regular and total shape
-    tsh1 = sh1 + fid1
-    tsh2 = sh2 + fid2
-    str1 = shape_to_strides(tsh1)
-    # str2 = shape_to_strides(tsh2)
-    assert product(tsh1) == product(tsh2)
-    assert (not sh1) and (fid1) and (sh2) and (not fid2)
-
-    # Build map from fi1/fid1 position to mi position
-    mi = [i for i in mi if isinstance(i, Index)]
-    nmi = len(mi)
-    ind1_to_mi_map = [None] * nmi
-    for k in range(nmi):
-        ind1_to_mi_map[fi1.index(mi[k].count())] = k
-
-    # Build map from flattened e1 component to flattened e2 component
-    indices2 = compute_indices(sh2)
-    ni = len(indices2)
-    d1 = [None] * ni
-    d2 = [None] * ni
-    for c2, p2 in enumerate(indices2):
-        p1 = [p2[k] for k in ind1_to_mi_map]
-        c1 = flatten_multiindex(p1, str1)
-        d1[c1] = c2
-        d2[c2] = c1
-    assert d1 == d2
-    return d1
-
-
-def __map_component_tensor_arg_components4(component_tensor):
-    assert isinstance(component_tensor, ComponentTensor)
-    e2 = component_tensor
-    e1, mi = e2.ufl_operands
-
-    # Get tensor and index shape
-    sh1 = e1.ufl_shape
-    sh2 = e2.ufl_shape
-    fi1 = e1.ufl_free_indices
-    #fi2 = e2.ufl_free_indices
-    fid1 = e1.ufl_index_dimensions
-    fid2 = e2.ufl_index_dimensions
-
-    # Compute regular and total shape
-    tsh1 = sh1 + fid1
-    tsh2 = sh2 + fid2
-    str1 = shape_to_strides(tsh1)
-    # str2 = shape_to_strides(tsh2)
-    assert product(tsh1) == product(tsh2)
-    assert (not sh1) and (fid1) and (sh2) and (not fid2)
-
-    # Build map from fi1/fid1 position to mi position
-    mi = [i for i in mi if isinstance(i, Index)]
-    nmi = len(mi)
-    ind1_to_mi_map = [None] * nmi
-    for k in range(nmi):
-        ind1_to_mi_map[fi1.index(mi[k].count())] = k
-
-    # Build map from flattened e1 component to flattened e2 component
-    indices2 = compute_indices(sh2)
-    ni = len(indices2)
-    d1 = [None] * ni
-    d2 = [None] * ni
-    for c2, p2 in enumerate(indices2):
-        p1 = [p2[k] for k in ind1_to_mi_map]
-        c1 = flatten_multiindex(p1, str1)
-        d1[c1] = c2
-        d2[c2] = c1
-    assert d1 == d2
-    return d2
