@@ -4,13 +4,13 @@ from ufl import *
 from ufl import as_ufl
 
 import uflacs.language
-from uflacs.language.ufl_to_cnodes import UFL2CNodesTranslator
+from uflacs.language.ufl_to_cnodes import UFL2CNodesTranslatorCpp, UFL2CNodesTranslatorC
 
 
 def test_ufl_to_cnodes():
 
     L = uflacs.language.cnodes
-    translate = UFL2CNodesTranslator(L)
+    translate = UFL2CNodesTranslatorCpp(L)
 
     f = ufl.CellVolume(ufl.triangle)
     g = ufl.CellVolume(ufl.triangle)
@@ -59,6 +59,22 @@ def test_ufl_to_cnodes():
         (Not(f < g), (x,), "!x"),
         (conditional(f < g, g, h), (x, y, z), "x ? y : z"),
     ]
+    for expr, args, code in examples:
+        # Warning: This test is subtle: translate will look at the type of expr and
+        #  ignore its operands, i.e. not translating the full tree but only one level.
+        assert str(translate(expr, *args)) == code
+
+
+    # C specific translation:
+    translate = UFL2CNodesTranslatorC(L)
+    examples = [
+        (sin(f), (x,), "sin(x)"),
+        (f**g, (x, y), "pow(x, y)"),
+        (exp(f), (x,), "exp(x)"),
+        (abs(f), (x,), "fabs(x)"),
+        (min_value(f, g), (x, y), "fmin(x, y)"),
+        (max_value(f, g), (x, y), "fmax(x, y)"),
+        ]
     for expr, args, code in examples:
         # Warning: This test is subtle: translate will look at the type of expr and
         #  ignore its operands, i.e. not translating the full tree but only one level.

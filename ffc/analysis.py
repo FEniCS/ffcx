@@ -185,7 +185,7 @@ def _autoselect_quadrature_degree(integral_metadata, integral, form_data):
         else:
             error("Illegal negative quadrature degree %s " % (qd,))
     else:
-        error("Invalid quadrature_degree {}." % (qd,))
+        error("Invalid quadrature_degree %s." % (qd,))
 
     tdim = integral.ufl_domain().topological_dimension()
     _check_quadrature_degree(qd, tdim)

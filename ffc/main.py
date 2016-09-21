@@ -141,6 +141,14 @@ def main(argv):
         elif opt == "-f":
             if len(arg.split("=")) == 2:
                 (key, value) = arg.split("=")
+                if key not in parameters:
+                    info_usage()
+                    return 1
+                default = parameters[key]
+                if isinstance(default, int):
+                    value = int(value)
+                elif isinstance(default, float):
+                    value = float(value)
                 parameters[key] = value
             elif len(arg.split("==")) == 1:
                 key = arg.split("=")[0]

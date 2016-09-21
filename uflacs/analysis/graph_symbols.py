@@ -18,11 +18,10 @@
 
 """Assigning symbols to computational graph nodes."""
 
+import numpy
 from ufl import product
 
-
-from uflacs.datastructures.arrays import int_array, object_array
-from uflacs.datastructures.crs import CRS, rows_to_crs
+from uflacs.analysis.crsarray import CRSArray
 from uflacs.analysis.valuenumbering import ValueNumberer
 from uflacs.analysis.expr_shapes import total_shape
 
@@ -32,29 +31,29 @@ def build_node_shapes(V):
 
     V is an array of ufl expressions, possibly nonscalar and with free indices.
 
-    Returning a CRS where row i is the total shape of V[i].
+    Returning a CRSArray where row i is the total shape of V[i].
     """
-    # Dimensions of returned CRS
+    # Dimensions of returned CRSArray
     nv = len(V)
     k = 0
 
     # Store shapes intermediately in an array of tuples
-    V_shapes = object_array(nv)
+    V_shapes = numpy.empty(nv, dtype=object)
     for i, v in enumerate(V):
         # Compute total shape of V[i]
         tsh = total_shape(v)
         V_shapes[i] = tsh
-        # Count number of elements for CRS representation
+        # Count number of elements for CRSArray representation
         k += len(tsh)
 
-    # Return a more memory efficient CRS representation
-    return rows_to_crs(V_shapes, nv, k, int)
+    # Return a more memory efficient CRSArray representation
+    return CRSArray.from_rows(V_shapes, nv, k, int)
 
 
 def build_node_sizes(V_shapes):
     "Compute all the products of a sequence of shapes."
     nv = len(V_shapes)
-    V_sizes = int_array(nv)
+    V_sizes = numpy.zeros(nv, dtype=int)
     for i, sh in enumerate(V_shapes):
         V_sizes[i] = product(sh)
     return V_sizes
@@ -64,14 +63,14 @@ def build_node_symbols(V, e2i, V_shapes, V_sizes):
     """Tabulate scalar value numbering of all nodes in a a list based representation of an expression graph.
 
     Returns:
-    V_symbols - CRS of symbols (value numbers) of each component of each node in V.
+    V_symbols - CRSArray of symbols (value numbers) of each component of each node in V.
     total_unique_symbols - The number of symbol values assigned to unique scalar components of the nodes in V.
     """
     # "Sparse" int matrix for storing variable number of entries (symbols) per row (vertex),
     # with a capasity bounded by the number of scalar subexpressions including repetitions
-    V_symbols = CRS(len(V), sum(V_sizes), int)
+    V_symbols = CRSArray(len(V), sum(V_sizes), int)
 
-    # Visit each node with value numberer algorithm, storing the result for each as a row in the V_symbols CRS
+    # Visit each node with value numberer algorithm, storing the result for each as a row in the V_symbols CRSArray
     value_numberer = ValueNumberer(e2i, V_sizes, V_symbols)
     for i, v in enumerate(V):
         V_symbols.push_row(value_numberer(v, i))
@@ -89,8 +88,8 @@ def build_graph_symbols(V, e2i, DEBUG):
     """Tabulate scalar value numbering of all nodes in a a list based representation of an expression graph.
 
     Returns:
-    V_shapes - CRS of the total shapes of nodes in V.
-    V_symbols - CRS of symbols (value numbers) of each component of each node in V.
+    V_shapes - CRSArray of the total shapes of nodes in V.
+    V_symbols - CRSArray of symbols (value numbers) of each component of each node in V.
     total_unique_symbols - The number of symbol values assigned to unique scalar components of the nodes in V.
     """
     # Compute the total shape (value shape x index dimensions) for each node

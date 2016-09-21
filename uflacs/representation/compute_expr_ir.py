@@ -20,18 +20,16 @@
 
 from ufl import product
 from ufl.checks import is_cellwise_constant
+
+from uflacs.analysis.balancing import balance_modifiers
 from uflacs.analysis.modified_terminals import is_modified_terminal, analyse_modified_terminal
 
 from uflacs.analysis.graph import build_graph
 from uflacs.analysis.graph_vertices import build_scalar_graph_vertices
 from uflacs.analysis.graph_rebuild import rebuild_with_scalar_subexpressions
-from uflacs.analysis.graph_dependencies import (compute_dependencies,
-                                                mark_active, mark_image)
-from uflacs.analysis.graph_ssa import (compute_dependency_count,
-                                       invert_dependencies,
-                                       default_cache_score_policy,
-                                       compute_cache_scores,
-                                       allocate_registers)
+from uflacs.analysis.graph_dependencies import compute_dependencies, mark_active, mark_image
+from uflacs.analysis.graph_ssa import compute_dependency_count, invert_dependencies
+#from uflacs.analysis.graph_ssa import default_cache_score_policy, compute_cache_scores, allocate_registers
 
 from uflacs.analysis.factorization import compute_argument_factorization
 
@@ -45,7 +43,7 @@ def build_scalar_graph(expressions):
     # Build the initial coarse computational graph of the expression
     G = build_graph(expressions)
 
-    assert len(expressions) == 1, "Multiple expressions in graph building needs more work from this point on."
+    assert len(expressions) == 1, "FIXME: Multiple expressions in graph building needs more work from this point on."
 
     # Build more fine grained computational graph of scalar subexpressions
     # TODO: Make it so that
@@ -53,15 +51,17 @@ def build_scalar_graph(expressions):
     #   len(nvs[k]) == value_size(expressions[k])
     scalar_expressions = rebuild_with_scalar_subexpressions(G)
 
+    # Sanity check on number of scalar symbols/components
     assert len(scalar_expressions) == sum(product(expr.ufl_shape) for expr in expressions)
 
-    # Build new list representation of graph where all vertices of V represent single scalar operations
+    # Build new list representation of graph where all vertices
+    # of V represent single scalar operations
     e2i, V, target_variables = build_scalar_graph_vertices(scalar_expressions)
 
     return e2i, V, target_variables
 
 
-def compute_expr_ir(expressions, parameters):
+def compute_expr_ir(expressions):
     """FIXME: Refactoring in progress!
 
     TODO:
@@ -82,6 +82,9 @@ def compute_expr_ir(expressions, parameters):
     if not isinstance(expressions, list):
         expressions = [expressions]
 
+    # Some rewriting workarounds...
+    expressions = [balance_modifiers(expr) for expr in expressions]
+
     # TODO: Can we merge these three calls to something more efficient overall?
     # Build scalar list-based graph representation
     e2i, V, target_variables = build_scalar_graph(expressions)
@@ -96,6 +99,7 @@ def compute_expr_ir(expressions, parameters):
     # Store modified arguments in analysed form
     for i in range(len(modified_arguments)):
         modified_arguments[i] = analyse_modified_terminal(modified_arguments[i])
+
 
     # --- Various dependency analysis ---
 
@@ -164,8 +168,8 @@ def compute_expr_ir(expressions, parameters):
 
     # Dependency structure of graph:
     expr_ir["modified_terminal_indices"] = modified_terminal_indices  # (array) list of V-indices to modified terminals
-    #expr_ir["dependencies"] = dependencies                           # (CRS) V-index -> direct dependency V-index list
-    #expr_ir["inverse_dependencies"] = inverse_dependencies           # (CRS) V-index -> direct dependee V-index list
+    #expr_ir["dependencies"] = dependencies                           # (CRSArray) V-index -> direct dependency V-index list
+    #expr_ir["inverse_dependencies"] = inverse_dependencies           # (CRSArray) V-index -> direct dependee V-index list
 
     # Metadata about each vertex
     #expr_ir["active"] = active       # (array) V-index -> bool

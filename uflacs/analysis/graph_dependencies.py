@@ -19,23 +19,20 @@
 """Tools for analysing dependencies within expression graphs."""
 
 import numpy
-from six.moves import xrange as range
-from ufl.classes import Terminal
 
-from uflacs.datastructures.types import sufficient_int_type, sufficient_uint_type
-from uflacs.datastructures.arrays import bool_array
-from uflacs.datastructures.arrays import object_array
-from uflacs.datastructures.crs import CRS, rows_to_crs
+from six.moves import xrange as range
+
+from uflacs.analysis.crsarray import CRSArray
 
 
 def compute_dependencies(e2i, V, ignore_terminal_modifiers=True):
     # Use numpy int type sufficient to hold num_rows
     num_rows = len(V)
-    dtype = sufficient_int_type(num_rows)
+    itype = numpy.int16 if num_rows < 2**15 else numpy.int32
 
-    # Preallocate CRS matrix of sufficient capacity
+    # Preallocate CRSArray matrix of sufficient capacity
     num_nonzeros = sum(len(v.ufl_operands) for v in V)
-    dependencies = CRS(num_rows, num_nonzeros, dtype)
+    dependencies = CRSArray(num_rows, num_nonzeros, itype)
     for v in V:
         if v._ufl_is_terminal_ or (ignore_terminal_modifiers and v._ufl_is_terminal_modifier_):
             dependencies.push_row(())
@@ -49,7 +46,7 @@ def mark_active(dependencies, targets):
     """Return an array marking the recursive dependencies of targets.
 
     Input:
-    - dependencies - CRS of ints, a mapping from a symbol to the symbols of its dependencies.
+    - dependencies - CRSArray of ints, a mapping from a symbol to the symbols of its dependencies.
     - targets      - Sequence of symbols to mark the dependencies of.
 
     Output:
@@ -59,7 +56,7 @@ def mark_active(dependencies, targets):
     n = len(dependencies)
 
     # Initial state where nothing is marked as used
-    active = bool_array(n)
+    active = numpy.zeros(n, dtype=numpy.int8)
     num_used = 0
 
     # Seed with initially used symbols
@@ -79,7 +76,7 @@ def mark_image(inverse_dependencies, sources):
     """Return an array marking the set of symbols dependent on the sources.
 
     Input:
-    - dependencies - CRS of ints, a mapping from a symbol to the symbols of its dependencies.
+    - dependencies - CRSArray of ints, a mapping from a symbol to the symbols of its dependencies.
     - sources      - Sequence of symbols to mark the dependants of.
 
     Output:
@@ -89,7 +86,7 @@ def mark_image(inverse_dependencies, sources):
     n = len(inverse_dependencies)
 
     # Initial state where nothing is marked as used
-    image = bool_array(n)
+    image = numpy.zeros(n, dtype=numpy.int8)
     num_used = 0
 
     # Seed with initially used symbols

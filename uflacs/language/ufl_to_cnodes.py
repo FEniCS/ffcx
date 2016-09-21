@@ -20,20 +20,14 @@
 
 from ffc.log import error
 
-import ufl
-
 from ufl.corealg.multifunction import MultiFunction
-from ufl.corealg.map_dag import map_expr_dag
+#from ufl.corealg.map_dag import map_expr_dag
 
-# FIXME: Need to incorporate some functions as CNode types, to
-#        create seams for selecting between C and C++ behaviour:
+
 class UFL2CNodesMixin(object):
     """Rules collection mixin for a UFL to CNodes translator class."""
-
     def __init__(self, language):
         self.L = language
-        # TODO: Make this configurable and add using statements somewhere:
-        self._enable_namespaces = True
 
     # === Error handlers for missing formatting rules ===
 
@@ -55,18 +49,39 @@ class UFL2CNodesMixin(object):
     def division(self, o, a, b):
         return self.L.Div(a, b)
 
+    # === Formatting rules for conditional expressions ===
+
+    def conditional(self, o, c, t, f):
+        return self.L.Conditional(c, t, f)
+
+    def eq(self, o, a, b):
+        return self.L.EQ(a, b)
+
+    def ne(self, o, a, b):
+        return self.L.NE(a, b)
+
+    def le(self, o, a, b):
+        return self.L.LE(a, b)
+
+    def ge(self, o, a, b):
+        return self.L.GE(a, b)
+
+    def lt(self, o, a, b):
+        return self.L.LT(a, b)
+
+    def gt(self, o, a, b):
+        return self.L.GT(a, b)
+
+    def and_condition(self, o, a, b):
+        return self.L.And(a, b)
+
+    def or_condition(self, o, a, b):
+        return self.L.Or(a, b)
+
+    def not_condition(self, o, a):
+        return self.L.Not(a)
+
     # === Formatting rules for cmath functions ===
-
-    def power(self, o, a, b):
-        name = "pow"
-        if self._enable_namespaces:
-            name = "std::" + name
-        return self.L.Call(name, (a, b))
-
-    def _cmath(self, name, op):
-        if self._enable_namespaces:
-            name = "std::" + name
-        return self.L.Call(name, op)
 
     def math_function(self, o, op):
         return self._cmath(o._name, op)
@@ -104,10 +119,7 @@ class UFL2CNodesMixin(object):
         return self._cmath("tanh", op)
 
     def atan_2(self, o, y, x):
-        name = "atan2"
-        if self._enable_namespaces:
-            name = "std::" + name
-        return self.L.Call(name, (y, x))
+        return self._cmath("atan_2", (y, x))
 
     def acos(self, o, op):
         return self._cmath("acos", op)
@@ -134,30 +146,46 @@ class UFL2CNodesMixin(object):
     #    # C++11 stl has this function
     #    return self._cmath("erfc", op)
 
+
+class RulesForC(object):
+    def _cmath(self, name, op):
+        return self.L.Call(name, op)
+
+    def power(self, o, a, b):
+        return self.L.Call("pow", (a, b))
+
     def abs(self, o, op):
-        #return Call("fabs", op) # C version
-        return self._cmath("abs", op)  # C++ stl version
+        return self.L.Call("fabs", op)
 
     def min_value(self, o, a, b):
-        #name = "fmin" # C99 version
-        name = "min" # C++ stl version
-        if self._enable_namespaces:
-            name = "std::" + name
-        return self.L.Call(name, (a, b))
+        return self.L.Call("fmin", (a, b))
 
     def max_value(self, o, a, b):
-        #name = "fmax" # C99 version
-        name = "max" # C++ stl version
-        if self._enable_namespaces:
-            name = "std::" + name
-        return self.L.Call(name, (a, b))
+        return self.L.Call("fmax", (a, b))
+
+    # ignoring bessel functions
+
+
+class RulesForCpp(object):
+    def _cmath(self, name, op):
+        return self.L.Call("std::" + name, op)
+
+    def power(self, o, a, b):
+        return self.L.Call("std::pow", (a, b))
+
+    def abs(self, o, op):
+        return self.L.Call("std::abs", op)
+
+    def min_value(self, o, a, b):
+        return self.L.Call("std::min", (a, b))
+
+    def max_value(self, o, a, b):
+        return self.L.Call("std::max", (a, b))
 
     # === Formatting rules for bessel functions ===
 
     def _bessel(self, o, n, v, name):
-        if self._enable_namespaces:
-            name = "boost::math::" + name
-        return self.L.Call(name, (n, v))
+        return self.L.Call("boost::math::" + name, (n, v))
 
     def bessel_i(self, o, n, v):
         return self._bessel(o, n, v, "cyl_bessel_i")
@@ -171,39 +199,15 @@ class UFL2CNodesMixin(object):
     def bessel_y(self, o, n, v):
         return self._bessel(o, n, v, "cyl_neumann")
 
-    # === Formatting rules for conditional expressions ===
 
-    def conditional(self, o, c, t, f):
-        return self.L.Conditional(c, t, f)
+class UFL2CNodesTranslatorC(MultiFunction, UFL2CNodesMixin, RulesForC):
+    """UFL to CNodes translator class."""
+    def __init__(self, language):
+        MultiFunction.__init__(self)
+        UFL2CNodesMixin.__init__(self, language)
 
-    def eq(self, o, a, b):
-        return self.L.EQ(a, b)
 
-    def ne(self, o, a, b):
-        return self.L.NE(a, b)
-
-    def le(self, o, a, b):
-        return self.L.LE(a, b)
-
-    def ge(self, o, a, b):
-        return self.L.GE(a, b)
-
-    def lt(self, o, a, b):
-        return self.L.LT(a, b)
-
-    def gt(self, o, a, b):
-        return self.L.GT(a, b)
-
-    def and_condition(self, o, a, b):
-        return self.L.And(a, b)
-
-    def or_condition(self, o, a, b):
-        return self.L.Or(a, b)
-
-    def not_condition(self, o, a):
-        return self.L.Not(a)
-
-class UFL2CNodesTranslator(MultiFunction, UFL2CNodesMixin):
+class UFL2CNodesTranslatorCpp(MultiFunction, UFL2CNodesMixin, RulesForCpp):
     """UFL to CNodes translator class."""
     def __init__(self, language):
         MultiFunction.__init__(self)

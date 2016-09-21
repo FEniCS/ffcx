@@ -19,11 +19,14 @@
 """Algorithms for value numbering within computational graphs."""
 
 from six.moves import xrange as range
-from ffc.log import warning
+
 from ufl import product
 from ufl.permutation import compute_indices
 from ufl.corealg.multifunction import MultiFunction
 from ufl.classes import FormArgument
+
+from ffc.log import error, ffc_assert
+
 from uflacs.analysis.indexing import map_indexed_arg_components, map_component_tensor_arg_components
 from uflacs.analysis.modified_terminals import analyse_modified_terminal
 
@@ -65,14 +68,20 @@ class ValueNumberer(MultiFunction):
         "Create new symbols for expressions that represent new values."
         symmetry = v.ufl_element().symmetry()
 
-        if False and symmetry:
-            # FIXME: Ignoring symmetries for now, handle by creating only
-            # some new symbols and mapping the rest using the symmetry map.
-            actual_components = sorted(set(symmetry.values()))
-            m = len(actual_components)
-            actual_symbols = self.new_symbols(m)
-            symbols = mapping_of_actual_symbols_to_all_components(actual_symbols, symmetry)  # Need to implement this
+        if symmetry:
+            # Build symbols with symmetric components skipped
+            symbols = []
+            mapped_symbols = {}
+            for c in compute_indices(v.ufl_shape):
+                # Build mapped component mc with symmetries from element considered
+                mc = symmetry.get(c, c)
 
+                # Get existing symbol or create new and store with mapped component mc as key
+                s = mapped_symbols.get(mc)
+                if s is None:
+                    s = self.new_symbol()
+                    mapped_symbols[mc] = s
+                symbols.append(s)
         else:
             n = self.V_sizes[i]
             symbols = self.new_symbols(n)
@@ -96,54 +105,39 @@ class ValueNumberer(MultiFunction):
         # (3) averaging and restrictions define distinct symbols, no additional symmetries
         # (4) two or more grad/reference_grad defines distinct symbols with additional symmetries
 
-        # FIXME: Need modified version of amt(), v is probably not scalar here. This hack works for now.
+        # v is not necessary scalar here, indexing in (0,...,0) picks the first scalar component
+        # to analyse, which should be sufficient to get the base shape and derivatives
         if v.ufl_shape:
             mt = analyse_modified_terminal(v[(0,) * len(v.ufl_shape)])
         else:
             mt = analyse_modified_terminal(v)
 
-        domain = mt.terminal.ufl_domain()
-
+        # Get derivatives
         num_ld = len(mt.local_derivatives)
         num_gd = len(mt.global_derivatives)
         assert not (num_ld and num_gd)
-
-        # Get base shape without the derivative axes
-        if mt.reference_value:
-            base_shape = mt.terminal.ufl_element().reference_value_shape()
-        else:
-            base_shape = mt.terminal.ufl_shape
-        base_components = compute_indices(base_shape)
-
         if num_ld:
+            domain = mt.terminal.ufl_domain()
             tdim = domain.topological_dimension()
-            # d_components = compute_permutations(num_ld, tdim)
             d_components = compute_indices((tdim,) * num_ld)
         elif num_gd:
+            domain = mt.terminal.ufl_domain()
             gdim = domain.geometric_dimension()
-            # d_components = compute_permutations(num_gd, gdim)
             d_components = compute_indices((gdim,) * num_gd)
         else:
             d_components = [()]
 
-        if isinstance(mt.terminal, FormArgument):
-            element = mt.terminal.ufl_element()
-            symmetry = element.symmetry()
-            if symmetry and mt.reference_value:
-                ffc_assert(element.value_shape() == element.reference_value_shape(),
-                           "The combination of element symmetries and "
-                           "Piola mapped elements is not currently handled.")
-        else:
-            symmetry = {}
+        # Get base shape without the derivative axes
+        base_components = compute_indices(mt.base_shape)
 
+        # Build symbols with symmetric components and derivatives skipped
         symbols = []
         mapped_symbols = {}
         for bc in base_components:
             for dc in d_components:
-                # Build mapped component with symmetries from element and derivatives combined
-                mbc = symmetry.get(bc, bc)
+                # Build mapped component mc with symmetries from element and derivatives combined
+                mbc = mt.base_symmetry.get(bc, bc)
                 mdc = tuple(sorted(dc))
-                c = bc + dc
                 mc = mbc + mdc
 
                 # Get existing symbol or create new and store with mapped component mc as key
@@ -153,10 +147,10 @@ class ValueNumberer(MultiFunction):
                     mapped_symbols[mc] = s
                 symbols.append(s)
 
+        # Consistency check before returning symbols
         assert not v.ufl_free_indices
-        if not product(v.ufl_shape) == len(symbols):
+        if product(v.ufl_shape) != len(symbols):
             error("Internal error in value numbering.")
-
         return symbols
 
     # Handle modified terminals with element symmetries and second derivative symmetries!
@@ -197,26 +191,7 @@ class ValueNumberer(MultiFunction):
         row_symbols = [self.get_node_symbols(row) for row in v.ufl_operands]
         symbols = []
         for rowsymb in row_symbols:
-            symbols.extend(rowsymb)  # FIXME: Test that this produces the right transposition
-        return symbols
-
-    def transposed(self, AT, i):
-        A, = AT.ufl_operands
-
-        assert not A.ufl_free_indices, "Assuming no free indices in transposed (for now), report as bug if needed."  # FIXME
-        r, c = A.ufl_shape
-
-        A_symbols = self.get_node_symbols(A)
-        assert len(A_symbols) == r * c
-
-        # AT[j,i] = A[i,j]
-        # sh(A) = (r,c)
-        # sh(AT) = (c,r)
-        # AT[j*r+i] = A[i*c+j]
-        symbols = [None] * (r * c)
-        for j in range(c):
-            for i in range(r):
-                symbols[j * r + i] = A_symbols[i * c + j]
+            symbols.extend(rowsymb)
         return symbols
 
     def variable(self, v, i):

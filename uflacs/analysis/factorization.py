@@ -18,8 +18,11 @@
 
 """Algorithms for factorizing argument dependent monomials."""
 
+import numpy
+
 from six import itervalues, iterkeys, iteritems
 from six.moves import xrange as range
+
 from ufl import as_ufl, conditional
 from ufl.classes import Argument
 from ufl.classes import Division
@@ -27,10 +30,10 @@ from ufl.classes import Product
 from ufl.classes import Sum
 from ufl.classes import Conditional
 from ufl.classes import Zero
+from ufl.algorithms import extract_type
 
 from ffc.log import ffc_assert, error
 
-from uflacs.datastructures.arrays import int_array, object_array
 from uflacs.analysis.graph_dependencies import compute_dependencies
 from uflacs.analysis.modified_terminals import analyse_modified_terminal, strip_modified_terminal
 
@@ -62,17 +65,7 @@ def _build_argument_indices_from_arg_sets(V, arg_sets):
     def arg_ordering_key(i):
         "Return a key for sorting argument vertex indices based on the properties of the modified terminal."
         mt = analyse_modified_terminal(arg_ordering_key.V[i])
-        arg = mt.terminal
-        assert isinstance(arg, Argument)
-        assert arg.number() >= 0
-        return (arg.number(),
-                arg.part(),
-                mt.reference_value,
-                mt.component,
-                mt.global_derivatives,
-                mt.local_derivatives,
-                mt.restriction,
-                mt.averaged)
+        return mt.argument_ordering_key()
     arg_ordering_key.V = V
     ordered_arg_indices = sorted(arg_indices, key=arg_ordering_key)
 
@@ -89,7 +82,7 @@ def build_argument_indices(V):
 def build_argument_dependencies(dependencies, arg_indices):
     "Preliminary algorithm: build list of argument vertex indices each vertex (indirectly) depends on."
     n = len(dependencies)
-    A = [[] for i in range(n)]  # TODO: Use array
+    A = numpy.empty(n, dtype=object)
     for i, deps in enumerate(dependencies):
         argdeps = []
         for j in deps:
@@ -269,7 +262,7 @@ def handle_conditional(i, v, deps, F, FV, sv2fv, e2fi):
         factors = {}
 
         z = as_ufl(0.0)
-        zfi = add_to_fv(z, FV, e2fi)
+        zfi = add_to_fv(z, FV, e2fi)  # TODO: flake8 complains zfi is unused, is that ok?
 
         # In general, can decompose like this:
         #    conditional(c, sum_i fi*ui, sum_j fj*uj) -> sum_i conditional(c, fi, 0)*ui + sum_j conditional(c, 0, fj)*uj
@@ -328,7 +321,7 @@ def collect_argument_factors(SV, dependencies, arg_indices):
     """
     # Extract argument component subgraph
     AV = [SV[j] for j in arg_indices]
-    av2sv = arg_indices
+    #av2sv = arg_indices
     sv2av = dict((j, i) for i, j in enumerate(arg_indices))
     assert all(AV[i] == SV[j] for i, j in enumerate(arg_indices))
     assert all(AV[i] == SV[j] for j, i in iteritems(sv2av))
@@ -338,7 +331,7 @@ def collect_argument_factors(SV, dependencies, arg_indices):
     e2fi = {}
 
     # Hack to later build dependencies for the FV entries that change K*K -> K**2
-    two = add_to_fv(as_ufl(2), FV, e2fi)
+    two = add_to_fv(as_ufl(2), FV, e2fi)  # FIXME: Might need something more robust here
 
     # Intermediate factorization for each vertex in SV on the format
     # F[i] = None # if SV[i] does not depend on arguments
@@ -346,8 +339,8 @@ def collect_argument_factors(SV, dependencies, arg_indices):
     #   FV[fi] is the expression SV[i] with arguments factored out
     #   argkey is a tuple with indices into SV for each of the argument components SV[i] depends on
     # F[i] = { argkey1: fi1, argkey2: fi2, ... } # if SV[i] is a linear combination of multiple argkey configurations
-    F = object_array(len(SV))  # TODO: Use some CRS based format?
-    sv2fv = int_array(len(SV))
+    F = numpy.empty(len(SV), dtype=object)
+    sv2fv = numpy.zeros(len(SV), dtype=int)
 
     # Factorize each subexpression in order:
     for i, v in enumerate(SV):

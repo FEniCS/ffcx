@@ -18,38 +18,30 @@
 
 """Tools for precomputed tables of terminal values."""
 
-from six import iteritems, iterkeys
-from six.moves import xrange as range
-import numpy as np
-import ufl
-from ufl import product
+import numpy
+
 from ufl.utils.derivativetuples import derivative_listing_to_counts
 from ufl.classes import FormArgument, GeometricQuantity, SpatialCoordinate, Jacobian
 from ufl.algorithms.analysis import unique_tuple
 
-from ffc.log import ffc_assert
+from ffc.log import error
 
-from uflacs.datastructures.arrays import object_array
-from uflacs.elementtables.table_utils import (generate_psi_table_name,
-                                              get_ffc_table_values,
-                                              strip_table_zeros,
-                                              build_unique_tables)
+from uflacs.elementtables.table_utils import generate_psi_table_name, get_ffc_table_values
+from uflacs.elementtables.table_utils import clamp_table_small_integers, strip_table_zeros, build_unique_tables
+
 
 def extract_terminal_elements(terminal_data):
     "Extract a list of unique elements from terminal data."
     elements = []
-    xs = {}
     for mt in terminal_data:
         t = mt.terminal
         if isinstance(t, FormArgument):
             # Add element for function and its coordinates
             elements.append(t.ufl_domain().ufl_coordinate_element())
             elements.append(t.ufl_element())
-
         elif isinstance(t, GeometricQuantity):
             # Add element for coordinate field of domain
             elements.append(t.ufl_domain().ufl_coordinate_element())
-
     return unique_tuple(elements)
 
 
@@ -78,7 +70,7 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data, epsi
       terminal_table_names
     """
     element_counter_map = {}  # build_element_counter_map(extract_terminal_elements(terminal_data))
-    terminal_table_names = object_array(len(terminal_data))
+    terminal_table_names = numpy.empty(len(terminal_data), dtype=object)
     tables = {}
     for i, mt in enumerate(terminal_data):
         t = mt.terminal
@@ -90,12 +82,10 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data, epsi
 
         # Add to element tables for FormArguments and relevant GeometricQuantities
         if isinstance(t, FormArgument):
-            if rv:
-                if gd:
-                    error("Global derivatives of reference values not defined.")
-            else:
-                if ld:
-                    error("Local derivatives of global values not defined.")
+            if gd and rv:
+                error("Global derivatives of reference values not defined.")
+            elif ld and not rv:
+                error("Local derivatives of global values not defined.")
             element = t.ufl_element()
 
         elif isinstance(t, SpatialCoordinate):
@@ -103,9 +93,10 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data, epsi
                 error("Not expecting reference value of x.")
             if gd:
                 error("Not expecting global derivatives of x.")
-                
+
             # TODO: Only need table for component element, does that matter?
             element = t.ufl_domain().ufl_coordinate_element()
+            #element = element.sub_element()
 
             if ld:
                 # Actually the Jacobian, translate component gc to x element context
@@ -120,6 +111,7 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data, epsi
 
             # TODO: Only need table for component element, does that matter?
             element = t.ufl_domain().ufl_coordinate_element()
+            #element = element.sub_element()
 
             fc = gc[0]
             ld = tuple(sorted((gc[1],) + ld))
@@ -136,11 +128,12 @@ def build_element_tables(psi_tables, num_points, entitytype, terminal_data, epsi
             element_counter_map[element] = element_counter
 
         # Change derivatives format for table lookup
-        if gd:
-            gdim = t.ufl_domain().geometric_dimension()
-            global_derivatives = tuple(derivative_listing_to_counts(gd, gdim))
-        else:
-            global_derivatives = None
+        #if gd:
+        #    gdim = t.ufl_domain().geometric_dimension()
+        #    global_derivatives = tuple(derivative_listing_to_counts(gd, gdim))
+        #else:
+        #    global_derivatives = None
+
         if ld:
             tdim = t.ufl_domain().topological_dimension()
             local_derivatives = tuple(derivative_listing_to_counts(ld, tdim))
@@ -175,13 +168,21 @@ def optimize_element_tables(tables, terminal_table_names, eps):
       unique_tables_dict - a new and mapping from name to table values with stripped zero columns
       terminal_table_ranges - a list of (table name, begin, end) for each of the input table names
     """
-
     # Names here are a bit long and slightly messy...
+
+    # Drop tables that are not referenced from any terminals
+    unused_names = set(terminal_table_names) - set(tables)
+    unused_names.remove(None)
+    for name in unused_names:
+        del tables[name]
 
     # Apply zero stripping to all tables
     stripped_tables = {}
     table_ranges = {}
-    for name, table in iteritems(tables):
+    for name, table in tables.items():
+        # Clamp 0, -1 and +1 values first
+        table = clamp_table_small_integers(table, eps)
+        # Then strip zeros at the ends
         begin, end, stripped_table = strip_table_zeros(table, eps)
         stripped_tables[name] = stripped_table
         table_ranges[name] = (begin, end)
@@ -192,19 +193,19 @@ def optimize_element_tables(tables, terminal_table_names, eps):
     # Build mapping of constructed table names to unique names,
     # pick first constructed name
     unique_table_names = {}
-    for name in sorted(iterkeys(table_name_to_unique_index)):
+    for name in sorted(table_name_to_unique_index.keys()):
         unique_index = table_name_to_unique_index[name]
         if unique_index in unique_table_names:
             continue
         unique_table_names[unique_index] = name
 
     # Build mapping from unique table name to the table itself
-    unique_tables = dict((unique_table_names[unique_index], unique_tables_list[unique_index])
-                         for unique_index in range(len(unique_tables_list)))
+    unique_tables = { unique_table_names[unique_index]: unique_tables_list[unique_index]
+                      for unique_index in range(len(unique_tables_list)) }
 
     # Build mapping from terminal data index to compacted table data:
     # terminal data index -> (unique name, table range begin, table range end)
-    terminal_table_ranges = object_array(len(terminal_table_names))
+    terminal_table_ranges = numpy.empty(len(terminal_table_names), dtype=object)
     for i, name in enumerate(terminal_table_names):
         if name is not None:
             unique_index = table_name_to_unique_index[name]
@@ -213,14 +214,3 @@ def optimize_element_tables(tables, terminal_table_names, eps):
             terminal_table_ranges[i] = (unique_name, b, e)
 
     return unique_tables, terminal_table_ranges
-
-# TODO: This seems to be unused, remove?
-def generate_element_table_definitions(L, tables):
-    "Format a dict of name->table into code."
-    code = []
-    for name in sorted(tables):
-        table = tables[name]
-        if product(table.shape) > 0:
-            code += [L.ArrayDecl("static const double",
-                                 name, table.shape, table)]
-    return code

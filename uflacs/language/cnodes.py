@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import print_function # used in some debugging
+from __future__ import print_function  # used in some debugging
 
 import numpy
 
@@ -24,13 +24,13 @@ from uflacs.language.format_value import format_value, format_float
 from uflacs.language.format_lines import format_indented_lines, Indented
 from uflacs.language.precedence import PRECEDENCE
 
+
 """CNode TODO:
 - Array copy statement
 - Memzero statement
 - Extend ArrayDecl and ArrayAccess with support for
   flattened but conceptually multidimensional arrays,
   maybe even with padding (FlattenedArray possibly covers what we need)
-- ArrayDecl using std::array
 - Function declaration
 - TypeDef
 - Type
@@ -52,6 +52,7 @@ def assign_loop(src, dst, ranges):
         code = ForRange(i, b, e, code)
     return code
 
+
 def accumulate_loop(src, dst, ranges):
     """Generate a nested loop over a list of ranges, adding dst to src in the innermost loop.
 
@@ -61,6 +62,7 @@ def accumulate_loop(src, dst, ranges):
     for i, b, e in reversed(ranges):
         code = ForRange(i, b, e, code)
     return code
+
 
 def scale_loop(src, dst, ranges):
     """Generate a nested loop over a list of ranges, multiplying dst with src in the innermost loop.
@@ -150,10 +152,12 @@ class CExpr(CNode):
     def __rfloordiv__(self, other):
         return NotImplemented
 
+
 class CExprOperator(CExpr):
     """Base class for all C expression operator."""
     __slots__ = ("children",)
     sideeffect = False
+
 
 class CExprTerminal(CExpr):
     """Base class for all C expression terminals."""
@@ -712,6 +716,7 @@ class Conditional(CExprOperator):
         # Return combined string
         return c + " ? " + t + " : " + f
 
+
 class Call(CExprOperator):
     __slots__ = ("function", "arguments")
     precedence = PRECEDENCE.CALL
@@ -720,6 +725,7 @@ class Call(CExprOperator):
     def __init__(self, function, arguments=None):
         # Note: This will wrap a str as a Symbol
         self.function = as_cexpr(function)
+
         # Accept None, single, or multple arguments; literals or CExprs
         if arguments is None:
             arguments = ()
@@ -735,6 +741,15 @@ class Call(CExprOperator):
 ############## Convertion function to expression nodes
 
 number_types = (int, float, complex, numpy.number)
+
+
+def _is_zero(values):
+    global number_types
+    if isinstance(values, number_types + (LiteralFloat, LiteralInt)):
+        return float(values) == 0.0
+    else:
+        return numpy.count_nonzero(values) == 0
+
 
 def as_cexpr(node):
     """Typechecks and wraps an object as a valid CExpr.
@@ -755,11 +770,13 @@ def as_cexpr(node):
     else:
         raise RuntimeError("Unexpected CExpr type %s:\n%s" % (type(node), str(node)))
 
+
 def as_symbol(symbol):
     if isinstance(symbol, str):
         symbol = Symbol(symbol)
     assert isinstance(symbol, Symbol)
     return symbol
+
 
 def flattened_indices(indices, shape):
     """Given a tuple of indices and a shape tuple,
@@ -822,6 +839,7 @@ class VerbatimStatement(CStatement):
     def cs_format(self):
         return self.codestring
 
+
 class Statement(CStatement):
     "Make an expression into a statement."
     __slots__ = ("expr",)
@@ -830,6 +848,7 @@ class Statement(CStatement):
 
     def cs_format(self):
         return self.expr.ce_format() + ";"
+
 
 class StatementList(CStatement):
     "A simple sequence of statements. No new scopes are introduced."
@@ -852,15 +871,18 @@ class Using(CStatement):
     def cs_format(self):
         return "using " + self.name + ";"
 
+
 class Break(CStatement):
     __slots__ = ()
     def cs_format(self):
         return "break;"
 
+
 class Continue(CStatement):
     __slots__ = ()
     def cs_format(self):
         return "continue;"
+
 
 class Return(CStatement):
     __slots__ = ("value",)
@@ -869,6 +891,7 @@ class Return(CStatement):
 
     def cs_format(self):
         return "return " + self.value.ce_format() + ";"
+
 
 class Case(CStatement):
     __slots__ = ("value",)
@@ -879,10 +902,12 @@ class Case(CStatement):
     def cs_format(self):
         return "case " + self.value.ce_format() + ":"
 
+
 class Default(CStatement):
     __slots__ = ()
     def cs_format(self):
         return "default:"
+
 
 class Throw(CStatement):
     __slots__ = ("exception", "message")
@@ -893,8 +918,9 @@ class Throw(CStatement):
         self.message = message
 
     def cs_format(self):
-        assert '"' not in message
+        assert '"' not in self.message
         return "throw " + self.exception + '("' + self.message + '");'
+
 
 class Comment(CStatement):
     "Line comment(s) used for annotating the generated code with human readable remarks."
@@ -907,7 +933,8 @@ class Comment(CStatement):
         lines = self.comment.strip().split("\n")
         return ["// " + line.strip() for line in lines]
 
-class Pragma(CStatement): # TODO: Improve on this with a use case later
+
+class Pragma(CStatement):  # TODO: Improve on this with a use case later
     "Pragma comments used for compiler-specific annotations."
     __slots__ = ("comment",)
     def __init__(self, comment):
@@ -944,7 +971,12 @@ class VariableDecl(CStatement):
         return code + ";"
 
 
-def build_1d_initializer_list(values, formatter):
+def leftover(size, padlen):
+    "Return minimum integer to add to size to make it divisible by padlen."
+    return (padlen - (size % padlen)) % padlen
+
+
+def build_1d_initializer_list(values, formatter, padlen=0):
     '''Return a list containing a single line formatted like "{ 0.0, 1.0, 2.0 }"'''
     tokens = ["{ "]
     if numpy.product(values.shape) > 0:
@@ -953,12 +985,18 @@ def build_1d_initializer_list(values, formatter):
         for v in fvalues[:-1]:
             tokens.append(v)
             tokens.append(sep)
-        tokens += [fvalues[-1]]
+        tokens.append(fvalues[-1])
+        if padlen:
+            # Add padding
+            zero = formatter(values.dtype(0))
+            for i in range(leftover(len(values), padlen)):
+                tokens.append(sep)
+                tokens.append(zero)
     tokens += " }"
     return "".join(tokens)
 
 
-def build_initializer_lists(values, sizes, level, formatter):
+def build_initializer_lists(values, sizes, level, formatter, padlen=0):
     """Return a list of lines with initializer lists for a multidimensional array.
 
     Example output::
@@ -976,10 +1014,13 @@ def build_initializer_lists(values, sizes, level, formatter):
     r = len(sizes)
     assert r > 0
     if r == 1:
-        return [build_1d_initializer_list(values, formatter)]
+        return [build_1d_initializer_list(values, formatter, padlen=padlen)]
     else:
         # Render all sublists
-        parts = [build_initializer_lists(val, sizes[1:], level+1, formatter) for val in values]
+        parts = []
+        for val in values:
+            sublist = build_initializer_lists(val, sizes[1:], level+1, formatter, padlen=padlen)
+            parts.append(sublist)
         # Add comma after last line in each part except the last one
         for part in parts[:-1]:
             part[-1] += ","
@@ -994,11 +1035,6 @@ def build_initializer_lists(values, sizes, level, formatter):
         lines[-1] += " }"
         return lines
 
-def _is_zero(values):
-    if isinstance(values, (int, float, LiteralFloat, LiteralInt)):
-        return float(values) == 0.0
-    else:
-        return numpy.count_nonzero(values) == 0
 
 class ArrayDecl(CStatement):
     """A declaration or definition of an array.
@@ -1009,8 +1045,8 @@ class ArrayDecl(CStatement):
     Otherwise use nested lists of lists to represent
     multidimensional array values to initialize to.
     """
-    __slots__ = ("typename", "symbol", "sizes", "values")
-    def __init__(self, typename, symbol, sizes, values=None):
+    __slots__ = ("typename", "symbol", "sizes", "alignas", "padlen", "values")
+    def __init__(self, typename, symbol, sizes, values=None, alignas=None, padlen=0):
         assert isinstance(typename, str)
         self.typename = typename
 
@@ -1021,7 +1057,13 @@ class ArrayDecl(CStatement):
         self.sizes = tuple(sizes)
 
         # NB! No type checking, assuming nested lists of literal values. Not applying as_cexpr.
-        self.values = values
+        if isinstance(values, (list, tuple)):
+            self.values = numpy.asarray(values)
+        else:
+            self.values = values
+
+        self.alignas = alignas
+        self.padlen = padlen
 
     def __getitem__(self, indices):
         """Allow using array declaration object as the array when indexed.
@@ -1032,25 +1074,39 @@ class ArrayDecl(CStatement):
         return ArrayAccess(self, indices)
 
     def cs_format(self):
-        # C style
-        brackets = ''.join("[%d]" % n for n in self.sizes)
+        # Pad innermost array dimension
+        sizes = list(self.sizes)
+        if self.padlen:
+            sizes[-1] += leftover(sizes[-1], self.padlen)
+
+        # Add brackets
+        brackets = ''.join("[%d]" % n for n in sizes)
+
+        # Join declaration
         decl = self.typename + " " + self.symbol.name + brackets
 
-        # C++11 style with std::array # TODO: Enable this, needs #include <array>
-        #typename = self.typename
-        #for dim in reversed(self.sizes):
-        #    typename = "std::array<%s, %s>" % (typename, dim)
-        #decl = "%s %s" % (typename, self.symbol.name)
+        # NB! C++11 style alignas prefix syntax.
+        # If trying other target languages, must use other syntax.
+        if self.alignas:
+            align = "alignas(%d)" % int(self.alignas)
+            decl = align + " " + decl
 
         if self.values is None:
             # Undefined initial values
             return decl + ";"
         elif _is_zero(self.values):
             # Zero initial values
+            # (NB! C++ style zero initialization, not sure about other target languages)
             return decl + " = {};"
         else:
             # Construct initializer lists for arbitrary multidimensional array values
-            initializer_lists = build_initializer_lists(self.values, self.sizes, 0, format_value)
+            if self.values.dtype.kind == "f":
+                formatter = format_float
+            else:
+                # Not really using other types, this can be buggy
+                formatter = format_value
+            initializer_lists = build_initializer_lists(self.values, self.sizes, 0,
+                                                        formatter, padlen=self.padlen)
             if len(initializer_lists) == 1:
                 return decl + " = " + initializer_lists[0] + ";"
             else:
@@ -1068,6 +1124,7 @@ class Scope(CStatement):
     def cs_format(self):
         return ("{", Indented(self.body.cs_format()), "}")
 
+
 class Namespace(CStatement):
     __slots__ = ("name", "body")
     def __init__(self, name, body):
@@ -1079,6 +1136,7 @@ class Namespace(CStatement):
         return ("namespace " + self.name,
                 "{", Indented(self.body.cs_format()), "}")
 
+
 class If(CStatement):
     __slots__ = ("condition", "body")
     def __init__(self, condition, body):
@@ -1088,6 +1146,7 @@ class If(CStatement):
     def cs_format(self):
         return ("if (" + self.condition.ce_format() + ")",
                 "{", Indented(self.body.cs_format()), "}")
+
 
 class ElseIf(CStatement):
     __slots__ = ("condition", "body")
@@ -1099,6 +1158,7 @@ class ElseIf(CStatement):
         return ("else if (" + self.condition.ce_format() + ")",
                 "{", Indented(self.body.cs_format()), "}")
 
+
 class Else(CStatement):
     __slots__ = ("body",)
     def __init__(self, body):
@@ -1107,6 +1167,7 @@ class Else(CStatement):
     def cs_format(self):
         return ("else",
                 "{", Indented(self.body.cs_format()), "}")
+
 
 class While(CStatement):
     __slots__ = ("condition", "body")
@@ -1118,6 +1179,7 @@ class While(CStatement):
         return ("while (" + self.condition.ce_format() + ")",
                 "{", Indented(self.body.cs_format()), "}")
 
+
 class Do(CStatement):
     __slots__ = ("condition", "body")
     def __init__(self, condition, body):
@@ -1127,6 +1189,7 @@ class Do(CStatement):
     def cs_format(self):
         return ("do", "{", Indented(self.body.cs_format()),
                 "} while (" + self.condition.ce_format() + ");")
+
 
 class For(CStatement):
     __slots__ = ("init", "check", "update", "body")
@@ -1148,6 +1211,7 @@ class For(CStatement):
         body = self.body.cs_format()
         return ("for (" + init + " " + check + "; " + update + ")",
                 "{", Indented(body), "}")
+
 
 class Switch(CStatement):
     __slots__ = ("arg", "cases", "default", "autobreak", "autoscope")

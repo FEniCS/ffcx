@@ -18,20 +18,22 @@
 
 """Utilities for precomputed table manipulation."""
 
-from __future__ import print_function # used in some debugging
+from __future__ import print_function  # used in some debugging
+
+import numpy
 
 from six import itervalues, iterkeys
 from six import advance_iterator as next
-from six.moves import map
-from six.moves import xrange as range
+
+from ffc.log import error
+
 from ufl.permutation import build_component_numbering
-import numpy as np
 
 
 def equal_tables(a, b, eps):
     "Compare tables to be equal within a tolerance."
-    a = np.asarray(a)
-    b = np.asarray(b)
+    a = numpy.asarray(a)
+    b = numpy.asarray(b)
     if a.shape != b.shape:
         return False
     if len(a.shape) > 1:
@@ -42,24 +44,33 @@ def equal_tables(a, b, eps):
     return all(scalars_equal(a[i], b[i], eps) for i in range(a.shape[0]))
 
 
+def clamp_table_small_integers(table, eps):
+    "Clamp almost 0,1,-1 values to integers. Returns new table."
+    # Get shape of table and number of columns, defined as the last axis
+    table = numpy.asarray(table)
+    for n in (-1, 0, 1):
+        table[numpy.where(abs(table - n) < eps)] = float(n)
+    return table
+
+
 def strip_table_zeros(table, eps):
     "Strip zero columns from table. Returns column range (begin,end) and the new compact table."
     # Get shape of table and number of columns, defined as the last axis
-    table = np.asarray(table)
+    table = numpy.asarray(table)
     sh = table.shape
     nc = sh[-1]
 
     # Find first nonzero column
     begin = nc
     for i in range(nc):
-        if np.linalg.norm(table[..., i]) > eps:
+        if numpy.linalg.norm(table[..., i]) > eps:
             begin = i
             break
 
     # Find (one beyond) last nonzero column
     end = begin
     for i in range(nc-1, begin-1, -1):
-        if np.linalg.norm(table[..., i]) > eps:
+        if numpy.linalg.norm(table[..., i]) > eps:
             end = i+1
             break
 
@@ -145,7 +156,7 @@ def get_ffc_table_values(tables, entitytype, num_points, element, flat_component
 
     # Make 3D array for final result
     shape = (num_entities, num_points, num_dofs)
-    res = np.zeros(shape)
+    res = numpy.zeros(shape)
 
     # Loop over entities and fill table blockwise (each block = points x dofs)
     sh = element.value_shape()
@@ -156,21 +167,21 @@ def get_ffc_table_values(tables, entitytype, num_points, element, flat_component
 
         # Extract array for right component and order axes as (points, dofs)
         if sh == ():
-            arr = np.transpose(tbl)
+            arr = numpy.transpose(tbl)
         elif len(sh) == 2 and element.num_sub_elements() == 0:
             # 2-tensor-valued elements, not a tensor product
             # mapping flat_component back to tensor component
             (_, f2t) = build_component_numbering(sh, element.symmetry())
             t_comp = f2t[flat_component]
-            arr = np.transpose(tbl[:, t_comp[0], t_comp[1], :])
+            arr = numpy.transpose(tbl[:, t_comp[0], t_comp[1], :])
         else:
-            arr = np.transpose(tbl[:, flat_component,:])
+            arr = numpy.transpose(tbl[:, flat_component,:])
 
         # Assign block of values for this entity
         res[entity,:,:] = arr
 
     # Clamp almost-zeros to zero
-    res[np.where(np.abs(res) < epsilon)] = 0.0
+    res[numpy.where(numpy.abs(res) < epsilon)] = 0.0
     return res
 
 
@@ -231,11 +242,11 @@ def generate_psi_table_name(element_counter, flat_component, derivative_counts, 
     return name
 
 
-def _examples(tables):
-    eps = 1e-14
-    name = generate_psi_table_name(counter, flat_component, derivative_counts, averaged, entitytype, None)
-    values = get_ffc_table_values(tables, entitytype, num_points, element, flat_component, derivative_counts, eps)
+#def _examples(tables):
+#    eps = 1e-14
+#    name = generate_psi_table_name(counter, flat_component, derivative_counts, averaged, entitytype, None)
+#    values = get_ffc_table_values(tables, entitytype, num_points, element, flat_component, derivative_counts, eps)
 
-    begin, end, table = strip_table_zeros(table, eps)
-    all_zeros = table.shape[-1] == 0
-    all_ones = equal_tables(table, np.ones(table.shape), eps)
+#    begin, end, table = strip_table_zeros(table, eps)
+#    all_zeros = table.shape[-1] == 0
+#    all_ones = equal_tables(table, numpy.ones(table.shape), eps)
