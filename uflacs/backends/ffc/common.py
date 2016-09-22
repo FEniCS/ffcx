@@ -67,12 +67,11 @@ class FFCBackendSymbols(object):
 
     def quadrature_loop_index(self, num_points):
         "Reusing a single index name for all quadrature loops, assumed not to be nested."
-        # If we want to use num_points-specific names for any symbols, this need num_points as well (or some other scope id).
-        #if num_points == 1:
-        #    return 0
-        #else:
-        #    return self.S("iq%d" % (num_points,))
-        return self.S("iq")
+        if num_points == 1:
+            return 0
+        else:
+            return self.S("iq%d" % (num_points,))
+        #return self.S("iq")
 
     def coefficient_dof_sum_index(self):
         "Reusing a single index name for all coefficient dof*basis sums, assumed to always be the innermost loop."

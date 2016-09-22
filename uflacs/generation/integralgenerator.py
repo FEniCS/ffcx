@@ -228,20 +228,15 @@ class IntegralGenerator(object):
     def generate_quadrature_loops(self, num_points):
         "Generate all quadrature loops."
         L = self.backend.language
-        parts = []
-
         body = self.generate_quadrature_body(num_points)
-        iq = self.backend.access.quadrature_loop_index(num_points)
 
-        # TODO: Specialize generated code with iq=0 instead of defining iq as a variable here,
-        # or just keep the loop in which case the compilers will not complain about unused iq
         if num_points == 1:
-            # Wrapping body in Scope to avoid thinking about scoping issues
-            parts += [L.Comment("Only 1 quadrature point, no loop"),
-                      L.VariableDecl("const int", iq, 0),
-                      L.Scope(body)]
+            # For now wrapping body in Scope to avoid thinking about scoping issues
+            parts = [L.Comment("Only 1 quadrature point, no loop"),
+                     L.Scope(body)]
         else:
-            parts += [L.ForRange(iq, 0, num_points, body=body)]
+            iq = self.backend.access.quadrature_loop_index(num_points)
+            parts = [L.ForRange(iq, 0, num_points, body=body)]
         return parts
 
 

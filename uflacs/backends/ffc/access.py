@@ -148,9 +148,11 @@ class FFCAccessBackend(MultiFunction):
 
         idof = self.argument_loop_index(mt.terminal.number())
 
-        iq = self.symbols.quadrature_loop_index(num_points)
-        #if tt == "piecewise": iq = 0
-            
+        if tt == "piecewise":
+            iq = 0
+        else:
+            iq = self.symbols.quadrature_loop_index(num_points)
+
         return uname[entity][iq][idof - begin]
 
 
