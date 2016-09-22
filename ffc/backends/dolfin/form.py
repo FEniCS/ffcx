@@ -272,7 +272,7 @@ def generate_multimesh_constructor(form, classname, space_tag,
     initializers = ", " + ", ".join(initializers) if initializers else ""
 
     # Ignore if functional
-    if form.rank!=0:
+    if form.rank != 0:
         spaces = ", ".join(spaces)
 
     # Set access method
