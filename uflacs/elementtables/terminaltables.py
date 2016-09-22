@@ -128,78 +128,72 @@ def optimize_element_tables(tables, mt_table_names, epsilon):
     """Optimize tables and make unique set.
 
     Steps taken:
-    - clamp values that are very close to -1, 0, +1 to those values
-    - remove dofs from beginning and end of tables where values are all zero
-    - for each modified terminal, provide the dof range that a given table corresponds to
+
+      - clamp values that are very close to -1, 0, +1 to those values
+      - remove dofs from beginning and end of tables where values are all zero
+      - for each modified terminal, provide the dof range that a given table corresponds to
+
+    Terminology:
+      name - str, name used in input arguments here
+      mt - modified terminal
+      table - numpy array of float values
+      stripped_table - numpy array of float values with zeroes
+                       removed from each end of dofrange
 
     Input:
-      tables - a mapping from name to table values
-      mt_table_names - a mapping from modified terminal to table name
+      tables - { name: table }
+      mt_table_names - { mt: name }
 
     Output:
-      unique_tables - a mapping from name to table values with stripped zero columns
-      mt_table_ranges - a mapping from modified terminal to (name, begin, end)
+      unique_tables - { unique_name: stripped_table }
+      mt_table_ranges - { mt: (unique_name, begin, end) }
     """
-    # Names here are a bit long and slightly messy...
-
-    # Drop tables not mentioned in mt_table_names
+    # Find and sort all unique table names mentioned in mt_table_names
     used_names = set(mt_table_names.values())
-    assert None not in mt_table_names
+    assert None not in used_names
     #used_names.remove(None)
-    tables = { name: tables[name]
-               for name in tables
-               if name in used_names }
+    used_names = sorted(used_names)
+
+    # Drop unused tables (if any at this point)
+    tables = { name: tables[name] for name in tables if name in used_names }
 
     # Clamp almost -1.0, 0.0, and +1.0 values first
     # (i.e. 0.999999 -> 1.0 if within epsilon distance)
-    tables = { name: clamp_table_small_integers(table, epsilon)
-               for name, table in tables.items() }
+    for name in used_names:
+        tables[name] = clamp_table_small_integers(tables[name], epsilon)
 
     # Strip contiguous zero blocks at the ends of all tables
-    stripped_tables = {}
     table_ranges = {}
-    for name, table in tables.items():
-        begin, end, stripped_table = strip_table_zeros(table, epsilon)
-        # Drop empty tables
-        if product(stripped_table.shape) == 0:
-            end = begin
-        else:
-            stripped_tables[name] = stripped_table
+    for name in used_names:
+        begin, end, stripped_table = strip_table_zeros(tables[name], epsilon)
+        tables[name] = stripped_table
         table_ranges[name] = (begin, end)
 
     # Build unique table mapping
-    unique_tables_list, table_name_to_unique_index = build_unique_tables(stripped_tables, epsilon)
+    unique_tables_list, name_to_unique_index = build_unique_tables(tables, epsilon)
 
     # Build mapping of constructed table names to unique names.
     # Picking first constructed name preserves some information
     # about the table origins although some names may be dropped.
-    unique_table_names = {}
-    for name in sorted(table_name_to_unique_index):
-        unique_index = table_name_to_unique_index[name]
-        if unique_index in unique_table_names:
-            continue
-        unique_table_names[unique_index] = name
+    unique_names = {}
+    for name in used_names:
+        ui = name_to_unique_index[name]
+        if ui not in unique_names:
+            unique_names[ui] = name
 
     # Build mapping from unique table name to the table itself
-    unique_tables = { unique_table_names[unique_index]: unique_tables_list[unique_index]
-                      for unique_index in range(len(unique_tables_list)) }
+    unique_tables = { unique_names[ui]: unique_tables_list[ui]
+                      for ui in range(len(unique_tables_list)) }
 
-    # Build mapping from modified terminal to compacted table data:
-    # mt ->
-    #    (unique name, table dof range begin, table dof range end) for varying tables
-    #    (None, begin, end=begin) for empty range tables
-    #    TODO:  ("ones", begin, end) for tables where all values are 1.0
-    #    TODO:  ("zeros", begin, end) for tables where all values are 0.0
+    # Build mapping from modified terminal to compacted table and dof range
+    # { mt: (unique name, table dof range begin, table dof range end) }
     mt_table_ranges = {}
     for mt, name in mt_table_names.items():
-        if name is not None:
-            b, e = table_ranges[name]
-            if e - b > 0:
-                unique_index = table_name_to_unique_index[name]
-                unique_name = unique_table_names[unique_index]
-            else:
-                unique_name = None
-            mt_table_ranges[mt] = (unique_name, b, e)
+        assert name is not None
+        b, e = table_ranges[name]
+        ui = name_to_unique_index[name]
+        unique_name = unique_names[ui]
+        mt_table_ranges[mt] = (unique_name, b, e)
 
     return unique_tables, mt_table_ranges
 
@@ -216,16 +210,6 @@ class TableProvider(object):
         psi_tables = self.psi_tables
         epsilon = self.epsilon
 
-        # FIXME: Refactor such that
-        #        terminal_table_ranges = dict(modified_terminal -> (tablename, begin, end))
-        #    instead of list where modified terminal indices have meaning,
-        #    to avoid having to renumber later! Requires modified terminals to be hashable, are they?
-        #    Note: Include modification for restricted form arguments
-        #    Note: Do not include DG0 and Real component tables (or use tablename "ones" which can be used to define piecewise constants in partitioning and also checked for in code generation)
-        #    Note: Do not include empty tables (why do they occur?) (or use tablename "empty" and begin=end)
-        #    Or split terminal_table_ranges into (varying_table_ranges, constant_tables, empty_tables)?
-        #    If the code generation
-
         # Build tables needed by all modified terminals
         # (currently build here means extract from ffc psi_tables)
         tables, mt_table_names = \
@@ -234,6 +218,30 @@ class TableProvider(object):
         # Optimize tables and get table name and dofrange for each modified terminal
         unique_tables, mt_table_ranges = \
             optimize_element_tables(tables, mt_table_names, epsilon)
+
+        # Analyze tables for properties useful for optimization
+        table_types = {}  # FIXME: Use this information!
+        for unique_name, table in unique_tables.items():
+            #num_entities, num_points, num_dofs = table.shape
+            num_points = table.shape[1]
+            if product(table.shape) == 0 or numpy.allclose(table, numpy.zeros(table.shape)):
+                # All values are 0.0
+                tabletype = "zeros"
+                # All table ranges referring to this table should be empty
+                assert all(data[1] == data[2]
+                           for mt, data in mt_table_ranges.items()
+                           if data is not None and data[0] == unique_name)
+            elif numpy.allclose(table, numpy.ones(table.shape)):
+                # All values are 1.0
+                tabletype = "ones"
+            elif all(numpy.allclose(table[:, 0, :], table[:, i, :])
+                     for i in range(1, num_points)):
+                # Piecewise constant over points (separately on each entity)
+                tabletype = "piecewise"
+            else:
+                # Varying over points
+                tabletype = "varying"
+            table_types[unique_name] = tabletype
 
         # Modify dof ranges for restricted form arguments
         # (geometry gets padded variable names instead)
@@ -245,4 +253,4 @@ class TableProvider(object):
                 (unique_name, b, e) = mt_table_ranges[mt]
                 mt_table_ranges[mt] = (unique_name, b + offset, e + offset)
 
-        return unique_tables, mt_table_ranges
+        return unique_tables, mt_table_ranges, table_types

@@ -21,7 +21,7 @@
 from ufl.permutation import build_component_numbering
 from ufl.corealg.multifunction import MultiFunction
 from ufl.checks import is_cellwise_constant
-from ffc.log import error
+from ffc.log import error, warning
 from ffc.log import ffc_assert
 
 from uflacs.backends.ffc.common import FFCBackendSymbols, ufc_restriction_offset
@@ -73,8 +73,8 @@ class FFCAccessBackend(MultiFunction):
         return names.points
 
 
-    def quadrature_loop_index(self):
-        return self.symbols.quadrature_loop_index()
+    def quadrature_loop_index(self, num_points):
+        return self.symbols.quadrature_loop_index(num_points)
 
 
     def argument_loop_index(self, iarg):
@@ -131,47 +131,46 @@ class FFCAccessBackend(MultiFunction):
 
         # No need to store basis function value in its own variable, just get table value directly
         uname, begin, end = tabledata
+
+        table_types = self.ir["uflacs"]["expr_irs"][num_points]["table_types"]
+        tt = table_types[uname]
+        if tt == "zeros":
+            error("Not expecting zero arguments to get this far.")
+            return L.LiteralFloat(0.0)
+        elif tt == "ones":
+            warning("Should simplify ones arguments before getting this far.")
+            return L.LiteralFloat(1.0)
+
         uname = L.Symbol(uname)
 
         entity = format_entity_name(self.ir["entitytype"], mt.restriction)
         entity = L.Symbol(entity)
 
-        iq = self.quadrature_loop_index()
         idof = self.argument_loop_index(mt.terminal.number())
 
+        iq = self.symbols.quadrature_loop_index(num_points)
+        #if tt == "piecewise": iq = 0
+            
         return uname[entity][iq][idof - begin]
 
 
     def coefficient(self, e, mt, tabledata, num_points):
-        t = mt.terminal
-        if is_cellwise_constant(t):
-            access = self._constant_coefficient(e, mt, tabledata)
-        else:
-            access = self._varying_coefficient(e, mt, tabledata)
-        return access
-
-
-    def _constant_coefficient(self, e, mt, tabledata):
-        # Map component to flat index
-        vi2si, si2vi = build_component_numbering(mt.terminal.ufl_shape,
-                                                 mt.terminal.ufl_element().symmetry())
-        ffc_assert(mt.flat_component == vi2si[mt.component], "Incompatible component flattening!")
-        num_flat_components = len(si2vi)
-
-        # Offset index if on second cell in interior facet integral
-        offset = ufc_restriction_offset(mt.restriction, num_flat_components)
-        if offset:
-            idof = mt.flat_component + offset
-        else:
-            idof = mt.flat_component
-
-        # Return direct reference to dof array
-        return self.symbols.coefficient_dof_access(mt.terminal, idof)
-
-
-    def _varying_coefficient(self, e, mt, tabledata):
-        # Format base coefficient (derivative) name
         L = self.language
+        t = mt.terminal
+
+        uname, begin, end = tabledata
+        table_types = self.ir["uflacs"]["expr_irs"][num_points]["table_types"]
+        tt = table_types[uname]
+        if tt == "zeros":
+            # FIXME: remove at earlier stage so dependent code can also be removed
+            warning("Not expecting zero coefficients to get this far.")
+            return L.LiteralFloat(0.0)
+
+        elif tt == "ones" and (end - begin) == 1:
+            # f = 1.0 * f_i, just return direct reference to dof array at dof begin
+            return self.symbols.coefficient_dof_access(mt.terminal, begin)
+
+        # Format base coefficient (derivative) name
         coefficient_numbering = self.ir["uflacs"]["coefficient_numbering"]
         c = coefficient_numbering[mt.terminal] # mt.terminal.count()
         basename = "{name}{count}".format(name=names.w, count=c)
@@ -182,7 +181,7 @@ class FFCAccessBackend(MultiFunction):
         L = self.language
         weight = self.weights_array_name(num_points)
         weight = L.Symbol(weight)
-        iq = self.quadrature_loop_index()
+        iq = self.symbols.quadrature_loop_index(num_points)
         return weight[iq]
 
 
@@ -197,7 +196,7 @@ class FFCAccessBackend(MultiFunction):
             # In a context where the physical coordinates are available in existing variables.
             x = self.physical_points_array_name()
             x = L.Symbol(x)
-            iq = self.quadrature_loop_index()
+            iq = self.symbols.quadrature_loop_index(num_points)
             gdim, = mt.terminal.ufl_shape
             return x[iq * gdim + mt.flat_component]
         else:
@@ -221,7 +220,7 @@ class FFCAccessBackend(MultiFunction):
         else:
             X = self.points_array_name(num_points)
             X = L.Symbol(X)
-            iq = self.quadrature_loop_index()
+            iq = self.symbols.quadrature_loop_index(num_points)
             tdim, = mt.terminal.ufl_shape
             return X[iq * tdim + mt.flat_component]
 
@@ -239,7 +238,7 @@ class FFCAccessBackend(MultiFunction):
         else:
             Xf = self.points_array_name(num_points)
             Xf = L.Symbol(Xf)
-            iq = self.quadrature_loop_index()
+            iq = self.symbols.quadrature_loop_index(num_points)
             tdim, = mt.terminal.ufl_shape
             if tdim <= 0:
                 error("Vertices have no facet coordinates.")

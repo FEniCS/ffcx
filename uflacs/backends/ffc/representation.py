@@ -119,20 +119,17 @@ def build_uflacs_ir(integrands, coefficient_numbering, entitytype, table_provide
                               for i in expr_ir["modified_terminal_indices"]]
         terminal_data = modified_terminals + expr_ir["modified_arguments"]
 
+        # FIXME: Want table information earlier, even before scalar rebuilding! Must split compute_expr_ir to achieve this.
+        unique_tables, mt_table_ranges, table_types = table_provider.build_optimized_tables(num_points, entitytype, terminal_data)
+
+
         # Figure out if we need to access CellCoordinate to
         # avoid generating quadrature point table otherwise
         expr_ir["need_points"] = any(isinstance(mt.terminal, CellCoordinate)
                                      for mt in modified_terminals)
 
-
-        # FIXME: Want table information earlier, even before scalar rebuilding!
-        unique_tables, mt_table_ranges = table_provider.build_optimized_tables(num_points, entitytype, terminal_data)
-
         # Ordered table data
         terminal_table_ranges = [mt_table_ranges.get(mt) for mt in terminal_data]
-
-        # Store the tables and ranges
-        expr_ir["unique_tables"] = unique_tables
 
         # Split into arguments and other terminals before storing in expr_ir
         # TODO: Some tables are associated with num_points, some are not
@@ -169,7 +166,20 @@ def build_uflacs_ir(integrands, coefficient_numbering, entitytype, table_provide
         # FIXME: Propagate dependencies back to remove expressions
         # not used anymore after dropping factorization terms
 
-        # FIXME: Drop tables from unique_tables that are not
-        #        referenced by active modified terminals
+        # Drop tables not referenced from modified terminals
+        # and and tables of zeros and ones
+        used_table_names = set()
+        for tabledata in terminal_table_ranges:
+            if tabledata is not None:
+                name, begin, end = tabledata
+                if table_types[name] not in ("zeros", "ones"):
+                    used_table_names.add(name)
+        if None in used_table_names:
+            used_table_names.remove(None)
+        unique_tables = { name: unique_tables[name] for name in used_table_names }
+
+        # Store the tables and ranges
+        expr_ir["table_types"] = table_types
+        expr_ir["unique_tables"] = unique_tables
 
     return uflacs_ir

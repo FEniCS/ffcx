@@ -65,10 +65,13 @@ class FFCBackendSymbols(object):
         "Reference cell coordinates."
         return self.S("xi" + str(quadloop))
 
-    def quadrature_loop_index(self):
+    def quadrature_loop_index(self, num_points):
         "Reusing a single index name for all quadrature loops, assumed not to be nested."
         # If we want to use num_points-specific names for any symbols, this need num_points as well (or some other scope id).
-        #return self.S("iq%d" % (num_points,))
+        #if num_points == 1:
+        #    return 0
+        #else:
+        #    return self.S("iq%d" % (num_points,))
         return self.S("iq")
 
     def coefficient_dof_sum_index(self):

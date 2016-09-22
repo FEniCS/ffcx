@@ -231,15 +231,15 @@ class IntegralGenerator(object):
         parts = []
 
         body = self.generate_quadrature_body(num_points)
-        iq = self.backend.access.quadrature_loop_index()
+        iq = self.backend.access.quadrature_loop_index(num_points)
 
+        # TODO: Specialize generated code with iq=0 instead of defining iq as a variable here,
+        # or just keep the loop in which case the compilers will not complain about unused iq
         if num_points == 1:
             # Wrapping body in Scope to avoid thinking about scoping issues
-            # TODO: Specialize generated code with iq=0 instead of defining iq here.
             parts += [L.Comment("Only 1 quadrature point, no loop"),
                       L.VariableDecl("const int", iq, 0),
                       L.Scope(body)]
-
         else:
             parts += [L.ForRange(iq, 0, num_points, body=body)]
         return parts
@@ -325,7 +325,7 @@ class IntegralGenerator(object):
 
                 # Backend specific modified terminal translation
                 vaccess = self.backend.access(mt.terminal, mt, table_ranges[i], num_points)
-                vdef = self.backend.definitions(mt.terminal, mt, table_ranges[i], vaccess)
+                vdef = self.backend.definitions(mt.terminal, mt, table_ranges[i], num_points, vaccess)
 
                 # Store definitions of terminals in list
                 if vdef is not None:
@@ -403,7 +403,7 @@ class IntegralGenerator(object):
                 else:
                     # Backend specific modified terminal formatting
                     vaccess = self.backend.access(mt.terminal, mt, table_ranges[i], num_points)
-                    vdef = self.backend.definitions(mt.terminal, mt, table_ranges[i], vaccess)
+                    vdef = self.backend.definitions(mt.terminal, mt, table_ranges[i], num_points, vaccess)
 
                 # Store definitions of terminals in list
                 if vdef is not None:
