@@ -28,7 +28,7 @@ def generate_integral_code(ir, prefix, parameters):
     code = initialize_integral_code(ir, prefix, parameters)
 
     # Generate tabulate_tensor body from ast
-    ast = ir["tsfc"].ast
+    ast = ir["tsfc"]
     tsfc_code = "".join(b.gencode() for b in ast.body)
     tsfc_code = tsfc_code.replace("#pragma coffee", "//#pragma coffee") # FIXME
     code["tabulate_tensor"] = tsfc_code
