@@ -18,8 +18,8 @@
 from ffc.log import info
 from ffc.representationutils import initialize_integral_ir
 
-from tsfc.backends import ufc as ufc_backend
 from tsfc.driver import compile_integral
+import tsfc.kernel_interface.ufc as ufc_interface
 
 
 def compute_integral_ir(integral_data,
@@ -36,6 +36,6 @@ def compute_integral_ir(integral_data,
 
     # Store tsfc generated part separately
     ir["tsfc"] = compile_integral(integral_data, form_data, None, parameters,
-                                  backend=ufc_backend)
+                                  interface=ufc_interface)
 
     return ir
