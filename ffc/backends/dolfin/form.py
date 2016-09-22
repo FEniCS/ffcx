@@ -39,6 +39,7 @@ def generate_form(form, classname, error_control):
     """
 
     blocks = []
+
     # Generate code for Form_x_FunctionSpace_y subclasses
     wrap = apply_function_space_template
     blocks += [wrap("%s_FunctionSpace_%d" % (classname, i),
@@ -187,6 +188,7 @@ def generate_multimesh_form_constructors(form, classname):
 
 def generate_constructor(form, classname, space_tag, coefficient_tag=None):
     "Generate a single Form constructor according to the given parameters."
+
     # Extract correct code snippets
     (argument, assign) = snippets[space_tag]
 
@@ -242,6 +244,7 @@ def generate_multimesh_constructor(form, classname, space_tag,
 
     # Extract correct code snippets
     (argument, dummy) = snippets[space_tag]
+
     # Construct list of arguments
     name = "V%d"
     if form.rank > 0:
@@ -277,6 +280,7 @@ def generate_multimesh_constructor(form, classname, space_tag,
         access = "->"
     else:
         access = "."
+
     # Create body for building multimesh function space
     body = ""
     body += "    // Create and add standard forms\n"
