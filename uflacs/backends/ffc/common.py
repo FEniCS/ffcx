@@ -16,13 +16,49 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>
 
-"""FFC specific utilities."""
-
-from six.moves import xrange as range
+"""FFC/UFC specific symbol naming."""
 
 
+from ffc.log import error
+
+
+physical_quadrature_integral_types = ("custom", "cutcell", "interface", "overlap")
+
+
+# TODO: Move somewhere else
+def num_coordinate_component_dofs(coordinate_element):
+    """Get the number of dofs for a coordinate component for this degree.
+
+    This is a local hack that works for Lagrange 1-3, better
+    would be to get this passed by ffc from fiat through the ir.
+    The table data is to messy to figure out a clean design for that quickly.
+    """
+    from ufl.cell import num_cell_entities
+    degree = coordinate_element.degree()
+    cell = coordinate_element.cell()
+    tdim = cell.topological_dimension()
+    cellname = cell.cellname()
+    d = 0
+    for entity_dim in range(tdim+1):
+        # n = dofs per cell entity
+        if entity_dim == 0:
+            n = 1
+        elif entity_dim == 1:
+            n = degree - 1
+        elif entity_dim == 2:
+            n = (degree - 2)*(degree - 1) // 2
+        elif entity_dim == 3:
+            n = (degree - 3)*(degree - 2)*(degree - 1) // 6
+        else:
+            error("Entity dimension out of range")
+        # Accumulate
+        num_entities = num_cell_entities[cellname][entity_dim]
+        d += num_entities * n
+    return d
+
+
+# TODO: Get restriction postfix from somewhere central
 def ufc_restriction_postfix(restriction):
-    # TODO: Get restriction postfix from somewhere central
     if restriction == "+":
         res = "_0"
     elif restriction == "-":
@@ -32,143 +68,12 @@ def ufc_restriction_postfix(restriction):
     return res
 
 
+# TODO: Get restriction postfix from somewhere central
 def ufc_restriction_offset(restriction, length):
-    # TODO: Get restriction postfix from somewhere central
     if restriction == "-":
         return length
     else:
         return 0
-
-
-# FIXME: Do something like this for shared symbol naming?
-class FFCBackendSymbols(object):
-    def __init__(self, language, coefficient_numbering):
-        self.L = language
-        self.S = self.L.Symbol
-        self.coefficient_numbering = coefficient_numbering
-
-        # Used for padding variable names based on restriction
-        self.restriction_postfix = { r: ufc_restriction_postfix(r)
-                                     for r in ("+", "-", None) }
-
-    # FIXME: Used in access: weights, points, ia, A, w, x, J
-
-    def entity(self, entitytype, restriction):
-        "Entity index."
-        return self.S(format_entity_name(entitytype, restriction))
-
-    def x(self, quadloop):
-        "Physical coordinates."
-        return self.S("x" + str(quadloop))
-
-    def xi(self, quadloop):
-        "Reference cell coordinates."
-        return self.S("xi" + str(quadloop))
-
-    def quadrature_loop_index(self, num_points):
-        "Reusing a single index name for all quadrature loops, assumed not to be nested."
-        if num_points == 1:
-            return 0
-        else:
-            return self.S("iq%d" % (num_points,))
-        #return self.S("iq")
-
-    def coefficient_dof_sum_index(self):
-        "Reusing a single index name for all coefficient dof*basis sums, assumed to always be the innermost loop."
-        return self.S("ic")
-
-    def coefficient_value_access(self, coefficient):  # TODO: Currently not used?
-        c = self.coefficient_numbering[coefficient] # coefficient.count()
-        # If we want to use num_points-specific names for any symbols, this need num_points as well (or some other scope id).
-        #return self.S("w%d_%d" % (c, num_points))
-        return self.S("w%d" % c)
-
-    def coefficient_dof_access(self, coefficient, dof_number):
-        # TODO: Add domain_number = self.ir["domain_numbering"][coefficient.ufl_domain().domain_key()]
-        # TODO: Flatten dofs array and use CRSArray lookup table?
-        # TODO: Apply integral specific renumbering?
-        c = self.coefficient_numbering[coefficient] # coefficient.count()
-        w = self.S("w")
-        return w[c, dof_number]
-
-    def domain_dof_access(self, dof, component, gdim, num_scalar_dofs, restriction, interleaved_components):
-        # TODO: Add domain number as argument here, and {domain_offset} to array indexing:
-        # domain_offset = self.ir["domain_offsets"][domain_number]
-        vc = self.S("coordinate_dofs" + ufc_restriction_postfix(restriction))
-        if interleaved_components:
-            return vc[gdim*dof + component]
-        else:
-            return vc[num_scalar_dofs*component + dof]
-
-    def domain_dofs_access(self, gdim, num_scalar_dofs, restriction, interleaved_components):
-        # TODO: Add domain number as argument here, and {domain_offset} to array indexing:
-        # domain_offset = self.ir["domain_offsets"][domain_number]
-        return [self.domain_dof_access(dof, component, gdim, num_scalar_dofs, restriction, interleaved_components)
-                for component in range(gdim)
-                for dof in range(num_scalar_dofs)]
-
-
-# TODO: This is not used much anymore, integrate in backend class, and use L.Symbol
-class Names:
-
-    def __init__(self):
-        # Topology argument names
-        self.vertex = "vertex"
-        self.facet = "facet"
-
-        # Geometry names
-        self.coordinate_dofs = "coordinate_dofs"
-        self.xi = "xi"
-        self.x = "x"
-        self.J = "J"
-        self.K = "K"
-        self.detJ = "detJ"
-        self.det = "det"
-
-        # Quadrature rule
-        self.points = "points"
-        self.weights = "weights"
-
-        # Quadrature temps
-        self.qw = "qw"
-        self.D = "D"
-
-        # (Base)name for intermediate registers
-        self.s = "s"
-
-        # Element tensor
-        self.A = "A"
-
-        # Coefficient dofs array
-        self.w = "w"
-
-        # Basenames for function components
-        self.wbase = "w"
-        self.vbase = "v"
-        self.dwbase = "dw"
-        self.dvbase = "dv"
-
-        # Loop indices
-        self.iq = "iq"   # Quadrature loop
-        self.ic = "ic"   # Coefficient accumulation loop
-        self.ia = "ia"   # Argument dof loop
-        self.ild = "ild"  # Local derivative accumulation loop
-
-        # Used for padding variable names based on restriction
-        self.restriction_postfix = { r: ufc_restriction_postfix(r)
-                                     for r in ("+", "-", None) }
-
-names = Names()
-
-
-def format_entity_name(entitytype, r):
-    if entitytype == "cell":
-        entity = "0"  # None # TODO: Keep 3D tables and use entity 0 for cells or make tables 2D and use None?
-    elif entitytype == "facet":
-        entity = names.facet + names.restriction_postfix[r]
-    elif entitytype == "vertex":
-        entity = names.vertex
-    return entity
 
 
 def format_mt_der(mt):
@@ -201,7 +106,7 @@ def format_mt_avg(mt):
 
 
 def format_mt_res(mt):
-    return names.restriction_postfix[mt.restriction].replace("_", "_r")
+    return ufc_restriction_postfix(mt.restriction).replace("_", "_r")
 
 
 def format_mt_name(basename, mt):
@@ -211,3 +116,106 @@ def format_mt_name(basename, mt):
                                                       der=format_mt_der(mt),
                                                       comp=format_mt_comp(mt))
     return access
+
+
+class FFCBackendSymbols(object):
+    """FFC specific symbol definitions. Provides non-ufl symbols."""
+    def __init__(self, language, coefficient_numbering):
+        self.L = language
+        self.S = self.L.Symbol
+        self.coefficient_numbering = coefficient_numbering
+
+        # Used for padding variable names based on restriction
+        self.restriction_postfix = { r: ufc_restriction_postfix(r)
+                                     for r in ("+", "-", None) }
+
+    def element_tensor(self):
+        "Symbol for the element tensor itself."
+        return self.S("A")
+
+    def entity(self, entitytype, restriction):
+        "Entity index for lookup in element tables."
+        if entitytype == "cell":
+            # Always 0 for cells (even with restriction)
+            return self.L.LiteralInt(0)
+        elif entitytype == "facet":
+            return self.S("facet" + ufc_restriction_postfix(restriction))
+        elif entitytype == "vertex":
+            return self.S("vertex")
+        else:
+            error("Unknown entitytype {}".format(entitytype))
+
+    def cell_orientation_argument(self, restriction):
+        "Cell orientation argument in ufc. Not same as cell orientation in generated code."
+        return self.S("cell_orientation" + ufc_restriction_postfix(restriction))
+
+    def cell_orientation_internal(self, restriction):
+        "Internal value for cell orientation in generated code."
+        return self.S("co" + ufc_restriction_postfix(restriction))
+
+    def argument_loop_index(self, iarg):
+        "Loop index for argument #iarg."
+        return self.S("ia%d" % (iarg,))
+
+    def quadrature_loop_index(self, num_points):
+        """Reusing a single index name for all quadrature loops,
+        assumed not to be nested."""
+        if num_points == 1:
+            return self.L.LiteralInt(0)
+        elif num_points is None:
+            return self.S("iq")
+        else:
+            return self.S("iq" + str(num_points))
+
+    def coefficient_dof_sum_index(self):
+        """Reusing a single index name for all coefficient dof*basis sums,
+        assumed to always be the innermost loop."""
+        return self.S("ic")
+
+    def weights_array(self, num_points):
+        return self.S("weights%d" % (num_points,))
+
+    def points_array(self, num_points):
+        # Note: Points array refers to points on the integration cell
+        return self.S("points%d" % (num_points,))
+
+    def physical_quadrature_points_array(self):
+        return self.S("quadrature_points")
+
+    def x_component(self, mt):
+        "Physical coordinate component."
+        return self.S(format_mt_name("x", mt))
+
+    def J_component(self, mt):
+        "Jacobian component."
+        return self.S(format_mt_name("J", mt))
+
+    def domain_dof_access(self, dof, component, gdim, num_scalar_dofs,
+                          restriction, interleaved_components):
+        # TODO: Add domain number?
+        vc = self.S("coordinate_dofs" + ufc_restriction_postfix(restriction))
+        if interleaved_components:
+            return vc[gdim*dof + component]
+        else:
+            return vc[num_scalar_dofs*component + dof]
+
+    def domain_dofs_access(self, gdim, num_scalar_dofs, restriction,
+                           interleaved_components):
+        # TODO: Add domain number?
+        return [self.domain_dof_access(dof, component, gdim, num_scalar_dofs,
+                                       restriction, interleaved_components)
+                for component in range(gdim)
+                for dof in range(num_scalar_dofs)]
+
+    def coefficient_dof_access(self, coefficient, dof_number):
+        # TODO: Add domain number?
+        c = self.coefficient_numbering[coefficient]
+        w = self.S("w")
+        return w[c, dof_number]
+
+    def coefficient_value(self, mt, num_points):
+        "Symbol for variable holding value or derivative component of coefficient."
+        c = self.coefficient_numbering[mt.terminal]
+        return self.S(format_mt_name("w%d" % (c,), mt))
+        # TODO: Should we include num_points here? Not sure if there is a need.
+        #return self.S(format_mt_name("w%d_%d" % (c, num_points), mt))

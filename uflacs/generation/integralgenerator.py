@@ -45,8 +45,8 @@ class IntegralGenerator(object):
         else:
             self._A_shape = self.ir["prim_idims"]
 
-        #self._using_names = set()
-        #self._includes = set()
+        # Set of operator names code has been generated for,
+        # used in the end for selecting necessary includes
         self._ufl_names = set()
 
         # TODO: Get self.alignas, self.padlen from ir
@@ -56,18 +56,14 @@ class IntegralGenerator(object):
 
         # Backend specific plugin with attributes
         # - language: for translating ufl operators to target language
+        # - symbols: for translating ufl operators to target language
         # - definitions: for defining backend specific variables
         # - access: for accessing backend specific variables
         self.backend = backend
 
 
-    def generate_using_statements(self):
-        #L = self.backend.language
-        return []  # [L.Using(name) for name in sorted(self._using_names)]
-
-
     def get_includes(self):
-        includes = set()  # self._includes)
+        includes = set()
 
         includes.add("#include <cstring>")  # for using memset
         #includes.add("#include <algorithm>")  # for using std::fill instead of memset
@@ -93,8 +89,6 @@ class IntegralGenerator(object):
         if boost_math_names & self._ufl_names:
             includes.add("#include <boost/math/special_functions.hpp>")
 
-        includes.update(self.backend.definitions.get_includes())
-
         return sorted(includes)
 
 
@@ -107,8 +101,6 @@ class IntegralGenerator(object):
         L = self.backend.language
 
         parts = []
-        parts += self.generate_using_statements()
-        parts += self.backend.definitions.initial()
         parts += self.generate_quadrature_tables()
         parts += self.generate_element_tables()
         parts += self.generate_tensor_reset()
@@ -148,26 +140,25 @@ class IntegralGenerator(object):
             return parts
 
         qrs = self.ir["quadrature_rules"]
-
+        expr_irs = self.ir["uflacs"]["expr_irs"]
         for num_points in sorted(qrs):
-            weights = qrs[num_points][0]
-            points = qrs[num_points][1]
-
-            # Size of quadrature points depends on context, assume this is correct:
-            pdim = len(points[0])
-
-            wname = self.backend.access.weights_array_name(num_points)
-            pname = self.backend.access.points_array_name(num_points)
+            expr_ir = expr_irs[num_points]
 
             # Quadrature weights array
-            parts += [L.ArrayDecl("static const double", wname, num_points, weights,
+            weights = qrs[num_points][0]
+            wsym = self.backend.symbols.weights_array(num_points)
+            parts += [L.ArrayDecl("static const double", wsym, num_points, weights,
                                   alignas=self.alignas)]
+
             # Quadrature points array
-            expr_ir = self.ir["uflacs"]["expr_irs"][num_points]
+            points = qrs[num_points][1]
+            # Size of quadrature points depends on context, assume this is correct:
+            pdim = len(points[0])
             if expr_ir["need_points"] and pdim > 0:
                 # Flatten array: (TODO: avoid flattening here, it makes padding harder)
                 points = points.reshape(product(points.shape))
-                parts += [L.ArrayDecl("static const double", pname, num_points * pdim, points,
+                psym = self.backend.symbols.points_array(num_points)
+                parts += [L.ArrayDecl("static const double", psym, num_points * pdim, points,
                                       alignas=self.alignas)]
 
         # Add leading comment if there are any tables
@@ -211,12 +202,12 @@ class IntegralGenerator(object):
         # TODO: Move this to language module, make CNode type
         def memzero(ptrname, size):
             tmp = "memset({ptrname}, 0, {size} * sizeof(*{ptrname}));"
-            code = tmp.format(ptrname=ptrname, size=size)
+            code = tmp.format(ptrname=str(ptrname), size=size)
             return L.VerbatimStatement(code)
 
         # Compute tensor size
         A_size = product(self._A_shape)
-        A = self.backend.access.element_tensor_name()
+        A = self.backend.symbols.element_tensor()
 
         # Stitch it together
         parts = []
@@ -235,7 +226,7 @@ class IntegralGenerator(object):
             parts = [L.Comment("Only 1 quadrature point, no loop"),
                      L.Scope(body)]
         else:
-            iq = self.backend.access.quadrature_loop_index(num_points)
+            iq = self.backend.symbols.quadrature_loop_index(num_points)
             parts = [L.ForRange(iq, 0, num_points, body=body)]
         return parts
 
@@ -297,7 +288,7 @@ class IntegralGenerator(object):
             body = self.generate_quadrature_body_dofblocks(num_points, dofblock)
 
             # Wrap setup, subloops, and accumulation in a loop for this level
-            idof = self.backend.access.argument_loop_index(iarg)
+            idof = self.backend.symbols.argument_loop_index(iarg)
             parts += [L.ForRange(idof, dofrange[0], dofrange[1], body=body)]
         return parts
 
@@ -481,13 +472,16 @@ class IntegralGenerator(object):
         parts = []
         L = self.backend.language
 
+        # Get representation details
         expr_ir = self.ir["uflacs"]["expr_irs"][num_points]
         AF = expr_ir["argument_factorization"]
         V = expr_ir["V"]
         MATR = expr_ir["modified_argument_table_ranges"]
         MA = expr_ir["modified_arguments"]
 
-        idofs = [self.backend.access.argument_loop_index(i) for i in range(self.ir["rank"])]
+        # Get some symbols
+        A = self.backend.symbols.element_tensor()
+        idofs = [self.backend.symbols.argument_loop_index(i) for i in range(self.ir["rank"])]
 
         # Find the blocks to build: (TODO: This is rather awkward,
         # having to rediscover these relations here)
@@ -503,25 +497,21 @@ class IntegralGenerator(object):
             # Get factor expression
             v = V[factor_index]
             if v._ufl_is_literal_ and float(v) == 1.0:
-                # TODO: Nicer way to check for f=1?
-                pass
+                pass  # TODO: Nicer way to check for f=1?
             else:
                 fexpr = self.vaccesses[num_points][v]
                 factors.append(fexpr)
 
             # Get table names
-            argfactors = []
             for i, ma in enumerate(args):
                 access = self.backend.access(MA[ma].terminal, MA[ma], MATR[ma], num_points)
-                argfactors += [access]
+                factors.append(access)
 
-            factors.extend(argfactors)
-
-            # Format index access to A
-            A_access = self.backend.access.element_tensor_entry(idofs, self._A_shape)
+            # Format flattened index expression to access A
+            flat_index = L.flattened_indices(idofs, self._A_shape)
 
             # Emit assignment
-            parts += [L.AssignAdd(A_access, L.Product(factors))]
+            parts += [L.AssignAdd(A[flat_index], L.Product(factors))]
 
         return parts
 

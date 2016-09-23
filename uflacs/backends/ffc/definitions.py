@@ -16,110 +16,59 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>
 
-"""FFC specific definitions."""
-
-from six.moves import xrange as range
+"""FFC/UFC specific variable definitions."""
 
 from ufl.corealg.multifunction import MultiFunction
-from ufl.checks import is_cellwise_constant
 
 from ffc.log import error, warning
 
 from uflacs.backends.ffc.common import FFCBackendSymbols
-# FIXME: Move these to FFCBackendSymbols
-#from uflacs.backends.ffc.common import format_entity_name
-from uflacs.backends.ffc.common import ufc_restriction_postfix
-
-from ufl.cell import num_cell_entities
-
-
-def num_coordinate_component_dofs(coordinate_element):
-    """Get the number of dofs for a coordinate component for this degree.
-
-    This is a local hack that works for Lagrange 1-3, better
-    would be to get this passed by ffc from fiat through the ir.
-    The table data is to messy to figure out a clean design for that quickly.
-    """
-    degree = coordinate_element.degree()
-    cell = coordinate_element.cell()
-    tdim = cell.topological_dimension()
-    cellname = cell.cellname()
-    d = 0
-    for entity_dim in range(tdim+1):
-        # n = dofs per cell entity
-        if entity_dim == 0:
-            n = 1
-        elif entity_dim == 1:
-            n = degree - 1
-        elif entity_dim == 2:
-            n = (degree - 2)*(degree - 1) // 2
-        elif entity_dim == 3:
-            n = (degree - 3)*(degree - 2)*(degree - 1) // 6
-        else:
-            error("Entity dimension out of range")
-        # Accumulate
-        num_entities = num_cell_entities[cellname][entity_dim]
-        d += num_entities * n
-    return d
+from uflacs.backends.ffc.common import physical_quadrature_integral_types
+from uflacs.backends.ffc.common import num_coordinate_component_dofs
 
 
 class FFCDefinitionsBackend(MultiFunction):
     """FFC specific code definitions."""
-    def __init__(self, ir, language, parameters):
+    def __init__(self, ir, language, symbols, parameters):
         MultiFunction.__init__(self)
 
         # Store ir and parameters
         self.ir = ir
         self.language = language
+        self.symbols = symbols
         self.parameters = parameters
 
         # TODO: Make this configurable for easy experimentation with dolfin!
         # Coordinate dofs for each component are interleaved? Must match dolfin.
         self.interleaved_components = True # parameters["interleaved_coordinate_component_dofs"]
 
-        # Configure definitions behaviour
-        if self.ir["integral_type"] in ("custom", "vertex"):
-            self.physical_coordinates_known = True
-        else:
-            self.physical_coordinates_known = False
-
         # FIXME: Need this for custom integrals
         #classname = make_classname(prefix, "finite_element", ir["element_numbers"][ufl_element])
 
-        # This contains definitions of various symbol names
-        self.symbols = FFCBackendSymbols(self.language, ir["uflacs"]["coefficient_numbering"])
 
-
-    def get_includes(self):
-        "Return include statements to insert at top of file."
-        includes = []
-        return includes
-
-
-    def initial(self):
-        "Return code inserted at beginning of kernel."
-        return []
-
+    # === Generate code to define variables for ufl types ===
 
     def expr(self, t, mt, tabledata, num_points, access):
         error("Unhandled type {0}".format(type(t)))
 
 
-    # === Generate code definitions ===
-
     def quadrature_weight(self, e, mt, tabledata, num_points, access):
+        "Quadrature weights are precomputed and need no code."
         return []
 
 
     def constant_value(self, e, mt, tabledata, num_points, access):
+        "Constants simply use literals in the target language."
         return []
 
 
     def argument(self, t, mt, tabledata, num_points, access):
+        "Arguments are accessed through element tables."
         return []
 
 
     def coefficient(self, t, mt, tabledata, num_points, access):
+        "Return definition code for coefficients."
         L = self.language
 
         # No need to store basis function value in its own variable,
@@ -206,6 +155,10 @@ class FFCDefinitionsBackend(MultiFunction):
                 ]
         elif tt == "ones":
             # Not sure if this ever happens
+            # Inlined version (we know this is bounded by a small number)
+            dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs,
+                                                         mt.restriction,
+                                                         self.interleaved_components)
             value = L.Sum([dof_access[idof] for idof in range(begin, end)])
             code = [
                 L.VariableDecl("const double", access, value)
@@ -251,7 +204,9 @@ class FFCDefinitionsBackend(MultiFunction):
         If reference facet coordinates are given:
           x = sum_k xdof_k xphi_k(Xf)
         """
-        if self.physical_coordinates_known:
+        # TODO: Jacobian may need adjustment for physical_quadrature_integral_types
+        if (self.ir["integral_type"] in physical_quadrature_integral_types
+                and not mt.local_derivatives):
             return []
         else:
             return self._define_coordinate_dofs_lincomb(e, mt, tabledata, num_points, access)
@@ -275,6 +230,7 @@ class FFCDefinitionsBackend(MultiFunction):
             Not currently supported.
 
         """
+        # Should be either direct access to points array or symbolically computed
         return []
 
 
@@ -283,10 +239,8 @@ class FFCDefinitionsBackend(MultiFunction):
 
         J = sum_k xdof_k grad_X xphi_k(X)
         """
-        if self.physical_coordinates_known:
-            return []
-        else:
-            return self._define_coordinate_dofs_lincomb(e, mt, tabledata, num_points, access)
+        # TODO: Jacobian may need adjustment for physical_quadrature_integral_types
+        return self._define_coordinate_dofs_lincomb(e, mt, tabledata, num_points, access)
 
 
     def cell_orientation(self, e, mt, tabledata, num_points, access):
@@ -294,8 +248,9 @@ class FFCDefinitionsBackend(MultiFunction):
         # but this is how dolfin/ufc/ffc currently passes this information.
         # 0 means up and gives +1.0, 1 means down and gives -1.0.
         L = self.language
-        co = "cell_orientation" + ufc_restriction_postfix(mt.restriction)
-        expr = L.VerbatimExpr("(" + co + " == 1) ? -1.0: +1.0;")
+        co = self.symbols.cell_orientation_argument(mt.restriction)
+        expr = L.Conditional(L.EQ(co, L.LiteralInt(1)),
+                             L.LiteralFloat(-1.0), L.LiteralFloat(+1.0))
         code = [
             L.VariableDecl("const double", access, expr)
             ]
