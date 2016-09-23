@@ -242,6 +242,10 @@ def rebuild_with_scalar_subexpressions(G, targets=None):
                 # Store single modified terminal expression component
                 ffc_assert(len(vs) == 1, "Expecting single symbol for scalar valued modified terminal.")
                 ws = [v]
+            # FIXME: Replace ws[:] with 0's if its table is empty
+            # Possible redesign: loop over modified terminals only first,
+            # then build tables for them, set W[s] = 0.0 for modified terminals with zero table,
+            # then loop over non-(modified terminal)s to reconstruct expression.
         else:
             # Find symbols of operands
             sops = []

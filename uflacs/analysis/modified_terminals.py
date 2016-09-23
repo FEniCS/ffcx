@@ -21,6 +21,7 @@
 from __future__ import print_function # used in some debugging
 
 from six.moves import zip
+
 from ufl.permutation import build_component_numbering
 from ufl.classes import (FormArgument, Argument,
                          Indexed, FixedIndex,
@@ -162,6 +163,7 @@ def is_modified_terminal(v):
             return False
     return True
 
+
 def strip_modified_terminal(v):
     "Extract core Terminal from a modified terminal or return None."
     while not v._ufl_is_terminal_:
@@ -289,11 +291,10 @@ def analyse_modified_terminal(expr):
         base_shape = t.ufl_shape
 
     # Assert that component is within the shape of the (reference) terminal
-    ffc_assert(len(component) == len(base_shape),
-               "Length of component does not match rank of (reference) terminal.")
-    ffc_assert(all(c >= 0 and c < d for c, d in zip(component, base_shape)),
-               "Component indices %s are outside value shape %s" % (component, base_shape))
-
+    if len(component) != len(base_shape):
+        error("Length of component does not match rank of (reference) terminal.")
+    if not all(c >= 0 and c < d for c, d in zip(component, base_shape)):
+        error("Component indices %s are outside value shape %s" % (component, base_shape))
 
     # Flatten component
     vi2si, si2vi = build_component_numbering(base_shape, base_symmetry)
