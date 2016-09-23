@@ -119,7 +119,7 @@ class FFCBackendAccess(MultiFunction):
             return self.symbols.coefficient_dof_access(mt.terminal, begin)
         else:
             # Return symbol, see definitions for computation 
-            return self.symbols.coefficient_value(mt, num_points)
+            return self.symbols.coefficient_value(mt)  #, num_points)
 
 
     def quadrature_weight(self, e, mt, tabledata, num_points):
@@ -136,7 +136,8 @@ class FFCBackendAccess(MultiFunction):
 
         if self.ir["integral_type"] in physical_quadrature_integral_types:
             # Physical coordinates are available in given variables
-            x = self.symbols.physical_quadrature_points_array()
+            assert num_points is None
+            x = self.symbols.points_array(num_points)
             iq = self.symbols.quadrature_loop_index(num_points)
             gdim, = mt.terminal.ufl_shape
             return x[iq * gdim + mt.flat_component]

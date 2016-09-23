@@ -153,9 +153,24 @@ class FFCBackendSymbols(object):
         "Internal value for cell orientation in generated code."
         return self.S("co" + ufc_restriction_postfix(restriction))
 
-    def argument_loop_index(self, iarg):
-        "Loop index for argument #iarg."
-        return self.S("ia%d" % (iarg,))
+    def num_quadrature_points(self, num_points):
+        if num_points is None:
+            return self.S("num_quadrature_points")
+        else:
+            return self.L.LiteralInt(num_points)
+
+    def weights_array(self, num_points):
+        if num_points is None:
+            return self.S("quadrature_weights")
+        else:
+            return self.S("weights%d" % (num_points,))
+
+    def points_array(self, num_points):
+        # Note: Points array refers to points on the integration cell
+        if num_points is None:
+            return self.S("quadrature_points")
+        else:
+            return self.S("points%d" % (num_points,))
 
     def quadrature_loop_index(self, num_points):
         """Reusing a single index name for all quadrature loops,
@@ -165,22 +180,16 @@ class FFCBackendSymbols(object):
         elif num_points is None:
             return self.S("iq")
         else:
-            return self.S("iq" + str(num_points))
+            return self.S("iq%d" % (num_points,))
+
+    def argument_loop_index(self, iarg):
+        "Loop index for argument #iarg."
+        return self.S("ia%d" % (iarg,))
 
     def coefficient_dof_sum_index(self):
         """Reusing a single index name for all coefficient dof*basis sums,
         assumed to always be the innermost loop."""
         return self.S("ic")
-
-    def weights_array(self, num_points):
-        return self.S("weights%d" % (num_points,))
-
-    def points_array(self, num_points):
-        # Note: Points array refers to points on the integration cell
-        return self.S("points%d" % (num_points,))
-
-    def physical_quadrature_points_array(self):
-        return self.S("quadrature_points")
 
     def x_component(self, mt):
         "Physical coordinate component."
@@ -213,7 +222,7 @@ class FFCBackendSymbols(object):
         w = self.S("w")
         return w[c, dof_number]
 
-    def coefficient_value(self, mt, num_points):
+    def coefficient_value(self, mt):  #, num_points):
         "Symbol for variable holding value or derivative component of coefficient."
         c = self.coefficient_numbering[mt.terminal]
         return self.S(format_mt_name("w%d" % (c,), mt))

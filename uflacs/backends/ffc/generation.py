@@ -47,4 +47,5 @@ def generate_tabulate_tensor_code(ir, prefix, parameters):
         "tabulate_tensor": body,
         "additional_includes_set": includes,
     }
+
     return code

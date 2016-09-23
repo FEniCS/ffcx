@@ -137,12 +137,14 @@ class IntegralGenerator(object):
         parts = []
 
         # No quadrature tables for custom (given argument) or point (evaluation in single vertex)
-        if self.ir["integral_type"] in ("custom", "vertex"):
+        if self.ir["integral_type"] in ("custom", "cutcell", "interface", "overlap", "vertex"):
             return parts
 
         qrs = self.ir["quadrature_rules"]
         expr_irs = self.ir["uflacs"]["expr_irs"]
         for num_points in sorted(qrs):
+            assert num_points is not None
+
             expr_ir = expr_irs[num_points]
 
             # Quadrature weights array
@@ -228,7 +230,8 @@ class IntegralGenerator(object):
                      L.Scope(body)]
         else:
             iq = self.backend.symbols.quadrature_loop_index(num_points)
-            parts = [L.ForRange(iq, 0, num_points, body=body)]
+            np = self.backend.symbols.num_quadrature_points(num_points)
+            parts = [L.ForRange(iq, 0, np, body=body)]
         return parts
 
 
