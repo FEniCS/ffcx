@@ -27,7 +27,7 @@ from uflacs.backends.ffc.common import FFCBackendSymbols
 from uflacs.backends.ffc.common import physical_quadrature_integral_types
 
 
-class FFCAccessBackend(MultiFunction):
+class FFCBackendAccess(MultiFunction):
     """FFC specific cpp formatter class."""
 
     def __init__(self, ir, language, symbols, parameters):

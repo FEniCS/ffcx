@@ -27,7 +27,7 @@ from uflacs.backends.ffc.common import physical_quadrature_integral_types
 from uflacs.backends.ffc.common import num_coordinate_component_dofs
 
 
-class FFCDefinitionsBackend(MultiFunction):
+class FFCBackendDefinitions(MultiFunction):
     """FFC specific code definitions."""
     def __init__(self, ir, language, symbols, parameters):
         MultiFunction.__init__(self)

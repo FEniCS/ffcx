@@ -21,8 +21,8 @@
 import uflacs.language.cnodes
 from uflacs.language.ufl_to_cnodes import UFL2CNodesTranslatorCpp
 from uflacs.backends.ffc.common import FFCBackendSymbols
-from uflacs.backends.ffc.access import FFCAccessBackend
-from uflacs.backends.ffc.definitions import FFCDefinitionsBackend
+from uflacs.backends.ffc.access import FFCBackendAccess
+from uflacs.backends.ffc.definitions import FFCBackendDefinitions
 
 
 class FFCBackend(object):
@@ -35,5 +35,5 @@ class FFCBackend(object):
 
         coefficient_numbering = ir["uflacs"]["coefficient_numbering"]
         self.symbols = FFCBackendSymbols(self.language, coefficient_numbering)
-        self.definitions = FFCDefinitionsBackend(ir, self.language, self.symbols, parameters)
-        self.access = FFCAccessBackend(ir, self.language, self.symbols, parameters)
+        self.definitions = FFCBackendDefinitions(ir, self.language, self.symbols, parameters)
+        self.access = FFCBackendAccess(ir, self.language, self.symbols, parameters)

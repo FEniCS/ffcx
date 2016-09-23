@@ -45,11 +45,7 @@ class IntegralGenerator(object):
         else:
             self._A_shape = self.ir["prim_idims"]
 
-        # Set of operator names code has been generated for,
-        # used in the end for selecting necessary includes
-        self._ufl_names = set()
-
-        # TODO: Get self.alignas, self.padlen from ir
+        # TODO: Get self.alignas, self.padlen from ir (and set via parameters)
         sizeof_double = 8
         self.alignas = 32
         self.padlen = self.alignas // sizeof_double
@@ -61,8 +57,13 @@ class IntegralGenerator(object):
         # - access: for accessing backend specific variables
         self.backend = backend
 
+        # Set of operator names code has been generated for,
+        # used in the end for selecting necessary includes
+        self._ufl_names = set()
+
 
     def get_includes(self):
+        "Return list of include statements needed to support generated code."
         includes = set()
 
         includes.add("#include <cstring>")  # for using memset
