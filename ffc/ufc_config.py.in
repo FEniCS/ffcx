@@ -15,13 +15,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
-def get_ufc_include():
-    """Return the include dir to ufc.h.
-
-    In this implementation, the value is computed at build time,
-    see setup.py.
-    """
-    return "@INSTALL_PREFIX/include"
+# FIXME: This can be removed once DOLFIN has been updated to
+#        use ufc.get_includes()
+from ufc import get_includes as get_ufc_include
 
 
 def get_ufc_cxx_flags():

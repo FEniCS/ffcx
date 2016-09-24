@@ -146,12 +146,11 @@ def generate_git_hash_file(GIT_COMMIT_HASH):
                       variables=dict(GIT_COMMIT_HASH=GIT_COMMIT_HASH))
 
 
-def generate_ufc_config_py_file(INSTALL_PREFIX, CXX_FLAGS, UFC_SIGNATURE):
+def generate_ufc_config_py_file(CXX_FLAGS, UFC_SIGNATURE):
     "Generate module with UFC signature"
     write_config_file(os.path.join("ffc", "ufc_config.py.in"),
                       os.path.join("ffc", "ufc_config.py"),
-                      variables=dict(INSTALL_PREFIX=INSTALL_PREFIX,
-                                     CXX_FLAGS=CXX_FLAGS,
+                      variables=dict(CXX_FLAGS=CXX_FLAGS,
                                      UFC_SIGNATURE=UFC_SIGNATURE))
 
 
@@ -198,15 +197,8 @@ def run_install():
     # Generate module with git hash from template
     generate_git_hash_file(GIT_COMMIT_HASH)
 
-    class my_install(install):
-        def run(self):
-            if not self.dry_run:
-                # Generate ufc_config.py
-                generate_ufc_config_py_file(INSTALL_PREFIX, CXX_FLAGS,
-                                            UFC_SIGNATURE)
-
-            # distutils uses old-style classes, so no super()
-            install.run(self)
+    # Generate ufc_config.py
+    generate_ufc_config_py_file(CXX_FLAGS, UFC_SIGNATURE)
 
     # FFC data files
     data_files = [(os.path.join("share", "man", "man1"),
@@ -232,7 +224,6 @@ def run_install():
               "ufc": ['*.h'],
           },
           scripts=scripts,
-          cmdclass={'install': my_install},
           data_files=data_files,
           install_requires=["numpy",
                             "six",
