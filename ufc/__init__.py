@@ -6,4 +6,4 @@ __license__  = "Released to the public domain"
 from os.path import dirname, abspath
 
 def get_includes():
-    return [dirname(abspath(__file__))]
+    return dirname(abspath(__file__))
