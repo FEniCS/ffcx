@@ -14,7 +14,6 @@ import hashlib
 from setuptools import setup, find_packages
 from setuptools.command.install import install
 
-from distutils import sysconfig
 from distutils.ccompiler import new_compiler
 
 if sys.version_info < (2, 7):
@@ -140,65 +139,6 @@ def write_config_file(infile, outfile, variables={}):
         a.write(s)
 
 
-def find_library(package_name, lib_names):
-    "Return the full path to the library (empty string if not found)"
-    search_dirs = [
-        "%s%slib" % (os.environ.get("%s_DIR" % package_name.upper(), ""),
-                     os.path.sep),
-        "%s" % sysconfig.get_config_vars().get("LIBDIR", ""),
-        "/usr/lib/%s" % sysconfig.get_config_vars().get("MULTIARCH", ""),
-        "/usr/local/lib",
-        "/opt/local/lib",
-        "/usr/lib",
-        "/usr/lib64",
-        ]
-    lib = None
-    cc = new_compiler()
-    for name in lib_names:
-        lib = cc.find_library_file(search_dirs, name)
-        if lib is not None:
-            break
-    return lib or ""
-
-
-def find_python_library():
-    "Return the full path to the Python library (empty string if not found)"
-    pyver = sysconfig.get_python_version()
-    libpython_names = [
-        "python%s" % pyver.replace(".", ""),
-        "python%smu" % pyver,
-        "python%sm" % pyver,
-        "python%su" % pyver,
-        "python%s" % pyver,
-        ]
-    return find_library("python", libpython_names)
-
-
-def find_boost_math_library():
-    "Return the full path to the Boost math library (empty string if not found)"
-    return find_library("boost", ["boost_math_tr1", "boost_math_tr1-mt"])
-
-
-def find_include_dir(package_name, header_file):
-    "Return the path to the given header file (empty string if not found)"
-    search_dirs = [
-        "%s%sinclude" % (os.environ.get("%s_DIR" % package_name.upper(), ""),
-                         os.path.sep),
-        "/usr/local/include",
-        "/opt/local/include",
-        "/usr/include",
-        ]
-    for inc_dir in search_dirs:
-        if os.path.isfile(os.path.join(inc_dir, header_file)):
-            return inc_dir
-    return ""
-
-
-def find_boost_include_dir():
-    "Return the path to the Boost include dir (empty string if not found)"
-    return find_include_dir("boost", os.path.join("boost", "version.hpp"))
-
-
 def generate_git_hash_file(GIT_COMMIT_HASH):
     "Generate module with git hash"
     write_config_file(os.path.join("ffc", "git_commit_hash.py.in"),
@@ -213,40 +153,6 @@ def generate_ufc_config_py_file(INSTALL_PREFIX, CXX_FLAGS, UFC_SIGNATURE):
                       variables=dict(INSTALL_PREFIX=INSTALL_PREFIX,
                                      CXX_FLAGS=CXX_FLAGS,
                                      UFC_SIGNATURE=UFC_SIGNATURE))
-
-
-def generate_ufc_config_files(INSTALL_PREFIX, CXX_FLAGS, UFC_SIGNATURE):
-    "Generate and install UFC configuration files"
-
-    # Get variables
-    PYTHON_LIBRARY = os.environ.get("PYTHON_LIBRARY", find_python_library())
-
-    # Generate UFCConfig.cmake
-    write_config_file(os.path.join("cmake", "templates", "UFCConfig.cmake.in"),
-                      os.path.join("cmake", "templates", "UFCConfig.cmake"),
-                      variables=dict(INSTALL_PREFIX=INSTALL_PREFIX,
-                                     CXX_FLAGS=CXX_FLAGS.strip(),
-                                     PYTHON_INCLUDE_DIR=sysconfig.get_python_inc(),
-                                     PYTHON_LIBRARY=PYTHON_LIBRARY,
-                                     PYTHON_EXECUTABLE=sys.executable,
-                                     FULLVERSION=VERSION,
-                                     UFC_SIGNATURE=UFC_SIGNATURE,
-                                     BOOST_INCLUDE_DIR=find_boost_include_dir(),
-                                     BOOST_MATH_LIBRARY=find_boost_math_library()))
-
-    # Generate UFCConfigVersion.cmake
-    write_config_file(os.path.join("cmake", "templates",
-                                   "UFCConfigVersion.cmake.in"),
-                      os.path.join("cmake", "templates",
-                                   "UFCConfigVersion.cmake"),
-                      variables=dict(FULLVERSION=VERSION,
-                                     MAJOR=VERSION.split(".")[0],
-                                     MINOR=VERSION.split(".")[1],
-                                     MICRO=VERSION.split(".")[2]))
-
-    # Generate UseUFC.cmake
-    write_config_file(os.path.join("cmake", "templates", "UseUFC.cmake.in"),
-                      os.path.join("cmake", "templates", "UseUFC.cmake"))
 
 
 def has_cxx_flag(cc, flag):
@@ -292,9 +198,6 @@ def run_install():
     # Generate module with git hash from template
     generate_git_hash_file(GIT_COMMIT_HASH)
 
-    # Generate config files
-    generate_ufc_config_files(INSTALL_PREFIX, CXX_FLAGS, UFC_SIGNATURE)
-
     class my_install(install):
         def run(self):
             if not self.dry_run:
@@ -308,23 +211,6 @@ def run_install():
     # FFC data files
     data_files = [(os.path.join("share", "man", "man1"),
                   [os.path.join("doc", "man", "man1", "ffc.1.gz")])]
-
-    # Add UFC data files (need to use complete path because setuptools
-    # installs into the Python package directory, not --prefix). This
-    # can be fixed when Swig, etc are removed from FFC).
-    data_files_ufc = [
-        #(os.path.join(INSTALL_PREFIX, "include"),
-        # [os.path.join("ufc", "ufc.h"),
-        #  os.path.join("ufc", "ufc_geometry.h")]),
-        (os.path.join(INSTALL_PREFIX, "share", "ufc"),
-         [os.path.join("cmake", "templates",
-                       "UFCConfig.cmake"),
-        os.path.join("cmake", "templates",
-                     "UFCConfigVersion.cmake"),
-          os.path.join("cmake", "templates",
-                       "UseUFC.cmake")])]
-
-    data_files = data_files + data_files_ufc
 
     # Call distutils to perform installation
     setup(name="FFC",
@@ -343,7 +229,7 @@ def run_install():
                        "uflacs": "uflacs",
                        "ufc": "ufc"},
           package_data={
-              'ufc': ['*.h'],
+              "ufc": ['*.h'],
           },
           scripts=scripts,
           cmdclass={'install': my_install},

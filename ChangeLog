@@ -1,5 +1,5 @@
- - Remove ufc-1.pc file installation (UFC path and compiler flags are
-   available from ffc module)
+ - Remove installation of pkg-config and CMake files (UFC path and
+   compiler flags are available from ffc module)
  - Add dependency on dijitso and remove dependency on instant
  - Add experimental Bitbucket pipelines
  - Tidy the repo after UFC and UFLACS merge, and general spring cleanup. This

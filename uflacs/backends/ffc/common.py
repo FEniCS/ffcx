@@ -21,6 +21,25 @@
 from six.moves import xrange as range
 
 
+def ufc_restriction_postfix(restriction):
+    # TODO: Get restriction postfix from somewhere central
+    if restriction == "+":
+        res = "_0"
+    elif restriction == "-":
+        res = "_1"
+    else:
+        res = ""
+    return res
+
+
+def ufc_restriction_offset(restriction, length):
+    # TODO: Get restriction postfix from somewhere central
+    if restriction == "-":
+        return length
+    else:
+        return 0
+
+
 # FIXME: Do something like this for shared symbol naming?
 class FFCBackendSymbols(object):
     def __init__(self, language, coefficient_numbering):
@@ -28,8 +47,9 @@ class FFCBackendSymbols(object):
         self.S = self.L.Symbol
         self.coefficient_numbering = coefficient_numbering
 
-        # Rules, make functions? (NB! Currently duplicated from names)
-        self.restriction_postfix = {"+": "_0", "-": "_1", None: ""}  # TODO: Use this wherever we need it?
+        # Used for padding variable names based on restriction
+        self.restriction_postfix = { r: ufc_restriction_postfix(r)
+                                     for r in ("+", "-", None) }
 
     # FIXME: Used in access: weights, points, ia, A, w, x, J
 
@@ -45,17 +65,20 @@ class FFCBackendSymbols(object):
         "Reference cell coordinates."
         return self.S("xi" + str(quadloop))
 
-    def quadrature_loop_index(self):
+    def quadrature_loop_index(self, num_points):
         "Reusing a single index name for all quadrature loops, assumed not to be nested."
         # If we want to use num_points-specific names for any symbols, this need num_points as well (or some other scope id).
-        #return self.S("iq%d" % (num_points,))
+        #if num_points == 1:
+        #    return 0
+        #else:
+        #    return self.S("iq%d" % (num_points,))
         return self.S("iq")
 
     def coefficient_dof_sum_index(self):
         "Reusing a single index name for all coefficient dof*basis sums, assumed to always be the innermost loop."
         return self.S("ic")
 
-    def coefficient_value_access(self, coefficient,):
+    def coefficient_value_access(self, coefficient):  # TODO: Currently not used?
         c = self.coefficient_numbering[coefficient] # coefficient.count()
         # If we want to use num_points-specific names for any symbols, this need num_points as well (or some other scope id).
         #return self.S("w%d_%d" % (c, num_points))
@@ -63,26 +86,23 @@ class FFCBackendSymbols(object):
 
     def coefficient_dof_access(self, coefficient, dof_number):
         # TODO: Add domain_number = self.ir["domain_numbering"][coefficient.ufl_domain().domain_key()]
-        # TODO: Flatten dofs array and use CRSArray lookup table.
-        # TODO: Apply integral specific renumbering.
+        # TODO: Flatten dofs array and use CRSArray lookup table?
+        # TODO: Apply integral specific renumbering?
         c = self.coefficient_numbering[coefficient] # coefficient.count()
-        #return self.L.ArrayAccess(names.w, (c, dof_number))
-        return self.S("w")[c, dof_number]
+        w = self.S("w")
+        return w[c, dof_number]
 
     def domain_dof_access(self, dof, component, gdim, num_scalar_dofs, restriction, interleaved_components):
         # TODO: Add domain number as argument here, and {domain_offset} to array indexing:
         # domain_offset = self.ir["domain_offsets"][domain_number]
-        vc = self.S("coordinate_dofs" + self.restriction_postfix[restriction])
+        vc = self.S("coordinate_dofs" + ufc_restriction_postfix(restriction))
         if interleaved_components:
-            #return L.ArrayAccess(vc, L.Add(L.Mul(gdim, dof), component))
             return vc[gdim*dof + component]
         else:
-            #return L.ArrayAccess(vc, L.Add(L.Mul(num_scalar_dofs, component), dof))
             return vc[num_scalar_dofs*component + dof]
 
     def domain_dofs_access(self, gdim, num_scalar_dofs, restriction, interleaved_components):
         # TODO: Add domain number as argument here, and {domain_offset} to array indexing:
-        # FIXME: Handle restriction here
         # domain_offset = self.ir["domain_offsets"][domain_number]
         return [self.domain_dof_access(dof, component, gdim, num_scalar_dofs, restriction, interleaved_components)
                 for component in range(gdim)
@@ -135,8 +155,9 @@ class Names:
         self.ia = "ia"   # Argument dof loop
         self.ild = "ild"  # Local derivative accumulation loop
 
-        # Rules, make functions?
-        self.restriction_postfix = {"+": "_0", "-": "_1", None: ""}  # TODO: Use this wherever we need it?
+        # Used for padding variable names based on restriction
+        self.restriction_postfix = { r: ufc_restriction_postfix(r)
+                                     for r in ("+", "-", None) }
 
 names = Names()
 
@@ -150,6 +171,7 @@ def format_entity_name(entitytype, r):
         entity = names.vertex
     return entity
 
+
 def format_mt_der(mt):
     # Expecting only local derivatives here
     assert not mt.global_derivatives
@@ -160,6 +182,7 @@ def format_mt_der(mt):
         der = ""
     return der
 
+
 def format_mt_comp(mt):
     # Add flattened component to name (TODO: this should be the local component?)
     if mt.component:
@@ -167,6 +190,7 @@ def format_mt_comp(mt):
     else:
         comp = ""
     return comp
+
 
 def format_mt_avg(mt):
     # Add averaged state to name
@@ -176,8 +200,10 @@ def format_mt_avg(mt):
         avg = ""
     return avg
 
+
 def format_mt_res(mt):
     return names.restriction_postfix[mt.restriction].replace("_", "_r")
+
 
 def format_mt_name(basename, mt):
     access = "{basename}{avg}{res}{der}{comp}".format(basename=basename,
@@ -186,24 +212,3 @@ def format_mt_name(basename, mt):
                                                       der=format_mt_der(mt),
                                                       comp=format_mt_comp(mt))
     return access
-
-def ufc_restriction_postfix(restriction):
-    # TODO: Get restriction postfix from somewhere central
-    if restriction == "+":
-        res = "_0"
-    elif restriction == "-":
-        res = "_1"
-    else:
-        res = ""
-    return res
-
-# from uflacs.backends.ffc.ffc_statement_formatter import format_element_table_access
-# from ufl.utils.derivativetuples import derivative_listing_to_counts
-# def generate_element_table_access(mt):
-#     FIXME: See  format_element_table_access  get_element_table_data
-#     entity = format_entity_name(self.ir["entitytype"], mt.restriction)
-#     return L.ArrayAccess(uname, (entity, names.iq, dof_number))
-#     return "FE[0]" # FIXME
-
-# def generate_geometry_table_access(mt):
-#     return "FJ[0]" # FIXME

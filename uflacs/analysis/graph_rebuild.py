@@ -189,7 +189,7 @@ def rebuild_expression_from_graph(G):
         return as_vector(w)  # TODO: Consider shape of initial v
 
 
-def rebuild_with_scalar_subexpressions(G):
+def rebuild_with_scalar_subexpressions(G, targets=None):
     """Build a new expression2index mapping where each subexpression is scalar valued.
 
     Input:
@@ -222,7 +222,6 @@ def rebuild_with_scalar_subexpressions(G):
 
     # Iterate over each graph node in order
     for i, v in enumerate(G.V):
-
         # Find symbols of v components
         vs = G.V_symbols[i]
 
@@ -231,35 +230,35 @@ def rebuild_with_scalar_subexpressions(G):
             continue
 
         if is_modified_terminal(v):
-
             # ffc_assert(v.ufl_free_indices == (), "Expecting no free indices.")
-
             sh = v.ufl_shape
-
             if sh:
-                # Store each terminal expression component (we may not actually need all of these later!)
+                # Store each terminal expression component.
+                # We may not actually need all of these later,
+                # but that will be optimized away.
+                # Note: symmetries will be dealt with in the value numbering.
                 ws = [v[c] for c in compute_indices(sh)]
-                # FIXME: How does this fit in with modified terminals with symmetries?
-
             else:
                 # Store single modified terminal expression component
                 ffc_assert(len(vs) == 1, "Expecting single symbol for scalar valued modified terminal.")
                 ws = [v]
-
+            # FIXME: Replace ws[:] with 0's if its table is empty
+            # Possible redesign: loop over modified terminals only first,
+            # then build tables for them, set W[s] = 0.0 for modified terminals with zero table,
+            # then loop over non-(modified terminal)s to reconstruct expression.
         else:
-
             # Find symbols of operands
             sops = []
             for j, vop in enumerate(v.ufl_operands):
-                # TODO: Store MultiIndex in G.V and allocate a symbol to it for this to work
                 if isinstance(vop, MultiIndex):
+                    # TODO: Store MultiIndex in G.V and allocate a symbol to it for this to work
                     if not isinstance(v, IndexSum):
                         error("Not expecting a %s." % type(v))
                     sops.append(())
                 else:
-                    k = G.e2i[vop]
-                    # TODO: Build edge datastructure and use this instead?
+                    # TODO: Build edge datastructure and use instead?
                     # k = G.E[i][j]
+                    k = G.e2i[vop]
                     sops.append(G.V_symbols[k])
 
             # Fetch reconstructed operand expressions
@@ -272,15 +271,28 @@ def rebuild_with_scalar_subexpressions(G):
             ffc_assert(len(vs) == len(ws), "Expecting one symbol for each expression.")
 
         # Store each new scalar subexpression in W at the index of its symbol
+        handled = set()
         for s, w in zip(vs, ws):
-            W[s] = w
+            if W[s] is None:
+                W[s] = w
+                handled.add(s)
+            else:
+                assert s in handled  # Result of symmetry!
 
-    # Find symbols of final v from input graph
-    vs = G.V_symbols[G.nv - 1]  # TODO: This is easy to extend to multiple 'final v'
+    # Find symbols of requested targets or final v from input graph
+    if targets is None:
+        targets = [G.V[-1]]
 
-    # Sanity check: assert that we've handled these symbols
-    ffc_assert(all(W[s] is not None for s in vs),
-               "Expecting that all symbols in vs are handled at this point.")
+    # Attempt to extend this to multiple target expressions
+    scalar_target_expressions = []
+    for target in targets:
+        ti = G.e2i[target]
+        vs = G.V_symbols[ti]
+        # Sanity check: assert that we've handled these symbols
+        ffc_assert(all(W[s] is not None for s in vs),
+                   "Expecting that all symbols in vs are handled at this point.")
+        scalar_target_expressions.append([W[s] for s in vs])
 
     # Return the scalar expressions for each of the components
-    return [W[s] for s in vs]
+    assert len(scalar_target_expressions) == 1  # TODO: Currently expected by callers, fix those first
+    return scalar_target_expressions[0]  # ... TODO: then return list

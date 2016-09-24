@@ -44,6 +44,15 @@ def equal_tables(a, b, eps):
     return all(scalars_equal(a[i], b[i], eps) for i in range(a.shape[0]))
 
 
+def clamp_table_small_integers(table, eps):
+    "Clamp almost 0,1,-1 values to integers. Returns new table."
+    # Get shape of table and number of columns, defined as the last axis
+    table = numpy.asarray(table)
+    for n in (-1, 0, 1):
+        table[numpy.where(abs(table - n) < eps)] = float(n)
+    return table
+
+
 def strip_table_zeros(table, eps):
     "Strip zero columns from table. Returns column range (begin,end) and the new compact table."
     # Get shape of table and number of columns, defined as the last axis
@@ -66,33 +75,11 @@ def strip_table_zeros(table, eps):
             break
 
     # Make subtable by stripping first and last columns
-    return begin, end, table[..., begin:end]
+    stripped_table = table[..., begin:end]
+    return begin, end, stripped_table
 
 
 def build_unique_tables(tables, eps):
-    """Given a list or dict of tables, return a list of unique tables
-    and a dict of unique table indices for each input table key."""
-    unique = []
-    mapping = {}
-    if isinstance(tables, list):
-        keys = list(range(len(tables)))
-    elif isinstance(tables, dict):
-        keys = sorted(tables.keys())
-    for k in keys:
-        t = tables[k]
-        found = -1
-        for i, u in enumerate(unique):
-            if equal_tables(u, t, eps):
-                found = i
-                break
-        if found == -1:
-            i = len(unique)
-            unique.append(t)
-        mapping[k] = i
-    return unique, mapping
-
-
-def build_unique_tables2(tables, eps):
     """Given a list or dict of tables, return a list of unique tables
     and a dict of unique table indices for each input table key."""
     unique = []

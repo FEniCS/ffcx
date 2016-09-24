@@ -988,7 +988,7 @@ def build_1d_initializer_list(values, formatter, padlen=0):
         tokens.append(fvalues[-1])
         if padlen:
             # Add padding
-            zero = formatter(0)
+            zero = formatter(values.dtype(0))
             for i in range(leftover(len(values), padlen)):
                 tokens.append(sep)
                 tokens.append(zero)
@@ -1057,7 +1057,10 @@ class ArrayDecl(CStatement):
         self.sizes = tuple(sizes)
 
         # NB! No type checking, assuming nested lists of literal values. Not applying as_cexpr.
-        self.values = values
+        if isinstance(values, (list, tuple)):
+            self.values = numpy.asarray(values)
+        else:
+            self.values = values
 
         self.alignas = alignas
         self.padlen = padlen
@@ -1097,8 +1100,13 @@ class ArrayDecl(CStatement):
             return decl + " = {};"
         else:
             # Construct initializer lists for arbitrary multidimensional array values
+            if self.values.dtype.kind == "f":
+                formatter = format_float
+            else:
+                # Not really using other types, this can be buggy
+                formatter = format_value
             initializer_lists = build_initializer_lists(self.values, self.sizes, 0,
-                                                        format_value, padlen=self.padlen)
+                                                        formatter, padlen=self.padlen)
             if len(initializer_lists) == 1:
                 return decl + " = " + initializer_lists[0] + ";"
             else:
