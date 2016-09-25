@@ -17,7 +17,7 @@
 
 # FIXME: This can be removed once DOLFIN has been updated to
 #        use ufc.get_includes()
-from ufc import get_includes as get_ufc_include
+from ufc import get_include_path as get_ufc_include
 
 
 def get_ufc_cxx_flags():
