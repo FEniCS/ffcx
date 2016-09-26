@@ -81,7 +81,7 @@ def get_installation_prefix():
 
 def get_ufc_signature():
     """Compute SHA-1 hash of ufc.h"""
-    with open(os.path.join('ufc', 'ufc.h'), 'rb') as f:
+    with open(os.path.join('ffc', 'backends', 'ufc', 'ufc.h'), 'rb') as f:
         return hashlib.sha1(f.read()).hexdigest()
 
 
@@ -221,7 +221,7 @@ def run_install():
                        "uflacs": "uflacs",
                        "ufc": "ufc"},
           package_data={
-              "ufc": ['*.h'],
+              "ffc" : [os.path.join('backends', 'ufc', '*.h')]
           },
           scripts=scripts,
           data_files=data_files,
