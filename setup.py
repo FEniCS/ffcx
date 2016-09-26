@@ -219,7 +219,6 @@ def run_install():
           packages=find_packages("."),
           package_dir={"ffc": "ffc",
                        "uflacs": "uflacs",
-                       "ufc": "ufc"},
           package_data={
               "ffc" : [os.path.join('backends', 'ufc', '*.h')]
           },
