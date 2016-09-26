@@ -3,13 +3,13 @@ import ufl
 from ufl import *
 from ufl import as_ufl
 
-import uflacs.language
-from uflacs.language.ufl_to_cnodes import UFL2CNodesTranslatorCpp, UFL2CNodesTranslatorC
+import ffc.uflacs.language
+from ffc.uflacs.language.ufl_to_cnodes import UFL2CNodesTranslatorCpp, UFL2CNodesTranslatorC
 
 
 def test_ufl_to_cnodes():
 
-    L = uflacs.language.cnodes
+    L = ffc.uflacs.language.cnodes
     translate = UFL2CNodesTranslatorCpp(L)
 
     f = ufl.CellVolume(ufl.triangle)

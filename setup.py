@@ -218,7 +218,6 @@ def run_install():
           platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
           packages=find_packages("."),
           package_dir={"ffc": "ffc",
-                       "uflacs": "uflacs",
                        "ufc": "ufc"},
           package_data={
               "ufc": ['*.h'],

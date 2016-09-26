@@ -7,7 +7,7 @@ Some of this is C++ specific, some is more generic.
 """
 
 import pytest
-from uflacs.language.cnodes import *
+from ffc.uflacs.language.cnodes import *
 
 
 def test_format_basics():

@@ -1,8 +1,8 @@
 
 import pytest
 from ufl import *
-from uflacs.analysis.indexing import map_indexed_arg_components
-from uflacs.analysis.indexing import map_component_tensor_arg_components
+from ffc.uflacs.analysis.indexing import map_indexed_arg_components
+from ffc.uflacs.analysis.indexing import map_component_tensor_arg_components
 
 def test_map_index_arg_components():
     x = SpatialCoordinate(triangle)

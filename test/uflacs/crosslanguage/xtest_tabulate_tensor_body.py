@@ -5,7 +5,7 @@ import ufl
 from ufl import *
 #from ufl import product
 
-from uflacs.backends.toy.toy_compiler import compile_expression
+from ffc.uflacs.backends.toy.toy_compiler import compile_expression
 
 def compile_expression0(expr):
     code = ""

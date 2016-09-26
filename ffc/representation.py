@@ -62,14 +62,11 @@ ufc_integral_types = ("cell",
 def pick_representation(representation):
     "Return one of the specialized code generation modules from a representation string."
     if representation == "quadrature":
-        from ffc import quadrature
-        r = quadrature
+        from ffc import quadrature as r
     elif representation == "tensor":
-        from ffc import tensor
-        r = tensor
+        from ffc import tensor as r
     elif representation == "uflacs":
-        from ffc import uflacsrepr
-        r = uflacsrepr
+        from ffc import uflacs as r
     else:
         error("Unknown representation: %s" % str(representation))
     return r

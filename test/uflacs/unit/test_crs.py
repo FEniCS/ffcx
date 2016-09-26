@@ -3,7 +3,7 @@ Tests of CRSArray data structure.
 """
 
 from six.moves import xrange
-from uflacs.analysis.crsarray import CRSArray
+from ffc.uflacs.analysis.crsarray import CRSArray
 
 
 def test_crs_can_have_zero_element_rows():
