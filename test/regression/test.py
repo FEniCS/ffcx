@@ -44,7 +44,8 @@ import subprocess
 import time
 from numpy import array, shape, abs, max, isnan
 from ffc.log import begin, end, info, info_red, info_green, info_blue
-from ffc import get_ufc_include, get_ufc_cxx_flags
+from ffc import get_ufc_cxx_flags
+from ffc.backends.ufc import get_include_path as get_ufc_include
 from ufctest import generate_test_code
 
 

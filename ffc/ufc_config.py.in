@@ -15,11 +15,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
-# FIXME: This can be removed once DOLFIN has been updated to
-#        use ufc.get_includes()
-from ufc import get_include_path as get_ufc_include
-
-
 def get_ufc_cxx_flags():
     """Return C++ flags for compiling UFC C++11 code. Return type
     is a list of strings.

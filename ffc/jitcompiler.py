@@ -49,7 +49,7 @@ from ffc.compiler import compile_form, compile_element
 from ffc.formatting import write_code
 from ffc.jitobject import JITObject
 from ffc.quadratureelement import default_quadrature_degree
-from ffc.ufc_config import get_ufc_include
+from ffc.backends.ufc import get_include_path as get_ufc_include
 
 
 def jit_generate(ufl_object, module_name, parameters):
