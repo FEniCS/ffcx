@@ -217,7 +217,7 @@ def run_install():
           download_url=tarball(),
           platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
           packages=find_packages("."),
-          package_dir={"ffc": "ffc"}
+          package_dir={"ffc": "ffc"},
           package_data={"ffc" : [os.path.join('backends', 'ufc', '*.h')]},
           scripts=scripts,
           data_files=data_files,
