@@ -9,13 +9,13 @@ from ufl import *
 from ufl import product
 from ufl.permutation import compute_indices
 
-from uflacs.analysis.graph import build_graph
-from uflacs.analysis.graph_rebuild import rebuild_expression_from_graph
-# from uflacs.analysis.graph_rebuild import rebuild_scalar_e2i
-# from uflacs.analysis.graph_dependencies import (compute_dependencies,
+from ffc.uflacs.analysis.graph import build_graph
+from ffc.uflacs.analysis.graph_rebuild import rebuild_expression_from_graph
+# from ffc.uflacs.analysis.graph_rebuild import rebuild_scalar_e2i
+# from ffc.uflacs.analysis.graph_dependencies import (compute_dependencies,
 #                                                mark_active,
 #                                                mark_image)
-# from uflacs.analysis.graph_ssa import (mark_partitions,
+# from ffc.uflacs.analysis.graph_ssa import (mark_partitions,
 #                                       compute_dependency_count,
 #                                       invert_dependencies,
 #                                       default_cache_score_policy,
@@ -323,7 +323,7 @@ def xtest_rebuild_expression_from_graph_on_compounds():
 
 
 def test_flattening_of_tensor_valued_expression_symbols():
-    # from uflacs.analysis.graph import foo
+    # from ffc.uflacs.analysis.graph import foo
     def flatten_expression_symbols(v, vsyms, opsyms):
         sh = v.ufl_shape
         if sh == ():

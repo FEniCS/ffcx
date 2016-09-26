@@ -10,9 +10,8 @@ import ufl
 from ufl.constantvalue import as_ufl
 from ufl.algorithms import preprocess_expression, expand_indices
 
-import uflacs
-from uflacs.codeutils.cpp_expr_formatting_rules import CppFormattingRules
-from uflacs.codeutils.expr_formatter import ExprFormatter
+from ffc.uflacs.codeutils.cpp_expr_formatting_rules import CppFormattingRules
+from ffc.uflacs.codeutils.expr_formatter import ExprFormatter
 
 
 def expr2cpp(expr, variables=None):

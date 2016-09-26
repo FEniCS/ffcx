@@ -4,7 +4,7 @@ Tests of CNode formatting.
 
 from __future__ import print_function
 
-from uflacs.language.cnodes import *
+from ffc.uflacs.language.cnodes import *
 
 
 def test_cnode_expression_precedence():

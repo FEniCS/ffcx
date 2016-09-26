@@ -1,3 +1,4 @@
+ - Move uflacs module into ffc.uflacs
  - Remove installation of pkg-config and CMake files (UFC path and
    compiler flags are available from ffc module)
  - Add dependency on dijitso and remove dependency on instant

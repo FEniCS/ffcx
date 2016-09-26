@@ -726,8 +726,8 @@ def set_float_formatting(precision):
     format["epsilon"] = 10.0 * eval("1e-%s" % precision)
 
     # Hack to propagate precision to uflacs internals...
-    import uflacs.language.format_value
-    uflacs.language.format_value.set_float_precision(precision)
+    import ffc.uflacs.language.format_value
+    ffc.uflacs.language.format_value.set_float_precision(precision)
 
 
 def set_exception_handling(convert_exceptions_to_warnings):
