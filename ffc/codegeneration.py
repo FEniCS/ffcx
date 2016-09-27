@@ -39,9 +39,8 @@ from ffc.evaluatedof import evaluate_dof_and_dofs, affine_weights
 from ffc.interpolatevertexvalues import interpolate_vertex_values
 from ffc.representation import pick_representation, ufc_integral_types
 
+
 # Errors issued for non-implemented functions
-
-
 def _not_implemented(function_name, return_null=False):
     body = format["exception"]("%s not yet implemented." % function_name)
     if return_null:
@@ -54,6 +53,7 @@ def generate_code(ir, parameters):
 
     begin("Compiler stage 4: Generating code")
 
+    # FIXME: This has global side effects
     # Set code generation parameters
     set_float_formatting(int(parameters["precision"]))
     set_exception_handling(parameters["convert_exceptions_to_warnings"])

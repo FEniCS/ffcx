@@ -220,6 +220,11 @@ def jit(ufl_object, parameters=None, indirect=False):
     if indirect:
         return module_name
     else:
+        # FIXME: Streamline number of return arguments here across kinds
+        if module is None:
+            # Returning instead of raising to let
+            return None
+
         if kind == "form":
             compiled_form = _instantiate_form(module, module_name)
             return (compiled_form, module, module_name)

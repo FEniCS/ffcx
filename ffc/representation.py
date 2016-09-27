@@ -72,7 +72,7 @@ def pick_representation(representation):
     return r
 
 
-def compute_ir(analysis, prefix, parameters):
+def compute_ir(analysis, prefix, parameters, jit=False):
     "Compute intermediate representation."
 
     begin("Compiler stage 2: Computing intermediate representation")
@@ -84,20 +84,26 @@ def compute_ir(analysis, prefix, parameters):
     # Extract data from analysis
     form_datas, elements, element_numbers, coordinate_elements = analysis
 
-    # Compute representation of elements
-    info("Computing representation of %d elements" % len(elements))
-    ir_elements = [_compute_element_ir(e, prefix, element_numbers)
-                   for e in elements]
+    # Skip processing elements if jitting forms
+    if jit and form_datas:
+        ir_elements = []
+        ir_dofmaps = []
+        ir_coordinate_mappings = []
+    else:
+        # Compute representation of elements
+        info("Computing representation of %d elements" % len(elements))
+        ir_elements = [_compute_element_ir(e, prefix, element_numbers)
+                       for e in elements]
 
-    # Compute representation of dofmaps
-    info("Computing representation of %d dofmaps" % len(elements))
-    ir_dofmaps = [_compute_dofmap_ir(e, prefix, element_numbers)
-                  for e in elements]
+        # Compute representation of dofmaps
+        info("Computing representation of %d dofmaps" % len(elements))
+        ir_dofmaps = [_compute_dofmap_ir(e, prefix, element_numbers)
+                      for e in elements]
 
-    # Compute representation of coordinate mappings
-    info("Computing representation of %d coordinate mappings" % len(coordinate_elements))
-    ir_compute_coordinate_mappings = [_compute_coordinate_mapping_ir(e, prefix, element_numbers)
-                                      for e in coordinate_elements]
+        # Compute representation of coordinate mappings
+        info("Computing representation of %d coordinate mappings" % len(coordinate_elements))
+        ir_coordinate_mappings = [_compute_coordinate_mapping_ir(e, prefix, element_numbers)
+                                  for e in coordinate_elements]
 
     # Compute and flatten representation of integrals
     info("Computing representation of integrals")
@@ -112,7 +118,7 @@ def compute_ir(analysis, prefix, parameters):
 
     end()
 
-    return ir_elements, ir_dofmaps, ir_compute_coordinate_mappings, ir_integrals, ir_forms
+    return ir_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms
 
 
 def _compute_element_ir(ufl_element, prefix, element_numbers):
