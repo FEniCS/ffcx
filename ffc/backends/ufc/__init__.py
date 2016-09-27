@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
 """Code generation format strings for UFC (Unified Form-assembly Code) version 2016.2.0.dev0
 
-Three format strings are defined for each of the following UFC classes:
+Five format strings are defined for each of the following UFC classes:
 
-    function
-    finite_element
-    dofmap
-    coordinate_mapping
     cell_integral
     exterior_facet_integral
     interior_facet_integral
@@ -14,22 +10,36 @@ Three format strings are defined for each of the following UFC classes:
     cutcell_integral
     interface_integral
     overlap_integral
+    function
+
+    finite_element
+    dofmap
+    coordinate_mapping
     form
 
-The strings are named '<classname>_header', '<classname>_implementation',
-and '<classname>_combined'. The header and implementation contain the
-definition and declaration respectively, and are meant to be placed in
-.h and .cpp files, while the combined version is for an implementation
-within a single .h header.
+The strings are named:
 
-Each string has the following format variables: 'classname',
+    '<classname>_header'
+    '<classname>_implementation'
+    '<classname>_combined'
+    '<classname>_jit_header'
+    '<classname>_jit_implementation'
+
+The header and implementation contain the definition and declaration
+of the class respectively, and are meant to be placed in .h and .cpp files,
+while the combined version is for an implementation within a single .h header.
+The _jit_ versions are used in the jit compiler and contains some additional
+factory functions exported as extern "C" to allow construction of compiled
+objects through ctypes without dealing with C++ ABI and name mangling issues.
+
+Each string has at least the following format variables: 'classname',
 'members', 'constructor', 'destructor', plus one for each interface
 function with name equal to the function name.
 
 For more information about UFC and the FEniCS Project, visit
 
     http://www.fenicsproject.org
-    https://bitbucket.org/fenics-project/ufc
+    https://bitbucket.org/fenics-project/ffc
 
 """
 
@@ -38,14 +48,14 @@ __date__ = "2016-09-27"
 __version__ = "2016.2.0.dev0"
 __license__ = "This code is released into the public domain"
 
+from os.path import dirname, abspath
+
 from .function import *
 from .finite_element import *
 from .dofmap import *
 from .coordinate_mapping import *
 from .integrals import *
 from .form import *
-from .factory import *
-from os.path import dirname, abspath
 
 
 def get_include_path():
@@ -53,63 +63,7 @@ def get_include_path():
     return dirname(abspath(__file__))
 
 
-templates = {"function_header": function_header,
-             "function_implementation": function_implementation,
-             "function_combined": function_combined,
-             "finite_element_header": finite_element_header,
-             "finite_element_jit_header": finite_element_jit_header,
-             "finite_element_implementation": finite_element_implementation,
-             "finite_element_jit_implementation": finite_element_jit_implementation,
-             "finite_element_combined": finite_element_combined,
-             "dofmap_header": dofmap_header,
-             "dofmap_jit_header": dofmap_jit_header,
-             "dofmap_implementation": dofmap_implementation,
-             "dofmap_jit_implementation": dofmap_jit_implementation,
-             "dofmap_combined": dofmap_combined,
-             "coordinate_mapping_header": coordinate_mapping_header,
-             "coordinate_mapping_jit_header": coordinate_mapping_jit_header,
-             "coordinate_mapping_implementation": coordinate_mapping_implementation,
-             "coordinate_mapping_jit_implementation": coordinate_mapping_jit_implementation,
-             "coordinate_mapping_combined": coordinate_mapping_combined,
-             "cell_integral_header": cell_integral_header,
-             "cell_integral_implementation": cell_integral_implementation,
-             "cell_integral_combined": cell_integral_combined,
-             "exterior_facet_integral_header": exterior_facet_integral_header,
-             "exterior_facet_integral_implementation": exterior_facet_integral_implementation,
-             "exterior_facet_integral_combined": exterior_facet_integral_combined,
-             "interior_facet_integral_header": interior_facet_integral_header,
-             "interior_facet_integral_implementation": interior_facet_integral_implementation,
-             "interior_facet_integral_combined": interior_facet_integral_combined,
-             "vertex_integral_header": vertex_integral_header,
-             "vertex_integral_implementation": vertex_integral_implementation,
-             "vertex_integral_combined": vertex_integral_combined,
-             "custom_integral_header": custom_integral_header,
-             "custom_integral_implementation": custom_integral_implementation,
-             "custom_integral_combined": custom_integral_combined,
-             "cutcell_integral_header": cutcell_integral_header,
-             "cutcell_integral_implementation": cutcell_integral_implementation,
-             "cutcell_integral_combined": cutcell_integral_combined,
-             "interface_integral_header": interface_integral_header,
-             "interface_integral_implementation": interface_integral_implementation,
-             "interface_integral_combined": interface_integral_combined,
-             "overlap_integral_header": overlap_integral_header,
-             "overlap_integral_implementation": overlap_integral_implementation,
-             "overlap_integral_combined": overlap_integral_combined,
-             "form_header": form_header,
-             "form_jit_header": form_jit_header,
-             "form_implementation": form_implementation,
-             "form_jit_implementation": form_jit_implementation,
-             "form_combined": form_combined,
-             "factory_header": factory_header,
-             "factory_implementation": factory_implementation,
-             }
-
-
-for integral_name in ["cell", "exterior_facet", "interior_facet", "vertex", "custom", "cutcell", "interface", "overlap"]:
-    templates[integral_name + "_integral_jit_header"] = ""
-    templates[integral_name + "_integral_jit_implementation"] = templates[integral_name + "_integral_combined"]
-
-
+# Platform specific snippets for controlling visilibity of exported symbols in generated shared libraries
 visibility_snippet = """
 // Based on https://gcc.gnu.org/wiki/Visibility
 #if defined _WIN32 || defined __CYGWIN__
@@ -123,13 +77,67 @@ visibility_snippet = """
 #endif
 """
 
+
+# Generic factory function signature
 factory_decl = """
 extern "C" %(basename)s * create_%(publicname)s();
 """
 
+
+# Generic factory function implementation. Set basename to the base class,
+# and note that publicname and privatename does not need to match, allowing
+# multiple factory functions to return the same object.
 factory_impl = """
 extern "C" DLL_EXPORT %(basename)s * create_%(publicname)s()
 {
  return new %(privatename)s();
 }
 """
+
+
+def all_ufc_classnames():
+    "Build list of all classnames."
+    integral_names = ["cell", "exterior_facet", "interior_facet", "vertex", "custom", "cutcell", "interface", "overlap"]
+    integral_classnames = [integral_name + "_integral" for integral_name in integral_names]
+    jitable_classnames = ["finite_element", "dofmap", "coordinate_mapping", "form"]
+    classnames = ["function"] + jitable_classnames + integral_classnames
+    return classnames
+
+
+def _build_templates():
+    "Build collection of all templates to store in the templates dict."
+    templates = {}
+    classnames = all_ufc_classnames()
+
+    for classname in classnames:
+        # Expect all classes to have header, implementation, and combined versions
+        header = globals()[classname + "_header"]
+        implementation = globals()[classname + "_implementation"]
+        combined = globals()[classname + "_combined"]
+
+        # Construct jit header with just factory function signature
+        jit_header = factory_decl % {
+            "basename": classname,
+            "publicname": "%(classname)s",
+            "privatename": "%(classname)s",
+            }
+
+        # Construct jit implementation template with class declaration,
+        # factory function implementation, and class definition
+        _fac_impl = factory_impl % {
+            "basename": classname,
+            "publicname": "%(classname)s",
+            "privatename": "%(classname)s",
+            }
+        jit_implementation = header + _fac_impl + implementation
+
+        # Store all in templates dict
+        templates[classname + "_header"] = header
+        templates[classname + "_implementation"] = implementation
+        templates[classname + "_combined"] = combined
+        templates[classname + "_jit_header"] = jit_header
+        templates[classname + "_jit_implementation"] = jit_implementation
+
+    return templates
+
+templates = _build_templates()

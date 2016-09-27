@@ -92,6 +92,8 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
         code_h += _format_h("form", code_form, parameters, jit)
         code_c += _format_c("form", code_form, parameters, jit)
 
+    # Add factory functions named "..._main" to construct the
+    # main element and dofmap in this module
     if jit and not code_forms:
         kind = "finite_element"
         pub = make_classname(prefix, kind, "main")

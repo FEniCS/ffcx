@@ -225,7 +225,7 @@ def jit(ufl_object, parameters=None, indirect=False):
             return (compiled_form, module, module_name)
             # TODO: module, module_name are never used in dolfin, drop?
             #return _instantiate_form(module, module_name)
-        elif kind == "element"
+        elif kind == "element":
             fe, dm = _instantiate_element_and_dofmap(module, module_name)
             return fe, dm
         elif kind == "coordinate_mapping":
