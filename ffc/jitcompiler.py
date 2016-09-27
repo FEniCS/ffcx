@@ -27,86 +27,174 @@ It uses dijitso to wrap the generated code into a Python module."""
 # Python modules
 import os
 import sys
-import dijitso
+from hashlib import sha1
 
-# UFL modules
-from ufl import TestFunction, ds, dx
-from ufl.classes import Form, FiniteElementBase
-from ufl.algorithms import extract_elements, extract_sub_elements, compute_form_data
+# FEniCS modules
+import ufl
+import dijitso
 
 # FFC modules
 from ffc.log import log
-from ffc.log import info
-from ffc.log import warning
-from ffc.log import debug
 from ffc.log import error
 from ffc.log import set_level
 from ffc.log import set_prefix
 from ffc.log import INFO
-from ffc.parameters import validate_jit_parameters
-from ffc.mixedelement import MixedElement
-from ffc.compiler import compile_form, compile_element
-from ffc.formatting import write_code
-from ffc.jitobject import JITObject
-from ffc.quadratureelement import default_quadrature_degree
-from ffc.backends.ufc import get_include_path as get_ufc_include
+from ffc.parameters import validate_jit_parameters, compute_jit_parameters_signature
+from ffc.compiler import compile_form, compile_element, compile_coordinate_mapping
+from ffc.backends.ufc import get_include_path as get_ufc_include_path
+from ffc.ufc_config import get_ufc_signature
+from ffc import __version__ as FFC_VERSION
+from ffc.cpp import make_classname
 
 
-def jit_generate(ufl_object, module_name, parameters):
-    "Generate code and return as strings."
-    if isinstance(ufl_object, Form):
-        code_h, code_c = compile_form(ufl_object, prefix=module_name,
-                                      parameters=parameters, jit=True)
-    elif isinstance(ufl_object, FiniteElementBase):
-        code_h, code_c = compile_element(ufl_object, prefix=module_name,
-                                         parameters=parameters, jit=True)
-    return code_h, code_c
+def jit_generate(ufl_object, module_name, signature, parameters):
+    "Callback function passed to dijitso.jit: generate code and return as strings."
+    log(INFO + 5, "Calling FFC just-in-time (JIT) compiler, this may take some time.")
+
+    # Jit compile dependent objects separately,
+    # but don't instantiate objects
+    # (this analysis is done in here such that it's
+    # only triggered if parent module is missing)
+    kind, dependent_ufl_objects = analyse_ufl_object_dependencies(ufl_object)
+    dependencies = []
+    for dep in dependent_ufl_objects:
+        dep_module_name = jit(dep, parameters, indirect=True)
+        dependencies.append(dep_module_name)
+
+    # Generate actual code for this object
+    if isinstance(ufl_object, ufl.Form):
+        compile_object = compile_form
+    elif isinstance(ufl_object, ufl.FiniteElementBase):
+        compile_object = compile_element
+    elif isinstance(ufl_object, ufl.Mesh):
+        compile_object = compile_coordinate_mapping
+
+    code_h, code_c = compile_object(ufl_object,
+            prefix=module_name, parameters=parameters, jit=True)
+
+    return code_h, code_c, dependencies
 
 
-def jit_build_with_dijitso(ufl_object, module_name, parameters):
+def jit_build(ufl_object, module_name, parameters, dependencies):
+    "Wraps dijitso jit with some parameter conversion etc."
 
-    def _generate(ufl_object, module_name, signature, parameters):
-        # Write a message
-        log(INFO + 5,
-            "Calling FFC just-in-time (JIT) compiler, this may take some time.")
-        code_h, code_c = jit_generate(ufl_object, module_name, parameters)
-        dependencies = ()
-        return code_h, code_c, dependencies
+    # FIXME: Expose more dijitso parameters?
+    # FIXME: dijitso build params are not part of module_name here.
+    #        Currently dijitso doesn't add to the module signature.
 
     # Translating the C++ flags from ffc parameters to dijitso
     # to get equivalent behaviour to instant code
-    if parameters["cpp_optimize"]:
-        build_params = {
-            "cxxflags_opt": tuple(parameters["cpp_optimize_flags"].split()),
-            "debug": False
-        }
-    else:
-        build_params = {
-            "cxxflags_debug": ("-O0",),
-            "debug": True
-        }
+    build_params = {}
+    build_params["debug"] = not parameters["cpp_optimize"]
+    build_params["cxxflags_opt"] = tuple(parameters["cpp_optimize_flags"].split())
+    build_params["cxxflags_debug"] = ("-O0",)
+    build_params["include_dirs"] = get_ufc_include_path()
 
-    # Add path to UFC include dir
-    build_params["include_dirs"] = get_ufc_include()
-
-    # FFC default is "", use "." to point to curdir
+    # Interpreting FFC default "" as None, use "." if you want to point to curdir
     cache_dir = parameters.get("cache_dir") or None
     if cache_dir:
         cache_params = {"cache_dir": cache_dir}
     else:
         cache_params = {}
 
+    # This will do some rudimenrary checking of the params and fill in dijitso defaults
     params = dijitso.validate_params({
         "cache": cache_params,
         "build": build_params,
-        "generator": parameters,
+        "generator": parameters,  # ffc parameters, just passed on to jit_generate
     })
 
-    module, signature = dijitso.jit(ufl_object, module_name, params, _generate)
+    # Carry out jit compilation, calling jit_generate only if needed
+    module, signature = dijitso.jit(jitable=ufl_object,
+                                    name=module_name,
+                                    params=params,
+                                    generate=jit_generate)
     return module
 
 
-def jit(ufl_object, parameters=None):
+def compute_jit_prefix(ufl_object, parameters):
+    "Compute the prefix (module name) for jit modules."
+
+    # Get signature from ufl object
+    if isinstance(ufl_object, ufl.Form):
+        kind = "form"
+        object_signature = ufl_object.signature()
+    elif isinstance(ufl_object, ufl.FiniteElementBase):
+        kind = "element"
+        object_signature = repr(ufl_object)
+    elif isinstance(ufl_object, ufl.Mesh):
+        kind = "coordinate_mapping"
+        # FIXME: Is this ok?
+        object_signature = kind + repr(ufl_object.ufl_coordinate_element())
+    else:
+        error("Unknown ufl object type %s" % (ufl_object.__class__.__name__,))
+
+    # Compute deterministic string of relevant parameters
+    parameters_signature = compute_jit_parameters_signature(parameters)
+
+    # Build common signature
+    signatures = [object_signature,
+                  parameters_signature,
+                  str(FFC_VERSION),
+                  get_ufc_signature()]
+    string = ";".join(signatures)
+
+    # Compute final signature
+    # TODO: Add parameter to shorten this?
+    signature = sha1(string.encode('utf-8')).hexdigest()
+
+    # Combine into prefix with some info including kind
+    prefix = "ffc_%s_%s" % (kind, signature)
+    return prefix
+
+
+def analyse_ufl_object_dependencies(ufl_object):
+    # Check that we get a form or element
+    if isinstance(ufl_object, ufl.Form):
+        kind = "form"
+
+        # Get all form arguments
+        args = ufl_object.arguments() + ufl_object.coefficients()
+
+        # Get all integration domains and form argument domains
+        # (don't think we need to get domains of geometric quantities directly)
+        domains = list(ufl_object.ufl_domains())
+        for dep in args:
+            domains.extend(dep.ufl_domains())
+
+        dependent_ufl_objects = []
+
+        # Depend on all argument and coefficient elements,
+        for dep in args:
+            dependent_ufl_objects.append(dep.ufl_element())
+
+        # Depend on coordinate mapping elements (although we will get these indirectly through coordinate mappings)
+        for dep in domains:
+            dependent_ufl_objects.append(dep.ufl_coordinate_element())
+
+        # Depend on coordinate mappings
+        for dep in domains:
+            dependent_ufl_objects.append(dep)
+
+    elif isinstance(ufl_object, ufl.FiniteElementBase):
+        kind = "element"
+
+        # Not compiling subelements separately at least for now, so no compile dependency.
+        dependent_ufl_objects = []
+
+    elif isinstance(ufl_object, ufl.Mesh):
+        kind = "coordinate_mapping"
+
+        # Depend on coordinate element (using full vector element here, not subelement)
+        dependent_ufl_objects = [ufl_object.ufl_coordinate_element()]
+
+    else:
+        error("Expecting a UFL form or element, got: %s" % repr(ufl_object))
+
+    return kind, dependent_ufl_objects
+
+
+def jit(ufl_object, parameters=None, indirect=False):
     """Just-in-time compile the given form or element
 
     Parameters:
@@ -114,14 +202,6 @@ def jit(ufl_object, parameters=None):
       ufl_object : The UFL object to be compiled
       parameters : A set of parameters
     """
-    # Check that we get a form or element
-    if isinstance(ufl_object, Form):
-        kind = "form"
-    elif isinstance(ufl_object, FiniteElementBase):
-        kind = "element"
-    else:
-        error("Expecting a UFL form or element, got: %s" % repr(ufl_object))
-
     # Check parameters
     parameters = validate_jit_parameters(parameters)
 
@@ -130,24 +210,27 @@ def jit(ufl_object, parameters=None):
     set_level(parameters["log_level"])
     set_prefix(parameters["log_prefix"])
 
-    # Wrap input
-    jit_object = JITObject(ufl_object, parameters)
-
-    # Set prefix for generated code
-    module_name = "ffc_%s_%s" % (kind, jit_object.signature())
+    # Make unique module name for generated code
+    module_name = compute_jit_prefix(ufl_object, parameters)
 
     # Inspect cache and generate+build if necessary
-    module = jit_build_with_dijitso(ufl_object, module_name, parameters)
+    module = jit_build(ufl_object, module_name, parameters)
 
-    # Construct instance of compiled form
-    if isinstance(ufl_object, Form):
-        compiled_form = _instantiate_form(module, module_name)
-        return compiled_form, module, module_name
-    elif isinstance(ufl_object, FiniteElementBase):
-        return _instantiate_element_and_dofmap(module, module_name)
-
-
-from ffc.cpp import make_classname
+    # Construct instance of object from compiled code unless indirect
+    if indirect:
+        return module_name
+    else:
+        if kind == "form":
+            compiled_form = _instantiate_form(module, module_name)
+            return (compiled_form, module, module_name)
+            # TODO: module, module_name are never used in dolfin, drop?
+            #return _instantiate_form(module, module_name)
+        elif kind == "element"
+            fe, dm = _instantiate_element_and_dofmap(module, module_name)
+            return fe, dm
+        elif kind == "coordinate_mapping":
+            cm = _instantiate_coordinate_mapping(module, module_name)
+            return cm
 
 
 def _instantiate_form(module, prefix):
@@ -164,5 +247,12 @@ def _instantiate_element_and_dofmap(module, prefix):
     dm_classname = make_classname(prefix, "dofmap", "main")
     fe = dijitso.extract_factory_function(module, "create_" + fe_classname)()
     dm = dijitso.extract_factory_function(module, "create_" + dm_classname)()
-
     return (fe, dm)
+
+
+def _instantiate_coordinate_mapping(module, prefix):
+    "Extract the coordinate_mapping from module with only one coordinate_mapping."
+    coordinate_mapping_id = 0
+    classname = make_classname(prefix, "coordinate_mapping", coordinate_mapping_id)
+    form = dijitso.extract_factory_function(module, "create_" + classname)()
+    return form

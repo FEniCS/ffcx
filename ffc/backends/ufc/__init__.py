@@ -6,7 +6,7 @@ Three format strings are defined for each of the following UFC classes:
     function
     finite_element
     dofmap
-    domain
+    coordinate_mapping
     cell_integral
     exterior_facet_integral
     interior_facet_integral
@@ -34,7 +34,7 @@ For more information about UFC and the FEniCS Project, visit
 """
 
 __author__ = "Martin Sandve Alnæs, Anders Logg, Kent-Andre Mardal, Ola Skavhaug, and Hans Petter Langtangen"
-__date__ = "2016-06-23"
+__date__ = "2016-09-27"
 __version__ = "2016.2.0.dev0"
 __license__ = "This code is released into the public domain"
 
@@ -67,7 +67,9 @@ templates = {"function_header": function_header,
              "dofmap_jit_implementation": dofmap_jit_implementation,
              "dofmap_combined": dofmap_combined,
              "coordinate_mapping_header": coordinate_mapping_header,
+             "coordinate_mapping_jit_header": coordinate_mapping_jit_header,
              "coordinate_mapping_implementation": coordinate_mapping_implementation,
+             "coordinate_mapping_jit_implementation": coordinate_mapping_jit_implementation,
              "coordinate_mapping_combined": coordinate_mapping_combined,
              "cell_integral_header": cell_integral_header,
              "cell_integral_implementation": cell_integral_implementation,
@@ -102,9 +104,11 @@ templates = {"function_header": function_header,
              "factory_implementation": factory_implementation,
              }
 
+
 for integral_name in ["cell", "exterior_facet", "interior_facet", "vertex", "custom", "cutcell", "interface", "overlap"]:
     templates[integral_name + "_integral_jit_header"] = ""
     templates[integral_name + "_integral_jit_implementation"] = templates[integral_name + "_integral_combined"]
+
 
 visibility_snippet = """
 // Based on https://gcc.gnu.org/wiki/Visibility

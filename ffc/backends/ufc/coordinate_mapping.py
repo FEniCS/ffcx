@@ -250,3 +250,14 @@ public:
 
 };
 """
+
+coordinate_mapping_jit_header = """
+extern "C" ufc::coordinate_mapping * create_%(classname)s();
+"""
+
+coordinate_mapping_jit_implementation = coordinate_mapping_header + """
+extern "C" DLL_EXPORT ufc::coordinate_mapping * create_%(classname)s()
+{
+  return new %(classname)s();
+}
+""" + coordinate_mapping_implementation
