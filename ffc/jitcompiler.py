@@ -75,7 +75,7 @@ def jit_generate(ufl_object, module_name, signature, parameters):
     return code_h, code_c, dependencies
 
 
-def jit_build(ufl_object, module_name, parameters, dependencies):
+def jit_build(ufl_object, module_name, parameters):
     "Wraps dijitso jit with some parameter conversion etc."
 
     # FIXME: Expose more dijitso parameters?
@@ -145,7 +145,7 @@ def compute_jit_prefix(ufl_object, parameters):
 
     # Combine into prefix with some info including kind
     prefix = "ffc_%s_%s" % (kind, signature)
-    return prefix
+    return kind, prefix
 
 
 def analyse_ufl_object_dependencies(ufl_object):
@@ -211,7 +211,7 @@ def jit(ufl_object, parameters=None, indirect=False):
     set_prefix(parameters["log_prefix"])
 
     # Make unique module name for generated code
-    module_name = compute_jit_prefix(ufl_object, parameters)
+    kind, module_name = compute_jit_prefix(ufl_object, parameters)
 
     # Inspect cache and generate+build if necessary
     module = jit_build(ufl_object, module_name, parameters)
@@ -231,6 +231,8 @@ def jit(ufl_object, parameters=None, indirect=False):
         elif kind == "coordinate_mapping":
             cm = _instantiate_coordinate_mapping(module, module_name)
             return cm
+        else:
+            error("Unknown kind %s" % (kind,))
 
 
 def _instantiate_form(module, prefix):

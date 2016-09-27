@@ -117,7 +117,7 @@ def _build_templates():
 
         # Construct jit header with just factory function signature
         jit_header = factory_decl % {
-            "basename": classname,
+            "basename": "ufc::" + classname,
             "publicname": "%(classname)s",
             "privatename": "%(classname)s",
             }
@@ -125,7 +125,7 @@ def _build_templates():
         # Construct jit implementation template with class declaration,
         # factory function implementation, and class definition
         _fac_impl = factory_impl % {
-            "basename": classname,
+            "basename": "ufc::" + classname,
             "publicname": "%(classname)s",
             "privatename": "%(classname)s",
             }
