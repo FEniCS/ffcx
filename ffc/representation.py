@@ -48,6 +48,7 @@ from ffc.quadratureelement import QuadratureElement
 from ffc.cpp import set_float_formatting
 from ffc.cpp import make_classname, make_integral_classname
 
+
 # List of supported integral types
 ufc_integral_types = ("cell",
                       "exterior_facet",
@@ -72,6 +73,24 @@ def pick_representation(representation):
     return r
 
 
+def make_finite_element_jit_classname(ufl_element, parameters):
+    from jitcompiler import compute_jit_prefix  # FIXME
+    kind, prefix = compute_jit_prefix(ufl_element, parameters)
+    return make_classname(prefix, "finite_element", "main")
+
+
+def make_dofmap_jit_classname(ufl_element, parameters):
+    from jitcompiler import compute_jit_prefix  # FIXME
+    kind, prefix = compute_jit_prefix(ufl_element, parameters)
+    return make_classname(prefix, "dofmap", "main")
+
+
+def make_coordinate_mapping_jit_classname(ufl_mesh, parameters):
+    from jitcompiler import compute_jit_prefix  # FIXME
+    kind, prefix = compute_jit_prefix(ufl_mesh, parameters)
+    return make_classname(prefix, "coordinate_mapping", "main")
+
+
 def compute_ir(analysis, prefix, parameters, jit=False):
     "Compute intermediate representation."
 
@@ -85,7 +104,7 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     form_datas, elements, element_numbers, coordinate_elements = analysis
 
     # Skip processing elements if jitting forms
-    if jit and form_datas:
+    if jit and form_datas:  # FIXME: Is this right now?
         ir_elements = []
         ir_dofmaps = []
         ir_coordinate_mappings = []
@@ -113,7 +132,7 @@ def compute_ir(analysis, prefix, parameters, jit=False):
 
     # Compute representation of forms
     info("Computing representation of forms")
-    ir_forms = [_compute_form_ir(fd, i, prefix, element_numbers)
+    ir_forms = [_compute_form_ir(fd, i, prefix, element_numbers, parameters, jit)
                 for (i, fd) in enumerate(form_datas)]
 
     end()
@@ -346,7 +365,8 @@ def _compute_integral_ir(form_data, form_id, prefix, element_numbers, parameters
                                    parameters)
 
         # Build classname
-        ir["classname"] = make_integral_classname(prefix, itg_data.integral_type, form_id, itg_data.subdomain_id)
+        ir["classname"] = make_integral_classname(prefix, itg_data.integral_type,
+                                                  form_id, itg_data.subdomain_id)
 
         # Storing prefix here for reconstruction of classnames on code generation side
         ir["prefix"] = prefix
@@ -364,7 +384,7 @@ def _compute_integral_ir(form_data, form_id, prefix, element_numbers, parameters
     return irs
 
 
-def _compute_form_ir(form_data, form_id, prefix, element_numbers):
+def _compute_form_ir(form_data, form_id, prefix, element_numbers, parameters, jit):
     "Compute intermediate representation of form."
 
     # Store id
@@ -372,6 +392,9 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers):
 
     # Storing prefix here for reconstruction of classnames on code generation side
     ir["prefix"] = prefix
+
+    # Remember jit status
+    ir["jit"] = jit
 
     # Compute common data
     ir["classname"] = make_classname(prefix, "form", form_id)
@@ -384,22 +407,54 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers):
     ir["num_coefficients"] = len(form_data.reduced_coefficients)
     ir["original_coefficient_position"] = form_data.original_coefficient_positions
 
-    # FIXME: First: pass classnames instead of element numbers to prepare for change to signature based classnames,
-    #               remember to use these classnames in codegeneration.py instead of calling make_classname.
-    # FIXME: Next: change element classnames to use unique signatures instead of small integer element numbers
+    # TODO: Remove create_coordinate_{finite_element,dofmap} and access
+    # through coordinate_mapping instead in dolfin, when that's in place
 
-    # TODO: Remove these two and access through coordinate_mapping instead in dolfin, when that's in place
-    ir["create_coordinate_finite_element"] = [make_classname(prefix, "finite_element", element_numbers[e])
-                                              for e in form_data.coordinate_elements]
-    ir["create_coordinate_dofmap"] = [make_classname(prefix, "dofmap", element_numbers[e])
-                                      for e in form_data.coordinate_elements]
-
-    ir["create_coordinate_mapping"] = [make_classname(prefix, "coordinate_mapping", element_numbers[e])
-                                       for e in form_data.coordinate_elements]
-    ir["create_finite_element"] = [make_classname(prefix, "finite_element", element_numbers[e])
-                                   for e in form_data.argument_elements + form_data.coefficient_elements]
-    ir["create_dofmap"] = [make_classname(prefix, "dofmap", element_numbers[e])
-                           for e in form_data.argument_elements + form_data.coefficient_elements]
+    if jit:
+        # Make unique classnames found in previously jit-compiled dependency module
+        ir["create_coordinate_finite_element"] = [
+            make_finite_element_jit_classname(e, parameters)
+            for e in form_data.coordinate_elements
+            ]
+        ir["create_coordinate_dofmap"] = [
+            make_dofmap_jit_classname(e, parameters)
+            for e in form_data.coordinate_elements
+            ]
+        ir["create_coordinate_mapping"] = [
+            make_coordinate_mapping_jit_classname(e, parameters)  # FIXME: Should pass mesh?
+            for e in form_data.coordinate_elements
+            ]
+        ir["create_finite_element"] = [
+            make_finite_element_jit_classname(e, parameters)
+            for e in form_data.argument_elements + form_data.coefficient_elements
+            ]
+        ir["create_dofmap"] = [
+            make_dofmap_jit_classname(e, parameters)
+            for e in form_data.argument_elements + form_data.coefficient_elements
+            ]
+    else:
+        # Make unique classnames within this module
+        # (using prefix and element numbers from this module)
+        ir["create_coordinate_finite_element"] = [
+            make_classname(prefix, "finite_element", element_numbers[e])
+            for e in form_data.coordinate_elements
+            ]
+        ir["create_coordinate_dofmap"] = [
+            make_classname(prefix, "dofmap", element_numbers[e])
+            for e in form_data.coordinate_elements
+            ]
+        ir["create_coordinate_mapping"] = [
+            make_classname(prefix, "coordinate_mapping", element_numbers[e])
+            for e in form_data.coordinate_elements
+            ]
+        ir["create_finite_element"] = [
+            make_classname(prefix, "finite_element", element_numbers[e])
+            for e in form_data.argument_elements + form_data.coefficient_elements
+            ]
+        ir["create_dofmap"] = [
+            make_classname(prefix, "dofmap", element_numbers[e])
+            for e in form_data.argument_elements + form_data.coefficient_elements
+            ]
 
     for integral_type in ufc_integral_types:
         ir["max_%s_subdomain_id" % integral_type] = form_data.max_subdomain_ids.get(integral_type, 0)

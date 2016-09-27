@@ -222,7 +222,8 @@ def jit(ufl_object, parameters=None, indirect=False):
     else:
         # FIXME: Streamline number of return arguments here across kinds
         if module is None:
-            # Returning instead of raising to let
+            # Returning instead of raising to let caller handle failure gracefully
+            # (could use a specific exception and let caller catch it of course)
             return None
 
         if kind == "form":

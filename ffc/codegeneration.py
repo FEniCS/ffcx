@@ -324,6 +324,8 @@ def _generate_form_code(ir, parameters):
     form_id = ir["id"]
     prefix = ir["prefix"]
 
+    jit = ir["jit"]
+
     # Generate code
     code = {}
     code["classname"] = ir["classname"]
@@ -570,10 +572,13 @@ def _tabulate_entity_dofs(ir):
 
 #--- Utility functions ---
 
-def _create_bar(arg, classnames):
-    "Generate code for create_<bar>(arg) returning new <classname[arg]>."
+def _create_switch(arg, classnames, factory=False):
+    "Generate code for create_<bar>(arg) returning new <classnames[arg]>."
     ret = format["return"]
-    create = format["create foo"]
+    if factory:
+        create = format["create factory"]
+    else:
+        create = format["create foo"]
     numbers = list(range(len(classnames)))
     cases = [ret(create(name)) for name in classnames]
     default = ret(0)
@@ -582,7 +587,10 @@ def _create_bar(arg, classnames):
 
 def _create_coordinate_finite_element(ir):
     ret = format["return"]
-    create = format["create foo"]
+    if ir["jit"]:
+        create = format["create factory"]
+    else:
+        create = format["create foo"]
     classnames = ir["create_coordinate_finite_element"]
     assert len(classnames) == 1  # list of length 1 until we support multiple domains
     return ret(create(classnames[0]))
@@ -590,7 +598,10 @@ def _create_coordinate_finite_element(ir):
 
 def _create_coordinate_dofmap(ir):
     ret = format["return"]
-    create = format["create foo"]
+    if ir["jit"]:
+        create = format["create factory"]
+    else:
+        create = format["create foo"]
     classnames = ir["create_coordinate_dofmap"]
     assert len(classnames) == 1  # list of length 1 until we support multiple domains
     return ret(create(classnames[0]))
@@ -598,7 +609,10 @@ def _create_coordinate_dofmap(ir):
 
 def _create_coordinate_mapping(ir):
     ret = format["return"]
-    create = format["create foo"]
+    if ir["jit"]:
+        create = format["create factory"]
+    else:
+        create = format["create foo"]
     classnames = ir["create_coordinate_mapping"]
     assert len(classnames) == 1  # list of length 1 until we support multiple domains
     # return ret(create(classnames[0]))
@@ -608,25 +622,25 @@ def _create_coordinate_mapping(ir):
 def _create_finite_element(ir):
     f_i = format["argument sub"]
     classnames = ir["create_finite_element"]
-    return _create_bar(f_i, classnames)
+    return _create_switch(f_i, classnames, ir["jit"])
 
 
 def _create_dofmap(ir):
     f_i = format["argument sub"]
     classnames = ir["create_dofmap"]
-    return _create_bar(f_i, classnames)
+    return _create_switch(f_i, classnames, ir["jit"])
 
 
 def _create_sub_element(ir):
     f_i = format["argument sub"]
     classnames = ir["create_sub_element"]
-    return _create_bar(f_i, classnames)
+    return _create_switch(f_i, classnames)
 
 
 def _create_sub_dofmap(ir):
     f_i = format["argument sub"]
     classnames = ir["create_sub_dofmap"]
-    return _create_bar(f_i, classnames)
+    return _create_switch(f_i, classnames)
 
 
 def _has_foo_integrals(ir, integral_type):
