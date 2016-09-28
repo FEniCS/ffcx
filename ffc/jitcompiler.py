@@ -51,16 +51,6 @@ def jit_generate(ufl_object, module_name, signature, parameters):
     "Callback function passed to dijitso.jit: generate code and return as strings."
     log(INFO + 5, "Calling FFC just-in-time (JIT) compiler, this may take some time.")
 
-    # Jit compile dependent objects separately,
-    # but don't instantiate objects
-    # (this analysis is done in here such that it's
-    # only triggered if parent module is missing)
-    kind, dependent_ufl_objects = analyse_ufl_object_dependencies(ufl_object)
-    dependencies = []
-    for dep in dependent_ufl_objects:
-        dep_module_name = jit(dep, parameters, indirect=True)
-        dependencies.append(dep_module_name)
-
     # Generate actual code for this object
     if isinstance(ufl_object, ufl.Form):
         compile_object = compile_form
@@ -69,8 +59,23 @@ def jit_generate(ufl_object, module_name, signature, parameters):
     elif isinstance(ufl_object, ufl.Mesh):
         compile_object = compile_coordinate_mapping
 
-    code_h, code_c = compile_object(ufl_object,
+    code_h, code_c, dependent_ufl_objects = compile_object(ufl_object,
             prefix=module_name, parameters=parameters, jit=True)
+
+    # Jit compile dependent objects separately,
+    # but pass indirect=True to skip instantiating objects.
+    # (this is done in here such that it's only triggered
+    # if parent jit module is missing, and it's done after
+    # compile_object because some misformed ufl objects may
+    # require analysis to determine (looking at you Expression...))
+    dependencies = []
+    for dep in dependent_ufl_objects["element"]:
+        dep_module_name = jit(dep, parameters, indirect=True)
+        dependencies.append(dep_module_name)
+    if 0:  # FIXME: Enable coordinate mapping generation when ready
+        for dep in dependent_ufl_objects["coordinate_mapping"]:
+            dep_module_name = jit(ufl.Mesh(dep, ufl_id=0), parameters, indirect=True)
+            dependencies.append(dep_module_name)
 
     return code_h, code_c, dependencies
 
@@ -153,54 +158,6 @@ def compute_jit_prefix(ufl_object, parameters, kind=None):
     # Combine into prefix with some info including kind
     prefix = ("ffc_%s_%s" % (kind, signature)).lower()
     return kind, prefix
-
-
-def analyse_ufl_object_dependencies(ufl_object):
-    # Check that we get a form or element
-    if isinstance(ufl_object, ufl.Form):
-        kind = "form"
-
-        # Get all form arguments
-        args = ufl_object.arguments() + ufl_object.coefficients()
-
-        # Get all integration domains and form argument domains
-        # (don't think we need to get domains of geometric quantities directly)
-        domains = list(ufl_object.ufl_domains())
-        for dep in args:
-            domains.extend(dep.ufl_domains())
-
-        dependent_ufl_objects = []
-
-        # Depend on all argument and coefficient elements
-        for dep in args:
-            dependent_ufl_objects.append(dep.ufl_element())
-
-        # Depend on coordinate mapping elements
-        # (eventually we will get these indirectly through depending on coordinate mappings)
-        for dep in domains:
-            dependent_ufl_objects.append(dep.ufl_coordinate_element().sub_elements()[0])
-            dependent_ufl_objects.append(dep.ufl_coordinate_element())
-
-        # Depend on coordinate mappings  # FIXME: Enable when coordinate_mapping class is generated properly
-        #for dep in domains:
-        #    dependent_ufl_objects.append(dep)
-
-    elif isinstance(ufl_object, ufl.FiniteElementBase):
-        kind = "element"
-
-        # Not compiling subelements separately at least for now, so no compile dependency.
-        dependent_ufl_objects = []
-
-    elif isinstance(ufl_object, ufl.Mesh):
-        kind = "coordinate_mapping"
-
-        # Depend on coordinate element and its scalar subelement
-        dependent_ufl_objects = [ufl_object.ufl_coordinate_element().sub_elements()[0],
-                                 ufl_object.ufl_coordinate_element()]
-    else:
-        error("Expecting a UFL form or element, got: %s" % repr(ufl_object))
-
-    return kind, dependent_ufl_objects
 
 
 class FFCError(Exception):

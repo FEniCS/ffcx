@@ -209,4 +209,13 @@ def compile_ufl_objects(ufl_objects, kind, object_names=None,
 
     info_green("FFC finished in %g seconds.", time() - cpu_time_0)
 
-    return code_h, code_c
+    if jit:
+        # Must use processed elements from analysis here
+        form_datas, unique_elements, element_numbers, unique_coordinate_elements = analysis
+        dependent_ufl_objects = {
+            "element": tuple(unique_elements),
+            "coordinate_mapping": tuple(unique_coordinate_elements),
+        }
+        return code_h, code_c, dependent_ufl_objects
+    else:
+        return code_h, code_c
