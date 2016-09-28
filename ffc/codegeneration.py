@@ -75,6 +75,8 @@ def generate_code(ir, parameters):
     info("Generating code for %d coordinate_mapping(s)" % len(ir_coordinate_mappings))
     code_coordinate_mappings = [_generate_coordinate_mapping_code(ir, parameters)
                                 for ir in ir_coordinate_mappings]
+    # FIXME: This disables output of generated coordinate_mapping class, until implemented properly
+    code_coordinate_mappings = []
 
     # Generate code for integrals
     info("Generating code for integrals")
@@ -246,6 +248,8 @@ def _generate_coordinate_mapping_code(ir, parameters):
     code["compute_jacobian_inverses"] = ""
     code["compute_geometry"] = ""
 
+    code["additional_includes_set"] = set("#include <%s>" % inc for inc in ir["jit_includes"])
+
     return code
 
 
@@ -347,6 +351,12 @@ def _generate_form_code(ir, parameters):
 
     code["create_finite_element"] = _create_finite_element(ir)
     code["create_dofmap"] = _create_dofmap(ir)
+
+    code["additional_includes_set"] = set()
+    code["additional_includes_set"].update("#include <%s>" % inc for inc in ir["jit_includes"])
+
+    # To add more includes we could do this, or pass through form metadata?
+    #code["additional_includes_set"].update("#include <%s>" % inc for inc in parameters["system_headers"])
 
     for integral_type in ufc_integral_types:
         code["max_%s_subdomain_id" % integral_type] = ret(ir["max_%s_subdomain_id" % integral_type])

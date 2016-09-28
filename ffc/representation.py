@@ -74,20 +74,20 @@ def pick_representation(representation):
 
 
 def make_finite_element_jit_classname(ufl_element, parameters):
-    from jitcompiler import compute_jit_prefix  # FIXME
+    from jitcompiler import compute_jit_prefix  # FIXME circular file dependency
     kind, prefix = compute_jit_prefix(ufl_element, parameters)
     return make_classname(prefix, "finite_element", "main")
 
 
 def make_dofmap_jit_classname(ufl_element, parameters):
-    from jitcompiler import compute_jit_prefix  # FIXME
+    from jitcompiler import compute_jit_prefix  # FIXME circular file dependency
     kind, prefix = compute_jit_prefix(ufl_element, parameters)
     return make_classname(prefix, "dofmap", "main")
 
 
 def make_coordinate_mapping_jit_classname(ufl_mesh, parameters):
-    from jitcompiler import compute_jit_prefix  # FIXME
-    kind, prefix = compute_jit_prefix(ufl_mesh, parameters)
+    from jitcompiler import compute_jit_prefix  # FIXME circular file dependency
+    kind, prefix = compute_jit_prefix(ufl_mesh, parameters, kind="coordinate_mapping")
     return make_classname(prefix, "coordinate_mapping", "main")
 
 
@@ -121,7 +121,7 @@ def compute_ir(analysis, prefix, parameters, jit=False):
 
         # Compute representation of coordinate mappings
         info("Computing representation of %d coordinate mappings" % len(coordinate_elements))
-        ir_coordinate_mappings = [_compute_coordinate_mapping_ir(e, prefix, element_numbers)
+        ir_coordinate_mappings = [_compute_coordinate_mapping_ir(e, prefix, element_numbers, parameters, jit)
                                   for e in coordinate_elements]
 
     # Compute and flatten representation of integrals
@@ -267,7 +267,7 @@ def _tabulate_coordinate_mapping_basis(ufl_element):
     return tables
 
 
-def _compute_coordinate_mapping_ir(ufl_coordinate_element, prefix, element_numbers):
+def _compute_coordinate_mapping_ir(ufl_coordinate_element, prefix, element_numbers, parameters, jit):
     "Compute intermediate representation of coordinate mapping."
 
     cell = ufl_coordinate_element.cell()
@@ -288,8 +288,16 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element, prefix, element_numbe
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = ufl_coordinate_element.value_size()
 
-    ir["create_coordinate_finite_element"] = make_classname(prefix, "finite_element", element_numbers[ufl_coordinate_element])
-    ir["create_coordinate_dofmap"] = make_classname(prefix, "dofmap", element_numbers[ufl_coordinate_element])
+    if jit:
+        ir["create_coordinate_finite_element"] = \
+          make_finite_element_jit_classname(ufl_coordinate_element, parameters)
+        ir["create_coordinate_dofmap"] = \
+          make_dofmap_jit_classname(ufl_coordinate_element, parameters)
+    else:
+        ir["create_coordinate_finite_element"] = \
+          make_classname(prefix, "finite_element", element_numbers[ufl_coordinate_element])
+        ir["create_coordinate_dofmap"] = \
+          make_classname(prefix, "dofmap", element_numbers[ufl_coordinate_element])
 
     ir["compute_physical_coordinates"] = None  # currently unused, corresponds to function name
     ir["compute_reference_coordinates"] = None  # currently unused, corresponds to function name
@@ -307,7 +315,26 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element, prefix, element_numbe
     ir["num_scalar_coordinate_element_dofs"] = tables["x0"].shape[0]
 
     # Get classnames for coordinate element and its scalar subelement:
-    ir["scalar_coordinate_finite_element_classname"] = make_classname(prefix, "finite_element", element_numbers[ufl_coordinate_element.sub_elements()[0]])
+    if jit:
+        ir["coordinate_finite_element_classname"] = \
+          make_finite_element_jit_classname(ufl_coordinate_element, parameters)
+        ir["scalar_coordinate_finite_element_classname"] = \
+          make_finite_element_jit_classname(ufl_coordinate_element.sub_elements()[0], parameters)
+    else:
+        ir["coordinate_finite_element_classname"] = \
+          make_classname(prefix, "finite_element",
+                element_numbers[ufl_coordinate_element])
+        ir["scalar_coordinate_finite_element_classname"] = \
+          make_classname(prefix, "finite_element",
+                element_numbers[ufl_coordinate_element.sub_elements()[0]])
+
+    # Get includes
+    ir["jit_includes"] = set()
+    if jit:
+        ir["jit_includes"].update(classname.split("_finite_element")[0] + ".h" for classname in [
+                ir["coordinate_finite_element_classname"],
+                ir["scalar_coordinate_finite_element_classname"]
+            ])
 
     return ir
 
@@ -410,6 +437,8 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, parameters, ji
     # TODO: Remove create_coordinate_{finite_element,dofmap} and access
     # through coordinate_mapping instead in dolfin, when that's in place
 
+    ir["jit_includes"] = set()
+
     if jit:
         # Make unique classnames found in previously jit-compiled dependency module
         ir["create_coordinate_finite_element"] = [
@@ -432,6 +461,17 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, parameters, ji
             make_dofmap_jit_classname(e, parameters)
             for e in form_data.argument_elements + form_data.coefficient_elements
             ]
+
+        # TODO: Don't need the includes, can just inject factory_decl statements instead
+        # Gather all header names for classes we need to construct via external factory functions.
+        # For finite_element and dofmap the module and header name is the prefix,
+        # extracted here with .split, and equal for both classes so we skip dofmap here:
+        ir["jit_includes"].update(
+            classname.split("_finite_element")[0] + ".h"
+            for classname in chain(ir["create_finite_element"], ir["create_coordinate_finite_element"]))
+        # FIXME: Enable when coordinate_mapping is fully generated:
+        #ir["jit_includes"].update(classname + ".h" for classname in ir["create_coordinate_mapping"])
+
     else:
         # Make unique classnames within this module
         # (using prefix and element numbers from this module)

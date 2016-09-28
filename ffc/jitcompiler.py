@@ -112,39 +112,46 @@ def jit_build(ufl_object, module_name, parameters):
     return module
 
 
-def compute_jit_prefix(ufl_object, parameters):
+def compute_jit_prefix(ufl_object, parameters, kind=None):
     "Compute the prefix (module name) for jit modules."
 
     # Get signature from ufl object
     if isinstance(ufl_object, ufl.Form):
         kind = "form"
         object_signature = ufl_object.signature()
+    elif isinstance(ufl_object, ufl.Mesh):
+        # When coordinate mapping is represented by a Mesh, just getting its coordinate element
+        kind = "coordinate_mapping"
+        ufl_object = ufl_object.ufl_coordinate_element()
+        object_signature = repr(ufl_object)  # ** must match below
+    elif kind == "coordinate_mapping" and isinstance(ufl_object, ufl.FiniteElementBase):
+        # When coordinate mapping is represented by its coordinate element
+        object_signature = repr(ufl_object)  # ** must match above
     elif isinstance(ufl_object, ufl.FiniteElementBase):
         kind = "element"
         object_signature = repr(ufl_object)
-    elif isinstance(ufl_object, ufl.Mesh):
-        kind = "coordinate_mapping"
-        # FIXME: Is this ok?
-        object_signature = kind + repr(ufl_object.ufl_coordinate_element())
     else:
         error("Unknown ufl object type %s" % (ufl_object.__class__.__name__,))
 
     # Compute deterministic string of relevant parameters
     parameters_signature = compute_jit_parameters_signature(parameters)
 
-    # Build common signature
+    # Build combined signature
     signatures = [object_signature,
                   parameters_signature,
                   str(FFC_VERSION),
-                  get_ufc_signature()]
+                  get_ufc_signature(),
+                  kind]
     string = ";".join(signatures)
-
-    # Compute final signature
-    # TODO: Add parameter to shorten this?
     signature = sha1(string.encode('utf-8')).hexdigest()
 
+    # Optionally shorten signature
+    max_signature_length = parameters["max_signature_length"]
+    if max_signature_length:
+        signature = signature[:max_signature_length]
+
     # Combine into prefix with some info including kind
-    prefix = "ffc_%s_%s" % (kind, signature)
+    prefix = ("ffc_%s_%s" % (kind, signature)).lower()
     return kind, prefix
 
 
@@ -164,17 +171,19 @@ def analyse_ufl_object_dependencies(ufl_object):
 
         dependent_ufl_objects = []
 
-        # Depend on all argument and coefficient elements,
+        # Depend on all argument and coefficient elements
         for dep in args:
             dependent_ufl_objects.append(dep.ufl_element())
 
-        # Depend on coordinate mapping elements (although we will get these indirectly through coordinate mappings)
+        # Depend on coordinate mapping elements
+        # (eventually we will get these indirectly through depending on coordinate mappings)
         for dep in domains:
+            dependent_ufl_objects.append(dep.ufl_coordinate_element().sub_elements()[0])
             dependent_ufl_objects.append(dep.ufl_coordinate_element())
 
-        # Depend on coordinate mappings
-        for dep in domains:
-            dependent_ufl_objects.append(dep)
+        # Depend on coordinate mappings  # FIXME: Enable when coordinate_mapping class is generated properly
+        #for dep in domains:
+        #    dependent_ufl_objects.append(dep)
 
     elif isinstance(ufl_object, ufl.FiniteElementBase):
         kind = "element"
@@ -185,13 +194,21 @@ def analyse_ufl_object_dependencies(ufl_object):
     elif isinstance(ufl_object, ufl.Mesh):
         kind = "coordinate_mapping"
 
-        # Depend on coordinate element (using full vector element here, not subelement)
-        dependent_ufl_objects = [ufl_object.ufl_coordinate_element()]
-
+        # Depend on coordinate element and its scalar subelement
+        dependent_ufl_objects = [ufl_object.ufl_coordinate_element().sub_elements()[0],
+                                 ufl_object.ufl_coordinate_element()]
     else:
         error("Expecting a UFL form or element, got: %s" % repr(ufl_object))
 
     return kind, dependent_ufl_objects
+
+
+class FFCError(Exception):
+    pass
+
+
+class FFCJitError(FFCError):
+    pass
 
 
 def jit(ufl_object, parameters=None, indirect=False):
@@ -216,16 +233,17 @@ def jit(ufl_object, parameters=None, indirect=False):
     # Inspect cache and generate+build if necessary
     module = jit_build(ufl_object, module_name, parameters)
 
+    # Raise exception on failure to build or import module
+    if module is None:
+        # TODO: To communicate directory name here, need dijitso params to call
+        #fail_dir = dijitso.cache.create_fail_dir_path(signature, dijitso_cache_params)
+        raise FFCJitError("A directory with files to reproduce the jit build failure has been created.")
+
     # Construct instance of object from compiled code unless indirect
     if indirect:
         return module_name
     else:
         # FIXME: Streamline number of return arguments here across kinds
-        if module is None:
-            # Returning instead of raising to let caller handle failure gracefully
-            # (could use a specific exception and let caller catch it of course)
-            return None
-
         if kind == "form":
             compiled_form = _instantiate_form(module, module_name)
             return (compiled_form, module, module_name)
@@ -260,7 +278,7 @@ def _instantiate_element_and_dofmap(module, prefix):
 
 def _instantiate_coordinate_mapping(module, prefix):
     "Extract the coordinate_mapping from module with only one coordinate_mapping."
-    coordinate_mapping_id = 0
+    coordinate_mapping_id = "main"
     classname = make_classname(prefix, "coordinate_mapping", coordinate_mapping_id)
     form = dijitso.extract_factory_function(module, "create_" + classname)()
     return form
