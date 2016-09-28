@@ -31,7 +31,9 @@ from hashlib import sha1
 
 # FEniCS modules
 import ufl
-import dijitso
+
+# Not importing globally to keep dijitso optional if jit is not used
+#import dijitso
 
 # FFC modules
 from ffc.log import log
@@ -82,6 +84,7 @@ def jit_generate(ufl_object, module_name, signature, parameters):
 
 def jit_build(ufl_object, module_name, parameters):
     "Wraps dijitso jit with some parameter conversion etc."
+    import dijitso
 
     # FIXME: Expose more dijitso parameters?
     # FIXME: dijitso build params are not part of module_name here.
@@ -218,6 +221,7 @@ def jit(ufl_object, parameters=None, indirect=False):
 
 def _instantiate_form(module, prefix):
     "Extract the form from module with only one form."
+    import dijitso
     form_id = 0
     classname = make_classname(prefix, "form", form_id)
     form = dijitso.extract_factory_function(module, "create_" + classname)()
@@ -226,6 +230,7 @@ def _instantiate_form(module, prefix):
 
 def _instantiate_element_and_dofmap(module, prefix):
     """Extract element and dofmap from module."""
+    import dijitso
     fe_classname = make_classname(prefix, "finite_element", "main")
     dm_classname = make_classname(prefix, "dofmap", "main")
     fe = dijitso.extract_factory_function(module, "create_" + fe_classname)()
@@ -235,6 +240,7 @@ def _instantiate_element_and_dofmap(module, prefix):
 
 def _instantiate_coordinate_mapping(module, prefix):
     "Extract the coordinate_mapping from module with only one coordinate_mapping."
+    import dijitso
     coordinate_mapping_id = "main"
     classname = make_classname(prefix, "coordinate_mapping", coordinate_mapping_id)
     form = dijitso.extract_factory_function(module, "create_" + classname)()
