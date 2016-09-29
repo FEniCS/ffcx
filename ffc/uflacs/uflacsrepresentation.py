@@ -48,9 +48,12 @@ def compute_integral_ir(itg_data,
     integrals_dict, psi_tables, quadrature_rules = \
         tabulate_basis(sorted_integrals, form_data, itg_data)
 
-    # Store element numbers, needed for classnames
+    # Store element numbers TODO: Still in use?
     ir["element_numbers"] = element_numbers
 
+    # Store element classnames
+    ir["classnames"] = classnames
+    
     # Delegate to flacs to build its intermediate representation and add to ir
     uflacs_ir = compute_uflacs_integral_ir(ir, psi_tables, integrals_dict, form_data, parameters)
 
@@ -71,5 +74,12 @@ def compute_integral_ir(itg_data,
     # Added for uflacs, not sure if this is the best way to get this:
     ir["coeff_idims"] = [create_element(ufl_element).space_dimension()
                          for ufl_element in form_data.coefficient_elements]
+
+    # TODO: Can easily add more element data here or move above if needed in uflacs
+    #unique_elements = element_numbers.keys()
+    #ir["fiat_elements"] = { ufl_element: create_element(ufl_element)
+    #                        for ufl_element in unique_elements }
+    #ir["element_dimensions"] = { ufl_element: fiat_element.space_dimension()
+    #                             for ufl_element, fiat_element in ir["fiat_elements"].items() }
 
     return ir

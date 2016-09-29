@@ -42,9 +42,6 @@ class FFCBackendDefinitions(MultiFunction):
         # Coordinate dofs for each component are interleaved? Must match dolfin.
         self.interleaved_components = True # parameters["interleaved_coordinate_component_dofs"]
 
-        # FIXME: Need this for custom integrals
-        #classname = make_classname(prefix, "finite_element", ir["element_numbers"][ufl_element])
-
 
     # === Generate code to define variables for ufl types ===
 
@@ -74,6 +71,7 @@ class FFCBackendDefinitions(MultiFunction):
         # No need to store basis function value in its own variable,
         # just get table value directly
         uname, begin, end = tabledata
+        #fe_classname = ir["classnames"]["finite_element"][t.ufl_element()]
 
         # For a constant coefficient we reference the dofs directly, so no definition needed
         table_types = self.ir["uflacs"]["expr_irs"][num_points]["table_types"]
@@ -132,6 +130,8 @@ class FFCBackendDefinitions(MultiFunction):
         # Find table name and dof range it corresponds to
         uname, begin, end = tabledata
         assert end - begin <= num_scalar_dofs
+        #xfe_classname = ir["classnames"]["finite_element"][coordinate_element]
+        #sfe_classname = ir["classnames"]["finite_element"][coordinate_element.sub_elements()[0]]
 
         # Get table type
         table_types = self.ir["uflacs"]["expr_irs"][num_points]["table_types"]
