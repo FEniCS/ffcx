@@ -22,6 +22,7 @@
 from ffc.uflacs.backends.ufc.generator import ufc_generator
 from ffc.uflacs.backends.ufc.utils import generate_return_new_switch
 
+
 class ufc_dofmap(ufc_generator):
     def __init__(self):
         ufc_generator.__init__(self, "dofmap")
@@ -212,4 +213,4 @@ class ufc_dofmap(ufc_generator):
     def create_sub_dofmap(self, L, ir):
         i = L.Symbol("i")
         classnames = ir["create_sub_dofmap"]
-        return generate_return_new_switch(L, i, classnames)
+        return generate_return_new_switch(L, i, classnames, factory=ir["jit"])

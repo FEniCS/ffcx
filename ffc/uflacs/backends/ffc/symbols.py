@@ -20,8 +20,6 @@
 
 from ffc.log import error
 
-from ffc.uflacs.backend.ffc.common import 
-
 
 # TODO: Get restriction postfix from somewhere central
 def ufc_restriction_postfix(restriction):

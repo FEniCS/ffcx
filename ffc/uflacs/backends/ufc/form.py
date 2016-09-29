@@ -20,7 +20,8 @@
 
 from ffc.cpp import make_integral_classname
 from ffc.uflacs.backends.ufc.generator import ufc_generator, integral_name_templates, ufc_integral_types
-from ffc.uflacs.backends.ufc.utils import generate_return_new_switch
+from ffc.uflacs.backends.ufc.utils import generate_return_new, generate_return_new_switch
+
 
 def add_ufc_form_integral_methods(cls):
     """This function generates methods on the class it decorates,
@@ -50,6 +51,7 @@ def add_ufc_form_integral_methods(cls):
 
             setattr(cls, declname, _delegate)
     return cls
+
 
 @add_ufc_form_integral_methods
 class ufc_form(ufc_generator):
@@ -81,7 +83,8 @@ class ufc_form(ufc_generator):
 
         position = L.Symbol("position")
 
-        # Throwing a lot into the 'typename' string here but no plans for building a full C++ type system
+        # Throwing a lot into the 'typename' string here but
+        # no plans for building a full C++ type system
         typename = "static const std::vector<std::size_t>"
         initializer_list = L.VerbatimExpr("{" + ", ".join(str(i) for i in positions) + "}")
         code = L.StatementList([
@@ -90,34 +93,36 @@ class ufc_form(ufc_generator):
             ])
         return code
 
+
     def create_coordinate_finite_element(self, L, ir):
         classnames = ir["create_coordinate_finite_element"]
         assert len(classnames) == 1
-        return L.Return(L.New(classnames[0]))
-        # TODO: Use factory functions instead, here and in all create_* functions:
-        #factoryname = make_factory_function_name(classname)
-        #return L.Return(L.Call(factoryname))
+        return generate_return_new(L, classnames[0], factory=ir["jit"])
 
     def create_coordinate_dofmap(self, L, ir):
         classnames = ir["create_coordinate_dofmap"]
         assert len(classnames) == 1
-        return L.Return(L.New(classnames[0]))
+        return generate_return_new(L, classnames[0], factory=ir["jit"])
 
     def create_coordinate_mapping(self, L, ir):
         classnames = ir["create_coordinate_mapping"]
         assert len(classnames) == 1
-        return L.Return(L.New(classnames[0]))
+        return generate_return_new(L, classnames[0], factory=ir["jit"])
 
     def create_finite_element(self, L, ir):
         i = L.Symbol("i")
         classnames = ir["create_finite_element"]
-        return generate_return_new_switch(L, i, classnames)
+        return generate_return_new_switch(L, i, classnames, factory=ir["jit"])
 
     def create_dofmap(self, L, ir):
         i = L.Symbol("i")
         classnames = ir["create_dofmap"]
-        return generate_return_new_switch(L, i, classnames)
+        return generate_return_new_switch(L, i, classnames, factory=ir["jit"])
 
+
+    # This group of functions are repeated for each
+    # foo_integral by add_ufc_form_integral_methods:
+    
     def _max_foo_subdomain_id(self, L, ir, integral_type, declname):
         "Return implementation of ufc::form::%(declname)s()."
         # e.g. max_subdomain_id = ir["max_cell_subdomain_id"]
@@ -139,7 +144,8 @@ class ufc_form(ufc_generator):
         subdomain_ids = ir[declname] # e.g. ir["create_cell_integral"]
         classnames = [make_integral_classname(prefix, integral_type, form_id, i)
                       for i in subdomain_ids]
-        return generate_return_new_switch(L, subdomain_id, classnames, subdomain_ids)
+        return generate_return_new_switch(L, subdomain_id, classnames,
+                                          subdomain_ids, factory=ir["jit"])
 
     def _create_default_foo_integral(self, L, ir, integral_type, declname):
         "Return implementation of ufc::form::%(declname)s()."
@@ -150,4 +156,4 @@ class ufc_form(ufc_generator):
             form_id = ir["id"]
             prefix = ir["prefix"]
             classname = make_integral_classname(prefix, integral_type, form_id, subdomain_id)
-            return L.Return(L.New(classname))
+            return generate_return_new(L, classname, factory=ir["jit"])

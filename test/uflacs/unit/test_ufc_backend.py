@@ -40,6 +40,7 @@ def basic_class_properties(classname):
         "destructor": "",
         "members": "",
         "preamble": "",
+        "jit": False,
     }
     return ir
 
