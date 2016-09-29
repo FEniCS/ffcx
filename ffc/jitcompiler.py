@@ -44,7 +44,7 @@ from ffc.log import INFO
 from ffc.parameters import validate_jit_parameters, compute_jit_parameters_signature
 from ffc.compiler import compile_form, compile_element, compile_coordinate_mapping
 from ffc.backends.ufc import get_include_path as get_ufc_include_path
-from ffc.ufc_config import get_ufc_signature
+from ffc.backends.ufc import get_ufc_signature, get_ufc_templates_signature
 from ffc import __version__ as FFC_VERSION
 from ffc.cpp import make_classname
 
@@ -145,11 +145,14 @@ def compute_jit_prefix(ufl_object, parameters, kind=None):
     parameters_signature = compute_jit_parameters_signature(parameters)
 
     # Build combined signature
-    signatures = [object_signature,
-                  parameters_signature,
-                  str(FFC_VERSION),
-                  get_ufc_signature(),
-                  kind]
+    signatures = [
+        object_signature,
+        parameters_signature,
+        str(FFC_VERSION),
+        get_ufc_signature(),
+        get_ufc_templates_signature(),
+        kind,
+        ]
     string = ";".join(signatures)
     signature = sha1(string.encode('utf-8')).hexdigest()
 

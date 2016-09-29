@@ -44,23 +44,24 @@ For more information about UFC and the FEniCS Project, visit
 """
 
 __author__ = "Martin Sandve Alnæs, Anders Logg, Kent-Andre Mardal, Ola Skavhaug, and Hans Petter Langtangen"
-__date__ = "2016-09-27"
+__date__ = "2016-09-29"
 __version__ = "2016.2.0.dev0"
 __license__ = "This code is released into the public domain"
 
-from os.path import dirname, abspath
+import os
+from hashlib import sha1
 
-from .function import *
-from .finite_element import *
-from .dofmap import *
-from .coordinate_mapping import *
-from .integrals import *
-from .form import *
+from ffc.backends.ufc.function import *
+from ffc.backends.ufc.finite_element import *
+from ffc.backends.ufc.dofmap import *
+from ffc.backends.ufc.coordinate_mapping import *
+from ffc.backends.ufc.integrals import *
+from ffc.backends.ufc.form import *
 
 
 def get_include_path():
     "Return location of UFC header files"
-    return dirname(abspath(__file__))
+    return os.path.dirname(os.path.abspath(__file__))
 
 
 # Platform specific snippets for controlling visilibity of exported symbols in generated shared libraries
@@ -115,12 +116,13 @@ def _build_templates():
         implementation = globals()[classname + "_implementation"]
         combined = globals()[classname + "_combined"]
 
-        # Construct jit header with just factory function signature
-        jit_header = factory_decl % {
+        # Construct jit header with class and factory function signature
+        _fac_decl = factory_decl % {
             "basename": "ufc::" + classname,
             "publicname": "%(classname)s",
             "privatename": "%(classname)s",
             }
+        jit_header = header + _fac_decl
 
         # Construct jit implementation template with class declaration,
         # factory function implementation, and class definition
@@ -129,7 +131,7 @@ def _build_templates():
             "publicname": "%(classname)s",
             "privatename": "%(classname)s",
             }
-        jit_implementation = header + _fac_impl + implementation
+        jit_implementation = implementation + _fac_impl
 
         # Store all in templates dict
         templates[classname + "_header"] = header
@@ -140,4 +142,42 @@ def _build_templates():
 
     return templates
 
+
+def _compute_ufc_templates_signature(templates):
+    # Compute signature of jit templates
+    h = sha1()
+    for k in sorted(templates):
+        h.update(k)
+        h.update(templates[k])
+    return h.hexdigest()
+
+
+def _compute_ufc_signature():
+    # Compute signature of ufc header files
+    h = sha1()
+    for fn in ("ufc.h", "ufc_geometry.h"):
+        with open(os.path.join(get_include_path(), fn)) as f:
+            h.update(f.read())
+    return h.hexdigest()
+
+
+# Build these on import
 templates = _build_templates()
+_ufc_signature = _compute_ufc_signature()
+_ufc_templates_signature = _compute_ufc_templates_signature(templates)
+
+
+def get_ufc_signature():
+    """Return SHA-1 hash of the contents of ufc.h and ufc_geometry.h.
+
+    In this implementation, the value is computed on import.
+    """
+    return _ufc_signature
+
+
+def get_ufc_templates_signature():
+    """Return SHA-1 hash of the ufc code templates.
+
+    In this implementation, the value is computed on import.
+    """
+    return _ufc_templates_signature
