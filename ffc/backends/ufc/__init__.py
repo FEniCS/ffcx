@@ -91,7 +91,7 @@ extern "C" %(basename)s * create_%(publicname)s();
 factory_impl = """
 extern "C" DLL_EXPORT %(basename)s * create_%(publicname)s()
 {
- return new %(privatename)s();
+  return new %(privatename)s();
 }
 """
 

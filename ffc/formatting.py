@@ -38,6 +38,43 @@ from ffc.backends.ufc import templates, visibility_snippet, factory_decl, factor
 from ffc.parameters import compilation_relevant_parameters
 
 
+def generate_factory_functions(prefix, kind, classname):
+    publicname = make_classname(prefix, kind, "main")
+    code_h = factory_decl % {
+        "basename": "ufc::%s" % kind,
+        "publicname": publicname,
+        }
+    code_c = factory_impl % {
+        "basename": "ufc::%s" % kind,
+        "publicname": publicname,
+        "privatename": classname
+        }
+    return code_h, code_c
+
+
+def generate_jit_factory_functions(code, prefix):
+    # Extract code
+    code_elements, code_dofmaps, code_coordinate_mappings, code_integrals, code_forms = code
+
+    if code_forms:
+        # Direct jit of form
+        code_h, code_c = generate_factory_functions(
+            prefix, "form", code_forms[-1]["classname"])
+    elif code_coordinate_mappings:
+        # Direct jit of coordinate mapping
+        code_h, code_c = generate_factory_functions(
+            prefix, "coordinate_mapping", code_coordinate_mappings[-1]["classname"])
+    else:
+        # Direct jit of element
+        code_h, code_c = generate_factory_functions(
+            prefix, "finite_element", code_elements[-1]["classname"])
+        fh, fc = generate_factory_functions(
+            prefix, "dofmap", code_dofmaps[-1]["classname"])
+        code_h += fh
+        code_c += fc
+    return code_h, code_c
+
+
 def format_code(code, wrapper_code, prefix, parameters, jit=False):
     "Format given code in UFC format. Returns two strings with header and source file contents."
 
@@ -91,31 +128,12 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
         code_h += _format_h("form", code_form, parameters, jit)
         code_c += _format_c("form", code_form, parameters, jit)
 
-    # Add factory functions named "..._main" to construct the
-    # main element and dofmap in this module
-    if jit and not code_forms:
-        kind = "finite_element"
-        pub = make_classname(prefix, kind, "main")
-        code_h += factory_decl % {
-            "basename": "ufc::%s" % kind,
-            "publicname": pub,
-        }
-        code_c += factory_impl % {
-            "basename": "ufc::%s" % kind,
-            "publicname": pub,
-            "privatename": code_elements[-1]["classname"]
-        }
-        kind = "dofmap"
-        pub = make_classname(prefix, kind, "main")
-        code_h += factory_decl % {
-            "basename": "ufc::%s" % kind,
-            "publicname": pub,
-        }
-        code_c += factory_impl % {
-            "basename": "ufc::%s" % kind,
-            "publicname": pub,
-            "privatename": code_dofmaps[-1]["classname"]
-        }
+    # Add factory functions named "..._main" to construct
+    # the main jit object this module
+    if 0: # jit: # should be part of templates now, right? FIXME Remove?
+        fh, fc = generate_jit_factory_functions(code, prefix)
+        code_h += fh
+        code_c += fc
 
     # Add wrappers
     if wrapper_code:

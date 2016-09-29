@@ -223,16 +223,15 @@ def jit(ufl_object, parameters=None, indirect=False):
 
 
 def _instantiate_form(module, prefix):
-    "Extract the form from module with only one form."
+    "Instantiate an object of the jit-compiled form."
     import dijitso
-    form_id = 0
-    classname = make_classname(prefix, "form", form_id)
+    classname = make_classname(prefix, "form", "main")
     form = dijitso.extract_factory_function(module, "create_" + classname)()
     return form
 
 
 def _instantiate_element_and_dofmap(module, prefix):
-    """Extract element and dofmap from module."""
+    "Instantiate objects of the jit-compiled finite_element and dofmap."
     import dijitso
     fe_classname = make_classname(prefix, "finite_element", "main")
     dm_classname = make_classname(prefix, "dofmap", "main")
@@ -242,9 +241,8 @@ def _instantiate_element_and_dofmap(module, prefix):
 
 
 def _instantiate_coordinate_mapping(module, prefix):
-    "Extract the coordinate_mapping from module with only one coordinate_mapping."
+    "Instantiate an object of the jit-compiled coordinate_mapping."
     import dijitso
-    coordinate_mapping_id = "main"
-    classname = make_classname(prefix, "coordinate_mapping", coordinate_mapping_id)
+    classname = make_classname(prefix, "coordinate_mapping", "main")
     form = dijitso.extract_factory_function(module, "create_" + classname)()
     return form
