@@ -23,7 +23,7 @@ from ufl.permutation import build_component_numbering
 
 from ffc.log import error, warning, ffc_assert
 
-from ffc.uflacs.backends.ffc.common import FFCBackendSymbols
+from ffc.uflacs.backends.ffc.symbols import FFCBackendSymbols
 from ffc.uflacs.backends.ffc.common import physical_quadrature_integral_types
 
 
@@ -35,12 +35,11 @@ class FFCBackendAccess(MultiFunction):
 
         # Store ir and parameters
         self.ir = ir
+        self.entitytype = ir["entitytype"]
+        self.integral_type = ir["integral_type"]
         self.language = language
         self.symbols = symbols
         self.parameters = parameters
-
-        # Need this for custom integrals
-        #classname = make_classname(prefix, "finite_element", ir["element_numbers"][ufl_element])
 
 
     # === Rules for all modified terminal types ===
@@ -80,21 +79,22 @@ class FFCBackendAccess(MultiFunction):
         # assert mt.global_component is None
 
         # No need to store basis function value in its own variable, just get table value directly
+        #uname, begin, end, ttype = tabledata
         uname, begin, end = tabledata
-
         table_types = self.ir["uflacs"]["expr_irs"][num_points]["table_types"]
-        tt = table_types[uname]
-        if tt == "zeros":
+        ttype = table_types[uname]
+
+        if ttype == "zeros":
             error("Not expecting zero arguments to get this far.")
             return L.LiteralFloat(0.0)
-        elif tt == "ones":
+        elif ttype == "ones":
             warning("Should simplify ones arguments before getting this far.")
             return L.LiteralFloat(1.0)
 
-        entity = self.symbols.entity(self.ir["entitytype"], mt.restriction)
+        entity = self.symbols.entity(self.entitytype, mt.restriction)
         idof = self.symbols.argument_loop_index(mt.terminal.number())
 
-        if tt == "piecewise":
+        if ttype == "piecewise":
             iq = 0
         else:
             iq = self.symbols.quadrature_loop_index(num_points)
@@ -105,16 +105,17 @@ class FFCBackendAccess(MultiFunction):
 
     def coefficient(self, e, mt, tabledata, num_points):
         # TODO: Passing type along with tabledata would make a lot of code cleaner
+        #uname, begin, end, ttype = tabledata
         uname, begin, end = tabledata
         table_types = self.ir["uflacs"]["expr_irs"][num_points]["table_types"]
-        tt = table_types[uname]
+        ttype = table_types[uname]
 
-        if tt == "zeros":
+        if ttype == "zeros":
             # FIXME: Remove at earlier stage so dependent code can also be removed
             warning("Not expecting zero coefficients to get this far.")
             L = self.language
             return L.LiteralFloat(0.0)
-        elif tt == "ones" and (end - begin) == 1:
+        elif ttype == "ones" and (end - begin) == 1:
             # f = 1.0 * f_i, just return direct reference to dof array at dof begin
             return self.symbols.coefficient_dof_access(mt.terminal, begin)
         else:
@@ -134,7 +135,7 @@ class FFCBackendAccess(MultiFunction):
         ffc_assert(not mt.local_derivatives, "Not expecting derivatives of SpatialCoordinate.")
         ffc_assert(not mt.averaged, "Not expecting average of SpatialCoordinates.")
 
-        if self.ir["integral_type"] in physical_quadrature_integral_types:
+        if self.integral_type in physical_quadrature_integral_types:
             # Physical coordinates are available in given variables
             assert num_points is None
             x = self.symbols.points_array(num_points)
@@ -152,7 +153,7 @@ class FFCBackendAccess(MultiFunction):
         ffc_assert(not mt.local_derivatives, "Not expecting derivatives of CellCoordinate.")
         ffc_assert(not mt.averaged, "Not expecting average of CellCoordinate.")
 
-        if self.ir["integral_type"] == "cell" and not mt.restriction:
+        if self.integral_type == "cell" and not mt.restriction:
             X = self.symbols.points_array(num_points)
             if num_points == 1:
                 return X[mt.flat_component]
@@ -172,7 +173,7 @@ class FFCBackendAccess(MultiFunction):
         ffc_assert(not mt.averaged, "Not expecting average of FacetCoordinate.")
         ffc_assert(not mt.restriction, "Not expecting restriction of FacetCoordinate.")
 
-        if self.ir["integral_type"] in ("interior_facet", "exterior_facet"):
+        if self.integral_type in ("interior_facet", "exterior_facet"):
             tdim, = mt.terminal.ufl_shape
             if tdim == 0:
                 error("Vertices have no facet coordinates.")

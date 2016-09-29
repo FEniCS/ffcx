@@ -21,7 +21,7 @@
 import ffc.uflacs.language.cnodes
 from ffc.uflacs.language.ufl_to_cnodes import UFL2CNodesTranslatorCpp
 
-from ffc.uflacs.backends.ffc.common import FFCBackendSymbols
+from ffc.uflacs.backends.ffc.symbols import FFCBackendSymbols
 from ffc.uflacs.backends.ffc.access import FFCBackendAccess
 from ffc.uflacs.backends.ffc.definitions import FFCBackendDefinitions
 

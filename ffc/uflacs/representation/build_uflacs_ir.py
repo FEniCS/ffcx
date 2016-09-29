@@ -59,6 +59,7 @@ def build_uflacs_ir(ir, integrands, coefficient_numbering, table_provider):
 
         # FIXME: Want table information earlier, even before scalar
         # rebuilding! Must split compute_expr_ir to achieve this.
+        # FIXME: Store table type as fourth entry in table ranges
         unique_tables, mt_table_ranges, table_types = \
           table_provider.build_optimized_tables(num_points, ir["entitytype"], terminal_data)
 

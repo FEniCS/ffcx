@@ -22,7 +22,7 @@ from ufl.corealg.multifunction import MultiFunction
 
 from ffc.log import error, warning
 
-from ffc.uflacs.backends.ffc.common import FFCBackendSymbols
+from ffc.uflacs.backends.ffc.symbols import FFCBackendSymbols
 from ffc.uflacs.backends.ffc.common import physical_quadrature_integral_types
 from ffc.uflacs.backends.ffc.common import num_coordinate_component_dofs
 
@@ -34,6 +34,8 @@ class FFCBackendDefinitions(MultiFunction):
 
         # Store ir and parameters
         self.ir = ir
+        self.integral_type = ir["integral_type"]
+        self.entitytype = ir["entitytype"]
         self.language = language
         self.symbols = symbols
         self.parameters = parameters
@@ -70,32 +72,34 @@ class FFCBackendDefinitions(MultiFunction):
 
         # No need to store basis function value in its own variable,
         # just get table value directly
+        #uname, begin, end, ttype = tabledata
         uname, begin, end = tabledata
+        table_types = self.ir["uflacs"]["expr_irs"][num_points]["table_types"]
+        ttype = table_types[uname]
+
         #fe_classname = ir["classnames"]["finite_element"][t.ufl_element()]
 
-        # For a constant coefficient we reference the dofs directly, so no definition needed
-        table_types = self.ir["uflacs"]["expr_irs"][num_points]["table_types"]
-        tt = table_types[uname]
-        if tt == "zeros":
-            # FIXME: remove at earlier stage so dependent code can also be removed
+        # FIXME: remove at earlier stage so dependent code can also be removed
+        if ttype == "zeros":
             warning("Not expecting zero coefficients to get this far.")
             return []
 
-        if tt == "ones" and (end - begin) == 1:
+        # For a constant coefficient we reference the dofs directly, so no definition needed
+        if ttype == "ones" and (end - begin) == 1:
             return []
 
         assert begin < end
 
         # Get various symbols to index element tables and coefficient dofs
-        entity = self.symbols.entity(self.ir["entitytype"], mt.restriction)
+        entity = self.symbols.entity(self.entitytype, mt.restriction)
 
         iq = self.symbols.quadrature_loop_index(num_points)
-        #if tt == "piecewise": iq = 0
+        #if ttype == "piecewise": iq = 0
 
         idof = self.symbols.coefficient_dof_sum_index()
         dof_access = self.symbols.coefficient_dof_access(mt.terminal, idof)
 
-        if tt == "ones":
+        if ttype == "ones":
             # Not sure if this actually happens
             table_access = L.LiteralFloat(1.0)
         else:
@@ -128,32 +132,32 @@ class FFCBackendDefinitions(MultiFunction):
         # this component as linear combination of coordinate_dofs "dofs" and table
 
         # Find table name and dof range it corresponds to
+        #uname, begin, end, ttype = tabledata
         uname, begin, end = tabledata
+        table_types = self.ir["uflacs"]["expr_irs"][num_points]["table_types"]
+        ttype = table_types[uname]
+
         assert end - begin <= num_scalar_dofs
+        assert ttype != "zeros"
         #xfe_classname = ir["classnames"]["finite_element"][coordinate_element]
         #sfe_classname = ir["classnames"]["finite_element"][coordinate_element.sub_elements()[0]]
 
-        # Get table type
-        table_types = self.ir["uflacs"]["expr_irs"][num_points]["table_types"]
-        tt = table_types[uname]
-        assert tt != "zeros"
-
         # Entity number
-        entity = self.symbols.entity(self.ir["entitytype"], mt.restriction)
+        entity = self.symbols.entity(self.entitytype, mt.restriction)
 
         # This check covers "piecewise constant over points on entity"
         iq = self.symbols.quadrature_loop_index(num_points)
-        if tt == "piecewise":
+        if ttype == "piecewise":
             iq = 0
 
         # Make indexable symbol
         uname = L.Symbol(uname)
 
-        if tt == "zeros":
+        if ttype == "zeros":
             code = [
                 L.VariableDecl("const double", access, L.LiteralFloat(0.0))
                 ]
-        elif tt == "ones":
+        elif ttype == "ones":
             # Not sure if this ever happens
             # Inlined version (we know this is bounded by a small number)
             dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs,
@@ -205,7 +209,7 @@ class FFCBackendDefinitions(MultiFunction):
           x = sum_k xdof_k xphi_k(Xf)
         """
         # TODO: Jacobian may need adjustment for physical_quadrature_integral_types
-        if (self.ir["integral_type"] in physical_quadrature_integral_types
+        if (self.integral_type in physical_quadrature_integral_types
                 and not mt.local_derivatives):
             return []
         else:
