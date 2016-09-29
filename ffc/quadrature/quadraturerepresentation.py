@@ -46,6 +46,7 @@ def compute_integral_ir(itg_data,
                         form_data,
                         form_id,
                         element_numbers,
+                        classnames,
                         parameters):
     "Compute intermediate represention of integral."
 
@@ -115,7 +116,7 @@ def compute_integral_ir(itg_data,
     # quadrature.  This is used by integral type custom_integral.
     ir["element_data"] = _extract_element_data(transformer.element_map,
                                                element_numbers,
-                                               ir["classnames"])
+                                               classnames)
 
     return ir
 

@@ -429,6 +429,7 @@ def _compute_integral_ir(form_data, form_id, prefix, element_numbers, classnames
                                    form_data,
                                    form_id,     # FIXME: Can we remove this?
                                    element_numbers,
+                                   classnames,
                                    parameters)
 
         # Build classname
