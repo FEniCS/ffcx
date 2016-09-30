@@ -9,22 +9,22 @@ from ufl import *
 from ufl import product
 from ufl.permutation import compute_indices
 
-from uflacs.analysis.graph import build_graph
+from ffc.uflacs.analysis.graph import build_graph
 
 # Tests need this but it has been removed. Rewrite tests!
-# from uflacs.analysis.graph_rebuild import rebuild_scalar_e2i
+# from ffc.uflacs.analysis.graph_rebuild import rebuild_scalar_e2i
 
-# from uflacs.analysis.graph_rebuild import rebuild_expression_from_graph
+# from ffc.uflacs.analysis.graph_rebuild import rebuild_expression_from_graph
 
-# from uflacs.analysis.indexing import (map_indexed_arg_components,
+# from ffc.uflacs.analysis.indexing import (map_indexed_arg_components,
 #                                        map_indexed_arg_components2,
 #                                        map_component_tensor_arg_components)
-# from uflacs.analysis.graph_symbols import (map_list_tensor_symbols,
+# from ffc.uflacs.analysis.graph_symbols import (map_list_tensor_symbols,
 #                                             map_transposed_symbols, get_node_symbols)
-# from uflacs.analysis.graph_dependencies import (compute_dependencies,
+# from ffc.uflacs.analysis.graph_dependencies import (compute_dependencies,
 #                                                mark_active,
 #                                                mark_image)
-# from uflacs.analysis.graph_ssa import (mark_partitions,
+# from ffc.uflacs.analysis.graph_ssa import (mark_partitions,
 #                                       compute_dependency_count,
 #                                       invert_dependencies,
 #                                       default_cache_score_policy,

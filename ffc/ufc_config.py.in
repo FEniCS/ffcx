@@ -15,15 +15,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
-def get_ufc_include():
-    """Return the include dir to ufc.h.
-
-    In this implementation, the value is computed at build time,
-    see setup.py.
-    """
-    return "@INSTALL_PREFIX/include"
-
-
 def get_ufc_cxx_flags():
     """Return C++ flags for compiling UFC C++11 code. Return type
     is a list of strings.

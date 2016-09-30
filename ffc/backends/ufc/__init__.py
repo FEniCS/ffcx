@@ -45,6 +45,13 @@ from .coordinate_mapping import *
 from .integrals import *
 from .form import *
 from .factory import *
+from os.path import dirname, abspath
+
+
+def get_include_path():
+    "Return location of UFC header files"
+    return dirname(abspath(__file__))
+
 
 templates = {"function_header": function_header,
              "function_implementation": function_implementation,

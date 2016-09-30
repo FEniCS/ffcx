@@ -14,8 +14,8 @@ import ufl
 from ufl import as_ufl
 from ufl import *
 
-import uflacs
-# from uflacs.backends.toy.toy_compiler import compile_form
+import ffc.uflacs
+# from ffc.uflacs.backends.toy.toy_compiler import compile_form
 
 
 def format_variable(i):
