@@ -89,8 +89,9 @@ known_tsfc_failures = set([
     "PointMeasure.ufl",
     "MetaData.ufl",
     "AdaptivePoisson.ufl",    # FIXME: is it fixable?
-    "Biharmonic.ufl",         # FIXME: just a tolerance issue
-    "BiharmonicHHJ.ufl",      # FIXME: might change soon
+    "Biharmonic.ufl",         # FIXME: tolerance issue in program output
+    "BiharmonicRegge.ufl",    # FIXME: tolerance issue in generated code
+    "BiharmonicHHJ.ufl",      # FIXME: missing in tsfc.fiat_interface
     "Mini.ufl",               # FIXME: let's postpone refactoring enriched element
     "MathFunctions.ufl",      # FIXME: should be easy
     "QuadratureElement.ufl",  # FIXME: is it fixable?
