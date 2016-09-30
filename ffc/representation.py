@@ -68,7 +68,7 @@ def pick_representation(representation):
     elif representation == "uflacs":
         from ffc import uflacs as r
     elif representation == "tsfc":
-        from ffc import tsfcrepr as r
+        from ffc import tsfc as r
     else:
         error("Unknown representation: %s" % str(representation))
     return r

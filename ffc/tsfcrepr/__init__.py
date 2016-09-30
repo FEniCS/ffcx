@@ -1,3 +1,0 @@
-from .tsfcrepresentation import compute_integral_ir
-from .tsfcoptimization import optimize_integral_ir
-from .tsfcgenerator import generate_integral_code
