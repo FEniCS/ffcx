@@ -536,14 +536,3 @@ ufc::overlap_integral * %(classname)s::create_default_overlap_integral() const
 %(create_default_overlap_integral)s
 }
 """
-
-form_jit_header = """
-extern "C" ufc::form * create_%(classname)s();
-"""
-
-form_jit_implementation = form_header + """
-extern "C" DLL_EXPORT ufc::form * create_%(classname)s()
-{
-  return new %(classname)s();
-}
-""" + form_implementation

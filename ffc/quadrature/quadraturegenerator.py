@@ -859,9 +859,9 @@ def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data,
 
         # Get element data for current element
         counter = int(prefix.split("FE")[1])
-        element_number = element_data[counter]["element_number"]
         space_dim = element_data[counter]["num_element_dofs"]
-        value_size = element_data[counter]["value_size"]
+        value_size = element_data[counter]["physical_value_size"]
+        element_classname = element_data[counter]["classname"]
 
         # Iterate over derivative orders
         for n, components in sorted_by_key(used_derivatives_and_components[prefix]):
@@ -908,8 +908,7 @@ def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data,
                     block = []
 
                     # Generate code for calling evaluate_basis_all
-                    block += [f_eval_basis % {"form_prefix": form_prefix,
-                                              "element_number": element_number,
+                    block += [f_eval_basis % {"classname": element_classname,
                                               "eval_name": eval_name,
                                               "gdim": gdim,
                                               "vertex_offset": vertex_offset}]
@@ -1002,8 +1001,7 @@ def _evaluate_basis_at_quadrature_points(psi_tables, gdim, element_data,
                     block = []
 
                     # Generate code for calling evaluate_basis_derivatives_all
-                    block += [f_eval_derivs % {"form_prefix": form_prefix,
-                                               "element_number": element_number,
+                    block += [f_eval_derivs % {"classname": element_classname,
                                                "eval_name": eval_name,
                                                "gdim": gdim,
                                                "vertex_offset": vertex_offset,

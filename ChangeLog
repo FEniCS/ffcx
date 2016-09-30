@@ -1,3 +1,5 @@
+ - Jit compiler now compiles elements separately from forms to avoid duplicate work
+ - Add parameter max_signature_length to optionally shorten signatures in the jit cache
  - Move uflacs module into ffc.uflacs
  - Remove installation of pkg-config and CMake files (UFC path and
    compiler flags are available from ffc module)

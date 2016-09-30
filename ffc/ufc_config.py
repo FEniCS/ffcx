@@ -15,24 +15,20 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
+
+# TODO: Can we safely remove this?
 def get_ufc_cxx_flags():
     """Return C++ flags for compiling UFC C++11 code. Return type
     is a list of strings.
-
-    In this implementation, the value is computed at build time,
-    see setup.py.
     """
-    return "@CXX_FLAGS".split()
+    return ["-std=c++11"]
 
 
-def get_ufc_signature():
-    """Return SHA-1 hash of the contents of ufc.h.
-
-    In this implementation, the value is computed at build time,
-    see setup.py.
-    """
-    return "@UFC_SIGNATURE"
+# TODO: Can we safely remove this name?
+from ffc.backends.ufc import get_ufc_signature
 
 
-# ufc_signature() already introduced to FFC standard in 1.7.0dev
-ufc_signature = get_ufc_signature
+# ufc_signature() already introduced to FFC standard in 1.7.0dev,
+# called by the dolfin cmake build system to compare against
+# future imported ffc versions for compatibility.
+from ffc.backends.ufc import get_ufc_signature as ufc_signature
