@@ -181,3 +181,19 @@ def get_ufc_templates_signature():
     In this implementation, the value is computed on import.
     """
     return _ufc_templates_signature
+
+
+def get_ufc_cxx_flags():
+    """Return C++ flags for compiling UFC C++11 code.
+
+    Return type is a list of strings.
+
+    Used internally in some tests.
+    """
+    return ["-std=c++11"]
+
+
+# ufc_signature() already introduced to FFC standard in 1.7.0dev,
+# called by the dolfin cmake build system to compare against
+# future imported ffc versions for compatibility.
+ufc_signature = get_ufc_signature

@@ -107,10 +107,9 @@ def compile_gcc_code(ufl_element, code):
     f.close()
 
     # Get location of UFC file
-    import ffc.ufc_config
-    import ffc.backends.ufc
-    ufc_include_path = ffc.backends.ufc.get_include_path()
-    ufc_cxx_flags = ffc.ufc_config.get_ufc_cxx_flags()
+    from ffc import get_include_path, get_ufc_cxx_flags
+    ufc_include_path = get_include_path()
+    ufc_cxx_flags = get_ufc_cxx_flags()
 
     # Compile c++ code
     c = "c++ -I{} {} -Wall -Werror -o evaluate_basis_test_code evaluate_basis.cpp".format(ufc_include_path, " ".join(ufc_cxx_flags))
