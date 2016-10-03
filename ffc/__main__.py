@@ -79,8 +79,10 @@ the FFC man page which may invoked by 'man ffc' (if installed).
 """)
 
 
-def main(argv):
-    "Main function."
+def main(args=None):
+    """This is the commandline tool for the python module ffc."""
+    if args is None:
+        args = sys.argv[1:]
 
     # Append current directory to path, such that the *_debug module
     # created by ufl_load_file can be found when FFC compiles a form
@@ -89,7 +91,7 @@ def main(argv):
 
     # Get command-line arguments
     try:
-        opts, args = getopt.getopt(argv, "hVSvsl:r:f:Oo:q:ep",
+        opts, args = getopt.getopt(args, "hVSvsl:r:f:Oo:q:ep",
                                    ["help", "version", "signature", "verbose", "silent",
                                     "language=", "representation=", "optimize",
                                     "output-directory=", "quadrature-rule=", "error-control",
@@ -236,3 +238,7 @@ def main(argv):
             print("Wrote profiling info to file {0}".format(pfn))
 
     return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
