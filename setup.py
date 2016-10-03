@@ -3,18 +3,11 @@ from __future__ import print_function
 
 import os
 import sys
-import platform
 import re
 import subprocess
 import string
-import tempfile
-import shutil
-import hashlib
 
 from setuptools import setup, find_packages
-from setuptools.command.install import install
-
-from distutils.ccompiler import new_compiler
 
 if sys.version_info < (2, 7):
     print("Python 2.7 or higher required, please upgrade.")
@@ -25,11 +18,11 @@ VERSION = re.findall('__version__ = "(.*)"',
 
 URL = "https://bitbucket.org/fenics-project/ffc/"
 
-SCRIPTS = [os.path.join("scripts", "ffc")]
+ENTRY_POINTS = {'console_scripts': ['ffc = ffc.__main__:main']}
 
 AUTHORS = """\
 Anders Logg, Kristian Oelgaard, Marie Rognes, Garth N. Wells,
-Martin Sandve Alnaes, Hans Petter Langtangen, Kent-Andre Mardal,
+Martin Sandve Alnæs, Hans Petter Langtangen, Kent-Andre Mardal,
 Ola Skavhaug, et al.
 """
 
@@ -95,20 +88,6 @@ def get_git_commit_hash():
         return hash.strip()
 
 
-def create_windows_batch_files(scripts):
-    """Create Windows batch files, to get around problem that we
-    cannot run Python scripts in the prompt without the .py
-    extension."""
-    batch_files = []
-    for script in scripts:
-        batch_file = script + ".bat"
-        with open(batch_file, "w") as f:
-            f.write(sys.executable + " \"%%~dp0\%s\" %%*\n" % os.path.split(script)[1])
-        batch_files.append(batch_file)
-    scripts.extend(batch_files)
-    return scripts
-
-
 def write_config_file(infile, outfile, variables={}):
     "Write config file based on template"
     class AtTemplate(string.Template):
@@ -133,10 +112,8 @@ def run_install():
     INSTALL_PREFIX = get_installation_prefix()
     GIT_COMMIT_HASH = get_git_commit_hash()
 
-    # Create batch files for Windows if necessary
-    scripts = SCRIPTS
-    if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
-        scripts = create_windows_batch_files(scripts)
+    # Scripts list
+    entry_points = ENTRY_POINTS
 
     # Generate module with git hash from template
     generate_git_hash_file(GIT_COMMIT_HASH)
@@ -160,7 +137,8 @@ def run_install():
           packages=find_packages("."),
           package_dir={"ffc": "ffc"},
           package_data={"ffc" : [os.path.join('backends', 'ufc', '*.h')]},
-          scripts=scripts,
+          #scripts=scripts,  # Using entry_points instead
+          entry_points=entry_points,
           data_files=data_files,
           install_requires=["numpy",
                             "six",
