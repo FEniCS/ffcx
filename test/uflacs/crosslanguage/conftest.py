@@ -10,7 +10,8 @@ import inspect
 from collections import defaultdict
 import subprocess
 
-from ffc import get_ufc_include, get_ufc_cxx_flags
+from ffc import get_ufc_cxx_flags
+from ffc.backends.ufc import get_include_path as get_ufc_include
 
 # TODO: For a generic framework, this needs to change somewhat:
 _supportcode = '''

@@ -7,12 +7,12 @@ from ufl import *
 from ufl import product
 from ufl.permutation import compute_indices
 
-from uflacs.analysis.indexing import (map_indexed_arg_components,
+from ffc.uflacs.analysis.indexing import (map_indexed_arg_components,
                                       map_component_tensor_arg_components)
-from uflacs.analysis.graph_symbols import (map_list_tensor_symbols,
+from ffc.uflacs.analysis.graph_symbols import (map_list_tensor_symbols,
                                            map_transposed_symbols,
                                            get_node_symbols)
-from uflacs.analysis.graph import build_graph
+from ffc.uflacs.analysis.graph import build_graph
 
 from operator import eq as equal
 

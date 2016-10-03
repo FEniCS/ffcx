@@ -309,7 +309,7 @@ def run_apidoc(_):
     apidoc_dir = os.path.join(sphinx_source_dir, "api-doc")
 
     # Include these modules
-    modules = ['ffc', 'uflacs']
+    modules = ['ffc']
 
     for module in modules:
         # Generate .rst files ready for autodoc

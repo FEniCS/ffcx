@@ -7,7 +7,7 @@ reflected in the code.
 """
 
 from ufl import *
-#from uflacs.backends.? import ?
+#from ffc.uflacs.backends.? import ?
 
 def test_cell_integral_body(gtest):
     """

@@ -1,9 +1,9 @@
 
 import numpy
 
-from uflacs.backends.ufc.generators import *
+from ffc.uflacs.backends.ufc.generators import *
 
-import uflacs.language.cnodes as L
+import ffc.uflacs.language.cnodes as L
 
 
 # TODO: Make this a feature of dijitso: dijitso show-function modulehash functionname
@@ -138,8 +138,8 @@ def mock_evaluate_basis_ir():
 
 
 def test_mock_evaluate_basis():
-    from uflacs.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
-    import uflacs.language.cnodes as L
+    from ffc.uflacs.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
+    import ffc.uflacs.language.cnodes as L
     data = mock_evaluate_basis_ir()
     code = generate_evaluate_reference_basis(L, data)
     print(code)

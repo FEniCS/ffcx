@@ -11,12 +11,9 @@ import numpy
 
 import hashlib
 
-#import uflacs, uflacs.codeutils
-#from uflacs.codeutils.expr_formatter import ExprFormatter
-from uflacs.params import default_parameters
-
-from uflacs.backends.dolfin.expression import format_dolfin_expression
-from uflacs.backends.dolfin.dolfin_compiler import compile_dolfin_expression_body
+from ffc.uflacs.params import default_parameters
+from ffc.uflacs.backends.dolfin.expression import format_dolfin_expression
+from ffc.uflacs.backends.dolfin.dolfin_compiler import compile_dolfin_expression_body
 
 
 # FIXME: Make tests with dolfin optional

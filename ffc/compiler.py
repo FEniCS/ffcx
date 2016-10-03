@@ -120,7 +120,7 @@ import os
 # FFC modules
 from ffc.log import info, info_green, warning
 from ffc.parameters import validate_parameters
-from ffc.analysis import analyze_forms, analyze_elements
+from ffc.analysis import analyze_ufl_objects
 from ffc.representation import compute_ir
 from ffc.optimization import optimize_ir
 from ffc.codegeneration import generate_code
@@ -128,36 +128,63 @@ from ffc.formatting import format_code
 from ffc.wrappers import generate_wrapper_code
 
 
-def compile_form(forms, object_names=None, prefix="Form", parameters=None, jit=False):
-    """This function generates UFC code for a given UFL form or list
-    of UFL forms."""
+def _print_timing(stage, timing):
+    "Print timing results."
+    info("Compiler stage %s finished in %g seconds.\n" % (str(stage), timing))
 
-    info("Compiling form %s\n" % prefix)
+
+def compile_form(forms, object_names=None,
+                 prefix="Form", parameters=None, jit=False):
+    """This function generates UFC code for a given UFL form or list of UFL forms."""
+    return compile_ufl_objects(forms, "form", object_names,
+                               prefix, parameters, jit)
+
+
+def compile_element(elements, object_names=None,
+                    prefix="Element", parameters=None, jit=False):
+    """This function generates UFC code for a given UFL element or list of UFL elements."""
+    return compile_ufl_objects(elements, "element", object_names,
+                               prefix, parameters, jit)
+
+
+def compile_coordinate_mapping(elements, object_names=None,
+                               prefix="Mesh", parameters=None, jit=False):
+    """This function generates UFC code for a given UFL element or list of UFL elements."""
+    return compile_ufl_objects(elements, "coordinate_mapping", object_names,
+                               prefix, parameters, jit)
+
+
+def compile_ufl_objects(ufl_objects, kind, object_names=None,
+                        prefix=None, parameters=None, jit=False):
+    """This function generates UFC code for a given UFL form or list of UFL forms."""
+    info("Compiling %s %s\n" % (kind, prefix))
 
     # Reset timing
     cpu_time_0 = time()
 
+    # Note that jit will always pass validated parameters so 
+    # this is only for commandline and direct call from python
+    if not jit:
+        parameters = validate_parameters(parameters)
+
     # Check input arguments
-    forms = _check_forms(forms)
-    if not forms:
+    if not isinstance(ufl_objects, (list, tuple)):
+        ufl_objects = (ufl_objects,)
+    if not ufl_objects:
         return "", ""
     if prefix != os.path.basename(prefix):
         error("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix))
     if object_names is None:
         object_names = {}
 
-    # Note that jit will always pass parameters so this is
-    # only for commandline and direct call from python
-    parameters = validate_parameters(parameters)
-
     # Stage 1: analysis
     cpu_time = time()
-    analysis = analyze_forms(forms, parameters)
+    analysis = analyze_ufl_objects(ufl_objects, kind, parameters)
     _print_timing(1, time() - cpu_time)
 
     # Stage 2: intermediate representation
     cpu_time = time()
-    ir = compute_ir(analysis, prefix, parameters)
+    ir = compute_ir(analysis, prefix, parameters, jit)
     _print_timing(2, time() - cpu_time)
 
     # Stage 3: optimization
@@ -182,80 +209,21 @@ def compile_form(forms, object_names=None, prefix="Form", parameters=None, jit=F
 
     info_green("FFC finished in %g seconds.", time() - cpu_time_0)
 
-    return code_h, code_c
+    if jit:
+        # Must use processed elements from analysis here
+        form_datas, unique_elements, element_numbers, unique_coordinate_elements = analysis
 
+        # Avoid returning self as dependency for infinite recursion
+        unique_elements = list(element for element in unique_elements
+                               if element not in ufl_objects)
 
-def compile_element(elements, prefix="Element", parameters=None, jit=False):
-    """This function generates UFC code for a given UFL element or
-    list of UFL elements."""
+        # FIXME: May get similar recursion issue with coordinate elements
+        # but currently not used all the way
+        dependent_ufl_objects = {
+            "element": tuple(unique_elements),
+            "coordinate_mapping": tuple(unique_coordinate_elements),
+        }
 
-    info("Compiling element %s\n" % prefix)
-
-    # Reset timing
-    cpu_time_0 = time()
-
-    # Check input arguments
-    elements = _check_elements(elements)
-    if not elements:
-        return "", ""
-
-    object_names = {}
-
-    # Note that jit will always pass parameters so this is
-    # only for commandline and direct call from python
-    parameters = validate_parameters(parameters)
-
-    # Stage 1: analysis
-    cpu_time = time()
-    analysis = analyze_elements(elements, parameters)
-    _print_timing(1, time() - cpu_time)
-
-    # Stage 2: intermediate representation
-    cpu_time = time()
-    ir = compute_ir(analysis, prefix, parameters)
-    _print_timing(2, time() - cpu_time)
-
-    # Stage 3: optimization
-    cpu_time = time()
-    oir = optimize_ir(ir, parameters)
-    _print_timing(3, time() - cpu_time)
-
-    # Stage 4: code generation
-    cpu_time = time()
-    code = generate_code(oir, parameters)
-    _print_timing(4, time() - cpu_time)
-
-    # Stage 4.1: generate wrappers
-    cpu_time = time()
-    wrapper_code = generate_wrapper_code(analysis, prefix, object_names, parameters)
-    _print_timing(4.1, time() - cpu_time)
-
-    # Stage 5: format code
-    cpu_time = time()
-    code_h, code_c = format_code(code, wrapper_code, prefix, parameters, jit)
-    _print_timing(5, time() - cpu_time)
-
-    info_green("FFC finished in %g seconds.", time() - cpu_time_0)
-
-    # TODO: If prefix and parameters are determined properly outside
-    #   this function they don't need to be returned here...
-    return code_h, code_c
-
-
-def _check_forms(forms):
-    "Initial check of forms."
-    if not isinstance(forms, (list, tuple)):
-        forms = (forms,)
-    return forms
-
-
-def _check_elements(elements):
-    "Initial check of elements."
-    if not isinstance(elements, (list, tuple)):
-        elements = (elements,)
-    return elements
-
-
-def _print_timing(stage, timing):
-    "Print timing results."
-    info("Compiler stage %s finished in %g seconds.\n" % (str(stage), timing))
+        return code_h, code_c, dependent_ufl_objects
+    else:
+        return code_h, code_c

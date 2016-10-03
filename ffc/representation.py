@@ -48,6 +48,7 @@ from ffc.quadratureelement import QuadratureElement
 from ffc.cpp import set_float_formatting
 from ffc.cpp import make_classname, make_integral_classname
 
+
 # List of supported integral types
 ufc_integral_types = ("cell",
                       "exterior_facet",
@@ -62,20 +63,66 @@ ufc_integral_types = ("cell",
 def pick_representation(representation):
     "Return one of the specialized code generation modules from a representation string."
     if representation == "quadrature":
-        from ffc import quadrature
-        r = quadrature
+        from ffc import quadrature as r
     elif representation == "tensor":
-        from ffc import tensor
-        r = tensor
+        from ffc import tensor as r
     elif representation == "uflacs":
-        from ffc import uflacsrepr
-        r = uflacsrepr
+        from ffc import uflacs as r
     else:
         error("Unknown representation: %s" % str(representation))
     return r
 
 
-def compute_ir(analysis, prefix, parameters):
+def make_finite_element_jit_classname(ufl_element, parameters):
+    from jitcompiler import compute_jit_prefix  # FIXME circular file dependency
+    kind, prefix = compute_jit_prefix(ufl_element, parameters)
+    return make_classname(prefix, "finite_element", "main")
+
+
+def make_dofmap_jit_classname(ufl_element, parameters):
+    from jitcompiler import compute_jit_prefix  # FIXME circular file dependency
+    kind, prefix = compute_jit_prefix(ufl_element, parameters)
+    return make_classname(prefix, "dofmap", "main")
+
+
+def make_coordinate_mapping_jit_classname(ufl_mesh, parameters):
+    from jitcompiler import compute_jit_prefix  # FIXME circular file dependency
+    kind, prefix = compute_jit_prefix(ufl_mesh, parameters, kind="coordinate_mapping")
+    return make_classname(prefix, "coordinate_mapping", "main")
+
+
+def make_all_element_classnames(prefix, elements, coordinate_elements, element_numbers, parameters, jit):
+    if jit:
+        # Make unique classnames to match separately jit-compiled module
+        classnames = {
+            "finite_element": {
+                e: make_finite_element_jit_classname(e, parameters)
+                for e in elements },
+            "dofmap": {
+                e: make_dofmap_jit_classname(e, parameters)
+                for e in elements },
+            "coordinate_mapping": {
+                e: make_coordinate_mapping_jit_classname(e, parameters)
+                for e in coordinate_elements },
+            }
+    else:
+        # Make unique classnames only within this module
+        # (using a shared prefix and element numbers that are only unique within this module)
+        classnames = {
+            "finite_element": {
+                e: make_classname(prefix, "finite_element", element_numbers[e])
+                for e in elements },
+            "dofmap": {
+                e: make_classname(prefix, "dofmap", element_numbers[e])
+                for e in elements },
+            "coordinate_mapping": {
+                e: make_classname(prefix, "coordinate_mapping", element_numbers[e])
+                for e in coordinate_elements },
+            }
+    return classnames
+
+
+def compute_ir(analysis, prefix, parameters, jit=False):
     "Compute intermediate representation."
 
     begin("Compiler stage 2: Computing intermediate representation")
@@ -87,38 +134,61 @@ def compute_ir(analysis, prefix, parameters):
     # Extract data from analysis
     form_datas, elements, element_numbers, coordinate_elements = analysis
 
+    # Construct classnames for all element objects and coordinate mappings
+    classnames = make_all_element_classnames(prefix, elements, coordinate_elements, element_numbers, parameters, jit)
+
+    # Skip processing elements if jitting forms
+    # NB! it's important that this happens _after_ the element numbers and classnames
+    # above have been created. 
+    if jit and form_datas:
+        # While we may get multiple forms during command line action, not so during jit
+        assert len(form_datas) == 1, "Expecting only one form data instance during jit."
+        # Drop some processing
+        elements = []
+        coordinate_elements = []
+    elif jit and coordinate_elements:
+        # While we may get multiple coordinate elements during command line action,
+        # or during form jit, not so during coordinate mapping jit
+        assert len(coordinate_elements) == 1, "Expecting only one form data instance during jit."
+        # Drop some processing
+        elements = []
+    elif jit and elements:
+        # Assuming a topological sorting of the elements,
+        # only process the last (main) element from here on
+        elements = [elements[-1]]
+
     # Compute representation of elements
     info("Computing representation of %d elements" % len(elements))
-    ir_elements = [_compute_element_ir(e, prefix, element_numbers)
+    ir_elements = [_compute_element_ir(e, element_numbers, classnames, jit)
                    for e in elements]
 
     # Compute representation of dofmaps
     info("Computing representation of %d dofmaps" % len(elements))
-    ir_dofmaps = [_compute_dofmap_ir(e, prefix, element_numbers)
+    ir_dofmaps = [_compute_dofmap_ir(e, element_numbers, classnames, jit)
                   for e in elements]
 
     # Compute representation of coordinate mappings
     info("Computing representation of %d coordinate mappings" % len(coordinate_elements))
-    ir_compute_coordinate_mappings = [_compute_coordinate_mapping_ir(e, prefix, element_numbers)
-                                      for e in coordinate_elements]
+    ir_coordinate_mappings = [_compute_coordinate_mapping_ir(e, element_numbers, classnames, jit)
+                              for e in coordinate_elements]
 
     # Compute and flatten representation of integrals
     info("Computing representation of integrals")
-    irs = [_compute_integral_ir(fd, i, prefix, element_numbers, parameters)
-           for (i, fd) in enumerate(form_datas)]
+    irs = [_compute_integral_ir(fd, form_id, prefix, element_numbers, classnames, parameters, jit)
+           for (form_id, fd) in enumerate(form_datas)]
     ir_integrals = [ir for ir in chain(*irs) if not ir is None]
 
     # Compute representation of forms
     info("Computing representation of forms")
-    ir_forms = [_compute_form_ir(fd, i, prefix, element_numbers)
-                for (i, fd) in enumerate(form_datas)]
+    ir_forms = [_compute_form_ir(fd, form_id, prefix, element_numbers, classnames, parameters, jit)
+                for (form_id, fd) in enumerate(form_datas)]
 
     end()
 
-    return ir_elements, ir_dofmaps, ir_compute_coordinate_mappings, ir_integrals, ir_forms
+    return ir_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms
 
 
-def _compute_element_ir(ufl_element, prefix, element_numbers):
+def _compute_element_ir(ufl_element, element_numbers, classnames, jit):
     "Compute intermediate representation of element."
 
     # Create FIAT element
@@ -128,7 +198,10 @@ def _compute_element_ir(ufl_element, prefix, element_numbers):
 
     # Store id
     ir = {"id": element_numbers[ufl_element]}
-    ir["classname"] = make_classname(prefix, "finite_element", element_numbers[ufl_element])
+    ir["classname"] = classnames["finite_element"][ufl_element]
+
+    # Remember jit status
+    ir["jit"] = jit
 
     # Compute data for each function
     ir["signature"] = repr(ufl_element)
@@ -149,7 +222,7 @@ def _compute_element_ir(ufl_element, prefix, element_numbers):
     ir["tabulate_dof_coordinates"] = _tabulate_dof_coordinates(ufl_element,
                                                                fiat_element)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
-    ir["create_sub_element"] = [make_classname(prefix, "finite_element", element_numbers[e])
+    ir["create_sub_element"] = [classnames["finite_element"][e]
                                 for e in ufl_element.sub_elements()]
 
     # debug_ir(ir, "finite_element")
@@ -157,7 +230,7 @@ def _compute_element_ir(ufl_element, prefix, element_numbers):
     return ir
 
 
-def _compute_dofmap_ir(ufl_element, prefix, element_numbers):
+def _compute_dofmap_ir(ufl_element, element_numbers, classnames, jit=False):
     "Compute intermediate representation of dofmap."
 
     # Create FIAT element
@@ -171,7 +244,10 @@ def _compute_dofmap_ir(ufl_element, prefix, element_numbers):
 
     # Store id
     ir = {"id": element_numbers[ufl_element]}
-    ir["classname"] = make_classname(prefix, "dofmap", element_numbers[ufl_element])
+    ir["classname"] = classnames["dofmap"][ufl_element]
+
+    # Remember jit status
+    ir["jit"] = jit
 
     # Compute data for each function
     ir["signature"] = "FFC dofmap for " + repr(ufl_element)
@@ -186,7 +262,7 @@ def _compute_dofmap_ir(ufl_element, prefix, element_numbers):
     ir["tabulate_facet_dofs"] = facet_dofs
     ir["tabulate_entity_dofs"] = (fiat_element.entity_dofs(), num_dofs_per_entity)
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
-    ir["create_sub_dofmap"] = [make_classname(prefix, "dofmap", element_numbers[e])
+    ir["create_sub_dofmap"] = [classnames["dofmap"][e]
                                for e in ufl_element.sub_elements()]
 
     return ir
@@ -245,7 +321,7 @@ def _tabulate_coordinate_mapping_basis(ufl_element):
     return tables
 
 
-def _compute_coordinate_mapping_ir(ufl_coordinate_element, prefix, element_numbers):
+def _compute_coordinate_mapping_ir(ufl_coordinate_element, element_numbers, classnames, jit=False):
     "Compute intermediate representation of coordinate mapping."
 
     cell = ufl_coordinate_element.cell()
@@ -258,7 +334,10 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element, prefix, element_numbe
 
     # Store id
     ir = {"id": element_numbers[ufl_coordinate_element]}
-    ir["classname"] = make_classname(prefix, "coordinate_mapping", element_numbers[ufl_coordinate_element])
+    ir["classname"] = classnames["coordinate_mapping"][ufl_coordinate_element]
+
+    # Remember jit status
+    ir["jit"] = jit
 
     # Compute data for each function
     ir["signature"] = "FFC coordinate_mapping from " + repr(ufl_coordinate_element)
@@ -266,8 +345,10 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element, prefix, element_numbe
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = ufl_coordinate_element.value_size()
 
-    ir["create_coordinate_finite_element"] = make_classname(prefix, "finite_element", element_numbers[ufl_coordinate_element])
-    ir["create_coordinate_dofmap"] = make_classname(prefix, "dofmap", element_numbers[ufl_coordinate_element])
+    ir["create_coordinate_finite_element"] = \
+        classnames["finite_element"][ufl_coordinate_element]
+    ir["create_coordinate_dofmap"] = \
+        classnames["dofmap"][ufl_coordinate_element]
 
     ir["compute_physical_coordinates"] = None  # currently unused, corresponds to function name
     ir["compute_reference_coordinates"] = None  # currently unused, corresponds to function name
@@ -285,7 +366,10 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element, prefix, element_numbe
     ir["num_scalar_coordinate_element_dofs"] = tables["x0"].shape[0]
 
     # Get classnames for coordinate element and its scalar subelement:
-    ir["scalar_coordinate_finite_element_classname"] = make_classname(prefix, "finite_element", element_numbers[ufl_coordinate_element.sub_elements()[0]])
+    ir["coordinate_finite_element_classname"] = \
+        classnames["finite_element"][ufl_coordinate_element]
+    ir["scalar_coordinate_finite_element_classname"] = \
+        classnames["finite_element"][ufl_coordinate_element.sub_elements()[0]]
 
     return ir
 
@@ -322,8 +406,13 @@ def _needs_mesh_entities(fiat_element):
         return [d > 0 for d in num_dofs_per_entity]
 
 
-def _compute_integral_ir(form_data, form_id, prefix, element_numbers, parameters):
+def _compute_integral_ir(form_data, form_id, prefix, element_numbers, classnames, parameters, jit):
     "Compute intermediate represention for form integrals."
+
+    # For consistency, all jit objects now have classnames with postfix "main"
+    if jit:
+        assert form_id == 0
+        form_id = "main"
 
     irs = []
 
@@ -338,15 +427,19 @@ def _compute_integral_ir(form_data, form_id, prefix, element_numbers, parameters
         # Compute representation
         ir = r.compute_integral_ir(itg_data,
                                    form_data,
-                                   form_id,
+                                   form_id,     # FIXME: Can we remove this?
                                    element_numbers,
+                                   classnames,
                                    parameters)
 
         # Build classname
-        ir["classname"] = make_integral_classname(prefix, itg_data.integral_type, form_id, itg_data.subdomain_id)
+        ir["classname"] = make_integral_classname(prefix, itg_data.integral_type,
+                                                  form_id, itg_data.subdomain_id)
+
+        ir["classnames"] = classnames  # FIXME XXX: Use this everywhere needed?
 
         # Storing prefix here for reconstruction of classnames on code generation side
-        ir["prefix"] = prefix
+        ir["prefix"] = prefix  # FIXME: Drop this?
 
         # Store metadata for later reference (eg. printing as comment)
         # NOTE: We make a commitment not to modify it!
@@ -354,15 +447,20 @@ def _compute_integral_ir(form_data, form_id, prefix, element_numbers, parameters
         ir["integral_metadata"] = [integral.metadata()
                                    for integral in itg_data.integrals]
 
-
         # Append representation
         irs.append(ir)
 
     return irs
 
 
-def _compute_form_ir(form_data, form_id, prefix, element_numbers):
+def _compute_form_ir(form_data, form_id, prefix, element_numbers,
+                     classnames, parameters, jit=False):
     "Compute intermediate representation of form."
+
+    # For consistency, all jit objects now have classnames with postfix "main"
+    if jit:
+        assert form_id == 0
+        form_id = "main"
 
     # Store id
     ir = {"id": form_id}
@@ -370,8 +468,12 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers):
     # Storing prefix here for reconstruction of classnames on code generation side
     ir["prefix"] = prefix
 
+    # Remember jit status
+    ir["jit"] = jit
+
     # Compute common data
     ir["classname"] = make_classname(prefix, "form", form_id)
+
     # ir["members"] = None # unused
     # ir["constructor"] = None # unused
     # ir["destructor"] = None # unused
@@ -381,28 +483,40 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers):
     ir["num_coefficients"] = len(form_data.reduced_coefficients)
     ir["original_coefficient_position"] = form_data.original_coefficient_positions
 
-    # FIXME: First: pass classnames instead of element numbers to prepare for change to signature based classnames,
-    #               remember to use these classnames in codegeneration.py instead of calling make_classname.
-    # FIXME: Next: change element classnames to use unique signatures instead of small integer element numbers
+    # TODO: Remove create_coordinate_{finite_element,dofmap} and access
+    # through coordinate_mapping instead in dolfin, when that's in place
+    ir["create_coordinate_finite_element"] = [
+        classnames["finite_element"][e]
+        for e in form_data.coordinate_elements
+        ]
+    ir["create_coordinate_dofmap"] = [
+        classnames["dofmap"][e]
+        for e in form_data.coordinate_elements
+        ]
+    ir["create_coordinate_mapping"] = [
+        classnames["coordinate_mapping"][e]
+        for e in form_data.coordinate_elements
+        ]
+    ir["create_finite_element"] = [
+        classnames["finite_element"][e]
+        for e in form_data.argument_elements + form_data.coefficient_elements
+        ]
+    ir["create_dofmap"] = [
+        classnames["dofmap"][e]
+        for e in form_data.argument_elements + form_data.coefficient_elements
+        ]
 
-    # TODO: Remove these two and access through coordinate_mapping instead in dolfin, when that's in place
-    ir["create_coordinate_finite_element"] = [make_classname(prefix, "finite_element", element_numbers[e])
-                                              for e in form_data.coordinate_elements]
-    ir["create_coordinate_dofmap"] = [make_classname(prefix, "dofmap", element_numbers[e])
-                                      for e in form_data.coordinate_elements]
-
-    ir["create_coordinate_mapping"] = [make_classname(prefix, "coordinate_mapping", element_numbers[e])
-                                       for e in form_data.coordinate_elements]
-    ir["create_finite_element"] = [make_classname(prefix, "finite_element", element_numbers[e])
-                                   for e in form_data.argument_elements + form_data.coefficient_elements]
-    ir["create_dofmap"] = [make_classname(prefix, "dofmap", element_numbers[e])
-                           for e in form_data.argument_elements + form_data.coefficient_elements]
-
+    # Create integral ids and names using form prefix
+    # (integrals are always generated as part of form so don't get their own prefix)
     for integral_type in ufc_integral_types:
-        ir["max_%s_subdomain_id" % integral_type] = form_data.max_subdomain_ids.get(integral_type, 0)
-        ir["has_%s_integrals" % integral_type] = _has_foo_integrals(integral_type, form_data)
-        ir["create_%s_integral" % integral_type] = _create_foo_integral(integral_type, form_data)
-        ir["create_default_%s_integral" % integral_type] = _create_default_foo_integral(integral_type, form_data)
+        ir["max_%s_subdomain_id" % integral_type] = \
+            form_data.max_subdomain_ids.get(integral_type, 0)
+        ir["has_%s_integrals" % integral_type] = \
+            _has_foo_integrals(prefix, form_id, integral_type, form_data)
+        ir["create_%s_integral" % integral_type] = \
+            _create_foo_integral(prefix, form_id, integral_type, form_data)
+        ir["create_default_%s_integral" % integral_type] = \
+            _create_default_foo_integral(prefix, form_id, integral_type, form_data)
 
     return ir
 
@@ -749,27 +863,36 @@ def _interpolate_vertex_values(ufl_element, fiat_element):
     return ir
 
 
-def _has_foo_integrals(integral_type, form_data):
+def _has_foo_integrals(prefix, form_id, integral_type, form_data):
     "Compute intermediate representation of has_foo_integrals."
     v = (form_data.max_subdomain_ids.get(integral_type, 0) > 0
-         or _create_default_foo_integral(integral_type, form_data) is not None)
+         or _create_default_foo_integral(prefix, form_id, integral_type, form_data) is not None)
     return bool(v)
 
 
-def _create_foo_integral(integral_type, form_data):
+def _create_foo_integral(prefix, form_id, integral_type, form_data):
     "Compute intermediate representation of create_foo_integral."
-    return [itg_data.subdomain_id for itg_data in form_data.integral_data
-            if (itg_data.integral_type == integral_type and
-                isinstance(itg_data.subdomain_id, int))]
+    subdomain_ids = [itg_data.subdomain_id
+                     for itg_data in form_data.integral_data
+                     if (itg_data.integral_type == integral_type
+                         and isinstance(itg_data.subdomain_id, int))]
+    classnames = [make_integral_classname(prefix, integral_type, form_id, subdomain_id)
+                  for subdomain_id in subdomain_ids]
+    return subdomain_ids, classnames
 
 
-def _create_default_foo_integral(integral_type, form_data):
+def _create_default_foo_integral(prefix, form_id, integral_type, form_data):
     "Compute intermediate representation of create_default_foo_integral."
     itg_data = [itg_data for itg_data in form_data.integral_data
                 if (itg_data.integral_type == integral_type and
                     itg_data.subdomain_id == "otherwise")]
     ffc_assert(len(itg_data) in (0, 1), "Expecting at most one default integral of each type.")
-    return "otherwise" if itg_data else None
+    if itg_data:
+        classname = make_integral_classname(prefix, integral_type, form_id, "otherwise")
+        return classname
+    else:
+        return None
+
 
 #--- Utility functions ---
 

@@ -35,7 +35,6 @@ from six.moves import zip
 
 # ufc class names
 
-
 def make_classname(prefix, basename, signature):
     pre = prefix.lower() + "_" if prefix else ""
     sig = str(signature).lower()
@@ -45,6 +44,7 @@ def make_classname(prefix, basename, signature):
 def make_integral_classname(prefix, integral_type, form_id, subdomain_id):
     basename = "%s_integral_%s" % (integral_type, str(form_id).lower())
     return make_classname(prefix, basename, subdomain_id)
+
 
 # Mapping of restrictions
 _fixed_map = {None: "", "+": "_0", "-": "_1"}
@@ -101,7 +101,8 @@ format.update({
     "static array": lambda t, n, s: "static %s %s[%d];" % (t, n, s),
     "fixed array": lambda t, n, s: "%s %s[%d];" % (t, n, s),
     "delete dynamic array": lambda n, s=None: _delete_array(n, s),
-    "create foo": lambda v: "new %s()" % v
+    "create foo": lambda v: "new %s()" % v,
+    "create factory": lambda v: "create_%s()" % v
 })
 
 # Mathematical operators
@@ -726,8 +727,8 @@ def set_float_formatting(precision):
     format["epsilon"] = 10.0 * eval("1e-%s" % precision)
 
     # Hack to propagate precision to uflacs internals...
-    import uflacs.language.format_value
-    uflacs.language.format_value.set_float_precision(precision)
+    import ffc.uflacs.language.format_value
+    ffc.uflacs.language.format_value.set_float_precision(precision)
 
 
 def set_exception_handling(convert_exceptions_to_warnings):

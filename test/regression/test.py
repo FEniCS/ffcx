@@ -44,7 +44,8 @@ import subprocess
 import time
 from numpy import array, shape, abs, max, isnan
 from ffc.log import begin, end, info, info_red, info_green, info_blue
-from ffc import get_ufc_include, get_ufc_cxx_flags
+from ffc import get_ufc_cxx_flags
+from ffc.backends.ufc import get_include_path as get_ufc_include
 from ufctest import generate_test_code
 
 
@@ -494,8 +495,6 @@ def main(args):
     if use_ext_quad:
         test_cases += ext_quad
 
-    _permissive = permissive
-
     test_case_timings = {}
 
     for argument in test_cases:
@@ -514,12 +513,6 @@ def main(args):
             info_blue("Skipping forms known to fail with uflacs:\n" + "\n".join(sorted(skip_forms)))
         else:
             skip_forms = set()
-
-        # uflacs needs permissive, a few variables are generated but not used
-        if "uflacs" in argument:
-            permissive = True
-        else:
-            permissive = _permissive
 
         # Generate test cases
         generate_test_cases(bench, only_forms, skip_forms)

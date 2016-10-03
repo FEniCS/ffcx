@@ -3,8 +3,8 @@ Tests of LaTeX formatting rules.
 """
 
 from ffc.log import ffc_assert, info, warning, error
-from uflacs.codeutils.expr_formatter import ExprFormatter
-from uflacs.codeutils.latex_expr_formatting_rules import LatexFormatter
+from ffc.uflacs.codeutils.expr_formatter import ExprFormatter
+from ffc.uflacs.codeutils.latex_expr_formatting_rules import LatexFormatter
 
 import ufl
 from ufl.algorithms import preprocess_expression, expand_indices

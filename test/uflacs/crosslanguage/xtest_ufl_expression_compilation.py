@@ -3,7 +3,7 @@
 import ufl
 from ufl import product
 
-from uflacs.backends.toy.toy_compiler import compile_expression
+from ffc.uflacs.backends.toy.toy_compiler import compile_expression
 
 """
 Unit tests of generated geometry snippet code.
