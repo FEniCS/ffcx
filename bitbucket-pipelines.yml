@@ -22,7 +22,6 @@ pipelines:
           - py.test -v ./test/unit
           - py.test -v ./test/uflacs
           - pip3 install --verbose .
-          - py.test-3 -v ./test/unit
           - py.test-3 -v ./test/uflacs
   branches:
     next:
