@@ -19,10 +19,10 @@ pipelines:
           - pip3 install git+https://bitbucket.org/fenics-project/ufl.git@master
           - pip3 install git+https://bitbucket.org/fenics-project/dijitso.git@master
           - pip2 install --verbose .
-          - py.test-2.7 -v ./test/unit
-          - py.test-2.7 -v ./test/uflacs
+          - python2 -m pytest -v ./test/unit
+          - python2 -m pytest -v ./test/uflacs
           - pip3 install --verbose .
-          - py.test-3 -v ./test/uflacs
+          - python3 -m pytest -v ./test/uflacs
   branches:
     next:
       - step:
