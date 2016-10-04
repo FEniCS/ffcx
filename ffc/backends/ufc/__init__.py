@@ -157,7 +157,7 @@ def _compute_ufc_signature():
     h = sha1()
     for fn in ("ufc.h", "ufc_geometry.h"):
         with open(os.path.join(get_include_path(), fn)) as f:
-            h.update(f.read())
+            h.update(f.read().encode("utf-8"))
     return h.hexdigest()
 
 
