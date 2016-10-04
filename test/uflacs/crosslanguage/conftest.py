@@ -190,11 +190,12 @@ class GTestContext:
         # Execute
         try:
             out = subprocess.check_output(cmd, shell=True)
-            self.info(out)
+            self.info(str(out))
             self.info("Building ok.")
-        except subprocess.CalledProcessError, e:
+        except subprocess.CalledProcessError as e:
             self.info("Building '{0}' FAILED (code {1}, headers: {2})".format(self._binary_filename,
-                                                                              e.returncode, self._test_header_names))
+                                                                              e.returncode,
+                                                                              self._test_header_names))
             self.info("Build output:")
             self.info(e.output)
             pytest.fail()
@@ -205,8 +206,8 @@ class GTestContext:
             out = subprocess.check_output(self._binary_filename, shell=True)
             self.info("Gtest running ok!")
             with open(self._gtest_log, "w") as f:
-                f.write(out)
-            self.info(out)
+                f.write(str(out))
+            self.info(str(out))
         except subprocess.CalledProcessError as e:
             self.info("Gtest running FAILED with code {0}!".format(e.returncode))
             with open(self._gtest_log, "w") as f:
