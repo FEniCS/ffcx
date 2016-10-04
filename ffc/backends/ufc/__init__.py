@@ -147,8 +147,8 @@ def _compute_ufc_templates_signature(templates):
     # Compute signature of jit templates
     h = sha1()
     for k in sorted(templates):
-        h.update(k)
-        h.update(templates[k])
+        h.update(k.encode("utf-8"))
+        h.update(templates[k].encode("utf-8"))
     return h.hexdigest()
 
 
@@ -157,7 +157,7 @@ def _compute_ufc_signature():
     h = sha1()
     for fn in ("ufc.h", "ufc_geometry.h"):
         with open(os.path.join(get_include_path(), fn)) as f:
-            h.update(f.read())
+            h.update(f.read().encode("utf-8"))
     return h.hexdigest()
 
 
