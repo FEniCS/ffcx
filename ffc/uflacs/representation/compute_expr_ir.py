@@ -76,62 +76,7 @@ def compute_argument_factorization2(expressions):
     return argument_factorization, modified_arguments, V, target_variables, dependencies
 
 
-def compute_expr_ir(expressions):
-    """Build the intermediate representation for a list of expressions.
-
-    FIXME: This is a bit messy now! Refactoring in progress!
-    FIXME: Document!
-
-    TODO:
-    Work for later::
-
-        - Apply some suitable renumbering of vertices and corresponding arrays prior to returning
-
-        - Allocate separate registers for each partition
-          (but e.g. argument[iq][i0] may need to be accessible in other loops)
-
-        - Improve register allocation algorithm
-
-        - Take a list of expressions as input to compile several expressions in one joined graph
-          (e.g. to compile a,L,M together for nonlinear problems)
-
-    """
-    # Wrap in list if we only get one expression
-    if not isinstance(expressions, list):
-        expressions = [expressions]
-
-    # TODO: Apply this transformation before calling compute_expr_ir?
-    expressions = [balance_modifiers(expr) for expr in expressions]
-
-    argument_factorization, modified_arguments, V, target_variables, dependencies = \
-        compute_argument_factorization2(expressions)
-
-    # Store modified arguments in analysed form
-    for i in range(len(modified_arguments)):
-        modified_arguments[i] = analyse_modified_terminal(modified_arguments[i])
-
-    # Build set of modified_terminal indices into factorized_vertices
-    modified_terminal_indices = [i for i, v in enumerate(V)
-                                 if is_modified_terminal(v)]
-
-
-    # Build IR for the given expressions
-    expr_ir = {}
-    # Core expression graph:
-    expr_ir["V"] = V                               # (array) V-index -> UFL subexpression
-    expr_ir["target_variables"] = target_variables  # (array) Flattened input expression component index -> V-index
-    # Result of factorization:
-    expr_ir["modified_arguments"] = modified_arguments         # (array) MA-index -> UFL expression of modified arguments
-    expr_ir["argument_factorization"] = argument_factorization  # (dict) tuple(MA-indices) -> V-index of monomial factor
-    # Modified terminals
-    expr_ir["modified_terminal_indices"] = modified_terminal_indices  # (array) list of V-indices to modified terminals
-
-    # FIXME: Split function here! Need to get and analyze table data before the below dependency analysis.
-
-
-
-    # --- Various dependency analysis ---
-
+def analyse_dependencies(V, target_variables, modified_terminal_indices, dependencies):
     # Count the number of dependencies every subexpr has
     depcount = compute_dependency_count(dependencies)
 
@@ -142,6 +87,7 @@ def compute_expr_ir(expressions):
     active, num_active = mark_active(dependencies, target_variables)
 
     # Build piecewise/varying markers for factorized_vertices
+    # FIXME: have better measure for spatial dependency now
     spatially_dependent_terminal_indices = [i for i in modified_terminal_indices
                                             if not is_cellwise_constant(V[i])]
     varying, num_spatial = mark_image(inverse_dependencies,
@@ -155,6 +101,95 @@ def compute_expr_ir(expressions):
     # nonliteral = ...
     # varying *= nonliteral
     # piecewise *= nonliteral
+
+    return dependencies, inverse_dependencies, active, piecewise, varying
+
+
+def compute_expr_ir(expressions):
+    """Build the intermediate representation for a list of expressions."""
+    
+    # Wrap in list if we only get one expression
+    if not isinstance(expressions, list):
+        expressions = [expressions]
+
+    # TODO: Apply this transformation before calling compute_expr_ir?
+    expressions = [balance_modifiers(expr) for expr in expressions]
+
+    argument_factorization, modified_arguments, V, target_variables, dependencies = \
+        compute_argument_factorization2(expressions)
+
+
+    # Store modified arguments in analysed form
+    for i in range(len(modified_arguments)):
+        modified_arguments[i] = analyse_modified_terminal(modified_arguments[i])
+
+    # Build set of modified_terminal indices into factorized_vertices
+    modified_terminal_indices = [i for i, v in enumerate(V)
+                                 if is_modified_terminal(v)]
+
+
+    # Build IR for the given expressions
+    expr_ir = {}
+
+    ### Core expression graph:
+    # (array) V-index -> UFL subexpression
+    expr_ir["V"] = V
+
+    # (array) Flattened input expression component index -> V-index
+    expr_ir["target_variables"] = target_variables
+
+    ### Result of factorization:
+    # (array) MA-index -> UFL expression of modified arguments
+    expr_ir["modified_arguments"] = modified_arguments
+
+    # (dict) tuple(MA-indices) -> V-index of monomial factor
+    expr_ir["argument_factorization"] = argument_factorization
+
+    ### Modified terminals
+    # (array) list of V-indices to modified terminals
+    expr_ir["modified_terminal_indices"] = modified_terminal_indices
+
+
+    # FIXME: Split function here! Need to get and analyze table data before the below dependency analysis.
+
+
+    # --- Various dependency analysis ---
+    dependencies, inverse_dependencies, active, piecewise, varying = \
+        analyse_dependencies(V, target_variables, modified_terminal_indices, dependencies)
+
+    # Dependency structure of graph:
+    #expr_ir["dependencies"] = dependencies                           # (CRSArray) V-index -> direct dependency V-index list
+    #expr_ir["inverse_dependencies"] = inverse_dependencies           # (CRSArray) V-index -> direct dependee V-index list
+
+    # Metadata about each vertex
+    #expr_ir["active"] = active       # (array) V-index -> bool
+    expr_ir["piecewise"] = piecewise  # (array) V-index -> bool
+    expr_ir["varying"] = varying     # (array) V-index -> bool
+
+    return expr_ir
+
+
+
+# TODO: Consider comments below and do it or delete them.
+
+""" Old comments:
+
+Work for later::
+
+        - Apply some suitable renumbering of vertices and corresponding arrays prior to returning
+
+        - Allocate separate registers for each partition
+          (but e.g. argument[iq][i0] may need to be accessible in other loops)
+
+        - Improve register allocation algorithm
+
+        - Take a list of expressions as input to compile several expressions in one joined graph
+          (e.g. to compile a,L,M together for nonlinear problems)
+
+"""
+
+
+""" # Old comments:
 
     # TODO: Inspection of varying shows that factorization is
     # needed for effective loop invariant code motion w.r.t. quadrature loop as well.
@@ -179,19 +214,7 @@ def compute_expr_ir(expressions):
     #argument_factorization: (dict) tuple(MA-indices (only relevant ones!)) -> V-index of monomial factor
     # becomes
     #argument_factorization: (dict) tuple(entry for each(!) rank) -> V-index of monomial factor ## doesn't cover intermediate f*u in f*u*v!
-
-    # Dependency structure of graph:
-    #expr_ir["dependencies"] = dependencies                           # (CRSArray) V-index -> direct dependency V-index list
-    #expr_ir["inverse_dependencies"] = inverse_dependencies           # (CRSArray) V-index -> direct dependee V-index list
-
-    # Metadata about each vertex
-    #expr_ir["active"] = active       # (array) V-index -> bool
-    expr_ir["piecewise"] = piecewise  # (array) V-index -> bool
-    expr_ir["varying"] = varying     # (array) V-index -> bool
-
-
-    
-    return expr_ir
+"""
 
 
 """
