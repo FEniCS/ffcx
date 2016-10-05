@@ -24,6 +24,7 @@ pipelines:
           - python2 -m pytest -v ./unit
           - python2 -m pytest -v ./uflacs
           - python3 -m pytest -v ./uflacs
+          - python -m flake8 ffc/
   branches:
     next:
       - step:
@@ -38,3 +39,4 @@ pipelines:
             - cd test
             - py.test -v ./unit/
             - py.test -v ./uflacs
+            - python -m flake8 ffc/
