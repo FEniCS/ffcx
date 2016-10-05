@@ -59,9 +59,13 @@ from ffc.backends.ufc.integrals import *
 from ffc.backends.ufc.form import *
 
 
+# Get abspath on import, it can in some cases be
+# a relative path w.r.t. curdir on startup
+_include_path = os.path.dirname(os.path.abspath(__file__))
+
 def get_include_path():
     "Return location of UFC header files"
-    return os.path.dirname(os.path.abspath(__file__))
+    return _include_path
 
 
 # Platform specific snippets for controlling visilibity of exported symbols in generated shared libraries
