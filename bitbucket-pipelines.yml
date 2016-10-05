@@ -12,7 +12,8 @@ pipelines:
           - pip3 install git+https://bitbucket.org/fenics-project/dijitso.git@master
           - pip2 install --verbose -e .
           - pip3 install --verbose -e .
-          - python -m flake8 ffc/
+          - python2 -m flake8 ffc/
+          - python3 -m flake8 ffc/
           - python2 -m pytest -v ./test/unit
           - python2 -m pytest -v ./test/uflacs
           - python3 -m pytest -v ./test/uflacs
@@ -28,7 +29,8 @@ pipelines:
           - pip3 install git+https://bitbucket.org/fenics-project/dijitso.git@next
           - pip2 install --verbose -e .
           - pip3 install --verbose -e .
-          - python -m flake8 ffc/
+          - python2 -m flake8 ffc/
+          - python3 -m flake8 ffc/
           - python2 -m pytest -v ./test/unit
           - python2 -m pytest -v ./test/uflacs
           - python3 -m pytest -v ./test/uflacs
