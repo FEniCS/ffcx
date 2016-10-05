@@ -23,6 +23,7 @@ import subprocess
 import time
 
 from ufl import FiniteElement, MixedElement
+import ffc
 from ffc.log import error
 from ffc.mixedelement import MixedElement as FFCMixedElement
 from ffc.fiatinterface import create_element, reference_cell
@@ -42,7 +43,18 @@ random_points = {1: [(0.114,), (0.349,), (0.986,)],
                      (0.986, 0.045, 0.127)]}
 
 
+def xcomb(items, n):
+    "Create n-tuples with combinations of items."
+    if n == 0:
+        yield []
+    else:
+        for i in range(len(items)):
+            for cc in xcomb(items[:i] + items[i + 1:], n - 1):
+                yield [items[i]] + cc
+
+
 # Elements, supported by FFC and FIAT, and their supported shape and orders
+# TODO: This is not used anywhere, was it before? What is the purpose?
 single_elements = [{"family": "Lagrange",
                     "shapes": ["interval", "triangle", "tetrahedron"],
                     "orders": [1, 2, 3, 4]},
@@ -100,85 +112,6 @@ bdm1_tet = FiniteElement("BDM", "tetrahedron", 1)
 ned1_tet = FiniteElement("N1curl", "tetrahedron", 1)
 reg0_tet = FiniteElement("Regge", "tetrahedron", 0)
 
-
-def compile_gcc_code(ufl_element, code):
-    # Write code to file
-    f = open("evaluate_basis.cpp", "w")
-    f.write(code)
-    f.close()
-
-    # Get location of UFC file
-    from ffc import get_include_path, get_ufc_cxx_flags
-    ufc_include_path = get_include_path()
-    ufc_cxx_flags = get_ufc_cxx_flags()
-
-    # Compile c++ code
-    c = "c++ -I{} {} -Wall -Werror -o evaluate_basis_test_code evaluate_basis.cpp".format(ufc_include_path, " ".join(ufc_cxx_flags))
-    f = open("compile.sh", "w")
-    f.write(c + "\n")
-    f.close()
-    subprocess.check_call(c, shell=True)
-
-
-def run_code(ufl_element, deriv_order):
-    "Compute values of basis functions for given element."
-
-    # Run compiled code and get values
-    c = ".%sevaluate_basis_test_code %d" % (os.path.sep, deriv_order)
-    try:
-        output = subprocess.check_output(c, shell=True)
-    except subprocess.CalledProcessError as e:
-        print("Could not run compiled code for element: {}".format(str(ufl_element)))
-        raise
-
-    values = [[float(value) for value in line.strip().split(" ") if value] for line in output.strip().split("\n")]
-    return numpy.array(values)
-
-
-def get_element_name(ufl_element):
-    "Extract relevant element name from header file."
-    f = open("test.h")
-    lines = f.readlines()
-    f.close()
-
-    signature = repr(ufl_element)
-    name = None
-    for e, l in enumerate(lines):
-        if "class" in l and "finite_element" in l:
-            name = l
-        if signature in l:
-            break
-    if name is None:
-        raise RuntimeError("No finite element class found")
-    return name.split()[1][:-1]
-
-
-def generate_element(ufl_element):
-    "Create UFL form file with a single element in it and compile it with FFC"
-    f = open("test.ufl", "w")
-    f.write("element = " + repr(ufl_element))
-    f.close()
-    try:
-        subprocess.check_output("ffc test.ufl", shell=True)
-    except subprocess.CalledProcessError as e:
-        print("FFC compilation failed for element: {}. Ouput: {}".format(str(ufl_element), e.output))
-        raise
-
-
-def matrix(points):
-    return "{%s};" % ", ".join(["{%s}" % ", ".join([str(c) for c in p]) for p in points])
-
-
-def xcomb(items, n):
-    "Create n-tuples with combinations of items."
-    if n == 0:
-        yield []
-    else:
-        for i in range(len(items)):
-            for cc in xcomb(items[:i] + items[i + 1:], n - 1):
-                yield [items[i]] + cc
-
-
 # Create combinations in pairs
 mix_tri = [MixedElement(e) for e in xcomb([dg0_tri, dg1_tri, cg1_tri, cr1_tri,
                                            rt1_tri, drt2_tri, bdm1_tri,
@@ -209,6 +142,70 @@ mixed_elements = [MixedElement([dg0_tri] * 4),
                   MixedElement([cg1_tet, cg1_tet, cg1_tet, reg0_tet]),
                   MixedElement([reg0_tet] * 2),
                   MixedElement([hhj0_tri, ned1_tri])] + mix_tri + mix_tet
+
+# Collect all elements here
+all_elements = mixed_elements
+
+
+def compile_gcc_code(ufl_element, code):
+    # Write code to file
+    with open("evaluate_basis.cpp", "w") as f:
+        f.write(code)
+
+    # Get location of UFC file
+    from ffc import get_include_path, get_ufc_cxx_flags
+    ufc_include_path = get_include_path()
+    ufc_cxx_flags = get_ufc_cxx_flags()
+
+    # Compile c++ code
+    c = "c++ -I{} {} -Wall -Werror -o evaluate_basis_test_code evaluate_basis.cpp".format(ufc_include_path, " ".join(ufc_cxx_flags))
+    with open("compile.sh", "w") as f:
+        f.write(c + "\n")
+    subprocess.check_call(c, shell=True)
+
+
+def run_code(ufl_element, deriv_order):
+    "Compute values of basis functions for given element."
+
+    # Run compiled code and get values
+    c = ".%sevaluate_basis_test_code %d" % (os.path.sep, deriv_order)
+    try:
+        output = subprocess.check_output(c, shell=True)
+    except subprocess.CalledProcessError as e:
+        print("Could not run compile code for element: {}".format(str(ufl_element)))
+        raise
+
+    values = [[float(value) for value in line.strip().split(" ") if value] for line in output.strip().split("\n")]
+    return numpy.array(values)
+
+
+def get_element_name(ufl_element):
+    "Extract relevant element name from header file."
+    with open("test.h") as f:
+        lines = f.readlines()
+
+    signature = repr(ufl_element)
+    name = None
+    for e, l in enumerate(lines):
+        if "class" in l and "finite_element" in l:
+            name = l
+        if signature in l:
+            break
+    if name is None:
+        raise RuntimeError("No finite element class found")
+    return name.split()[1][:-1]
+
+
+def generate_element(ufl_element):
+    "Create UFL form file with a single element in it and compile it with FFC"
+    with open("test.ufl", "w") as f:
+        f.write("element = " + repr(ufl_element))
+    r = ffc.main(["test.ufl"])
+    assert r == 0, "FFC compilation failed for element: {}.".format(str(ufl_element))
+
+
+def matrix(points):
+    return "{%s};" % ", ".join(["{%s}" % ", ".join([str(c) for c in p]) for p in points])
 
 
 def to_fiat_tuple(comb, gdim):
@@ -387,7 +384,7 @@ def verify_values(ufl_element, ref_values, ffc_values):
 
 
 # Test over different element types
-@pytest.mark.parametrize("ufl_element", mixed_elements)
+@pytest.mark.parametrize("ufl_element", all_elements)
 def test_element(ufl_element):
     "Test FFC elements against FIAT"
 
@@ -399,8 +396,7 @@ def test_element(ufl_element):
     # Get FFC values
     t = time.time()
     ffc_values = get_ffc_values(ufl_element)
-    if ffc_values is None:
-        return
+    assert ffc_values is not None
     # debug("  time to compute FFC values: %f" % (time.time() - t))
 
     # Get FIAT values that are formatted in the same way as the values
