@@ -151,7 +151,7 @@ def _create_fiat_element(ufl_element):
             return RestrictedElement(V, _indices(V, "interior", tdim), None)
 
         # Check if finite element family is supported by FIAT
-        if not family in FIAT.supported_elements:
+        if family not in FIAT.supported_elements:
             error("Sorry, finite element of type \"%s\" are not supported by FIAT.", family)
 
         # Create FIAT finite element

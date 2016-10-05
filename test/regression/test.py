@@ -447,7 +447,7 @@ def main(args):
         "--print-timing",
         "--help",
     )
-    args = [arg for arg in args if not arg in flags]
+    args = [arg for arg in args if arg not in flags]
 
     if show_help:
         info("Valid arguments:\n" + "\n".join(flags))

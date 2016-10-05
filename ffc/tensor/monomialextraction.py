@@ -166,12 +166,12 @@ class Monomial:
             raise MonomialException("Unable to create monomial from expression: " + str(arg))
 
     def apply_derivative(self, indices):
-        if not len(self.factors) == 1:
+        if len(self.factors) != 1:
             raise MonomialException("Expecting a single factor.")
         self.factors[0].apply_derivative(indices)
 
     def apply_tensor(self, indices):
-        if not self.index_slots is None:
+        if self.index_slots is not None:
             raise MonomialException("Expecting scalar-valued expression.")
         self.index_slots = indices
 
@@ -395,7 +395,7 @@ def _replace_indices(indices, old_indices, new_indices):
     "Handle replacement of subsets of multi indices."
 
     # Old and new indices must match
-    if not len(old_indices) == len(new_indices):
+    if len(old_indices) != len(new_indices):
         raise MonomialException("Unable to replace indices, mismatching index dimensions.")
 
     # Build index map

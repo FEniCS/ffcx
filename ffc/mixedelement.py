@@ -104,7 +104,7 @@ class MixedElement:
             for dtuple in table.keys():
 
                 # Insert zeros if necessary (should only happen first time)
-                if not dtuple in mixed_table:
+                if dtuple not in mixed_table:
                     # NOTE: It is super important to create a new numpy.zeros
                     # instance to avoid manipulating a numpy reference in case
                     # it is created outside the loop.

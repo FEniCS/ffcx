@@ -427,7 +427,7 @@ class TransformedMonomial:
         for i in internal_indices + external_indices:
 
             # Skip already visited indices
-            if not i.index_type is None:
+            if i.index_type is not None:
                 continue
 
             # Set index type and id
@@ -450,7 +450,7 @@ class TransformedMonomial:
         "Return all unique indices for monomial w.r.t. type and id (not range)."
         indices = []
         for index in self._extract_indices(index_type):
-            if not index in indices:
+            if index not in indices:
                 indices.append(index)
         return indices
 
@@ -499,7 +499,7 @@ class TransformedMonomial:
     def __str__(self):
         "Return informal string representation (pretty-print)."
         factors = []
-        if not self.float_value == 1.0:
+        if self.float_value != 1.0:
             factors.append(self.float_value)
         factors += self.determinants
         factors += self.coefficients
