@@ -40,9 +40,9 @@ def testSymbol():
     assert repr(s4) == "Symbol('z', IP)"
 
     assert s2 == s3
-    assert (s2 == s1) == False
-    assert (s2 == s4) == False
-    assert (s2 != s3) == False
+    assert (s2 == s1) is False
+    assert (s2 == s4) is False
+    assert (s2 != s3) is False
     assert s2 != s1
 
     assert s0 < s1

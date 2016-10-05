@@ -57,7 +57,7 @@ def analyze_forms(forms, parameters):
 
 
 def analyze_elements(elements, parameters):
-    return analyze_ufl_objects(forms, "element", parameters)
+    return analyze_ufl_objects(elements, "element", parameters)
 
 
 def analyze_coordinate_mappings(coordinate_elements, parameters):

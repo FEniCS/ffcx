@@ -110,5 +110,5 @@ def testProduct():
     assert p3 in d
     assert p10 in l
     assert p10 in d
-    assert not p2 in l
-    assert not p2 in d
+    assert p2 not in l
+    assert p2 not in d

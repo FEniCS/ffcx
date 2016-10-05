@@ -388,8 +388,6 @@ def _change_variables(mapping, gdim, tdim, offset):
     else:
         raise Exception("The mapping (%s) is not allowed" % mapping)
 
-    return code
-
 
 def affine_weights(dim):
     "Compute coefficents for mapping from reference to physical element"

@@ -23,6 +23,7 @@ import subprocess
 import time
 
 from ufl import FiniteElement, MixedElement
+from ffc.log import error
 from ffc.mixedelement import MixedElement as FFCMixedElement
 from ffc.fiatinterface import create_element, reference_cell
 

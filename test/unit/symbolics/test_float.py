@@ -58,5 +58,5 @@ def testFloat():
     assert f0 in d
     assert f4 in l
     assert f4 in d
-    assert not f1 in l
-    assert not f1 in d
+    assert f1 not in l
+    assert f1 not in d

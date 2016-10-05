@@ -319,7 +319,7 @@ def _multiply_value_by_det(value, dets, is_sum, j_set):
 
     # Cell / exterior facets:
     d = []
-    if all([det.restriction == None for det in dets]):
+    if all([det.restriction is None for det in dets]):
         total_power = sum(det.power for det in dets)
         if not total_power == 0:
             J = format["det(J)"](None)

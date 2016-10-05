@@ -118,7 +118,7 @@ from time import time
 import os
 
 # FFC modules
-from ffc.log import info, info_green, warning
+from ffc.log import info, info_green, warning, error
 from ffc.parameters import validate_parameters
 from ffc.analysis import analyze_ufl_objects
 from ffc.representation import compute_ir

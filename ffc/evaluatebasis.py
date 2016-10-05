@@ -39,7 +39,7 @@ import numpy
 # FFC modules
 from ffc.log import error
 from ffc.cpp import remove_unused, indent, format
-from ffc.quadrature.symbolics import create_float, create_float, create_symbol,\
+from ffc.quadrature.symbolics import create_float, create_symbol,\
     create_product, create_sum, create_fraction, CONST
 
 
@@ -781,6 +781,6 @@ def _compute_basisvalues(data, dof_data):
                         code += [myline]
 
     else:
-        error("Cannot compute basis values for shape: %d" % elemet_cell_domain)
+        error("Cannot compute basis values for shape: %d" % element_cellname)
 
     return code + [""]

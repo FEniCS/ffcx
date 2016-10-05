@@ -50,6 +50,7 @@ from ffc.log import DEBUG, INFO, ERROR
 from ffc.parameters import default_parameters
 from ffc import __version__ as FFC_VERSION, get_ufc_signature
 from ffc.backends.ufc import __version__ as UFC_VERSION
+from ffc.backends.ufc import get_include_path
 from ffc.compiler import compile_form, compile_element
 from ffc.formatting import write_code
 from ffc.errorcontrol import compile_with_error_control
@@ -79,20 +80,32 @@ the FFC man page which may invoked by 'man ffc' (if installed).
 """)
 
 
+def compile_ufl_data(ufd, prefix, parameters):
+    if parameters["error_control"]:
+        code_h, code_c = compile_with_error_control(ufd.forms,
+                                                    ufd.object_names,
+                                                    ufd.reserved_objects,
+                                                    prefix,
+                                                    parameters)
+    elif len(ufd.forms) > 0:
+        code_h, code_c = compile_form(ufd.forms, ufd.object_names,
+                                      prefix=prefix,
+                                      parameters=parameters)
+    else:
+        code_h, code_c = compile_element(ufd.elements, prefix=prefix,
+                                         parameters=parameters)
+    return code_h, code_c
+
+
 def main(args=None):
     """This is the commandline tool for the python module ffc."""
     if args is None:
         args = sys.argv[1:]
 
-    # Append current directory to path, such that the *_debug module
-    # created by ufl_load_file can be found when FFC compiles a form
-    # which is not in the PYHTONPATH
-    sys.path.append(getcwd())
-
     # Get command-line arguments
     try:
-        opts, args = getopt.getopt(args, "hVSvsl:r:f:Oo:q:ep",
-                                   ["help", "version", "signature", "verbose", "silent",
+        opts, args = getopt.getopt(args, "hIVSvsl:r:f:Oo:q:ep",
+                                   ["help", "includes", "version", "signature", "verbose", "silent",
                                     "language=", "representation=", "optimize",
                                     "output-directory=", "quadrature-rule=", "error-control",
                                     "profile"])
@@ -104,6 +117,11 @@ def main(args=None):
     # Check for --help
     if ("-h", "") in opts or ("--help", "") in opts:
         info_usage()
+        return 0
+
+    # Check for --includes
+    if ("-I", "") in opts or ("--includes", "") in opts:
+        print(get_include_path())
         return 0
 
     # Check for --version
@@ -194,41 +212,31 @@ def main(args=None):
             return 1
 
         # Turn on profiling
-        if enable_profile:  # parameters.get("profile"):
+        if enable_profile:
             pr = cProfile.Profile()
             pr.enable()
 
         # Load UFL file
         ufd = load_ufl_file(filename)
 
-        # Compile
-        try:
-            if parameters["error_control"]:
-                code_h, code_c = compile_with_error_control(ufd.forms,
-                                                            ufd.object_names,
-                                                            ufd.reserved_objects,
-                                                            prefix,
-                                                            parameters)
-            elif len(ufd.forms) > 0:
-                code_h, code_c = compile_form(ufd.forms, ufd.object_names,
-                                              prefix=prefix,
-                                              parameters=parameters)
-            else:
-                code_h, code_c = compile_element(ufd.elements, prefix=prefix,
-                                                 parameters=parameters)
+        # Previously wrapped in try-except, disabled to actually get information we need
+        #try:
 
-            # Write to file
-            write_code(code_h, code_c, prefix, parameters)
+        # Generate code
+        code_h, code_c = compile_ufl_data(ufd, prefix, parameters)
 
-        except Exception as exception:
-            # Catch exceptions only when not in debug mode
-            if parameters["log_level"] <= DEBUG:
-                raise
-            else:
-                print("")
-                print_error(str(exception))
-                print_error("To get more information about this error, rerun FFC with --verbose.")
-                return 1
+        # Write to file
+        write_code(code_h, code_c, prefix, parameters)
+
+        #except Exception as exception:
+        #    # Catch exceptions only when not in debug mode
+        #    if parameters["log_level"] <= DEBUG:
+        #        raise
+        #    else:
+        #        print("")
+        #        print_error(str(exception))
+        #        print_error("To get more information about this error, rerun FFC with --verbose.")
+        #        return 1
 
         # Turn off profiling and write status to file
         if enable_profile:

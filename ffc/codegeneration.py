@@ -110,7 +110,7 @@ def _generate_element_code(ir, parameters):
     (evaluate_dof_code, evaluate_dofs_code) \
         = evaluate_dof_and_dofs(ir["evaluate_dof"])
 
-    element_number = ir["id"]
+    #element_number = ir["id"]
 
     # Generate code
     code = {}
@@ -178,7 +178,7 @@ def _generate_dofmap_code(ir, parameters):
     f_d = format["argument dimension"]
     create = format["create foo"]
 
-    element_number = ir["id"]
+    #element_number = ir["id"]
 
     # Generate code
     code = {}
@@ -737,7 +737,7 @@ def _postprocess_code(code, parameters):
 def _indent_code(code):
     "Indent code that should be indented."
     for key in code:
-        if not key in ("classname", "members", "constructor_arguments",
+        if key not in ("classname", "members", "constructor_arguments",
                        "initializer_list", "additional_includes_set",
                        "class_type"):
             code[key] = indent(code[key], 4)

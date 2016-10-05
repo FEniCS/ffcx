@@ -109,7 +109,7 @@ def run_install():
     "Run installation"
 
     # Get common variables
-    INSTALL_PREFIX = get_installation_prefix()
+    #INSTALL_PREFIX = get_installation_prefix()
     GIT_COMMIT_HASH = get_git_commit_hash()
 
     # Scripts list
