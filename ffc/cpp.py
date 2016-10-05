@@ -777,7 +777,7 @@ def remove_unused(code, used_set=set()):
             continue
 
         # Split words
-        words = [word for word in line.split(" ") if not word == ""]
+        words = [word for word in line.split(" ") if word != ""]
 
         # Remember line where variable is declared
         for type in [type for type in types if " ".join(type) in " ".join(words)]:  # Fewer matches than line below.
@@ -803,7 +803,7 @@ def remove_unused(code, used_set=set()):
                     variable_name = variable_name[0]
 
                 variables[variable_name] = (line_number, [])
-                if not variable_name in variable_names:
+                if variable_name not in variable_names:
                     variable_names += [variable_name]
 
         # Mark line for used variables
@@ -823,19 +823,19 @@ def remove_unused(code, used_set=set()):
         for line in removed_lines:
             if line in used_lines:
                 used_lines.remove(line)
-        if not used_lines and not variable_name in used_set:
+        if not used_lines and variable_name not in used_set:
             debug("Removing unused variable: %s" % variable_name)
             lines[declaration_line] = None  # KBO: Need to completely remove line for evaluate_basis* to work
             # lines[declaration_line] = "// " + lines[declaration_line]
             removed_lines += [declaration_line]
-    return "\n".join([line for line in lines if not line is None])
+    return "\n".join([line for line in lines if line is not None])
 
 
 def _variable_in_line(variable_name, line):
     "Check if variable name is used in line"
-    if not variable_name in line:
+    if variable_name not in line:
         return False
     for character in special_characters:
         line = line.replace(character, "\\" + character)
     delimiter = "[" + ",".join(["\\" + c for c in special_characters]) + "]"
-    return not re.search(delimiter + variable_name + delimiter, line) == None
+    return re.search(delimiter + variable_name + delimiter, line) is not None

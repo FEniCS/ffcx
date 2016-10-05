@@ -184,7 +184,7 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     info("Computing representation of integrals")
     irs = [_compute_integral_ir(fd, form_id, prefix, element_numbers, classnames, parameters, jit)
            for (form_id, fd) in enumerate(form_datas)]
-    ir_integrals = [ir for ir in chain(*irs) if not ir is None]
+    ir_integrals = [ir for ir in chain(*irs) if ir is not None]
 
     # Compute representation of forms
     info("Computing representation of forms")
@@ -804,7 +804,7 @@ def _tabulate_facet_dofs(element, cell):
     # Find out which entities are incident to each facet
     incident = num_facets * [None]
     for facet in range(num_facets):
-        incident[facet] = [pair[1] for pair in incidence if incidence[pair] == True and pair[0] == (D - 1, facet)]
+        incident[facet] = [pair[1] for pair in incidence if incidence[pair] is True and pair[0] == (D - 1, facet)]
 
     # Make list of dofs
     facet_dofs = []
@@ -949,10 +949,8 @@ def __compute_incidence(D):
         for i0 in range(len(sub_simplices[d0])):
             for d1 in range(d0 + 1):
                 for i1 in range(len(sub_simplices[d1])):
-                    if min([v in sub_simplices[d0][i0] for v in sub_simplices[d1][i1]]) == True:
-                        incidence[((d0, i0), (d1, i1))] = True
-                    else:
-                        incidence[((d0, i0), (d1, i1))] = False
+                    incidence[((d0, i0), (d1, i1))] = all(v in sub_simplices[d0][i0]
+                                                          for v in sub_simplices[d1][i1])
 
     return incidence
 
@@ -981,7 +979,7 @@ def __compute_sub_simplices(D, d):
         remove = permutations[i]
 
         # Remove vertices, keeping d + 1 vertices
-        vertices = [v for v in range(num_vertices) if not v in remove]
+        vertices = [v for v in range(num_vertices) if v not in remove]
         sub_simplices += [vertices]
 
     return sub_simplices

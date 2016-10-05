@@ -19,7 +19,7 @@
 # Last changed: 2014-04-15
 
 # FFC modules
-from ffc.log import debug
+from ffc.log import debug, error
 
 # FFC tensor representation modules
 from ffc.tensor.monomialextraction import extract_monomial_form
