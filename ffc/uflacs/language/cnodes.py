@@ -17,7 +17,7 @@
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import print_function  # used in some debugging
-
+from six import string_types
 import numpy
 
 from ffc.uflacs.language.format_value import format_value, format_float
@@ -272,7 +272,7 @@ class Symbol(CExprTerminal):
     precedence = PRECEDENCE.SYMBOL
 
     def __init__(self, name):
-        assert isinstance(name, str)
+        assert isinstance(name, string_types)
         self.name = name
 
     def ce_format(self):
@@ -286,7 +286,7 @@ class VerbatimExpr(CExprTerminal):
     precedence = PRECEDENCE.LOWEST
 
     def __init__(self, codestring):
-        assert isinstance(codestring, str)
+        assert isinstance(codestring, string_types)
         self.codestring = codestring
 
     def ce_format(self):
@@ -295,7 +295,7 @@ class VerbatimExpr(CExprTerminal):
 class New(CExpr):
     __slots__ = ("typename",)
     def __init__(self, typename):
-        assert isinstance(typename, str)
+        assert isinstance(typename, string_types)
         self.typename = typename
 
     def ce_format(self):
@@ -598,7 +598,7 @@ class FlattenedArray(object):
         elif isinstance(array, Symbol):
             self.array = array
         else:
-            assert isinstance(array, str)
+            assert isinstance(array, string_types)
             self.array = Symbol(array)
 
         # Allow expressions or literals as strides or dims and offset
@@ -649,7 +649,7 @@ class ArrayAccess(CExprOperator):
 
     def __init__(self, array, indices):
         # Typecheck array argument
-        if isinstance(array, str):
+        if isinstance(array, string_types):
             array = Symbol(array)
         if isinstance(array, Symbol):
             self.array = array
@@ -763,7 +763,7 @@ def as_cexpr(node):
         return LiteralInt(node)
     elif isinstance(node, (float, numpy.floating)):
         return LiteralFloat(node)
-    elif isinstance(node, str):
+    elif isinstance(node, string_types):
         # Treat string as a symbol
         # TODO: Using LiteralString or VerbatimExpr would be other options, is this too ambiguous?
         return Symbol(node)
@@ -772,7 +772,7 @@ def as_cexpr(node):
 
 
 def as_symbol(symbol):
-    if isinstance(symbol, str):
+    if isinstance(symbol, string_types):
         symbol = Symbol(symbol)
     assert isinstance(symbol, Symbol)
     return symbol
@@ -833,7 +833,7 @@ class VerbatimStatement(CStatement):
     "Wraps a source code string to be pasted verbatim into the source code."
     __slots__ = ("codestring",)
     def __init__(self, codestring):
-        assert isinstance(codestring, str)
+        assert isinstance(codestring, string_types)
         self.codestring = codestring
 
     def cs_format(self):
@@ -865,7 +865,7 @@ class StatementList(CStatement):
 class Using(CStatement):
     __slots__ = ("name",)
     def __init__(self, name):
-        assert isinstance(name, str)
+        assert isinstance(name, string_types)
         self.name = name
 
     def cs_format(self):
@@ -912,8 +912,8 @@ class Default(CStatement):
 class Throw(CStatement):
     __slots__ = ("exception", "message")
     def __init__(self, exception, message):
-        assert isinstance(exception, str)
-        assert isinstance(message, str)
+        assert isinstance(exception, string_types)
+        assert isinstance(message, string_types)
         self.exception = exception
         self.message = message
 
@@ -926,7 +926,7 @@ class Comment(CStatement):
     "Line comment(s) used for annotating the generated code with human readable remarks."
     __slots__ = ("comment",)
     def __init__(self, comment):
-        assert isinstance(comment, str)
+        assert isinstance(comment, string_types)
         self.comment = comment
 
     def cs_format(self):
@@ -938,7 +938,7 @@ class Pragma(CStatement):  # TODO: Improve on this with a use case later
     "Pragma comments used for compiler-specific annotations."
     __slots__ = ("comment",)
     def __init__(self, comment):
-        assert isinstance(comment, str)
+        assert isinstance(comment, string_types)
         self.comment = comment
 
     def cs_format(self):
@@ -954,7 +954,7 @@ class VariableDecl(CStatement):
     def __init__(self, typename, symbol, value=None):
 
         # No type system yet, just using strings
-        assert isinstance(typename, str)
+        assert isinstance(typename, string_types)
         self.typename = typename
 
         # Allow Symbol or just a string
@@ -1047,7 +1047,7 @@ class ArrayDecl(CStatement):
     """
     __slots__ = ("typename", "symbol", "sizes", "alignas", "padlen", "values")
     def __init__(self, typename, symbol, sizes, values=None, alignas=None, padlen=0):
-        assert isinstance(typename, str)
+        assert isinstance(typename, string_types)
         self.typename = typename
 
         self.symbol = as_symbol(symbol)
@@ -1128,7 +1128,7 @@ class Scope(CStatement):
 class Namespace(CStatement):
     __slots__ = ("name", "body")
     def __init__(self, name, body):
-        assert isinstance(name, str)
+        assert isinstance(name, string_types)
         self.name = name
         self.body = as_cstatement(body)
 
@@ -1203,7 +1203,7 @@ class For(CStatement):
         # The C model here is a bit crude and this causes trouble
         # in the init statement/expression here:
         init = self.init.cs_format()
-        assert isinstance(init, str)
+        assert isinstance(init, string_types)
         assert init.rstrip().endswith(";")
 
         check = self.check.ce_format()
@@ -1293,7 +1293,7 @@ def as_cstatement(node):
     elif isinstance(node, list):
         # Convenience case for list of statements
         return StatementList(node)
-    elif isinstance(node, str):
+    elif isinstance(node, string_types):
         # Backdoor for flexibility in code generation to allow verbatim pasted statements
         return VerbatimStatement(node)
     else:

@@ -22,6 +22,7 @@
 #
 # Last changed: 2016-08-17
 
+from six import string_types
 from ffc.cpp import format, remove_unused
 
 # Extract code manipulation formats
@@ -43,7 +44,7 @@ def interpolate_vertex_values(ir):
     "Generate code for interpolate_vertex_values."
 
     # Handle unsupported elements.
-    if isinstance(ir, str):
+    if isinstance(ir, string_types):
         return format["exception"]("interpolate_vertex_values: %s" % ir)
 
     # Add code for Jacobian if necessary

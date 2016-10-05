@@ -28,6 +28,7 @@ representation of the code found in FIAT_NEW."""
 # Python modules
 import math
 import numpy
+from six import string_types
 
 # FFC modules
 from ffc.log import error, ffc_assert
@@ -39,7 +40,7 @@ def _evaluate_basis_derivatives_all(data):
     """Like evaluate_basis, but return the values of all basis
     functions (dofs)."""
 
-    if isinstance(data, str):
+    if isinstance(data, string_types):
         return format["exception"]("evaluate_basis_derivatives_all: %s" % data)
 
     # Prefetch formats.
@@ -157,7 +158,7 @@ def _evaluate_basis_derivatives(data):
     run time and combinations (depending on the order of derivative) of dmats
     tables which hold the derivatives of the expansion coefficients."""
 
-    if isinstance(data, str):
+    if isinstance(data, string_types):
         return format["exception"]("evaluate_basis_derivatives: %s" % data)
 
     # Initialise return code.

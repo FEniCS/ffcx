@@ -35,6 +35,7 @@ the code found in FIAT."""
 # Python modules
 import math
 import numpy
+from six import string_types
 
 # FFC modules
 from ffc.log import error
@@ -46,7 +47,7 @@ from ffc.quadrature.symbolics import create_float, create_symbol,\
 def _evaluate_basis_all(data):
     """Like evaluate_basis, but return the values of all basis functions (dofs)."""
 
-    if isinstance(data, str):
+    if isinstance(data, string_types):
         return format["exception"]("evaluate_basis_all: %s" % data)
 
     # Prefetch formats.
@@ -133,7 +134,7 @@ def _evaluate_basis(data):
     The function should work for all elements supported by FIAT, but it remains
     untested for tensor valued elements."""
 
-    if isinstance(data, str):
+    if isinstance(data, string_types):
         return format["exception"]("evaluate_basis: %s" % data)
 
     # Prefetch formats.

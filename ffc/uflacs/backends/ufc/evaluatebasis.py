@@ -1,5 +1,6 @@
 """Work in progress translation of FFC evaluatebasis code to uflacs CNodes format."""
 
+from six import string_types
 from ffc.log import error
 
 """
@@ -95,7 +96,7 @@ def generate_evaluate_reference_basis(L, data):
     The FFC code has a comment "From FIAT_NEW.polynomial_set.tabulate()".
     """
     # Cutoff for feature to disable generation of this code (consider removing after benchmarking final result)
-    if isinstance(data, str):
+    if isinstance(data, string_types):
         return L.Throw("evaluate_reference_basis: %s" % data)
 
     # Get some known dimensions
