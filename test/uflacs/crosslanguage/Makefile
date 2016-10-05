@@ -5,9 +5,8 @@
 #
 
 # These are the commands we assume
-CXX=g++ # TODO: Allow overriding
-RM=rm
-PYTEST=py.test
+CXX?=c++
+RM?=rm
 
 # Local filenames
 TESTBINARY=run_gtest
@@ -16,8 +15,7 @@ TESTSUPPORTDIR=cppsupport
 TESTMAINSRC=${TESTSRCDIR}/main.cpp
 
 # Configure ufc
-UFC_INCLUDE_DIR?=../../../ufc
-#UFCINCDIR=`pkg-config ufc-1 --cflags`
+UFC_INCLUDE_DIR?=../../../ffc/backends/ufc
 UFCINCDIR=-I${UFC_INCLUDE_DIR}
 
 # Configure gtest
@@ -25,8 +23,8 @@ GTEST_DIR?=../../../libs/gtest-1.7.0
 GTESTINCDIR=-I${GTEST_DIR}/include
 GTESTLIBS=-L${GTEST_DIR}/lib -lgtest -lpthread
 
-# Flags set for easy debugging # TODO: Allow overriding
-CXXFLAGS?=-g -O0 -std=c++11
+# Flags set for easy debugging
+CXXFLAGS?=-g -O0 -std=c++11 -Wall
 
 .PHONY: clean
 
@@ -44,12 +42,6 @@ ${TESTBINARY}: ${TESTMAINSRC} ${TESTSUPPORTDIR}/*.h
 	${CXX} ${CXXFLAGS} -o ${TESTBINARY} \
 		${TESTMAINSRC} -I${TESTSRCDIR} -I${TESTSUPPORTDIR} \
 		${UFCINCDIR} ${GTESTINCDIR} ${GTESTLIBS}
-
-# Enable this to run py.test to regenerate main.cpp each time python
-# tests are changed.  Currently disabled because I think py.test
-# should call make and not the other way around.
-#${TESTMAINSRC}: test_*.py
-#	py.test
 
 clean:
 	${RM} -f `find -name \*.pyc`
