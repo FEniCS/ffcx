@@ -46,6 +46,9 @@ snippets = {"shared_ptr_space":
             "shared_ptr_mesh":
             ("std::shared_ptr<const dolfin::Mesh> mesh",
              "    _mesh = mesh;"),
+            "shared_ptr_multimesh":
+                ("std::shared_ptr<const dolfin::MultiMesh> mesh",
+                 "    _multimesh = mesh;"),
             "referenced_mesh":
             ("const dolfin::Mesh& mesh",
              "    _mesh = reference_to_no_delete_pointer(mesh);"),
