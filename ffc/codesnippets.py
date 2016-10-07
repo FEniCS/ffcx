@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "Code snippets for code generation."
 
 # Copyright (C) 2007-2013 Anders Logg

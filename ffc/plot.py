@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "This module provides functionality for plotting finite elements."
 
 # Copyright (C) 2010 Anders Logg

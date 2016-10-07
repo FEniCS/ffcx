@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "Transformation of monomial representations of UFL forms."
 
 # Copyright (C) 2009 Anders Logg

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """This module provides a just-in-time (JIT) form compiler.
 It uses dijitso to wrap the generated code into a Python module."""
 

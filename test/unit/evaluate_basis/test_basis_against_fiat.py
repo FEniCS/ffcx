@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright (C) 2010-2016 Kristian B. Oelgaard and Garth N. Wells
 #
 # This file is part of FFC.

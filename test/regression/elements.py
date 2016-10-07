@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 interval_2D = "Cell('interval', geometric_dimension=2)"
 interval_3D = "Cell('interval', geometric_dimension=3)"
 triangle_3D = "Cell('triangle', geometric_dimension=3)"

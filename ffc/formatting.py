@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Compiler stage 5: Code formatting
 ---------------------------------

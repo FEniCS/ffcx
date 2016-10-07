@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Tests of generic code formatting utilities,
 which focus on the overall structure of the code,

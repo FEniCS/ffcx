@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Based on original implementation by Martin Alnes and Anders Logg
 #
 # Modified by Anders Logg 2015

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """This script compiles and verifies the output for all form files
 found in the 'demo' directory. The verification is performed in two
 steps. First, the generated code is compared with stored references.

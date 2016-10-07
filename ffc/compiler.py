@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This is the compiler, acting as the main interface for compilation
 of forms and breaking the compilation into several sequential stages.

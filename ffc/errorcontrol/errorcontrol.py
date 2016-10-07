@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This module provides compilation of forms required for goal-oriented
 error control

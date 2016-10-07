@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "This file implements a base class to represent an expression."
 
 # Copyright (C) 2009-2010 Kristian B. Oelgaard

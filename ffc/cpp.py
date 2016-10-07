@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "This module defines rules and algorithms for generating C++ code."
 
 # Copyright (C) 2009-2015 Anders Logg

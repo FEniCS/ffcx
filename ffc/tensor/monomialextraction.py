@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "Extraction of monomial representations of UFL forms."
 
 # Copyright (C) 2008-2013 Anders Logg

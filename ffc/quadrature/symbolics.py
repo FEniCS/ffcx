@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "This file contains functions to optimise the code generated for quadrature representation."
 
 # Copyright (C) 2009-2010 Kristian B. Oelgaard

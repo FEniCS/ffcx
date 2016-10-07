@@ -1,4 +1,5 @@
 #!/usr/bin/env py.test
+# -*- coding: utf-8 -*-
 
 def test_example_showing_how_to_test_generated_code_with_gtest(gtest):
     "This is an example test explaining the py.test/gtest integration framework."

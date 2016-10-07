@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "Utility functions for quadrature representation."
 
 # Copyright (C) 2007-2010 Kristian B. Oelgaard

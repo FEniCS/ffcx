@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """This file contains code for setting up C++ unit tests with gtest
 from within Python tests using py.test.
 

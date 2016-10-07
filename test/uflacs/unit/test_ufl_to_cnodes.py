@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 
 import ufl
 from ufl import *

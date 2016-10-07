@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Code generation for evaluate_dof.
 
 This module generates the functions evaluate_dof and evaluate_dofs.

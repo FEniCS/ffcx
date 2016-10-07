@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "Code generator for quadrature representation."
 
 # Copyright (C) 2009-2014 Kristian B. Oelgaard

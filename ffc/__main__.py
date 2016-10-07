@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This script is the command-line interface to FFC. It parses
 # command-line arguments and wraps the given form file code in a

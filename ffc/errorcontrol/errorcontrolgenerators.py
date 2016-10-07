@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This module provides an abstract ErrorControlGenerator class for
 generating forms required for goal-oriented error control and a

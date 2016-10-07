@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "Reordering of entries in reference tensor for interior facets."
 
 # Copyright (C) 2006-2009 Anders Logg

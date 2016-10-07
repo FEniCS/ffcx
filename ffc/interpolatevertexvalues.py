@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "Code generation for interpolate_vertex_values."
 
 # Copyright (C) 2009 Marie E. Rognes

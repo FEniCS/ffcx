@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Code generation for evaluation of finite element basis values. This
 module generates code which is more or less a C++ representation of
 the code found in FIAT."""

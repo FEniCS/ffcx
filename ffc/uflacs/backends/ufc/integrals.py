@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 
 from ffc.uflacs.backends.ufc.generator import ufc_generator, ufc_integral_types
 

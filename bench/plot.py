@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "This script plots the results found in bench.log."
 
 # Copyright (C) 2010 Anders Logg

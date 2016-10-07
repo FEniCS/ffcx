@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "Code generator for tensor representation"
 
 # Copyright (C) 2004-2013 Anders Logg

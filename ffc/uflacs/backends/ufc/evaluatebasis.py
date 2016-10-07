@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Work in progress translation of FFC evaluatebasis code to uflacs CNodes format."""
 
 from six import string_types

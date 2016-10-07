@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "QuadratureTransformer (optimised) for quadrature code generation to translate UFL expressions."
 
 # Copyright (C) 2009-2011 Kristian B. Oelgaard

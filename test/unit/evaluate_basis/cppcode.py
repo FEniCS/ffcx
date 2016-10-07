@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "This module provides simple C++ code for verification of UFC code."
 
 # Copyright (C) 2010 Kristian B. Oelgaard

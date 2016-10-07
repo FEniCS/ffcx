@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """This module implements the representation of a multilinear form as
 a sum of tensor contractions.
 

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright (C) 2008-2015 Martin Sandve Alnes
 #
 # This file is part of DOLFIN.

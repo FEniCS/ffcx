@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """QuadratureTransformerBase, a common class for quadrature
 transformers to translate UFL expressions."""
 

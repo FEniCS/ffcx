@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "Quadrature representation class for UFL"
 
 # Copyright (C) 2009-2014 Kristian B. Oelgaard

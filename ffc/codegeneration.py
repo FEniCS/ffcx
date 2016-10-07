@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Compiler stage 4: Code generation
 ---------------------------------

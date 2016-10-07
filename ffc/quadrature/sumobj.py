@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "This file implements a class to represent a sum."
 
 # Copyright (C) 2009-2010 Kristian B. Oelgaard

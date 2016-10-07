@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """This module contains utility functions for some code shared between
 quadrature and tensor representation."""
 

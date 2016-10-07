@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright (C) 2010-2013 Anders Logg, Kristian B. Oelgaard and Marie E. Rognes
 #
 # This file is part of FFC.

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 
 
 # TODO: Move these to uflacs.language utils?
