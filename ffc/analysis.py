@@ -40,7 +40,7 @@ from ufl.algorithms import compute_form_data
 from ufl.algorithms.analysis import extract_sub_elements
 
 # FFC modules
-from ffc.log import log, info, begin, end, warning, debug, error, ffc_assert, warning_blue
+from ffc.log import log, info, begin, end, warning, debug, error, warning_blue
 from ffc.quadratureelement import default_quadrature_degree
 from ffc.utils import all_equal
 from ffc.tensor import estimate_cost
@@ -140,8 +140,8 @@ def _analyze_form(form, parameters):
     "Analyze form, returning form data."
 
     # Check that form is not empty
-    ffc_assert(not form.empty(),
-               "Form (%s) seems to be zero: cannot compile it." % str(form))
+    if form.empty():
+        error("Form (%s) seems to be zero: cannot compile it." % str(form))
 
     # Hack to override representation with environment variable
     forced_r = os.environ.get("FFC_FORCE_REPRESENTATION")

@@ -33,7 +33,7 @@ import FIAT
 from FIAT.trace import DiscontinuousLagrangeTrace
 
 # FFC modules
-from ffc.log import debug, error, ffc_assert
+from ffc.log import debug, error
 from ffc.quadratureelement import QuadratureElement as FFCQuadratureElement
 
 
@@ -127,8 +127,8 @@ def _create_fiat_element(ufl_element):
     degree = ufl_element.degree()
 
     # Check that FFC supports this element
-    ffc_assert(family in supported_families,
-               "This element family (%s) is not supported by FFC." % family)
+    if family not in supported_families:
+        error("This element family (%s) is not supported by FFC." % family)
 
     # Handle the space of the constant
     if family == "Real":
@@ -163,9 +163,9 @@ def _create_fiat_element(ufl_element):
             element = ElementClass(fiat_cell, degree)
 
     # Consistency check between UFL and FIAT elements.
-    ffc_assert(element.value_shape() == ufl_element.reference_value_shape(),
-               "Something went wrong in the construction of FIAT element from UFL element." +
-               "Shapes are %s and %s." % (element.value_shape(), ufl_element.reference_value_shape()))
+    if element.value_shape() != ufl_element.reference_value_shape():
+        error("Something went wrong in the construction of FIAT element from UFL element." +
+              "Shapes are %s and %s." % (element.value_shape(), ufl_element.reference_value_shape()))
 
     return element
 

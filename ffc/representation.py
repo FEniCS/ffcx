@@ -40,7 +40,7 @@ import ufl
 
 # FFC modules
 from ffc.utils import compute_permutations, product
-from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
+from ffc.log import info, error, begin, end, debug_ir, warning
 from ffc.fiatinterface import create_element, reference_cell
 from ffc.mixedelement import MixedElement
 from ffc.enrichedelement import EnrichedElement, SpaceOfReals
@@ -906,7 +906,8 @@ def _create_default_foo_integral(prefix, form_id, integral_type, form_data):
     itg_data = [itg_data for itg_data in form_data.integral_data
                 if (itg_data.integral_type == integral_type and
                     itg_data.subdomain_id == "otherwise")]
-    ffc_assert(len(itg_data) in (0, 1), "Expecting at most one default integral of each type.")
+    if len(itg_data) > 1:
+        error("Expecting at most one default integral of each type.")
     if itg_data:
         classname = make_integral_classname(prefix, integral_type, form_id, "otherwise")
         return classname
