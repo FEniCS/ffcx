@@ -48,61 +48,19 @@ def compute_integral_ir(itg_data,
     # Initialise representation
     ir = initialize_integral_ir("uflacs", itg_data, form_data, form_id)
 
+    # Store element classnames
+    ir["classnames"] = classnames
+
     # Sort integrals into a dict with quadrature degree and rule as key
     sorted_integrals = sort_integrals(itg_data.integrals,
                                       itg_data.metadata["quadrature_degree"],
                                       itg_data.metadata["quadrature_rule"])
 
+
     # TODO: Might want to create the uflacs ir first and then create the tables we need afterwards!
     # Tabulate quadrature points and basis function values in these points
     integrals_dict, psi_tables, quadrature_rules = \
         tabulate_basis(sorted_integrals, form_data, itg_data)
-
-    # Store element numbers TODO: Still in use?
-    ir["element_numbers"] = element_numbers
-
-    # Store element classnames
-    ir["classnames"] = classnames
-    
-    # Delegate to flacs to build its intermediate representation and add to ir
-    uflacs_ir = compute_uflacs_integral_ir(ir, psi_tables, integrals_dict, form_data, parameters)
-
-    # Store uflacs generated part separately
-    ir["uflacs"] = uflacs_ir
-
-    # Create and save the optimisation parameters
-    # TODO: Define uflacs specific optimization parameters instead
-    #ir["optimise_parameters"] = parse_optimise_parameters(parameters)
-
-    # Save tables for quadrature weights and points
-    ir["quadrature_rules"] = quadrature_rules
-
-    # Create dimensions of primary indices, needed to reset the argument 'A'
-    # given to tabulate_tensor() by the assembler.
-    ir["prim_idims"] = [create_element(ufl_element).space_dimension()
-                        for ufl_element in form_data.argument_elements]
-
-    # Added for uflacs, not sure if this is the best way to get this:
-    ir["coeff_idims"] = [create_element(ufl_element).space_dimension()
-                         for ufl_element in form_data.coefficient_elements]
-
-    # TODO: Can easily add more element data here or move above if needed in uflacs
-    #unique_elements = element_numbers.keys()
-    #ir["fiat_elements"] = { ufl_element: create_element(ufl_element)
-    #                        for ufl_element in unique_elements }
-    #ir["element_dimensions"] = { ufl_element: fiat_element.space_dimension()
-    #                             for ufl_element, fiat_element in ir["fiat_elements"].items() }
-
-    return ir
-
-
-def compute_uflacs_integral_ir(ir, psi_tables,
-                               integrals_dict, form_data,
-                               parameters):
-    # TODO: Hack before we get default parameters properly into ffc
-    #p = default_parameters()
-    #p.update(parameters)
-    #parameters = p
 
     # Build coefficient numbering for UFC interface here, to avoid
     # renumbering in UFL and application of replace mapping
@@ -139,11 +97,13 @@ def compute_uflacs_integral_ir(ir, psi_tables,
         #    }
         # then pass coefficient_element and coefficient_domain to the uflacs ir as well
 
+
     # Hiding ffc data behind interface that we can
     # improve later to build tables on the fly instead of
     # precomputing psi_tables in ffc, somewhat disconnecting the
     # uflacs representation building from the psi_tables format
     table_provider = TableProvider(psi_tables, parameters)
+
 
     # Some more form_data info that we may need to
     # insert in the uflacs_ir but currently don't use
@@ -153,5 +113,28 @@ def compute_uflacs_integral_ir(ir, psi_tables,
     #form_data.integration_domains[0].ufl_cell()
     #form_data.function_replace_map
 
-    # Build the uflacs-specific intermediate representation
-    return build_uflacs_ir(ir, integrands, coefficient_numbering, table_provider)
+
+    # Build the more uflacs-specific intermediate representation
+    ir["uflacs"] = build_uflacs_ir(ir, integrands, coefficient_numbering, table_provider)
+
+
+    # Save tables for quadrature weights and points
+    ir["quadrature_rules"] = quadrature_rules
+
+    # Create dimensions of primary indices, needed to reset the argument 'A'
+    # given to tabulate_tensor() by the assembler.
+    ir["prim_idims"] = [create_element(ufl_element).space_dimension()
+                        for ufl_element in form_data.argument_elements]
+
+    # Added for uflacs, not sure if this is the best way to get this:
+    ir["coeff_idims"] = [create_element(ufl_element).space_dimension()
+                         for ufl_element in form_data.coefficient_elements]
+
+    # TODO: Can easily add more element data here or move above if needed in uflacs
+    #unique_elements = element_numbers.keys()
+    #ir["fiat_elements"] = { ufl_element: create_element(ufl_element)
+    #                        for ufl_element in unique_elements }
+    #ir["element_dimensions"] = { ufl_element: fiat_element.space_dimension()
+    #                             for ufl_element, fiat_element in ir["fiat_elements"].items() }
+
+    return ir
