@@ -31,7 +31,6 @@ from ufl.classes import (FormArgument, Argument,
                          FacetAvg, CellAvg)
 
 from ffc.log import error
-from ffc.log import ffc_assert
 
 
 class ModifiedTerminal(object):
@@ -198,47 +197,55 @@ def analyse_modified_terminal(expr):
     t = expr
     while not t._ufl_is_terminal_:
         if isinstance(t, Indexed):
-            ffc_assert(component is None, "Got twice indexed terminal.")
+            if component is not None:
+                error("Got twice indexed terminal.")
 
             t, i = t.ufl_operands
             component = [int(j) for j in i]
 
-            ffc_assert(all(isinstance(j, FixedIndex) for j in i), "Expected only fixed indices.")
+            if not all(isinstance(j, FixedIndex) for j in i):
+                error("Expected only fixed indices.")
 
         elif isinstance(t, ReferenceValue):
-            ffc_assert(reference_value is None, "Got twice pulled back terminal!")
+            if reference_value is not None:
+                error("Got twice pulled back terminal!")
 
             t, = t.ufl_operands
             reference_value = True
 
         elif isinstance(t, ReferenceGrad):
-            ffc_assert(len(component), "Got local gradient of terminal without prior indexing.")
+            if not component:  # covers None or ()
+                error("Got local gradient of terminal without prior indexing.")
 
             t, = t.ufl_operands
             local_derivatives.append(component[-1])
             component = component[:-1]
 
         elif isinstance(t, Grad):
-            ffc_assert(len(component), "Got gradient of terminal without prior indexing.")
+            if not component:  # covers None or ()
+                error("Got local gradient of terminal without prior indexing.")
 
             t, = t.ufl_operands
             global_derivatives.append(component[-1])
             component = component[:-1]
 
         elif isinstance(t, Restricted):
-            ffc_assert(restriction is None, "Got twice restricted terminal!")
+            if restriction is not None:
+                error("Got twice restricted terminal!")
 
             restriction = t._side
             t, = t.ufl_operands
 
         elif isinstance(t, CellAvg):
-            ffc_assert(averaged is None, "Got twice averaged terminal!")
+            if averaged is not None:
+                error("Got twice averaged terminal!")
 
             t, = t.ufl_operands
             averaged = "cell"
 
         elif isinstance(t, FacetAvg):
-            ffc_assert(averaged is None, "Got twice averaged terminal!")
+            if averaged is not None:
+                error("Got twice averaged terminal!")
 
             t, = t.ufl_operands
             averaged = "facet"

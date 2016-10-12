@@ -31,7 +31,7 @@ from ufl.classes import MultiIndex, IndexSum, Product
 from ufl.corealg.multifunction import MultiFunction
 from ufl.utils.indexflattening import flatten_multiindex, shape_to_strides
 
-from ffc.log import error, ffc_assert
+from ffc.log import error
 from ffc.uflacs.analysis.modified_terminals import is_modified_terminal
 
 
@@ -61,7 +61,8 @@ class ReconstructScalarSubexpressions(MultiFunction):
     variable = unexpected
 
     def scalar_nary(self, o, ops):
-        ffc_assert(o.ufl_shape == (), "Expecting scalar.")
+        if o.ufl_shape != ():
+            error("Expecting scalar.")
         sops = [op[0] for op in ops]
         return [o._ufl_expr_reconstruct_(*sops)]
 
@@ -84,26 +85,33 @@ class ReconstructScalarSubexpressions(MultiFunction):
         # A condition can be non scalar
         symbols = []
         n = len(ops[1])
-        ffc_assert(len(ops[0]) == 1, "Condition should be scalar.")
-        ffc_assert(n == len(ops[2]), "Conditional branches should have same shape.")
+        if len(ops[0]) != 1:
+            error("Condition should be scalar.")
+        if n != len(ops[2]):
+            error("Conditional branches should have same shape.")
         for i in range(len(ops[1])):
             sops = (ops[0][0], ops[1][i], ops[2][i])
             symbols.append(o._ufl_expr_reconstruct_(*sops))
         return symbols
 
     def division(self, o, ops):
-        ffc_assert(len(ops) == 2, "Expecting two operands.")
-        ffc_assert(len(ops[1]) == 1, "Expecting scalar divisor.")
+        if len(ops) != 2:
+            error("Expecting two operands.")
+        if len(ops[1]) != 1:
+            error("Expecting scalar divisor.")
         b, = ops[1]
         return [o._ufl_expr_reconstruct_(a, b) for a in ops[0]]
 
     def sum(self, o, ops):
-        ffc_assert(len(ops) == 2, "Expecting two operands.")
-        ffc_assert(len(ops[0]) == len(ops[1]), "Expecting scalar divisor.")
+        if len(ops) != 2:
+            error("Expecting two operands.")
+        if len(ops[0]) != len(ops[1]):
+            error("Expecting scalar divisor.")
         return [o._ufl_expr_reconstruct_(a, b) for a, b in zip(ops[0], ops[1])]
 
     def product(self, o, ops):
-        ffc_assert(len(ops) == 2, "Expecting two operands.")
+        if len(ops) != 2:
+            error("Expecting two operands.")
 
         # Get the simple cases out of the way
         if len(ops[0]) == 1:  # True scalar * something
@@ -158,7 +166,8 @@ class ReconstructScalarSubexpressions(MultiFunction):
         # flattened total component of indexsum o by removing
         # axis corresponding to summation index ii.
         ss = ops[0]  # Scalar subexpressions of summand
-        ffc_assert(len(ss) == predim * postdim * d, "Mismatching number of subexpressions.")
+        if len(ss) != predim * postdim * d:
+            error("Mismatching number of subexpressions.")
         sops = []
         for i in range(predim):
             iind = i * (postdim * d)
@@ -230,7 +239,8 @@ def rebuild_with_scalar_subexpressions(G, targets=None):
             continue
 
         if is_modified_terminal(v):
-            # ffc_assert(v.ufl_free_indices == (), "Expecting no free indices.")
+            # if v.ufl_free_indices:
+            #     error("Expecting no free indices.")
             sh = v.ufl_shape
             if sh:
                 # Store each terminal expression component.
@@ -240,7 +250,8 @@ def rebuild_with_scalar_subexpressions(G, targets=None):
                 ws = [v[c] for c in compute_indices(sh)]
             else:
                 # Store single modified terminal expression component
-                ffc_assert(len(vs) == 1, "Expecting single symbol for scalar valued modified terminal.")
+                if len(vs) != 1:
+                    error("Expecting single symbol for scalar valued modified terminal.")
                 ws = [v]
             # FIXME: Replace ws[:] with 0's if its table is empty
             # Possible redesign: loop over modified terminals only first,
@@ -268,7 +279,8 @@ def rebuild_with_scalar_subexpressions(G, targets=None):
             ws = reconstruct_scalar_subexpressions(v, wops)
 
             # Store all scalar subexpressions for v symbols
-            ffc_assert(len(vs) == len(ws), "Expecting one symbol for each expression.")
+            if len(vs) != len(ws):
+                error("Expecting one symbol for each expression.")
 
         # Store each new scalar subexpression in W at the index of its symbol
         handled = set()
@@ -289,8 +301,8 @@ def rebuild_with_scalar_subexpressions(G, targets=None):
         ti = G.e2i[target]
         vs = G.V_symbols[ti]
         # Sanity check: assert that we've handled these symbols
-        ffc_assert(all(W[s] is not None for s in vs),
-                   "Expecting that all symbols in vs are handled at this point.")
+        if any(W[s] is None for s in vs):
+            error("Expecting that all symbols in vs are handled at this point.")
         scalar_target_expressions.append([W[s] for s in vs])
 
     # Return the scalar expressions for each of the components

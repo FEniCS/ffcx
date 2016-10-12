@@ -32,7 +32,7 @@ from ufl.classes import Conditional
 from ufl.classes import Zero
 from ufl.algorithms import extract_type
 
-from ffc.log import ffc_assert, error
+from ffc.log import error
 
 from ffc.uflacs.analysis.graph_dependencies import compute_dependencies
 from ffc.uflacs.analysis.modified_terminals import analyse_modified_terminal, strip_modified_terminal
@@ -137,7 +137,8 @@ def handle_modified_terminal(i, v, F, FV, e2fi, arg_indices, AV, sv2av):
 
 
 def handle_sum(i, v, deps, F, FV, sv2fv, e2fi):
-    ffc_assert(len(deps) == 2, "Assuming binary sum here. This can be fixed if needed.")
+    if len(deps) != 2:
+        error("Assuming binary sum here. This can be fixed if needed.")
     fac0 = F[deps[0]]
     fac1 = F[deps[1]]
 
@@ -148,7 +149,8 @@ def handle_sum(i, v, deps, F, FV, sv2fv, e2fi):
         fi = None
         factors = {}
         for argkey in argkeys:
-            ffc_assert(len(argkey) == keylen, "Expecting equal argument rank terms among summands.")
+            if len(argkey) != keylen:
+                error("Expecting equal argument rank terms among summands.")
 
             fi0 = fac0.get(argkey)
             fi1 = fac1.get(argkey)
@@ -170,7 +172,8 @@ def handle_sum(i, v, deps, F, FV, sv2fv, e2fi):
 
 
 def handle_product(i, v, deps, F, FV, sv2fv, e2fi):
-    ffc_assert(len(deps) == 2, "Assuming binary product here. This can be fixed if needed.")
+    if len(deps) != 2:
+        error("Assuming binary product here. This can be fixed if needed.")
     fac0 = F[deps[0]]
     fac1 = F[deps[1]]
 
@@ -437,8 +440,8 @@ def compute_argument_factorization(SV, target_variables, dependencies):
     # TODO: Use target_variables! Currently just assuming the last vertex is the target here...
 
     if list(target_variables) != [len(SV) - 1]:
-        ffc_assert(not extract_type(SV[-1], Argument),
-                   "Multiple or nonscalar Argument dependent expressions not supported in factorization.")
+        if extract_type(SV[-1], Argument):
+            error("Multiple or nonscalar Argument dependent expressions not supported in factorization.")
         AV = []
         FV = SV
         IM = {}

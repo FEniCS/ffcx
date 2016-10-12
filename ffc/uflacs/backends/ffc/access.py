@@ -21,7 +21,7 @@
 from ufl.corealg.multifunction import MultiFunction
 from ufl.permutation import build_component_numbering
 
-from ffc.log import error, warning, ffc_assert
+from ffc.log import error, warning
 
 from ffc.uflacs.backends.ffc.symbols import FFCBackendSymbols
 from ffc.uflacs.backends.ffc.common import physical_quadrature_integral_types
@@ -131,9 +131,12 @@ class FFCBackendAccess(MultiFunction):
 
     def spatial_coordinate(self, e, mt, tabledata, num_points):
         #L = self.language
-        ffc_assert(not mt.global_derivatives, "Not expecting derivatives of SpatialCoordinate.")
-        ffc_assert(not mt.local_derivatives, "Not expecting derivatives of SpatialCoordinate.")
-        ffc_assert(not mt.averaged, "Not expecting average of SpatialCoordinates.")
+        if mt.global_derivatives:
+            error("Not expecting derivatives of SpatialCoordinate.")
+        if mt.local_derivatives:
+            error("Not expecting derivatives of SpatialCoordinate.")
+        if mt.averaged:
+            error("Not expecting average of SpatialCoordinates.")
 
         if self.integral_type in physical_quadrature_integral_types:
             # Physical coordinates are available in given variables
@@ -149,9 +152,12 @@ class FFCBackendAccess(MultiFunction):
 
     def cell_coordinate(self, e, mt, tabledata, num_points):
         #L = self.language
-        ffc_assert(not mt.global_derivatives, "Not expecting derivatives of CellCoordinate.")
-        ffc_assert(not mt.local_derivatives, "Not expecting derivatives of CellCoordinate.")
-        ffc_assert(not mt.averaged, "Not expecting average of CellCoordinate.")
+        if mt.global_derivatives:
+            error("Not expecting derivatives of CellCoordinate.")
+        if mt.local_derivatives:
+            error("Not expecting derivatives of CellCoordinate.")
+        if mt.averaged:
+            error("Not expecting average of CellCoordinate.")
 
         if self.integral_type == "cell" and not mt.restriction:
             X = self.symbols.points_array(num_points)
@@ -168,10 +174,14 @@ class FFCBackendAccess(MultiFunction):
 
     def facet_coordinate(self, e, mt, tabledata, num_points):
         L = self.language
-        ffc_assert(not mt.global_derivatives, "Not expecting derivatives of FacetCoordinate.")
-        ffc_assert(not mt.local_derivatives, "Not expecting derivatives of FacetCoordinate.")
-        ffc_assert(not mt.averaged, "Not expecting average of FacetCoordinate.")
-        ffc_assert(not mt.restriction, "Not expecting restriction of FacetCoordinate.")
+        if mt.global_derivatives:
+            error("Not expecting derivatives of FacetCoordinate.")
+        if mt.local_derivatives:
+            error("Not expecting derivatives of FacetCoordinate.")
+        if mt.averaged:
+            error("Not expecting average of FacetCoordinate.")
+        if mt.restriction:
+            error("Not expecting restriction of FacetCoordinate.")
 
         if self.integral_type in ("interior_facet", "exterior_facet"):
             tdim, = mt.terminal.ufl_shape
@@ -199,9 +209,12 @@ class FFCBackendAccess(MultiFunction):
 
     def jacobian(self, e, mt, tabledata, num_points):
         L = self.language
-        ffc_assert(not mt.global_derivatives, "Not expecting derivatives of Jacobian.")
-        ffc_assert(not mt.local_derivatives, "Not expecting derivatives of Jacobian.")
-        ffc_assert(not mt.averaged, "Not expecting average of Jacobian.")
+        if mt.global_derivatives:
+            error("Not expecting derivatives of Jacobian.")
+        if mt.local_derivatives:
+            error("Not expecting derivatives of Jacobian.")
+        if mt.averaged:
+            error("Not expecting average of Jacobian.")
         return self.symbols.J_component(mt)
 
 
