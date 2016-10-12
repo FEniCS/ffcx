@@ -192,8 +192,9 @@ def main(args=None):
     # Set UFL precision
     ufl.constantvalue.precision = int(parameters["precision"])
 
-    # Print a nice message
-    info_version()
+    # Print a versioning message if silence was not requested
+    if parameters["log_level"] != ERROR:
+        info_version()
 
     # Call parser and compiler for each file
     for filename in args:
