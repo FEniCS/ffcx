@@ -31,7 +31,7 @@ from ufl.algorithms import extract_unique_elements, extract_type, extract_elemen
 from ufl import custom_integral_types
 
 # FFC modules
-from ffc.log import ffc_assert, error
+from ffc.log import error
 from ffc.utils import product
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import map_facet_points, reference_cell_vertices
@@ -201,16 +201,16 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
         len_weights = None if weights is None else len(weights)
 
         # Add points and rules to dictionary
-        ffc_assert(len_weights not in quadrature_rules,
-                   "This number of points is already present in the weight table: " + repr(quadrature_rules))
+        if len_weights in quadrature_rules:
+            error("This number of points is already present in the weight table: " + repr(quadrature_rules))
         quadrature_rules[len_weights] = (weights, points)
 
         # --------- Store integral
         # Add the integral with the number of points as a key to the
         # return integrals.
         integral = sorted_integrals[(degree, scheme)]
-        ffc_assert(len_weights not in integrals,
-                   "This number of points is already present in the integrals: " + repr(integrals))
+        if len_weights in integrals:
+            error("This number of points is already present in the integrals: " + repr(integrals))
         integrals[len_weights] = integral
 
         # --------- Analyse UFL elements in integral
@@ -249,8 +249,8 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
         # --------- store in tables
 
         # Add the number of points to the psi tables dictionary
-        ffc_assert(len_weights not in psi_tables,
-                   "This number of points is already present in the psi table: " + repr(psi_tables))
+        if len_weights in psi_tables:
+            error("This number of points is already present in the psi table: " + repr(psi_tables))
         psi_tables[len_weights] = {}
 
         # Loop FIAT elements and tabulate basis as usual.
@@ -308,16 +308,16 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
                 if rank:
                     # Compute numeric integral
                     num_dofs, num_components, num_points = psi_table.shape
-                    ffc_assert(num_points == len(weights),
-                               "Weights and table shape does not match.")
+                    if num_points != len(weights):
+                        error("Weights and table shape does not match.")
                     avg_psi_table = numpy.asarray([[[numpy.dot(psi_table[j, k, :], weights) / wsum]
                                                     for k in range(num_components)]
                                                    for j in range(num_dofs)])
                 else:
                     # Compute numeric integral
                     num_dofs, num_points = psi_table.shape
-                    ffc_assert(num_points == len(weights),
-                               "Weights and table shape does not match.")
+                    if num_points != len(weights):
+                        error("Weights and table shape does not match.")
                     avg_psi_table = numpy.asarray([[numpy.dot(psi_table[j, :],
                                                               weights) / wsum] for j in range(num_dofs)])
 
