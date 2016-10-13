@@ -71,7 +71,7 @@ def compute_integral_ir(itg_data,
         tabulate_basis(sorted_integrals, form_data, itg_data)
 
     # Save tables for quadrature weights and points
-    ir["quadrature_weights"] = quadrature_rules  # TODO: Rename this ir entry to quadrature_rules
+    ir["quadrature_rules"] = quadrature_rules
 
     # Create dimensions of primary indices, needed to reset the
     # argument 'A' given to tabulate_tensor() by the assembler.
@@ -123,10 +123,9 @@ def compute_integral_ir(itg_data,
 def sort_integrals(integrals, default_quadrature_degree,
                    default_quadrature_rule):
     """Sort and accumulate integrals according to the number of quadrature
-points needed per axis.
+    points needed per axis.
 
     All integrals should be over the same (sub)domain.
-
     """
 
     if not integrals:
