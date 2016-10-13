@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This module provides compilation of forms required for goal-oriented
 error control
@@ -72,9 +73,9 @@ def compile_with_error_control(forms, object_names, reserved_objects,
     # Check that there are no conflicts between user defined and
     # generated names
     ec_names = generator.ec_names
-    comment = "%s are reserved error control names." % str(sorted(ec_names.values()))
-    assert not (set(object_names.values()) & set(ec_names.values())), \
-        "Conflict between user defined and generated names: %s" % comment
+    if set(object_names.values()) & set(ec_names.values()):
+        comment = "%s are reserved error control names." % str(sorted(ec_names.values()))
+        error("Conflict between user defined and generated names: %s" % comment)
 
     # Add names generated for error control to object_names
     for (objid, name) in sorted_by_key(ec_names):
@@ -119,8 +120,8 @@ def prepare_input_arguments(forms, object_names, reserved_objects):
     """
 
     # Check that we get a tuple of forms
-    expecting_tuple_msg = "Expecting tuple of forms, got %s" % str(forms)
-    assert(isinstance(forms, (list, tuple))), expecting_tuple_msg
+    if not isinstance(forms, (list, tuple)):
+        error("Expecting tuple of forms, got %s" % str(forms))
 
     def __is_nonlinear(forms):
         return len(forms) == 2
@@ -139,8 +140,8 @@ def prepare_input_arguments(forms, object_names, reserved_objects):
         (F, M) = forms
 
         # Check that forms have the expected rank
-        assert(len(F.arguments()) == 1)
-        assert(len(M.arguments()) == 0)
+        assert len(F.arguments()) == 1
+        assert len(M.arguments()) == 0
 
         # Return primal, goal and unknown
         return (F, M, u)
@@ -155,9 +156,9 @@ def prepare_input_arguments(forms, object_names, reserved_objects):
 
         # Check that forms have the expected rank
         arguments = a.arguments()
-        assert(len(arguments) == 2)
-        assert(len(L.arguments()) == 1)
-        assert(len(M.arguments()) == 1)
+        assert len(arguments) == 2
+        assert len(L.arguments()) == 1
+        assert len(M.arguments()) == 1
 
         # Standard case: create default Coefficient in trial space and
         # label it __discrete_primal_solution

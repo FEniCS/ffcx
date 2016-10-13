@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "Reordering of entries in reference tensor for interior facets."
 
 # Copyright (C) 2006-2009 Anders Logg
@@ -100,10 +101,10 @@ def __compute_restrictions(term):
     new_idims = [i for i in idims]
     new_adims = [i for i in adims]
     for i in range(len(new_idims)):
-        if not restrictions[i] == None:
+        if restrictions[i] is not None:
             new_idims[i] = 2 * new_idims[i]
     for i in range(len(new_adims)):
-        if not restrictions[i + len(new_idims)] == None:
+        if restrictions[i + len(new_idims)] is not None:
             new_adims[i] = 2 * new_adims[i]
 
     return (restrictions, new_idims, new_adims)

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Code generation format strings for UFC (Unified Form-assembly Code) version 2016.2.0.dev0.
 # This code is released into the public domain.
 #

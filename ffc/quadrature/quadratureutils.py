@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "Utility functions for quadrature representation."
 
 # Copyright (C) 2007-2010 Kristian B. Oelgaard
@@ -28,7 +29,7 @@
 import numpy
 
 # FFC modules.
-from ffc.log import debug, error, ffc_assert
+from ffc.log import debug, error
 from ffc.cpp import format
 
 
@@ -425,7 +426,8 @@ def create_permutations(expr):
                     key1 = [key1]
                 if not isinstance(val1, list):
                     val1 = [val1]
-                ffc_assert(tuple(key0 + key1) not in new, "This is not supposed to happen.")
+                if tuple(key0 + key1) in new:
+                    error("This is not supposed to happen.")
                 new[tuple(key0 + key1)] = val0 + val1
 
         return new

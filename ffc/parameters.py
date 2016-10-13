@@ -1,4 +1,5 @@
-# Copyright (C) 2005-2015 Anders Logg
+# -*- coding: utf-8 -*-
+# Copyright (C) 2005-2016 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -23,7 +24,8 @@ from ffc.log import INFO
 # FIXME: Document option -fconvert_exceptions_to_warnings
 # FIXME: Remove option epsilon and just rely on precision?
 
-
+# NB! Parameters in the generate and build sets are
+# included in jit signature, cache and log are not.
 _FFC_GENERATE_PARAMETERS = {
     "format": "ufc",           # code generation format
     "representation": "auto",  # form representation / code
@@ -44,6 +46,7 @@ _FFC_GENERATE_PARAMETERS = {
                                                # in generated code
     "error_control": False,   # with error control
     "optimize": False,        # optimise the code generation
+    "max_signature_length": 0,  # set to positive integer to shorten signatures
 }
 _FFC_BUILD_PARAMETERS = {
     "cpp_optimize": True,          # optimization for the JIT compiler

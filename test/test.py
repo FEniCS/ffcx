@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Run all tests, including unit tests and regression tests"""
 
 # Copyright (C) 2007 Anders Logg

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright (C) 2010 Anders Logg
 #
 # This file is part of FFC.
@@ -19,7 +20,7 @@
 # Last changed: 2014-04-15
 
 # FFC modules
-from ffc.log import debug
+from ffc.log import debug, error
 
 # FFC tensor representation modules
 from ffc.tensor.monomialextraction import extract_monomial_form

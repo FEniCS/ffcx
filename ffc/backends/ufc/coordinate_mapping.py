@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 # Code generation format strings for UFC (Unified Form-assembly Code) v. 2016.1.0dev.
 # This code is released into the public domain.
 #
-# The FEniCS Project (http://www.fenicsproject.org/) 2006-2015.
+# The FEniCS Project (http://www.fenicsproject.org/) 2006-2016.
 
 coordinate_mapping_header = """
 class %(classname)s: public ufc::coordinate_mapping

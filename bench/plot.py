@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "This script plots the results found in bench.log."
 
 # Copyright (C) 2010 Anders Logg
@@ -29,16 +30,16 @@ try:
 except:
     output = open("results/bench.log").read()
 for line in output.split("\n"):
-    if not "," in line: continue
+    if "," not in line: continue
     test_case, test_option, timing = [w.strip() for w in line.split(",")]
     try:
         form, degree = test_case.split("_")
     except:
         form, dim, degree = test_case.split("_")
         form = form + "_" + dim
-    if not form in results:
+    if form not in results:
         results[form] = {}
-    if not test_option in results[form]:
+    if test_option not in results[form]:
         results[form][test_option] = ([], [])
     results[form][test_option][0].append(int(degree))
     results[form][test_option][1].append(float(timing))

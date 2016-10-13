@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Compiler stage 1: Analysis
 --------------------------
@@ -53,56 +54,77 @@ def analyze_forms(forms, parameters):
        unique_elements - a tuple of unique elements across all forms
        element_numbers - a mapping to unique numbers for all elements
     """
-
-    begin("Compiler stage 1: Analyzing form(s)")
-
-    # Analyze forms
-    form_datas = tuple(_analyze_form(form,
-                                     parameters) for form in forms)
-
-    # Extract unique elements accross all forms
-    unique_elements = set()
-    for form_data in form_datas:
-        unique_elements.update(form_data.unique_sub_elements)
-
-    # Sort elements
-    unique_elements = sort_elements(unique_elements)
-
-    # Compute element numbers
-    element_numbers = _compute_element_numbers(unique_elements)
-
-    # Extract coordinate elements
-    unique_coordinate_elements = sorted(set(chain(*[form_data.coordinate_elements for form_data in form_datas])))
-
-    end()
-
-    return form_datas, unique_elements, element_numbers, unique_coordinate_elements
+    return analyze_ufl_objects(forms, "form", parameters)
 
 
 def analyze_elements(elements, parameters):
+    return analyze_ufl_objects(elements, "element", parameters)
 
-    begin("Compiler stage 1: Analyzing elements(s)")
 
-    # Extract unique (sub)elements
-    unique_elements = set(extract_sub_elements(elements))
+def analyze_coordinate_mappings(coordinate_elements, parameters):
+    return analyze_ufl_objects(coordinate_elements, "coordinate_mapping", parameters)
+
+
+def analyze_ufl_objects(ufl_objects, kind, parameters):
+    """
+    Analyze ufl object(s), either forms, elements, or coordinate mappings, returning:
+
+       form_datas      - a tuple of form_data objects
+       unique_elements - a tuple of unique elements across all forms
+       element_numbers - a mapping to unique numbers for all elements
+
+    """
+    begin("Compiler stage 1: Analyzing %s(s)" % (kind,))
+
+    form_datas = ()
+    unique_elements = set()
+    unique_coordinate_elements = set()
+
+    if kind == "form":
+        forms = ufl_objects
+
+        # Analyze forms
+        form_datas = tuple(_analyze_form(form, parameters)
+                           for form in forms)
+
+        # Extract unique elements accross all forms
+        for form_data in form_datas:
+            unique_elements.update(form_data.unique_sub_elements)
+
+        # Extract coordinate elements across all forms
+        for form_data in form_datas:
+            unique_coordinate_elements.update(form_data.coordinate_elements)
+
+    elif kind == "element":
+        elements = ufl_objects
+
+        # Extract unique (sub)elements
+        unique_elements.update(extract_sub_elements(elements))
+
+    elif kind == "coordinate_mapping":
+        meshes = ufl_objects
+
+        # Extract unique (sub)elements
+        unique_coordinate_elements = [mesh.ufl_coordinate_element() for mesh in meshes]
+
+    # Make sure coordinate elements and their subelements are included
+    unique_elements.update(extract_sub_elements(unique_coordinate_elements))
 
     # Sort elements
     unique_elements = sort_elements(unique_elements)
 
-    # Build element map
-    element_numbers = _compute_element_numbers(unique_elements)
-
-    # Update scheme for QuadratureElements
+    # Check for schemes for QuadratureElements
     for element in unique_elements:
         if element.family() == "Quadrature":
             qs = element.quadrature_scheme()
             if qs is None:
                 error("Missing quad_scheme in quadrature element.")
 
+    # Compute element numbers
+    element_numbers = _compute_element_numbers(unique_elements)
+
     end()
 
-    form_datas = ()
-    unique_coordinate_elements = ()
     return form_datas, unique_elements, element_numbers, unique_coordinate_elements
 
 
@@ -118,8 +140,8 @@ def _analyze_form(form, parameters):
     "Analyze form, returning form data."
 
     # Check that form is not empty
-    ffc_assert(not form.empty(),
-               "Form (%s) seems to be zero: cannot compile it." % str(form))
+    if form.empty():
+        error("Form (%s) seems to be zero: cannot compile it." % str(form))
 
     # Hack to override representation with environment variable
     forced_r = os.environ.get("FFC_FORCE_REPRESENTATION")

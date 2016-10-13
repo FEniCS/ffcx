@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Tests of generic C++ compilation code.
 """

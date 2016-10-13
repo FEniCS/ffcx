@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "This modules provides additional functionality for users of FFC."
 
 # Copyright (C) 2010 Anders Logg

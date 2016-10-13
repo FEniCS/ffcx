@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Tests of graph representation of expressions.
 """

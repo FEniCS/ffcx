@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """This script compiles and verifies the output for all form files
 found in the 'demo' directory. The verification is performed in two
 steps. First, the generated code is compared with stored references.
@@ -27,7 +28,7 @@ option --bench.
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Martin Alnaes, 2013-2015
+# Modified by Martin Alnaes, 2013-2016
 # Modified by Johannes Ring, 2013
 # Modified by Kristian B. Oelgaard, 2013
 # Modified by Garth N. Wells, 2014
@@ -467,7 +468,7 @@ def main(args):
         "--print-timing",
         "--help",
     )
-    args = [arg for arg in args if not arg in flags]
+    args = [arg for arg in args if arg not in flags]
 
     if show_help:
         info("Valid arguments:\n" + "\n".join(flags))

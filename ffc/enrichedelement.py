@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright (C) 2010 Marie E. Rognes
 #
 # This file is part of FFC.
@@ -70,7 +71,7 @@ class EnrichedElement:
             # Insert element table into table
             for dtuple in etable.keys():
 
-                if not dtuple in table:
+                if dtuple not in table:
                     if num_components == 1:
                         table[dtuple] = numpy.zeros((self.space_dimension(), len(points)))
                     else:

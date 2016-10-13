@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 
 import numpy
 
@@ -40,6 +41,7 @@ def basic_class_properties(classname):
         "destructor": "",
         "members": "",
         "preamble": "",
+        "jit": False,
     }
     return ir
 

@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 "This module defines rules and algorithms for generating C++ code."
 
-# Copyright (C) 2009-2015 Anders Logg
+# Copyright (C) 2009-2016 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -19,12 +20,13 @@
 #
 # Modified by Kristian B. Oelgaard 2011
 # Modified by Marie E. Rognes 2010
-# Modified by Martin Alnaes 2013-2015
+# Modified by Martin Alnaes 2013-2016
 
 # Python modules
 import re
 import numpy
 import platform
+from six import string_types
 
 # UFL modules
 from ufl import custom_integral_types
@@ -35,7 +37,6 @@ from six.moves import zip
 
 # ufc class names
 
-
 def make_classname(prefix, basename, signature):
     pre = prefix.lower() + "_" if prefix else ""
     sig = str(signature).lower()
@@ -45,6 +46,7 @@ def make_classname(prefix, basename, signature):
 def make_integral_classname(prefix, integral_type, form_id, subdomain_id):
     basename = "%s_integral_%s" % (integral_type, str(form_id).lower())
     return make_classname(prefix, basename, subdomain_id)
+
 
 # Mapping of restrictions
 _fixed_map = {None: "", "+": "_0", "-": "_1"}
@@ -101,7 +103,8 @@ format.update({
     "static array": lambda t, n, s: "static %s %s[%d];" % (t, n, s),
     "fixed array": lambda t, n, s: "%s %s[%d];" % (t, n, s),
     "delete dynamic array": lambda n, s=None: _delete_array(n, s),
-    "create foo": lambda v: "new %s()" % v
+    "create foo": lambda v: "new %s()" % v,
+    "create factory": lambda v: "create_%s()" % v
 })
 
 # Mathematical operators
@@ -405,7 +408,7 @@ def _inner_product(v, w):
         return format["float"](0)
 
     # Straightforward handling when we only have strings
-    if isinstance(v[0], str):
+    if isinstance(v[0], string_types):
         return _add([_multiply([v[i], w[i]]) for i in range(len(v))])
 
     # Fancy handling of negative numbers etc
@@ -776,7 +779,7 @@ def remove_unused(code, used_set=set()):
             continue
 
         # Split words
-        words = [word for word in line.split(" ") if not word == ""]
+        words = [word for word in line.split(" ") if word != ""]
 
         # Remember line where variable is declared
         for type in [type for type in types if " ".join(type) in " ".join(words)]:  # Fewer matches than line below.
@@ -802,7 +805,7 @@ def remove_unused(code, used_set=set()):
                     variable_name = variable_name[0]
 
                 variables[variable_name] = (line_number, [])
-                if not variable_name in variable_names:
+                if variable_name not in variable_names:
                     variable_names += [variable_name]
 
         # Mark line for used variables
@@ -822,19 +825,19 @@ def remove_unused(code, used_set=set()):
         for line in removed_lines:
             if line in used_lines:
                 used_lines.remove(line)
-        if not used_lines and not variable_name in used_set:
+        if not used_lines and variable_name not in used_set:
             debug("Removing unused variable: %s" % variable_name)
             lines[declaration_line] = None  # KBO: Need to completely remove line for evaluate_basis* to work
             # lines[declaration_line] = "// " + lines[declaration_line]
             removed_lines += [declaration_line]
-    return "\n".join([line for line in lines if not line is None])
+    return "\n".join([line for line in lines if line is not None])
 
 
 def _variable_in_line(variable_name, line):
     "Check if variable name is used in line"
-    if not variable_name in line:
+    if variable_name not in line:
         return False
     for character in special_characters:
         line = line.replace(character, "\\" + character)
     delimiter = "[" + ",".join(["\\" + c for c in special_characters]) + "]"
-    return not re.search(delimiter + variable_name + delimiter, line) == None
+    return re.search(delimiter + variable_name + delimiter, line) is not None

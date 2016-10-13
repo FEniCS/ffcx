@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "Some simple functions for manipulating expressions symbolically"
 
 # Copyright (C) 2008-2010 Kristian B. Oelgaard

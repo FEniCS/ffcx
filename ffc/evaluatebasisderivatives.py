@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Code generation for evaluation of derivatives of finite element
 basis values.  This module generates code which is more or less a C++
 representation of the code found in FIAT_NEW."""
@@ -28,9 +29,10 @@ representation of the code found in FIAT_NEW."""
 # Python modules
 import math
 import numpy
+from six import string_types
 
 # FFC modules
-from ffc.log import error, ffc_assert
+from ffc.log import error
 from ffc.evaluatebasis import _compute_basisvalues, _tabulate_coefficients
 from ffc.cpp import remove_unused, indent, format
 
@@ -39,7 +41,7 @@ def _evaluate_basis_derivatives_all(data):
     """Like evaluate_basis, but return the values of all basis
     functions (dofs)."""
 
-    if isinstance(data, str):
+    if isinstance(data, string_types):
         return format["exception"]("evaluate_basis_derivatives_all: %s" % data)
 
     # Prefetch formats.
@@ -157,7 +159,7 @@ def _evaluate_basis_derivatives(data):
     run time and combinations (depending on the order of derivative) of dmats
     tables which hold the derivatives of the expansion coefficients."""
 
-    if isinstance(data, str):
+    if isinstance(data, string_types):
         return format["exception"]("evaluate_basis_derivatives: %s" % data)
 
     # Initialise return code.
@@ -408,7 +410,8 @@ def _tabulate_dmats(dof_data):
 
         # Get shape and check dimension (This is probably not needed).
         shape = numpy.shape(matrix)
-        ffc_assert(shape[0] == shape[1] == dof_data["num_expansion_members"], "Something is wrong with the shape of dmats.")
+        if not (shape[0] == shape[1] == dof_data["num_expansion_members"]):
+            error("Something is wrong with the shape of dmats.")
 
         # Declare varable name for coefficients.
         name = f_component(f_dmats(i), [shape[0], shape[1]])
@@ -546,8 +549,8 @@ def _compute_reference_derivatives(data, dof_data):
     # Get shape of derivative matrix (they should all have the same shape) and
     # verify that it is a square matrix.
     shape_dmats = numpy.shape(dof_data["dmats"][0])
-    ffc_assert(shape_dmats[0] == shape_dmats[1],
-               "Something is wrong with the dmats:\n%s" % str(dof_data["dmats"]))
+    if shape_dmats[0] != shape_dmats[1]:
+        error("Something is wrong with the dmats:\n%s" % str(dof_data["dmats"]))
 
     code = [f_comment("Compute reference derivatives.")]
 

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This module contains functionality for working with automated
 goal-oriented error control. In particular it offers the following

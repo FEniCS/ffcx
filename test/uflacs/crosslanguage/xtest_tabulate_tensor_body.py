@@ -1,4 +1,5 @@
 #!/usr/bin/env py.test
+# -*- coding: utf-8 -*-
 
 from six.moves import xrange as range
 import ufl
@@ -222,7 +223,7 @@ def test_tabulate_tensor_interval_facet(gtest):
 
     gtest.add(pre + code + post)
 
-def test_tabulate_tensor_interval_facet(gtest):
+def test_tabulate_tensor_interval_interior_facet(gtest):
     """Test code generation of body of the ufc function:
 
     void tabulate_tensor(

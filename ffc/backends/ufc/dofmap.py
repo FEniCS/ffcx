@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Code generation format strings for UFC (Unified Form-assembly Code) version 2016.2.0.dev0.
 # This code is released into the public domain.
 #
@@ -216,14 +217,3 @@ ufc::dofmap * %(classname)s::create() const
 %(create)s
 }
 """
-
-dofmap_jit_header = """
-extern "C" ufc::dofmap * create_%(classname)s();
-"""
-
-dofmap_jit_implementation = dofmap_header + """
-extern "C" DLL_EXPORT ufc::dofmap * create_%(classname)s()
-{
-  return new %(classname)s();
-}
-""" + dofmap_implementation

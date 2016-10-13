@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Compiler stage 5: Code formatting
 ---------------------------------
@@ -9,7 +10,7 @@ It relies on templates for UFC code available as part of the module
 ufc_utils.
 """
 
-# Copyright (C) 2009-2015 Anders Logg
+# Copyright (C) 2009-2016 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -36,6 +37,43 @@ from ffc.backends.ufc import __version__ as UFC_VERSION
 from ffc.cpp import format, make_classname
 from ffc.backends.ufc import templates, visibility_snippet, factory_decl, factory_impl
 from ffc.parameters import compilation_relevant_parameters
+
+
+def generate_factory_functions(prefix, kind, classname):
+    publicname = make_classname(prefix, kind, "main")
+    code_h = factory_decl % {
+        "basename": "ufc::%s" % kind,
+        "publicname": publicname,
+        }
+    code_c = factory_impl % {
+        "basename": "ufc::%s" % kind,
+        "publicname": publicname,
+        "privatename": classname
+        }
+    return code_h, code_c
+
+
+def generate_jit_factory_functions(code, prefix):
+    # Extract code
+    code_elements, code_dofmaps, code_coordinate_mappings, code_integrals, code_forms = code
+
+    if code_forms:
+        # Direct jit of form
+        code_h, code_c = generate_factory_functions(
+            prefix, "form", code_forms[-1]["classname"])
+    elif code_coordinate_mappings:
+        # Direct jit of coordinate mapping
+        code_h, code_c = generate_factory_functions(
+            prefix, "coordinate_mapping", code_coordinate_mappings[-1]["classname"])
+    else:
+        # Direct jit of element
+        code_h, code_c = generate_factory_functions(
+            prefix, "finite_element", code_elements[-1]["classname"])
+        fh, fc = generate_factory_functions(
+            prefix, "dofmap", code_dofmaps[-1]["classname"])
+        code_h += fh
+        code_c += fc
+    return code_h, code_c
 
 
 def format_code(code, wrapper_code, prefix, parameters, jit=False):
@@ -77,7 +115,6 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
         code_c += _format_c("dofmap", code_dofmap, parameters, jit)
 
     # Generate code for coordinate_mappings
-    code_coordinate_mappings = []  # FIXME: This disables output of generated coordinate_mapping class, until implemented properly
     for code_coordinate_mapping in code_coordinate_mappings:
         code_h += _format_h("coordinate_mapping", code_coordinate_mapping, parameters)
         code_c += _format_c("coordinate_mapping", code_coordinate_mapping, parameters)
@@ -92,29 +129,12 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
         code_h += _format_h("form", code_form, parameters, jit)
         code_c += _format_c("form", code_form, parameters, jit)
 
-    if jit and not code_forms:
-        kind = "finite_element"
-        pub = make_classname(prefix, kind, "main")
-        code_h += factory_decl % {
-            "basename": "ufc::%s" % kind,
-            "publicname": pub,
-        }
-        code_c += factory_impl % {
-            "basename": "ufc::%s" % kind,
-            "publicname": pub,
-            "privatename": code_elements[-1]["classname"]
-        }
-        kind = "dofmap"
-        pub = make_classname(prefix, kind, "main")
-        code_h += factory_decl % {
-            "basename": "ufc::%s" % kind,
-            "publicname": pub,
-        }
-        code_c += factory_impl % {
-            "basename": "ufc::%s" % kind,
-            "publicname": pub,
-            "privatename": code_dofmaps[-1]["classname"]
-        }
+    # Add factory functions named "..._main" to construct
+    # the main jit object this module
+    if 0: # jit: # should be part of templates now, right? FIXME Remove?
+        fh, fc = generate_jit_factory_functions(code, prefix)
+        code_h += fh
+        code_c += fc
 
     # Add wrappers
     if wrapper_code:

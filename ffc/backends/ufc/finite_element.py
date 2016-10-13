@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Code generation format strings for UFC (Unified Form-assembly Code) version 2016.2.0.dev0.
 # This code is released into the public domain.
 #
@@ -491,14 +492,3 @@ ufc::finite_element * %(classname)s::create() const
 %(create)s
 }
 """
-
-finite_element_jit_header = """
-extern "C" ufc::finite_element * create_%(classname)s();
-"""
-
-finite_element_jit_implementation = finite_element_header + """
-extern "C" DLL_EXPORT ufc::finite_element * create_%(classname)s()
-{
-  return new %(classname)s();
-}
-""" + finite_element_implementation

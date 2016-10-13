@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2015-2015 Martin Sandve Alnæs
+# Copyright (C) 2015-2016 Martin Sandve Alnæs
 #
 # This file is part of UFLACS.
 #

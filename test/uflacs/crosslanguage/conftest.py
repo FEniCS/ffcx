@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """This file contains code for setting up C++ unit tests with gtest
 from within Python tests using py.test.
 
@@ -10,8 +11,8 @@ import inspect
 from collections import defaultdict
 import subprocess
 
-from ffc import get_ufc_cxx_flags
-from ffc.backends.ufc import get_include_path as get_ufc_include
+from ffc.backends.ufc import get_include_path
+
 
 # TODO: For a generic framework, this needs to change somewhat:
 _supportcode = '''
@@ -76,13 +77,14 @@ class GTestContext:
     _all = []
 
     def __init__(self, config):
-        self._basedir = os.path.split(__file__)[0]
+        self._basedir = os.path.dirname(__file__)
         self._gendir = os.path.join(self._basedir, "generated")
         self._binary_filename = os.path.join(self._basedir, "run_gtest")
         self._gtest_log = os.path.join(self._basedir, "gtest.log")
         self._code = defaultdict(list)
         self._dirlist = []
         GTestContext._all.append(self)
+
 
     def info(self, msg):
         pre = "In gtest generation:"
@@ -92,12 +94,6 @@ class GTestContext:
         else:
             print(pre, msg)
 
-    def pushdir(self):
-        self._dirlist.append(os.path.abspath(os.curdir))
-        os.chdir(self._basedir)
-
-    def popdir(self):
-        os.chdir(self._dirlist.pop())
 
     def add(self, body):
         # Look through stack to find frame with test_... function name
@@ -123,6 +119,7 @@ class GTestContext:
                                       case=case,
                                       body=body)
         self._code[hfilename].append(code)
+
 
     def write(self):
         # Make sure we have the directory for generated code
@@ -151,16 +148,17 @@ class GTestContext:
         with open(self._main_filename, "w") as f:
             f.write(runner_code)
 
+
     def build_gtest(self):
         "Build gtest library"
 
         # Source and build directories
         gtest_dir = "../../../libs/gtest-1.7.0"
+        gtest_dir = os.path.abspath(os.path.join(self._basedir, gtest_dir))
         build_dir = os.path.join(gtest_dir, "lib")
 
         # Check if GTest source can be found
         if os.path.isdir(gtest_dir):
-
             # Make build directory, if required
             if not os.path.isdir(build_dir):
                 os.mkdir(build_dir)
@@ -181,18 +179,22 @@ class GTestContext:
 
     def build(self):
         # Prepare command
-        UFC_INCLUDE_DIR = get_ufc_include()
-        UFC_CXX_FLAGS = " ".join(["-g", "-O0"] + get_ufc_cxx_flags())
+        UFC_INCLUDE_DIR = get_include_path()
+        if not os.path.exists(os.path.join(UFC_INCLUDE_DIR, "ufc.h")):
+            import IPython; IPython.embed()
+            raise RuntimeError("Cannot find ufc.h in provided include path: %s" % (UFC_INCLUDE_DIR,))
+        UFC_CXX_FLAGS = " ".join(["-g", "-O0", "-std=c++11", "-Wall"])
         cmd = ['make', 'UFC_INCLUDE_DIR="%s"' % UFC_INCLUDE_DIR, 'CXXFLAGS="%s"' % UFC_CXX_FLAGS]
         self.info("Running command: " + " ".join(cmd))
-        cmd = " ".join(cmd) # Why needed?
 
         # Execute
         try:
-            out = subprocess.check_output(cmd, shell=True)
+            out = subprocess.check_output(cmd,
+                                          cwd=self._basedir, shell=True,
+                                          universal_newlines=True)
             self.info(out)
             self.info("Building ok.")
-        except subprocess.CalledProcessError, e:
+        except subprocess.CalledProcessError as e:
             self.info("Building '{0}' FAILED (code {1}, headers: {2})".format(self._binary_filename,
                                                                               e.returncode, self._test_header_names))
             self.info("Build output:")
@@ -202,7 +204,9 @@ class GTestContext:
 
     def run(self):
         try:
-            out = subprocess.check_output(self._binary_filename, shell=True)
+            out = subprocess.check_output(self._binary_filename,
+                                          cwd=self._basedir, shell=True,
+                                          universal_newlines=True)
             self.info("Gtest running ok!")
             with open(self._gtest_log, "w") as f:
                 f.write(out)
@@ -214,17 +218,19 @@ class GTestContext:
             self.info(e.output)
             pytest.fail()
 
+
     def finalize(self):
-        # Write generated test code to files, build and run, all from
-        # within a stable basedir
-        self.pushdir()
-        try:
-            self.build_gtest()
-            self.write()
-            self.build()
-            self.run()
-        finally:
-            self.popdir()
+        # Build gtest library itself
+        self.build_gtest()
+
+        # Write collected test code to files
+        self.write()
+
+        # Build test code
+        self.build()
+
+        # Run compiled tests
+        self.run()
 
 
 @pytest.fixture("session")

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2011-2015 Martin Sandve Alnæs
+# Copyright (C) 2011-2016 Martin Sandve Alnæs
 #
 # This file is part of UFLACS.
 #
@@ -385,9 +385,12 @@ class IntegralGenerator(object):
                 # Modified terminal
                 t, = row
                 mt = MT[t] # XXX FIXME: Get this as input
+                tc = mt[0]
+
 
                 if isinstance(mt.terminal, ConstantValue):
                     # Format literal value for the chosen language
+                    modified_literal_to_ast_node = []  # silence flake8
                     vaccess = modified_literal_to_ast_node[tc](mt)  # XXX FIXME: Implement this mapping
                     vdef = None
                 else:
@@ -408,6 +411,7 @@ class IntegralGenerator(object):
                 opsaccess = [self.ast_variables[k] for k in ops]
 
                 # Generate expression for this operator application
+                typecode2astnode = []  # silence flake8
                 vexpr = typecode2astnode[tc](opsaccess) # XXX FIXME: Implement this mapping
 
                 store_this_in_variable = True # TODO: Don't store all subexpressions

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Code generation format strings for UFC (Unified Form-assembly Code) version 2016.2.0.dev0.
 # This code is released into the public domain.
 #
@@ -536,14 +537,3 @@ ufc::overlap_integral * %(classname)s::create_default_overlap_integral() const
 %(create_default_overlap_integral)s
 }
 """
-
-form_jit_header = """
-extern "C" ufc::form * create_%(classname)s();
-"""
-
-form_jit_implementation = form_header + """
-extern "C" DLL_EXPORT ufc::form * create_%(classname)s()
-{
-  return new %(classname)s();
-}
-""" + form_implementation

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Tests of algorithm for factorization of integrand w.r.t. Argument terms.
 """

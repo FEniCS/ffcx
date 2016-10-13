@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "This file implements a class to represent a symbol."
 
 # Copyright (C) 2009-2011 Kristian B. Oelgaard

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "This module implements efficient integration of monomial forms."
 
 # Copyright (C) 2004-2011 Anders Logg

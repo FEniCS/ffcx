@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 "Quadrature representation class for UFL"
 
-# Copyright (C) 2009-2015 Kristian B. Oelgaard
+# Copyright (C) 2009-2016 Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -18,7 +19,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Anders Logg 2009, 2014
-# Modified by Martin Alnaes 2013-2015
+# Modified by Martin Alnaes 2013-2016
 
 # Python modules
 import six
@@ -46,6 +47,7 @@ def compute_integral_ir(itg_data,
                         form_data,
                         form_id,
                         element_numbers,
+                        classnames,
                         parameters):
     "Compute intermediate represention of integral."
 
@@ -114,7 +116,8 @@ def compute_integral_ir(itg_data,
     # Extract element data for psi_tables, needed for runtime
     # quadrature.  This is used by integral type custom_integral.
     ir["element_data"] = _extract_element_data(transformer.element_map,
-                                               element_numbers)
+                                               element_numbers,
+                                               classnames)
 
     return ir
 
@@ -229,7 +232,7 @@ def _transform_integrals(transformer, integrals, integral_type):
     return transformed_integrals
 
 
-def _extract_element_data(element_map, element_numbers):
+def _extract_element_data(element_map, element_numbers, classnames):
     "Extract element data for psi_tables"
 
     # Iterate over map
@@ -244,15 +247,15 @@ def _extract_element_data(element_map, element_numbers):
             value_size = product(ufl_element.value_shape())
 
             # Get element number
-            element_number = element_numbers.get(ufl_element)
-            if element_number is None:
-                # FIXME: Should not be necessary, we should always
-                # know the element number
-                pass
+            element_number = element_numbers[ufl_element]
 
+            # Get element classname
+            element_classname = classnames["finite_element"][ufl_element]
+    
             # Store data
-            element_data[counter] = {"value_size": value_size,
+            element_data[counter] = {"physical_value_size": value_size,
                                      "num_element_dofs": fiat_element.space_dimension(),
-                                     "element_number": element_number}
+                                     "element_number": element_number,
+                                     "classname": element_classname}
 
     return element_data

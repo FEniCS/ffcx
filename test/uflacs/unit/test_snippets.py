@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 
 from ffc.uflacs.language.format_value import format_float, set_float_precision, reset_float_precision
 from ffc.uflacs.language.format_lines import iter_indented_lines, Indented, format_indented_lines

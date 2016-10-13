@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2011-2015 Martin Sandve Alnæs
+# Copyright (C) 2011-2016 Martin Sandve Alnæs
 #
 # This file is part of UFLACS.
 #
@@ -54,10 +54,14 @@ def build_uflacs_ir(ir, integrands, coefficient_numbering, table_provider):
                               for i in expr_ir["modified_terminal_indices"]]
         terminal_data = modified_terminals + expr_ir["modified_arguments"]
 
-        # FIXME: For custom integrals, skip table building but set up the necessary table names and classname mappings instead
+        # FIXME: For custom integrals, skip table building but set up
+        # the necessary table names and classname mappings instead
 
-        # FIXME: Want table information earlier, even before scalar rebuilding! Must split compute_expr_ir to achieve this.
-        unique_tables, mt_table_ranges, table_types = table_provider.build_optimized_tables(num_points, ir["entitytype"], terminal_data)
+        # FIXME: Want table information earlier, even before scalar
+        # rebuilding! Must split compute_expr_ir to achieve this.
+        # FIXME: Store table type as fourth entry in table ranges
+        unique_tables, mt_table_ranges, table_types = \
+          table_provider.build_optimized_tables(num_points, ir["entitytype"], terminal_data)
 
 
         # Figure out if we need to access CellCoordinate to

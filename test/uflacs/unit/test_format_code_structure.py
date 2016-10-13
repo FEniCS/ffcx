@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Tests of generic code formatting utilities,
 which focus on the overall structure of the code,
@@ -121,8 +122,8 @@ def test_format_variable_decl():
 
 
 def test_literal_cexpr_value_conversion():
-    assert bool(LiteralBool(True)) == True
-    assert bool(LiteralBool(False)) == False
+    assert bool(LiteralBool(True)) is True
+    assert bool(LiteralBool(False)) is False
     assert int(LiteralInt(2)) == 2
     assert float(LiteralFloat(2.0)) == 2.0
     # assert complex(LiteralFloat(2.0+4.0j)) == 2.0+4.0j

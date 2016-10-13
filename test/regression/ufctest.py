@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright (C) 2010-2013 Anders Logg, Kristian B. Oelgaard and Marie E. Rognes
 #
 # This file is part of FFC.
@@ -15,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Martin Alnaes, 2013-2015
+# Modified by Martin Alnaes, 2013-2016
 
 _test_code = """\
 #include "../../ufctest.h"

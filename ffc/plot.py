@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 "This module provides functionality for plotting finite elements."
 
 # Copyright (C) 2010 Anders Logg
@@ -583,7 +584,7 @@ def create_cell_model(element):
 
     # Get color
     family = element.family()
-    if not family in element_colors:
+    if family not in element_colors:
         warning("Don't know a good color for elements of type '%s', using default color." % family)
         family = "Lagrange"
     color = element_colors[family]
@@ -616,7 +617,7 @@ def create_dof_models(element):
 
     # Check if element is supported
     family = element.family()
-    if not family in unsupported:
+    if family not in unsupported:
         # Create FIAT element and get dofs
         fiat_element = create_element(element)
         dofs = [(dof.get_type_tag(), dof.get_point_dict()) for dof in fiat_element.dual_basis()]

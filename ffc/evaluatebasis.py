@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Code generation for evaluation of finite element basis values. This
 module generates code which is more or less a C++ representation of
 the code found in FIAT."""
@@ -35,18 +36,19 @@ the code found in FIAT."""
 # Python modules
 import math
 import numpy
+from six import string_types
 
 # FFC modules
 from ffc.log import error
 from ffc.cpp import remove_unused, indent, format
-from ffc.quadrature.symbolics import create_float, create_float, create_symbol,\
+from ffc.quadrature.symbolics import create_float, create_symbol,\
     create_product, create_sum, create_fraction, CONST
 
 
 def _evaluate_basis_all(data):
     """Like evaluate_basis, but return the values of all basis functions (dofs)."""
 
-    if isinstance(data, str):
+    if isinstance(data, string_types):
         return format["exception"]("evaluate_basis_all: %s" % data)
 
     # Prefetch formats.
@@ -133,7 +135,7 @@ def _evaluate_basis(data):
     The function should work for all elements supported by FIAT, but it remains
     untested for tensor valued elements."""
 
-    if isinstance(data, str):
+    if isinstance(data, string_types):
         return format["exception"]("evaluate_basis: %s" % data)
 
     # Prefetch formats.
@@ -781,6 +783,6 @@ def _compute_basisvalues(data, dof_data):
                         code += [myline]
 
     else:
-        error("Cannot compute basis values for shape: %d" % elemet_cell_domain)
+        error("Cannot compute basis values for shape: %d" % element_cellname)
 
     return code + [""]

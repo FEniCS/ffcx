@@ -28,6 +28,7 @@ def compute_integral_ir(integral_data,
                         form_data,
                         form_id,
                         element_numbers,
+                        classnames,
                         parameters):
     "Compute intermediate represention of integral."
 

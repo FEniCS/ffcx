@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2009-2015 Anders Logg and Martin Sandve Alnæs
+# Copyright (C) 2009-2016 Anders Logg and Martin Sandve Alnæs
 #
 # This file is part of UFLACS.
 #
@@ -22,6 +22,7 @@
 from ufl import product
 from ffc.uflacs.backends.ufc.generator import ufc_generator
 from ffc.uflacs.backends.ufc.utils import generate_return_new_switch
+
 
 def affine_weights(dim): # FIXME: This is used where we still assume an affine mesh. Get rid of all places that use it.
     "Compute coefficents for mapping from reference to physical element"
@@ -196,7 +197,8 @@ class ufc_finite_element(ufc_generator):
         # Basis symbol
         phi = L.Symbol("phi")
 
-        # TODO: This code assumes an affine coordinate field. Ok for now in here, this function must be removed anyway.
+        # TODO: This code assumes an affine coordinate field.
+        #       Ok for now in here, this function must be removed anyway.
         # Create code for evaluating affine coordinate basis functions
         num_scalar_xdofs = tdim + 1
         cg1_basis = affine_weights(tdim)
@@ -213,7 +215,9 @@ class ufc_finite_element(ufc_generator):
             L.ForRange(ip, 0, len(points), body=
                 L.ForRange(i, 0, gdim, body=
                     L.ForRange(k, 0, num_scalar_xdofs, body=
-                        L.AssignAdd(dof_coordinates[ip][i], coordinate_dofs[gdim*k + i] * phi[ip*num_scalar_xdofs + k])))),
+                        L.AssignAdd(dof_coordinates[ip][i],
+                                    coordinate_dofs[gdim*k + i]
+                                    * phi[ip*num_scalar_xdofs + k])))),
             ]
         return L.StatementList(code)
 
@@ -224,4 +228,4 @@ class ufc_finite_element(ufc_generator):
     def create_sub_element(self, L, ir):
         i = L.Symbol("i")
         classnames = ir["create_sub_element"]
-        return generate_return_new_switch(L, i, classnames)
+        return generate_return_new_switch(L, i, classnames, factory=ir["jit"])

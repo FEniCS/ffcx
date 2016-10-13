@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Tests of dolfin Expression formatting.
 """
@@ -252,7 +253,7 @@ def check_dolfin_expression_compilation(uexpr, expected_lines, expected_values, 
     dexpr = dolfin.Expression(cppcode=code)
 
     # Connect compiled dolfin::Expression object with dolfin::Function instances
-    for name, value in iteritems(members):
+    for name, value in members.items():
         setattr(dexpr, name, value)
 
     # Evaluate and assert compiled value!

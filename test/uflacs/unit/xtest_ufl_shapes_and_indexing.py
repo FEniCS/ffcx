@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Tests of utilities for dealing with ufl indexing and components vs
 flattened index spaces.
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2011-2015 Martin Sandve Alnæs
+# Copyright (C) 2011-2016 Martin Sandve Alnæs
 #
 # This file is part of UFLACS.
 #
@@ -22,6 +22,8 @@ When formatting an AST into a string, it's better to collect
 lists of snippets and then join them than adding the pieces
 continually, which gives O(n^2) behaviour w.r.t. AST size n.
 """
+
+from six import string_types
 
 class Indented(object):
     """Class to mark a collection of snippets for indentation.
@@ -50,7 +52,7 @@ def iter_indented_lines(snippets, level=0):
     """
     tabsize = 4
     indentation = ' ' * (tabsize * level)
-    if isinstance(snippets, str):
+    if isinstance(snippets, string_types):
         for line in snippets.split("\n"):
             yield indentation + line
     elif isinstance(snippets, Indented):

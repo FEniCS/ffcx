@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
+from six import string_types
 import re
 import numpy
 #from ffc.log import info
@@ -101,7 +102,7 @@ def format_value(value):
         return format_float(float(value))
     elif isinstance(value, _ints):
         return str(int(value))
-    elif isinstance(value, str):
+    elif isinstance(value, string_types):
         return '"' + value + '"'
     elif hasattr(value, "ce_format"):
         return value.ce_format()

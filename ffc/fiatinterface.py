@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright (C) 2009-2013 Kristian B. Oelgaard and Anders Logg
 #
 # This file is part of FFC.
@@ -28,11 +29,10 @@ import six
 import ufl
 from ufl.utils.sorting import sorted_by_key
 import FIAT
-
 from FIAT.trace import DiscontinuousLagrangeTrace
 
 # FFC modules
-from ffc.log import debug, error, ffc_assert
+from ffc.log import debug, error
 from ffc.mixedelement import MixedElement
 from ffc.restrictedelement import RestrictedElement
 from ffc.enrichedelement import EnrichedElement, SpaceOfReals
@@ -123,8 +123,8 @@ def _create_fiat_element(ufl_element):
     degree = ufl_element.degree()
 
     # Check that FFC supports this element
-    ffc_assert(family in supported_families,
-               "This element family (%s) is not supported by FFC." % family)
+    if family not in supported_families:
+        error("This element family (%s) is not supported by FFC." % family)
 
     # Handle the space of the constant
     if family == "Real":
@@ -148,7 +148,7 @@ def _create_fiat_element(ufl_element):
             return RestrictedElement(V, _indices(V, "interior", tdim), None)
 
         # Check if finite element family is supported by FIAT
-        if not family in FIAT.supported_elements:
+        if family not in FIAT.supported_elements:
             error("Sorry, finite element of type \"%s\" are not supported by FIAT.", family)
 
         # Create FIAT finite element
@@ -159,9 +159,9 @@ def _create_fiat_element(ufl_element):
             element = ElementClass(fiat_cell, degree)
 
     # Consistency check between UFL and FIAT elements.
-    ffc_assert(element.value_shape() == ufl_element.reference_value_shape(),
-               "Something went wrong in the construction of FIAT element from UFL element." +
-               "Shapes are %s and %s." % (element.value_shape(), ufl_element.reference_value_shape()))
+    if element.value_shape() != ufl_element.reference_value_shape():
+        error("Something went wrong in the construction of FIAT element from UFL element." +
+              "Shapes are %s and %s." % (element.value_shape(), ufl_element.reference_value_shape()))
 
     return element
 

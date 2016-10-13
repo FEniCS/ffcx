@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Code generation for evaluate_dof.
 
 This module generates the functions evaluate_dof and evaluate_dofs.
@@ -387,8 +388,6 @@ def _change_variables(mapping, gdim, tdim, offset):
 
     else:
         raise Exception("The mapping (%s) is not allowed" % mapping)
-
-    return code
 
 
 def affine_weights(dim):

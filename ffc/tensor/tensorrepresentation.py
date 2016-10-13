@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """This module implements the representation of a multilinear form as
 a sum of tensor contractions.
 
@@ -43,6 +44,7 @@ def compute_integral_ir(itg_data,
                         form_data,
                         form_id,
                         element_numbers,
+                        classnames,
                         parameters):
     "Compute intermediate represention of integral."
 

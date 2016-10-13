@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2011-2015 Martin Sandve Alnæs
+# Copyright (C) 2011-2016 Martin Sandve Alnæs
 #
 # This file is part of UFLACS.
 #
@@ -25,7 +25,7 @@ from ufl.permutation import compute_indices
 from ufl.corealg.multifunction import MultiFunction
 from ufl.classes import FormArgument
 
-from ffc.log import error, ffc_assert
+from ffc.log import error
 
 from ffc.uflacs.analysis.indexing import map_indexed_arg_components, map_component_tensor_arg_components
 from ffc.uflacs.analysis.modified_terminals import analyse_modified_terminal
