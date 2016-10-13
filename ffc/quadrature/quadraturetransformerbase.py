@@ -96,7 +96,6 @@ class QuadratureTransformerBase(Transformer):
         self.coordinate = None
         self.conditionals = {}
         self.additional_includes_set = set()
-        self.__psi_tables = psi_tables  # TODO: Unused? Remove?
 
         # Stacks.
         self._derivatives = []

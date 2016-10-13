@@ -23,15 +23,10 @@ from ufl.utils.sorting import sorted_by_count
 
 from ffc.log import info
 from ffc.representationutils import initialize_integral_ir
-#from ffc.quadrature.parameters import parse_optimise_parameters
-from ffc.quadrature.quadraturerepresentation import sort_integrals
-
-# Element table tools
 from ffc.fiatinterface import create_element
-from ffc.quadrature.tabulate_basis import tabulate_basis
+from ffc.uflacs.tools import compute_quadrature_rules, accumulate_integrals
+from ffc.uflacs.tabulate_basis import tabulate_basis
 from ffc.uflacs.elementtables.terminaltables import TableProvider
-
-#from ffc.uflacs.params import default_parameters
 from ffc.uflacs.representation.build_uflacs_ir import build_uflacs_ir
 
 
@@ -51,51 +46,19 @@ def compute_integral_ir(itg_data,
     # Store element classnames
     ir["classnames"] = classnames
 
-    # Sort integrals into a dict with quadrature degree and rule as key
-    sorted_integrals = sort_integrals(itg_data.integrals,
-                                      itg_data.metadata["quadrature_degree"],
-                                      itg_data.metadata["quadrature_rule"])
+    # Compute actual points and weights
+    quadrature_rules, quadrature_rule_sizes = compute_quadrature_rules(itg_data)
 
+    # Store quadrature rules in format { num_points: (points, weights) }
+    ir["quadrature_rules"] = quadrature_rules
+
+    # Group and accumulate integrals on the format { num_points: integral data }
+    sorted_integrals = accumulate_integrals(itg_data, quadrature_rule_sizes)
 
     # TODO: Might want to create the uflacs ir first and then create the tables we need afterwards!
     # Tabulate quadrature points and basis function values in these points
-    integrals_dict, psi_tables, quadrature_rules = \
-        tabulate_basis(sorted_integrals, form_data, itg_data)
-
-    # Build coefficient numbering for UFC interface here, to avoid
-    # renumbering in UFL and application of replace mapping
-    if True:
-        # Using the mapped coefficients, numbered by UFL
-        coefficient_numbering = {}
-        sorted_coefficients = sorted_by_count(form_data.function_replace_map.keys())
-        for i, f in enumerate(sorted_coefficients):
-            g = form_data.function_replace_map[f]
-            coefficient_numbering[g] = i
-            assert i == g.count()
-
-        # Replace coefficients so they all have proper element and domain for what's to come
-        # TODO: We can avoid the replace call when proper Expression support is in place
-        #       and element/domain assignment is removed from compute_form_data.
-        integrands = {
-            num_points: replace(integrals_dict[num_points].integrand(), form_data.function_replace_map)
-            for num_points in sorted(integrals_dict.keys())
-            }
-    else:
-        pass
-        #coefficient_numbering = {}
-        #coefficient_element = {}
-        #coefficient_domain = {}
-        #sorted_coefficients = sorted_by_count(form_data.function_replace_map.keys())
-        #for i, f in enumerate(sorted_coefficients):
-        #    g = form_data.function_replace_map[f]
-        #    coefficient_numbering[f] = i
-        #    coefficient_element[f] = g.ufl_element()
-        #    coefficient_domain[f] = g.ufl_domain()
-        #integrands = {
-        #    num_points: integrals_dict[num_points].integrand()
-        #    for num_points in sorted(integrals_dict.keys())
-        #    }
-        # then pass coefficient_element and coefficient_domain to the uflacs ir as well
+    psi_tables = tabulate_basis(
+        sorted_integrals, form_data, itg_data, quadrature_rules)
 
 
     # Hiding ffc data behind interface that we can
@@ -103,23 +66,6 @@ def compute_integral_ir(itg_data,
     # precomputing psi_tables in ffc, somewhat disconnecting the
     # uflacs representation building from the psi_tables format
     table_provider = TableProvider(psi_tables, parameters)
-
-
-    # Some more form_data info that we may need to
-    # insert in the uflacs_ir but currently don't use
-    #form_data.name
-    #form_data.coefficient_names
-    #form_data.argument_names
-    #form_data.integration_domains[0].ufl_cell()
-    #form_data.function_replace_map
-
-
-    # Build the more uflacs-specific intermediate representation
-    ir["uflacs"] = build_uflacs_ir(ir, integrands, coefficient_numbering, table_provider)
-
-
-    # Save tables for quadrature weights and points
-    ir["quadrature_rules"] = quadrature_rules
 
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.
@@ -136,5 +82,47 @@ def compute_integral_ir(itg_data,
     #                        for ufl_element in unique_elements }
     #ir["element_dimensions"] = { ufl_element: fiat_element.space_dimension()
     #                             for ufl_element, fiat_element in ir["fiat_elements"].items() }
+
+
+    # Build coefficient numbering for UFC interface here, to avoid
+    # renumbering in UFL and application of replace mapping
+    if True:
+        # Using the mapped coefficients, numbered by UFL
+        coefficient_numbering = {}
+        sorted_coefficients = sorted_by_count(form_data.function_replace_map.keys())
+        for i, f in enumerate(sorted_coefficients):
+            g = form_data.function_replace_map[f]
+            coefficient_numbering[g] = i
+            assert i == g.count()
+
+        # Replace coefficients so they all have proper element and domain for what's to come
+        # TODO: We can avoid the replace call when proper Expression support is in place
+        #       and element/domain assignment is removed from compute_form_data.
+        integrands = {
+            num_points: replace(sorted_integrals[num_points].integrand(), form_data.function_replace_map)
+            for num_points in sorted(sorted_integrals)
+            }
+    else:
+        pass
+        #coefficient_numbering = {}
+        #coefficient_element = {}
+        #coefficient_domain = {}
+        #sorted_coefficients = sorted_by_count(form_data.function_replace_map.keys())
+        #for i, f in enumerate(sorted_coefficients):
+        #    g = form_data.function_replace_map[f]
+        #    coefficient_numbering[f] = i
+        #    coefficient_element[f] = g.ufl_element()
+        #    coefficient_domain[f] = g.ufl_domain()
+        #integrands = {
+        #    num_points: sorted_integrals[num_points].integrand()
+        #    for num_points in sorted(sorted_integrals)
+        #    }
+        # then pass coefficient_element and coefficient_domain to the uflacs ir as well
+
+
+    # Build the more uflacs-specific intermediate representation
+    ir["uflacs"] = build_uflacs_ir(itg_data.integral_type, ir["entitytype"],
+                                   integrands, coefficient_numbering,
+                                   table_provider)
 
     return ir

@@ -140,8 +140,7 @@ def get_ffc_table_values(tables, entitytype, num_points, element, flat_component
     sh = element.value_shape()
     for entity in range(num_entities):
         # Access subtable
-        entity_key = None if entitytype == "cell" else entity
-        tbl = element_table[entity_key][derivative_counts]
+        tbl = element_table[entity][derivative_counts]
 
         # Extract array for right component and order axes as (points, dofs)
         if sh == ():

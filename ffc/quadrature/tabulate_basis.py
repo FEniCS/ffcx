@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-"Quadrature representation class for UFL"
 
 # Copyright (C) 2009-2014 Kristian B. Oelgaard
 #
@@ -20,6 +19,8 @@
 #
 # Modified by Anders Logg, 2009, 2015
 # Modified by Martin Alnaes, 2013-2014
+
+"Quadrature representation class."
 
 import numpy
 import itertools
@@ -90,8 +91,15 @@ def _map_entity_points(cellname, tdim, points, entity_dim, entity):
         return (reference_cell_vertices(cellname)[entity],)
 
 
+def _tabulate_entities(integral_type, cellname, tdim):
+    "Tabulate psi table for different integral types."
+    entity_dim = domain_to_entity_dim(integral_type, tdim)
+    num_entities = num_cell_entities[cellname][entity_dim]
+    return set(range(num_entities))
+
+
 def _tabulate_empty_psi_table(tdim, deriv_order, element):
-    "Tabulate psi table when there are no points"
+    "Tabulate psi table when there are no points (custom integrals)."
 
     # All combinations of partial derivatives up to given order
     gdim = tdim  # hack, consider passing gdim variable here
@@ -108,48 +116,30 @@ def _tabulate_empty_psi_table(tdim, deriv_order, element):
             value_size = product(value_shape)
             table[d] = [[[] for c in range(value_size)]]
 
-    return {None: table}
+    # Let entity be 0 even for non-cells
+    entity = 0
+
+    return {entity: table}
 
 
 def _tabulate_psi_table(integral_type, cellname, tdim, element, deriv_order,
                         points):
     "Tabulate psi table for different integral types."
-    # MSA: I attempted to generalize this function, could this way of
-    # handling domain types generically extend to other parts of the
-    # code?
-
     # Handle case when list of points is empty
     if points is None:
         return _tabulate_empty_psi_table(tdim, deriv_order, element)
+
     # Otherwise, call FIAT to tabulate
     entity_dim = domain_to_entity_dim(integral_type, tdim)
     num_entities = num_cell_entities[cellname][entity_dim]
-    psi_table = {}
-    for entity in range(num_entities):
-        entity_points = _map_entity_points(cellname, tdim, points, entity_dim,
-                                           entity)
-        # TODO: Use 0 as key for cell and we may be able to generalize
-        # other places:
-        key = None if integral_type == "cell" else entity
-        psi_table[key] = element.tabulate(deriv_order, entity_points)
+
+    mapped_points = { entity: _map_entity_points(cellname, tdim, points, entity_dim, entity)
+                      for entity in range(num_entities) }
+
+    psi_table = { entity: element.tabulate(deriv_order, entity_points)
+                  for entity, entity_points in mapped_points.items() }
 
     return psi_table
-
-
-def _tabulate_entities(integral_type, cellname, tdim):
-    "Tabulate psi table for different integral types."
-    # MSA: I attempted to generalize this function, could this way of
-    # handling domain types generically extend to other parts of the
-    # code?
-    entity_dim = domain_to_entity_dim(integral_type, tdim)
-    num_entities = num_cell_entities[cellname][entity_dim]
-    entities = set()
-    for entity in range(num_entities):
-        # TODO: Use 0 as key for cell and we may be able to generalize
-        # other places:
-        key = None if integral_type == "cell" else entity
-        entities.add(key)
-    return entities
 
 
 def insert_nested_dict(root, keys, value):
@@ -189,7 +179,8 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
     rules = sorted(sorted_integrals.keys())
 
     # Loop the quadrature points and tabulate the basis values.
-    for degree, scheme in rules:
+    for rule in rules:
+        scheme, degree = rule
 
         # --------- Creating quadrature rule
         # Make quadrature rule and get points and weights.
@@ -208,7 +199,7 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
         # --------- Store integral
         # Add the integral with the number of points as a key to the
         # return integrals.
-        integral = sorted_integrals[(degree, scheme)]
+        integral = sorted_integrals[rule]
         if len_weights in integrals:
             error("This number of points is already present in the integrals: " + repr(integrals))
         integrals[len_weights] = integral

@@ -123,29 +123,35 @@ def needs_oriented_jacobian(form_data):
     return False
 
 
+# Mapping from recognized domain types to entity types
+_entity_types = {
+    "cell": "cell",
+    "exterior_facet": "facet",
+    "interior_facet": "facet",
+    "vertex": "vertex",
+    # "point":          "vertex", # TODO: Not sure, clarify here what 'entity_type' refers to?
+    "custom": "cell",
+    "cutcell": "cell",
+    "interface": "cell",  # "facet"  # TODO: ?
+    "overlap": "cell",
+    }
+
+
+def entity_type_from_integral_type(integral_type):
+    return _entity_types[integral_type]
+
+
 def initialize_integral_ir(representation, itg_data, form_data, form_id):
     """Initialize a representation dict with common information that is
     expected independently of which representation is chosen."""
 
-    # Mapping from recognized domain types to entity types
-    entity_type = {"cell": "cell",
-                   "exterior_facet": "facet",
-                   "interior_facet": "facet",
-                   "vertex": "vertex",
-                   # "point":          "vertex", # TODO: Not sure, clarify here what 'entity_type' refers to?
-                   "custom": "cell",
-                   "cutcell": "cell",
-                   "interface": "cell",
-                   "overlap": "cell",
-                   }[itg_data.integral_type]
-
-    # Extract data
+    entitytype = entity_type_from_integral_type(itg_data.integral_type)
     cell = itg_data.domain.ufl_cell()
-    cellname = cell.cellname()
+    #cellname = cell.cellname()
     tdim = cell.topological_dimension()
     assert all(tdim == itg.ufl_domain().topological_dimension() for itg in itg_data.integrals)
 
-    # Set number of cells if not set TODO: Get automatically from number of domains
+    # Set number of cells if not set  TODO: Get automatically from number of domains
     num_cells = itg_data.metadata.get("num_cells")
 
     return {"representation": representation,
@@ -155,7 +161,7 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
             "rank": form_data.rank,
             "geometric_dimension": form_data.geometric_dimension,
             "topological_dimension": tdim,
-            "entitytype": entity_type,
+            "entitytype": entitytype,
             "num_facets": cell.num_facets(),
             "num_vertices": cell.num_vertices(),
             "needs_oriented": needs_oriented_jacobian(form_data),

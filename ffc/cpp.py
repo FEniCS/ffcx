@@ -581,10 +581,7 @@ def _generate_psi_name(counter, entity_type, entity, component, derivatives, avg
     name = "FE%d" % counter
 
     if entity_type == "facet":
-        if entity is None:
-            name += "_f0"
-        else:
-            name += "_f%d" % entity
+        name += "_f%d" % entity
     elif entity_type == "vertex":
         name += "_v%d" % entity
 

@@ -120,8 +120,7 @@ def compute_integral_ir(itg_data,
     return ir
 
 
-def sort_integrals(integrals, default_quadrature_degree,
-                   default_quadrature_rule):
+def sort_integrals(integrals, default_scheme, default_degree):
     """Sort and accumulate integrals according to the number of quadrature
     points needed per axis.
 
@@ -148,21 +147,20 @@ def sort_integrals(integrals, default_quadrature_degree,
         # Override default degree and rule if specified in integral
         # metadata
         integral_metadata = integral.metadata() or {}
-        degree = integral_metadata.get("quadrature_degree",
-                                       default_quadrature_degree)
-        rule = integral_metadata.get("quadrature_rule", default_quadrature_rule)
+        degree = integral_metadata.get("quadrature_degree", default_degree)
+        scheme = integral_metadata.get("quadrature_rule", default_scheme)
         assert isinstance(degree, int)
-        # Add integrand to dictionary according to degree and rule.
-        key = (degree, rule)
-        sorted_integrands[key].append(integral.integrand())
+        # Add integrand to dictionary according to degree and scheme.
+        rule = (scheme, degree)
+        sorted_integrands[rule].append(integral.integrand())
 
     # Create integrals from accumulated integrands.
     sorted_integrals = {}
-    for key, integrands in list(sorted_integrands.items()):
+    for rule, integrands in list(sorted_integrands.items()):
         # Summing integrands in a canonical ordering defined by UFL
         integrand = sorted_expr_sum(integrands)
-        sorted_integrals[key] = Integral(integrand, integral_type, domain,
-                                         subdomain_id, {}, None)
+        sorted_integrals[rule] = Integral(integrand, integral_type, domain,
+                                          subdomain_id, {}, None)
     return sorted_integrals
 
 

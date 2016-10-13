@@ -33,11 +33,11 @@ class IntegralGenerator(object):
         self.ir = ir
 
         # Consistency check on quadrature rules
-        nps1 = sorted(ir["uflacs"]["expr_irs"].keys())
-        nps2 = sorted(ir["quadrature_rules"].keys())
-        if nps1 != nps2:
-            warning("Got different num_points for expression irs and quadrature rules:\n{0}\n{1}".format(
-                nps1, nps2))
+        rules1 = sorted(ir["uflacs"]["expr_irs"].keys())
+        rules2 = sorted(ir["quadrature_rules"].keys())
+        if rules1 != rules2:
+            warning("Found different rules in expr_irs and "
+                    "quadrature_rules:\n{0}\n{1}".format(rules1, rules2))
 
         # Compute shape of element tensor
         if self.ir["integral_type"] == "interior_facet":
@@ -136,33 +136,33 @@ class IntegralGenerator(object):
 
         parts = []
 
-        # No quadrature tables for custom (given argument) or point (evaluation in single vertex)
-        if self.ir["integral_type"] in ("custom", "cutcell", "interface", "overlap", "vertex"):
+        # No quadrature tables for custom (given argument)
+        # or point (evaluation in single vertex)
+        skip = ("custom", "cutcell", "interface", "overlap", "vertex")
+        if self.ir["integral_type"] in skip:
             return parts
 
+        # Loop over quadrature rules
         qrs = self.ir["quadrature_rules"]
-        expr_irs = self.ir["uflacs"]["expr_irs"]
         for num_points in sorted(qrs):
-            assert num_points is not None
+            points, weights = qrs[num_points]
+            assert num_points == len(weights)
 
-            expr_ir = expr_irs[num_points]
-
-            # Quadrature weights array
-            weights = qrs[num_points][0]
+            # Generate quadrature weights array
             wsym = self.backend.symbols.weights_array(num_points)
             parts += [L.ArrayDecl("static const double", wsym, num_points, weights,
                                   alignas=self.alignas)]
 
-            # Quadrature points array
-            points = qrs[num_points][1]
             # Size of quadrature points depends on context, assume this is correct:
             pdim = len(points[0])
-            if expr_ir["need_points"] and pdim > 0:
+
+            # Generate quadrature points array
+            if pdim and self.ir["uflacs"]["expr_irs"][num_points]["need_points"]:
                 # Flatten array: (TODO: avoid flattening here, it makes padding harder)
-                points = points.reshape(product(points.shape))
+                flattened_points = points.reshape(product(points.shape))
                 psym = self.backend.symbols.points_array(num_points)
-                parts += [L.ArrayDecl("static const double", psym, num_points * pdim, points,
-                                      alignas=self.alignas)]
+                parts += [L.ArrayDecl("static const double", psym, num_points * tdim,
+                                      flattened_points, alignas=self.alignas)]
 
         # Add leading comment if there are any tables
         if parts:
@@ -531,8 +531,7 @@ class IntegralGenerator(object):
         """
         parts = []
 
-        if not self.ir["quadrature_rules"]:  # Rather check ir["integral_type"]?
-            # TODO: Implement for expression support
+        if self.ir["integral_type"] == "expression":
             error("Expression generation not implemented yet.")
             # TODO: If no integration, assuming we generate an expression, and assign results here
             # Corresponding code from compiler.py:
