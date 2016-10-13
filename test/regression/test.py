@@ -83,16 +83,15 @@ known_uflacs_failures = set([
 ])
 
 known_tsfc_failures = set([
+    # Expected not to work
     "CustomIntegral.ufl",
     "CustomMixedIntegral.ufl",
     "CustomVectorIntegral.ufl",
     "PointMeasure.ufl",
     "MetaData.ufl",
+    # Failures
     "AdaptivePoisson.ufl",    # FIXME: is it fixable?
-    "Biharmonic.ufl",         # FIXME: tolerance issue in program output
-    "BiharmonicRegge.ufl",    # FIXME: tolerance issue in generated code
-    "BiharmonicHHJ.ufl",      # FIXME: missing in tsfc.fiat_interface
-    "Mini.ufl",               # FIXME: let's postpone refactoring enriched element
+    "Mini.ufl",               # FIXME: will fix later
     "MathFunctions.ufl",      # FIXME: should be easy
     "QuadratureElement.ufl",  # FIXME: is it fixable?
     "RestrictedElement.ufl",  # FIXME: is it fixable?
