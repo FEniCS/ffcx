@@ -10,7 +10,7 @@ It relies on templates for UFC code available as part of the module
 ufc_utils.
 """
 
-# Copyright (C) 2009-2015 Anders Logg
+# Copyright (C) 2009-2016 Anders Logg
 #
 # This file is part of FFC.
 #

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 "This module defines rules and algorithms for generating C++ code."
 
-# Copyright (C) 2009-2015 Anders Logg
+# Copyright (C) 2009-2016 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -20,7 +20,7 @@
 #
 # Modified by Kristian B. Oelgaard 2011
 # Modified by Marie E. Rognes 2010
-# Modified by Martin Alnaes 2013-2015
+# Modified by Martin Alnaes 2013-2016
 
 # Python modules
 import re

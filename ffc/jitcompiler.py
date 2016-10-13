@@ -2,7 +2,7 @@
 """This module provides a just-in-time (JIT) form compiler.
 It uses dijitso to wrap the generated code into a Python module."""
 
-# Copyright (C) 2007-2015 Anders Logg
+# Copyright (C) 2007-2016 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -23,7 +23,7 @@ It uses dijitso to wrap the generated code into a Python module."""
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Joachim Haga, 2011.
-# Modified by Martin Alnaes, 2013-2015
+# Modified by Martin Alnaes, 2013-2016
 
 # Python modules
 import os
