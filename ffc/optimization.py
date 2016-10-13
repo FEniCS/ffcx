@@ -24,7 +24,7 @@ representation.
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Martin Alnaes, 2013
+# Modified by Martin Sandve Alnæs, 2013
 #
 # First added:  2009-12-22
 # Last changed: 2013-02-10

@@ -17,7 +17,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Marie E. Rognes, 2013
-# Modified by Martin Alnaes, 2013-2014
+# Modified by Martin Sandve Alnæs, 2013-2014
 
 from ufl.utils.sorting import sorted_by_key
 

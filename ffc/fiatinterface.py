@@ -18,7 +18,7 @@
 #
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009-2013.
-# Modified by Martin Alnaes, 2013
+# Modified by Martin Sandve Alnæs, 2013
 # Modified by Lizao Li, 2015, 2016
 
 # Python modules

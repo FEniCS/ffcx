@@ -20,7 +20,7 @@
 #
 # Modified by Kristian B. Oelgaard 2011
 # Modified by Marie E. Rognes 2010
-# Modified by Martin Alnaes 2013-2016
+# Modified by Martin Sandve Alnæs 2013-2016
 
 # Python modules
 import re

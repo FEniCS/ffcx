@@ -19,7 +19,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Anders Logg 2009, 2014
-# Modified by Martin Alnaes 2013-2016
+# Modified by Martin Sandve Alnæs 2013-2016
 
 # Python modules
 import six

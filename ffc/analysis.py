@@ -26,7 +26,7 @@ form representation type.
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Marie E. Rognes, 2010
-# Modified by Martin Alnaes, 2013-2014
+# Modified by Martin Sandve Alnæs, 2013-2014
 
 import os
 import copy

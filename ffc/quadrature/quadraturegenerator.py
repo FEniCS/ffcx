@@ -20,7 +20,7 @@
 #
 # Modified by Mehdi Nikbakht 2010
 # Modified by Anders Logg 2013-2014
-# Modified by Martin Alnaes 2013-2014
+# Modified by Martin Sandve Alnæs 2013-2014
 
 # Python modules
 import functools

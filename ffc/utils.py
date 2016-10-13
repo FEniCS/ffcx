@@ -17,7 +17,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Kristian B. Oelgaard, 2009
-# Modified by Martin Alnaes 2014
+# Modified by Martin Sandve Alnæs 2014
 
 # Python modules.
 import operator

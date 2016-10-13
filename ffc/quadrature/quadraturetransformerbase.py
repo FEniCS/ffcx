@@ -19,7 +19,7 @@ transformers to translate UFL expressions."""
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Martin Alnaes, 2013
+# Modified by Martin Sandve Alnæs, 2013
 # Modified by Garth N. Wells, 2013
 # Modified by Lizao Li, 2015
 # Modified by Anders Logg, 2015

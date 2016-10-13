@@ -21,7 +21,7 @@
 # Modified by Kristian B. Oelgaard 2010-2013
 # Modified by Marie Rognes 2007-2012
 # Modified by Peter Brune 2009
-# Modified by Martin Alnaes, 2013
+# Modified by Martin Sandve Alnæs, 2013
 #
 # First added:  2007-02-28
 # Last changed: 2014-06-10
