@@ -207,10 +207,10 @@ def create_quadrature(shape, degree, scheme="default"):
                            [0.0, 1.0]]),
                     array([1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0])
                     )
-        else:
+        elif shape == "interval":
             # Trapezoidal rule.
-            return (array([[0.0, 0.0],
-                           [0.0, 1.0]]),
+            return (array([[0.0],
+                           [1.0]]),
                     array([1.0 / 2.0, 1.0 / 2.0])
                     )
 
