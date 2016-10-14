@@ -192,39 +192,44 @@ def test_get_ffc_table_values_scalar_cell():
     element = MockElement()
     component = ()
 
+    avg = None
+    entity = 0
     for num_points in (1, 3):
         for num_dofs in (1, 5):
             arr = np.ones((num_dofs, num_points))
-            for derivatives in [(), (0,)]:
+            for derivatives in [(0, 0), (1, 1)]:
                 # Mocking table built by ffc
                 ffc_tables = {
                     num_points: {
                         element: {
-                            None: { # avg
-                                None: { # entityid
+                            avg: { # avg
+                                entity: { # entityid
                                     derivatives: arr
                                 }
                             }
                         }
                     }
                 }
-                table = get_ffc_table_values(ffc_tables, entitytype, num_points, element, component, derivatives, default_tolerance)
+                table = get_ffc_table_values(ffc_tables, entitytype, num_points, element,
+                                             component, derivatives, avg, default_tolerance)
                 assert equal_tables(table[0, ...], np.transpose(arr), default_tolerance)
+
 
 def test_get_ffc_table_values_vector_facet():
     entitytype = "facet"
-    num_facets = 3
+    num_entities = 3
     class MockElement:
         def value_shape(self): return (2,)
     element = MockElement()
     num_components = 2
 
+    avg = None
     for num_points in (1, 5):
         for num_dofs in (4, 7):
             # Make ones array of the right shape (all dimensions differ to detect algorithm bugs better)
             arr1 = np.ones((num_dofs, num_components, num_points))
             arrays = []
-            for i in range(num_facets):
+            for i in range(num_entities):
                 arr = (i+1.0)*arr1 # Make first digit the facet number (1,2,3)
                 for j in range(num_components):
                     arr[:, j,:] += 0.1*(j+1.0) # Make first decimal the component number (1,2)
@@ -239,18 +244,17 @@ def test_get_ffc_table_values_vector_facet():
                 ffc_tables = {
                     num_points: {
                         element: {
-                            None: { # avg
-                                # entityid:
-                                0: { derivatives: arrays[0] },
-                                1: { derivatives: arrays[1] },
-                                2: { derivatives: arrays[2] },
+                            avg: {
+                                entity: { derivatives: arrays[entity] }
+                                for entity in range(num_entities)
                             }
                         }
                     }
                 }
                 # Tables use flattened component, so we can loop over them as integers:
                 for component in range(num_components):
-                    table = get_ffc_table_values(ffc_tables, entitytype, num_points, element, component, derivatives, default_tolerance)
-                    for i in range(num_facets):
+                    table = get_ffc_table_values(ffc_tables, entitytype, num_points, element,
+                                                 component, derivatives, avg, default_tolerance)
+                    for i in range(num_entities):
                         # print table[i,...]
                         assert equal_tables(table[i, ...], np.transpose(arrays[i][:, component,:]), default_tolerance)

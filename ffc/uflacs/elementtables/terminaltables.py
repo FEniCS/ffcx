@@ -58,6 +58,7 @@ def build_element_tables(psi_tables, num_points, entitytype, modified_terminals,
         ld = mt.local_derivatives
         gc = mt.component
         fc = mt.flat_component
+        avg = mt.averaged
 
         # Extract element from FormArguments and relevant GeometricQuantities
         if isinstance(t, FormArgument):
@@ -94,29 +95,24 @@ def build_element_tables(psi_tables, num_points, entitytype, modified_terminals,
             element_counter_map[element] = element_counter
 
         # Change derivatives format for table lookup
-        #if gd:
-        #    gdim = t.ufl_domain().geometric_dimension()
-        #    global_derivatives = tuple(derivative_listing_to_counts(gd, gdim))
-        #else:
-        #    global_derivatives = None
+        #gdim = t.ufl_domain().geometric_dimension()
+        #global_derivatives = derivative_listing_to_counts(gd, gdim)
 
         # Change derivatives format for table lookup
-        if ld:
-            tdim = t.ufl_domain().topological_dimension()
-            local_derivatives = tuple(derivative_listing_to_counts(ld, tdim))
-        else:
-            local_derivatives = None
+        tdim = t.ufl_domain().topological_dimension()
+        local_derivatives = derivative_listing_to_counts(ld, tdim)
 
         # Build name for this particular table
-        name = generate_psi_table_name(element_counter, fc, local_derivatives,
-                                       mt.averaged, entitytype, num_points)
+        name = generate_psi_table_name(element_counter,
+            fc, local_derivatives, avg, entitytype, num_points)
 
         # Extract the values of the table from ffc table format
-        table = tables.get(name)
-        if table is None:
-            table = get_ffc_table_values(psi_tables, entitytype, num_points,
-                                         element, fc, local_derivatives, epsilon)
-            tables[name] = table
+        if name not in tables:
+            tables[name] = get_ffc_table_values(
+                psi_tables,
+                entitytype, num_points,
+                element, fc, local_derivatives, avg,
+                epsilon)
 
         # Store table name with modified terminal
         mt_table_names[mt] = name

@@ -257,7 +257,8 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
 
             # Insert table into dictionary based on UFL elements
             # (None=not averaged)
-            psi_tables[len_weights][ufl_element] = {None: psi_table}
+            avg = None
+            psi_tables[len_weights][ufl_element] = { avg: psi_table }
 
     # Loop over elements found in CellAvg and tabulate basis averages
     len_weights = 1

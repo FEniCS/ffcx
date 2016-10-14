@@ -104,33 +104,67 @@ def build_unique_tables(tables, eps):
 
     return unique, mapping
 
+'''
+# Straight copy from quadrature/tabulate_basis
+def _tabulate_psi_table(integral_type, cellname, tdim, fiat_element, deriv_order,
+                        points):
+    "Tabulate psi table for different integral types."
+    # Handle case when list of points is empty
+    if points is None:
+        return _tabulate_empty_psi_table(tdim, deriv_order, fiat_element)
 
-def get_ffc_table_values(tables, entitytype, num_points, element, flat_component, derivative_counts, epsilon):
+    # Otherwise, call FIAT to tabulate
+    entity_dim = domain_to_entity_dim(integral_type, tdim)
+    num_entities = num_cell_entities[cellname][entity_dim]
+
+    mapped_points = { entity: _map_entity_points(cellname, tdim, points, entity_dim, entity)
+                      for entity in range(num_entities) }
+
+    psi_table = { entity: fiat_element.tabulate(deriv_order, entity_points)
+                  for entity, entity_points in mapped_points.items() }
+
+    return psi_table
+
+
+# FIXME: Argument list here is from get_ffc_table_values, adjust to what's needed
+def compute_table_values(tables, entitytype, num_points, ufl_element, flat_component, derivative_counts, epsilon):
+    
+    # FIXME: Instead of extracting from psi_tables, compute table here
+
+    num_derivatives = FIXME(derivative_counts)
+    points = FIXME
+    integral_type = FIXME
+    cellname = FIXME
+    tdim = FIXME
+
+    fiat_element = create_element(ufl_element)
+
+    # Tabulate table of basis functions and derivatives in points
+    element_table = _tabulate_psi_table(
+        integral_type,
+        cellname,
+        tdim,
+        fiat_element,
+        num_derivatives,
+        points)
+
+    return element_table
+'''
+
+
+def get_ffc_table_values(psi_tables, entitytype, num_points, element, flat_component, derivative_counts, avg, epsilon):
     """Extract values from ffc element table.
 
     Returns a 3D numpy array with axes
     (entity number, quadrature point number, dof number)
     """
     # Get quadrule/element subtable
-    element_table = tables[num_points][element]
+    subtable = psi_tables[num_points][element][avg]
 
-    # Temporary fix for new table structure TODO: Handle avg properly
-    if len(element_table) != 1:
-        print()
-        print(element_table)
-    assert len(element_table) == 1
-    element_table = element_table[None]
-
-    # FFC property:
-    # element_counter = element_map[num_points][element]
-
-    # Figure out shape of final array by inspecting tables
-    num_entities = len(element_table)
-    tmp = next(itervalues(element_table)) # Pick subtable for arbitrary chosen cell entity
-    if derivative_counts is None: # Workaround for None vs (0,)*tdim
-        dc = next(iterkeys(tmp))
-        derivative_counts = (0,)*len(dc)
-    num_dofs = len(tmp[derivative_counts])
+    # Figure out shape of final array by inspecting psi_tables
+    num_entities = len(subtable)
+    entity = 0  # Just look at the first entity
+    num_dofs = len(subtable[entity][derivative_counts])
 
     # Make 3D array for final result
     shape = (num_entities, num_points, num_dofs)
@@ -140,7 +174,8 @@ def get_ffc_table_values(tables, entitytype, num_points, element, flat_component
     sh = element.value_shape()
     for entity in range(num_entities):
         # Access subtable
-        tbl = element_table[entity][derivative_counts]
+        tbl = subtable[entity][derivative_counts]
+        #tbl = compute_table(num_points, element, avg, entity, derivative_counts)
 
         # Extract array for right component and order axes as (points, dofs)
         if sh == ():
@@ -162,7 +197,8 @@ def get_ffc_table_values(tables, entitytype, num_points, element, flat_component
     return res
 
 
-def generate_psi_table_name(element_counter, flat_component, derivative_counts, averaged, entitytype, num_quadrature_points):
+def generate_psi_table_name(element_counter,
+    flat_component, derivative_counts, averaged, entitytype, num_points):
     """Generate a name for the psi table of the form:
     FE#_C#_D###[_AC|_AF|][_F|V][_Q#], where '#' will be an integer value.
 
@@ -186,36 +222,15 @@ def generate_psi_table_name(element_counter, flat_component, derivative_counts, 
     Q   - number of quadrature points, to distinguish between tables in a mixed quadrature degree setting
 
     """
-
     name = "FE%d" % element_counter
-
-    if isinstance(flat_component, int):
+    if flat_component is not None:
         name += "_C%d" % flat_component
-    else:
-        assert flat_component is None
-
-    if derivative_counts and any(derivative_counts):
-        name += "_D" + "".join(map(str, derivative_counts))
-
-    if averaged == "cell":
-        name += "_AC"
-    elif averaged == "facet":
-        name += "_AF"
-
-    if entitytype == "cell":
-        pass
-    elif entitytype == "facet":
-        name += "_F"
-    elif entitytype == "vertex":
-        name += "_V"
-    else:
-        error("Unknown entity type %s." % entitytype)
-
-    if isinstance(num_quadrature_points, int):
-        name += "_Q%d" % num_quadrature_points
-    else:
-        assert num_quadrature_points is None
-
+    if any(derivative_counts):
+        name += "_D" + "".join(str(d) for d in derivative_counts)
+    name += { None: "", "cell": "_AC", "facet": "_AF" }[averaged]
+    name += { "cell": "", "facet": "_F", "vertex": "_V" }[entitytype]
+    if num_points is not None:
+        name += "_Q%d" % num_points
     return name
 
 
