@@ -39,13 +39,13 @@ from ffc.uflacs.elementtables.terminaltables import build_optimized_tables
 def build_uflacs_ir(cell, integral_type, entitytype,
                     integrands, coefficient_numbering,
                     quadrature_rules, parameters):
-    uflacs_ir = {}
+    ir = {}
 
     # { ufl coefficient: count }
-    uflacs_ir["coefficient_numbering"] = coefficient_numbering
+    ir["coefficient_numbering"] = coefficient_numbering
 
     # { num_points: expr_ir for one integrand }
-    uflacs_ir["expr_irs"] = {}
+    ir["expr_irs"] = {}
 
     # Build the core uflacs expression ir for each num_points/integrand
     # TODO: Better to compute joint IR for all integrands
@@ -55,9 +55,63 @@ def build_uflacs_ir(cell, integral_type, entitytype,
     #       automatically anyway, num_points should be advisory.
     #       For now, expecting multiple num_points to be rare.
     for num_points in sorted(integrands.keys()):
-        expr_ir = compute_expr_ir(integrands[num_points])
+        ##################################### begin old compute_expr_ir
+        #expr_ir = compute_expr_ir(integrands[num_points])
+        expressions = [integrands[num_points]]
 
-        uflacs_ir["expr_irs"][num_points] = expr_ir
+        # TODO: Apply this transformation to integrands earlier?
+        expressions = [balance_modifiers(expr) for expr in expressions]
+
+        argument_factorization, modified_arguments, V, target_variables, dependencies = \
+            compute_argument_factorization2(expressions)
+
+        # Store modified arguments in analysed form
+        for i in range(len(modified_arguments)):
+            modified_arguments[i] = analyse_modified_terminal(modified_arguments[i])
+
+        # Build set of modified_terminal indices into factorized_vertices
+        modified_terminal_indices = [i for i, v in enumerate(V)
+                                     if is_modified_terminal(v)]
+
+        # Build IR for the given expressions
+        expr_ir = {}
+
+        ### Core expression graph:
+        # (array) V-index -> UFL subexpression
+        expr_ir["V"] = V
+
+        # (array) Flattened input expression component index -> V-index
+        expr_ir["target_variables"] = target_variables
+
+        ### Result of factorization:
+        # (array) MA-index -> UFL expression of modified arguments
+        expr_ir["modified_arguments"] = modified_arguments
+
+        # (dict) tuple(MA-indices) -> V-index of monomial factor
+        expr_ir["argument_factorization"] = argument_factorization
+
+        ### Modified terminals
+        # (array) list of V-indices to modified terminals
+        expr_ir["modified_terminal_indices"] = modified_terminal_indices
+
+        # FIXME: Split function here! Need to get and analyze table data before the below dependency analysis.
+
+        # --- Various dependency analysis ---
+        dependencies, inverse_dependencies, active, piecewise, varying = \
+            analyse_dependencies(V, target_variables, modified_terminal_indices, dependencies)
+
+        # Dependency structure of graph:
+        #expr_ir["dependencies"] = dependencies                           # (CRSArray) V-index -> direct dependency V-index list
+        #expr_ir["inverse_dependencies"] = inverse_dependencies           # (CRSArray) V-index -> direct dependee V-index list
+
+        # Metadata about each vertex
+        #expr_ir["active"] = active       # (array) V-index -> bool
+        expr_ir["piecewise"] = piecewise  # (array) V-index -> bool
+        expr_ir["varying"] = varying     # (array) V-index -> bool
+
+        ##################################### end old compute_expr_ir
+
+        ir["expr_irs"][num_points] = expr_ir
 
         # Build set of modified terminal ufl expressions
         V = expr_ir["V"]
@@ -141,7 +195,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         expr_ir["table_types"] = table_types
         expr_ir["unique_tables"] = unique_tables
 
-    return uflacs_ir
+    return ir
 
 
 def build_scalar_graph(expressions):
@@ -213,71 +267,6 @@ def analyse_dependencies(V, target_variables, modified_terminal_indices, depende
     # piecewise *= nonliteral
 
     return dependencies, inverse_dependencies, active, piecewise, varying
-
-
-def compute_expr_ir(expressions):
-    """Build the intermediate representation for a list of expressions."""
-    
-    # Wrap in list if we only get one expression
-    if not isinstance(expressions, list):
-        expressions = [expressions]
-
-    # TODO: Apply this transformation before calling compute_expr_ir?
-    expressions = [balance_modifiers(expr) for expr in expressions]
-
-    argument_factorization, modified_arguments, V, target_variables, dependencies = \
-        compute_argument_factorization2(expressions)
-
-
-    # Store modified arguments in analysed form
-    for i in range(len(modified_arguments)):
-        modified_arguments[i] = analyse_modified_terminal(modified_arguments[i])
-
-    # Build set of modified_terminal indices into factorized_vertices
-    modified_terminal_indices = [i for i, v in enumerate(V)
-                                 if is_modified_terminal(v)]
-
-
-    # Build IR for the given expressions
-    expr_ir = {}
-
-    ### Core expression graph:
-    # (array) V-index -> UFL subexpression
-    expr_ir["V"] = V
-
-    # (array) Flattened input expression component index -> V-index
-    expr_ir["target_variables"] = target_variables
-
-    ### Result of factorization:
-    # (array) MA-index -> UFL expression of modified arguments
-    expr_ir["modified_arguments"] = modified_arguments
-
-    # (dict) tuple(MA-indices) -> V-index of monomial factor
-    expr_ir["argument_factorization"] = argument_factorization
-
-    ### Modified terminals
-    # (array) list of V-indices to modified terminals
-    expr_ir["modified_terminal_indices"] = modified_terminal_indices
-
-
-    # FIXME: Split function here! Need to get and analyze table data before the below dependency analysis.
-
-
-    # --- Various dependency analysis ---
-    dependencies, inverse_dependencies, active, piecewise, varying = \
-        analyse_dependencies(V, target_variables, modified_terminal_indices, dependencies)
-
-    # Dependency structure of graph:
-    #expr_ir["dependencies"] = dependencies                           # (CRSArray) V-index -> direct dependency V-index list
-    #expr_ir["inverse_dependencies"] = inverse_dependencies           # (CRSArray) V-index -> direct dependee V-index list
-
-    # Metadata about each vertex
-    #expr_ir["active"] = active       # (array) V-index -> bool
-    expr_ir["piecewise"] = piecewise  # (array) V-index -> bool
-    expr_ir["varying"] = varying     # (array) V-index -> bool
-
-    return expr_ir
-
 
 
 # TODO: Consider comments below and do it or delete them.
