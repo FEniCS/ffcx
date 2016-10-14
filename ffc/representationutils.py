@@ -28,11 +28,12 @@ from ufl.measure import integral_type_to_measure_name
 from ufl.cell import cellname2facetname
 from ufl import custom_integral_types
 
-from ffc.fiatinterface import create_element
-from ffc.cpp import make_integral_classname
 from ffc.log import error
-
+from ffc.cpp import make_integral_classname
+from ffc.fiatinterface import create_element
 from ffc.fiatinterface import create_quadrature
+from ffc.fiatinterface import map_facet_points
+from ffc.fiatinterface import reference_cell_vertices
 
 
 def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
@@ -64,6 +65,23 @@ def integral_type_to_entity_dim(integral_type, tdim):
     else:
         error("Unknown integral_type: %s" % integral_type)
     return entity_dim
+
+
+def map_integral_points(points, integral_type, cell, entity):
+    """Map points from reference entity to its parent reference cell."""
+    tdim = cell.topological_dimension()
+    entity_dim = integral_type_to_entity_dim(integral_type, tdim)
+    if entity_dim == tdim:
+        assert points.shape[1] == tdim
+        assert entity == 0
+        return numpy.asarray(points)
+    elif entity_dim == tdim - 1:
+        assert points.shape[1] == tdim - 1
+        return numpy.asarray(map_facet_points(points, entity))
+    elif entity_dim == 0:
+        return numpy.asarray([reference_cell_vertices(cell.cellname())[entity]])
+    else:
+        error("Can't map points from entity_dim=%s" % (entity_dim,))
 
 
 def transform_component(component, offset, ufl_element):

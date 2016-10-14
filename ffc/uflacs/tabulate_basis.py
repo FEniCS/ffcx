@@ -143,11 +143,11 @@ def tabulate_basis(sorted_integrals, form_data, itg_data, quadrature_rules):
     # Loop over elements found in CellAvg and tabulate basis averages
     num_points = 1
     for avg in ("cell", "facet"):
-        # Doesn't matter if it's exterior or interior
-        if avg == "cell":
-            avg_integral_type = "cell"
-        elif avg == "facet":
-            avg_integral_type = "exterior_facet"
+        # Doesn't matter if it's exterior or interior facet integral, just need a valid integral type
+        avg_integral_type = {
+            "cell": "cell",
+            "facet": "exterior_facet",
+            }[avg]
 
         for element in avg_elements[avg]:
             fiat_element = create_element(element)

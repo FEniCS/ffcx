@@ -33,16 +33,15 @@ from ffc.uflacs.elementtables.table_utils import clamp_table_small_integers, str
 from ffc.uflacs.backends.ffc.common import ufc_restriction_offset
 
 
-# FIXME: Pass points
-def build_element_tables(psi_tables, num_points, quadrature_rules,
+def build_element_tables(num_points, quadrature_rules,
                          cell, integral_type, entitytype,
                          modified_terminals, epsilon):
     """Build the element tables needed for a list of modified terminals.
 
     Input:
-      psi_tables - tables from ffc
       entitytype - str
       modified_terminals - ordered sequence of unique modified terminals
+      FIXME: Document
 
     Output:
       tables - dict(name: table)
@@ -111,19 +110,12 @@ def build_element_tables(psi_tables, num_points, quadrature_rules,
 
         # Extract the values of the table from ffc table format
         if name not in tables:
-            if 0: # TODO: Fix this:
-                points, weights = quadrature_rules[num_points]
-                tables[name] = compute_table_values(
-                    cell, integral_type, points,
-                    element, avg,
-                    entitytype, local_derivatives, fc,
-                    epsilon)
-            else:
-                tables[name] = get_ffc_table_values(psi_tables,
-                    cell, integral_type,
-                    num_points, element, avg,
-                    entitytype, local_derivatives, fc,
-                    epsilon)
+            tables[name] = get_ffc_table_values(
+                quadrature_rules[num_points][0],
+                cell, integral_type,
+                num_points, element, avg,
+                entitytype, local_derivatives, fc,
+                epsilon)
 
         # Store table name with modified terminal
         mt_table_names[mt] = name
@@ -206,8 +198,7 @@ def optimize_element_tables(tables, mt_table_names, epsilon):
 
 
 class TableProvider(object):
-    def __init__(self, psi_tables, quadrature_rules, parameters):
-        self.psi_tables = psi_tables
+    def __init__(self, quadrature_rules, parameters):
         self.quadrature_rules = quadrature_rules
 
         # FIXME: Should be epsilon from ffc parameters
@@ -215,13 +206,11 @@ class TableProvider(object):
         self.epsilon = get_float_threshold()
 
     def build_optimized_tables(self, num_points, cell, integral_type, entitytype, modified_terminals):
-        psi_tables = self.psi_tables
         epsilon = self.epsilon
 
         # Build tables needed by all modified terminals
-        # (currently build here means extract from ffc psi_tables)
         tables, mt_table_names = \
-            build_element_tables(psi_tables, num_points, self.quadrature_rules,
+            build_element_tables(num_points, self.quadrature_rules,
                 cell, integral_type, entitytype,
                 modified_terminals, epsilon)
 

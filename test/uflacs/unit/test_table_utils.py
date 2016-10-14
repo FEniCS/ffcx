@@ -187,7 +187,7 @@ def test_unique_tables_string_keys():
         assert equal_tables(t, unique[mapping[i]], default_tolerance)
 
 
-def test_get_ffc_table_values_scalar_cell():
+def xtest_get_ffc_table_values_scalar_cell():
     cell = triangle
     integral_type = "cell"
     entitytype = "cell"
@@ -222,7 +222,7 @@ def test_get_ffc_table_values_scalar_cell():
                 assert equal_tables(table[0, ...], np.transpose(arr), default_tolerance)
 
 
-def test_get_ffc_table_values_vector_facet():
+def xtest_get_ffc_table_values_vector_facet():
     cell = triangle
     integral_type = "exterior_facet"
     entitytype = "facet"

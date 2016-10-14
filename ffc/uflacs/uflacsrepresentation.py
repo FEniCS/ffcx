@@ -25,7 +25,6 @@ from ffc.log import info
 from ffc.representationutils import initialize_integral_ir
 from ffc.fiatinterface import create_element
 from ffc.uflacs.tools import compute_quadrature_rules, accumulate_integrals
-from ffc.uflacs.tabulate_basis import tabulate_basis
 from ffc.uflacs.elementtables.terminaltables import TableProvider
 from ffc.uflacs.representation.build_uflacs_ir import build_uflacs_ir
 
@@ -55,17 +54,8 @@ def compute_integral_ir(itg_data,
     # Group and accumulate integrals on the format { num_points: integral data }
     sorted_integrals = accumulate_integrals(itg_data, quadrature_rule_sizes)
 
-    # TODO: Might want to create the uflacs ir first and then create the tables we need afterwards!
-    # Tabulate quadrature points and basis function values in these points
-    psi_tables = tabulate_basis(
-        sorted_integrals, form_data, itg_data, quadrature_rules)
-
-
-    # Hiding ffc data behind interface that we can
-    # improve later to build tables on the fly instead of
-    # precomputing psi_tables in ffc, somewhat disconnecting the
-    # uflacs representation building from the psi_tables format
-    table_provider = TableProvider(psi_tables, quadrature_rules, parameters)
+    # Object providing finite element table computation
+    table_provider = TableProvider(quadrature_rules, parameters)
 
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.
