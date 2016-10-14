@@ -216,7 +216,7 @@ def analyse_table_types(unique_tables, mt_table_ranges, epsilon):
     for unique_name, table in unique_tables.items():
         #num_entities, num_points, num_dofs = table.shape
         num_points = table.shape[1]
-        if product(table.shape) == 0 or numpy.allclose(table, numpy.zeros(table.shape), atol=epsilon):
+        if product(table.shape) == 0 or numpy.allclose(table, numpy.zeros(table.shape)): #, atol=epsilon):
             # All values are 0.0
             tabletype = "zeros"
             # All table ranges referring to this table should be empty
@@ -241,7 +241,10 @@ def build_optimized_tables(num_points, quadrature_rules,
                            cell, integral_type, entitytype,
                            modified_terminals, parameters):
     # Get tolerance for checking table values against 0.0 or 1.0
-    epsilon = parameters["epsilon"]
+    from ffc.uflacs.language.format_value import get_float_threshold
+    epsilon = get_float_threshold()
+    # FIXME: Should be epsilon from ffc parameters
+    #epsilon = parameters["epsilon"]
 
     # Build tables needed by all modified terminals
     tables, mt_table_names = \
