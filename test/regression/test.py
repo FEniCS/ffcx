@@ -76,6 +76,10 @@ ext_uflacs = [
     "-r uflacs",
 ]
 
+known_quad_failures = set([
+    "PoissonQuad.ufl",
+])
+
 known_uflacs_failures = set([
     "CustomIntegral.ufl",
     "CustomMixedIntegral.ufl",
@@ -535,8 +539,11 @@ def main(args):
         clean_output(sub_directory)
         os.chdir(sub_directory)
 
-        # Workarounds for partial feature completeness in uflacs/tsfc
-        if "uflacs" in argument and not only_forms:
+        # Workarounds for feature lack in representation
+        if "quadrature" in argument and not only_forms:
+            skip_forms = known_quad_failures
+            info_blue("Skipping forms known to fail with quadrature:\n" + "\n".join(sorted(skip_forms)))
+        elif "uflacs" in argument and not only_forms:
             skip_forms = known_uflacs_failures
             info_blue("Skipping forms known to fail with uflacs:\n" + "\n".join(sorted(skip_forms)))
         elif "tsfc" in argument and not only_forms:
