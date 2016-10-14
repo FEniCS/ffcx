@@ -168,13 +168,18 @@ def _analyze_form(form, parameters):
                                       do_apply_restrictions=True,
                                       )
     elif r == "tsfc":
-        # TSFC provides compute_form_data wrapper using correct kwargs
-        from tsfc.ufl_utils import compute_form_data as tsfc_compute_form_data
+        try:
+            # TSFC provides compute_form_data wrapper using correct kwargs
+            from tsfc.ufl_utils import compute_form_data as tsfc_compute_form_data
+        except ImportError:
+            error("Failed to import tsfc.ufl_utils.compute_form_data when asked "
+                  "for tsfc representation.")
         form_data = tsfc_compute_form_data(form)
-    else:
-        ffc_assert(r == "legacy", "Unexpected representation family "
-            "'%s' for form preprocessing." % r)
+    elif r == "legacy":
+        # quadrature or tensor representation
         form_data = compute_form_data(form)
+    else:
+        error("Unexpected representation family '%s' for form preprocessing." % r)
 
     info("")
     info(str(form_data))
@@ -187,10 +192,10 @@ def _analyze_form(form, parameters):
 
 
 def _extract_representation_family(form, parameters):
-    """Return 'uflacs', 'legacy' or raise error. This takes care
-    of (a) compatibility between the integrals due to differences
-    in preprocessing, (b) choosing uflacs for higher-order
-    geometries.
+    """Return 'uflacs', 'tsfc' or 'legacy', or raise error. This
+    takes care of (a) compatibility between representations due to
+    differences in preprocessing, (b) choosing uflacs for
+    higher-order geometries.
 
     NOTE: Final representation is picked later by
     ``_determine_representation``.
@@ -246,9 +251,11 @@ def _extract_representation_family(form, parameters):
 
 def _validate_representation_choice(form_data,
                                     preprocessing_representation_family):
-    """Check that effective representations do not mix legacy and
-    uflacs, implement higher-order geometry, and match employed
-    preprocessing strategy.
+    """Check that effective representations
+
+    * do not mix legacy, uflacs and tsfc,
+    * implement higher-order geometry,
+    * match employed preprocessing strategy.
 
     This function is final check that everything is compatible due
     to the mess in this file. Better safe than sorry...
