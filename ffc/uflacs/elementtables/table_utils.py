@@ -193,8 +193,8 @@ def get_ffc_table_values(points,
     return res
 
 
-def generate_psi_table_name(num_points, element_counter,
-    averaged, entitytype, derivative_counts, flat_component):
+def generate_psi_table_name(num_points, element_counter, averaged,
+                            entitytype, derivative_counts, flat_component):
     """Generate a name for the psi table of the form:
     FE#_C#_D###[_AC|_AF|][_F|V][_Q#], where '#' will be an integer value.
 
