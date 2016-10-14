@@ -210,8 +210,10 @@ def test_get_ffc_table_values_scalar_cell():
                         }
                     }
                 }
-                table = get_ffc_table_values(ffc_tables, entitytype, num_points, element,
-                                             component, derivatives, avg, default_tolerance)
+                table = get_ffc_table_values(ffc_tables,
+                    num_points, element, avg,
+                    entitytype, derivatives, component, 
+                    default_tolerance)
                 assert equal_tables(table[0, ...], np.transpose(arr), default_tolerance)
 
 
@@ -253,8 +255,10 @@ def test_get_ffc_table_values_vector_facet():
                 }
                 # Tables use flattened component, so we can loop over them as integers:
                 for component in range(num_components):
-                    table = get_ffc_table_values(ffc_tables, entitytype, num_points, element,
-                                                 component, derivatives, avg, default_tolerance)
+                    table = get_ffc_table_values(ffc_tables,
+                        num_points, element, avg,
+                        entitytype, derivatives, component,
+                        default_tolerance)
                     for i in range(num_entities):
                         # print table[i,...]
                         assert equal_tables(table[i, ...], np.transpose(arrays[i][:, component,:]), default_tolerance)

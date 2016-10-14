@@ -108,10 +108,9 @@ def build_element_tables(psi_tables, num_points, entitytype, modified_terminals,
 
         # Extract the values of the table from ffc table format
         if name not in tables:
-            tables[name] = get_ffc_table_values(
-                psi_tables,
-                entitytype, num_points,
-                element, fc, local_derivatives, avg,
+            tables[name] = get_ffc_table_values(psi_tables,
+                num_points, element, avg,
+                entitytype, local_derivatives, fc,
                 epsilon)
 
         # Store table name with modified terminal

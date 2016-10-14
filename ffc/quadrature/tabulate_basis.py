@@ -91,13 +91,6 @@ def _map_entity_points(cellname, tdim, points, entity_dim, entity):
         return (reference_cell_vertices(cellname)[entity],)
 
 
-def _tabulate_entities(integral_type, cellname, tdim):
-    "Tabulate psi table for different integral types."
-    entity_dim = domain_to_entity_dim(integral_type, tdim)
-    num_entities = num_cell_entities[cellname][entity_dim]
-    return set(range(num_entities))
-
-
 def _tabulate_empty_psi_table(tdim, deriv_order, element):
     "Tabulate psi table when there are no points (custom integrals)."
 
@@ -174,6 +167,8 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
     cell = itg_data.domain.ufl_cell()
     cellname = cell.cellname()
     tdim = itg_data.domain.topological_dimension()
+    entity_dim = domain_to_entity_dim(integral_type, tdim)
+    num_entities = num_cell_entities[cellname][entity_dim]
 
     # Create canonical ordering of quadrature rules
     rules = sorted(sorted_integrals.keys())
@@ -189,20 +184,20 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
                                                                  scheme)
 
         # The TOTAL number of weights/points
-        len_weights = None if weights is None else len(weights)
+        num_points = None if weights is None else len(weights)
 
         # Add points and rules to dictionary
-        if len_weights in quadrature_rules:
+        if num_points in quadrature_rules:
             error("This number of points is already present in the weight table: " + repr(quadrature_rules))
-        quadrature_rules[len_weights] = (weights, points)
+        quadrature_rules[num_points] = (weights, points)
 
         # --------- Store integral
         # Add the integral with the number of points as a key to the
         # return integrals.
         integral = sorted_integrals[rule]
-        if len_weights in integrals:
+        if num_points in integrals:
             error("This number of points is already present in the integrals: " + repr(integrals))
-        integrals[len_weights] = integral
+        integrals[num_points] = integral
 
         # --------- Analyse UFL elements in integral
 
@@ -240,9 +235,9 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
         # --------- store in tables
 
         # Add the number of points to the psi tables dictionary
-        if len_weights in psi_tables:
+        if num_points in psi_tables:
             error("This number of points is already present in the psi table: " + repr(psi_tables))
-        psi_tables[len_weights] = {}
+        psi_tables[num_points] = {}
 
         # Loop FIAT elements and tabulate basis as usual.
         for ufl_element in ufl_elements:
@@ -258,10 +253,10 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
             # Insert table into dictionary based on UFL elements
             # (None=not averaged)
             avg = None
-            psi_tables[len_weights][ufl_element] = { avg: psi_table }
+            psi_tables[num_points][ufl_element] = { avg: psi_table }
 
     # Loop over elements found in CellAvg and tabulate basis averages
-    len_weights = 1
+    num_points = 1
     for avg in ("cell", "facet"):
         # Doesn't matter if it's exterior or interior
         if avg == "cell":
@@ -285,13 +280,12 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
 
             # Hack, duplicating table with per-cell values for each
             # facet in the case of cell_avg(f) in a facet integral
-            actual_entities = _tabulate_entities(integral_type, cellname, tdim)
-            if len(actual_entities) > len(entity_psi_tables):
+            if num_entities > len(entity_psi_tables):
                 assert len(entity_psi_tables) == 1
                 assert avg_integral_type == "cell"
                 assert "facet" in integral_type
                 v, = sorted(entity_psi_tables.values())
-                entity_psi_tables = dict((e, v) for e in actual_entities)
+                entity_psi_tables = dict((e, v) for e in range(num_entities))
 
             for entity, deriv_table in sorted(entity_psi_tables.items()):
                 deriv, = sorted(deriv_table.keys())  # Not expecting derivatives of averages
@@ -314,7 +308,7 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
                                                               weights) / wsum] for j in range(num_dofs)])
 
                 # Insert table into dictionary based on UFL elements
-                insert_nested_dict(psi_tables, (len_weights, element, avg,
+                insert_nested_dict(psi_tables, (num_points, element, avg,
                                                 entity, deriv), avg_psi_table)
 
     return (integrals, psi_tables, quadrature_rules)

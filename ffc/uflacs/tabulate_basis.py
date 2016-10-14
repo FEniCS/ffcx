@@ -39,7 +39,6 @@ from ffc.representationutils import create_quadrature_points_and_weights
 # Utilities we share with the quadrature representation version of tabulate_basis
 from ffc.quadrature.tabulate_basis import _find_element_derivatives
 from ffc.quadrature.tabulate_basis import _tabulate_psi_table
-from ffc.quadrature.tabulate_basis import _tabulate_entities
 from ffc.quadrature.tabulate_basis import insert_nested_dict
 
 
@@ -55,6 +54,8 @@ def tabulate_basis(sorted_integrals, form_data, itg_data, quadrature_rules):
     cell = itg_data.domain.ufl_cell()
     cellname = cell.cellname()
     tdim = itg_data.domain.topological_dimension()
+    entity_dim = domain_to_entity_dim(integral_type, tdim)
+    num_entities = num_cell_entities[cellname][entity_dim]
 
     for num_points, integral in sorted(sorted_integrals.items()):
         points, weights = quadrature_rules[num_points]
@@ -137,13 +138,12 @@ def tabulate_basis(sorted_integrals, form_data, itg_data, quadrature_rules):
 
             # Hack: duplicating table with per-cell values for each
             # facet in the case of cell_avg(f) in a facet integral
-            actual_entities = _tabulate_entities(integral_type, cellname, tdim)
-            if len(actual_entities) > len(entity_psi_tables):
+            if num_entities > len(entity_psi_tables):
                 assert len(entity_psi_tables) == 1
                 assert avg_integral_type == "cell"
                 assert "facet" in integral_type
                 v, = sorted(entity_psi_tables.values())
-                entity_psi_tables = dict((e, v) for e in actual_entities)
+                entity_psi_tables = { entity: v for entity in range(num_entitites) }
 
             for entity, deriv_table in sorted(entity_psi_tables.items()):
                 deriv, = sorted(deriv_table.keys())  # Not expecting derivatives of averages

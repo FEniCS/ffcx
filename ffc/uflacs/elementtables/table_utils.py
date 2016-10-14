@@ -26,6 +26,7 @@ from six import itervalues, iterkeys
 from six import advance_iterator as next
 
 from ffc.log import error
+from ffc.fiatinterface import create_element
 
 from ufl.permutation import build_component_numbering
 
@@ -152,7 +153,25 @@ def compute_table_values(tables, entitytype, num_points, ufl_element, flat_compo
 '''
 
 
-def get_ffc_table_values(psi_tables, entitytype, num_points, element, flat_component, derivative_counts, avg, epsilon):
+
+def missing_args(ufl_element, integral_type, cell, points):
+    fiat_element = create_element(ufl_element)
+
+    cellname = cell.cellname()
+    tdim = cell.topological_dimension()
+
+    entity_dim = domain_to_entity_dim(integral_type, tdim)
+    num_entities = num_cell_entities[cellname][entity_dim]
+
+    for entity in range(num_entities):
+        entity_points = _map_entity_points(cellname, tdim, points, entity_dim, entity)
+        table[entity] = fiat_element.tabulate(deriv_order, entity_points)
+
+
+#tbl = compute_table(num_points, element, avg, entity, derivative_counts)
+def get_ffc_table_values(psi_tables, num_points, element, avg,
+                         entitytype, derivative_counts,
+                         flat_component, epsilon):
     """Extract values from ffc element table.
 
     Returns a 3D numpy array with axes
@@ -175,7 +194,6 @@ def get_ffc_table_values(psi_tables, entitytype, num_points, element, flat_compo
     for entity in range(num_entities):
         # Access subtable
         tbl = subtable[entity][derivative_counts]
-        #tbl = compute_table(num_points, element, avg, entity, derivative_counts)
 
         # Extract array for right component and order axes as (points, dofs)
         if sh == ():
@@ -232,13 +250,3 @@ def generate_psi_table_name(element_counter,
     if num_points is not None:
         name += "_Q%d" % num_points
     return name
-
-
-#def _examples(tables):
-#    eps = 1e-14
-#    name = generate_psi_table_name(counter, flat_component, derivative_counts, averaged, entitytype, None)
-#    values = get_ffc_table_values(tables, entitytype, num_points, element, flat_component, derivative_counts, eps)
-
-#    begin, end, table = strip_table_zeros(table, eps)
-#    all_zeros = table.shape[-1] == 0
-#    all_ones = equal_tables(table, numpy.ones(table.shape), eps)
