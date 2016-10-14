@@ -36,6 +36,7 @@ from ffc.fiatinterface import map_facet_points, reference_cell_vertices
 from ffc.representationutils import create_quadrature_points_and_weights
 
 
+# Utilities we share with the quadrature representation version of tabulate_basis
 from ffc.quadrature.tabulate_basis import _find_element_derivatives
 from ffc.quadrature.tabulate_basis import _tabulate_psi_table
 from ffc.quadrature.tabulate_basis import _tabulate_entities

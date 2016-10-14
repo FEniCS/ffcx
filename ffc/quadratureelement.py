@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2007-2010 Kristian B. Oelgaard
+
+# Copyright (C) 2007-2016 Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -17,9 +18,6 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Garth N. Wells 2006-2009
-#
-# First added:  2007-12-10
-# Last changed: 2010-01-30
 
 # Python modules.
 import numpy

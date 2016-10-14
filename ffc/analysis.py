@@ -1,14 +1,6 @@
 # -*- coding: utf-8 -*-
-"""
-Compiler stage 1: Analysis
---------------------------
 
-This module implements the analysis/preprocessing of variational
-forms, including automatic selection of elements, degrees and
-form representation type.
-"""
-
-# Copyright (C) 2007-201r Anders Logg and Kristian B. Oelgaard
+# Copyright (C) 2007-2016 Anders Logg and Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -27,6 +19,15 @@ form representation type.
 #
 # Modified by Marie E. Rognes, 2010
 # Modified by Martin Sandve Alnæs, 2013-2014
+
+"""
+Compiler stage 1: Analysis
+--------------------------
+
+This module implements the analysis/preprocessing of variational
+forms, including automatic selection of elements, degrees and
+form representation type.
+"""
 
 import os
 import copy

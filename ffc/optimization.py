@@ -1,13 +1,6 @@
 # -*- coding: utf-8 -*-
-"""
-Compiler stage 5: optimization
-------------------------------
 
-This module implements the optimization of an intermediate code
-representation.
-"""
-
-# Copyright (C) 2009-2013 Anders Logg
+# Copyright (C) 2009-2016 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -25,9 +18,14 @@ representation.
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Martin Sandve Alnæs, 2013
-#
-# First added:  2009-12-22
-# Last changed: 2013-02-10
+
+"""
+Compiler stage 5: optimization
+------------------------------
+
+This module implements the optimization of an intermediate code
+representation.
+"""
 
 # FFC modules
 from ffc.log import info, begin, end

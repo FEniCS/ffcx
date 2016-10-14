@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2005-2010 Anders Logg
+
+# Copyright (C) 2005-2016 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -20,8 +21,6 @@
 # Modified by Marie E. Rognes, 2007-2010
 # Modified by Kristian B. Oelgaard, 2010
 # Modified by Lizao Li, 2015
-#
-# Last changed: 2015-04-25
 
 # Python modules
 import numpy
