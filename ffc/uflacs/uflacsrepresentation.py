@@ -44,31 +44,36 @@ def compute_integral_ir(itg_data,
     # Store element classnames
     ir["classnames"] = classnames
 
+    # TODO: Set alignas and padlen from parameters
+    sizeof_double = 8
+    ir["alignas"] = 32
+    ir["padlen"] = ir["alignas"] // sizeof_double
+
+    # Get element space dimensions
+    unique_elements = element_numbers.keys()
+    ir["element_dimensions"] = { ufl_element: create_element(ufl_element).space_dimension()
+                                 for ufl_element in unique_elements }
+
+    # Create dimensions of primary indices, needed to reset the argument 'A'
+    # given to tabulate_tensor() by the assembler.
+    argument_dimensions = [ir["element_dimensions"][ufl_element]
+                           for ufl_element in form_data.argument_elements]
+
+    # Compute shape of element tensor
+    if ir["integral_type"] == "interior_facet":
+        ir["tensor_shape"] = [2 * dim for dim in argument_dimensions]
+    else:
+        ir["tensor_shape"] = argument_dimensions
+
     # Compute actual points and weights
     quadrature_rules, quadrature_rule_sizes = compute_quadrature_rules(itg_data)
 
     # Store quadrature rules in format { num_points: (points, weights) }
     ir["quadrature_rules"] = quadrature_rules
 
+
     # Group and accumulate integrals on the format { num_points: integral data }
     sorted_integrals = accumulate_integrals(itg_data, quadrature_rule_sizes)
-
-    # Create dimensions of primary indices, needed to reset the argument 'A'
-    # given to tabulate_tensor() by the assembler.
-    ir["prim_idims"] = [create_element(ufl_element).space_dimension()
-                        for ufl_element in form_data.argument_elements]
-
-    # Added for uflacs, not sure if this is the best way to get this:
-    ir["coeff_idims"] = [create_element(ufl_element).space_dimension()
-                         for ufl_element in form_data.coefficient_elements]
-
-    # TODO: Can easily add more element data here or move above if needed in uflacs
-    #unique_elements = element_numbers.keys()
-    #ir["fiat_elements"] = { ufl_element: create_element(ufl_element)
-    #                        for ufl_element in unique_elements }
-    #ir["element_dimensions"] = { ufl_element: fiat_element.space_dimension()
-    #                             for ufl_element, fiat_element in ir["fiat_elements"].items() }
-
 
     # Build coefficient numbering for UFC interface here, to avoid
     # renumbering in UFL and application of replace mapping
@@ -105,11 +110,21 @@ def compute_integral_ir(itg_data,
         #    }
         # then pass coefficient_element and coefficient_domain to the uflacs ir as well
 
+
     # Build the more uflacs-specific intermediate representation
     cell = itg_data.domain.ufl_cell()
-    ir["uflacs"] = build_uflacs_ir(cell, itg_data.integral_type, ir["entitytype"],
-                                   integrands,
-                                   coefficient_numbering,
-                                   quadrature_rules,
-                                   parameters)
+    uflacs_ir = build_uflacs_ir(cell, itg_data.integral_type, ir["entitytype"],
+                                integrands,
+                                coefficient_numbering,
+                                quadrature_rules,
+                                parameters)
+    ir.update(uflacs_ir)
+
+    # Consistency check on quadrature rules
+    rules1 = sorted(ir["expr_irs"].keys())
+    rules2 = sorted(ir["quadrature_rules"].keys())
+    if rules1 != rules2:
+        warning("Found different rules in expr_irs and "
+                "quadrature_rules:\n{0}\n{1}".format(rules1, rules2))
+
     return ir

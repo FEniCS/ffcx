@@ -212,7 +212,7 @@ def offset_restricted_table_ranges(mt_table_ranges, mt_table_names,
 
 
 def analyse_table_types(unique_tables, mt_table_ranges, epsilon):
-    table_types = {}  # FIXME: Use this information!
+    table_types = {}
     for unique_name, table in unique_tables.items():
         #num_entities, num_points, num_dofs = table.shape
         num_points = table.shape[1]
