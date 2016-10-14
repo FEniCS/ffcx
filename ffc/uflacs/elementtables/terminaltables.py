@@ -197,59 +197,67 @@ def optimize_element_tables(tables, mt_table_names, epsilon):
     return unique_tables, mt_table_ranges
 
 
-class TableProvider(object):
-    def __init__(self, quadrature_rules, parameters):
-        self.quadrature_rules = quadrature_rules
+def offset_restricted_table_ranges(mt_table_ranges, mt_table_names,
+                                   tables, modified_terminals):
+    # Modify dof ranges for restricted form arguments
+    # (geometry gets padded variable names instead)
+    for mt in modified_terminals:
+        if mt.restriction and isinstance(mt.terminal, FormArgument):
+            # offset = 0 or number of dofs before table optimization
+            num_original_dofs = int(tables[mt_table_names[mt]].shape[-1])
+            offset = ufc_restriction_offset(mt.restriction, num_original_dofs)
+            (unique_name, b, e) = mt_table_ranges[mt]
+            mt_table_ranges[mt] = (unique_name, b + offset, e + offset)
+    return mt_table_ranges
 
-        # FIXME: Should be epsilon from ffc parameters
-        from ffc.uflacs.language.format_value import get_float_threshold
-        self.epsilon = get_float_threshold()
 
-    def build_optimized_tables(self, num_points, cell, integral_type, entitytype, modified_terminals):
-        epsilon = self.epsilon
+def analyse_table_types(unique_tables, mt_table_ranges, epsilon):
+    table_types = {}  # FIXME: Use this information!
+    for unique_name, table in unique_tables.items():
+        #num_entities, num_points, num_dofs = table.shape
+        num_points = table.shape[1]
+        if product(table.shape) == 0 or numpy.allclose(table, numpy.zeros(table.shape), atol=epsilon):
+            # All values are 0.0
+            tabletype = "zeros"
+            # All table ranges referring to this table should be empty
+            assert all(data[1] == data[2]
+                       for mt, data in mt_table_ranges.items()
+                       if data is not None and data[0] == unique_name)
+        elif numpy.allclose(table, numpy.ones(table.shape)):
+            # All values are 1.0
+            tabletype = "ones"
+        elif all(numpy.allclose(table[:, 0, :], table[:, i, :])
+                 for i in range(1, num_points)):
+            # Piecewise constant over points (separately on each entity)
+            tabletype = "piecewise"
+        else:
+            # Varying over points
+            tabletype = "varying"
+        table_types[unique_name] = tabletype
+    return table_types
 
-        # Build tables needed by all modified terminals
-        tables, mt_table_names = \
-            build_element_tables(num_points, self.quadrature_rules,
-                cell, integral_type, entitytype,
-                modified_terminals, epsilon)
 
-        # Optimize tables and get table name and dofrange for each modified terminal
-        unique_tables, mt_table_ranges = \
-            optimize_element_tables(tables, mt_table_names, epsilon)
+def build_optimized_tables(num_points, quadrature_rules,
+                           cell, integral_type, entitytype,
+                           modified_terminals, parameters):
+    # Get tolerance for checking table values against 0.0 or 1.0
+    epsilon = parameters["epsilon"]
 
-        # Analyze tables for properties useful for optimization
-        table_types = {}  # FIXME: Use this information!
-        for unique_name, table in unique_tables.items():
-            #num_entities, num_points, num_dofs = table.shape
-            num_points = table.shape[1]
-            if product(table.shape) == 0 or numpy.allclose(table, numpy.zeros(table.shape)):
-                # All values are 0.0
-                tabletype = "zeros"
-                # All table ranges referring to this table should be empty
-                assert all(data[1] == data[2]
-                           for mt, data in mt_table_ranges.items()
-                           if data is not None and data[0] == unique_name)
-            elif numpy.allclose(table, numpy.ones(table.shape)):
-                # All values are 1.0
-                tabletype = "ones"
-            elif all(numpy.allclose(table[:, 0, :], table[:, i, :])
-                     for i in range(1, num_points)):
-                # Piecewise constant over points (separately on each entity)
-                tabletype = "piecewise"
-            else:
-                # Varying over points
-                tabletype = "varying"
-            table_types[unique_name] = tabletype
+    # Build tables needed by all modified terminals
+    tables, mt_table_names = \
+        build_element_tables(num_points, quadrature_rules,
+            cell, integral_type, entitytype,
+            modified_terminals, epsilon)
 
-        # Modify dof ranges for restricted form arguments
-        # (geometry gets padded variable names instead)
-        for mt in modified_terminals:
-            if mt.restriction and isinstance(mt.terminal, FormArgument):
-                # offset = 0 or number of dofs before table optimization
-                num_original_dofs = int(tables[mt_table_names[mt]].shape[-1])
-                offset = ufc_restriction_offset(mt.restriction, num_original_dofs)
-                (unique_name, b, e) = mt_table_ranges[mt]
-                mt_table_ranges[mt] = (unique_name, b + offset, e + offset)
+    # Optimize tables and get table name and dofrange for each modified terminal
+    unique_tables, mt_table_ranges = \
+        optimize_element_tables(tables, mt_table_names, epsilon)
 
-        return unique_tables, mt_table_ranges, table_types
+    # Analyze tables for properties useful for optimization
+    table_types = analyse_table_types(unique_tables, mt_table_ranges, epsilon)
+
+    # Add offsets to dof ranges for restricted terminals
+    mt_table_ranges = offset_restricted_table_ranges(
+        mt_table_ranges, mt_table_names, tables, modified_terminals)
+
+    return unique_tables, mt_table_ranges, table_types

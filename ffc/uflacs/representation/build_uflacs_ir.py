@@ -33,10 +33,12 @@ from ffc.uflacs.analysis.graph_dependencies import compute_dependencies, mark_ac
 from ffc.uflacs.analysis.graph_ssa import compute_dependency_count, invert_dependencies
 #from ffc.uflacs.analysis.graph_ssa import default_cache_score_policy, compute_cache_scores, allocate_registers
 from ffc.uflacs.analysis.factorization import compute_argument_factorization
+from ffc.uflacs.elementtables.terminaltables import build_optimized_tables
 
 
 def build_uflacs_ir(cell, integral_type, entitytype,
-                    integrands, coefficient_numbering, table_provider):
+                    integrands, coefficient_numbering,
+                    quadrature_rules, parameters):
     uflacs_ir = {}
 
     # { ufl coefficient: count }
@@ -70,8 +72,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         # rebuilding! Must split compute_expr_ir to achieve this.
         # FIXME: Store table type as fourth entry in table ranges
         unique_tables, mt_table_ranges, table_types = \
-            table_provider.build_optimized_tables(num_points,
-                cell, integral_type, entitytype, terminal_data)
+            build_optimized_tables(num_points, quadrature_rules,
+                cell, integral_type, entitytype, terminal_data, parameters)
 
         # Figure out if we need to access CellCoordinate to
         # avoid generating quadrature point table otherwise

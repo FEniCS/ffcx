@@ -25,7 +25,6 @@ from ffc.log import info
 from ffc.representationutils import initialize_integral_ir
 from ffc.fiatinterface import create_element
 from ffc.uflacs.tools import compute_quadrature_rules, accumulate_integrals
-from ffc.uflacs.elementtables.terminaltables import TableProvider
 from ffc.uflacs.representation.build_uflacs_ir import build_uflacs_ir
 
 
@@ -53,9 +52,6 @@ def compute_integral_ir(itg_data,
 
     # Group and accumulate integrals on the format { num_points: integral data }
     sorted_integrals = accumulate_integrals(itg_data, quadrature_rule_sizes)
-
-    # Object providing finite element table computation
-    table_provider = TableProvider(quadrature_rules, parameters)
 
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.
@@ -114,6 +110,6 @@ def compute_integral_ir(itg_data,
     ir["uflacs"] = build_uflacs_ir(cell, itg_data.integral_type, ir["entitytype"],
                                    integrands,
                                    coefficient_numbering,
-                                   table_provider)
-
+                                   quadrature_rules,
+                                   parameters)
     return ir
