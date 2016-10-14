@@ -66,3 +66,14 @@ def compute_permutations(k, n, skip=[]):
             if i < p[0]:
                 permutations += [(i, ) + p]
     return permutations
+
+
+def insert_nested_dict(root, keys, value):
+    "Set root[keys[0]][...][keys[-1]] = value, creating subdicts on the way if missing."
+    for k in keys[:-1]:
+        d = root.get(k)
+        if d is None:
+            d = {}
+            root[k] = d
+        root = d
+    root[keys[-1]] = value

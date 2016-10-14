@@ -65,7 +65,7 @@ def compute_integral_ir(itg_data,
     # improve later to build tables on the fly instead of
     # precomputing psi_tables in ffc, somewhat disconnecting the
     # uflacs representation building from the psi_tables format
-    table_provider = TableProvider(psi_tables, parameters)
+    table_provider = TableProvider(psi_tables, quadrature_rules, parameters)
 
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.
@@ -119,10 +119,11 @@ def compute_integral_ir(itg_data,
         #    }
         # then pass coefficient_element and coefficient_domain to the uflacs ir as well
 
-
     # Build the more uflacs-specific intermediate representation
-    ir["uflacs"] = build_uflacs_ir(itg_data.integral_type, ir["entitytype"],
-                                   integrands, coefficient_numbering,
+    cell = itg_data.domain.ufl_cell()
+    ir["uflacs"] = build_uflacs_ir(cell, itg_data.integral_type, ir["entitytype"],
+                                   integrands,
+                                   coefficient_numbering,
                                    table_provider)
 
     return ir

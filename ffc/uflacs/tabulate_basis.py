@@ -30,20 +30,46 @@ from ufl import custom_integral_types
 
 # FFC modules
 from ffc.log import error
-from ffc.utils import product
+from ffc.utils import product, insert_nested_dict
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import map_facet_points, reference_cell_vertices
 from ffc.representationutils import create_quadrature_points_and_weights
+from ffc.representationutils import integral_type_to_entity_dim
 
 
-# Utilities we share with the quadrature representation version of tabulate_basis
-from ffc.quadrature.tabulate_basis import _find_element_derivatives
-from ffc.quadrature.tabulate_basis import _tabulate_psi_table
-from ffc.quadrature.tabulate_basis import insert_nested_dict
+def _map_entity_points(cellname, tdim, points, entity_dim, entity):
+    # Not sure if this is useful anywhere else than in _tabulate_psi_table!
+    if entity_dim == tdim:
+        assert entity == 0
+        return points
+    elif entity_dim == tdim-1:
+        return map_facet_points(points, entity)
+    elif entity_dim == 0:
+        return (reference_cell_vertices(cellname)[entity],)
+
+
+def _tabulate_psi_table(integral_type, cellname, tdim,
+                        element, deriv_order, points):
+    "Tabulate psi table for different integral types."
+    # Handle case when list of points is empty
+    if points is None:
+        from ffc.quadrature.tabulate_basis import _tabulate_empty_psi_table
+        return _tabulate_empty_psi_table(tdim, deriv_order, element)
+
+    # Otherwise, call FIAT to tabulate
+    entity_dim = integral_type_to_entity_dim(integral_type, tdim)
+    num_entities = num_cell_entities[cellname][entity_dim]
+    psi_table = {}
+    for entity in range(num_entities):
+        entity_points = _map_entity_points(cellname, tdim, points, entity_dim, entity)
+        psi_table[entity] = element.tabulate(deriv_order, entity_points)
+    return psi_table
 
 
 def tabulate_basis(sorted_integrals, form_data, itg_data, quadrature_rules):
     "Tabulate the basisfunctions and derivatives."
+    # Utilities we share with the quadrature representation version of tabulate_basis
+    from ffc.quadrature.tabulate_basis import _find_element_derivatives
 
     # Initialise return values.
     psi_tables = {}
@@ -54,7 +80,7 @@ def tabulate_basis(sorted_integrals, form_data, itg_data, quadrature_rules):
     cell = itg_data.domain.ufl_cell()
     cellname = cell.cellname()
     tdim = itg_data.domain.topological_dimension()
-    entity_dim = domain_to_entity_dim(integral_type, tdim)
+    entity_dim = integral_type_to_entity_dim(integral_type, tdim)
     num_entities = num_cell_entities[cellname][entity_dim]
 
     for num_points, integral in sorted(sorted_integrals.items()):

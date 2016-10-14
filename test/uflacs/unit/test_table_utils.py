@@ -5,6 +5,7 @@ Tests of table manipulation utilities.
 
 from __future__ import print_function
 
+from ufl import triangle
 from six import itervalues, iteritems
 from six.moves import xrange as range
 from ffc.uflacs.elementtables.table_utils import equal_tables, strip_table_zeros, build_unique_tables, get_ffc_table_values
@@ -185,7 +186,10 @@ def test_unique_tables_string_keys():
     for i, t in iteritems(tables):
         assert equal_tables(t, unique[mapping[i]], default_tolerance)
 
+
 def test_get_ffc_table_values_scalar_cell():
+    cell = triangle
+    integral_type = "cell"
     entitytype = "cell"
     class MockElement:
         def value_shape(self): return ()
@@ -211,6 +215,7 @@ def test_get_ffc_table_values_scalar_cell():
                     }
                 }
                 table = get_ffc_table_values(ffc_tables,
+                    cell, integral_type,
                     num_points, element, avg,
                     entitytype, derivatives, component, 
                     default_tolerance)
@@ -218,6 +223,8 @@ def test_get_ffc_table_values_scalar_cell():
 
 
 def test_get_ffc_table_values_vector_facet():
+    cell = triangle
+    integral_type = "exterior_facet"
     entitytype = "facet"
     num_entities = 3
     class MockElement:
@@ -256,6 +263,7 @@ def test_get_ffc_table_values_vector_facet():
                 # Tables use flattened component, so we can loop over them as integers:
                 for component in range(num_components):
                     table = get_ffc_table_values(ffc_tables,
+                        cell, integral_type,
                         num_points, element, avg,
                         entitytype, derivatives, component,
                         default_tolerance)

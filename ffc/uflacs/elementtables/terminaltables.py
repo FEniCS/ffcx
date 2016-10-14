@@ -33,7 +33,10 @@ from ffc.uflacs.elementtables.table_utils import clamp_table_small_integers, str
 from ffc.uflacs.backends.ffc.common import ufc_restriction_offset
 
 
-def build_element_tables(psi_tables, num_points, entitytype, modified_terminals, epsilon):
+# FIXME: Pass points
+def build_element_tables(psi_tables, num_points, quadrature_rules,
+                         cell, integral_type, entitytype,
+                         modified_terminals, epsilon):
     """Build the element tables needed for a list of modified terminals.
 
     Input:
@@ -51,7 +54,6 @@ def build_element_tables(psi_tables, num_points, entitytype, modified_terminals,
     tables = {}
     # Add to element tables
     for mt in modified_terminals:
-        
         t = mt.terminal
         rv = mt.reference_value
         gd = mt.global_derivatives
@@ -103,15 +105,25 @@ def build_element_tables(psi_tables, num_points, entitytype, modified_terminals,
         local_derivatives = derivative_listing_to_counts(ld, tdim)
 
         # Build name for this particular table
-        name = generate_psi_table_name(element_counter,
-            fc, local_derivatives, avg, entitytype, num_points)
+        name = generate_psi_table_name(
+            num_points, element_counter, avg,
+            entitytype, local_derivatives, fc)
 
         # Extract the values of the table from ffc table format
         if name not in tables:
-            tables[name] = get_ffc_table_values(psi_tables,
-                num_points, element, avg,
-                entitytype, local_derivatives, fc,
-                epsilon)
+            if 0: # TODO: Fix this:
+                points, weights = quadrature_rules[num_points]
+                tables[name] = compute_table_values(
+                    cell, integral_type, points,
+                    element, avg,
+                    entitytype, local_derivatives, fc,
+                    epsilon)
+            else:
+                tables[name] = get_ffc_table_values(psi_tables,
+                    cell, integral_type,
+                    num_points, element, avg,
+                    entitytype, local_derivatives, fc,
+                    epsilon)
 
         # Store table name with modified terminal
         mt_table_names[mt] = name
@@ -194,21 +206,24 @@ def optimize_element_tables(tables, mt_table_names, epsilon):
 
 
 class TableProvider(object):
-    def __init__(self, psi_tables, parameters):
+    def __init__(self, psi_tables, quadrature_rules, parameters):
         self.psi_tables = psi_tables
+        self.quadrature_rules = quadrature_rules
 
         # FIXME: Should be epsilon from ffc parameters
         from ffc.uflacs.language.format_value import get_float_threshold
         self.epsilon = get_float_threshold()
 
-    def build_optimized_tables(self, num_points, entitytype, modified_terminals):
+    def build_optimized_tables(self, num_points, cell, integral_type, entitytype, modified_terminals):
         psi_tables = self.psi_tables
         epsilon = self.epsilon
 
         # Build tables needed by all modified terminals
         # (currently build here means extract from ffc psi_tables)
         tables, mt_table_names = \
-            build_element_tables(psi_tables, num_points, entitytype, modified_terminals, epsilon)
+            build_element_tables(psi_tables, num_points, self.quadrature_rules,
+                cell, integral_type, entitytype,
+                modified_terminals, epsilon)
 
         # Optimize tables and get table name and dofrange for each modified terminal
         unique_tables, mt_table_ranges = \

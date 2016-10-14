@@ -25,10 +25,12 @@ import numpy
 from six import itervalues, iterkeys
 from six import advance_iterator as next
 
+from ufl.permutation import build_component_numbering
+from ufl.cell import num_cell_entities
+
 from ffc.log import error
 from ffc.fiatinterface import create_element
-
-from ufl.permutation import build_component_numbering
+from ffc.representationutils import integral_type_to_entity_dim
 
 
 def equal_tables(a, b, eps):
@@ -154,22 +156,38 @@ def compute_table_values(tables, entitytype, num_points, ufl_element, flat_compo
 
 
 
-def missing_args(ufl_element, integral_type, cell, points):
+def compute_table_values(cell, integral_type, points, ufl_element, avg,
+                         entitytype, local_derivatives, fc, epsilon):
     fiat_element = create_element(ufl_element)
 
     cellname = cell.cellname()
     tdim = cell.topological_dimension()
 
-    entity_dim = domain_to_entity_dim(integral_type, tdim)
-    num_entities = num_cell_entities[cellname][entity_dim]
+    entity_dim = integral_type_to_entity_dim(integral_type, tdim)
 
-    for entity in range(num_entities):
-        entity_points = _map_entity_points(cellname, tdim, points, entity_dim, entity)
-        table[entity] = fiat_element.tabulate(deriv_order, entity_points)
+    deriv_order = sum(local_derivatives)  # FIXME: Right?
+
+    tables = {}
+    if avg is None:
+        # Compute table for each entity
+        num_entities = num_cell_entities[cellname][entity_dim]
+        for entity in range(num_entities):
+            entity_points = _map_entity_points(cellname, tdim, points, entity_dim, entity)
+            tables[entity] = fiat_element.tabulate(deriv_order, entity_points)
+    elif avg in ("cell", "facet"):
+        num_entities = 1
+        entity = 0
+        tables[entity] = fixme
+
+    # FIXME: Reshape
+
+    return tables
 
 
 #tbl = compute_table(num_points, element, avg, entity, derivative_counts)
-def get_ffc_table_values(psi_tables, num_points, element, avg,
+def get_ffc_table_values(psi_tables,
+                         cell, integral_type,
+                         num_points, ufl_element, avg,
                          entitytype, derivative_counts,
                          flat_component, epsilon):
     """Extract values from ffc element table.
@@ -178,45 +196,68 @@ def get_ffc_table_values(psi_tables, num_points, element, avg,
     (entity number, quadrature point number, dof number)
     """
     # Get quadrule/element subtable
-    subtable = psi_tables[num_points][element][avg]
+    subtable = psi_tables[num_points][ufl_element][avg]
 
-    # Figure out shape of final array by inspecting psi_tables
-    num_entities = len(subtable)
-    entity = 0  # Just look at the first entity
-    num_dofs = len(subtable[entity][derivative_counts])
+    #fiat_element = create_element(ufl_element)
+    deriv_order = sum(derivative_counts)  # FIXME: Right?
 
-    # Make 3D array for final result
-    shape = (num_entities, num_points, num_dofs)
-    res = numpy.zeros(shape)
+    if avg is None:
+        cellname = cell.cellname()
+        tdim = cell.topological_dimension()
+        entity_dim = integral_type_to_entity_dim(integral_type, tdim)
+        num_entities = num_cell_entities[cellname][entity_dim]
+
+        # Extract tables for this derivative combination for each entity
+        entity_tables = []
+        for entity in range(num_entities):
+            tbl = subtable[entity][derivative_counts]
+
+            #entity_points = fixme
+            #tbl = fiat_element.tabulate(deriv_order, entity_points)
+
+            entity_tables.append(tbl)
+
+    elif avg in ("cell", "facet"):
+        num_entities = 1
+        # FIXME: Compute average tables
+
+
+    # Extract arrays for the right component
+    component_tables = {}
+    sh = ufl_element.value_shape()
+    if sh == ():
+        # Scalar valued element
+        for entity, entity_table in enumerate(entity_tables):
+            component_tables[entity] = entity_table
+    elif len(sh) == 2 and ufl_element.num_sub_elements() == 0:
+        # 2-tensor-valued elements, not a tensor product
+        # mapping flat_component back to tensor component
+        (_, f2t) = build_component_numbering(sh, ufl_element.symmetry())
+        t_comp = f2t[flat_component]
+        for entity, entity_table in enumerate(entity_tables):
+            component_tables[entity] = entity_table[:, t_comp[0], t_comp[1], :]
+    else:
+        # Vector-valued or mixed element
+        for entity, entity_table in enumerate(entity_tables):
+            component_tables[entity] = entity_table[:, flat_component, :]
 
     # Loop over entities and fill table blockwise (each block = points x dofs)
-    sh = element.value_shape()
+    # Reorder axes as (points, dofs) instead of (dofs, points)
+    assert len(component_tables) == num_entities
+    num_dofs, num_points = component_tables[0].shape
+    shape = (num_entities, num_points, num_dofs)
+    res = numpy.zeros(shape)
     for entity in range(num_entities):
-        # Access subtable
-        tbl = subtable[entity][derivative_counts]
-
-        # Extract array for right component and order axes as (points, dofs)
-        if sh == ():
-            arr = numpy.transpose(tbl)
-        elif len(sh) == 2 and element.num_sub_elements() == 0:
-            # 2-tensor-valued elements, not a tensor product
-            # mapping flat_component back to tensor component
-            (_, f2t) = build_component_numbering(sh, element.symmetry())
-            t_comp = f2t[flat_component]
-            arr = numpy.transpose(tbl[:, t_comp[0], t_comp[1], :])
-        else:
-            arr = numpy.transpose(tbl[:, flat_component,:])
-
-        # Assign block of values for this entity
-        res[entity,:,:] = arr
+        res[entity, :, :] = numpy.transpose(component_tables[entity])
 
     # Clamp almost-zeros to zero
-    res[numpy.where(numpy.abs(res) < epsilon)] = 0.0
+    #res[numpy.where(numpy.abs(res) < epsilon)] = 0.0  # TODO: This is done by table optimization, remove here?
+
     return res
 
 
-def generate_psi_table_name(element_counter,
-    flat_component, derivative_counts, averaged, entitytype, num_points):
+def generate_psi_table_name(num_points, element_counter,
+    averaged, entitytype, derivative_counts, flat_component):
     """Generate a name for the psi table of the form:
     FE#_C#_D###[_AC|_AF|][_F|V][_Q#], where '#' will be an integer value.
 

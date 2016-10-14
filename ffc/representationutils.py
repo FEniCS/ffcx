@@ -51,6 +51,21 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     return (points, weights)
 
 
+def integral_type_to_entity_dim(integral_type, tdim):
+    "Given integral_type and domain tdim, return the tdim of the integration entity."
+    if integral_type == "cell":
+        entity_dim = tdim
+    elif (integral_type == "exterior_facet" or integral_type == "interior_facet"):
+        entity_dim = tdim - 1
+    elif integral_type == "vertex":
+        entity_dim = 0
+    elif integral_type in custom_integral_types:
+        entity_dim = tdim
+    else:
+        error("Unknown integral_type: %s" % integral_type)
+    return entity_dim
+
+
 def transform_component(component, offset, ufl_element):
     """
     This function accounts for the fact that if the geometrical and

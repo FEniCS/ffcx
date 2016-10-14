@@ -33,10 +33,11 @@ from ufl import custom_integral_types
 
 # FFC modules
 from ffc.log import error
-from ffc.utils import product
+from ffc.utils import product, insert_nested_dict
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import map_facet_points, reference_cell_vertices
 from ffc.representationutils import create_quadrature_points_and_weights
+from ffc.representationutils import integral_type_to_entity_dim
 
 
 def _find_element_derivatives(expr, elements, element_replace_map):
@@ -67,30 +68,6 @@ def _find_element_derivatives(expr, elements, element_replace_map):
     return num_derivatives
 
 
-def domain_to_entity_dim(integral_type, tdim):
-    if integral_type == "cell":
-        entity_dim = tdim
-    elif (integral_type == "exterior_facet" or integral_type == "interior_facet"):
-        entity_dim = tdim - 1
-    elif integral_type == "vertex":
-        entity_dim = 0
-    elif integral_type in custom_integral_types:
-        entity_dim = tdim
-    else:
-        error("Unknown integral_type: %s" % integral_type)
-    return entity_dim
-
-
-def _map_entity_points(cellname, tdim, points, entity_dim, entity):
-    # Not sure if this is useful anywhere else than in _tabulate_psi_table!
-    if entity_dim == tdim:
-        return points
-    elif entity_dim == tdim-1:
-        return map_facet_points(points, entity)
-    elif entity_dim == 0:
-        return (reference_cell_vertices(cellname)[entity],)
-
-
 def _tabulate_empty_psi_table(tdim, deriv_order, element):
     "Tabulate psi table when there are no points (custom integrals)."
 
@@ -109,40 +86,39 @@ def _tabulate_empty_psi_table(tdim, deriv_order, element):
             value_size = product(value_shape)
             table[d] = [[[] for c in range(value_size)]]
 
-    # Let entity be 0 even for non-cells
+    # Let entity be 0 even for non-cells, this is for
+    # custom integrals where we don't need tables to
+    # contain multiple entitites
     entity = 0
-
     return {entity: table}
 
 
-def _tabulate_psi_table(integral_type, cellname, tdim, element, deriv_order,
-                        points):
+def _map_entity_points(cellname, tdim, points, entity_dim, entity):
+    # Not sure if this is useful anywhere else than in _tabulate_psi_table!
+    if entity_dim == tdim:
+        assert entity == 0
+        return points
+    elif entity_dim == tdim-1:
+        return map_facet_points(points, entity)
+    elif entity_dim == 0:
+        return (reference_cell_vertices(cellname)[entity],)
+
+
+def _tabulate_psi_table(integral_type, cellname, tdim,
+                        element, deriv_order, points):
     "Tabulate psi table for different integral types."
     # Handle case when list of points is empty
     if points is None:
         return _tabulate_empty_psi_table(tdim, deriv_order, element)
 
     # Otherwise, call FIAT to tabulate
-    entity_dim = domain_to_entity_dim(integral_type, tdim)
+    entity_dim = integral_type_to_entity_dim(integral_type, tdim)
     num_entities = num_cell_entities[cellname][entity_dim]
-
-    mapped_points = { entity: _map_entity_points(cellname, tdim, points, entity_dim, entity)
-                      for entity in range(num_entities) }
-
-    psi_table = { entity: element.tabulate(deriv_order, entity_points)
-                  for entity, entity_points in mapped_points.items() }
-
+    psi_table = {}
+    for entity in range(num_entities):
+        entity_points = _map_entity_points(cellname, tdim, points, entity_dim, entity)
+        psi_table[entity] = element.tabulate(deriv_order, entity_points)
     return psi_table
-
-
-def insert_nested_dict(root, keys, value):
-    for k in keys[:-1]:
-        d = root.get(k)
-        if d is None:
-            d = {}
-            root[k] = d
-        root = d
-    root[keys[-1]] = value
 
 
 # MSA: This function is in serious need for some refactoring and
@@ -167,7 +143,7 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
     cell = itg_data.domain.ufl_cell()
     cellname = cell.cellname()
     tdim = itg_data.domain.topological_dimension()
-    entity_dim = domain_to_entity_dim(integral_type, tdim)
+    entity_dim = integral_type_to_entity_dim(integral_type, tdim)
     num_entities = num_cell_entities[cellname][entity_dim]
 
     # Create canonical ordering of quadrature rules
