@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2009-2013 Kristian B. Oelgaard and Anders Logg
+
+# Copyright (C) 2009-2016 Kristian B. Oelgaard and Anders Logg
 #
 # This file is part of FFC.
 #
@@ -18,7 +19,7 @@
 #
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009-2013.
-# Modified by Martin Alnaes, 2013
+# Modified by Martin Sandve Alnæs, 2013
 # Modified by Lizao Li, 2015, 2016
 
 # Python modules
@@ -207,10 +208,10 @@ def create_quadrature(shape, degree, scheme="default"):
                            [0.0, 1.0]]),
                     array([1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0])
                     )
-        else:
+        elif shape == "interval":
             # Trapezoidal rule.
-            return (array([[0.0, 0.0],
-                           [0.0, 1.0]]),
+            return (array([[0.0],
+                           [1.0]]),
                     array([1.0 / 2.0, 1.0 / 2.0])
                     )
 

@@ -20,7 +20,7 @@
 #
 # Modified by Mehdi Nikbakht 2010
 # Modified by Anders Logg 2013-2014
-# Modified by Martin Alnaes 2013-2014
+# Modified by Martin Sandve Alnæs 2013-2014
 
 # Python modules
 import functools
@@ -94,7 +94,7 @@ def _tabulate_tensor(ir, prefix, parameters):
     sets = [used_weights, used_psi_tables, used_nzcs, trans_set]
 
     affine_tables = {}  # TODO: This is not populated anywhere, remove?
-    quadrature_weights = ir["quadrature_weights"]
+    quadrature_rules = ir["quadrature_rules"]
 
     operations = []
     if integral_type == "cell":
@@ -330,7 +330,7 @@ def _tabulate_tensor(ir, prefix, parameters):
 
     # Add common code except for custom integrals
     if integral_type not in custom_integral_types:
-        common += _tabulate_weights([quadrature_weights[p] for p in sorted(used_weights)])
+        common += _tabulate_weights([quadrature_rules[p] for p in sorted(used_weights)])
 
         # Add common code for updating tables
         name_map = ir["name_map"]
@@ -627,7 +627,7 @@ def _generate_integral_code(points, terms, sets, optimise_parameters):
     return code, num_ops
 
 
-def _tabulate_weights(quadrature_weights):
+def _tabulate_weights(quadrature_rules):
     "Generate table of quadrature weights."
 
     # Prefetch formats to speed up code generation.
@@ -645,7 +645,7 @@ def _tabulate_weights(quadrature_weights):
     code = ["", f_comment("Array of quadrature weights.")]
 
     # Loop tables of weights and create code.
-    for weights, points in quadrature_weights:
+    for weights, points in quadrature_rules:
         # FIXME: For now, raise error if we don't have weights.
         # We might want to change this later.
         ffc_assert(weights.any(), "No weights.")

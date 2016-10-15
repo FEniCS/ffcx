@@ -22,12 +22,12 @@ from __future__ import print_function  # used in some debugging
 
 import numpy
 
-from six import itervalues, iterkeys
-from six import advance_iterator as next
+from ufl.permutation import build_component_numbering
+from ufl.cell import num_cell_entities
 
 from ffc.log import error
-
-from ufl.permutation import build_component_numbering
+from ffc.fiatinterface import create_element
+from ffc.representationutils import integral_type_to_entity_dim, map_integral_points
 
 
 def equal_tables(a, b, eps):
@@ -37,11 +37,12 @@ def equal_tables(a, b, eps):
     if a.shape != b.shape:
         return False
     if len(a.shape) > 1:
-        return all(equal_tables(a[i], b[i], eps) for i in range(a.shape[0]))
-
+        return all(equal_tables(a[i], b[i], eps)
+                   for i in range(a.shape[0]))
     def scalars_equal(x, y, eps):
         return abs(x-y) < eps
-    return all(scalars_equal(a[i], b[i], eps) for i in range(a.shape[0]))
+    return all(scalars_equal(a[i], b[i], eps)
+               for i in range(a.shape[0]))
 
 
 def clamp_table_small_integers(table, eps):
@@ -105,65 +106,95 @@ def build_unique_tables(tables, eps):
     return unique, mapping
 
 
-def get_ffc_table_values(tables, entitytype, num_points, element, flat_component, derivative_counts, epsilon):
+def get_ffc_table_values(points,
+                         cell, integral_type,
+                         num_points, # TODO: Remove, not needed
+                         ufl_element, avg,
+                         entitytype, derivative_counts,
+                         flat_component, epsilon):
     """Extract values from ffc element table.
 
     Returns a 3D numpy array with axes
     (entity number, quadrature point number, dof number)
     """
-    # Get quadrule/element subtable
-    element_table = tables[num_points][element]
+    deriv_order = sum(derivative_counts)
 
-    # Temporary fix for new table structure TODO: Handle avg properly
-    if len(element_table) != 1:
-        print()
-        print(element_table)
-    assert len(element_table) == 1
-    element_table = element_table[None]
+    if avg in ("cell", "facet"):
+        # Redefine points to compute average tables
 
-    # FFC property:
-    # element_counter = element_map[num_points][element]
+        # Make sure this is not called with points, that doesn't make sense
+        assert points is None
+        assert num_points is None
 
-    # Figure out shape of final array by inspecting tables
-    num_entities = len(element_table)
-    tmp = next(itervalues(element_table)) # Pick subtable for arbitrary chosen cell entity
-    if derivative_counts is None: # Workaround for None vs (0,)*tdim
-        dc = next(iterkeys(tmp))
-        derivative_counts = (0,)*len(dc)
-    num_dofs = len(tmp[derivative_counts])
+        # Not expecting derivatives of averages
+        assert not any(derivative_counts)
+        assert deriv_order == 0
 
-    # Make 3D array for final result
-    shape = (num_entities, num_points, num_dofs)
-    res = numpy.zeros(shape)
+        # Doesn't matter if it's exterior or interior facet integral,
+        # just need a valid integral type to create quadrature rule
+        if avg == "cell":
+            integral_type = "cell"
+        elif avg == "facet":
+            integral_type = "exterior_facet"
+
+        # Make quadrature rule and get points and weights
+        points, weights = create_quadrature_points_and_weights(
+            avg_integral_type, cell, ufl_element.degree(), "default")
+
+    # Tabulate table of basis functions and derivatives in points for each entity
+    fiat_element = create_element(ufl_element)
+    tdim = cell.topological_dimension()
+    entity_dim = integral_type_to_entity_dim(integral_type, tdim)
+    num_entities = num_cell_entities[cell.cellname()][entity_dim]
+    entity_tables = []
+    for entity in range(num_entities):
+        entity_points = map_integral_points(points, integral_type, cell, entity)
+        tbl = fiat_element.tabulate(deriv_order, entity_points)[derivative_counts]
+        entity_tables.append(tbl)
+
+    # Extract arrays for the right scalar component
+    component_tables = []
+    sh = ufl_element.value_shape()
+    if sh == ():
+        # Scalar valued element
+        for entity, entity_table in enumerate(entity_tables):
+            component_tables.append(entity_table)
+    elif len(sh) == 2 and ufl_element.num_sub_elements() == 0:
+        # 2-tensor-valued elements, not a tensor product
+        # mapping flat_component back to tensor component
+        (_, f2t) = build_component_numbering(sh, ufl_element.symmetry())
+        t_comp = f2t[flat_component]
+        for entity, entity_table in enumerate(entity_tables):
+            tbl = entity_table[:, t_comp[0], t_comp[1], :]
+            component_tables.append(tbl)
+    else:
+        # Vector-valued or mixed element
+        for entity, entity_table in enumerate(entity_tables):
+            tbl = entity_table[:, flat_component, :]
+            component_tables.append(tbl)
+
+    if avg in ("cell", "facet"):
+        # Compute numeric integral of the each component table
+        wsum = sum(weights)
+        for entity, tbl in enumerate(component_tables):
+            num_dofs = tbl.shape[0]
+            tbl = numpy.dot(tbl, weights) / wsum
+            tbl = reshape(tbl, (num_dofs, 1))
+            component_tables[entity] = tbl
 
     # Loop over entities and fill table blockwise (each block = points x dofs)
-    sh = element.value_shape()
+    # Reorder axes as (points, dofs) instead of (dofs, points)
+    assert len(component_tables) == num_entities
+    num_dofs, num_points = component_tables[0].shape
+    shape = (num_entities, num_points, num_dofs)
+    res = numpy.zeros(shape)
     for entity in range(num_entities):
-        # Access subtable
-        entity_key = None if entitytype == "cell" else entity
-        tbl = element_table[entity_key][derivative_counts]
-
-        # Extract array for right component and order axes as (points, dofs)
-        if sh == ():
-            arr = numpy.transpose(tbl)
-        elif len(sh) == 2 and element.num_sub_elements() == 0:
-            # 2-tensor-valued elements, not a tensor product
-            # mapping flat_component back to tensor component
-            (_, f2t) = build_component_numbering(sh, element.symmetry())
-            t_comp = f2t[flat_component]
-            arr = numpy.transpose(tbl[:, t_comp[0], t_comp[1], :])
-        else:
-            arr = numpy.transpose(tbl[:, flat_component,:])
-
-        # Assign block of values for this entity
-        res[entity,:,:] = arr
-
-    # Clamp almost-zeros to zero
-    res[numpy.where(numpy.abs(res) < epsilon)] = 0.0
+        res[entity, :, :] = numpy.transpose(component_tables[entity])
     return res
 
 
-def generate_psi_table_name(element_counter, flat_component, derivative_counts, averaged, entitytype, num_quadrature_points):
+def generate_psi_table_name(num_points, element_counter, averaged,
+                            entitytype, derivative_counts, flat_component):
     """Generate a name for the psi table of the form:
     FE#_C#_D###[_AC|_AF|][_F|V][_Q#], where '#' will be an integer value.
 
@@ -187,44 +218,13 @@ def generate_psi_table_name(element_counter, flat_component, derivative_counts, 
     Q   - number of quadrature points, to distinguish between tables in a mixed quadrature degree setting
 
     """
-
     name = "FE%d" % element_counter
-
-    if isinstance(flat_component, int):
+    if flat_component is not None:
         name += "_C%d" % flat_component
-    else:
-        assert flat_component is None
-
-    if derivative_counts and any(derivative_counts):
-        name += "_D" + "".join(map(str, derivative_counts))
-
-    if averaged == "cell":
-        name += "_AC"
-    elif averaged == "facet":
-        name += "_AF"
-
-    if entitytype == "cell":
-        pass
-    elif entitytype == "facet":
-        name += "_F"
-    elif entitytype == "vertex":
-        name += "_V"
-    else:
-        error("Unknown entity type %s." % entitytype)
-
-    if isinstance(num_quadrature_points, int):
-        name += "_Q%d" % num_quadrature_points
-    else:
-        assert num_quadrature_points is None
-
+    if any(derivative_counts):
+        name += "_D" + "".join(str(d) for d in derivative_counts)
+    name += { None: "", "cell": "_AC", "facet": "_AF" }[averaged]
+    name += { "cell": "", "facet": "_F", "vertex": "_V" }[entitytype]
+    if num_points is not None:
+        name += "_Q%d" % num_points
     return name
-
-
-#def _examples(tables):
-#    eps = 1e-14
-#    name = generate_psi_table_name(counter, flat_component, derivative_counts, averaged, entitytype, None)
-#    values = get_ffc_table_values(tables, entitytype, num_points, element, flat_component, derivative_counts, eps)
-
-#    begin, end, table = strip_table_zeros(table, eps)
-#    all_zeros = table.shape[-1] == 0
-#    all_ones = equal_tables(table, numpy.ones(table.shape), eps)

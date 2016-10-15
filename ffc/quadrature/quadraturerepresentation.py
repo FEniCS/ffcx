@@ -19,7 +19,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Anders Logg 2009, 2014
-# Modified by Martin Alnaes 2013-2016
+# Modified by Martin Sandve Alnæs 2013-2016
 
 # Python modules
 import six
@@ -71,7 +71,7 @@ def compute_integral_ir(itg_data,
         tabulate_basis(sorted_integrals, form_data, itg_data)
 
     # Save tables for quadrature weights and points
-    ir["quadrature_weights"] = quadrature_rules  # TODO: Rename this ir entry to quadrature_rules
+    ir["quadrature_rules"] = quadrature_rules
 
     # Create dimensions of primary indices, needed to reset the
     # argument 'A' given to tabulate_tensor() by the assembler.
@@ -115,20 +115,16 @@ def compute_integral_ir(itg_data,
 
     # Extract element data for psi_tables, needed for runtime
     # quadrature.  This is used by integral type custom_integral.
-    ir["element_data"] = _extract_element_data(transformer.element_map,
-                                               element_numbers,
-                                               classnames)
+    ir["element_data"] = _extract_element_data(transformer.element_map, classnames)
 
     return ir
 
 
-def sort_integrals(integrals, default_quadrature_degree,
-                   default_quadrature_rule):
+def sort_integrals(integrals, default_scheme, default_degree):
     """Sort and accumulate integrals according to the number of quadrature
-points needed per axis.
+    points needed per axis.
 
     All integrals should be over the same (sub)domain.
-
     """
 
     if not integrals:
@@ -151,21 +147,20 @@ points needed per axis.
         # Override default degree and rule if specified in integral
         # metadata
         integral_metadata = integral.metadata() or {}
-        degree = integral_metadata.get("quadrature_degree",
-                                       default_quadrature_degree)
-        rule = integral_metadata.get("quadrature_rule", default_quadrature_rule)
+        degree = integral_metadata.get("quadrature_degree", default_degree)
+        scheme = integral_metadata.get("quadrature_rule", default_scheme)
         assert isinstance(degree, int)
-        # Add integrand to dictionary according to degree and rule.
-        key = (degree, rule)
-        sorted_integrands[key].append(integral.integrand())
+        # Add integrand to dictionary according to degree and scheme.
+        rule = (scheme, degree)
+        sorted_integrands[rule].append(integral.integrand())
 
     # Create integrals from accumulated integrands.
     sorted_integrals = {}
-    for key, integrands in list(sorted_integrands.items()):
+    for rule, integrands in list(sorted_integrands.items()):
         # Summing integrands in a canonical ordering defined by UFL
         integrand = sorted_expr_sum(integrands)
-        sorted_integrals[key] = Integral(integrand, integral_type, domain,
-                                         subdomain_id, {}, None)
+        sorted_integrals[rule] = Integral(integrand, integral_type, domain,
+                                          subdomain_id, {}, None)
     return sorted_integrals
 
 
@@ -232,7 +227,7 @@ def _transform_integrals(transformer, integrals, integral_type):
     return transformed_integrals
 
 
-def _extract_element_data(element_map, element_numbers, classnames):
+def _extract_element_data(element_map, classnames):
     "Extract element data for psi_tables"
 
     # Iterate over map
@@ -246,16 +241,12 @@ def _extract_element_data(element_map, element_numbers, classnames):
             # Compute value size
             value_size = product(ufl_element.value_shape())
 
-            # Get element number
-            element_number = element_numbers[ufl_element]
-
             # Get element classname
             element_classname = classnames["finite_element"][ufl_element]
     
             # Store data
             element_data[counter] = {"physical_value_size": value_size,
                                      "num_element_dofs": fiat_element.space_dimension(),
-                                     "element_number": element_number,
                                      "classname": element_classname}
 
     return element_data

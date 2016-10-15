@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Code generation for evaluation of finite element basis values. This
-module generates code which is more or less a C++ representation of
-the code found in FIAT."""
 
-# Copyright (C) 2007-2010 Kristian B. Oelgaard
+# Copyright (C) 2007-2016 Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -20,13 +17,14 @@ the code found in FIAT."""
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# First added:  2007-04-04
-# Last changed: 2016-08-17
-#
 # Modified by Marie E. Rognes 2011
 # Modified by Anders Logg 2013
 # Modified by Lizao Li 2015, 2016
-#
+
+"""Code generation for evaluation of finite element basis values. This
+module generates code which is more or less a C++ representation of
+the code found in FIAT."""
+
 # MER: The original module generated code that was more or less a C++
 # representation of the code found in FIAT. I've modified this (for 2
 # and 3D) to generate code that does the same as FIAT, but with loops

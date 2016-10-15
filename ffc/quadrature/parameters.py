@@ -19,7 +19,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Anders Logg 2009, 2014
-# Modified by Martin Alnaes 2013-2014
+# Modified by Martin Sandve Alnæs 2013-2014
 
 # UFL modules
 from ufl import custom_integral_types

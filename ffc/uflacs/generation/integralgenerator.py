@@ -32,24 +32,6 @@ class IntegralGenerator(object):
         # Store ir
         self.ir = ir
 
-        # Consistency check on quadrature rules
-        nps1 = sorted(ir["uflacs"]["expr_irs"].keys())
-        nps2 = sorted(ir["quadrature_rules"].keys())
-        if nps1 != nps2:
-            warning("Got different num_points for expression irs and quadrature rules:\n{0}\n{1}".format(
-                nps1, nps2))
-
-        # Compute shape of element tensor
-        if self.ir["integral_type"] == "interior_facet":
-            self._A_shape = [2 * n for n in self.ir["prim_idims"]]
-        else:
-            self._A_shape = self.ir["prim_idims"]
-
-        # TODO: Get self.alignas, self.padlen from ir (and set via parameters)
-        sizeof_double = 8
-        self.alignas = 32
-        self.padlen = self.alignas // sizeof_double
-
         # Backend specific plugin with attributes
         # - language: for translating ufl operators to target language
         # - symbols: for translating ufl operators to target language
@@ -110,7 +92,7 @@ class IntegralGenerator(object):
         # we wrap each integral in a separate scope, avoiding having to
         # think about name clashes for now. This is a bit wasteful in that
         # piecewise quantities are not shared, but at least it should work.
-        expr_irs = self.ir["uflacs"]["expr_irs"]
+        expr_irs = self.ir["expr_irs"]
         all_num_points = sorted(expr_irs)
 
         # Reset variables, separate sets for quadrature loop
@@ -136,33 +118,33 @@ class IntegralGenerator(object):
 
         parts = []
 
-        # No quadrature tables for custom (given argument) or point (evaluation in single vertex)
-        if self.ir["integral_type"] in ("custom", "cutcell", "interface", "overlap", "vertex"):
+        # No quadrature tables for custom (given argument)
+        # or point (evaluation in single vertex)
+        skip = ("custom", "cutcell", "interface", "overlap", "vertex")
+        if self.ir["integral_type"] in skip:
             return parts
 
+        # Loop over quadrature rules
         qrs = self.ir["quadrature_rules"]
-        expr_irs = self.ir["uflacs"]["expr_irs"]
         for num_points in sorted(qrs):
-            assert num_points is not None
+            points, weights = qrs[num_points]
+            assert num_points == len(weights)
 
-            expr_ir = expr_irs[num_points]
-
-            # Quadrature weights array
-            weights = qrs[num_points][0]
+            # Generate quadrature weights array
             wsym = self.backend.symbols.weights_array(num_points)
             parts += [L.ArrayDecl("static const double", wsym, num_points, weights,
-                                  alignas=self.alignas)]
+                                  alignas=self.ir["alignas"])]
 
-            # Quadrature points array
-            points = qrs[num_points][1]
             # Size of quadrature points depends on context, assume this is correct:
             pdim = len(points[0])
-            if expr_ir["need_points"] and pdim > 0:
+
+            # Generate quadrature points array
+            if pdim and self.ir["expr_irs"][num_points]["need_points"]:
                 # Flatten array: (TODO: avoid flattening here, it makes padding harder)
-                points = points.reshape(product(points.shape))
+                flattened_points = points.reshape(product(points.shape))
                 psym = self.backend.symbols.points_array(num_points)
-                parts += [L.ArrayDecl("static const double", psym, num_points * pdim, points,
-                                      alignas=self.alignas)]
+                parts += [L.ArrayDecl("static const double", psym, num_points * tdim,
+                                      flattened_points, alignas=self.ir["alignas"])]
 
         # Add leading comment if there are any tables
         if parts:
@@ -176,7 +158,7 @@ class IntegralGenerator(object):
         function values in quadrature points."""
         L = self.backend.language
         parts = []
-        expr_irs = self.ir["uflacs"]["expr_irs"]
+        expr_irs = self.ir["expr_irs"]
         for num_points in sorted(expr_irs):
             # Get all unique tables for this quadrature rule
             tables = expr_irs[num_points]["unique_tables"]
@@ -189,7 +171,7 @@ class IntegralGenerator(object):
                 for name in sorted(tables):
                     table = tables[name]
                     parts += [L.ArrayDecl("static const double", name, table.shape, table,
-                                          alignas=self.alignas)]  # TODO: Not padding, consider when and if to do so
+                                          alignas=self.ir["alignas"])]  # TODO: Not padding, consider when and if to do so
         # Add leading comment if there are any tables
         if parts:
             header = [L.Comment("Section for precomputed element basis function values"),
@@ -209,7 +191,7 @@ class IntegralGenerator(object):
             return L.VerbatimStatement(code)
 
         # Compute tensor size
-        A_size = product(self._A_shape)
+        A_size = product(self.ir["tensor_shape"])
         A = self.backend.symbols.element_tensor()
 
         # Stitch it together
@@ -267,7 +249,7 @@ class IntegralGenerator(object):
             return parts
         assert iarg < self.ir["rank"]
 
-        expr_ir = self.ir["uflacs"]["expr_irs"][num_points]
+        expr_ir = self.ir["expr_irs"][num_points]
         # tuple(modified_argument_indices) -> code_index
         AF = expr_ir["argument_factorization"]
 
@@ -358,7 +340,7 @@ class IntegralGenerator(object):
         # Join terminal computation, array of intermediate expressions, and intermediate computations
         parts = [definitions]
         if intermediates:
-            parts += [L.ArrayDecl("double", symbol, len(intermediates), alignas=self.alignas)]
+            parts += [L.ArrayDecl("double", symbol, len(intermediates), alignas=self.ir["alignas"])]
             parts += intermediates
         return parts
 
@@ -430,7 +412,7 @@ class IntegralGenerator(object):
         # Join terminal computation, array of intermediate expressions, and intermediate computations
         parts = [definitions]
         if intermediates:
-            parts += [L.ArrayDecl("double", symbol, len(intermediates), alignas=self.alignas)]
+            parts += [L.ArrayDecl("double", symbol, len(intermediates), alignas=self.ir["alignas"])]
             parts += intermediates
         return parts
 
@@ -441,7 +423,7 @@ class IntegralGenerator(object):
         This mostly includes computations involving piecewise constant geometry and coefficients.
         """
         L = self.backend.language
-        expr_ir = self.ir["uflacs"]["expr_irs"][num_points]
+        expr_ir = self.ir["expr_irs"][num_points]
         arraysymbol = L.Symbol("sp{0}".format(num_points))
         parts = self.generate_partition(arraysymbol,
                                         expr_ir["V"],
@@ -455,7 +437,7 @@ class IntegralGenerator(object):
 
     def generate_varying_partition(self, num_points):
         L = self.backend.language
-        expr_ir = self.ir["uflacs"]["expr_irs"][num_points]
+        expr_ir = self.ir["expr_irs"][num_points]
         arraysymbol = L.Symbol("sv{0}".format(num_points))
         parts = self.generate_partition(arraysymbol,
                                         expr_ir["V"],
@@ -481,7 +463,7 @@ class IntegralGenerator(object):
         L = self.backend.language
 
         # Get representation details
-        expr_ir = self.ir["uflacs"]["expr_irs"][num_points]
+        expr_ir = self.ir["expr_irs"][num_points]
         AF = expr_ir["argument_factorization"]
         V = expr_ir["V"]
         MATR = expr_ir["modified_argument_table_ranges"]
@@ -516,7 +498,7 @@ class IntegralGenerator(object):
                 factors.append(access)
 
             # Format flattened index expression to access A
-            flat_index = L.flattened_indices(idofs, self._A_shape)
+            flat_index = L.flattened_indices(idofs, self.ir["tensor_shape"])
 
             # Emit assignment
             parts += [L.AssignAdd(A[flat_index], L.Product(factors))]
@@ -531,8 +513,7 @@ class IntegralGenerator(object):
         """
         parts = []
 
-        if not self.ir["quadrature_rules"]:  # Rather check ir["integral_type"]?
-            # TODO: Implement for expression support
+        if self.ir["integral_type"] == "expression":
             error("Expression generation not implemented yet.")
             # TODO: If no integration, assuming we generate an expression, and assign results here
             # Corresponding code from compiler.py:

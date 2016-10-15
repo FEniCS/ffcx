@@ -20,21 +20,32 @@
 
 import numpy
 
+from ufl import product
+from ufl.checks import is_cellwise_constant
 from ufl.classes import CellCoordinate, FacetCoordinate
 
-from ffc.uflacs.analysis.modified_terminals import analyse_modified_terminal
+from ffc.uflacs.analysis.balancing import balance_modifiers
+from ffc.uflacs.analysis.modified_terminals import is_modified_terminal, analyse_modified_terminal
+from ffc.uflacs.analysis.graph import build_graph
+from ffc.uflacs.analysis.graph_vertices import build_scalar_graph_vertices
+from ffc.uflacs.analysis.graph_rebuild import rebuild_with_scalar_subexpressions
+from ffc.uflacs.analysis.graph_dependencies import compute_dependencies, mark_active, mark_image
+from ffc.uflacs.analysis.graph_ssa import compute_dependency_count, invert_dependencies
+#from ffc.uflacs.analysis.graph_ssa import default_cache_score_policy, compute_cache_scores, allocate_registers
+from ffc.uflacs.analysis.factorization import compute_argument_factorization
+from ffc.uflacs.elementtables.terminaltables import build_optimized_tables
 
-from ffc.uflacs.representation.compute_expr_ir import compute_expr_ir
 
-
-def build_uflacs_ir(ir, integrands, coefficient_numbering, table_provider):
-    uflacs_ir = {}
+def build_uflacs_ir(cell, integral_type, entitytype,
+                    integrands, coefficient_numbering,
+                    quadrature_rules, parameters):
+    ir = {}
 
     # { ufl coefficient: count }
-    uflacs_ir["coefficient_numbering"] = coefficient_numbering
+    ir["coefficient_numbering"] = coefficient_numbering
 
     # { num_points: expr_ir for one integrand }
-    uflacs_ir["expr_irs"] = {}
+    ir["expr_irs"] = {}
 
     # Build the core uflacs expression ir for each num_points/integrand
     # TODO: Better to compute joint IR for all integrands
@@ -44,9 +55,63 @@ def build_uflacs_ir(ir, integrands, coefficient_numbering, table_provider):
     #       automatically anyway, num_points should be advisory.
     #       For now, expecting multiple num_points to be rare.
     for num_points in sorted(integrands.keys()):
-        expr_ir = compute_expr_ir(integrands[num_points])
+        ##################################### begin old compute_expr_ir
+        #expr_ir = compute_expr_ir(integrands[num_points])
+        expressions = [integrands[num_points]]
 
-        uflacs_ir["expr_irs"][num_points] = expr_ir
+        # TODO: Apply this transformation to integrands earlier?
+        expressions = [balance_modifiers(expr) for expr in expressions]
+
+        argument_factorization, modified_arguments, V, target_variables, dependencies = \
+            compute_argument_factorization2(expressions)
+
+        # Store modified arguments in analysed form
+        for i in range(len(modified_arguments)):
+            modified_arguments[i] = analyse_modified_terminal(modified_arguments[i])
+
+        # Build set of modified_terminal indices into factorized_vertices
+        modified_terminal_indices = [i for i, v in enumerate(V)
+                                     if is_modified_terminal(v)]
+
+        # Build IR for the given expressions
+        expr_ir = {}
+
+        ### Core expression graph:
+        # (array) V-index -> UFL subexpression
+        expr_ir["V"] = V
+
+        # (array) Flattened input expression component index -> V-index
+        expr_ir["target_variables"] = target_variables
+
+        ### Result of factorization:
+        # (array) MA-index -> UFL expression of modified arguments
+        expr_ir["modified_arguments"] = modified_arguments
+
+        # (dict) tuple(MA-indices) -> V-index of monomial factor
+        expr_ir["argument_factorization"] = argument_factorization
+
+        ### Modified terminals
+        # (array) list of V-indices to modified terminals
+        expr_ir["modified_terminal_indices"] = modified_terminal_indices
+
+        # FIXME: Split function here! Need to get and analyze table data before the below dependency analysis.
+
+        # --- Various dependency analysis ---
+        dependencies, inverse_dependencies, active, piecewise, varying = \
+            analyse_dependencies(V, target_variables, modified_terminal_indices, dependencies)
+
+        # Dependency structure of graph:
+        #expr_ir["dependencies"] = dependencies                           # (CRSArray) V-index -> direct dependency V-index list
+        #expr_ir["inverse_dependencies"] = inverse_dependencies           # (CRSArray) V-index -> direct dependee V-index list
+
+        # Metadata about each vertex
+        #expr_ir["active"] = active       # (array) V-index -> bool
+        expr_ir["piecewise"] = piecewise  # (array) V-index -> bool
+        expr_ir["varying"] = varying     # (array) V-index -> bool
+
+        ##################################### end old compute_expr_ir
+
+        ir["expr_irs"][num_points] = expr_ir
 
         # Build set of modified terminal ufl expressions
         V = expr_ir["V"]
@@ -61,15 +126,15 @@ def build_uflacs_ir(ir, integrands, coefficient_numbering, table_provider):
         # rebuilding! Must split compute_expr_ir to achieve this.
         # FIXME: Store table type as fourth entry in table ranges
         unique_tables, mt_table_ranges, table_types = \
-          table_provider.build_optimized_tables(num_points, ir["entitytype"], terminal_data)
-
+            build_optimized_tables(num_points, quadrature_rules,
+                cell, integral_type, entitytype, terminal_data, parameters)
 
         # Figure out if we need to access CellCoordinate to
         # avoid generating quadrature point table otherwise
-        if ir["integral_type"] == "cell":
+        if integral_type == "cell":
             expr_ir["need_points"] = any(isinstance(mt.terminal, CellCoordinate)
                                          for mt in modified_terminals)
-        elif ir["integral_type"] in ("interior_facet", "exterior_facet"):
+        elif integral_type in ("interior_facet", "exterior_facet"):
             expr_ir["need_points"] = any(isinstance(mt.terminal, FacetCoordinate)
                                          for mt in modified_terminals)
         else:
@@ -130,4 +195,150 @@ def build_uflacs_ir(ir, integrands, coefficient_numbering, table_provider):
         expr_ir["table_types"] = table_types
         expr_ir["unique_tables"] = unique_tables
 
-    return uflacs_ir
+    return ir
+
+
+def build_scalar_graph(expressions):
+    """Build list representation of expression graph covering the given expressions.
+
+    TODO: Renaming, refactoring and cleanup of the graph building algorithms used in here
+    """
+
+    # Build the initial coarse computational graph of the expression
+    G = build_graph(expressions)
+
+    assert len(expressions) == 1, "FIXME: Multiple expressions in graph building needs more work from this point on."
+
+    # Build more fine grained computational graph of scalar subexpressions
+    # TODO: Make it so that
+    #   expressions[k] <-> NV[nvs[k][:]],
+    #   len(nvs[k]) == value_size(expressions[k])
+    scalar_expressions = rebuild_with_scalar_subexpressions(G)
+
+    # Sanity check on number of scalar symbols/components
+    assert len(scalar_expressions) == sum(product(expr.ufl_shape) for expr in expressions)
+
+    # Build new list representation of graph where all vertices
+    # of V represent single scalar operations
+    e2i, V, target_variables = build_scalar_graph_vertices(scalar_expressions)
+
+    return e2i, V, target_variables
+
+
+def compute_argument_factorization2(expressions):
+    # TODO: Can we merge these three calls to something more efficient overall?
+
+    # Build scalar list-based graph representation
+    e2i, V, target_variables = build_scalar_graph(expressions)
+
+    # Compute sparse dependency matrix
+    dependencies = compute_dependencies(e2i, V)
+
+    # Compute factorization of arguments
+    argument_factorization, modified_arguments, V, target_variables, dependencies = \
+        compute_argument_factorization(V, target_variables, dependencies)
+    return argument_factorization, modified_arguments, V, target_variables, dependencies
+
+
+def analyse_dependencies(V, target_variables, modified_terminal_indices, dependencies):
+    # Count the number of dependencies every subexpr has
+    depcount = compute_dependency_count(dependencies)
+
+    # Build the 'inverse' of the sparse dependency matrix
+    inverse_dependencies = invert_dependencies(dependencies, depcount)
+
+    # Mark subexpressions of V that are actually needed for final result
+    active, num_active = mark_active(dependencies, target_variables)
+
+    # Build piecewise/varying markers for factorized_vertices
+    # FIXME: have better measure for spatial dependency now
+    spatially_dependent_terminal_indices = [i for i in modified_terminal_indices
+                                            if not is_cellwise_constant(V[i])]
+    varying, num_spatial = mark_image(inverse_dependencies,
+                                      spatially_dependent_terminal_indices)
+    piecewise = 1 - varying
+    # Skip non-active things
+    varying *= active
+    piecewise *= active
+
+    # TODO: Skip literals in both varying and piecewise
+    # nonliteral = ...
+    # varying *= nonliteral
+    # piecewise *= nonliteral
+
+    return dependencies, inverse_dependencies, active, piecewise, varying
+
+
+# TODO: Consider comments below and do it or delete them.
+
+""" Old comments:
+
+Work for later::
+
+        - Apply some suitable renumbering of vertices and corresponding arrays prior to returning
+
+        - Allocate separate registers for each partition
+          (but e.g. argument[iq][i0] may need to be accessible in other loops)
+
+        - Improve register allocation algorithm
+
+        - Take a list of expressions as input to compile several expressions in one joined graph
+          (e.g. to compile a,L,M together for nonlinear problems)
+
+"""
+
+
+""" # Old comments:
+
+    # TODO: Inspection of varying shows that factorization is
+    # needed for effective loop invariant code motion w.r.t. quadrature loop as well.
+    # Postphoning that until everything is working fine again.
+    # Core ingredients for such factorization would be:
+    # - Flatten products of products somehow
+    # - Sorting flattened product factors by loop dependency then by canonical ordering
+    # Or to keep binary products:
+    # - Rebalancing product trees ((a*c)*(b*d) -> (a*b)*(c*d)) to make piecewise quantities 'float' to the top of the list
+
+    # rank = max(len(k) for k in argument_factorization.keys())
+    # for i,a in enumerate(modified_arguments):
+    #    iarg = a.number()
+    # ipart = a.part()
+
+    # TODO: More structured MA organization?
+    #modified_arguments[rank][block][entry] -> UFL expression of modified argument
+    #dofranges[rank][block] -> (begin, end)
+    # or
+    #modified_arguments[rank][entry] -> UFL expression of modified argument
+    #dofrange[rank][entry] -> (begin, end)
+    #argument_factorization: (dict) tuple(MA-indices (only relevant ones!)) -> V-index of monomial factor
+    # becomes
+    #argument_factorization: (dict) tuple(entry for each(!) rank) -> V-index of monomial factor ## doesn't cover intermediate f*u in f*u*v!
+"""
+
+
+"""
+def old_code_useful_for_optimization():
+
+    # Use heuristics to mark the usefulness of storing every subexpr in a variable
+    scores = compute_cache_scores(V,
+                                  active,
+                                  dependencies,
+                                  inverse_dependencies,
+                                  partitions,  # TODO: Rewrite in terms of something else, this doesn't exist anymore
+                                  cache_score_policy=default_cache_score_policy)
+
+    # Allocate variables to store subexpressions in
+    allocations = allocate_registers(active, partitions, target_variables,
+                                     scores, int(parameters["max_registers"]), int(parameters["score_threshold"]))
+    target_registers = [allocations[r] for r in target_variables]
+    num_registers = sum(1 if x >= 0 else 0 for x in allocations)
+    # TODO: If we renumber we can allocate registers separately for each partition, which is probably a good idea.
+
+    expr_oir = {}
+    expr_oir["num_registers"] = num_registers
+    expr_oir["partitions"] = partitions
+    expr_oir["allocations"] = allocations
+    expr_oir["target_registers"] = target_registers
+    return expr_oir
+"""
+

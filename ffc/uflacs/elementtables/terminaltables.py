@@ -33,13 +33,15 @@ from ffc.uflacs.elementtables.table_utils import clamp_table_small_integers, str
 from ffc.uflacs.backends.ffc.common import ufc_restriction_offset
 
 
-def build_element_tables(psi_tables, num_points, entitytype, modified_terminals, epsilon):
+def build_element_tables(num_points, quadrature_rules,
+                         cell, integral_type, entitytype,
+                         modified_terminals, epsilon):
     """Build the element tables needed for a list of modified terminals.
 
     Input:
-      psi_tables - tables from ffc
       entitytype - str
       modified_terminals - ordered sequence of unique modified terminals
+      FIXME: Document
 
     Output:
       tables - dict(name: table)
@@ -51,13 +53,13 @@ def build_element_tables(psi_tables, num_points, entitytype, modified_terminals,
     tables = {}
     # Add to element tables
     for mt in modified_terminals:
-        
         t = mt.terminal
         rv = mt.reference_value
         gd = mt.global_derivatives
         ld = mt.local_derivatives
         gc = mt.component
         fc = mt.flat_component
+        avg = mt.averaged
 
         # Extract element from FormArguments and relevant GeometricQuantities
         if isinstance(t, FormArgument):
@@ -94,29 +96,26 @@ def build_element_tables(psi_tables, num_points, entitytype, modified_terminals,
             element_counter_map[element] = element_counter
 
         # Change derivatives format for table lookup
-        #if gd:
-        #    gdim = t.ufl_domain().geometric_dimension()
-        #    global_derivatives = tuple(derivative_listing_to_counts(gd, gdim))
-        #else:
-        #    global_derivatives = None
+        #gdim = t.ufl_domain().geometric_dimension()
+        #global_derivatives = derivative_listing_to_counts(gd, gdim)
 
         # Change derivatives format for table lookup
-        if ld:
-            tdim = t.ufl_domain().topological_dimension()
-            local_derivatives = tuple(derivative_listing_to_counts(ld, tdim))
-        else:
-            local_derivatives = None
+        tdim = t.ufl_domain().topological_dimension()
+        local_derivatives = derivative_listing_to_counts(ld, tdim)
 
         # Build name for this particular table
-        name = generate_psi_table_name(element_counter, fc, local_derivatives,
-                                       mt.averaged, entitytype, num_points)
+        name = generate_psi_table_name(
+            num_points, element_counter, avg,
+            entitytype, local_derivatives, fc)
 
         # Extract the values of the table from ffc table format
-        table = tables.get(name)
-        if table is None:
-            table = get_ffc_table_values(psi_tables, entitytype, num_points,
-                                         element, fc, local_derivatives, epsilon)
-            tables[name] = table
+        if name not in tables:
+            tables[name] = get_ffc_table_values(
+                quadrature_rules[num_points][0],
+                cell, integral_type,
+                num_points, element, avg,
+                entitytype, local_derivatives, fc,
+                epsilon)
 
         # Store table name with modified terminal
         mt_table_names[mt] = name
@@ -198,59 +197,70 @@ def optimize_element_tables(tables, mt_table_names, epsilon):
     return unique_tables, mt_table_ranges
 
 
-class TableProvider(object):
-    def __init__(self, psi_tables, parameters):
-        self.psi_tables = psi_tables
+def offset_restricted_table_ranges(mt_table_ranges, mt_table_names,
+                                   tables, modified_terminals):
+    # Modify dof ranges for restricted form arguments
+    # (geometry gets padded variable names instead)
+    for mt in modified_terminals:
+        if mt.restriction and isinstance(mt.terminal, FormArgument):
+            # offset = 0 or number of dofs before table optimization
+            num_original_dofs = int(tables[mt_table_names[mt]].shape[-1])
+            offset = ufc_restriction_offset(mt.restriction, num_original_dofs)
+            (unique_name, b, e) = mt_table_ranges[mt]
+            mt_table_ranges[mt] = (unique_name, b + offset, e + offset)
+    return mt_table_ranges
 
-        # FIXME: Should be epsilon from ffc parameters
-        from ffc.uflacs.language.format_value import get_float_threshold
-        self.epsilon = get_float_threshold()
 
-    def build_optimized_tables(self, num_points, entitytype, modified_terminals):
-        psi_tables = self.psi_tables
-        epsilon = self.epsilon
+def analyse_table_types(unique_tables, mt_table_ranges, epsilon):
+    table_types = {}
+    for unique_name, table in unique_tables.items():
+        #num_entities, num_points, num_dofs = table.shape
+        num_points = table.shape[1]
+        if product(table.shape) == 0 or numpy.allclose(table, numpy.zeros(table.shape)): #, atol=epsilon):
+            # All values are 0.0
+            tabletype = "zeros"
+            # All table ranges referring to this table should be empty
+            assert all(data[1] == data[2]
+                       for mt, data in mt_table_ranges.items()
+                       if data is not None and data[0] == unique_name)
+        elif numpy.allclose(table, numpy.ones(table.shape)):
+            # All values are 1.0
+            tabletype = "ones"
+        elif all(numpy.allclose(table[:, 0, :], table[:, i, :])
+                 for i in range(1, num_points)):
+            # Piecewise constant over points (separately on each entity)
+            tabletype = "piecewise"
+        else:
+            # Varying over points
+            tabletype = "varying"
+        table_types[unique_name] = tabletype
+    return table_types
 
-        # Build tables needed by all modified terminals
-        # (currently build here means extract from ffc psi_tables)
-        tables, mt_table_names = \
-            build_element_tables(psi_tables, num_points, entitytype, modified_terminals, epsilon)
 
-        # Optimize tables and get table name and dofrange for each modified terminal
-        unique_tables, mt_table_ranges = \
-            optimize_element_tables(tables, mt_table_names, epsilon)
+def build_optimized_tables(num_points, quadrature_rules,
+                           cell, integral_type, entitytype,
+                           modified_terminals, parameters):
+    # Get tolerance for checking table values against 0.0 or 1.0
+    from ffc.uflacs.language.format_value import get_float_threshold
+    epsilon = get_float_threshold()
+    # FIXME: Should be epsilon from ffc parameters
+    #epsilon = parameters["epsilon"]
 
-        # Analyze tables for properties useful for optimization
-        table_types = {}  # FIXME: Use this information!
-        for unique_name, table in unique_tables.items():
-            #num_entities, num_points, num_dofs = table.shape
-            num_points = table.shape[1]
-            if product(table.shape) == 0 or numpy.allclose(table, numpy.zeros(table.shape)):
-                # All values are 0.0
-                tabletype = "zeros"
-                # All table ranges referring to this table should be empty
-                assert all(data[1] == data[2]
-                           for mt, data in mt_table_ranges.items()
-                           if data is not None and data[0] == unique_name)
-            elif numpy.allclose(table, numpy.ones(table.shape)):
-                # All values are 1.0
-                tabletype = "ones"
-            elif all(numpy.allclose(table[:, 0, :], table[:, i, :])
-                     for i in range(1, num_points)):
-                # Piecewise constant over points (separately on each entity)
-                tabletype = "piecewise"
-            else:
-                # Varying over points
-                tabletype = "varying"
-            table_types[unique_name] = tabletype
+    # Build tables needed by all modified terminals
+    tables, mt_table_names = \
+        build_element_tables(num_points, quadrature_rules,
+            cell, integral_type, entitytype,
+            modified_terminals, epsilon)
 
-        # Modify dof ranges for restricted form arguments
-        # (geometry gets padded variable names instead)
-        for mt in modified_terminals:
-            if mt.restriction and isinstance(mt.terminal, FormArgument):
-                # offset = 0 or number of dofs before table optimization
-                num_original_dofs = int(tables[mt_table_names[mt]].shape[-1])
-                offset = ufc_restriction_offset(mt.restriction, num_original_dofs)
-                (unique_name, b, e) = mt_table_ranges[mt]
-                mt_table_ranges[mt] = (unique_name, b + offset, e + offset)
+    # Optimize tables and get table name and dofrange for each modified terminal
+    unique_tables, mt_table_ranges = \
+        optimize_element_tables(tables, mt_table_names, epsilon)
 
-        return unique_tables, mt_table_ranges, table_types
+    # Analyze tables for properties useful for optimization
+    table_types = analyse_table_types(unique_tables, mt_table_ranges, epsilon)
+
+    # Add offsets to dof ranges for restricted terminals
+    mt_table_ranges = offset_restricted_table_ranges(
+        mt_table_ranges, mt_table_names, tables, modified_terminals)
+
+    return unique_tables, mt_table_ranges, table_types

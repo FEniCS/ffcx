@@ -24,7 +24,7 @@
 scheme = "default"
 degree = 3
 dx = Measure("dx")
-dx = dx(degree=degree, rule=scheme)
+dx = dx(degree=degree, scheme=scheme)
 
 # Configure quadrature elements with compatible rule
 element = FiniteElement("Lagrange", triangle, 2)

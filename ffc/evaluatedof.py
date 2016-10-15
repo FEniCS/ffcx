@@ -1,4 +1,26 @@
 # -*- coding: utf-8 -*-
+
+# Copyright (C) 2009-2016 Marie E. Rognes
+#
+# This file is part of FFC.
+#
+# FFC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# FFC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with FFC. If not, see <http://www.gnu.org/licenses/>.
+#
+# Modified by Kristian B. Oelgaard 2010-2011
+# Modified by Anders Logg 2013
+# Modified by Lizao Li 2015, 2016
+
 """Code generation for evaluate_dof.
 
 This module generates the functions evaluate_dof and evaluate_dofs.
@@ -24,30 +46,6 @@ The points x_j, weights w_{j, k} and components k are extracted from
 FIAT (functional.pt_dict) in the intermediate representation stage.
 
 """
-
-# Copyright (C) 2009 Marie E. Rognes
-#
-# This file is part of FFC.
-#
-# FFC is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# FFC is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# Modified by Kristian B. Oelgaard 2010-2011
-# Modified by Anders Logg 2013
-# Modified by Lizao Li 2015, 2016
-#
-# First added:  2009-xx-yy
-# Last changed: 2016-08-17
 
 from collections import OrderedDict
 import six

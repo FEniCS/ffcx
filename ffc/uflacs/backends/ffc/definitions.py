@@ -74,7 +74,7 @@ class FFCBackendDefinitions(MultiFunction):
         # just get table value directly
         #uname, begin, end, ttype = tabledata
         uname, begin, end = tabledata
-        table_types = self.ir["uflacs"]["expr_irs"][num_points]["table_types"]
+        table_types = self.ir["expr_irs"][num_points]["table_types"]
         ttype = table_types[uname]
 
         #fe_classname = ir["classnames"]["finite_element"][t.ufl_element()]
@@ -134,7 +134,7 @@ class FFCBackendDefinitions(MultiFunction):
         # Find table name and dof range it corresponds to
         #uname, begin, end, ttype = tabledata
         uname, begin, end = tabledata
-        table_types = self.ir["uflacs"]["expr_irs"][num_points]["table_types"]
+        table_types = self.ir["expr_irs"][num_points]["table_types"]
         ttype = table_types[uname]
 
         assert end - begin <= num_scalar_dofs
