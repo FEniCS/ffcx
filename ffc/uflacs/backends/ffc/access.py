@@ -92,12 +92,13 @@ class FFCBackendAccess(MultiFunction):
             return L.LiteralFloat(1.0)
 
         entity = self.symbols.entity(self.entitytype, mt.restriction)
-        idof = self.symbols.argument_loop_index(mt.terminal.number())
 
         if ttype == "piecewise":
             iq = 0
         else:
             iq = self.symbols.quadrature_loop_index(num_points)
+
+        idof = self.symbols.argument_loop_index(mt.terminal.number())
 
         uname = L.Symbol(uname)
         return uname[entity][iq][idof - begin]
@@ -132,19 +133,25 @@ class FFCBackendAccess(MultiFunction):
     def spatial_coordinate(self, e, mt, tabledata, num_points):
         #L = self.language
         if mt.global_derivatives:
-            error("Not expecting derivatives of SpatialCoordinate.")
-        if mt.local_derivatives:
-            error("Not expecting derivatives of SpatialCoordinate.")
+            error("Not expecting global derivatives of SpatialCoordinate.")
         if mt.averaged:
             error("Not expecting average of SpatialCoordinates.")
 
         if self.integral_type in physical_quadrature_integral_types:
+            # FIXME: Jacobian may need adjustment for physical_quadrature_integral_types
+            if mt.local_derivatives:
+                error("FIXME: Jacobian in custom integrals is not implemented.")
+
             # Physical coordinates are available in given variables
             assert num_points is None
             x = self.symbols.points_array(num_points)
-            iq = self.symbols.quadrature_loop_index(num_points)
-            gdim, = mt.terminal.ufl_shape
-            return x[iq * gdim + mt.flat_component]
+            if gdim == 1:
+                index = iq
+            else:
+                iq = self.symbols.quadrature_loop_index(num_points)
+                gdim, = mt.terminal.ufl_shape
+                index = iq * gdim + mt.flat_component
+            return x[index]
         else:
             # Physical coordinates are computed by code generated in definitions
             return self.symbols.x_component(mt)
@@ -161,12 +168,19 @@ class FFCBackendAccess(MultiFunction):
 
         if self.integral_type == "cell" and not mt.restriction:
             X = self.symbols.points_array(num_points)
-            if num_points == 1:
-                return X[mt.flat_component]
+            if tdim == 1:
+                if num_points == 1:
+                    index = 0
+                else:
+                    index = iq
             else:
-                iq = self.symbols.quadrature_loop_index(num_points)
-                tdim, = mt.terminal.ufl_shape
-                return X[iq * tdim + mt.flat_component]
+                if num_points == 1:
+                    index = mt.flat_component
+                else:
+                    iq = self.symbols.quadrature_loop_index(num_points)
+                    tdim, = mt.terminal.ufl_shape
+                    index = iq * tdim + mt.flat_component
+            return X[index]
         else:
             # X should be computed from x or Xf symbolically instead of getting here
             error("Expecting reference cell coordinate to be symbolically rewritten.")
@@ -191,17 +205,21 @@ class FFCBackendAccess(MultiFunction):
                 # 0D vertex coordinate
                 warning("Vertex coordinate is always 0, should get rid of this in ufl geometry lowering.")
                 return L.LiteralFloat(0.0)
-
             Xf = self.points_array(num_points)
             iq = self.symbols.quadrature_loop_index(num_points)
             assert 0 <= mt.flat_component < (tdim-1)
             if tdim == 2:
-                # 1D edge coordinate
-                assert mt.flat_component == 0
-                return Xf[iq]
+                if num_points == 1:
+                    index = 0
+                else:
+                    index = iq
             else:
-                # The general case
-                return Xf[iq * (tdim - 1) + mt.flat_component]
+                if num_points == 1:
+                    index = mt.flat_component
+                else:
+                    # The general case
+                    index = iq * (tdim - 1) + mt.flat_component
+            return Xf[index]
         else:
             # Xf should be computed from X or x symbolically instead of getting here
             error("Expecting reference facet coordinate to be symbolically rewritten.")
@@ -210,9 +228,7 @@ class FFCBackendAccess(MultiFunction):
     def jacobian(self, e, mt, tabledata, num_points):
         L = self.language
         if mt.global_derivatives:
-            error("Not expecting derivatives of Jacobian.")
-        if mt.local_derivatives:
-            error("Not expecting derivatives of Jacobian.")
+            error("Not expecting global derivatives of Jacobian.")
         if mt.averaged:
             error("Not expecting average of Jacobian.")
         return self.symbols.J_component(mt)

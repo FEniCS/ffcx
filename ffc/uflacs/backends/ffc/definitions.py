@@ -90,11 +90,14 @@ class FFCBackendDefinitions(MultiFunction):
 
         assert begin < end
 
-        # Get various symbols to index element tables and coefficient dofs
+        # Entity number
         entity = self.symbols.entity(self.entitytype, mt.restriction)
 
-        iq = self.symbols.quadrature_loop_index(num_points)
-        #if ttype == "piecewise": iq = 0
+        # This check covers "piecewise constant over points on entity"
+        if ttype == "piecewise":
+            iq = 0
+        else:
+            iq = self.symbols.quadrature_loop_index(num_points)
 
         idof = self.symbols.coefficient_dof_sum_index()
         dof_access = self.symbols.coefficient_dof_access(mt.terminal, idof)
@@ -146,9 +149,10 @@ class FFCBackendDefinitions(MultiFunction):
         entity = self.symbols.entity(self.entitytype, mt.restriction)
 
         # This check covers "piecewise constant over points on entity"
-        iq = self.symbols.quadrature_loop_index(num_points)
         if ttype == "piecewise":
             iq = 0
+        else:
+            iq = self.symbols.quadrature_loop_index(num_points)
 
         # Make indexable symbol
         uname = L.Symbol(uname)
@@ -208,9 +212,10 @@ class FFCBackendDefinitions(MultiFunction):
         If reference facet coordinates are given:
           x = sum_k xdof_k xphi_k(Xf)
         """
-        # TODO: Jacobian may need adjustment for physical_quadrature_integral_types
-        if (self.integral_type in physical_quadrature_integral_types
-                and not mt.local_derivatives):
+        if self.integral_type in physical_quadrature_integral_types:
+            # FIXME: Jacobian may need adjustment for physical_quadrature_integral_types
+            if mt.local_derivatives:
+                error("FIXME: Jacobian in custom integrals is not implemented.")
             return []
         else:
             return self._define_coordinate_dofs_lincomb(e, mt, tabledata, num_points, access)

@@ -94,7 +94,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         # (array) list of V-indices to modified terminals
         expr_ir["modified_terminal_indices"] = modified_terminal_indices
 
-        # FIXME: Split function here! Need to get and analyze table data before the below dependency analysis.
+        # FIXME: Split function here! Need to get and analyze table
+        # data before the below dependency analysis.
 
         # --- Various dependency analysis ---
         dependencies, inverse_dependencies, active, piecewise, varying = \
