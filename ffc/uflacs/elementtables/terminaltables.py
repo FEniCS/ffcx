@@ -268,8 +268,7 @@ def offset_restricted_table_ranges(mt_table_ranges, mt_table_names,
 def analyse_table_types(unique_tables, mt_table_ranges, epsilon):
     table_types = {}
     for unique_name, table in unique_tables.items():
-        #num_entities, num_points, num_dofs = table.shape
-        num_points = table.shape[1]
+        num_entities, num_points, num_dofs = table.shape
         if product(table.shape) == 0 or numpy.allclose(table, numpy.zeros(table.shape)):  #, atol=epsilon):
             # All values are 0.0
             tabletype = "zeros"
@@ -280,18 +279,30 @@ def analyse_table_types(unique_tables, mt_table_ranges, epsilon):
         elif numpy.allclose(table, numpy.ones(table.shape)):  #, atol=epsilon
             # All values are 1.0
             tabletype = "ones"
-        elif all(numpy.allclose(table[:, 0, :], table[:, i, :])  #, atol=epsilon
-                 for i in range(1, num_points)):
-            # Piecewise constant over points (separately on each entity)
-            tabletype = "piecewise"
         else:
-            # Varying over points
-            tabletype = "varying"
-            # No table ranges referring to this table should be averaged
-            assert all(not mt.averaged
-                       for mt, data in mt_table_ranges.items()
-                       if data is not None and data[0] == unique_name)
-            
+            # Equal for all points on a given entity
+            piecewise = all(numpy.allclose(table[:, 0, :],
+                                           table[:, i, :])  #, atol=epsilon
+                            for i in range(1, num_points))
+            # Equal for all entities
+            uniform = all(numpy.allclose(table[0, :, :],
+                                         table[i, :, :])  #, atol=epsilon
+                          for i in range(1, num_entities))
+            # TODO: Use the two separate properties piecewise
+            #       and uniform instead of one tabletype
+            if piecewise and uniform:
+                tabletype = "fixed"
+            elif piecewise:
+                tabletype = "piecewise"
+            elif uniform:
+                tabletype = "uniform"
+            else:
+                # Varying over points
+                tabletype = "varying"
+                # No table ranges referring to this table should be averaged
+                assert all(not mt.averaged
+                           for mt, data in mt_table_ranges.items()
+                           if data is not None and data[0] == unique_name)
         table_types[unique_name] = tabletype
     return table_types
 
@@ -329,11 +340,13 @@ def build_optimized_tables(num_points, quadrature_rules,
         del table_types[uname]
         del unique_tables[uname]
     for uname, tabletype in table_types.items():
-        if tabletype == "piecewise":
+        if tabletype in ("piecewise", "fixed"):
             # Reduce table to dimension 1 along num_points axis in generated code
-            # FIXME: Make sure it's never indexed with iq!
             unique_tables[uname] = unique_tables[uname][:,0:1,:]
-        elif tabletype == "zeros":
+        if tabletype in ("uniform", "fixed"):
+            # Reduce table to dimension 1 along num_entities axis in generated code
+            unique_tables[uname] = unique_tables[uname][0:1,:,:]
+        if tabletype == "zeros":
             del unique_tables[uname]
         elif tabletype == "ones":
             del unique_tables[uname]

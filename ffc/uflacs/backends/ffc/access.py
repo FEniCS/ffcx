@@ -91,9 +91,12 @@ class FFCBackendAccess(MultiFunction):
             warning("Should simplify ones arguments before getting this far.")
             return L.LiteralFloat(1.0)
 
-        entity = self.symbols.entity(self.entitytype, mt.restriction)
+        if ttype in ("uniform", "fixed"):
+            entity = 0
+        else:
+            entity = self.symbols.entity(self.entitytype, mt.restriction)
 
-        if ttype == "piecewise":
+        if ttype in ("piecewise", "fixed"):
             iq = 0
         else:
             iq = self.symbols.quadrature_loop_index(num_points)

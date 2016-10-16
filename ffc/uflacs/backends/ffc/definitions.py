@@ -91,10 +91,13 @@ class FFCBackendDefinitions(MultiFunction):
         assert begin < end
 
         # Entity number
-        entity = self.symbols.entity(self.entitytype, mt.restriction)
+        if ttype in ("uniform", "fixed"):
+            entity = 0
+        else:
+            entity = self.symbols.entity(self.entitytype, mt.restriction)
 
         # This check covers "piecewise constant over points on entity"
-        if ttype == "piecewise":
+        if ttype in ("piecewise", "fixed"):
             iq = 0
         else:
             iq = self.symbols.quadrature_loop_index(num_points)
@@ -146,10 +149,13 @@ class FFCBackendDefinitions(MultiFunction):
         #sfe_classname = ir["classnames"]["finite_element"][coordinate_element.sub_elements()[0]]
 
         # Entity number
-        entity = self.symbols.entity(self.entitytype, mt.restriction)
+        if ttype in ("uniform", "fixed"):
+            entity = 0
+        else:
+            entity = self.symbols.entity(self.entitytype, mt.restriction)
 
         # This check covers "piecewise constant over points on entity"
-        if ttype == "piecewise":
+        if ttype in ("piecewise", "fixed"):
             iq = 0
         else:
             iq = self.symbols.quadrature_loop_index(num_points)
