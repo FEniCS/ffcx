@@ -47,7 +47,7 @@ import logging
 from numpy import array, shape, abs, max, isnan
 import ffc
 from ffc.log import begin, end, info, info_red, info_green, info_blue
-from ffc.log import ffc_logger, WARNING, ERROR
+from ffc.log import ffc_logger, ERROR
 from ufl.log import ufl_logger
 from ffc import get_ufc_cxx_flags
 from ffc.backends.ufc import get_include_path as get_ufc_include
@@ -75,8 +75,8 @@ class GEFilter(object):
     def filter(self, record):
         return record.levelno >= self.__level
 
-class LEFilter(object):
-    """Filter messages that are less or equal to given log level"""
+class LTFilter(object):
+    """Filter messages that are less than given log level"""
     def __init__(self, level):
         self.__level = level
 
@@ -84,8 +84,8 @@ class LEFilter(object):
         return record.levelno <= self.__level
 
 # Filter out error messages from std output
-ffc_logger.get_handler().addFilter(LEFilter(WARNING))
-ufl_logger.get_handler().addFilter(LEFilter(WARNING))
+ffc_logger.get_handler().addFilter(LTFilter(ERROR))
+ufl_logger.get_handler().addFilter(LTFilter(ERROR))
 
 # Filter out error messages to log file
 file_handler = logging.FileHandler(logfile)
@@ -212,18 +212,18 @@ def generate_code(args, only_forms, skip_forms):
         options.append(f)
         options = filter(None, options)
 
-        cmd = "ffc " + " ".join(options)
+        cmd = sys.executable + " -mffc " + " ".join(options)
 
         # Generate code
         t1 = time.time()
         try:
             ok = ffc.main(options)
-            t2 = time.time()
         except Exception as e:
             log_error(e)
             ok = -1
+        finally:
             t2 = time.time()
-        _command_timings.append((cmd, t2 - t1))
+            _command_timings.append((cmd, t2 - t1))
 
         # Check status
         if ok == 0:
