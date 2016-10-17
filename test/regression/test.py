@@ -212,7 +212,7 @@ def generate_code(args, only_forms, skip_forms):
         options.append(f)
         options = filter(None, options)
 
-        cmd = sys.executable + " -mffc " + " ".join(options)
+        cmd = sys.executable + " -m ffc " + " ".join(options)
 
         # Generate code
         t1 = time.time()
