@@ -34,6 +34,32 @@ from ffc.uflacs.elementtables.table_utils import clamp_table_small_integers, str
 from ffc.uflacs.backends.ffc.common import ufc_restriction_offset
 
 
+class Table(object):  # TODO: Use this class for tables with metadata
+    """Table with metadata.
+
+    Valid table types:
+    "zeros"
+    "ones"
+    "quadrature"
+    "piecewise"
+    "uniform"
+    "fixed"
+    "varying"
+
+    FIXME: Document these. For now see table computation.
+    """
+    def __init__(self, name, values, tabletype):
+        self.name = name
+        self.values = values
+        self.num_entities = values.shape[0]
+        self.num_points = values.shape[1]
+        self.num_dofs = values.shape[2]
+        self.tabletype = tabletype
+
+        self.piecewise = tabletype in ("piecewise", "fixed")
+        self.uniform = tabletype in ("uniform", "fixed")
+
+
 def get_modified_terminal_element(mt):
     gd = mt.global_derivatives
     ld = mt.local_derivatives
@@ -265,45 +291,68 @@ def offset_restricted_table_ranges(mt_table_ranges, mt_table_names,
     return mt_table_ranges
 
 
-def analyse_table_types(unique_tables, mt_table_ranges, epsilon):
+def is_zeros_table(table, epsilon):
+    return (product(table.shape) == 0
+            or numpy.allclose(table, numpy.zeros(table.shape), atol=epsilon))
+
+
+def is_ones_table(table, epsilon):
+    return numpy.allclose(table, numpy.ones(table.shape), atol=epsilon)
+
+
+def is_quadrature_table(table, epsilon):
+    num_entities, num_points, num_dofs = table.shape
+    I = numpy.eye(num_points)
+    return (num_points == num_dofs
+            and all(numpy.allclose(table[i, :, :], I, atol=epsilon)
+                    for i in range(num_entities)))
+
+
+def is_piecewise_table(table, epsilon):
+    return all(numpy.allclose(table[:, 0, :], table[:, i, :], atol=epsilon)
+               for i in range(1, table.shape[1]))
+
+
+def is_uniform_table(table, epsilon):
+    return all(numpy.allclose(table[0, :, :], table[i, :, :], atol=epsilon)
+               for i in range(1, table.shape[0]))
+
+
+def analyse_table_types(unique_tables, epsilon):
     table_types = {}
     for unique_name, table in unique_tables.items():
         num_entities, num_points, num_dofs = table.shape
-        if product(table.shape) == 0 or numpy.allclose(table, numpy.zeros(table.shape)):  #, atol=epsilon):
-            # All values are 0.0
+        if is_zeros_table(table, epsilon):
+            # Table is empty or all values are 0.0
             tabletype = "zeros"
-            # All table ranges referring to this table should be empty
-            assert all(data[1] == data[2]
-                       for mt, data in mt_table_ranges.items()
-                       if data is not None and data[0] == unique_name)
-        elif numpy.allclose(table, numpy.ones(table.shape)):  #, atol=epsilon
+        elif is_ones_table(table, epsilon):
             # All values are 1.0
             tabletype = "ones"
+        elif is_quadrature_table(table, epsilon):
+            # Identity matrix mapping points to dofs (separately on each entity)
+            tabletype = "quadrature"
         else:
             # Equal for all points on a given entity
-            piecewise = all(numpy.allclose(table[:, 0, :],
-                                           table[:, i, :])  #, atol=epsilon
-                            for i in range(1, num_points))
+            piecewise = is_piecewise_table(table, epsilon)
+
             # Equal for all entities
-            uniform = all(numpy.allclose(table[0, :, :],
-                                         table[i, :, :])  #, atol=epsilon
-                          for i in range(1, num_entities))
-            # TODO: Use the two separate properties piecewise
-            #       and uniform instead of one tabletype
+            uniform = is_uniform_table(table, epsilon)
+
             if piecewise and uniform:
+                # Constant for all points and all entities
                 tabletype = "fixed"
             elif piecewise:
+                # Constant for all points on each entity separately
                 tabletype = "piecewise"
             elif uniform:
+                # Equal on all entities
                 tabletype = "uniform"
             else:
-                # Varying over points
+                # Varying over points and entities
                 tabletype = "varying"
-                # No table ranges referring to this table should be averaged
-                assert all(not mt.averaged
-                           for mt, data in mt_table_ranges.items()
-                           if data is not None and data[0] == unique_name)
+
         table_types[unique_name] = tabletype
+
     return table_types
 
 
@@ -327,7 +376,22 @@ def build_optimized_tables(num_points, quadrature_rules,
         optimize_element_tables(tables, mt_table_names, table_origins, epsilon)
 
     # Analyze tables for properties useful for optimization
-    table_types = analyse_table_types(unique_tables, mt_table_ranges, epsilon)
+    table_types = analyse_table_types(unique_tables, epsilon)
+
+
+    # Consistency checking
+    for unique_name, tabletype in table_types.items():
+        if tabletype == "zeros":
+            # All table ranges referring to this table should be empty
+            assert all(data[1] == data[2]
+                       for mt, data in mt_table_ranges.items()
+                       if data is not None and data[0] == unique_name)
+        if tabletype == "varying":
+            # No table ranges referring to this table should be averaged
+            assert all(not mt.averaged
+                       for mt, data in mt_table_ranges.items()
+                       if data is not None and data[0] == unique_name)
+
 
     # Add offsets to dof ranges for restricted terminals
     mt_table_ranges = offset_restricted_table_ranges(
@@ -346,9 +410,7 @@ def build_optimized_tables(num_points, quadrature_rules,
         if tabletype in ("uniform", "fixed"):
             # Reduce table to dimension 1 along num_entities axis in generated code
             unique_tables[uname] = unique_tables[uname][0:1,:,:]
-        if tabletype == "zeros":
-            del unique_tables[uname]
-        elif tabletype == "ones":
+        if tabletype in ("zeros", "ones", "quadrature"):
             del unique_tables[uname]
 
     return unique_tables, mt_table_ranges, table_types

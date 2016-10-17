@@ -63,30 +63,47 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         # Build scalar list-based graph representation
         e2i, V, target_variables = build_scalar_graph(expressions)
 
+        # Compute sparse dependency matrix
+        dependencies = compute_dependencies(e2i, V)
+
 
         # Build terminal_data from V here before factorization.
         # Then we can use it to derive table properties for all modified terminals,
         # and then use that to rebuild the scalar graph more efficiently before
         # argument factorization. We can build terminal_data again after factorization
         # if that's necessary.
-        initial_terminal_data = [analyse_modified_terminal(v)
-                                 for v in V
-                                 if is_modified_terminal(v)]
+        initial_terminal_indices = [i for i, v in enumerate(V)
+                                    if is_modified_terminal(v)]
+        initial_terminal_data = [analyse_modified_terminal(V[i])
+                                 for i in initial_terminal_indices]
         unique_tables, mt_table_ranges, table_types = \
             build_optimized_tables(num_points, quadrature_rules,
                 cell, integral_type, entitytype, initial_terminal_data, parameters)
 
-        # TODO: Store table type in mt_table_ranges?
-        # Or separate piecewice/uniform properties?
+        if 0:
+            # Build replacement map for modified terminals with zero tables
+            z = as_ufl(0.0)
+            for i in initial_terminal_indices:
+                mt = initial_terminal_data[i]
+                tr = mt_terminal_ranges.get(mt)
+                if tr is not None:
+                    uname, begin, end = tr[0]
+                    ttype = table_types[uname]
+                    if ttype == "zeros":
+                        V[i] = z
 
+            # Propagate expression changes
+            for i in range(len(V)):
+                deps = [V[j] for j in dependencies[i]]
+                if deps:
+                    V[i] = V[i]._ufl_reconstruct_(*deps)
+            # FIXME: At this point some expressions in V may be inactive,
+            # either repair that or make sure compute_argument_factorization works fine anyway
 
-        # Compute sparse dependency matrix
-        dependencies = compute_dependencies(e2i, V)
-
+        # FIXME: Use table_types in argument factorization to drop zero terms earlier
         # Compute factorization of arguments
         argument_factorization, modified_arguments, V, target_variables, dependencies = \
             compute_argument_factorization(V, target_variables, dependencies)
-
 
         # Store modified arguments in analysed form
         for i in range(len(modified_arguments)):
@@ -102,16 +119,6 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         terminal_data = modified_terminals + modified_arguments
 
 
-        # FIXME: Want table information earlier, even before scalar rebuilding!
-        # FIXME: Store table type as fourth entry in table ranges?
-        #unique_tables, mt_table_ranges, table_types = \
-        #    build_optimized_tables(num_points, quadrature_rules,
-        #        cell, integral_type, entitytype, terminal_data, parameters)
-
-
-        # FIXME: Replace coefficients with empty dofrange with zero (which are these?)
-        # FIXME: Propagate constants, tables with ones and zeros in particular
-
         # Ordered table data
         terminal_table_ranges = [mt_table_ranges.get(mt) for mt in terminal_data]
         n = len(modified_terminal_indices)
@@ -121,6 +128,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         modified_terminal_table_ranges = terminal_table_ranges[:n]
         modified_argument_table_ranges = terminal_table_ranges[n:]
 
+        # FIXME: Can probably do this during factorization with table_types info
         # Drop factorization terms where table dof range is
         # empty for any of the modified arguments
         for mas in list(argument_factorization.keys()):
@@ -138,7 +146,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         for tabledata in terminal_table_ranges:
             if tabledata is not None:
                 name, begin, end = tabledata
-                if table_types[name] not in ("zeros", "ones"):
+                if table_types[name] not in ("zeros", "ones", "quadrature"):
                     used_table_names.add(name)
         if None in used_table_names:
             used_table_names.remove(None)
@@ -155,6 +163,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         else:
             need_points = False
 
+        # FIXME: Use table_types to mark vertices for better partition seeds
         # Dependency analysis
         dependencies, inverse_dependencies, active, piecewise, varying = \
             analyse_dependencies(V, target_variables, modified_terminal_indices, dependencies)

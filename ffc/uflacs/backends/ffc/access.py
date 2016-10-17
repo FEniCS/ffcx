@@ -101,7 +101,11 @@ class FFCBackendAccess(MultiFunction):
         else:
             iq = self.symbols.quadrature_loop_index(num_points)
 
-        idof = self.symbols.argument_loop_index(mt.terminal.number())
+        if ttype == "quadrature":
+            warning("Should simplify quadrature element arguments before getting this far.")
+            idof = iq
+        else:
+            idof = self.symbols.argument_loop_index(mt.terminal.number())
 
         uname = L.Symbol(uname)
         return uname[entity][iq][idof - begin]
@@ -120,8 +124,16 @@ class FFCBackendAccess(MultiFunction):
             L = self.language
             return L.LiteralFloat(0.0)
         elif ttype == "ones" and (end - begin) == 1:
-            # f = 1.0 * f_i, just return direct reference to dof array at dof begin
-            return self.symbols.coefficient_dof_access(mt.terminal, begin)
+            # f = 1.0 * f_{begin}, just return direct reference to dof array at dof begin
+            # (if mt is restricted, begin contains cell offset)
+            idof = begin
+            return self.symbols.coefficient_dof_access(mt.terminal, idof)
+        elif ttype == "quadrature":
+            # f(x_q) = sum_i f_i * delta_iq = f_q, just return direct
+            # reference to dof array at quadrature point index + begin
+            iq = self.symbols.quadrature_loop_index(num_points)
+            idof = begin + iq
+            return self.symbols.coefficient_dof_access(mt.terminal, idof)
         else:
             # Return symbol, see definitions for computation 
             return self.symbols.coefficient_value(mt)  #, num_points)

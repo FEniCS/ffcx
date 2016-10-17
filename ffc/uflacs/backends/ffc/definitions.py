@@ -88,6 +88,10 @@ class FFCBackendDefinitions(MultiFunction):
         if ttype == "ones" and (end - begin) == 1:
             return []
 
+        # For quadrature elements we reference the dofs directly, so no definition needed
+        if ttype == "quadrature":
+            return []
+
         assert begin < end
 
         # Entity number
@@ -106,7 +110,7 @@ class FFCBackendDefinitions(MultiFunction):
         dof_access = self.symbols.coefficient_dof_access(mt.terminal, idof)
 
         if ttype == "ones":
-            # Not sure if this actually happens
+            # Don't think this can actually happen
             table_access = L.LiteralFloat(1.0)
         else:
             uname = L.Symbol(uname)
@@ -160,6 +164,8 @@ class FFCBackendDefinitions(MultiFunction):
         else:
             iq = self.symbols.quadrature_loop_index(num_points)
 
+        assert ttype != "quadrature"
+            
         # Make indexable symbol
         uname = L.Symbol(uname)
 
