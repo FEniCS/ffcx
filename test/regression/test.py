@@ -49,6 +49,7 @@ import ffc
 from ffc.log import begin, end, info, info_red, info_green, info_blue
 from ffc.log import ffc_logger, ERROR
 from ufl.log import ufl_logger
+from ufl.utils.py23 import as_native_str
 from ffc import get_ufc_cxx_flags
 from ffc.backends.ufc import get_include_path as get_ufc_include
 from ufctest import generate_test_code
@@ -124,7 +125,7 @@ def run_command(command):
 
     t1 = time.time()
     try:
-        output = subprocess.check_output(command, shell=True)
+        output = as_native_str(subprocess.check_output(command, shell=True))
         t2 = time.time()
         _command_timings.append((command, t2 - t1))
         verbose = False  # FIXME: Set from --verbose
@@ -508,7 +509,8 @@ def main(args):
         info_blue("Skipping reference data download")
     else:
         try:
-            output = subprocess.check_output("./scripts/download", shell=True)
+            cmd = "./scripts/download"
+            output = as_native_str(subprocess.check_output(cmd, shell=True))
             print(output)
             info_green("Download reference data ok")
         except subprocess.CalledProcessError as e:
