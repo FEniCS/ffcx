@@ -129,21 +129,26 @@ class IntegralGenerator(object):
         for num_points in sorted(qrs):
             points, weights = qrs[num_points]
             assert num_points == len(weights)
+            expr_ir = self.ir["expr_irs"][num_points]
 
             # Generate quadrature weights array
-            wsym = self.backend.symbols.weights_array(num_points)
-            parts += [L.ArrayDecl("static const double", wsym, num_points, weights,
-                                  alignas=self.ir["alignas"])]
+            if expr_ir["need_weights"]:
+                wsym = self.backend.symbols.weights_array(num_points)
+                parts += [L.ArrayDecl("static const double", wsym, num_points, weights,
+                                      alignas=self.ir["alignas"])]
 
             # Size of quadrature points depends on context, assume this is correct:
             pdim = len(points[0])
+            assert points.shape[0] == num_points
+            assert pdim == points.shape[1]
+            #import IPython; IPython.embed()
 
             # Generate quadrature points array
-            if pdim and self.ir["expr_irs"][num_points]["need_points"]:
+            if pdim and expr_ir["need_points"]:
                 # Flatten array: (TODO: avoid flattening here, it makes padding harder)
                 flattened_points = points.reshape(product(points.shape))
                 psym = self.backend.symbols.points_array(num_points)
-                parts += [L.ArrayDecl("static const double", psym, num_points * tdim,
+                parts += [L.ArrayDecl("static const double", psym, num_points * pdim,
                                       flattened_points, alignas=self.ir["alignas"])]
 
         # Add leading comment if there are any tables
@@ -260,12 +265,15 @@ class IntegralGenerator(object):
 
         # Find dofranges at this loop level iarg starting with outer_dofblock
         dofranges = set()
-        for mas in argument_factorization:
-            mas_full_dofblock = tuple(modified_argument_table_ranges[j][1:3] for j in mas)
+        for ma_indices in argument_factorization:
+            mas_full_dofblock = tuple(modified_argument_table_ranges[j][1:3]
+                                      for j in ma_indices)
             if tuple(mas_full_dofblock[:iarg]) == tuple(outer_dofblock):
-                dofrange = mas_full_dofblock[iarg]
-                assert dofrange[0] != dofrange[1]
-                dofranges.add(dofrange)
+                # FIXME: This if check was a temporary symptom fix, don't understand what's going on here:
+                if iarg < len(mas_full_dofblock):
+                    dofrange = mas_full_dofblock[iarg]
+                    assert dofrange[0] != dofrange[1]
+                    dofranges.add(dofrange)
         dofranges = sorted(dofranges)
 
         # Build loops for each dofrange

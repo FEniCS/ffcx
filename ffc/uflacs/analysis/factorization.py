@@ -22,6 +22,7 @@ import numpy
 
 from six import itervalues, iterkeys, iteritems
 from six.moves import xrange as range
+from itertools import chain
 
 from ufl import as_ufl, conditional
 from ufl.classes import Argument
@@ -117,18 +118,18 @@ def add_to_fv(expr, FV, e2fi):
 noargs = {}
 
 
-def handle_modified_terminal(i, v, F, FV, e2fi, arg_indices, AV, sv2av):
+def handle_modified_terminal(si, v, SV_factors, FV, e2fi, arg_indices, AV, sv2av):
     # v is a modified terminal...
-    if i in arg_indices:
+    if si in arg_indices:
         # ... a modified Argument
-        argkey = (i,)
+        argkey = (si,)
         fi = None
 
         # Adding 1 as an expression allows avoiding special representation by representing "v" as "1*v"
         one = add_to_fv(as_ufl(1.0), FV, e2fi)
         factors = {argkey: one}
 
-        assert AV[sv2av[i]] == v
+        assert AV[sv2av[si]] == v
     else:
         # ... record a non-argument modified terminal
         factors = noargs
@@ -136,11 +137,11 @@ def handle_modified_terminal(i, v, F, FV, e2fi, arg_indices, AV, sv2av):
     return fi, factors
 
 
-def handle_sum(i, v, deps, F, FV, sv2fv, e2fi):
+def handle_sum(si, v, deps, SV_factors, FV, sv2fv, e2fi):
     if len(deps) != 2:
         error("Assuming binary sum here. This can be fixed if needed.")
-    fac0 = F[deps[0]]
-    fac1 = F[deps[1]]
+    fac0 = SV_factors[deps[0]]
+    fac1 = SV_factors[deps[1]]
 
     argkeys = sorted(set(iterkeys(fac0)) | set(iterkeys(fac1)))
 
@@ -171,11 +172,11 @@ def handle_sum(i, v, deps, F, FV, sv2fv, e2fi):
     return fi, factors
 
 
-def handle_product(i, v, deps, F, FV, sv2fv, e2fi):
+def handle_product(si, v, deps, SV_factors, FV, sv2fv, e2fi):
     if len(deps) != 2:
         error("Assuming binary product here. This can be fixed if needed.")
-    fac0 = F[deps[0]]
-    fac1 = F[deps[1]]
+    fac0 = SV_factors[deps[0]]
+    fac1 = SV_factors[deps[1]]
 
     if not fac0 and not fac1:  # non-arg * non-arg
         # Record non-argument product
@@ -218,9 +219,9 @@ def handle_product(i, v, deps, F, FV, sv2fv, e2fi):
     return fi, factors
 
 
-def handle_division(i, v, deps, F, FV, sv2fv, e2fi):
-    fac0 = F[deps[0]]
-    fac1 = F[deps[1]]
+def handle_division(si, v, deps, SV_factors, FV, sv2fv, e2fi):
+    fac0 = SV_factors[deps[0]]
+    fac1 = SV_factors[deps[1]]
     assert not fac1, "Cannot divide by arguments."
 
     if fac0:  # arg / non-arg
@@ -240,10 +241,10 @@ def handle_division(i, v, deps, F, FV, sv2fv, e2fi):
     return fi, factors
 
 
-def handle_conditional(i, v, deps, F, FV, sv2fv, e2fi):
-    fac0 = F[deps[0]]
-    fac1 = F[deps[1]]
-    fac2 = F[deps[2]]
+def handle_conditional(si, v, deps, SV_factors, FV, sv2fv, e2fi):
+    fac0 = SV_factors[deps[0]]
+    fac1 = SV_factors[deps[1]]
+    fac2 = SV_factors[deps[2]]
     assert not fac0, "Cannot have argument in condition."
 
     if not (fac1 or fac2):  # non-arg ? non-arg : non-arg
@@ -280,9 +281,9 @@ def handle_conditional(i, v, deps, F, FV, sv2fv, e2fi):
     return fi, factors
 
 
-def handle_operator(i, v, deps, F, FV, sv2fv, e2fi):
+def handle_operator(si, v, deps, SV_factors, FV, sv2fv, e2fi):
     # Error checking
-    if any(F[deps[j]] for j in range(len(deps))):
+    if any(SV_factors[deps[j]] for j in range(len(deps))):
         error("Assuming that a {0} cannot be applied to arguments. If this is wrong please report a bug.".format(type(v)))
     # Record non-argument subexpression
     fi = add_to_fv(v, FV, e2fi)
@@ -290,7 +291,7 @@ def handle_operator(i, v, deps, F, FV, sv2fv, e2fi):
     return fi, factors
 
 
-def collect_argument_factors(SV, dependencies, arg_indices):
+def compute_argument_factorization(SV, SV_deps, SV_targets):
     """Factorizes a scalar expression graph w.r.t. scalar Argument
     components.
 
@@ -316,18 +317,20 @@ def collect_argument_factors(SV, dependencies, arg_indices):
 
         This mapping represents the factorization of SV[-1] w.r.t. Arguments s.t.:
 
-          SV[-1] := sum(FV[fik] * product(AV[j] for j in aik) for aik, fik in IM.items())
+          SV[-1] := sum(FV[fik] * product(AV[ai] for ai in aik) for aik, fik in IM.items())
 
         where := means equivalence in the mathematical sense,
         of course in a different technical representation.
 
     """
     # Extract argument component subgraph
-    AV = [SV[j] for j in arg_indices]
+    arg_indices = build_argument_indices(SV)
+    #A = build_argument_dependencies(SV_deps, arg_indices)
+    AV = [SV[si] for si in arg_indices]
     #av2sv = arg_indices
-    sv2av = dict((j, i) for i, j in enumerate(arg_indices))
-    assert all(AV[i] == SV[j] for i, j in enumerate(arg_indices))
-    assert all(AV[i] == SV[j] for j, i in iteritems(sv2av))
+    sv2av = { si: ai for ai, si in enumerate(arg_indices) }
+    assert all(AV[ai] == SV[si] for ai, si in enumerate(arg_indices))
+    assert all(AV[ai] == SV[si] for si, ai in iteritems(sv2av))
 
     # Data structure for building non-argument factors
     FV = []
@@ -337,35 +340,35 @@ def collect_argument_factors(SV, dependencies, arg_indices):
     two = add_to_fv(as_ufl(2), FV, e2fi)  # FIXME: Might need something more robust here
 
     # Intermediate factorization for each vertex in SV on the format
-    # F[i] = None # if SV[i] does not depend on arguments
-    # F[i] = { argkey: fi } # if SV[i] does depend on arguments, where:
-    #   FV[fi] is the expression SV[i] with arguments factored out
-    #   argkey is a tuple with indices into SV for each of the argument components SV[i] depends on
-    # F[i] = { argkey1: fi1, argkey2: fi2, ... } # if SV[i] is a linear combination of multiple argkey configurations
-    F = numpy.empty(len(SV), dtype=object)
+    # SV_factors[si] = None # if SV[si] does not depend on arguments
+    # SV_factors[si] = { argkey: fi } # if SV[si] does depend on arguments, where:
+    #   FV[fi] is the expression SV[si] with arguments factored out
+    #   argkey is a tuple with indices into SV for each of the argument components SV[si] depends on
+    # SV_factors[si] = { argkey1: fi1, argkey2: fi2, ... } # if SV[si] is a linear combination of multiple argkey configurations
+    SV_factors = numpy.empty(len(SV), dtype=object)
     sv2fv = numpy.zeros(len(SV), dtype=int)
 
     # Factorize each subexpression in order:
-    for i, v in enumerate(SV):
-        deps = dependencies[i]
+    for si, v in enumerate(SV):
+        deps = SV_deps[si]
 
-        # These handlers insert values in sv2fv and F
+        # These handlers insert values in sv2fv and SV_factors
         if not len(deps):
-            fi, factors = handle_modified_terminal(i, v, F, FV, e2fi, arg_indices, AV, sv2av)
+            fi, factors = handle_modified_terminal(si, v, SV_factors, FV, e2fi, arg_indices, AV, sv2av)
         elif isinstance(v, Sum):
-            fi, factors = handle_sum(i, v, deps, F, FV, sv2fv, e2fi)
+            fi, factors = handle_sum(si, v, deps, SV_factors, FV, sv2fv, e2fi)
         elif isinstance(v, Product):
-            fi, factors = handle_product(i, v, deps, F, FV, sv2fv, e2fi)
+            fi, factors = handle_product(si, v, deps, SV_factors, FV, sv2fv, e2fi)
         elif isinstance(v, Division):
-            fi, factors = handle_division(i, v, deps, F, FV, sv2fv, e2fi)
+            fi, factors = handle_division(si, v, deps, SV_factors, FV, sv2fv, e2fi)
         elif isinstance(v, Conditional):
-            fi, factors = handle_conditional(i, v, deps, F, FV, sv2fv, e2fi)
+            fi, factors = handle_conditional(si, v, deps, SV_factors, FV, sv2fv, e2fi)
         else:  # All other operators
-            fi, factors = handle_operator(i, v, deps, F, FV, sv2fv, e2fi)
+            fi, factors = handle_operator(si, v, deps, SV_factors, FV, sv2fv, e2fi)
 
         if fi is not None:
-            sv2fv[i] = fi
-        F[i] = factors
+            sv2fv[si] = fi
+        SV_factors[si] = factors
 
     assert not noargs, "This dict was not supposed to be filled with anything!"
 
@@ -373,18 +376,28 @@ def collect_argument_factors(SV, dependencies, arg_indices):
     # FV = FV[:len(e2fi)]
     assert len(FV) == len(e2fi)
 
-    # Get the factorization of the final value # TODO: Support simultaneous factorization of multiple integrands?
-    IM = F[-1]
+    # Get the factorizations of the target values
+    IMs = []
+    for si in SV_targets:
+        if SV_factors[si] == {}:
+            # Functionals and expressions: store as no args * factor
+            factors = { (): sv2fv[si] }
+        else:
+            # Forms of arity 1 or higher:
+            # Map argkeys from indices into SV to indices into AV,
+            # and resort keys for canonical representation
+            factors = { tuple(sorted(sv2av[si] for si in argkey)): fi
+                        for argkey, fi in SV_factors[si].items() }
+        IMs.append(factors)
 
-    # Map argkeys from indices into SV to indices into AV, and resort keys for canonical representation
-    IM = dict((tuple(sorted(sv2av[j] for j in argkey)), fi) for argkey, fi in iteritems(IM))
+    # Recompute dependencies in FV
+    FV_deps = compute_dependencies(e2fi, FV)
 
-    # If this is a non-argument expression, point to the expression from IM (not sure if this is useful)
-    if any([not AV, not IM, not arg_indices]):
-        assert all([not AV, not IM, not arg_indices])
-        IM = {(): len(FV) - 1}
+    # Indices into FV that are needed for final result
+    FV_targets = list(chain(sorted(IM.values())
+                            for IM in IMs))
 
-    return FV, e2fi, AV, IM
+    return IMs, AV, FV, FV_deps, FV_targets
 
 
 def rebuild_scalar_graph_from_factorization(AV, FV, IM):
@@ -433,29 +446,3 @@ def rebuild_scalar_graph_from_factorization(AV, FV, IM):
     dependencies = compute_dependencies(se2i, SV)
 
     return SV, se2i, dependencies
-
-
-def compute_argument_factorization(SV, target_variables, dependencies):
-
-    # TODO: Use target_variables! Currently just assuming the last vertex is the target here...
-
-    if list(target_variables) != [len(SV) - 1]:
-        if extract_type(SV[-1], Argument):
-            error("Multiple or nonscalar Argument dependent expressions not supported in factorization.")
-        AV = []
-        FV = SV
-        IM = {}
-        return AV, FV, IM, target_variables, dependencies
-
-    assert list(target_variables) == [len(SV) - 1]
-
-    arg_indices = build_argument_indices(SV)
-    #A = build_argument_dependencies(dependencies, arg_indices)
-    FV, e2fi, AV, IM = collect_argument_factors(SV, dependencies, arg_indices)
-
-    # Indices into FV that are needed for final result
-    target_variables = sorted(itervalues(IM))
-
-    dependencies = compute_dependencies(e2fi, FV)
-
-    return IM, AV, FV, target_variables, dependencies
