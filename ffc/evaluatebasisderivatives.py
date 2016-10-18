@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Code generation for evaluation of derivatives of finite element
-basis values.  This module generates code which is more or less a C++
-representation of the code found in FIAT_NEW."""
 
-# Copyright (C) 2007-2013 Kristian B. Oelgaard
+# Copyright (C) 2007-2016 Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -22,9 +19,10 @@ representation of the code found in FIAT_NEW."""
 #
 # Modified by Anders Logg 2013
 # Modified by Lizao Li 2015, 2016
-#
-# First added:  2007-04-16
-# Last changed: 2016-08-17
+
+"""Code generation for evaluation of derivatives of finite element
+basis values.  This module generates code which is more or less a C++
+representation of the code found in FIAT_NEW."""
 
 # Python modules
 import math

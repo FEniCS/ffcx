@@ -1,12 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Compiler stage 1: Analysis
---------------------------
-
-This module implements the analysis/preprocessing of variational
-forms, including automatic selection of elements, degrees and
-form representation type.
-"""
 
 # Copyright (C) 2007-2016 Anders Logg, Martin Alnaes, Kristian B. Oelgaard,
 # and others
@@ -27,6 +19,15 @@ form representation type.
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
+
+"""
+Compiler stage 1: Analysis
+--------------------------
+
+This module implements the analysis/preprocessing of variational
+forms, including automatic selection of elements, degrees and
+form representation type.
+"""
 
 import os
 import copy

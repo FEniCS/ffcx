@@ -28,7 +28,7 @@ option --bench.
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Martin Alnaes, 2013-2016
+# Modified by Martin Sandve Alnæs, 2013-2016
 # Modified by Johannes Ring, 2013
 # Modified by Kristian B. Oelgaard, 2013
 # Modified by Garth N. Wells, 2014
@@ -43,12 +43,16 @@ import difflib
 import sysconfig
 import subprocess
 import time
+import logging
 from numpy import array, shape, abs, max, isnan
+import ffc
 from ffc.log import begin, end, info, info_red, info_green, info_blue, warning
+from ffc.log import ffc_logger, ERROR
+from ufl.log import ufl_logger
+from ufl.utils.py23 import as_native_str
 from ffc import get_ufc_cxx_flags
 from ffc.backends.ufc import get_include_path as get_ufc_include
 from ufctest import generate_test_code
-
 
 # Parameters TODO: Can make this a cmdline argument, and start
 # crashing programs in debugger automatically?
@@ -58,7 +62,37 @@ demo_directory = "../../../../demo"
 bench_directory = "../../../../bench"
 
 # Global log file
-logfile = None
+logfile = "error.log"
+
+# Remove old log file
+if os.path.isfile(logfile):
+    os.remove(logfile)
+
+class GEFilter(object):
+    """Filter messages that are greater or equal to given log level"""
+    def __init__(self, level):
+        self.__level = level
+
+    def filter(self, record):
+        return record.levelno >= self.__level
+
+class LTFilter(object):
+    """Filter messages that are less than given log level"""
+    def __init__(self, level):
+        self.__level = level
+
+    def filter(self, record):
+        return record.levelno <= self.__level
+
+# Filter out error messages from std output
+ffc_logger.get_handler().addFilter(LTFilter(ERROR))
+ufl_logger.get_handler().addFilter(LTFilter(ERROR))
+
+# Filter out error messages to log file
+file_handler = logging.FileHandler(logfile)
+file_handler.addFilter(GEFilter(ERROR))
+ffc_logger.get_logger().addHandler(file_handler)
+ufl_logger.get_logger().addHandler(file_handler)
 
 # Extended quadrature tests (optimisations)
 ext_quad = [
@@ -110,11 +144,10 @@ _command_timings = []
 def run_command(command):
     "Run command and collect errors in log file."
     global _command_timings
-    global logfile
 
     t1 = time.time()
     try:
-        output = subprocess.check_output(command, shell=True)
+        output = as_native_str(subprocess.check_output(command, shell=True))
         t2 = time.time()
         _command_timings.append((command, t2 - t1))
         verbose = False  # FIXME: Set from --verbose
@@ -124,19 +157,14 @@ def run_command(command):
     except subprocess.CalledProcessError as e:
         t2 = time.time()
         _command_timings.append((command, t2 - t1))
-        if logfile is None:
-            logfile = open("../../error.log", "w")
-        logfile.write(e.output + "\n")
+        log_error(e.output)
         print(e.output)
         return False
 
 
 def log_error(message):
     "Log error message."
-    global logfile
-    if logfile is None:
-        logfile = open("../../error.log", "w")
-    logfile.write(message + "\n")
+    ffc_logger.get_logger().error(message)
 
 
 def clean_output(output_directory):
@@ -184,6 +212,7 @@ def generate_test_cases(bench, only_forms, skip_forms):
 
 def generate_code(args, only_forms, skip_forms):
     "Generate code for all test cases."
+    global _command_timings
 
     # Get a list of all files
     form_files = [f for f in os.listdir(".")
@@ -200,16 +229,27 @@ def generate_code(args, only_forms, skip_forms):
 
     # Iterate over all files
     for f in form_files:
-        options = special.get(f, "")
+        options = [special.get(f, "")]
+        options.extend(args)
+        options.extend(["-f", "precision=8", "-fconvert_exceptions_to_warnings"])
+        options.append(f)
+        options = list(filter(None, options))
 
-        cmd = ("ffc %s %s -f precision=8 -fconvert_exceptions_to_warnings %s"
-               % (options, " ".join(args), f))
+        cmd = sys.executable + " -m ffc " + " ".join(options)
 
         # Generate code
-        ok = run_command(cmd)
+        t1 = time.time()
+        try:
+            ok = ffc.main(options)
+        except Exception as e:
+            log_error(e)
+            ok = -1
+        finally:
+            t2 = time.time()
+            _command_timings.append((cmd, t2 - t1))
 
         # Check status
-        if ok:
+        if ok == 0:
             info_green("%s OK" % f)
         else:
             info_red("%s failed" % f)
@@ -493,7 +533,8 @@ def main(args):
         info_blue("Skipping reference data download")
     else:
         try:
-            output = subprocess.check_output("./scripts/download", shell=True)
+            cmd = "./scripts/download"
+            output = as_native_str(subprocess.check_output(cmd, shell=True))
             print(output)
             info_green("Download reference data ok")
         except subprocess.CalledProcessError as e:
@@ -556,7 +597,7 @@ def main(args):
         generate_test_cases(bench, only_forms, skip_forms)
 
         # Generate code
-        generate_code(args + [argument], only_forms, skip_forms)
+        generate_code(args + argument.split(), only_forms, skip_forms)
 
         # Location of reference directories
         reference_directory = os.path.abspath("../../ffc-reference-data/")
@@ -593,6 +634,9 @@ def main(args):
         end()
         test_case_timings[argument] = time.time() - test_case_timings[argument]
 
+    # Go back up
+    os.chdir(os.path.pardir)
+
     # Print results
     if print_timing:
         info_green("Timing of all commands executed:")
@@ -603,12 +647,12 @@ def main(args):
     for argument in test_cases:
         info("Total time for %s: %d s" % (argument, test_case_timings[argument]))
 
-    if logfile is None:
+    if not os.path.isfile(logfile) or os.stat(logfile).st_size == 0:
         info_green("Regression tests OK")
         return 0
     else:
         info_red("Regression tests failed")
-        info("Error messages stored in error.log")
+        info("Error messages stored in %s" % logfile)
         return 1
 
 

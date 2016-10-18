@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-"Code snippets for code generation."
 
-# Copyright (C) 2007-2013 Anders Logg
+# Copyright (C) 2007-2016 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -21,12 +20,12 @@
 # Modified by Kristian B. Oelgaard 2010-2013
 # Modified by Marie Rognes 2007-2012
 # Modified by Peter Brune 2009
-# Modified by Martin Alnaes, 2013
+# Modified by Martin Sandve Alnæs, 2013
 #
 # First added:  2007-02-28
 # Last changed: 2014-06-10
 
-# Code snippets
+"Code snippets for code generation."
 
 __all__ = ["comment_ufc", "comment_dolfin", "header_h", "header_c", "footer",
            "compute_jacobian", "compute_jacobian_inverse",

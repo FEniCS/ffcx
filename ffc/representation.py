@@ -13,7 +13,7 @@ function "foo", one should only need to use the data stored
 in the intermediate representation under the key "foo".
 """
 
-# Copyright (C) 2009-2016 Anders Logg, Martin Alnaes, Marie E. Rognes,
+# Copyright (C) 2009-2016 Anders Logg, Martin Sandve Alnæs, Marie E. Rognes,
 # Kristian B. Oelgaard, and others
 #
 # This file is part of FFC.

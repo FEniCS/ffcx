@@ -110,7 +110,7 @@ The compiler stages are implemented by the following functions:
 # Modified by Kristian B. Oelgaard, 2010.
 # Modified by Dag Lindbo, 2008.
 # Modified by Garth N. Wells, 2009.
-# Modified by Martin Alnaes, 2013-2016
+# Modified by Martin Sandve Alnæs, 2013-2016
 
 __all__ = ["compile_form", "compile_element"]
 

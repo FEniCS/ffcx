@@ -24,6 +24,7 @@ import subprocess
 import time
 
 from ufl import FiniteElement, MixedElement
+from ufl.utils.py23 import as_native_str
 import ffc
 from ffc.log import error
 from ffc.mixedelement import MixedElement as FFCMixedElement
@@ -171,7 +172,7 @@ def run_code(ufl_element, deriv_order):
     # Run compiled code and get values
     c = ".%sevaluate_basis_test_code %d" % (os.path.sep, deriv_order)
     try:
-        output = subprocess.check_output(c, shell=True)
+        output = as_native_str(subprocess.check_output(c, shell=True))
     except subprocess.CalledProcessError as e:
         print("Could not run compile code for element: {}".format(str(ufl_element)))
         raise

@@ -18,7 +18,12 @@ VERSION = re.findall('__version__ = "(.*)"',
 
 URL = "https://bitbucket.org/fenics-project/ffc/"
 
-ENTRY_POINTS = {'console_scripts': ['ffc = ffc.__main__:main']}
+if sys.version_info[0] == 2:
+    ENTRY_POINTS = {'console_scripts': ['ffc = ffc.__main__:main',
+                                        'ffc-2 = ffc.__main__:main']}
+else:
+    ENTRY_POINTS = {'console_scripts': ['ffc = ffc.__main__:main',
+                                        'ffc-3 = ffc.__main__:main']}
 
 AUTHORS = """\
 Anders Logg, Kristian Oelgaard, Marie Rognes, Garth N. Wells,

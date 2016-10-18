@@ -26,7 +26,7 @@ might be (re-)implemented in a future version of FFC
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Kristian B. Oelgaard, 2010.
-# Modified by Martin Alnaes, 2013
+# Modified by Martin Sandve Alnæs, 2013
 
 # FFC modules
 from ffc.log import info, error

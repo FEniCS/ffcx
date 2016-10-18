@@ -81,7 +81,7 @@ class FFCBackendAccess(MultiFunction):
         # No need to store basis function value in its own variable, just get table value directly
         #uname, begin, end, ttype = tabledata
         uname, begin, end = tabledata
-        table_types = self.ir["uflacs"]["expr_irs"][num_points]["table_types"]
+        table_types = self.ir["expr_irs"][num_points]["table_types"]
         ttype = table_types[uname]
 
         if ttype == "zeros":
@@ -107,7 +107,7 @@ class FFCBackendAccess(MultiFunction):
         # TODO: Passing type along with tabledata would make a lot of code cleaner
         #uname, begin, end, ttype = tabledata
         uname, begin, end = tabledata
-        table_types = self.ir["uflacs"]["expr_irs"][num_points]["table_types"]
+        table_types = self.ir["expr_irs"][num_points]["table_types"]
         ttype = table_types[uname]
 
         if ttype == "zeros":

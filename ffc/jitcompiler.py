@@ -23,7 +23,7 @@ It uses dijitso to wrap the generated code into a Python module."""
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Joachim Haga, 2011.
-# Modified by Martin Alnaes, 2013-2016
+# Modified by Martin Sandve Alnæs, 2013-2016
 
 # Python modules
 import os

@@ -19,7 +19,7 @@ quadrature and tensor representation."""
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Martin Alnaes 2013-2016
+# Modified by Martin Sandve Alnæs 2013-2016
 # Modified by Anders Logg 2014
 
 import numpy
@@ -28,11 +28,12 @@ from ufl.measure import integral_type_to_measure_name
 from ufl.cell import cellname2facetname
 from ufl import custom_integral_types
 
-from ffc.fiatinterface import create_element
-from ffc.cpp import make_integral_classname
 from ffc.log import error
-
+from ffc.cpp import make_integral_classname
+from ffc.fiatinterface import create_element
 from ffc.fiatinterface import create_quadrature
+from ffc.fiatinterface import map_facet_points
+from ffc.fiatinterface import reference_cell_vertices
 
 
 def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
@@ -49,6 +50,38 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     else:
         error("Unknown integral type: " + str(integral_type))
     return (points, weights)
+
+
+def integral_type_to_entity_dim(integral_type, tdim):
+    "Given integral_type and domain tdim, return the tdim of the integration entity."
+    if integral_type == "cell":
+        entity_dim = tdim
+    elif (integral_type == "exterior_facet" or integral_type == "interior_facet"):
+        entity_dim = tdim - 1
+    elif integral_type == "vertex":
+        entity_dim = 0
+    elif integral_type in custom_integral_types:
+        entity_dim = tdim
+    else:
+        error("Unknown integral_type: %s" % integral_type)
+    return entity_dim
+
+
+def map_integral_points(points, integral_type, cell, entity):
+    """Map points from reference entity to its parent reference cell."""
+    tdim = cell.topological_dimension()
+    entity_dim = integral_type_to_entity_dim(integral_type, tdim)
+    if entity_dim == tdim:
+        assert points.shape[1] == tdim
+        assert entity == 0
+        return numpy.asarray(points)
+    elif entity_dim == tdim - 1:
+        assert points.shape[1] == tdim - 1
+        return numpy.asarray(map_facet_points(points, entity))
+    elif entity_dim == 0:
+        return numpy.asarray([reference_cell_vertices(cell.cellname())[entity]])
+    else:
+        error("Can't map points from entity_dim=%s" % (entity_dim,))
 
 
 def transform_component(component, offset, ufl_element):
@@ -123,29 +156,35 @@ def needs_oriented_jacobian(form_data):
     return False
 
 
+# Mapping from recognized domain types to entity types
+_entity_types = {
+    "cell": "cell",
+    "exterior_facet": "facet",
+    "interior_facet": "facet",
+    "vertex": "vertex",
+    # "point":          "vertex", # TODO: Not sure, clarify here what 'entity_type' refers to?
+    "custom": "cell",
+    "cutcell": "cell",
+    "interface": "cell",  # "facet"  # TODO: ?
+    "overlap": "cell",
+    }
+
+
+def entity_type_from_integral_type(integral_type):
+    return _entity_types[integral_type]
+
+
 def initialize_integral_ir(representation, itg_data, form_data, form_id):
     """Initialize a representation dict with common information that is
     expected independently of which representation is chosen."""
 
-    # Mapping from recognized domain types to entity types
-    entity_type = {"cell": "cell",
-                   "exterior_facet": "facet",
-                   "interior_facet": "facet",
-                   "vertex": "vertex",
-                   # "point":          "vertex", # TODO: Not sure, clarify here what 'entity_type' refers to?
-                   "custom": "cell",
-                   "cutcell": "cell",
-                   "interface": "cell",
-                   "overlap": "cell",
-                   }[itg_data.integral_type]
-
-    # Extract data
+    entitytype = entity_type_from_integral_type(itg_data.integral_type)
     cell = itg_data.domain.ufl_cell()
-    cellname = cell.cellname()
+    #cellname = cell.cellname()
     tdim = cell.topological_dimension()
     assert all(tdim == itg.ufl_domain().topological_dimension() for itg in itg_data.integrals)
 
-    # Set number of cells if not set TODO: Get automatically from number of domains
+    # Set number of cells if not set  TODO: Get automatically from number of domains
     num_cells = itg_data.metadata.get("num_cells")
 
     return {"representation": representation,
@@ -155,7 +194,7 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
             "rank": form_data.rank,
             "geometric_dimension": form_data.geometric_dimension,
             "topological_dimension": tdim,
-            "entitytype": entity_type,
+            "entitytype": entitytype,
             "num_facets": cell.num_facets(),
             "num_vertices": cell.num_vertices(),
             "needs_oriented": needs_oriented_jacobian(form_data),

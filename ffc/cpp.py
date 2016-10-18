@@ -20,7 +20,7 @@
 #
 # Modified by Kristian B. Oelgaard 2011
 # Modified by Marie E. Rognes 2010
-# Modified by Martin Alnaes 2013-2016
+# Modified by Martin Sandve Alnæs 2013-2016
 
 # Python modules
 import re
@@ -581,10 +581,7 @@ def _generate_psi_name(counter, entity_type, entity, component, derivatives, avg
     name = "FE%d" % counter
 
     if entity_type == "facet":
-        if entity is None:
-            name += "_f0"
-        else:
-            name += "_f%d" % entity
+        name += "_f%d" % entity
     elif entity_type == "vertex":
         name += "_v%d" % entity
 

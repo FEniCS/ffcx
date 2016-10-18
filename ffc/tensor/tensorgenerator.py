@@ -22,7 +22,7 @@
 # Modified by Marie Rognes, 2007
 # Modified by Garth N. Wells, 2009
 # Modified by Mehdi Nikbakht, 2010
-# Modified by Martin Alnaes, 2013
+# Modified by Martin Sandve Alnæs, 2013
 #
 # First added:  2004-11-03
 # Last changed: 2013-02-10

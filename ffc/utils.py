@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2005-2014 Anders Logg
+
+# Copyright (C) 2005-2016 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -17,7 +18,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Kristian B. Oelgaard, 2009
-# Modified by Martin Alnaes 2014
+# Modified by Martin Sandve Alnæs 2014
 
 # Python modules.
 import operator
@@ -65,3 +66,14 @@ def compute_permutations(k, n, skip=[]):
             if i < p[0]:
                 permutations += [(i, ) + p]
     return permutations
+
+
+def insert_nested_dict(root, keys, value):
+    "Set root[keys[0]][...][keys[-1]] = value, creating subdicts on the way if missing."
+    for k in keys[:-1]:
+        d = root.get(k)
+        if d is None:
+            d = {}
+            root[k] = d
+        root = d
+    root[keys[-1]] = value

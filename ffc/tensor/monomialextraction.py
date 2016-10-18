@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Martin Alnaes, 2008, 2013
+# Modified by Martin Sandve Alnæs, 2008, 2013
 # Modified by Kristian B. Oelgaard
 #
 # First added:  2008-08-01

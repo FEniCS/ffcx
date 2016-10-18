@@ -28,7 +28,7 @@ is a wrapper for the standard Python logging module.
 # UFL modules
 from ufl.log import Logger
 from ufl.log import log_functions
-from ufl.log import INFO, DEBUG, ERROR, CRITICAL
+from ufl.log import INFO, DEBUG, WARNING, ERROR, CRITICAL
 from ufl.utils.sorting import sorted_by_key
 from ufl.utils.formatting import dstr, tstr
 
