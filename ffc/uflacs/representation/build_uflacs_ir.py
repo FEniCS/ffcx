@@ -38,13 +38,16 @@ from ffc.uflacs.elementtables.terminaltables import build_optimized_tables
 
 
 def build_uflacs_ir(cell, integral_type, entitytype,
-                    integrands, coefficient_numbering,
+                    integrands, tensor_shape,
+                    coefficient_numbering,
                     quadrature_rules, parameters):
     ir = {}
 
     # { ufl coefficient: count }
     ir["coefficient_numbering"] = coefficient_numbering
 
+    rank = len(tensor_shape)
+    
     # { num_points: expr_ir for one integrand }
     ir["expr_irs"] = {}
 
@@ -109,7 +112,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         # Compute factorization of arguments
         (argument_factorizations, modified_arguments,
              FV, FV_deps, FV_targets) = \
-            compute_argument_factorization(SV, SV_deps, SV_targets)
+            compute_argument_factorization(SV, SV_deps, SV_targets, rank)
         assert len(SV_targets) == len(argument_factorizations)
 
         # TODO: Still expecting one target variable in code generation
@@ -188,10 +191,37 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         need_weights = any(isinstance(mt.terminal, QuadratureWeight)
                            for mt in active_mts)
 
+        # Loop over factorization terms
+        from collections import defaultdict
+        block_contributions = {
+            # TODO: Should not store piecewise blocks inside num_points context
+            "piecewise": defaultdict(list),
+            "varying": defaultdict(list)
+            }
+        for ma_indices, fi in argument_factorization.items():
+            # Get a bunch of information about this term
+            rank = len(ma_indices)
+            trs = tuple(modified_argument_table_ranges[ai] for ai in ma_indices)
+            unames = tuple(tr[0] for tr in trs)
+            dofblock = tuple(tr[1:3] for tr in trs)
+            ttypes = tuple(table_types[name] for name in unames)
+            assert not any(tt == "zeros" for tt in ttypes)
+
+            piecewise_types = ("piecewise", "fixed", "ones")
+            if FV_piecewise[fi] and all(tt in piecewise_types for tt in ttypes):
+                contributions = block_contributions["piecewise"][dofblock]
+            else:
+                contributions = block_contributions["varying"][dofblock]
+
+            data = (ma_indices, fi, trs, unames, ttypes)
+            contributions.append(data)
+
 
         # Build IR dict for the given expressions
         expr_ir = {}
 
+        expr_ir["block_contributions"] = block_contributions
+        
         # (array) FV-index -> UFL subexpression
         expr_ir["V"] = FV
 

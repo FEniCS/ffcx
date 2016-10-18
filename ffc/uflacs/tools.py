@@ -19,6 +19,8 @@
 
 import numbers
 import collections
+import numpy
+
 from ufl.sorting import sorted_expr_sum
 from ufl import custom_integral_types
 from ufl.classes import Integral
@@ -53,6 +55,9 @@ def compute_quadrature_rules(itg_data):
         # Compute quadrature points and weights
         (points, weights) = create_quadrature_points_and_weights(
             itg_data.integral_type, itg_data.domain.ufl_cell(), degree, scheme)
+
+        if points is not None:
+            points = numpy.asarray(points)
 
         if weights is None:
             # For custom integrals, there are no points

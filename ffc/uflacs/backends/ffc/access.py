@@ -160,11 +160,11 @@ class FFCBackendAccess(MultiFunction):
             # Physical coordinates are available in given variables
             assert num_points is None
             x = self.symbols.points_array(num_points)
+            iq = self.symbols.quadrature_loop_index(num_points)
+            gdim, = mt.terminal.ufl_shape
             if gdim == 1:
                 index = iq
             else:
-                iq = self.symbols.quadrature_loop_index(num_points)
-                gdim, = mt.terminal.ufl_shape
                 index = iq * gdim + mt.flat_component
             return x[index]
         else:
@@ -183,18 +183,14 @@ class FFCBackendAccess(MultiFunction):
 
         if self.integral_type == "cell" and not mt.restriction:
             X = self.symbols.points_array(num_points)
-            if tdim == 1:
-                if num_points == 1:
-                    index = 0
-                else:
-                    index = iq
+            tdim, = mt.terminal.ufl_shape
+            iq = self.symbols.quadrature_loop_index(num_points)
+            if num_points == 1:
+                index = mt.flat_component
+            elif tdim == 1:
+                index = iq
             else:
-                if num_points == 1:
-                    index = mt.flat_component
-                else:
-                    iq = self.symbols.quadrature_loop_index(num_points)
-                    tdim, = mt.terminal.ufl_shape
-                    index = iq * tdim + mt.flat_component
+                index = iq * tdim + mt.flat_component
             return X[index]
         else:
             # X should be computed from x or Xf symbolically instead of getting here
@@ -223,17 +219,12 @@ class FFCBackendAccess(MultiFunction):
             Xf = self.points_array(num_points)
             iq = self.symbols.quadrature_loop_index(num_points)
             assert 0 <= mt.flat_component < (tdim-1)
-            if tdim == 2:
-                if num_points == 1:
-                    index = 0
-                else:
-                    index = iq
+            if num_points == 1:
+                index = mt.flat_component
+            elif tdim == 2:
+                index = iq
             else:
-                if num_points == 1:
-                    index = mt.flat_component
-                else:
-                    # The general case
-                    index = iq * (tdim - 1) + mt.flat_component
+                index = iq * (tdim - 1) + mt.flat_component
             return Xf[index]
         else:
             # Xf should be computed from X or x symbolically instead of getting here

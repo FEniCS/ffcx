@@ -291,7 +291,7 @@ def handle_operator(si, v, deps, SV_factors, FV, sv2fv, e2fi):
     return fi, factors
 
 
-def compute_argument_factorization(SV, SV_deps, SV_targets):
+def compute_argument_factorization(SV, SV_deps, SV_targets, rank):
     """Factorizes a scalar expression graph w.r.t. scalar Argument
     components.
 
@@ -380,14 +380,22 @@ def compute_argument_factorization(SV, SV_deps, SV_targets):
     IMs = []
     for si in SV_targets:
         if SV_factors[si] == {}:
-            # Functionals and expressions: store as no args * factor
-            factors = { (): sv2fv[si] }
+            if rank == 0:
+                # Functionals and expressions: store as no args * factor
+                factors = { (): sv2fv[si] }
+            else:
+                # Zero form of arity 1 or higher: make factors empty
+                factors = {}
         else:
             # Forms of arity 1 or higher:
             # Map argkeys from indices into SV to indices into AV,
             # and resort keys for canonical representation
             factors = { tuple(sorted(sv2av[si] for si in argkey)): fi
                         for argkey, fi in SV_factors[si].items() }
+        # Expecting all term keys to have length == rank
+        # (this assumption will eventually have to change if we
+        # implement joint bilinear+linear form factorization here)
+        assert all(len(k) == rank for k in factors)
         IMs.append(factors)
 
     # Recompute dependencies in FV
