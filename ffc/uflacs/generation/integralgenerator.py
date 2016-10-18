@@ -211,8 +211,10 @@ class IntegralGenerator(object):
         "Generate all quadrature loops."
         L = self.backend.language
         body = self.generate_quadrature_body(num_points)
-
-        if num_points == 1:
+        if not body:
+            # Could happen for integral with everything zero and optimized away
+            parts = []
+        elif num_points == 1:
             # For now wrapping body in Scope to avoid thinking about scoping issues
             parts = [L.Comment("Only 1 quadrature point, no loop"),
                      L.Scope(body)]
@@ -228,9 +230,11 @@ class IntegralGenerator(object):
         """
         parts = []
         L = self.backend.language
+
         parts += self.generate_varying_partition(num_points)
         if parts:
-            parts = [L.Comment("Quadrature loop body setup (num_points={0})".format(num_points))] + parts
+            comment = [L.Comment("Quadrature loop body setup (num_points={0})".format(num_points))]
+            parts = comment + parts
 
         # Compute single argument partitions outside of the dofblock loops
         for iarg in range(self.ir["rank"]):
@@ -316,8 +320,8 @@ class IntegralGenerator(object):
                 vdef = self.backend.definitions(mt.terminal, mt, table_ranges[i], num_points, vaccess)
 
                 # Store definitions of terminals in list
-                if vdef is not None:
-                    definitions.append(vdef)
+                assert isinstance(vdef, list)
+                definitions.extend(vdef)
             else:
                 # Get previously visited operands (TODO: use edges of V instead of ufl_operands?)
                 vops = [vaccesses[op] for op in v.ufl_operands]
@@ -354,7 +358,9 @@ class IntegralGenerator(object):
             vaccesses[v] = vaccess
 
         # Join terminal computation, array of intermediate expressions, and intermediate computations
-        parts = [definitions]
+        parts = []
+        if definitions:
+            parts += definitions
         if intermediates:
             parts += [L.ArrayDecl("double", symbol, len(intermediates), alignas=self.ir["alignas"])]
             parts += intermediates
@@ -426,7 +432,9 @@ class IntegralGenerator(object):
             self.ast_variables[i] = vaccess
 
         # Join terminal computation, array of intermediate expressions, and intermediate computations
-        parts = [definitions]
+        parts = []
+        if definitions:
+            parts += definitions
         if intermediates:
             parts += [L.ArrayDecl("double", symbol, len(intermediates), alignas=self.ir["alignas"])]
             parts += intermediates
@@ -447,7 +455,8 @@ class IntegralGenerator(object):
                                         expr_ir["table_ranges"],
                                         num_points)
         if parts:
-            parts.insert(0, L.Comment("Section for piecewise constant computations"))
+            comment = [L.Comment("Section for piecewise constant computations")]
+            parts = comment + parts
         return parts
 
 
@@ -461,7 +470,8 @@ class IntegralGenerator(object):
                                         expr_ir["table_ranges"],
                                         num_points)
         if parts:
-            parts.insert(0, L.Comment("Section for geometrically varying computations"))
+            comment = [L.Comment("Section for geometrically varying computations")]
+            parts = comment + parts
         return parts
 
 
