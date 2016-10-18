@@ -15,6 +15,7 @@ pipelines:
           - python2 -m flake8 ffc/
           - python3 -m flake8 ffc/
           - python2 -m pytest -v ./test/unit
+          - python3 -m pytest -v ./test/unit
           - python2 -m pytest -v ./test/uflacs
           - python3 -m pytest -v ./test/uflacs
   branches:
@@ -32,5 +33,6 @@ pipelines:
           - python2 -m flake8 ffc/
           - python3 -m flake8 ffc/
           - python2 -m pytest -v ./test/unit
+          - python3 -m pytest -v ./test/unit
           - python2 -m pytest -v ./test/uflacs
           - python3 -m pytest -v ./test/uflacs
