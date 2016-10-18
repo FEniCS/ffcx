@@ -211,7 +211,7 @@ def generate_code(args, only_forms, skip_forms):
         options.extend(args)
         options.extend(["-f", "precision=8", "-fconvert_exceptions_to_warnings"])
         options.append(f)
-        options = filter(None, options)
+        options = list(filter(None, options))
 
         cmd = sys.executable + " -m ffc " + " ".join(options)
 
