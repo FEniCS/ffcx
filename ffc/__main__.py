@@ -46,8 +46,8 @@ from ufl.algorithms import load_ufl_file
 import ufl
 
 # FFC modules.
-from ffc.log import set_level
-from ffc.log import DEBUG, INFO, ERROR
+from ffc.log import push_level, pop_level
+from ffc.log import DEBUG, INFO, WARNING, ERROR
 from ffc.parameters import default_parameters
 from ffc import __version__ as FFC_VERSION, get_ufc_signature
 from ffc.backends.ufc import __version__ as UFC_VERSION
@@ -105,8 +105,8 @@ def main(args=None):
 
     # Get command-line arguments
     try:
-        opts, args = getopt.getopt(args, "hIVSvsl:r:f:Oo:q:ep",
-                                   ["help", "includes", "version", "signature", "verbose", "silent",
+        opts, args = getopt.getopt(args, "hIVSdvsl:r:f:Oo:q:ep",
+                                   ["help", "includes", "version", "signature", "debug", "verbose", "silent",
                                     "language=", "representation=", "optimize",
                                     "output-directory=", "quadrature-rule=", "error-control",
                                     "profile"])
@@ -140,9 +140,11 @@ def main(args=None):
         print_error("Missing file.")
         return 1
 
-    # Get parameters and choose INFO as default for script
+    # Get parameters
     parameters = default_parameters()
-    parameters["log_level"] = INFO
+
+    # Choose WARNING as default for script
+    parameters["log_level"] = WARNING
 
     # Set default value (not part of in parameters[])
     enable_profile = False
@@ -150,6 +152,8 @@ def main(args=None):
     # Parse command-line parameters
     for opt, arg in opts:
         if opt in ("-v", "--verbose"):
+            parameters["log_level"] = INFO
+        elif opt in ("-d", "--debug"):
             parameters["log_level"] = DEBUG
         elif opt in ("-s", "--silent"):
             parameters["log_level"] = ERROR
@@ -187,31 +191,33 @@ def main(args=None):
             enable_profile = True
 
     # Set log_level
-    set_level(parameters["log_level"])
+    push_level(parameters["log_level"])
 
     # Set UFL precision
     ufl.constantvalue.precision = int(parameters["precision"])
 
-    # Print a versioning message if silence was not requested
-    if parameters["log_level"] != ERROR:
+    # Print a versioning message if verbose output was requested
+    if parameters["log_level"] <= INFO:
         info_version()
 
     # Call parser and compiler for each file
+    resultcode = 0
     for filename in args:
 
         # Get filename prefix and suffix
         prefix, suffix = os.path.splitext(os.path.basename(filename))
         suffix = suffix.replace(os.path.extsep, "")
 
+        # Check file suffix
+        if suffix != "ufl":
+            print_error("Expecting a UFL form file (.ufl).")
+            resultcode = 1
+            break
+
         # Remove weird characters (file system allows more than the C
         # preprocessor)
         prefix = re.subn("[^{}]".format(string.ascii_letters + string.digits + "_"), "!", prefix)[0]
         prefix = re.subn("!+", "_", prefix)[0]
-
-        # Check file suffix
-        if suffix != "ufl":
-            print_error("Expecting a UFL form file (.ufl).")
-            return 1
 
         # Turn on profiling
         if enable_profile:
@@ -237,7 +243,7 @@ def main(args=None):
         #    else:
         #        print("")
         #        print_error(str(exception))
-        #        print_error("To get more information about this error, rerun FFC with --verbose.")
+        #        print_error("To get more information about this error, rerun FFC with --debug.")
         #        return 1
 
         # Turn off profiling and write status to file
@@ -247,7 +253,10 @@ def main(args=None):
             pr.dump_stats(pfn)
             print("Wrote profiling info to file {0}".format(pfn))
 
-    return 0
+    # Reset logging level
+    pop_level()
+
+    return resultcode
 
 
 if __name__ == "__main__":
