@@ -23,20 +23,19 @@
 # Modified by Lizao Li, 2015, 2016
 
 # Python modules
-from numpy import array
 import six
+import numpy
+from numpy import array
 
 # UFL and FIAT modules
 import ufl
 from ufl.utils.sorting import sorted_by_key
-import FIAT
 
+import FIAT
 from FIAT.trace import DiscontinuousLagrangeTrace
 
 # FFC modules
 from ffc.log import debug, error
-from ffc.quadratureelement import QuadratureElement as FFCQuadratureElement
-
 
 from ffc.mixedelement import MixedElement
 from ffc.restrictedelement import RestrictedElement
@@ -140,7 +139,7 @@ def _create_fiat_element(ufl_element):
     # FIXME: AL: Should this really be here?
     # Handle QuadratureElement
     elif family == "Quadrature":
-        element = FFCQuadratureElement(ufl_element)
+        element = QuadratureElement(ufl_element)
 
     else:
         # Create FIAT cell
@@ -176,12 +175,11 @@ def create_quadrature(shape, degree, scheme="default"):
     Generate quadrature rule (points, weights) for given shape
     that will integrate an polynomial of order 'degree' exactly.
     """
-
     if isinstance(shape, int) and shape == 0:
-        return ([()], array([1.0, ]))
+        return (numpy.zeros((1, 0)), numpy.ones((1,)))
 
     if shape in cellname2dim and cellname2dim[shape] == 0:
-        return ([()], array([1.0, ]))
+        return (numpy.zeros((1, 0)), numpy.ones((1,)))
 
     if scheme == "vertex":
         # The vertex scheme, i.e., averaging the function value in the vertices
@@ -190,7 +188,6 @@ def create_quadrature(shape, degree, scheme="default"):
         # Equation systems generated with the vertex scheme have some
         # properties that other schemes lack, e.g., the mass matrix is
         # a simple diagonal matrix. This may be prescribed in certain cases.
-        #
         if degree > 1:
             from warnings import warn
             warn(("Explicitly selected vertex quadrature (degree 1), "
@@ -216,7 +213,9 @@ def create_quadrature(shape, degree, scheme="default"):
                     )
 
     quad_rule = FIAT.create_quadrature(reference_cell(shape), degree, scheme)
-    return quad_rule.get_points(), quad_rule.get_weights()
+    points = numpy.asarray(quad_rule.get_points())
+    weights = numpy.asarray(quad_rule.get_weights())
+    return points, weights
 
 
 def map_facet_points(points, facet):
@@ -342,3 +341,6 @@ def _indices(element, restriction_domain, tdim):
         for (entity, index) in sorted_by_key(entities):
             indices += index
     return indices
+
+# Import FFC module with circular dependency
+from ffc.quadratureelement import QuadratureElement

@@ -56,7 +56,8 @@ def integrate(monomial,
     tic = time.time()
 
     # Initialize quadrature points and weights
-    (points, weights) = create_quadrature_points_and_weights(integral_type, cell, quadrature_degree, quadrature_rule)
+    (points, weights) = create_quadrature_points_and_weights(
+        integral_type, cell, quadrature_degree, quadrature_rule)
 
     # Initialize quadrature table for basis functions
     table = _init_table(monomial.arguments,
