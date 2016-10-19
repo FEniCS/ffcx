@@ -88,19 +88,29 @@ class FFCBackendDefinitions(MultiFunction):
         if ttype == "ones" and (end - begin) == 1:
             return []
 
+        # For quadrature elements we reference the dofs directly, so no definition needed
+        if ttype == "quadrature":
+            return []
+
         assert begin < end
 
-        # Get various symbols to index element tables and coefficient dofs
-        entity = self.symbols.entity(self.entitytype, mt.restriction)
+        # Entity number
+        if ttype in ("uniform", "fixed"):
+            entity = 0
+        else:
+            entity = self.symbols.entity(self.entitytype, mt.restriction)
 
-        iq = self.symbols.quadrature_loop_index(num_points)
-        #if ttype == "piecewise": iq = 0
+        # This check covers "piecewise constant over points on entity"
+        if ttype in ("piecewise", "fixed"):
+            iq = 0
+        else:
+            iq = self.symbols.quadrature_loop_index(num_points)
 
         idof = self.symbols.coefficient_dof_sum_index()
         dof_access = self.symbols.coefficient_dof_access(mt.terminal, idof)
 
         if ttype == "ones":
-            # Not sure if this actually happens
+            # Don't think this can actually happen
             table_access = L.LiteralFloat(1.0)
         else:
             uname = L.Symbol(uname)
@@ -143,13 +153,19 @@ class FFCBackendDefinitions(MultiFunction):
         #sfe_classname = ir["classnames"]["finite_element"][coordinate_element.sub_elements()[0]]
 
         # Entity number
-        entity = self.symbols.entity(self.entitytype, mt.restriction)
+        if ttype in ("uniform", "fixed"):
+            entity = 0
+        else:
+            entity = self.symbols.entity(self.entitytype, mt.restriction)
 
         # This check covers "piecewise constant over points on entity"
-        iq = self.symbols.quadrature_loop_index(num_points)
-        if ttype == "piecewise":
+        if ttype in ("piecewise", "fixed"):
             iq = 0
+        else:
+            iq = self.symbols.quadrature_loop_index(num_points)
 
+        assert ttype != "quadrature"
+            
         # Make indexable symbol
         uname = L.Symbol(uname)
 
@@ -208,9 +224,10 @@ class FFCBackendDefinitions(MultiFunction):
         If reference facet coordinates are given:
           x = sum_k xdof_k xphi_k(Xf)
         """
-        # TODO: Jacobian may need adjustment for physical_quadrature_integral_types
-        if (self.integral_type in physical_quadrature_integral_types
-                and not mt.local_derivatives):
+        if self.integral_type in physical_quadrature_integral_types:
+            # FIXME: Jacobian may need adjustment for physical_quadrature_integral_types
+            if mt.local_derivatives:
+                error("FIXME: Jacobian in custom integrals is not implemented.")
             return []
         else:
             return self._define_coordinate_dofs_lincomb(e, mt, tabledata, num_points, access)

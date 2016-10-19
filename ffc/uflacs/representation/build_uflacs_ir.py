@@ -20,9 +20,10 @@
 
 import numpy
 
-from ufl import product
+from ufl import product, as_ufl
+from ufl.log import error
 from ufl.checks import is_cellwise_constant
-from ufl.classes import CellCoordinate, FacetCoordinate
+from ufl.classes import CellCoordinate, FacetCoordinate, QuadratureWeight
 
 from ffc.uflacs.analysis.balancing import balance_modifiers
 from ffc.uflacs.analysis.modified_terminals import is_modified_terminal, analyse_modified_terminal
@@ -37,13 +38,16 @@ from ffc.uflacs.elementtables.terminaltables import build_optimized_tables
 
 
 def build_uflacs_ir(cell, integral_type, entitytype,
-                    integrands, coefficient_numbering,
+                    integrands, tensor_shape,
+                    coefficient_numbering,
                     quadrature_rules, parameters):
     ir = {}
 
     # { ufl coefficient: count }
     ir["coefficient_numbering"] = coefficient_numbering
 
+    rank = len(tensor_shape)
+    
     # { num_points: expr_ir for one integrand }
     ir["expr_irs"] = {}
 
@@ -55,145 +59,219 @@ def build_uflacs_ir(cell, integral_type, entitytype,
     #       automatically anyway, num_points should be advisory.
     #       For now, expecting multiple num_points to be rare.
     for num_points in sorted(integrands.keys()):
-        ##################################### begin old compute_expr_ir
-        #expr_ir = compute_expr_ir(integrands[num_points])
         expressions = [integrands[num_points]]
 
         # TODO: Apply this transformation to integrands earlier?
         expressions = [balance_modifiers(expr) for expr in expressions]
 
-        argument_factorization, modified_arguments, V, target_variables, dependencies = \
-            compute_argument_factorization2(expressions)
+        # Build scalar list-based graph representation
+        V, V_deps, V_targets = build_scalar_graph(expressions)
+
+
+        # Build terminal_data from V here before factorization.
+        # Then we can use it to derive table properties for all modified terminals,
+        # and then use that to rebuild the scalar graph more efficiently before
+        # argument factorization. We can build terminal_data again after factorization
+        # if that's necessary.
+        initial_terminal_indices = [i for i, v in enumerate(V)
+                                    if is_modified_terminal(v)]
+        initial_terminal_data = [analyse_modified_terminal(V[i])
+                                 for i in initial_terminal_indices]
+        unique_tables, mt_table_ranges, table_types = \
+            build_optimized_tables(num_points, quadrature_rules,
+                cell, integral_type, entitytype, initial_terminal_data, parameters)
+
+
+        # Build replacement map for modified terminals with zero tables
+        z = as_ufl(0.0)
+        for i, mt in zip(initial_terminal_indices, initial_terminal_data):
+            tr = mt_table_ranges.get(mt)
+            if tr is not None:
+                uname, begin, end = tr
+                ttype = table_types[uname]
+                # Any modified terminal with zero table is itself a zero value
+                if ttype == "zeros":
+                    V[i] = z
+        # Propagate expression changes
+        # (could possibly use replace() on target expressions instead)
+        for i in range(len(V)):
+            deps = [V[j] for j in V_deps[i]]
+            if deps:
+                V[i] = V[i]._ufl_expr_reconstruct_(*deps)
+
+        # Rebuild scalar target expressions and graph
+        # (this may be overkill and possible to optimize
+        # away if it turns out to be costly)
+        expressions = [V[i] for i in V_targets]
+
+        # Rebuild scalar list-based graph representation
+        SV, SV_deps, SV_targets = build_scalar_graph(expressions)
+        assert all(i < len(SV) for i in SV_targets)
+
+
+        # Compute factorization of arguments
+        (argument_factorizations, modified_arguments,
+             FV, FV_deps, FV_targets) = \
+            compute_argument_factorization(SV, SV_deps, SV_targets, rank)
+        assert len(SV_targets) == len(argument_factorizations)
+
+        # TODO: Still expecting one target variable in code generation
+        assert len(argument_factorizations) == 1
+        argument_factorization, = argument_factorizations
 
         # Store modified arguments in analysed form
         for i in range(len(modified_arguments)):
             modified_arguments[i] = analyse_modified_terminal(modified_arguments[i])
 
         # Build set of modified_terminal indices into factorized_vertices
-        modified_terminal_indices = [i for i, v in enumerate(V)
+        modified_terminal_indices = [i for i, v in enumerate(FV)
                                      if is_modified_terminal(v)]
 
-        # Build IR for the given expressions
+        # Build set of modified terminal ufl expressions
+        modified_terminals = [analyse_modified_terminal(FV[i])
+                              for i in modified_terminal_indices]
+
+        # Organize table data more, split into arguments and other terminals
+        modified_terminal_table_ranges = [mt_table_ranges.get(mt)
+                                          for mt in modified_terminals]
+        modified_argument_table_ranges = [mt_table_ranges.get(mt)
+                                          for mt in modified_arguments]
+
+
+        # Dependency analysis
+        inv_FV_deps, FV_active, FV_piecewise, FV_varying = \
+            analyse_dependencies(FV, FV_deps, FV_targets,
+                                 modified_terminal_indices,
+                                 mt_table_ranges,
+                                 table_types)
+
+        # Mark active modified arguments
+        #active_modified_arguments = numpy.zeros(len(modified_arguments), dtype=int)
+        #for ma_indices in argument_factorization:
+        #    for j in ma_indices:
+        #        active_modified_arguments[j] = 1
+
+
+        # Figure out which table names are active
+        active_table_names = set()
+        for i, tr in enumerate(modified_terminal_table_ranges):
+            if FV_active[i] and tr is not None:
+                active_table_names.add(tr[0])
+        for ma_indices in argument_factorization:
+            for j in ma_indices:
+                tr = modified_argument_table_ranges[j]
+                if tr is not None:
+                    active_table_names.add(tr[0])
+
+        # Drop tables not referenced from modified terminals
+        # and and tables of zeros and ones
+        unused_types = ("zeros", "ones", "quadrature")
+        used_table_names = set(name for name in active_table_names
+                               if name is not None
+                                  and table_types[name] not in unused_types)
+        unique_tables = { name: unique_tables[name] for name in used_table_names }
+
+
+        # Analyse active terminals to check what we'll need to generate code for
+        active_mts = [mt for i, mt in enumerate(modified_terminals) if FV_active[i]]
+
+        # Figure out if we need to access CellCoordinate to
+        # avoid generating quadrature point table otherwise
+        if integral_type == "cell":
+            need_points = any(isinstance(mt.terminal, CellCoordinate)
+                              for mt in active_mts)
+        elif integral_type in ("interior_facet", "exterior_facet"):
+            need_points = any(isinstance(mt.terminal, FacetCoordinate)
+                              for mt in active_mts)
+        else:
+            need_points = False
+
+        # Figure out if we need to access QuadratureWeight to
+        # avoid generating quadrature point table otherwise
+        need_weights = any(isinstance(mt.terminal, QuadratureWeight)
+                           for mt in active_mts)
+
+        # Loop over factorization terms
+        from collections import defaultdict
+        block_contributions = {
+            # TODO: Should not store piecewise blocks inside num_points context
+            "piecewise": defaultdict(list),
+            "varying": defaultdict(list)
+            }
+        for ma_indices, fi in sorted(argument_factorization.items()):
+            # Get a bunch of information about this term
+            rank = len(ma_indices)
+            trs = tuple(modified_argument_table_ranges[ai] for ai in ma_indices)
+            unames = tuple(tr[0] for tr in trs)
+            dofblock = tuple(tr[1:3] for tr in trs)
+            ttypes = tuple(table_types[name] for name in unames)
+            assert not any(tt == "zeros" for tt in ttypes)
+
+            piecewise_types = ("piecewise", "fixed", "ones")
+            if FV_piecewise[fi] and all(tt in piecewise_types for tt in ttypes):
+                contributions = block_contributions["piecewise"][dofblock]
+            else:
+                contributions = block_contributions["varying"][dofblock]
+
+            data = (ma_indices, fi, trs, unames, ttypes)
+            contributions.append(data)
+
+
+        # Build IR dict for the given expressions
         expr_ir = {}
 
-        ### Core expression graph:
-        # (array) V-index -> UFL subexpression
-        expr_ir["V"] = V
+        expr_ir["block_contributions"] = block_contributions
+        
+        # (array) FV-index -> UFL subexpression
+        expr_ir["V"] = FV
 
-        # (array) Flattened input expression component index -> V-index
-        expr_ir["target_variables"] = target_variables
+        # (array) Flattened input expression component index -> FV-index
+        expr_ir["target_variables"] = FV_targets
 
         ### Result of factorization:
         # (array) MA-index -> UFL expression of modified arguments
         expr_ir["modified_arguments"] = modified_arguments
 
-        # (dict) tuple(MA-indices) -> V-index of monomial factor
+        # (dict) tuple(MA-indices) -> FV-index of monomial factor
         expr_ir["argument_factorization"] = argument_factorization
 
         ### Modified terminals
-        # (array) list of V-indices to modified terminals
+        # (array) list of FV-indices to modified terminals
         expr_ir["modified_terminal_indices"] = modified_terminal_indices
 
-        # FIXME: Split function here! Need to get and analyze table data before the below dependency analysis.
-
-        # --- Various dependency analysis ---
-        dependencies, inverse_dependencies, active, piecewise, varying = \
-            analyse_dependencies(V, target_variables, modified_terminal_indices, dependencies)
-
         # Dependency structure of graph:
-        #expr_ir["dependencies"] = dependencies                           # (CRSArray) V-index -> direct dependency V-index list
-        #expr_ir["inverse_dependencies"] = inverse_dependencies           # (CRSArray) V-index -> direct dependee V-index list
+        # (CRSArray) FV-index -> direct dependency FV-index list
+        #expr_ir["dependencies"] = FV_deps
+
+        # (CRSArray) FV-index -> direct dependee FV-index list
+        #expr_ir["inverse_dependencies"] = inv_FV_deps
 
         # Metadata about each vertex
-        #expr_ir["active"] = active       # (array) V-index -> bool
-        expr_ir["piecewise"] = piecewise  # (array) V-index -> bool
-        expr_ir["varying"] = varying     # (array) V-index -> bool
+        expr_ir["active"] = FV_active        # (array) FV-index -> bool
+        expr_ir["piecewise"] = FV_piecewise  # (array) FV-index -> bool
+        expr_ir["varying"] = FV_varying      # (array) FV-index -> bool
 
-        ##################################### end old compute_expr_ir
+        expr_ir["modified_terminal_table_ranges"] = modified_terminal_table_ranges
+        expr_ir["modified_argument_table_ranges"] = modified_argument_table_ranges
 
-        ir["expr_irs"][num_points] = expr_ir
-
-        # Build set of modified terminal ufl expressions
-        V = expr_ir["V"]
-        modified_terminals = [analyse_modified_terminal(V[i])
-                              for i in expr_ir["modified_terminal_indices"]]
-        terminal_data = modified_terminals + expr_ir["modified_arguments"]
-
-        # FIXME: For custom integrals, skip table building but set up
-        # the necessary table names and classname mappings instead
-
-        # FIXME: Want table information earlier, even before scalar
-        # rebuilding! Must split compute_expr_ir to achieve this.
-        # FIXME: Store table type as fourth entry in table ranges
-        unique_tables, mt_table_ranges, table_types = \
-            build_optimized_tables(num_points, quadrature_rules,
-                cell, integral_type, entitytype, terminal_data, parameters)
-
-        # Figure out if we need to access CellCoordinate to
-        # avoid generating quadrature point table otherwise
-        if integral_type == "cell":
-            expr_ir["need_points"] = any(isinstance(mt.terminal, CellCoordinate)
-                                         for mt in modified_terminals)
-        elif integral_type in ("interior_facet", "exterior_facet"):
-            expr_ir["need_points"] = any(isinstance(mt.terminal, FacetCoordinate)
-                                         for mt in modified_terminals)
-        else:
-            expr_ir["need_points"] = False
-
-
-        # Ordered table data
-        terminal_table_ranges = [mt_table_ranges.get(mt) for mt in terminal_data]
-
-        # Split into arguments and other terminals before storing in expr_ir
-        # TODO: Some tables are associated with num_points, some are not
-        #       (i.e. piecewise constant, averaged and x0).
-        #       It will be easier to deal with that if we can join
-        #       the expr_ir for all num_points as mentioned above.
-        n = len(expr_ir["modified_terminal_indices"])
-        m = len(expr_ir["modified_arguments"])
-        assert len(terminal_data) == n + m
-        assert len(terminal_table_ranges) == n + m
-        expr_ir["modified_terminal_table_ranges"] = terminal_table_ranges[:n]
-        expr_ir["modified_argument_table_ranges"] = terminal_table_ranges[n:]
-
-        # Store table data in V indexing, this is used in integralgenerator
-        expr_ir["table_ranges"] = numpy.empty(len(V), dtype=object)
+        # Store table data in FV indexing, this is used in integralgenerator
+        expr_ir["table_ranges"] = numpy.empty(len(FV), dtype=object)
         expr_ir["table_ranges"][expr_ir["modified_terminal_indices"]] = \
             expr_ir["modified_terminal_table_ranges"]
 
-        # FIXME: Drop tables for Real and DG0 elements (all 1.0 for each dof)
-
-        # FIXME: Replace coefficients with empty dofrange with zero (which are these?)
-        # FIXME: Propagate constants
-
-        # Drop factorization terms where table dof range is
-        # empty for any of the modified arguments
-        AF = expr_ir["argument_factorization"]
-        MATR = expr_ir["modified_argument_table_ranges"]
-        for mas in list(AF.keys()):
-            for j in mas:
-                dofrange = MATR[j][1:3]
-                if dofrange[0] == dofrange[1]:
-                    del AF[mas]
-                    break
-        # FIXME: Propagate dependencies back to remove expressions
-        # not used anymore after dropping factorization terms
-
-        # Drop tables not referenced from modified terminals
-        # and and tables of zeros and ones
-        used_table_names = set()
-        for tabledata in terminal_table_ranges:
-            if tabledata is not None:
-                name, begin, end = tabledata
-                if table_types[name] not in ("zeros", "ones"):
-                    used_table_names.add(name)
-        if None in used_table_names:
-            used_table_names.remove(None)
-        unique_tables = { name: unique_tables[name] for name in used_table_names }
+        expr_ir["need_points"] = need_points
+        expr_ir["need_weights"] = need_weights
 
         # Store the tables and ranges
         expr_ir["table_types"] = table_types
         expr_ir["unique_tables"] = unique_tables
+
+
+        # TODO: Some tables are associated with num_points, some are not
+        #       (i.e. piecewise constant, averaged and x0).
+        #       It will be easier to deal with that if we can join
+        #       the expr_ir for all num_points as mentioned above.
+        ir["expr_irs"][num_points] = expr_ir
 
     return ir
 
@@ -218,46 +296,61 @@ def build_scalar_graph(expressions):
     # Sanity check on number of scalar symbols/components
     assert len(scalar_expressions) == sum(product(expr.ufl_shape) for expr in expressions)
 
-    # Build new list representation of graph where all vertices
-    # of V represent single scalar operations
-    e2i, V, target_variables = build_scalar_graph_vertices(scalar_expressions)
-
-    return e2i, V, target_variables
-
-
-def compute_argument_factorization2(expressions):
-    # TODO: Can we merge these three calls to something more efficient overall?
-
-    # Build scalar list-based graph representation
-    e2i, V, target_variables = build_scalar_graph(expressions)
+    # Build new list representation of graph where all
+    # vertices of V represent single scalar operations
+    e2i, V, V_targets = build_scalar_graph_vertices(scalar_expressions)
 
     # Compute sparse dependency matrix
-    dependencies = compute_dependencies(e2i, V)
+    V_deps = compute_dependencies(e2i, V)
 
-    # Compute factorization of arguments
-    argument_factorization, modified_arguments, V, target_variables, dependencies = \
-        compute_argument_factorization(V, target_variables, dependencies)
-    return argument_factorization, modified_arguments, V, target_variables, dependencies
+    return V, V_deps, V_targets
 
 
-def analyse_dependencies(V, target_variables, modified_terminal_indices, dependencies):
+def analyse_dependencies(V, V_deps, V_targets,
+                         modified_terminal_indices,
+                         mt_table_ranges,
+                         table_types):
     # Count the number of dependencies every subexpr has
-    depcount = compute_dependency_count(dependencies)
+    V_depcount = compute_dependency_count(V_deps)
 
     # Build the 'inverse' of the sparse dependency matrix
-    inverse_dependencies = invert_dependencies(dependencies, depcount)
+    inv_deps = invert_dependencies(V_deps, V_depcount)
 
     # Mark subexpressions of V that are actually needed for final result
-    active, num_active = mark_active(dependencies, target_variables)
+    active, num_active = mark_active(V_deps, V_targets)
 
     # Build piecewise/varying markers for factorized_vertices
-    # FIXME: have better measure for spatial dependency now
-    spatially_dependent_terminal_indices = [i for i in modified_terminal_indices
-                                            if not is_cellwise_constant(V[i])]
-    varying, num_spatial = mark_image(inverse_dependencies,
-                                      spatially_dependent_terminal_indices)
+    varying_indices = []
+    for i in modified_terminal_indices:
+
+        # TODO: Can probably avoid this re-analysis by
+        # passing other datastructures in here:
+        mt = analyse_modified_terminal(V[i])
+        tr = mt_table_ranges.get(mt)
+        if tr is not None:
+            # Check if table computations have revealed values varying over points
+            uname = tr[0]
+            ttype = table_types[uname]
+            # Note: uniform means entity-wise uniform, varying over points
+            if ttype in ("varying", "uniform", "quadrature"):
+                varying_indices.append(i)
+            else:
+                if ttype not in ("fixed", "piecewise", "ones", "zeros"):
+                    error("Invalid ttype %s" % (ttype,))
+
+        elif not is_cellwise_constant(V[i]):
+            # Keeping this check to be on the safe side,
+            # not sure which cases this will cover (if any)
+            varying_indices.append(i)
+
+    # Mark every subexpression that is computed
+    # from the spatially dependent terminals
+    varying, num_varying = mark_image(inv_deps, varying_indices)
+
+    # The rest of the subexpressions are piecewise constant (1-1=0, 1-0=1)
     piecewise = 1 - varying
-    # Skip non-active things
+
+    # Unmark non-active subexpressions
     varying *= active
     piecewise *= active
 
@@ -266,7 +359,7 @@ def analyse_dependencies(V, target_variables, modified_terminal_indices, depende
     # varying *= nonliteral
     # piecewise *= nonliteral
 
-    return dependencies, inverse_dependencies, active, piecewise, varying
+    return inv_deps, active, piecewise, varying
 
 
 # TODO: Consider comments below and do it or delete them.
@@ -299,7 +392,7 @@ Work for later::
     # Or to keep binary products:
     # - Rebalancing product trees ((a*c)*(b*d) -> (a*b)*(c*d)) to make piecewise quantities 'float' to the top of the list
 
-    # rank = max(len(k) for k in argument_factorization.keys())
+    # rank = max(len(ma_indices) for ma_indices in argument_factorization)
     # for i,a in enumerate(modified_arguments):
     #    iarg = a.number()
     # ipart = a.part()

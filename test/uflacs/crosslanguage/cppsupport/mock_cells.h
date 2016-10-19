@@ -34,8 +34,8 @@
             this->geometric_dimension = geometric_dimension;
             this->topological_dimension = topological_dimension;
             this->num_vertices = num_vertices;
-            for (int i=0; i<sizeof(coordinate_dofs)/sizeof(coordinate_dofs[0]);
-                 ++i)
+            int n = int(sizeof(coordinate_dofs) / sizeof(coordinate_dofs[0]));
+            for (int i=0; i<n; ++i)
             {
               coordinate_dofs[i] = 0.0;
             }

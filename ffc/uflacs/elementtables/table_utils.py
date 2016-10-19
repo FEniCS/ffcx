@@ -28,7 +28,7 @@ from ufl.cell import num_cell_entities
 from ffc.log import error
 from ffc.fiatinterface import create_element
 from ffc.representationutils import integral_type_to_entity_dim, map_integral_points
-
+from ffc.representationutils import create_quadrature_points_and_weights
 
 def equal_tables(a, b, eps):
     "Compare tables to be equal within a tolerance."
@@ -123,8 +123,8 @@ def get_ffc_table_values(points,
         # Redefine points to compute average tables
 
         # Make sure this is not called with points, that doesn't make sense
-        assert points is None
-        assert num_points is None
+        #assert points is None
+        #assert num_points is None
 
         # Not expecting derivatives of averages
         assert not any(derivative_counts)
@@ -139,7 +139,7 @@ def get_ffc_table_values(points,
 
         # Make quadrature rule and get points and weights
         points, weights = create_quadrature_points_and_weights(
-            avg_integral_type, cell, ufl_element.degree(), "default")
+            integral_type, cell, ufl_element.degree(), "default")
 
     # Tabulate table of basis functions and derivatives in points for each entity
     fiat_element = create_element(ufl_element)
@@ -179,7 +179,7 @@ def get_ffc_table_values(points,
         for entity, tbl in enumerate(component_tables):
             num_dofs = tbl.shape[0]
             tbl = numpy.dot(tbl, weights) / wsum
-            tbl = reshape(tbl, (num_dofs, 1))
+            tbl = numpy.reshape(tbl, (num_dofs, 1))
             component_tables[entity] = tbl
 
     # Loop over entities and fill table blockwise (each block = points x dofs)
