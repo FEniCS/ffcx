@@ -482,7 +482,7 @@ def main(args):
     use_auto = "--skip-auto" not in args
     use_uflacs = "--skip-uflacs" not in args
     use_quad = "--skip-quad" not in args
-    use_tsfc = "--skip-tsfc" not in args
+    use_tsfc = "--use-tsfc" in args
     use_ext_quad = "--ext-quad" in args
 
     skip_download = "--skip-download" in args
@@ -500,7 +500,7 @@ def main(args):
         "--skip-auto",
         "--skip-uflacs",
         "--skip-quad",
-        "--skip-tsfc",
+        "--use-tsfc",
         "--ext-quad",
         "--skip-download",
         "--skip-run",
