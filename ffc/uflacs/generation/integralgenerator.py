@@ -99,13 +99,19 @@ class IntegralGenerator(object):
         self.vaccesses = { num_points: {} for num_points in all_num_points }
 
         for num_points in all_num_points:
-            pp = self.generate_piecewise_partition(num_points)
-            ql = self.generate_quadrature_loops(num_points)
+            body = []
+            body += self.generate_unstructured_partition(num_points, "piecewise")
+            body += self.generate_dofblock_partition(num_points, "piecewise")
+            body += self.generate_quadrature_loops(num_points)
+
+            # If there are multiple quadrature rules here, just wrapping
+            # in Scope to avoid thinking about scoping issues for now.
+            # A better handling of multiple rules would be nice,
+            # in particular 
             if len(all_num_points) > 1:
-                # Wrapping in Scope to avoid thinking about scoping issues
-                parts += [L.Scope([pp, ql])]
+                parts.append(L.Scope(body))
             else:
-                parts += [pp, ql]
+                parts.extend(body)
 
         parts += self.generate_finishing_statements()
 
@@ -129,27 +135,31 @@ class IntegralGenerator(object):
         for num_points in sorted(qrs):
             points, weights = qrs[num_points]
             assert num_points == len(weights)
+            expr_ir = self.ir["expr_irs"][num_points]
 
             # Generate quadrature weights array
-            wsym = self.backend.symbols.weights_array(num_points)
-            parts += [L.ArrayDecl("static const double", wsym, num_points, weights,
-                                  alignas=self.ir["alignas"])]
+            if expr_ir["need_weights"]:
+                wsym = self.backend.symbols.weights_array(num_points)
+                parts += [L.ArrayDecl("static const double", wsym, num_points, weights,
+                                      alignas=self.ir["alignas"])]
 
             # Size of quadrature points depends on context, assume this is correct:
             pdim = len(points[0])
+            assert points.shape[0] == num_points
+            assert pdim == points.shape[1]
+            #import IPython; IPython.embed()
 
             # Generate quadrature points array
-            if pdim and self.ir["expr_irs"][num_points]["need_points"]:
+            if pdim and expr_ir["need_points"]:
                 # Flatten array: (TODO: avoid flattening here, it makes padding harder)
                 flattened_points = points.reshape(product(points.shape))
                 psym = self.backend.symbols.points_array(num_points)
-                parts += [L.ArrayDecl("static const double", psym, num_points * tdim,
+                parts += [L.ArrayDecl("static const double", psym, num_points * pdim,
                                       flattened_points, alignas=self.ir["alignas"])]
 
         # Add leading comment if there are any tables
-        if parts:
-            header = [L.Comment("Section for quadrature weights and points")]
-            parts = header + parts
+        parts = L.commented_code_list(parts,
+            "Section for quadrature weights and points")
         return parts
 
 
@@ -159,24 +169,24 @@ class IntegralGenerator(object):
         L = self.backend.language
         parts = []
         expr_irs = self.ir["expr_irs"]
+
         for num_points in sorted(expr_irs):
             # Get all unique tables for this quadrature rule
             tables = expr_irs[num_points]["unique_tables"]
-
-            # Produce code
-            if len(tables):
+            if tables:
                 tmp = "Definitions of {0} tables for {1} quadrature points"
-                comment = tmp.format(len(tables), num_points)
-                parts += [L.Comment(comment)]
+                parts += [L.Comment(tmp.format(len(tables), num_points))]
                 for name in sorted(tables):
+                    # TODO: table here can actually have only 1 point,
+                    # regroup or at least fix generated comment
                     table = tables[name]
+                    # TODO: Not padding, consider when and if to do so
                     parts += [L.ArrayDecl("static const double", name, table.shape, table,
-                                          alignas=self.ir["alignas"])]  # TODO: Not padding, consider when and if to do so
+                                          alignas=self.ir["alignas"])]
         # Add leading comment if there are any tables
-        if parts:
-            header = [L.Comment("Section for precomputed element basis function values"),
-                      L.Comment("Table dimensions: num_entities, num_points, num_dofs")]
-            parts = header + parts
+        parts = L.commented_code_list(parts, [
+            "Section for precomputed element basis function values",
+            "Table dimensions: num_entities, num_points, num_dofs"])
         return parts
 
 
@@ -191,91 +201,123 @@ class IntegralGenerator(object):
             return L.VerbatimStatement(code)
 
         # Compute tensor size
-        A_size = product(self.ir["tensor_shape"])
         A = self.backend.symbols.element_tensor()
+        A_size = product(self.ir["tensor_shape"])
 
         # Stitch it together
-        parts = []
-        parts += [L.Comment("Reset element tensor")]
-        parts += [memzero(A, A_size)]
+        parts = [L.Comment("Reset element tensor")]
+        if A_size == 1:
+            parts += [L.Assign(A[0], L.LiteralFloat(0.0))]
+        else:
+            parts += [memzero(A, A_size)]
         return parts
 
 
     def generate_quadrature_loops(self, num_points):
         "Generate all quadrature loops."
         L = self.backend.language
-        body = self.generate_quadrature_body(num_points)
+        body = []
 
-        if num_points == 1:
+        # Generate unstructured varying partition
+        body += self.generate_unstructured_partition(num_points, "varying")
+        body = L.commented_code_list(body,
+            "Quadrature loop body setup (num_points={0})".format(num_points))
+
+        body += self.generate_dofblock_partition(num_points, "varying")
+
+        # Wrap body in loop or scope
+        if not body:
+            # Could happen for integral with everything zero and optimized away
+            parts = []
+        elif num_points == 1:
             # For now wrapping body in Scope to avoid thinking about scoping issues
-            parts = [L.Comment("Only 1 quadrature point, no loop"),
-                     L.Scope(body)]
+            parts = L.commented_code_list(L.Scope(body), "Only 1 quadrature point, no loop")
         else:
+            # Regular case: define quadrature loop
             iq = self.backend.symbols.quadrature_loop_index(num_points)
             np = self.backend.symbols.num_quadrature_points(num_points)
             parts = [L.ForRange(iq, 0, np, body=body)]
-        return parts
-
-
-    def generate_quadrature_body(self, num_points):
-        """
-        """
-        parts = []
-        L = self.backend.language
-        parts += self.generate_varying_partition(num_points)
-        if parts:
-            parts = [L.Comment("Quadrature loop body setup (num_points={0})".format(num_points))] + parts
-
-        # Compute single argument partitions outside of the dofblock loops
-        for iarg in range(self.ir["rank"]):
-            for dofrange in []:  # TODO: Move f*arg0 out here
-                parts += self.generate_argument_partition(num_points, iarg, dofrange)
-
-        # Nested argument loops and accumulation into element tensor
-        parts += self.generate_quadrature_body_dofblocks(num_points)
 
         return parts
 
 
-    def generate_quadrature_body_dofblocks(self, num_points, outer_dofblock=()):
-        parts = []
+    def generate_dofblock_partition(self, num_points, partition):
         L = self.backend.language
 
-        # The loop level iarg here equals the argument count (in renumbered >= 0 format)
-        iarg = len(outer_dofblock)
-        if iarg == self.ir["rank"]:
-            # At the innermost argument loop level we accumulate into the element tensor
-            parts += [self.generate_integrand_accumulation(num_points, outer_dofblock)]
-            return parts
-        assert iarg < self.ir["rank"]
+        # TODO: Add partial blocks (T[i0] = factor_index * arg0;)
 
+        # TODO: Move piecewise blocks outside quadrature loop
+        # (Can only do this by removing weight from factor,
+        # and using that piecewise f*u*v gives that
+        # sum_q weight[q]*f*u*v == f*u*v*(sum_q weight[q]) )
+
+        # Get representation details
         expr_ir = self.ir["expr_irs"][num_points]
-        # tuple(modified_argument_indices) -> code_index
-        AF = expr_ir["argument_factorization"]
+        V = expr_ir["V"]
+        modified_arguments = expr_ir["modified_arguments"]
+        block_contributions = expr_ir["block_contributions"]
 
-        # modified_argument_index -> (tablename, dofbegin, dofend)
-        MATR = expr_ir["modified_argument_table_ranges"]
+        vaccesses = self.vaccesses[num_points]
+        A = self.backend.symbols.element_tensor()
 
-        # Find dofranges at this loop level iarg starting with outer_dofblock
-        dofranges = set()
-        for mas in AF:
-            mas_full_dofblock = tuple(MATR[j][1:3] for j in mas)
-            if tuple(mas_full_dofblock[:iarg]) == tuple(outer_dofblock):
-                dofrange = mas_full_dofblock[iarg]
-                assert dofrange[0] != dofrange[1]
-                dofranges.add(dofrange)
-        dofranges = sorted(dofranges)
+        parts = []
+        for dofblock, contributions in sorted(block_contributions[partition].items()):
+            for data in contributions:
+                (ma_indices, factor_index, table_ranges, unames, ttypes) = data
 
-        # Build loops for each dofrange
-        for dofrange in dofranges:
-            dofblock = outer_dofblock + (dofrange,)
+                # Add code in layers starting with innermost A[...] += product(factors)
+                rank = len(unames)
+                factors = []
 
-            # Generate nested inner loops (only triggers for forms with two or more arguments
-            body = self.generate_quadrature_body_dofblocks(num_points, dofblock)
+                # Get factor expression
+                v = V[factor_index]
+                if not (v._ufl_is_literal_ and float(v) == 1.0):
+                    factors.append(vaccesses[v])
 
-            # Wrap setup, subloops, and accumulation in a loop for this level
-            idof = self.backend.symbols.argument_loop_index(iarg)
-            parts += [L.ForRange(idof, dofrange[0], dofrange[1], body=body)]
+                # Get loop counter symbols to access A with
+                A_indices = []
+                for i in range(rank):
+                    if ttypes[i] == "quadrature":
+                        # Used to index A like A[iq*num_dofs + iq]
+                        ia = self.backend.symbols.quadrature_loop_index(num_points)
+                    else:
+                        # Regular dof index
+                        ia = self.backend.symbols.argument_loop_index(i)
+                    A_indices.append(ia)
+
+                # Add table access to factors, unless it's always 1.0
+                for i in range(rank):
+                    tt = ttypes[i]
+                    assert tt not in ("zeros",)
+                    if tt not in ("quadrature", "ones"):
+                        ma = ma_indices[i]
+                        access = self.backend.access(
+                            modified_arguments[ma].terminal,
+                            modified_arguments[ma],
+                            table_ranges[i],
+                            num_points)
+                        factors.append(access)
+
+                # Special case where all factors are 1.0 and dropped
+                if factors:
+                    term = L.Product(factors)
+                else:
+                    term = L.LiteralFloat(1.0)
+
+                # Format flattened index expression to access A
+                flat_index = L.flattened_indices(A_indices, self.ir["tensor_shape"])
+                body = L.AssignAdd(A[flat_index], term)
+
+                # Wrap accumulation in loop nest
+                #for i in range(rank):
+                for i in range(rank-1, -1, -1):
+                    if ttypes[i] != "quadrature":
+                        dofrange = dofblock[i]
+                        body = L.ForRange(A_indices[i], dofrange[0], dofrange[1], body=body)
+
+                # Add this block to parts
+                parts.append(body)
+
         return parts
 
 
@@ -296,12 +338,14 @@ class IntegralGenerator(object):
                 mt = analyse_modified_terminal(v)
 
                 # Backend specific modified terminal translation
-                vaccess = self.backend.access(mt.terminal, mt, table_ranges[i], num_points)
-                vdef = self.backend.definitions(mt.terminal, mt, table_ranges[i], num_points, vaccess)
+                vaccess = self.backend.access(mt.terminal,
+                    mt, table_ranges[i], num_points)
+                vdef = self.backend.definitions(mt.terminal,
+                    mt, table_ranges[i], num_points, vaccess)
 
                 # Store definitions of terminals in list
-                if vdef is not None:
-                    definitions.append(vdef)
+                assert isinstance(vdef, list)
+                definitions.extend(vdef)
             else:
                 # Get previously visited operands (TODO: use edges of V instead of ufl_operands?)
                 vops = [vaccesses[op] for op in v.ufl_operands]
@@ -315,7 +359,8 @@ class IntegralGenerator(object):
                 # and in what order:
                 #j = variable_id[i]
 
-                # Currently instead creating a new intermediate for each subexpression except boolean conditions
+                # Currently instead creating a new intermediate for
+                # each subexpression except boolean conditions
                 if isinstance(v, Condition):
                     # Inline the conditions x < y, condition values
                     # 'x' and 'y' may still be stored in intermediates.
@@ -337,16 +382,56 @@ class IntegralGenerator(object):
             # Store access node for future reference
             vaccesses[v] = vaccess
 
-        # Join terminal computation, array of intermediate expressions, and intermediate computations
-        parts = [definitions]
+        # Join terminal computation, array of intermediate expressions,
+        # and intermediate computations
+        parts = []
+        if definitions:
+            parts += definitions
         if intermediates:
-            parts += [L.ArrayDecl("double", symbol, len(intermediates), alignas=self.ir["alignas"])]
+            parts += [L.ArrayDecl("double", symbol, len(intermediates),
+                                  alignas=self.ir["alignas"])]
             parts += intermediates
         return parts
 
 
+    def generate_unstructured_partition(self, num_points, partition):
+        L = self.backend.language
+        expr_ir = self.ir["expr_irs"][num_points]
+        if partition == "piecewise":
+            name = "sp"
+        elif partition == "varying":
+            name = "sv"
+        arraysymbol = L.Symbol("{0}{1}".format(name, num_points))
+        parts = self.generate_partition(arraysymbol,
+                                        expr_ir["V"],
+                                        expr_ir[partition],
+                                        expr_ir["table_ranges"],
+                                        num_points)
+        parts = L.commented_code_list(parts,
+            "Unstructured %s computations" % (partition,))
+        return parts
+
+
+    def generate_finishing_statements(self):
+        """Generate finishing statements.
+
+        This includes assigning to output array if there is no integration.
+        """
+        parts = []
+
+        if self.ir["integral_type"] == "expression":
+            error("Expression generation not implemented yet.")
+            # TODO: If no integration, assuming we generate an expression, and assign results here
+            # Corresponding code from compiler.py:
+            # assign_to_variables = tfmt.output_variable_names(len(final_variable_names))
+            # parts += list(format_assignments(zip(assign_to_variables, final_variable_names)))
+
+        return parts
+
+
+"""
     # TODO: Rather take list of vertices, not markers
-    # XXX FIXME: Fix up this function and use it instead!
+    # XXX FIXME: Fix up this function and use it instead?
     def alternative_generate_partition(self, symbol, C, MT, partition, table_ranges, num_points):
         L = self.backend.language
 
@@ -373,12 +458,15 @@ class IntegralGenerator(object):
                 if isinstance(mt.terminal, ConstantValue):
                     # Format literal value for the chosen language
                     modified_literal_to_ast_node = []  # silence flake8
-                    vaccess = modified_literal_to_ast_node[tc](mt)  # XXX FIXME: Implement this mapping
+                    # XXX FIXME: Implement this mapping:
+                    vaccess = modified_literal_to_ast_node[tc](mt)
                     vdef = None
                 else:
                     # Backend specific modified terminal formatting
-                    vaccess = self.backend.access(mt.terminal, mt, table_ranges[i], num_points)
-                    vdef = self.backend.definitions(mt.terminal, mt, table_ranges[i], num_points, vaccess)
+                    vaccess = self.backend.access(mt.terminal,
+                        mt, table_ranges[i], num_points)
+                    vdef = self.backend.definitions(mt.terminal,
+                        mt, table_ranges[i], num_points, vaccess)
 
                 # Store definitions of terminals in list
                 if vdef is not None:
@@ -409,115 +497,14 @@ class IntegralGenerator(object):
             # Store access string, either a variable symbol or an inlined expression
             self.ast_variables[i] = vaccess
 
-        # Join terminal computation, array of intermediate expressions, and intermediate computations
-        parts = [definitions]
+        # Join terminal computation, array of intermediate expressions,
+        # and intermediate computations
+        parts = []
+        if definitions:
+            parts += definitions
         if intermediates:
-            parts += [L.ArrayDecl("double", symbol, len(intermediates), alignas=self.ir["alignas"])]
+            parts += [L.ArrayDecl("double", symbol, len(intermediates),
+                                  alignas=self.ir["alignas"])]
             parts += intermediates
         return parts
-
-
-    def generate_piecewise_partition(self, num_points):
-        """Generate statements prior to the quadrature loop.
-
-        This mostly includes computations involving piecewise constant geometry and coefficients.
-        """
-        L = self.backend.language
-        expr_ir = self.ir["expr_irs"][num_points]
-        arraysymbol = L.Symbol("sp{0}".format(num_points))
-        parts = self.generate_partition(arraysymbol,
-                                        expr_ir["V"],
-                                        expr_ir["piecewise"],
-                                        expr_ir["table_ranges"],
-                                        num_points)
-        if parts:
-            parts.insert(0, L.Comment("Section for piecewise constant computations"))
-        return parts
-
-
-    def generate_varying_partition(self, num_points):
-        L = self.backend.language
-        expr_ir = self.ir["expr_irs"][num_points]
-        arraysymbol = L.Symbol("sv{0}".format(num_points))
-        parts = self.generate_partition(arraysymbol,
-                                        expr_ir["V"],
-                                        expr_ir["varying"],
-                                        expr_ir["table_ranges"],
-                                        num_points)
-        if parts:
-            parts.insert(0, L.Comment("Section for geometrically varying computations"))
-        return parts
-
-
-    def generate_argument_partition(self, num_points, iarg, dofrange):
-        """Generate code for the partition corresponding to arguments 0..iarg within given dofblock."""
-        parts = []
-        # TODO: What do we want to do here? Define!
-        # Should this be a single loop over i0, i1 separately
-        # outside of the double loop over (i0,i1)?
-        return parts
-
-
-    def generate_integrand_accumulation(self, num_points, dofblock):
-        parts = []
-        L = self.backend.language
-
-        # Get representation details
-        expr_ir = self.ir["expr_irs"][num_points]
-        AF = expr_ir["argument_factorization"]
-        V = expr_ir["V"]
-        MATR = expr_ir["modified_argument_table_ranges"]
-        MA = expr_ir["modified_arguments"]
-
-        # Get some symbols
-        A = self.backend.symbols.element_tensor()
-        idofs = [self.backend.symbols.argument_loop_index(i) for i in range(self.ir["rank"])]
-
-        # Find the blocks to build: (TODO: This is rather awkward,
-        # having to rediscover these relations here)
-        arguments_and_factors = sorted(expr_ir["argument_factorization"].items(),
-                                       key=lambda x: x[0])
-        for args, factor_index in arguments_and_factors:
-            if not all(tuple(dofblock[iarg]) == tuple(MATR[ma][1:3])
-                       for iarg, ma in enumerate(args)):
-                continue
-
-            factors = []
-
-            # Get factor expression
-            v = V[factor_index]
-            if v._ufl_is_literal_ and float(v) == 1.0:
-                pass  # TODO: Nicer way to check for f=1?
-            else:
-                fexpr = self.vaccesses[num_points][v]
-                factors.append(fexpr)
-
-            # Get table names
-            for i, ma in enumerate(args):
-                access = self.backend.access(MA[ma].terminal, MA[ma], MATR[ma], num_points)
-                factors.append(access)
-
-            # Format flattened index expression to access A
-            flat_index = L.flattened_indices(idofs, self.ir["tensor_shape"])
-
-            # Emit assignment
-            parts += [L.AssignAdd(A[flat_index], L.Product(factors))]
-
-        return parts
-
-
-    def generate_finishing_statements(self):
-        """Generate finishing statements.
-
-        This includes assigning to output array if there is no integration.
-        """
-        parts = []
-
-        if self.ir["integral_type"] == "expression":
-            error("Expression generation not implemented yet.")
-            # TODO: If no integration, assuming we generate an expression, and assign results here
-            # Corresponding code from compiler.py:
-            # assign_to_variables = tfmt.output_variable_names(len(final_variable_names))
-            # parts += list(format_assignments(zip(assign_to_variables, final_variable_names)))
-
-        return parts
+"""

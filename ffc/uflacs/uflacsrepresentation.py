@@ -112,9 +112,11 @@ def compute_integral_ir(itg_data,
 
 
     # Build the more uflacs-specific intermediate representation
-    cell = itg_data.domain.ufl_cell()
-    uflacs_ir = build_uflacs_ir(cell, itg_data.integral_type, ir["entitytype"],
+    uflacs_ir = build_uflacs_ir(itg_data.domain.ufl_cell(),
+                                itg_data.integral_type,
+                                ir["entitytype"],
                                 integrands,
+                                ir["tensor_shape"],
                                 coefficient_numbering,
                                 quadrature_rules,
                                 parameters)

@@ -25,6 +25,7 @@ from six.moves import zip
 from ufl.permutation import build_component_numbering
 from ufl.classes import (FormArgument, Argument,
                          Indexed, FixedIndex,
+                         SpatialCoordinate, Jacobian,
                          ReferenceValue,
                          Grad, ReferenceGrad,
                          Restricted,
@@ -270,11 +271,13 @@ def analyse_modified_terminal(expr):
     reference_value = reference_value or False
 
     # Consistency check
-    if local_derivatives and not reference_value:
-        error("Local derivatives of non-local value is not legal.")
-    if global_derivatives and reference_value:
-        error("Global derivatives of local value is not legal.")
-
+    if isinstance(t, (SpatialCoordinate, Jacobian)):
+        pass
+    else:
+        if local_derivatives and not reference_value:
+            error("Local derivatives of non-local value is not legal.")
+        if global_derivatives and reference_value:
+            error("Global derivatives of local value is not legal.")
 
     # Make sure component is an integer tuple
     if component is None:

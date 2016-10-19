@@ -934,6 +934,19 @@ class Comment(CStatement):
         return ["// " + line.strip() for line in lines]
 
 
+def commented_code_list(code, comments):
+    "Convenience wrapper for adding comment to code list if the list is not empty."
+    if isinstance(code, CNode):
+        code = [code]
+    assert isinstance(code, list)
+    if code:
+        if not isinstance(comments, (list, tuple)):
+            comments = [comments]
+        comments = [Comment(c) for c in comments]
+        code = comments + code
+    return code
+
+
 class Pragma(CStatement):  # TODO: Improve on this with a use case later
     "Pragma comments used for compiler-specific annotations."
     __slots__ = ("comment",)
