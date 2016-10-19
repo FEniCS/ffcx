@@ -41,10 +41,9 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     if integral_type == "cell":
         (points, weights) = create_quadrature(cell.cellname(), degree, rule)
     elif integral_type == "exterior_facet" or integral_type == "interior_facet":
-        facet_cellname = cellname2facetname[cell.cellname()]
-        (points, weights) = create_quadrature(facet_cellname, degree, rule)
+        (points, weights) = create_quadrature(cellname2facetname[cell.cellname()], degree, rule)
     elif integral_type == "vertex":
-        (points, weights) = ([()], numpy.array([1.0, ]))  # TODO: Will be fixed
+        (points, weights) = create_quadrature("vertex", degree, rule)
     elif integral_type in custom_integral_types:
         (points, weights) = (None, None)
     else:
