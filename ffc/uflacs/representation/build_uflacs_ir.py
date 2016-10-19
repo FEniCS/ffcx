@@ -198,7 +198,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
             "piecewise": defaultdict(list),
             "varying": defaultdict(list)
             }
-        for ma_indices, fi in argument_factorization.items():
+        for ma_indices, fi in sorted(argument_factorization.items()):
             # Get a bunch of information about this term
             rank = len(ma_indices)
             trs = tuple(modified_argument_table_ranges[ai] for ai in ma_indices)
