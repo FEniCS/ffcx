@@ -99,11 +99,16 @@ class IntegralGenerator(object):
         self.vaccesses = { num_points: {} for num_points in all_num_points }
 
         for num_points in all_num_points:
-            pp = self.generate_piecewise_partition(num_points)
-            ql = self.generate_quadrature_loops(num_points)
-            body = pp + ql
+            body = []
+            body += self.generate_unstructured_partition(num_points, "piecewise")
+            body += self.generate_dofblock_partition(num_points, "piecewise")
+            body += self.generate_quadrature_loops(num_points)
+
+            # If there are multiple quadrature rules here, just wrapping
+            # in Scope to avoid thinking about scoping issues for now.
+            # A better handling of multiple rules would be nice,
+            # in particular 
             if len(all_num_points) > 1:
-                # Wrapping in Scope to avoid thinking about scoping issues
                 parts.append(L.Scope(body))
             else:
                 parts.extend(body)
@@ -153,9 +158,8 @@ class IntegralGenerator(object):
                                       flattened_points, alignas=self.ir["alignas"])]
 
         # Add leading comment if there are any tables
-        if parts:
-            header = [L.Comment("Section for quadrature weights and points")]
-            parts = header + parts
+        parts = L.commented_code_list(parts,
+            "Section for quadrature weights and points")
         return parts
 
 
@@ -180,10 +184,9 @@ class IntegralGenerator(object):
                     parts += [L.ArrayDecl("static const double", name, table.shape, table,
                                           alignas=self.ir["alignas"])]
         # Add leading comment if there are any tables
-        if parts:
-            header = [L.Comment("Section for precomputed element basis function values"),
-                      L.Comment("Table dimensions: num_entities, num_points, num_dofs")]
-            parts = header + parts
+        parts = L.commented_code_list(parts, [
+            "Section for precomputed element basis function values",
+            "Table dimensions: num_entities, num_points, num_dofs"])
         return parts
 
 
@@ -216,28 +219,11 @@ class IntegralGenerator(object):
         body = []
 
         # Generate unstructured varying partition
-        body += self.generate_varying_partition(num_points)
-        if body:
-            comment = [L.Comment("Quadrature loop body setup (num_points={0})".format(num_points))]
-            body = comment + body
+        body += self.generate_unstructured_partition(num_points, "varying")
+        body = L.commented_code_list(body,
+            "Quadrature loop body setup (num_points={0})".format(num_points))
 
-        """Previous data flow:
-        generate_piecewise_partition
-        generate_quadrature_loops
-         generate_quadrature_body
-          generate_varying_partition
-           generate_argument_partition
-            generate_quadrature_body_dofblocks
-             generate_quadrature_body_dofblocks
-              generate_integrand_accumulation
-        """
-
-        if 0:
-            # Nested argument loops and accumulation into element tensor
-            body += self.generate_quadrature_body_dofblocks(num_points)
-        else:
-            # FIXME: Use this instead:
-            body += self.generate_quadrature_body_dofblocks2(num_points)
+        body += self.generate_dofblock_partition(num_points, "varying")
 
         # Wrap body in loop or scope
         if not body:
@@ -245,8 +231,7 @@ class IntegralGenerator(object):
             parts = []
         elif num_points == 1:
             # For now wrapping body in Scope to avoid thinking about scoping issues
-            parts = [L.Comment("Only 1 quadrature point, no loop"),
-                     L.Scope(body)]
+            parts = L.commented_code_list(L.Scope(body), "Only 1 quadrature point, no loop")
         else:
             # Regular case: define quadrature loop
             iq = self.backend.symbols.quadrature_loop_index(num_points)
@@ -256,7 +241,7 @@ class IntegralGenerator(object):
         return parts
 
 
-    def generate_quadrature_body_dofblocks2(self, num_points):
+    def generate_dofblock_partition(self, num_points, partition):
         L = self.backend.language
 
         # TODO: Add partial blocks (T[i0] = factor_index * arg0;)
@@ -276,120 +261,63 @@ class IntegralGenerator(object):
         A = self.backend.symbols.element_tensor()
 
         parts = []
-        for partition in ["piecewise", "varying"]:
-            partition_parts = []
-            for dofblock, contributions in sorted(block_contributions[partition].items()):
-                for data in contributions:
-                    (ma_indices, factor_index, table_ranges, unames, ttypes) = data
+        for dofblock, contributions in sorted(block_contributions[partition].items()):
+            for data in contributions:
+                (ma_indices, factor_index, table_ranges, unames, ttypes) = data
 
-                    # Add code in layers starting with innermost A[...] += product(factors)
-                    rank = len(unames)
-                    factors = []
+                # Add code in layers starting with innermost A[...] += product(factors)
+                rank = len(unames)
+                factors = []
 
-                    # Get factor expression
-                    v = V[factor_index]
-                    if not (v._ufl_is_literal_ and float(v) == 1.0):
-                        factors.append(vaccesses[v])
+                # Get factor expression
+                v = V[factor_index]
+                if not (v._ufl_is_literal_ and float(v) == 1.0):
+                    factors.append(vaccesses[v])
 
-                    # Get loop counter symbols to access A with
-                    A_indices = []
-                    for i in range(rank):
-                        if ttypes[i] == "quadrature":
-                            # Used to index A like A[iq*num_dofs + iq]
-                            ia = self.backend.symbols.quadrature_loop_index(num_points)
-                        else:
-                            # Regular dof index
-                            ia = self.backend.symbols.argument_loop_index(i)
-                        A_indices.append(ia)
-
-                    # Add table access to factors, unless it's always 1.0
-                    for i in range(rank):
-                        tt = ttypes[i]
-                        assert tt not in ("zeros",)
-                        if tt not in ("quadrature", "ones"):
-                            ma = ma_indices[i]
-                            access = self.backend.access(
-                                modified_arguments[ma].terminal,
-                                modified_arguments[ma],
-                                table_ranges[i],
-                                num_points)
-                            factors.append(access)
-
-                    # Special case where all factors are 1.0 and dropped
-                    if factors:
-                        term = L.Product(factors)
+                # Get loop counter symbols to access A with
+                A_indices = []
+                for i in range(rank):
+                    if ttypes[i] == "quadrature":
+                        # Used to index A like A[iq*num_dofs + iq]
+                        ia = self.backend.symbols.quadrature_loop_index(num_points)
                     else:
-                        term = L.LiteralFloat(1.0)
+                        # Regular dof index
+                        ia = self.backend.symbols.argument_loop_index(i)
+                    A_indices.append(ia)
 
-                    # Format flattened index expression to access A
-                    flat_index = L.flattened_indices(A_indices, self.ir["tensor_shape"])
-                    body = [L.AssignAdd(A[flat_index], term)]
+                # Add table access to factors, unless it's always 1.0
+                for i in range(rank):
+                    tt = ttypes[i]
+                    assert tt not in ("zeros",)
+                    if tt not in ("quadrature", "ones"):
+                        ma = ma_indices[i]
+                        access = self.backend.access(
+                            modified_arguments[ma].terminal,
+                            modified_arguments[ma],
+                            table_ranges[i],
+                            num_points)
+                        factors.append(access)
 
-                    # Wrap accumulation in loop nest
-                    #for i in range(rank):
-                    for i in range(rank-1, -1, -1):
-                        if ttypes[i] != "quadrature":
-                            dofrange = dofblock[i]
-                            body = [L.ForRange(A_indices[i], dofrange[0], dofrange[1], body=body)]
+                # Special case where all factors are 1.0 and dropped
+                if factors:
+                    term = L.Product(factors)
+                else:
+                    term = L.LiteralFloat(1.0)
 
-                    # Add this block to parts
-                    partition_parts.append(body)
-            if partition_parts:
-                parts += [L.Comment("Blocks of %s contributions" % (partition,))]
-                parts.extend(partition_parts)
-        return parts
+                # Format flattened index expression to access A
+                flat_index = L.flattened_indices(A_indices, self.ir["tensor_shape"])
+                body = L.AssignAdd(A[flat_index], term)
 
+                # Wrap accumulation in loop nest
+                #for i in range(rank):
+                for i in range(rank-1, -1, -1):
+                    if ttypes[i] != "quadrature":
+                        dofrange = dofblock[i]
+                        body = L.ForRange(A_indices[i], dofrange[0], dofrange[1], body=body)
 
-    def generate_quadrature_body_dofblocks(self, num_points, outer_dofblock=()):
-        parts = []
-        L = self.backend.language
+                # Add this block to parts
+                parts.append(body)
 
-        # The loop level iarg here equals the argument count (in renumbered >= 0 format)
-        iarg = len(outer_dofblock)
-        if iarg == self.ir["rank"]:
-            # At the innermost argument loop level we accumulate into the element tensor
-            parts += [self.generate_integrand_accumulation(num_points, outer_dofblock)]
-            return parts
-        assert iarg < self.ir["rank"]
-
-        expr_ir = self.ir["expr_irs"][num_points]
-
-        # tuple(modified_argument_indices) -> code_index
-        argument_factorization = expr_ir["argument_factorization"]
-
-        # modified_argument_index -> (tablename, dofbegin, dofend)
-        modified_argument_table_ranges = expr_ir["modified_argument_table_ranges"]
-
-        # Find dofranges at this loop level iarg starting with outer_dofblock
-        dofranges = set()
-        for ma_indices in argument_factorization:
-            ma_table_ranges = tuple(modified_argument_table_ranges[j]
-                                    for j in ma_indices)
-            full_dofblock = tuple(tr[1:3] for tr in ma_table_ranges)
-
-            # FIXME: Figure out exactly why iarg < len(full_dofblock) is needed
-            if iarg < len(full_dofblock) and tuple(full_dofblock[:iarg]) == tuple(outer_dofblock):
-                dofrange = full_dofblock[iarg]
-                assert dofrange[0] != dofrange[1]
-                dofranges.add(dofrange)
-        dofranges = sorted(dofranges)
-
-        # Build loops for each dofrange
-        for dofrange in dofranges:
-            dofblock = outer_dofblock + (dofrange,)
-
-            # Generate nested inner loops (only triggers for forms with two or more arguments
-            body = self.generate_quadrature_body_dofblocks(num_points, dofblock)
-
-            # Wrap setup, subloops, and accumulation in a loop for this level
-            ttype = "not-quadrature"  # FIXME
-            if ttype == "quadrature":
-                # FIXME: Possibly need to extract the quadrature dofranges at a higher level
-                # For quadrature element, drop the loop
-                parts += [body]
-            else:
-                idof = self.backend.symbols.argument_loop_index(iarg)
-                parts += [L.ForRange(idof, dofrange[0], dofrange[1], body=body)]
         return parts
 
 
@@ -466,8 +394,44 @@ class IntegralGenerator(object):
         return parts
 
 
+    def generate_unstructured_partition(self, num_points, partition):
+        L = self.backend.language
+        expr_ir = self.ir["expr_irs"][num_points]
+        if partition == "piecewise":
+            name = "sp"
+        elif partition == "varying":
+            name = "sv"
+        arraysymbol = L.Symbol("{0}{1}".format(name, num_points))
+        parts = self.generate_partition(arraysymbol,
+                                        expr_ir["V"],
+                                        expr_ir[partition],
+                                        expr_ir["table_ranges"],
+                                        num_points)
+        parts = L.commented_code_list(parts,
+            "Unstructured %s computations" % (partition,))
+        return parts
+
+
+    def generate_finishing_statements(self):
+        """Generate finishing statements.
+
+        This includes assigning to output array if there is no integration.
+        """
+        parts = []
+
+        if self.ir["integral_type"] == "expression":
+            error("Expression generation not implemented yet.")
+            # TODO: If no integration, assuming we generate an expression, and assign results here
+            # Corresponding code from compiler.py:
+            # assign_to_variables = tfmt.output_variable_names(len(final_variable_names))
+            # parts += list(format_assignments(zip(assign_to_variables, final_variable_names)))
+
+        return parts
+
+
+"""
     # TODO: Rather take list of vertices, not markers
-    # XXX FIXME: Fix up this function and use it instead!
+    # XXX FIXME: Fix up this function and use it instead?
     def alternative_generate_partition(self, symbol, C, MT, partition, table_ranges, num_points):
         L = self.backend.language
 
@@ -543,125 +507,4 @@ class IntegralGenerator(object):
                                   alignas=self.ir["alignas"])]
             parts += intermediates
         return parts
-
-
-    def generate_piecewise_partition(self, num_points):
-        """Generate statements prior to the quadrature loop.
-
-        This mostly includes computations involving piecewise constant geometry and coefficients.
-        """
-        L = self.backend.language
-        expr_ir = self.ir["expr_irs"][num_points]
-        arraysymbol = L.Symbol("sp{0}".format(num_points))
-        parts = self.generate_partition(arraysymbol,
-                                        expr_ir["V"],
-                                        expr_ir["piecewise"],
-                                        expr_ir["table_ranges"],
-                                        num_points)
-        if parts:
-            comment = [L.Comment("Section for piecewise constant computations")]
-            parts = comment + parts
-        return parts
-
-
-    def generate_varying_partition(self, num_points):
-        L = self.backend.language
-        expr_ir = self.ir["expr_irs"][num_points]
-        arraysymbol = L.Symbol("sv{0}".format(num_points))
-        parts = self.generate_partition(arraysymbol,
-                                        expr_ir["V"],
-                                        expr_ir["varying"],
-                                        expr_ir["table_ranges"],
-                                        num_points)
-        if parts:
-            comment = [L.Comment("Section for geometrically varying computations")]
-            parts = comment + parts
-        return parts
-
-
-    def generate_integrand_accumulation(self, num_points, dofblock):
-        parts = []
-        L = self.backend.language
-
-        vaccesses = self.vaccesses[num_points]
-
-        # Get representation details
-        expr_ir = self.ir["expr_irs"][num_points]
-        argument_factorization = expr_ir["argument_factorization"]
-        V = expr_ir["V"]
-        modified_argument_table_ranges = expr_ir["modified_argument_table_ranges"]
-        modified_arguments = expr_ir["modified_arguments"]
-
-        # Get some symbols
-        A = self.backend.symbols.element_tensor()
-        idofs = []
-        for i in range(self.ir["rank"]):
-            # FIXME: If ttype == "quadrature", drop loop and set argument access == 1.0
-            ttype = "not-quadrature"  # FIXME
-            if ttype == "quadrature":
-                # Used to index A like A[iq*num_dofs + iq]
-                ia = self.backend.symbols.quadrature_loop_index(num_points)
-            else:
-                ia = self.backend.symbols.argument_loop_index(i)
-            idofs.append(ia)
-
-        # Find the blocks to build: (TODO: This is rather awkward,
-        # having to rediscover these relations here)
-        arguments_and_factors = sorted(argument_factorization.items(),
-                                       key=lambda x: x[0])
-        for args, factor_index in arguments_and_factors:
-            if not all(tuple(dofblock[iarg])
-                       == tuple(modified_argument_table_ranges[ma][1:3])
-                       for iarg, ma in enumerate(args)):
-                continue
-
-            factors = []
-
-            # Get factor expression
-            v = V[factor_index]
-            # TODO: Nicer way to check for f=1?
-            if not (v._ufl_is_literal_ and float(v) == 1.0):
-                factors.append(vaccesses[v])
-
-            # Get table names
-            for i, ma in enumerate(args):
-                # FIXME: If ttype == "quadrature", drop loop and set argument access == 1.0
-                ttype = "not-quadrature"  # FIXME
-                if ttype not in ("quadrature", "ones"):
-                    access = self.backend.access(
-                        modified_arguments[ma].terminal,
-                        modified_arguments[ma],
-                        modified_argument_table_ranges[ma],
-                        num_points)
-                    factors.append(access)
-
-            # Special case where all factors are 1.0 and dropped
-            if factors:
-                term = L.Product(factors)
-            else:
-                term = L.LiteralFloat(1.0)
-
-            # Format flattened index expression to access A
-            flat_index = L.flattened_indices(idofs, self.ir["tensor_shape"])
-
-            # Emit assignment
-            parts += [L.AssignAdd(A[flat_index], term)]
-
-        return parts
-
-
-    def generate_finishing_statements(self):
-        """Generate finishing statements.
-
-        This includes assigning to output array if there is no integration.
-        """
-        parts = []
-
-        if self.ir["integral_type"] == "expression":
-            error("Expression generation not implemented yet.")
-            # TODO: If no integration, assuming we generate an expression, and assign results here
-            # Corresponding code from compiler.py:
-            # assign_to_variables = tfmt.output_variable_names(len(final_variable_names))
-            # parts += list(format_assignments(zip(assign_to_variables, final_variable_names)))
-
-        return parts
+"""
