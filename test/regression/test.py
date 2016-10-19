@@ -82,15 +82,16 @@ class LTFilter(object):
         self.__level = level
 
     def filter(self, record):
-        return record.levelno <= self.__level
+        return record.levelno < self.__level
 
 # Filter out error messages from std output
-ffc_logger.get_handler().addFilter(LTFilter(ERROR))
-ufl_logger.get_handler().addFilter(LTFilter(ERROR))
+splitlevel = ERROR
+ffc_logger.get_handler().addFilter(LTFilter(splitlevel))
+ufl_logger.get_handler().addFilter(LTFilter(splitlevel))
 
 # Filter out error messages to log file
 file_handler = logging.FileHandler(logfile)
-file_handler.addFilter(GEFilter(ERROR))
+file_handler.addFilter(GEFilter(splitlevel))
 ffc_logger.get_logger().addHandler(file_handler)
 ufl_logger.get_logger().addHandler(file_handler)
 
@@ -197,15 +198,16 @@ def generate_test_cases(bench, only_forms, skip_forms):
     info_green("Found %d form files" % len(form_files))
 
     # Generate form files for forms
-    info("Generating form files for extra forms: Not implemented")
+    #info("Generating form files for extra forms: Not implemented")
 
     # Generate form files for elements
-    if not bench:
+    if not (bench or only_forms):
         from elements import elements
         info("Generating form files for extra elements (%d elements)"
              % len(elements))
         for (i, element) in enumerate(elements):
-            open("X_Element%d.ufl" % i, "w").write("element = %s" % element)
+            with open("X_Element%d.ufl" % i, "w") as f:
+                f.write("element = %s" % element)
 
     end()
 
@@ -243,7 +245,8 @@ def generate_code(args, only_forms, skip_forms):
             ok = ffc.main(options)
         except Exception as e:
             log_error(e)
-            ok = -1
+            ok = 1
+            raise
         finally:
             t2 = time.time()
             _command_timings.append((cmd, t2 - t1))
@@ -285,7 +288,10 @@ def validate_code(reference_dir):
             info_green("%s OK" % f)
         else:
             info_red("%s differs" % f)
-            diff = "\n".join([line for line in difflib.unified_diff(reference_code.split("\n"), generated_code.split("\n"))])
+            difflines = difflib.unified_diff(
+                reference_code.split("\n"),
+                generated_code.split("\n"))
+            diff = "\n".join(difflines)
             s = ("Code differs for %s, diff follows (reference first, generated second)"
                  % os.path.join(*reference_file.split(os.path.sep)[-3:]))
             log_error("\n" + s + "\n" + len(s) * "-")
@@ -642,17 +648,17 @@ def main(args):
         info_green("Timing of all commands executed:")
         timings = '\n'.join("%10.2e s  %s" % (t, name) for (name, t)
                             in _command_timings)
-        info(timings)
+        info_blue(timings)
 
     for argument in test_cases:
-        info("Total time for %s: %d s" % (argument, test_case_timings[argument]))
+        info_blue("Total time for %s: %.1f s" % (argument, test_case_timings[argument]))
 
     if not os.path.isfile(logfile) or os.stat(logfile).st_size == 0:
         info_green("Regression tests OK")
         return 0
     else:
         info_red("Regression tests failed")
-        info("Error messages stored in %s" % logfile)
+        info_red("Error messages stored in %s" % logfile)
         return 1
 
 
