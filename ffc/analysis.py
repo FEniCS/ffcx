@@ -227,8 +227,8 @@ def _extract_representation_family(form, parameters):
     # Don't tolerate more representation families due to restrictions
     # in preprocessing
     if len(representations) > 1:
-        error("Cannot mix legacy (quadrature, tensor) representation "
-              "with uflacs representation in single form.")
+        error("Cannot mix legacy (quadrature, tensor), uflacs, or tsfc "
+              "representation in single form.")
 
     # Avoid legacy for higher-order geometry; use uflacs as default
     if _has_higher_order_geometry(form):
