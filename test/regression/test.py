@@ -46,7 +46,7 @@ import time
 import logging
 from numpy import array, shape, abs, max, isnan
 import ffc
-from ffc.log import begin, end, info, info_red, info_green, info_blue, warning
+from ffc.log import begin, end, info, info_red, info_green, info_blue
 from ffc.log import ffc_logger, ERROR
 from ufl.log import ufl_logger
 from ufl.utils.py23 import as_native_str
@@ -565,12 +565,7 @@ def main(args):
     if use_quad:
         test_cases += ["-r quadrature", "-r quadrature -O"]
     if use_tsfc:
-        try:
-            import tsfc
-        except ImportError:
-            warning("Failed to import tsfc. Will skip tsfc test case.")
-        else:
-            test_cases += ["-r tsfc"]
+        test_cases += ["-r tsfc"]
     if use_ext_quad:
         test_cases += ext_quad
 
