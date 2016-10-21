@@ -36,7 +36,8 @@ from ffc.representationutils import create_quadrature_points_and_weights
 from ffc.uflacs.backends.ffc.common import ufc_restriction_offset
 
 
-class Table(object):  # TODO: Use this class for tables with metadata
+# TODO: Use this class for tables with metadata?
+class Table(object):
     """Table with metadata.
 
     Valid table types:
@@ -62,6 +63,32 @@ class Table(object):  # TODO: Use this class for tables with metadata
         self.uniform = tabletype in ("uniform", "fixed")
 
 
+class TableData(object):
+    """
+
+    Valid table types:
+    "zeros"
+    "ones"
+    "quadrature"
+    "piecewise"
+    "uniform"
+    "fixed"
+    "varying"
+
+    FIXME: Document these. For now see table computation.
+    """
+    def __init__(self, name, values, begin, end, tabletype):
+        self.name = name
+        self.begin = begin
+        self.end = end
+        self.values = values
+
+        self.tabletype = tabletype
+        self.is_piecewise = tabletype in ("piecewise", "fixed")
+        self.is_uniform = tabletype in ("uniform", "fixed")
+
+
+# TODO: Replace with numpy.allclose
 def equal_tables(a, b, eps):
     "Compare tables to be equal within a tolerance."
     a = numpy.asarray(a)
@@ -77,6 +104,7 @@ def equal_tables(a, b, eps):
                for i in range(a.shape[0]))
 
 
+# TODO: Is clamping 1's really safe?
 def clamp_table_small_integers(table, eps):
     "Clamp almost 0,1,-1 values to integers. Returns new table."
     # Get shape of table and number of columns, defined as the last axis
@@ -140,7 +168,6 @@ def build_unique_tables(tables, eps):
 
 def get_ffc_table_values(points,
                          cell, integral_type,
-                         num_points, # TODO: Remove, not needed
                          ufl_element, avg,
                          entitytype, derivative_counts,
                          flat_component, epsilon):
@@ -156,7 +183,6 @@ def get_ffc_table_values(points,
 
         # Make sure this is not called with points, that doesn't make sense
         #assert points is None
-        #assert num_points is None
 
         # Not expecting derivatives of averages
         assert not any(derivative_counts)
@@ -361,7 +387,7 @@ def build_element_tables(num_points, quadrature_rules,
             tables[name] = get_ffc_table_values(
                 quadrature_rules[num_points][0],
                 cell, integral_type,
-                num_points, element, avg,
+                element, avg,
                 entitytype, local_derivatives, flat_component,
                 epsilon)
 
@@ -560,7 +586,8 @@ def analyse_table_types(unique_tables, epsilon):
 
 def build_optimized_tables(num_points, quadrature_rules,
                            cell, integral_type, entitytype,
-                           modified_terminals, parameters):
+                           modified_terminals, existing_tables,
+                           parameters):
     # Get tolerance for checking table values against 0.0 or 1.0
     from ffc.uflacs.language.format_value import get_float_threshold
     epsilon = get_float_threshold()
@@ -614,5 +641,27 @@ def build_optimized_tables(num_points, quadrature_rules,
             unique_tables[uname] = unique_tables[uname][0:1,:,:]
         if tabletype in ("zeros", "ones", "quadrature"):
             del unique_tables[uname]
+
+    # Change tables to point to existing optimized tables
+    name_map = {}
+    existing_names = set(existing_tables)
+    for name1 in sorted(unique_tables):
+        tbl1 = unique_tables[name1]
+        for name2 in existing_names:
+            tbl2 = existing_tables[name2]
+            if equal_tables(tbl1, tbl2, epsilon):
+                # Don't visit this table again (just to avoid the processing)
+                existing_names.remove(name2)
+                # Replace table name
+                name_map[name1] = name2
+                del unique_tables[name1]
+                unique_tables[name2] = tbl2
+                table_types[name2] = table_types[name1]
+                del table_types[name1]
+                break
+    for mt in list(mt_table_ranges):
+        tr = mt_table_ranges[mt]
+        if tr[0] in name_map:
+            mt_table_ranges[mt] = (name_map[tr[0]],) + tuple(tr[1:])
 
     return unique_tables, mt_table_ranges, table_types

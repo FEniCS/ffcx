@@ -33,7 +33,6 @@ class FFCBackendDefinitions(MultiFunction):
         MultiFunction.__init__(self)
 
         # Store ir and parameters
-        self.ir = ir
         self.integral_type = ir["integral_type"]
         self.entitytype = ir["entitytype"]
         self.language = language
@@ -72,10 +71,7 @@ class FFCBackendDefinitions(MultiFunction):
 
         # No need to store basis function value in its own variable,
         # just get table value directly
-        #uname, begin, end, ttype = tabledata
-        uname, begin, end = tabledata
-        table_types = self.ir["expr_irs"][num_points]["table_types"]
-        ttype = table_types[uname]
+        uname, begin, end, ttype = tabledata
 
         #fe_classname = ir["classnames"]["finite_element"][t.ufl_element()]
 
@@ -142,10 +138,7 @@ class FFCBackendDefinitions(MultiFunction):
         # this component as linear combination of coordinate_dofs "dofs" and table
 
         # Find table name and dof range it corresponds to
-        #uname, begin, end, ttype = tabledata
-        uname, begin, end = tabledata
-        table_types = self.ir["expr_irs"][num_points]["table_types"]
-        ttype = table_types[uname]
+        uname, begin, end, ttype = tabledata
 
         assert end - begin <= num_scalar_dofs
         assert ttype != "zeros"

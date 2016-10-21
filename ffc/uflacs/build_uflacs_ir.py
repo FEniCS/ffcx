@@ -19,6 +19,7 @@
 """Main algorithm for building the uflacs intermediate representation."""
 
 import numpy
+from collections import defaultdict, namedtuple
 
 from ufl import product, as_ufl
 from ufl.log import error
@@ -34,31 +35,56 @@ from ffc.uflacs.analysis.dependencies import compute_dependencies, mark_active, 
 from ffc.uflacs.analysis.graph_ssa import compute_dependency_count, invert_dependencies
 #from ffc.uflacs.analysis.graph_ssa import default_cache_score_policy, compute_cache_scores, allocate_registers
 from ffc.uflacs.analysis.factorization import compute_argument_factorization
-from ffc.uflacs.elementtables import build_optimized_tables
+from ffc.uflacs.elementtables import build_optimized_tables, equal_tables
+
+
+table_data_t = namedtuple("table_data_t", ["name", "begin", "end", "ttype"])
+
+ma_data_t = namedtuple("ma_data_t", ["ma_index", "tabledata"])
+
+block_data_t = namedtuple("block_data_t", ["factor_is_piecewise", "factor_index", "ma_data"])
+
+
+def empty_expr_ir():
+    expr_ir = {}
+    expr_ir["V"] = []
+    expr_ir["V_active"] = []
+    expr_ir["V_table_data"] = []  # FIXME: Change from table_ranges in rest of code
+    expr_ir["block_contributions"] = defaultdict(list)
+    expr_ir["modified_arguments"] = []
+    return expr_ir
 
 
 def build_uflacs_ir(cell, integral_type, entitytype,
                     integrands, tensor_shape,
                     coefficient_numbering,
                     quadrature_rules, parameters):
+    # The intermediate representation dict we're building and returning here
     ir = {}
+
+    epsilon = 1e-10  # FIXME get from parameters
 
     # { ufl coefficient: count }
     ir["coefficient_numbering"] = coefficient_numbering
 
-    rank = len(tensor_shape)
-    
+    # Shared unique tables for all quadrature loops
+    ir["unique_tables"] = {}
+    ir["unique_table_types"] = {}
+
+    # Shared piecewise expr_ir for all quadrature loops
+    ir["piecewise_ir"] = empty_expr_ir()
+
     # { num_points: expr_ir for one integrand }
-    ir["expr_irs"] = {}
+    ir["varying_irs"] = {}
+
+    # Temporary data structures to build shared piecewise data
+    pe2i = {}
+    piecewise_modified_argument_indices = {}
+
 
     # Build the core uflacs expression ir for each num_points/integrand
-    # TODO: Better to compute joint IR for all integrands
-    #       and deal with num_points later?
-    #       I.e. common_expr_ir = compute_common_expr_ir(integrands)
-    #       If we want to adjoint quadrature rules for subterms
-    #       automatically anyway, num_points should be advisory.
-    #       For now, expecting multiple num_points to be rare.
-    for num_points in sorted(integrands.keys()):
+    ir["all_num_points"] = sorted(integrands.keys())
+    for num_points in ir["all_num_points"]:
         expressions = [integrands[num_points]]
 
         # TODO: Apply this transformation to integrands earlier?
@@ -79,7 +105,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                                  for i in initial_terminal_indices]
         unique_tables, mt_table_ranges, table_types = \
             build_optimized_tables(num_points, quadrature_rules,
-                cell, integral_type, entitytype, initial_terminal_data, parameters)
+                cell, integral_type, entitytype, initial_terminal_data,
+                ir["unique_tables"], parameters)
 
         # Build replacement map for modified terminals with zero tables
         z = as_ufl(0.0)
@@ -111,7 +138,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         # Compute factorization of arguments
         (argument_factorizations, modified_arguments,
              FV, FV_deps, FV_targets) = \
-            compute_argument_factorization(SV, SV_deps, SV_targets, rank)
+            compute_argument_factorization(SV, SV_deps, SV_targets, len(tensor_shape))
         assert len(SV_targets) == len(argument_factorizations)
 
         # TODO: Still expecting one target variable in code generation
@@ -136,7 +163,6 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         modified_argument_table_ranges = [mt_table_ranges.get(mt)
                                           for mt in modified_arguments]
 
-
         # Dependency analysis
         inv_FV_deps, FV_active, FV_piecewise, FV_varying = \
             analyse_dependencies(FV, FV_deps, FV_targets,
@@ -149,7 +175,6 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         #for ma_indices in argument_factorization:
         #    for j in ma_indices:
         #        active_modified_arguments[j] = 1
-
 
         # Figure out which table names are active
         active_table_names = set()
@@ -191,53 +216,113 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         need_weights = any(isinstance(mt.terminal, QuadratureWeight)
                            for mt in active_mts)
 
+        # Just some data flow workarounds, V_table_data[i] is passed
+        # as argument to backend access and definition together with V[i]
+        V_table_data = numpy.empty(len(FV), dtype=object)
+        for i, tr in zip(modified_terminal_indices, modified_terminal_table_ranges):
+            if tr is None:
+                td = None
+            else:
+                name = tr[0]
+                ttype = table_types[name]
+                td = tr + (ttype,)
+            V_table_data[i] = td
+
+        # Extend piecewise V with unique new FV_piecewise vertices
+        pir = ir["piecewise_ir"]
+        for i, v in enumerate(FV):
+            if FV_piecewise[i]:
+                j = pe2i.get(v)
+                if j is None:
+                    j = len(pe2i)
+                    pe2i[v] = j
+                    pir["V"].append(v)
+                    pir["V_active"].append(1)
+                    pir["V_table_data"].append(V_table_data[i])
+
+        # Extend piecewise modified_arguments list with unique new items
+        for mt in modified_arguments:
+            ma = piecewise_modified_argument_indices.get(mt)
+            if ma is None:
+                ma = len(pir["modified_arguments"])
+                pir["modified_arguments"].append(mt)
+                piecewise_modified_argument_indices[mt] = ma
+
         # Loop over factorization terms
-        from collections import defaultdict
-        block_contributions = {
-            # TODO: Should not store piecewise blocks inside num_points context
-            "piecewise": defaultdict(list),
-            "varying": defaultdict(list)
-            }
+        block_contributions = defaultdict(list)
         for ma_indices, fi in sorted(argument_factorization.items()):
             # Get a bunch of information about this term
-            rank = len(ma_indices)
+            #rank = len(ma_indices)
             trs = tuple(modified_argument_table_ranges[ai] for ai in ma_indices)
             unames = tuple(tr[0] for tr in trs)
             dofblock = tuple(tr[1:3] for tr in trs)
             ttypes = tuple(table_types[name] for name in unames)
             assert not any(tt == "zeros" for tt in ttypes)
 
-            piecewise_types = ("piecewise", "fixed", "ones")
-            if FV_piecewise[fi] and all(tt in piecewise_types for tt in ttypes):
-                contributions = block_contributions["piecewise"][dofblock]
-            else:
-                contributions = block_contributions["varying"][dofblock]
+            # Slightly awkward tuple rearranging to make things cleaner in integralgenerator
+            tds = tuple(table_data_t(tr[0], tr[1], tr[2], ttype)
+                        for tr, ttype in zip(trs, ttypes))
 
-            data = (ma_indices, fi, trs, unames, ttypes)
+            # Store piecewise status for fi and for each of ma_indices in data
+            factor_is_piecewise = FV_piecewise[fi]
+            if factor_is_piecewise:
+                factor_index = pe2i[FV[fi]]
+            else:
+                factor_index = fi
+
+            piecewise_types = ("piecewise", "fixed", "ones")
+
+            block_is_piecewise = factor_is_piecewise
+
+            # Translate indices to piecewise context if necessary
+            ma_data = []
+            for i, ma in enumerate(ma_indices):
+                if tds[i].ttype in piecewise_types:
+                    ma_index = piecewise_modified_argument_indices[modified_arguments[ma]]
+                else:
+                    block_is_piecewise = False
+                    ma_index = ma
+                ma_data.append(ma_data_t(ma_index, tds[i]))
+            data = block_data_t(factor_is_piecewise, factor_index, tuple(ma_data))
+
+            if block_is_piecewise:
+                # Insert in piecewise expr_ir
+                contributions = ir["piecewise_ir"]["block_contributions"][dofblock]
+            else:
+                # Insert in varying expr_ir for this quadrature loop
+                contributions = block_contributions[dofblock]
+
             contributions.append(data)
 
+        # Add to set of all tables
+        for name, table in unique_tables.items():
+            tbl = ir["unique_tables"].get(name)
+            if tbl is not None and not equal_tables(tbl, table, epsilon):
+                error("Table values mismatch with same name.")
+        ir["unique_tables"].update(unique_tables)
+        ir["unique_table_types"].update(table_types)
 
         # Build IR dict for the given expressions
         expr_ir = {}
 
-        expr_ir["block_contributions"] = block_contributions
-        
         # (array) FV-index -> UFL subexpression
         expr_ir["V"] = FV
 
-        # (array) Flattened input expression component index -> FV-index
-        expr_ir["target_variables"] = FV_targets
+        # (array) V indices for each input expression component in flattened order
+        expr_ir["V_targets"] = FV_targets
 
         ### Result of factorization:
         # (array) MA-index -> UFL expression of modified arguments
         expr_ir["modified_arguments"] = modified_arguments
 
         # (dict) tuple(MA-indices) -> FV-index of monomial factor
-        expr_ir["argument_factorization"] = argument_factorization
+        #expr_ir["argument_factorization"] = argument_factorization
+
+        expr_ir["block_contributions"] = block_contributions
 
         ### Modified terminals
         # (array) list of FV-indices to modified terminals
-        expr_ir["modified_terminal_indices"] = modified_terminal_indices
+        #expr_ir["modified_terminal_indices"] = modified_terminal_indices
 
         # Dependency structure of graph:
         # (CRSArray) FV-index -> direct dependency FV-index list
@@ -247,32 +332,28 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         #expr_ir["inverse_dependencies"] = inv_FV_deps
 
         # Metadata about each vertex
-        expr_ir["active"] = FV_active        # (array) FV-index -> bool
-        expr_ir["piecewise"] = FV_piecewise  # (array) FV-index -> bool
-        expr_ir["varying"] = FV_varying      # (array) FV-index -> bool
+        #expr_ir["active"] = FV_active        # (array) FV-index -> bool
+        #expr_ir["V_piecewise"] = FV_piecewise  # (array) FV-index -> bool
+        expr_ir["V_varying"] = FV_varying      # (array) FV-index -> bool
 
-        expr_ir["modified_terminal_table_ranges"] = modified_terminal_table_ranges
-        expr_ir["modified_argument_table_ranges"] = modified_argument_table_ranges
+        #expr_ir["modified_terminal_table_ranges"] = modified_terminal_table_ranges
+        #expr_ir["modified_argument_table_ranges"] = modified_argument_table_ranges
 
         # Store table data in FV indexing, this is used in integralgenerator
-        expr_ir["table_ranges"] = numpy.empty(len(FV), dtype=object)
-        expr_ir["table_ranges"][expr_ir["modified_terminal_indices"]] = \
-            expr_ir["modified_terminal_table_ranges"]
+        expr_ir["V_table_data"] = V_table_data
 
+        # To emit quadrature rules only if needed
         expr_ir["need_points"] = need_points
         expr_ir["need_weights"] = need_weights
 
         # Store the tables and ranges
-        expr_ir["table_types"] = table_types
-        expr_ir["unique_tables"] = unique_tables
+        #expr_ir["table_types"] = table_types
+        #expr_ir["unique_tables"] = unique_tables
 
+        # Store final ir for this num_points
+        ir["varying_irs"][num_points] = expr_ir
 
-        # TODO: Some tables are associated with num_points, some are not
-        #       (i.e. piecewise constant, averaged and x0).
-        #       It will be easier to deal with that if we can join
-        #       the expr_ir for all num_points as mentioned above.
-        ir["expr_irs"][num_points] = expr_ir
-
+    #import IPython; IPython.embed()
     return ir
 
 

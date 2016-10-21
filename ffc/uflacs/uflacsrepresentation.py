@@ -122,11 +122,4 @@ def compute_integral_ir(itg_data,
                                 parameters)
     ir.update(uflacs_ir)
 
-    # Consistency check on quadrature rules
-    rules1 = sorted(ir["expr_irs"].keys())
-    rules2 = sorted(ir["quadrature_rules"].keys())
-    if rules1 != rules2:
-        warning("Found different rules in expr_irs and "
-                "quadrature_rules:\n{0}\n{1}".format(rules1, rules2))
-
     return ir

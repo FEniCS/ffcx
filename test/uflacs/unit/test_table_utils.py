@@ -216,7 +216,7 @@ def xtest_get_ffc_table_values_scalar_cell():
                 }
                 table = get_ffc_table_values(ffc_tables,
                     cell, integral_type,
-                    num_points, element, avg,
+                    element, avg,
                     entitytype, derivatives, component, 
                     default_tolerance)
                 assert equal_tables(table[0, ...], np.transpose(arr), default_tolerance)
@@ -264,7 +264,7 @@ def xtest_get_ffc_table_values_vector_facet():
                 for component in range(num_components):
                     table = get_ffc_table_values(ffc_tables,
                         cell, integral_type,
-                        num_points, element, avg,
+                        element, avg,
                         entitytype, derivatives, component,
                         default_tolerance)
                     for i in range(num_entities):

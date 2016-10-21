@@ -43,6 +43,10 @@ class IntegralGenerator(object):
         # used in the end for selecting necessary includes
         self._ufl_names = set()
 
+        # Reset variables, separate sets for quadrature loop
+        self.vaccesses = { num_points: {} for num_points in self.ir["all_num_points"] }
+        self.vaccesses[None] = {}
+
 
     def get_includes(self):
         "Return list of include statements needed to support generated code."
@@ -75,6 +79,16 @@ class IntegralGenerator(object):
         return sorted(includes)
 
 
+    def get_vaccess(self, v, num_points):
+        # This handles scoping of piecewise vs varying
+        f = self.vaccesses[num_points].get(v)
+        if f is None:
+            f = self.vaccesses[None][v]
+        else:
+            assert num_points is None or v not in self.vaccesses[None]
+        return f
+
+
     def generate(self):
         """Generate entire tabulate_tensor body.
 
@@ -83,26 +97,22 @@ class IntegralGenerator(object):
         """
         L = self.backend.language
 
+        assert not any(d for d in self.vaccesses.values())
+
         parts = []
         parts += self.generate_quadrature_tables()
         parts += self.generate_element_tables()
         parts += self.generate_tensor_reset()
+        parts += self.generate_piecewise_partition()
+        parts += self.generate_piecewise_dofblock_partition()
 
         # If we have integrals with different number of quadrature points,
         # we wrap each integral in a separate scope, avoiding having to
         # think about name clashes for now. This is a bit wasteful in that
         # piecewise quantities are not shared, but at least it should work.
-        expr_irs = self.ir["expr_irs"]
-        all_num_points = sorted(expr_irs)
-
-        # Reset variables, separate sets for quadrature loop
-        self.vaccesses = { num_points: {} for num_points in all_num_points }
-
+        all_num_points = self.ir["all_num_points"]
         for num_points in all_num_points:
-            body = []
-            body += self.generate_unstructured_partition(num_points, "piecewise")
-            body += self.generate_dofblock_partition(num_points, "piecewise")
-            body += self.generate_quadrature_loops(num_points)
+            body = self.generate_quadrature_loops(num_points)
 
             # If there are multiple quadrature rules here, just wrapping
             # in Scope to avoid thinking about scoping issues for now.
@@ -131,30 +141,26 @@ class IntegralGenerator(object):
             return parts
 
         # Loop over quadrature rules
-        qrs = self.ir["quadrature_rules"]
-        for num_points in sorted(qrs):
-            points, weights = qrs[num_points]
+        for num_points in self.ir["all_num_points"]:
+            varying_ir = self.ir["varying_irs"][num_points]
+
+            points, weights = self.ir["quadrature_rules"][num_points]
             assert num_points == len(weights)
-            expr_ir = self.ir["expr_irs"][num_points]
+            assert num_points == points.shape[0]
 
             # Generate quadrature weights array
-            if expr_ir["need_weights"]:
+            if varying_ir["need_weights"]:
                 wsym = self.backend.symbols.weights_array(num_points)
                 parts += [L.ArrayDecl("static const double", wsym, num_points, weights,
                                       alignas=self.ir["alignas"])]
 
-            # Size of quadrature points depends on context, assume this is correct:
-            pdim = len(points[0])
-            assert points.shape[0] == num_points
-            assert pdim == points.shape[1]
-            #import IPython; IPython.embed()
-
             # Generate quadrature points array
-            if pdim and expr_ir["need_points"]:
+            N = product(points.shape)
+            if varying_ir["need_points"] and N:
                 # Flatten array: (TODO: avoid flattening here, it makes padding harder)
-                flattened_points = points.reshape(product(points.shape))
+                flattened_points = points.reshape(N)
                 psym = self.backend.symbols.points_array(num_points)
-                parts += [L.ArrayDecl("static const double", psym, num_points * pdim,
+                parts += [L.ArrayDecl("static const double", psym, N,
                                       flattened_points, alignas=self.ir["alignas"])]
 
         # Add leading comment if there are any tables
@@ -168,25 +174,24 @@ class IntegralGenerator(object):
         function values in quadrature points."""
         L = self.backend.language
         parts = []
-        expr_irs = self.ir["expr_irs"]
 
-        for num_points in sorted(expr_irs):
-            # Get all unique tables for this quadrature rule
-            tables = expr_irs[num_points]["unique_tables"]
-            if tables:
-                tmp = "Definitions of {0} tables for {1} quadrature points"
-                parts += [L.Comment(tmp.format(len(tables), num_points))]
-                for name in sorted(tables):
-                    # TODO: table here can actually have only 1 point,
-                    # regroup or at least fix generated comment
-                    table = tables[name]
-                    # TODO: Not padding, consider when and if to do so
-                    parts += [L.ArrayDecl("static const double", name, table.shape, table,
-                                          alignas=self.ir["alignas"])]
+        tables = self.ir["unique_tables"]
+        for name in sorted(tables):
+            # TODO: Not padding, consider when and if to do so
+            table = tables[name]
+            decl = L.ArrayDecl("static const double", name,
+                               table.shape, table,
+                               alignas=self.ir["alignas"])
+            parts += [decl]
+
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, [
-            "Section for precomputed element basis function values",
-            "Table dimensions: num_entities, num_points, num_dofs"])
+            "Precomputed values of basis functions", # and partial integrals",
+            "FE* dimensions: [entities][points][dofs]",
+            # TODO: When adding preintegrated tables extend the comments here:
+            #"B* dimensions: [entities][dofs]", 
+            #"C* dimensions: [entities][dofs][dofs]",
+            ])
         return parts
 
 
@@ -219,11 +224,11 @@ class IntegralGenerator(object):
         body = []
 
         # Generate unstructured varying partition
-        body += self.generate_unstructured_partition(num_points, "varying")
+        body += self.generate_varying_partition(num_points)
         body = L.commented_code_list(body,
             "Quadrature loop body setup (num_points={0})".format(num_points))
 
-        body += self.generate_dofblock_partition(num_points, "varying")
+        body += self.generate_varying_dofblock_partition(num_points)
 
         # Wrap body in loop or scope
         if not body:
@@ -241,8 +246,17 @@ class IntegralGenerator(object):
         return parts
 
 
-    def generate_dofblock_partition(self, num_points, partition):
+    def generate_piecewise_dofblock_partition(self):
+        return self.generate_dofblock_partition(None)
+
+
+    def generate_varying_dofblock_partition(self, num_points):
+        return self.generate_dofblock_partition(num_points)
+
+
+    def generate_dofblock_partition(self, num_points):
         L = self.backend.language
+        A = self.backend.symbols.element_tensor()
 
         # TODO: Add partial blocks (T[i0] = factor_index * arg0;)
 
@@ -251,33 +265,34 @@ class IntegralGenerator(object):
         # and using that piecewise f*u*v gives that
         # sum_q weight[q]*f*u*v == f*u*v*(sum_q weight[q]) )
 
-        # Get representation details
-        expr_ir = self.ir["expr_irs"][num_points]
-        V = expr_ir["V"]
-        modified_arguments = expr_ir["modified_arguments"]
-        block_contributions = expr_ir["block_contributions"]
-
-        vaccesses = self.vaccesses[num_points]
-        A = self.backend.symbols.element_tensor()
+        pir = self.ir["piecewise_ir"]
+        if num_points is None:
+            block_contributions = pir["block_contributions"]
+        else:
+            vir = self.ir["varying_irs"].get(num_points)
+            block_contributions = vir["block_contributions"]
 
         parts = []
-        for dofblock, contributions in sorted(block_contributions[partition].items()):
-            for data in contributions:
-                (ma_indices, factor_index, table_ranges, unames, ttypes) = data
+        for dofblock, contributions in sorted(block_contributions.items()):
+            for blockdata in contributions:
+                ma_data = blockdata.ma_data
+                rank = len(ma_data)
 
                 # Add code in layers starting with innermost A[...] += product(factors)
-                rank = len(unames)
                 factors = []
 
                 # Get factor expression
-                v = V[factor_index]
+                if blockdata.factor_is_piecewise:
+                    v = pir["V"][blockdata.factor_index]
+                else:
+                    v = vir["V"][blockdata.factor_index]
                 if not (v._ufl_is_literal_ and float(v) == 1.0):
-                    factors.append(vaccesses[v])
+                    factors.append(self.get_vaccess(v, num_points))
 
                 # Get loop counter symbols to access A with
                 A_indices = []
                 for i in range(rank):
-                    if ttypes[i] == "quadrature":
+                    if ma_data[i].tabledata.ttype == "quadrature":
                         # Used to index A like A[iq*num_dofs + iq]
                         ia = self.backend.symbols.quadrature_loop_index(num_points)
                     else:
@@ -287,15 +302,22 @@ class IntegralGenerator(object):
 
                 # Add table access to factors, unless it's always 1.0
                 for i in range(rank):
-                    tt = ttypes[i]
-                    assert tt not in ("zeros",)
-                    if tt not in ("quadrature", "ones"):
-                        ma = ma_indices[i]
-                        access = self.backend.access(
-                            modified_arguments[ma].terminal,
-                            modified_arguments[ma],
-                            table_ranges[i],
-                            num_points)
+                    ttype = ma_data[i].tabledata.ttype
+                    # 1.0 factors do not contribute
+                    if ttype in ("quadrature", "ones"):
+                        pass
+                    elif ttype == "zeros":
+                        # Zeros should be optimized away
+                        error("Not expecting zero arguments to be left in dofblock generation.")
+                    else:
+                        if ttype in ("piecewise", "fixed"):
+                            mt = pir["modified_arguments"][ma_data[i].ma_index]
+                        elif ttype in ("uniform", "varying"):
+                            mt = vir["modified_arguments"][ma_data[i].ma_index]
+                        else:
+                            error("Not expecting table type %s in dofblock generation." % (ttype,))
+                        access = self.backend.access(mt.terminal,
+                            mt, ma_data[i].tabledata, num_points)
                         factors.append(access)
 
                 # Special case where all factors are 1.0 and dropped
@@ -311,7 +333,7 @@ class IntegralGenerator(object):
                 # Wrap accumulation in loop nest
                 #for i in range(rank):
                 for i in range(rank-1, -1, -1):
-                    if ttypes[i] != "quadrature":
+                    if ma_data[i].tabledata.ttype != "quadrature":
                         dofrange = dofblock[i]
                         body = L.ForRange(A_indices[i], dofrange[0], dofrange[1], body=body)
 
@@ -321,35 +343,35 @@ class IntegralGenerator(object):
         return parts
 
 
-    def generate_partition(self, symbol, V, partition, table_ranges, num_points):
+    def generate_partition(self, symbol, V, V_active, V_table_data, num_points):
         L = self.backend.language
 
         definitions = []
         intermediates = []
 
-        vaccesses = self.vaccesses[num_points]
+        active_indices = [i for i, p in enumerate(V_active) if p]
 
-        partition_indices = [i for i, p in enumerate(partition) if p]
-
-        for i in partition_indices:
+        for i in active_indices:
             v = V[i]
 
             if is_modified_terminal(v):
                 mt = analyse_modified_terminal(v)
 
+                tabledata = V_table_data[i]
+
                 # Backend specific modified terminal translation
                 vaccess = self.backend.access(mt.terminal,
-                    mt, table_ranges[i], num_points)
+                    mt, tabledata, num_points)
                 vdef = self.backend.definitions(mt.terminal,
-                    mt, table_ranges[i], num_points, vaccess)
+                    mt, tabledata, num_points, vaccess)
 
                 # Store definitions of terminals in list
                 assert isinstance(vdef, list)
                 definitions.extend(vdef)
             else:
-                # Get previously visited operands (TODO: use edges of V instead of ufl_operands?)
-                vops = [vaccesses[op] for op in v.ufl_operands]
-
+                # Get previously visited operands
+                vops = [self.get_vaccess(op, num_points) for op in v.ufl_operands]
+                
                 # Mapping UFL operator to target language
                 self._ufl_names.add(v._ufl_handler_name_)
                 vexpr = self.backend.ufl_to_language(v, *vops)
@@ -380,7 +402,7 @@ class IntegralGenerator(object):
                     vaccess = vexpr
 
             # Store access node for future reference
-            vaccesses[v] = vaccess
+            self.vaccesses[num_points][v] = vaccess
 
         # Join terminal computation, array of intermediate expressions,
         # and intermediate computations
@@ -394,21 +416,38 @@ class IntegralGenerator(object):
         return parts
 
 
-    def generate_unstructured_partition(self, num_points, partition):
+    def generate_piecewise_partition(self):
         L = self.backend.language
-        expr_ir = self.ir["expr_irs"][num_points]
-        if partition == "piecewise":
-            name = "sp"
-        elif partition == "varying":
-            name = "sv"
-        arraysymbol = L.Symbol("{0}{1}".format(name, num_points))
+
+        num_points = None
+        expr_ir = self.ir["piecewise_ir"]
+
+        name = "sp"
+        arraysymbol = L.Symbol(name)
         parts = self.generate_partition(arraysymbol,
                                         expr_ir["V"],
-                                        expr_ir[partition],
-                                        expr_ir["table_ranges"],
+                                        expr_ir["V_active"],
+                                        expr_ir["V_table_data"],
                                         num_points)
         parts = L.commented_code_list(parts,
-            "Unstructured %s computations" % (partition,))
+            "Unstructured piecewise computations")
+        return parts
+
+
+    def generate_varying_partition(self, num_points):
+        L = self.backend.language
+
+        expr_ir = self.ir["varying_irs"][num_points]
+
+        name = "sv"
+        arraysymbol = L.Symbol("%s%d" % (name, num_points))
+        parts = self.generate_partition(arraysymbol,
+                                        expr_ir["V"],
+                                        expr_ir["V_varying"],
+                                        expr_ir["V_table_data"],
+                                        num_points)
+        parts = L.commented_code_list(parts,
+            "Unstructured varying computations for num_points=%d" % (num_points,))
         return parts
 
 
@@ -427,84 +466,3 @@ class IntegralGenerator(object):
             # parts += list(format_assignments(zip(assign_to_variables, final_variable_names)))
 
         return parts
-
-
-"""
-    # TODO: Rather take list of vertices, not markers
-    # XXX FIXME: Fix up this function and use it instead?
-    def alternative_generate_partition(self, symbol, C, MT, partition, table_ranges, num_points):
-        L = self.backend.language
-
-        definitions = []
-        intermediates = []
-
-        # XXX FIXME: create these!
-        # C = input CRSArray representation of expression DAG
-        # MT = input list/dict of modified terminals
-
-        self.ast_variables = [None]*len(C) # FIXME: Create outside
-
-        # TODO: Get this as input instead of partition?
-        partition_indices = [i for i, p in enumerate(partition) if p]
-        for i in partition_indices:
-            row = C[i] # XXX FIXME: Get this as input
-            if len(row) == 1:
-                # Modified terminal
-                t, = row
-                mt = MT[t] # XXX FIXME: Get this as input
-                tc = mt[0]
-
-
-                if isinstance(mt.terminal, ConstantValue):
-                    # Format literal value for the chosen language
-                    modified_literal_to_ast_node = []  # silence flake8
-                    # XXX FIXME: Implement this mapping:
-                    vaccess = modified_literal_to_ast_node[tc](mt)
-                    vdef = None
-                else:
-                    # Backend specific modified terminal formatting
-                    vaccess = self.backend.access(mt.terminal,
-                        mt, table_ranges[i], num_points)
-                    vdef = self.backend.definitions(mt.terminal,
-                        mt, table_ranges[i], num_points, vaccess)
-
-                # Store definitions of terminals in list
-                if vdef is not None:
-                    definitions.append(vdef)
-
-            else:
-                # Application of operator with typecode tc to operands with indices ops
-                tc = mt[0]
-                ops = mt[1:]
-
-                # Get operand AST nodes
-                opsaccess = [self.ast_variables[k] for k in ops]
-
-                # Generate expression for this operator application
-                typecode2astnode = []  # silence flake8
-                vexpr = typecode2astnode[tc](opsaccess) # XXX FIXME: Implement this mapping
-
-                store_this_in_variable = True # TODO: Don't store all subexpressions
-                if store_this_in_variable:
-                    # Record assignment of vexpr to intermediate variable
-                    j = len(intermediates)
-                    vaccess = symbol[j]
-                    intermediates.append(L.Assign(vaccess, vexpr))
-                else:
-                    # Access the inlined expression
-                    vaccess = vexpr
-
-            # Store access string, either a variable symbol or an inlined expression
-            self.ast_variables[i] = vaccess
-
-        # Join terminal computation, array of intermediate expressions,
-        # and intermediate computations
-        parts = []
-        if definitions:
-            parts += definitions
-        if intermediates:
-            parts += [L.ArrayDecl("double", symbol, len(intermediates),
-                                  alignas=self.ir["alignas"])]
-            parts += intermediates
-        return parts
-"""

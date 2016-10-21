@@ -34,7 +34,6 @@ class FFCBackendAccess(MultiFunction):
         MultiFunction.__init__(self)
 
         # Store ir and parameters
-        self.ir = ir
         self.entitytype = ir["entitytype"]
         self.integral_type = ir["integral_type"]
         self.language = language
@@ -78,11 +77,9 @@ class FFCBackendAccess(MultiFunction):
         assert not mt.global_derivatives
         # assert mt.global_component is None
 
-        # No need to store basis function value in its own variable, just get table value directly
-        #uname, begin, end, ttype = tabledata
-        uname, begin, end = tabledata
-        table_types = self.ir["expr_irs"][num_points]["table_types"]
-        ttype = table_types[uname]
+        # No need to store basis function value in its own
+        # variable, just get table value directly
+        uname, begin, end, ttype = tabledata
 
         if ttype == "zeros":
             error("Not expecting zero arguments to get this far.")
@@ -112,11 +109,7 @@ class FFCBackendAccess(MultiFunction):
 
 
     def coefficient(self, e, mt, tabledata, num_points):
-        # TODO: Passing type along with tabledata would make a lot of code cleaner
-        #uname, begin, end, ttype = tabledata
-        uname, begin, end = tabledata
-        table_types = self.ir["expr_irs"][num_points]["table_types"]
-        ttype = table_types[uname]
+        uname, begin, end, ttype = tabledata
 
         if ttype == "zeros":
             # FIXME: Remove at earlier stage so dependent code can also be removed
