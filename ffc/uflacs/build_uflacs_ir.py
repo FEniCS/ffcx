@@ -30,7 +30,7 @@ from ffc.uflacs.analysis.modified_terminals import is_modified_terminal, analyse
 from ffc.uflacs.analysis.graph import build_graph
 from ffc.uflacs.analysis.graph_vertices import build_scalar_graph_vertices
 from ffc.uflacs.analysis.graph_rebuild import rebuild_with_scalar_subexpressions
-from ffc.uflacs.analysis.graph_dependencies import compute_dependencies, mark_active, mark_image
+from ffc.uflacs.analysis.dependencies import compute_dependencies, mark_active, mark_image
 from ffc.uflacs.analysis.graph_ssa import compute_dependency_count, invert_dependencies
 #from ffc.uflacs.analysis.graph_ssa import default_cache_score_policy, compute_cache_scores, allocate_registers
 from ffc.uflacs.analysis.factorization import compute_argument_factorization

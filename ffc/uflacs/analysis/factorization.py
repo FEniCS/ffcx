@@ -35,7 +35,7 @@ from ufl.algorithms import extract_type
 
 from ffc.log import error
 
-from ffc.uflacs.analysis.graph_dependencies import compute_dependencies
+from ffc.uflacs.analysis.dependencies import compute_dependencies
 from ffc.uflacs.analysis.modified_terminals import analyse_modified_terminal, strip_modified_terminal
 
 
