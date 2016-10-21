@@ -8,7 +8,7 @@ from __future__ import print_function
 from ufl import triangle
 from six import itervalues, iteritems
 from six.moves import xrange as range
-from ffc.uflacs.elementtables.table_utils import equal_tables, strip_table_zeros, build_unique_tables, get_ffc_table_values
+from ffc.uflacs.elementtables import equal_tables, strip_table_zeros, build_unique_tables, get_ffc_table_values
 
 import numpy as np
 default_tolerance = 1e-14

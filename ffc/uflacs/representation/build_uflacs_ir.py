@@ -34,7 +34,7 @@ from ffc.uflacs.analysis.graph_dependencies import compute_dependencies, mark_ac
 from ffc.uflacs.analysis.graph_ssa import compute_dependency_count, invert_dependencies
 #from ffc.uflacs.analysis.graph_ssa import default_cache_score_policy, compute_cache_scores, allocate_registers
 from ffc.uflacs.analysis.factorization import compute_argument_factorization
-from ffc.uflacs.elementtables.terminaltables import build_optimized_tables
+from ffc.uflacs.elementtables import build_optimized_tables
 
 
 def build_uflacs_ir(cell, integral_type, entitytype,
