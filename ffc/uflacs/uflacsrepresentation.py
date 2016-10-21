@@ -25,7 +25,7 @@ from ffc.log import info
 from ffc.representationutils import initialize_integral_ir
 from ffc.fiatinterface import create_element
 from ffc.uflacs.tools import compute_quadrature_rules, accumulate_integrals
-from ffc.uflacs.representation.build_uflacs_ir import build_uflacs_ir
+from ffc.uflacs.build_uflacs_ir import build_uflacs_ir
 
 
 def compute_integral_ir(itg_data,
