@@ -23,7 +23,7 @@ from ffc.log import info
 from ffc.representationutils import initialize_integral_code
 
 from ffc.uflacs.backends.ffc.backend import FFCBackend
-from ffc.uflacs.generation.integralgenerator import IntegralGenerator
+from ffc.uflacs.integralgenerator import IntegralGenerator
 from ffc.uflacs.language.format_lines import format_indented_lines
 
 
