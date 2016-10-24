@@ -81,7 +81,6 @@ def build_uflacs_ir(cell, integral_type, entitytype,
             build_optimized_tables(num_points, quadrature_rules,
                 cell, integral_type, entitytype, initial_terminal_data, parameters)
 
-
         # Build replacement map for modified terminals with zero tables
         z = as_ufl(0.0)
         for i, mt in zip(initial_terminal_indices, initial_terminal_data):
@@ -154,7 +153,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
 
         # Figure out which table names are active
         active_table_names = set()
-        for i, tr in enumerate(modified_terminal_table_ranges):
+        for i, tr in zip(modified_terminal_indices, modified_terminal_table_ranges):
             if FV_active[i] and tr is not None:
                 active_table_names.add(tr[0])
         for ma_indices in argument_factorization:
@@ -173,7 +172,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
 
 
         # Analyse active terminals to check what we'll need to generate code for
-        active_mts = [mt for i, mt in enumerate(modified_terminals) if FV_active[i]]
+        active_mts = [mt for i, mt in zip(modified_terminal_indices, modified_terminals)
+                      if FV_active[i]]
 
         # Figure out if we need to access CellCoordinate to
         # avoid generating quadrature point table otherwise
