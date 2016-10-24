@@ -118,36 +118,17 @@ def add_to_fv(expr, FV, e2fi):
 noargs = {}
 
 
-def handle_modified_terminal(si, v, SV_factors, FV, e2fi, arg_indices, AV, sv2av):
-    # v is a modified terminal...
-    if si in arg_indices:
-        # ... a modified Argument
-        argkey = (si,)
-        fi = None
-
-        # Adding 1 as an expression allows avoiding special representation by representing "v" as "1*v"
-        one = add_to_fv(as_ufl(1.0), FV, e2fi)
-        factors = {argkey: one}
-
-        assert AV[sv2av[si]] == v
-    else:
-        # ... record a non-argument modified terminal
-        factors = noargs
-        fi = add_to_fv(v, FV, e2fi)
-    return fi, factors
-
-
-def handle_sum(si, v, deps, SV_factors, FV, sv2fv, e2fi):
+def handle_sum(v, si, deps, SV_factors, FV, sv2fv, e2fi):
     if len(deps) != 2:
         error("Assuming binary sum here. This can be fixed if needed.")
+
     fac0 = SV_factors[deps[0]]
     fac1 = SV_factors[deps[1]]
-
-    argkeys = sorted(set(iterkeys(fac0)) | set(iterkeys(fac1)))
+    argkeys = set(fac0) | set(fac1)
 
     if argkeys:  # f*arg + g*arg = (f+g)*arg
+        argkeys = sorted(argkeys)
         keylen = len(argkeys[0])
-        fi = None
         factors = {}
         for argkey in argkeys:
             if len(argkey) != keylen:
@@ -167,12 +148,12 @@ def handle_sum(si, v, deps, SV_factors, FV, sv2fv, e2fi):
 
     else:  # non-arg + non-arg
         factors = noargs
-        fi = add_to_fv(v, FV, e2fi)
+        sv2fv[si] = add_to_fv(v, FV, e2fi)
 
-    return fi, factors
+    return factors
 
 
-def handle_product(si, v, deps, SV_factors, FV, sv2fv, e2fi):
+def handle_product(v, si, deps, SV_factors, FV, sv2fv, e2fi):
     if len(deps) != 2:
         error("Assuming binary product here. This can be fixed if needed.")
     fac0 = SV_factors[deps[0]]
@@ -184,8 +165,8 @@ def handle_product(si, v, deps, SV_factors, FV, sv2fv, e2fi):
         f0 = FV[sv2fv[deps[0]]]
         f1 = FV[sv2fv[deps[1]]]
         assert f1 * f0 == v
-        fi = add_to_fv(v, FV, e2fi)
-        assert FV[fi] == v
+        sv2fv[si] = add_to_fv(v, FV, e2fi)
+        assert FV[sv2fv[si]] == v
 
     elif not fac0:  # non-arg * arg
         # Record products of non-arg operand with each factor of arg-dependent operand
@@ -194,7 +175,6 @@ def handle_product(si, v, deps, SV_factors, FV, sv2fv, e2fi):
         for k1 in sorted(fac1):
             fi1 = fac1[k1]
             factors[k1] = add_to_fv(f0 * FV[fi1], FV, e2fi)
-        fi = None
 
     elif not fac1:  # arg * non-arg
         # Record products of non-arg operand with each factor of arg-dependent operand
@@ -203,7 +183,6 @@ def handle_product(si, v, deps, SV_factors, FV, sv2fv, e2fi):
         for k0 in sorted(fac0):
             f0 = FV[fac0[k0]]
             factors[k0] = add_to_fv(f1 * f0, FV, e2fi)
-        fi = None
 
     else:  # arg * arg
         # Record products of each factor of arg-dependent operand
@@ -214,12 +193,11 @@ def handle_product(si, v, deps, SV_factors, FV, sv2fv, e2fi):
                 f1 = FV[fac1[k1]]
                 argkey = tuple(sorted(k0 + k1))  # sort key for canonical representation
                 factors[argkey] = add_to_fv(f0 * f1, FV, e2fi)
-        fi = None
 
-    return fi, factors
+    return factors
 
 
-def handle_division(si, v, deps, SV_factors, FV, sv2fv, e2fi):
+def handle_division(v, si, deps, SV_factors, FV, sv2fv, e2fi):
     fac0 = SV_factors[deps[0]]
     fac1 = SV_factors[deps[1]]
     assert not fac1, "Cannot divide by arguments."
@@ -231,17 +209,16 @@ def handle_division(si, v, deps, SV_factors, FV, sv2fv, e2fi):
         for k0 in sorted(fac0):
             f0 = FV[fac0[k0]]
             factors[k0] = add_to_fv(f0 / f1, FV, e2fi)
-        fi = None
 
     else:  # non-arg / non-arg
         # Record non-argument subexpression
         factors = noargs
-        fi = add_to_fv(v, FV, e2fi)
+        sv2fv[si] = add_to_fv(v, FV, e2fi)
 
-    return fi, factors
+    return factors
 
 
-def handle_conditional(si, v, deps, SV_factors, FV, sv2fv, e2fi):
+def handle_conditional(v, si, deps, SV_factors, FV, sv2fv, e2fi):
     fac0 = SV_factors[deps[0]]
     fac1 = SV_factors[deps[1]]
     fac2 = SV_factors[deps[2]]
@@ -249,7 +226,7 @@ def handle_conditional(si, v, deps, SV_factors, FV, sv2fv, e2fi):
 
     if not (fac1 or fac2):  # non-arg ? non-arg : non-arg
         # Record non-argument subexpression
-        fi = add_to_fv(v, FV, e2fi)
+        sv2fv[si] = add_to_fv(v, FV, e2fi)
         factors = noargs
     else:
         f0 = FV[sv2fv[deps[0]]]
@@ -262,15 +239,12 @@ def handle_conditional(si, v, deps, SV_factors, FV, sv2fv, e2fi):
         assert () not in fac1
         assert () not in fac2
 
-        fi = None
-        factors = {}
-
         z = as_ufl(0.0)
-        zfi = add_to_fv(z, FV, e2fi)  # TODO: flake8 complains zfi is unused, is that ok?
 
         # In general, can decompose like this:
         #    conditional(c, sum_i fi*ui, sum_j fj*uj) -> sum_i conditional(c, fi, 0)*ui + sum_j conditional(c, 0, fj)*uj
         mas = sorted(set(fac1.keys()) | set(fac2.keys()))
+        factors = {}
         for k in mas:
             fi1 = fac1.get(k)
             fi2 = fac2.get(k)
@@ -278,17 +252,17 @@ def handle_conditional(si, v, deps, SV_factors, FV, sv2fv, e2fi):
             f2 = z if fi2 is None else FV[fi2]
             factors[k] = add_to_fv(conditional(f0, f1, f2), FV, e2fi)
 
-    return fi, factors
+    return factors
 
 
-def handle_operator(si, v, deps, SV_factors, FV, sv2fv, e2fi):
+def handle_operator(v, si, deps, SV_factors, FV, sv2fv, e2fi):
     # Error checking
-    if any(SV_factors[deps[j]] for j in range(len(deps))):
+    if any(SV_factors[d] for d in deps):
         error("Assuming that a {0} cannot be applied to arguments. If this is wrong please report a bug.".format(type(v)))
     # Record non-argument subexpression
-    fi = add_to_fv(v, FV, e2fi)
+    sv2fv[si] = add_to_fv(v, FV, e2fi)
     factors = noargs
-    return fi, factors
+    return factors
 
 
 def compute_argument_factorization(SV, SV_deps, SV_targets, rank):
@@ -336,8 +310,15 @@ def compute_argument_factorization(SV, SV_deps, SV_targets, rank):
     FV = []
     e2fi = {}
 
-    # Hack to later build dependencies for the FV entries that change K*K -> K**2
-    two = add_to_fv(as_ufl(2), FV, e2fi)  # FIXME: Might need something more robust here
+    # Adding 0.0 as an expression to fix issue in conditional
+    zero_index = add_to_fv(as_ufl(0.0), FV, e2fi)
+
+    # Adding 1.0 as an expression allows avoiding special representation
+    # of arguments when first visited by representing "v" as "1*v"
+    one_index = add_to_fv(as_ufl(1.0), FV, e2fi)
+
+    # Adding 2 as an expression fixes an issue with FV entries that change K*K -> K**2
+    two_index = add_to_fv(as_ufl(2), FV, e2fi)
 
     # Intermediate factorization for each vertex in SV on the format
     # SV_factors[si] = None # if SV[si] does not depend on arguments
@@ -346,28 +327,37 @@ def compute_argument_factorization(SV, SV_deps, SV_targets, rank):
     #   argkey is a tuple with indices into SV for each of the argument components SV[si] depends on
     # SV_factors[si] = { argkey1: fi1, argkey2: fi2, ... } # if SV[si] is a linear combination of multiple argkey configurations
     SV_factors = numpy.empty(len(SV), dtype=object)
-    sv2fv = numpy.zeros(len(SV), dtype=int)
+    si2fi = numpy.zeros(len(SV), dtype=int)
 
     # Factorize each subexpression in order:
     for si, v in enumerate(SV):
         deps = SV_deps[si]
 
-        # These handlers insert values in sv2fv and SV_factors
+        # These handlers insert values in si2fi and SV_factors
         if not len(deps):
-            fi, factors = handle_modified_terminal(si, v, SV_factors, FV, e2fi, arg_indices, AV, sv2av)
-        elif isinstance(v, Sum):
-            fi, factors = handle_sum(si, v, deps, SV_factors, FV, sv2fv, e2fi)
-        elif isinstance(v, Product):
-            fi, factors = handle_product(si, v, deps, SV_factors, FV, sv2fv, e2fi)
-        elif isinstance(v, Division):
-            fi, factors = handle_division(si, v, deps, SV_factors, FV, sv2fv, e2fi)
-        elif isinstance(v, Conditional):
-            fi, factors = handle_conditional(si, v, deps, SV_factors, FV, sv2fv, e2fi)
-        else:  # All other operators
-            fi, factors = handle_operator(si, v, deps, SV_factors, FV, sv2fv, e2fi)
+            if si in arg_indices:
+                # v is a modified Argument
+                factors = { (si,): one_index }
+            else:
+                # v is a modified non-Argument terminal
+                si2fi[si] = add_to_fv(v, FV, e2fi)
+                factors = noargs
+        else:
+            # These quantities could be better input args to handlers:
+            #facs = [SV_factors[d] for d in deps]
+            #fs = [FV[sv2fv[d]] for d in deps]
+            if isinstance(v, Sum):
+                handler = handle_sum
+            elif isinstance(v, Product):
+                handler = handle_product
+            elif isinstance(v, Division):
+                handler = handle_division
+            elif isinstance(v, Conditional):
+                handler = handle_conditional
+            else:  # All other operators
+                handler = handle_operator
+            factors = handler(v, si, deps, SV_factors, FV, si2fi, e2fi)
 
-        if fi is not None:
-            sv2fv[si] = fi
         SV_factors[si] = factors
 
     assert not noargs, "This dict was not supposed to be filled with anything!"
@@ -382,7 +372,7 @@ def compute_argument_factorization(SV, SV_deps, SV_targets, rank):
         if SV_factors[si] == {}:
             if rank == 0:
                 # Functionals and expressions: store as no args * factor
-                factors = { (): sv2fv[si] }
+                factors = { (): si2fi[si] }
             else:
                 # Zero form of arity 1 or higher: make factors empty
                 factors = {}
