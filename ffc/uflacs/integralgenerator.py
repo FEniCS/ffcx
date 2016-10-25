@@ -80,12 +80,15 @@ class IntegralGenerator(object):
 
 
     def get_vaccess(self, v, num_points):
-        # This handles scoping of piecewise vs varying
+        # Lookup v in 'num_points' quadloop scope
         f = self.vaccesses[num_points].get(v)
         if f is None:
+            # Missed quadloop scope lookup, lookup in piecewise scope
+            # (this should exist now)
             f = self.vaccesses[None][v]
         else:
-            assert num_points is None or v not in self.vaccesses[None]
+            #assert num_points is None or v not in self.vaccesses[None]
+            v in self.vaccesses[None]
         return f
 
 
