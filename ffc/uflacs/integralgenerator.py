@@ -20,6 +20,7 @@
 
 from ufl import product
 from ufl.classes import ConstantValue, Condition
+from ufl.measure import custom_integral_types, point_integral_types
 
 from ffc.log import error, warning
 
@@ -139,7 +140,7 @@ class IntegralGenerator(object):
 
         # No quadrature tables for custom (given argument)
         # or point (evaluation in single vertex)
-        skip = ("custom", "cutcell", "interface", "overlap", "vertex")
+        skip = custom_integral_types + point_integral_types
         if self.ir["integral_type"] in skip:
             return parts
 

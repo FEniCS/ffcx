@@ -20,11 +20,11 @@
 
 from ufl.corealg.multifunction import MultiFunction
 from ufl.permutation import build_component_numbering
+from ufl.measure import custom_integral_types
 
 from ffc.log import error, warning
 
 from ffc.uflacs.backends.ffc.symbols import FFCBackendSymbols
-from ffc.uflacs.backends.ffc.common import physical_quadrature_integral_types
 
 
 class FFCBackendAccess(MultiFunction):
@@ -145,8 +145,8 @@ class FFCBackendAccess(MultiFunction):
         if mt.averaged:
             error("Not expecting average of SpatialCoordinates.")
 
-        if self.integral_type in physical_quadrature_integral_types:
-            # FIXME: Jacobian may need adjustment for physical_quadrature_integral_types
+        if self.integral_type in custom_integral_types:
+            # FIXME: Jacobian may need adjustment for custom_integral_types
             if mt.local_derivatives:
                 error("FIXME: Jacobian in custom integrals is not implemented.")
 

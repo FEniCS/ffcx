@@ -19,11 +19,11 @@
 """FFC/UFC specific variable definitions."""
 
 from ufl.corealg.multifunction import MultiFunction
+from ufl.measure import custom_integral_types
 
 from ffc.log import error, warning
 
 from ffc.uflacs.backends.ffc.symbols import FFCBackendSymbols
-from ffc.uflacs.backends.ffc.common import physical_quadrature_integral_types
 from ffc.uflacs.backends.ffc.common import num_coordinate_component_dofs
 
 
@@ -217,8 +217,8 @@ class FFCBackendDefinitions(MultiFunction):
         If reference facet coordinates are given:
           x = sum_k xdof_k xphi_k(Xf)
         """
-        if self.integral_type in physical_quadrature_integral_types:
-            # FIXME: Jacobian may need adjustment for physical_quadrature_integral_types
+        if self.integral_type in custom_integral_types:
+            # FIXME: Jacobian may need adjustment for custom_integral_types
             if mt.local_derivatives:
                 error("FIXME: Jacobian in custom integrals is not implemented.")
             return []
@@ -253,7 +253,7 @@ class FFCBackendDefinitions(MultiFunction):
 
         J = sum_k xdof_k grad_X xphi_k(X)
         """
-        # TODO: Jacobian may need adjustment for physical_quadrature_integral_types
+        # TODO: Jacobian may need adjustment for custom_integral_types
         return self._define_coordinate_dofs_lincomb(e, mt, tabledata, num_points, access)
 
 

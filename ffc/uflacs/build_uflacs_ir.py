@@ -25,6 +25,7 @@ from ufl import product, as_ufl
 from ufl.log import error
 from ufl.checks import is_cellwise_constant
 from ufl.classes import CellCoordinate, FacetCoordinate, QuadratureWeight
+from ufl.measure import custom_integral_types, point_integral_types, facet_integral_types
 
 from ffc.uflacs.analysis.balancing import balance_modifiers
 from ffc.uflacs.analysis.modified_terminals import is_modified_terminal, analyse_modified_terminal
@@ -139,11 +140,12 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         (argument_factorizations, modified_arguments,
              FV, FV_deps, FV_targets) = \
             compute_argument_factorization(SV, SV_deps, SV_targets, len(tensor_shape))
-        assert len(SV_targets) == len(argument_factorizations)
+        assert len(SV_targets) == len(argument_factorizations)       
 
         # TODO: Still expecting one target variable in code generation
         assert len(argument_factorizations) == 1
         argument_factorization, = argument_factorizations
+
 
         # Store modified arguments in analysed form
         for i in range(len(modified_arguments)):
@@ -205,7 +207,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         if integral_type == "cell":
             need_points = any(isinstance(mt.terminal, CellCoordinate)
                               for mt in active_mts)
-        elif integral_type in ("interior_facet", "exterior_facet"):
+        elif integral_type in facet_integral_types:
             need_points = any(isinstance(mt.terminal, FacetCoordinate)
                               for mt in active_mts)
         else:

@@ -22,9 +22,6 @@
 from ffc.log import error
 
 
-physical_quadrature_integral_types = ("custom", "cutcell", "interface", "overlap")
-
-
 # TODO: Move somewhere else
 def num_coordinate_component_dofs(coordinate_element):
     """Get the number of dofs for a coordinate component for this degree.
