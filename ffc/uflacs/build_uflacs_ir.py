@@ -22,10 +22,11 @@ import numpy
 from collections import defaultdict, namedtuple
 
 from ufl import product, as_ufl
-from ufl.log import error
+from ufl.log import error, warning
 from ufl.checks import is_cellwise_constant
 from ufl.classes import CellCoordinate, FacetCoordinate, QuadratureWeight
 from ufl.measure import custom_integral_types, point_integral_types, facet_integral_types
+from ufl.algorithms.analysis import has_type
 
 from ffc.uflacs.analysis.balancing import balance_modifiers
 from ffc.uflacs.analysis.modified_terminals import is_modified_terminal, analyse_modified_terminal
@@ -43,16 +44,26 @@ table_data_t = namedtuple("table_data_t", ["name", "begin", "end", "ttype"])
 
 ma_data_t = namedtuple("ma_data_t", ["ma_index", "tabledata"])
 
-block_data_t = namedtuple("block_data_t", ["factor_is_piecewise", "factor_index", "ma_data"])
+block_data_t = namedtuple(
+    "block_data_t",
+    ["block_mode", "factor_is_piecewise", "factor_index", "ma_data"]
+    )
+
+preintegrated_block_data_t = namedtuple(
+    "preintegrated_block_data_t",
+    ["block_mode", "factor_index", "pname"]
+    )
 
 
 def empty_expr_ir():
     expr_ir = {}
     expr_ir["V"] = []
     expr_ir["V_active"] = []
-    expr_ir["V_table_data"] = []  # FIXME: Change from table_ranges in rest of code
-    expr_ir["block_contributions"] = defaultdict(list)
+    expr_ir["V_table_data"] = []
     expr_ir["modified_arguments"] = []
+    expr_ir["preintegrated_blocks"] = {}
+    expr_ir["preintegrated_contributions"] = defaultdict(list)
+    expr_ir["block_contributions"] = defaultdict(list)
     return expr_ir
 
 
@@ -64,6 +75,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
     ir = {}
 
     epsilon = 1e-10  # FIXME get from parameters
+    do_apply_preintegration = False #True  # FIXME get from parameters
 
     # { ufl coefficient: count }
     ir["coefficient_numbering"] = coefficient_numbering
@@ -82,6 +94,14 @@ def build_uflacs_ir(cell, integral_type, entitytype,
     pe2i = {}
     piecewise_modified_argument_indices = {}
 
+    # Whether we expect the quadrature weight to be applied or not
+    # (in some cases it's just set to 1 in ufl integral scaling)
+    tdim = cell.topological_dimension()
+    expect_weight = (
+        entitytype == "cell"
+        or (entitytype == "facet" and tdim > 1)
+        or (integral_type in custom_integral_types)
+        )
 
     # Build the core uflacs expression ir for each num_points/integrand
     ir["all_num_points"] = sorted(integrands.keys())
@@ -104,23 +124,29 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                                     if is_modified_terminal(v)]
         initial_terminal_data = [analyse_modified_terminal(V[i])
                                  for i in initial_terminal_indices]
-        unique_tables, mt_table_ranges, table_types = \
+        unique_tables, mt_table_ranges, table_types, table_num_dofs = \
             build_optimized_tables(num_points, quadrature_rules,
                 cell, integral_type, entitytype, initial_terminal_data,
                 ir["unique_tables"], parameters)
 
-        # Build replacement map for modified terminals with zero tables
-        z = as_ufl(0.0)
-        for i, mt in zip(initial_terminal_indices, initial_terminal_data):
-            tr = mt_table_ranges.get(mt)
-            if tr is not None:
-                uname, begin, end = tr
-                ttype = table_types[uname]
-                # Any modified terminal with zero table is itself a zero value
-                if ttype == "zeros":
-                    V[i] = z
-        # Propagate expression changes
+        # Replace some scalar modified terminals before reconstructing expressions
         # (could possibly use replace() on target expressions instead)
+        z = as_ufl(0.0)
+        one = as_ufl(1.0)
+        for i, mt in zip(initial_terminal_indices, initial_terminal_data):
+            if do_apply_preintegration and isinstance(mt.terminal, QuadratureWeight):
+                # Replace quadrature weight with 1.0, will be added back later
+                V[i] = one
+            else:
+                # Set modified terminals with zero tables to zero
+                tr = mt_table_ranges.get(mt)
+                if tr is not None:
+                    uname, begin, end = tr
+                    ttype = table_types[uname]
+                    if ttype == "zeros":
+                        V[i] = z
+
+        # Propagate expression changes using dependency list
         for i in range(len(V)):
             deps = [V[j] for j in V_deps[i]]
             if deps:
@@ -146,6 +172,12 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         assert len(argument_factorizations) == 1
         argument_factorization, = argument_factorizations
 
+        # Preliminary check before implementing weight extraction
+        # This seems to pass all existing regression tests
+        if expect_weight and not do_apply_preintegration:
+            for ma_indices, fi in argument_factorization.items():
+                f = FV[fi]
+                assert has_type(f, QuadratureWeight)
 
         # Store modified arguments in analysed form
         for i in range(len(modified_arguments)):
@@ -186,11 +218,13 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         for ma_indices in argument_factorization:
             for j in ma_indices:
                 tr = modified_argument_table_ranges[j]
+                # TODO: This shouldn't be None?
+                assert tr is not None
                 if tr is not None:
                     active_table_names.add(tr[0])
 
         # Drop tables not referenced from modified terminals
-        # and and tables of zeros and ones
+        # and tables of zeros and ones
         unused_types = ("zeros", "ones", "quadrature")
         used_table_names = set(name for name in active_table_names
                                if name is not None
@@ -242,6 +276,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                     pir["V_active"].append(1)
                     pir["V_table_data"].append(V_table_data[i])
 
+        piecewise_ttypes = ("piecewise", "fixed", "ones")
+
         # Extend piecewise modified_arguments list with unique new items
         for mt in modified_arguments:
             ma = piecewise_modified_argument_indices.get(mt)
@@ -254,7 +290,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         block_contributions = defaultdict(list)
         for ma_indices, fi in sorted(argument_factorization.items()):
             # Get a bunch of information about this term
-            #rank = len(ma_indices)
+            rank = len(ma_indices)
             trs = tuple(modified_argument_table_ranges[ai] for ai in ma_indices)
             unames = tuple(tr[0] for tr in trs)
             dofblock = tuple(tr[1:3] for tr in trs)
@@ -272,29 +308,148 @@ def build_uflacs_ir(cell, integral_type, entitytype,
             else:
                 factor_index = fi
 
-            piecewise_types = ("piecewise", "fixed", "ones")
-
-            block_is_piecewise = factor_is_piecewise
-
-            # Translate indices to piecewise context if necessary
-            ma_data = []
-            for i, ma in enumerate(ma_indices):
-                if tds[i].ttype in piecewise_types:
-                    ma_index = piecewise_modified_argument_indices[modified_arguments[ma]]
+            # Figure out preintegration status
+            if do_apply_preintegration:
+                # Decide how to handle block
+                if factor_is_piecewise and rank > 0:
+                    # Could work for rank 0 as well but currently doesn't
+                    block_mode = "preintegrate"
+                elif all(tt in piecewise_ttypes for tt in ttypes):
+                    block_mode = "functional"
+                elif any(tt in piecewise_ttypes for tt in ttypes):
+                    block_mode = "partial"
                 else:
-                    block_is_piecewise = False
-                    ma_index = ma
-                ma_data.append(ma_data_t(ma_index, tds[i]))
-            data = block_data_t(factor_is_piecewise, factor_index, tuple(ma_data))
-
-            if block_is_piecewise:
-                # Insert in piecewise expr_ir
-                contributions = ir["piecewise_ir"]["block_contributions"][dofblock]
+                    block_mode = "runtime"
             else:
-                # Insert in varying expr_ir for this quadrature loop
-                contributions = block_contributions[dofblock]
+                block_mode = "runtime"
 
-            contributions.append(data)
+            # Carry out decision
+            if block_mode == "preintegrate":
+                # TODO: Reuse transpose to save memory
+                pname = ir["piecewise_ir"]["preintegrated_blocks"].get(unames)
+                if pname is None:
+                    weights = quadrature_rules[num_points][1]
+                    tables = [unique_tables.get(name) for name in unames]
+                    num_entities = max([1] + [tbl.shape[0] for tbl in tables if tbl is not None])
+                    num_dofs = tuple(table_num_dofs[name] for name in unames)
+
+                    ptable = numpy.zeros((num_entities,) + num_dofs)
+                    for entity in range(num_entities):
+                        for iq, w in enumerate(weights):
+                            vectors = []
+                            for i, tbl in enumerate(tables):
+                                if tbl is None:
+                                    assert ttypes[i] == "ones"
+                                    vectors.append(numpy.ones((num_dofs[i],)))
+                                else:
+                                    # Some tables are compacted along entities or points
+                                    e = 0 if tbl.shape[0] == 1 else entity
+                                    q = 0 if tbl.shape[1] == 1 else iq
+                                    vectors.append(tbl[e][q][:])
+                            if len(vectors) > 1:
+                                ptable[entity, ...] += w * numpy.outer(*vectors)
+                            else:
+                                ptable[entity, :] += w * vectors[0]
+
+                    # Add ptable to unique_tables
+                    pname = "P%d" % (len(ir["piecewise_ir"]["preintegrated_blocks"],))
+                    ir["piecewise_ir"]["preintegrated_blocks"][unames] = pname
+                    unique_tables[pname] = ptable
+                    table_types[pname] = "preintegrated"
+
+                # FIXME: Generate code for preintegrated_contributions
+                # 1) P = weight*u*v;  preintegrate block here
+                # 2) B = f*P;         scale block after quadloop
+                # 3) A[dofblock] += B[:];   add block to A in finalization
+                data = preintegrated_block_data_t(block_mode, factor_index, pname)
+                ir["piecewise_ir"]["preintegrated_contributions"][dofblock].append(data)
+
+            elif 0: # block_mode == "functional":
+                pass
+                # FIXME:
+                # 1) f = factor * weight;  integrated at runtime         F
+                # 2) C = u*v;              precomputed block table here  FE2
+                # 3) B = f*C;              scale block after quadloop    sFE2
+                # 4) A += B;               add block to A in finalization
+            elif 0: # block_mode == "partial":
+                pass
+                # Either u or v is piecewise, here assuming v:
+                # FIXME:
+                # 1) Compute C in quadloop (C :: (fi, uname))  (fi known not piecewise!)
+                # C = 0
+                # for (q)
+                #     (1a)
+                #     f = factor * weight
+                #     (1b)
+                #     for (i)
+                #         C[i] += u[i]*f
+                # 2) Compute B after quadloop (B :: ((fi, uname), vname))
+                # for (i)
+                #     for (j)
+                #         B[i,j] = C[i]*v[j]
+                # 3) A += B;               add block to A in finalization
+
+            elif 1: # block_mode == "runtime":
+                # Translate indices to piecewise context if necessary
+                block_is_piecewise = factor_is_piecewise and not expect_weight
+                ma_data = []
+                for i, ma in enumerate(ma_indices):
+                    if tds[i].ttype in piecewise_ttypes:
+                        ma_index = piecewise_modified_argument_indices[modified_arguments[ma]]
+                    else:
+                        block_is_piecewise = False
+                        ma_index = ma
+                    ma_data.append(ma_data_t(ma_index, tds[i]))
+                data = block_data_t(block_mode, factor_is_piecewise, factor_index, tuple(ma_data))
+
+
+                if do_apply_preintegration and expect_weight: # XXX
+                    warning("FIXME: Add back weight that was removed somethere!")
+                    
+
+                if block_is_piecewise:
+                    # Insert in piecewise expr_ir
+                    ir["piecewise_ir"]["block_contributions"][dofblock].append(data)
+                else:
+                    # Insert in varying expr_ir for this quadrature loop
+                    block_contributions[dofblock].append(data)
+
+                # FIXME:
+                # Implement this initially:
+                # 1) Compute B in quadloop
+                # B = 0  # Storage: num_dofs * num_dofs  // Reuse space for all factors?
+                # for (q)
+                #     (1a)
+                #     f = factor * weight
+                #     (1b)
+                #     for (i)
+                #         C[i] = u[i]*f
+                #     (1c)
+                #     for (i)
+                #         for (j)
+                #             B[i,j] += C[i]*v[j]
+                # 2) A += B;               add block to A in finalization
+
+                # Alternative possible optimization, needs more temporary storage:
+                # 1) Compute f in quadloop    # Storage per factor: num_points
+                # for (q)
+                #     f1[q] = factor1 * weight[q]
+                #     f#[q] = ...
+                #     fn[q] = factorn * weight[q]
+                # 2) Compute C in quadloop    # Storage: num_points*num_dofs
+                # for (q)
+                #     for (i)
+                #         C[i,q] = u[i,q]*f[q]
+                # 3) Compute B in quadloop    # Storage: num_dofs*num_dofs
+                # B = 0
+                # for (q)
+                #     for (i)
+                #         for (j)
+                #             B[i,j] += C[i,q]*v[j,q]
+                # 4) A += B;               add block to A in finalization
+                # Note that storage for C and B can be reused for all terms
+                # if 2-3-4 are completed for each term before starting the next.
+                # Of course reusing C and B across terms where possible.
 
         # Add to set of all tables
         for name, table in unique_tables.items():

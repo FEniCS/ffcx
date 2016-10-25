@@ -607,6 +607,8 @@ def build_optimized_tables(num_points, quadrature_rules,
     # Analyze tables for properties useful for optimization
     table_types = analyse_table_types(unique_tables, epsilon)
 
+    # Get num_dofs for all tables before they can be deleted later
+    table_num_dofs = { name: tbl.shape[2] for name, tbl in unique_tables.items() }
 
     # Consistency checking
     for unique_name, tabletype in table_types.items():
@@ -620,7 +622,6 @@ def build_optimized_tables(num_points, quadrature_rules,
             assert all(not mt.averaged
                        for mt, data in mt_table_ranges.items()
                        if data is not None and data[0] == unique_name)
-
 
     # Add offsets to dof ranges for restricted terminals
     mt_table_ranges = offset_restricted_table_ranges(
@@ -664,4 +665,4 @@ def build_optimized_tables(num_points, quadrature_rules,
         if tr[0] in name_map:
             mt_table_ranges[mt] = (name_map[tr[0]],) + tuple(tr[1:])
 
-    return unique_tables, mt_table_ranges, table_types
+    return unique_tables, mt_table_ranges, table_types, table_num_dofs
