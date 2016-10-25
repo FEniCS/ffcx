@@ -74,8 +74,10 @@ def build_uflacs_ir(cell, integral_type, entitytype,
     # The intermediate representation dict we're building and returning here
     ir = {}
 
-    epsilon = 1e-10  # FIXME get from parameters
-    do_apply_preintegration = False #True  # FIXME get from parameters
+    # FIXME get from parameters:
+    epsilon = 1e-10
+    #do_apply_preintegration = False
+    do_apply_preintegration = True
 
     # { ufl coefficient: count }
     ir["coefficient_numbering"] = coefficient_numbering
@@ -311,16 +313,34 @@ def build_uflacs_ir(cell, integral_type, entitytype,
             # Figure out preintegration status
             if do_apply_preintegration:
                 # Decide how to handle block
-                if factor_is_piecewise and rank > 0:
-                    # Could work for rank 0 as well but currently doesn't
+                skip = point_integral_types + custom_integral_types + ("interior_facet",)
+                if (factor_is_piecewise
+                        and rank > 0
+                        and "quadrature" not in ttypes
+                        and integral_type not in skip):
+                    # - Piecewise factor is an absolute prerequisite
+                    # - Could work for rank 0 as well but currently doesn't
+                    # - Haven't considered how quadrature elements work out
+                    # - Facet integrals haven't been priority at first,
+                    #   integration for each entity adds a little complexity,
+                    #   even more so for interior integrals
                     block_mode = "preintegrate"
                 elif all(tt in piecewise_ttypes for tt in ttypes):
+                    # Integrate functional in quadloop, scale block after quadloop
                     block_mode = "functional"
                 elif any(tt in piecewise_ttypes for tt in ttypes):
+                    # Partial computation in quadloop of f*u[i],
+                    # compute (f*u[i])*v[i] outside quadloop,
+                    # (or with u,v swapped)
                     block_mode = "partial"
                 else:
+                    # Full runtime integration of f*u[i]*v[j],
+                    # can still do partial computation in quadloop of f*u[i]
+                    # but must compute (f*u[i])*v[i] as well inside quadloop.
+                    # (or with u,v swapped)
                     block_mode = "runtime"
             else:
+                # Use full runtime integration if preintegration disabled
                 block_mode = "runtime"
 
             # Carry out decision

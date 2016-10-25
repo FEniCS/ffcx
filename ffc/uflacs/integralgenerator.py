@@ -108,6 +108,7 @@ class IntegralGenerator(object):
         parts += self.generate_element_tables()
         parts += self.generate_tensor_reset()
         parts += self.generate_piecewise_partition()
+        parts += self.generate_preintegrated_dofblocks()
         parts += self.generate_piecewise_dofblock_partition()
 
         # If we have integrals with different number of quadrature points,
@@ -250,6 +251,60 @@ class IntegralGenerator(object):
         return parts
 
 
+    def generate_preintegrated_dofblocks(self):
+        L = self.backend.language
+        A = self.backend.symbols.element_tensor()
+        parts = []
+
+        pir = self.ir["piecewise_ir"]
+        #PB = pir["preintegrated_blocks"]
+        PC = pir["preintegrated_contributions"]
+        for dofblock, contributions in sorted(PC.items()):
+            rank = len(dofblock)
+            for data in contributions:
+                assert data.block_mode == "preintegrate"
+
+                v = pir["V"][data.factor_index]
+                f = self.get_vaccess(v, None)
+
+                # Get loop counter symbols to access A with
+                A_indices = []
+                for i in range(rank):
+                    ia = self.backend.symbols.argument_loop_index(i)
+                    A_indices.append(ia)
+
+                # Offset A indices to define P indices
+                restriction = None
+                assert self.ir["integral_type"] != "interior_facet"
+                entity = self.backend.symbols.entity(self.ir["entitytype"], restriction)
+                P_indices = (entity,) + tuple(A_indices[i] - dofblock[i][0] for i in range(rank))
+
+                # The preintegrated term scaled with piecewise factor
+                P = L.Symbol(data.pname)
+                term = f * P[P_indices]
+
+                # Format flattened index expression to access A
+                flat_index = L.flattened_indices(A_indices, self.ir["tensor_shape"])
+                body = L.AssignAdd(A[flat_index], term)
+
+                # Wrap accumulation in loop nest
+                for i in range(rank-1, -1, -1):
+                    dofrange = dofblock[i]
+                    body = L.ForRange(A_indices[i], dofrange[0], dofrange[1], body=body)
+
+                # Add this block to parts
+                parts.append(body)
+
+        # FIXME: Generate code for preintegrated_contributions
+        # 1) P = weight*u*v;  preintegrate block here
+        # 2) B = f*P;         scale block after quadloop
+        # 3) A[dofblock] += B[:];   add block to A in finalization
+
+        parts = L.commented_code_list(parts,
+            "Preintegrated dofblocks")
+        return parts
+
+
     def generate_piecewise_dofblock_partition(self):
         return self.generate_dofblock_partition(None)
 
@@ -270,7 +325,7 @@ class IntegralGenerator(object):
         # sum_q weight[q]*f*u*v == f*u*v*(sum_q weight[q]) )
 
         pir = self.ir["piecewise_ir"]
-        if num_points is None:
+        if num_points is None:  # NB! meaning piecewise partition, not custom integral
             block_contributions = pir["block_contributions"]
         else:
             vir = self.ir["varying_irs"].get(num_points)
@@ -279,6 +334,9 @@ class IntegralGenerator(object):
         parts = []
         for dofblock, contributions in sorted(block_contributions.items()):
             for blockdata in contributions:
+                # TODO: Generate different code for functional, partial, and runtime
+                assert blockdata.block_mode in ("functional", "partial", "runtime")
+                assert blockdata.block_mode not in ("preintegrate",)
                 ma_data = blockdata.ma_data
                 rank = len(ma_data)
 
