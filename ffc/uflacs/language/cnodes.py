@@ -42,34 +42,34 @@ from ffc.uflacs.language.precedence import PRECEDENCE
 
 ############## Some helper functions
 
-def assign_loop(src, dst, ranges):
-    """Generate a nested loop over a list of ranges, assigning dst to src in the innermost loop.
+def assign_loop(dst, src, ranges):
+    """Generate a nested loop over a list of ranges, assigning src to dst in the innermost loop.
 
     Ranges is a list on the format [(index, begin, end),...].
     """
-    code = Assign(src, dst)
+    code = Assign(dst, src)
     for i, b, e in reversed(ranges):
         code = ForRange(i, b, e, code)
     return code
 
 
-def accumulate_loop(src, dst, ranges):
-    """Generate a nested loop over a list of ranges, adding dst to src in the innermost loop.
+def accumulate_loop(dst, src, ranges):
+    """Generate a nested loop over a list of ranges, adding src to dst in the innermost loop.
 
     Ranges is a list on the format [(index, begin, end),...].
     """
-    code = AssignAdd(src, dst)
+    code = AssignAdd(dst, src)
     for i, b, e in reversed(ranges):
         code = ForRange(i, b, e, code)
     return code
 
 
-def scale_loop(src, dst, ranges):
-    """Generate a nested loop over a list of ranges, multiplying dst with src in the innermost loop.
+def scale_loop(dst, factor, ranges):
+    """Generate a nested loop over a list of ranges, multiplying dst with factor in the innermost loop.
 
     Ranges is a list on the format [(index, begin, end),...].
     """
-    code = AssignMul(src, dst)
+    code = AssignMul(dst, factor)
     for i, b, e in reversed(ranges):
         code = ForRange(i, b, e, code)
     return code

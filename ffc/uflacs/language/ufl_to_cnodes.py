@@ -35,6 +35,17 @@ class UFL2CNodesMixin(object):
         "Generic fallback with error message for missing rules."
         error("Missing C++ formatting rule for expr type {0}.".format(o._ufl_class_))
 
+    # === Formatting rules for scalar literals ===
+
+    #def complex_value(self, o):
+    #    return self.L.ComplexValue(complex(o))
+
+    def float_value(self, o):
+        return self.L.LiteralFloat(float(o))
+
+    def int_value(self, o):
+        return self.L.LiteralInt(int(o))
+
     # === Formatting rules for arithmetic operators ===
 
     def sum(self, o, a, b):
