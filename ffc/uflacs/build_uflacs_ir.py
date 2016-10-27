@@ -139,8 +139,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
 
     # FIXME get from parameters:
     epsilon = 1e-10
-    do_apply_preintegration = False
-    #do_apply_preintegration = True
+    #do_apply_preintegration = False
+    do_apply_preintegration = True
 
     # { ufl coefficient: count }
     ir["coefficient_numbering"] = coefficient_numbering
