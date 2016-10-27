@@ -490,13 +490,27 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                     for mad in blockdata.ma_data:
                         active_table_names.add(mad.tabledata.name)
 
+        # Record all table types before dropping tables
+        ir["unique_table_types"].update(table_types)
+
         # Drop tables not referenced from modified terminals
         # and tables of zeros and ones
-        unused_types = ("zeros", "ones", "quadrature")
-        used_table_names = set(name for name in active_table_names
-                               if name is not None
-                                  and table_types[name] not in unused_types)
-        unique_tables = { name: unique_tables[name] for name in used_table_names }
+        unused_ttypes = ("zeros", "ones", "quadrature")
+        keep_table_names = set()
+        for name in active_table_names:
+            ttype = ir["unique_table_types"][name]
+            if ttype not in unused_ttypes:
+                if name in unique_tables:
+                    keep_table_names.add(name)
+        unique_tables = { name: unique_tables[name]
+                          for name in keep_table_names }
+
+        # Add to global set of all tables
+        for name, table in unique_tables.items():
+            tbl = ir["unique_tables"].get(name)
+            if tbl is not None and not equal_tables(tbl, table, epsilon):
+                error("Table values mismatch with same name.")
+        ir["unique_tables"].update(unique_tables)
 
         # Analyse active terminals to check what we'll need to generate code for
         active_mts = []
@@ -519,14 +533,6 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         # avoid generating quadrature point table otherwise
         need_weights = any(isinstance(mt.terminal, QuadratureWeight)
                            for mt in active_mts)
-
-        # Add to global set of all tables
-        for name, table in unique_tables.items():
-            tbl = ir["unique_tables"].get(name)
-            if tbl is not None and not equal_tables(tbl, table, epsilon):
-                error("Table values mismatch with same name.")
-        ir["unique_tables"].update(unique_tables)
-        ir["unique_table_types"].update(table_types)
 
         # Build IR dict for the given expressions
         expr_ir = {}
