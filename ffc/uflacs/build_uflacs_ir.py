@@ -23,7 +23,7 @@ from collections import defaultdict, namedtuple
 from itertools import chain
 
 from ufl import product, as_ufl
-from ufl.log import error, warning
+from ufl.log import error, warning, debug
 from ufl.checks import is_cellwise_constant
 from ufl.classes import CellCoordinate, FacetCoordinate, QuadratureWeight
 from ufl.measure import custom_integral_types, point_integral_types, facet_integral_types
@@ -531,8 +531,24 @@ def build_uflacs_ir(cell, integral_type, entitytype,
 
         # Figure out if we need to access QuadratureWeight to
         # avoid generating quadrature point table otherwise
-        need_weights = any(isinstance(mt.terminal, QuadratureWeight)
-                           for mt in active_mts)
+        #need_weights = any(isinstance(mt.terminal, QuadratureWeight)
+        #                   for mt in active_mts)
+
+        # Count blocks of each mode
+        block_modes = defaultdict(int)
+        for dofblock, contributions in block_contributions.items():
+            for blockdata in contributions:
+                block_modes[blockdata.block_mode] += 1
+        # Debug output
+        summary = "\n".join("  %d\t%s" % (count, mode)
+                            for mode, count in sorted(block_modes.items()))
+        debug("Blocks of each mode: \n" + summary)
+
+        # If there are any blocks other than preintegrated we need weights
+        if expect_weight and any(mode != "preintegrated" for mode in block_modes):
+            need_weights = True
+        else:
+            need_weights = False
 
         # Build IR dict for the given expressions
         expr_ir = {}
