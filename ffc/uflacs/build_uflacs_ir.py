@@ -139,8 +139,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
 
     # FIXME get from parameters:
     epsilon = 1e-10
-    #do_apply_preintegration = False
-    do_apply_preintegration = True
+    do_apply_preintegration = False
+    #do_apply_preintegration = True
 
     # { ufl coefficient: count }
     ir["coefficient_numbering"] = coefficient_numbering
@@ -211,7 +211,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         z = as_ufl(0.0)
         one = as_ufl(1.0)
         for i, mt in zip(initial_terminal_indices, initial_terminal_data):
-            if do_apply_preintegration and isinstance(mt.terminal, QuadratureWeight):
+            if isinstance(mt.terminal, QuadratureWeight):
                 # Replace quadrature weight with 1.0, will be added back later
                 V[i] = one
             else:
@@ -248,13 +248,6 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         # TODO: Still expecting one target variable in code generation
         assert len(argument_factorizations) == 1
         argument_factorization, = argument_factorizations
-
-        # Preliminary check before implementing weight extraction
-        # This seems to pass all existing regression tests
-        if expect_weight and not do_apply_preintegration:
-            for ma_indices, fi in argument_factorization.items():
-                f = FV[fi]
-                assert has_type(f, QuadratureWeight)
 
         # Store modified arguments in analysed form
         for i in range(len(modified_arguments)):
@@ -351,7 +344,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
             # Decide out how to handle code generation for this dofblock
             if not do_apply_preintegration:
                 # Use full runtime integration by default
-                block_mode = "full"
+                block_mode = "safe"
             else:
                 skip_preintegrated = point_integral_types + custom_integral_types + ("interior_facet",)
                 skip_premultiplied = point_integral_types + custom_integral_types + ("interior_facet",)
@@ -430,7 +423,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                                                        pname)
                 block_is_piecewise = False
 
-            elif block_mode in ("partial", "full"):
+            elif block_mode in ("partial", "full", "safe"):
                 # Translate indices to piecewise context if necessary
                 block_is_piecewise = factor_is_piecewise and not expect_weight
                 ma_data = []
@@ -456,7 +449,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                     blockdata = partial_block_data_t(block_mode,  ttypes,
                                                      factor_index, factor_is_piecewise,
                                                      tuple(ma_data), piecewise_ma_index)
-                elif block_mode == "full":
+                elif block_mode in ("full", "safe"):
                     # Add to contributions:
                     # B[i] = sum_q weight * f * u[i] * v[j];  generated inside quadloop
                     # A[dofblock] += B[i];                    generated after quadloop
@@ -486,7 +479,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
             for blockdata in contributions:
                 if blockdata.block_mode in ("preintegrated", "premultiplied"):
                     active_table_names.add(blockdata.name)
-                elif blockdata.block_mode in ("partial", "full"):
+                elif blockdata.block_mode in ("partial", "full", "safe"):
                     for mad in blockdata.ma_data:
                         active_table_names.add(mad.tabledata.name)
 

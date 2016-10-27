@@ -71,7 +71,7 @@ class FFCBackendAccess(MultiFunction):
         return L.LiteralFloat(float(e))
 
 
-    def argument(self, e, mt, tabledata, num_points):
+    def _argument(self, e, mt, tabledata, num_points):
         L = self.language
         # Expecting only local derivatives and values here
         assert not mt.global_derivatives
@@ -103,6 +103,47 @@ class FFCBackendAccess(MultiFunction):
             idof = iq
         else:
             idof = self.symbols.argument_loop_index(mt.terminal.number())
+
+        # Return direct access to element table
+        return L.Symbol(tabledata.name)[entity][iq][idof - begin]
+
+
+    def argument(self, e, mt, tabledata, num_points):
+        begin = tabledata.begin
+        argindex = self.symbols.argument_loop_index(mt.terminal.number())
+        return self.element_table(e, mt, tabledata, num_points, argindex, begin)
+
+
+    def element_table(self, e, mt, tabledata, num_points, argindex, begin):
+        L = self.language
+        # Expecting only local derivatives and values here
+        assert not mt.global_derivatives
+        # assert mt.global_component is None
+
+        ttype = tabledata.ttype
+
+        if ttype == "zeros":
+            error("Not expecting zero arguments to get this far.")
+            #return L.LiteralFloat(0.0)
+        elif ttype == "ones":
+            debug("Should simplify ones arguments before getting this far.")
+            return L.LiteralFloat(1.0)
+
+        if tabledata.is_uniform:
+            entity = 0
+        else:
+            entity = self.symbols.entity(self.entitytype, mt.restriction)
+
+        if tabledata.is_piecewise:
+            iq = 0
+        else:
+            iq = self.symbols.quadrature_loop_index(num_points)
+
+        if ttype == "quadrature":
+            debug("Should simplify quadrature element arguments before getting this far.")
+            idof = iq
+        else:
+            idof = argindex
 
         # Return direct access to element table
         return L.Symbol(tabledata.name)[entity][iq][idof - begin]
