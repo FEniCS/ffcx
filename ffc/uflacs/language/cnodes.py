@@ -17,8 +17,10 @@
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import print_function  # used in some debugging
+
 from six import string_types
 import numpy
+import numbers
 
 from ffc.uflacs.language.format_value import format_value, format_float
 from ffc.uflacs.language.format_lines import format_indented_lines, Indented
@@ -75,6 +77,32 @@ def scale_loop(dst, factor, ranges):
     return code
 
 
+def is_zero_cexpr(cexpr):
+    return isinstance(cexpr, CExprLiteral) and float(cexpr) == 0.0
+
+
+def is_one_cexpr(cexpr):
+    return isinstance(cexpr, CExprLiteral) and float(cexpr) == 1.0
+
+
+def is_negative_one_cexpr(cexpr):
+    return isinstance(cexpr, CExprLiteral) and float(cexpr) == -1.0
+
+
+def float_product(factors):
+    "Build product of float factors, simplifying ones and zeros and returning 1.0 if empty sequence."
+    factors = [f for f in factors if not is_one_cexpr(f)]
+    if len(factors) == 0:
+        return LiteralFloat(1.0)
+    elif len(factors) == 1:
+        return factors[0]
+    else:
+        for f in factors:
+            if is_zero_cexpr(f):
+                return f
+        return Product(factors)
+
+
 ############## CNode core
 
 class CNode(object):
@@ -114,37 +142,69 @@ class CExpr(CNode):
         return ArrayAccess(self, indices)
 
     def __neg__(self):
+        if is_zero_cexpr(self):
+            return self
         return Neg(self)
 
     def __add__(self, other):
+        if is_zero_cexpr(self):
+            return other
+        if is_zero_cexpr(other):
+            return self
         return Add(self, other)
 
     def __radd__(self, other):
+        if is_zero_cexpr(self):
+            return other
+        if is_zero_cexpr(other):
+            return self
         return Add(other, self)
 
     def __sub__(self, other):
+        if is_zero_cexpr(self):
+            return -other
+        if is_zero_cexpr(other):
+            return self
         return Sub(self, other)
 
     def __rsub__(self, other):
+        if is_zero_cexpr(self):
+            return other
+        if is_zero_cexpr(other):
+            return -self
         return Sub(other, self)
 
     def __mul__(self, other):
+        if is_zero_cexpr(self):
+            return self
+        if is_zero_cexpr(other):
+            return other
         return Mul(self, other)
 
     def __rmul__(self, other):
+        if is_zero_cexpr(self):
+            return self
+        if is_zero_cexpr(other):
+            return other
         return Mul(other, self)
 
     def __div__(self, other):
+        if is_zero_cexpr(other):
+            raise ValueError("Division by zero!")
+        if is_zero_cexpr(self):
+            return self
         return Div(self, other)
 
     def __rdiv__(self, other):
+        if is_zero_cexpr(self):
+            raise ValueError("Division by zero!")
+        if is_zero_cexpr(other):
+            return other
         return Div(other, self)
 
-    def __truediv__(self, other):
-        return Div(self, other)
+    __truediv__ = __div__
 
-    def __rtruediv__(self, other):
-        return Div(other, self)
+    __rtruediv__ = __rdiv__
 
     def __floordiv__(self, other):
         return NotImplemented
@@ -169,8 +229,9 @@ class CExprTerminal(CExpr):
 
 class CExprLiteral(CExprTerminal):
     "A float or int literal value."
-    __slots__ = ("value",)
+    __slots__ = ()
     precedence = PRECEDENCE.LITERAL
+
 
 class Null(CExprLiteral):
     "A null pointer literal."
@@ -185,6 +246,7 @@ class Null(CExprLiteral):
 
     def __eq__(self, other):
         return isinstance(other, Null)
+
 
 class LiteralFloat(CExprLiteral):
     "A floating point literal value."
@@ -201,11 +263,14 @@ class LiteralFloat(CExprLiteral):
     def __eq__(self, other):
         return isinstance(other, LiteralFloat) and self.value == other.value
 
-    def __nonzero__(self):
+    def __bool__(self):
         return bool(self.value)
+
+    __nonzero__ = __bool__
 
     def __float__(self):
         return float(self.value)
+
 
 class LiteralInt(CExprLiteral):
     "An integer literal value."
@@ -222,11 +287,17 @@ class LiteralInt(CExprLiteral):
     def __eq__(self, other):
         return isinstance(other, LiteralInt) and self.value == other.value
 
-    def __nonzero__(self):
+    def __bool__(self):
         return bool(self.value)
+
+    __nonzero__ = __bool__
 
     def __int__(self):
         return int(self.value)
+
+    def __float__(self):
+        return float(self.value)
+
 
 class LiteralBool(CExprLiteral):
     "A boolean literal value."
@@ -243,11 +314,11 @@ class LiteralBool(CExprLiteral):
     def __eq__(self, other):
         return isinstance(other, LiteralBool) and self.value == other.value
 
-    def __nonzero__(self):
-        return bool(self.value)
-
     def __bool__(self):
         return bool(self.value)
+
+    __nonzero__ = __bool__
+
 
 class LiteralString(CExprLiteral):
     "A boolean literal value."
@@ -628,15 +699,20 @@ class FlattenedArray(object):
         if not isinstance(indices, (list,tuple)):
             indices = (indices,)
         n = len(indices)
-        i, s = (indices[0], self.strides[0])
-        literal_one = LiteralInt(1)
-
-        flat = (i if s == literal_one else s * i)
-        if self.offset is not None:
-            flat = self.offset + flat
-        for i, s in zip(indices[1:n], self.strides[1:n]):
-            flat = flat + (i if s == literal_one else s * i)
-
+        if n == 0:
+            # Handle scalar case, allowing dims=() and indices=() for A[0]
+            if len(self.strides) != 0:
+                raise ValueError("Empty indices for nonscalar array.")
+            flat = LiteralInt(0)
+        else:
+            i, s = (indices[0], self.strides[0])
+            literal_one = LiteralInt(1)
+            flat = (i if s == literal_one else s * i)
+            if self.offset is not None:
+                flat = self.offset + flat
+            for i, s in zip(indices[1:n], self.strides[1:n]):
+                flat = flat + (i if s == literal_one else s * i)
+        # Delay applying ArrayAccess until we have all indices
         if n == len(self.strides):
             return ArrayAccess(self.array, flat)
         else:
@@ -740,12 +816,8 @@ class Call(CExprOperator):
 
 ############## Convertion function to expression nodes
 
-number_types = (int, float, complex, numpy.number)
-
-
-def _is_zero(values):
-    global number_types
-    if isinstance(values, number_types + (LiteralFloat, LiteralInt)):
+def _is_zero_valued(values):
+    if isinstance(values, (numbers.Number, LiteralFloat, LiteralInt)):
         return float(values) == 0.0
     else:
         return numpy.count_nonzero(values) == 0
@@ -756,7 +828,6 @@ def as_cexpr(node):
 
     Accepts CExpr nodes, treats int and float as literals, and treats a string as a symbol.
     """
-    global number_types
     if isinstance(node, CExpr):
         return node
     elif isinstance(node, (int, numpy.integer)):
@@ -1107,7 +1178,7 @@ class ArrayDecl(CStatement):
         if self.values is None:
             # Undefined initial values
             return decl + ";"
-        elif _is_zero(self.values):
+        elif _is_zero_valued(self.values):
             # Zero initial values
             # (NB! C++ style zero initialization, not sure about other target languages)
             return decl + " = {};"

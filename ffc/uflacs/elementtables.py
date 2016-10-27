@@ -627,12 +627,14 @@ def build_optimized_tables(num_points, quadrature_rules,
     mt_table_ranges = offset_restricted_table_ranges(
         mt_table_ranges, mt_table_names, tables, modified_terminals)
 
-    # Delete unused tables and compress piecewise constant tables
+    # Delete tables not referenced by modified terminals
     used_names = set(tabledata[0] for tabledata in mt_table_ranges.values())
     unused_names = set(unique_tables.keys()) - used_names
     for uname in unused_names:
         del table_types[uname]
         del unique_tables[uname]
+
+    # Compress piecewise constant tables
     for uname, tabletype in table_types.items():
         if tabletype in ("piecewise", "fixed"):
             # Reduce table to dimension 1 along num_points axis in generated code
@@ -640,8 +642,6 @@ def build_optimized_tables(num_points, quadrature_rules,
         if tabletype in ("uniform", "fixed"):
             # Reduce table to dimension 1 along num_entities axis in generated code
             unique_tables[uname] = unique_tables[uname][0:1,:,:]
-        if tabletype in ("zeros", "ones", "quadrature"):
-            del unique_tables[uname]
 
     # Change tables to point to existing optimized tables
     name_map = {}

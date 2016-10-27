@@ -37,6 +37,9 @@ class UFL2CNodesMixin(object):
 
     # === Formatting rules for scalar literals ===
 
+    def zero(self, o):
+        return self.L.LiteralFloat(0.0)
+
     #def complex_value(self, o):
     #    return self.L.ComplexValue(complex(o))
 

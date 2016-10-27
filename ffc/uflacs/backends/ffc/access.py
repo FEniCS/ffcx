@@ -77,43 +77,45 @@ class FFCBackendAccess(MultiFunction):
         assert not mt.global_derivatives
         # assert mt.global_component is None
 
-        # No need to store basis function value in its own
-        # variable, just get table value directly
-        uname, begin, end, ttype = tabledata
+        ttype = tabledata.ttype
+        begin = tabledata.begin
+        end = tabledata.end
 
         if ttype == "zeros":
             error("Not expecting zero arguments to get this far.")
-            return L.LiteralFloat(0.0)
+            #return L.LiteralFloat(0.0)
         elif ttype == "ones":
-            warning("Should simplify ones arguments before getting this far.")
+            debug("Should simplify ones arguments before getting this far.")
             return L.LiteralFloat(1.0)
 
-        if ttype in ("uniform", "fixed"):
+        if tabledata.is_uniform:
             entity = 0
         else:
             entity = self.symbols.entity(self.entitytype, mt.restriction)
 
-        if ttype in ("piecewise", "fixed"):
+        if tabledata.is_piecewise:
             iq = 0
         else:
             iq = self.symbols.quadrature_loop_index(num_points)
 
         if ttype == "quadrature":
-            warning("Should simplify quadrature element arguments before getting this far.")
+            debug("Should simplify quadrature element arguments before getting this far.")
             idof = iq
         else:
             idof = self.symbols.argument_loop_index(mt.terminal.number())
 
-        uname = L.Symbol(uname)
-        return uname[entity][iq][idof - begin]
+        # Return direct access to element table
+        return L.Symbol(tabledata.name)[entity][iq][idof - begin]
 
 
     def coefficient(self, e, mt, tabledata, num_points):
-        uname, begin, end, ttype = tabledata
+        ttype = tabledata.ttype
+        begin = tabledata.begin
+        end = tabledata.end
 
         if ttype == "zeros":
             # FIXME: Remove at earlier stage so dependent code can also be removed
-            warning("Not expecting zero coefficients to get this far.")
+            debug("Not expecting zero coefficients to get this far.")
             L = self.language
             return L.LiteralFloat(0.0)
         elif ttype == "ones" and (end - begin) == 1:

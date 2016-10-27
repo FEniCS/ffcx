@@ -55,8 +55,9 @@ class IntegralGenerator(object):
         # Block contributions collected during generation to be added to A at the end
         self.finalization_blocks = defaultdict(list)
 
-        # Counter for name assignment
-        self.block_counter = 0
+        # Set of counters used for assigning names to intermediate variables
+        # TODO: Should this be part of the backend symbols? Doesn't really matter now.
+        self.symbol_counters = defaultdict(int)
 
 
     def get_includes(self):
@@ -136,6 +137,14 @@ class IntegralGenerator(object):
         if f is None:
             f = self.scopes[None][v]
         return f
+
+
+    def new_temp_symbol(self, basename):
+        "Create a new code symbol named basename + running counter."
+        L = self.backend.language
+        name = "%s%d" % (basename, self.symbol_counters[basename])
+        self.symbol_counters[basename] += 1
+        return L.Symbol(name)
 
 
     def generate(self):
@@ -458,18 +467,27 @@ class IntegralGenerator(object):
 
 
     def generate_block_parts(self, num_points, dofblock, blockdata):
-        """
+        """Generate and return code parts for a given block.
+
+        Returns parts occuring before, inside, and after
+        the quadrature loop identified by num_points.
+
+        Should be called with num_points=None for quadloop-independent blocks.
         """
         L = self.backend.language
 
-        # TODO: Define name in backend symbols
+        # The parts to return
+        preparts = []
+        quadparts = []
+        postparts = []
+
+        # TODO: Define names in backend symbols?
         blocknames = {
             "preintegrated": "BI",
-            "premultiply": "BM",
+            "premultiplied": "BM",
             "partial": "BP",
             "full": "BF",
             }
-        basename = blocknames[blockdata.block_mode]
 
         block_rank = len(dofblock)
         blockdims = tuple(end - begin for begin, end in dofblock)
@@ -490,15 +508,13 @@ class IntegralGenerator(object):
                 B_indices.append(self.backend.symbols.argument_loop_index(i))
         B_indices = tuple(B_indices)
 
-        # Define unique block name
-        B = L.Symbol("%s%d" % (basename, self.block_counter))
-        self.block_counter += 1
+        # Define unique block symbol
+        B = self.new_temp_symbol(blocknames[blockdata.block_mode])
 
         # Add initialization of this block to parts
         # For all modes, block definition occurs before quadloop
-        preparts = [L.ArrayDecl("double", B, blockdims, 0,
-                                alignas=self.ir["alignas"])]
-
+        preparts.append(L.ArrayDecl("double", B, blockdims, 0,
+                                    alignas=self.ir["alignas"]))
 
         # Get factor expression
         if blockdata.factor_is_piecewise:
@@ -507,164 +523,127 @@ class IntegralGenerator(object):
             v = self.ir["varying_irs"][num_points]["V"][blockdata.factor_index]
         f = self.get_var(num_points, v)
 
+        # Quadrature weight was removed in representation, add it back now
+        if num_points is None:
+            weight = L.LiteralFloat(1.0)
+        else:
+            # The weight doesn't actually depend on anything
+            # other than which quadrature rule it belongs to
+            weight = self.backend.access.quadrature_weight(None, None, None, num_points)
 
-        if blockdata.block_mode == "full":
-            quadparts = []
-
-            # Add code in layers starting with innermost A[...] += product(factors)
-            factors = []
-            if f != L.LiteralFloat(1.0) and f != L.LiteralInt(1):
-                factors.append(f)
-
-            # FIXME: Add QuadratureWeight to factors!
-
-            # Add table access to argument factors, unless it's always 1.0
+        if blockdata.block_mode in ("full", "partial"):
+            # Collect modified arguments
             ma_data = blockdata.ma_data
             rank = len(ma_data)
             assert rank == block_rank
-
-            # Skip piecewise index in partial mode
             mts = []
             for i in range(rank):
-                if ttypes[i] in ("piecewise", "fixed"):
-                    mt = self.ir["piecewise_ir"]["modified_arguments"][ma_data[i].ma_index]
-                    mts.append((i, mt))
-                elif ttypes[i] in ("uniform", "varying"):
-                    mt = self.ir["varying_irs"][num_points]["modified_arguments"][ma_data[i].ma_index]
-                    mts.append((i, mt))
-                elif ttypes[i] not in ("quadrature", "ones"):
-                    error("Not expecting table type %s in dofblock generation." % (ttypes[i],))
+                if blockdata.block_mode == "partial" and i == blockdata.piecewise_ma_index:
+                    # Skip the piecewise index, to be applied after loop
+                    continue
 
-            for i, mt in mts:
+                mad = ma_data[i]
+                td = mad.tabledata
+
+                if td.ttype in ("quadrature", "ones"):
+                    # Skip factors that contribute as 1.0
+                    # FIXME: This assumes that quadrature ttype is correctly exploited in indexing!
+                    continue
+
+                if td.is_piecewise:
+                    # ma_index refers to piecewise scope  # TODO: Make this an attribute of blockdata
+                    scope = self.ir["piecewise_ir"]["modified_arguments"]
+                else:
+                    # ma_index refers to current varying scope
+                    scope = self.ir["varying_irs"][num_points]["modified_arguments"]
+
+                mts.append((i, scope[mad.ma_index], td))
+
+            # Translate modified terminals to code
+            arg_factors = []
+            for i, mt, td in mts:
                 access = self.backend.access(mt.terminal,
-                    mt, ma_data[i].tabledata, num_points)
-                factors.append(access)
+                    mt, td, num_points)
+                arg_factors.append(access)
 
-            # Special case where all factors are 1.0 and dropped
-            if factors:
-                rhs = L.Product(factors)
-            else:
-                rhs = L.LiteralFloat(1.0)
+        if blockdata.block_mode == "full":
+            # Multiply collected factors
+            B_rhs = L.float_product([f, weight] + arg_factors)
 
-            # Write result to block
-            body = L.AssignAdd(B[B_indices], rhs)  # NB! 
-            for i in range(block_rank-1, -1, -1):
+            # Add result to block inside quadloop
+            body = L.AssignAdd(B[B_indices], B_rhs)  # NB! += not =
+            for i in reversed(range(block_rank)):
                 if ttypes[i] != "quadrature":
                     body = L.ForRange(B_indices[i], 0, dofblock[i][1] - dofblock[i][0], body=body)
             quadparts += [body]
 
         elif blockdata.block_mode == "partial":
-            quadparts = []
+            # Multiply collected factors
+            P_rhs = L.float_product([f, weight] + arg_factors)
 
-            # Add code in layers starting with innermost A[...] += product(factors)
-            factors = []
-            if f != L.LiteralFloat(1.0) and f != L.LiteralInt(1):
-                factors.append(f)
+            # Get indices and dimensions right here...  # FIXME: Validate that this transposes correctly!
+            assert rank == 2
+            i = blockdata.piecewise_ma_index
+            not_piecewise_index = 1 - i
+            P_range = dofblock[not_piecewise_index]
+            P_dim = P_range[1] - P_range[0]
+            P_index = self.backend.symbols.argument_loop_index(not_piecewise_index)
 
-            # FIXME: Add QuadratureWeight to factors!
+            # Declare P table in preparts
+            P = self.new_temp_symbol("PM")
+            preparts.append(L.ArrayDecl("double", P, P_dim, 0,
+                                        alignas=self.ir["alignas"]))
 
-            # Add table access to argument factors, unless it's always 1.0
-            ma_data = blockdata.ma_data
-            rank = len(ma_data)
-            assert rank == block_rank
+            # Accumulate P += weight * f * args in quadrature loop
+            body = L.AssignAdd(P[P_index], P_rhs)
+            if ttypes[i] != "quadrature":  # FIXME: What does this mean?
+                body = L.ForRange(P_index, 0, P_dim, body=body)
+            quadparts.append(body)
 
-            # Skip piecewise index in partial mode
-            ind = [i for i in range(rank)]
-            if blockdata.block_mode == "partial":            
-                ind.remove()
-
-            mts = []
-            for i in range(rank):
-                if i == blockdata.piecewise_index:
-                    # Skip the piecewise index, to be applied after loop
-                    pass
-                elif ttypes[i] in ("piecewise", "fixed"):
-                    mt = self.ir["piecewise_ir"]["modified_arguments"][ma_data[i].ma_index]
-                    mts.append((i, mt))
-                elif ttypes[i] in ("uniform", "varying"):
-                    mt = self.ir["varying_irs"][num_points]["modified_arguments"][ma_data[i].ma_index]
-                    mts.append((i, mt))
-                elif ttypes[i] not in ("quadrature", "ones"):
-                    error("Not expecting table type %s in dofblock generation." % (ttypes[i],))
-
-            for i, mt in mts:
-                access = self.backend.access(mt.terminal,
-                    mt, ma_data[i].tabledata, num_points)
-                factors.append(access)
-
-            # Special case where all factors are 1.0 and dropped
-            if factors:
-                rhs = L.Product(factors)
-            else:
-                rhs = L.LiteralFloat(1.0)
-
-            # FIXME: Declare P table in preparts
-            P = FIXME
-
-            # FIXME: Add P += rhs to quadparts
-            P += rhs  # FIXME
-
-
-            # FIXME: Is it enough to swap B_indices?
-            if blockdata.piecewise_index == 1:
-                error("FIXME: Current code would transpose block contribution with this optimization...")
-
-
-            # Define rhs as product of piecewise argument and integrated vector
-            i = blockdata.piecewise_index
+            # Get access to element table for piecewise argument
             mt = self.ir["piecewise_ir"]["modified_arguments"][ma_data[i].ma_index]
-            piecewise_access = self.backend.access(mt.terminal,
+            piecewise_argument = self.backend.access(mt.terminal,
                 mt, ma_data[i].tabledata, num_points)
-            rhs = piecewise_access * P
 
+            # Define B = B_rhs = piecewise_argument[:] * P[:], where P[:] = sum_q weight * f * other_argument[:]
+            B_rhs = piecewise_argument * P[P_index]
 
-        elif blockdata.block_mode == "premultiplied":
-            quadparts = []
-
-            # Currently not handling facet-facet combinations for premultiplied blocks
+        if blockdata.block_mode in ("premultiplied", "preintegrated"):
+            # Currently not handling facet-facet combinations for precomputed blocks
             assert self.ir["integral_type"] != "interior_facet"
-
-            # FIXME: Define FI in preparts
-            # FIXME: Add QuadratureWeight to factors
-            # FIXME: Add FI += f*weight to quadparts
-
-            # Get the preintegrated block
-            P = L.Symbol(blockdata.name)
+            # Get the current cell entity
             entity = self.backend.symbols.entity(self.ir["entitytype"], None)
-            P_indices = (entity,) + B_indices
 
-            # Define expression for scaled preintegrated block B = FI * P
-            rhs = FI * P[P_indices]
+        if blockdata.block_mode == "premultiplied":
+            # Declare FI in preparts
+            FI = self.new_temp_symbol("FI")
+            preparts.append(L.VariableDecl("double", FI, 0))
+
+            # Accumulate FI += weight * f in quadparts
+            quadparts.append(L.AssignAdd(FI, L.float_product([weight, f])))
+
+            # Define B = B_rhs = FI * P where FI = sum_q weight*f, and P = u * v
+            B_rhs = L.float_product([FI, L.Symbol(blockdata.name)[(entity,) + B_indices]])
 
         elif blockdata.block_mode == "preintegrated":
-            quadparts = []
-
             # Preintegrated should never get into quadloops
             assert num_points == None
 
-            # Currently not handling facet-facet combinations for preintegrated blocks
-            assert self.ir["integral_type"] != "interior_facet"
-
-            # Get the preintegrated block
-            P = L.Symbol(blockdata.name)
-            entity = self.backend.symbols.entity(self.ir["entitytype"], None)
-            P_indices = (entity,) + B_indices
-
-            # Define expression for scaled preintegrated block B = f * P
-            rhs = f * P[P_indices]
+            # Define B = B_rhs = f * P where P = sum_q weight * u * v
+            B_rhs = L.float_product([f, L.Symbol(blockdata.name)[(entity,) + B_indices]])
 
         # For full, partial, premultiplied, quadloop is non-empty
+        if blockdata.block_mode in ("full", "partial", "premultiplied") and not quadparts:
+            error("Not expecting empty quadparts for block mode %s." % (blockdata.block_mode,))
 
         # For partial, premultiplied, and preintegrated, block write occurs after quadloop
-        if blockdata.block_mode == "full":
-            postparts = []
-        else:
+        if blockdata.block_mode != "full":
             # Write result to block
-            body = L.Assign(B[B_indices], rhs)  # NB! = not +=
-            for i in range(block_rank-1, -1, -1):
+            body = L.Assign(B[B_indices], B_rhs)  # NB! = not +=
+            for i in reversed(range(block_rank)):
                 if ttypes[i] != "quadrature":
                     body = L.ForRange(B_indices[i], 0, dofblock[i][1] - dofblock[i][0], body=body)
-            postparts = [body]
+            postparts.append(body)
 
         return B, preparts, quadparts, postparts
 
@@ -747,7 +726,7 @@ class IntegralGenerator(object):
 
                 # Add components of all B's to A component in loop nest
                 body = L.AssignAdd(A[A_indices], term)
-                for i in range(rank-1, -1, -1):
+                for i in reversed(range(rank)):
                     # TODO: need ttypes associated with this B to deal
                     # with loop dropping for quadrature elements:
                     # if ttypes[i] != "quadrature":
