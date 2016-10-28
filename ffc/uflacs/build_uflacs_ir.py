@@ -57,7 +57,7 @@ ma_data_t = namedtuple(
     ["ma_index", "tabledata"]
     )
 
-common_block_data_fields = ["block_mode", "ttypes", "factor_index", "factor_is_piecewise", "unames"]
+common_block_data_fields = ["block_mode", "ttypes", "factor_index", "factor_is_piecewise", "unames", "restrictions"]
 common_block_data_t = namedtuple(
     "common_block_data_t",
     common_block_data_fields
@@ -341,6 +341,17 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                                      ttype in uniform_ttypes)
                         for tr, ttype in zip(trs, ttypes))
 
+            # Collect relevant restrictions to identify blocks
+            # correctly in interior facet integrals
+            block_restrictions = []
+            for i, ma in enumerate(ma_indices):
+                if tds[i].is_uniform:
+                    r = None
+                else:
+                    r = modified_arguments[ma].restriction
+                block_restrictions.append(r)
+            block_restrictions = tuple(block_restrictions)
+
             # Store piecewise status for fi and translate
             # index to piecewise scope if relevant
             factor_is_piecewise = FV_piecewise[fi]
@@ -348,6 +359,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 factor_index = pe2i[FV[fi]]
             else:
                 factor_index = fi
+
+            # TODO: Not reusing transposed blocks anywhere
 
             # Decide out how to handle code generation for this dofblock
             if not do_apply_preintegration:
@@ -406,7 +419,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 block_unames = (pname,)
                 blockdata = preintegrated_block_data_t(block_mode, ttypes,
                                                        factor_index, factor_is_piecewise,
-                                                       block_unames,
+                                                       block_unames, block_restrictions,
                                                        pname)
                 block_is_piecewise = True
 
@@ -431,7 +444,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 block_unames = (pname,)
                 blockdata = premultiplied_block_data_t(block_mode, ttypes,
                                                        factor_index, factor_is_piecewise,
-                                                       block_unames,
+                                                       block_unames, block_restrictions,
                                                        pname)
                 block_is_piecewise = False
 
@@ -463,7 +476,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                     block_unames = (unames[not_piecewise_ma_index],)
                     blockdata = partial_block_data_t(block_mode,  ttypes,
                                                      factor_index, factor_is_piecewise,
-                                                     block_unames,
+                                                     block_unames, block_restrictions,
                                                      tuple(ma_data), piecewise_ma_index)
                 elif block_mode in ("full", "safe"):
                     # Add to contributions:
@@ -473,7 +486,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                     block_unames = unames
                     blockdata = full_block_data_t(block_mode, ttypes,
                                                   factor_index, factor_is_piecewise,
-                                                  block_unames,
+                                                  block_unames, block_restrictions,
                                                   tuple(ma_data))
             else:
                 error("Invalid block_mode %s" % (block_mode,))

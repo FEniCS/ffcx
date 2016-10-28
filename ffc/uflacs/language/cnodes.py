@@ -1447,11 +1447,11 @@ class For(CStatement):
         # in the init statement/expression here:
         init = self.init.cs_format()
         assert isinstance(init, string_types)
-        assert init.rstrip().endswith(";")
+        init = init.rstrip(" ;")
 
         check = self.check.ce_format()
         update = self.update.ce_format()
-        
+
         prelude = "for (" + init + "; " + check + "; " + update + ")"
         body = Indented(self.body.cs_format())
 
