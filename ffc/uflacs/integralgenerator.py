@@ -27,6 +27,7 @@ from ufl.measure import custom_integral_types, point_integral_types
 from ffc.log import error, warning
 
 from ffc.uflacs.analysis.modified_terminals import analyse_modified_terminal, is_modified_terminal
+from ffc.uflacs.build_uflacs_ir import get_common_block_data
 
 
 class IntegralGenerator(object):
@@ -145,6 +146,16 @@ class IntegralGenerator(object):
         name = "%s%d" % (basename, self.symbol_counters[basename])
         self.symbol_counters[basename] += 1
         return L.Symbol(name)
+
+
+    def get_temp_symbol(self, tempname, key):
+        key = (tempname,) + key
+        s = self.shared_blocks.get(key)
+        defined = s is not None
+        if not defined:
+            s = self.new_temp_symbol(tempname)
+            self.shared_blocks[key] = s
+        return s, defined
 
 
     def generate(self):
@@ -442,7 +453,8 @@ class IntegralGenerator(object):
             blockdims = tuple(end - begin for begin, end in dofblock)
             for blockdata in contributions:
                 # Get symbol for already defined block B if it exists
-                B = self.shared_blocks.get(blockdata)
+                common_block_data = get_common_block_data(blockdata)
+                B = self.shared_blocks.get(common_block_data)
                 if B is None:
                     # Define code for block depending on mode
                     B, block_preparts, block_quadparts, block_postparts = \
@@ -458,7 +470,7 @@ class IntegralGenerator(object):
                     postparts.extend(block_postparts)
 
                     # Store reference for reuse
-                    self.shared_blocks[blockdata] = B
+                    self.shared_blocks[common_block_data] = B
 
                 # Add A[dofblock] += B[...] to finalization
                 self.finalization_blocks[dofblock].append(B)
@@ -482,6 +494,8 @@ class IntegralGenerator(object):
         postparts = []
 
         # TODO: Define names in backend symbols?
+        #tempnames = self.backend.symbols.block_temp_names
+        #blocknames = self.backend.symbols.block_names
         tempnames = {
             "preintegrated": "TI",
             "premultiplied": "TM",
@@ -495,6 +509,13 @@ class IntegralGenerator(object):
             "full": "BF",
             "safe": "BS",
             }
+
+        fwtempname = "fw"
+        tempname = tempnames[blockdata.block_mode]
+        blockname = blocknames[blockdata.block_mode]
+
+        # Define unique block symbol
+        B = self.new_temp_symbol(blockname)
 
         block_rank = len(dofblock)
         blockdims = tuple(end - begin for begin, end in dofblock)
@@ -514,9 +535,6 @@ class IntegralGenerator(object):
             else:
                 B_indices.append(self.backend.symbols.argument_loop_index(i))
         B_indices = tuple(B_indices)
-
-        # Define unique block symbol
-        B = self.new_temp_symbol(blocknames[blockdata.block_mode])
 
         # Add initialization of this block to parts
         # For all modes, block definition occurs before quadloop
@@ -538,45 +556,41 @@ class IntegralGenerator(object):
             # other than which quadrature rule it belongs to
             weight = self.backend.access.quadrature_weight(None, None, None, num_points)
 
+        # Fetch code to access modified arguments
         if blockdata.block_mode in ("safe", "full", "partial"):
-            # Collect modified arguments
-            ma_data = blockdata.ma_data
-            rank = len(ma_data)
-            assert rank == block_rank
-            mts = []
-            for i in range(rank):
-                if blockdata.block_mode == "partial" and i == blockdata.piecewise_ma_index:
-                    # Skip the piecewise index, to be applied after loop
-                    continue
-
-                mad = ma_data[i]
+            arg_factors = []
+            for i in range(block_rank):
+                mad = blockdata.ma_data[i]
                 td = mad.tabledata
-
-                if td.ttype in ("quadrature", "ones"):
-                    # Skip factors that contribute as 1.0
-                    # FIXME: This assumes that quadrature ttype is correctly exploited in indexing!
-                    continue
-
                 if td.is_piecewise:
-                    # ma_index refers to piecewise scope  # TODO: Make this an attribute of blockdata
                     scope = self.ir["piecewise_ir"]["modified_arguments"]
                 else:
-                    # ma_index refers to current varying scope
                     scope = self.ir["varying_irs"][num_points]["modified_arguments"]
-
-                mts.append((i, scope[mad.ma_index], td))
-
-            # Translate modified terminals to code
-            arg_factors = []
-            for i, mt, td in mts:
-                # FIXME: access.argument is too magic with its indices, does this work around the problem? Another one down there.
+                mt = scope[mad.ma_index]
+                # Translate modified terminal to code
+                # FIXME: access.argument is too magic with its indices,
+                # does this work around the problem? Another one down there.
                 access = self.backend.access.element_table(mt.terminal,
                     mt, td, num_points, B_indices[i], 0)
                 arg_factors.append(access)
+            assert len(arg_factors) == block_rank
+
+        # Define fw = f * weight
+        if blockdata.block_mode in ("safe", "full", "partial"):
+            fw_rhs = L.float_product([f, weight])
+            if not isinstance(fw_rhs, L.Product):
+                fw = fw_rhs
+            else:
+                # Define and cache scalar temp variable
+                key = (num_points, blockdata.factor_index, blockdata.factor_is_piecewise)
+                fw, defined = self.get_temp_symbol(fwtempname, key)
+                if not defined:
+                    quadparts.append(L.VariableDecl("const double", fw, fw_rhs))
 
         if blockdata.block_mode == "safe":
             # Collect scalar factors
-            B_rhs = L.float_product([f, weight] + arg_factors)
+            B_rhs = L.float_product([fw] + arg_factors)
+
             # Add result to block inside quadloop
             body = L.AssignAdd(B[B_indices], B_rhs)  # NB! += not =
             for i in reversed(range(block_rank)):
@@ -585,49 +599,38 @@ class IntegralGenerator(object):
             quadparts += [body]
 
         elif blockdata.block_mode == "full":
-            # Collect scalar factors
-            fw_rhs = L.float_product([f, weight])
-
-            if len(arg_factors) == 0:
-                # Functional
-                B_rhs = fw_rhs
+            if block_rank < 2:
+                # Multiply collected factors
+                B_rhs = L.float_product([fw] + arg_factors)
             else:
-                # Define scalar temp variable
-                fw = self.new_temp_symbol("s" + tempnames[blockdata.block_mode])
-                quadparts.append(L.VariableDecl("const double", fw, fw_rhs))
+                # TODO: Pick arg with smallest dimension, or pick
+                # based on global optimization to reuse more blocks
+                i = 0  # Index selected for precomputation
+                j = 1 - i
 
-                if len(arg_factors) == 1:
-                    # Multiply collected factors
-                    B_rhs = L.float_product([fw] + arg_factors)
+                P_index = B_indices[i]
 
-                elif len(arg_factors) == 2:
-                    # TODO: Pick arg with smallest dimension, or pick
-                    # based on global optimization to reuse more blocks
-                    i = 0  # Precomputation index
-                    j = 1 - i
+                key = (num_points, blockdata.factor_index, blockdata.factor_is_piecewise,
+                       arg_factors[i].ce_format())
+                P, defined = self.get_temp_symbol(tempname, key)
+                if not defined:
+                    # TODO: If FE table is varying and only used in contexts
+                    # where it's multiplied by weight, we can premultiply it!
+                    # Then this would become P = f * preweighted_FE_table[:].
 
-                    # Multiply collected factors
-                    P_rhs = L.float_product([fw, arg_factors[i]])
-
+                    # Define and compute intermediate value
+                    # P[:] = (weight * f) * args[i][:]
+                    # inside quadrature loop
                     P_dim = blockdims[i]
-                    P_index = B_indices[i]
-                    FE_index = B_indices[j]
-
-                    # Declare P table in preparts
-                    P = self.new_temp_symbol(tempnames[blockdata.block_mode])
                     quadparts.append(L.ArrayDecl("double", P, P_dim, None,
-                                                alignas=self.ir["alignas"]))
-
-                    # Compute intermediate value P += (weight * f) * args[0] inside quadrature loop
+                                                 alignas=self.ir["alignas"]))
+                    P_rhs = L.float_product([fw, arg_factors[i]])
                     body = L.Assign(P[P_index], P_rhs)
                     #if ttypes[i] != "quadrature":  # FIXME: What does this mean here?
                     body = L.ForRange(P_index, 0, P_dim, body=body)
                     quadparts.append(body)
 
-                    if FE_index != arg_factors[j].indices[2]:
-                        if FE_index not in (arg_factors[j].indices[2].lhs, arg_factors[j].indices[2].rhs):
-                            import ipdb; ipdb.set_trace()
-                    B_rhs = P[P_index] * arg_factors[j]
+                B_rhs = P[P_index] * arg_factors[j]
 
             # Add result to block inside quadloop
             body = L.AssignAdd(B[B_indices], B_rhs)  # NB! += not =
@@ -638,37 +641,33 @@ class IntegralGenerator(object):
             quadparts += [body]
 
         elif blockdata.block_mode == "partial":
-            # Multiply collected factors
-            P_rhs = L.float_product([f, weight] + arg_factors)
-
             # Get indices and dimensions right here...  # FIXME: Validate that this transposes correctly!
-            assert rank == 2
+            assert block_rank == 2
             i = blockdata.piecewise_ma_index
             not_piecewise_index = 1 - i
 
-            P_dim = blockdims[not_piecewise_index]
             P_index = self.backend.symbols.argument_loop_index(not_piecewise_index)
 
-            # Declare P table in preparts
-            P = self.new_temp_symbol(tempnames[blockdata.block_mode])
-            preparts.append(L.ArrayDecl("double", P, P_dim, 0,
-                                        alignas=self.ir["alignas"]))
+            key = (num_points, blockdata.factor_index, blockdata.factor_is_piecewise,
+                   arg_factors[not_piecewise_index].ce_format())
+            P, defined = self.get_temp_symbol(tempname, key)
+            if not defined:
+                # Declare P table in preparts
+                P_dim = blockdims[not_piecewise_index]
+                preparts.append(L.ArrayDecl("double", P, P_dim, 0,
+                                            alignas=self.ir["alignas"]))
 
-            # Accumulate P += weight * f * args in quadrature loop
-            body = L.AssignAdd(P[P_index], P_rhs)
-            if ttypes[i] != "quadrature":  # FIXME: What does this mean?
-                body = L.ForRange(P_index, 0, P_dim, body=body)
-            quadparts.append(body)
+                # Multiply collected factors
+                P_rhs = L.float_product([fw, arg_factors[not_piecewise_index]])
 
-            # Get access to element table for piecewise argument
-            mt = self.ir["piecewise_ir"]["modified_arguments"][ma_data[i].ma_index]
-            # FIXME: access.argument is too magic with its indices
-            td = ma_data[i].tabledata
-            piecewise_argument = self.backend.access.element_table(mt.terminal,
-                    mt, td, num_points, B_indices[i], 0)
+                # Accumulate P += weight * f * args in quadrature loop
+                body = L.AssignAdd(P[P_index], P_rhs)
+                if ttypes[i] != "quadrature":  # FIXME: What does this mean?
+                    body = L.ForRange(P_index, 0, P_dim, body=body)
+                quadparts.append(body)
 
             # Define B = B_rhs = piecewise_argument[:] * P[:], where P[:] = sum_q weight * f * other_argument[:]
-            B_rhs = piecewise_argument * P[P_index]
+            B_rhs = arg_factors[i] * P[P_index]
 
         if blockdata.block_mode in ("premultiplied", "preintegrated"):
             # Currently not handling facet-facet combinations for precomputed blocks
@@ -677,12 +676,13 @@ class IntegralGenerator(object):
             entity = self.backend.symbols.entity(self.ir["entitytype"], None)
 
         if blockdata.block_mode == "premultiplied":
-            # Declare FI in preparts
-            FI = self.new_temp_symbol(tempnames[blockdata.block_mode])
-            preparts.append(L.VariableDecl("double", FI, 0))
-
-            # Accumulate FI += weight * f in quadparts
-            quadparts.append(L.AssignAdd(FI, L.float_product([weight, f])))
+            key = (num_points, blockdata.factor_index, blockdata.factor_is_piecewise)
+            FI, defined = self.get_temp_symbol(tempname, key)
+            if not defined:
+                # Declare FI = 0 before quadloop
+                preparts += [L.VariableDecl("double", FI, 0)]
+                # Accumulate FI += weight * f in quadparts
+                quadparts += [L.AssignAdd(FI, L.float_product([weight, f]))]
 
             # Define B = B_rhs = FI * P where FI = sum_q weight*f, and P = u * v
             B_rhs = L.float_product([FI, L.Symbol(blockdata.name)[(entity,) + B_indices]])
@@ -693,10 +693,6 @@ class IntegralGenerator(object):
 
             # Define B = B_rhs = f * P where P = sum_q weight * u * v
             B_rhs = L.float_product([f, L.Symbol(blockdata.name)[(entity,) + B_indices]])
-
-        # For full, partial, premultiplied, quadloop is non-empty
-        if blockdata.block_mode in ("safe", "full", "partial", "premultiplied") and not quadparts:
-            error("Not expecting empty quadparts for block mode %s." % (blockdata.block_mode,))
 
         # For partial, premultiplied, and preintegrated, block write occurs after quadloop
         if blockdata.block_mode not in ("full", "safe"):

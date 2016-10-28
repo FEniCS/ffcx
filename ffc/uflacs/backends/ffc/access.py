@@ -22,7 +22,7 @@ from ufl.corealg.multifunction import MultiFunction
 from ufl.permutation import build_component_numbering
 from ufl.measure import custom_integral_types
 
-from ffc.log import error, warning
+from ffc.log import error, warning, debug
 
 from ffc.uflacs.backends.ffc.symbols import FFCBackendSymbols
 

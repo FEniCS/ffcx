@@ -57,25 +57,33 @@ ma_data_t = namedtuple(
     ["ma_index", "tabledata"]
     )
 
+common_block_data_fields = ["block_mode", "ttypes", "factor_index", "factor_is_piecewise", "unames"]
+common_block_data_t = namedtuple(
+    "common_block_data_t",
+    common_block_data_fields
+    )
+
+def get_common_block_data(blockdata):
+    return common_block_data_t(*blockdata[:len(common_block_data_fields)])
 
 preintegrated_block_data_t = namedtuple(
     "preintegrated_block_data_t",
-    ["block_mode", "ttypes", "factor_index", "factor_is_piecewise", "name"]
+    common_block_data_fields + ["name"]
     )
 
 premultiplied_block_data_t = namedtuple(
     "premultiplied_block_data_t",
-    ["block_mode", "ttypes", "factor_index", "factor_is_piecewise", "name"]
+    common_block_data_fields + ["name"]
     )
 
 partial_block_data_t = namedtuple(
     "partial_block_data_t",
-    ["block_mode", "ttypes", "factor_index", "factor_is_piecewise", "ma_data", "piecewise_ma_index"]
+    common_block_data_fields + ["ma_data", "piecewise_ma_index"]
     )
 
 full_block_data_t = namedtuple(
     "full_block_data_t",
-    ["block_mode", "ttypes", "factor_index", "factor_is_piecewise", "ma_data"]
+    common_block_data_fields + ["ma_data"]
     )
 
 
@@ -395,8 +403,10 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                     table_types[pname] = "preintegrated"
 
                 assert factor_is_piecewise
+                block_unames = (pname,)
                 blockdata = preintegrated_block_data_t(block_mode, ttypes,
                                                        factor_index, factor_is_piecewise,
+                                                       block_unames,
                                                        pname)
                 block_is_piecewise = True
 
@@ -418,8 +428,10 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                     table_types[pname] = "premultiplied"
 
                 assert not factor_is_piecewise
+                block_unames = (pname,)
                 blockdata = premultiplied_block_data_t(block_mode, ttypes,
                                                        factor_index, factor_is_piecewise,
+                                                       block_unames,
                                                        pname)
                 block_is_piecewise = False
 
@@ -446,16 +458,22 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                         if tds[i].is_piecewise:
                             piecewise_ma_index = i
                             break
+                    assert rank == 2
+                    not_piecewise_ma_index = 1 - piecewise_ma_index
+                    block_unames = (unames[not_piecewise_ma_index],)
                     blockdata = partial_block_data_t(block_mode,  ttypes,
                                                      factor_index, factor_is_piecewise,
+                                                     block_unames,
                                                      tuple(ma_data), piecewise_ma_index)
                 elif block_mode in ("full", "safe"):
                     # Add to contributions:
                     # B[i] = sum_q weight * f * u[i] * v[j];  generated inside quadloop
                     # A[dofblock] += B[i];                    generated after quadloop
 
+                    block_unames = unames
                     blockdata = full_block_data_t(block_mode, ttypes,
                                                   factor_index, factor_is_piecewise,
+                                                  block_unames,
                                                   tuple(ma_data))
             else:
                 error("Invalid block_mode %s" % (block_mode,))
