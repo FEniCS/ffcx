@@ -56,3 +56,16 @@ and run tests as usual
 The test.py script will run scripts/download which will check out the
 regression data with the commit id from ffc-regression-data-id in
 ffc-regression-data/.
+
+
+How to inspect diff in output from executed generated code
+==========================================================
+
+Say you have differences in the output of PoissonDG,
+you can diff the .json files (NB! within some tolerance
+on the floating point accuracy!) like this:
+
+  python recdiff.py ffc-reference-data/r_uflacs/PoissonDG.json output/r_uflacs/PoissonDG.json
+  python recdiff.py output/r_uflacs/PoissonDG.json output/r_tensor/PoissonDG.json
+
+Pick any combination of ffc-reference-data | output and r_foo | r_bar you want to compare.
