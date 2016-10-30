@@ -274,6 +274,10 @@ def _validate_representation_choice(form_data,
             representations.remove(r)
             representations.add('legacy')
 
+    # No integrals
+    if len(representations) == 0:
+        return
+
     # Require unique family; allow legacy only with affine meshes
     ffc_assert(len(representations) == 1,
                "Failed to extract unique representation family. "
@@ -281,6 +285,8 @@ def _validate_representation_choice(form_data,
     if _has_higher_order_geometry(form_data.preprocessed_form):
         ffc_assert('legacy' not in representations,
             "Did not expect legacy representation for higher-order geometry.")
+
+    # Check preprocessing strategy
     ffc_assert(preprocessing_representation_family in representations,
         "Form has been preprocessed using '%s' representaion family, "
         "while '%s' representations have been set for integrals."
