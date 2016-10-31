@@ -125,7 +125,8 @@ class FFCBackendSymbols(object):
 
     def argument_loop_index(self, iarg):
         "Loop index for argument #iarg."
-        return self.S("ia%d" % (iarg,))
+        indices = ["i", "j", "k", "l"]
+        return self.S(indices[iarg])
 
     def coefficient_dof_sum_index(self):
         """Reusing a single index name for all coefficient dof*basis sums,
