@@ -568,8 +568,9 @@ class IntegralGenerator(object):
                     scope = self.ir["varying_irs"][num_points]["modified_arguments"]
                 mt = scope[mad.ma_index]
                 # Translate modified terminal to code
-                # FIXME: access.argument is too magic with its indices,
-                # does this work around the problem? Another one down there.
+                # TODO: Move element table access out of backend?
+                #       Not using self.backend.access.argument() here
+                #       now because it assumes too much about indices.
                 access = self.backend.access.element_table(mt.terminal,
                     mt, td, num_points, B_indices[i], 0)
                 arg_factors.append(access)
@@ -662,8 +663,7 @@ class IntegralGenerator(object):
 
                 # Accumulate P += weight * f * args in quadrature loop
                 body = L.AssignAdd(P[P_index], P_rhs)
-                if ttypes[i] != "quadrature":  # FIXME: What does this mean?
-                    body = L.ForRange(P_index, 0, P_dim, body=body)
+                body = L.ForRange(P_index, 0, P_dim, body=body)
                 quadparts.append(body)
 
             # Define B = B_rhs = piecewise_argument[:] * P[:], where P[:] = sum_q weight * f * other_argument[:]
@@ -699,48 +699,10 @@ class IntegralGenerator(object):
             # Write result to block
             body = L.Assign(B[B_indices], B_rhs)  # NB! = not +=
             for i in reversed(range(block_rank)):
-                if ttypes[i] != "quadrature":
-                    body = L.ForRange(B_indices[i], 0, dofblock[i][1] - dofblock[i][0], body=body)
+                body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
             postparts.append(body)
 
         return B, preparts, quadparts, postparts
-
-                # FIXME:
-                # Implement this initially:
-                # 1) Compute B in quadloop
-                # B = 0  # Storage: num_dofs * num_dofs  // Reuse space for all factors?
-                # for (q)
-                #     (1a)
-                #     f = factor * weight
-                #     (1b)
-                #     for (i)
-                #         C[i] = u[i]*f
-                #     (1c)
-                #     for (i)
-                #         for (j)
-                #             B[i,j] += C[i]*v[j]
-                # 2) A += B;               add block to A in finalization
-
-                # Alternative possible optimization, needs more temporary storage:
-                # 1) Compute f in quadloop    # Storage per factor: num_points
-                # for (q)
-                #     f1[q] = factor1 * weight[q]
-                #     f#[q] = ...
-                #     fn[q] = factorn * weight[q]
-                # 2) Compute C in quadloop    # Storage: num_points*num_dofs
-                # for (q)
-                #     for (i)
-                #         C[i,q] = u[i,q]*f[q]
-                # 3) Compute B in quadloop    # Storage: num_dofs*num_dofs
-                # B = 0
-                # for (q)
-                #     for (i)
-                #         for (j)
-                #             B[i,j] += C[i,q]*v[j,q]
-                # 4) A += B;               add block to A in finalization
-                # Note that storage for C and B can be reused for all terms
-                # if 2-3-4 are completed for each term before starting the next.
-                # Of course reusing C and B across terms where possible.
 
 
     def generate_copyout_statements(self):
@@ -771,24 +733,55 @@ class IntegralGenerator(object):
             A = self.backend.symbols.element_tensor()
             A = L.FlattenedArray(A, dims=self.ir["tensor_shape"])
             rank = len(self.ir["tensor_shape"])
-            A_indices = [self.backend.symbols.argument_loop_index(i)
-                         for i in range(rank)]
+            indices = [self.backend.symbols.argument_loop_index(i)
+                       for i in range(rank)]
 
+            dofmaps = {}
+
+            # TODO: Make blockmap the key here
+            #for blockmap, contributions in sorted(self.finalization_blocks.items()):
             for dofblock, contributions in sorted(self.finalization_blocks.items()):
-                # Offset indices from A indices to access dense block B
-                B_indices = tuple(A_indices[i] - dofblock[i][0]
+                blockmap = tuple(tuple(range(dofblock[i][0], dofblock[i][1]))
+                                 for i in range(rank))
+
+                dofblock = tuple((blockmap[i][0], blockmap[i][-1]+1) for i in range(rank))
+                blockdims = tuple(dofblock[i][1] - dofblock[i][0]
                                   for i in range(rank))
 
-                # Sum up all blocks contributing to the same dofblock
+                # Define mapping from B indices to A indices
+                B_indices = indices
+                A_indices = []
+                for i in range(rank):
+                    if len(blockmap[i]) == blockdims[i]:
+                        # Dense insertion, offset B index to index A
+                        j = indices[i] + dofblock[i][0]
+                    else:
+                        # TODO: If B is flattened we can simplify the sparse insertion by
+                        #       collapsing "A[N*DM[i]+DM[j]] = B[i][j]" into "A[DM[i]] = B[i]".
+                        # Sparse insertion, map B index through dofmap
+                        dofmap = blockmap[i]
+                        DM = dofmaps.get(dofmap)
+                        if DM is None:
+                            DM = L.Symbol("DM%d" % len(dofmaps))
+                            dofmaps[dofmap] = DM
+                            parts.append(L.ArrayDecl("static const int", DM, len(dofmap), dofmap))
+                        j = DM[B_indices[i]]
+                    A_indices.append(j)
+                A_indices = tuple(A_indices)
+
+                # Sum up all blocks contributing to this blockmap
                 term = L.Sum([B[B_indices] for B in contributions])
+
+                # TODO: need ttypes associated with this dofblock to deal
+                # with loop dropping for quadrature elements:
+                ttypes = ()
+                if ttypes == ("quadrature", "quadrature"):
+                    debug("quadrature element block insertion not optimized")
 
                 # Add components of all B's to A component in loop nest
                 body = L.AssignAdd(A[A_indices], term)
                 for i in reversed(range(rank)):
-                    # TODO: need ttypes associated with this B to deal
-                    # with loop dropping for quadrature elements:
-                    # if ttypes[i] != "quadrature":
-                    body = L.ForRange(A_indices[i], dofblock[i][0], dofblock[i][1], body=body)
+                    body = L.ForRange(indices[i], 0, blockdims[i], body=body)
 
                 # Add this block to parts
                 parts.append(body)

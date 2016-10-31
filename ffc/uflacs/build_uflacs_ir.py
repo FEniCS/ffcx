@@ -209,10 +209,12 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                                     if is_modified_terminal(v)]
         initial_terminal_data = [analyse_modified_terminal(V[i])
                                  for i in initial_terminal_indices]
-        unique_tables, mt_table_ranges, table_types, table_num_dofs = \
+        unique_tables, mt_table_ranges, mt_table_nonzeros, table_types, table_num_dofs = \
             build_optimized_tables(num_points, quadrature_rules,
                 cell, integral_type, entitytype, initial_terminal_data,
                 ir["unique_tables"], parameters)
+
+        # FIXME: Use mt_table_nonzeros where mt_table_ranges is used!
 
         # Replace some scalar modified terminals before reconstructing expressions
         # (could possibly use replace() on target expressions instead)
@@ -275,13 +277,6 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         modified_argument_table_ranges = [mt_table_ranges.get(mt)
                                           for mt in modified_arguments]
 
-        # Dependency analysis
-        inv_FV_deps, FV_active, FV_piecewise, FV_varying = \
-            analyse_dependencies(FV, FV_deps, FV_targets,
-                                 modified_terminal_indices,
-                                 mt_table_ranges,
-                                 table_types)
-
         # Mark active modified arguments
         #active_modified_arguments = numpy.zeros(len(modified_arguments), dtype=int)
         #for ma_indices in argument_factorization:
@@ -291,18 +286,30 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         # Just some data flow workarounds, V_table_data[i] is passed
         # as argument to backend access and definition together with V[i]
         V_table_data = numpy.empty(len(FV), dtype=object)
-        #modified_terminal_table_data = {}  # TODO: This could replace V_table_data
+        #mt_table_data = {}  # TODO: This could replace V_table_data
+        mt_table_types = {}
         for i, mt, tr in zip(modified_terminal_indices, modified_terminals, modified_terminal_table_ranges):
             if tr is None:
                 td = None
             else:
                 name = tr[0]
+                begin, end = tr[1], tr[2]
                 ttype = table_types[name]
-                td = table_data_t(tr[0], tr[1], tr[2], ttype,
+                td = table_data_t(name,
+                                  begin, end,  # FIXME: Replace with dofmap? Or at least add dofmap first, then see.
+                                  ttype,
                                   ttype in piecewise_ttypes,
                                   ttype in uniform_ttypes)
-                #modified_terminal_table_data[mt] = td
+                #mt_table_data[mt] = td
+                mt_table_types[mt] = ttype
             V_table_data[i] = td
+
+        # Dependency analysis
+        inv_FV_deps, FV_active, FV_piecewise, FV_varying = \
+            analyse_dependencies(FV, FV_deps, FV_targets,
+                                 modified_terminal_indices,
+                                 modified_terminals,
+                                 mt_table_types)
 
         # Extend piecewise V with unique new FV_piecewise vertices
         pir = ir["piecewise_ir"]
@@ -361,6 +368,31 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 factor_index = fi
 
             # TODO: Not reusing transposed blocks anywhere
+
+            # TODO: Add separate block modes for quadrature
+            # Both arguments in quadrature elements
+            """
+            for iq
+                fw = f*w
+                #for i
+                #    for j
+                #        B[i,j] = fw*U[i]*V[j] = 0 if i != iq or j != iq
+                BQ[iq] = B[iq,iq] = fw
+            for (iq) 
+                A[iq+offset0, iq+offset1] = BQ[iq]
+            """
+            # One argument in quadrature element
+            """
+            for iq
+                fw[iq] = f*w
+                #for i
+                #    for j
+                #        B[i,j] = fw*UQ[i]*V[j] = 0 if i != iq
+                for j
+                    BQ[iq,j] = fw[iq]*V[iq,j]
+            for (iq) for (j)
+                A[iq+offset, j+offset] = BQ[iq,j]
+            """
 
             # Decide out how to handle code generation for this dofblock
             if not do_apply_preintegration:
@@ -664,8 +696,8 @@ def build_scalar_graph(expressions):
 
 def analyse_dependencies(V, V_deps, V_targets,
                          modified_terminal_indices,
-                         mt_table_ranges,
-                         table_types):
+                         modified_terminals,
+                         mt_table_types):
     # Count the number of dependencies every subexpr has
     V_depcount = compute_dependency_count(V_deps)
 
@@ -676,19 +708,14 @@ def analyse_dependencies(V, V_deps, V_targets,
     active, num_active = mark_active(V_deps, V_targets)
 
     # Build piecewise/varying markers for factorized_vertices
+    varying_ttypes = ("varying", "uniform", "quadrature")
     varying_indices = []
-    for i in modified_terminal_indices:
-
-        # TODO: Can probably avoid this re-analysis by
-        # passing other datastructures in here:
-        mt = analyse_modified_terminal(V[i])
-        tr = mt_table_ranges.get(mt)
-        if tr is not None:
+    for i, mt in zip(modified_terminal_indices, modified_terminals):
+        ttype = mt_table_types.get(mt)
+        if ttype is not None:
             # Check if table computations have revealed values varying over points
-            uname = tr[0]
-            ttype = table_types[uname]
             # Note: uniform means entity-wise uniform, varying over points
-            if ttype in ("varying", "uniform", "quadrature"):
+            if ttype in varying_ttypes:
                 varying_indices.append(i)
             else:
                 if ttype not in ("fixed", "piecewise", "ones", "zeros"):

@@ -37,7 +37,7 @@ from ffc.uflacs.backends.ffc.common import ufc_restriction_offset
 
 
 # TODO: Use this class for tables with metadata?
-class Table(object):
+class TableData(object):
     """Table with metadata.
 
     Valid table types:
@@ -51,41 +51,22 @@ class Table(object):
 
     FIXME: Document these. For now see table computation.
     """
-    def __init__(self, name, values, tabletype):
+    def __init__(self, name, values, tabletype, nonzero_dofs):
         self.name = name
         self.values = values
+
         self.num_entities = values.shape[0]
         self.num_points = values.shape[1]
         self.num_dofs = values.shape[2]
-        self.tabletype = tabletype
 
-        self.piecewise = tabletype in ("piecewise", "fixed")
-        self.uniform = tabletype in ("uniform", "fixed")
-
-
-class TableData(object):
-    """
-
-    Valid table types:
-    "zeros"
-    "ones"
-    "quadrature"
-    "piecewise"
-    "uniform"
-    "fixed"
-    "varying"
-
-    FIXME: Document these. For now see table computation.
-    """
-    def __init__(self, name, values, begin, end, tabletype):
-        self.name = name
-        self.begin = begin
-        self.end = end
-        self.values = values
+        self.nonzero_dofs = nonzero_dofs
+        self.begin = self.nonzero_dofs[0]
+        self.end = self.nonzero_dofs[-1] + 1
 
         self.tabletype = tabletype
         self.is_piecewise = tabletype in ("piecewise", "fixed")
         self.is_uniform = tabletype in ("uniform", "fixed")
+        self.is_varying = tabletype in ("varying", "uniform", "quadrature")
 
 
 # TODO: Replace with numpy.allclose
@@ -114,30 +95,31 @@ def clamp_table_small_integers(table, eps):
     return table
 
 
-def strip_table_zeros(table, eps):
-    "Strip zero columns from table. Returns column range (begin,end) and the new compact table."
+def strip_table_zeros(table, compress_zeros, eps):
+    "Strip zero columns from table. Returns column range (begin, end) and the new compact table."
     # Get shape of table and number of columns, defined as the last axis
     table = numpy.asarray(table)
     sh = table.shape
-    nc = sh[-1]
 
-    # Find first nonzero column
-    begin = nc
-    for i in range(nc):
-        if numpy.linalg.norm(table[..., i]) > eps:
-            begin = i
-            break
+    # Find nonzero columns
+    nonzero_columns = [i for i in range(sh[-1])
+                       if numpy.linalg.norm(table[..., i]) > eps]
+    if nonzero_columns:
+        # Find first nonzero column
+        begin = nonzero_columns[0]
+        # Find (one beyond) last nonzero column
+        end = nonzero_columns[-1] + 1
+    else:
+        begin = 0
+        end = 0
 
-    # Find (one beyond) last nonzero column
-    end = begin
-    for i in range(nc-1, begin-1, -1):
-        if numpy.linalg.norm(table[..., i]) > eps:
-            end = i+1
-            break
+    # If compression is not wanted, pretend whole range is nonzero
+    if not compress_zeros:
+        nonzero_columns = list(range(begin, end))
 
-    # Make subtable by stripping first and last columns
-    stripped_table = table[..., begin:end]
-    return begin, end, stripped_table
+    # Make subtable by dropping zero columns
+    stripped_table = table[..., nonzero_columns]
+    return begin, end, nonzero_columns, stripped_table
 
 
 def build_unique_tables(tables, eps):
@@ -421,7 +403,7 @@ def build_element_tables(num_points, quadrature_rules,
     return tables, mt_table_names, table_origins
 
 
-def optimize_element_tables(tables, mt_table_names, table_origins, epsilon):
+def optimize_element_tables(tables, mt_table_names, table_origins, compress_zeros, epsilon):
     """Optimize tables and make unique set.
 
     Steps taken:
@@ -448,11 +430,12 @@ def optimize_element_tables(tables, mt_table_names, table_origins, epsilon):
     # Find and sort all unique table names mentioned in mt_table_names
     used_names = set(mt_table_names.values())
     assert None not in used_names
-    #used_names.remove(None)
     used_names = sorted(used_names)
 
     # Drop unused tables (if any at this point)
-    tables = { name: tables[name] for name in tables if name in used_names }
+    tables = { name: tables[name]
+               for name in tables
+               if name in used_names }
 
     # Clamp almost -1.0, 0.0, and +1.0 values first
     # (i.e. 0.999999 -> 1.0 if within epsilon distance)
@@ -461,10 +444,12 @@ def optimize_element_tables(tables, mt_table_names, table_origins, epsilon):
 
     # Strip contiguous zero blocks at the ends of all tables
     table_ranges = {}
+    table_nonzeros = {}
     for name in used_names:
-        begin, end, stripped_table = strip_table_zeros(tables[name], epsilon)
+        begin, end, nonzeros, stripped_table = strip_table_zeros(tables[name], compress_zeros, epsilon)
         tables[name] = stripped_table
         table_ranges[name] = (begin, end)
+        table_nonzeros[name] = nonzeros
 
     # Build unique table mapping
     unique_tables_list, name_to_unique_index = build_unique_tables(tables, epsilon)
@@ -477,6 +462,8 @@ def optimize_element_tables(tables, mt_table_names, table_origins, epsilon):
         ui = name_to_unique_index[name]
         if ui not in unique_names:
             unique_names[ui] = name
+    name_to_unique_name = { name: unique_names[name_to_unique_index[name]]
+                            for name in name_to_unique_index }
 
     # Build mapping from unique table name to the table itself
     unique_tables = {}
@@ -490,7 +477,7 @@ def optimize_element_tables(tables, mt_table_names, table_origins, epsilon):
         dofrange = table_ranges[uname]
         # FIXME: Make sure the "smallest" element is chosen
         (element, avg, derivative_counts, fc) = table_origins[name]
-        unique_table_origins[uname] = (element, avg, derivative_counts, fc, dofrange)
+        unique_table_origins[uname] = (element, avg, derivative_counts, fc, dofrange)  # FIXME: nonzeros instead of dofrange
 
     # Build mapping from modified terminal to compacted table and dof range
     # { mt: (unique name, table dof range begin, table dof range end) }
@@ -498,14 +485,17 @@ def optimize_element_tables(tables, mt_table_names, table_origins, epsilon):
     for mt, name in mt_table_names.items():
         assert name is not None
         b, e = table_ranges[name]
-        ui = name_to_unique_index[name]
-        unique_name = unique_names[ui]
+        unique_name = name_to_unique_name[name]
         mt_table_ranges[mt] = (unique_name, b, e)
+    mt_table_nonzeros = {}
+    for mt, name in mt_table_names.items():
+        mt_table_nonzeros[mt] = table_nonzeros[name]
+        #mt_table_names[mt] = name_to_unique_name[name]
 
-    return unique_tables, mt_table_ranges, unique_table_origins
+    return unique_tables, mt_table_ranges, mt_table_nonzeros, unique_table_origins
 
 
-def offset_restricted_table_ranges(mt_table_ranges, mt_table_names,
+def offset_restricted_table_ranges(mt_table_ranges, mt_table_nonzeros, mt_table_names,
                                    tables, modified_terminals):
     # Modify dof ranges for restricted form arguments
     # (geometry gets padded variable names instead)
@@ -514,9 +504,14 @@ def offset_restricted_table_ranges(mt_table_ranges, mt_table_names,
             # offset = 0 or number of dofs before table optimization
             num_original_dofs = int(tables[mt_table_names[mt]].shape[-1])
             offset = ufc_restriction_offset(mt.restriction, num_original_dofs)
+
             (unique_name, b, e) = mt_table_ranges[mt]
             mt_table_ranges[mt] = (unique_name, b + offset, e + offset)
-    return mt_table_ranges
+
+            nonzeros = mt_table_nonzeros[mt]
+            mt_table_nonzeros[mt] = tuple(i + offset for i in nonzeros)
+
+    return mt_table_ranges, mt_table_nonzeros
 
 
 def is_zeros_table(table, epsilon):
@@ -594,6 +589,10 @@ def build_optimized_tables(num_points, quadrature_rules,
     # FIXME: Should be epsilon from ffc parameters
     #epsilon = parameters["epsilon"]
 
+    # FIXME: Should be from ffc parameters
+    #compress_zeros = parameters["compress_zeros"]
+    compress_zeros = False
+
     # Build tables needed by all modified terminals
     tables, mt_table_names, table_origins = \
         build_element_tables(num_points, quadrature_rules,
@@ -601,8 +600,8 @@ def build_optimized_tables(num_points, quadrature_rules,
             modified_terminals, epsilon)
 
     # Optimize tables and get table name and dofrange for each modified terminal
-    unique_tables, mt_table_ranges, table_origins = \
-        optimize_element_tables(tables, mt_table_names, table_origins, epsilon)
+    unique_tables, mt_table_ranges, mt_table_nonzeros, table_origins = \
+        optimize_element_tables(tables, mt_table_names, table_origins, compress_zeros, epsilon)
 
     # Analyze tables for properties useful for optimization
     table_types = analyse_table_types(unique_tables, epsilon)
@@ -624,8 +623,9 @@ def build_optimized_tables(num_points, quadrature_rules,
                        if data is not None and data[0] == unique_name)
 
     # Add offsets to dof ranges for restricted terminals
-    mt_table_ranges = offset_restricted_table_ranges(
-        mt_table_ranges, mt_table_names, tables, modified_terminals)
+    mt_table_ranges, mt_table_nonzeros = offset_restricted_table_ranges(
+        mt_table_ranges, mt_table_nonzeros,
+        mt_table_names, tables, modified_terminals)
 
     # Delete tables not referenced by modified terminals
     used_names = set(tabledata[0] for tabledata in mt_table_ranges.values())
@@ -660,9 +660,20 @@ def build_optimized_tables(num_points, quadrature_rules,
                 table_types[name2] = table_types[name1]
                 del table_types[name1]
                 break
+
     for mt in list(mt_table_ranges):
         tr = mt_table_ranges[mt]
         if tr[0] in name_map:
             mt_table_ranges[mt] = (name_map[tr[0]],) + tuple(tr[1:])
 
-    return unique_tables, mt_table_ranges, table_types, table_num_dofs
+    # TODO: Pack data about table in a TableData object
+    #mt_table_data = {}
+    #for mt in mt_table_ranges:
+    #    #name = mt_table_names[mt]
+    #    #dofrange = mt_table_ranges[mt]
+    #    name, begin, end = mt_table_ranges[mt]
+    #    nonzeros = mt_table_nonzeros[mt]
+    #    td = TableData(...)
+    #    mt_table_data[mt] = td
+
+    return unique_tables, mt_table_ranges, mt_table_nonzeros, table_types, table_num_dofs
