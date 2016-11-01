@@ -170,3 +170,17 @@ class FFCBackendSymbols(object):
         return self.S(format_mt_name("w%d" % (c,), mt))
         # TODO: Should we include num_points here? Not sure if there is a need.
         #return self.S(format_mt_name("w%d_%d" % (c, num_points), mt))
+
+    def element_table(self, tabledata, entitytype, restriction, num_points):
+        if tabledata.is_uniform:
+            entity = 0
+        else:
+            entity = self.entity(entitytype, restriction)
+
+        if tabledata.is_piecewise:
+            iq = 0
+        else:
+            iq = self.quadrature_loop_index(num_points)
+
+        # Return direct access to element table
+        return self.S(tabledata.name)[entity][iq]

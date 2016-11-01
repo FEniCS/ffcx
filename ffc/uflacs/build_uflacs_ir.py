@@ -311,12 +311,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
             ttypes = tuple(tr.ttype for tr in trs)
             assert not any(tt == "zeros" for tt in ttypes)
 
-            # TODO: Use blockmap instead of dofblock:
-            #  - as key in block_contributions
-            #  - as key in finalization_blocks
-            #  - 
-            dofblock = tuple(tr.dofrange for tr in trs)
-            #blockmap = tuple(tr.dofmap for tr in trs)
+            blockmap = tuple(tr.dofmap for tr in trs)
 
             # Collect relevant restrictions to identify blocks
             # correctly in interior facet integrals
@@ -364,7 +359,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 A[iq+offset, j+offset] = BQ[iq,j]
             """
 
-            # Decide out how to handle code generation for this dofblock
+            # Decide out how to handle code generation for this block
             if not do_apply_preintegration:
                 # Use full runtime integration by default
                 block_mode = "safe"
@@ -404,7 +399,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 # Add to contributions:
                 # P = sum_q weight*u*v;      preintegrated here
                 # B[...] = f * P[...];       generated after quadloop
-                # A[dofblock] += B[...];     generated after quadloop
+                # A[blockmap] += B[...];     generated after quadloop
 
                 # TODO: Reuse transpose to save memory
                 cache = ir["piecewise_ir"]["preintegrated_blocks"]
@@ -430,7 +425,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 # P = u*v;                        computed here
                 # FI = sum_q weight * f;          generated inside quadloop
                 # B[...] = FI * P[...];           generated after quadloop
-                # A[dofblock] += B[...];          generated after quadloop
+                # A[blockmap] += B[...];          generated after quadloop
 
                 # TODO: Reuse transpose to save memory
                 cache = ir["piecewise_ir"]["premultiplied_blocks"]
@@ -466,7 +461,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                     # Add to contributions:
                     # P[i] = sum_q weight * f * u[i];  generated inside quadloop
                     # B[i,j] = P[i] * v[j];            generated after quadloop (where v is the piecewise ma)
-                    # A[dofblock] += B[...];           generated after quadloop
+                    # A[blockmap] += B[...];           generated after quadloop
 
                     # Find first piecewise index TODO: Is last better? just reverse range here
                     for i in range(rank):
@@ -483,7 +478,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 elif block_mode in ("full", "safe"):
                     # Add to contributions:
                     # B[i] = sum_q weight * f * u[i] * v[j];  generated inside quadloop
-                    # A[dofblock] += B[i];                    generated after quadloop
+                    # A[blockmap] += B[i];                    generated after quadloop
 
                     block_unames = unames
                     blockdata = full_block_data_t(block_mode, ttypes,
@@ -495,10 +490,10 @@ def build_uflacs_ir(cell, integral_type, entitytype,
 
             if block_is_piecewise:
                 # Insert in piecewise expr_ir
-                ir["piecewise_ir"]["block_contributions"][dofblock].append(blockdata)
+                ir["piecewise_ir"]["block_contributions"][blockmap].append(blockdata)
             else:
                 # Insert in varying expr_ir for this quadrature loop
-                block_contributions[dofblock].append(blockdata)
+                block_contributions[blockmap].append(blockdata)
 
         # Figure out which table names are referenced in unstructured partition
         active_table_names = set()
@@ -508,7 +503,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 active_table_names.add(tr.name)
 
         # Figure out which table names are referenced in blocks
-        for dofblock, contributions in chain(block_contributions.items(),
+        for blockmap, contributions in chain(block_contributions.items(),
                                              ir["piecewise_ir"]["block_contributions"].items()):
             for blockdata in contributions:
                 if blockdata.block_mode in ("preintegrated", "premultiplied"):
@@ -563,7 +558,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
 
         # Count blocks of each mode
         block_modes = defaultdict(int)
-        for dofblock, contributions in block_contributions.items():
+        for blockmap, contributions in block_contributions.items():
             for blockdata in contributions:
                 block_modes[blockdata.block_mode] += 1
         # Debug output

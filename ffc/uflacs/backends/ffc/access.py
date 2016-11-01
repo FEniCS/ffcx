@@ -71,108 +71,21 @@ class FFCBackendAccess(MultiFunction):
         return L.LiteralFloat(float(e))
 
 
-    def _argument(self, e, mt, tabledata, num_points):
-        L = self.language
-        # Expecting only local derivatives and values here
-        assert not mt.global_derivatives
-        # assert mt.global_component is None
-
-        ttype = tabledata.ttype
-        begin, end = tabledata.dofrange
-
-        # Still assuming contiguous dofmap
-        assert len(tabledata.dofmap) == end - begin
-
-        if ttype == "zeros":
-            error("Not expecting zero arguments to get this far.")
-            #return L.LiteralFloat(0.0)
-        elif ttype == "ones":
-            debug("Should simplify ones arguments before getting this far.")
-            return L.LiteralFloat(1.0)
-
-        if tabledata.is_uniform:
-            entity = 0
-        else:
-            entity = self.symbols.entity(self.entitytype, mt.restriction)
-
-        if tabledata.is_piecewise:
-            iq = 0
-        else:
-            iq = self.symbols.quadrature_loop_index(num_points)
-
-        if ttype == "quadrature":
-            debug("Should simplify quadrature element arguments before getting this far.")
-            idof = iq
-        else:
-            idof = self.symbols.argument_loop_index(mt.terminal.number())
-
-        # Return direct access to element table
-        return L.Symbol(tabledata.name)[entity][iq][idof - begin]
-
-
-    def argument(self, e, mt, tabledata, num_points):
-        begin, end = tabledata.dofrange
-
-        # Still assuming contiguous dofmap
-        assert len(tabledata.dofmap) == end - begin
-
-        argindex = self.symbols.argument_loop_index(mt.terminal.number())
-        return self.element_table(e, mt, tabledata, num_points, argindex, begin)
-
-
-    def element_table(self, e, mt, tabledata, num_points, argindex, begin):
-        L = self.language
-        # Expecting only local derivatives and values here
-        assert not mt.global_derivatives
-        # assert mt.global_component is None
-
-        ttype = tabledata.ttype
-
-        if ttype == "zeros":
-            error("Not expecting zero arguments to get this far.")
-            #return L.LiteralFloat(0.0)
-        elif ttype == "ones":
-            debug("Should simplify ones arguments before getting this far.")
-            return L.LiteralFloat(1.0)
-
-        if tabledata.is_uniform:
-            entity = 0
-        else:
-            entity = self.symbols.entity(self.entitytype, mt.restriction)
-
-        if tabledata.is_piecewise:
-            iq = 0
-        else:
-            iq = self.symbols.quadrature_loop_index(num_points)
-
-        if ttype == "quadrature":
-            debug("Should simplify quadrature element arguments before getting this far.")
-            idof = iq
-        else:
-            idof = argindex
-
-        # Return direct access to element table
-        return L.Symbol(tabledata.name)[entity][iq][idof - begin]
-
-
     def coefficient(self, e, mt, tabledata, num_points):
         ttype = tabledata.ttype
+
+        assert ttype != "zeros"
+
         begin, end = tabledata.dofrange
 
-        # Still assuming contiguous dofmap
-        assert len(tabledata.dofmap) == end - begin
-
-        if ttype == "zeros":
-            # FIXME: Remove at earlier stage so dependent code can also be removed
-            debug("Not expecting zero coefficients to get this far.")
-            L = self.language
-            return L.LiteralFloat(0.0)
-        elif ttype == "ones" and (end - begin) == 1:
+        if ttype == "ones" and (end - begin) == 1:
             # f = 1.0 * f_{begin}, just return direct reference to dof array at dof begin
             # (if mt is restricted, begin contains cell offset)
             idof = begin
             return self.symbols.coefficient_dof_access(mt.terminal, idof)
         elif ttype == "quadrature":
+            # Dofmap should be contiguous in this case
+            assert len(tabledata.dofmap) == end - begin
             # f(x_q) = sum_i f_i * delta_iq = f_q, just return direct
             # reference to dof array at quadrature point index + begin
             iq = self.symbols.quadrature_loop_index(num_points)

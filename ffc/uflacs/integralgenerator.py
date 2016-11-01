@@ -448,8 +448,7 @@ class IntegralGenerator(object):
         quadparts = []
         postparts = []
 
-        for dofblock, contributions in sorted(block_contributions.items()):
-            blockdims = tuple(end - begin for begin, end in dofblock)
+        for blockmap, contributions in sorted(block_contributions.items()):
             for blockdata in contributions:
                 # Get symbol for already defined block B if it exists
                 common_block_data = get_common_block_data(blockdata)
@@ -457,7 +456,7 @@ class IntegralGenerator(object):
                 if B is None:
                     # Define code for block depending on mode
                     B, block_preparts, block_quadparts, block_postparts = \
-                        self.generate_block_parts(num_points, dofblock, blockdata)
+                        self.generate_block_parts(num_points, blockmap, blockdata)
 
                     # Add definitions
                     preparts.extend(block_preparts)
@@ -471,13 +470,13 @@ class IntegralGenerator(object):
                     # Store reference for reuse
                     self.shared_blocks[common_block_data] = B
 
-                # Add A[dofblock] += B[...] to finalization
-                self.finalization_blocks[dofblock].append(B)
+                # Add A[blockmap] += B[...] to finalization
+                self.finalization_blocks[blockmap].append(B)
 
         return preparts, quadparts, postparts
 
 
-    def generate_block_parts(self, num_points, dofblock, blockdata):
+    def generate_block_parts(self, num_points, blockmap, blockdata):
         """Generate and return code parts for a given block.
 
         Returns parts occuring before, inside, and after
@@ -516,18 +515,8 @@ class IntegralGenerator(object):
         # Define unique block symbol
         B = self.new_temp_symbol(blockname)
 
-        # TODO: Make blockmap the first class quantity instead, here
-        # built from dofblock so we can transition it into the code below
-        _dofblock = dofblock
-        blockmap = tuple(tuple(range(begin, end))
-                         for begin, end in _dofblock)
-
         block_rank = len(blockmap)
         blockdims = tuple(len(dofmap) for dofmap in blockmap)
-        dofblock = tuple((dofmap[0], dofmap[-1] + 1) for dofmap in blockmap)
-
-        # Check for consistency with old approach
-        assert _dofblock == dofblock
 
         ttypes = blockdata.ttypes
         if "zeros" in ttypes:
@@ -577,13 +566,25 @@ class IntegralGenerator(object):
                 else:
                     scope = self.ir["varying_irs"][num_points]["modified_arguments"]
                 mt = scope[mad.ma_index]
+
                 # Translate modified terminal to code
                 # TODO: Move element table access out of backend?
                 #       Not using self.backend.access.argument() here
                 #       now because it assumes too much about indices.
-                access = self.backend.access.element_table(mt.terminal,
-                    mt, td, num_points, B_indices[i], 0)
-                arg_factors.append(access)
+
+                table = self.backend.symbols.element_table(td,
+                    self.ir["entitytype"], mt.restriction, num_points)
+
+                assert td.ttype != "zeros"
+
+                if td.ttype == "ones":
+                    arg_factor = L.LiteralFloat(1.0)
+                elif td.ttype == "quadrature":  # TODO: Revisit all quadrature ttype checks
+                    arg_factor = table[iq]
+                else:
+                    # Assuming B sparsity follows element table sparsity
+                    arg_factor = table[B_indices[i]]
+                arg_factors.append(arg_factor)
             assert len(arg_factors) == block_rank
 
         # Define fw = f * weight
@@ -747,29 +748,21 @@ class IntegralGenerator(object):
                        for i in range(rank)]
 
             dofmaps = {}
-
-            # TODO: Make blockmap the key here
-            #for blockmap, contributions in sorted(self.finalization_blocks.items()):
-            for dofblock, contributions in sorted(self.finalization_blocks.items()):
-                blockmap = tuple(tuple(range(dofblock[i][0], dofblock[i][1]))
-                                 for i in range(rank))
-
-                dofblock = tuple((blockmap[i][0], blockmap[i][-1]+1) for i in range(rank))
-                blockdims = tuple(dofblock[i][1] - dofblock[i][0]
-                                  for i in range(rank))
-
+            for blockmap, contributions in sorted(self.finalization_blocks.items()):
                 # Define mapping from B indices to A indices
                 B_indices = indices
                 A_indices = []
                 for i in range(rank):
-                    if len(blockmap[i]) == blockdims[i]:
+                    dofmap = blockmap[i]
+                    begin = dofmap[0]
+                    end = dofmap[-1] + 1
+                    if len(dofmap) == end - begin:
                         # Dense insertion, offset B index to index A
-                        j = indices[i] + dofblock[i][0]
+                        j = indices[i] + begin
                     else:
                         # TODO: If B is flattened we can simplify the sparse insertion by
                         #       collapsing "A[N*DM[i]+DM[j]] = B[i][j]" into "A[DM[i]] = B[i]".
                         # Sparse insertion, map B index through dofmap
-                        dofmap = blockmap[i]
                         DM = dofmaps.get(dofmap)
                         if DM is None:
                             DM = L.Symbol("DM%d" % len(dofmaps))
@@ -782,7 +775,7 @@ class IntegralGenerator(object):
                 # Sum up all blocks contributing to this blockmap
                 term = L.Sum([B[B_indices] for B in contributions])
 
-                # TODO: need ttypes associated with this dofblock to deal
+                # TODO: need ttypes associated with this block to deal
                 # with loop dropping for quadrature elements:
                 ttypes = ()
                 if ttypes == ("quadrature", "quadrature"):
@@ -791,7 +784,7 @@ class IntegralGenerator(object):
                 # Add components of all B's to A component in loop nest
                 body = L.AssignAdd(A[A_indices], term)
                 for i in reversed(range(rank)):
-                    body = L.ForRange(indices[i], 0, blockdims[i], body=body)
+                    body = L.ForRange(indices[i], 0, len(blockmap[i]), body=body)
 
                 # Add this block to parts
                 parts.append(body)

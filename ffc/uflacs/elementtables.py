@@ -90,8 +90,8 @@ def strip_table_zeros(table, compress_zeros, eps):
     sh = table.shape
 
     # Find nonzero columns
-    dofmap = [i for i in range(sh[-1])
-                       if numpy.linalg.norm(table[..., i]) > eps]
+    dofmap = tuple(i for i in range(sh[-1])
+                   if numpy.linalg.norm(table[..., i]) > eps)
     if dofmap:
         # Find first nonzero column
         begin = dofmap[0]
@@ -103,7 +103,7 @@ def strip_table_zeros(table, compress_zeros, eps):
 
     # If compression is not wanted, pretend whole range is nonzero
     if not compress_zeros:
-        dofmap = list(range(begin, end))
+        dofmap = tuple(range(begin, end))
 
     # Make subtable by dropping zero columns
     stripped_table = table[..., dofmap]
@@ -552,6 +552,7 @@ def build_optimized_tables(num_points, quadrature_rules,
 
     # FIXME: Should be from ffc parameters
     #compress_zeros = parameters["compress_zeros"]
+    #compress_zeros = True
     compress_zeros = False
 
     # Build tables needed by all modified terminals
@@ -570,14 +571,12 @@ def build_optimized_tables(num_points, quadrature_rules,
     # Analyze tables for properties useful for optimization
     unique_table_ttypes = analyse_table_types(unique_tables, epsilon)
 
-    # Compress piecewise constant tables
-    piecewise_table_types = ("piecewise", "fixed")
-    uniform_table_types = ("uniform", "fixed")
+    # Compress tables that are constant along num_entities or num_points
     for uname, tabletype in unique_table_ttypes.items():
-        if tabletype in piecewise_table_types:
+        if tabletype in piecewise_ttypes:
             # Reduce table to dimension 1 along num_points axis in generated code
             unique_tables[uname] = unique_tables[uname][:,0:1,:]
-        if tabletype in uniform_table_types:
+        if tabletype in uniform_ttypes:
             # Reduce table to dimension 1 along num_entities axis in generated code
             unique_tables[uname] = unique_tables[uname][0:1,:,:]
 
