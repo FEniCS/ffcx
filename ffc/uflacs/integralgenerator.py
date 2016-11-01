@@ -169,30 +169,45 @@ class IntegralGenerator(object):
         assert not any(d for d in self.scopes.values())
 
         parts = []
+
+        # Generate the tables of quadrature points and weights
         parts += self.generate_quadrature_tables()
+
+        # Generate the tables of basis function values and preintegrated blocks
         parts += self.generate_element_tables()
+
+        # Generate code to set A = 0
         parts += self.generate_tensor_reset()
+
+        # Generate code to compute piecewise constant scalar factors
         parts += self.generate_unstructured_piecewise_partition()
 
+        # Loop generation code will produce parts to go before quadloops,
+        # to define the quadloops, and to go after the quadloops
         all_preparts = []
         all_quadparts = []
         all_postparts = []
-
         for num_points in self.ir["all_num_points"]:
+            # Generate code to integrate reusable blocks of final element tensor
             preparts, quadparts, postparts = \
                 self.generate_quadrature_loop(num_points)
             all_preparts += preparts
             all_quadparts += quadparts
             all_postparts += postparts
 
-        preparts, quadparts, postparts = self.generate_dofblock_partition(None)
-        parts += all_preparts
-        parts += preparts
-        parts += all_quadparts
-        parts += quadparts
-        parts += all_postparts
-        parts += postparts
+        # Generate code to finish computing reusable blocks outside quadloop
+        preparts, quadparts, postparts = \
+            self.generate_dofblock_partition(None)
+        all_preparts += preparts
+        all_quadparts += quadparts
+        all_postparts += postparts
 
+        # Collect loop parts
+        parts += all_preparts
+        parts += all_quadparts
+        parts += all_postparts
+
+        # Generate code to add reusable blocks B* to element tensor A
         parts += self.generate_copyout_statements()
 
         return L.StatementList(parts)
