@@ -26,7 +26,6 @@ from ufl.measure import custom_integral_types, point_integral_types
 
 from ffc.log import error, warning
 
-from ffc.uflacs.analysis.modified_terminals import analyse_modified_terminal, is_modified_terminal
 from ffc.uflacs.build_uflacs_ir import get_common_block_data
 
 
@@ -330,7 +329,8 @@ class IntegralGenerator(object):
         parts = self.generate_partition(arraysymbol,
                                         expr_ir["V"],
                                         expr_ir["V_active"],
-                                        expr_ir["V_table_data"],
+                                        expr_ir["V_mts"],
+                                        expr_ir["mt_tabledata"],
                                         num_points)
         parts = L.commented_code_list(parts,
             "Unstructured piecewise computations")
@@ -347,14 +347,15 @@ class IntegralGenerator(object):
         parts = self.generate_partition(arraysymbol,
                                         expr_ir["V"],
                                         expr_ir["V_varying"],
-                                        expr_ir["V_table_data"],
+                                        expr_ir["V_mts"],
+                                        expr_ir["mt_tabledata"],
                                         num_points)
         parts = L.commented_code_list(parts,
             "Unstructured varying computations for num_points=%d" % (num_points,))
         return parts
 
 
-    def generate_partition(self, symbol, V, V_active, V_table_data, num_points):
+    def generate_partition(self, symbol, V, V_active, V_mts, mt_tabledata, num_points):
         L = self.backend.language
 
         definitions = []
@@ -364,16 +365,14 @@ class IntegralGenerator(object):
 
         for i in active_indices:
             v = V[i]
+            mt = V_mts[i]
 
             # XXX: Enable this after tests pass again to avoid too much changes at once:
             #if v._ufl_is_literal_:
             #    vaccess = self.backend.ufl_to_language(v)
-            #elif is_modified_terminal(v):
-            if is_modified_terminal(v):
-                mt = analyse_modified_terminal(v)
-
-                tabledata = V_table_data[i]
-                #tabledata = modified_terminal_table_data[mt]
+            #elif
+            if mt is not None:
+                tabledata = mt_tabledata[mt]
 
                 # Backend specific modified terminal translation
                 vaccess = self.backend.access(mt.terminal,
@@ -517,8 +516,19 @@ class IntegralGenerator(object):
         # Define unique block symbol
         B = self.new_temp_symbol(blockname)
 
-        block_rank = len(dofblock)
-        blockdims = tuple(end - begin for begin, end in dofblock)
+        # TODO: Make blockmap the first class quantity instead, here
+        # built from dofblock so we can transition it into the code below
+        _dofblock = dofblock
+        blockmap = tuple(tuple(range(begin, end))
+                         for begin, end in _dofblock)
+
+        block_rank = len(blockmap)
+        blockdims = tuple(len(dofmap) for dofmap in blockmap)
+        dofblock = tuple((dofmap[0], dofmap[-1] + 1) for dofmap in blockmap)
+
+        # Check for consistency with old approach
+        assert _dofblock == dofblock
+
         ttypes = blockdata.ttypes
         if "zeros" in ttypes:
             error("Not expecting zero arguments to be left in dofblock generation.")

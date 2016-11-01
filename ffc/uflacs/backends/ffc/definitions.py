@@ -70,8 +70,10 @@ class FFCBackendDefinitions(MultiFunction):
         L = self.language
 
         ttype = tabledata.ttype
-        begin = tabledata.begin
-        end = tabledata.end
+        begin, end = tabledata.dofrange
+
+        # Still assuming contiguous dofmap
+        assert len(tabledata.dofmap) == end - begin
 
         #fe_classname = ir["classnames"]["finite_element"][t.ufl_element()]
 
@@ -134,8 +136,10 @@ class FFCBackendDefinitions(MultiFunction):
 
         # Find table name and dof range it corresponds to
         ttype = tabledata.ttype
-        begin = tabledata.begin
-        end = tabledata.end
+        begin, end = tabledata.dofrange
+
+        # Still assuming contiguous dofmap
+        assert len(tabledata.dofmap) == end - begin
 
         assert end - begin <= num_scalar_dofs
         assert ttype != "zeros"

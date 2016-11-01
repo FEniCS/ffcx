@@ -78,8 +78,10 @@ class FFCBackendAccess(MultiFunction):
         # assert mt.global_component is None
 
         ttype = tabledata.ttype
-        begin = tabledata.begin
-        end = tabledata.end
+        begin, end = tabledata.dofrange
+
+        # Still assuming contiguous dofmap
+        assert len(tabledata.dofmap) == end - begin
 
         if ttype == "zeros":
             error("Not expecting zero arguments to get this far.")
@@ -109,7 +111,11 @@ class FFCBackendAccess(MultiFunction):
 
 
     def argument(self, e, mt, tabledata, num_points):
-        begin = tabledata.begin
+        begin, end = tabledata.dofrange
+
+        # Still assuming contiguous dofmap
+        assert len(tabledata.dofmap) == end - begin
+
         argindex = self.symbols.argument_loop_index(mt.terminal.number())
         return self.element_table(e, mt, tabledata, num_points, argindex, begin)
 
@@ -151,8 +157,10 @@ class FFCBackendAccess(MultiFunction):
 
     def coefficient(self, e, mt, tabledata, num_points):
         ttype = tabledata.ttype
-        begin = tabledata.begin
-        end = tabledata.end
+        begin, end = tabledata.dofrange
+
+        # Still assuming contiguous dofmap
+        assert len(tabledata.dofmap) == end - begin
 
         if ttype == "zeros":
             # FIXME: Remove at earlier stage so dependent code can also be removed
