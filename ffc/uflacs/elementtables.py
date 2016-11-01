@@ -552,8 +552,8 @@ def build_optimized_tables(num_points, quadrature_rules,
 
     # FIXME: Should be from ffc parameters
     #compress_zeros = parameters["compress_zeros"]
-    #compress_zeros = True
-    compress_zeros = False
+    compress_zeros = True
+    #compress_zeros = False
 
     # Build tables needed by all modified terminals
     tables, mt_table_names, table_origins = \
