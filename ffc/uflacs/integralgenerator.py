@@ -272,7 +272,7 @@ class IntegralGenerator(object):
         table_types = self.ir["unique_table_types"]
 
         alignas = self.ir["alignas"]
-        padlen = self.ir["padlen"]
+        #padlen = self.ir["padlen"]
 
         if self.ir["integral_type"] in custom_integral_types:
             # Define only piecewise tables
@@ -286,8 +286,7 @@ class IntegralGenerator(object):
             table = tables[name]
             decl = L.ArrayDecl("static const double", name,
                                table.shape, table,
-                               alignas=alignas,
-                               padlen=padlen)
+                               alignas=alignas)  # padlen=padlen)
             parts += [decl]
 
         # Add leading comment if there are any tables
@@ -347,7 +346,10 @@ class IntegralGenerator(object):
             quadparts = L.commented_code_list(L.Scope(body), "Only 1 quadrature point, no loop")
         else:
             # Regular case: define quadrature loop
-            iq = self.backend.symbols.quadrature_loop_index()
+            if num_points == 1:
+                iq = 0
+            else:
+                iq = self.backend.symbols.quadrature_loop_index()
             quadparts = [L.ForRange(iq, 0, num_points, body=body)]
 
         return preparts, quadparts, postparts
@@ -366,7 +368,7 @@ class IntegralGenerator(object):
         tdim = self.ir["topological_dimension"]
 
         alignas = self.ir["alignas"]
-        padlen = self.ir["padlen"]
+        # padlen = self.ir["padlen"]
 
         tables = self.ir["unique_tables"]
         table_types = self.ir["unique_table_types"]
@@ -450,8 +452,7 @@ class IntegralGenerator(object):
                 table = tables[name]
                 decl = L.ArrayDecl("double", name,
                                    (1, chunk_size, table.shape[2]), 0,
-                                   alignas=alignas,
-                                   padlen=padlen)
+                                   alignas=alignas)  # padlen=padlen)
                 table_parts += [decl]
 
             table_parts += [L.Comment("FIXME: Fill element tables here")]
@@ -513,11 +514,9 @@ class IntegralGenerator(object):
             v = V[i]
             mt = V_mts[i]
 
-            # XXX: Enable this after tests pass again to avoid too much changes at once:
-            #if v._ufl_is_literal_:
-            #    vaccess = self.backend.ufl_to_language(v)
-            #elif
-            if mt is not None:
+            if v._ufl_is_literal_:
+                vaccess = self.backend.ufl_to_language(v)
+            elif mt is not None:
                 tabledata = mt_tabledata[mt]
 
                 # Backend specific modified terminal translation
@@ -551,11 +550,10 @@ class IntegralGenerator(object):
                     # With tensor-valued conditionals it may not be optimal but we
                     # let the C++ compiler take responsibility for optimizing those cases.
                     j = None
-                # XXX: Enable this after tests pass again to avoid too much changes at once:
-                #elif any(op._ufl_is_literal_ for op in v.ufl_operands):
-                #    # Skip intermediates for e.g. -2.0*x,
-                #    # resulting in lines like z = y + -2.0*x
-                #    j = None
+                elif any(op._ufl_is_literal_ for op in v.ufl_operands):
+                    # Skip intermediates for e.g. -2.0*x,
+                    # resulting in lines like z = y + -2.0*x
+                    j = None
                 else:
                     j = len(intermediates)
 
@@ -671,7 +669,11 @@ class IntegralGenerator(object):
         if "zeros" in ttypes:
             error("Not expecting zero arguments to be left in dofblock generation.")
 
-        if num_points is not None:
+        if num_points is None:
+            iq = None
+        elif num_points == 1:
+            iq = 0
+        else:
             iq = self.backend.symbols.quadrature_loop_index()
 
         # Override dof index with quadrature loop index for arguments with

@@ -78,15 +78,24 @@ def scale_loop(dst, factor, ranges):
 
 
 def is_zero_cexpr(cexpr):
-    return isinstance(cexpr, CExprLiteral) and float(cexpr) == 0.0
+    return (
+        (isinstance(cexpr, LiteralFloat) and cexpr.value == 0.0)
+        or (isinstance(cexpr, LiteralInt) and cexpr.value == 0)
+        )
 
 
 def is_one_cexpr(cexpr):
-    return isinstance(cexpr, CExprLiteral) and float(cexpr) == 1.0
+    return (
+        (isinstance(cexpr, LiteralFloat) and cexpr.value == 1.0)
+        or (isinstance(cexpr, LiteralInt) and cexpr.value == 1)
+        )
 
 
 def is_negative_one_cexpr(cexpr):
-    return isinstance(cexpr, CExprLiteral) and float(cexpr) == -1.0
+    return (
+        (isinstance(cexpr, LiteralFloat) and cexpr.value == -1.0)
+        or (isinstance(cexpr, LiteralInt) and cexpr.value == -1)
+        )
 
 
 def float_product(factors):
@@ -149,8 +158,10 @@ class CExpr(CNode):
         return ArrayAccess(self, indices)
 
     def __neg__(self):
-        if is_zero_cexpr(self):
-            return self
+        if isinstance(self, LiteralFloat):
+            return LiteralFloat(-self.value)
+        if isinstance(self, LiteralInt):
+            return LiteralInt(-self.value)
         return Neg(self)
 
     def __add__(self, other):
@@ -159,6 +170,8 @@ class CExpr(CNode):
             return other
         if is_zero_cexpr(other):
             return self
+        if isinstance(other, Neg):
+            return Sub(self, other.arg)
         return Add(self, other)
 
     def __radd__(self, other):
@@ -167,6 +180,8 @@ class CExpr(CNode):
             return other
         if is_zero_cexpr(other):
             return self
+        if isinstance(self, Neg):
+            return Sub(other, self.arg)
         return Add(other, self)
 
     def __sub__(self, other):
@@ -175,6 +190,8 @@ class CExpr(CNode):
             return -other
         if is_zero_cexpr(other):
             return self
+        if isinstance(other, Neg):
+            return Add(self, other.arg)
         return Sub(self, other)
 
     def __rsub__(self, other):
@@ -183,6 +200,8 @@ class CExpr(CNode):
             return other
         if is_zero_cexpr(other):
             return -self
+        if isinstance(self, Neg):
+            return Add(other, self.arg)
         return Sub(other, self)
 
     def __mul__(self, other):
@@ -191,6 +210,10 @@ class CExpr(CNode):
             return self
         if is_zero_cexpr(other):
             return other
+        if is_negative_one_cexpr(other):
+            return Neg(self)
+        if is_negative_one_cexpr(self):
+            return Neg(other)
         return Mul(self, other)
 
     def __rmul__(self, other):
@@ -199,6 +222,10 @@ class CExpr(CNode):
             return self
         if is_zero_cexpr(other):
             return other
+        if is_negative_one_cexpr(other):
+            return Neg(self)
+        if is_negative_one_cexpr(self):
+            return Neg(other)
         return Mul(other, self)
 
     def __div__(self, other):
