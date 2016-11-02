@@ -554,6 +554,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         elif integral_type in facet_integral_types:
             need_points = any(isinstance(mt.terminal, FacetCoordinate)
                               for mt in active_mts)
+        elif integral_type in custom_integral_types:
+            need_points = True  # TODO: Always?
         else:
             need_points = False
 
@@ -575,6 +577,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         # If there are any blocks other than preintegrated we need weights
         if expect_weight and any(mode != "preintegrated" for mode in block_modes):
             need_weights = True
+        elif integral_type in custom_integrals:
+            need_weights = True  # TODO: Always?
         else:
             need_weights = False
 

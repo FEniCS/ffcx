@@ -244,7 +244,7 @@ class IntegralGenerator(object):
 
             # Generate quadrature weights array
             if varying_ir["need_weights"]:
-                wsym = self.backend.symbols.weights_array(num_points)
+                wsym = self.backend.symbols.weights_table(num_points)
                 parts += [L.ArrayDecl("static const double", wsym, num_points, weights,
                                       alignas=self.ir["alignas"])]
 
@@ -253,13 +253,12 @@ class IntegralGenerator(object):
             if varying_ir["need_points"] and N:
                 # Flatten array: (TODO: avoid flattening here, it makes padding harder)
                 flattened_points = points.reshape(N)
-                psym = self.backend.symbols.points_array(num_points)
+                psym = self.backend.symbols.points_table(num_points)
                 parts += [L.ArrayDecl("static const double", psym, N,
                                       flattened_points, alignas=self.ir["alignas"])]
 
         # Add leading comment if there are any tables
-        parts = L.commented_code_list(parts,
-            "Section for quadrature weights and points")
+        parts = L.commented_code_list(parts, "Quadrature rules")
         return parts
 
 
@@ -271,31 +270,25 @@ class IntegralGenerator(object):
 
         tables = self.ir["unique_tables"]
         table_types = self.ir["unique_table_types"]
-        # TODO: Not padding, consider when and if to do so
+
+        alignas = self.ir["alignas"]
+        padlen = self.ir["padlen"]
 
         if self.ir["integral_type"] in custom_integral_types:
-            chunk_size = self.ir["chunk_size"]
-            for name in sorted(tables):
-                if table_types[name] in piecewise_ttypes:
-                    table = tables[name]
-                    decl = L.ArrayDecl("static const double", name,
-                                       table.shape, table,
-                                       alignas=self.ir["alignas"])
-                    parts += [decl]
-            for name in sorted(tables):
-                if table_types[name] not in piecewise_ttypes:
-                    table = tables[name]
-                    decl = L.ArrayDecl("double", name,
-                                       (1, chunk_size, table.shape[2]), 0,
-                                       alignas=self.ir["alignas"])
-                    parts += [decl]
+            # Define only piecewise tables
+            table_names = [name for name in sorted(tables)
+                           if table_types[name] in piecewise_ttypes]
         else:
-            for name in sorted(tables):
-                table = tables[name]
-                decl = L.ArrayDecl("static const double", name,
-                                   table.shape, table,
-                                   alignas=self.ir["alignas"])
-                parts += [decl]
+            # Define all tables
+            table_names = sorted(tables)
+
+        for name in table_names:
+            table = tables[name]
+            decl = L.ArrayDecl("static const double", name,
+                               table.shape, table,
+                               alignas=alignas,
+                               padlen=padlen)
+            parts += [decl]
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, [
@@ -354,7 +347,7 @@ class IntegralGenerator(object):
             quadparts = L.commented_code_list(L.Scope(body), "Only 1 quadrature point, no loop")
         else:
             # Regular case: define quadrature loop
-            iq = self.backend.symbols.quadrature_loop_index(num_points)
+            iq = self.backend.symbols.quadrature_loop_index()
             quadparts = [L.ForRange(iq, 0, num_points, body=body)]
 
         return preparts, quadparts, postparts
@@ -368,6 +361,16 @@ class IntegralGenerator(object):
 
         num_points = self.ir["fake_num_points"]
         chunk_size = self.ir["chunk_size"]
+
+        gdim = self.ir["geometric_dimension"]
+        tdim = self.ir["topological_dimension"]
+
+        alignas = self.ir["alignas"]
+        padlen = self.ir["padlen"]
+
+        tables = self.ir["unique_tables"]
+        table_types = self.ir["unique_table_types"]
+        #table_origins = self.ir["unique_table_origins"]  # FIXME
 
         # Generate unstructured varying partition
         body = self.generate_unstructured_varying_partition(num_points)
@@ -387,52 +390,72 @@ class IntegralGenerator(object):
             # Could happen for integral with everything zero and optimized away
             quadparts = []
         else:
+            rule_parts = []
+
             # Define two-level quadrature loop; over chunks then over points in chunk
             iq_chunk = L.Symbol("iq_chunk")
             np = self.backend.symbols.num_custom_quadrature_points()
             num_point_blocks = (np + chunk_size - 1) / chunk_size
-            iq = self.backend.symbols.quadrature_loop_index(num_points)
-            num_points_in_block = L.Call("min", (chunk_size, np - iq_chunk * chunk_size))
+            iq = self.backend.symbols.quadrature_loop_index()
+
+            # Not assuming runtime size to be multiple by chunk size
+            num_points_in_block = L.Symbol("num_points_in_chunk")
+            decl = L.VariableDecl("const int", num_points_in_block,
+                                  L.Call("min", (chunk_size, np - iq_chunk * chunk_size)))
+            rule_parts.append(decl)
+
             iq_body = L.ForRange(iq, 0, num_points_in_block, body=body)
 
 
             ### Preparations for quadrature rules
             # 
             varying_ir = self.ir["varying_irs"][num_points]
-            varying_ir["need_weights"] = False  # FIXME
-            varying_ir["need_points"] = False  # FIXME
 
-            rule_parts = []
-
-            # Generate quadrature weights array
+            # Copy quadrature weights for this chunk
             if varying_ir["need_weights"]:
-                cwsym = self.backend.symbols.custom_weights_array()
-                wsym = self.backend.symbols.weights_array(chunk_size)
-                # Copy weights
+                cwsym = self.backend.symbols.custom_quadrature_weights()
+                wsym = self.backend.symbols.custom_weights_table()
                 rule_parts += [
                     L.ArrayDecl("double", wsym, chunk_size, 0,
-                                alignas=self.ir["alignas"]),
+                                alignas=alignas),
                     L.ForRange(iq, 0, num_points_in_block,
                                body=L.Assign(wsym[iq], cwsym[chunk_size*iq_chunk + iq])),
                     ]
 
-            # Generate quadrature points array
+            # Copy quadrature points for this chunk
             if varying_ir["need_points"]:
-                cpsym = self.backend.symbols.custom_points_array()
-                psym = self.backend.symbols.points_array(num_points)
-                rule_parts += [L.ArrayDecl("double", psym, chunk_size * tdim, 0,  # NB! tdim or gdim here?
-                                           alignas=self.ir["alignas"])]
-                # FIXME: Copy points, clarify array names for physical vs reference points
+                cpsym = self.backend.symbols.custom_quadrature_points()
+                psym = self.backend.symbols.custom_points_table()
+                rule_parts += [
+                    L.ArrayDecl("double", psym, chunk_size * gdim, 0,
+                                alignas=alignas),
+                    L.ForRange(iq, 0, num_points_in_block,
+                        body=[L.Assign(psym[iq*gdim + i],
+                                       cpsym[chunk_size*iq_chunk*gdim + iq*gdim + i])
+                              for i in range(gdim)])
+                    ]
 
             # Add leading comment if there are any tables
             rule_parts = L.commented_code_list(rule_parts,
-                "Section for quadrature weights and points")
+                "Quadrature weights and points")
 
 
             ### Preparations for element tables
-            table_parts = [L.Comment("FIXME: Declare element tables here"),
-                           L.Comment("FIXME: Fill element tables here")]
+            table_parts = []
 
+            # Only declare non-piecewise tables, computed inside chunk loop
+            non_piecewise_tables = [name for name in sorted(tables)
+                                    if table_types[name] not in piecewise_ttypes]
+            for name in non_piecewise_tables:
+                table = tables[name]
+                decl = L.ArrayDecl("double", name,
+                                   (1, chunk_size, table.shape[2]), 0,
+                                   alignas=alignas,
+                                   padlen=padlen)
+                table_parts += [decl]
+
+            table_parts += [L.Comment("FIXME: Fill element tables here")]
+            #table_origins
 
             ### Gather all in chunk loop
             chunk_body = rule_parts + table_parts + [iq_body]
@@ -649,7 +672,7 @@ class IntegralGenerator(object):
             error("Not expecting zero arguments to be left in dofblock generation.")
 
         if num_points is not None:
-            iq = self.backend.symbols.quadrature_loop_index(num_points)
+            iq = self.backend.symbols.quadrature_loop_index()
 
         # Override dof index with quadrature loop index for arguments with
         # quadrature element, to index B like B[iq*num_dofs + iq]
@@ -676,10 +699,12 @@ class IntegralGenerator(object):
         # Quadrature weight was removed in representation, add it back now
         if num_points is None:
             weight = L.LiteralFloat(1.0)
+        elif self.ir["integral_type"] in custom_integral_types:
+            weights = self.backend.symbols.custom_weights_table()
+            weight = weights[iq]
         else:
-            # The weight doesn't actually depend on anything
-            # other than which quadrature rule it belongs to
-            weight = self.backend.access.quadrature_weight(None, None, None, num_points)
+            weight = self.backend.symbols.weights_table(num_points)
+            weight = weights[iq]
 
         # Fetch code to access modified arguments
         if blockdata.block_mode in ("safe", "full", "partial"):
@@ -699,7 +724,7 @@ class IntegralGenerator(object):
                 #       now because it assumes too much about indices.
 
                 table = self.backend.symbols.element_table(td,
-                    self.ir["entitytype"], mt.restriction, num_points)
+                    self.ir["entitytype"], mt.restriction)
 
                 assert td.ttype != "zeros"
 

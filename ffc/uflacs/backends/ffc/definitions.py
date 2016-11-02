@@ -50,9 +50,9 @@ class FFCBackendDefinitions(MultiFunction):
         error("Unhandled type {0}".format(type(t)))
 
 
-    def quadrature_weight(self, e, mt, tabledata, num_points, access):
-        "Quadrature weights are precomputed and need no code."
-        return []
+    #def quadrature_weight(self, e, mt, tabledata, num_points, access):
+    #    "Quadrature weights are precomputed and need no code."
+    #    return []
 
 
     def constant_value(self, e, mt, tabledata, num_points, access):
@@ -89,7 +89,7 @@ class FFCBackendDefinitions(MultiFunction):
         assert begin < end
 
         # Get access to element table
-        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction, num_points)
+        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
 
         unroll = len(tabledata.dofmap) != end - begin
         #unroll = True
@@ -140,7 +140,7 @@ class FFCBackendDefinitions(MultiFunction):
         #sfe_classname = ir["classnames"]["finite_element"][coordinate_element.sub_elements()[0]]
 
         # Get access to element table
-        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction, num_points)
+        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
 
         inline = True
 
