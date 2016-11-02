@@ -187,13 +187,22 @@ class IntegralGenerator(object):
         all_preparts = []
         all_quadparts = []
         all_postparts = []
-        for num_points in self.ir["all_num_points"]:
-            # Generate code to integrate reusable blocks of final element tensor
+
+        # Go through each relevant quadrature loop
+        if self.ir["integral_type"] in custom_integral_types:
             preparts, quadparts, postparts = \
-                self.generate_quadrature_loop(num_points)
+              self.generate_runtime_quadrature_loop()
             all_preparts += preparts
             all_quadparts += quadparts
             all_postparts += postparts
+        else:
+            for num_points in self.ir["all_num_points"]:
+                # Generate code to integrate reusable blocks of final element tensor
+                preparts, quadparts, postparts = \
+                    self.generate_quadrature_loop(num_points)
+                all_preparts += preparts
+                all_quadparts += quadparts
+                all_postparts += postparts
 
         # Generate code to finish computing reusable blocks outside quadloop
         preparts, quadparts, postparts = \
@@ -329,6 +338,52 @@ class IntegralGenerator(object):
             iq = self.backend.symbols.quadrature_loop_index(num_points)
             np = self.backend.symbols.num_quadrature_points(num_points)
             quadparts = [L.ForRange(iq, 0, np, body=body)]
+
+        return preparts, quadparts, postparts
+
+
+    def generate_runtime_quadrature_loop(self):
+        "Generate quadrature loop for custom integrals, with physical points given runtime."
+        L = self.backend.language
+
+        assert self.ir["integral_type"] in custom_integral_types
+
+        num_points = self.backend.symbols.num_quadrature_points(None)
+
+        # Generate unstructured varying partition
+        body = self.generate_unstructured_varying_partition(num_points)
+        body = L.commented_code_list(body,
+            "Quadrature loop body setup (num_points={0})".format(num_points))
+
+        # Generate dofblock parts, some of this
+        # will be placed before or after quadloop
+        preparts, quadparts, postparts = \
+            self.generate_dofblock_partition(num_points)
+        body += quadparts
+
+        # Wrap body in loop
+        if not body:
+            # Could happen for integral with everything zero and optimized away
+            quadparts = []
+        else:
+            # Regular case: define quadrature loop
+            iq_block = L.Symbol("iq_block")
+            points_block_size = 4  # TODO: Make this a parameter?
+            num_point_blocks = (num_points + points_block_size - 1) / points_block_size
+
+            iq = self.backend.symbols.quadrature_loop_index(None)
+
+            num_points_in_block = L.Min(points_block_size, num_points - iq_block*points_block_size)
+            body = L.ForRange(iq, 0, num_points_in_block, body=body)
+
+            body = [
+                L.Comment("FIXME: Copy points here"),
+                L.Comment("FIXME: Recompute element tables here"),
+                body
+                ]
+
+            body = L.ForRange(iq_block, 0, num_point_blocks, body=body)
+            quadparts = [body]
 
         return preparts, quadparts, postparts
 
