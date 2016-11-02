@@ -147,6 +147,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
     if integral_type in custom_integral_types:
         do_apply_preintegration = False
 
+    ir["chunk_size"] = 4  # TODO: Make this a parameter?
+
     # { ufl coefficient: count }
     ir["coefficient_numbering"] = coefficient_numbering
 

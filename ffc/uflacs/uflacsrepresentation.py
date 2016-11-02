@@ -72,7 +72,7 @@ def compute_integral_ir(itg_data,
     if integral_type in custom_integral_types:
         # Set quadrature degree to twice the highest element degree, to get
         # enough points to identify basis functions via table computations
-        max_element_degree = max([2] + [ufl_element.degree() for ufl_element in unique_elements])
+        max_element_degree = max([1] + [ufl_element.degree() for ufl_element in unique_elements])
         rules = [("default", 2*max_element_degree)]
         quadrature_integral_type = "cell"
     else:
@@ -90,6 +90,9 @@ def compute_integral_ir(itg_data,
     # Store quadrature rules in format { num_points: (points, weights) }
     ir["quadrature_rules"] = quadrature_rules
 
+    # Store the fake num_points for analysis in custom integrals
+    if integral_type in custom_integral_types:
+        ir["fake_num_points"], = quadrature_rules.keys()
 
     # Group and accumulate integrals on the format { num_points: integral data }
     sorted_integrals = accumulate_integrals(itg_data, quadrature_rule_sizes)

@@ -94,34 +94,29 @@ class FFCBackendSymbols(object):
         "Internal value for cell orientation in generated code."
         return self.S("co" + ufc_restriction_postfix(restriction))
 
-    def num_quadrature_points(self, num_points):
-        if num_points is None:
-            return self.S("num_quadrature_points")
-        else:
-            return self.L.LiteralInt(num_points)
+    def num_custom_quadrature_points(self):
+        return self.S("num_quadrature_points")
+
+    def custom_quadrature_weights(self):
+        return self.S("quadrature_weights")
+
+    def custom_quadrature_points(self):
+        return self.S("quadrature_points")
 
     def weights_array(self, num_points):
-        if num_points is None:
-            return self.S("quadrature_weights")
-        else:
-            return self.S("weights%d" % (num_points,))
+        return self.S("weights%d" % (num_points,))
 
     def points_array(self, num_points):
         # Note: Points array refers to points on the integration cell
-        if num_points is None:
-            return self.S("quadrature_points")
-        else:
-            return self.S("points%d" % (num_points,))
+        return self.S("points%d" % (num_points,))
 
     def quadrature_loop_index(self, num_points):
         """Reusing a single index name for all quadrature loops,
         assumed not to be nested."""
         if num_points == 1:
             return self.L.LiteralInt(0)
-        elif num_points is None:
-            return self.S("iq")
         else:
-            return self.S("iq%d" % (num_points,))
+            return self.S("iq")
 
     def argument_loop_index(self, iarg):
         "Loop index for argument #iarg."

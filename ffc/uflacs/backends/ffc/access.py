@@ -114,8 +114,12 @@ class FFCBackendAccess(MultiFunction):
             if mt.local_derivatives:
                 error("FIXME: Jacobian in custom integrals is not implemented.")
 
+                FIXME
+                weights_array
+                points_array
+
             # Physical coordinates are available in given variables
-            assert num_points is None
+            #assert num_points is None
             x = self.symbols.points_array(num_points)
             iq = self.symbols.quadrature_loop_index(num_points)
             gdim, = mt.terminal.ufl_shape

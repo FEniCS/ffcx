@@ -27,7 +27,7 @@ from ufl.measure import custom_integral_types, point_integral_types
 from ffc.log import error, warning
 
 from ffc.uflacs.build_uflacs_ir import get_common_block_data
-
+from ffc.uflacs.elementtables import piecewise_ttypes
 
 class IntegralGenerator(object):
 
@@ -270,13 +270,32 @@ class IntegralGenerator(object):
         parts = []
 
         tables = self.ir["unique_tables"]
-        for name in sorted(tables):
-            # TODO: Not padding, consider when and if to do so
-            table = tables[name]
-            decl = L.ArrayDecl("static const double", name,
-                               table.shape, table,
-                               alignas=self.ir["alignas"])
-            parts += [decl]
+        table_types = self.ir["unique_table_types"]
+        # TODO: Not padding, consider when and if to do so
+
+        if self.ir["integral_type"] in custom_integral_types:
+            chunk_size = self.ir["chunk_size"]
+            for name in sorted(tables):
+                if table_types[name] in piecewise_ttypes:
+                    table = tables[name]
+                    decl = L.ArrayDecl("static const double", name,
+                                       table.shape, table,
+                                       alignas=self.ir["alignas"])
+                    parts += [decl]
+            for name in sorted(tables):
+                if table_types[name] not in piecewise_ttypes:
+                    table = tables[name]
+                    decl = L.ArrayDecl("double", name,
+                                       (1, chunk_size, table.shape[2]), 0,
+                                       alignas=self.ir["alignas"])
+                    parts += [decl]
+        else:
+            for name in sorted(tables):
+                table = tables[name]
+                decl = L.ArrayDecl("static const double", name,
+                                   table.shape, table,
+                                   alignas=self.ir["alignas"])
+                parts += [decl]
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, [
@@ -336,8 +355,7 @@ class IntegralGenerator(object):
         else:
             # Regular case: define quadrature loop
             iq = self.backend.symbols.quadrature_loop_index(num_points)
-            np = self.backend.symbols.num_quadrature_points(num_points)
-            quadparts = [L.ForRange(iq, 0, np, body=body)]
+            quadparts = [L.ForRange(iq, 0, num_points, body=body)]
 
         return preparts, quadparts, postparts
 
@@ -348,12 +366,15 @@ class IntegralGenerator(object):
 
         assert self.ir["integral_type"] in custom_integral_types
 
-        num_points = self.backend.symbols.num_quadrature_points(None)
+        num_points = self.ir["fake_num_points"]
+        chunk_size = self.ir["chunk_size"]
 
         # Generate unstructured varying partition
         body = self.generate_unstructured_varying_partition(num_points)
         body = L.commented_code_list(body,
-            "Quadrature loop body setup (num_points={0})".format(num_points))
+            ["Run-time quadrature loop body setup",
+             "(chunk_size={0}, analysis_num_points={1})".format(
+                 chunk_size, num_points)])
 
         # Generate dofblock parts, some of this
         # will be placed before or after quadloop
@@ -366,24 +387,56 @@ class IntegralGenerator(object):
             # Could happen for integral with everything zero and optimized away
             quadparts = []
         else:
-            # Regular case: define quadrature loop
-            iq_block = L.Symbol("iq_block")
-            points_block_size = 4  # TODO: Make this a parameter?
-            num_point_blocks = (num_points + points_block_size - 1) / points_block_size
+            # Define two-level quadrature loop; over chunks then over points in chunk
+            iq_chunk = L.Symbol("iq_chunk")
+            np = self.backend.symbols.num_custom_quadrature_points()
+            num_point_blocks = (np + chunk_size - 1) / chunk_size
+            iq = self.backend.symbols.quadrature_loop_index(num_points)
+            num_points_in_block = L.Call("min", (chunk_size, np - iq_chunk * chunk_size))
+            iq_body = L.ForRange(iq, 0, num_points_in_block, body=body)
 
-            iq = self.backend.symbols.quadrature_loop_index(None)
 
-            num_points_in_block = L.Min(points_block_size, num_points - iq_block*points_block_size)
-            body = L.ForRange(iq, 0, num_points_in_block, body=body)
+            ### Preparations for quadrature rules
+            # 
+            varying_ir = self.ir["varying_irs"][num_points]
+            varying_ir["need_weights"] = False  # FIXME
+            varying_ir["need_points"] = False  # FIXME
 
-            body = [
-                L.Comment("FIXME: Copy points here"),
-                L.Comment("FIXME: Recompute element tables here"),
-                body
-                ]
+            rule_parts = []
 
-            body = L.ForRange(iq_block, 0, num_point_blocks, body=body)
-            quadparts = [body]
+            # Generate quadrature weights array
+            if varying_ir["need_weights"]:
+                cwsym = self.backend.symbols.custom_weights_array()
+                wsym = self.backend.symbols.weights_array(chunk_size)
+                # Copy weights
+                rule_parts += [
+                    L.ArrayDecl("double", wsym, chunk_size, 0,
+                                alignas=self.ir["alignas"]),
+                    L.ForRange(iq, 0, num_points_in_block,
+                               body=L.Assign(wsym[iq], cwsym[chunk_size*iq_chunk + iq])),
+                    ]
+
+            # Generate quadrature points array
+            if varying_ir["need_points"]:
+                cpsym = self.backend.symbols.custom_points_array()
+                psym = self.backend.symbols.points_array(num_points)
+                rule_parts += [L.ArrayDecl("double", psym, chunk_size * tdim, 0,  # NB! tdim or gdim here?
+                                           alignas=self.ir["alignas"])]
+                # FIXME: Copy points, clarify array names for physical vs reference points
+
+            # Add leading comment if there are any tables
+            rule_parts = L.commented_code_list(rule_parts,
+                "Section for quadrature weights and points")
+
+
+            ### Preparations for element tables
+            table_parts = [L.Comment("FIXME: Declare element tables here"),
+                           L.Comment("FIXME: Fill element tables here")]
+
+
+            ### Gather all in chunk loop
+            chunk_body = rule_parts + table_parts + [iq_body]
+            quadparts = [L.ForRange(iq_chunk, 0, num_point_blocks, body=chunk_body)]
 
         return preparts, quadparts, postparts
 
@@ -569,6 +622,8 @@ class IntegralGenerator(object):
             "premultiplied": "TM",
             "partial": "TP",
             "full": "TF",
+            "safe": "TS",
+            "quadrature": "TQ",
             }
         blocknames = {
             "preintegrated": "BI",
@@ -576,6 +631,7 @@ class IntegralGenerator(object):
             "partial": "BP",
             "full": "BF",
             "safe": "BS",
+            "quadrature": "BQ",
             }
 
         fwtempname = "fw"

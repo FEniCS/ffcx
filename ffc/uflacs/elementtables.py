@@ -29,6 +29,7 @@ from ufl.utils.derivativetuples import derivative_listing_to_counts
 from ufl.permutation import build_component_numbering
 from ufl.classes import FormArgument, GeometricQuantity, SpatialCoordinate, Jacobian
 from ufl.algorithms.analysis import unique_tuple
+from ufl.measure import custom_integral_types
 
 from ffc.log import error
 from ffc.fiatinterface import create_element
@@ -148,6 +149,11 @@ def get_ffc_table_values(points,
     (entity number, quadrature point number, dof number)
     """
     deriv_order = sum(derivative_counts)
+
+    if integral_type in custom_integral_types:
+        # Use quadrature points on cell for analysis in custom integral types
+        integral_type = "cell"
+        assert not avg
 
     if avg in ("cell", "facet"):
         # Redefine points to compute average tables
