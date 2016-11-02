@@ -1191,7 +1191,7 @@ def build_1d_initializer_list(values, formatter, padlen=0):
         tokens.append(fvalues[-1])
         if padlen:
             # Add padding
-            zero = formatter(values.dtype(0))
+            zero = formatter(values.dtype.type(0))
             for i in range(leftover(len(values), padlen)):
                 tokens.append(sep)
                 tokens.append(zero)

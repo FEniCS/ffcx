@@ -703,7 +703,7 @@ class IntegralGenerator(object):
             weights = self.backend.symbols.custom_weights_table()
             weight = weights[iq]
         else:
-            weight = self.backend.symbols.weights_table(num_points)
+            weights = self.backend.symbols.weights_table(num_points)
             weight = weights[iq]
 
         # Fetch code to access modified arguments
