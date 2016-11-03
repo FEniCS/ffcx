@@ -199,11 +199,16 @@ def _generate_dofmap_code(ir, parameters):
     code["num_entity_dofs"] \
         = switch(f_d, [ret(num) for num in ir["num_entity_dofs"]],
                  ret(f_int(0)))
+    code["num_subcomplex_dofs"] \
+        = switch(f_d, [ret(num) for num in ir["num_subcomplex_dofs"]],
+                 ret(f_int(0)))
     code["tabulate_dofs"] = _tabulate_dofs(ir["tabulate_dofs"])
     code["tabulate_facet_dofs"] \
         = _tabulate_facet_dofs(ir["tabulate_facet_dofs"])
     code["tabulate_entity_dofs"] \
         = _tabulate_entity_dofs(ir["tabulate_entity_dofs"])
+    code["tabulate_subcomplex_dofs"] \
+        = _tabulate_subcomplex_dofs(ir["tabulate_subcomplex_dofs"])
     code["num_sub_dofmaps"] = ret(ir["num_sub_dofmaps"])
     code["create_sub_dofmap"] = _create_sub_dofmap(ir)
     code["create"] = ret(create(code["classname"]))
@@ -617,6 +622,50 @@ def _tabulate_entity_dofs(ir):
         cases = ["\n".join(assign(component(dofs, j), dof)
                            for (j, dof) in enumerate(entity_dofs[d][entity]))
                  for entity in range(num_entities)]
+
+        # Generate inner switch with preceding check
+        all_cases[d] = "\n".join([check, format["switch"](f_i, cases)])
+
+    # Generate outer switch
+    code.append(format["switch"](f_d, all_cases))
+
+    return "\n".join(code)
+
+
+def _tabulate_subcomplex_dofs(ir):
+    "Generate code for tabulate_subcomplex_dofs."
+
+    # Extract variables from ir
+    subcomplex_dofs, entity_dofs, num_dofs_per_entity = ir
+
+    # Prefetch formats
+    assign = format["assign"]
+    component = format["component"]
+    f_d = format["argument dimension"]
+    f_i = format["argument entity"]
+    dofs = format["argument dofs"]
+
+    # Add check that dimension and number of mesh entities is valid
+    dim = len(num_dofs_per_entity)
+    excpt = format["exception"]("%s is larger than dimension (%d)"
+                                % (f_d, dim - 1))
+    code = [format["if"]("%s > %d" % (f_d, dim - 1), excpt)]
+
+    # Generate cases for each dimension:
+    all_cases = ["" for d in range(dim)]
+    for d in range(dim):
+        # Add check that given entity is valid:
+        num_entities = len(entity_dofs[d].keys())
+        excpt = format["exception"]("%s is larger than number of entities (%d)"
+                                    % (f_i, num_entities - 1))
+        check = format["if"]("%s > %d" % (f_i, num_entities - 1), excpt)
+
+        # Generate cases for each mesh entity
+        cases = []
+        for entity in range(num_entities):
+            assignments = [assign(component(dofs, j), dof)
+                           for (j, dof) in enumerate(subcomplex_dofs[(d, entity)])]
+            cases.append("\n".join(assignments))
 
         # Generate inner switch with preceding check
         all_cases[d] = "\n".join([check, format["switch"](f_i, cases)])
