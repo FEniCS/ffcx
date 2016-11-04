@@ -71,6 +71,13 @@ class ufc_dofmap(ufc_generator):
         default = L.Return(L.LiteralInt(0))
         return L.Switch(d, cases, default=default)
 
+    def num_entity_closure_dofs(self, L, ir):
+        d = L.Symbol("d")
+        values = ir["num_entity_closure_dofs"]
+        cases = [(i, L.Return(L.LiteralInt(value))) for i, value in enumerate(values)]
+        default = L.Return(L.LiteralInt(0))
+        return L.Switch(d, cases, default=default)
+
     def tabulate_dofs(self, L, ir):
 
         # Input arguments
@@ -205,6 +212,9 @@ class ufc_dofmap(ufc_generator):
             all_cases.append((dim, inner_switch))
 
         return L.Switch(d, all_cases, autoscope=False)
+
+    def tabulate_entity_closure_dofs(self, L, ir):
+        return L.Comment("FIXME")
 
     def num_sub_dofmaps(self, L, ir):
         value = ir["num_sub_dofmaps"]
