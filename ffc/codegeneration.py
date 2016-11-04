@@ -654,8 +654,9 @@ def _tabulate_entity_closure_dofs(ir):
     # Generate cases for each dimension:
     all_cases = ["" for d in range(dim)]
     for d in range(dim):
+        num_entities = len(entity_dofs[d])
+
         # Add check that given entity is valid:
-        num_entities = len(entity_dofs[d].keys())
         excpt = format["exception"]("%s is larger than number of entities (%d)"
                                     % (f_i, num_entities - 1))
         check = format["if"]("%s > %d" % (f_i, num_entities - 1), excpt)
