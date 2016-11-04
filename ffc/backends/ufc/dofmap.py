@@ -55,9 +55,9 @@ public:
 %(num_entity_dofs)s
   }
 
-  std::size_t num_subcomplex_dofs(std::size_t d) const final override
+  std::size_t num_entity_closure_dofs(std::size_t d) const final override
   {
-%(num_subcomplex_dofs)s
+%(num_entity_closure_dofs)s
   }
 
   void tabulate_dofs(std::size_t * dofs,
@@ -79,10 +79,10 @@ public:
 %(tabulate_entity_dofs)s
   }
 
-  void tabulate_subcomplex_dofs(std::size_t * dofs,
-                                std::size_t d, std::size_t i) const final override
+  void tabulate_entity_closure_dofs(std::size_t * dofs,
+                                    std::size_t d, std::size_t i) const final override
   {
-%(tabulate_subcomplex_dofs)s
+%(tabulate_entity_closure_dofs)s
   }
 
 
@@ -128,7 +128,7 @@ public:
 
   std::size_t num_entity_dofs(std::size_t d) const final override;
 
-  std::size_t num_subcomplex_dofs(std::size_t d) const final override;
+  std::size_t num_entity_closure_dofs(std::size_t d) const final override;
 
   void tabulate_dofs(std::size_t * dofs,
                      const std::vector<std::size_t>& num_global_entities,
@@ -140,7 +140,7 @@ public:
   void tabulate_entity_dofs(std::size_t * dofs,
                             std::size_t d, std::size_t i) const final override;
 
-  void tabulate_subcomplex_dofs(std::size_t * dofs,
+  void tabulate_entity_closure_dofs(std::size_t * dofs,
                             std::size_t d, std::size_t i) const final override;
 
   std::size_t num_sub_dofmaps() const final override;
@@ -199,9 +199,9 @@ std::size_t %(classname)s::num_entity_dofs(std::size_t d) const
 %(num_entity_dofs)s
 }
 
-std::size_t %(classname)s::num_subcomplex_dofs(std::size_t d) const
+std::size_t %(classname)s::num_entity_closure_dofs(std::size_t d) const
 {
-%(num_subcomplex_dofs)s
+%(num_entity_closure_dofs)s
 }
 
 void %(classname)s::tabulate_dofs(std::size_t * dofs,
@@ -223,10 +223,10 @@ void %(classname)s::tabulate_entity_dofs(std::size_t * dofs,
 %(tabulate_entity_dofs)s
 }
 
-void %(classname)s::tabulate_subcomplex_dofs(std::size_t * dofs,
+void %(classname)s::tabulate_entity_closure_dofs(std::size_t * dofs,
                                              std::size_t d, std::size_t i) const
 {
-%(tabulate_subcomplex_dofs)s
+%(tabulate_entity_closure_dofs)s
 }
 
 std::size_t %(classname)s::num_sub_dofmaps() const

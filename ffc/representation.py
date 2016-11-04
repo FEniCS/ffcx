@@ -251,8 +251,8 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, jit=False):
     num_dofs_per_entity = _num_dofs_per_entity(fiat_element)
     entity_dofs = fiat_element.entity_dofs()
     facet_dofs = _tabulate_facet_dofs(fiat_element, cell)
-    subcomplex_dofs, num_dofs_per_subcomplex = \
-        _tabulate_subcomplex_dofs(fiat_element, cell)
+    entity_closure_dofs, num_dofs_per_entity_closure = \
+        _tabulate_entity_closure_dofs(fiat_element, cell)
     
     
     # Store id
@@ -271,11 +271,11 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, jit=False):
     ir["num_element_dofs"] = fiat_element.space_dimension()
     ir["num_facet_dofs"] = len(facet_dofs[0])
     ir["num_entity_dofs"] = num_dofs_per_entity
-    ir["num_subcomplex_dofs"] = num_dofs_per_subcomplex
+    ir["num_entity_closure_dofs"] = num_dofs_per_entity_closure
     ir["tabulate_dofs"] = _tabulate_dofs(fiat_element, cell)
     ir["tabulate_facet_dofs"] = facet_dofs
     ir["tabulate_entity_dofs"] = (entity_dofs, num_dofs_per_entity)
-    ir["tabulate_subcomplex_dofs"] = (subcomplex_dofs, entity_dofs, num_dofs_per_entity)
+    ir["tabulate_entity_closure_dofs"] = (entity_closure_dofs, entity_dofs, num_dofs_per_entity)
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
     ir["create_sub_dofmap"] = [classnames["dofmap"][e]
                                for e in ufl_element.sub_elements()]
@@ -828,8 +828,8 @@ def _tabulate_facet_dofs(element, cell):
     return facet_dofs
 
 
-def _tabulate_subcomplex_dofs(element, cell):
-    "Compute intermediate representation of tabulate_subcomplex_dofs."
+def _tabulate_entity_closure_dofs(element, cell):
+    "Compute intermediate representation of tabulate_entity_closure_dofs."
 
     # Compute incidences
     incidence = __compute_incidence(cell.topological_dimension())
@@ -839,7 +839,7 @@ def _tabulate_subcomplex_dofs(element, cell):
 
     entity_dofs = element.entity_dofs()
 
-    subcomplex_dofs = {}
+    entity_closure_dofs = {}
     for d0 in range(D + 1):
         # Find out which entities are incident to each entity of dim d0
         incident = {}
@@ -854,14 +854,14 @@ def _tabulate_subcomplex_dofs(element, cell):
                 for e1 in entity_dofs[d1]:
                     if (d1, e1) in incident[(d0, e0)]:
                         dofs += entity_dofs[d1][e1]
-            subcomplex_dofs[(d0, e0)] = sorted(dofs)
+            entity_closure_dofs[(d0, e0)] = sorted(dofs)
 
-    num_subcomplex_dofs = [max(len(dofs)
-                               for (d, e), dofs in subcomplex_dofs.items()
+    num_entity_closure_dofs = [max(len(dofs)
+                               for (d, e), dofs in entity_closure_dofs.items()
                                if d == dim)
                            for dim in range(D + 1)]
 
-    return subcomplex_dofs, num_subcomplex_dofs
+    return entity_closure_dofs, num_entity_closure_dofs
 
 
 def _interpolate_vertex_values(ufl_element, fiat_element):

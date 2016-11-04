@@ -199,16 +199,16 @@ def _generate_dofmap_code(ir, parameters):
     code["num_entity_dofs"] \
         = switch(f_d, [ret(num) for num in ir["num_entity_dofs"]],
                  ret(f_int(0)))
-    code["num_subcomplex_dofs"] \
-        = switch(f_d, [ret(num) for num in ir["num_subcomplex_dofs"]],
+    code["num_entity_closure_dofs"] \
+        = switch(f_d, [ret(num) for num in ir["num_entity_closure_dofs"]],
                  ret(f_int(0)))
     code["tabulate_dofs"] = _tabulate_dofs(ir["tabulate_dofs"])
     code["tabulate_facet_dofs"] \
         = _tabulate_facet_dofs(ir["tabulate_facet_dofs"])
     code["tabulate_entity_dofs"] \
         = _tabulate_entity_dofs(ir["tabulate_entity_dofs"])
-    code["tabulate_subcomplex_dofs"] \
-        = _tabulate_subcomplex_dofs(ir["tabulate_subcomplex_dofs"])
+    code["tabulate_entity_closure_dofs"] \
+        = _tabulate_entity_closure_dofs(ir["tabulate_entity_closure_dofs"])
     code["num_sub_dofmaps"] = ret(ir["num_sub_dofmaps"])
     code["create_sub_dofmap"] = _create_sub_dofmap(ir)
     code["create"] = ret(create(code["classname"]))
@@ -632,11 +632,11 @@ def _tabulate_entity_dofs(ir):
     return "\n".join(code)
 
 
-def _tabulate_subcomplex_dofs(ir):
-    "Generate code for tabulate_subcomplex_dofs."
+def _tabulate_entity_closure_dofs(ir):
+    "Generate code for tabulate_entity_closure_dofs."
 
     # Extract variables from ir
-    subcomplex_dofs, entity_dofs, num_dofs_per_entity = ir
+    entity_closure_dofs, entity_dofs, num_dofs_per_entity = ir
 
     # Prefetch formats
     assign = format["assign"]
@@ -664,7 +664,7 @@ def _tabulate_subcomplex_dofs(ir):
         cases = []
         for entity in range(num_entities):
             assignments = [assign(component(dofs, j), dof)
-                           for (j, dof) in enumerate(subcomplex_dofs[(d, entity)])]
+                           for (j, dof) in enumerate(entity_closure_dofs[(d, entity)])]
             cases.append("\n".join(assignments))
 
         # Generate inner switch with preceding check
