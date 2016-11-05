@@ -135,7 +135,6 @@ known_tsfc_failures = set([
     "MathFunctions.ufl",      # FIXME: should be easy
     "QuadratureElement.ufl",  # FIXME: is it fixable?
     "RestrictedElement.ufl",  # FIXME: is it fixable?
-    "TraceElement.ufl",       # FIXME: is it supported by tsfc?
 ])
 
 
