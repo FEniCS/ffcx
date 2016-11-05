@@ -31,7 +31,7 @@ from numpy import array
 import ufl
 from ufl.utils.sorting import sorted_by_key
 import FIAT
-from FIAT.trace import DiscontinuousLagrangeTrace
+from FIAT.hdiv_trace import HDivTrace
 
 # FFC modules
 from ffc.log import debug, error
@@ -48,7 +48,7 @@ supported_families = ("Brezzi-Douglas-Marini",
                       "Crouzeix-Raviart",
                       "Discontinuous Lagrange",
                       "Discontinuous Raviart-Thomas",
-                      "Discontinuous Lagrange Trace",
+                      "HDiv Trace",
                       "Lagrange",
                       "Lobatto",
                       "Nedelec 1st kind H(curl)",
