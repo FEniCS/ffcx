@@ -44,7 +44,7 @@ from ffc.log import info, error, begin, end, debug_ir, warning
 from ffc.fiatinterface import create_element, reference_cell
 from ffc.mixedelement import MixedElement
 from ffc.enrichedelement import EnrichedElement, SpaceOfReals
-from ffc.fiatinterface import DiscontinuousLagrangeTrace
+from ffc.fiatinterface import HDivTrace
 from ffc.quadratureelement import QuadratureElement
 from ffc.cpp import set_float_formatting
 from ffc.cpp import make_classname, make_integral_classname
@@ -679,7 +679,7 @@ def _evaluate_basis(ufl_element, fiat_element):
     for e in elements:
         if isinstance(e, QuadratureElement):
             return "Function not supported/implemented for QuadratureElement."
-        if isinstance(e, DiscontinuousLagrangeTrace):
+        if isinstance(e, HDivTrace):
             return "Function not supported for Trace elements"
 
     # Initialise data with 'global' values.
@@ -871,8 +871,8 @@ def _interpolate_vertex_values(ufl_element, fiat_element):
     for e in all_elements(fiat_element):
         if isinstance(e, QuadratureElement):
             return "Function is not supported/implemented for QuadratureElement."
-        if isinstance(e, DiscontinuousLagrangeTrace):
-            return "Function is not implemented for DiscontinuousLagrangeTrace."
+        if isinstance(e, HDivTrace):
+            return "Function is not implemented for HDivTrace."
 
     cell = ufl_element.cell()
     cellname = cell.cellname()
