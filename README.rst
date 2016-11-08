@@ -18,13 +18,37 @@ For more information, visit http://www.fenicsproject.org
 Documentation
 =============
 
-The FFC documentation can be viewed at Read the Docs:
+Documentation can be viewed at http://fenics-ffc.readthedocs.org/.
 
-+--------+-------------------------------------------------------------------------------------+
-|FFC     |  .. image:: https://readthedocs.org/projects/fenics-ffc/badge/?version=latest       |
-|        |     :target: http://fenics.readthedocs.io/projects/ffc/en/latest/?badge=latest      |
-|        |     :alt: Documentation Status                                                      |
-+--------+-------------------------------------------------------------------------------------+
+.. image:: https://readthedocs.org/projects/fenics-ffc/badge/?version=latest
+   :target: http://fenics.readthedocs.io/projects/ffc/en/latest/?badge=latest
+   :alt: Documentation Status
+
+
+Automated Testing
+=================
+
+We use Bitbucket Pipelines and Atlassian Bamboo to perform automated
+testing.
+
+.. image:: https://bitbucket-badges.useast.atlassian.io/badge/fenics-project/ffc.svg
+   :target: https://bitbucket.org/fenics-project/ffc/addon/pipelines/home
+   :alt: Pipelines Build Status
+
+.. image:: http://fenics-bamboo.simula.no:8085/plugins/servlet/wittified/build-status/FFC-FD
+   :target: http://fenics-bamboo.simula.no:8085/browse/FFC-FD/latest
+   :alt: Bamboo Build Status
+
+
+Code Coverage
+=============
+
+Code coverage reports can be viewed at
+https://coveralls.io/repos/bitbucket/fenics-project/ffc.
+
+.. image:: https://coveralls.io/repos/bitbucket/fenics-project/ffc/badge.svg?branch=master
+   :target: https://coveralls.io/bitbucket/fenics-project/ffc?branch=master
+   :alt: Coverage Status
 
 
 License
