@@ -91,6 +91,19 @@ def mock_form_ir():
 
 def mock_dofmap_ir():
     ir = basic_class_properties("mock_dofmap_classname")
+    num_dofs_per_entity = [1, 1, 1]
+    entity_dofs = [[(0,), (1,), (2,)],
+                   [(3,), (4,), (5,)],
+                   [(6,)]]
+    entity_closure_dofs = {
+        (0, 0): [0],
+        (0, 1): [1],
+        (0, 2): [2],
+        (1, 0): [0, 1],
+        (1, 1): [0, 2],
+        (1, 2): [1, 2],
+        (2, 0): [0, 1, 2],
+        }
     ir.update({
         "signature": "mock element signature",
         "geometric_dimension": 3,
@@ -98,10 +111,12 @@ def mock_dofmap_ir():
         "global_dimension": ([3, 2, 1], 4),
         "tabulate_dofs": ([[[(0,), (1,), (2,)], [(3,), (4,), (5,)], [(6,)]], None], [7, 1], True, [False, True]),
         "tabulate_facet_dofs": [[0, 1, 2], [1, 2, 3], [0, 2, 3]],
-        "tabulate_entity_dofs": ([[(0,), (1,), (2,)], [(3,), (4,), (5,)], [(6,)]], [1, 1, 1]),
+        "tabulate_entity_dofs": (entity_dofs, num_dofs_per_entity),
+        "tabulate_entity_closure_dofs": (entity_closure_dofs, entity_dofs, num_dofs_per_entity),
         "needs_mesh_entities": [True, False, True],
         "num_element_dofs": 7,
-        "num_entity_dofs": [3, 0, 1],
+        "num_entity_dofs": num_dofs_per_entity,
+        "num_entity_closure_dofs": [3, 6, 10],
         "num_facet_dofs": 7,
         "num_sub_dofmaps": 3,
         "create_sub_dofmap": ["mock_dofmap_classname_sub_%d" % (i,) for i in range(3)],

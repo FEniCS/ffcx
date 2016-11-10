@@ -249,8 +249,12 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, jit=False):
 
     # Precompute repeatedly used items
     num_dofs_per_entity = _num_dofs_per_entity(fiat_element)
+    entity_dofs = fiat_element.entity_dofs()
     facet_dofs = _tabulate_facet_dofs(fiat_element, cell)
-
+    entity_closure_dofs, num_dofs_per_entity_closure = \
+        _tabulate_entity_closure_dofs(fiat_element, cell)
+    
+    
     # Store id
     ir = {"id": element_numbers[ufl_element]}
     ir["classname"] = classnames["dofmap"][ufl_element]
@@ -267,9 +271,11 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, jit=False):
     ir["num_element_dofs"] = fiat_element.space_dimension()
     ir["num_facet_dofs"] = len(facet_dofs[0])
     ir["num_entity_dofs"] = num_dofs_per_entity
+    ir["num_entity_closure_dofs"] = num_dofs_per_entity_closure
     ir["tabulate_dofs"] = _tabulate_dofs(fiat_element, cell)
     ir["tabulate_facet_dofs"] = facet_dofs
-    ir["tabulate_entity_dofs"] = (fiat_element.entity_dofs(), num_dofs_per_entity)
+    ir["tabulate_entity_dofs"] = (entity_dofs, num_dofs_per_entity)
+    ir["tabulate_entity_closure_dofs"] = (entity_closure_dofs, entity_dofs, num_dofs_per_entity)
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
     ir["create_sub_dofmap"] = [classnames["dofmap"][e]
                                for e in ufl_element.sub_elements()]
@@ -805,7 +811,8 @@ def _tabulate_facet_dofs(element, cell):
     # Find out which entities are incident to each facet
     incident = num_facets * [None]
     for facet in range(num_facets):
-        incident[facet] = [pair[1] for pair in incidence if incidence[pair] is True and pair[0] == (D - 1, facet)]
+        incident[facet] = [pair[1] for pair in incidence
+                           if incidence[pair] is True and pair[0] == (D - 1, facet)]
 
     # Make list of dofs
     facet_dofs = []
@@ -819,6 +826,42 @@ def _tabulate_facet_dofs(element, cell):
                     facet_dofs[facet] += entity_dofs[dim][entity]
         facet_dofs[facet].sort()
     return facet_dofs
+
+
+def _tabulate_entity_closure_dofs(element, cell):
+    "Compute intermediate representation of tabulate_entity_closure_dofs."
+
+    # Compute incidences
+    incidence = __compute_incidence(cell.topological_dimension())
+
+    # Get topological dimension
+    D = max([pair[0][0] for pair in incidence])
+
+    entity_dofs = element.entity_dofs()
+
+    entity_closure_dofs = {}
+    for d0 in range(D + 1):
+        # Find out which entities are incident to each entity of dim d0
+        incident = {}
+        for e0 in entity_dofs[d0]:
+            incident[(d0, e0)] = [pair[1] for pair in incidence
+                                  if incidence[pair] is True and pair[0] == (d0, e0)]
+
+        # Make list of dofs
+        for e0 in entity_dofs[d0]:
+            dofs = []
+            for d1 in entity_dofs:
+                for e1 in entity_dofs[d1]:
+                    if (d1, e1) in incident[(d0, e0)]:
+                        dofs += entity_dofs[d1][e1]
+            entity_closure_dofs[(d0, e0)] = sorted(dofs)
+
+    num_entity_closure_dofs = [max(len(dofs)
+                               for (d, e), dofs in entity_closure_dofs.items()
+                               if d == dim)
+                           for dim in range(D + 1)]
+
+    return entity_closure_dofs, num_entity_closure_dofs
 
 
 def _interpolate_vertex_values(ufl_element, fiat_element):
@@ -953,7 +996,6 @@ def __compute_incidence(D):
                 for i1 in range(len(sub_simplices[d1])):
                     incidence[((d0, i0), (d1, i1))] = all(v in sub_simplices[d0][i0]
                                                           for v in sub_simplices[d1][i1])
-
     return incidence
 
 
