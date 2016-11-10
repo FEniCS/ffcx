@@ -63,31 +63,31 @@ class ufc_finite_element(ufc_generator):
         return L.Return(L.LiteralInt(value))
 
     def value_rank(self, L, ir):
-        sh = ir["value_dimension"]
+        sh = ir["value_shape"]
         return L.Return(L.LiteralInt(len(sh)))
 
     def value_size(self, L, ir):
-        sh = ir["value_dimension"]
+        sh = ir["value_shape"]
         return L.Return(L.LiteralInt(product(sh)))
 
     def value_dimension(self, L, ir):
         i = L.Symbol("i")
-        sh = ir["value_dimension"]
+        sh = ir["value_shape"]
         cases = [(L.LiteralInt(j), L.Return(L.LiteralInt(k))) for j, k in enumerate(sh)]
         default = L.Return(L.LiteralInt(0))
         return L.Switch(i, cases, default=default, autoscope=False, autobreak=False)
 
     def reference_value_rank(self, L, ir):
-        sh = ir["reference_value_dimension"]
+        sh = ir["reference_value_shape"]
         return L.Return(L.LiteralInt(len(sh)))
 
     def reference_value_size(self, L, ir):
-        sh = ir["reference_value_dimension"]
+        sh = ir["reference_value_shape"]
         return L.Return(L.LiteralInt(product(sh)))
 
     def reference_value_dimension(self, L, ir):
         i = L.Symbol("i")
-        sh = ir["reference_value_dimension"]
+        sh = ir["reference_value_shape"]
         cases = [(L.LiteralInt(j), L.Return(L.LiteralInt(k))) for j, k in enumerate(sh)]
         default = L.Return(L.LiteralInt(0))
         return L.Switch(i, cases, default=default, autoscope=False, autobreak=False)
@@ -106,7 +106,7 @@ class ufc_finite_element(ufc_generator):
 
     def evaluate_basis_derivatives(self, L, ir): # FIXME: Get rid of this
         # FIXME: port this, then translate into reference version
-        data = ir["evaluate_basis_derivatives"]
+        data = ir["evaluate_basis"]
         return "FIXME"
 
     def evaluate_dof(self, L, ir): # FIXME: Get rid of this
@@ -117,12 +117,12 @@ class ufc_finite_element(ufc_generator):
 
     def evaluate_basis_all(self, L, ir):
         # FIXME: port this, then translate into reference version
-        data = ir["evaluate_basis_all"]
+        data = ir["evaluate_basis"]
         return "FIXME"
 
     def evaluate_basis_derivatives_all(self, L, ir):
         # FIXME: port this, then translate into reference version
-        data = ir["evaluate_basis_derivatives_all"]
+        data = ir["evaluate_basis"]
         return "FIXME"
 
     def evaluate_dofs(self, L, ir):
@@ -148,12 +148,13 @@ class ufc_finite_element(ufc_generator):
           // Finally: nu_j(f) = sum_component sum_ip weights[j][ip][component] fvalues[ip][component]
           element->evaluate_dofs(fdofs, fvalues, J, detJ, K)
         """
-
-        return "FIXME" + ir["evaluate_dofs"]
+        data = ir["evaluate_dof"]
+        return "FIXME"
 
     def interpolate_vertex_values(self, L, ir): # FIXME: port this
         # FIXME: port this, then translate into reference version
-        return "FIXME" + ir["interpolate_vertex_values"]
+        data = ir["interpolate_vertex_values"]
+        return "FIXME"
 
     def _tabulate_dof_reference_coordinates(self, L, ir):
         """TODO: Add this signature to finite_element:
