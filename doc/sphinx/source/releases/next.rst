@@ -11,17 +11,6 @@ Summary of changes
           be published (and renamed) to list the most important
           changes in the new release.
 
-- Generalize ufc interface to non-affine parameterized coordinates
-- Add ``ufc::coordinate_mapping`` class
-- Make ufc interface depend on C++11 features requiring gcc version >= 4.8
-- Change the mapping ``pullback as metric`` to ``double covariant piola`` (this
-  preserves tangential-tangential trace).
-- Added Hellan-Herrmann-Johnson element as supported element
-- Add mapping ``double contravariant piola`` (this preserves normal-normal
-  trace).
-- Include comment with effective representation and integral metadata
-  to generated ``tabulate_tensor`` code
-
 
 Detailed changes
 ================
