@@ -71,6 +71,13 @@ class ufc_dofmap(ufc_generator):
         default = L.Return(L.LiteralInt(0))
         return L.Switch(d, cases, default=default)
 
+    def num_entity_closure_dofs(self, L, ir):
+        d = L.Symbol("d")
+        values = ir["num_entity_closure_dofs"]
+        cases = [(i, L.Return(L.LiteralInt(value))) for i, value in enumerate(values)]
+        default = L.Return(L.LiteralInt(0))
+        return L.Switch(d, cases, default=default)
+
     def tabulate_dofs(self, L, ir):
 
         # Input arguments
@@ -196,6 +203,41 @@ class ufc_dofmap(ufc_generator):
             for entity in range(len(entity_dofs[dim])):
                 casebody = []
                 for (j, dof) in enumerate(entity_dofs[dim][entity]):
+                    casebody += [L.Assign(dofs[j], dof)]
+                cases.append((entity, L.StatementList(casebody)))
+
+            # Generate inner switch
+            # TODO: Removed check for (i <= num_entities-1)
+            inner_switch = L.Switch(i, cases, autoscope=False)
+            all_cases.append((dim, inner_switch))
+
+        return L.Switch(d, all_cases, autoscope=False)
+
+    def tabulate_entity_closure_dofs(self, L, ir):
+        # Extract variables from ir
+        entity_closure_dofs, entity_dofs, num_dofs_per_entity = \
+            ir["tabulate_entity_closure_dofs"]
+
+        # Output argument array
+        dofs = L.Symbol("dofs")
+
+        # Input arguments
+        d = L.Symbol("d")
+        i = L.Symbol("i")
+
+        # TODO: Removed check for (d <= tdim + 1)
+        tdim = len(num_dofs_per_entity) - 1
+
+        # Generate cases for each dimension:
+        all_cases = []
+        for dim in range(tdim + 1):
+            num_entities = len(entity_dofs[dim])
+
+            # Generate cases for each mesh entity
+            cases = []
+            for entity in range(num_entities):
+                casebody = []
+                for (j, dof) in enumerate(entity_closure_dofs[(dim, entity)]):
                     casebody += [L.Assign(dofs[j], dof)]
                 cases.append((entity, L.StatementList(casebody)))
 

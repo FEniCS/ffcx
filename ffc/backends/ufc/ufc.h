@@ -231,9 +231,13 @@ namespace ufc
     /// Return the number of dofs on each cell facet
     virtual std::size_t num_facet_dofs() const = 0;
 
-   /// Return the number of dofs associated with each cell entity of
-    /// dimension d
+    /// Return the number of dofs associated with each cell
+    /// entity of dimension d
     virtual std::size_t num_entity_dofs(std::size_t d) const = 0;
+
+    /// Return the number of dofs associated with the closure
+    /// of each cell entity dimension d
+    virtual std::size_t num_entity_closure_dofs(std::size_t d) const = 0;
 
     /// Tabulate the local-to-global mapping of dofs on a cell
     virtual void tabulate_dofs(std::size_t * dofs,
@@ -247,6 +251,10 @@ namespace ufc
     /// Tabulate the local-to-local mapping of dofs on entity (d, i)
     virtual void tabulate_entity_dofs(std::size_t * dofs,
                                       std::size_t d, std::size_t i) const = 0;
+
+    /// Tabulate the local-to-local mapping of dofs on the closure of entity (d, i)
+    virtual void tabulate_entity_closure_dofs(std::size_t * dofs,
+                                              std::size_t d, std::size_t i) const = 0;
 
     /// Return the number of sub dofmaps (for a mixed element)
     virtual std::size_t num_sub_dofmaps() const = 0;
