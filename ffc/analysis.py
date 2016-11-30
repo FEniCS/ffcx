@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2007-2016 Anders Logg and Kristian B. Oelgaard
+# Copyright (C) 2007-2016 Anders Logg, Martin Alnaes, Kristian B. Oelgaard,
+# and others
 #
 # This file is part of FFC.
 #
@@ -16,9 +17,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# Modified by Marie E. Rognes, 2010
-# Modified by Martin Sandve Alnæs, 2013-2014
+
+from __future__ import absolute_import
 
 """
 Compiler stage 1: Analysis
@@ -34,15 +34,15 @@ import copy
 from itertools import chain
 
 # UFL modules
-from ufl.finiteelement import MixedElement, EnrichedElement
-from ufl.algorithms import estimate_total_polynomial_degree
+from ufl.classes import Form, CellVolume, FacetArea
+from ufl.integral import Integral
+from ufl.finiteelement import MixedElement, EnrichedElement, VectorElement
 from ufl.algorithms import sort_elements
 from ufl.algorithms import compute_form_data
 from ufl.algorithms.analysis import extract_sub_elements
 
 # FFC modules
-from ffc.log import log, info, begin, end, warning, debug, error, warning_blue
-from ffc.quadratureelement import default_quadrature_degree
+from ffc.log import info, begin, end, warning, debug, error, ffc_assert, warning_blue
 from ffc.utils import all_equal
 from ffc.tensor import estimate_cost
 
@@ -148,9 +148,15 @@ def _analyze_form(form, parameters):
     forced_r = os.environ.get("FFC_FORCE_REPRESENTATION")
     if forced_r:
         warning("representation:    forced by $FFC_FORCE_REPRESENTATION to '%s'" % forced_r)
+        r = forced_r
+        r = "legacy" if r in ["quadrature", "tensor"] else r
+    else:
+        r = _extract_representation_family(form, parameters)
+
+    debug("Preprocessing form using '%s' representation family." % r)
 
     # Compute form metadata
-    if parameters["representation"] == "uflacs" or forced_r == "uflacs":
+    if r == "uflacs":
         # Temporary workaround to let uflacs have a different preprocessing pipeline
         # than the legacy representations quadrature and tensor. This approach imposes
         # a limitation that e.g. uflacs and tensor representation cannot be mixed in the same form.
@@ -162,16 +168,140 @@ def _analyze_form(form, parameters):
                                       preserve_geometry_types=(Jacobian,),
                                       do_apply_restrictions=True,
                                       )
-    else:
+    elif r == "tsfc":
+        try:
+            # TSFC provides compute_form_data wrapper using correct kwargs
+            from tsfc.ufl_utils import compute_form_data as tsfc_compute_form_data
+        except ImportError:
+            error("Failed to import tsfc.ufl_utils.compute_form_data when asked "
+                  "for tsfc representation.")
+        form_data = tsfc_compute_form_data(form)
+    elif r == "legacy":
+        # quadrature or tensor representation
         form_data = compute_form_data(form)
+    else:
+        error("Unexpected representation family '%s' for form preprocessing." % r)
 
     info("")
     info(str(form_data))
 
     # Attach integral meta data
     _attach_integral_metadata(form_data, parameters)
+    _validate_representation_choice(form_data, r)
 
     return form_data
+
+
+def _extract_representation_family(form, parameters):
+    """Return 'uflacs', 'tsfc' or 'legacy', or raise error. This
+    takes care of (a) compatibility between representations due to
+    differences in preprocessing, (b) choosing uflacs for
+    higher-order geometries.
+
+    NOTE: Final representation is picked later by
+    ``_determine_representation``.
+    """
+    # Fetch all representation choice requests
+    representations = set()
+    for integral in form.integrals():
+        representations.add(integral.metadata().get("representation"))
+
+    # Remove auto and replace it by parameter value if it's not auto
+    for r in list(representations):
+        if r in [None, 'auto']:
+            representations.remove(r)
+            if parameters["representation"] != "auto":
+                representations.add(parameters["representation"])
+
+    # Translate quadrature/tensor to legacy
+    for r in list(representations):
+        if r in ['quadrature', 'tensor']:
+            representations.remove(r)
+            representations.add('legacy')
+
+    # Sanity check
+    ffc_assert(len(representations.intersection((
+        'quadrature', 'tensor', 'auto', None))) == 0,
+        "Unexpected representation family candidates '%s'." % representations)
+
+    # Don't tolerate more representation families due to restrictions
+    # in preprocessing
+    if len(representations) > 1:
+        error("Cannot mix legacy (quadrature, tensor), uflacs, or tsfc "
+              "representation in single form.")
+
+    # Avoid legacy for higher-order geometry; use uflacs as default
+    if _has_higher_order_geometry(form):
+        if 'legacy' in representations:
+            error("Legacy (quadrature, tensor) representations do not emit "
+                  "accurate code for higher-order geometry of domain.")
+        if len(representations) == 0:
+            # NOTE: Need to pick the same default as in _auto_select_representation
+            representations.add('uflacs')
+
+    # Good ol' quadrature; Martin shall switch to uflacs soon :)
+    if len(representations) == 0:
+        representations.add('legacy')
+
+    # Return the unique choice
+    ffc_assert(len(representations) == 1,
+               "Failed to extract unique representation family. "
+               "Got '%s'." % representations)
+    return representations.pop()
+
+
+def _validate_representation_choice(form_data,
+                                    preprocessing_representation_family):
+    """Check that effective representations
+
+    * do not mix legacy, uflacs and tsfc,
+    * implement higher-order geometry,
+    * match employed preprocessing strategy.
+
+    This function is final check that everything is compatible due
+    to the mess in this file. Better safe than sorry...
+    """
+    # Fetch all representations
+    representations = set()
+    for ida in form_data.integral_data:
+        representations.add(ida.metadata["representation"])
+        for integral in ida.integrals:
+            representations.add(integral.metadata()["representation"])
+
+    # Translate quadrature/tensor to legacy
+    for r in list(representations):
+        if r in ['quadrature', 'tensor']:
+            representations.remove(r)
+            representations.add('legacy')
+
+    # No integrals
+    if len(representations) == 0:
+        return
+
+    # Require unique family; allow legacy only with affine meshes
+    ffc_assert(len(representations) == 1,
+               "Failed to extract unique representation family. "
+               "Got '%s'." % representations)
+    if _has_higher_order_geometry(form_data.preprocessed_form):
+        ffc_assert('legacy' not in representations,
+            "Did not expect legacy representation for higher-order geometry.")
+
+    # Check preprocessing strategy
+    ffc_assert(preprocessing_representation_family in representations,
+        "Form has been preprocessed using '%s' representaion family, "
+        "while '%s' representations have been set for integrals."
+        % (preprocessing_representation_family, representations))
+
+
+def _has_higher_order_geometry(o):
+    if isinstance(o, Form):
+        P1 = VectorElement("P", o.ufl_cell(), 1)
+        return any(d.ufl_coordinate_element() != P1 for d in o.ufl_domains())
+    elif isinstance(o, Integral):
+        P1 = VectorElement("P", o.ufl_domain().ufl_cell(), 1)
+        return o.ufl_domain().ufl_coordinate_element() != P1
+    else:
+        raise NotImplementedError
 
 
 def _extract_common_quadrature_degree(integral_metadatas):
@@ -256,11 +386,8 @@ def _autoselect_quadrature_rule(integral_metadata, integral, form_data):
 def _determine_representation(integral_metadatas, ida, form_data, parameters):
     "Determine one unique representation considering all integrals together."
 
-    # Hack because uflacs and quadrature/tensor cannot coincide in same form because of compute_form_data differences.
+    # Will consider this value later if metadata do not help
     r = parameters["representation"]
-    if r == "uflacs":
-        warning("representation:    ignoring metadata and using '%s' set by parameters" % r)
-        return r
 
     # Hack to override representation with environment variable
     forced_r = os.environ.get("FFC_FORCE_REPRESENTATION")
@@ -404,6 +531,11 @@ def _auto_select_representation(integral, elements, function_replace_map):
     into the same integral (if their measures are equal) will
     necessarily get the same representation.
     """
+    # Use uflacs for non-affine meshes
+    # NOTE: Need to pick the same default as in _extract_representation_family
+    if _has_higher_order_geometry(integral):
+        debug("Encountered higher-order mesh, picking uflacs representation.")
+        return "uflacs"
 
     # Skip unsupported integration domain types
     if integral.integral_type() == "vertex":

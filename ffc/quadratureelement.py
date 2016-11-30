@@ -26,7 +26,9 @@ import numpy
 from FIAT.functional import PointEvaluation
 
 # FFC modules.
-from .log import error, info_red
+from ffc.fiatinterface import reference_cell, create_quadrature
+from ffc.log import error, info_red
+
 
 # Default quadrature element degree
 default_quadrature_degree = 1
@@ -134,7 +136,3 @@ def _create_entity_dofs(fiat_cell, num_dofs):
             entity_dofs[dim][entity] = []
     entity_dofs[dim][0] = list(range(num_dofs))
     return entity_dofs
-
-# FFC modules to avoid circular import
-from ffc.fiatinterface import reference_cell
-from ffc.fiatinterface import create_quadrature

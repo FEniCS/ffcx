@@ -30,13 +30,11 @@ from numpy import array
 # UFL and FIAT modules
 import ufl
 from ufl.utils.sorting import sorted_by_key
-
 import FIAT
 from FIAT.hdiv_trace import HDivTrace
 
 # FFC modules
 from ffc.log import debug, error
-
 from ffc.mixedelement import MixedElement
 from ffc.restrictedelement import RestrictedElement
 from ffc.enrichedelement import EnrichedElement, SpaceOfReals

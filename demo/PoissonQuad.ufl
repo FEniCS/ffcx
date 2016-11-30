@@ -1,4 +1,4 @@
-# Copyright (C) 2009-2010 Anders Logg
+# Copyright (C) 2016 Jan Blechta
 #
 # This file is part of FFC.
 #
@@ -15,21 +15,21 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# First added:  2009-03-20
-# Last changed: 2011-03-08
+# The bilinear form a(u, v) and linear form L(v) for
+# Poisson's equation using bilinear elements on bilinear mesh geometry.
 #
-# Simple example of a form defined over exterior and interior facets.
-#
-# Compile this form with FFC: ffc FacetIntegrals.ufl
+# Compile this form with FFC: ffc PoissonQuad.ufl
 
-element = FiniteElement("Discontinuous Lagrange", triangle, 1)
+coords = VectorElement("P", triangle, 2)
+mesh = Mesh(coords)
+dx = dx(mesh)
 
-u = TrialFunction(element)
-v = TestFunction(element)
+element = FiniteElement("P", mesh.ufl_cell(), 2)
+space = FunctionSpace(mesh, element)
 
-n = FacetNormal(triangle)
+u = TrialFunction(space)
+v = TestFunction(space)
+f = Coefficient(space)
 
-a = u*v*ds \
-  + u('+')*v('-')*dS \
-  + inner(jump(u, n), avg(grad(v)))*dS \
-  + inner(avg(grad(u)), jump(v, n))*dS
+a = inner(grad(u), grad(v))*dx
+L = f*v*dx

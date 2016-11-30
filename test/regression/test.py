@@ -47,7 +47,7 @@ import logging
 from numpy import array, shape, abs, max, isnan
 import ffc
 from ffc.log import begin, end, info, info_red, info_green, info_blue
-from ffc.log import ffc_logger, ERROR, WARNING
+from ffc.log import ffc_logger, ERROR
 from ufl.log import ufl_logger
 from ufl.utils.py23 import as_native_str
 from ffc import get_ufc_cxx_flags
@@ -111,11 +111,32 @@ ext_uflacs = [
     "-r uflacs",
 ]
 
+known_quad_failures = set([
+    "PoissonQuad.ufl",
+])
+
 known_uflacs_failures = set([
     "CustomIntegral.ufl",
     "CustomMixedIntegral.ufl",
     "CustomVectorIntegral.ufl",
+    "MetaData.ufl",
 ])
+
+known_tsfc_failures = set([
+    # Expected not to work
+    "CustomIntegral.ufl",
+    "CustomMixedIntegral.ufl",
+    "CustomVectorIntegral.ufl",
+    "PointMeasure.ufl",
+    "MetaData.ufl",
+    # Failures
+    "AdaptivePoisson.ufl",    # FIXME: is it fixable?
+    "Mini.ufl",               # FIXME: will fix later
+    "MathFunctions.ufl",      # FIXME: should be easy
+    "QuadratureElement.ufl",  # FIXME: is it fixable?
+    "RestrictedElement.ufl",  # FIXME: is it fixable?
+])
+
 
 _command_timings = []
 
@@ -466,6 +487,7 @@ def main(args):
     use_auto = "--skip-auto" not in args
     use_uflacs = "--skip-uflacs" not in args
     use_quad = "--skip-quad" not in args
+    use_tsfc = "--use-tsfc" in args
     use_ext_quad = "--ext-quad" in args
 
     skip_download = "--skip-download" in args
@@ -483,6 +505,7 @@ def main(args):
         "--skip-auto",
         "--skip-uflacs",
         "--skip-quad",
+        "--use-tsfc",
         "--ext-quad",
         "--skip-download",
         "--skip-run",
@@ -540,6 +563,8 @@ def main(args):
         test_cases += ["-r uflacs"]
     if use_quad:
         test_cases += ["-r quadrature", "-r quadrature -O"]
+    if use_tsfc:
+        test_cases += ["-r tsfc", "-r tsfc -O"]
     if use_ext_quad:
         test_cases += ext_quad
 
@@ -555,10 +580,16 @@ def main(args):
         clean_output(sub_directory)
         os.chdir(sub_directory)
 
-        # Workarounds for partial feature completeness in uflacs
-        if "uflacs" in argument and not only_forms:
+        # Workarounds for feature lack in representation
+        if "quadrature" in argument and not only_forms:
+            skip_forms = known_quad_failures
+            info_blue("Skipping forms known to fail with quadrature:\n" + "\n".join(sorted(skip_forms)))
+        elif "uflacs" in argument and not only_forms:
             skip_forms = known_uflacs_failures
             info_blue("Skipping forms known to fail with uflacs:\n" + "\n".join(sorted(skip_forms)))
+        elif "tsfc" in argument and not only_forms:
+            skip_forms = known_tsfc_failures
+            info_blue("Skipping forms known to fail with tsfc:\n" + "\n".join(sorted(skip_forms)))
         else:
             skip_forms = set()
 
@@ -589,7 +620,7 @@ def main(args):
         if skip_run:
             info_blue("Skipping program execution")
         else:
-            build_programs(bench, permissive)
+            build_programs(bench, permissive or argument == "-r tsfc -O")
             run_programs(bench)
             # Validate output to common reference results
             if skip_validate:

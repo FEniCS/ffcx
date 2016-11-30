@@ -45,22 +45,28 @@ double time()
 }
 
 // Function for creating "random" vertex coordinates
-std::vector<double> test_coordinate_dofs(int gdim)
+std::vector<double> test_coordinate_dofs(std::size_t gdim, std::size_t gdeg)
 {
   // Generate some "random" coordinates
   std::vector<double> coordinate_dofs;
   if (gdim == 1)
   {
-    coordinate_dofs.resize(4);
+    coordinate_dofs.resize(2);
     coordinate_dofs[0]  = 0.903;
     coordinate_dofs[1]  = 0.561;
     // Huh? Only 2 vertices for interval, is this for tdim=1,gdim=2?
 //    coordinate_dofs[2]  = 0.987;
 //    coordinate_dofs[3]  = 0.123;
+    if (gdeg > 1)
+    {
+      assert(gdeg == 2);
+      coordinate_dofs.resize(3);
+      coordinate_dofs[2]  = 0.750;
+    }
   }
   else if (gdim == 2)
   {
-    coordinate_dofs.resize(8);
+    coordinate_dofs.resize(6);
     coordinate_dofs[0]  = 0.903;
     coordinate_dofs[1]  = 0.341;
     coordinate_dofs[2]  = 0.561;
@@ -70,6 +76,17 @@ std::vector<double> test_coordinate_dofs(int gdim)
     // Huh? Only 4 vertices for triangle, is this for quads?
 //    coordinate_dofs[6]  = 0.123;
 //    coordinate_dofs[7] = 0.561;
+    if (gdeg > 1)
+    {
+      assert(gdeg == 2);
+      coordinate_dofs.resize(12);
+      coordinate_dofs[6]  = 0.750;
+      coordinate_dofs[7]  = 0.901;
+      coordinate_dofs[8]  = 0.999;
+      coordinate_dofs[9]  = 0.500;
+      coordinate_dofs[10] = 0.659;
+      coordinate_dofs[11] = 0.555;
+    }
   }
   else if (gdim == 3)
   {
@@ -86,19 +103,27 @@ std::vector<double> test_coordinate_dofs(int gdim)
     coordinate_dofs[9]  = 0.123;
     coordinate_dofs[10] = 0.561;
     coordinate_dofs[11] = 0.667;
+    if (gdeg > 1)
+    {
+      assert(gdeg == 2);
+      coordinate_dofs.resize(30);
+      // FIXME: Add some quadratic tetrahedron
+      assert(false);
+    }
   }
   return coordinate_dofs;
 }
 
 // Function for creating "random" vertex coordinates
-std::pair<std::vector<double>, std::vector<double>> test_coordinate_dof_pair(int gdim, int facet0, int facet1)
+std::pair<std::vector<double>, std::vector<double>> test_coordinate_dof_pair(int gdim, int gdeg, int facet0, int facet1)
 {
-  // For simplices only.
+  // For affine simplices only so far...
+  assert(gdeg == 1);
 
   // Return pair of cell coordinates there facet0 of cell 0 cooresponds to facet1 of cell 1
   int num_vertices = gdim+1;
-  std::vector<double> c0 = test_coordinate_dofs(gdim);
-  std::vector<double> c1(gdim*num_vertices);
+  std::vector<double> c0 = test_coordinate_dofs(gdim, gdeg);
+  std::vector<double> c1(c0.size());
   std::vector<double> m(gdim);
 
   for (int i=0; i<gdim; ++i)
@@ -235,8 +260,9 @@ void test_finite_element(ufc::finite_element& element, int id, Printer& printer)
 
   // Prepare arguments
   test_cell c(element.cell_shape(), element.geometric_dimension());
+  // NOTE: Assuming geometry degree 1
   const std::vector<double> coordinate_dofs
-    = test_coordinate_dofs(element.geometric_dimension());
+    = test_coordinate_dofs(element.geometric_dimension(), 1);
   std::size_t value_size = 1;
   for (std::size_t i = 0; i < element.value_rank(); i++)
     value_size *= element.value_dimension(i);
@@ -448,6 +474,7 @@ void test_dofmap(ufc::dofmap& dofmap, ufc::shape cell_shape, int id,
 void test_cell_integral(ufc::cell_integral& integral,
                         ufc::shape cell_shape,
                         std::size_t gdim,
+                        std::size_t gdeg,
                         std::size_t tensor_size,
                         double** w,
                         bool bench,
@@ -458,7 +485,7 @@ void test_cell_integral(ufc::cell_integral& integral,
 
   // Prepare arguments
   test_cell c(cell_shape, gdim);
-  const std::vector<double> coordinate_dofs = test_coordinate_dofs(gdim);
+  const std::vector<double> coordinate_dofs = test_coordinate_dofs(gdim, gdeg);
   std::vector<double> A(tensor_size, 0.0);
 
   // Call tabulate_tensor
@@ -496,6 +523,7 @@ void test_cell_integral(ufc::cell_integral& integral,
 void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
                                   ufc::shape cell_shape,
                                   std::size_t gdim,
+                                  std::size_t gdeg,
                                   std::size_t tensor_size,
                                   double** w,
                                   bool bench,
@@ -506,7 +534,7 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
 
   // Prepare arguments
   test_cell c(cell_shape, gdim);
-  const std::vector<double> coordinate_dofs = test_coordinate_dofs(gdim);
+  const std::vector<double> coordinate_dofs = test_coordinate_dofs(gdim, gdeg);
   std::size_t num_facets = c.topological_dimension + 1;
   std::vector<double> A(tensor_size);
 
@@ -553,6 +581,7 @@ void test_exterior_facet_integral(ufc::exterior_facet_integral& integral,
 void test_interior_facet_integral(ufc::interior_facet_integral& integral,
                                   ufc::shape cell_shape,
                                   std::size_t gdim,
+                                  std::size_t gdeg,
                                   std::size_t macro_tensor_size,
                                   double** w,
                                   bool bench,
@@ -573,7 +602,7 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
     for (std::size_t facet1 = 0; facet1 < num_facets; facet1++)
     {
       const std::pair<std::vector<double>, std::vector<double>> coordinate_dofs
-        = test_coordinate_dof_pair(gdim, facet0, facet1);
+        = test_coordinate_dof_pair(gdim, gdeg, facet0, facet1);
 
       for(std::size_t i = 0; i < macro_tensor_size; i++)
         A[i] = 0.0;
@@ -593,7 +622,7 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
   if (bench)
   {
     const std::pair<std::vector<double>, std::vector<double>> coordinate_dofs
-      = test_coordinate_dof_pair(gdim, 0, 0);
+      = test_coordinate_dof_pair(gdim, gdeg, 0, 0);
 
     printer.begin("timing");
     for (std::size_t num_reps = initial_num_reps;; num_reps *= 2)
@@ -628,6 +657,7 @@ void test_interior_facet_integral(ufc::interior_facet_integral& integral,
 void test_vertex_integral(ufc::vertex_integral& integral,
                          ufc::shape cell_shape,
                          std::size_t gdim,
+                         std::size_t gdeg,
                          std::size_t tensor_size,
                          double** w,
                          bool bench,
@@ -638,7 +668,7 @@ void test_vertex_integral(ufc::vertex_integral& integral,
 
   // Prepare arguments
   test_cell c(cell_shape, gdim);
-  const std::vector<double> coordinate_dofs = test_coordinate_dofs(gdim);
+  const std::vector<double> coordinate_dofs = test_coordinate_dofs(gdim, gdeg);
   std::size_t num_vertices = c.topological_dimension + 1;
   std::vector<double> A(tensor_size);
 
@@ -720,6 +750,10 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
   std::unique_ptr<ufc::finite_element> element(form.create_coordinate_finite_element());
   ufc::shape cell_shape = element->cell_shape();
   std::size_t gdim = element->geometric_dimension();
+  std::size_t gdeg = element->degree();
+  assert(element->value_rank() == 1);
+  assert(element->value_dimension(0) == gdim);
+  assert(element->family() == std::string("Lagrange"));
   element.reset();
 
 // signature
@@ -781,7 +815,7 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
     printer.print_scalar("default_cell_integral", (bool)integral);
     if (integral)
     {
-      test_cell_integral(*integral, cell_shape, gdim,
+      test_cell_integral(*integral, cell_shape, gdim, gdeg,
                          tensor_size, w, bench, -1, printer);
     }
   }
@@ -790,7 +824,7 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
     std::unique_ptr<ufc::cell_integral> integral(form.create_cell_integral(i));
     if (integral)
     {
-      test_cell_integral(*integral, cell_shape, gdim,
+      test_cell_integral(*integral, cell_shape, gdim, gdeg,
                          tensor_size, w, bench, i, printer);
     }
   }
@@ -802,7 +836,7 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
     printer.print_scalar("default_exterior_facet_integral", (bool)integral);
     if (integral)
     {
-      test_exterior_facet_integral(*integral, cell_shape, gdim,
+      test_exterior_facet_integral(*integral, cell_shape, gdim, gdeg,
                                    tensor_size, w, bench, -1, printer);
     }
   }
@@ -813,7 +847,7 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
       integral(form.create_exterior_facet_integral(i));
     if (integral)
     {
-      test_exterior_facet_integral(*integral, cell_shape, gdim,
+      test_exterior_facet_integral(*integral, cell_shape, gdim, gdeg,
                                    tensor_size, w, bench, i, printer);
     }
   }
@@ -825,7 +859,7 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
     printer.print_scalar("default_interior_facet_integral", (bool)integral);
     if (integral)
     {
-      test_interior_facet_integral(*integral, cell_shape, gdim,
+      test_interior_facet_integral(*integral, cell_shape, gdim, gdeg,
                                    macro_tensor_size, w, bench, -1, printer);
     }
   }
@@ -835,7 +869,7 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
       integral(form.create_interior_facet_integral(i));
     if (integral)
     {
-      test_interior_facet_integral(*integral, cell_shape, gdim,
+      test_interior_facet_integral(*integral, cell_shape, gdim, gdeg,
                                    macro_tensor_size, w, bench, i, printer);
     }
   }
@@ -847,8 +881,8 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
     printer.print_scalar("default_vertex_integral", (bool)integral);
     if (integral)
     {
-      test_vertex_integral(*integral, cell_shape, gdim, tensor_size, w, bench,
-                          -1, printer);
+      test_vertex_integral(*integral, cell_shape, gdim, gdeg,
+                           tensor_size, w, bench, -1, printer);
     }
   }
   for (std::size_t i = 0; i < form.max_vertex_subdomain_id(); i++)
@@ -857,8 +891,8 @@ void test_form(ufc::form& form, bool bench, int id, Printer & printer)
       integral(form.create_vertex_integral(i));
     if (integral)
     {
-      test_vertex_integral(*integral, cell_shape, gdim, tensor_size, w, bench,
-                          i, printer);
+      test_vertex_integral(*integral, cell_shape, gdim, gdeg,
+                           tensor_size, w, bench, i, printer);
     }
   }
 

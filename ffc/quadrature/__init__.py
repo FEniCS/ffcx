@@ -1,4 +1,4 @@
 # -*- coding: utf-8 -*-
-from .quadraturerepresentation import compute_integral_ir
-from .quadratureoptimization import optimize_integral_ir
-from .quadraturegenerator import generate_integral_code
+from ffc.quadrature.quadraturerepresentation import compute_integral_ir
+from ffc.quadrature.quadratureoptimization import optimize_integral_ir
+from ffc.quadrature.quadraturegenerator import generate_integral_code

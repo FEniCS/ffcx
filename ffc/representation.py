@@ -69,6 +69,8 @@ def pick_representation(representation):
         from ffc import tensor as r
     elif representation == "uflacs":
         from ffc import uflacs as r
+    elif representation == "tsfc":
+        from ffc import tsfc as r
     else:
         error("Unknown representation: %s" % str(representation))
     return r
