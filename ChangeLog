@@ -1,3 +1,6 @@
+201x.x.x [201x-xx-xx]
+ -
+2016.2.0 [2016-11-30]
  - Jit compiler now compiles elements separately from forms to avoid duplicate work
  - Add parameter max_signature_length to optionally shorten signatures in the jit cache
  - Move uflacs module into ffc.uflacs
