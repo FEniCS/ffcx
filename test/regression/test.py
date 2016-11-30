@@ -565,6 +565,10 @@ def main(args):
         test_cases += ["-r quadrature", "-r quadrature -O"]
     if use_tsfc:
         test_cases += ["-r tsfc", "-r tsfc -O"]
+        if sys.version_info[0] >= 3:
+            test_cases.remove("-r tsfc -O")
+            info_red("COFFEE optimizations produce different code with Py3! "
+                     "Skipping '-r tsfc -O'!")
     if use_ext_quad:
         test_cases += ext_quad
 
