@@ -564,7 +564,7 @@ def main(args):
     if use_quad:
         test_cases += ["-r quadrature", "-r quadrature -O"]
     if use_tsfc:
-        test_cases += ["-r tsfc"]
+        test_cases += ["-r tsfc", "-r tsfc -O"]
     if use_ext_quad:
         test_cases += ext_quad
 
@@ -620,7 +620,7 @@ def main(args):
         if skip_run:
             info_blue("Skipping program execution")
         else:
-            build_programs(bench, permissive)
+            build_programs(bench, permissive or argument == "-r tsfc -O")
             run_programs(bench)
             # Validate output to common reference results
             if skip_validate:
