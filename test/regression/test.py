@@ -565,6 +565,14 @@ def main(args):
         test_cases += ["-r quadrature", "-r quadrature -O"]
     if use_tsfc:
         test_cases += ["-r tsfc", "-r tsfc -O"]
+        # Workaround Py version instability in COFFEE
+        if sys.version_info[0] >= 3:
+            test_cases.remove("-r tsfc -O")
+            info_red("COFFEE optimizations produce different code with Py3! "
+                     "Skipping '-r tsfc -O'!")
+        # Silence good-performance messages by COFFEE
+        import coffee
+        coffee.set_log_level(coffee.logger.PERF_WARN)
     if use_ext_quad:
         test_cases += ext_quad
 
