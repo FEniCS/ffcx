@@ -340,5 +340,6 @@ def _indices(element, restriction_domain, tdim):
             indices += index
     return indices
 
+
 # Import FFC module with circular dependency
 from ffc.quadratureelement import QuadratureElement

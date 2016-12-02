@@ -39,12 +39,12 @@ ffc_logger = Logger("FFC")
 for foo in log_functions:
     exec("%s = lambda *message : ffc_logger.%s(*message)" % (foo, foo))
 
+
 # Assertion, copied from UFL
-
-
 def ffc_assert(condition, *message):
     "Assert that condition is true and otherwise issue an error with given message."
     condition or error(*message)
+
 
 # Set default log level
 set_level(INFO)

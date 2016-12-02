@@ -46,6 +46,7 @@ def create_float(val):
     _float_cache[val] = float_val
     return float_val
 
+
 _symbol_cache = {}
 
 
@@ -56,6 +57,7 @@ def create_symbol(variable, symbol_type, base_expr=None, base_op=0):
     symbol = Symbol(variable, symbol_type, base_expr, base_op)
     _symbol_cache[key] = symbol
     return symbol
+
 
 _product_cache = {}
 
@@ -72,6 +74,7 @@ def create_product(variables):
     _product_cache[key] = product
     return product
 
+
 _sum_cache = {}
 
 
@@ -87,6 +90,7 @@ def create_sum(variables):
     s = Sum(key)
     _sum_cache[key] = s
     return s
+
 
 _fraction_cache = {}
 
