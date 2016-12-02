@@ -46,7 +46,7 @@ from ufl.algorithms import load_ufl_file
 import ufl
 
 # FFC modules.
-from ffc.log import push_level, pop_level
+from ffc.log import push_level, pop_level, set_indent, ffc_logger
 from ffc.log import DEBUG, INFO, WARNING, ERROR
 from ffc.parameters import default_parameters
 from ffc import __version__ as FFC_VERSION, get_ufc_signature
@@ -205,6 +205,19 @@ def main(args=None):
 
     # Call parser and compiler for each file
     resultcode = 0
+    init_indent = ffc_logger._indent_level
+    try:
+        resultcode = _compile_files(args, parameters, enable_profile)
+    finally:
+        # Reset logging level and indent
+        pop_level()
+        set_indent(init_indent)
+
+    return resultcode
+
+
+def _compile_files(args, parameters, enable_profile):
+    # Call parser and compiler for each file
     for filename in args:
 
         # Get filename prefix and suffix
@@ -214,8 +227,7 @@ def main(args=None):
         # Check file suffix
         if suffix != "ufl":
             print_error("Expecting a UFL form file (.ufl).")
-            resultcode = 1
-            break
+            return 1
 
         # Remove weird characters (file system allows more than the C
         # preprocessor)
@@ -256,10 +268,7 @@ def main(args=None):
             pr.dump_stats(pfn)
             print("Wrote profiling info to file {0}".format(pfn))
 
-    # Reset logging level
-    pop_level()
-
-    return resultcode
+    return 0
 
 
 if __name__ == "__main__":

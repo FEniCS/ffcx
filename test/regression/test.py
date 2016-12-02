@@ -44,6 +44,7 @@ import sysconfig
 import subprocess
 import time
 import logging
+import traceback
 from numpy import array, shape, abs, max, isnan
 import ffc
 from ffc.log import begin, end, info, info_red, info_green, info_blue
@@ -242,10 +243,11 @@ def generate_code(args, only_forms, skip_forms):
         t1 = time.time()
         try:
             ok = ffc.main(options)
-        except Exception as e:
-            log_error(e)
+        except Exception:
+            msg = traceback.format_exc()
+            log_error(cmd)
+            log_error(msg)
             ok = 1
-            raise
         finally:
             t2 = time.time()
             _command_timings.append((cmd, t2 - t1))
@@ -565,11 +567,10 @@ def main(args):
         test_cases += ["-r quadrature", "-r quadrature -O"]
     if use_tsfc:
         test_cases += ["-r tsfc", "-r tsfc -O"]
-        # Workaround Py version instability in COFFEE
+        # COFFEE does not work with Py3 yet
         if sys.version_info[0] >= 3:
             test_cases.remove("-r tsfc -O")
-            info_red("COFFEE optimizations produce different code with Py3! "
-                     "Skipping '-r tsfc -O'!")
+            info_red("Skipping '-r tsfc -O' with Py3!")
         # Silence good-performance messages by COFFEE
         import coffee
         coffee.set_log_level(coffee.logger.PERF_WARN)
