@@ -39,8 +39,10 @@ def equal_tables(a, b, eps):
     if len(a.shape) > 1:
         return all(equal_tables(a[i], b[i], eps)
                    for i in range(a.shape[0]))
+
     def scalars_equal(x, y, eps):
         return abs(x-y) < eps
+
     return all(scalars_equal(a[i], b[i], eps)
                for i in range(a.shape[0]))
 

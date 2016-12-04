@@ -85,6 +85,7 @@ class CNode(object):
         name = self.__class__.__name__
         raise NotImplementedError("Missing implementation of __str__ in " + name)
 
+
 CNode.debug = False
 
 

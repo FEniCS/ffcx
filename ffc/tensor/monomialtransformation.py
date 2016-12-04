@@ -507,6 +507,7 @@ class TransformedMonomial:
         factors += self.transforms
         return " * ".join([str(f) for f in factors]) + " | " + " * ".join([str(v) for v in self.arguments])
 
+
 # Index counters
 _current_secondary_index = 0
 _current_internal_index = 0

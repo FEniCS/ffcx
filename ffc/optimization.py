@@ -56,13 +56,5 @@ def optimize_ir(ir, parameters):
 
 def _optimize_integral_ir(ir, parameters):
     "Compute optimized intermediate represention of integral."
-
-    # Select representation
     r = pick_representation(ir["representation"])
-
-    # Optimize representation (if available for representation)
-    try:
-        oir = r.optimize_integral_ir(ir, parameters)
-        return oir
-    except:
-        return ir
+    return r.optimize_integral_ir(ir, parameters)

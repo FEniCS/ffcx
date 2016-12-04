@@ -102,6 +102,7 @@ def mark_partitions(V, active, dependencies, rank,
         partitions[i] = p
     return partitions
 
+
 """
 def build_factorized_partitions():
     num_points = [3]
@@ -187,6 +188,7 @@ def compute_cache_scores(V, active, dependencies, inverse_dependencies, partitio
             s = -1
         score[i] = s
     return score
+
 
 import heapq
 

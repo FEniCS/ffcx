@@ -549,6 +549,7 @@ for (unsigned int row = 0; row < %%(num_derivatives)s%(g)s; row++)
 
     return snippet
 
+
 # Codesnippets used in evaluate_dof
 _map_onto_physical_1D = """\
 // Evaluate basis functions for affine mapping
