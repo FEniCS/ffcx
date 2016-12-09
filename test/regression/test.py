@@ -629,7 +629,7 @@ def main(args):
         if skip_run:
             info_blue("Skipping program execution")
         else:
-            build_programs(bench, permissive or argument == "-r tsfc -O")
+            build_programs(bench, permissive)
             run_programs(bench)
             # Validate output to common reference results
             if skip_validate:
