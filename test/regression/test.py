@@ -567,10 +567,6 @@ def main(args):
         test_cases += ["-r quadrature", "-r quadrature -O"]
     if use_tsfc:
         test_cases += ["-r tsfc", "-r tsfc -O"]
-        # COFFEE does not work with Py3 yet
-        if sys.version_info[0] >= 3:
-            test_cases.remove("-r tsfc -O")
-            info_red("Skipping '-r tsfc -O' with Py3!")
         # Silence good-performance messages by COFFEE
         import coffee
         coffee.set_log_level(coffee.logger.PERF_WARN)
