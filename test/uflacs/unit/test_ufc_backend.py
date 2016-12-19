@@ -313,6 +313,7 @@ def test_debug_by_printing_extracted_function():
     print(extract_function(name, cpp))
     print("/// end")
 
+
 """
 Missing:
 

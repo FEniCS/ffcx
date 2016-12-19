@@ -191,8 +191,10 @@ def xtest_get_ffc_table_values_scalar_cell():
     cell = triangle
     integral_type = "cell"
     entitytype = "cell"
+
     class MockElement:
         def value_shape(self): return ()
+
     element = MockElement()
     component = ()
 
@@ -227,8 +229,10 @@ def xtest_get_ffc_table_values_vector_facet():
     integral_type = "exterior_facet"
     entitytype = "facet"
     num_entities = 3
+
     class MockElement:
         def value_shape(self): return (2,)
+
     element = MockElement()
     num_components = 2
 

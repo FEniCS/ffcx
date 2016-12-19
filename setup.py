@@ -152,5 +152,6 @@ def run_install():
                             "dijitso==%s" % VERSION],
           zip_safe=False)
 
+
 if __name__ == "__main__":
     run_install()

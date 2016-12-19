@@ -12,6 +12,7 @@ class DiffMarkerType:
     def __repr__(self):
         return self.name
 
+
 DiffMissing = DiffMarkerType("<value missing>")
 DiffEqual = DiffMarkerType("<equal>")
 

@@ -85,6 +85,7 @@ class LTFilter(object):
     def filter(self, record):
         return record.levelno < self.__level
 
+
 # Filter out error messages from std output
 splitlevel = ERROR
 ffc_logger.get_handler().addFilter(LTFilter(splitlevel))
