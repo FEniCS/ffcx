@@ -499,7 +499,7 @@ def main(args):
     skip_validate = "--skip-validate" in args
     bench = "--bench" in args
 
-    permissive = "--permissive" in args
+    permissive = "--permissive" in args or bench
     tolerant = "--tolerant" in args
     print_timing = "--print-timing" in args
     show_help = "--help" in args

@@ -29,7 +29,7 @@ from utils import print_table
 
 # Test options
 test_options = ["-r tensor",
-                "-r tensor -O",
+                #"-r tensor -O",
                 "-r quadrature",
                 "-r quadrature -O",
                 "-r uflacs"]

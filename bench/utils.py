@@ -19,6 +19,8 @@
 # First added:  2010-05-11
 # Last changed: 2010-05-11
 
+from __future__ import print_function
+
 def print_table(values, title):
     "Print nicely formatted table."
 
@@ -47,13 +49,13 @@ def print_table(values, title):
     column_sizes = [max([len(table[i][j]) for i in range(m)]) for j in range(n)]
     row_size = sum(column_sizes) + 3*(len(column_sizes) - 1) + 2
 
-    print ""
+    print("")
     for i in range(m):
-        print " " + "-"*row_size
-        print "|",
+        print(" " + "-"*row_size)
+        print("|", end="")
         for j in range(n):
-            print table[i][j] + " "*(column_sizes[j] - len(table[i][j])),
-            print "|",
-        print ""
-    print " " + "-"*row_size
-    print ""
+            print(table[i][j] + " "*(column_sizes[j] - len(table[i][j])), end="")
+            print("|", end="")
+        print("")
+    print(" " + "-"*row_size)
+    print("")
