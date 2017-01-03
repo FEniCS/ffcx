@@ -246,12 +246,12 @@ def test_while_loop():
 
 
 def test_for_loop():
-    code = For("int i = 0;", "i < 3", "++i", [])
+    code = For("int i = 0", "i < 3", "++i", [])
     actual = str(code)
     expected = "for (int i = 0; i < 3; ++i)\n{\n}"
     assert actual == expected
 
-    code = For("int i = 0;", "i < 3", "++i", body=["ting;", "tang;"])
+    code = For("int i = 0", "i < 3", "++i", body=["ting;", "tang;"])
     actual = str(code)
     expected = "for (int i = 0; i < 3; ++i)\n{\n    ting;\n    tang;\n}"
     assert actual == expected

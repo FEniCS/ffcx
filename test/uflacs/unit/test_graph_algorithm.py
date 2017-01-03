@@ -13,7 +13,7 @@ from ufl.permutation import compute_indices
 from ffc.uflacs.analysis.graph import build_graph
 from ffc.uflacs.analysis.graph_rebuild import rebuild_expression_from_graph
 # from ffc.uflacs.analysis.graph_rebuild import rebuild_scalar_e2i
-# from ffc.uflacs.analysis.graph_dependencies import (compute_dependencies,
+# from ffc.uflacs.analysis.dependencies import (compute_dependencies,
 #                                                mark_active,
 #                                                mark_image)
 # from ffc.uflacs.analysis.graph_ssa import (mark_partitions,

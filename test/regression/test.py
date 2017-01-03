@@ -371,8 +371,12 @@ def build_programs(bench, permissive):
         info("Benchmarking activated")
         # Takes too long to build with -O2
         # compiler_options += " -O2"
-        compiler_options += " -O3"
+
+        # gcc bug: gcc is too eager to report array-bounds warning with -O3
+        compiler_options += " -O3 -Wno-array-bounds -march=native"
+
         # compiler_options += " -O3 -fno-math-errno -march=native"
+
     if debug:
         info("Debugging activated")
         compiler_options += " -g -O0"
