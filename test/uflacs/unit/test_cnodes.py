@@ -48,13 +48,16 @@ def test_cnode_expressions():
     # FlattenedArray
     n = Symbol("n")
     decl = ArrayDecl("double", A, (4,))
-    assert str(FlattenedArray(decl, strides=(2,), offset=3)[0]) == "A[3 + 2 * 0]"
-    assert str(FlattenedArray(decl, strides=(2,))[0]) == "A[2 * 0]"
+    assert str(FlattenedArray(decl, strides=(2,), offset=3)[0]) == "A[3]"  # "A[3 + 2 * 0]"
+    assert str(FlattenedArray(decl, strides=(2,))[0]) == "A[0]"  # "A[2 * 0]"
     decl = ArrayDecl("double", A, (2, 3, 4))
     flattened = FlattenedArray(decl, strides=(7, 8 * n, n - 1))
-    assert str(flattened[0, n, n * 7]) == "A[7 * 0 + 8 * n * n + (n - 1) * (n * 7)]"
-    assert str(flattened[0, n][n * 7]) == "A[7 * 0 + 8 * n * n + (n - 1) * (n * 7)]"
-    assert str(flattened[0][n][n * 7]) == "A[7 * 0 + 8 * n * n + (n - 1) * (n * 7)]"
+    #assert str(flattened[0, n, n * 7]) == "A[7 * 0 + 8 * n * n + (n - 1) * (n * 7)]"
+    #assert str(flattened[0, n][n * 7]) == "A[7 * 0 + 8 * n * n + (n - 1) * (n * 7)]"
+    #assert str(flattened[0][n][n * 7]) == "A[7 * 0 + 8 * n * n + (n - 1) * (n * 7)]"
+    assert str(flattened[0, n, n * 7]) == "A[8 * n * n + (n - 1) * (n * 7)]"
+    assert str(flattened[0, n][n * 7]) == "A[8 * n * n + (n - 1) * (n * 7)]"
+    assert str(flattened[0][n][n * 7]) == "A[8 * n * n + (n - 1) * (n * 7)]"
 
     # Unary operators
     assert str(Pos(1)) == "+1"
@@ -251,7 +254,7 @@ def test_cnode_loop_statements():
 
     # Using assigns as both statements and expressions
     assert str(While(LT(AssignAdd("x", 4.0), 17.0), AssignAdd("A", "y"))) == "while ((x += 4.0) < 17.0)\n{\n    A += y;\n}"
-    assert str(ForRange("i", 3, 7, AssignAdd("A", "i"))) == "for (int i = 3; i < 7; ++i)\n{\n    A += i;\n}"
+    assert str(ForRange("i", 3, 7, AssignAdd("A", "i"))) == "for (int i = 3; i < 7; ++i)\n    A += i;"
 
 
 def test_cnode_loop_helpers():
@@ -263,9 +266,18 @@ def test_cnode_loop_helpers():
     src = A[i + 4 * j]
     dst = 2.0 * B[j] * C[i]
     ranges = [(i, 0, 2), (j, 1, 3)]
-    assert str(assign_loop(src, dst, ranges)) == "for (int i = 0; i < 2; ++i)\n{\n    for (int j = 1; j < 3; ++j)\n    {\n        A[i + 4 * j] = 2.0 * B[j] * C[i];\n    }\n}"
-    assert str(scale_loop(src, dst, ranges)) == "for (int i = 0; i < 2; ++i)\n{\n    for (int j = 1; j < 3; ++j)\n    {\n        A[i + 4 * j] *= 2.0 * B[j] * C[i];\n    }\n}"
-    assert str(accumulate_loop(src, dst, ranges)) == "for (int i = 0; i < 2; ++i)\n{\n    for (int j = 1; j < 3; ++j)\n    {\n        A[i + 4 * j] += 2.0 * B[j] * C[i];\n    }\n}"
+    assert str(assign_loop(src, dst, ranges)) == """\
+for (int i = 0; i < 2; ++i)
+    for (int j = 1; j < 3; ++j)
+        A[i + 4 * j] = 2.0 * B[j] * C[i];"""
+    assert str(scale_loop(src, dst, ranges)) == """\
+for (int i = 0; i < 2; ++i)
+    for (int j = 1; j < 3; ++j)
+        A[i + 4 * j] *= 2.0 * B[j] * C[i];"""
+    assert str(accumulate_loop(src, dst, ranges)) == """\
+for (int i = 0; i < 2; ++i)
+    for (int j = 1; j < 3; ++j)
+        A[i + 4 * j] += 2.0 * B[j] * C[i];"""
 
 
 def test_cnode_switch_statements():

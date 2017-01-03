@@ -19,11 +19,11 @@
 """FFC/UFC specific variable definitions."""
 
 from ufl.corealg.multifunction import MultiFunction
+from ufl.measure import custom_integral_types
 
 from ffc.log import error, warning
 
 from ffc.uflacs.backends.ffc.symbols import FFCBackendSymbols
-from ffc.uflacs.backends.ffc.common import physical_quadrature_integral_types
 from ffc.uflacs.backends.ffc.common import num_coordinate_component_dofs
 
 
@@ -33,7 +33,6 @@ class FFCBackendDefinitions(MultiFunction):
         MultiFunction.__init__(self)
 
         # Store ir and parameters
-        self.ir = ir
         self.integral_type = ir["integral_type"]
         self.entitytype = ir["entitytype"]
         self.language = language
@@ -51,9 +50,9 @@ class FFCBackendDefinitions(MultiFunction):
         error("Unhandled type {0}".format(type(t)))
 
 
-    def quadrature_weight(self, e, mt, tabledata, num_points, access):
-        "Quadrature weights are precomputed and need no code."
-        return []
+    #def quadrature_weight(self, e, mt, tabledata, num_points, access):
+    #    "Quadrature weights are precomputed and need no code."
+    #    return []
 
 
     def constant_value(self, e, mt, tabledata, num_points, access):
@@ -70,18 +69,13 @@ class FFCBackendDefinitions(MultiFunction):
         "Return definition code for coefficients."
         L = self.language
 
-        # No need to store basis function value in its own variable,
-        # just get table value directly
-        #uname, begin, end, ttype = tabledata
-        uname, begin, end = tabledata
-        table_types = self.ir["expr_irs"][num_points]["table_types"]
-        ttype = table_types[uname]
+        ttype = tabledata.ttype
+        begin, end = tabledata.dofrange
 
         #fe_classname = ir["classnames"]["finite_element"][t.ufl_element()]
 
-        # FIXME: remove at earlier stage so dependent code can also be removed
         if ttype == "zeros":
-            warning("Not expecting zero coefficients to get this far.")
+            debug("Not expecting zero coefficients to get this far.")
             return []
 
         # For a constant coefficient we reference the dofs directly, so no definition needed
@@ -94,35 +88,29 @@ class FFCBackendDefinitions(MultiFunction):
 
         assert begin < end
 
-        # Entity number
-        if ttype in ("uniform", "fixed"):
-            entity = 0
+        # Get access to element table
+        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
+
+        unroll = len(tabledata.dofmap) != end - begin
+        #unroll = True
+        if unroll:
+            # TODO: Could also use a generated constant dofmap here like in block code
+            # Unrolled loop to accumulate linear combination of dofs and tables
+            values = [self.symbols.coefficient_dof_access(mt.terminal, idof) * FE[i]
+                      for i, idof in enumerate(tabledata.dofmap)]
+            value = L.Sum(values)
+            code = [
+                L.VariableDecl("const double", access, value)
+                ]
         else:
-            entity = self.symbols.entity(self.entitytype, mt.restriction)
-
-        # This check covers "piecewise constant over points on entity"
-        if ttype in ("piecewise", "fixed"):
-            iq = 0
-        else:
-            iq = self.symbols.quadrature_loop_index(num_points)
-
-        idof = self.symbols.coefficient_dof_sum_index()
-        dof_access = self.symbols.coefficient_dof_access(mt.terminal, idof)
-
-        if ttype == "ones":
-            # Don't think this can actually happen
-            table_access = L.LiteralFloat(1.0)
-        else:
-            uname = L.Symbol(uname)
-            table_access = uname[entity][iq][idof - begin]
-
-        # Loop to accumulate linear combination of dofs and tables
-        code = [
-            L.VariableDecl("double", access, 0.0),
-            L.ForRange(idof, begin, end,
-                       body=[L.AssignAdd(access, dof_access * table_access)])
-            ]
-
+            # Loop to accumulate linear combination of dofs and tables
+            ic = self.symbols.coefficient_dof_sum_index()
+            dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic + begin)
+            code = [
+                L.VariableDecl("double", access, 0.0),
+                L.ForRange(ic, 0, end - begin,
+                           body=[L.AssignAdd(access, dof_access * FE[ic])])
+                ]
         return code
 
 
@@ -142,71 +130,64 @@ class FFCBackendDefinitions(MultiFunction):
         # this component as linear combination of coordinate_dofs "dofs" and table
 
         # Find table name and dof range it corresponds to
-        #uname, begin, end, ttype = tabledata
-        uname, begin, end = tabledata
-        table_types = self.ir["expr_irs"][num_points]["table_types"]
-        ttype = table_types[uname]
+        ttype = tabledata.ttype
+        begin, end = tabledata.dofrange
 
         assert end - begin <= num_scalar_dofs
         assert ttype != "zeros"
+        assert ttype != "quadrature"
         #xfe_classname = ir["classnames"]["finite_element"][coordinate_element]
         #sfe_classname = ir["classnames"]["finite_element"][coordinate_element.sub_elements()[0]]
 
-        # Entity number
-        if ttype in ("uniform", "fixed"):
-            entity = 0
-        else:
-            entity = self.symbols.entity(self.entitytype, mt.restriction)
+        # Get access to element table
+        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
 
-        # This check covers "piecewise constant over points on entity"
-        if ttype in ("piecewise", "fixed"):
-            iq = 0
-        else:
-            iq = self.symbols.quadrature_loop_index(num_points)
-
-        assert ttype != "quadrature"
-            
-        # Make indexable symbol
-        uname = L.Symbol(uname)
+        inline = True
 
         if ttype == "zeros":
+            # Not sure if this will ever happen
+            debug("Not expecting zeros for %s." % (e._ufl_class_.__name__,))
             code = [
                 L.VariableDecl("const double", access, L.LiteralFloat(0.0))
                 ]
         elif ttype == "ones":
-            # Not sure if this ever happens
+            # Not sure if this will ever happen
+            debug("Not expecting ones for %s." % (e._ufl_class_.__name__,))
             # Inlined version (we know this is bounded by a small number)
             dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs,
                                                          mt.restriction,
                                                          self.interleaved_components)
-            value = L.Sum([dof_access[idof] for idof in range(begin, end)])
+            values = [dof_access[idof] for idof in tabledata.dofmap]
+            value = L.Sum(values)
             code = [
                 L.VariableDecl("const double", access, value)
                 ]
-        elif True:
+        elif inline:
             # Inlined version (we know this is bounded by a small number)
             dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs,
                                                          mt.restriction,
                                                          self.interleaved_components)
             # Inlined loop to accumulate linear combination of dofs and tables
-            value = L.Sum([dof_access[idof] * uname[entity][iq][idof - begin]
-                           for idof in range(begin, end)])
+            value = L.Sum([dof_access[idof] * FE[i]
+                           for i, idof in enumerate(tabledata.dofmap)])
             code = [
                 L.VariableDecl("const double", access, value)
                 ]
         else:  # TODO: Make an option to test this version for performance
+            # Assuming contiguous dofmap here
+            assert len(tabledata.dofmap) == end - begin
+
             # Generated loop version:
-            coefficient_dof = self.symbols.coefficient_dof_sum_index()
-            dof_access = self.symbols.domain_dof_access(coefficient_dof, mt.flat_component,
+            ic = self.symbols.coefficient_dof_sum_index()
+            dof_access = self.symbols.domain_dof_access(ic + begin, mt.flat_component,
                                                         gdim, num_scalar_dofs,
                                                         mt.restriction, self.interleaved_components)
-            table_access = uname[entity][iq][coefficient_dof]
 
             # Loop to accumulate linear combination of dofs and tables
             code = [
                 L.VariableDecl("double", access, 0.0),
-                L.ForRange(coefficient_dof, begin, end,
-                           body=[L.AssignAdd(access, dof_access * table_access)])
+                L.ForRange(ic, 0, end - begin,
+                           body=[L.AssignAdd(access, dof_access * FE[ic])])
                 ]
 
         return code
@@ -224,8 +205,8 @@ class FFCBackendDefinitions(MultiFunction):
         If reference facet coordinates are given:
           x = sum_k xdof_k xphi_k(Xf)
         """
-        if self.integral_type in physical_quadrature_integral_types:
-            # FIXME: Jacobian may need adjustment for physical_quadrature_integral_types
+        if self.integral_type in custom_integral_types:
+            # FIXME: Jacobian may need adjustment for custom_integral_types
             if mt.local_derivatives:
                 error("FIXME: Jacobian in custom integrals is not implemented.")
             return []
@@ -260,7 +241,7 @@ class FFCBackendDefinitions(MultiFunction):
 
         J = sum_k xdof_k grad_X xphi_k(X)
         """
-        # TODO: Jacobian may need adjustment for physical_quadrature_integral_types
+        # TODO: Jacobian may need adjustment for custom_integral_types
         return self._define_coordinate_dofs_lincomb(e, mt, tabledata, num_points, access)
 
 

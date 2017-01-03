@@ -20,11 +20,11 @@
 
 from ufl.corealg.multifunction import MultiFunction
 from ufl.permutation import build_component_numbering
+from ufl.measure import custom_integral_types
 
-from ffc.log import error, warning
+from ffc.log import error, warning, debug
 
 from ffc.uflacs.backends.ffc.symbols import FFCBackendSymbols
-from ffc.uflacs.backends.ffc.common import physical_quadrature_integral_types
 
 
 class FFCBackendAccess(MultiFunction):
@@ -34,7 +34,6 @@ class FFCBackendAccess(MultiFunction):
         MultiFunction.__init__(self)
 
         # Store ir and parameters
-        self.ir = ir
         self.entitytype = ir["entitytype"]
         self.integral_type = ir["integral_type"]
         self.language = language
@@ -72,77 +71,34 @@ class FFCBackendAccess(MultiFunction):
         return L.LiteralFloat(float(e))
 
 
-    def argument(self, e, mt, tabledata, num_points):
-        L = self.language
-        # Expecting only local derivatives and values here
-        assert not mt.global_derivatives
-        # assert mt.global_component is None
-
-        # No need to store basis function value in its own variable, just get table value directly
-        #uname, begin, end, ttype = tabledata
-        uname, begin, end = tabledata
-        table_types = self.ir["expr_irs"][num_points]["table_types"]
-        ttype = table_types[uname]
-
-        if ttype == "zeros":
-            error("Not expecting zero arguments to get this far.")
-            return L.LiteralFloat(0.0)
-        elif ttype == "ones":
-            warning("Should simplify ones arguments before getting this far.")
-            return L.LiteralFloat(1.0)
-
-        if ttype in ("uniform", "fixed"):
-            entity = 0
-        else:
-            entity = self.symbols.entity(self.entitytype, mt.restriction)
-
-        if ttype in ("piecewise", "fixed"):
-            iq = 0
-        else:
-            iq = self.symbols.quadrature_loop_index(num_points)
-
-        if ttype == "quadrature":
-            warning("Should simplify quadrature element arguments before getting this far.")
-            idof = iq
-        else:
-            idof = self.symbols.argument_loop_index(mt.terminal.number())
-
-        uname = L.Symbol(uname)
-        return uname[entity][iq][idof - begin]
+    #def quadrature_weight(self, e, mt, tabledata, num_points):
+    #    "Quadrature weights are precomputed and need no code."
+    #    return []
 
 
     def coefficient(self, e, mt, tabledata, num_points):
-        # TODO: Passing type along with tabledata would make a lot of code cleaner
-        #uname, begin, end, ttype = tabledata
-        uname, begin, end = tabledata
-        table_types = self.ir["expr_irs"][num_points]["table_types"]
-        ttype = table_types[uname]
+        ttype = tabledata.ttype
 
-        if ttype == "zeros":
-            # FIXME: Remove at earlier stage so dependent code can also be removed
-            warning("Not expecting zero coefficients to get this far.")
-            L = self.language
-            return L.LiteralFloat(0.0)
-        elif ttype == "ones" and (end - begin) == 1:
+        assert ttype != "zeros"
+
+        begin, end = tabledata.dofrange
+
+        if ttype == "ones" and (end - begin) == 1:
             # f = 1.0 * f_{begin}, just return direct reference to dof array at dof begin
             # (if mt is restricted, begin contains cell offset)
             idof = begin
             return self.symbols.coefficient_dof_access(mt.terminal, idof)
         elif ttype == "quadrature":
+            # Dofmap should be contiguous in this case
+            assert len(tabledata.dofmap) == end - begin
             # f(x_q) = sum_i f_i * delta_iq = f_q, just return direct
             # reference to dof array at quadrature point index + begin
-            iq = self.symbols.quadrature_loop_index(num_points)
+            iq = self.symbols.quadrature_loop_index()
             idof = begin + iq
             return self.symbols.coefficient_dof_access(mt.terminal, idof)
         else:
             # Return symbol, see definitions for computation 
             return self.symbols.coefficient_value(mt)  #, num_points)
-
-
-    def quadrature_weight(self, e, mt, tabledata, num_points):
-        weight = self.symbols.weights_array(num_points)
-        iq = self.symbols.quadrature_loop_index(num_points)
-        return weight[iq]
 
 
     def spatial_coordinate(self, e, mt, tabledata, num_points):
@@ -152,15 +108,13 @@ class FFCBackendAccess(MultiFunction):
         if mt.averaged:
             error("Not expecting average of SpatialCoordinates.")
 
-        if self.integral_type in physical_quadrature_integral_types:
-            # FIXME: Jacobian may need adjustment for physical_quadrature_integral_types
+        if self.integral_type in custom_integral_types:
             if mt.local_derivatives:
                 error("FIXME: Jacobian in custom integrals is not implemented.")
 
-            # Physical coordinates are available in given variables
-            assert num_points is None
-            x = self.symbols.points_array(num_points)
-            iq = self.symbols.quadrature_loop_index(num_points)
+            # Access predefined quadrature points table
+            x = self.symbols.custom_points_table()
+            iq = self.symbols.quadrature_loop_index()
             gdim, = mt.terminal.ufl_shape
             if gdim == 1:
                 index = iq
@@ -182,9 +136,10 @@ class FFCBackendAccess(MultiFunction):
             error("Not expecting average of CellCoordinate.")
 
         if self.integral_type == "cell" and not mt.restriction:
-            X = self.symbols.points_array(num_points)
+            # Access predefined quadrature points table
+            X = self.symbols.points_table(num_points)
             tdim, = mt.terminal.ufl_shape
-            iq = self.symbols.quadrature_loop_index(num_points)
+            iq = self.symbols.quadrature_loop_index()
             if num_points == 1:
                 index = mt.flat_component
             elif tdim == 1:
@@ -216,8 +171,8 @@ class FFCBackendAccess(MultiFunction):
                 # 0D vertex coordinate
                 warning("Vertex coordinate is always 0, should get rid of this in ufl geometry lowering.")
                 return L.LiteralFloat(0.0)
-            Xf = self.points_array(num_points)
-            iq = self.symbols.quadrature_loop_index(num_points)
+            Xf = self.points_table(num_points)
+            iq = self.symbols.quadrature_loop_index()
             assert 0 <= mt.flat_component < (tdim-1)
             if num_points == 1:
                 index = mt.flat_component

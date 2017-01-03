@@ -51,8 +51,6 @@ def balance_modified_terminal(expr):
     # Build list of modifier layers
     layers = [expr]
     while not expr._ufl_is_terminal_:
-        if not expr._ufl_is_terminal_modifier_:
-            import IPython; IPython.embed()
         assert expr._ufl_is_terminal_modifier_
         expr = expr.ufl_operands[0]
         layers.append(expr)

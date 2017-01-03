@@ -23,7 +23,7 @@ from ffc.log import info
 from ffc.representationutils import initialize_integral_code
 
 from ffc.uflacs.backends.ffc.backend import FFCBackend
-from ffc.uflacs.generation.integralgenerator import IntegralGenerator
+from ffc.uflacs.integralgenerator import IntegralGenerator
 from ffc.uflacs.language.format_lines import format_indented_lines
 
 
@@ -32,47 +32,29 @@ def generate_integral_code(ir, prefix, parameters):
 
     info("Generating code from ffc.uflacs representation")
 
-    # Generate generic ffc code snippets
-    code = initialize_integral_code(ir, prefix, parameters)
-
-    # Generate tabulate_tensor body using uflacs algorithms
-    uflacs_code = generate_tabulate_tensor_code(ir, prefix, parameters)
-
-    code["tabulate_tensor"] = uflacs_code["tabulate_tensor"]
-
-    # TODO: Use code generation utils here for consistency
-    if ir.get("num_cells") is not None:
-        code["num_cells"] = "  return %d;" % (ir["num_cells"],)
-
-    code["additional_includes_set"] = set()
-    code["additional_includes_set"].update(ir.get("additional_includes_set",()))
-    code["additional_includes_set"].update(uflacs_code["additional_includes_set"])
-
-    return code
-
-
-def generate_tabulate_tensor_code(ir, prefix, parameters):
-
     # Create FFC C++ backend
     backend = FFCBackend(ir, parameters)
 
-    # Create code generator for integral body
+    # Configure kernel generator
     ig = IntegralGenerator(ir, backend)
 
     # Generate code ast for the tabulate_tensor body
     parts = ig.generate()
 
-    # Format code AST as one string
+    # Format code as string
     body = format_indented_lines(parts.cs_format(), 1)
 
-    # Fetch includes
-    includes = set(ig.get_includes())
 
-    # Format uflacs specific code structures into a single
-    # string and place in dict before returning to ffc
-    code = {
-        "tabulate_tensor": body,
-        "additional_includes_set": includes,
-    }
+    # Generate generic ffc code snippets and add uflacs specific parts
+    code = initialize_integral_code(ir, prefix, parameters)
+    code["tabulate_tensor"] = body
+    code["additional_includes_set"] = set(ig.get_includes())
+    code["additional_includes_set"].update(ir.get("additional_includes_set", ()))
+
+    # TODO: Move to initialize_integral_code, this is not representation specific
+    L = backend.language
+    if ir.get("num_cells") is not None:
+        ret = L.Return(ir["num_cells"])
+        code["num_cells"] = format_indented_lines(ret.cs_format(), 1)
 
     return code

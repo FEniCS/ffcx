@@ -17,8 +17,10 @@
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import print_function  # used in some debugging
+
 from six import string_types
 import numpy
+import numbers
 
 from ffc.uflacs.language.format_value import format_value, format_float
 from ffc.uflacs.language.format_lines import format_indented_lines, Indented
@@ -42,37 +44,72 @@ from ffc.uflacs.language.precedence import PRECEDENCE
 
 ############## Some helper functions
 
-def assign_loop(src, dst, ranges):
-    """Generate a nested loop over a list of ranges, assigning dst to src in the innermost loop.
+def assign_loop(dst, src, ranges):
+    """Generate a nested loop over a list of ranges, assigning src to dst in the innermost loop.
 
     Ranges is a list on the format [(index, begin, end),...].
     """
-    code = Assign(src, dst)
+    code = Assign(dst, src)
     for i, b, e in reversed(ranges):
         code = ForRange(i, b, e, code)
     return code
 
 
-def accumulate_loop(src, dst, ranges):
-    """Generate a nested loop over a list of ranges, adding dst to src in the innermost loop.
+def accumulate_loop(dst, src, ranges):
+    """Generate a nested loop over a list of ranges, adding src to dst in the innermost loop.
 
     Ranges is a list on the format [(index, begin, end),...].
     """
-    code = AssignAdd(src, dst)
+    code = AssignAdd(dst, src)
     for i, b, e in reversed(ranges):
         code = ForRange(i, b, e, code)
     return code
 
 
-def scale_loop(src, dst, ranges):
-    """Generate a nested loop over a list of ranges, multiplying dst with src in the innermost loop.
+def scale_loop(dst, factor, ranges):
+    """Generate a nested loop over a list of ranges, multiplying dst with factor in the innermost loop.
 
     Ranges is a list on the format [(index, begin, end),...].
     """
-    code = AssignMul(src, dst)
+    code = AssignMul(dst, factor)
     for i, b, e in reversed(ranges):
         code = ForRange(i, b, e, code)
     return code
+
+
+def is_zero_cexpr(cexpr):
+    return (
+        (isinstance(cexpr, LiteralFloat) and cexpr.value == 0.0)
+        or (isinstance(cexpr, LiteralInt) and cexpr.value == 0)
+        )
+
+
+def is_one_cexpr(cexpr):
+    return (
+        (isinstance(cexpr, LiteralFloat) and cexpr.value == 1.0)
+        or (isinstance(cexpr, LiteralInt) and cexpr.value == 1)
+        )
+
+
+def is_negative_one_cexpr(cexpr):
+    return (
+        (isinstance(cexpr, LiteralFloat) and cexpr.value == -1.0)
+        or (isinstance(cexpr, LiteralInt) and cexpr.value == -1)
+        )
+
+
+def float_product(factors):
+    "Build product of float factors, simplifying ones and zeros and returning 1.0 if empty sequence."
+    factors = [f for f in factors if not is_one_cexpr(f)]
+    if len(factors) == 0:
+        return LiteralFloat(1.0)
+    elif len(factors) == 1:
+        return factors[0]
+    else:
+        for f in factors:
+            if is_zero_cexpr(f):
+                return f
+        return Product(factors)
 
 
 ############## CNode core
@@ -84,6 +121,13 @@ class CNode(object):
     def __str__(self):
         name = self.__class__.__name__
         raise NotImplementedError("Missing implementation of __str__ in " + name)
+
+    def __eq__(self, other):
+        name = self.__class__.__name__
+        raise NotImplementedError("Missing implementation of __eq__ in " + name)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 CNode.debug = False
 
@@ -114,37 +158,95 @@ class CExpr(CNode):
         return ArrayAccess(self, indices)
 
     def __neg__(self):
+        if isinstance(self, LiteralFloat):
+            return LiteralFloat(-self.value)
+        if isinstance(self, LiteralInt):
+            return LiteralInt(-self.value)
         return Neg(self)
 
     def __add__(self, other):
+        other = as_cexpr(other)
+        if is_zero_cexpr(self):
+            return other
+        if is_zero_cexpr(other):
+            return self
+        if isinstance(other, Neg):
+            return Sub(self, other.arg)
         return Add(self, other)
 
     def __radd__(self, other):
+        other = as_cexpr(other)
+        if is_zero_cexpr(self):
+            return other
+        if is_zero_cexpr(other):
+            return self
+        if isinstance(self, Neg):
+            return Sub(other, self.arg)
         return Add(other, self)
 
     def __sub__(self, other):
+        other = as_cexpr(other)
+        if is_zero_cexpr(self):
+            return -other
+        if is_zero_cexpr(other):
+            return self
+        if isinstance(other, Neg):
+            return Add(self, other.arg)
         return Sub(self, other)
 
     def __rsub__(self, other):
+        other = as_cexpr(other)
+        if is_zero_cexpr(self):
+            return other
+        if is_zero_cexpr(other):
+            return -self
+        if isinstance(self, Neg):
+            return Add(other, self.arg)
         return Sub(other, self)
 
     def __mul__(self, other):
+        other = as_cexpr(other)
+        if is_zero_cexpr(self):
+            return self
+        if is_zero_cexpr(other):
+            return other
+        if is_negative_one_cexpr(other):
+            return Neg(self)
+        if is_negative_one_cexpr(self):
+            return Neg(other)
         return Mul(self, other)
 
     def __rmul__(self, other):
+        other = as_cexpr(other)
+        if is_zero_cexpr(self):
+            return self
+        if is_zero_cexpr(other):
+            return other
+        if is_negative_one_cexpr(other):
+            return Neg(self)
+        if is_negative_one_cexpr(self):
+            return Neg(other)
         return Mul(other, self)
 
     def __div__(self, other):
+        other = as_cexpr(other)
+        if is_zero_cexpr(other):
+            raise ValueError("Division by zero!")
+        if is_zero_cexpr(self):
+            return self
         return Div(self, other)
 
     def __rdiv__(self, other):
+        other = as_cexpr(other)
+        if is_zero_cexpr(self):
+            raise ValueError("Division by zero!")
+        if is_zero_cexpr(other):
+            return other
         return Div(other, self)
 
-    def __truediv__(self, other):
-        return Div(self, other)
+    __truediv__ = __div__
 
-    def __rtruediv__(self, other):
-        return Div(other, self)
+    __rtruediv__ = __rdiv__
 
     def __floordiv__(self, other):
         return NotImplemented
@@ -155,26 +257,27 @@ class CExpr(CNode):
 
 class CExprOperator(CExpr):
     """Base class for all C expression operator."""
-    __slots__ = ("children",)
+    __slots__ = ()
     sideeffect = False
 
 
 class CExprTerminal(CExpr):
     """Base class for all C expression terminals."""
     __slots__ = ()
-    children = ()
+    sideeffect = False
 
 
 ############## CExprTerminal types
 
 class CExprLiteral(CExprTerminal):
     "A float or int literal value."
-    __slots__ = ("value",)
+    __slots__ = ()
     precedence = PRECEDENCE.LITERAL
+
 
 class Null(CExprLiteral):
     "A null pointer literal."
-    __slots__ = ("value",)
+    __slots__ = ()
     precedence = PRECEDENCE.LITERAL
 
     def ce_format(self):
@@ -185,6 +288,7 @@ class Null(CExprLiteral):
 
     def __eq__(self, other):
         return isinstance(other, Null)
+
 
 class LiteralFloat(CExprLiteral):
     "A floating point literal value."
@@ -201,11 +305,14 @@ class LiteralFloat(CExprLiteral):
     def __eq__(self, other):
         return isinstance(other, LiteralFloat) and self.value == other.value
 
-    def __nonzero__(self):
+    def __bool__(self):
         return bool(self.value)
+
+    __nonzero__ = __bool__
 
     def __float__(self):
         return float(self.value)
+
 
 class LiteralInt(CExprLiteral):
     "An integer literal value."
@@ -222,11 +329,17 @@ class LiteralInt(CExprLiteral):
     def __eq__(self, other):
         return isinstance(other, LiteralInt) and self.value == other.value
 
-    def __nonzero__(self):
+    def __bool__(self):
         return bool(self.value)
+
+    __nonzero__ = __bool__
 
     def __int__(self):
         return int(self.value)
+
+    def __float__(self):
+        return float(self.value)
+
 
 class LiteralBool(CExprLiteral):
     "A boolean literal value."
@@ -243,11 +356,11 @@ class LiteralBool(CExprLiteral):
     def __eq__(self, other):
         return isinstance(other, LiteralBool) and self.value == other.value
 
-    def __nonzero__(self):
-        return bool(self.value)
-
     def __bool__(self):
         return bool(self.value)
+
+    __nonzero__ = __bool__
+
 
 class LiteralString(CExprLiteral):
     "A boolean literal value."
@@ -278,6 +391,10 @@ class Symbol(CExprTerminal):
     def ce_format(self):
         return self.name
 
+    def __eq__(self, other):
+        return isinstance(other, Symbol) and self.name == other.name
+
+
 class VerbatimExpr(CExprTerminal):
     """A verbatim copy of an expression source string.
 
@@ -292,6 +409,10 @@ class VerbatimExpr(CExprTerminal):
     def ce_format(self):
         return self.codestring
 
+    def __eq__(self, other):
+        return isinstance(other, VerbatimExpr) and self.codestring == other.codestring
+
+
 class New(CExpr):
     __slots__ = ("typename",)
     def __init__(self, typename):
@@ -300,6 +421,9 @@ class New(CExpr):
 
     def ce_format(self):
         return "new %s()" % (self.typename,)
+
+    def __eq__(self, other):
+        return isinstance(other, New) and self.typename == other.typename
 
 
 ############## CExprOperator base classes
@@ -310,6 +434,10 @@ class UnaryOp(CExprOperator):
     def __init__(self, arg):
         self.arg = as_cexpr(arg)
 
+    def __eq__(self, other):
+        return isinstance(other, type(self)) and self.arg == other.arg
+
+
 class PrefixUnaryOp(UnaryOp):
     "Base class for prefix unary operators."
     __slots__ = ()
@@ -319,6 +447,10 @@ class PrefixUnaryOp(UnaryOp):
             arg = '(' + arg + ')'
         return self.op + arg
 
+    def __eq__(self, other):
+        return isinstance(other, type(self))
+
+
 class PostfixUnaryOp(UnaryOp):
     "Base class for postfix unary operators."
     __slots__ = ()
@@ -327,6 +459,10 @@ class PostfixUnaryOp(UnaryOp):
         if self.arg.precedence >= self.precedence:
             arg = '(' + arg + ')'
         return arg + self.op
+
+    def __eq__(self, other):
+        return isinstance(other, type(self))
+
 
 class BinOp(CExprOperator):
     __slots__ = ("lhs", "rhs")
@@ -347,6 +483,12 @@ class BinOp(CExprOperator):
 
         # Return combined string
         return lhs + (" " + self.op + " ") + rhs
+
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+                    and self.lhs == other.lhs
+                    and self.rhs == other.rhs)
+
 
 class NaryOp(CExprOperator):
     "Base class for special n-ary operators."
@@ -369,6 +511,12 @@ class NaryOp(CExprOperator):
         for i in range(1, len(args)):
             s += op + args[i]
         return s
+
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+                    and len(self.args) == len(other.args)
+                    and all(a == b for a, b in zip(self.args, other.args)))
+
 
 ############## CExpr unary operators
 
@@ -628,15 +776,20 @@ class FlattenedArray(object):
         if not isinstance(indices, (list,tuple)):
             indices = (indices,)
         n = len(indices)
-        i, s = (indices[0], self.strides[0])
-        literal_one = LiteralInt(1)
-
-        flat = (i if s == literal_one else s * i)
-        if self.offset is not None:
-            flat = self.offset + flat
-        for i, s in zip(indices[1:n], self.strides[1:n]):
-            flat = flat + (i if s == literal_one else s * i)
-
+        if n == 0:
+            # Handle scalar case, allowing dims=() and indices=() for A[0]
+            if len(self.strides) != 0:
+                raise ValueError("Empty indices for nonscalar array.")
+            flat = LiteralInt(0)
+        else:
+            i, s = (indices[0], self.strides[0])
+            literal_one = LiteralInt(1)
+            flat = (i if s == literal_one else s * i)
+            if self.offset is not None:
+                flat = self.offset + flat
+            for i, s in zip(indices[1:n], self.strides[1:n]):
+                flat = flat + (i if s == literal_one else s * i)
+        # Delay applying ArrayAccess until we have all indices
         if n == len(self.strides):
             return ArrayAccess(self.array, flat)
         else:
@@ -690,6 +843,12 @@ class ArrayAccess(CExprOperator):
             s += "[" + index.ce_format() + "]"
         return s
 
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+                    and self.array == other.array
+                    and self.indices == other.indices)
+
+
 class Conditional(CExprOperator):
     __slots__ = ("condition", "true", "false")
     precedence = PRECEDENCE.CONDITIONAL
@@ -716,6 +875,12 @@ class Conditional(CExprOperator):
         # Return combined string
         return c + " ? " + t + " : " + f
 
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+                    and self.condition == other.condition
+                    and self.true == other.true
+                    and self.false == other.false)
+
 
 class Call(CExprOperator):
     __slots__ = ("function", "arguments")
@@ -737,15 +902,16 @@ class Call(CExprOperator):
         args = ", ".join(arg.ce_format() for arg in self.arguments)
         return self.function.ce_format() + "(" + args + ")"
 
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+                    and self.function == other.function
+                    and self.arguments == other.arguments)
+
 
 ############## Convertion function to expression nodes
 
-number_types = (int, float, complex, numpy.number)
-
-
-def _is_zero(values):
-    global number_types
-    if isinstance(values, number_types + (LiteralFloat, LiteralInt)):
+def _is_zero_valued(values):
+    if isinstance(values, (numbers.Number, LiteralFloat, LiteralInt)):
         return float(values) == 0.0
     else:
         return numpy.count_nonzero(values) == 0
@@ -756,7 +922,6 @@ def as_cexpr(node):
 
     Accepts CExpr nodes, treats int and float as literals, and treats a string as a symbol.
     """
-    global number_types
     if isinstance(node, CExpr):
         return node
     elif isinstance(node, (int, numpy.integer)):
@@ -810,7 +975,7 @@ class CStatement(CNode):
 
     Subtypes do _not_ define a 'precedence' class attribute.
     """
-    __slots__ = ("children",)
+    __slots__ = ()
 
     def cs_format(self):
         "Return S: string | list(S) | Indented(S)."
@@ -839,6 +1004,10 @@ class VerbatimStatement(CStatement):
     def cs_format(self):
         return self.codestring
 
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+                    and self.codestring == other.codestring)
+
 
 class Statement(CStatement):
     "Make an expression into a statement."
@@ -849,6 +1018,10 @@ class Statement(CStatement):
     def cs_format(self):
         return self.expr.ce_format() + ";"
 
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+                    and self.expr == other.expr)
+
 
 class StatementList(CStatement):
     "A simple sequence of statements. No new scopes are introduced."
@@ -858,6 +1031,10 @@ class StatementList(CStatement):
 
     def cs_format(self):
         return [st.cs_format() for st in self.statements]
+
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+                    and self.statements == other.statements)
 
 
 ############## Simple statements
@@ -871,17 +1048,27 @@ class Using(CStatement):
     def cs_format(self):
         return "using " + self.name + ";"
 
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+                    and self.name == other.name)
+
 
 class Break(CStatement):
     __slots__ = ()
     def cs_format(self):
         return "break;"
 
+    def __eq__(self, other):
+        return isinstance(other, type(self))
+
 
 class Continue(CStatement):
     __slots__ = ()
     def cs_format(self):
         return "continue;"
+
+    def __eq__(self, other):
+        return isinstance(other, type(self))
 
 
 class Return(CStatement):
@@ -891,6 +1078,10 @@ class Return(CStatement):
 
     def cs_format(self):
         return "return " + self.value.ce_format() + ";"
+
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+                    and self.value == other.value)
 
 
 class Case(CStatement):
@@ -902,11 +1093,18 @@ class Case(CStatement):
     def cs_format(self):
         return "case " + self.value.ce_format() + ":"
 
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+                    and self.value == other.value)
+
 
 class Default(CStatement):
     __slots__ = ()
     def cs_format(self):
         return "default:"
+
+    def __eq__(self, other):
+        return isinstance(other, type(self))
 
 
 class Throw(CStatement):
@@ -921,6 +1119,11 @@ class Throw(CStatement):
         assert '"' not in self.message
         return "throw " + self.exception + '("' + self.message + '");'
 
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+                    and self.message == other.message
+                    and self.exception == other.exception)
+
 
 class Comment(CStatement):
     "Line comment(s) used for annotating the generated code with human readable remarks."
@@ -932,6 +1135,10 @@ class Comment(CStatement):
     def cs_format(self):
         lines = self.comment.strip().split("\n")
         return ["// " + line.strip() for line in lines]
+
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+                    and self.comment == other.comment)
 
 
 def commented_code_list(code, comments):
@@ -958,6 +1165,10 @@ class Pragma(CStatement):  # TODO: Improve on this with a use case later
         assert "\n" not in self.comment
         return "#pragma " + self.comment
 
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+                    and self.comment == other.comment)
+
 
 ############## Type and variable declarations
 
@@ -983,6 +1194,12 @@ class VariableDecl(CStatement):
             code += " = " + self.value.ce_format()
         return code + ";"
 
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+                    and self.typename == other.typename
+                    and self.symbol == other.symbol
+                    and self.value == other.value)
+
 
 def leftover(size, padlen):
     "Return minimum integer to add to size to make it divisible by padlen."
@@ -1001,7 +1218,7 @@ def build_1d_initializer_list(values, formatter, padlen=0):
         tokens.append(fvalues[-1])
         if padlen:
             # Add padding
-            zero = formatter(values.dtype(0))
+            zero = formatter(values.dtype.type(0))
             for i in range(leftover(len(values), padlen)):
                 tokens.append(sep)
                 tokens.append(zero)
@@ -1107,7 +1324,7 @@ class ArrayDecl(CStatement):
         if self.values is None:
             # Undefined initial values
             return decl + ";"
-        elif _is_zero(self.values):
+        elif _is_zero_valued(self.values):
             # Zero initial values
             # (NB! C++ style zero initialization, not sure about other target languages)
             return decl + " = {};"
@@ -1126,6 +1343,13 @@ class ArrayDecl(CStatement):
                 initializer_lists[-1] += ";" # Close statement on final line
                 return (decl + " =", Indented(initializer_lists))
 
+    def __eq__(self, other):
+        attributes = ("typename", "symbol", "sizes", "alignas", "padlen", "values")
+        return (isinstance(other, type(self))
+                    and all(getattr(self, name) == getattr(self, name)
+                            for name in attributes))
+
+
 
 ############## Scoped statements
 
@@ -1136,6 +1360,10 @@ class Scope(CStatement):
 
     def cs_format(self):
         return ("{", Indented(self.body.cs_format()), "}")
+
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+                    and self.body == other.body)
 
 
 class Namespace(CStatement):
@@ -1149,6 +1377,11 @@ class Namespace(CStatement):
         return ("namespace " + self.name,
                 "{", Indented(self.body.cs_format()), "}")
 
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+                    and self.name == other.name
+                    and self.body == other.body)
+
 
 class If(CStatement):
     __slots__ = ("condition", "body")
@@ -1159,6 +1392,11 @@ class If(CStatement):
     def cs_format(self):
         return ("if (" + self.condition.ce_format() + ")",
                 "{", Indented(self.body.cs_format()), "}")
+
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+                    and self.condition == other.condition
+                    and self.body == other.body)
 
 
 class ElseIf(CStatement):
@@ -1171,6 +1409,11 @@ class ElseIf(CStatement):
         return ("else if (" + self.condition.ce_format() + ")",
                 "{", Indented(self.body.cs_format()), "}")
 
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+                    and self.condition == other.condition
+                    and self.body == other.body)
+
 
 class Else(CStatement):
     __slots__ = ("body",)
@@ -1180,6 +1423,10 @@ class Else(CStatement):
     def cs_format(self):
         return ("else",
                 "{", Indented(self.body.cs_format()), "}")
+
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+                    and self.body == other.body)
 
 
 class While(CStatement):
@@ -1192,6 +1439,11 @@ class While(CStatement):
         return ("while (" + self.condition.ce_format() + ")",
                 "{", Indented(self.body.cs_format()), "}")
 
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+                    and self.condition == other.condition
+                    and self.body == other.body)
+
 
 class Do(CStatement):
     __slots__ = ("condition", "body")
@@ -1202,6 +1454,11 @@ class Do(CStatement):
     def cs_format(self):
         return ("do", "{", Indented(self.body.cs_format()),
                 "} while (" + self.condition.ce_format() + ");")
+
+    def __eq__(self, other):
+        return (isinstance(other, type(self))
+                    and self.condition == other.condition
+                    and self.body == other.body)
 
 
 class For(CStatement):
@@ -1217,13 +1474,27 @@ class For(CStatement):
         # in the init statement/expression here:
         init = self.init.cs_format()
         assert isinstance(init, string_types)
-        assert init.rstrip().endswith(";")
+        init = init.rstrip(" ;")
 
         check = self.check.ce_format()
         update = self.update.ce_format()
-        body = self.body.cs_format()
-        return ("for (" + init + " " + check + "; " + update + ")",
-                "{", Indented(body), "}")
+
+        prelude = "for (" + init + "; " + check + "; " + update + ")"
+        body = Indented(self.body.cs_format())
+
+        # Reduce size of code with lots of simple loops by dropping {} in obviously safe cases
+        if (isinstance(self.body, ForRange)
+                or (isinstance(self.body, Statement)
+                        and isinstance(self.body.expr, AssignOp))):
+            return (prelude, body)
+        else:
+            return (prelude, "{", body, "}")
+
+    def __eq__(self, other):
+        attributes = ("init", "check", "update", "body")
+        return (isinstance(other, type(self))
+                    and all(getattr(self, name) == getattr(self, name)
+                            for name in attributes))
 
 
 class Switch(CStatement):
@@ -1260,6 +1531,12 @@ class Switch(CStatement):
         return ("switch (" + self.arg.ce_format() + ")",
                 "{", cases, "}")
 
+    def __eq__(self, other):
+        attributes = ("arg", "cases", "default", "autobreak", "autoscope")
+        return (isinstance(other, type(self))
+                    and all(getattr(self, name) == getattr(self, name)
+                            for name in attributes))
+
 
 class ForRange(CStatement):
     "Slightly higher-level for loop assuming incrementing an index over a range."
@@ -1284,15 +1561,32 @@ class ForRange(CStatement):
         check = index + " < " + end
         update = "++" + index
 
-        return ("for (" + init + "; " + check + "; " + update + ")",
-                "{", Indented(self.body.cs_format()), "}")
+        prelude = "for (" + init + "; " + check + "; " + update + ")"
+        body = Indented(self.body.cs_format())
+
+        # Reduce size of code with lots of simple loops by dropping {} in obviously safe cases
+        if (isinstance(self.body, ForRange)
+                or (isinstance(self.body, Statement)
+                        and isinstance(self.body.expr, AssignOp))):
+            return (prelude, body)
+        else:
+            return (prelude, "{", body, "}")
+
+    def __eq__(self, other):
+        attributes = ("index", "begin", "end", "body", "index_type")
+        return (isinstance(other, type(self))
+                    and all(getattr(self, name) == getattr(self, name)
+                            for name in attributes))
 
 
 ############## Convertion function to statement nodes
 
 def as_cstatement(node):
     "Perform type checking on node and wrap in a suitable statement type if necessary."
-    if isinstance(node, CStatement):
+    if isinstance(node, StatementList) and len(node.statements) == 1:
+        # Cleans up the expression tree a bit
+        return node.statements[0]
+    elif isinstance(node, CStatement):
         # No-op
         return node
     elif isinstance(node, CExprOperator):
@@ -1305,7 +1599,11 @@ def as_cstatement(node):
                 % (type(node), str(node)))
     elif isinstance(node, list):
         # Convenience case for list of statements
-        return StatementList(node)
+        if len(node) == 1:
+            # Cleans up the expression tree a bit
+            return as_cstatement(node[0])
+        else:
+            return StatementList(node)
     elif isinstance(node, string_types):
         # Backdoor for flexibility in code generation to allow verbatim pasted statements
         return VerbatimStatement(node)

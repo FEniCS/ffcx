@@ -22,7 +22,7 @@ from ffc.uflacs.analysis.graph import build_graph
 #                                        map_component_tensor_arg_components)
 # from ffc.uflacs.analysis.graph_symbols import (map_list_tensor_symbols,
 #                                             map_transposed_symbols, get_node_symbols)
-# from ffc.uflacs.analysis.graph_dependencies import (compute_dependencies,
+# from ffc.uflacs.analysis.dependencies import (compute_dependencies,
 #                                                mark_active,
 #                                                mark_image)
 # from ffc.uflacs.analysis.graph_ssa import (mark_partitions,
