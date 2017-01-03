@@ -20,6 +20,8 @@
 
 import numpy
 
+def sufficient_int(maxval):
+    return numpy.int16 if maxval < 2**15 else numpy.int32
 
 class CRSArray(object):
     """An array of variable length dense arrays.
@@ -34,7 +36,7 @@ class CRSArray(object):
     There is no column index.
     """
     def __init__(self, row_capacity, element_capacity, dtype):
-        itype = numpy.int16 if row_capacity < 2**15 else numpy.int32
+        itype = sufficient_int(element_capacity)
         self.row_offsets = numpy.zeros(row_capacity + 1, dtype=itype)
         self.data = numpy.zeros(element_capacity, dtype=dtype)
         self.num_rows = 0

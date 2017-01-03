@@ -22,13 +22,13 @@ import numpy
 
 from six.moves import xrange as range
 
-from ffc.uflacs.analysis.crsarray import CRSArray
+from ffc.uflacs.analysis.crsarray import CRSArray, sufficient_int
 
 
 def compute_dependencies(e2i, V, ignore_terminal_modifiers=True):
     # Use numpy int type sufficient to hold num_rows
     num_rows = len(V)
-    itype = numpy.int16 if num_rows < 2**15 else numpy.int32
+    itype = sufficient_int(num_rows)
 
     # Preallocate CRSArray matrix of sufficient capacity
     num_nonzeros = sum(len(v.ufl_operands) for v in V)
