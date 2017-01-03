@@ -421,7 +421,7 @@ def optimize_element_tables(tables, table_origins, compress_zeros, epsilon):
       unique_tables - { unique_name: stripped_table }
       unique_table_origins - FIXME
     """
-    used_names = list(tables)
+    used_names = sorted(tables)
     compressed_tables = {}
     table_ranges = {}
     table_dofmaps = {}
@@ -510,40 +510,42 @@ def is_uniform_table(table, epsilon):
                for i in range(1, table.shape[0]))
 
 
-def analyse_table_types(unique_tables, epsilon):
-    unique_table_ttypes = {}
-    for uname, table in unique_tables.items():
-        num_entities, num_points, num_dofs = table.shape
-        if is_zeros_table(table, epsilon):
-            # Table is empty or all values are 0.0
-            ttype = "zeros"
-        elif is_ones_table(table, epsilon):
-            # All values are 1.0
-            ttype = "ones"
-        elif is_quadrature_table(table, epsilon):
-            # Identity matrix mapping points to dofs (separately on each entity)
-            ttype = "quadrature"
+def analyse_table_type(table, epsilon):
+    num_entities, num_points, num_dofs = table.shape
+    if is_zeros_table(table, epsilon):
+        # Table is empty or all values are 0.0
+        ttype = "zeros"
+    elif is_ones_table(table, epsilon):
+        # All values are 1.0
+        ttype = "ones"
+    elif is_quadrature_table(table, epsilon):
+        # Identity matrix mapping points to dofs (separately on each entity)
+        ttype = "quadrature"
+    else:
+        # Equal for all points on a given entity
+        piecewise = is_piecewise_table(table, epsilon)
+
+        # Equal for all entities
+        uniform = is_uniform_table(table, epsilon)
+
+        if piecewise and uniform:
+            # Constant for all points and all entities
+            ttype = "fixed"
+        elif piecewise:
+            # Constant for all points on each entity separately
+            ttype = "piecewise"
+        elif uniform:
+            # Equal on all entities
+            ttype = "uniform"
         else:
-            # Equal for all points on a given entity
-            piecewise = is_piecewise_table(table, epsilon)
+            # Varying over points and entities
+            ttype = "varying"
+    return ttype
 
-            # Equal for all entities
-            uniform = is_uniform_table(table, epsilon)
 
-            if piecewise and uniform:
-                # Constant for all points and all entities
-                ttype = "fixed"
-            elif piecewise:
-                # Constant for all points on each entity separately
-                ttype = "piecewise"
-            elif uniform:
-                # Equal on all entities
-                ttype = "uniform"
-            else:
-                # Varying over points and entities
-                ttype = "varying"
-        unique_table_ttypes[uname] = ttype
-    return unique_table_ttypes
+def analyse_table_types(unique_tables, epsilon):
+    return { uname: analyse_table_type(table, epsilon)
+             for uname, table in unique_tables.items() }
 
 
 def build_optimized_tables(num_points, quadrature_rules,
@@ -596,16 +598,16 @@ def build_optimized_tables(num_points, quadrature_rules,
     # Change tables to point to existing optimized tables
     # (i.e. tables from other contexts that have been compressed to look the same)
     name_map = {}
-    existing_names = set(existing_tables)
+    existing_names = sorted(existing_tables)
     for uname in sorted(unique_tables):
         utbl = unique_tables[uname]
-        for ename in existing_names:
+        for i, ename in enumerate(existing_names):
             etbl = existing_tables[ename]
             if equal_tables(utbl, etbl, epsilon):
                 # Setup table name mapping
                 name_map[uname] = ename
                 # Don't visit this table again (just to avoid the processing)
-                existing_names.remove(ename)
+                existing_names.pop(i)
                 break
 
     # Replace unique table names
