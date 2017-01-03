@@ -263,18 +263,18 @@ def test_cnode_loop_helpers():
     A = Symbol("A")
     B = Symbol("B")
     C = Symbol("C")
-    src = A[i + 4 * j]
-    dst = 2.0 * B[j] * C[i]
+    dst = A[i + 4 * j]
+    src = 2.0 * B[j] * C[i]
     ranges = [(i, 0, 2), (j, 1, 3)]
-    assert str(assign_loop(src, dst, ranges)) == """\
+    assert str(assign_loop(dst, src, ranges)) == """\
 for (int i = 0; i < 2; ++i)
     for (int j = 1; j < 3; ++j)
         A[i + 4 * j] = 2.0 * B[j] * C[i];"""
-    assert str(scale_loop(src, dst, ranges)) == """\
+    assert str(scale_loop(dst, src, ranges)) == """\
 for (int i = 0; i < 2; ++i)
     for (int j = 1; j < 3; ++j)
         A[i + 4 * j] *= 2.0 * B[j] * C[i];"""
-    assert str(accumulate_loop(src, dst, ranges)) == """\
+    assert str(accumulate_loop(dst, src, ranges)) == """\
 for (int i = 0; i < 2; ++i)
     for (int j = 1; j < 3; ++j)
         A[i + 4 * j] += 2.0 * B[j] * C[i];"""
