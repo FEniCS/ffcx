@@ -58,6 +58,10 @@ unique_table_reference_t = namedtuple("unique_table_reference",
      "ttype", "is_piecewise", "is_uniform"])
 
 
+def scalars_equal(x, y, eps):
+    return abs(x-y) < eps
+
+
 # TODO: Replace with numpy.allclose
 def equal_tables(a, b, eps):
     "Compare tables to be equal within a tolerance."
@@ -65,13 +69,12 @@ def equal_tables(a, b, eps):
     b = numpy.asarray(b)
     if a.shape != b.shape:
         return False
-    if len(a.shape) > 1:
+    elif len(a.shape) > 1:
         return all(equal_tables(a[i], b[i], eps)
                    for i in range(a.shape[0]))
-    def scalars_equal(x, y, eps):
-        return abs(x-y) < eps
-    return all(scalars_equal(a[i], b[i], eps)
-               for i in range(a.shape[0]))
+    else:
+        return all(scalars_equal(a[i], b[i], eps)
+                   for i in range(a.shape[0]))
 
 
 # TODO: Is clamping 1's really safe?

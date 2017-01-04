@@ -55,8 +55,10 @@ common_block_data_t = namedtuple(
     common_block_data_fields
     )
 
+
 def get_common_block_data(blockdata):
     return common_block_data_t(*blockdata[:len(common_block_data_fields)])
+
 
 preintegrated_block_data_t = namedtuple(
     "preintegrated_block_data_t",
