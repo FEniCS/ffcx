@@ -853,7 +853,7 @@ class IntegralGenerator(object):
 
         elif blockdata.block_mode == "preintegrated":
             # Preintegrated should never get into quadloops
-            assert num_points == None
+            assert num_points is None
 
             # Define B = B_rhs = f * P where P = sum_q weight * u * v
             B_rhs = L.float_product([f, L.Symbol(blockdata.name)[(entity,) + B_indices]])
