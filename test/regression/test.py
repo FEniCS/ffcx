@@ -359,40 +359,57 @@ def build_programs(bench, permissive):
 
     # Get UFC flags
     ufc_cflags = "-I" + get_ufc_include() + " " + " ".join(get_ufc_cxx_flags())
+
+    # Get boost flags
     boost_cflags, boost_linkflags = find_boost_cflags()
-    ufc_cflags += boost_cflags
-    linker_options = boost_linkflags
 
     # Set compiler options
-    compiler_options = "%s -Wall " % ufc_cflags
+    compiler_options = " -Wall"
     if not permissive:
         compiler_options += " -Werror -pedantic"
+
+    # Always need ufc
+    compiler_options += " " + ufc_cflags
+
     if bench:
         info("Benchmarking activated")
-        # Takes too long to build with -O2
-        # compiler_options += " -O2"
-
-        # gcc bug: gcc is too eager to report array-bounds warning with -O3
-        compiler_options += " -O3 -Wno-array-bounds -march=native"
-
-        # compiler_options += " -O3 -fno-math-errno -march=native"
+        compiler_options += " -O3 -march=native"
+        # Workaround for gcc bug: gcc is too eager to report array-bounds warning with -O3
+        compiler_options += " -Wno-array-bounds"
 
     if debug:
         info("Debugging activated")
         compiler_options += " -g -O0"
+
     info("Compiler options: %s" % compiler_options)
 
     # Iterate over all files
     for f in header_files:
+        prefix = f.split(".h")[0]
+
+        # Options for all files
+        cpp_flags = compiler_options
+        ld_flags = ""
+
+        # Only add boost flags if necessary
+        needs_boost = prefix == "MathFunctions"
+        if needs_boost:
+            info("Additional compiler options for %s: %s" % (prefix, boost_cflags))
+            info("Additional linker options for %s: %s" % (prefix, boost_linkflags))
+            cpp_flags += " " + boost_cflags
+            ld_flags += " " + boost_linkflags
 
         # Generate test code
         filename = generate_test_code(f)
 
         # Compile test code
-        prefix = f.split(".h")[0]
         command = "g++ %s -o %s.bin %s.cpp %s" % \
-                  (compiler_options, prefix, prefix, linker_options)
+                  (cpp_flags, prefix, prefix, ld_flags)
         ok = run_command(command)
+
+        # Store compile command for easy reproduction
+        with open("%s.build" % (prefix,), "w") as f:
+            f.write(command + "\n")
 
         # Check status
         if ok:
