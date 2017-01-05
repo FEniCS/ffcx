@@ -27,7 +27,7 @@ from six import advance_iterator as next
 
 # UFL common.
 from ufl.utils.sorting import sorted_by_key
-from ufl import custom_integral_types
+from ufl.measure import custom_integral_types, point_integral_types
 
 # UFL Classes.
 from ufl.classes import IntValue
@@ -773,7 +773,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         weight = self._create_symbol(weight, ACCESS)[()]
 
         # Create value.
-        if integral_type in (("vertex",) + custom_integral_types):
+        if integral_type in (point_integral_types + custom_integral_types):
             trans_set = set()
             value = create_product([val, weight])
         else:

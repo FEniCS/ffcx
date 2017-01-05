@@ -8,10 +8,18 @@ from __future__ import print_function
 from ufl import triangle
 from six import itervalues, iteritems
 from six.moves import xrange as range
-from ffc.uflacs.elementtables.table_utils import equal_tables, strip_table_zeros, build_unique_tables, get_ffc_table_values
+from ffc.uflacs.elementtables import equal_tables, strip_table_zeros, build_unique_tables, get_ffc_table_values
 
 import numpy as np
 default_tolerance = 1e-14
+
+
+def old_strip_table_zeros(table, eps):
+    "Quick fix translating new version to old behaviour to keep tests without modification."
+    dofrange, dofmap, stripped_table = strip_table_zeros(table, False, eps)
+    begin, end = dofrange
+    return begin, end, stripped_table
+
 
 def test_equal_tables():
     a = np.zeros((2, 3))
@@ -35,43 +43,44 @@ def test_equal_tables():
     a = np.ones((2, 3))*(1.0+eps)
     assert equal_tables(a, np.ones(a.shape), 10*eps)
 
+
 def test_strip_table_zeros():
     # Can strip entire table:
     a = np.zeros((2, 3))
     e = np.zeros((2, 0))
-    begin, end, b = strip_table_zeros(a, default_tolerance)
-    assert begin == a.shape[-1]
-    assert end == a.shape[-1]
+    begin, end, b = old_strip_table_zeros(a, default_tolerance)
     assert begin == end # This is a way to check for all-zero table
+    assert begin == 0
+    assert end == 0
     assert equal_tables(b, e, default_tolerance)
 
     # Can keep entire nonzero table:
     a = np.ones((2, 3))
     e = np.ones((2, 3))
-    begin, end, b = strip_table_zeros(a, default_tolerance)
+    begin, end, b = old_strip_table_zeros(a, default_tolerance)
+    assert begin != end
     assert begin == 0
     assert end == a.shape[-1]
-    assert begin != end
     assert equal_tables(b, e, default_tolerance)
 
     # Can strip one left side column:
     a = np.ones((2, 3))
     a[:, 0] = 0.0
     e = np.ones((2, 2))
-    begin, end, b = strip_table_zeros(a, default_tolerance)
+    begin, end, b = old_strip_table_zeros(a, default_tolerance)
+    assert begin != end
     assert begin == 1
     assert end == a.shape[-1]
-    assert begin != end
     assert equal_tables(b, e, default_tolerance)
 
     # Can strip one right side column:
     a = np.ones((2, 3))
     a[:, 2] = 0.0
     e = np.ones((2, 2))
-    begin, end, b = strip_table_zeros(a, default_tolerance)
+    begin, end, b = old_strip_table_zeros(a, default_tolerance)
+    assert begin != end
     assert begin == 0
     assert end == a.shape[-1]-1
-    assert begin != end
     assert equal_tables(b, e, default_tolerance)
 
     # Can strip two columns on each side:
@@ -81,10 +90,10 @@ def test_strip_table_zeros():
     a[:, 3] = 0.0
     a[:, 4] = 0.0
     e = np.ones((2, 1))
-    begin, end, b = strip_table_zeros(a, default_tolerance)
+    begin, end, b = old_strip_table_zeros(a, default_tolerance)
+    assert begin != end
     assert begin == 2
     assert end == a.shape[-1]-2
-    assert begin != end
     assert equal_tables(b, e, default_tolerance)
 
     # Can strip two columns on each side of rank 1 table:
@@ -94,10 +103,10 @@ def test_strip_table_zeros():
     a[..., 3] = 0.0
     a[..., 4] = 0.0
     e = np.ones((1,))
-    begin, end, b = strip_table_zeros(a, default_tolerance)
+    begin, end, b = old_strip_table_zeros(a, default_tolerance)
+    assert begin != end
     assert begin == 2
     assert end == a.shape[-1]-2
-    assert begin != end
     assert equal_tables(b, e, default_tolerance)
 
     # Can strip two columns on each side of rank 3 table:
@@ -107,11 +116,30 @@ def test_strip_table_zeros():
     a[..., 3] = 0.0
     a[..., 4] = 0.0
     e = np.ones((3, 2, 1))
-    begin, end, b = strip_table_zeros(a, default_tolerance)
+    begin, end, b = old_strip_table_zeros(a, default_tolerance)
+    assert begin != end
     assert begin == 2
     assert end == a.shape[-1]-2
-    assert begin != end
     assert equal_tables(b, e, default_tolerance)
+
+    # Can strip columns on each side and compress the one in the middle:
+    a = np.ones((2, 5))
+    a[:, 0] = 0.0
+    a[:, 1] = 1.0
+    a[:, 2] = 0.0
+    a[:, 3] = 3.0
+    a[:, 4] = 0.0
+    e = np.ones((2, 2))
+    e[:, 0] = 1.0
+    e[:, 1] = 3.0
+    dofrange, dofmap, b = strip_table_zeros(a, True, default_tolerance)
+    begin, end = dofrange
+    assert begin != end
+    assert begin == 1
+    assert end == a.shape[-1] - 1
+    assert list(dofmap) == [1, 3]
+    assert equal_tables(b, e, default_tolerance)
+
 
 def test_unique_tables_some_equal():
     tables = [
@@ -136,6 +164,7 @@ def test_unique_tables_some_equal():
     assert len(set(itervalues(mapping))) == len(unique)
     for i, t in enumerate(tables):
         assert equal_tables(t, unique[mapping[i]], default_tolerance)
+
 
 def test_unique_tables_all_equal():
     tables = [np.ones((3, 5))*2.0]*6
@@ -218,7 +247,7 @@ def xtest_get_ffc_table_values_scalar_cell():
                 }
                 table = get_ffc_table_values(ffc_tables,
                     cell, integral_type,
-                    num_points, element, avg,
+                    element, avg,
                     entitytype, derivatives, component, 
                     default_tolerance)
                 assert equal_tables(table[0, ...], np.transpose(arr), default_tolerance)
@@ -268,7 +297,7 @@ def xtest_get_ffc_table_values_vector_facet():
                 for component in range(num_components):
                     table = get_ffc_table_values(ffc_tables,
                         cell, integral_type,
-                        num_points, element, avg,
+                        element, avg,
                         entitytype, derivatives, component,
                         default_tolerance)
                     for i in range(num_entities):

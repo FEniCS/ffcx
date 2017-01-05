@@ -20,12 +20,13 @@ import numpy
 
 from ufl.algorithms import replace
 from ufl.utils.sorting import sorted_by_count
+from ufl import custom_integral_types
 
 from ffc.log import info
 from ffc.representationutils import initialize_integral_ir
 from ffc.fiatinterface import create_element
-from ffc.uflacs.tools import compute_quadrature_rules, accumulate_integrals
-from ffc.uflacs.representation.build_uflacs_ir import build_uflacs_ir
+from ffc.uflacs.tools import collect_quadrature_rules, compute_quadrature_rules, accumulate_integrals
+from ffc.uflacs.build_uflacs_ir import build_uflacs_ir
 
 
 def compute_integral_ir(itg_data,
@@ -65,12 +66,33 @@ def compute_integral_ir(itg_data,
     else:
         ir["tensor_shape"] = argument_dimensions
 
+    integral_type = itg_data.integral_type
+    cell = itg_data.domain.ufl_cell()
+
+    if integral_type in custom_integral_types:
+        # Set quadrature degree to twice the highest element degree, to get
+        # enough points to identify basis functions via table computations
+        max_element_degree = max([1] + [ufl_element.degree() for ufl_element in unique_elements])
+        rules = [("default", 2*max_element_degree)]
+        quadrature_integral_type = "cell"
+    else:
+        # Collect which quadrature rules occur in integrals
+        default_scheme = itg_data.metadata["quadrature_degree"]
+        default_degree = itg_data.metadata["quadrature_rule"]
+        rules = collect_quadrature_rules(
+            itg_data.integrals, default_scheme, default_degree)
+        quadrature_integral_type = integral_type
+
     # Compute actual points and weights
-    quadrature_rules, quadrature_rule_sizes = compute_quadrature_rules(itg_data)
+    quadrature_rules, quadrature_rule_sizes = compute_quadrature_rules(
+        rules, quadrature_integral_type, cell)
 
     # Store quadrature rules in format { num_points: (points, weights) }
     ir["quadrature_rules"] = quadrature_rules
 
+    # Store the fake num_points for analysis in custom integrals
+    if integral_type in custom_integral_types:
+        ir["fake_num_points"], = quadrature_rules.keys()
 
     # Group and accumulate integrals on the format { num_points: integral data }
     sorted_integrals = accumulate_integrals(itg_data, quadrature_rule_sizes)
@@ -121,12 +143,5 @@ def compute_integral_ir(itg_data,
                                 quadrature_rules,
                                 parameters)
     ir.update(uflacs_ir)
-
-    # Consistency check on quadrature rules
-    rules1 = sorted(ir["expr_irs"].keys())
-    rules2 = sorted(ir["quadrature_rules"].keys())
-    if rules1 != rules2:
-        warning("Found different rules in expr_irs and "
-                "quadrature_rules:\n{0}\n{1}".format(rules1, rules2))
 
     return ir

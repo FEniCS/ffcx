@@ -39,14 +39,8 @@ def collect_quadrature_rules(integrals, default_scheme, default_degree):
     return rules
 
 
-def compute_quadrature_rules(itg_data):
+def compute_quadrature_rules(rules, integral_type, cell):
     "Compute points and weights for a set of quadrature rules."
-    # Collect which quadrature rules occur in integrals
-    default_scheme = itg_data.metadata["quadrature_degree"]
-    default_degree = itg_data.metadata["quadrature_rule"]
-    rules = collect_quadrature_rules(
-        itg_data.integrals, default_scheme, default_degree)
-
     quadrature_rules = {}
     quadrature_rule_sizes = {}
     for rule in rules:
@@ -54,7 +48,7 @@ def compute_quadrature_rules(itg_data):
 
         # Compute quadrature points and weights
         (points, weights) = create_quadrature_points_and_weights(
-            itg_data.integral_type, itg_data.domain.ufl_cell(), degree, scheme)
+            integral_type, cell, degree, scheme)
 
         if points is not None:
             points = numpy.asarray(points)
@@ -83,18 +77,23 @@ def accumulate_integrals(itg_data, quadrature_rule_sizes):
     if not itg_data.integrals:
         return {}
 
-    default_scheme = itg_data.metadata["quadrature_degree"]
-    default_degree = itg_data.metadata["quadrature_rule"]
-
     # Group integrands by quadrature rule
     sorted_integrands = collections.defaultdict(list)
-    for integral in itg_data.integrals:
-        md = integral.metadata() or {}
-        scheme = md.get("quadrature_rule", default_scheme)
-        degree = md.get("quadrature_degree", default_degree)
-        rule = (scheme, degree)
-        num_points = quadrature_rule_sizes[rule]
-        sorted_integrands[num_points].append(integral.integrand())
+    if itg_data.integral_type in custom_integral_types:
+        # Should only be one size here, ignoring irrelevant metadata and parameters
+        num_points, = quadrature_rule_sizes.values()
+        for integral in itg_data.integrals:
+            sorted_integrands[num_points].append(integral.integrand())
+    else:
+        default_scheme = itg_data.metadata["quadrature_degree"]
+        default_degree = itg_data.metadata["quadrature_rule"]
+        for integral in itg_data.integrals:
+            md = integral.metadata() or {}
+            scheme = md.get("quadrature_rule", default_scheme)
+            degree = md.get("quadrature_degree", default_degree)
+            rule = (scheme, degree)
+            num_points = quadrature_rule_sizes[rule]
+            sorted_integrands[num_points].append(integral.integrand())
 
     # Accumulate integrands in a canonical ordering defined by UFL
     sorted_integrals = {

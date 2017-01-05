@@ -24,9 +24,8 @@ quadrature and tensor representation."""
 
 import numpy
 
-from ufl.measure import integral_type_to_measure_name
+from ufl.measure import integral_type_to_measure_name, point_integral_types, facet_integral_types, custom_integral_types
 from ufl.cell import cellname2facetname
-from ufl import custom_integral_types
 
 from ffc.log import error
 from ffc.cpp import make_integral_classname
@@ -40,9 +39,9 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     "Create quadrature rule and return points and weights."
     if integral_type == "cell":
         (points, weights) = create_quadrature(cell.cellname(), degree, rule)
-    elif integral_type == "exterior_facet" or integral_type == "interior_facet":
+    elif integral_type in facet_integral_types:
         (points, weights) = create_quadrature(cellname2facetname[cell.cellname()], degree, rule)
-    elif integral_type == "vertex":
+    elif integral_type in point_integral_types:
         (points, weights) = create_quadrature("vertex", degree, rule)
     elif integral_type in custom_integral_types:
         (points, weights) = (None, None)
@@ -55,9 +54,9 @@ def integral_type_to_entity_dim(integral_type, tdim):
     "Given integral_type and domain tdim, return the tdim of the integration entity."
     if integral_type == "cell":
         entity_dim = tdim
-    elif (integral_type == "exterior_facet" or integral_type == "interior_facet"):
+    elif integral_type in facet_integral_types:
         entity_dim = tdim - 1
-    elif integral_type == "vertex":
+    elif integral_type in point_integral_types:
         entity_dim = 0
     elif integral_type in custom_integral_types:
         entity_dim = tdim
