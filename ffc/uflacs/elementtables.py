@@ -59,6 +59,8 @@ unique_table_reference_t = namedtuple("unique_table_reference",
 
 
 def scalars_equal(x, y, eps):
+    # TODO: Use relative comparison?
+    # return abs(x-y) < eps*(abs(x)+abs(y))
     return abs(x-y) < eps
 
 
@@ -82,8 +84,8 @@ def clamp_table_small_integers(table, eps):
     "Clamp almost 0,1,-1 values to integers. Returns new table."
     # Get shape of table and number of columns, defined as the last axis
     table = numpy.asarray(table)
-    for n in (-1, 0, 1):
-        table[numpy.where(abs(table - n) < eps)] = float(n)
+    for n in (-1.0, 0.0, 1.0):
+        table[numpy.where(abs(table - n) < eps)] = n
     return table
 
 
@@ -430,12 +432,14 @@ def optimize_element_tables(tables, table_origins, compress_zeros, epsilon):
     table_dofmaps = {}
     table_original_num_dofs = {}
 
+    clamp_epsilon = epsilon
+
     for name in used_names:
         tbl = tables[name]
 
         # Clamp almost -1.0, 0.0, and +1.0 values first
         # (i.e. 0.999999 -> 1.0 if within epsilon distance)
-        tbl = clamp_table_small_integers(tbl, epsilon)
+        tbl = clamp_table_small_integers(tbl, clamp_epsilon)
 
         # Store original dof dimension before compressing
         num_dofs = tbl.shape[2]
@@ -554,18 +558,7 @@ def analyse_table_types(unique_tables, epsilon):
 def build_optimized_tables(num_points, quadrature_rules,
                            cell, integral_type, entitytype,
                            modified_terminals, existing_tables,
-                           parameters):
-    # Get tolerance for checking table values against 0.0 or 1.0
-    from ffc.uflacs.language.format_value import get_float_threshold
-    epsilon = get_float_threshold()
-    # FIXME: Should be epsilon from ffc parameters
-    #epsilon = parameters["epsilon"]
-
-    # FIXME: Should be from ffc parameters
-    #compress_zeros = parameters["compress_zeros"]
-    compress_zeros = True
-    #compress_zeros = False
-
+                           epsilon, compress_zeros):
     # Build tables needed by all modified terminals
     tables, mt_table_names, table_origins = \
         build_element_tables(num_points, quadrature_rules,

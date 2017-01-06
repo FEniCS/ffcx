@@ -639,7 +639,7 @@ class IntegralGenerator(object):
         #tempnames = self.backend.symbols.block_temp_names
         #blocknames = self.backend.symbols.block_names
         tempnames = {
-            "preintegrated": "TI",
+            #"preintegrated": "TI",
             "premultiplied": "TM",
             "partial": "TP",
             "full": "TF",
@@ -647,20 +647,16 @@ class IntegralGenerator(object):
             "quadrature": "TQ",
             }
         blocknames = {
-            "preintegrated": "BI",
-            "premultiplied": "BM",
-            "partial": "BP",
+            #"preintegrated": "BI",
+            #"premultiplied": "BM",
+            #"partial": "BP",
             "full": "BF",
             "safe": "BS",
             "quadrature": "BQ",
             }
 
         fwtempname = "fw"
-        tempname = tempnames[blockdata.block_mode]
-        blockname = blocknames[blockdata.block_mode]
-
-        # Define unique block symbol
-        B = self.new_temp_symbol(blockname)
+        tempname = tempnames.get(blockdata.block_mode)
 
         block_rank = len(blockmap)
         blockdims = tuple(len(dofmap) for dofmap in blockmap)
@@ -678,18 +674,24 @@ class IntegralGenerator(object):
 
         # Override dof index with quadrature loop index for arguments with
         # quadrature element, to index B like B[iq*num_dofs + iq]
+        arg_indices = tuple(self.backend.symbols.argument_loop_index(i)
+                            for i in range(block_rank))
         B_indices = []
         for i in range(block_rank):
             if ttypes[i] == "quadrature":
                 B_indices.append(iq)
             else:
-                B_indices.append(self.backend.symbols.argument_loop_index(i))
+                B_indices.append(arg_indices[i])
         B_indices = tuple(B_indices)
 
-        # Add initialization of this block to parts
-        # For all modes, block definition occurs before quadloop
-        preparts.append(L.ArrayDecl("double", B, blockdims, 0,
-                                    alignas=self.ir["alignas"]))
+        # Define unique block symbol
+        blockname = blocknames.get(blockdata.block_mode)
+        if blockname:
+            B = self.new_temp_symbol(blockname)
+            # Add initialization of this block to parts
+            # For all modes, block definition occurs before quadloop
+            preparts.append(L.ArrayDecl("double", B, blockdims, 0,
+                                        alignas=self.ir["alignas"]))
 
         # Get factor expression
         if blockdata.factor_is_piecewise:
@@ -742,6 +744,8 @@ class IntegralGenerator(object):
 
         # Define fw = f * weight
         if blockdata.block_mode in ("safe", "full", "partial"):
+            assert not blockdata.transposed, "Not handled yet"
+
             fw_rhs = L.float_product([f, weight])
             if not isinstance(fw_rhs, L.Product):
                 fw = fw_rhs
@@ -753,6 +757,8 @@ class IntegralGenerator(object):
                     quadparts.append(L.VariableDecl("const double", fw, fw_rhs))
 
         if blockdata.block_mode == "safe":
+            assert not blockdata.transposed
+
             # Collect scalar factors
             B_rhs = L.float_product([fw] + arg_factors)
 
@@ -763,7 +769,12 @@ class IntegralGenerator(object):
                     body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
             quadparts += [body]
 
+            # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
+            A_rhs = B[arg_indices]
+
         elif blockdata.block_mode == "full":
+            assert not blockdata.transposed, "Not handled yet"
+
             if block_rank < 2:
                 # Multiply collected factors
                 B_rhs = L.float_product([fw] + arg_factors)
@@ -805,13 +816,19 @@ class IntegralGenerator(object):
 
             quadparts += [body]
 
+            # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
+            A_rhs = B[arg_indices]
+
         elif blockdata.block_mode == "partial":
-            # Get indices and dimensions right here...  # FIXME: Validate that this transposes correctly!
+            # TODO: To handle transpose here, must add back intermediate block B
+            assert not blockdata.transposed, "Not handled yet"
+
+            # Get indices and dimensions right here...
             assert block_rank == 2
             i = blockdata.piecewise_ma_index
             not_piecewise_index = 1 - i
 
-            P_index = self.backend.symbols.argument_loop_index(not_piecewise_index)
+            P_index = arg_indices[not_piecewise_index]
 
             key = (num_points, blockdata.factor_index, blockdata.factor_is_piecewise,
                    arg_factors[not_piecewise_index].ce_format())
@@ -833,40 +850,57 @@ class IntegralGenerator(object):
             # Define B = B_rhs = piecewise_argument[:] * P[:], where P[:] = sum_q weight * f * other_argument[:]
             B_rhs = arg_factors[i] * P[P_index]
 
-        if blockdata.block_mode in ("premultiplied", "preintegrated"):
-            # Currently not handling facet-facet combinations for precomputed blocks
-            assert self.ir["integral_type"] != "interior_facet"
-            # Get the current cell entity
-            entity = self.backend.symbols.entity(self.ir["entitytype"], None)
+            # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
+            A_rhs = B_rhs
 
-        if blockdata.block_mode == "premultiplied":
-            key = (num_points, blockdata.factor_index, blockdata.factor_is_piecewise)
-            FI, defined = self.get_temp_symbol(tempname, key)
-            if not defined:
-                # Declare FI = 0 before quadloop
-                preparts += [L.VariableDecl("double", FI, 0)]
-                # Accumulate FI += weight * f in quadparts
-                quadparts += [L.AssignAdd(FI, L.float_product([weight, f]))]
+        elif blockdata.block_mode in ("premultiplied", "preintegrated"):
+            if self.ir["integral_type"] == "interior_facet":
+                # Get the facet entities
+                entities = []
+                for r in blockdata.restrictions:
+                    if r is None:
+                        entities.append(0)
+                    else:
+                        entities.append(self.backend.symbols.entity(self.ir["entitytype"], r))
+                if blockdata.transposed:
+                    P_block_indices = (entities[1], entities[0])
+                else:
+                    P_block_indices = tuple(entities)
+            else:
+                # Get the current cell or facet entity
+                entity = self.backend.symbols.entity(self.ir["entitytype"], None)
+                P_block_indices = (entity,)
 
-            # Define B = B_rhs = FI * P where FI = sum_q weight*f, and P = u * v
-            B_rhs = L.float_product([FI, L.Symbol(blockdata.name)[(entity,) + B_indices]])
+            if blockdata.transposed:
+                P_block_indices += (arg_indices[1], arg_indices[0])
+            else:
+                P_block_indices += arg_indices
 
-        elif blockdata.block_mode == "preintegrated":
-            # Preintegrated should never get into quadloops
-            assert num_points is None
+            if blockdata.block_mode == "preintegrated":
+                # Preintegrated should never get into quadloops
+                assert num_points is None
 
-            # Define B = B_rhs = f * P where P = sum_q weight * u * v
-            B_rhs = L.float_product([f, L.Symbol(blockdata.name)[(entity,) + B_indices]])
+                # Define B = B_rhs = f * PI where PI = sum_q weight * u * v
+                PI = L.Symbol(blockdata.name)[P_block_indices]
+                B_rhs = L.float_product([f, PI])
 
-        # For partial, premultiplied, and preintegrated, block write occurs after quadloop
-        if blockdata.block_mode not in ("full", "safe"):
-            # Write result to block
-            body = L.Assign(B[B_indices], B_rhs)  # NB! = not +=
-            for i in reversed(range(block_rank)):
-                body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
-            postparts.append(body)
+            elif blockdata.block_mode == "premultiplied":
+                key = (num_points, blockdata.factor_index, blockdata.factor_is_piecewise)
+                FI, defined = self.get_temp_symbol(tempname, key)
+                if not defined:
+                    # Declare FI = 0 before quadloop
+                    preparts += [L.VariableDecl("double", FI, 0)]
+                    # Accumulate FI += weight * f in quadparts
+                    quadparts += [L.AssignAdd(FI, L.float_product([weight, f]))]
 
-        return B, preparts, quadparts, postparts
+                # Define B_rhs = FI * PM where FI = sum_q weight*f, and PM = u * v
+                PM = L.Symbol(blockdata.name)[P_block_indices]
+                B_rhs = L.float_product([FI, PM])
+
+            # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
+            A_rhs = B_rhs
+
+        return A_rhs, preparts, quadparts, postparts
 
 
     def generate_copyout_statements(self):
@@ -903,7 +937,6 @@ class IntegralGenerator(object):
             dofmaps = {}
             for blockmap, contributions in sorted(self.finalization_blocks.items()):
                 # Define mapping from B indices to A indices
-                B_indices = indices
                 A_indices = []
                 for i in range(rank):
                     dofmap = blockmap[i]
@@ -913,20 +946,25 @@ class IntegralGenerator(object):
                         # Dense insertion, offset B index to index A
                         j = indices[i] + begin
                     else:
-                        # TODO: If B is flattened we can simplify the sparse insertion by
-                        #       collapsing "A[N*DM[i]+DM[j]] = B[i][j]" into "A[DM[i]] = B[i]".
                         # Sparse insertion, map B index through dofmap
                         DM = dofmaps.get(dofmap)
                         if DM is None:
                             DM = L.Symbol("DM%d" % len(dofmaps))
                             dofmaps[dofmap] = DM
                             parts.append(L.ArrayDecl("static const int", DM, len(dofmap), dofmap))
-                        j = DM[B_indices[i]]
+                        j = DM[indices[i]]
                     A_indices.append(j)
                 A_indices = tuple(A_indices)
 
+                # TODO: If B[ij] = ... outside quadloop, change
+                #       "A[ij] += B[ij]" into "A[ij] += ..." and drop the B[ij] temporary.
+
                 # Sum up all blocks contributing to this blockmap
-                term = L.Sum([B[B_indices] for B in contributions])
+                if 0:
+                    B_indices = indices
+                    term = L.Sum([B[B_indices] for B in contributions])
+                else: # XXX New suggestion, let B_indices be rolled into B_rhs
+                    term = L.Sum([B_rhs for B_rhs in contributions])
 
                 # TODO: need ttypes associated with this block to deal
                 # with loop dropping for quadrature elements:
