@@ -45,9 +45,9 @@ def reorder_entries(terms):
         for i in range(len(restrictions)):
             dim = dims[i]
             if restrictions[i] == "+":
-                position = position + [slice(0, dim / 2)]
+                position = position + [slice(0, dim // 2)]
             elif restrictions[i] == "-":
-                position = position + [slice(dim / 2, dim)]
+                position = position + [slice(dim // 2, dim)]
             else:
                 position = position + [slice(0, dim)]
 
