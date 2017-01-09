@@ -58,7 +58,7 @@ from ufctest import generate_test_code
 # Parameters TODO: Can make this a cmdline argument, and start
 # crashing programs in debugger automatically?
 debug = False
-output_tolerance = 1.e-6
+output_tolerance = 1e-5
 demo_directory = "../../../../demo"
 bench_directory = "../../../../bench"
 
