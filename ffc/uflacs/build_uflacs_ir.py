@@ -192,14 +192,6 @@ def uflacs_default_parameters():
     opt = True
 
     p = dict(
-        # Precision to use when formatting float numbers in code generation
-        #precision = 15,  # ffc option follows this format
-
-        # Precision to use when comparing finite element table values during optimization
-        # FIXME: replace parameters["epsilon"] from ffc parameters with rtol/atol
-        table_rtol = 1e-5,
-        table_atol = 1e-8,
-
         # Optimization parameters
         enable_block_optimizations     = True,
         enable_preintegration          = True,
@@ -218,20 +210,18 @@ def build_uflacs_ir(cell, integral_type, entitytype,
     # The intermediate representation dict we're building and returning here
     ir = {}
 
-    # FIXME: Expose uflacs parameters in global parameter
-    #        system and get this from parameters
-    p = uflacs_default_parameters()
-
     # Precision to use when comparing finite element table values during optimization
-    table_rtol = p["table_rtol"]
-    table_atol = p["table_atol"]
+    table_rtol = 1e-5 # parameters["table_rtol"]
+    table_atol = 1e-8 # parameters["table_atol"]
 
     enable_optimizations = parameters["optimize"]
     # FIXME: To actually use the optimize parameter, need to
     #   update regression test references and add '-r uflacs -O' to cases
     enable_optimizations = True
 
-    # FIXME get from parameters instead of p, expose in cmdline
+    # FIXME: Expose uflacs parameters in global parameter system
+    #        and cmdline and get this from 'parameters' instead of 'p'
+    p = uflacs_default_parameters()
     enable_block_optimizations     = p["enable_block_optimizations"]
     enable_preintegration          = p["enable_preintegration"]
     enable_premultiplication       = p["enable_premultiplication"]

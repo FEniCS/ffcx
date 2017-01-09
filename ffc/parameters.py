@@ -35,9 +35,17 @@ _FFC_GENERATE_PARAMETERS = {
     "quadrature_degree": -1,   # quadrature degree used for
                                # computing integrals
     "precision": 0,            # precision used when writing
-                               # numbers
+                               # numbers (0 for max precision)
     "epsilon": 1e-14,          # machine precision, used for
                                # dropping zero terms
+                               # (quadrature and tensor repr)
+    #"table_rtol": 1e-5,        # relative tolerance for comparing finite
+                               # element table entries for table reuse
+                               # (uflacs repr)
+    #"table_atol": 1e-8,        # absolute tolerance for comparing finite
+                               # element table entries for table reuse and
+                               # dropping of zero terms
+                               # (uflacs repr)
     "split": False,            # split generated code into .h and
                                # .cpp file
     "form_postfix": True,      # postfix form name with "Function",
