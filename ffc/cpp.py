@@ -691,6 +691,10 @@ def count_ops(code):
 def set_float_formatting(precision):
     "Set floating point formatting based on precision."
 
+    # FIXME: Temporary workaround to be able to change default from 15 to 0
+    if not precision:
+        precision = 15
+
     # Options for float formatting
     # f1     = "%%.%df" % precision
     # f2     = "%%.%de" % precision
@@ -726,8 +730,8 @@ def set_float_formatting(precision):
     format["epsilon"] = 10.0 * eval("1e-%s" % precision)
 
     # Hack to propagate precision to uflacs internals...
-    import ffc.uflacs.language.format_value
-    ffc.uflacs.language.format_value.set_float_precision(precision)
+    #import ffc.uflacs.language.format_value
+    #ffc.uflacs.language.format_value.set_float_precision(precision)
 
 
 def set_exception_handling(convert_exceptions_to_warnings):

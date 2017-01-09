@@ -38,6 +38,10 @@ from ffc.representationutils import create_quadrature_points_and_weights
 from ffc.uflacs.backends.ffc.common import ufc_restriction_offset
 
 
+# Using same defaults as numpy.allclose
+default_rtol = 1e-5
+default_atol = 1e-8
+
 
 table_origin_t = namedtuple("table_origin",
     ["element", "avg", "derivatives", "flat_component", "dofrange", "dofmap"])
@@ -58,46 +62,35 @@ unique_table_reference_t = namedtuple("unique_table_reference",
      "ttype", "is_piecewise", "is_uniform"])
 
 
-def scalars_equal(x, y, eps):
-    # TODO: Use relative comparison?
-    # return abs(x-y) < eps*(abs(x)+abs(y))
-    return abs(x-y) < eps
-
-
-# TODO: Replace with numpy.allclose
-def equal_tables(a, b, eps):
-    "Compare tables to be equal within a tolerance."
+def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
     a = numpy.asarray(a)
     b = numpy.asarray(b)
     if a.shape != b.shape:
         return False
-    elif len(a.shape) > 1:
-        return all(equal_tables(a[i], b[i], eps)
-                   for i in range(a.shape[0]))
     else:
-        return all(scalars_equal(a[i], b[i], eps)
-                   for i in range(a.shape[0]))
+        return numpy.allclose(a, b, rtol=rtol, atol=atol)
 
 
 # TODO: Is clamping 1's really safe?
-def clamp_table_small_integers(table, eps):
+def clamp_table_small_integers(table, rtol=default_rtol, atol=default_atol):
     "Clamp almost 0,1,-1 values to integers. Returns new table."
     # Get shape of table and number of columns, defined as the last axis
     table = numpy.asarray(table)
     for n in (-1.0, 0.0, 1.0):
-        table[numpy.where(abs(table - n) < eps)] = n
+        table[numpy.where(numpy.isclose(table, n, rtol=rtol, atol=atol))] = n
     return table
 
 
-def strip_table_zeros(table, compress_zeros, eps):
+def strip_table_zeros(table, compress_zeros, rtol=default_rtol, atol=default_atol):
     "Strip zero columns from table. Returns column range (begin, end) and the new compact table."
     # Get shape of table and number of columns, defined as the last axis
     table = numpy.asarray(table)
     sh = table.shape
 
     # Find nonzero columns
+    z = numpy.zeros(sh[:-1])  # Correctly shaped zero table
     dofmap = tuple(i for i in range(sh[-1])
-                   if numpy.linalg.norm(table[..., i]) > eps)
+                   if not numpy.allclose(z, table[..., i], rtol=rtol, atol=atol))
     if dofmap:
         # Find first nonzero column
         begin = dofmap[0]
@@ -117,7 +110,7 @@ def strip_table_zeros(table, compress_zeros, eps):
     return dofrange, dofmap, stripped_table
 
 
-def build_unique_tables(tables, eps):
+def build_unique_tables(tables, rtol=default_rtol, atol=default_atol):
     """Given a list or dict of tables, return a list of unique tables
     and a dict of unique table indices for each input table key."""
     unique = []
@@ -132,7 +125,7 @@ def build_unique_tables(tables, eps):
         t = tables[k]
         found = -1
         for i, u in enumerate(unique):
-            if equal_tables(u, t, eps):
+            if equal_tables(u, t, rtol=rtol, atol=atol):
                 found = i
                 break
         if found == -1:
@@ -147,7 +140,7 @@ def get_ffc_table_values(points,
                          cell, integral_type,
                          ufl_element, avg,
                          entitytype, derivative_counts,
-                         flat_component, epsilon):
+                         flat_component):
     """Extract values from ffc element table.
 
     Returns a 3D numpy array with axes
@@ -323,7 +316,7 @@ def get_modified_terminal_element(mt):
 
 def build_element_tables(num_points, quadrature_rules,
                          cell, integral_type, entitytype,
-                         modified_terminals, epsilon):
+                         modified_terminals, rtol=default_rtol, atol=default_atol):
     """Build the element tables needed for a list of modified terminals.
 
     Input:
@@ -370,8 +363,7 @@ def build_element_tables(num_points, quadrature_rules,
                 quadrature_rules[num_points][0],
                 cell, integral_type,
                 element, avg,
-                entitytype, local_derivatives, flat_component,
-                epsilon)
+                entitytype, local_derivatives, flat_component)
 
             # Track table origin for custom integrals:
             table_origins[name] = res
@@ -403,7 +395,7 @@ def build_element_tables(num_points, quadrature_rules,
     return tables, mt_table_names, table_origins
 
 
-def optimize_element_tables(tables, table_origins, compress_zeros, epsilon):
+def optimize_element_tables(tables, table_origins, compress_zeros, rtol=default_rtol, atol=default_atol):
     """Optimize tables and make unique set.
 
     Steps taken:
@@ -432,20 +424,18 @@ def optimize_element_tables(tables, table_origins, compress_zeros, epsilon):
     table_dofmaps = {}
     table_original_num_dofs = {}
 
-    clamp_epsilon = epsilon
-
     for name in used_names:
         tbl = tables[name]
 
         # Clamp almost -1.0, 0.0, and +1.0 values first
         # (i.e. 0.999999 -> 1.0 if within epsilon distance)
-        tbl = clamp_table_small_integers(tbl, clamp_epsilon)
+        tbl = clamp_table_small_integers(tbl, rtol=rtol, atol=atol)
 
         # Store original dof dimension before compressing
         num_dofs = tbl.shape[2]
 
         # Strip contiguous zero blocks at the ends of all tables
-        dofrange, dofmap, tbl = strip_table_zeros(tbl, compress_zeros, epsilon)
+        dofrange, dofmap, tbl = strip_table_zeros(tbl, compress_zeros, rtol=rtol, atol=atol)
 
         compressed_tables[name] = tbl
         table_ranges[name] = dofrange
@@ -454,7 +444,7 @@ def optimize_element_tables(tables, table_origins, compress_zeros, epsilon):
 
     # Build unique table mapping
     unique_tables_list, name_to_unique_index = build_unique_tables(
-        compressed_tables, epsilon)
+        compressed_tables, rtol=rtol, atol=atol)
 
     # Build mapping of constructed table names to unique names.
     # Picking first constructed name preserves some information
@@ -490,50 +480,50 @@ def optimize_element_tables(tables, table_origins, compress_zeros, epsilon):
     return unique_tables, unique_table_origins, table_unames, table_ranges, table_dofmaps, table_original_num_dofs
 
 
-def is_zeros_table(table, epsilon):
+def is_zeros_table(table, rtol=default_rtol, atol=default_atol):
     return (product(table.shape) == 0
-            or numpy.allclose(table, numpy.zeros(table.shape), atol=epsilon))
+            or numpy.allclose(table, numpy.zeros(table.shape), rtol=rtol, atol=atol))
 
 
-def is_ones_table(table, epsilon):
-    return numpy.allclose(table, numpy.ones(table.shape), atol=epsilon)
+def is_ones_table(table, rtol=default_rtol, atol=default_atol):
+    return numpy.allclose(table, numpy.ones(table.shape), rtol=rtol, atol=atol)
 
 
-def is_quadrature_table(table, epsilon):
+def is_quadrature_table(table, rtol=default_rtol, atol=default_atol):
     num_entities, num_points, num_dofs = table.shape
     I = numpy.eye(num_points)
     return (num_points == num_dofs
-            and all(numpy.allclose(table[i, :, :], I, atol=epsilon)
+            and all(numpy.allclose(table[i, :, :], I, rtol=rtol, atol=atol)
                     for i in range(num_entities)))
 
 
-def is_piecewise_table(table, epsilon):
-    return all(numpy.allclose(table[:, 0, :], table[:, i, :], atol=epsilon)
+def is_piecewise_table(table, rtol=default_rtol, atol=default_atol):
+    return all(numpy.allclose(table[:, 0, :], table[:, i, :], rtol=rtol, atol=atol)
                for i in range(1, table.shape[1]))
 
 
-def is_uniform_table(table, epsilon):
-    return all(numpy.allclose(table[0, :, :], table[i, :, :], atol=epsilon)
+def is_uniform_table(table, rtol=default_rtol, atol=default_atol):
+    return all(numpy.allclose(table[0, :, :], table[i, :, :], rtol=rtol, atol=atol)
                for i in range(1, table.shape[0]))
 
 
-def analyse_table_type(table, epsilon):
+def analyse_table_type(table, rtol=default_rtol, atol=default_atol):
     num_entities, num_points, num_dofs = table.shape
-    if is_zeros_table(table, epsilon):
+    if is_zeros_table(table, rtol=rtol, atol=atol):
         # Table is empty or all values are 0.0
         ttype = "zeros"
-    elif is_ones_table(table, epsilon):
+    elif is_ones_table(table, rtol=rtol, atol=atol):
         # All values are 1.0
         ttype = "ones"
-    elif is_quadrature_table(table, epsilon):
+    elif is_quadrature_table(table, rtol=rtol, atol=atol):
         # Identity matrix mapping points to dofs (separately on each entity)
         ttype = "quadrature"
     else:
         # Equal for all points on a given entity
-        piecewise = is_piecewise_table(table, epsilon)
+        piecewise = is_piecewise_table(table, rtol=rtol, atol=atol)
 
         # Equal for all entities
-        uniform = is_uniform_table(table, epsilon)
+        uniform = is_uniform_table(table, rtol=rtol, atol=atol)
 
         if piecewise and uniform:
             # Constant for all points and all entities
@@ -550,30 +540,30 @@ def analyse_table_type(table, epsilon):
     return ttype
 
 
-def analyse_table_types(unique_tables, epsilon):
-    return { uname: analyse_table_type(table, epsilon)
+def analyse_table_types(unique_tables, rtol=default_rtol, atol=default_atol):
+    return { uname: analyse_table_type(table, rtol=rtol, atol=atol)
              for uname, table in unique_tables.items() }
 
 
 def build_optimized_tables(num_points, quadrature_rules,
                            cell, integral_type, entitytype,
                            modified_terminals, existing_tables,
-                           epsilon, compress_zeros):
+                           compress_zeros, rtol=default_rtol, atol=default_atol):
     # Build tables needed by all modified terminals
     tables, mt_table_names, table_origins = \
         build_element_tables(num_points, quadrature_rules,
             cell, integral_type, entitytype,
-            modified_terminals, epsilon)
+            modified_terminals, rtol=rtol, atol=atol)
 
     # Optimize tables and get table name and dofrange for each modified terminal
     unique_tables, unique_table_origins, table_unames, table_ranges, table_dofmaps, table_original_num_dofs = \
-        optimize_element_tables(tables, table_origins, compress_zeros, epsilon)
+        optimize_element_tables(tables, table_origins, compress_zeros, rtol=rtol, atol=atol)
 
     # Get num_dofs for all tables before they can be deleted later
     unique_table_num_dofs = { uname: tbl.shape[2] for uname, tbl in unique_tables.items() }
 
     # Analyze tables for properties useful for optimization
-    unique_table_ttypes = analyse_table_types(unique_tables, epsilon)
+    unique_table_ttypes = analyse_table_types(unique_tables, rtol=rtol, atol=atol)
 
     # Compress tables that are constant along num_entities or num_points
     for uname, tabletype in unique_table_ttypes.items():
@@ -599,7 +589,7 @@ def build_optimized_tables(num_points, quadrature_rules,
         utbl = unique_tables[uname]
         for i, ename in enumerate(existing_names):
             etbl = existing_tables[ename]
-            if equal_tables(utbl, etbl, epsilon):
+            if equal_tables(utbl, etbl, rtol=rtol, atol=atol):
                 # Setup table name mapping
                 name_map[uname] = ename
                 # Don't visit this table again (just to avoid the processing)

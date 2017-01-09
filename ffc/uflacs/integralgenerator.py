@@ -31,9 +31,12 @@ from ffc.uflacs.elementtables import piecewise_ttypes
 
 class IntegralGenerator(object):
 
-    def __init__(self, ir, backend):
+    def __init__(self, ir, backend, precision):
         # Store ir
         self.ir = ir
+
+        # Formatting precision
+        self.precision = precision
 
         # Backend specific plugin with attributes
         # - language: for translating ufl operators to target language
@@ -787,7 +790,7 @@ class IntegralGenerator(object):
                 P_index = B_indices[i]
 
                 key = (num_points, blockdata.factor_index, blockdata.factor_is_piecewise,
-                       arg_factors[i].ce_format())
+                       arg_factors[i].ce_format(self.precision))
                 P, defined = self.get_temp_symbol(tempname, key)
                 if not defined:
                     # TODO: If FE table is varying and only used in contexts
@@ -831,7 +834,7 @@ class IntegralGenerator(object):
             P_index = arg_indices[not_piecewise_index]
 
             key = (num_points, blockdata.factor_index, blockdata.factor_is_piecewise,
-                   arg_factors[not_piecewise_index].ce_format())
+                   arg_factors[not_piecewise_index].ce_format(self.precision))
             P, defined = self.get_temp_symbol(tempname, key)
             if not defined:
                 # Declare P table in preparts

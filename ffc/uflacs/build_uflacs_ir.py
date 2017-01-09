@@ -39,7 +39,7 @@ from ffc.uflacs.analysis.dependencies import compute_dependencies, mark_active, 
 from ffc.uflacs.analysis.graph_ssa import compute_dependency_count, invert_dependencies
 #from ffc.uflacs.analysis.graph_ssa import default_cache_score_policy, compute_cache_scores, allocate_registers
 from ffc.uflacs.analysis.factorization import compute_argument_factorization
-from ffc.uflacs.elementtables import build_optimized_tables, equal_tables, piecewise_ttypes, uniform_ttypes
+from ffc.uflacs.elementtables import build_optimized_tables, piecewise_ttypes, uniform_ttypes
 
 
 # Some quick internal structs, massive improvement to
@@ -184,6 +184,33 @@ def empty_expr_ir():
     return expr_ir
 
 
+def uflacs_default_parameters():
+    # FIXME: iterate on parameter names before exposing
+    # FIXME: go through code and add more parameter if necessary
+    # FIXME: join uflacs parameters with global parameter system
+
+    opt = True
+
+    p = dict(
+        # Precision to use when formatting float numbers in code generation
+        #precision = 15,  # ffc option follows this format
+
+        # Precision to use when comparing finite element table values during optimization
+        # FIXME: replace parameters["epsilon"] from ffc parameters with rtol/atol
+        table_rtol = 1e-5,
+        table_atol = 1e-8,
+
+        # Optimization parameters
+        enable_block_optimizations     = True,
+        enable_preintegration          = True,
+        enable_premultiplication       = True,
+        enable_sum_factorization       = True,
+        enable_block_transpose_reuse   = True,
+        enable_table_zero_compression  = True,
+        )
+    return p
+
+
 def build_uflacs_ir(cell, integral_type, entitytype,
                     integrands, tensor_shape,
                     coefficient_numbering,
@@ -191,22 +218,36 @@ def build_uflacs_ir(cell, integral_type, entitytype,
     # The intermediate representation dict we're building and returning here
     ir = {}
 
+    # FIXME: Expose uflacs parameters in global parameter
+    #        system and get this from parameters
+    p = uflacs_default_parameters()
 
-    # FIXME get from parameters:
-    enable_opt = True
-    enable_block_optimizations     = enable_opt and True
-    enable_preintegration          = enable_opt and True
-    enable_premultiplication       = enable_opt and False
-    enable_sum_factorization       = enable_opt and False
-    enable_block_transpose_reuse   = enable_opt and False
-    enable_table_zero_compression  = enable_opt and True
+    # Precision to use when comparing finite element table values during optimization
+    table_rtol = p["table_rtol"]
+    table_atol = p["table_atol"]
 
-    # Get tolerance for checking table values against 0.0 or 1.0
-    # FIXME: Should be epsilon from ffc parameters
-    from ffc.uflacs.language.format_value import get_float_threshold
-    epsilon = 1e-10
-    table_epsilon = get_float_threshold()  # parameters["epsilon"]
+    enable_optimizations = parameters["optimize"]
+    # FIXME: To actually use the optimize parameter, need to
+    #   update regression test references and add '-r uflacs -O' to cases
+    enable_optimizations = True
 
+    # FIXME get from parameters instead of p, expose in cmdline
+    enable_block_optimizations     = p["enable_block_optimizations"]
+    enable_preintegration          = p["enable_preintegration"]
+    enable_premultiplication       = p["enable_premultiplication"]
+    enable_sum_factorization       = p["enable_sum_factorization"]
+    enable_block_transpose_reuse   = p["enable_block_transpose_reuse"]
+    enable_table_zero_compression  = p["enable_table_zero_compression"]
+
+    if not enable_optimizations:
+        enable_block_optimizations = False
+        enable_table_zero_compression = False
+
+    if not enable_block_optimizations:
+        enable_preintegration          = False
+        enable_premultiplication       = False
+        enable_sum_factorization       = False
+        enable_block_transpose_reuse   = False
 
     # Conditionally disable some optimizations based on integral type
     skip_preintegrated = point_integral_types + custom_integral_types
@@ -269,7 +310,6 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         # Build initial scalar list-based graph representation
         V, V_deps, V_targets = build_scalar_graph(expressions)
 
-
         # Build terminal_data from V here before factorization.
         # Then we can use it to derive table properties for all modified terminals,
         # and then use that to rebuild the scalar graph more efficiently before
@@ -282,7 +322,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         unique_tables, unique_table_types, unique_table_num_dofs, mt_unique_table_reference = \
             build_optimized_tables(num_points, quadrature_rules,
                 cell, integral_type, entitytype, initial_terminal_data,
-                ir["unique_tables"], table_epsilon, enable_table_zero_compression)
+                ir["unique_tables"], enable_table_zero_compression, rtol=table_rtol, atol=table_atol)
 
         # Replace some scalar modified terminals before reconstructing expressions
         # (could possibly use replace() on target expressions instead)
@@ -312,7 +352,6 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         # Rebuild scalar list-based graph representation
         SV, SV_deps, SV_targets = build_scalar_graph(expressions)
         assert all(i < len(SV) for i in SV_targets)
-
 
         # Compute factorization of arguments
         (argument_factorizations, modified_arguments,
@@ -434,8 +473,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 A[iq+offset, j+offset] = BQ[iq,j]
             """
 
-            # Decide out how to handle code generation for this block
-            if not enable_block_optimizations:
+            # Decide how to handle code generation for this block
+            if not enable_block_optimizations or rank == 0:
                 # Use full runtime integration by default
                 block_mode = "safe"
             else:
@@ -532,7 +571,6 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                     unique_tables[pname] = ptable
                     unique_table_types[pname] = "premultiplied"
 
-                assert not factor_is_piecewise
                 block_unames = (pname,)
                 blockdata = premultiplied_block_data_t(block_mode, ttypes,
                                                        factor_index, factor_is_piecewise,
@@ -639,7 +677,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         # Add to global set of all tables
         for name, table in unique_tables.items():
             tbl = ir["unique_tables"].get(name)
-            if tbl is not None and not equal_tables(tbl, table, epsilon):
+            if tbl is not None and not numpy.allclose(tbl, table, rtol=table_rtol, atol=table_atol):
                 error("Table values mismatch with same name.")
         ir["unique_tables"].update(unique_tables)
 

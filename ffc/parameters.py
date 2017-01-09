@@ -34,7 +34,7 @@ _FFC_GENERATE_PARAMETERS = {
                                # integration of element tensors
     "quadrature_degree": -1,   # quadrature degree used for
                                # computing integrals
-    "precision": 15,           # precision used when writing
+    "precision": 0,            # precision used when writing
                                # numbers
     "epsilon": 1e-14,          # machine precision, used for
                                # dropping zero terms

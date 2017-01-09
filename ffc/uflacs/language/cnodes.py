@@ -22,7 +22,7 @@ from six import string_types
 import numpy
 import numbers
 
-from ffc.uflacs.language.format_value import format_value, format_float
+from ffc.uflacs.language.format_value import format_value, format_float, format_int
 from ffc.uflacs.language.format_lines import format_indented_lines, Indented
 from ffc.uflacs.language.precedence import PRECEDENCE
 
@@ -142,7 +142,7 @@ class CExpr(CNode):
     """
     __slots__ = ()
 
-    def ce_format(self):
+    def ce_format(self, precision=None):
         raise NotImplementedError("Missing implementation of ce_format() in CExpr.")
 
     def __str__(self):
@@ -281,7 +281,7 @@ class Null(CExprLiteral):
     __slots__ = ()
     precedence = PRECEDENCE.LITERAL
 
-    def ce_format(self):
+    def ce_format(self, precision=None):
         # C or old C++ version
         #return "NULL"
         # C++11 version
@@ -300,8 +300,8 @@ class LiteralFloat(CExprLiteral):
         assert isinstance(value, (float, int, numpy.number))
         self.value = value
 
-    def ce_format(self):
-        return format_float(self.value)
+    def ce_format(self, precision=None):
+        return format_float(self.value, precision)
 
     def __eq__(self, other):
         return isinstance(other, LiteralFloat) and self.value == other.value
@@ -324,7 +324,7 @@ class LiteralInt(CExprLiteral):
         assert isinstance(value, (int, numpy.number))
         self.value = value
 
-    def ce_format(self):
+    def ce_format(self, precision=None):
         return str(self.value)
 
     def __eq__(self, other):
@@ -351,7 +351,7 @@ class LiteralBool(CExprLiteral):
         assert isinstance(value, (bool,))
         self.value = value
 
-    def ce_format(self):
+    def ce_format(self, precision=None):
         return "true" if self.value else "false"
 
     def __eq__(self, other):
@@ -373,7 +373,7 @@ class LiteralString(CExprLiteral):
         assert '"' not in value
         self.value = value
 
-    def ce_format(self):
+    def ce_format(self, precision=None):
         return '"%s"' % (self.value,)
 
     def __eq__(self, other):
@@ -389,7 +389,7 @@ class Symbol(CExprTerminal):
         assert isinstance(name, string_types)
         self.name = name
 
-    def ce_format(self):
+    def ce_format(self, precision=None):
         return self.name
 
     def __eq__(self, other):
@@ -407,7 +407,7 @@ class VerbatimExpr(CExprTerminal):
         assert isinstance(codestring, string_types)
         self.codestring = codestring
 
-    def ce_format(self):
+    def ce_format(self, precision=None):
         return self.codestring
 
     def __eq__(self, other):
@@ -420,7 +420,7 @@ class New(CExpr):
         assert isinstance(typename, string_types)
         self.typename = typename
 
-    def ce_format(self):
+    def ce_format(self, precision=None):
         return "new %s()" % (self.typename,)
 
     def __eq__(self, other):
@@ -442,8 +442,8 @@ class UnaryOp(CExprOperator):
 class PrefixUnaryOp(UnaryOp):
     "Base class for prefix unary operators."
     __slots__ = ()
-    def ce_format(self):
-        arg = self.arg.ce_format()
+    def ce_format(self, precision=None):
+        arg = self.arg.ce_format(precision)
         if self.arg.precedence >= self.precedence:
             arg = '(' + arg + ')'
         return self.op + arg
@@ -455,8 +455,8 @@ class PrefixUnaryOp(UnaryOp):
 class PostfixUnaryOp(UnaryOp):
     "Base class for postfix unary operators."
     __slots__ = ()
-    def ce_format(self):
-        arg = self.arg.ce_format()
+    def ce_format(self, precision=None):
+        arg = self.arg.ce_format(precision)
         if self.arg.precedence >= self.precedence:
             arg = '(' + arg + ')'
         return arg + self.op
@@ -471,10 +471,10 @@ class BinOp(CExprOperator):
         self.lhs = as_cexpr(lhs)
         self.rhs = as_cexpr(rhs)
 
-    def ce_format(self):
+    def ce_format(self, precision=None):
         # Format children
-        lhs = self.lhs.ce_format()
-        rhs = self.rhs.ce_format()
+        lhs = self.lhs.ce_format(precision)
+        rhs = self.rhs.ce_format(precision)
 
         # Apply parentheses
         if self.lhs.precedence > self.precedence:
@@ -497,9 +497,9 @@ class NaryOp(CExprOperator):
     def __init__(self, args):
         self.args = [as_cexpr(arg) for arg in args]
 
-    def ce_format(self):
+    def ce_format(self, precision=None):
         # Format children
-        args = [arg.ce_format() for arg in self.args]
+        args = [arg.ce_format(precision) for arg in self.args]
 
         # Apply parentheses
         for i in range(len(args)):
@@ -838,10 +838,10 @@ class ArrayAccess(CExprOperator):
             indices = (indices,)
         return ArrayAccess(self.array, self.indices + indices)
 
-    def ce_format(self):
-        s = self.array.ce_format()
+    def ce_format(self, precision=None):
+        s = self.array.ce_format(precision)
         for index in self.indices:
-            s += "[" + index.ce_format() + "]"
+            s += "[" + index.ce_format(precision) + "]"
         return s
 
     def __eq__(self, other):
@@ -859,11 +859,11 @@ class Conditional(CExprOperator):
         self.true = as_cexpr(true)
         self.false = as_cexpr(false)
 
-    def ce_format(self):
+    def ce_format(self, precision=None):
         # Format children
-        c = self.condition.ce_format()
-        t = self.true.ce_format()
-        f = self.false.ce_format()
+        c = self.condition.ce_format(precision)
+        t = self.true.ce_format(precision)
+        f = self.false.ce_format(precision)
 
         # Apply parentheses
         if self.condition.precedence >= self.precedence:
@@ -899,9 +899,9 @@ class Call(CExprOperator):
             arguments = (arguments,)
         self.arguments = [as_cexpr(arg) for arg in arguments]
 
-    def ce_format(self):
-        args = ", ".join(arg.ce_format() for arg in self.arguments)
-        return self.function.ce_format() + "(" + args + ")"
+    def ce_format(self, precision=None):
+        args = ", ".join(arg.ce_format(precision) for arg in self.arguments)
+        return self.function.ce_format(precision) + "(" + args + ")"
 
     def __eq__(self, other):
         return (isinstance(other, type(self))
@@ -978,7 +978,7 @@ class CStatement(CNode):
     """
     __slots__ = ()
 
-    def cs_format(self):
+    def cs_format(self, precision=None):
         "Return S: string | list(S) | Indented(S)."
         raise NotImplementedError("Missing implementation of cs_format() in CStatement.")
 
@@ -1002,7 +1002,7 @@ class VerbatimStatement(CStatement):
         assert isinstance(codestring, string_types)
         self.codestring = codestring
 
-    def cs_format(self):
+    def cs_format(self, precision=None):
         return self.codestring
 
     def __eq__(self, other):
@@ -1016,8 +1016,8 @@ class Statement(CStatement):
     def __init__(self, expr):
         self.expr = as_cexpr(expr)
 
-    def cs_format(self):
-        return self.expr.ce_format() + ";"
+    def cs_format(self, precision=None):
+        return self.expr.ce_format(precision) + ";"
 
     def __eq__(self, other):
         return (isinstance(other, type(self))
@@ -1030,8 +1030,8 @@ class StatementList(CStatement):
     def __init__(self, statements):
         self.statements = [as_cstatement(st) for st in statements]
 
-    def cs_format(self):
-        return [st.cs_format() for st in self.statements]
+    def cs_format(self, precision=None):
+        return [st.cs_format(precision) for st in self.statements]
 
     def __eq__(self, other):
         return (isinstance(other, type(self))
@@ -1046,7 +1046,7 @@ class Using(CStatement):
         assert isinstance(name, string_types)
         self.name = name
 
-    def cs_format(self):
+    def cs_format(self, precision=None):
         return "using " + self.name + ";"
 
     def __eq__(self, other):
@@ -1056,7 +1056,7 @@ class Using(CStatement):
 
 class Break(CStatement):
     __slots__ = ()
-    def cs_format(self):
+    def cs_format(self, precision=None):
         return "break;"
 
     def __eq__(self, other):
@@ -1065,7 +1065,7 @@ class Break(CStatement):
 
 class Continue(CStatement):
     __slots__ = ()
-    def cs_format(self):
+    def cs_format(self, precision=None):
         return "continue;"
 
     def __eq__(self, other):
@@ -1077,8 +1077,8 @@ class Return(CStatement):
     def __init__(self, value):
         self.value = as_cexpr(value)
 
-    def cs_format(self):
-        return "return " + self.value.ce_format() + ";"
+    def cs_format(self, precision=None):
+        return "return " + self.value.ce_format(precision) + ";"
 
     def __eq__(self, other):
         return (isinstance(other, type(self))
@@ -1091,8 +1091,8 @@ class Case(CStatement):
         # NB! This is too permissive and will allow invalid case arguments.
         self.value = as_cexpr(value)
 
-    def cs_format(self):
-        return "case " + self.value.ce_format() + ":"
+    def cs_format(self, precision=None):
+        return "case " + self.value.ce_format(precision) + ":"
 
     def __eq__(self, other):
         return (isinstance(other, type(self))
@@ -1101,7 +1101,7 @@ class Case(CStatement):
 
 class Default(CStatement):
     __slots__ = ()
-    def cs_format(self):
+    def cs_format(self, precision=None):
         return "default:"
 
     def __eq__(self, other):
@@ -1116,7 +1116,7 @@ class Throw(CStatement):
         self.exception = exception
         self.message = message
 
-    def cs_format(self):
+    def cs_format(self, precision=None):
         assert '"' not in self.message
         return "throw " + self.exception + '("' + self.message + '");'
 
@@ -1133,7 +1133,7 @@ class Comment(CStatement):
         assert isinstance(comment, string_types)
         self.comment = comment
 
-    def cs_format(self):
+    def cs_format(self, precision=None):
         lines = self.comment.strip().split("\n")
         return ["// " + line.strip() for line in lines]
 
@@ -1162,7 +1162,7 @@ class Pragma(CStatement):  # TODO: Improve on this with a use case later
         assert isinstance(comment, string_types)
         self.comment = comment
 
-    def cs_format(self):
+    def cs_format(self, precision=None):
         assert "\n" not in self.comment
         return "#pragma " + self.comment
 
@@ -1189,10 +1189,10 @@ class VariableDecl(CStatement):
             value = as_cexpr(value)
         self.value = value
 
-    def cs_format(self):
+    def cs_format(self, precision=None):
         code = self.typename + " " + self.symbol.name
         if self.value is not None:
-            code += " = " + self.value.ce_format()
+            code += " = " + self.value.ce_format(precision)
         return code + ";"
 
     def __eq__(self, other):
@@ -1207,19 +1207,19 @@ def leftover(size, padlen):
     return (padlen - (size % padlen)) % padlen
 
 
-def build_1d_initializer_list(values, formatter, padlen=0):
+def build_1d_initializer_list(values, formatter, padlen=0, precision=None):
     '''Return a list containing a single line formatted like "{ 0.0, 1.0, 2.0 }"'''
     tokens = ["{ "]
     if numpy.product(values.shape) > 0:
         sep = ", "
-        fvalues = [formatter(v) for v in values]
+        fvalues = [formatter(v, precision) for v in values]
         for v in fvalues[:-1]:
             tokens.append(v)
             tokens.append(sep)
         tokens.append(fvalues[-1])
         if padlen:
             # Add padding
-            zero = formatter(values.dtype.type(0))
+            zero = formatter(values.dtype.type(0), precision)
             for i in range(leftover(len(values), padlen)):
                 tokens.append(sep)
                 tokens.append(zero)
@@ -1227,7 +1227,7 @@ def build_1d_initializer_list(values, formatter, padlen=0):
     return "".join(tokens)
 
 
-def build_initializer_lists(values, sizes, level, formatter, padlen=0):
+def build_initializer_lists(values, sizes, level, formatter, padlen=0, precision=None):
     """Return a list of lines with initializer lists for a multidimensional array.
 
     Example output::
@@ -1245,12 +1245,12 @@ def build_initializer_lists(values, sizes, level, formatter, padlen=0):
     r = len(sizes)
     assert r > 0
     if r == 1:
-        return [build_1d_initializer_list(values, formatter, padlen=padlen)]
+        return [build_1d_initializer_list(values, formatter, padlen=padlen, precision=precision)]
     else:
         # Render all sublists
         parts = []
         for val in values:
-            sublist = build_initializer_lists(val, sizes[1:], level+1, formatter, padlen=padlen)
+            sublist = build_initializer_lists(val, sizes[1:], level+1, formatter, padlen=padlen, precision=precision)
             parts.append(sublist)
         # Add comma after last line in each part except the last one
         for part in parts[:-1]:
@@ -1304,7 +1304,7 @@ class ArrayDecl(CStatement):
         """
         return ArrayAccess(self, indices)
 
-    def cs_format(self):
+    def cs_format(self, precision=None):
         # Pad innermost array dimension
         sizes = list(self.sizes)
         if self.padlen:
@@ -1333,11 +1333,13 @@ class ArrayDecl(CStatement):
             # Construct initializer lists for arbitrary multidimensional array values
             if self.values.dtype.kind == "f":
                 formatter = format_float
+            elif self.values.dtype.kind == "i":
+                formatter = format_int
             else:
-                # Not really using other types, this can be buggy
                 formatter = format_value
             initializer_lists = build_initializer_lists(self.values, self.sizes, 0,
-                                                        formatter, padlen=self.padlen)
+                                                        formatter, padlen=self.padlen,
+                                                        precision=precision)
             if len(initializer_lists) == 1:
                 return decl + " = " + initializer_lists[0] + ";"
             else:
@@ -1359,8 +1361,8 @@ class Scope(CStatement):
     def __init__(self, body):
         self.body = as_cstatement(body)
 
-    def cs_format(self):
-        return ("{", Indented(self.body.cs_format()), "}")
+    def cs_format(self, precision):
+        return ("{", Indented(self.body.cs_format(precision)), "}")
 
     def __eq__(self, other):
         return (isinstance(other, type(self))
@@ -1374,9 +1376,9 @@ class Namespace(CStatement):
         self.name = name
         self.body = as_cstatement(body)
 
-    def cs_format(self):
+    def cs_format(self, precision):
         return ("namespace " + self.name,
-                "{", Indented(self.body.cs_format()), "}")
+                "{", Indented(self.body.cs_format(precision)), "}")
 
     def __eq__(self, other):
         return (isinstance(other, type(self))
@@ -1390,9 +1392,9 @@ class If(CStatement):
         self.condition = as_cexpr(condition)
         self.body = as_cstatement(body)
 
-    def cs_format(self):
-        return ("if (" + self.condition.ce_format() + ")",
-                "{", Indented(self.body.cs_format()), "}")
+    def cs_format(self, precision):
+        return ("if (" + self.condition.ce_format(precision) + ")",
+                "{", Indented(self.body.cs_format(precision)), "}")
 
     def __eq__(self, other):
         return (isinstance(other, type(self))
@@ -1406,9 +1408,9 @@ class ElseIf(CStatement):
         self.condition = as_cexpr(condition)
         self.body = as_cstatement(body)
 
-    def cs_format(self):
-        return ("else if (" + self.condition.ce_format() + ")",
-                "{", Indented(self.body.cs_format()), "}")
+    def cs_format(self, precision=None):
+        return ("else if (" + self.condition.ce_format(precision) + ")",
+                "{", Indented(self.body.cs_format(precision)), "}")
 
     def __eq__(self, other):
         return (isinstance(other, type(self))
@@ -1421,9 +1423,9 @@ class Else(CStatement):
     def __init__(self, body):
         self.body = as_cstatement(body)
 
-    def cs_format(self):
+    def cs_format(self, precision=None):
         return ("else",
-                "{", Indented(self.body.cs_format()), "}")
+                "{", Indented(self.body.cs_format(precision)), "}")
 
     def __eq__(self, other):
         return (isinstance(other, type(self))
@@ -1436,9 +1438,9 @@ class While(CStatement):
         self.condition = as_cexpr(condition)
         self.body = as_cstatement(body)
 
-    def cs_format(self):
-        return ("while (" + self.condition.ce_format() + ")",
-                "{", Indented(self.body.cs_format()), "}")
+    def cs_format(self, precision=None):
+        return ("while (" + self.condition.ce_format(precision) + ")",
+                "{", Indented(self.body.cs_format(precision)), "}")
 
     def __eq__(self, other):
         return (isinstance(other, type(self))
@@ -1452,9 +1454,9 @@ class Do(CStatement):
         self.condition = as_cexpr(condition)
         self.body = as_cstatement(body)
 
-    def cs_format(self):
-        return ("do", "{", Indented(self.body.cs_format()),
-                "} while (" + self.condition.ce_format() + ");")
+    def cs_format(self, precision=None):
+        return ("do", "{", Indented(self.body.cs_format(precision)),
+                "} while (" + self.condition.ce_format(precision) + ");")
 
     def __eq__(self, other):
         return (isinstance(other, type(self))
@@ -1470,18 +1472,18 @@ class For(CStatement):
         self.update = as_cexpr(update)
         self.body = as_cstatement(body)
 
-    def cs_format(self):
+    def cs_format(self, precision=None):
         # The C model here is a bit crude and this causes trouble
         # in the init statement/expression here:
-        init = self.init.cs_format()
+        init = self.init.cs_format(precision)
         assert isinstance(init, string_types)
         init = init.rstrip(" ;")
 
-        check = self.check.ce_format()
-        update = self.update.ce_format()
+        check = self.check.ce_format(precision)
+        update = self.update.ce_format(precision)
 
         prelude = "for (" + init + "; " + check + "; " + update + ")"
-        body = Indented(self.body.cs_format())
+        body = Indented(self.body.cs_format(precision))
 
         # Reduce size of code with lots of simple loops by dropping {} in obviously safe cases
         if (isinstance(self.body, ForRange)
@@ -1511,11 +1513,11 @@ class Switch(CStatement):
         self.autobreak = autobreak
         self.autoscope = autoscope
 
-    def cs_format(self):
+    def cs_format(self, precision=None):
         cases = []
         for case in self.cases:
-            caseheader = "case " + case[0].ce_format() + ":"
-            casebody = case[1].cs_format()
+            caseheader = "case " + case[0].ce_format(precision) + ":"
+            casebody = case[1].cs_format(precision)
             if self.autoscope:
                 casebody = ("{", Indented(casebody), "}")
             if self.autobreak:
@@ -1524,12 +1526,12 @@ class Switch(CStatement):
 
         if self.default is not None:
             caseheader = "default:"
-            casebody = self.default.cs_format()
+            casebody = self.default.cs_format(precision)
             if self.autoscope:
                 casebody = ("{", Indented(casebody), "}")
             cases.extend([caseheader, Indented(casebody)])
 
-        return ("switch (" + self.arg.ce_format() + ")",
+        return ("switch (" + self.arg.ce_format(precision) + ")",
                 "{", cases, "}")
 
     def __eq__(self, other):
@@ -1552,18 +1554,18 @@ class ForRange(CStatement):
         # going to handle type information right now:
         self.index_type = "int"
 
-    def cs_format(self):
+    def cs_format(self, precision=None):
         indextype = self.index_type
-        index = self.index.ce_format()
-        begin = self.begin.ce_format()
-        end = self.end.ce_format()
+        index = self.index.ce_format(precision)
+        begin = self.begin.ce_format(precision)
+        end = self.end.ce_format(precision)
 
         init = indextype + " " + index + " = " + begin
         check = index + " < " + end
         update = "++" + index
 
         prelude = "for (" + init + "; " + check + "; " + update + ")"
-        body = Indented(self.body.cs_format())
+        body = Indented(self.body.cs_format(precision))
 
         # Reduce size of code with lots of simple loops by dropping {} in obviously safe cases
         if (isinstance(self.body, ForRange)

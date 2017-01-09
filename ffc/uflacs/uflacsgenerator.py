@@ -32,17 +32,20 @@ def generate_integral_code(ir, prefix, parameters):
 
     info("Generating code from ffc.uflacs representation")
 
+    # FIXME: Is this the right precision value to use? Make it default to None or 0.
+    precision = parameters["precision"]
+
     # Create FFC C++ backend
     backend = FFCBackend(ir, parameters)
 
     # Configure kernel generator
-    ig = IntegralGenerator(ir, backend)
+    ig = IntegralGenerator(ir, backend, precision)
 
     # Generate code ast for the tabulate_tensor body
     parts = ig.generate()
 
     # Format code as string
-    body = format_indented_lines(parts.cs_format(), 1)
+    body = format_indented_lines(parts.cs_format(precision), 1)
 
 
     # Generate generic ffc code snippets and add uflacs specific parts

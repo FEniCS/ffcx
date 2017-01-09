@@ -159,8 +159,9 @@ def run_command(command):
     except subprocess.CalledProcessError as e:
         t2 = time.time()
         _command_timings.append((command, t2 - t1))
-        log_error(e.output)
-        print(e.output)
+        if e.output:
+            log_error(e.output)
+            print(e.output)
         return False
 
 
@@ -244,7 +245,9 @@ def generate_code(args, only_forms, skip_forms):
         t1 = time.time()
         try:
             ok = ffc.main(options)
-        except Exception:
+        except Exception as e:
+            if debug:
+                raise e
             msg = traceback.format_exc()
             log_error(cmd)
             log_error(msg)
