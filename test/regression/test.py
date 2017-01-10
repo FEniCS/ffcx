@@ -36,6 +36,7 @@ option --bench.
 # FIXME: Need to add many more test cases. Quite a few DOLFIN forms
 # failed after the FFC tests passed.
 
+from collections import OrderedDict
 import os
 import sys
 import shutil
@@ -231,6 +232,8 @@ def generate_code(args, only_forms, skip_forms):
     # some sort of tag like '#ffc: <flags>'.
     special = {"AdaptivePoisson.ufl": "-e", }
 
+    failures = []
+
     # Iterate over all files
     for f in form_files:
         options = [special.get(f, "")]
@@ -261,8 +264,10 @@ def generate_code(args, only_forms, skip_forms):
             info_green("%s OK" % f)
         else:
             info_red("%s failed" % f)
+            failures.append(f)
 
     end()
+    return failures
 
 
 def validate_code(reference_dir):
@@ -273,6 +278,8 @@ def validate_code(reference_dir):
 
     begin("Validating generated code (%d header files found)"
           % len(header_files))
+
+    failures = []
 
     # Iterate over all files
     for f in header_files:
@@ -301,8 +308,10 @@ def validate_code(reference_dir):
                  % os.path.join(*reference_file.split(os.path.sep)[-3:]))
             log_error("\n" + s + "\n" + len(s) * "-")
             log_error(diff)
+            failures.append(f)
 
     end()
+    return failures
 
 
 def find_boost_cflags():
@@ -386,6 +395,8 @@ def build_programs(bench, permissive):
 
     info("Compiler options: %s" % compiler_options)
 
+    failures = []
+
     # Iterate over all files
     for f in header_files:
         prefix = f.split(".h")[0]
@@ -419,8 +430,10 @@ def build_programs(bench, permissive):
             info_green("%s OK" % prefix)
         else:
             info_red("%s failed" % prefix)
+            failures.append(prefix)
 
     end()
+    return failures
 
 
 def run_programs(bench):
@@ -434,6 +447,8 @@ def run_programs(bench):
 
     begin("Running generated programs (%d programs found)" % len(test_programs))
 
+    failures = []
+
     # Iterate over all files
     for f in test_programs:
 
@@ -446,8 +461,9 @@ def run_programs(bench):
             info_green("%s OK" % f)
         else:
             info_red("%s failed" % f)
-
+            failures.append(f)
     end()
+    return failures
 
 
 def validate_programs(reference_dir):
@@ -458,6 +474,8 @@ def validate_programs(reference_dir):
 
     begin("Validating generated programs (%d .json program output files found)"
           % len(output_files))
+
+    failures = []
 
     # Iterate over all files
     for fj in output_files:
@@ -503,8 +521,10 @@ def validate_programs(reference_dir):
             log_error("Json output differs for %s, diff follows (generated first, reference second)"
                       % os.path.join(*reference_json_file.split(os.path.sep)[-3:]))
             print_recdiff(json_diff, printer=log_error)
+            failures.append(fj)
 
     end()
+    return failures
 
 
 def main(args):
@@ -600,8 +620,11 @@ def main(args):
 
     test_case_timings = {}
 
+    fails = OrderedDict()
+
     for argument in test_cases:
         test_case_timings[argument] = time.time()
+        fails[argument] = OrderedDict()
 
         begin("Running regression tests with %s" % argument)
 
@@ -627,7 +650,9 @@ def main(args):
         generate_test_cases(bench, only_forms, skip_forms)
 
         # Generate code
-        generate_code(args + argument.split(), only_forms, skip_forms)
+        failures = generate_code(args + argument.split(), only_forms, skip_forms)
+        if failures:
+            fails[argument]["generate_code"] = failures
 
         # Location of reference directories
         reference_directory = os.path.abspath("../../ffc-reference-data/")
@@ -643,20 +668,30 @@ def main(args):
         if skip_code_diff or (argument in ext_quad):
             info_blue("Skipping code diff validation")
         else:
-            validate_code(code_reference_dir)
+            failures = validate_code(code_reference_dir)
+            if failures:
+                fails[argument]["validate_code"] = failures
 
         # Build and run programs and validate output to common
         # reference
         if skip_run:
             info_blue("Skipping program execution")
         else:
-            build_programs(bench, permissive)
-            run_programs(bench)
+            failures = build_programs(bench, permissive)
+            if failures:
+                fails[argument]["build_programs"] = failures
+
+            failures = run_programs(bench)
+            if failures:
+                fails[argument]["run_programs"] = failures
+
             # Validate output to common reference results
             if skip_validate:
                 info_blue("Skipping program output validation")
             else:
-                validate_programs(output_reference_dir)
+                failures = validate_programs(output_reference_dir)
+                if failures:
+                    fails[argument]["validate_programs"] = failures
 
         # Go back up
         os.chdir(os.path.pardir)
@@ -683,6 +718,16 @@ def main(args):
     else:
         info_red("Regression tests failed")
         info_red("Error messages stored in %s" % logfile)
+        info_red("Summary:")
+        for argument in test_cases:
+            if fails[argument]:
+                info_red("  Failures for %s:" % argument)
+            else:
+                info_green("  Success for %s" % argument)
+            for phase, failures in fails[argument].items():
+                info_red("    %d failures in %s:" % (len(failures), phase))
+                for f in failures:
+                    info_red("      %s" % (f,))
         return 1
 
 
