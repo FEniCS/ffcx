@@ -39,7 +39,7 @@ from ffc.uflacs.analysis.dependencies import compute_dependencies, mark_active, 
 from ffc.uflacs.analysis.graph_ssa import compute_dependency_count, invert_dependencies
 #from ffc.uflacs.analysis.graph_ssa import default_cache_score_policy, compute_cache_scores, allocate_registers
 from ffc.uflacs.analysis.factorization import compute_argument_factorization
-from ffc.uflacs.elementtables import build_optimized_tables, piecewise_ttypes, uniform_ttypes
+from ffc.uflacs.elementtables import build_optimized_tables, piecewise_ttypes, uniform_ttypes, clamp_table_small_numbers
 
 
 # Some quick internal structs, massive improvement to
@@ -145,7 +145,8 @@ def multiply_block(point_index, unames, ttypes, unique_tables, unique_table_num_
     return ptable
 
 
-def integrate_block(weights, unames, ttypes, unique_tables, unique_table_num_dofs):
+def integrate_block(weights, unames, ttypes, unique_tables, unique_table_num_dofs, rtol, atol):
+    rank = len(unames)
     tables = [unique_tables.get(name) for name in unames]
     num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
 
@@ -153,10 +154,13 @@ def integrate_block(weights, unames, ttypes, unique_tables, unique_table_num_dof
     ptable = numpy.zeros((num_entities,) + num_dofs)
     for iq, w in enumerate(weights):
         ptable[...] += w * multiply_block(iq, unames, ttypes, unique_tables, unique_table_num_dofs)
+
+    ptable = clamp_table_small_numbers(ptable, rtol=rtol**rank, atol=atol**rank)
+
     return ptable
 
 
-def integrate_block_interior_facets(weights, unames, ttypes, unique_tables, unique_table_num_dofs):
+def integrate_block_interior_facets(weights, unames, ttypes, unique_tables, unique_table_num_dofs, rtol, atol):
     rank = len(unames)
     tables = [unique_tables.get(name) for name in unames]
     num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
@@ -166,6 +170,9 @@ def integrate_block_interior_facets(weights, unames, ttypes, unique_tables, uniq
     for iq, w in enumerate(weights):
         mtable = multiply_block_interior_facets(iq, unames, ttypes, unique_tables, unique_table_num_dofs)
         ptable[...] += w * mtable
+
+    ptable = clamp_table_small_numbers(ptable, rtol=rtol**rank, atol=atol**rank)
+
     return ptable
 
 
@@ -514,9 +521,11 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                     # Cache miss, precompute block
                     weights = quadrature_rules[num_points][1]
                     if integral_type == "interior_facet":
-                        ptable = integrate_block_interior_facets(weights, unames, ttypes, unique_tables, unique_table_num_dofs)
+                        ptable = integrate_block_interior_facets(weights, unames, ttypes,
+                            unique_tables, unique_table_num_dofs, rtol=table_rtol, atol=table_atol)
                     else:
-                        ptable = integrate_block(weights, unames, ttypes, unique_tables, unique_table_num_dofs)
+                        ptable = integrate_block(weights, unames, ttypes,
+                            unique_tables, unique_table_num_dofs, rtol=table_rtol, atol=table_atol)
                     pname = "PI%d" % (len(cache,))
                     cache[unames] = pname
                     unique_tables[pname] = ptable

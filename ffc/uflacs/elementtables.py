@@ -71,12 +71,11 @@ def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
         return numpy.allclose(a, b, rtol=rtol, atol=atol)
 
 
-# TODO: Is clamping 1's really safe?
-def clamp_table_small_integers(table, rtol=default_rtol, atol=default_atol):
+def clamp_table_small_numbers(table, rtol=default_rtol, atol=default_atol):
     "Clamp almost 0,1,-1 values to integers. Returns new table."
     # Get shape of table and number of columns, defined as the last axis
     table = numpy.asarray(table)
-    for n in (-1.0, 0.0, 1.0):
+    for n in (-1.0, -0.5, 0.0, 0.5, 1.0):
         table[numpy.where(numpy.isclose(table, n, rtol=rtol, atol=atol))] = n
     return table
 
@@ -427,9 +426,10 @@ def optimize_element_tables(tables, table_origins, compress_zeros, rtol=default_
     for name in used_names:
         tbl = tables[name]
 
-        # Clamp almost -1.0, 0.0, and +1.0 values first
-        # (i.e. 0.999999 -> 1.0 if within epsilon distance)
-        tbl = clamp_table_small_integers(tbl, rtol=rtol, atol=atol)
+        # Clamp to selected small numbers if close,
+        # (-1.0, -0.5, 0.0, 0.5 and +1.0)
+        # (i.e. 0.999999 -> 1.0 if within rtol/atol distance)
+        tbl = clamp_table_small_numbers(tbl, rtol=rtol, atol=atol)
 
         # Store original dof dimension before compressing
         num_dofs = tbl.shape[2]

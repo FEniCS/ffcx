@@ -717,17 +717,16 @@ def main(args):
         return 0
     else:
         info_red("Regression tests failed")
-        info_red("Error messages stored in %s" % logfile)
-        info_red("Summary:")
         for argument in test_cases:
             if fails[argument]:
                 info_red("  Failures for %s:" % argument)
             else:
-                info_green("  Success for %s" % argument)
+                info_green("  No failures for %s" % argument)
             for phase, failures in fails[argument].items():
                 info_red("    %d failures in %s:" % (len(failures), phase))
                 for f in failures:
                     info_red("      %s" % (f,))
+        info_red("Error messages stored in %s" % logfile)
         return 1
 
 
