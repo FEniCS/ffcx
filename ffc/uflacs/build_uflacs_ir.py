@@ -115,6 +115,7 @@ def multiply_block_interior_facets(point_index, unames, ttypes, unique_tables, u
             ptable[facets[0], :] = vectors[0]
         else:
             error("Nothing to multiply!")
+
     return ptable
 
 
@@ -142,10 +143,11 @@ def multiply_block(point_index, unames, ttypes, unique_tables, unique_table_num_
             ptable[entity, :] = vectors[0]
         else:
             error("Nothing to multiply!")
+
     return ptable
 
 
-def integrate_block(weights, unames, ttypes, unique_tables, unique_table_num_dofs, rtol, atol):
+def integrate_block(weights, unames, ttypes, unique_tables, unique_table_num_dofs):
     rank = len(unames)
     tables = [unique_tables.get(name) for name in unames]
     num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
@@ -155,12 +157,10 @@ def integrate_block(weights, unames, ttypes, unique_tables, unique_table_num_dof
     for iq, w in enumerate(weights):
         ptable[...] += w * multiply_block(iq, unames, ttypes, unique_tables, unique_table_num_dofs)
 
-    ptable = clamp_table_small_numbers(ptable, rtol=rtol**rank, atol=atol**rank)
-
     return ptable
 
 
-def integrate_block_interior_facets(weights, unames, ttypes, unique_tables, unique_table_num_dofs, rtol, atol):
+def integrate_block_interior_facets(weights, unames, ttypes, unique_tables, unique_table_num_dofs):
     rank = len(unames)
     tables = [unique_tables.get(name) for name in unames]
     num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
@@ -170,8 +170,6 @@ def integrate_block_interior_facets(weights, unames, ttypes, unique_tables, uniq
     for iq, w in enumerate(weights):
         mtable = multiply_block_interior_facets(iq, unames, ttypes, unique_tables, unique_table_num_dofs)
         ptable[...] += w * mtable
-
-    ptable = clamp_table_small_numbers(ptable, rtol=rtol**rank, atol=atol**rank)
 
     return ptable
 
@@ -196,8 +194,6 @@ def uflacs_default_parameters():
     # FIXME: go through code and add more parameter if necessary
     # FIXME: join uflacs parameters with global parameter system
 
-    opt = True
-
     p = dict(
         # Optimization parameters
         enable_block_optimizations     = True,
@@ -218,8 +214,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
     ir = {}
 
     # Precision to use when comparing finite element table values during optimization
-    table_rtol = 1e-5 # parameters["table_rtol"]
-    table_atol = 1e-8 # parameters["table_atol"]
+    table_rtol = 1e-6 # parameters["table_rtol"]
+    table_atol = 1e-9 # parameters["table_atol"]
 
     enable_optimizations = parameters["optimize"]
     # FIXME: To actually use the optimize parameter, need to
@@ -522,10 +518,12 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                     weights = quadrature_rules[num_points][1]
                     if integral_type == "interior_facet":
                         ptable = integrate_block_interior_facets(weights, unames, ttypes,
-                            unique_tables, unique_table_num_dofs, rtol=table_rtol, atol=table_atol)
+                            unique_tables, unique_table_num_dofs)
                     else:
                         ptable = integrate_block(weights, unames, ttypes,
-                            unique_tables, unique_table_num_dofs, rtol=table_rtol, atol=table_atol)
+                            unique_tables, unique_table_num_dofs)
+                    ptable = clamp_table_small_numbers(ptable, rtol=table_rtol, atol=table_atol)
+
                     pname = "PI%d" % (len(cache,))
                     cache[unames] = pname
                     unique_tables[pname] = ptable
