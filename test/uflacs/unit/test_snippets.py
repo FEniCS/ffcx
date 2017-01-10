@@ -1,27 +1,45 @@
 # -*- coding: utf-8 -*-
 
-from ffc.uflacs.language.format_value import format_float, set_float_precision, reset_float_precision
+from ffc.uflacs.language.format_value import format_float
 from ffc.uflacs.language.format_lines import iter_indented_lines, Indented, format_indented_lines
 
 
 def test_format_float():
-    reset_float_precision()
-    assert format_float(0.0) == "0.0"
-    assert format_float(1.0) == "1.0"
-    assert format_float(12.) == "12.0"
+    # Ints handled
+    assert format_float(0, 3) == "0.0"
+    assert format_float(1, 3) == "1.0"
+    assert format_float(12, 15) == "12.0"
 
-    set_float_precision(3)
-    assert format_float(0.0) == "0.0"
-    assert format_float(1.0) == "1.0"
-    assert format_float(1.2) == "1.2"
-    assert format_float(1.23) == "1.23"
+    # Zeros simple
+    assert format_float(0.0, 0) == "0.0"
+    assert format_float(0.0, 3) == "0.0"
+    assert format_float(0.0, 15) == "0.0"
 
-    set_float_precision(15, 1e-15)
-    assert format_float(0.0) == "0.0"
-    assert format_float(1.0) == "1.0"
-    assert format_float(12.) == "12.0"  # 1.2e+01
+    # Ones simple
+    assert format_float(1.0, 0) == "1.0"
+    assert format_float(1.0, 3) == "1.0"
+    assert format_float(1.0, 15) == "1.0"
 
-    reset_float_precision()
+    # Small ints simple
+    assert format_float(12., 15) == "12.0"
+    assert format_float(12., 15) == "12.0"
+
+    # Precision truncates
+    assert format_float(1.2, 3) == "1.2"
+    assert format_float(1.23, 3) == "1.23"
+    assert format_float(1.2345, 3) == "1.23"
+    assert format_float(1.0 + 1e-5, 7) == "1.00001"
+    assert format_float(1.0 + 1e-5, 6) == "1.00001"
+    assert format_float(1.0 + 1e-5, 5) == "1.0"
+
+    # Cleanly formatted exponential numbers
+    # without superfluous +s and 0s
+    assert format_float(1234567.0, 3) == "1.23e6"
+    assert format_float(1.23e6, 3) == "1.23e6"
+    assert format_float(1.23e-6, 3) == "1.23e-6"
+    assert format_float(-1.23e-6, 3) == "-1.23e-6"
+    assert format_float(-1.23e6, 3) == "-1.23e6"
+
 
 
 def test_iter_indented_lines():

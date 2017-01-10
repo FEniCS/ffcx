@@ -18,14 +18,23 @@
 
 from six import string_types
 import numbers
+import re
 
-
+_subs = (
+    # Remove 0s after e+ or e-
+    (re.compile(r"e[\+]0*(.)"), r"e\1"),
+    (re.compile(r"e[\-]0*(.)"), r"e-\1"),
+    )
 def format_float(x, precision=None):
     "Format a float value according to given precision."
+    global _subs
     if precision:
-        return "{:.{prec}}".format(float(x), prec=precision)
+        s = "{:.{prec}}".format(float(x), prec=precision)
     else:
-        return "{}".format(float(x))
+        s = "{}".format(float(x))
+    for r, v in _subs:
+        s = r.sub(v, s)
+    return s
 
 
 def format_int(x, precision=None):

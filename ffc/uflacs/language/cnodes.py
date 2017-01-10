@@ -1209,6 +1209,8 @@ def leftover(size, padlen):
 
 def build_1d_initializer_list(values, formatter, padlen=0, precision=None):
     '''Return a list containing a single line formatted like "{ 0.0, 1.0, 2.0 }"'''
+    if formatter == str:
+        formatter = lambda x, p: str(x)
     tokens = ["{ "]
     if numpy.product(values.shape) > 0:
         sep = ", "
@@ -1235,6 +1237,8 @@ def build_initializer_lists(values, sizes, level, formatter, padlen=0, precision
         { { 0.0, 0.1 },
           { 1.0, 1.1 } }
     """
+    if formatter == str:
+        formatter = lambda x, p: str(x)
     values = numpy.asarray(values)
     assert numpy.product(values.shape) == numpy.product(sizes)
     assert len(sizes) > 0
@@ -1361,7 +1365,7 @@ class Scope(CStatement):
     def __init__(self, body):
         self.body = as_cstatement(body)
 
-    def cs_format(self, precision):
+    def cs_format(self, precision=None):
         return ("{", Indented(self.body.cs_format(precision)), "}")
 
     def __eq__(self, other):
@@ -1376,7 +1380,7 @@ class Namespace(CStatement):
         self.name = name
         self.body = as_cstatement(body)
 
-    def cs_format(self, precision):
+    def cs_format(self, precision=None):
         return ("namespace " + self.name,
                 "{", Indented(self.body.cs_format(precision)), "}")
 
@@ -1392,7 +1396,7 @@ class If(CStatement):
         self.condition = as_cexpr(condition)
         self.body = as_cstatement(body)
 
-    def cs_format(self, precision):
+    def cs_format(self, precision=None):
         return ("if (" + self.condition.ce_format(precision) + ")",
                 "{", Indented(self.body.cs_format(precision)), "}")
 
