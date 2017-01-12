@@ -36,3 +36,20 @@ pipelines:
           - python3 -m pytest -v ./test/unit
           - python2 -m pytest -v ./test/uflacs
           - python3 -m pytest -v ./test/uflacs
+    maint:
+      - step:
+          script:
+          - pip2 install git+https://bitbucket.org/fenics-project/fiat.git@maint
+          - pip2 install git+https://bitbucket.org/fenics-project/ufl.git@maint
+          - pip2 install git+https://bitbucket.org/fenics-project/dijitso.git@maint
+          - pip3 install git+https://bitbucket.org/fenics-project/fiat.git@maint
+          - pip3 install git+https://bitbucket.org/fenics-project/ufl.git@maint
+          - pip3 install git+https://bitbucket.org/fenics-project/dijitso.git@maint
+          - pip2 install --verbose -e .
+          - pip3 install --verbose -e .
+          - python2 -m flake8 ffc/
+          - python3 -m flake8 ffc/
+          - python2 -m pytest -v ./test/unit
+          - python3 -m pytest -v ./test/unit
+          - python2 -m pytest -v ./test/uflacs
+          - python3 -m pytest -v ./test/uflacs
