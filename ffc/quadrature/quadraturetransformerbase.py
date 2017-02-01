@@ -494,10 +494,6 @@ class QuadratureTransformerBase(Transformer):
 
         if self.vertex is not None:
             error("Spatial coordinates (x) not implemented for point measure (dP)")  # TODO: Implement this, should be just the point.
-        elif self.points is None:
-            gdim = o.ufl_shape
-            coordinate = "quadrature_points[ip*%d]" % (gdim,c)
-            return self._create_symbol(coordinate, IP)
         else:
             # Generate the appropriate coordinate and update tables.
             coordinate = format["ip coordinates"](self.points, c)
