@@ -47,7 +47,6 @@ def generate_integral_code(ir, prefix, parameters):
     # Format code as string
     body = format_indented_lines(parts.cs_format(precision), 1)
 
-
     # Generate generic ffc code snippets and add uflacs specific parts
     code = initialize_integral_code(ir, prefix, parameters)
     code["tabulate_tensor"] = body
@@ -55,9 +54,8 @@ def generate_integral_code(ir, prefix, parameters):
     code["additional_includes_set"].update(ir.get("additional_includes_set", ()))
 
     # TODO: Move to initialize_integral_code, this is not representation specific
-    L = backend.language
     if ir.get("num_cells") is not None:
-        ret = L.Return(ir["num_cells"])
+        ret = backend.language.Return(ir["num_cells"])
         code["num_cells"] = format_indented_lines(ret.cs_format(), 1)
 
     return code

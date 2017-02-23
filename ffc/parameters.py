@@ -55,6 +55,7 @@ _FFC_GENERATE_PARAMETERS = {
     "error_control": False,   # with error control
     "optimize": False,        # optimise the code generation
     "max_signature_length": 0,  # set to positive integer to shorten signatures
+    "generate_dummy_tabulate_tensor": False,  # set to True to replace tabulate_tensor body with no-op
 }
 _FFC_BUILD_PARAMETERS = {
     "cpp_optimize": True,          # optimization for the JIT compiler
