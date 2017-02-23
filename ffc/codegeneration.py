@@ -309,6 +309,42 @@ def _generate_coordinate_mapping_code(ir, parameters):
     return code
 
 
+tt_timing_template = """
+static const std::size_t _tperiod = 10000;
+static std::size_t _tcount = 0;
+static auto _tsum = std::chrono::nanoseconds::zero();
+static auto _tavg_best = std::chrono::nanoseconds::max();
+auto _before = std::chrono::high_resolution_clock::now();
+{
+
+%s
+
+}
+auto _after = std::chrono::high_resolution_clock::now();
+const std::chrono::seconds _s(1);
+auto _tsingle = _after - _before;
+++_tcount;
+_tsum += _tsingle;
+if (_tcount %% _tperiod == 0 || _tsum > _s)
+{
+    std::chrono::nanoseconds _tavg = _tsum / _tcount;
+    if (_tavg_best > _tavg)
+        _tavg_best = _tavg;
+    auto _tot_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(_tsum).count();
+    auto _avg_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(_tavg).count();
+    auto _avg_best_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(_tavg_best).count();
+    std::cout << "FFC tt time:"
+              << "  avg_best = " << _avg_best_ns << " ns,"
+              << "  avg = " << _avg_ns << " ns,"
+              << "  tot = " << _tot_ns << " ns,"
+              << "  n = " << _tcount
+              << std::endl;
+    _tcount = 0;
+    _tsum = std::chrono::nanoseconds(0);
+}
+"""
+
+
 def _generate_integral_code(ir, parameters):
     "Generate code for integrals from intermediate representation."
 
@@ -326,6 +362,13 @@ def _generate_integral_code(ir, parameters):
     # Hack for benchmarking overhead in assembler with empty tabulate_tensor
     if parameters["generate_dummy_tabulate_tensor"]:
         code["tabulate_tensor"] = ""
+
+    # Wrapping tabulate_tensor in a timing snippet for benchmarking
+    if parameters["add_tabulate_tensor_timing"]:
+        code["tabulate_tensor"] = tt_timing_template % code["tabulate_tensor"]
+        code["additional_includes_set"] = code.get("additional_includes_set", set())
+        code["additional_includes_set"].add("#include <chrono>")
+        code["additional_includes_set"].add("#include <iostream>")
 
     # Generate comment
     code["tabulate_tensor_comment"] = _generate_tabulate_tensor_comment(ir, parameters)
