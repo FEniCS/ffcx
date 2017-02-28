@@ -1207,6 +1207,21 @@ def leftover(size, padlen):
     return (padlen - (size % padlen)) % padlen
 
 
+def pad_dim(dim, padlen):
+    "Make dim divisible by padlen."
+    if padlen:
+        dim += leftover(dim, padlen)
+    return dim
+
+
+def pad_innermost_dim(shape, padlen):
+    "Make the last dimension in shape divisible by padlen."
+    shape = list(shape)
+    if padlen:
+        shape[-1] = pad_dim(shape[-1], padlen)
+    return tuple(shape)
+
+
 def build_1d_initializer_list(values, formatter, padlen=0, precision=None):
     '''Return a list containing a single line formatted like "{ 0.0, 1.0, 2.0 }"'''
     if formatter == str:
@@ -1310,9 +1325,7 @@ class ArrayDecl(CStatement):
 
     def cs_format(self, precision=None):
         # Pad innermost array dimension
-        sizes = list(self.sizes)
-        if self.padlen:
-            sizes[-1] += leftover(sizes[-1], self.padlen)
+        sizes = pad_innermost_dim(self.sizes, self.padlen)
 
         # Add brackets
         brackets = ''.join("[%d]" % n for n in sizes)
