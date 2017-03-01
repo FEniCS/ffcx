@@ -48,8 +48,12 @@ def compute_integral_ir(itg_data,
     # TODO: Set alignas and padlen from parameters
     sizeof_double = 8
     ir["alignas"] = 32
-    ir["padlen"] = ir["alignas"] // sizeof_double
-    ir["vectorize"] = False #True
+    ir["vectorize"] = False
+    if ir["vectorize"]:
+        ir["padlen"] = ir["alignas"] // sizeof_double
+    else:
+        ir["padlen"] = 1
+    ir["use_symbol_array"] = True
 
     # Get element space dimensions
     unique_elements = element_numbers.keys()

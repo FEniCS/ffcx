@@ -581,8 +581,12 @@ class IntegralGenerator(object):
 
                 if j is not None:
                     # Record assignment of vexpr to intermediate variable
-                    vaccess = symbol[j]
-                    intermediates.append(L.Assign(vaccess, vexpr))
+                    if self.ir["use_symbol_array"]:
+                        vaccess = symbol[j]
+                        intermediates.append(L.Assign(vaccess, vexpr))
+                    else:
+                        vaccess = L.Symbol("%s_%d" % (symbol.name, j))
+                        intermediates.append(L.VariableDecl("const double", vaccess, vexpr))
                 else:
                     # Access the inlined expression
                     vaccess = vexpr
@@ -596,10 +600,11 @@ class IntegralGenerator(object):
         if definitions:
             parts += definitions
         if intermediates:
-            alignas = self.ir["alignas"]
-            parts += [L.ArrayDecl("double", symbol,
-                                  len(intermediates),
-                                  alignas=alignas)]
+            if self.ir["use_symbol_array"]:
+                alignas = self.ir["alignas"]
+                parts += [L.ArrayDecl("double", symbol,
+                                      len(intermediates),
+                                      alignas=alignas)]
             parts += intermediates
         return parts
 
@@ -784,6 +789,19 @@ class IntegralGenerator(object):
                 fw, defined = self.get_temp_symbol(fwtempname, key)
                 if not defined:
                     quadparts.append(L.VariableDecl("const double", fw, fw_rhs))
+
+                # Plan for vectorization of fw computations over iq:
+                # 1) Define fw as arrays e.g. "double fw0[nq];" outside quadloop
+                # 2) Access as fw0[iq] of course
+                # 3) Split quadrature loops, one for fw computation and one for blocks
+                # 4) Pad quadrature rule with 0 weights and last point
+
+                # Plan for vectorization of coefficient evaluation over iq:
+                # 1) Define w0_c1 etc as arrays e.g. "double w0_c1[nq] = {};" outside quadloop
+                # 2) Access as w0_c1[iq] of course
+                # 3) Splitquadrature loops, coefficients before fw computation
+                # 4) Possibly swap loops over iq and ic:
+                #    for(ic) for(iq) w0_c1[iq] = w[0][ic] * FE[iq][ic];
 
         if blockdata.block_mode == "safe":
             assert not blockdata.transposed
