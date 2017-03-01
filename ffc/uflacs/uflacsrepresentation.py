@@ -49,6 +49,7 @@ def compute_integral_ir(itg_data,
     sizeof_double = 8
     ir["alignas"] = 32
     ir["padlen"] = ir["alignas"] // sizeof_double
+    ir["vectorize"] = False #True
 
     # Get element space dimensions
     unique_elements = element_numbers.keys()

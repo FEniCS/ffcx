@@ -28,7 +28,7 @@ from ffc.log import error, warning
 
 from ffc.uflacs.build_uflacs_ir import get_common_block_data
 from ffc.uflacs.elementtables import piecewise_ttypes
-from ffc.uflacs.language.cnodes import pad_innermost_dim
+from ffc.uflacs.language.cnodes import pad_innermost_dim, pad_dim
 
 
 class IntegralGenerator(object):
@@ -795,7 +795,9 @@ class IntegralGenerator(object):
             body = L.AssignAdd(B[B_indices], B_rhs)  # NB! += not =
             for i in reversed(range(block_rank)):
                 if ttypes[i] != "quadrature":
-                    body = L.ForRange(B_indices[i], 0, padded_blockdims[i], body=body)
+                    vectorize = self.ir["vectorize"] and (i == block_rank-1)
+                    body = L.ForRange(B_indices[i], 0, padded_blockdims[i],
+                                      body=body, vectorize=vectorize)
             quadparts += [body]
 
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
@@ -833,17 +835,23 @@ class IntegralGenerator(object):
                     P_rhs = L.float_product([fw, arg_factors[i]])
                     body = L.Assign(P[P_index], P_rhs)
                     #if ttypes[i] != "quadrature":  # FIXME: What does this mean here?
-                    body = L.ForRange(P_index, 0, P_dim, body=body)
+                    vectorize = self.ir["vectorize"]
+                    body = L.ForRange(P_index, 0, P_dim,
+                                      body=body, vectorize=vectorize)
                     quadparts.append(body)
 
                 B_rhs = P[P_index] * arg_factors[j]
 
             # Add result to block inside quadloop
             body = L.AssignAdd(B[B_indices], B_rhs)  # NB! += not =
+            # Vectorize only the innermost loop
+            vectorize = self.ir["vectorize"]
             for i in reversed(range(block_rank)):
                 if ttypes[i] != "quadrature":
-                    body = L.ForRange(B_indices[i], 0, padded_blockdims[i], body=body)
-
+                    body = L.ForRange(B_indices[i], 0, padded_blockdims[i],
+                                      body=body, vectorize=vectorize)
+                # Don't vectorize the rest of the loops
+                vectorize = False
             quadparts += [body]
 
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs

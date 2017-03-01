@@ -1209,9 +1209,7 @@ def leftover(size, padlen):
 
 def pad_dim(dim, padlen):
     "Make dim divisible by padlen."
-    if padlen:
-        dim += leftover(dim, padlen)
-    return dim
+    return ((dim + padlen - 1) // padlen) * padlen
 
 
 def pad_innermost_dim(shape, padlen):
@@ -1480,14 +1478,30 @@ class Do(CStatement):
                     and self.condition == other.condition
                     and self.body == other.body)
 
+def as_pragma(pragma):
+    if isinstance(pragma, string_types):
+        return Pragma(pragma)
+    elif isinstance(pragma, Pragma):
+        return pragma
+    return None
+
+def is_simple_inner_loop(code):
+    if isinstance(code, ForRange) and code.pragma is None:
+        return True
+    if isinstance(code, For) and code.pragma is None:
+        return True
+    if isinstance(code, Statement) and isinstance(code.expr, AssignOp):
+        return True
+    return False
 
 class For(CStatement):
-    __slots__ = ("init", "check", "update", "body")
-    def __init__(self, init, check, update, body):
+    __slots__ = ("init", "check", "update", "body", "pragma")
+    def __init__(self, init, check, update, body, pragma=None):
         self.init = as_cstatement(init)
         self.check = as_cexpr(check)
         self.update = as_cexpr(update)
         self.body = as_cstatement(body)
+        self.pragma = as_pragma(pragma)
 
     def cs_format(self, precision=None):
         # The C model here is a bit crude and this causes trouble
@@ -1503,12 +1517,16 @@ class For(CStatement):
         body = Indented(self.body.cs_format(precision))
 
         # Reduce size of code with lots of simple loops by dropping {} in obviously safe cases
-        if (isinstance(self.body, ForRange)
-                or (isinstance(self.body, Statement)
-                        and isinstance(self.body.expr, AssignOp))):
-            return (prelude, body)
+        if is_simple_inner_loop(self.body):
+            code = (prelude, body)
         else:
-            return (prelude, "{", body, "}")
+            code = (prelude, "{", body, "}")
+
+        # Add pragma prefix if requested
+        if self.pragma is not None:
+            code = (self.pragma.cs_format(),) + code
+
+        return code
 
     def __eq__(self, other):
         attributes = ("init", "check", "update", "body")
@@ -1560,12 +1578,18 @@ class Switch(CStatement):
 
 class ForRange(CStatement):
     "Slightly higher-level for loop assuming incrementing an index over a range."
-    __slots__ = ("index", "begin", "end", "body", "index_type")
-    def __init__(self, index, begin, end, body):
+    __slots__ = ("index", "begin", "end", "body", "pragma", "index_type")
+    def __init__(self, index, begin, end, body, vectorize=None):
         self.index = as_cexpr(index)
         self.begin = as_cexpr(begin)
         self.end = as_cexpr(end)
         self.body = as_cstatement(body)
+
+        if vectorize:
+            pragma = Pragma("omp simd")
+        else:
+            pragma = None
+        self.pragma = pragma
 
         # Could be configured if needed but not sure how we're
         # going to handle type information right now:
@@ -1585,15 +1609,19 @@ class ForRange(CStatement):
         body = Indented(self.body.cs_format(precision))
 
         # Reduce size of code with lots of simple loops by dropping {} in obviously safe cases
-        if (isinstance(self.body, ForRange)
-                or (isinstance(self.body, Statement)
-                        and isinstance(self.body.expr, AssignOp))):
-            return (prelude, body)
+        if is_simple_inner_loop(self.body):
+            code = (prelude, body)
         else:
-            return (prelude, "{", body, "}")
+            code = (prelude, "{", body, "}")
+
+        # Add vectorization hint if requested
+        if self.pragma is not None:
+            code = (self.pragma.cs_format(),) + code
+
+        return code
 
     def __eq__(self, other):
-        attributes = ("index", "begin", "end", "body", "index_type")
+        attributes = ("index", "begin", "end", "body", "pragma", "index_type")
         return (isinstance(other, type(self))
                     and all(getattr(self, name) == getattr(self, name)
                             for name in attributes))
