@@ -310,38 +310,60 @@ def _generate_coordinate_mapping_code(ir, parameters):
 
 
 tt_timing_template = """
-static const std::size_t _tperiod = 10000;
-static std::size_t _tcount = 0;
-static auto _tsum = std::chrono::nanoseconds::zero();
-static auto _tavg_best = std::chrono::nanoseconds::max();
-auto _before = std::chrono::high_resolution_clock::now();
-{
+    // Initialize timing variables
+    static const std::size_t _tperiod = 10000;
+    static std::size_t _tcount = 0;
+    static auto _tsum = std::chrono::nanoseconds::zero();
+    static auto _tavg_best = std::chrono::nanoseconds::max();
+    static auto _tmin = std::chrono::nanoseconds::max();
+    static auto _tmax = std::chrono::nanoseconds::min();
 
+    // Measure single kernel time
+    auto _before = std::chrono::high_resolution_clock::now();
+    { // Begin original kernel
 %s
+    } // End original kernel
+    // Measure single kernel time
+    auto _after = std::chrono::high_resolution_clock::now();
 
-}
-auto _after = std::chrono::high_resolution_clock::now();
-const std::chrono::seconds _s(1);
-auto _tsingle = _after - _before;
-++_tcount;
-_tsum += _tsingle;
-if (_tcount %% _tperiod == 0 || _tsum > _s)
-{
-    std::chrono::nanoseconds _tavg = _tsum / _tcount;
-    if (_tavg_best > _tavg)
-        _tavg_best = _tavg;
-    auto _tot_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(_tsum).count();
-    auto _avg_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(_tavg).count();
-    auto _avg_best_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(_tavg_best).count();
-    std::cout << "FFC tt time:"
-              << "  avg_best = " << _avg_best_ns << " ns,"
-              << "  avg = " << _avg_ns << " ns,"
-              << "  tot = " << _tot_ns << " ns,"
-              << "  n = " << _tcount
-              << std::endl;
-    _tcount = 0;
-    _tsum = std::chrono::nanoseconds(0);
-}
+    // Update time stats
+    const std::chrono::seconds _s(1);
+    auto _tsingle = _after - _before;
+    ++_tcount;
+    _tsum += _tsingle;
+    _tmin = std::min(_tmin, _tsingle);
+    _tmax = std::max(_tmax, _tsingle);
+
+    if (_tcount %% _tperiod == 0 || _tsum > _s)
+    {
+        // Record best average across batches
+        std::chrono::nanoseconds _tavg = _tsum / _tcount;
+        if (_tavg_best > _tavg)
+            _tavg_best = _tavg;
+
+        // Convert to ns
+        auto _tot_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(_tsum).count();
+        auto _avg_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(_tavg).count();
+        auto _min_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(_tmin).count();
+        auto _max_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(_tmax).count();
+        auto _avg_best_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(_tavg_best).count();
+
+        // Print report
+        std::cout << "FFC tt time:"
+                  << "  avg_best = " << _avg_best_ns << " ns,"
+                  << "  avg = " << _avg_ns << " ns,"
+                  << "  min = " << _min_ns << " ns,"
+                  << "  max = " << _max_ns << " ns,"
+                  << "  tot = " << _tot_ns << " ns,"
+                  << "  n = " << _tcount
+                  << std::endl;
+
+        // Reset statistics for next batch
+        _tcount = 0;
+        _tsum = std::chrono::nanoseconds(0);
+        _tmin = std::chrono::nanoseconds::max();
+        _tmax = std::chrono::nanoseconds::min();
+    }
 """
 
 
