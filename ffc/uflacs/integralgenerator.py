@@ -649,6 +649,57 @@ class IntegralGenerator(object):
         return preparts, quadparts, postparts
 
 
+    def get_entities(self, restrictions, transposed):
+        if self.ir["integral_type"] == "interior_facet":
+            # Get the facet entities
+            entities = []
+            for r in restrictions:
+                if r is None:
+                    entities.append(0)
+                else:
+                    entities.append(self.backend.symbols.entity(self.ir["entitytype"], r))
+            if transposed:
+                return (entities[1], entities[0])
+            else:
+                return tuple(entities)
+        else:
+            # Get the current cell or facet entity
+            entity = self.backend.symbols.entity(self.ir["entitytype"], None)
+            return (entity,)
+
+
+    def get_arg_factors(self, blockdata, block_rank, num_points, iq, indices):
+        arg_factors = []
+        for i in range(block_rank):
+            mad = blockdata.ma_data[i]
+            td = mad.tabledata
+            if td.is_piecewise:
+                scope = self.ir["piecewise_ir"]["modified_arguments"]
+            else:
+                scope = self.ir["varying_irs"][num_points]["modified_arguments"]
+            mt = scope[mad.ma_index]
+
+            # Translate modified terminal to code
+            # TODO: Move element table access out of backend?
+            #       Not using self.backend.access.argument() here
+            #       now because it assumes too much about indices.
+
+            table = self.backend.symbols.element_table(td,
+                self.ir["entitytype"], mt.restriction)
+
+            assert td.ttype != "zeros"
+
+            if td.ttype == "ones":
+                arg_factor = L.LiteralFloat(1.0)
+            elif td.ttype == "quadrature":  # TODO: Revisit all quadrature ttype checks
+                arg_factor = table[iq]
+            else:
+                # Assuming B sparsity follows element table sparsity
+                arg_factor = table[indices[i]]
+            arg_factors.append(arg_factor)
+        return arg_factors
+
+
     def generate_block_parts(self, num_points, blockmap, blockdata):
         """Generate and return code parts for a given block.
 
@@ -744,41 +795,12 @@ class IntegralGenerator(object):
             weights = self.backend.symbols.weights_table(num_points)
             weight = weights[iq]
 
-        # Fetch code to access modified arguments
-        if blockdata.block_mode in ("safe", "full", "partial"):
-            arg_factors = []
-            for i in range(block_rank):
-                mad = blockdata.ma_data[i]
-                td = mad.tabledata
-                if td.is_piecewise:
-                    scope = self.ir["piecewise_ir"]["modified_arguments"]
-                else:
-                    scope = self.ir["varying_irs"][num_points]["modified_arguments"]
-                mt = scope[mad.ma_index]
-
-                # Translate modified terminal to code
-                # TODO: Move element table access out of backend?
-                #       Not using self.backend.access.argument() here
-                #       now because it assumes too much about indices.
-
-                table = self.backend.symbols.element_table(td,
-                    self.ir["entitytype"], mt.restriction)
-
-                assert td.ttype != "zeros"
-
-                if td.ttype == "ones":
-                    arg_factor = L.LiteralFloat(1.0)
-                elif td.ttype == "quadrature":  # TODO: Revisit all quadrature ttype checks
-                    arg_factor = table[iq]
-                else:
-                    # Assuming B sparsity follows element table sparsity
-                    arg_factor = table[B_indices[i]]
-                arg_factors.append(arg_factor)
-            assert len(arg_factors) == block_rank
-
         # Define fw = f * weight
         if blockdata.block_mode in ("safe", "full", "partial"):
             assert not blockdata.transposed, "Not handled yet"
+
+            # Fetch code to access modified arguments
+            arg_factors = self.get_arg_factors(blockdata, block_rank, num_points, iq, B_indices)
 
             fw_rhs = L.float_product([f, weight])
             if not isinstance(fw_rhs, L.Product):
@@ -911,23 +933,7 @@ class IntegralGenerator(object):
             A_rhs = B_rhs
 
         elif blockdata.block_mode in ("premultiplied", "preintegrated"):
-            if self.ir["integral_type"] == "interior_facet":
-                # Get the facet entities
-                entities = []
-                for r in blockdata.restrictions:
-                    if r is None:
-                        entities.append(0)
-                    else:
-                        entities.append(self.backend.symbols.entity(self.ir["entitytype"], r))
-                if blockdata.transposed:
-                    P_block_indices = (entities[1], entities[0])
-                else:
-                    P_block_indices = tuple(entities)
-            else:
-                # Get the current cell or facet entity
-                entity = self.backend.symbols.entity(self.ir["entitytype"], None)
-                P_block_indices = (entity,)
-
+            P_block_indices = self.get_entities(blockdata.restrictions, blockdata.transposed)
             if blockdata.transposed:
                 P_block_indices += (arg_indices[1], arg_indices[0])
             else:

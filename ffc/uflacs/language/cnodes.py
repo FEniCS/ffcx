@@ -1214,6 +1214,8 @@ def pad_dim(dim, padlen):
 
 def pad_innermost_dim(shape, padlen):
     "Make the last dimension in shape divisible by padlen."
+    if not shape:
+        return ()
     shape = list(shape)
     if padlen:
         shape[-1] = pad_dim(shape[-1], padlen)
