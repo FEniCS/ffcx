@@ -28,7 +28,7 @@ from ffc.log import error, warning
 
 from ffc.uflacs.build_uflacs_ir import get_common_block_data
 from ffc.uflacs.elementtables import piecewise_ttypes
-from ffc.uflacs.language.cnodes import pad_innermost_dim, pad_dim
+from ffc.uflacs.language.cnodes import pad_innermost_dim, pad_dim, MemZero
 
 
 class IntegralGenerator(object):
@@ -69,8 +69,14 @@ class IntegralGenerator(object):
         "Return list of include statements needed to support generated code."
         includes = set()
 
-        includes.add("#include <cstring>")  # for using memset
-        #includes.add("#include <algorithm>")  # for using std::fill instead of memset
+        # Get std::fill used by MemZero
+        includes.add("#include <algorithm>")
+
+        # For controlling floating point environment
+        #includes.add("#include <cfenv>")
+
+        # For intel intrinsics and controlling floating point environment
+        #includes.add("#include <xmmintrin.h>")
 
         cmath_names = set((
                 "abs", "sign", "pow", "sqrt",
@@ -174,6 +180,12 @@ class IntegralGenerator(object):
         assert not any(d for d in self.scopes.values())
 
         parts = []
+
+        # TODO: Is this needed? Find a test case to check.
+        parts += [
+            #L.VerbatimStatement("_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);"),
+            #L.VerbatimStatement("std::fesetenv(FE_DFL_DISABLE_SSE_DENORMS_ENV);"),
+            ]
 
         # Generate the tables of quadrature points and weights
         parts += self.generate_quadrature_tables()
@@ -322,23 +334,12 @@ class IntegralGenerator(object):
     def generate_tensor_reset(self):
         "Generate statements for resetting the element tensor to zero."
         L = self.backend.language
-
-        # TODO: Move this to language module, make CNode type
-        def memzero(ptrname, size):
-            tmp = "memset({ptrname}, 0, {size} * sizeof(*{ptrname}));"
-            code = tmp.format(ptrname=str(ptrname), size=size)
-            return L.VerbatimStatement(code)
-
-        # Compute tensor size
         A = self.backend.symbols.element_tensor()
         A_size = product(self.ir["tensor_shape"])
-
-        # Stitch it together
-        parts = [L.Comment("Reset element tensor")]
-        if A_size == 1:
-            parts += [L.Assign(A[0], L.LiteralFloat(0.0))]
-        else:
-            parts += [memzero(A, A_size)]
+        parts = [
+            L.Comment("Reset element tensor"),
+            L.MemZero(A, A_size),
+            ]
         return parts
 
 
@@ -621,30 +622,33 @@ class IntegralGenerator(object):
         quadparts = []
         postparts = []
 
-        for blockmap, contributions in sorted(block_contributions.items()):
-            for blockdata in contributions:
-                # Get symbol for already defined block B if it exists
-                common_block_data = get_common_block_data(blockdata)
-                B = self.shared_blocks.get(common_block_data)
-                if B is None:
-                    # Define code for block depending on mode
-                    B, block_preparts, block_quadparts, block_postparts = \
-                        self.generate_block_parts(num_points, blockmap, blockdata)
+        blocks = [(blockmap, blockdata)
+                  for blockmap, contributions in sorted(block_contributions.items())
+                  for blockdata in contributions]
 
-                    # Add definitions
-                    preparts.extend(block_preparts)
+        for blockmap, blockdata in blocks:
+            # Get symbol for already defined block B if it exists
+            common_block_data = get_common_block_data(blockdata)
+            B = self.shared_blocks.get(common_block_data)
+            if B is None:
+                # Define code for block depending on mode
+                B, block_preparts, block_quadparts, block_postparts = \
+                    self.generate_block_parts(num_points, blockmap, blockdata)
 
-                    # Add computations
-                    quadparts.extend(block_quadparts)
+                # Add definitions
+                preparts.extend(block_preparts)
 
-                    # Add finalization
-                    postparts.extend(block_postparts)
+                # Add computations
+                quadparts.extend(block_quadparts)
 
-                    # Store reference for reuse
-                    self.shared_blocks[common_block_data] = B
+                # Add finalization
+                postparts.extend(block_postparts)
 
-                # Add A[blockmap] += B[...] to finalization
-                self.finalization_blocks[blockmap].append(B)
+                # Store reference for reuse
+                self.shared_blocks[common_block_data] = B
+
+            # Add A[blockmap] += B[...] to finalization
+            self.finalization_blocks[blockmap].append(B)
 
         return preparts, quadparts, postparts
 
@@ -966,81 +970,98 @@ class IntegralGenerator(object):
         return A_rhs, preparts, quadparts, postparts
 
 
-    def generate_copyout_statements(self):
-        """Generate statements copying results to output array."""
+    def generate_expr_copyout_statements(self):
         L = self.backend.language
         parts = []
 
-        if self.ir["integral_type"] == "expression":
-            # Not expecting any quadrature loop scopes here
-            assert tuple(self.scopes.keys()) == (None,)
+        # Not expecting any quadrature loop scopes here
+        assert tuple(self.scopes.keys()) == (None,)
 
-            # TODO: Get symbol from backend
-            values = L.Symbol("values")
+        # TODO: Get symbol from backend
+        values = L.Symbol("values")
 
-            # TODO: Allow expression compilation to compute multiple points at once!
-            # Similarities to custom integrals in that points are given,
-            # while different in output format: results are not accumulated
-            # for each point but stored in output array instead.
+        # TODO: Allow expression compilation to compute multiple points at once!
+        # Similarities to custom integrals in that points are given,
+        # while different in output format: results are not accumulated
+        # for each point but stored in output array instead.
 
-            # Assign computed results to output variables
-            pir = self.ir["piecewise_ir"]
-            V = pir["V"]
-            V_targets = pir["V_targets"]
-            for i, fi in enumerate(V_targets):
-                parts.append(L.Assign(values[i], self.get_var(None, V[fi])))
-        else:
-            # Get symbol, dimensions, and loop index symbols for A
-            A = self.backend.symbols.element_tensor()
-            A = L.FlattenedArray(A, dims=self.ir["tensor_shape"])
-            rank = len(self.ir["tensor_shape"])
-            indices = [self.backend.symbols.argument_loop_index(i)
-                       for i in range(rank)]
-
-            dofmaps = {}
-            for blockmap, contributions in sorted(self.finalization_blocks.items()):
-                # Define mapping from B indices to A indices
-                A_indices = []
-                for i in range(rank):
-                    dofmap = blockmap[i]
-                    begin = dofmap[0]
-                    end = dofmap[-1] + 1
-                    if len(dofmap) == end - begin:
-                        # Dense insertion, offset B index to index A
-                        j = indices[i] + begin
-                    else:
-                        # Sparse insertion, map B index through dofmap
-                        DM = dofmaps.get(dofmap)
-                        if DM is None:
-                            DM = L.Symbol("DM%d" % len(dofmaps))
-                            dofmaps[dofmap] = DM
-                            parts.append(L.ArrayDecl("static const int", DM, len(dofmap), dofmap))
-                        j = DM[indices[i]]
-                    A_indices.append(j)
-                A_indices = tuple(A_indices)
-
-                # TODO: If B[ij] = ... outside quadloop, change
-                #       "A[ij] += B[ij]" into "A[ij] += ..." and drop the B[ij] temporary.
-
-                # Sum up all blocks contributing to this blockmap
-                if 0:
-                    B_indices = indices
-                    term = L.Sum([B[B_indices] for B in contributions])
-                else: # XXX New suggestion, let B_indices be rolled into B_rhs
-                    term = L.Sum([B_rhs for B_rhs in contributions])
-
-                # TODO: need ttypes associated with this block to deal
-                # with loop dropping for quadrature elements:
-                ttypes = ()
-                if ttypes == ("quadrature", "quadrature"):
-                    debug("quadrature element block insertion not optimized")
-
-                # Add components of all B's to A component in loop nest
-                body = L.AssignAdd(A[A_indices], term)
-                for i in reversed(range(rank)):
-                    body = L.ForRange(indices[i], 0, len(blockmap[i]), body=body)
-
-                # Add this block to parts
-                parts.append(body)
+        # Assign computed results to output variables
+        pir = self.ir["piecewise_ir"]
+        V = pir["V"]
+        V_targets = pir["V_targets"]
+        for i, fi in enumerate(V_targets):
+            parts.append(L.Assign(values[i], self.get_var(None, V[fi])))
 
         return parts
+
+
+    def generate_tensor_copyout_statements(self):
+        L = self.backend.language
+        parts = []
+
+        # Get symbol, dimensions, and loop index symbols for A
+        A = self.backend.symbols.element_tensor()
+        A = L.FlattenedArray(A, dims=self.ir["tensor_shape"])
+        A_shape = self.ir["tensor_shape"]
+        A_rank = len(A_shape)
+        indices = [self.backend.symbols.argument_loop_index(i)
+                   for i in range(A_rank)]
+
+        dofmaps = {}
+        for blockmap, contributions in sorted(self.finalization_blocks.items()):
+            # Define mapping from B indices to A indices
+            A_indices = []
+            for i in range(A_rank):
+                dofmap = blockmap[i]
+                begin = dofmap[0]
+                end = dofmap[-1] + 1
+                if len(dofmap) == end - begin:
+                    # Dense insertion, offset B index to index A
+                    j = indices[i] + begin
+                else:
+                    # Sparse insertion, map B index through dofmap
+                    DM = dofmaps.get(dofmap)
+                    if DM is None:
+                        DM = L.Symbol("DM%d" % len(dofmaps))
+                        dofmaps[dofmap] = DM
+                        parts.append(L.ArrayDecl("static const int", DM, len(dofmap), dofmap))
+                    j = DM[indices[i]]
+                A_indices.append(j)
+            A_indices = tuple(A_indices)
+
+            # TODO: If B[ij] = ... outside quadloop, change
+            #       "A[ij] += B[ij]" into "A[ij] += ..." and drop the B[ij] temporary.
+
+            # Sum up all blocks contributing to this blockmap
+            if 0:
+                B_indices = indices
+                term = L.Sum([B[B_indices] for B in contributions])
+            else: # XXX New suggestion, let B_indices be rolled into B_rhs
+                term = L.Sum([B_rhs for B_rhs in contributions])
+
+            # TODO: need ttypes associated with this block to deal
+            # with loop dropping for quadrature elements:
+            ttypes = ()
+            if ttypes == ("quadrature", "quadrature"):
+                debug("quadrature element block insertion not optimized")
+
+            # Add components of all B's to A component in loop nest
+            body = L.AssignAdd(A[A_indices], term)
+            for i in reversed(range(A_rank)):
+                body = L.ForRange(indices[i], 0, len(blockmap[i]), body=body)
+
+            # Add this block to parts
+            parts.append(body)
+
+        return parts
+
+
+
+    def generate_copyout_statements(self):
+        """Generate statements copying results to output array."""
+        if self.ir["integral_type"] == "expression":
+            return self.generate_expr_copyout_statements()
+        #elif self.ir["unroll_copyout_loops"]:
+        #    return self.generate_unrolled_tensor_copyout_statements()
+        else:
+            return self.generate_tensor_copyout_statements()

@@ -29,7 +29,6 @@ from ffc.uflacs.language.precedence import PRECEDENCE
 
 """CNode TODO:
 - Array copy statement
-- Memzero statement
 - Extend ArrayDecl and ArrayAccess with support for
   flattened but conceptually multidimensional arrays,
   maybe even with padding (FlattenedArray possibly covers what we need)
@@ -110,6 +109,13 @@ def float_product(factors):
             if is_zero_cexpr(f):
                 return f
         return Product(factors)
+
+
+def MemZero(name, size):
+    name = as_cexpr(name)
+    size = as_cexpr(size)
+    z = LiteralFloat(0.0)
+    return Call("std::fill", (name, name + size, z))
 
 
 ############## CNode core
