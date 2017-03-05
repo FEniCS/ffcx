@@ -54,6 +54,7 @@ def compute_integral_ir(itg_data,
     else:
         ir["padlen"] = 1
     ir["use_symbol_array"] = True
+    ir["tensor_init_mode"] = "interleaved"  # interleaved | direct | upfront
 
     # Get element space dimensions
     unique_elements = element_numbers.keys()

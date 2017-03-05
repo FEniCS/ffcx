@@ -111,11 +111,21 @@ def float_product(factors):
         return Product(factors)
 
 
+def MemZeroRange(name, begin, end):
+    name = as_cexpr(name)
+    return Call("std::fill", (
+        AddressOf(name[begin]),
+        AddressOf(name[end]),
+        LiteralFloat(0.0)))
+
+
 def MemZero(name, size):
     name = as_cexpr(name)
     size = as_cexpr(size)
-    z = LiteralFloat(0.0)
-    return Call("std::fill", (name, name + size, z))
+    return Call("std::fill", (
+        name,
+        name + size,
+        LiteralFloat(0.0)))
 
 
 ############## CNode core
