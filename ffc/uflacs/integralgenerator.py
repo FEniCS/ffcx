@@ -19,6 +19,7 @@
 """Controlling algorithm for building the tabulate_tensor source structure from factorized representation."""
 
 from collections import defaultdict
+import itertools
 
 from ufl import product
 from ufl.classes import ConstantValue, Condition
@@ -28,6 +29,8 @@ from ffc.log import error, warning
 
 from ffc.uflacs.build_uflacs_ir import get_common_block_data
 from ffc.uflacs.elementtables import piecewise_ttypes
+from ffc.uflacs.language.cnodes import pad_innermost_dim, pad_dim, MemZero, MemZeroRange
+
 
 class IntegralGenerator(object):
 
@@ -67,8 +70,14 @@ class IntegralGenerator(object):
         "Return list of include statements needed to support generated code."
         includes = set()
 
-        includes.add("#include <cstring>")  # for using memset
-        #includes.add("#include <algorithm>")  # for using std::fill instead of memset
+        # Get std::fill used by MemZero
+        includes.add("#include <algorithm>")
+
+        # For controlling floating point environment
+        #includes.add("#include <cfenv>")
+
+        # For intel intrinsics and controlling floating point environment
+        #includes.add("#include <xmmintrin.h>")
 
         cmath_names = set((
                 "abs", "sign", "pow", "sqrt",
@@ -173,14 +182,17 @@ class IntegralGenerator(object):
 
         parts = []
 
+        # TODO: Is this needed? Find a test case to check.
+        parts += [
+            #L.VerbatimStatement("_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);"),
+            #L.VerbatimStatement("std::fesetenv(FE_DFL_DISABLE_SSE_DENORMS_ENV);"),
+            ]
+
         # Generate the tables of quadrature points and weights
         parts += self.generate_quadrature_tables()
 
         # Generate the tables of basis function values and preintegrated blocks
         parts += self.generate_element_tables()
-
-        # Generate code to set A = 0
-        parts += self.generate_tensor_reset()
 
         # Generate code to compute piecewise constant scalar factors
         parts += self.generate_unstructured_piecewise_partition()
@@ -214,13 +226,24 @@ class IntegralGenerator(object):
         all_quadparts += quadparts
         all_postparts += postparts
 
-        # Collect loop parts
+        # Generate code to fill in A
+        all_finalizeparts = []
+
+        # Generate code to set A = 0
+        #all_finalizeparts += self.generate_tensor_reset()
+
+        # Generate code to compute piecewise constant scalar factors
+        # and set A at corresponding nonzero components
+        all_finalizeparts += self.generate_preintegrated_dofblock_partition()
+
+        # Generate code to add reusable blocks B* to element tensor A
+        all_finalizeparts += self.generate_copyout_statements()
+
+        # Collect parts before, during, and after quadrature loops
         parts += all_preparts
         parts += all_quadparts
         parts += all_postparts
-
-        # Generate code to add reusable blocks B* to element tensor A
-        parts += self.generate_copyout_statements()
+        parts += all_finalizeparts
 
         return L.StatementList(parts)
 
@@ -237,6 +260,9 @@ class IntegralGenerator(object):
         if self.ir["integral_type"] in skip:
             return parts
 
+        alignas = self.ir["alignas"]
+        padlen = self.ir["padlen"]
+
         # Loop over quadrature rules
         for num_points in self.ir["all_num_points"]:
             varying_ir = self.ir["varying_irs"][num_points]
@@ -248,8 +274,9 @@ class IntegralGenerator(object):
             # Generate quadrature weights array
             if varying_ir["need_weights"]:
                 wsym = self.backend.symbols.weights_table(num_points)
-                parts += [L.ArrayDecl("static const double", wsym, num_points, weights,
-                                      alignas=self.ir["alignas"])]
+                parts += [L.ArrayDecl("static const double", wsym,
+                                      num_points, weights,
+                                      alignas=alignas)]
 
             # Generate quadrature points array
             N = product(points.shape)
@@ -257,8 +284,9 @@ class IntegralGenerator(object):
                 # Flatten array: (TODO: avoid flattening here, it makes padding harder)
                 flattened_points = points.reshape(N)
                 psym = self.backend.symbols.points_table(num_points)
-                parts += [L.ArrayDecl("static const double", psym, N,
-                                      flattened_points, alignas=self.ir["alignas"])]
+                parts += [L.ArrayDecl("static const double", psym,
+                                      N, flattened_points,
+                                      alignas=alignas)]
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, "Quadrature rules")
@@ -273,9 +301,10 @@ class IntegralGenerator(object):
 
         tables = self.ir["unique_tables"]
         table_types = self.ir["unique_table_types"]
+        inline_tables = self.ir["integral_type"] == "cell"
 
         alignas = self.ir["alignas"]
-        #padlen = self.ir["padlen"]
+        padlen = self.ir["padlen"]
 
         if self.ir["integral_type"] in custom_integral_types:
             # Define only piecewise tables
@@ -287,9 +316,21 @@ class IntegralGenerator(object):
 
         for name in table_names:
             table = tables[name]
+
+            # Don't pad preintegrated tables
+            if name[0] == "P":
+                p = 1
+            else:
+                p = padlen
+
+            # Skip tables that are inlined in code generation
+            if inline_tables and name[:2] == "PI":
+                continue
+
             decl = L.ArrayDecl("static const double", name,
                                table.shape, table,
-                               alignas=alignas)  # padlen=padlen)
+                               alignas=alignas,
+                               padlen=p)
             parts += [decl]
 
         # Add leading comment if there are any tables
@@ -305,23 +346,13 @@ class IntegralGenerator(object):
     def generate_tensor_reset(self):
         "Generate statements for resetting the element tensor to zero."
         L = self.backend.language
-
-        # TODO: Move this to language module, make CNode type
-        def memzero(ptrname, size):
-            tmp = "memset({ptrname}, 0, {size} * sizeof(*{ptrname}));"
-            code = tmp.format(ptrname=str(ptrname), size=size)
-            return L.VerbatimStatement(code)
-
-        # Compute tensor size
         A = self.backend.symbols.element_tensor()
-        A_size = product(self.ir["tensor_shape"])
-
-        # Stitch it together
-        parts = [L.Comment("Reset element tensor")]
-        if A_size == 1:
-            parts += [L.Assign(A[0], L.LiteralFloat(0.0))]
-        else:
-            parts += [memzero(A, A_size)]
+        A_shape = self.ir["tensor_shape"]
+        A_size = product(A_shape)
+        parts = [
+            L.Comment("Reset element tensor"),
+            L.MemZero(A, A_size),
+            ]
         return parts
 
 
@@ -346,7 +377,8 @@ class IntegralGenerator(object):
             quadparts = []
         elif num_points == 1:
             # For now wrapping body in Scope to avoid thinking about scoping issues
-            quadparts = L.commented_code_list(L.Scope(body), "Only 1 quadrature point, no loop")
+            quadparts = L.commented_code_list(L.Scope(body),
+                "Only 1 quadrature point, no loop")
         else:
             # Regular case: define quadrature loop
             if num_points == 1:
@@ -564,8 +596,12 @@ class IntegralGenerator(object):
 
                 if j is not None:
                     # Record assignment of vexpr to intermediate variable
-                    vaccess = symbol[j]
-                    intermediates.append(L.Assign(vaccess, vexpr))
+                    if self.ir["use_symbol_array"]:
+                        vaccess = symbol[j]
+                        intermediates.append(L.Assign(vaccess, vexpr))
+                    else:
+                        vaccess = L.Symbol("%s_%d" % (symbol.name, j))
+                        intermediates.append(L.VariableDecl("const double", vaccess, vexpr))
                 else:
                     # Access the inlined expression
                     vaccess = vexpr
@@ -579,8 +615,11 @@ class IntegralGenerator(object):
         if definitions:
             parts += definitions
         if intermediates:
-            parts += [L.ArrayDecl("double", symbol, len(intermediates),
-                                  alignas=self.ir["alignas"])]
+            if self.ir["use_symbol_array"]:
+                alignas = self.ir["alignas"]
+                parts += [L.ArrayDecl("double", symbol,
+                                      len(intermediates),
+                                      alignas=alignas)]
             parts += intermediates
         return parts
 
@@ -597,32 +636,87 @@ class IntegralGenerator(object):
         quadparts = []
         postparts = []
 
-        for blockmap, contributions in sorted(block_contributions.items()):
-            for blockdata in contributions:
-                # Get symbol for already defined block B if it exists
-                common_block_data = get_common_block_data(blockdata)
-                B = self.shared_blocks.get(common_block_data)
-                if B is None:
-                    # Define code for block depending on mode
-                    B, block_preparts, block_quadparts, block_postparts = \
-                        self.generate_block_parts(num_points, blockmap, blockdata)
+        blocks = [(blockmap, blockdata)
+                  for blockmap, contributions in sorted(block_contributions.items())
+                  for blockdata in contributions
+                  if blockdata.block_mode != "preintegrated"]
 
-                    # Add definitions
-                    preparts.extend(block_preparts)
+        for blockmap, blockdata in blocks:
+            # Get symbol for already defined block B if it exists
+            common_block_data = get_common_block_data(blockdata)
+            B = self.shared_blocks.get(common_block_data)
+            if B is None:
+                # Define code for block depending on mode
+                B, block_preparts, block_quadparts, block_postparts = \
+                    self.generate_block_parts(num_points, blockmap, blockdata)
 
-                    # Add computations
-                    quadparts.extend(block_quadparts)
+                # Add definitions
+                preparts.extend(block_preparts)
 
-                    # Add finalization
-                    postparts.extend(block_postparts)
+                # Add computations
+                quadparts.extend(block_quadparts)
 
-                    # Store reference for reuse
-                    self.shared_blocks[common_block_data] = B
+                # Add finalization
+                postparts.extend(block_postparts)
 
-                # Add A[blockmap] += B[...] to finalization
-                self.finalization_blocks[blockmap].append(B)
+                # Store reference for reuse
+                self.shared_blocks[common_block_data] = B
+
+            # Add A[blockmap] += B[...] to finalization
+            self.finalization_blocks[blockmap].append(B)
 
         return preparts, quadparts, postparts
+
+
+    def get_entities(self, restrictions, transposed):
+        if self.ir["integral_type"] == "interior_facet":
+            # Get the facet entities
+            entities = []
+            for r in restrictions:
+                if r is None:
+                    entities.append(0)
+                else:
+                    entities.append(self.backend.symbols.entity(self.ir["entitytype"], r))
+            if transposed:
+                return (entities[1], entities[0])
+            else:
+                return tuple(entities)
+        else:
+            # Get the current cell or facet entity
+            entity = self.backend.symbols.entity(self.ir["entitytype"], None)
+            return (entity,)
+
+
+    def get_arg_factors(self, blockdata, block_rank, num_points, iq, indices):
+        arg_factors = []
+        for i in range(block_rank):
+            mad = blockdata.ma_data[i]
+            td = mad.tabledata
+            if td.is_piecewise:
+                scope = self.ir["piecewise_ir"]["modified_arguments"]
+            else:
+                scope = self.ir["varying_irs"][num_points]["modified_arguments"]
+            mt = scope[mad.ma_index]
+
+            # Translate modified terminal to code
+            # TODO: Move element table access out of backend?
+            #       Not using self.backend.access.argument() here
+            #       now because it assumes too much about indices.
+
+            table = self.backend.symbols.element_table(td,
+                self.ir["entitytype"], mt.restriction)
+
+            assert td.ttype != "zeros"
+
+            if td.ttype == "ones":
+                arg_factor = L.LiteralFloat(1.0)
+            elif td.ttype == "quadrature":  # TODO: Revisit all quadrature ttype checks
+                arg_factor = table[iq]
+            else:
+                # Assuming B sparsity follows element table sparsity
+                arg_factor = table[indices[i]]
+            arg_factors.append(arg_factor)
+        return arg_factors
 
 
     def generate_block_parts(self, num_points, blockmap, blockdata):
@@ -663,8 +757,12 @@ class IntegralGenerator(object):
         fwtempname = "fw"
         tempname = tempnames.get(blockdata.block_mode)
 
+        alignas = self.ir["alignas"]
+        padlen = self.ir["padlen"]
+
         block_rank = len(blockmap)
         blockdims = tuple(len(dofmap) for dofmap in blockmap)
+        padded_blockdims = pad_innermost_dim(blockdims, padlen)
 
         ttypes = blockdata.ttypes
         if "zeros" in ttypes:
@@ -696,7 +794,8 @@ class IntegralGenerator(object):
             # Add initialization of this block to parts
             # For all modes, block definition occurs before quadloop
             preparts.append(L.ArrayDecl("double", B, blockdims, 0,
-                                        alignas=self.ir["alignas"]))
+                                        alignas=alignas,
+                                        padlen=padlen))
 
         # Get factor expression
         if blockdata.factor_is_piecewise:
@@ -715,41 +814,12 @@ class IntegralGenerator(object):
             weights = self.backend.symbols.weights_table(num_points)
             weight = weights[iq]
 
-        # Fetch code to access modified arguments
-        if blockdata.block_mode in ("safe", "full", "partial"):
-            arg_factors = []
-            for i in range(block_rank):
-                mad = blockdata.ma_data[i]
-                td = mad.tabledata
-                if td.is_piecewise:
-                    scope = self.ir["piecewise_ir"]["modified_arguments"]
-                else:
-                    scope = self.ir["varying_irs"][num_points]["modified_arguments"]
-                mt = scope[mad.ma_index]
-
-                # Translate modified terminal to code
-                # TODO: Move element table access out of backend?
-                #       Not using self.backend.access.argument() here
-                #       now because it assumes too much about indices.
-
-                table = self.backend.symbols.element_table(td,
-                    self.ir["entitytype"], mt.restriction)
-
-                assert td.ttype != "zeros"
-
-                if td.ttype == "ones":
-                    arg_factor = L.LiteralFloat(1.0)
-                elif td.ttype == "quadrature":  # TODO: Revisit all quadrature ttype checks
-                    arg_factor = table[iq]
-                else:
-                    # Assuming B sparsity follows element table sparsity
-                    arg_factor = table[B_indices[i]]
-                arg_factors.append(arg_factor)
-            assert len(arg_factors) == block_rank
-
         # Define fw = f * weight
         if blockdata.block_mode in ("safe", "full", "partial"):
             assert not blockdata.transposed, "Not handled yet"
+
+            # Fetch code to access modified arguments
+            arg_factors = self.get_arg_factors(blockdata, block_rank, num_points, iq, B_indices)
 
             fw_rhs = L.float_product([f, weight])
             if not isinstance(fw_rhs, L.Product):
@@ -761,6 +831,19 @@ class IntegralGenerator(object):
                 if not defined:
                     quadparts.append(L.VariableDecl("const double", fw, fw_rhs))
 
+                # Plan for vectorization of fw computations over iq:
+                # 1) Define fw as arrays e.g. "double fw0[nq];" outside quadloop
+                # 2) Access as fw0[iq] of course
+                # 3) Split quadrature loops, one for fw computation and one for blocks
+                # 4) Pad quadrature rule with 0 weights and last point
+
+                # Plan for vectorization of coefficient evaluation over iq:
+                # 1) Define w0_c1 etc as arrays e.g. "double w0_c1[nq] = {};" outside quadloop
+                # 2) Access as w0_c1[iq] of course
+                # 3) Splitquadrature loops, coefficients before fw computation
+                # 4) Possibly swap loops over iq and ic:
+                #    for(ic) for(iq) w0_c1[iq] = w[0][ic] * FE[iq][ic];
+
         if blockdata.block_mode == "safe":
             assert not blockdata.transposed
 
@@ -771,7 +854,9 @@ class IntegralGenerator(object):
             body = L.AssignAdd(B[B_indices], B_rhs)  # NB! += not =
             for i in reversed(range(block_rank)):
                 if ttypes[i] != "quadrature":
-                    body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
+                    vectorize = self.ir["vectorize"] and (i == block_rank-1)
+                    body = L.ForRange(B_indices[i], 0, padded_blockdims[i],
+                                      body=body, vectorize=vectorize)
             quadparts += [body]
 
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
@@ -804,21 +889,28 @@ class IntegralGenerator(object):
                     # inside quadrature loop
                     P_dim = blockdims[i]
                     quadparts.append(L.ArrayDecl("double", P, P_dim, None,
-                                                 alignas=self.ir["alignas"]))
+                                                 alignas=alignas,
+                                                 padlen=padlen))
                     P_rhs = L.float_product([fw, arg_factors[i]])
                     body = L.Assign(P[P_index], P_rhs)
                     #if ttypes[i] != "quadrature":  # FIXME: What does this mean here?
-                    body = L.ForRange(P_index, 0, P_dim, body=body)
+                    vectorize = self.ir["vectorize"]
+                    body = L.ForRange(P_index, 0, P_dim,
+                                      body=body, vectorize=vectorize)
                     quadparts.append(body)
 
                 B_rhs = P[P_index] * arg_factors[j]
 
             # Add result to block inside quadloop
             body = L.AssignAdd(B[B_indices], B_rhs)  # NB! += not =
+            # Vectorize only the innermost loop
+            vectorize = self.ir["vectorize"]
             for i in reversed(range(block_rank)):
                 if ttypes[i] != "quadrature":
-                    body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
-
+                    body = L.ForRange(B_indices[i], 0, padded_blockdims[i],
+                                      body=body, vectorize=vectorize)
+                # Don't vectorize the rest of the loops
+                vectorize = False
             quadparts += [body]
 
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
@@ -842,14 +934,15 @@ class IntegralGenerator(object):
                 # Declare P table in preparts
                 P_dim = blockdims[not_piecewise_index]
                 preparts.append(L.ArrayDecl("double", P, P_dim, 0,
-                                            alignas=self.ir["alignas"]))
+                                            alignas=alignas,
+                                            padlen=padlen))
 
                 # Multiply collected factors
                 P_rhs = L.float_product([fw, arg_factors[not_piecewise_index]])
 
                 # Accumulate P += weight * f * args in quadrature loop
                 body = L.AssignAdd(P[P_index], P_rhs)
-                body = L.ForRange(P_index, 0, P_dim, body=body)
+                body = L.ForRange(P_index, 0, pad_dim(P_dim, padlen), body=body)
                 quadparts.append(body)
 
             # Define B = B_rhs = piecewise_argument[:] * P[:], where P[:] = sum_q weight * f * other_argument[:]
@@ -859,23 +952,7 @@ class IntegralGenerator(object):
             A_rhs = B_rhs
 
         elif blockdata.block_mode in ("premultiplied", "preintegrated"):
-            if self.ir["integral_type"] == "interior_facet":
-                # Get the facet entities
-                entities = []
-                for r in blockdata.restrictions:
-                    if r is None:
-                        entities.append(0)
-                    else:
-                        entities.append(self.backend.symbols.entity(self.ir["entitytype"], r))
-                if blockdata.transposed:
-                    P_block_indices = (entities[1], entities[0])
-                else:
-                    P_block_indices = tuple(entities)
-            else:
-                # Get the current cell or facet entity
-                entity = self.backend.symbols.entity(self.ir["entitytype"], None)
-                P_block_indices = (entity,)
-
+            P_block_indices = self.get_entities(blockdata.restrictions, blockdata.transposed)
             if blockdata.transposed:
                 P_block_indices += (arg_indices[1], arg_indices[0])
             else:
@@ -908,81 +985,234 @@ class IntegralGenerator(object):
         return A_rhs, preparts, quadparts, postparts
 
 
-    def generate_copyout_statements(self):
-        """Generate statements copying results to output array."""
+    def generate_preintegrated_dofblock_partition(self):
+        # FIXME: Generalize this to unrolling all A[] += ... loops, or all loops with noncontiguous DM??
+        L = self.backend.language
+        block_contributions = self.ir["piecewise_ir"]["block_contributions"]
+
+        blocks = [(blockmap, blockdata)
+                  for blockmap, contributions in sorted(block_contributions.items())
+                  for blockdata in contributions
+                  if blockdata.block_mode == "preintegrated"]
+
+        # Get symbol, dimensions, and loop index symbols for A
+        A_shape = self.ir["tensor_shape"]
+        A_size = product(A_shape)
+        A_rank = len(A_shape)
+
+        A_strides = [1]*A_rank  # TODO: there's something like shape2strides(A_shape) somewhere
+        for i in reversed(range(0, A_rank-1)):
+            A_strides[i] = A_strides[i+1] * A_shape[i+1]
+
+        A = self.backend.symbols.element_tensor()
+        #A = L.FlattenedArray(A, dims=A_shape)
+
+        A_values = [0.0] * A_size
+
+        for blockmap, blockdata in blocks:
+            # Accumulate A[blockmap[...]] += f*PI[...]
+
+            # Get table for inlining
+            tables = self.ir["unique_tables"]
+            table = tables[blockdata.name]
+            inline_table = self.ir["integral_type"] == "cell"
+
+            # Get factor expression
+            v = self.ir["piecewise_ir"]["V"][blockdata.factor_index]
+            f = self.get_var(None, v)
+
+            # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
+            # A_rhs = f * PI where PI = sum_q weight * u * v
+            PI = L.Symbol(blockdata.name)
+            block_rank = len(blockmap)
+
+            # Override dof index with quadrature loop index for arguments with
+            # quadrature element, to index B like B[iq*num_dofs + iq]
+            arg_indices = tuple(self.backend.symbols.argument_loop_index(i)
+                                for i in range(block_rank))
+
+            # Define indices into preintegrated block
+            P_entity_indices = self.get_entities(blockdata.restrictions, blockdata.transposed)
+            if inline_table:
+                assert P_entity_indices == (L.LiteralInt(0),)
+                assert table.shape[0] == 1
+
+            # Unroll loop
+            blockshape = [len(DM) for DM in blockmap]
+            blockrange = [range(d) for d in blockshape]
+
+            for ii in itertools.product(*blockrange):
+                A_ii = sum(A_strides[i] * blockmap[i][ii[i]]
+                           for i in range(len(ii)))
+                if blockdata.transposed:
+                    P_arg_indices = (ii[1], ii[0])
+                else:
+                    P_arg_indices = ii
+
+                if inline_table:
+                    # Extract float value of PI[P_ii]
+                    Pval = table[0]  # always entity 0
+                    for i in P_arg_indices:
+                        Pval = Pval[i]
+                    A_rhs = Pval * f
+                else:
+                    # Index the static preintegrated table:
+                    P_ii = P_entity_indices + P_arg_indices
+                    A_rhs = f * PI[P_ii]
+
+                A_values[A_ii] = A_values[A_ii] + A_rhs
+
+        return self.generate_tensor_value_initialization(A_values)
+
+
+    def generate_tensor_value_initialization(self, A_values):
+        parts = []
+
+        L = self.backend.language
+        A = self.backend.symbols.element_tensor()
+        A_size = len(A_values)
+
+        init_mode = self.ir["tensor_init_mode"]
+        z = L.LiteralFloat(0.0)
+
+        if init_mode == "direct":
+            # Generate A[i] = A_values[i] including zeros
+            for i in range(A_size):
+                parts += [L.Assign(A[i], A_values[i])]
+        elif init_mode == "upfront":
+            # Zero everything first
+            parts += [L.MemZero(A, A_size)]
+
+            # Generate A[i] = A_values[i] skipping zeros
+            for i in range(A_size):
+                if not (A_values[i] == 0.0 or A_values[i] == z):
+                    parts += [L.Assign(A[i], A_values[i])]
+        elif init_mode == "interleaved":
+            # Generate A[i] = A_values[i] with interleaved zero filling
+            i = 0
+            zero_begin = 0
+            zero_end = zero_begin
+            while i < A_size:
+                if A_values[i] == 0.0 or A_values[i] == z:
+                    # Update range of A zeros
+                    zero_end = i + 1
+                else:
+                    # Set zeros of A just prior to A[i]
+                    if zero_end == zero_begin + 1:
+                        parts += [L.Assign(A[zero_begin], 0.0)]
+                    elif zero_end > zero_begin:
+                        parts += [L.MemZeroRange(A, zero_begin, zero_end)]
+                    zero_begin = i + 1
+                    zero_end = zero_begin
+                    # Set A[i] value
+                    parts += [L.Assign(A[i], A_values[i])]
+                i += 1
+            if zero_end == zero_begin + 1:
+                parts += [L.Assign(A[zero_begin], 0.0)]
+            elif zero_end > zero_begin:
+                parts += [L.MemZeroRange(A, zero_begin, zero_end)]
+        else:
+            error("Invalid init_mode parameter %s" % (init_mode,))
+
+        return parts
+
+
+    def generate_expr_copyout_statements(self):
         L = self.backend.language
         parts = []
 
-        if self.ir["integral_type"] == "expression":
-            # Not expecting any quadrature loop scopes here
-            assert tuple(self.scopes.keys()) == (None,)
+        # Not expecting any quadrature loop scopes here
+        assert tuple(self.scopes.keys()) == (None,)
 
-            # TODO: Get symbol from backend
-            values = L.Symbol("values")
+        # TODO: Get symbol from backend
+        values = L.Symbol("values")
 
-            # TODO: Allow expression compilation to compute multiple points at once!
-            # Similarities to custom integrals in that points are given,
-            # while different in output format: results are not accumulated
-            # for each point but stored in output array instead.
+        # TODO: Allow expression compilation to compute multiple points at once!
+        # Similarities to custom integrals in that points are given,
+        # while different in output format: results are not accumulated
+        # for each point but stored in output array instead.
 
-            # Assign computed results to output variables
-            pir = self.ir["piecewise_ir"]
-            V = pir["V"]
-            V_targets = pir["V_targets"]
-            for i, fi in enumerate(V_targets):
-                parts.append(L.Assign(values[i], self.get_var(None, V[fi])))
-        else:
-            # Get symbol, dimensions, and loop index symbols for A
-            A = self.backend.symbols.element_tensor()
-            A = L.FlattenedArray(A, dims=self.ir["tensor_shape"])
-            rank = len(self.ir["tensor_shape"])
-            indices = [self.backend.symbols.argument_loop_index(i)
-                       for i in range(rank)]
-
-            dofmaps = {}
-            for blockmap, contributions in sorted(self.finalization_blocks.items()):
-                # Define mapping from B indices to A indices
-                A_indices = []
-                for i in range(rank):
-                    dofmap = blockmap[i]
-                    begin = dofmap[0]
-                    end = dofmap[-1] + 1
-                    if len(dofmap) == end - begin:
-                        # Dense insertion, offset B index to index A
-                        j = indices[i] + begin
-                    else:
-                        # Sparse insertion, map B index through dofmap
-                        DM = dofmaps.get(dofmap)
-                        if DM is None:
-                            DM = L.Symbol("DM%d" % len(dofmaps))
-                            dofmaps[dofmap] = DM
-                            parts.append(L.ArrayDecl("static const int", DM, len(dofmap), dofmap))
-                        j = DM[indices[i]]
-                    A_indices.append(j)
-                A_indices = tuple(A_indices)
-
-                # TODO: If B[ij] = ... outside quadloop, change
-                #       "A[ij] += B[ij]" into "A[ij] += ..." and drop the B[ij] temporary.
-
-                # Sum up all blocks contributing to this blockmap
-                if 0:
-                    B_indices = indices
-                    term = L.Sum([B[B_indices] for B in contributions])
-                else: # XXX New suggestion, let B_indices be rolled into B_rhs
-                    term = L.Sum([B_rhs for B_rhs in contributions])
-
-                # TODO: need ttypes associated with this block to deal
-                # with loop dropping for quadrature elements:
-                ttypes = ()
-                if ttypes == ("quadrature", "quadrature"):
-                    debug("quadrature element block insertion not optimized")
-
-                # Add components of all B's to A component in loop nest
-                body = L.AssignAdd(A[A_indices], term)
-                for i in reversed(range(rank)):
-                    body = L.ForRange(indices[i], 0, len(blockmap[i]), body=body)
-
-                # Add this block to parts
-                parts.append(body)
+        # Assign computed results to output variables
+        pir = self.ir["piecewise_ir"]
+        V = pir["V"]
+        V_targets = pir["V_targets"]
+        for i, fi in enumerate(V_targets):
+            parts.append(L.Assign(values[i], self.get_var(None, V[fi])))
 
         return parts
+
+
+    def generate_tensor_copyout_statements(self):
+        L = self.backend.language
+        parts = []
+
+        # Get symbol, dimensions, and loop index symbols for A
+        A_shape = self.ir["tensor_shape"]
+        A_size = product(A_shape)
+        A_rank = len(A_shape)
+
+        A_strides = [1]*A_rank  # TODO: there's something like shape2strides(A_shape) somewhere
+        for i in reversed(range(0, A_rank-1)):
+            A_strides[i] = A_strides[i+1] * A_shape[i+1]
+
+        Asym = self.backend.symbols.element_tensor()
+        A = L.FlattenedArray(Asym, dims=A_shape)
+
+        indices = [self.backend.symbols.argument_loop_index(i)
+                   for i in range(A_rank)]
+
+        dofmap_parts = []
+        dofmaps = {}
+        for blockmap, contributions in sorted(self.finalization_blocks.items()):
+
+            # Define mapping from B indices to A indices
+            A_indices = []
+            for i in range(A_rank):
+                dofmap = blockmap[i]
+                begin = dofmap[0]
+                end = dofmap[-1] + 1
+                if len(dofmap) == end - begin:
+                    # Dense insertion, offset B index to index A
+                    j = indices[i] + begin
+                else:
+                    # Sparse insertion, map B index through dofmap
+                    DM = dofmaps.get(dofmap)
+                    if DM is None:
+                        DM = L.Symbol("DM%d" % len(dofmaps))
+                        dofmaps[dofmap] = DM
+                        dofmap_parts.append(L.ArrayDecl("static const int", DM, len(dofmap), dofmap))
+                    j = DM[indices[i]]
+                A_indices.append(j)
+            A_indices = tuple(A_indices)
+
+            # Sum up all blocks contributing to this blockmap
+            term = L.Sum([B_rhs for B_rhs in contributions])
+
+            # TODO: need ttypes associated with this block to deal
+            # with loop dropping for quadrature elements:
+            ttypes = ()
+            if ttypes == ("quadrature", "quadrature"):
+                debug("quadrature element block insertion not optimized")
+
+            # Add components of all B's to A component in loop nest
+            body = L.AssignAdd(A[A_indices], term)
+            for i in reversed(range(A_rank)):
+                body = L.ForRange(indices[i], 0, len(blockmap[i]), body=body)
+
+            # Add this block to parts
+            parts.append(body)
+
+        # Place static dofmap tables first
+        parts = dofmap_parts + parts
+
+        return parts
+
+
+    def generate_copyout_statements(self):
+        """Generate statements copying results to output array."""
+        if self.ir["integral_type"] == "expression":
+            return self.generate_expr_copyout_statements()
+        #elif self.ir["unroll_copyout_loops"]:
+        #    return self.generate_unrolled_tensor_copyout_statements()
+        else:
+            return self.generate_tensor_copyout_statements()

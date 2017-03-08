@@ -29,6 +29,9 @@ class UFL2CNodesMixin(object):
     def __init__(self, language):
         self.L = language
 
+        self.force_floats = False
+        self.enable_strength_reduction = False
+
     # === Error handlers for missing formatting rules ===
 
     def expr(self, o):
@@ -47,6 +50,8 @@ class UFL2CNodesMixin(object):
         return self.L.LiteralFloat(float(o))
 
     def int_value(self, o):
+        if self.force_floats:
+            return self.float_value(o)
         return self.L.LiteralInt(int(o))
 
     # === Formatting rules for arithmetic operators ===
@@ -61,7 +66,10 @@ class UFL2CNodesMixin(object):
         return self.L.Mul(a, b)
 
     def division(self, o, a, b):
-        return self.L.Div(a, b)
+        if self.enable_strength_reduction:
+            return self.L.Mul(a, self.L.Div(1.0, b))
+        else:
+            return self.L.Div(a, b)
 
     # === Formatting rules for conditional expressions ===
 
