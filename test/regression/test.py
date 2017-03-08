@@ -128,6 +128,61 @@ known_uflacs_failures = set([
     "MetaData.ufl",
 ])
 
+known_tensor_failures = set([
+#    "AdaptivePoisson.ufl",
+    "AlgebraOperators.ufl",
+    "BiharmonicHHJ.ufl",
+    "BiharmonicRegge.ufl",
+    "Biharmonic.ufl",
+    "CellGeometry.ufl",
+    "CoefficientOperators.ufl",
+#    "Components.ufl",
+    "Conditional.ufl",
+#    "Constant.ufl",
+    "CustomIntegral.ufl",
+    "CustomMixedIntegral.ufl",
+    "CustomVectorIntegral.ufl",
+#    "Elasticity.ufl",
+#    "EnergyNorm.ufl",
+#    "Equation.ufl",
+    "FacetIntegrals.ufl",
+#    "FacetRestrictionAD.ufl",
+#    "Heat.ufl",
+    "HyperElasticity.ufl",
+#    "Mass.ufl",
+    "MathFunctions.ufl",
+    "MetaData.ufl",
+#    "Mini.ufl",
+#    "MixedCoefficient.ufl",
+#    "MixedMixedElement.ufl",
+#    "MixedPoissonDual.ufl",
+#    "MixedPoisson.ufl",
+#    "NavierStokes.ufl",
+#    "NeumannProblem.ufl",
+    "Normals.ufl",
+#    "Optimization.ufl",
+#    "P5tet.ufl",
+#    "P5tri.ufl",
+    "PointMeasure.ufl",
+#    "Poisson1D.ufl",
+    "PoissonDG.ufl",
+    "PoissonQuad.ufl",
+#    "Poisson.ufl",
+#    "ProjectionManifold.ufl",
+    "QuadratureElement.ufl",
+#    "ReactionDiffusion.ufl",
+#    "RestrictedElement.ufl",
+    "SpatialCoordinates.ufl",
+#    "StabilisedStokes.ufl",
+#    "Stokes.ufl",
+#    "SubDomains.ufl",
+#    "SubDomain.ufl",
+    "TensorWeightedPoisson.ufl",
+#    "TraceElement.ufl",
+#    "VectorLaplaceGradCurl.ufl",
+#    "VectorPoisson.ufl",
+])
+
 known_tsfc_failures = set([
     # Expected not to work
     "CustomIntegral.ufl",
@@ -534,11 +589,13 @@ def main(args):
     "Run all regression tests."
 
     # Check command-line arguments TODO: Use argparse
-    use_auto = "--skip-auto" not in args
+    only_auto  = "--only-auto" in args
+    use_auto   = "--skip-auto" not in args
+    use_tensor = "--skip-tensor" not in args
     use_uflacs = "--skip-uflacs" not in args
-    use_quad = "--skip-quad" not in args
-    use_tsfc = "--use-tsfc" in args
-    use_ext_quad = "--ext-quad" in args
+    use_quad   = "--skip-quad" not in args
+    use_tsfc   = "--use-tsfc" in args
+    use_ext_quad   = "--ext-quad" in args
     use_ext_uflacs = "--ext-uflacs" in args
 
     skip_download = "--skip-download" in args
@@ -553,7 +610,9 @@ def main(args):
     show_help = "--help" in args
 
     flags = (
+        "--only-auto",
         "--skip-auto",
+        "--skip-tensor",
         "--skip-uflacs",
         "--skip-quad",
         "--use-tsfc",
@@ -610,21 +669,26 @@ def main(args):
 
     # Adjust which test cases (combinations of compile arguments) to run here
     test_cases = []
-    if use_auto:
+    if only_auto:
         test_cases += ["-r auto"]
-    if use_uflacs:
-        test_cases += ["-r uflacs -O0", "-r uflacs -O"]
-    if use_quad:
-        test_cases += ["-r quadrature -O0", "-r quadrature -O"]
-    if use_tsfc:
-        test_cases += ["-r tsfc -O0", "-r tsfc -O"]
-        # Silence good-performance messages by COFFEE
-        import coffee
-        coffee.set_log_level(coffee.logger.PERF_WARN)
-    if use_ext_quad:
-        test_cases += ext_quad
-    if use_ext_uflacs:
-        test_cases += ext_uflacs
+    else:
+        if use_auto:
+            test_cases += ["-r auto"]
+        if use_tensor:
+            test_cases += ["-r tensor"]
+        if use_uflacs:
+            test_cases += ["-r uflacs -O0", "-r uflacs -O"]
+        if use_quad:
+            test_cases += ["-r quadrature -O0", "-r quadrature -O"]
+        if use_tsfc:
+            test_cases += ["-r tsfc -O0", "-r tsfc -O"]
+            # Silence good-performance messages by COFFEE
+            import coffee
+            coffee.set_log_level(coffee.logger.PERF_WARN)
+        if use_ext_quad:
+            test_cases += ext_quad
+        if use_ext_uflacs:
+            test_cases += ext_uflacs
 
     test_case_timings = {}
 
@@ -645,6 +709,9 @@ def main(args):
         if "quadrature" in argument and not only_forms:
             skip_forms = known_quad_failures
             info_blue("Skipping forms known to fail with quadrature:\n" + "\n".join(sorted(skip_forms)))
+        elif "tensor" in argument and not only_forms:
+            skip_forms = known_tensor_failures
+            info_blue("Skipping forms known to fail with tensor:\n" + "\n".join(sorted(skip_forms)))
         elif "uflacs" in argument and not only_forms:
             skip_forms = known_uflacs_failures
             info_blue("Skipping forms known to fail with uflacs:\n" + "\n".join(sorted(skip_forms)))

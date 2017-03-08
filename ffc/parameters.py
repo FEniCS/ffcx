@@ -94,14 +94,7 @@ def split_parameters(parameters):
 
 def default_parameters():
     "Return (a copy of) the default parameter values for FFC."
-    parameters = copy.deepcopy(FFC_PARAMETERS)
-
-    # HACK
-    r = os.environ.get("FFC_FORCE_REPRESENTATION")
-    if r:
-        parameters["representation"] = r
-
-    return parameters
+    return copy.deepcopy(FFC_PARAMETERS)
 
 
 def default_jit_parameters():
