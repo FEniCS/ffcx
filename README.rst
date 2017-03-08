@@ -44,7 +44,7 @@ Code Coverage
 =============
 
 Code coverage reports can be viewed at
-https://coveralls.io/repos/bitbucket/fenics-project/ffc.
+https://coveralls.io/bitbucket/fenics-project/ffc.
 
 .. image:: https://coveralls.io/repos/bitbucket/fenics-project/ffc/badge.svg?branch=master
    :target: https://coveralls.io/bitbucket/fenics-project/ffc?branch=master
