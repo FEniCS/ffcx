@@ -42,7 +42,7 @@ fi
 
 # Copy references
 echo "Copying new reference data to $DATA_DIR"
-rsync -r  --exclude='README.rst' --exclude='*.bin' --exclude='*.cpp' --exclude='*~' --exclude='.*' --exclude='*#*' $OUTPUT_DIR/ $DATA_DIR
+rsync -r  --exclude='README.rst' --exclude='*.build' --exclude='*.bin' --exclude='*.cpp' --exclude='*~' --exclude='.*' --exclude='*#*' $OUTPUT_DIR/ $DATA_DIR
 echo ""
 
 # Get current id for main repo (does not include dirty files, so not quite trustworthy!)
