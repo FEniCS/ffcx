@@ -277,7 +277,6 @@ class IntegralGenerator(object):
                 parts += [L.ArrayDecl("static const double", wsym,
                                       num_points, weights,
                                       alignas=alignas)]
-                                      #padlen=padlen)]
 
             # Generate quadrature points array
             N = product(points.shape)
@@ -288,7 +287,6 @@ class IntegralGenerator(object):
                 parts += [L.ArrayDecl("static const double", psym,
                                       N, flattened_points,
                                       alignas=alignas)]
-                                      #padlen=padlen)]
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, "Quadrature rules")
