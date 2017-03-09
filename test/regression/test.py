@@ -111,12 +111,10 @@ ext_quad = [
 # Extended uflacs tests
 # (to be extended with optimisation parameters later)
 ext_uflacs = [
-    "-r uflacs -N -fenable_sum_factorization",
-    "-r uflacs -N -fenable_preintegration",
-    "-r uflacs -N -fenable_premultiplication",
+    "-r uflacs -O -fvectorize -fpadlen=4 -falignas=32",
+    "-r uflacs -O -fno-enable_sum_factorization",
+    "-r uflacs -O -fno-enable_preintegration",
     "-r uflacs -O -fenable_premultiplication",
-    "-r uflacs -O",
-    "-r uflacs -N",
 ]
 
 known_quad_failures = set([
@@ -615,11 +613,11 @@ def main(args):
     if use_auto:
         test_cases += ["-r auto"]
     if use_uflacs:
-        test_cases += ["-r uflacs", "-r uflacs -O"]
+        test_cases += ["-r uflacs -O0", "-r uflacs -O"]
     if use_quad:
-        test_cases += ["-r quadrature", "-r quadrature -O"]
+        test_cases += ["-r quadrature -O0", "-r quadrature -O"]
     if use_tsfc:
-        test_cases += ["-r tsfc", "-r tsfc -O"]
+        test_cases += ["-r tsfc -O0", "-r tsfc -O"]
         # Silence good-performance messages by COFFEE
         import coffee
         coffee.set_log_level(coffee.logger.PERF_WARN)

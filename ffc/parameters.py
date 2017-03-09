@@ -54,7 +54,7 @@ _FFC_GENERATE_PARAMETERS = {
     "convert_exceptions_to_warnings": False,   # convert all exceptions to warning
                                                # in generated code
     "error_control": False,   # with error control
-    "optimize": 0,            # optimize code generation
+    "optimize": 1,            # optimization level for code generation (0=no optimization, >0=optimization)
     "max_signature_length": 0,  # set to positive integer to shorten signatures
     "generate_dummy_tabulate_tensor": False,  # set to True to replace tabulate_tensor body with no-op
     "add_tabulate_tensor_timing": False,      # set to True to add timing inside tabulate_tensor
@@ -125,6 +125,8 @@ def validate_parameters(parameters):
     p = default_parameters()
     if parameters is not None:
         p.update(parameters)
+    if isinstance(parameters["optimize"], bool):
+        parameters["optimize"] = 2 if parameters["optimize"] else 0
     return p
 
 
@@ -133,6 +135,8 @@ def validate_jit_parameters(parameters):
     p = default_jit_parameters()
     if parameters is not None:
         p.update(parameters)
+    if isinstance(parameters["optimize"], bool):
+        parameters["optimize"] = 2 if parameters["optimize"] else 0
     return p
 
 
