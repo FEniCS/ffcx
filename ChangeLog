@@ -1,5 +1,7 @@
 201x.x.x [201x-xx-xx]
- -
+ - Let ffc -O parameter take an optional integer level like -O2, -O0
+ - Implement blockwise optimizations in uflacs code generation
+ - Expose uflacs optimization parameters through parameter system
 2016.2.0 [2016-11-30]
  - Jit compiler now compiles elements separately from forms to avoid duplicate work
  - Add parameter max_signature_length to optionally shorten signatures in the jit cache
