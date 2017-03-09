@@ -108,9 +108,11 @@ def main(args=None):
 
     # Get command-line arguments
     try:
-        opts, args = getopt.getopt(args, "hIVSdvsl:r:f:NOo:q:ep",
+        if "-O" in args:
+            args[args.index("-O")] = "-O2"
+        opts, args = getopt.getopt(args, "hIVSdvsl:r:f:O:o:q:ep",
                                    ["help", "includes", "version", "signature", "debug", "verbose", "silent",
-                                    "language=", "representation=", "nooptimize", "optimize",
+                                    "language=", "representation=", "optimize=",
                                     "output-directory=", "quadrature-rule=", "error-control",
                                     "profile"])
     except getopt.GetoptError:
@@ -186,10 +188,8 @@ def main(args=None):
             else:
                 info_usage()
                 return 1
-        elif opt in ("-N", "--nooptimize"):
-            parameters["optimize"] = False
         elif opt in ("-O", "--optimize"):
-            parameters["optimize"] = True
+            parameters["optimize"] = int(arg)
         elif opt in ("-o", "--output-directory"):
             parameters["output_dir"] = arg
         elif opt in ("-e", "--error-control"):

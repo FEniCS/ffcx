@@ -54,7 +54,7 @@ _FFC_GENERATE_PARAMETERS = {
     "convert_exceptions_to_warnings": False,   # convert all exceptions to warning
                                                # in generated code
     "error_control": False,   # with error control
-    "optimize": False,        # optimize code generation
+    "optimize": 0,            # optimize code generation
     "max_signature_length": 0,  # set to positive integer to shorten signatures
     "generate_dummy_tabulate_tensor": False,  # set to True to replace tabulate_tensor body with no-op
     "add_tabulate_tensor_timing": False,      # set to True to add timing inside tabulate_tensor
