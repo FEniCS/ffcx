@@ -108,10 +108,15 @@ ext_quad = [
     "-r quadrature -O -fprecompute_basis_const -feliminate_zeros",
 ]
 
-# Extended uflacs tests (to be extended with optimisation parameters
-# later)
+# Extended uflacs tests
+# (to be extended with optimisation parameters later)
 ext_uflacs = [
-    "-r uflacs",
+    "-r uflacs -N -fenable_sum_factorization",
+    "-r uflacs -N -fenable_preintegration",
+    "-r uflacs -N -fenable_premultiplication",
+    "-r uflacs -O -fenable_premultiplication",
+    "-r uflacs -O",
+    "-r uflacs -N",
 ]
 
 known_quad_failures = set([
@@ -536,6 +541,7 @@ def main(args):
     use_quad = "--skip-quad" not in args
     use_tsfc = "--use-tsfc" in args
     use_ext_quad = "--ext-quad" in args
+    use_ext_uflacs = "--ext-uflacs" in args
 
     skip_download = "--skip-download" in args
     skip_run = "--skip-run" in args
@@ -575,6 +581,8 @@ def main(args):
     if bench:
         skip_code_diff = True
         skip_validate = True
+    if use_ext_quad or use_ext_uflacs:
+        skip_code_diff = True
 
     # Extract .ufl names from args
     only_forms = set([arg for arg in args if arg.endswith(".ufl")])
@@ -607,7 +615,7 @@ def main(args):
     if use_auto:
         test_cases += ["-r auto"]
     if use_uflacs:
-        test_cases += ["-r uflacs"]
+        test_cases += ["-r uflacs", "-r uflacs -O"]
     if use_quad:
         test_cases += ["-r quadrature", "-r quadrature -O"]
     if use_tsfc:
@@ -617,6 +625,8 @@ def main(args):
         coffee.set_log_level(coffee.logger.PERF_WARN)
     if use_ext_quad:
         test_cases += ext_quad
+    if use_ext_uflacs:
+        test_cases += ext_uflacs
 
     test_case_timings = {}
 
@@ -665,7 +675,7 @@ def main(args):
 
         # Validate code by comparing to code generated with this set
         # of compiler parameters
-        if skip_code_diff or (argument in ext_quad):
+        if skip_code_diff:
             info_blue("Skipping code diff validation")
         else:
             failures = validate_code(code_reference_dir)

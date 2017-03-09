@@ -17,6 +17,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import copy
 from ffc.log import INFO
 
 
@@ -53,7 +54,7 @@ _FFC_GENERATE_PARAMETERS = {
     "convert_exceptions_to_warnings": False,   # convert all exceptions to warning
                                                # in generated code
     "error_control": False,   # with error control
-    "optimize": False,        # optimise the code generation
+    "optimize": False,        # optimize code generation
     "max_signature_length": 0,  # set to positive integer to shorten signatures
     "generate_dummy_tabulate_tensor": False,  # set to True to replace tabulate_tensor body with no-op
     "add_tabulate_tensor_timing": False,      # set to True to add timing inside tabulate_tensor
@@ -93,7 +94,7 @@ def split_parameters(parameters):
 
 def default_parameters():
     "Return (a copy of) the default parameter values for FFC."
-    parameters = FFC_PARAMETERS.copy()
+    parameters = copy.deepcopy(FFC_PARAMETERS)
 
     # HACK
     r = os.environ.get("FFC_FORCE_REPRESENTATION")
@@ -108,7 +109,7 @@ def default_jit_parameters():
 
     # TODO: This is not in the above parameters dict.
     #       There are other parameters like this.
-    #       This is confusing, which parameters are available? What ar the defaults?
+    #       This is confusing, which parameters are available? What are the defaults?
     # Skip evaluation of basis derivatives in elements by default because it's costly
     # FIXME: Make this False when we have elements generated once instead of for each form
     parameters["no-evaluate_basis_derivatives"] = True

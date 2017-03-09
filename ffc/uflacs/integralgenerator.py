@@ -260,8 +260,8 @@ class IntegralGenerator(object):
         if self.ir["integral_type"] in skip:
             return parts
 
-        alignas = self.ir["alignas"]
-        padlen = self.ir["padlen"]
+        alignas = self.ir["params"]["alignas"]
+        padlen = self.ir["params"]["padlen"]
 
         # Loop over quadrature rules
         for num_points in self.ir["all_num_points"]:
@@ -303,8 +303,8 @@ class IntegralGenerator(object):
         table_types = self.ir["unique_table_types"]
         inline_tables = self.ir["integral_type"] == "cell"
 
-        alignas = self.ir["alignas"]
-        padlen = self.ir["padlen"]
+        alignas = self.ir["params"]["alignas"]
+        padlen = self.ir["params"]["padlen"]
 
         if self.ir["integral_type"] in custom_integral_types:
             # Define only piecewise tables
@@ -397,13 +397,13 @@ class IntegralGenerator(object):
         assert self.ir["integral_type"] in custom_integral_types
 
         num_points = self.ir["fake_num_points"]
-        chunk_size = self.ir["chunk_size"]
+        chunk_size = self.ir["params"]["chunk_size"]
 
         gdim = self.ir["geometric_dimension"]
         tdim = self.ir["topological_dimension"]
 
-        alignas = self.ir["alignas"]
-        # padlen = self.ir["padlen"]
+        alignas = self.ir["params"]["alignas"]
+        #padlen = self.ir["params"]["padlen"]
 
         tables = self.ir["unique_tables"]
         table_types = self.ir["unique_table_types"]
@@ -596,7 +596,7 @@ class IntegralGenerator(object):
 
                 if j is not None:
                     # Record assignment of vexpr to intermediate variable
-                    if self.ir["use_symbol_array"]:
+                    if self.ir["params"]["use_symbol_array"]:
                         vaccess = symbol[j]
                         intermediates.append(L.Assign(vaccess, vexpr))
                     else:
@@ -615,8 +615,8 @@ class IntegralGenerator(object):
         if definitions:
             parts += definitions
         if intermediates:
-            if self.ir["use_symbol_array"]:
-                alignas = self.ir["alignas"]
+            if self.ir["params"]["use_symbol_array"]:
+                alignas = self.ir["params"]["alignas"]
                 parts += [L.ArrayDecl("double", symbol,
                                       len(intermediates),
                                       alignas=alignas)]
@@ -687,7 +687,7 @@ class IntegralGenerator(object):
             return (entity,)
 
 
-    def get_arg_factors(self, blockdata, block_rank, num_points, iq, indices):
+    def get_arg_factors(self, L, blockdata, block_rank, num_points, iq, indices):
         arg_factors = []
         for i in range(block_rank):
             mad = blockdata.ma_data[i]
@@ -757,8 +757,8 @@ class IntegralGenerator(object):
         fwtempname = "fw"
         tempname = tempnames.get(blockdata.block_mode)
 
-        alignas = self.ir["alignas"]
-        padlen = self.ir["padlen"]
+        alignas = self.ir["params"]["alignas"]
+        padlen = self.ir["params"]["padlen"]
 
         block_rank = len(blockmap)
         blockdims = tuple(len(dofmap) for dofmap in blockmap)
@@ -819,7 +819,7 @@ class IntegralGenerator(object):
             assert not blockdata.transposed, "Not handled yet"
 
             # Fetch code to access modified arguments
-            arg_factors = self.get_arg_factors(blockdata, block_rank, num_points, iq, B_indices)
+            arg_factors = self.get_arg_factors(L, blockdata, block_rank, num_points, iq, B_indices)
 
             fw_rhs = L.float_product([f, weight])
             if not isinstance(fw_rhs, L.Product):
@@ -845,18 +845,12 @@ class IntegralGenerator(object):
                 #    for(ic) for(iq) w0_c1[iq] = w[0][ic] * FE[iq][ic];
 
         if blockdata.block_mode == "safe":
+            # Naively accumulate integrand for this block in the innermost loop
             assert not blockdata.transposed
-
-            # Collect scalar factors
             B_rhs = L.float_product([fw] + arg_factors)
-
-            # Add result to block inside quadloop
             body = L.AssignAdd(B[B_indices], B_rhs)  # NB! += not =
             for i in reversed(range(block_rank)):
-                if ttypes[i] != "quadrature":
-                    vectorize = self.ir["vectorize"] and (i == block_rank-1)
-                    body = L.ForRange(B_indices[i], 0, padded_blockdims[i],
-                                      body=body, vectorize=vectorize)
+                body = L.ForRange(B_indices[i], 0, padded_blockdims[i], body=body)
             quadparts += [body]
 
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
@@ -894,7 +888,7 @@ class IntegralGenerator(object):
                     P_rhs = L.float_product([fw, arg_factors[i]])
                     body = L.Assign(P[P_index], P_rhs)
                     #if ttypes[i] != "quadrature":  # FIXME: What does this mean here?
-                    vectorize = self.ir["vectorize"]
+                    vectorize = self.ir["params"]["vectorize"]
                     body = L.ForRange(P_index, 0, P_dim,
                                       body=body, vectorize=vectorize)
                     quadparts.append(body)
@@ -903,14 +897,12 @@ class IntegralGenerator(object):
 
             # Add result to block inside quadloop
             body = L.AssignAdd(B[B_indices], B_rhs)  # NB! += not =
-            # Vectorize only the innermost loop
-            vectorize = self.ir["vectorize"]
             for i in reversed(range(block_rank)):
+                # Vectorize only the innermost loop
+                vectorize = self.ir["params"]["vectorize"] and (i == block_rank - 1)
                 if ttypes[i] != "quadrature":
                     body = L.ForRange(B_indices[i], 0, padded_blockdims[i],
                                       body=body, vectorize=vectorize)
-                # Don't vectorize the rest of the loops
-                vectorize = False
             quadparts += [body]
 
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
@@ -1072,7 +1064,7 @@ class IntegralGenerator(object):
         A = self.backend.symbols.element_tensor()
         A_size = len(A_values)
 
-        init_mode = self.ir["tensor_init_mode"]
+        init_mode = self.ir["params"]["tensor_init_mode"]
         z = L.LiteralFloat(0.0)
 
         if init_mode == "direct":
