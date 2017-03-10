@@ -196,13 +196,16 @@ def uflacs_default_parameters(optimize):
     without deprecation mechanism at any time.
     """
     p = {
-        # Precision to use when comparing finite element
-        # table values during optimization
+        # Relative precision to use when comparing finite element
+        # table values for table reuse
         "table_rtol": 1e-6,
+
+        # Absolute precision to use when comparing finite element
+        # table values for table reuse and dropping of table zeros
         "table_atol": 1e-9,
 
         # Point chunk size for custom integrals
-        "chunk_size": 4,
+        "chunk_size": 8,
 
         # Optimization parameters used in representation building
         # TODO: The names of these parameters can be a bit misleading

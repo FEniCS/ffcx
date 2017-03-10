@@ -40,13 +40,6 @@ _FFC_GENERATE_PARAMETERS = {
     "epsilon": 1e-14,          # machine precision, used for
                                # dropping zero terms
                                # (quadrature and tensor repr)
-    #"table_rtol": 1e-5,        # relative tolerance for comparing finite
-                               # element table entries for table reuse
-                               # (uflacs repr)
-    #"table_atol": 1e-8,        # absolute tolerance for comparing finite
-                               # element table entries for table reuse and
-                               # dropping of zero terms
-                               # (uflacs repr)
     "split": False,            # split generated code into .h and
                                # .cpp file
     "form_postfix": True,      # postfix form name with "Function",
@@ -54,14 +47,14 @@ _FFC_GENERATE_PARAMETERS = {
     "convert_exceptions_to_warnings": False,   # convert all exceptions to warning
                                                # in generated code
     "error_control": False,   # with error control
-    "optimize": 1,            # optimization level for code generation (0=no optimization, >0=optimization)
+    "optimize": True,         # turn on optimization for code generation
     "max_signature_length": 0,  # set to positive integer to shorten signatures
     "generate_dummy_tabulate_tensor": False,  # set to True to replace tabulate_tensor body with no-op
     "add_tabulate_tensor_timing": False,      # set to True to add timing inside tabulate_tensor
 }
 _FFC_BUILD_PARAMETERS = {
-    "cpp_optimize": True,          # optimization for the JIT compiler
-    "cpp_optimize_flags": "-O2",   # optimization flags for the JIT compiler
+    "cpp_optimize": True,          # optimization for the C++ compiler
+    "cpp_optimize_flags": "-O2",   # optimization flags for the C++ compiler
 }
 _FFC_CACHE_PARAMETERS = {
     "cache_dir": "",        # cache dir used by Instant
@@ -118,8 +111,12 @@ def validate_parameters(parameters):
     p = default_parameters()
     if parameters is not None:
         p.update(parameters)
-    if isinstance(p["optimize"], bool):
-        p["optimize"] = 2 if p["optimize"] else 0
+
+    #if isinstance(p["optimize"], bool):
+    #    p["optimize"] = 1 if p["optimize"] else 0
+    if isinstance(p["optimize"], int):
+        p["optimize"] = bool(p["optimize"])
+
     return p
 
 
@@ -128,8 +125,12 @@ def validate_jit_parameters(parameters):
     p = default_jit_parameters()
     if parameters is not None:
         p.update(parameters)
-    if isinstance(p["optimize"], bool):
-        p["optimize"] = 2 if p["optimize"] else 0
+
+    #if isinstance(p["optimize"], bool):
+    #    p["optimize"] = 1 if p["optimize"] else 0
+    if isinstance(p["optimize"], int):
+        p["optimize"] = bool(p["optimize"])
+
     return p
 
 

@@ -189,7 +189,7 @@ def main(args=None):
                 info_usage()
                 return 1
         elif opt in ("-O", "--optimize"):
-            parameters["optimize"] = int(arg)
+            parameters["optimize"] = bool(int(arg))
         elif opt in ("-o", "--output-directory"):
             parameters["output_dir"] = arg
         elif opt in ("-e", "--error-control"):
