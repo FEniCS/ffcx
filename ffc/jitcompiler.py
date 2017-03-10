@@ -155,7 +155,7 @@ def compute_jit_prefix(ufl_object, parameters, kind=None):
         object_signature,
         parameters_signature,
         str(FFC_VERSION),
-        jit_version_bump,
+        str(jit_version_bump),
         get_ufc_signature(),
         get_ufc_templates_signature(),
         kind,

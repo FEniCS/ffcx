@@ -668,26 +668,34 @@ class IntegralGenerator(object):
         return preparts, quadparts, postparts
 
 
-    def get_entities(self, restrictions, transposed):
+    def get_entities(self, blockdata):
+        L = self.backend.language
+
         if self.ir["integral_type"] == "interior_facet":
             # Get the facet entities
             entities = []
-            for r in restrictions:
+            for r in blockdata.restrictions:
                 if r is None:
                     entities.append(0)
                 else:
                     entities.append(self.backend.symbols.entity(self.ir["entitytype"], r))
-            if transposed:
+            if blockdata.transposed:
                 return (entities[1], entities[0])
             else:
                 return tuple(entities)
         else:
             # Get the current cell or facet entity
-            entity = self.backend.symbols.entity(self.ir["entitytype"], None)
+            if blockdata.is_uniform:
+                # uniform, i.e. constant across facets
+                entity = L.LiteralInt(0)
+            else:
+                entity = self.backend.symbols.entity(self.ir["entitytype"], None)
             return (entity,)
 
 
-    def get_arg_factors(self, L, blockdata, block_rank, num_points, iq, indices):
+    def get_arg_factors(self, blockdata, block_rank, num_points, iq, indices):
+        L = self.backend.language
+
         arg_factors = []
         for i in range(block_rank):
             mad = blockdata.ma_data[i]
@@ -819,7 +827,7 @@ class IntegralGenerator(object):
             assert not blockdata.transposed, "Not handled yet"
 
             # Fetch code to access modified arguments
-            arg_factors = self.get_arg_factors(L, blockdata, block_rank, num_points, iq, B_indices)
+            arg_factors = self.get_arg_factors(blockdata, block_rank, num_points, iq, B_indices)
 
             fw_rhs = L.float_product([f, weight])
             if not isinstance(fw_rhs, L.Product):
@@ -944,18 +952,19 @@ class IntegralGenerator(object):
             A_rhs = B_rhs
 
         elif blockdata.block_mode in ("premultiplied", "preintegrated"):
-            P_block_indices = self.get_entities(blockdata.restrictions, blockdata.transposed)
+            P_entity_indices = self.get_entities(blockdata)
             if blockdata.transposed:
-                P_block_indices += (arg_indices[1], arg_indices[0])
+                P_block_indices = (arg_indices[1], arg_indices[0])
             else:
-                P_block_indices += arg_indices
+                P_block_indices = arg_indices
+            P_ii = P_entity_indices + P_block_indices
 
             if blockdata.block_mode == "preintegrated":
                 # Preintegrated should never get into quadloops
                 assert num_points is None
 
                 # Define B = B_rhs = f * PI where PI = sum_q weight * u * v
-                PI = L.Symbol(blockdata.name)[P_block_indices]
+                PI = L.Symbol(blockdata.name)[P_ii]
                 B_rhs = L.float_product([f, PI])
 
             elif blockdata.block_mode == "premultiplied":
@@ -968,7 +977,7 @@ class IntegralGenerator(object):
                     quadparts += [L.AssignAdd(FI, L.float_product([weight, f]))]
 
                 # Define B_rhs = FI * PM where FI = sum_q weight*f, and PM = u * v
-                PM = L.Symbol(blockdata.name)[P_block_indices]
+                PM = L.Symbol(blockdata.name)[P_ii]
                 B_rhs = L.float_product([FI, PM])
 
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
@@ -1024,7 +1033,7 @@ class IntegralGenerator(object):
                                 for i in range(block_rank))
 
             # Define indices into preintegrated block
-            P_entity_indices = self.get_entities(blockdata.restrictions, blockdata.transposed)
+            P_entity_indices = self.get_entities(blockdata)
             if inline_table:
                 assert P_entity_indices == (L.LiteralInt(0),)
                 assert table.shape[0] == 1

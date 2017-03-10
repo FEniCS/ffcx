@@ -71,12 +71,12 @@ def get_common_block_data(blockdata):
 
 preintegrated_block_data_t = namedtuple(
     "preintegrated_block_data_t",
-    common_block_data_fields + ["name"]
+    common_block_data_fields + ["is_uniform", "name"]
     )
 
 premultiplied_block_data_t = namedtuple(
     "premultiplied_block_data_t",
-    common_block_data_fields + ["name"]
+    common_block_data_fields + ["is_uniform", "name"]
     )
 
 partial_block_data_t = namedtuple(
@@ -457,6 +457,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
 
             blockmap = tuple(tr.dofmap for tr in trs)
 
+            block_is_uniform = all(tr.is_uniform for tr in trs)
+
             # Collect relevant restrictions to identify blocks
             # correctly in interior facet integrals
             block_restrictions = []
@@ -568,7 +570,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 blockdata = preintegrated_block_data_t(block_mode, ttypes,
                                                        factor_index, factor_is_piecewise,
                                                        block_unames, block_restrictions,
-                                                       block_is_transposed,
+                                                       block_is_transposed, block_is_uniform,
                                                        pname)
                 block_is_piecewise = True
 
@@ -606,7 +608,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 blockdata = premultiplied_block_data_t(block_mode, ttypes,
                                                        factor_index, factor_is_piecewise,
                                                        block_unames, block_restrictions,
-                                                       block_is_transposed,
+                                                       block_is_transposed, block_is_uniform,
                                                        pname)
                 block_is_piecewise = False
 
