@@ -125,8 +125,8 @@ def validate_parameters(parameters):
     p = default_parameters()
     if parameters is not None:
         p.update(parameters)
-    if isinstance(parameters["optimize"], bool):
-        parameters["optimize"] = 2 if parameters["optimize"] else 0
+    if isinstance(p["optimize"], bool):
+        p["optimize"] = 2 if p["optimize"] else 0
     return p
 
 
@@ -135,8 +135,8 @@ def validate_jit_parameters(parameters):
     p = default_jit_parameters()
     if parameters is not None:
         p.update(parameters)
-    if isinstance(parameters["optimize"], bool):
-        parameters["optimize"] = 2 if parameters["optimize"] else 0
+    if isinstance(p["optimize"], bool):
+        p["optimize"] = 2 if p["optimize"] else 0
     return p
 
 
