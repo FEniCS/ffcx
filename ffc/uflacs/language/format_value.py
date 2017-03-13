@@ -31,7 +31,9 @@ def format_float(x, precision=None):
     if precision:
         s = "{:.{prec}}".format(float(x), prec=precision)
     else:
-        s = "{}".format(float(x))
+        # Using "{}".format(float(x)) apparently results
+        # in lesser precision in python 2 than python 3
+        s = repr(float(x))
     for r, v in _subs:
         s = r.sub(v, s)
     return s
