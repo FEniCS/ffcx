@@ -45,17 +45,6 @@ def compute_integral_ir(itg_data,
     # Store element classnames
     ir["classnames"] = classnames
 
-    # TODO: Set alignas and padlen from parameters
-    sizeof_double = 8
-    ir["alignas"] = 32
-    ir["vectorize"] = False
-    if ir["vectorize"]:
-        ir["padlen"] = ir["alignas"] // sizeof_double
-    else:
-        ir["padlen"] = 1
-    ir["use_symbol_array"] = True
-    ir["tensor_init_mode"] = "interleaved"  # interleaved | direct | upfront
-
     # Get element space dimensions
     unique_elements = element_numbers.keys()
     ir["element_dimensions"] = { ufl_element: create_element(ufl_element).space_dimension()

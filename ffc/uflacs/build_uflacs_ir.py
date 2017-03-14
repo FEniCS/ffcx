@@ -71,12 +71,12 @@ def get_common_block_data(blockdata):
 
 preintegrated_block_data_t = namedtuple(
     "preintegrated_block_data_t",
-    common_block_data_fields + ["name"]
+    common_block_data_fields + ["is_uniform", "name"]
     )
 
 premultiplied_block_data_t = namedtuple(
     "premultiplied_block_data_t",
-    common_block_data_fields + ["name"]
+    common_block_data_fields + ["is_uniform", "name"]
     )
 
 partial_block_data_t = namedtuple(
@@ -189,20 +189,89 @@ def empty_expr_ir():
     return expr_ir
 
 
-def uflacs_default_parameters():
-    # FIXME: iterate on parameter names before exposing
-    # FIXME: go through code and add more parameter if necessary
-    # FIXME: join uflacs parameters with global parameter system
+def uflacs_default_parameters(optimize):
+    """Default parameters for tuning of uflacs code generation.
 
-    p = dict(
-        # Optimization parameters
-        enable_block_optimizations     = True,
-        enable_preintegration          = True,
-        enable_premultiplication       = True,
-        enable_sum_factorization       = True,
-        enable_block_transpose_reuse   = True,
-        enable_table_zero_compression  = True,
-        )
+    These are considered experimental and may change
+    without deprecation mechanism at any time.
+    """
+    p = {
+        # Relative precision to use when comparing finite element
+        # table values for table reuse
+        "table_rtol": 1e-6,
+
+        # Absolute precision to use when comparing finite element
+        # table values for table reuse and dropping of table zeros
+        "table_atol": 1e-9,
+
+        # Point chunk size for custom integrals
+        "chunk_size": 8,
+
+        # Optimization parameters used in representation building
+        # TODO: The names of these parameters can be a bit misleading
+        "enable_preintegration": False,
+        "enable_premultiplication": False,
+        "enable_sum_factorization": False,
+        "enable_block_transpose_reuse": False,
+        "enable_table_zero_compression": False,
+
+        # Code generation parameters
+        "vectorize": False,
+        "alignas": 0,
+        "padlen": 1,
+        "use_symbol_array": True,
+        "tensor_init_mode": "upfront",   # interleaved | direct | upfront
+    }
+    if optimize:
+        # Override defaults if optimization is turned on
+        p.update({
+            # Optimization parameters used in representation building
+            # TODO: The names of these parameters can be a bit misleading
+            "enable_preintegration": True,
+            "enable_premultiplication": False,
+            "enable_sum_factorization": True,
+            "enable_block_transpose_reuse": True,
+            "enable_table_zero_compression": True,
+
+            # Code generation parameters
+            "vectorize": False,
+            "alignas": 32,
+            "padlen": 1,
+            "use_symbol_array": True,
+            "tensor_init_mode": "interleaved",   # interleaved | direct | upfront
+        })
+    return p
+
+
+def parse_uflacs_optimization_parameters(parameters, integral_type):
+    """Following model from quadrature representation, extracting
+    uflacs specific parameters from the global parameters dict."""
+
+    # Get default parameters
+    p = uflacs_default_parameters(parameters["optimize"])
+
+    # Override with uflacs specific parameters if
+    # present in given global parameters dict
+    for key in p:
+        if key in parameters:
+            value = parameters[key]
+            # Casting done here because main doesn't know about these parameters
+            if isinstance(p[key], int):
+                value = int(value)
+            elif isinstance(p[key], float):
+                value = float(value)
+            p[key] = value
+
+    # Conditionally disable some optimizations based on integral type,
+    # i.e. these options are not valid for certain integral types
+    skip_preintegrated = point_integral_types + custom_integral_types
+    if integral_type in skip_preintegrated:
+        p["enable_preintegration"] = False
+
+    skip_premultiplied = point_integral_types + custom_integral_types
+    if integral_type in skip_premultiplied:
+        p["enable_premultiplication"] = False
+
     return p
 
 
@@ -213,46 +282,11 @@ def build_uflacs_ir(cell, integral_type, entitytype,
     # The intermediate representation dict we're building and returning here
     ir = {}
 
-    # Precision to use when comparing finite element table values during optimization
-    table_rtol = 1e-6 # parameters["table_rtol"]
-    table_atol = 1e-9 # parameters["table_atol"]
+    # Extract uflacs specific optimization and code generation parameters
+    p = parse_uflacs_optimization_parameters(parameters, integral_type)
 
-    enable_optimizations = parameters["optimize"]
-    # FIXME: To actually use the optimize parameter, need to
-    #   update regression test references and add '-r uflacs -O' to cases
-    enable_optimizations = True
-
-    # FIXME: Expose uflacs parameters in global parameter system
-    #        and cmdline and get this from 'parameters' instead of 'p'
-    p = uflacs_default_parameters()
-    enable_block_optimizations     = p["enable_block_optimizations"]
-    enable_preintegration          = p["enable_preintegration"]
-    enable_premultiplication       = p["enable_premultiplication"]
-    enable_sum_factorization       = p["enable_sum_factorization"]
-    enable_block_transpose_reuse   = p["enable_block_transpose_reuse"]
-    enable_table_zero_compression  = p["enable_table_zero_compression"]
-
-    if not enable_optimizations:
-        enable_block_optimizations = False
-        enable_table_zero_compression = False
-
-    if not enable_block_optimizations:
-        enable_preintegration          = False
-        enable_premultiplication       = False
-        enable_sum_factorization       = False
-        enable_block_transpose_reuse   = False
-
-    # Conditionally disable some optimizations based on integral type
-    skip_preintegrated = point_integral_types + custom_integral_types
-    if integral_type in skip_preintegrated:
-        enable_preintegration = False
-
-    skip_premultiplied = point_integral_types + custom_integral_types
-    if integral_type in skip_premultiplied:
-        enable_premultiplication = False
-
-
-    ir["chunk_size"] = 4  # TODO: Make this a parameter?
+    # Pass on parameters for consumption in code generation
+    ir["params"] = p
 
     # { ufl coefficient: count }
     ir["coefficient_numbering"] = coefficient_numbering
@@ -315,7 +349,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         unique_tables, unique_table_types, unique_table_num_dofs, mt_unique_table_reference = \
             build_optimized_tables(num_points, quadrature_rules,
                 cell, integral_type, entitytype, initial_terminal_data,
-                ir["unique_tables"], enable_table_zero_compression, rtol=table_rtol, atol=table_atol)
+                ir["unique_tables"], p["enable_table_zero_compression"],
+                rtol=p["table_rtol"], atol=p["table_atol"])
 
         # Replace some scalar modified terminals before reconstructing expressions
         # (could possibly use replace() on target expressions instead)
@@ -422,6 +457,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
 
             blockmap = tuple(tr.dofmap for tr in trs)
 
+            block_is_uniform = all(tr.is_uniform for tr in trs)
+
             # Collect relevant restrictions to identify blocks
             # correctly in interior facet integrals
             block_restrictions = []
@@ -467,22 +504,18 @@ def build_uflacs_ir(cell, integral_type, entitytype,
             """
 
             # Decide how to handle code generation for this block
-            if not enable_block_optimizations or rank == 0:
-                # Use full runtime integration by default
-                block_mode = "safe"
-            else:
-                if enable_preintegration and (factor_is_piecewise
-                        and rank > 0 and "quadrature" not in ttypes):
-                    # - Piecewise factor is an absolute prerequisite
-                    # - Could work for rank 0 as well but currently doesn't
-                    # - Haven't considered how quadrature elements work out
-                    block_mode = "preintegrated"
-                elif enable_premultiplication and (rank > 0
-                        and all(tt in piecewise_ttypes for tt in ttypes)):
-                    # Integrate functional in quadloop, scale block after quadloop
-                    block_mode = "premultiplied"
-                elif enable_sum_factorization and (rank == 2
-                        and any(tt in piecewise_ttypes for tt in ttypes)):
+            if p["enable_preintegration"] and (factor_is_piecewise
+                    and rank > 0 and "quadrature" not in ttypes):
+                # - Piecewise factor is an absolute prerequisite
+                # - Could work for rank 0 as well but currently doesn't
+                # - Haven't considered how quadrature elements work out
+                block_mode = "preintegrated"
+            elif p["enable_premultiplication"] and (rank > 0
+                    and all(tt in piecewise_ttypes for tt in ttypes)):
+                # Integrate functional in quadloop, scale block after quadloop
+                block_mode = "premultiplied"
+            elif p["enable_sum_factorization"]:
+                if (rank == 2 and any(tt in piecewise_ttypes for tt in ttypes)):
                     # Partial computation in quadloop of f*u[i],
                     # compute (f*u[i])*v[i] outside quadloop,
                     # (or with u,v swapped)
@@ -493,6 +526,9 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                     # but must compute (f*u[i])*v[i] as well inside quadloop.
                     # (or with u,v swapped)
                     block_mode = "full"
+            else:
+                # Use full runtime integration with nothing fancy going on
+                block_mode = "safe"
 
             # Carry out decision
             if block_mode == "preintegrated":
@@ -507,7 +543,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 pname = cache.get(unames)
 
                 # Reuse transpose to save memory
-                if enable_block_transpose_reuse and pname is None and len(unames) == 2:
+                if p["enable_block_transpose_reuse"] and pname is None and len(unames) == 2:
                     pname = cache.get((unames[1], unames[0]))
                     if pname is not None:
                         # Cache hit on transpose
@@ -522,7 +558,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                     else:
                         ptable = integrate_block(weights, unames, ttypes,
                             unique_tables, unique_table_num_dofs)
-                    ptable = clamp_table_small_numbers(ptable, rtol=table_rtol, atol=table_atol)
+                    ptable = clamp_table_small_numbers(ptable, rtol=p["table_rtol"], atol=p["table_atol"])
 
                     pname = "PI%d" % (len(cache,))
                     cache[unames] = pname
@@ -534,7 +570,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 blockdata = preintegrated_block_data_t(block_mode, ttypes,
                                                        factor_index, factor_is_piecewise,
                                                        block_unames, block_restrictions,
-                                                       block_is_transposed,
+                                                       block_is_transposed, block_is_uniform,
                                                        pname)
                 block_is_piecewise = True
 
@@ -551,7 +587,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 pname = cache.get(unames)
 
                 # Reuse transpose to save memory
-                if enable_block_transpose_reuse and pname is None and len(unames) == 2:
+                if p["enable_block_transpose_reuse"] and pname is None and len(unames) == 2:
                     pname = cache.get((unames[1], unames[0]))
                     if pname is not None:
                         # Cache hit on transpose
@@ -572,7 +608,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 blockdata = premultiplied_block_data_t(block_mode, ttypes,
                                                        factor_index, factor_is_piecewise,
                                                        block_unames, block_restrictions,
-                                                       block_is_transposed,
+                                                       block_is_transposed, block_is_uniform,
                                                        pname)
                 block_is_piecewise = False
 
@@ -674,7 +710,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         # Add to global set of all tables
         for name, table in unique_tables.items():
             tbl = ir["unique_tables"].get(name)
-            if tbl is not None and not numpy.allclose(tbl, table, rtol=table_rtol, atol=table_atol):
+            if tbl is not None and not numpy.allclose(tbl, table, rtol=p["table_rtol"], atol=p["table_atol"]):
                 error("Table values mismatch with same name.")
         ir["unique_tables"].update(unique_tables)
 

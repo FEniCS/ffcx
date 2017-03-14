@@ -108,9 +108,11 @@ def main(args=None):
 
     # Get command-line arguments
     try:
-        opts, args = getopt.getopt(args, "hIVSdvsl:r:f:Oo:q:ep",
+        if "-O" in args:
+            args[args.index("-O")] = "-O2"
+        opts, args = getopt.getopt(args, "hIVSdvsl:r:f:O:o:q:ep",
                                    ["help", "includes", "version", "signature", "debug", "verbose", "silent",
-                                    "language=", "representation=", "optimize",
+                                    "language=", "representation=", "optimize=",
                                     "output-directory=", "quadrature-rule=", "error-control",
                                     "profile"])
     except getopt.GetoptError:
@@ -169,10 +171,7 @@ def main(args=None):
         elif opt == "-f":
             if len(arg.split("=")) == 2:
                 (key, value) = arg.split("=")
-                if key not in parameters:
-                    info_usage()
-                    return 1
-                default = parameters[key]
+                default = parameters.get(key)
                 if isinstance(default, int):
                     value = int(value)
                 elif isinstance(default, float):
@@ -180,12 +179,17 @@ def main(args=None):
                 parameters[key] = value
             elif len(arg.split("==")) == 1:
                 key = arg.split("=")[0]
-                parameters[arg] = True
+                if key.startswith("no-"):
+                    key = key[3:]
+                    value = False
+                else:
+                    value = True
+                parameters[key] = value
             else:
                 info_usage()
                 return 1
         elif opt in ("-O", "--optimize"):
-            parameters["optimize"] = True
+            parameters["optimize"] = bool(int(arg))
         elif opt in ("-o", "--output-directory"):
             parameters["output_dir"] = arg
         elif opt in ("-e", "--error-control"):

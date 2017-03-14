@@ -145,11 +145,17 @@ def compute_jit_prefix(ufl_object, parameters, kind=None):
     # Compute deterministic string of relevant parameters
     parameters_signature = compute_jit_parameters_signature(parameters)
 
+    # Increase this number at any time to invalidate cache
+    # signatures if code generation has changed in important
+    # ways without the change being visible in regular signatures:
+    jit_version_bump = 2
+
     # Build combined signature
     signatures = [
         object_signature,
         parameters_signature,
         str(FFC_VERSION),
+        str(jit_version_bump),
         get_ufc_signature(),
         get_ufc_templates_signature(),
         kind,

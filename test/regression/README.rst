@@ -69,3 +69,24 @@ on the floating point accuracy!) like this:
   python recdiff.py output/r_uflacs/PoissonDG.json output/r_tensor/PoissonDG.json
 
 Pick any combination of ffc-reference-data | output and r_foo | r_bar you want to compare.
+
+
+How to manually delete old reference data
+=========================================
+
+If you update the tests such that some data should no longer be kept
+in the data repository, this approach allows deleting reference data:
+
+  cd ffc-regression-data
+  git checkout master
+  git pull
+  git rm -rf <old-directory-or-files>
+  git commit -a -m"Manually updated data because ..."
+  git rev-parse HEAD > ../ffc-regression-data-id
+  cd ..
+  git commit ffc-regression-data-id -m"Manually updated reference id."
+
+This is not automated because it happens rarely.
+Probably a good idea to coordinate with other devs so they
+don't introduce the deleted files with another branch.
+
