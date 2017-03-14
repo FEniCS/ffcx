@@ -693,7 +693,7 @@ def set_float_formatting(precision):
 
     # FIXME: Temporary workaround to be able to change default from 15 to 0
     if not precision:
-        precision = 17
+        precision = 15
 
     # Options for float formatting
     # f1     = "%%.%df" % precision

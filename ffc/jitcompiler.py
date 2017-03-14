@@ -148,7 +148,7 @@ def compute_jit_prefix(ufl_object, parameters, kind=None):
     # Increase this number at any time to invalidate cache
     # signatures if code generation has changed in important
     # ways without the change being visible in regular signatures:
-    jit_version_bump = 2
+    jit_version_bump = 3
 
     # Build combined signature
     signatures = [
