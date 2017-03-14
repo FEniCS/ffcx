@@ -58,5 +58,5 @@ except:
     supported_elements_for_plotting = []
 
 # Import main function, entry point to script
-from ffc.__main__ import main
+from ffc.main import main
 
