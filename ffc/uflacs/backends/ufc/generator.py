@@ -67,7 +67,8 @@ class ufc_generator(object):
 
         self._keywords = sorted(self._header_keywords | self._implementation_keywords)
 
-        # Do some ufc interface template checking, to catch bugs early when we change the ufc interface templates
+        # Do some ufc interface template checking, to catch bugs
+        # early when we change the ufc interface templates
         if set(self._keywords) != set(self._combined_keywords):
             a = set(self._header_keywords) - set(self._combined_keywords)
             b = set(self._implementation_keywords) - set(self._combined_keywords)
