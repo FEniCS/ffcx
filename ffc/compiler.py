@@ -215,15 +215,17 @@ def compile_ufl_objects(ufl_objects, kind, object_names=None,
         form_datas, unique_elements, element_numbers, unique_coordinate_elements = analysis
 
         # Avoid returning self as dependency for infinite recursion
-        unique_elements = list(element for element in unique_elements
-                               if element not in ufl_objects)
+        unique_elements = tuple(element
+            for element in unique_elements
+            if element not in ufl_objects)
+        unique_coordinate_elements = tuple(element
+            for element in unique_coordinate_elements
+            if element not in ufl_objects)
 
-        # FIXME: May get similar recursion issue with coordinate elements
-        # but currently not used all the way
         dependent_ufl_objects = {
-            "element": tuple(unique_elements),
-            "coordinate_mapping": tuple(unique_coordinate_elements),
-        }
+            "element": unique_elements,
+            "coordinate_mapping": unique_coordinate_elements,
+            }
 
         return code_h, code_c, dependent_ufl_objects
     else:
