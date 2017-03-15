@@ -14,10 +14,10 @@ def generate_return_new(L, classname, factory):
 def generate_return_new_switch(L, i, classnames, args=None, factory=False):
     if factory:
         def create(classname):
-            return L.New(classname)
+            return L.Call("create_" + classname)
     else:
         def create(classname):
-            return L.Call("create_" + classname)
+            return L.New(classname)
     if classnames:
         cases = []
         if args is None:
