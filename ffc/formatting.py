@@ -55,7 +55,7 @@ def generate_factory_functions(prefix, kind, classname):
 
 def generate_jit_factory_functions(code, prefix):
     # Extract code
-    code_elements, code_dofmaps, code_coordinate_mappings, code_integrals, code_forms = code
+    code_finite_elements, code_dofmaps, code_coordinate_mappings, code_integrals, code_forms = code
 
     if code_forms:
         # Direct jit of form
@@ -68,7 +68,7 @@ def generate_jit_factory_functions(code, prefix):
     else:
         # Direct jit of element
         code_h, code_c = generate_factory_functions(
-            prefix, "finite_element", code_elements[-1]["classname"])
+            prefix, "finite_element", code_finite_elements[-1]["classname"])
         fh, fc = generate_factory_functions(
             prefix, "dofmap", code_dofmaps[-1]["classname"])
         code_h += fh
@@ -82,7 +82,7 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
     begin("Compiler stage 5: Formatting code")
 
     # Extract code
-    code_elements, code_dofmaps, code_coordinate_mappings, code_integrals, code_forms = code
+    code_finite_elements, code_dofmaps, code_coordinate_mappings, code_integrals, code_forms = code
 
     # Generate code for comment on top of file
     code_h_pre = _generate_comment(parameters) + "\n"
@@ -104,10 +104,10 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
     if jit:
         code_c += visibility_snippet
 
-    # Generate code for elements
-    for code_element in code_elements:
-        code_h += _format_h("finite_element", code_element, parameters, jit)
-        code_c += _format_c("finite_element", code_element, parameters, jit)
+    # Generate code for finite_elements
+    for code_finite_element in code_finite_elements:
+        code_h += _format_h("finite_element", code_finite_element, parameters, jit)
+        code_c += _format_c("finite_element", code_finite_element, parameters, jit)
 
     # Generate code for dofmaps
     for code_dofmap in code_dofmaps:
