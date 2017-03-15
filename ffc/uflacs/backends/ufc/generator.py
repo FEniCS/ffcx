@@ -160,10 +160,10 @@ class ufc_generator(object):
         # Return snippets, a dict of code strings
         return snippets
 
-    def generate(self, L, ir, snippets=None):
+    def generate(self, L, ir, parameters=None, snippets=None):
         "Return composition of templates with generated snippets."
         if snippets is None:
-            snippets = self.generate_snippets(L, ir)
+            snippets = self.generate_snippets(L, ir, parameters)
         h = self._header_template % snippets
         cpp = self._implementation_template % snippets
         return h, cpp

@@ -112,7 +112,7 @@ def float_product(factors):
 
 
 def MemZeroRange(name, begin, end):
-    name = as_cexpr(name)
+    name = as_cexpr_or_string_symbol(name)
     return Call("std::fill", (
         AddressOf(name[begin]),
         AddressOf(name[end]),
@@ -120,7 +120,7 @@ def MemZeroRange(name, begin, end):
 
 
 def MemZero(name, size):
-    name = as_cexpr(name)
+    name = as_cexpr_or_string_symbol(name)
     size = as_cexpr(size)
     return Call("std::fill", (
         name,
@@ -695,6 +695,8 @@ class AssignOp(BinOp):
     __slots__ = ()
     precedence = PRECEDENCE.ASSIGN
     sideeffect = True
+    def __init__(self, lhs, rhs):
+        BinOp.__init__(self, as_cexpr_or_string_symbol(lhs), rhs)
 
 class Assign(AssignOp):
     __slots__ = ()
@@ -831,7 +833,7 @@ class ArrayAccess(CExprOperator):
         # Allow expressions or literals as indices
         if not isinstance(indices, (list, tuple)):
             indices = (indices,)
-        self.indices = tuple(as_cexpr(i) for i in indices)
+        self.indices = tuple(as_cexpr_or_string_symbol(i) for i in indices)
 
         # Early error checking for negative array dimensions
         if any(isinstance(i, int) and i < 0 for i in self.indices):
@@ -905,9 +907,7 @@ class Call(CExprOperator):
     sideeffect = True
 
     def __init__(self, function, arguments=None):
-        if isinstance(function, string_types):
-            function = Symbol(function)
-        self.function = as_cexpr(function)
+        self.function = as_cexpr_or_string_symbol(function)
 
         # Accept None, single, or multple arguments; literals or CExprs
         if arguments is None:
@@ -951,12 +951,27 @@ def as_cexpr(node):
     elif isinstance(node, numbers.Real):
         return LiteralFloat(node)
     elif isinstance(node, string_types):
-        # TODO: When sure this is not used for symbols in existing code,
-        # can make it cast to LiteralString, consistent with the other cases here
         raise RuntimeError("Got string for CExpr, this is ambiguous: %s" % (node,))
-        return LiteralString(node)
     else:
         raise RuntimeError("Unexpected CExpr type %s:\n%s" % (type(node), str(node)))
+
+
+def as_cexpr_or_string_symbol(node):
+    if isinstance(node, string_types):
+        return Symbol(node)
+    return as_cexpr(node)
+
+
+def as_cexpr_or_verbatim(node):
+    if isinstance(node, string_types):
+        return VerbatimExpr(node)
+    return as_cexpr(node)
+
+
+def as_cexpr_or_literal(node):
+    if isinstance(node, string_types):
+        return LiteralString(node)
+    return as_cexpr(node)
 
 
 def as_symbol(symbol):
@@ -1535,8 +1550,8 @@ class For(CStatement):
     __slots__ = ("init", "check", "update", "body", "pragma")
     def __init__(self, init, check, update, body, pragma=None):
         self.init = as_cstatement(init)
-        self.check = as_cexpr(check)
-        self.update = as_cexpr(update)
+        self.check = as_cexpr_or_verbatim(check)
+        self.update = as_cexpr_or_verbatim(update)
         self.body = as_cstatement(body)
         self.pragma = as_pragma(pragma)
 
@@ -1575,7 +1590,7 @@ class For(CStatement):
 class Switch(CStatement):
     __slots__ = ("arg", "cases", "default", "autobreak", "autoscope")
     def __init__(self, arg, cases, default=None, autobreak=True, autoscope=True):
-        self.arg = as_cexpr(arg)
+        self.arg = as_cexpr_or_string_symbol(arg)
         self.cases = [(as_cexpr(value), as_cstatement(body)) for value, body in cases]
         if default is not None:
             default = as_cstatement(default)
@@ -1621,7 +1636,7 @@ class ForRange(CStatement):
     "Slightly higher-level for loop assuming incrementing an index over a range."
     __slots__ = ("index", "begin", "end", "body", "pragma", "index_type")
     def __init__(self, index, begin, end, body, index_type="int", vectorize=None):
-        self.index = as_cexpr(index)
+        self.index = as_cexpr_or_string_symbol(index)
         self.begin = as_cexpr(begin)
         self.end = as_cexpr(end)
         self.body = as_cstatement(body)

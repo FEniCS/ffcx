@@ -1,10 +1,17 @@
 # -*- coding: utf-8 -*-
 
+import pytest
+
 import numpy
 
 from ffc.uflacs.backends.ufc.generators import *
 
 import ffc.uflacs.language.cnodes as L
+
+from ffc.cpp import format as cpp_format
+from ffc.cpp import set_float_formatting
+if "floating point" not in cpp_format:
+    set_float_formatting(precision=8)
 
 
 # TODO: Make this a feature of dijitso: dijitso show-function modulehash functionname
@@ -46,6 +53,10 @@ def basic_class_properties(classname):
     return ir
 
 
+def mock_parameters():
+    return {}
+
+
 def mock_form_ir():
     ir = basic_class_properties("mock_form_classname")
     ir.update({
@@ -79,17 +90,22 @@ def mock_form_ir():
     template = "create_%s_integral"
     for i, integral_type in enumerate(ufc_integral_types):
         key = template % integral_type
-        ir[key] = [key.replace("create_", "") + str(j) for j in range(i)]  # faking list of classnames
+        subdomain_ids = list(range(i))
+        classnames = [key.replace("create_", "") + str(j) for j in subdomain_ids]
+        ir[key] = (subdomain_ids, classnames)
 
     template = "create_default_%s_integral"
     for i, integral_type in enumerate(ufc_integral_types):
         key = template % integral_type
-        ir[key] = key.replace("create_", "")  # faking classname
+        classname = key.replace("create_", "")
+        ir[key] = classname
 
     return ir
 
 
 def mock_dofmap_ir():
+    # Note: The mock data here is not necessarily consistent,
+    # it just needs to have the right types to exercise the code generation.
     ir = basic_class_properties("mock_dofmap_classname")
     num_dofs_per_entity = [1, 1, 1]
     entity_dofs = [[(0,), (1,), (2,)],
@@ -114,6 +130,8 @@ def mock_dofmap_ir():
         "tabulate_entity_dofs": (entity_dofs, num_dofs_per_entity),
         "tabulate_entity_closure_dofs": (entity_closure_dofs, entity_dofs, num_dofs_per_entity),
         "needs_mesh_entities": [True, False, True],
+        "num_global_support_dofs": 1,
+        "num_element_support_dofs": 6,
         "num_element_dofs": 7,
         "num_entity_dofs": num_dofs_per_entity,
         "num_entity_closure_dofs": [3, 6, 10],
@@ -133,6 +151,8 @@ def mock_evaluate_basis_ir():
             "coeffs": [list(range(20, 27)), list(range(30, 37))],
             "reference_offset": 3,
             "physical_offset": 5,
+            "mapping": "affine",
+            "dmats": [], # FIXME: Mock dmats data
         },
         {
             "embedded_degree": 1,
@@ -141,6 +161,8 @@ def mock_evaluate_basis_ir():
             "coeffs": [list(range(7)), list(range(10, 17))],
             "reference_offset": 3,
             "physical_offset": 5,
+            "mapping": "affine",
+            "dmats": [], # FIXME: Mock dmats data
         }
     ]
     data = {
@@ -150,19 +172,26 @@ def mock_evaluate_basis_ir():
         "reference_value_size": 3,
         "physical_value_size": 2,
         "dofs_data": dofs_data,
+        "needs_oriented": True,
+        "space_dimension": 14,
+        "max_degree": 5,
     }
     return data
 
 
+@pytest.mark.skip("mock ir for evaluate basis is currently incomplete")
 def test_mock_evaluate_basis():
     from ffc.uflacs.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
     import ffc.uflacs.language.cnodes as L
-    data = mock_evaluate_basis_ir()
-    code = generate_evaluate_reference_basis(L, data)
+    parameters = mock_parameters()
+    data = mock_evaluate_basis_ir()  # FIXME: mock data is currently incomplete
+    code = generate_evaluate_reference_basis(L, data, parameters)
     print(code)
 
 
 def mock_finite_element_ir():
+    # Note: The mock data here is not necessarily consistent,
+    # it just needs to have the right types to exercise the code generation.
     ir = basic_class_properties("mock_finite_element_classname")
     ebir = mock_evaluate_basis_ir()
     ir.update({
@@ -176,6 +205,8 @@ def mock_finite_element_ir():
         "reference_value_dimension": (2, 2),
         "space_dimension": 6,
         "tabulate_dof_coordinates": {"gdim": 3, "tdim": 2, "points": [(0.0, 0.0), (0.0, 1.0), (1.0, 0.0)]},
+        "evaluate_reference_basis": ebir,
+        "evaluate_reference_basis_derivatives": ebir,
         "evaluate_basis": ebir,
         "evaluate_basis_derivatives": ebir,
         "evaluate_basis_all": ebir,
@@ -190,8 +221,13 @@ def mock_finite_element_ir():
 
 
 def mock_integral_ir():
+    # Note: The mock data here is not necessarily consistent,
+    # it just needs to have the right types to exercise the code generation.
     ir = basic_class_properties("mock_integral_classname")
     ir.update({
+        "representation": "uflacs",
+        "integral_metadata": [{"dummy": "integral metadata"}],
+        "integrals_metadata": {"dummy": "integrals metadata"},
         "prefix": "Foo",
         "enabled_coefficients": [True, False, True],
         "tabulate_tensor": "    mock_body_of_tabulate_tensor();",
@@ -221,33 +257,38 @@ def mock_coordinate_mapping_ir():
 
 
 def compile_mock_coordinate_mapping():
+    parameters = mock_parameters()
     ir = mock_coordinate_mapping_ir()
     gen = ufc_coordinate_mapping()
-    return gen.generate(L, ir)
+    return gen.generate(L, ir, parameters)
 
 
 def compile_mock_form():
+    parameters = mock_parameters()
     ir = mock_form_ir()
     gen = ufc_form()
-    return gen.generate(L, ir)
+    return gen.generate(L, ir, parameters)
 
 
 def compile_mock_dofmap():
+    parameters = mock_parameters()
     ir = mock_dofmap_ir()
     gen = ufc_dofmap()
-    return gen.generate(L, ir)
+    return gen.generate(L, ir, parameters)
 
 
 def compile_mock_finite_element():
+    parameters = mock_parameters()
     ir = mock_finite_element_ir()
     gen = ufc_finite_element()
-    return gen.generate(L, ir)
+    return gen.generate(L, ir, parameters)
 
 
 def compile_mock_integral(integral_type):
+    parameters = mock_parameters()
     ir = mock_integral_ir()
     gen = eval("ufc_%s_integral" % integral_type)()
-    return gen.generate(L, ir)
+    return gen.generate(L, ir, parameters)
 
 
 def compile_mock_all():
@@ -274,6 +315,7 @@ def test_mock_dofmap():
     print(cpp)
 
 
+@pytest.mark.skip("mock ir for evaluate basis is currently incomplete")
 def test_mock_finite_element():
     h, cpp = compile_mock_finite_element()
     print(h)
@@ -288,9 +330,10 @@ def test_mock_integral():
 
 
 def test_foo_integral_properties():
+    parameters = mock_parameters()
     ir = mock_form_ir()
     assert "cell_integral" in ufc_form.create_cell_integral.__doc__
-    assert "return" in str(ufc_form().create_cell_integral(L, ir))
+    assert "return" in str(ufc_form().create_cell_integral(L, ir, parameters))
 
 
 def test_mock_extract_function():

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from ffc.uflacs.backends.ufc.generator import ufc_generator, ufc_integral_types
+from ufl.utils.formatting import dstr
+
 
 class ufc_integral(ufc_generator):
     "Each function maps to a keyword in the template. See documentation of ufc_generator."
