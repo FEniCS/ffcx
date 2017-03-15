@@ -106,7 +106,7 @@ def _extract_includes(full_ir, code_integrals):
     return includes
 
 
-def _generate_finite_element_code(ir, parameters):
+def _old_generate_finite_element_code(ir, parameters):
     "Generate code for finite element from intermediate representation."
 
     # Prefetch formatting to speedup code generation
@@ -169,7 +169,7 @@ def _generate_finite_element_code(ir, parameters):
     return code
 
 
-def _generate_dofmap_code(ir, parameters):
+def _old_generate_dofmap_code(ir, parameters):
     "Generate code for dofmap from intermediate representation."
 
     # Prefetch formatting to speedup code generation
@@ -270,7 +270,7 @@ def _additional_includes_form(ir):
     return set("#include <%s>" % inc for inc in jit_includes)
 
 
-def _generate_coordinate_mapping_code(ir, parameters):
+def _old_generate_coordinate_mapping_code(ir, parameters):
     "Generate code for coordinate_mapping from intermediate representation."
 
     coordinate_mapping_number = ir["id"]
@@ -366,7 +366,7 @@ tt_timing_template = """
 """
 
 
-def _generate_integral_code(ir, parameters):
+def _old_generate_integral_code(ir, parameters):
     "Generate code for integrals from intermediate representation."
 
     # Select representation
@@ -434,7 +434,7 @@ def _generate_original_coefficient_position(original_coefficient_positions):
     return code
 
 
-def _generate_form_code(ir, parameters):
+def _old_generate_form_code(ir, parameters):
     "Generate code for form from intermediate representation."
 
     # Prefetch formatting to speedup code generation
@@ -480,6 +480,25 @@ def _generate_form_code(ir, parameters):
     _postprocess_code(code, parameters)
 
     return code
+
+
+# --- Temporary selection of old vs new implementations
+
+#_generate_finite_element_code = _new_generate_finite_element_code
+_generate_finite_element_code = _old_generate_finite_element_code
+
+#_generate_dofmap_code = _new_generate_dofmap_code
+_generate_dofmap_code = _old_generate_dofmap_code
+
+#_generate_coordinate_mapping_code = _new_generate_coordinate_mapping_code
+_generate_coordinate_mapping_code = _old_generate_coordinate_mapping_code
+
+#_generate_integral_code = _new_generate_integral_code
+_generate_integral_code = _old_generate_integral_code
+
+#_generate_form_code = _new_generate_form_code
+_generate_form_code = _old_generate_form_code
+
 
 #--- Code generation for non-trivial functions ---
 
@@ -847,11 +866,16 @@ def _postprocess_code(code, parameters):
 
 def _indent_code(code):
     "Indent code that should be indented."
-    for key in code:
-        if key not in ("classname", "members", "constructor_arguments",
-                       "initializer_list", "additional_includes_set",
-                       "class_type"):
-            code[key] = indent(code[key], 4)
+    skiplist = set((
+        "additional_includes_set",
+        "classname",
+        "members",
+        "constructor_arguments",
+        "initializer_list",
+        "class_type",
+        ))
+    for key in set(code) - skiplist:
+        code[key] = indent(code[key], 4)
 
 
 def _remove_code(code, parameters):
