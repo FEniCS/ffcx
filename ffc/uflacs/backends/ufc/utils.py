@@ -67,3 +67,34 @@ def generate_error(L, msg, emit_warning):
         return L.VerbatimStatement('std::cerr << "*** FFC warning: " << "%s" << std::endl;' % (msg,))
     else:
         return L.Raise('std::runtime_error("%s");' % (msg,))
+
+
+"""
+// TODO: UFC functions that return constant arrays
+// could use something like this to reduce copying,
+// returning pointers to static data:
+
+  template<T>
+  class array_view
+  {
+  public:
+    array_view(std::size_t size, const T * data):
+      size(size), data(data)
+    const std::size_t size;
+    const T * data;
+    const T operator[](std::size_t i) const
+    { return data[i]; }
+  };
+
+  array_view<int> form::original_coefficient_positions() const
+  {
+    static const int data = { 0, 1, 2, 5 };
+    return array_view<int>{4, data};
+  }
+
+  array_view<bool> integral::enabled_coefficients() const
+  {
+    static const bool data = { true, true, true, false, false, true };
+    return array_view<bool>{6, data};
+  }
+"""
