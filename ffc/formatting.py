@@ -129,13 +129,6 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
         code_h += _format_h("form", code_form, parameters, jit)
         code_c += _format_c("form", code_form, parameters, jit)
 
-    # Add factory functions named "..._main" to construct
-    # the main jit object this module
-    if 0: # jit: # should be part of templates now, right? FIXME Remove?
-        fh, fc = generate_jit_factory_functions(code, prefix)
-        code_h += fh
-        code_c += fc
-
     # Add wrappers
     if wrapper_code:
         code_h += wrapper_code
