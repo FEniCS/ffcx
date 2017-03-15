@@ -223,5 +223,5 @@ def initialize_integral_code(ir, prefix, parameters):
     code["initializer_list"] = ""
     code["destructor"] = ""
     code["enabled_coefficients"] = generate_enabled_coefficients(ir["enabled_coefficients"])
-    # code["additional_includes_set"] = set() #ir["additional_includes_set"]
+    code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
     return code
