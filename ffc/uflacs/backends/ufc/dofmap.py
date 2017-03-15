@@ -20,25 +20,19 @@
 
 
 from ffc.uflacs.backends.ufc.generator import ufc_generator
-from ffc.uflacs.backends.ufc.utils import generate_return_new_switch
+from ffc.uflacs.backends.ufc.utils import generate_return_new_switch, generate_return_int_switch, generate_return_bool_switch
 
 
 class ufc_dofmap(ufc_generator):
+    "Each function maps to a keyword in the template. See documentation of ufc_generator."
     def __init__(self):
         ufc_generator.__init__(self, "dofmap")
 
-    def topological_dimension(self, L, ir):
-        "Default implementation of returning topological dimension fetched from ir."
-        tdim = ir["topological_dimension"]
-        return L.Return(L.LiteralInt(tdim))
+    def topological_dimension(self, L, topological_dimension):
+        return L.Return(topological_dimension)
 
-    def needs_mesh_entities(self, L, ir):
-        d = L.Symbol("d")
-        nme = ir["needs_mesh_entities"]
-        cases = [(L.LiteralInt(dim), L.Return(L.LiteralBool(need)))
-                 for dim, need in enumerate(nme)]
-        default = L.Return(L.LiteralBool(False))
-        return L.Switch(d, cases, default=default, autoscope=False, autobreak=False)
+    def needs_mesh_entities(self, L, needs_mesh_entities):
+        return generate_return_bool_switch(L, "d", needs_mesh_entities, False)
 
     def global_dimension(self, L, ir):
         # A list of num dofs per entity
@@ -53,44 +47,32 @@ class ufc_dofmap(ufc_generator):
             if num == 1:
                 entity_dofs.append(entities[dim])
             elif num > 1:
-                entity_dofs.append(L.LiteralInt(num) * entities[dim])
+                entity_dofs.append(num * entities[dim])
 
         if entity_dofs:
             dimension = L.Sum(entity_dofs)
         else:
-            dimension = L.LiteralInt(0)
+            dimension = 0
 
         # Add global dofs if any
         if num_global_dofs:
-            # TODO: Extend ufc with num_global_support_dofs, the number is right here!
-            dimension = dimension + L.LiteralInt(num_global_dofs)
+            dimension = dimension + num_global_dofs
 
         return L.Return(dimension)
 
-    def num_element_dofs(self, L, ir):
-        value = ir["num_element_dofs"]
-        return L.Return(L.LiteralInt(value))
+    def num_element_dofs(self, L, num_element_dofs):
+        return L.Return(num_element_dofs)
 
-    def num_facet_dofs(self, L, ir):
-        value = ir["num_facet_dofs"]
-        return L.Return(L.LiteralInt(value))
+    def num_facet_dofs(self, L, num_facet_dofs):
+        return L.Return(num_facet_dofs)
 
-    def num_entity_dofs(self, L, ir):
-        d = L.Symbol("d")
-        values = ir["num_entity_dofs"]
-        cases = [(i, L.Return(L.LiteralInt(value))) for i, value in enumerate(values)]
-        default = L.Return(L.LiteralInt(0))
-        return L.Switch(d, cases, autoscope=False, autobreak=False, default=default)
+    def num_entity_dofs(self, L, num_entity_dofs):
+        return generate_return_int_switch(L, "d", num_entity_dofs, 0)
 
-    def num_entity_closure_dofs(self, L, ir):
-        d = L.Symbol("d")
-        values = ir["num_entity_closure_dofs"]
-        cases = [(i, L.Return(L.LiteralInt(value))) for i, value in enumerate(values)]
-        default = L.Return(L.LiteralInt(0))
-        return L.Switch(d, cases, default=default)
+    def num_entity_closure_dofs(self, L, num_entity_closure_dofs):
+        return generate_return_int_switch(L, "d", num_entity_closure_dofs, 0)
 
     def tabulate_dofs(self, L, ir):
-
         # Input arguments
         entity_indices = L.Symbol("entity_indices")
         num_mesh_entities = L.Symbol("num_global_entities")
@@ -191,8 +173,12 @@ class ufc_dofmap(ufc_generator):
         for f, single_facet_dofs in enumerate(all_facet_dofs):
             assignments = [L.Assign(dofs[i], dof)
                            for (i, dof) in enumerate(single_facet_dofs)]
-            cases.append((f, L.StatementList(assignments)))
-        return L.Switch(facet, cases, autoscope=False)
+            if assignments:
+                cases.append((f, L.StatementList(assignments)))
+        if cases:
+            return L.Switch(facet, cases, autoscope=False)
+        else:
+            return L.NoOp()
 
 
     def tabulate_entity_dofs(self, L, ir):
@@ -229,7 +215,11 @@ class ufc_dofmap(ufc_generator):
             inner_switch = L.Switch(i, cases, autoscope=False)
             all_cases.append((dim, inner_switch))
 
-        return L.Switch(d, all_cases, autoscope=False)
+        if all_cases:
+            return L.Switch(d, all_cases, autoscope=False)
+        else:
+            return L.NoOp()
+
 
     def tabulate_entity_closure_dofs(self, L, ir):
         # Extract variables from ir
@@ -259,18 +249,22 @@ class ufc_dofmap(ufc_generator):
                     casebody += [L.Assign(dofs[j], dof)]
                 cases.append((entity, L.StatementList(casebody)))
 
-            # Generate inner switch
-            # TODO: Removed check for (i <= num_entities-1)
-            inner_switch = L.Switch(i, cases, autoscope=False)
-            all_cases.append((dim, inner_switch))
+            # Generate inner switch unless empty
+            if cases:
+                # TODO: Removed check for (i <= num_entities-1)
+                inner_switch = L.Switch(i, cases, autoscope=False)
+                all_cases.append((dim, inner_switch))
 
-        return L.Switch(d, all_cases, autoscope=False)
+        if all_cases:
+            return L.Switch(d, all_cases, autoscope=False)
+        else:
+            return L.NoOp()
 
-    def num_sub_dofmaps(self, L, ir):
-        value = ir["num_sub_dofmaps"]
-        return L.Return(L.LiteralInt(value))
+
+    def num_sub_dofmaps(self, L, num_sub_dofmaps):
+        return L.Return(num_sub_dofmaps)
+
 
     def create_sub_dofmap(self, L, ir):
-        i = L.Symbol("i")
         classnames = ir["create_sub_dofmap"]
-        return generate_return_new_switch(L, i, classnames, factory=ir["jit"])
+        return generate_return_new_switch(L, "i", classnames, factory=ir["jit"])

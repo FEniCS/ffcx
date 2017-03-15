@@ -42,6 +42,10 @@ from ffc.interpolatevertexvalues import interpolate_vertex_values
 from ffc.representation import pick_representation, ufc_integral_types
 
 
+# FIXME: This disables output of generated coordinate_mapping class, until implemented properly
+ENABLE_COORDINATE_MAPPING = False
+
+
 # Errors issued for non-implemented functions
 def _not_implemented(function_name, return_null=False):
     body = format["exception"]("%s not yet implemented." % function_name)
@@ -79,8 +83,9 @@ def generate_code(ir, parameters):
     info("Generating code for %d coordinate_mapping(s)" % len(ir_coordinate_mappings))
     code_coordinate_mappings = [_generate_coordinate_mapping_code(ir, parameters)
                                 for ir in ir_coordinate_mappings]
-    # FIXME: This disables output of generated coordinate_mapping class, until implemented properly
-    code_coordinate_mappings = []
+
+    if not ENABLE_COORDINATE_MAPPING:
+        code_coordinate_mappings = []
 
     # Generate code for integrals
     info("Generating code for integrals")
@@ -166,13 +171,13 @@ def _form_jit_includes(ir):
     includes = [classname.split(postfix)[0] + ".h"
                 for classname in classnames]
 
-    #classnames = ir["create_coordinate_mapping"]
-    #postfix = "_coordinate_mapping"
-    #includes += [classname.split(postfix)[0] + ".h"
-    #             for classname in classnames]
+    if ENABLE_COORDINATE_MAPPING:
+        classnames = ir["create_coordinate_mapping"]
+        postfix = "_coordinate_mapping"
+        includes += [classname.split(postfix)[0] + ".h"
+                     for classname in classnames]
 
     return includes
-
 
 
 def _old_generate_finite_element_code(ir, parameters):
@@ -434,7 +439,7 @@ def _generate_tabulate_tensor_comment(ir, parameters):
         comment += "\n".join([format["comment"]("  " + l) for l in dstr(metadata).split("\n")][:-1])
         comment += "\n"
 
-    return indent(comment, 4)
+    return comment
 
 
 def _generate_original_coefficient_position(original_coefficient_positions):
@@ -498,7 +503,7 @@ def _new_generate_finite_element_code(ir, parameters):
     "Generate code for finite_element from intermediate representation."
     import ffc.uflacs.language.cnodes as L
     from ffc.uflacs.backends.ufc.finite_element import ufc_finite_element
-    code = ufc_finite_element().generate_snippets(L, ir)
+    code = ufc_finite_element().generate_snippets(L, ir, parameters)
     return code
 
 
@@ -506,7 +511,7 @@ def _new_generate_dofmap_code(ir, parameters):
     "Generate code for dofmap from intermediate representation."
     import ffc.uflacs.language.cnodes as L
     from ffc.uflacs.backends.ufc.dofmap import ufc_dofmap
-    code = ufc_dofmap().generate_snippets(L, ir)
+    code = ufc_dofmap().generate_snippets(L, ir, parameters)
     return code
 
 
@@ -514,7 +519,7 @@ def _new_generate_coordinate_mapping_code(ir, parameters):
     "Generate code for coordinate_mapping from intermediate representation."
     import ffc.uflacs.language.cnodes as L
     from ffc.uflacs.backends.ufc.coordinate_mapping import ufc_coordinate_mapping
-    code = ufc_coordinate_mapping().generate_snippets(L, ir)
+    code = ufc_coordinate_mapping().generate_snippets(L, ir, parameters)
     return code
 
 
@@ -522,11 +527,7 @@ def _new_generate_integral_code(ir, parameters):
     "Generate code for integrals from intermediate representation."
     import ffc.uflacs.language.cnodes as L
     from ffc.uflacs.backends.ufc.integral import ufc_integral
-    code = ufc_integral().generate_snippets(L, ir)
-
-    # Generate comment
-    code["tabulate_tensor_comment"] = _generate_tabulate_tensor_comment(ir, parameters)
-
+    code = ufc_integral().generate_snippets(L, ir, parameters)
     return code
 
 
@@ -534,7 +535,7 @@ def _new_generate_form_code(ir, parameters):
     "Generate code for coordinate_mapping from intermediate representation."
     import ffc.uflacs.language.cnodes as L
     from ffc.uflacs.backends.ufc.form import ufc_form
-    code = ufc_form().generate_snippets(L, ir)
+    code = ufc_form().generate_snippets(L, ir, parameters)
     return code
 
 
@@ -927,7 +928,6 @@ def _indent_code(code):
         "constructor_arguments",
         "initializer_list",
         "class_type",
-        "tabulate_tensor_comment",
         )
     for key in set(code) - set(skiplist):
         code[key] = indent(code[key], 4)
@@ -941,3 +941,11 @@ def _remove_code(code, parameters):
             msg = "// Function %s not generated (compiled with -f%s)" \
                   % (key, flag)
             code[key] = format["exception"](msg)
+
+
+def _postprocess_code_entry(code, parameters):  # FIXME: Used? Remove?
+    "Postprocess generated code."
+    # Hack for transition to uflacs based code generation of elements
+    code = indent(code, 4)
+    # ignoring no-foo here
+    return code

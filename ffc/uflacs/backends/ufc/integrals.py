@@ -3,6 +3,7 @@
 from ffc.uflacs.backends.ufc.generator import ufc_generator, ufc_integral_types
 
 class ufc_integral(ufc_generator):
+    "Each function maps to a keyword in the template. See documentation of ufc_generator."
     def __init__(self, integral_type):
         assert integral_type in ufc_integral_types
         ufc_generator.__init__(self, integral_type + "_integral")
@@ -24,9 +25,31 @@ class ufc_integral(ufc_generator):
         code = "code generated from %s" % tt
         return code
 
+
     def tabulate_tensor_comment(self, L, ir):
-        # FIXME: Copy from ffc.codegeneration._generate_tabulate_tensor_comment
-        return ""
+        "Generate comment for tabulate_tensor."
+
+        r = ir["representation"]
+        integrals_metadata = ir["integrals_metadata"]
+        integral_metadata = ir["integral_metadata"]
+
+        lines  = [
+            "This function was generated using '%s' representation" % r,
+            "with the following integrals metadata:",
+            ""]
+        lines += [("  " + l) for l in dstr(integrals_metadata).split("\n")]
+        lines += [""]
+        for i, metadata in enumerate(integral_metadata):
+            lines += [
+                "",
+                "and the following integral %d metadata:" % i,
+                "",
+                ]
+            lines += [("  " + l) for l in dstr(metadata).split("\n")][:-1]
+            lines += [""]
+
+        return [L.Comment(line) for line in lines]
+
 
 class ufc_cell_integral(ufc_integral):
     def __init__(self):

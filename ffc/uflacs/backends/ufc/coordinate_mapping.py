@@ -17,6 +17,11 @@
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
 from ffc.uflacs.backends.ufc.generator import ufc_generator
+from ffc.uflacs.backends.ufc.utils import generate_return_new
+
+
+# TODO: Test everything here! Cover all combinations of gdim,tdim=1,2,3!
+
 
 ### Code generation utilities:
 
@@ -150,32 +155,29 @@ def generate_assign_inverse(L, K, J, detJ, gdim, tdim):
 
 
 class ufc_coordinate_mapping(ufc_generator):
+    "Each function maps to a keyword in the template. See documentation of ufc_generator."
     def __init__(self):
         ufc_generator.__init__(self, "coordinate_mapping")
 
     def cell_shape(self, L, ir):
         name = ir["cell_shape"]
-        return L.Return(L.Symbol(name))
+        return L.Return(L.Symbol("ufc::shape::" + name))
 
-    def topological_dimension(self, L, ir):
-        "Default implementation of returning topological dimension fetched from ir."
-        value = ir["topological_dimension"]
-        return L.Return(L.LiteralInt(value))
+    def topological_dimension(self, L, topological_dimension):
+        return L.Return(topological_dimension)
 
-    def geometric_dimension(self, L, ir):
-        "Default implementation of returning geometric dimension fetched from ir."
-        value = ir["geometric_dimension"]
-        return L.Return(L.LiteralInt(value))
+    def geometric_dimension(self, L, geometric_dimension):
+        return L.Return(geometric_dimension)
 
     def create_coordinate_finite_element(self, L, ir):
         classname = ir["create_coordinate_finite_element"]
-        return L.Return(L.New(classname))
+        return generate_return_new(L, classname, factory=ir["jit"])
 
     def create_coordinate_dofmap(self, L, ir):
         classname = ir["create_coordinate_dofmap"]
-        return L.Return(L.New(classname))
+        return generate_return_new(L, classname, factory=ir["jit"])
 
-    def compute_physical_coordinates(self, L, ir): # FIXME: Implement evaluate_reference_basis
+    def compute_physical_coordinates(self, L, ir):
         num_dofs = ir["num_scalar_coordinate_element_dofs"]
         scalar_coordinate_element_classname = ir["scalar_coordinate_finite_element_classname"]
 
@@ -203,22 +205,17 @@ class ufc_coordinate_mapping(ufc_generator):
         # num_points will allow skipping dynamic allocation
         one_point = 1
 
-        # FIXME: Use correct approach and function name to compute basis values here
-        if 1:
-            # Call static function on element class
-            define_element = []
-            func = "%s::_evaluate_reference_basis" % (scalar_coordinate_element_classname,)
-        else:
-            # Define scalar finite element instance (stateless, so placing this on the stack is free)
-            define_element = [L.VariableDecl(scalar_coordinate_element_classname, "element")]
-            func = "element.evaluate_reference_basis"
-
         # Symbols for local basis values table
         phi_sym = L.Symbol("phi")
-        phi = L.FlattenedArray(phi_sym, dims=(num_dofs,)) # FIXME: Match evaluate_reference_basis array layout
+        # FIXME: Match array layout of evaluate_reference_basis 
+        phi = L.FlattenedArray(phi_sym, dims=(num_dofs,))
 
         # Arguments to evaluate_reference_basis
-        args = (phi_sym, one_point, L.AddressOf(X[ip, 0])) # FIXME: Match evaluate_reference_basis signature
+        args = (phi_sym, L.AddressOf(X[ip, 0]))
+
+        # Define scalar finite element instance (stateless, so placing this on the stack is free)
+        define_element = [L.VariableDecl(scalar_coordinate_element_classname, "xelement")]
+        func = "xelement.evaluate_reference_basis"
 
         # For each point, compute basis values and accumulate into the right x
         code = L.StatementList(define_element + [
@@ -243,7 +240,8 @@ class ufc_coordinate_mapping(ufc_generator):
             # General case with newton loop to solve F(X) = x(X) - x0 = 0
             return self._compute_reference_coordinates_newton(L, ir)
 
-    def _compute_reference_coordinates_affine(self, L, ir): # TODO: Test!
+
+    def _compute_reference_coordinates_affine(self, L, ir):
         # Dimensions
         gdim = ir["geometric_dimension"]
         tdim = ir["topological_dimension"]
@@ -267,6 +265,7 @@ class ufc_coordinate_mapping(ufc_generator):
 
         # Input cell data
         coordinate_dofs = L.FlattenedArray(L.Symbol("coordinate_dofs"), dims=(num_dofs, gdim))
+        cell_orientation = L.Symbol("cell_orientation")
 
         # Tables of coordinate basis function values and derivatives at
         # X=0 and X=midpoint available through ir. This is useful in
@@ -313,12 +312,13 @@ class ufc_coordinate_mapping(ufc_generator):
         K0 = L.Symbol("K0")
         compute_K0 = [
             L.ArrayDecl("double", detJ0, sizes=(1,)),
-            L.Call("compute_jacobian_determinants", (detJ0, 1, J0)),
+            L.Call("compute_jacobian_determinants", (detJ0, 1, J0, cell_orientation)),
             L.ArrayDecl("double", K0, sizes=(tdim*gdim,)),
             L.Call("compute_jacobian_inverses", (K0, 1, J0, detJ0)),
             ]
 
         # Compute X = K0*(x-x0) for each physical point x
+        K0 = L.FlattenedArray(K0, dims=(tdim, gdim))
         compute_X = [
             L.ForRange(ip, 0, num_points, body=
                 L.ForRange(j, 0, tdim, body=
@@ -330,7 +330,7 @@ class ufc_coordinate_mapping(ufc_generator):
         code = L.StatementList(table_decls + compute_x0 + compute_J0 + compute_K0 + compute_X)
         return code
 
-    def _compute_reference_coordinates_newton(self, L, ir): # TODO: Test! TODO: Determine stopping criteria to use.
+    def _compute_reference_coordinates_newton(self, L, ir):
         """Solves x(X) = x0 for X.
 
         Find X such that, given x0,
@@ -427,7 +427,8 @@ class ufc_coordinate_mapping(ufc_generator):
         mp = L.Symbol("%s_midpoint" % cellname)
 
         # Variables for stopping criteria
-        # TODO: Check if these are good convergence criteria, e.g. is epsilon=1e-6 and iterations=degree sufficient?
+        # TODO: Check if these are good convergence criteria,
+        #       e.g. is epsilon=1e-6 and iterations=degree sufficient?
         max_iter = L.LiteralInt(2*degree)
         epsilon = L.LiteralFloat(1e-14)
         # TODO: Could also easily make criteria input if desired
@@ -503,7 +504,7 @@ class ufc_coordinate_mapping(ufc_generator):
                           body=L.StatementList([newton_init, newton_loop, newton_finish]))
         return code
 
-    def compute_jacobians(self, L, ir): # FIXME: Implement evaluate_reference_basis_derivatives
+    def compute_jacobians(self, L, ir):
         num_dofs = ir["num_scalar_coordinate_element_dofs"]
         scalar_coordinate_element_classname = ir["scalar_coordinate_finite_element_classname"]
 
@@ -531,22 +532,17 @@ class ufc_coordinate_mapping(ufc_generator):
         # num_points will allow skipping dynamic allocation
         one_point = 1
 
-        # FIXME: Use correct approach and function name to compute basis derivatives here
-        if 1:
-            # Call static function on element class
-            define_element = []
-            func = "%s::_evaluate_reference_basis_derivatives" % (scalar_coordinate_element_classname,)
-        else:
-            # Define scalar finite element instance (stateless, so placing this on the stack is free)
-            define_element = [L.VariableDecl(scalar_coordinate_element_classname, "element")]
-            func = "element.evaluate_reference_basis_derivatives"
-
         # Symbols for local basis derivatives table
         dphi_sym = L.Symbol("dphi")
-        dphi = L.FlattenedArray(dphi_sym, dims=(tdim, num_dofs)) # FIXME: Match array layout of evaluate_reference_basis_derivatives
+        # FIXME: Match array layout of evaluate_reference_basis_derivatives
+        dphi = L.FlattenedArray(dphi_sym, dims=(tdim, num_dofs))
 
         # Arguments to evaluate_reference_basis_derivatives
-        args = (dphi_sym, one_point, L.AddressOf(X[ip, 0])) # FIXME: Match evaluate_reference_basis_derivatives signature
+        args = (1, dphi_sym, L.AddressOf(X[ip, 0]))
+
+        # Define scalar finite element instance (stateless, so placing this on the stack is free)
+        define_element = [L.VariableDecl(scalar_coordinate_element_classname, "xelement")]
+        func = "xelement.evaluate_reference_basis_derivatives"
 
         # For each point, compute basis derivatives and accumulate into the right J
         code = L.StatementList(define_element + [
@@ -563,7 +559,7 @@ class ufc_coordinate_mapping(ufc_generator):
             ])
         return code
 
-    def compute_jacobian_determinants(self, L, ir): # Looks good on inspection. TODO: Test!
+    def compute_jacobian_determinants(self, L, ir):
         # Dimensions
         gdim = ir["geometric_dimension"]
         tdim = ir["topological_dimension"]
@@ -579,7 +575,7 @@ class ufc_coordinate_mapping(ufc_generator):
         J = L.FlattenedArray(L.Symbol("J"), dims=(num_points, gdim, tdim))
         cell_orientation = L.Symbol("cell_orientation")
 
-        # Assign det expression to detJ # TODO: Call Eigen instead?
+        # Assign det expression to detJ
         if gdim == tdim:
             body = L.Assign(detJ, det_nn(J[ip], gdim))
         elif tdim == 1:
@@ -594,12 +590,10 @@ class ufc_coordinate_mapping(ufc_generator):
                 ])
 
         # Carry out for all points
-        loop = L.ForRange(ip, 0, num_points, body=body)
-
-        code = loop #[defines, loop]
+        code = L.ForRange(ip, 0, num_points, body=body)
         return code
 
-    def compute_jacobian_inverses(self, L, ir): # TODO: Test! Cover all combinations of gdim,tdim=1,2,3!
+    def compute_jacobian_inverses(self, L, ir):
         # Dimensions
         gdim = ir["geometric_dimension"]
         tdim = ir["topological_dimension"]
@@ -621,7 +615,7 @@ class ufc_coordinate_mapping(ufc_generator):
         # Carry out for all points
         return L.ForRange(ip, 0, num_points, body=body)
 
-    def compute_geometry(self, L, ir): # Output looks good on inspection. TODO: Test!
+    def compute_geometry(self, L, ir):
         # Output geometry
         x = L.Symbol("x")
         J = L.Symbol("J")
@@ -643,9 +637,9 @@ class ufc_coordinate_mapping(ufc_generator):
 
         # Just chain calls to other functions here
         code = [
-            L.Call("compute_physical_coordinates", (x, num_points, X, coordinate_dofs, cell_orientation)),
-            L.Call("compute_jacobians", (J, num_points, X, coordinate_dofs, cell_orientation)),
-            L.Call("compute_jacobian_determinants", (detJ, num_points, J)),
+            L.Call("compute_physical_coordinates", (x, num_points, X, coordinate_dofs)),
+            L.Call("compute_jacobians", (J, num_points, X, coordinate_dofs)),
+            L.Call("compute_jacobian_determinants", (detJ, num_points, J, cell_orientation)),
             L.Call("compute_jacobian_inverses", (K, num_points, J, detJ)),
             ]
         return L.StatementList(code)
