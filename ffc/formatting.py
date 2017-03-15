@@ -55,7 +55,8 @@ def generate_factory_functions(prefix, kind, classname):
 
 def generate_jit_factory_functions(code, prefix):
     # Extract code
-    code_finite_elements, code_dofmaps, code_coordinate_mappings, code_integrals, code_forms = code
+    (code_finite_elements, code_dofmaps, code_coordinate_mappings,
+         code_integrals, code_forms, includes) = code
 
     if code_forms:
         # Direct jit of form
@@ -82,7 +83,8 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
     begin("Compiler stage 5: Formatting code")
 
     # Extract code
-    code_finite_elements, code_dofmaps, code_coordinate_mappings, code_integrals, code_forms = code
+    (code_finite_elements, code_dofmaps, code_coordinate_mappings,
+         code_integrals, code_forms, includes) = code
 
     # Generate code for comment on top of file
     code_h_pre = _generate_comment(parameters) + "\n"
@@ -93,7 +95,7 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
     code_c_pre += format["header_c"] % {"prefix": prefix}
 
     # Add includes
-    includes_h, includes_c = _generate_includes(code, parameters)
+    includes_h, includes_c = _generate_includes(code, includes, parameters)
     code_h_pre += includes_h
     code_c_pre += includes_c
 
@@ -206,9 +208,9 @@ def _generate_comment(parameters):
     return comment
 
 
-def _generate_includes(code, parameters):
+def _generate_includes(code, includes, parameters):
     # Extract includes from code
-    includes = set()
+    includes = set() | includes
     for code_foo in code:
         for c in code_foo:
             # TODO: move more of these includes to cpp file if possible

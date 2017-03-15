@@ -92,7 +92,10 @@ def generate_code(ir, parameters):
 
     end()
 
-    return code_elements, code_dofmaps, code_coordinate_mappings, code_integrals, code_forms
+    includes = set()
+
+    return (code_elements, code_dofmaps, code_coordinate_mappings,
+                code_integrals, code_forms, includes)
 
 
 def _generate_element_code(ir, parameters):
