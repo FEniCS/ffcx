@@ -61,12 +61,12 @@ def generate_code(ir, parameters):
     set_exception_handling(parameters["convert_exceptions_to_warnings"])
 
     # Extract representations
-    ir_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
+    ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
 
-    # Generate code for elements
-    info("Generating code for %d element(s)" % len(ir_elements))
-    code_elements = [_generate_element_code(ir, parameters)
-                     for ir in ir_elements]
+    # Generate code for finite_elements
+    info("Generating code for %d finite_element(s)" % len(ir_finite_elements))
+    code_finite_elements = [_generate_finite_element_code(ir, parameters)
+                     for ir in ir_finite_elements]
 
     # Generate code for dofmaps
     info("Generating code for %d dofmap(s)" % len(ir_dofmaps))
@@ -90,15 +90,16 @@ def generate_code(ir, parameters):
     code_forms = [_generate_form_code(ir, parameters)
                   for ir in ir_forms]
 
-    end()
-
+    # Extract additional includes
     includes = set()
 
-    return (code_elements, code_dofmaps, code_coordinate_mappings,
-                code_integrals, code_forms, includes)
+    end()
+
+    return (code_finite_elements, code_dofmaps, code_coordinate_mappings,
+            code_integrals, code_forms, includes)
 
 
-def _generate_element_code(ir, parameters):
+def _generate_finite_element_code(ir, parameters):
     "Generate code for finite element from intermediate representation."
 
     # Skip code generation if ir is None
