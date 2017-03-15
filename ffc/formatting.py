@@ -95,7 +95,7 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
     code_c_pre += format["header_c"] % {"prefix": prefix}
 
     # Add includes
-    includes_h, includes_c = _generate_includes(code, includes, parameters)
+    includes_h, includes_c = _generate_includes(includes, parameters)
     code_h_pre += includes_h
     code_c_pre += includes_c
 
@@ -208,27 +208,21 @@ def _generate_comment(parameters):
     return comment
 
 
-def _generate_includes(code, includes, parameters):
-    # Extract includes from code
-    includes = set() | includes
-    for code_foo in code:
-        for c in code_foo:
-            # TODO: move more of these includes to cpp file if possible
-            includes.update(c.get("additional_includes_set", ()))
-
-    default_includes = [
+def _generate_includes(includes, parameters):
+    default_h_includes = [
         "#include <ufc.h>",
+        ]
+
+    default_cpp_includes = [
         # FIXME: Avoid adding these includes if we don't need them:
         "#include <stdexcept>",
         ]
 
-    s = set()
-    s.update(default_includes)
-    s.update(includes)
+    external_includes = set("#include <%s>" % inc for inc in parameters.get("external_includes", ()))
 
-    s2 = set()
-    s2.update(parameters.get("external_includes", ()))
-    s2 -= s
+    s = set(default_h_includes + default_cpp_includes) | includes
+
+    s2 = (set(default_cpp_includes) | external_includes) - s
 
     includes_h = "\n".join(sorted(s)) + "\n" if s else ""
     includes_cpp = "\n".join(sorted(s2)) + "\n" if s2 else ""

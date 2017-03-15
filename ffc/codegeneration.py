@@ -102,13 +102,81 @@ def generate_code(ir, parameters):
 
 
 def _extract_includes(full_ir, code_integrals):
+    ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = full_ir
+
+    # Includes added by representations
     includes = set()
+    for code in code_integrals:
+        includes.update(code["additional_includes_set"])
+
+    # Includes for dependencies in jit mode
+    jit = any(full_ir[i][j]["jit"]
+              for i in range(len(full_ir))
+              for j in range(len(full_ir[i])))
+    if jit:
+        dep_includes = set()
+        for ir in ir_finite_elements:
+            dep_includes.update(_finite_element_jit_includes(ir))
+        for ir in ir_dofmaps:
+            dep_includes.update(_dofmap_jit_includes(ir))
+        for ir in ir_coordinate_mappings:
+            dep_includes.update(_coordinate_mapping_jit_includes(ir))
+        #for ir in ir_integrals:
+        #    dep_includes.update(_integral_jit_includes(ir))
+        for ir in ir_forms:
+            dep_includes.update(_form_jit_includes(ir))
+        includes.update(['#include "%s"' % inc for inc in dep_includes])
+
     return includes
+
+
+def _finite_element_jit_includes(ir):
+    classnames = ir["create_sub_element"]
+    postfix = "_finite_element"
+    return [classname.split(postfix)[0] + ".h"
+            for classname in classnames]
+
+
+def _dofmap_jit_includes(ir):
+    classnames = ir["create_sub_dofmap"]
+    postfix = "_dofmap"
+    return [classname.split(postfix)[0] + ".h"
+            for classname in classnames]
+
+
+def _coordinate_mapping_jit_includes(ir):
+    classnames = [
+        ir["coordinate_finite_element_classname"],
+        ir["scalar_coordinate_finite_element_classname"]
+        ]
+    postfix = "_finite_element"
+    return [classname.split(postfix)[0] + ".h"
+            for classname in classnames]
+
+
+def _form_jit_includes(ir):
+    # Gather all header names for classes that are separately compiled
+    # For finite_element and dofmap the module and header name is the prefix,
+    # extracted here with .split, and equal for both classes so we skip dofmap here:
+    classnames = list(chain(
+        ir["create_finite_element"],
+        ir["create_coordinate_finite_element"]
+        ))
+    postfix = "_finite_element"
+    includes = [classname.split(postfix)[0] + ".h"
+                for classname in classnames]
+
+    #classnames = ir["create_coordinate_mapping"]
+    #postfix = "_coordinate_mapping"
+    #includes += [classname.split(postfix)[0] + ".h"
+    #             for classname in classnames]
+
+    return includes
+
 
 
 def _old_generate_finite_element_code(ir, parameters):
     "Generate code for finite element from intermediate representation."
-
     # Prefetch formatting to speedup code generation
     ret = format["return"]
     do_nothing = format["do nothing"]
@@ -161,7 +229,6 @@ def _old_generate_finite_element_code(ir, parameters):
     code["num_sub_elements"] = ret(ir["num_sub_elements"])
     code["create_sub_element"] = _create_sub_element(ir)
     code["create"] = ret(create(code["classname"]))
-    code["additional_includes_set"] = _additional_includes_finite_element(ir)
 
     # Postprocess code
     _postprocess_code(code, parameters)
@@ -215,7 +282,6 @@ def _old_generate_dofmap_code(ir, parameters):
     code["num_sub_dofmaps"] = ret(ir["num_sub_dofmaps"])
     code["create_sub_dofmap"] = _create_sub_dofmap(ir)
     code["create"] = ret(create(code["classname"]))
-    code["additional_includes_set"] = _additional_includes_dofmap(ir)
 
     # Postprocess code
     _postprocess_code(code, parameters)
@@ -223,56 +289,8 @@ def _old_generate_dofmap_code(ir, parameters):
     return code
 
 
-def _additional_includes_dofmap(ir):
-    if not ir["jit"]:
-        return set()
-    dofmap_classnames = ir["create_sub_dofmap"]
-    jit_includes = [classname.split("_dofmap")[0] + ".h"
-                    for classname in dofmap_classnames]
-    return set("#include <%s>" % inc for inc in jit_includes)
-
-
-def _additional_includes_finite_element(ir):
-    if not ir["jit"]:
-        return set()
-    finite_element_classnames = ir["create_sub_element"]
-    jit_includes = [classname.split("_finite_element")[0] + ".h"
-                    for classname in finite_element_classnames]
-    return set("#include <%s>" % inc for inc in jit_includes)
-
-
-def _additional_includes_coordinate_mapping(ir):
-    if not ir["jit"]:
-        return set()
-    finite_element_classnames = [
-        ir["coordinate_finite_element_classname"],
-        ir["scalar_coordinate_finite_element_classname"]
-        ]
-    jit_includes = [classname.split("_finite_element")[0] + ".h"
-                    for classname in finite_element_classnames]
-    return set("#include <%s>" % inc for inc in jit_includes)
-
-
-def _additional_includes_form(ir):
-    if not ir["jit"]:
-        return set()
-    # Gather all header names for classes that are separately compiled
-    # For finite_element and dofmap the module and header name is the prefix,
-    # extracted here with .split, and equal for both classes so we skip dofmap here:
-    finite_element_classnames = list(chain(
-        ir["create_finite_element"],
-        ir["create_coordinate_finite_element"]
-        ))
-    jit_includes = set(classname.split("_finite_element")[0] + ".h"
-                       for classname in finite_element_classnames)
-    # FIXME: Enable when coordinate_mapping is fully generated:
-    #jit_includes.update(classname + ".h" for classname in ir["create_coordinate_mapping"])
-    return set("#include <%s>" % inc for inc in jit_includes)
-
-
 def _old_generate_coordinate_mapping_code(ir, parameters):
     "Generate code for coordinate_mapping from intermediate representation."
-
     coordinate_mapping_number = ir["id"]
 
     # FIXME: Get code dict from current work in uflacs
@@ -302,8 +320,6 @@ def _old_generate_coordinate_mapping_code(ir, parameters):
     code["compute_jacobian_determinants"] = ""
     code["compute_jacobian_inverses"] = ""
     code["compute_geometry"] = ""
-
-    code["additional_includes_set"] = _additional_includes_coordinate_mapping(ir)
 
     return code
 
@@ -368,7 +384,6 @@ tt_timing_template = """
 
 def _old_generate_integral_code(ir, parameters):
     "Generate code for integrals from intermediate representation."
-
     # Select representation
     r = pick_representation(ir["representation"])
 
@@ -419,7 +434,7 @@ def _generate_tabulate_tensor_comment(ir, parameters):
         comment += "\n".join([format["comment"]("  " + l) for l in dstr(metadata).split("\n")][:-1])
         comment += "\n"
 
-    return comment
+    return indent(comment, 4)
 
 
 def _generate_original_coefficient_position(original_coefficient_positions):
@@ -436,7 +451,6 @@ def _generate_original_coefficient_position(original_coefficient_positions):
 
 def _old_generate_form_code(ir, parameters):
     "Generate code for form from intermediate representation."
-
     # Prefetch formatting to speedup code generation
     ret = format["return"]
     do_nothing = format["do nothing"]
@@ -464,8 +478,6 @@ def _old_generate_form_code(ir, parameters):
     code["create_finite_element"] = _create_finite_element(ir)
     code["create_dofmap"] = _create_dofmap(ir)
 
-    code["additional_includes_set"] = _additional_includes_form(ir)
-
     for integral_type in ufc_integral_types:
         code["max_%s_subdomain_id" % integral_type] = \
             ret(ir["max_%s_subdomain_id" % integral_type])
@@ -481,8 +493,6 @@ def _old_generate_form_code(ir, parameters):
 
     return code
 
-
-# --- Temporary selection of old vs new implementations
 
 #_generate_finite_element_code = _new_generate_finite_element_code
 _generate_finite_element_code = _old_generate_finite_element_code
@@ -866,15 +876,16 @@ def _postprocess_code(code, parameters):
 
 def _indent_code(code):
     "Indent code that should be indented."
-    skiplist = set((
+    skiplist = (
         "additional_includes_set",
         "classname",
         "members",
         "constructor_arguments",
         "initializer_list",
         "class_type",
-        ))
-    for key in set(code) - skiplist:
+        "tabulate_tensor_comment",
+        )
+    for key in set(code) - set(skiplist):
         code[key] = indent(code[key], 4)
 
 
