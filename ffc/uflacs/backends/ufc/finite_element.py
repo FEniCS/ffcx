@@ -24,56 +24,6 @@ from ffc.uflacs.backends.ufc.generator import ufc_generator
 from ffc.uflacs.backends.ufc.utils import generate_return_new_switch, generate_return_int_switch, generate_error
 
 
-
-"""
-// TODO: UFC functions that return constant arrays
-// could use something like this to reduce copying,
-// returning pointers to static data:
-
-  template<T>
-  class array_view
-  {
-  public:
-    array_view(std::size_t size, const T * data):
-      size(size), data(data)
-    const std::size_t size;
-    const T * data;
-    const T operator[](std::size_t i) const
-    { return data[i]; }
-  };
-
-  array_view<int> form::original_coefficient_positions() const
-  {
-    static const int data = { 0, 1, 2, 5 };
-    return array_view<int>{4, data};
-  }
-
-  array_view<bool> integral::enabled_coefficients() const
-  {
-    static const bool data = { true, true, true, false, false, true };
-    return array_view<bool>{6, data};
-  }
-"""
-
-
-"""
-TODO: Document new ufc functions evaluate_reference_basis and evaluate_reference_basis_derivatives
-
-TODO: Add support for mappings to finite_element, something like:
-
-    /// Return true if the basis needs to be mapped between physical and reference frames
-    virtual bool needs_mapping() const = 0;
-
-    /// Map values from reference frame to physical frame
-    virtual void map_from_reference_values(double * values, const double * J) const = 0;
-
-    /// Map values from physical frame to reference frame
-    virtual void map_to_reference_values(double * values, const double * J) const = 0;
-
-    // TODO: Need mapping of derivatives as well
-"""
-
-
 class ufc_finite_element(ufc_generator):
     "Each function maps to a keyword in the template. See documentation of ufc_generator."
     def __init__(self):
@@ -282,18 +232,90 @@ class ufc_finite_element(ufc_generator):
             ]
         return code
 
-    def evaluate_reference_basis(self, L, ir, parameters): # FIXME: NEW implement!
-        """TODO: Add this signature to finite_element:
-        evaluate_reference_basis(...)
-        """
+    def evaluate_reference_basis(self, L, ir, parameters):
         data = ir["evaluate_basis"]
         from ffc.uflacs.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
-        return generate_evaluate_reference_basis(L, data)
+        return generate_evaluate_reference_basis(L, data, parameters)
 
-    def evaluate_reference_basis_derivatives(self, L, ir, parameters): # FIXME: NEW implement!
-        """TODO: Add this signature to finite_element:
-        evaluate_reference_basis_derivatives(...)
-        """
-        #data = ir["evaluate_reference_basis_derivatives"]
-        msg = "FIXME NOT IMPLEMENTED"
-        return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
+    def evaluate_reference_basis_derivatives(self, L, ir, parameters):
+        data = ir["evaluate_basis"]
+        from ffc.uflacs.backends.ufc.evalderivs import generate_evaluate_reference_basis_derivatives
+        return generate_evaluate_reference_basis_derivatives(L, data, parameters)
+
+
+"""
+TODO: Document new ufc functions evaluate_reference_basis and evaluate_reference_basis_derivatives
+
+TODO: Add support for mappings to finite_element, something like:
+
+    /// Return true if the basis needs to be mapped between physical and reference frames
+    virtual bool needs_mapping() const = 0;
+
+    /// Map values from reference frame to physical frame
+    virtual void map_from_reference_values(double * values, const double * J) const = 0;
+
+    /// Map values from physical frame to reference frame
+    virtual void map_to_reference_values(double * values, const double * J) const = 0;
+
+    // TODO: Need mapping of derivatives as well
+"""
+
+
+"""
+TODO: Remove unused ufc::cell from interpolate_vertex_values
+"""
+
+
+''' /// FUTURE SPLIT IMPLEMENTATION OF EVALUATE_BASIS:
+    /// Evaluate basis function i at given point x in cell
+    virtual void evaluate_basis(std::size_t i,
+                                double* values,
+                                const double* x,
+                                const double* coordinate_dofs,
+                                int cell_orientation) const;
+    /// Evaluate all basis functions at given point x in cell
+    virtual void evaluate_basis_all(double* values,
+                                    const double* x,
+                                    const double* coordinate_dofs,
+                                    int cell_orientation) const
+    ... and derivatives
+    {
+      const std::size_t gdim = 3;
+      const std::size_t tdim = 2;
+      const std::size_t num_points = 1;
+
+      // domain::
+      double X[num_points*tdim]; // X[i] -> X[ip*tdim + i]
+      compute_reference_coordinates(X, num_points, x, coordinate_dofs, cell_orientation);
+
+      // domain::
+      double J[num_points*gdim*tdim]; // J[i,j] -> J[ip*gdim*tdim + i*tdim + j]
+      compute_jacobians(J, num_points, X, coordinate_dofs, cell_orientation);
+
+      // domain::
+      double detJ[num_points]; // detJ -> detJ[ip]
+      compute_jacobian_determinants(detJ, num_points, J);
+
+      // domain::
+      double K[num_points*tdim*gdim]; // K[i,j] -> K[ip*tdim*gdim + i*gdim + j]
+      compute_jacobian_inverses(K, num_points, J, detJ);
+
+      // domain:: (inverse of compute_reference_coordinates)
+      //double x[num_points*gdim]; // x[i] -> x[ip*gdim + i]
+      //compute_physical_coordinates(x, num_points, X, K, coordinate_dofs, cell_orientation);
+
+      // domain:: (combining the above)
+      //compute_geometry(x, J, detJ, K, num_points, X, coordinate_dofs, cell_orientation);
+
+      // phi[ip*ndofs*rvs + idof*rvs + jcomp]
+      double reference_basis_values[num_points*num_dofs*reference_value_size];
+      compute_reference_basis(reference_basis_values, num_points, X);
+
+      // phi[ip*nder*ndofs*rvs + iderivative*ndofs*rvs + idof*rvs + jcomp]
+      double reference_basis_derivatives[num_points*num_derivatives*num_dofs*reference_value_size];
+      compute_reference_basis_derivatives(reference_basis_derivatives, derivative_order, num_points, X);
+
+      double physical_basis_values[num_points*num_dofs*value_size]; // phi -> phi[ip*ndofs*pvs + idof*pvs + icomp]
+      compute_physical_basis[_derivatives](physical_basis_values, num_points, reference_basis_values, J, detJ, K);
+    }
+'''

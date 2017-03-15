@@ -211,7 +211,7 @@ class ufc_coordinate_mapping(ufc_generator):
         phi = L.FlattenedArray(phi_sym, dims=(num_dofs,))
 
         # Arguments to evaluate_reference_basis
-        args = (phi_sym, L.AddressOf(X[ip, 0]))
+        args = (phi_sym, 1, L.AddressOf(X[ip, 0]))
 
         # Define scalar finite element instance (stateless, so placing this on the stack is free)
         define_element = [L.VariableDecl(scalar_coordinate_element_classname, "xelement")]
@@ -538,7 +538,7 @@ class ufc_coordinate_mapping(ufc_generator):
         dphi = L.FlattenedArray(dphi_sym, dims=(tdim, num_dofs))
 
         # Arguments to evaluate_reference_basis_derivatives
-        args = (1, dphi_sym, L.AddressOf(X[ip, 0]))
+        args = (dphi_sym, 1, 1, L.AddressOf(X[ip, 0]))
 
         # Define scalar finite element instance (stateless, so placing this on the stack is free)
         define_element = [L.VariableDecl(scalar_coordinate_element_classname, "xelement")]

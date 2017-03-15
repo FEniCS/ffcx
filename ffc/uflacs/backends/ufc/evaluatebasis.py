@@ -3,84 +3,12 @@
 
 from six import string_types
 from ffc.log import error
-
-"""
-TODO: Add these to ufc::finite_element:
-
-    /// NEW: Evaluate all reference basis function values at given points X in reference cell
-    /// Unflattened shape of values is [num_points][num_dofs][reference_value_size]
-    /// Unflattened shape of X is [num_points][tdim]
-    virtual void evaluate_reference_basis_values(double * reference_values,
-                                                 std::size_t num_points,
-                                                 const double * X) const = 0;
-
-    /// NEW: Evaluate all reference basis function derivatives up to order at given points X in reference cell
-    /// Unflattened shape of values is [num_points][num_derivatives][num_dofs][reference_value_size]
-    /// Unflattened shape of X is [num_points][tdim]
-    virtual void evaluate_reference_basis_derivatives(double * reference_values,
-                                                      std::size_t num_points,
-                                                      std::size_t order,
-                                                      const double * X) const = 0;
-
-"""
-
-''' /// FUTURE SPLIT IMPLEMENTATION OF EVALUATE_BASIS:
-    /// Evaluate basis function i at given point x in cell
-    virtual void evaluate_basis(std::size_t i,
-                                double* values,
-                                const double* x,
-                                const double* coordinate_dofs,
-                                int cell_orientation) const;
-    /// Evaluate all basis functions at given point x in cell
-    virtual void evaluate_basis_all(double* values,
-                                    const double* x,
-                                    const double* coordinate_dofs,
-                                    int cell_orientation) const
-    ... and derivatives
-    {
-      const std::size_t gdim = 3;
-      const std::size_t tdim = 2;
-      const std::size_t num_points = 1;
-
-      // domain::
-      double X[num_points*tdim]; // X[i] -> X[ip*tdim + i]
-      compute_reference_coordinates(X, num_points, x, coordinate_dofs, cell_orientation);
-
-      // domain::
-      double J[num_points*gdim*tdim]; // J[i,j] -> J[ip*gdim*tdim + i*tdim + j]
-      compute_jacobians(J, num_points, X, coordinate_dofs, cell_orientation);
-
-      // domain::
-      double detJ[num_points]; // detJ -> detJ[ip]
-      compute_jacobian_determinants(detJ, num_points, J);
-
-      // domain::
-      double K[num_points*tdim*gdim]; // K[i,j] -> K[ip*tdim*gdim + i*gdim + j]
-      compute_jacobian_inverses(K, num_points, J, detJ);
-
-      // domain:: (inverse of compute_reference_coordinates)
-      //double x[num_points*gdim]; // x[i] -> x[ip*gdim + i]
-      //compute_physical_coordinates(x, num_points, X, K, coordinate_dofs, cell_orientation);
-
-      // domain:: (combining the above)
-      //compute_geometry(x, J, detJ, K, num_points, X, coordinate_dofs, cell_orientation);
-
-      // phi[ip*ndofs*rvs + idof*rvs + jcomp]
-      double reference_basis_values[num_points*num_dofs*reference_value_size];
-      compute_reference_basis(reference_basis_values, num_points, X);
-
-      // phi[ip*nder*ndofs*rvs + iderivative*ndofs*rvs + idof*rvs + jcomp]
-      double reference_basis_derivatives[num_points*num_derivatives*num_dofs*reference_value_size];
-      compute_reference_basis_derivatives(reference_basis_derivatives, derivative_order, num_points, X);
-
-      double physical_basis_values[num_points*num_dofs*value_size]; // phi -> phi[ip*ndofs*pvs + idof*pvs + icomp]
-      compute_physical_basis[_derivatives](physical_basis_values, num_points, reference_basis_values, J, detJ, K);
-    }
-'''
+from ffc.uflacs.backends.ufc.utils import generate_error
 
 import math
 
-def generate_evaluate_reference_basis(L, data):
+
+def generate_evaluate_reference_basis(L, data, parameters):
     """Generate code to evaluate element basisfunctions at an arbitrary point on the reference element.
 
     The value(s) of the basisfunction is/are computed as in FIAT as
@@ -98,11 +26,11 @@ def generate_evaluate_reference_basis(L, data):
     """
     # Cutoff for feature to disable generation of this code (consider removing after benchmarking final result)
     if isinstance(data, string_types):
-        return L.Throw("evaluate_reference_basis: %s" % data)
+        msg = "evaluate_reference_basis: %s" % (data,)
+        return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
 
     # Get some known dimensions
     element_cellname = data["cellname"]
-    #gdim = data["geometric_dimension"]
     tdim = data["topological_dimension"]
     reference_value_size = data["reference_value_size"]
     num_dofs = len(data["dofs_data"])
@@ -115,67 +43,30 @@ def generate_evaluate_reference_basis(L, data):
     reference_values = L.Symbol("reference_values")
     ref_values = L.FlattenedArray(reference_values, dims=(num_points, num_dofs, reference_value_size))
 
-    # NB! This symbol refers to the FIAT reference coordinate!
-    Y = L.Symbol("Y")
-
     # Loop indices
     ip = L.Symbol("ip")
     k = L.Symbol("k")
     c = L.Symbol("c")
     r = L.Symbol("r")
 
-
     # Generate code with static tables of expansion coefficients
-    tables_code = []
-    coefficients_for_dof = []
-    for idof, dof_data in enumerate(data["dofs_data"]):
-        num_components = dof_data["num_components"]
-        num_members = dof_data["num_expansion_members"]
-        fiat_coefficients = dof_data["coeffs"]
+    tables_code, coefficients_for_dof = generate_expansion_coefficients(L, data["dofs_data"])
 
-        # TODO: Check if any fiat_coefficients tables in expansion_coefficients are equal and reuse instead of declaring new.
-
-        # Create separate variable name for coefficients table for each dof
-        coefficients = L.Symbol("coefficients%d" % idof)
-
-        # Create static table with expansion coefficients computed by FIAT compile time.
-        tables_code += [L.ArrayDecl("static const double", coefficients,
-                                    (num_components, num_members), values=fiat_coefficients)]
-
-        # Store symbol reference for this dof
-        coefficients_for_dof.append(coefficients)
-
-
-    # Reset values[:] to 0
+    # Reset reference_values[:] to 0
     reset_values_code = [
         L.ForRange(k, 0, num_points*num_dofs*reference_value_size, body=
             L.Assign(reference_values[k], 0.0))
         ]
-
-
-    # Mapping from UFC reference cell coordinate X to FIAT reference cell coordinate Y
-    fiat_coordinate_mapping = L.ArrayDecl("const double", Y, (tdim,),
-                                          values=[2.0*X[ip*tdim + jj]-1.0 for jj in range(tdim)])
-
+    setup_code = tables_code + reset_values_code
 
     # Generate code to compute tables of basisvalues
-    basisvalues_code = []
-    basisvalues_for_degree = {}
-    for idof, dof_data in enumerate(data["dofs_data"]):
-        embedded_degree = dof_data["embedded_degree"]
-        num_members = dof_data["num_expansion_members"]
-
-        if embedded_degree not in basisvalues_for_degree:
-            basisvalues = L.Symbol("basisvalues%d" % embedded_degree)
-            bfcode = _generate_compute_basisvalues(L, basisvalues, Y, element_cellname, embedded_degree, num_members)
-            basisvalues_code += [L.StatementList(bfcode)]
-
-            # Store symbol reference for this degree
-            basisvalues_for_degree[embedded_degree] = basisvalues
-
+    basisvalues_code, basisvalues_for_degree, need_fiat_coordinates = \
+        generate_compute_basisvalues(L, data["dofs_data"], element_cellname, tdim, X, ip)
 
     # Accumulate products of basisvalues and coefficients into values
-    accumulation_code = []
+    accumulation_code = [
+        L.Comment("Accumulate products of coefficients and basisvalues"),
+        ]
     for idof, dof_data in enumerate(data["dofs_data"]):
         embedded_degree = dof_data["embedded_degree"]
         num_components = dof_data["num_components"]
@@ -208,22 +99,72 @@ def generate_evaluate_reference_basis(L, data):
                 L.AssignAdd(ref_values[ip, idof, reference_offset], coefficients[0, 0] * basisvalues[0])
                 ]
 
-        # FIXME: Move this mapping to its own ufc function e.g. finite_element::apply_element_mapping(reference_values, J, K)
+        # TODO: Move this mapping to its own ufc function e.g. finite_element::apply_element_mapping(reference_values, J, K)
         #code += _generate_apply_mapping_to_computed_values(L, dof_data) # Only works for affine (no-op)
 
     # Stitch it all together
-    code = L.StatementList(
-        tables_code +
-        reset_values_code +
-        [L.ForRange(ip, 0, num_points, body=L.StatementList([
-            L.Comment("Map from UFC reference coordinate X to FIAT reference coordinate Y"),
-            fiat_coordinate_mapping,
-            L.Comment("Compute basisvalues for each relevant embedded degree"),
-            basisvalues_code,
-            L.Comment("Accumulate products of coefficients and basisvalues"),
-            accumulation_code,
-            ]))])
+    code = [
+        setup_code,
+        L.ForRange(ip, 0, num_points,
+                   body=basisvalues_code + accumulation_code)
+        ]
     return code
+
+
+def generate_expansion_coefficients(L, dofs_data):
+    tables_code = []
+    coefficients_for_dof = []
+    for idof, dof_data in enumerate(dofs_data):
+        num_components = dof_data["num_components"]
+        num_members = dof_data["num_expansion_members"]
+        fiat_coefficients = dof_data["coeffs"]
+
+        # TODO: Check if any fiat_coefficients tables in expansion_coefficients are equal and reuse instead of declaring new.
+
+        # Create separate variable name for coefficients table for each dof
+        coefficients = L.Symbol("coefficients%d" % idof)
+
+        # Create static table with expansion coefficients computed by FIAT compile time.
+        tables_code += [L.ArrayDecl("static const double", coefficients,
+                                    (num_components, num_members), values=fiat_coefficients)]
+
+        # Store symbol reference for this dof
+        coefficients_for_dof.append(coefficients)
+    return tables_code, coefficients_for_dof
+
+
+def generate_compute_basisvalues(L, dofs_data, element_cellname, tdim, X, ip):
+    basisvalues_code = [
+        L.Comment("Compute basisvalues for each relevant embedded degree"),
+        ]
+    basisvalues_for_degree = {}
+    need_fiat_coordinates = False
+    Y = L.Symbol("Y")
+    for idof, dof_data in enumerate(dofs_data):
+        embedded_degree = dof_data["embedded_degree"]
+        if embedded_degree:
+            need_fiat_coordinates = True
+
+        if embedded_degree not in basisvalues_for_degree:
+            num_members = dof_data["num_expansion_members"]
+
+            basisvalues = L.Symbol("basisvalues%d" % embedded_degree)
+            bfcode = _generate_compute_basisvalues(L, basisvalues, Y, element_cellname, embedded_degree, num_members)
+            basisvalues_code += [L.StatementList(bfcode)]
+
+            # Store symbol reference for this degree
+            basisvalues_for_degree[embedded_degree] = basisvalues
+
+    if need_fiat_coordinates:
+        # Mapping from UFC reference cell coordinate X to FIAT reference cell coordinate Y
+        fiat_coordinate_mapping = [
+            L.Comment("Map from UFC reference coordinate X to FIAT reference coordinate Y"),
+            L.ArrayDecl("const double", Y, (tdim,),
+                        values=[2.0*X[ip*tdim + jj]-1.0 for jj in range(tdim)]),
+            ]
+        basisvalues_code = fiat_coordinate_mapping + basisvalues_code
+
+    return basisvalues_code, basisvalues_for_degree, need_fiat_coordinates
 
 
 def _generate_compute_basisvalues(L, basisvalues, Y, element_cellname, embedded_degree, num_members):
@@ -241,11 +182,13 @@ def _generate_compute_basisvalues(L, basisvalues, Y, element_cellname, embedded_
 
     return code
 
+
 def _jrc(a, b, n):
     an = float((2*n+1+a+b) * (2*n+2+a+b))   / float(2*(n+1) * (n+1+a+b))
     bn = float((a*a-b*b) * (2*n+1+a+b))     / float(2*(n+1) * (2*n+a+b) * (n+1+a+b))
     cn = float((n+a) * (n+b) * (2*n+2+a+b)) / float((n+1) * (n+1+a+b) * (2*n+a+b))
     return (an, bn, cn)
+
 
 def _generate_compute_interval_basisvalues(L, basisvalues, Y, embedded_degree, num_members):
     # FIAT_NEW.expansions.LineExpansionSet.
@@ -298,8 +241,9 @@ def _generate_compute_interval_basisvalues(L, basisvalues, Y, embedded_degree, n
     # Scale values
     p = L.Symbol("p")
     code += [L.ForRange(p, 0, embedded_degree + 1,
-                        body=L.AssignMul(basisvalues[p], L.Sqrt(0.5 + p)))]
+                        body=L.AssignMul(basisvalues[p], L.Call("sqrt", (0.5 + p,))))]
     return code
+
 
 def _generate_compute_triangle_basisvalues(L, basisvalues, Y, embedded_degree, num_members):
     # FIAT_NEW.expansions.TriangleExpansionSet.
@@ -401,6 +345,7 @@ def _generate_compute_triangle_basisvalues(L, basisvalues, Y, embedded_degree, n
             code += [L.AssignMul(basisvalues[rr], math.sqrt(A))]
 
     return code
+
 
 def _generate_compute_tetrahedron_basisvalues(L, basisvalues, Y, embedded_degree, num_members):
     # FIAT_NEW.expansions.TetrahedronExpansionSet.
@@ -548,141 +493,3 @@ def _generate_compute_tetrahedron_basisvalues(L, basisvalues, Y, embedded_degree
                 code += [L.AssignMul(basisvalues[rr], math.sqrt(A))]
 
     return code
-
-
-def _generate_apply_mapping_to_computed_values(L, dof_data):
-    mapping = dof_data["mapping"]
-    num_components = dof_data["num_components"]
-    reference_offset = dof_data["reference_offset"]
-    physical_offset = dof_data["physical_offset"]
-
-    physical_values[num_points][num_dofs][physical_value_size]
-    reference_values[num_points][num_dofs][reference_value_size]
-
-    code = []
-
-    # FIXME: Define values numbering
-    if mapping == "affine":
-        # Just copy values
-        if num_components == 1:
-            code += [
-                L.ForRange(ip, 0, num_points, body=
-                    L.Assign(physical_values[ip][physical_offset],
-                             reference_values[ip][reference_offset])),
-                ]
-        else:
-            code += [
-                L.ForRange(ip, 0, num_points, body=
-                    L.ForRange(k, 0, num_components, body=
-                        L.Assign(physical_values[ip][physical_offset + k],
-                                 reference_values[ip][reference_offset + k]))),
-                ]
-        return code
-
-    else:
-        fixme
-
-    return code
-
-def __ffc_implementation_of__generate_apply_mapping_to_computed_values(L):
-    # Apply transformation if applicable.
-    mapping = dof_data["mapping"]
-    num_components = dof_data["num_components"]
-    reference_offset = dof_data["reference_offset"]
-    physical_offset = dof_data["physical_offset"]
-
-    if mapping == "affine":
-        pass
-
-    elif mapping == "contravariant piola":
-        code += ["", f_comment("Using contravariant Piola transform to map values back to the physical element")]
-
-        # Get temporary values before mapping.
-        code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))
-                 for i in range(num_components)]
-
-        # Create names for inner product.
-        basis_col = [f_tmp_ref(j) for j in range(tdim)]
-        for i in range(gdim):
-            # Create Jacobian.
-            jacobian_row = [f_trans("J", i, j, gdim, tdim, None) for j in range(tdim)]
-            # Create inner product and multiply by inverse of Jacobian.
-            inner = f_group(f_inner(jacobian_row, basis_col)) # sum_j J[i,j], values[offset + j])
-            value = f_mul([f_inv(f_detJ(None)), inner])
-            name = f_component(f_values, i + offset)
-            # FIXME: This is writing values[offset+:] = M[:,:] * values[offset+:],
-            #        i.e. offset must be physical (unless there's a bug).
-            #        We want to use reference offset for evaluate_reference_basis,
-            #        and to make this mapping read from one array using reference offset
-            #        and write to another array using physical offset.
-            code += [f_assign(name, value)]
-
-    elif mapping == "covariant piola":
-        code += ["", f_comment("Using covariant Piola transform to map values back to the physical element")]
-        # Get temporary values before mapping.
-        code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))
-                 for i in range(num_components)]
-        # Create names for inner product.
-        tdim = data["topological_dimension"]
-        gdim = data["geometric_dimension"]
-        basis_col = [f_tmp_ref(j) for j in range(tdim)]
-        for i in range(gdim):
-            # Create inverse of Jacobian.
-            inv_jacobian_column = [f_trans("JINV", j, i, tdim, gdim, None) for j in range(tdim)]
-
-            # Create inner product of basis values and inverse of Jacobian.
-            value = f_group(f_inner(inv_jacobian_column, basis_col))
-            name = f_component(f_values, i + offset)
-            code += [f_assign(name, value)]
-
-    elif mapping == "double covariant piola":
-        code += ["", f_comment("Using double covariant Piola transform to map values back to the physical element")]
-        # Get temporary values before mapping.
-        code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))
-                 for i in range(num_components)]
-        # Create names for inner product.
-        tdim = data["topological_dimension"]
-        gdim = data["geometric_dimension"]
-        basis_col = [f_tmp_ref(j) for j in range(num_components)]
-        for p in range(num_components):
-            # unflatten the indices
-            i = p // tdim
-            l = p % tdim
-            # g_il = K_ji G_jk K_kl
-            value = f_group(f_inner(
-                [f_inner([f_trans("JINV", j, i, tdim, gdim, None)
-                          for j in range(tdim)],
-                         [basis_col[j * tdim + k] for j in range(tdim)])
-                 for k in range(tdim)],
-                [f_trans("JINV", k, l, tdim, gdim, None)
-                 for k in range(tdim)]))
-            name = f_component(f_values, p + offset)
-            code += [f_assign(name, value)]
-
-    elif mapping == "double contravariant piola":
-        code += ["", f_comment("Pullback of a matrix-valued funciton as contravariant 2-tensor mapping values back to the physical element")]
-        # Get temporary values before mapping.
-        code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))
-                 for i in range(num_components)]
-        # Create names for inner product.
-        tdim = data["topological_dimension"]
-        gdim = data["geometric_dimension"]
-        basis_col = [f_tmp_ref(j) for j in range(num_components)]
-        for p in range(num_components):
-            # unflatten the indices
-            i = p // tdim
-            l = p % tdim
-            # g_il = (detJ)^(-2) J_ij G_jk J_lk
-            value = f_group(f_inner(
-                [f_inner([f_trans("J", i, j, tdim, gdim, None)
-                          for j in range(tdim)],
-                         [basis_col[j * tdim + k] for j in range(tdim)])
-                 for k in range(tdim)],
-                [f_trans("J", l, k, tdim, gdim, None)
-                 for k in range(tdim)]))
-            value = f_mul([f_inv(f_detJ(None)), f_inv(f_detJ(None)), value])
-            name = f_component(f_values, p + offset)
-            code += [f_assign(name, value)]
-
-    else:
-        error("Unknown mapping: %s" % mapping)
