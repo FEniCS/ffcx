@@ -905,7 +905,8 @@ class Call(CExprOperator):
     sideeffect = True
 
     def __init__(self, function, arguments=None):
-        # Note: This will wrap a str as a Symbol
+        if isinstance(function, string_types):
+            function = Symbol(function)
         self.function = as_cexpr(function)
 
         # Accept None, single, or multple arguments; literals or CExprs
@@ -928,7 +929,9 @@ class Call(CExprOperator):
 ############## Convertion function to expression nodes
 
 def _is_zero_valued(values):
-    if isinstance(values, (numbers.Number, LiteralFloat, LiteralInt)):
+    if isinstance(values, (numbers.Integral, LiteralInt)):
+        return int(values) == 0
+    elif isinstance(values, (numbers.Number, LiteralFloat)):
         return float(values) == 0.0
     else:
         return numpy.count_nonzero(values) == 0
@@ -941,14 +944,17 @@ def as_cexpr(node):
     """
     if isinstance(node, CExpr):
         return node
-    elif isinstance(node, (int, numpy.integer)):
+    elif isinstance(node, bool):
+        return LiteralBool(node)
+    elif isinstance(node, numbers.Integral):
         return LiteralInt(node)
-    elif isinstance(node, (float, numpy.floating)):
+    elif isinstance(node, numbers.Real):
         return LiteralFloat(node)
     elif isinstance(node, string_types):
-        # Treat string as a symbol
-        # TODO: Using LiteralString or VerbatimExpr would be other options, is this too ambiguous?
-        return Symbol(node)
+        # TODO: When sure this is not used for symbols in existing code,
+        # can make it cast to LiteralString, consistent with the other cases here
+        raise RuntimeError("Got string for CExpr, this is ambiguous: %s" % (node,))
+        return LiteralString(node)
     else:
         raise RuntimeError("Unexpected CExpr type %s:\n%s" % (type(node), str(node)))
 
@@ -1156,6 +1162,10 @@ class Comment(CStatement):
     def __eq__(self, other):
         return (isinstance(other, type(self))
                     and self.comment == other.comment)
+
+
+def NoOp():
+    return Comment("Do nothing")
 
 
 def commented_code_list(code, comments):
@@ -1496,12 +1506,14 @@ class Do(CStatement):
                     and self.condition == other.condition
                     and self.body == other.body)
 
+
 def as_pragma(pragma):
     if isinstance(pragma, string_types):
         return Pragma(pragma)
     elif isinstance(pragma, Pragma):
         return pragma
     return None
+
 
 def is_simple_inner_loop(code):
     if isinstance(code, ForRange) and code.pragma is None:
@@ -1511,6 +1523,7 @@ def is_simple_inner_loop(code):
     if isinstance(code, Statement) and isinstance(code.expr, AssignOp):
         return True
     return False
+
 
 class For(CStatement):
     __slots__ = ("init", "check", "update", "body", "pragma")
@@ -1561,6 +1574,10 @@ class Switch(CStatement):
         if default is not None:
             default = as_cstatement(default)
         self.default = default
+        # If this is a switch where every case returns, scopes or breaks are never needed
+        if all(isinstance(case[1], Return) for case in [(None, default)] + self.cases):
+            autobreak = False
+            autoscope = False
         assert autobreak in (True, False)
         assert autoscope in (True, False)
         self.autobreak = autobreak
@@ -1597,7 +1614,7 @@ class Switch(CStatement):
 class ForRange(CStatement):
     "Slightly higher-level for loop assuming incrementing an index over a range."
     __slots__ = ("index", "begin", "end", "body", "pragma", "index_type")
-    def __init__(self, index, begin, end, body, vectorize=None):
+    def __init__(self, index, begin, end, body, index_type="int", vectorize=None):
         self.index = as_cexpr(index)
         self.begin = as_cexpr(begin)
         self.end = as_cexpr(end)
@@ -1609,9 +1626,7 @@ class ForRange(CStatement):
             pragma = None
         self.pragma = pragma
 
-        # Could be configured if needed but not sure how we're
-        # going to handle type information right now:
-        self.index_type = "int"
+        self.index_type = index_type
 
     def cs_format(self, precision=None):
         indextype = self.index_type
