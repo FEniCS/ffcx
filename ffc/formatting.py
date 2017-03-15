@@ -93,7 +93,7 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
     code_c_pre += format["header_c"] % {"prefix": prefix}
 
     # Add includes
-    includes_h, includes_c = _generate_additional_includes(code)
+    includes_h, includes_c = _generate_includes(code, parameters)
     code_h_pre += includes_h
     code_c_pre += includes_c
 
@@ -206,22 +206,28 @@ def _generate_comment(parameters):
     return comment
 
 
-def _generate_additional_includes(code):
-    s = set()
-    s.add("#include <ufc.h>")
-
+def _generate_includes(code, parameters):
+    # Extract includes from code
+    includes = set()
     for code_foo in code:
-        # FIXME: Avoid adding these includes if we don't need them
-        # s.add("#include <cmath>")
-        s.add("#include <stdexcept>")
-
         for c in code_foo:
-            s.update(c.get("additional_includes_set", ()))
+            # TODO: move more of these includes to cpp file if possible
+            includes.update(c.get("additional_includes_set", ()))
 
-    if s:
-        includes = "\n".join(sorted(s)) + "\n"
-    else:
-        includes = ""
+    default_includes = [
+        "#include <ufc.h>",
+        # FIXME: Avoid adding these includes if we don't need them:
+        "#include <stdexcept>",
+        ]
 
-    # TODO: move includes to cpp file if possible
-    return includes, ""
+    s = set()
+    s.update(default_includes)
+    s.update(includes)
+
+    s2 = set()
+    s2.update(parameters.get("external_includes", ()))
+    s2 -= s
+
+    includes_h = "\n".join(sorted(s)) + "\n" if s else ""
+    includes_cpp = "\n".join(sorted(s2)) + "\n" if s2 else ""
+    return includes_h, includes_cpp

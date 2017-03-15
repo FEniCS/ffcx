@@ -29,6 +29,7 @@ It uses dijitso to wrap the generated code into a Python module."""
 import os
 import sys
 from hashlib import sha1
+from six import string_types
 
 # FEniCS modules
 import ufl
@@ -83,6 +84,19 @@ def jit_generate(ufl_object, module_name, signature, parameters):
     return code_h, code_c, dependencies
 
 
+def _string_tuple(param):
+    "Split a : separated string or convert a list to a tuple."
+    if isinstance(param, (tuple, list)):
+        pass
+    elif isinstance(param, string_types):
+        param = param.split(":")
+    else:
+        param = ()
+    param = tuple(p for p in param if p)
+    assert all(isinstance(p, string_types) for p in param)
+    return param
+
+
 def jit_build(ufl_object, module_name, parameters):
     "Wraps dijitso jit with some parameter conversion etc."
     import dijitso
@@ -97,7 +111,9 @@ def jit_build(ufl_object, module_name, parameters):
     build_params["debug"] = not parameters["cpp_optimize"]
     build_params["cxxflags_opt"] = tuple(parameters["cpp_optimize_flags"].split())
     build_params["cxxflags_debug"] = ("-O0",)
-    build_params["include_dirs"] = get_ufc_include_path()
+    build_params["include_dirs"] = (get_ufc_include_path(),) + _string_tuple(parameters.get("external_include_dirs"))
+    build_params["lib_dirs"] = _string_tuple(parameters.get("external_library_dirs"))
+    build_params["libs"] = _string_tuple(parameters.get("external_libraries"))
 
     # Interpreting FFC default "" as None, use "." if you want to point to curdir
     cache_dir = parameters.get("cache_dir") or None

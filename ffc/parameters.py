@@ -51,10 +51,14 @@ _FFC_GENERATE_PARAMETERS = {
     "max_signature_length": 0,  # set to positive integer to shorten signatures
     "generate_dummy_tabulate_tensor": False,  # set to True to replace tabulate_tensor body with no-op
     "add_tabulate_tensor_timing": False,      # set to True to add timing inside tabulate_tensor
+    "external_includes": "",    # ':' separated list of include filenames to add to generated code
 }
 _FFC_BUILD_PARAMETERS = {
     "cpp_optimize": True,          # optimization for the C++ compiler
     "cpp_optimize_flags": "-O2",   # optimization flags for the C++ compiler
+    "external_libraries": "",      # ':' separated list of libraries to link JIT compiled libraries with
+    "external_library_dirs": "",   # ':' separated list of library search dirs to add when JIT compiling
+    "external_include_dirs": "",   # ':' separated list of include dirs to add when JIT compiling
 }
 _FFC_CACHE_PARAMETERS = {
     "cache_dir": "",        # cache dir used by Instant
