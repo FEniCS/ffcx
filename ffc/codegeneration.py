@@ -55,6 +55,8 @@ def generate_code(ir, parameters):
 
     begin("Compiler stage 4: Generating code")
 
+    full_ir = ir
+
     # FIXME: This has global side effects
     # Set code generation parameters
     set_float_formatting(int(parameters["precision"]))
@@ -66,7 +68,7 @@ def generate_code(ir, parameters):
     # Generate code for finite_elements
     info("Generating code for %d finite_element(s)" % len(ir_finite_elements))
     code_finite_elements = [_generate_finite_element_code(ir, parameters)
-                     for ir in ir_finite_elements]
+                            for ir in ir_finite_elements]
 
     # Generate code for dofmaps
     info("Generating code for %d dofmap(s)" % len(ir_dofmaps))
@@ -91,7 +93,7 @@ def generate_code(ir, parameters):
                   for ir in ir_forms]
 
     # Extract additional includes
-    includes = set()
+    includes = _extract_includes(full_ir, code_integrals)
 
     end()
 
@@ -99,12 +101,13 @@ def generate_code(ir, parameters):
             code_integrals, code_forms, includes)
 
 
+def _extract_includes(full_ir, code_integrals):
+    includes = set()
+    return includes
+
+
 def _generate_finite_element_code(ir, parameters):
     "Generate code for finite element from intermediate representation."
-
-    # Skip code generation if ir is None
-    if ir is None:
-        return None
 
     # Prefetch formatting to speedup code generation
     ret = format["return"]
@@ -168,10 +171,6 @@ def _generate_finite_element_code(ir, parameters):
 
 def _generate_dofmap_code(ir, parameters):
     "Generate code for dofmap from intermediate representation."
-
-    # Skip code generation if ir is None
-    if ir is None:
-        return None
 
     # Prefetch formatting to speedup code generation
     ret = format["return"]
@@ -274,10 +273,6 @@ def _additional_includes_form(ir):
 def _generate_coordinate_mapping_code(ir, parameters):
     "Generate code for coordinate_mapping from intermediate representation."
 
-    # Skip code generation if ir is None
-    if ir is None:
-        return None
-
     coordinate_mapping_number = ir["id"]
 
     # FIXME: Get code dict from current work in uflacs
@@ -374,10 +369,6 @@ tt_timing_template = """
 def _generate_integral_code(ir, parameters):
     "Generate code for integrals from intermediate representation."
 
-    # Skip code generation if ir is None
-    if ir is None:
-        return None
-
     # Select representation
     r = pick_representation(ir["representation"])
 
@@ -445,10 +436,6 @@ def _generate_original_coefficient_position(original_coefficient_positions):
 
 def _generate_form_code(ir, parameters):
     "Generate code for form from intermediate representation."
-
-    # Skip code generation if ir is None
-    if ir is None:
-        return None
 
     # Prefetch formatting to speedup code generation
     ret = format["return"]
