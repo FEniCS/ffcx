@@ -269,6 +269,8 @@ def _old_generate_dofmap_code(ir, parameters):
         = _needs_mesh_entities(ir["needs_mesh_entities"])
     code["topological_dimension"] = ret(ir["topological_dimension"])
     code["global_dimension"] = _global_dimension(ir["global_dimension"])
+    code["num_global_support_dofs"] = ret(ir["num_global_support_dofs"])
+    code["num_element_support_dofs"] = ret(ir["num_element_support_dofs"])
     code["num_element_dofs"] = ret(ir["num_element_dofs"])
     code["num_facet_dofs"] = ret(ir["num_facet_dofs"])
     code["num_entity_dofs"] \

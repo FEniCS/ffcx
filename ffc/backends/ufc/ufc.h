@@ -225,7 +225,15 @@ namespace ufc
                                          num_global_mesh_entities) const = 0;
 
     /// Return the dimension of the local finite element function space
-    /// for a cell
+    /// Return the number of dofs with global support (i.e. global constants)
+    virtual std::size_t num_global_support_dofs() const = 0;
+
+    /// Return the dimension of the local finite element function space
+    /// for a cell (not including global support dofs)
+    virtual std::size_t num_element_support_dofs() const = 0;
+
+    /// Return the dimension of the local finite element function space
+    /// for a cell (old version including global support dofs)
     virtual std::size_t num_element_dofs() const = 0;
 
     /// Return the number of dofs on each cell facet

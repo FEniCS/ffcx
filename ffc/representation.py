@@ -270,6 +270,8 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, jit=False):
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
     ir["global_dimension"] = _global_dimension(fiat_element)
+    ir["num_global_support_dofs"] = _num_global_support_dofs(fiat_element)
+    ir["num_element_support_dofs"] = fiat_element.space_dimension() - ir["num_global_support_dofs"]
     ir["num_element_dofs"] = fiat_element.space_dimension()
     ir["num_facet_dofs"] = len(facet_dofs[0])
     ir["num_entity_dofs"] = num_dofs_per_entity
@@ -390,6 +392,19 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element, element_numbers,
         classnames["finite_element"][ufl_coordinate_element.sub_elements()[0]]
 
     return ir
+
+
+def _num_global_support_dofs(fiat_element):
+    "Compute number of global support dofs."
+    if not isinstance(fiat_element, MixedElement):
+        if isinstance(fiat_element, SpaceOfReals):
+            return 1
+        return 0
+    num_reals = 0
+    for (i, e) in enumerate(fiat_element.elements()):
+        if isinstance(e, SpaceOfReals):
+            num_reals += 1
+    return num_reals
 
 
 def _global_dimension(fiat_element):

@@ -60,6 +60,12 @@ class ufc_dofmap(ufc_generator):
 
         return L.Return(dimension)
 
+    def num_global_support_dofs(self, L, num_global_support_dofs):
+        return L.Return(num_global_support_dofs)
+
+    def num_element_support_dofs(self, L, num_element_support_dofs):
+        return L.Return(num_element_support_dofs)
+
     def num_element_dofs(self, L, num_element_dofs):
         return L.Return(num_element_dofs)
 
