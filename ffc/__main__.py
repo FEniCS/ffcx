@@ -20,7 +20,8 @@
 
 """This is triggered by running 'python -m ffc'."""
 
+from ffc.main import main
+
 if __name__ == "__main__":
     import sys
-    from ffc.main import main
     sys.exit(main())
