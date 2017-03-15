@@ -451,6 +451,9 @@ def _compute_integral_ir(form_data, form_id, prefix, element_numbers, classnames
                                    classnames,
                                    parameters)
 
+        # Remember jit status
+        ir["jit"] = jit
+
         # Build classname
         ir["classname"] = make_integral_classname(prefix, itg_data.integral_type,
                                                   form_id, itg_data.subdomain_id)
