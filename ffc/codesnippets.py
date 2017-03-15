@@ -818,7 +818,8 @@ eval_basis = """\
 // Get current quadrature point and compute values of basis functions
 const double* x = quadrature_points + ip*%(gdim)s;
 const double* v = coordinate_dofs + %(vertex_offset)s;
-%(classname)s::_evaluate_basis_all(%(eval_name)s, x, v, cell_orientation);"""
+%(classname)s %(classname)s_obj;
+%(classname)s_obj.evaluate_basis_all(%(eval_name)s, x, v, cell_orientation);"""
 
 eval_basis_copy = """\
 // Copy values to table %(table_name)s
@@ -836,7 +837,8 @@ eval_derivs = """\
 // Get current quadrature point and compute values of basis function derivatives
 const double* x = quadrature_points + ip*%(gdim)s;
 const double* v = coordinate_dofs + %(vertex_offset)s;
-%(classname)s::_evaluate_basis_derivatives_all(%(n)s, %(eval_name)s, x, v, cell_orientation);"""
+%(classname)s %(classname)s_obj;
+%(classname)s_obj.evaluate_basis_derivatives_all(%(n)s, %(eval_name)s, x, v, cell_orientation);"""
 
 eval_derivs_copy = """\
 // Copy values to table %(table_name)s

@@ -225,6 +225,10 @@ def _old_generate_finite_element_code(ir, parameters):
     code["evaluate_basis_derivatives_all"] \
         = _evaluate_basis_derivatives_all(ir["evaluate_basis"])
 
+    code["evaluate_reference_basis"] = "// Missing implementation"
+    code["evaluate_reference_basis_derivatives"] = "// Missing implementation"
+    code["tabulate_reference_dof_coordinates"] = "// Missing implementation"
+
     code["evaluate_dof"] = evaluate_dof_code
     code["evaluate_dofs"] = evaluate_dofs_code
     code["interpolate_vertex_values"] \

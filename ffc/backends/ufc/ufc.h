@@ -135,6 +135,17 @@ namespace ufc
     /// Return the family of the finite element function space
     virtual const char * family() const = 0;
 
+    /// Evaluate all basis functions at given point X in reference cell
+    virtual void evaluate_reference_basis(double * reference_values,
+                                          std::size_t num_points,
+                                          const double * X) const = 0;
+
+    /// Evaluate specific order derivatives of all basis functions at given point X in reference cell
+    virtual void evaluate_reference_basis_derivatives(double * reference_values,
+                                                      std::size_t order,
+                                                      std::size_t num_points,
+                                                      const double * X) const = 0;
+
     /// Evaluate basis function i at given point x in cell
     virtual void evaluate_basis(std::size_t i,
                                 double * values,
@@ -189,6 +200,9 @@ namespace ufc
     /// Tabulate the coordinates of all dofs on a cell
     virtual void tabulate_dof_coordinates(double * dof_coordinates,
                                           const double * coordinate_dofs) const = 0;
+
+    /// Tabulate the coordinates of all dofs on a reference cell
+    virtual void tabulate_reference_dof_coordinates(double * reference_dof_coordinates) const = 0;
 
     /// Return the number of sub elements (for a mixed element)
     virtual std::size_t num_sub_elements() const = 0;
@@ -313,7 +327,9 @@ namespace ufc
         double * X, std::size_t num_points,
         const double * x,
         const double * coordinate_dofs, double cell_orientation) const = 0;
-    /// Compute X, J, detJ, K from physical coordinates x on a cell // TODO: Can compute all this at no extra cost
+
+    // TODO: Can compute all this at no extra cost with the code in compute_reference_coordinates
+    /// Compute X, J, detJ, K from physical coordinates x on a cell
     //virtual void compute_reference_geometry(
     //    double * X, double * J, double * detJ, double * K, std::size_t num_points,
     //    const double * x,
