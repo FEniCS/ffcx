@@ -1096,11 +1096,17 @@ class Continue(CStatement):
 
 class Return(CStatement):
     __slots__ = ("value",)
-    def __init__(self, value):
-        self.value = as_cexpr(value)
+    def __init__(self, value=None):
+        if value is None:
+            self.value = None
+        else:
+            self.value = as_cexpr(value)
 
     def cs_format(self, precision=None):
-        return "return " + self.value.ce_format(precision) + ";"
+        if self.value is None:
+            return "return;"
+        else:
+            return "return %s;" % (self.value.ce_format(precision),)
 
     def __eq__(self, other):
         return (isinstance(other, type(self))
