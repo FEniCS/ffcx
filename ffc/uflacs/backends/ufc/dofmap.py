@@ -48,10 +48,21 @@ class ufc_dofmap(ufc_generator):
         entities = L.Symbol("num_global_entities")
 
         # Accumulate number of dofs per entity times given number of entities in mesh
-        dimension = sum(L.LiteralInt(num)*entities[dim] for dim, num in enumerate(num_entity_dofs) if num > 0)
+        entity_dofs = []
+        for dim, num in enumerate(num_entity_dofs):
+            if num == 1:
+                entity_dofs.append(entities[dim])
+            elif num > 1:
+                entity_dofs.append(L.LiteralInt(num) * entities[dim])
+
+        if entity_dofs:
+            dimension = L.Sum(entity_dofs)
+        else:
+            dimension = L.LiteralInt(0)
 
         # Add global dofs if any
         if num_global_dofs:
+            # TODO: Extend ufc with num_global_support_dofs, the number is right here!
             dimension = dimension + L.LiteralInt(num_global_dofs)
 
         return L.Return(dimension)
@@ -69,7 +80,7 @@ class ufc_dofmap(ufc_generator):
         values = ir["num_entity_dofs"]
         cases = [(i, L.Return(L.LiteralInt(value))) for i, value in enumerate(values)]
         default = L.Return(L.LiteralInt(0))
-        return L.Switch(d, cases, default=default)
+        return L.Switch(d, cases, autoscope=False, autobreak=False, default=default)
 
     def num_entity_closure_dofs(self, L, ir):
         d = L.Symbol("d")
@@ -87,10 +98,14 @@ class ufc_dofmap(ufc_generator):
         # Output arguments
         dofs_variable = L.Symbol("dofs")
 
-
         ir = ir["tabulate_dofs"]
-        if ir is None: # What is this supposed to mean?
-            return L.Assign(dofs_variable[0], 0)
+        if ir is None:
+            # Special case for SpaceOfReals, ir returns None
+            # FIXME: This is how the old code did in this case,
+            # is it correct? Is there only 1 dof?
+            # I guess VectorElement(Real) handled elsewhere?
+            code = [L.Assign(dofs_variable[0], 0)]
+            return L.StatementList(code)
 
         # Extract representation
         #(dofs_per_element, num_dofs_per_element, need_offset, fakes) = ir # names from original ffc code
@@ -149,14 +164,16 @@ class ufc_dofmap(ufc_generator):
 
                     for (j, dof) in enumerate(dofs):
                         # dof is the local dof index on the subelement
-                        # j is the local index of dof among the dofs on this particular cell/mesh entity
+                        # j is the local index of dof among the dofs
+                        # on this particular cell/mesh entity
                         local_dof_index = subelement_offset + dof
                         global_dof_index = offset + entity_offset + j
                         code.append(L.Assign(dofs_variable[local_dof_index], global_dof_index))
 
                 # Update offset corresponding to mesh entity:
                 if need_offset:
-                    code.append(L.AssignAdd(offset, num_dofs_per_mesh_entity * num_mesh_entities[cell_entity_dim]))
+                    value = num_dofs_per_mesh_entity * num_mesh_entities[cell_entity_dim]
+                    code.append(L.AssignAdd(offset, value))
 
             subelement_offset += num_dofs_per_subelement[subelement_index]
 
@@ -171,11 +188,12 @@ class ufc_dofmap(ufc_generator):
 
         # For each facet, copy all_facet_dofs[facet][:] into output argument array dofs[:]
         cases = []
-        for facet, single_facet_dofs in enumerate(all_facet_dofs):
-            assigns = L.StatementList([L.Assign(dofs[i], dof) for (i, dof) in enumerate(single_facet_dofs)])
-            cases.append((facet, assigns))
-
+        for f, single_facet_dofs in enumerate(all_facet_dofs):
+            assignments = [L.Assign(dofs[i], dof)
+                           for (i, dof) in enumerate(single_facet_dofs)]
+            cases.append((f, L.StatementList(assignments)))
         return L.Switch(facet, cases, autoscope=False)
+
 
     def tabulate_entity_dofs(self, L, ir):
         entity_dofs, num_dofs_per_entity = ir["tabulate_entity_dofs"]
