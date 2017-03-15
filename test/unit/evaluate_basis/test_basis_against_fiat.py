@@ -149,7 +149,7 @@ mixed_elements = [MixedElement([dg0_tri] * 4),
 all_elements = mixed_elements
 
 
-def compile_gcc_code(ufl_element, code):
+def compile_gcc_code(code):
     # Write code to file
     with open("evaluate_basis.cpp", "w") as f:
         f.write(code)
@@ -204,6 +204,7 @@ def generate_element(ufl_element):
         f.write("element = " + repr(ufl_element))
     r = ffc.main(["test.ufl"])
     assert r == 0, "FFC compilation failed for element: {}.".format(str(ufl_element))
+    assert os.path.exists("test.h")
 
 
 def matrix(points):
@@ -294,7 +295,7 @@ def get_ffc_values(ufl_element):
                "points": matrix(points),
                "cell_ref_coords": "double cell_ref_coords[{}][{}] = {}".format(num_coords, geo_dim, matrix(ref_coords)),
                "num_coords": num_coords}
-    compile_gcc_code(ufl_element, evaluate_basis_code_fiat % options)
+    compile_gcc_code(evaluate_basis_code_fiat % options)
 
     # Loop over derivative order and compute values
     ffc_values = {}
