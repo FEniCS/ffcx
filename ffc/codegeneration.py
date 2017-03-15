@@ -494,6 +494,50 @@ def _old_generate_form_code(ir, parameters):
     return code
 
 
+def _new_generate_finite_element_code(ir, parameters):
+    "Generate code for finite_element from intermediate representation."
+    import ffc.uflacs.language.cnodes as L
+    from ffc.uflacs.backends.ufc.finite_element import ufc_finite_element
+    code = ufc_finite_element().generate_snippets(L, ir)
+    return code
+
+
+def _new_generate_dofmap_code(ir, parameters):
+    "Generate code for dofmap from intermediate representation."
+    import ffc.uflacs.language.cnodes as L
+    from ffc.uflacs.backends.ufc.dofmap import ufc_dofmap
+    code = ufc_dofmap().generate_snippets(L, ir)
+    return code
+
+
+def _new_generate_coordinate_mapping_code(ir, parameters):
+    "Generate code for coordinate_mapping from intermediate representation."
+    import ffc.uflacs.language.cnodes as L
+    from ffc.uflacs.backends.ufc.coordinate_mapping import ufc_coordinate_mapping
+    code = ufc_coordinate_mapping().generate_snippets(L, ir)
+    return code
+
+
+def _new_generate_integral_code(ir, parameters):
+    "Generate code for integrals from intermediate representation."
+    import ffc.uflacs.language.cnodes as L
+    from ffc.uflacs.backends.ufc.integral import ufc_integral
+    code = ufc_integral().generate_snippets(L, ir)
+
+    # Generate comment
+    code["tabulate_tensor_comment"] = _generate_tabulate_tensor_comment(ir, parameters)
+
+    return code
+
+
+def _new_generate_form_code(ir, parameters):
+    "Generate code for coordinate_mapping from intermediate representation."
+    import ffc.uflacs.language.cnodes as L
+    from ffc.uflacs.backends.ufc.form import ufc_form
+    code = ufc_form().generate_snippets(L, ir)
+    return code
+
+
 #_generate_finite_element_code = _new_generate_finite_element_code
 _generate_finite_element_code = _old_generate_finite_element_code
 
