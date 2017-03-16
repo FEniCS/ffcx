@@ -113,19 +113,21 @@ def float_product(factors):
 
 def MemZeroRange(name, begin, end):
     name = as_cexpr_or_string_symbol(name)
-    return Call("std::fill", (
-        AddressOf(name[begin]),
-        AddressOf(name[end]),
-        LiteralFloat(0.0)))
+    return Call("std::fill", (name + begin, name + end, LiteralFloat(0.0)))
+    #return Call("std::fill", (AddressOf(name[begin]), AddressOf(name[end]), LiteralFloat(0.0)))
 
 
 def MemZero(name, size):
     name = as_cexpr_or_string_symbol(name)
     size = as_cexpr(size)
-    return Call("std::fill", (
-        name,
-        name + size,
-        LiteralFloat(0.0)))
+    return Call("std::fill", (name, name + size, LiteralFloat(0.0)))
+
+
+def MemCopy(src, dst, size):
+    src = as_cexpr_or_string_symbol(src)
+    dst = as_cexpr_or_string_symbol(dst)
+    size = as_cexpr(size)
+    return Call("std::copy", (src, src + size, dst))
 
 
 ############## CNode core
