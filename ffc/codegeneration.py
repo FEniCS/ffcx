@@ -545,20 +545,19 @@ def _new_generate_form_code(ir, parameters):
     return code
 
 
-#_generate_finite_element_code = _new_generate_finite_element_code
+# Use the old ones:
 _generate_finite_element_code = _old_generate_finite_element_code
-
-#_generate_dofmap_code = _new_generate_dofmap_code
 _generate_dofmap_code = _old_generate_dofmap_code
-
-#_generate_coordinate_mapping_code = _new_generate_coordinate_mapping_code
 _generate_coordinate_mapping_code = _old_generate_coordinate_mapping_code
-
-#_generate_integral_code = _new_generate_integral_code
 _generate_integral_code = _old_generate_integral_code
+_generate_form_code = _old_generate_form_code
 
+# Unless overridden with the new ones:
+#_generate_finite_element_code = _new_generate_finite_element_code
+_generate_dofmap_code = _new_generate_dofmap_code
+#_generate_coordinate_mapping_code = _new_generate_coordinate_mapping_code
+#_generate_integral_code = _new_generate_integral_code
 _generate_form_code = _new_generate_form_code
-#_generate_form_code = _old_generate_form_code
 
 
 #--- Code generation for non-trivial functions ---
