@@ -20,7 +20,7 @@
 
 
 from ffc.uflacs.backends.ufc.generator import ufc_generator
-from ffc.uflacs.backends.ufc.utils import generate_return_new_switch, generate_return_int_switch, generate_return_bool_switch
+from ffc.uflacs.backends.ufc.utils import generate_return_new_switch, generate_return_sizet_switch, generate_return_bool_switch
 
 
 class ufc_dofmap(ufc_generator):
@@ -73,10 +73,10 @@ class ufc_dofmap(ufc_generator):
         return L.Return(num_facet_dofs)
 
     def num_entity_dofs(self, L, num_entity_dofs):
-        return generate_return_int_switch(L, "d", num_entity_dofs, 0)
+        return generate_return_sizet_switch(L, "d", num_entity_dofs, 0)
 
     def num_entity_closure_dofs(self, L, num_entity_closure_dofs):
-        return generate_return_int_switch(L, "d", num_entity_closure_dofs, 0)
+        return generate_return_sizet_switch(L, "d", num_entity_closure_dofs, 0)
 
     def tabulate_dofs(self, L, ir):
         # Input arguments

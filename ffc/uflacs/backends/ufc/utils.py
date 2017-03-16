@@ -38,27 +38,44 @@ def generate_return_new_switch(L, i, classnames, args=None, factory=False):
         return default
 
 
-def generate_return_literal_switch(L, i, values, default, literal_type):
+def generate_return_literal_switch(L, i, values, default, literal_type, typename=None):
     # TODO: UFC functions of this type could be replaced with return vector<T>{values}.
 
     if isinstance(i, string_types):
         i = L.Symbol(i)
+    return_default = L.Return(literal_type(default))
 
-    default = L.Return(literal_type(default))
-    if values:
+    if values and typename is not None:
+        # Store values in static table and return from there
+        V = L.Symbol("return_values")
+        decl = L.ArrayDecl("static const %s" % typename, V, len(values),
+                            [literal_type(k) for k in values])
+        return L.StatementList([
+            decl,
+            L.If(L.GE(i, len(values)),
+                 return_default),
+            L.Return(V[i])
+            ])
+    elif values:
+        # Need typename to create static array, fallback to switch
         cases = [(j, L.Return(literal_type(k)))
                  for j, k in enumerate(values)]
-        return L.Switch(i, cases, default=default)
+        return L.Switch(i, cases, default=return_default)
     else:
-        return default
+        # No values, just return default
+        return return_default
+
+
+def generate_return_sizet_switch(L, i, values, default):
+    return generate_return_literal_switch(L, i, values, default, L.LiteralInt, "std::size_t")
 
 
 def generate_return_int_switch(L, i, values, default):
-    return generate_return_literal_switch(L, i, values, default, int)
+    return generate_return_literal_switch(L, i, values, default, L.LiteralInt, "int")
 
 
 def generate_return_bool_switch(L, i, values, default):
-    return generate_return_literal_switch(L, i, values, default, bool)
+    return generate_return_literal_switch(L, i, values, default, L.LiteralBool, "bool")
 
 
 # TODO: Better error handling
