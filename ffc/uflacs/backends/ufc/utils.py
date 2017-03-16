@@ -83,7 +83,7 @@ def generate_error(L, msg, emit_warning):
     if emit_warning:
         return L.VerbatimStatement('std::cerr << "*** FFC warning: " << "%s" << std::endl;' % (msg,))
     else:
-        return L.Raise('std::runtime_error("%s");' % (msg,))
+        return L.Throw('std::runtime_error', msg)
 
 
 """
