@@ -1458,6 +1458,14 @@ class Namespace(CStatement):
                     and self.body == other.body)
 
 
+def _is_simple_if_body(body):
+    if isinstance(body, StatementList):
+        if len(body.statements) > 1:
+            return False
+        body, = body.statements
+    return isinstance(body, (Return, AssignOp))
+
+
 class If(CStatement):
     __slots__ = ("condition", "body")
     def __init__(self, condition, body):
@@ -1465,8 +1473,12 @@ class If(CStatement):
         self.body = as_cstatement(body)
 
     def cs_format(self, precision=None):
-        return ("if (" + self.condition.ce_format(precision) + ")",
-                "{", Indented(self.body.cs_format(precision)), "}")
+        statement = "if (" + self.condition.ce_format(precision) + ")"
+        body_fmt = Indented(self.body.cs_format(precision))
+        if _is_simple_if_body(self.body):
+            return (statement, body_fmt)
+        else:
+            return (statement, "{", body_fmt, "}")
 
     def __eq__(self, other):
         return (isinstance(other, type(self))
@@ -1481,8 +1493,12 @@ class ElseIf(CStatement):
         self.body = as_cstatement(body)
 
     def cs_format(self, precision=None):
-        return ("else if (" + self.condition.ce_format(precision) + ")",
-                "{", Indented(self.body.cs_format(precision)), "}")
+        statement = "else if (" + self.condition.ce_format(precision) + ")"
+        body_fmt = Indented(self.body.cs_format(precision))
+        if _is_simple_if_body(self.body):
+            return (statement, body_fmt)
+        else:
+            return (statement, "{", body_fmt, "}")
 
     def __eq__(self, other):
         return (isinstance(other, type(self))
@@ -1496,8 +1512,12 @@ class Else(CStatement):
         self.body = as_cstatement(body)
 
     def cs_format(self, precision=None):
-        return ("else",
-                "{", Indented(self.body.cs_format(precision)), "}")
+        statement = "else"
+        body_fmt = Indented(self.body.cs_format(precision))
+        if _is_simple_if_body(self.body):
+            return (statement, body_fmt)
+        else:
+            return (statement, "{", body_fmt, "}")
 
     def __eq__(self, other):
         return (isinstance(other, type(self))
