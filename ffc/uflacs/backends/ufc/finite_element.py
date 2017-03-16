@@ -194,7 +194,7 @@ class ufc_finite_element(ufc_generator):
         return code
 
     def tabulate_reference_dof_coordinates(self, L, ir, parameters):
-        # TODO: Change signature to
+        # TODO: Change signature to avoid copy? E.g.
         # virtual const std::vector<double> & tabulate_reference_dof_coordinates() const = 0;
         # See integral::enabled_coefficients for example
 
@@ -213,34 +213,29 @@ class ufc_finite_element(ufc_generator):
         points = ir["points"]
 
         # Output argument
-        #reference_dof_coordinates = L.FlattenedArray(L.Symbol("reference_dof_coordinates"), dims=(len(points), tdim))
         reference_dof_coordinates = L.Symbol("reference_dof_coordinates")
-
-        # Loop indices
-        j = L.Symbol("j")
-        ip = L.Symbol("ip")
 
         # Reference coordinates
         dof_X = L.Symbol("dof_X")
         dof_X_values = [X[jj] for X in points for jj in range(tdim)]
-        code = [
-            L.ArrayDecl("static const double", dof_X,
-                        (len(points) * tdim,), values=dof_X_values),
-            L.ForRange(ip, 0, len(points), body=
-                L.ForRange(j, 0, tdim, body=
-                    L.AssignAdd(reference_dof_coordinates[ip*tdim + j], dof_X[ip*tdim + j]))),
-            ]
+        decl = L.ArrayDecl("static const double", dof_X,
+                           (len(points) * tdim,), values=dof_X_values)
+        copy = L.MemCopy(dof_X, reference_dof_coordinates, tdim*len(points))
+
+        code = [decl, copy]
         return code
 
     def evaluate_reference_basis(self, L, ir, parameters):
         data = ir["evaluate_basis"]
-        from ffc.uflacs.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
-        return generate_evaluate_reference_basis(L, data, parameters)
+        #from ffc.uflacs.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
+        #return generate_evaluate_reference_basis(L, data, parameters)
+        return L.Comment("Missing implementation")
 
     def evaluate_reference_basis_derivatives(self, L, ir, parameters):
         data = ir["evaluate_basis"]
-        from ffc.uflacs.backends.ufc.evalderivs import generate_evaluate_reference_basis_derivatives
-        return generate_evaluate_reference_basis_derivatives(L, data, parameters)
+        #from ffc.uflacs.backends.ufc.evalderivs import generate_evaluate_reference_basis_derivatives
+        #return generate_evaluate_reference_basis_derivatives(L, data, parameters)
+        return L.Comment("Missing implementation")
 
 
 """

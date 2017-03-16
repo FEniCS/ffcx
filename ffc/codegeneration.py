@@ -532,8 +532,8 @@ def _new_generate_coordinate_mapping_code(ir, parameters):
 def _new_generate_integral_code(ir, parameters):
     "Generate code for integrals from intermediate representation."
     import ffc.uflacs.language.cnodes as L
-    from ffc.uflacs.backends.ufc.integral import ufc_integral
-    code = ufc_integral().generate_snippets(L, ir, parameters)
+    from ffc.uflacs.backends.ufc.integrals import ufc_integral
+    code = ufc_integral(ir["integral_type"]).generate_snippets(L, ir, parameters)
     return code
 
 
@@ -553,7 +553,7 @@ _generate_integral_code = _old_generate_integral_code
 _generate_form_code = _old_generate_form_code
 
 # Unless overridden with the new ones:
-#_generate_finite_element_code = _new_generate_finite_element_code
+_generate_finite_element_code = _new_generate_finite_element_code
 _generate_dofmap_code = _new_generate_dofmap_code
 #_generate_coordinate_mapping_code = _new_generate_coordinate_mapping_code
 #_generate_integral_code = _new_generate_integral_code

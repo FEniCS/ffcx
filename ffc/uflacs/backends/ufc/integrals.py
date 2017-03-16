@@ -3,7 +3,7 @@
 from ffc.uflacs.backends.ufc.generator import ufc_generator, ufc_integral_types
 from ufl.utils.formatting import dstr
 
-
+# (This is currently not in use, see ffc/codegeneration.py for current status)
 class ufc_integral(ufc_generator):
     "Each function maps to a keyword in the template. See documentation of ufc_generator."
     def __init__(self, integral_type):
@@ -22,11 +22,11 @@ class ufc_integral(ufc_generator):
         return code
 
     def tabulate_tensor(self, L, ir):
-        # FIXME: This is where the current ffc backend code generation should be injected
+        # FIXME: This is where the current ffc backend code generation should be injected,
+        #        however that will require using pick_representation in here?
         tt = ir["tabulate_tensor"]
         code = "code generated from %s" % tt
         return code
-
 
     def tabulate_tensor_comment(self, L, ir):
         "Generate comment for tabulate_tensor."
