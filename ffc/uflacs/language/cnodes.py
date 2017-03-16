@@ -227,6 +227,10 @@ class CExpr(CNode):
             return self
         if is_zero_cexpr(other):
             return other
+        if is_one_cexpr(self):
+            return other
+        if is_one_cexpr(other):
+            return self
         if is_negative_one_cexpr(other):
             return Neg(self)
         if is_negative_one_cexpr(self):
@@ -239,6 +243,10 @@ class CExpr(CNode):
             return self
         if is_zero_cexpr(other):
             return other
+        if is_one_cexpr(self):
+            return other
+        if is_one_cexpr(other):
+            return self
         if is_negative_one_cexpr(other):
             return Neg(self)
         if is_negative_one_cexpr(self):
