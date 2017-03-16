@@ -557,8 +557,8 @@ _generate_coordinate_mapping_code = _old_generate_coordinate_mapping_code
 #_generate_integral_code = _new_generate_integral_code
 _generate_integral_code = _old_generate_integral_code
 
-#_generate_form_code = _new_generate_form_code
-_generate_form_code = _old_generate_form_code
+_generate_form_code = _new_generate_form_code
+#_generate_form_code = _old_generate_form_code
 
 
 #--- Code generation for non-trivial functions ---
