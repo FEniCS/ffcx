@@ -30,7 +30,9 @@ int main(int argc, char* argv[])
   %(element)s element;
 
   // Get derivative order
-  unsigned int n = std::atoi(argv[1]);
+  unsigned int n = 0;
+  if (argc > 1)
+    n = std::atoi(argv[1]);
 
   // Value dimension
   int N;

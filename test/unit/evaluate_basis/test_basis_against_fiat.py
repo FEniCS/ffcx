@@ -278,8 +278,10 @@ def get_data(ufl_element):
     return (element, points, geo_dim, ref_coords, deriv_order)
 
 
+_gcc_t = 0.0
 def get_ffc_values(ufl_element):
     "Get the values from evaluate_basis and evaluate_basis_derivatives."
+    global _gcc_t
 
     # Get data from element and tabulate basis values
     element, points, geo_dim, ref_coords, deriv_order = get_data(ufl_element)
@@ -295,7 +297,14 @@ def get_ffc_values(ufl_element):
                "points": matrix(points),
                "cell_ref_coords": "double cell_ref_coords[{}][{}] = {}".format(num_coords, geo_dim, matrix(ref_coords)),
                "num_coords": num_coords}
+    t = time.time()
+
     compile_gcc_code(evaluate_basis_code_fiat % options)
+
+    # This shows c++ spends ~70% of the total test time, so
+    # reusing subelement code should allow reducing this drastically
+    _gcc_t += time.time() - t
+    print("total gcc time: %.2f s" % (_gcc_t,))
 
     # Loop over derivative order and compute values
     ffc_values = {}
@@ -386,21 +395,38 @@ def verify_values(ufl_element, ref_values, ffc_values):
     return num_tests
 
 
+@pytest.yield_fixture(scope="function")
+def intmpdir(tmpdir):
+    """Return a unique directory name for this test function instance.
+
+    Deletes and re-creates directory from previous test runs but lets
+    the directory stay after the test run for eventual inspection.
+
+    Returns the directory name, derived from the test file and function
+    plus a sequence number to work with parameterized tests.
+
+    Changes the current directory to the tempdir and resets cwd afterwards.
+    """
+    cwd = os.getcwd()
+    path = tmpdir.strpath
+    os.chdir(path)
+    yield path
+    os.chdir(cwd)
+
+
 # Test over different element types
 @pytest.mark.parametrize("ufl_element", all_elements)
-def test_element(ufl_element):
+def test_element(ufl_element, intmpdir):
     "Test FFC elements against FIAT"
-
     print("\nVerifying element: {}".format(str(ufl_element)))
+    t = time.time()
 
     # Generate element
     generate_element(ufl_element)
 
     # Get FFC values
-    t = time.time()
     ffc_values = get_ffc_values(ufl_element)
     assert ffc_values is not None
-    # debug("  time to compute FFC values: %f" % (time.time() - t))
 
     # Get FIAT values that are formatted in the same way as the values
     # from evaluate_basis and evaluate_basis_derivatives.
@@ -408,3 +434,5 @@ def test_element(ufl_element):
 
     # Compare FIAT and FFC values
     verify_values(ufl_element, fiat_values, ffc_values)
+
+    print("  total time for element: %.2f s" % (time.time() - t))
