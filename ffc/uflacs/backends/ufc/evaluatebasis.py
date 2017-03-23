@@ -8,6 +8,9 @@ from ffc.uflacs.backends.ufc.utils import generate_error
 import math
 
 
+index_type = "std::size_t"
+    
+
 def generate_evaluate_reference_basis(L, data, parameters):
     """Generate code to evaluate element basisfunctions at an arbitrary point on the reference element.
 
@@ -54,7 +57,8 @@ def generate_evaluate_reference_basis(L, data, parameters):
 
     # Reset reference_values[:] to 0
     reset_values_code = [
-        L.ForRange(k, 0, num_points*num_dofs*reference_value_size, body=
+        L.ForRange(k, 0, num_points*num_dofs*reference_value_size,
+                   index_type=index_type, body=
             L.Assign(reference_values[k], 0.0))
         ]
     setup_code = tables_code + reset_values_code
@@ -84,14 +88,14 @@ def generate_evaluate_reference_basis(L, data, parameters):
         # Generate basis accumulation loop
         if num_components > 1:
             accumulation_code += [
-                L.ForRange(c, 0, num_components, body=
-                    L.ForRange(r, 0, num_members, body=
+                L.ForRange(c, 0, num_components, index_type=index_type, body=
+                    L.ForRange(r, 0, num_members, index_type=index_type, body=
                         L.AssignAdd(ref_values[ip, idof, reference_offset + c],
                                     coefficients[c,r] * basisvalues[r])))
                 ]
         elif num_members > 1:
             accumulation_code += [
-                L.ForRange(r, 0, num_members, body=
+                L.ForRange(r, 0, num_members, index_type=index_type, body=
                     L.AssignAdd(ref_values[ip, idof, reference_offset], coefficients[0, r] * basisvalues[r]))
                 ]
         else:
@@ -105,7 +109,7 @@ def generate_evaluate_reference_basis(L, data, parameters):
     # Stitch it all together
     code = [
         setup_code,
-        L.ForRange(ip, 0, num_points,
+        L.ForRange(ip, 0, num_points, index_type=index_type,
                    body=basisvalues_code + accumulation_code)
         ]
     return code
@@ -240,7 +244,7 @@ def _generate_compute_interval_basisvalues(L, basisvalues, Y, embedded_degree, n
 
     # Scale values
     p = L.Symbol("p")
-    code += [L.ForRange(p, 0, embedded_degree + 1,
+    code += [L.ForRange(p, 0, embedded_degree + 1, index_type=index_type,
                         body=L.AssignMul(basisvalues[p], L.Call("sqrt", (0.5 + p,))))]
     return code
 

@@ -1,34 +1,23 @@
 # -*- coding: utf-8 -*-
+# Copyright (C) 2015-2016 Martin Sandve Alnæs
+#
+# This file is part of UFLACS.
+#
+# UFLACS is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# UFLACS is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
 import re
 from ffc.backends.ufc import *
-
-# TODO: Make cell_orientation a double +1.0|-1.0 instead of the int flag in ffc/ufc/dolfin
-# TODO: Simplify ufc templates by introducing 'preamble' keyword in place of members, constructor, destructor
-
-domain_background = """
-/// This is just here to document the memory layout of the geometry data arrays
-struct geometry_data
-{
-  // Example dimensions
-  std::size_t gdim = 3;
-  std::size_t tdim = 2;
-  std::size_t num_points = 1;
-
-  // Memory layout of geometry data arrays
-  double x[num_points * gdim];         // x[i]   -> x[ip*gdim + i]
-  double X[num_points * tdim];         // X[j]   -> X[ip*tdim + j]
-  double J[num_points * gdim * tdim];  // J[i,j] -> J[ip*gdim*tdim + i*tdim + j]
-  double detJ[num_points];             // detJ   -> detJ[ip]
-  double K[num_points * tdim * gdim];  // K[j,i] -> K[ip*tdim*gdim + j*gdim + i]
-  double n[num_points * gdim];         // n[i]   -> n[ip*gdim + i]
-
-  // In the affine case we have the relation:
-  // x[i] = x0[i] + sum_j J[i,j] X[j]
-  // X[j] = sum_i K[j,i] (x[i] - x0[i])
-
-};
-"""
 
 def extract_keywords(template):
     r = re.compile(r"%\(([a-zA-Z0-9_]*)\)")

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2009-2016 Anders Logg and Martin Sandve Alnæs
+# Copyright (C) 2009-2017 Anders Logg and Martin Sandve Alnæs
 #
 # This file is part of UFLACS.
 #
@@ -28,11 +28,14 @@ class ufc_dofmap(ufc_generator):
     def __init__(self):
         ufc_generator.__init__(self, "dofmap")
 
+
     def topological_dimension(self, L, topological_dimension):
         return L.Return(topological_dimension)
 
+
     def needs_mesh_entities(self, L, needs_mesh_entities):
         return generate_return_bool_switch(L, "d", needs_mesh_entities, False)
+
 
     def global_dimension(self, L, ir):
         # A list of num dofs per entity
@@ -60,23 +63,30 @@ class ufc_dofmap(ufc_generator):
 
         return L.Return(dimension)
 
+
     def num_global_support_dofs(self, L, num_global_support_dofs):
         return L.Return(num_global_support_dofs)
+
 
     def num_element_support_dofs(self, L, num_element_support_dofs):
         return L.Return(num_element_support_dofs)
 
+
     def num_element_dofs(self, L, num_element_dofs):
         return L.Return(num_element_dofs)
+
 
     def num_facet_dofs(self, L, num_facet_dofs):
         return L.Return(num_facet_dofs)
 
+
     def num_entity_dofs(self, L, num_entity_dofs):
         return generate_return_sizet_switch(L, "d", num_entity_dofs, 0)
 
+
     def num_entity_closure_dofs(self, L, num_entity_closure_dofs):
         return generate_return_sizet_switch(L, "d", num_entity_closure_dofs, 0)
+
 
     def tabulate_dofs(self, L, ir):
         # Input arguments
@@ -166,6 +176,7 @@ class ufc_dofmap(ufc_generator):
             subelement_offset += num_dofs_per_subelement[subelement_index]
 
         return L.StatementList(code)
+
 
     def tabulate_facet_dofs(self, L, ir):
         all_facet_dofs = ir["tabulate_facet_dofs"]

@@ -23,6 +23,31 @@ from ffc.uflacs.backends.ufc.utils import generate_return_new
 # TODO: Test everything here! Cover all combinations of gdim,tdim=1,2,3!
 
 
+_domain_background = """
+/// This is just here to document the memory layout of the geometry data arrays
+struct geometry_data
+{
+  // Example dimensions
+  std::size_t gdim = 3;
+  std::size_t tdim = 2;
+  std::size_t num_points = 1;
+
+  // Memory layout of geometry data arrays
+  double x[num_points * gdim];         // x[i]   -> x[ip*gdim + i]
+  double X[num_points * tdim];         // X[j]   -> X[ip*tdim + j]
+  double J[num_points * gdim * tdim];  // J[i,j] -> J[ip*gdim*tdim + i*tdim + j]
+  double detJ[num_points];             // detJ   -> detJ[ip]
+  double K[num_points * tdim * gdim];  // K[j,i] -> K[ip*tdim*gdim + j*gdim + i]
+  double n[num_points * gdim];         // n[i]   -> n[ip*gdim + i]
+
+  // In the affine case we have the relation:
+  // x[i] = x0[i] + sum_j J[i,j] X[j]
+  // X[j] = sum_i K[j,i] (x[i] - x0[i])
+
+};
+"""
+
+
 ### Code generation utilities:
 
 def generate_compute_ATA(L, ATA, A, m, n, index_prefix=""):
@@ -86,7 +111,7 @@ def pdet_m1(L, A, m):
     A2 = A[0,0]*A[0,0]
     for i in range(1, m):
         A2 = A2 + A[i,0]*A[i,0]
-    return L.Call("sqrt", A2)
+    return L.Call("std::sqrt", A2)
 
 def adj_expr_2x2(A):
     return [[ A[1, 1], -A[0, 1]],
@@ -207,7 +232,7 @@ class ufc_coordinate_mapping(ufc_generator):
 
         # Symbols for local basis values table
         phi_sym = L.Symbol("phi")
-        # FIXME: Match array layout of evaluate_reference_basis 
+        # FIXME: Match array layout of evaluate_reference_basis
         phi = L.FlattenedArray(phi_sym, dims=(num_dofs,))
 
         # Arguments to evaluate_reference_basis
@@ -215,7 +240,7 @@ class ufc_coordinate_mapping(ufc_generator):
 
         # Define scalar finite element instance (stateless, so placing this on the stack is free)
         define_element = [L.VariableDecl(scalar_coordinate_element_classname, "xelement")]
-        func = "xelement.evaluate_reference_basis"
+        func = "xelement.evaluate_reference_basis"  # FIXME: Need this function to work!
 
         # For each point, compute basis values and accumulate into the right x
         code = L.StatementList(define_element + [
@@ -542,7 +567,7 @@ class ufc_coordinate_mapping(ufc_generator):
 
         # Define scalar finite element instance (stateless, so placing this on the stack is free)
         define_element = [L.VariableDecl(scalar_coordinate_element_classname, "xelement")]
-        func = "xelement.evaluate_reference_basis_derivatives"
+        func = "xelement.evaluate_reference_basis_derivatives"  # FIXME: Need this function to work!
 
         # For each point, compute basis derivatives and accumulate into the right J
         code = L.StatementList(define_element + [
@@ -586,7 +611,7 @@ class ufc_coordinate_mapping(ufc_generator):
             JTJ = L.Symbol("JTJ")
             body = L.StatementList([
                 generate_compute_ATA(L, JTJ, J[ip], gdim, tdim),
-                L.Assign(detJ, cell_orientation*L.Call("sqrt", det_nn(JTJ, tdim))),
+                L.Assign(detJ, cell_orientation*L.Call("std::sqrt", det_nn(JTJ, tdim))),
                 ])
 
         # Carry out for all points
