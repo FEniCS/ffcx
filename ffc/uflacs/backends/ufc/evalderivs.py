@@ -11,8 +11,8 @@ from ffc.uflacs.backends.ufc.utils import generate_error
 from ffc.uflacs.backends.ufc.evaluatebasis import generate_expansion_coefficients, generate_compute_basisvalues
 
 
-# Used for various arrays in this file
-int_type = "int"
+# Used for various indices and arrays in this file
+index_type = "std::size_t"
 
 
 def generate_evaluate_reference_basis_derivatives(L, data, parameters):
@@ -63,7 +63,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
     all_num_derivatives = L.Symbol("all_num_derivatives")
     count_derivs_code = [
         L.Comment("Number of derivatives for each order"),
-        L.ArrayDecl("static const " + int_type, all_num_derivatives, max_degree+1,
+        L.ArrayDecl("static const " + index_type, all_num_derivatives, max_degree+1,
                     values=[tdim**n for n in range(max_degree+1)]),
         ]
     num_derivatives = all_num_derivatives[order]
@@ -213,14 +213,14 @@ def _generate_combinations(L, tdim, dummy, max_degree):
 
     code = [
         L.Comment("Declare two dimensional array that holds combinations of derivatives and initialise"),
-        L.ArrayDecl(int_type, combinations, (max_num_derivatives, max_degree)),
+        L.ArrayDecl(index_type, combinations, (max_num_derivatives, max_degree)),
         L.ForRange(row, 0, max_num_derivatives, body=
             L.ForRange(col, 0, max_degree, body=
                 L.Assign(combinations[row][col], 0))),
         L.Comment("Generate combinations of derivatives"),
         L.ForRange(row, 1, num_derivatives, body=
             L.ForRange(num, 0, row, body=
-                L.For(L.VariableDecl(int_type, col, order-1),
+                L.For(L.VariableDecl(index_type, col, order-1),
                           L.GE(col, 0), L.PreDecrement(col), body=[
                     L.If(L.GT(combinations[row][col] + 1, tdim-1),
                         L.Assign(combinations[row][col], 0)),

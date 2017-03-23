@@ -8,6 +8,7 @@ from ffc.uflacs.backends.ufc.utils import generate_error
 import math
 
 
+# Used for various indices and arrays in this file
 index_type = "std::size_t"
     
 
@@ -130,7 +131,8 @@ def generate_expansion_coefficients(L, dofs_data):
 
         # Create static table with expansion coefficients computed by FIAT compile time.
         tables_code += [L.ArrayDecl("static const double", coefficients,
-                                    (num_components, num_members), values=fiat_coefficients)]
+                                    (num_components, num_members),
+                                    values=fiat_coefficients)]
 
         # Store symbol reference for this dof
         coefficients_for_dof.append(coefficients)

@@ -170,17 +170,17 @@ def compute_ir(analysis, prefix, parameters, jit=False):
 
     # Compute representation of elements
     info("Computing representation of %d elements" % len(elements))
-    ir_elements = [_compute_element_ir(e, element_numbers, classnames, jit)
+    ir_elements = [_compute_element_ir(e, element_numbers, classnames, parameters, jit)
                    for e in elements]
 
     # Compute representation of dofmaps
     info("Computing representation of %d dofmaps" % len(elements))
-    ir_dofmaps = [_compute_dofmap_ir(e, element_numbers, classnames, jit)
+    ir_dofmaps = [_compute_dofmap_ir(e, element_numbers, classnames, parameters, jit)
                   for e in elements]
 
     # Compute representation of coordinate mappings
     info("Computing representation of %d coordinate mappings" % len(coordinate_elements))
-    ir_coordinate_mappings = [_compute_coordinate_mapping_ir(e, element_numbers, classnames, jit)
+    ir_coordinate_mappings = [_compute_coordinate_mapping_ir(e, element_numbers, classnames, parameters, jit)
                               for e in coordinate_elements]
 
     # Compute and flatten representation of integrals
@@ -199,7 +199,7 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     return ir_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms
 
 
-def _compute_element_ir(ufl_element, element_numbers, classnames, jit):
+def _compute_element_ir(ufl_element, element_numbers, classnames, parameters, jit):
     "Compute intermediate representation of element."
 
     # Create FIAT element
@@ -226,7 +226,7 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, jit):
     ir["degree"] = ufl_element.degree()
     ir["family"] = ufl_element.family()
 
-    ir["evaluate_basis"] = _evaluate_basis(ufl_element, fiat_element)
+    ir["evaluate_basis"] = _evaluate_basis(ufl_element, fiat_element, parameters["epsilon"])
     ir["evaluate_dof"] = _evaluate_dof(ufl_element, fiat_element)
     ir["interpolate_vertex_values"] = _interpolate_vertex_values(ufl_element,
                                                                  fiat_element)
@@ -241,7 +241,7 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, jit):
     return ir
 
 
-def _compute_dofmap_ir(ufl_element, element_numbers, classnames, jit=False):
+def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit=False):
     "Compute intermediate representation of dofmap."
 
     # Create FIAT element
@@ -341,7 +341,7 @@ def _tabulate_coordinate_mapping_basis(ufl_element):
 
 
 def _compute_coordinate_mapping_ir(ufl_coordinate_element, element_numbers,
-                                   classnames, jit=False):
+                                   classnames, parameters, jit=False):
     "Compute intermediate representation of coordinate mapping."
 
     cell = ufl_coordinate_element.cell()
@@ -677,7 +677,7 @@ def _extract_elements(fiat_element):
     return new_elements
 
 
-def _evaluate_basis(ufl_element, fiat_element):
+def _evaluate_basis(ufl_element, fiat_element, epsilon):
     "Compute intermediate representation for evaluate_basis."
     cell = ufl_element.cell()
     cellname = cell.cellname()
@@ -752,6 +752,10 @@ def _evaluate_basis(ufl_element, fiat_element):
                                 for q in range(e.value_shape()[1])]
             else:
                 error("Unknown situation with num_components > 1")
+
+            # Clamp coefficient zeros
+            coefficients = numpy.asarray(coefficients)
+            coefficients[numpy.where(numpy.isclose(coefficients, 0.0, rtol=epsilon, atol=epsilon))] = 0.0
 
             dof_data = {
                 "coeffs": coefficients,

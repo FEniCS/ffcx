@@ -71,11 +71,11 @@ def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
         return numpy.allclose(a, b, rtol=rtol, atol=atol)
 
 
-def clamp_table_small_numbers(table, rtol=default_rtol, atol=default_atol):
+def clamp_table_small_numbers(table, rtol=default_rtol, atol=default_atol, numbers=(-1.0, -0.5, 0.0, 0.5, 1.0)):
     "Clamp almost 0,1,-1 values to integers. Returns new table."
     # Get shape of table and number of columns, defined as the last axis
     table = numpy.asarray(table)
-    for n in (-1.0, -0.5, 0.0, 0.5, 1.0):
+    for n in numbers:
         table[numpy.where(numpy.isclose(table, n, rtol=rtol, atol=atol))] = n
     return table
 
