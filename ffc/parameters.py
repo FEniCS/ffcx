@@ -23,7 +23,6 @@ from ffc.log import INFO
 
 # Comments from other places in code:
 # FIXME: Document option -fconvert_exceptions_to_warnings
-# FIXME: Remove option epsilon and just rely on precision?
 
 # NB! Parameters in the generate and build sets are
 # included in jit signature, cache and log are not.
@@ -39,7 +38,10 @@ _FFC_GENERATE_PARAMETERS = {
                                # numbers (0 for max precision)
     "epsilon": 1e-14,          # machine precision, used for
                                # dropping zero terms
-                               # (quadrature and tensor repr)
+                               # (tensor repr)
+                               # FIXME: Remove option epsilon and just rely on
+                               # precision?  Seems that this can be done once
+                               # tensor repr is removed
     "split": False,            # split generated code into .h and
                                # .cpp file
     "form_postfix": True,      # postfix form name with "Function",

@@ -28,7 +28,7 @@
 # Last changed: 2013-02-10
 
 # FFC modules
-from ffc.log import error
+from ffc.log import error, warning
 from ffc.cpp import format, remove_unused, count_ops
 
 # FFC tensor representation modules
@@ -40,6 +40,11 @@ def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
     code = initialize_integral_code(ir, prefix, parameters)
     code["tabulate_tensor"] = _tabulate_tensor(ir, parameters)
+
+    if ir["integrals_metadata"].get("precision") is not None:
+        warning("Ignoring precision in integral metadata compiled "
+                "using tensor representation. Not implemented.")
+
     return code
 
 

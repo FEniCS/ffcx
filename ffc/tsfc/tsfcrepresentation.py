@@ -37,8 +37,16 @@ def compute_integral_ir(integral_data,
     # Initialise representation
     ir = initialize_integral_ir("tsfc", integral_data, form_data, form_id)
 
+    # Translate parameters into formar tsfc accepts
+    # FIXME: This is not enough because precision = 0 can already be in metadata
+    tsfc_parameters = parameters.copy()
+    if tsfc_parameters["precision"] in [0, "auto"]:
+        tsfc_parameters.pop("precision")
+    tsfc_parameters.pop("epsilon")  # Not used by tsfc
+
     # Store tsfc generated part separately
-    ir["tsfc"] = compile_integral(integral_data, form_data, None, parameters,
+    ir["tsfc"] = compile_integral(integral_data, form_data, None,
+                                  tsfc_parameters,
                                   interface=ufc_interface)
 
     return ir
