@@ -29,6 +29,8 @@ forms, including automatic selection of elements, degrees and
 form representation type.
 """
 
+import numpy
+
 import os
 import copy
 from itertools import chain
@@ -46,6 +48,7 @@ from ufl import custom_integral_types
 from ffc.log import info, begin, end, warning, debug, error, ffc_assert, warning_blue
 from ffc.utils import all_equal
 from ffc.tensor import estimate_cost
+from ffc.cpp import default_precision
 
 
 def analyze_forms(forms, parameters):
@@ -322,6 +325,7 @@ def _extract_common_quadrature_degree(integral_metadatas):
             error("Invalid non-integer quadrature degree %s" % (str(d),))
     qd = max(quadrature_degrees)
     if not all_equal(quadrature_degrees):
+        # FIXME: Shouldn't we raise here?
         # TODO: This may be loosened up without too much effort,
         # if the form compiler handles mixed integration degree,
         # something that most of the pipeline seems to be ready for.
@@ -335,7 +339,7 @@ def _autoselect_quadrature_degree(integral_metadata, integral, form_data):
     pd = integral_metadata["estimated_polynomial_degree"]
 
     # Special case: handling -1 as "auto" for quadrature_degree
-    if qd == -1:
+    if qd in [-1, None]:
         qd = "auto"
 
     # TODO: Add other options here
@@ -381,7 +385,7 @@ def _extract_common_quadrature_rule(integral_metadatas):
 def _autoselect_quadrature_rule(integral_metadata, integral, form_data):
     # Automatic selection of quadrature rule
     qr = integral_metadata["quadrature_rule"]
-    if qr == "auto":
+    if qr in ["auto", None]:
         # Just use default for now.
         qr = "default"
         info("quadrature_rule:   auto --> %s" % qr)
@@ -453,6 +457,9 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
         info("representation:    auto --> %s" % r)
     else:
         info("representation:    %s" % r)
+
+    if p is None:
+        p = default_precision
 
     return r, o, p
 

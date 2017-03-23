@@ -30,12 +30,14 @@ _FFC_GENERATE_PARAMETERS = {
     "format": "ufc",           # code generation format
     "representation": "auto",  # form representation / code
                                # generation strategy
-    "quadrature_rule": "auto", # quadrature rule used for
+    "quadrature_rule": None,   # quadrature rule used for
                                # integration of element tensors
-    "quadrature_degree": -1,   # quadrature degree used for
+                               # (None is auto)
+    "quadrature_degree": None, # quadrature degree used for
                                # computing integrals
-    "precision": 0,            # precision used when writing
-                               # numbers (0 for max precision)
+                               # (None is auto)
+    "precision": None,         # precision used when writing
+                               # numbers (None for max precision)
     "epsilon": 1e-14,          # machine precision, used for
                                # dropping zero terms
                                # (tensor repr)
