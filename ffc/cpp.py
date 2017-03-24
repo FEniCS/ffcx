@@ -696,6 +696,13 @@ def count_ops(code):
 def set_float_formatting(precision):
     "Set floating point formatting based on precision."
 
+    # Because of various hacks we get various types
+    if isinstance(precision, string_types):
+        if precision == "None":
+            precision = None
+        else:
+            precision = int(precision)
+
     # Set default if not set
     if precision is None:
         precision = default_precision
