@@ -41,7 +41,8 @@ def generate_integral_code(ir, prefix, parameters):
     code = initialize_integral_code(ir, prefix, parameters)
     code["tabulate_tensor"] = _tabulate_tensor(ir, parameters)
 
-    if ir["integrals_metadata"].get("precision") is not None:
+    precision = ir["integrals_metadata"].get("precision")
+    if precision is not None and precision != parameters["precision"]:
         warning("Ignoring precision in integral metadata compiled "
                 "using tensor representation. Not implemented.")
 
