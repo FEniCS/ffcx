@@ -208,7 +208,7 @@ def generate_tabulate_dmats(L, dofs_data):
         # O(n^2) matrix matching...
         name = None
         for oldname, oldmatrix in all_matrices:
-            if numpy.allclose(matrix, oldmatrix):
+            if matrix.shape == oldmatrix.shape and numpy.allclose(matrix, oldmatrix):
                 name = oldname
                 break
 
