@@ -722,6 +722,10 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
         num_expansion_members = e.get_num_members(e.degree())
         dmats = e.dmats()
 
+        # Clamp dmats zeros
+        dmats = numpy.asarray(dmats)
+        dmats[numpy.where(numpy.isclose(dmats, 0.0, rtol=epsilon, atol=epsilon))] = 0.0
+
         # Extracted parts of dd below that are common for the element
         # here.  These dict entries are added to each dof_data dict
         # for each dof, because that's what the code generation

@@ -124,7 +124,8 @@ def generate_expansion_coefficients(L, dofs_data):
         num_members = dof_data["num_expansion_members"]
         fiat_coefficients = dof_data["coeffs"]
 
-        # TODO: Check if any fiat_coefficients tables in expansion_coefficients are equal and reuse instead of declaring new.
+        # TODO: Check if any fiat_coefficients tables in expansion_coefficients
+        #   are equal and reuse instead of declaring new.
 
         # Create separate variable name for coefficients table for each dof
         coefficients = L.Symbol("coefficients%d" % idof)
@@ -247,7 +248,7 @@ def _generate_compute_interval_basisvalues(L, basisvalues, Y, embedded_degree, n
     # Scale values
     p = L.Symbol("p")
     code += [L.ForRange(p, 0, embedded_degree + 1, index_type=index_type,
-                        body=L.AssignMul(basisvalues[p], L.Call("sqrt", (0.5 + p,))))]
+                        body=L.AssignMul(basisvalues[p], L.Call("std::sqrt", (0.5 + p,))))]
     return code
 
 

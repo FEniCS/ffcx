@@ -1567,9 +1567,7 @@ def as_pragma(pragma):
 
 
 def is_simple_inner_loop(code):
-    if isinstance(code, ForRange) and code.pragma is None:
-        return True
-    if isinstance(code, For) and code.pragma is None:
+    if isinstance(code, (ForRange, For)) and code.pragma is None and is_simple_inner_loop(code.body):
         return True
     if isinstance(code, Statement) and isinstance(code.expr, AssignOp):
         return True
