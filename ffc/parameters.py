@@ -133,15 +133,19 @@ def validate_jit_parameters(parameters):
 
 
 def _validate_parameters(parameters):
+    """Does some casting of parameter values in place on the
+    provided dictionary"""
 
-    #if isinstance(parameters["optimize"], bool):
-    #    parameters["optimize"] = 1 if parameters["optimize"] else 0
+    # Cast int optimize flag to bool
     if isinstance(parameters["optimize"], int):
         parameters["optimize"] = bool(parameters["optimize"])
 
+    # Convert all legal default values to None
     if parameters["quadrature_rule"] in ["auto", None, "None"]:
         parameters["quadrature_rule"] = None
 
+    # Convert all legal default values to None and
+    # cast nondefaults from str to int
     if parameters["quadrature_degree"] in ["auto", -1, None, "None"]:
         parameters["quadrature_degree"] = None
     else:
@@ -151,8 +155,9 @@ def _validate_parameters(parameters):
             error("Failed to convert quadrature degree '%s' to int"
                   % parameters.get("quadrature_degree"))
 
-    # FIXME: Can we remove Martin's zero before released?
-    if parameters["precision"] in ["auto", 0, None, "None"]:
+    # Convert all legal default values to None and
+    # cast nondefaults from str to int
+    if parameters["precision"] in ["auto", None, "None"]:
         parameters["precision"] = None
     else:
         try:
