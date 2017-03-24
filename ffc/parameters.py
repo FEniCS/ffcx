@@ -116,10 +116,7 @@ def validate_parameters(parameters):
     if parameters is not None:
         p.update(parameters)
 
-    #if isinstance(p["optimize"], bool):
-    #    p["optimize"] = 1 if p["optimize"] else 0
-    if isinstance(p["optimize"], int):
-        p["optimize"] = bool(p["optimize"])
+    _validate_parameters(p)
 
     return p
 
@@ -130,12 +127,39 @@ def validate_jit_parameters(parameters):
     if parameters is not None:
         p.update(parameters)
 
-    #if isinstance(p["optimize"], bool):
-    #    p["optimize"] = 1 if p["optimize"] else 0
-    if isinstance(p["optimize"], int):
-        p["optimize"] = bool(p["optimize"])
+    _validate_parameters(p)
 
     return p
+
+
+def _validate_parameters(parameters):
+
+    #if isinstance(parameters["optimize"], bool):
+    #    parameters["optimize"] = 1 if parameters["optimize"] else 0
+    if isinstance(parameters["optimize"], int):
+        parameters["optimize"] = bool(parameters["optimize"])
+
+    if parameters["quadrature_rule"] in ["auto", None, "None"]:
+        parameters["quadrature_rule"] = None
+
+    if parameters["quadrature_degree"] in ["auto", -1, None, "None"]:
+        parameters["quadrature_degree"] = None
+    else:
+        try:
+            parameters["quadrature_degree"] = int(parameters["quadrature_degree"])
+        except Exception:
+            error("Failed to convert quadrature degree '%s' to int"
+                  % parameters.get("quadrature_degree"))
+
+    # FIXME: Can we remove Martin's zero before released?
+    if parameters["precision"] in ["auto", 0, None, "None"]:
+        parameters["precision"] = None
+    else:
+        try:
+            parameters["precision"] = int(parameters["precision"])
+        except Exception:
+            error("Failed to convert precision '%s' to int"
+                  % parameters.get("precision"))
 
 
 def compilation_relevant_parameters(parameters):

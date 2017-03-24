@@ -339,14 +339,6 @@ def _autoselect_quadrature_degree(integral_metadata, integral, form_data):
     qd = integral_metadata["quadrature_degree"]
     pd = integral_metadata["estimated_polynomial_degree"]
 
-    # Main can provide string from command-line
-    if isinstance(qd, string_types):
-        if qd in ["None", "auto"]:
-            # FIXME: Change this internal representation to None?
-            qd = "auto"
-        else:
-            qd = int(qd)
-
     # Special case: handling -1 as "auto" for quadrature_degree
     if qd in [-1, None]:
         qd = "auto"
