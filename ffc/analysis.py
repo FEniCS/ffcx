@@ -411,11 +411,11 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
     precision_values = set(md["precision"] for md in integral_metadatas)
 
     if len(representations) > 1:
-        error("Integral representation must be equal within each sub domain or 'auto', got %s." % (str(sorted(representations)),))
+        error("Integral representation must be equal within each sub domain or 'auto', got %s." % (str(sorted(str(v) for v in representations)),))
     if len(optimize_values) > 1:
-        error("Integral 'optimize' metadata must be equal within each sub domain or not set, got %s." % (str(sorted(optimize_values)),))
+        error("Integral 'optimize' metadata must be equal within each sub domain or not set, got %s." % (str(sorted(str(v) for v in optimize_values)),))
     if len(precision_values) > 1:
-        error("Integral 'precision' metadata must be equal within each sub domain or not set, got %s." % (str(sorted(precision_values)),))
+        error("Integral 'precision' metadata must be equal within each sub domain or not set, got %s." % (str(sorted(str(v) for v in precision_values)),))
 
     # The one and only non-auto representation found, or get from parameters
     r, = representations  or (parameters["representation"],)
