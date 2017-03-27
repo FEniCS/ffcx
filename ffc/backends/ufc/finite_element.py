@@ -99,6 +99,18 @@ public:
 %(evaluate_reference_basis_derivatives)s
   }
 
+  void transform_reference_basis_derivatives(double * values,
+                                             std::size_t order,
+                                             std::size_t num_points,
+                                             const double * reference_values,
+                                             const double * X,
+                                             const double * J,
+                                             const double * Jinv,
+                                             int cell_orientation) const final override
+  {
+%(transform_reference_basis_derivatives)s
+  }
+
   void evaluate_basis(std::size_t i,
                       double * values,
                       const double * x,
@@ -234,6 +246,15 @@ public:
                                             std::size_t order,
                                             std::size_t num_points,
                                             const double * X) const final override;
+
+  void transform_reference_basis_derivatives(double * values,
+                                             std::size_t order,
+                                             std::size_t num_points,
+                                             const double * reference_values,
+                                             const double * X,
+                                             const double * J,
+                                             const double * Jinv,
+                                             int cell_orientation) const final override;
 
   void evaluate_basis(std::size_t i,
                       double * values,
@@ -380,6 +401,18 @@ void %(classname)s::evaluate_reference_basis_derivatives(double * reference_valu
                                                          const double * X) const
 {
 %(evaluate_reference_basis_derivatives)s
+}
+
+void %(classname)s::transform_reference_basis_derivatives(double * values,
+                                                          std::size_t order,
+                                                          std::size_t num_points,
+                                                          const double * reference_values,
+                                                          const double * X,
+                                                          const double * J,
+                                                          const double * Jinv,
+                                                          int cell_orientation) const
+{
+%(transform_reference_basis_derivatives)s
 }
 
 void %(classname)s::evaluate_basis(std::size_t i,

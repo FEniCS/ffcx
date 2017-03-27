@@ -238,6 +238,24 @@ class ufc_finite_element(ufc_generator):
         return generate_evaluate_reference_basis_derivatives(L, data, parameters)
         #return L.Comment("Missing implementation")
 
+    def transform_reference_basis_derivatives(self, L, ir, parameters):
+        '''
+        (double * values,
+        std::size_t order,
+        std::size_t num_points,
+        const double * reference_values,
+        const double * X,
+        const double * J,
+        const double * Jinv,
+        int cell_orientation) const = 0;
+        '''
+        # FIXME: Need this to work to fully replace old evaluate_basis[_derivatives]
+        data = ir["evaluate_basis"]
+        #from ffc.uflacs.backends.ufc.evalderivs import generate_evaluate_reference_basis_derivatives
+        #return generate_evaluate_reference_basis_derivatives(L, data, parameters)
+        return L.Comment("Missing implementation")
+
+
 
 """
 TODO: Document new ufc functions evaluate_reference_basis and evaluate_reference_basis_derivatives
@@ -247,6 +265,7 @@ TODO: Add support for mappings to finite_element, something like:
     /// Return true if the basis needs to be mapped between physical and reference frames
     virtual bool needs_mapping() const = 0;
 
+    /// This is the transform_basis_derivatives function added above:
     /// Map values from reference frame to physical frame
     virtual void map_from_reference_values(double * values, const double * J) const = 0;
 

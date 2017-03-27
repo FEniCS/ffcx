@@ -174,6 +174,18 @@ namespace ufc
                                                 const double * coordinate_dofs,
                                                 int cell_orientation) const = 0;
 
+    /// Transform order n derivatives (can be 0) of all basis functions
+    /// previously evaluated in points X in reference cell with given
+    /// Jacobian J and its inverse Jinv for each point
+    virtual void transform_reference_basis_derivatives(double * values,
+                                                       std::size_t order,
+                                                       std::size_t num_points,
+                                                       const double * reference_values,
+                                                       const double * X,
+                                                       const double * J,
+                                                       const double * Jinv,
+                                                       int cell_orientation) const = 0;
+
     // FIXME: cell argument only included here so we can pass it to the eval function...
 
     /// Evaluate linear functional for dof i on the function f
