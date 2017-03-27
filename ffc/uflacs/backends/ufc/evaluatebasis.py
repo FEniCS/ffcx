@@ -78,7 +78,8 @@ def generate_evaluate_reference_basis(L, data, parameters):
         num_components = dof_data["num_components"]
         num_members = dof_data["num_expansion_members"]
 
-        # In ffc representation, this is extracted per dof (but will coincide for some dofs of piola mapped elements):
+        # In ffc representation, this is extracted per dof
+        # (but will coincide for some dofs of piola mapped elements):
         reference_offset = dof_data["reference_offset"]
 
         # Select the right basisvalues for this dof

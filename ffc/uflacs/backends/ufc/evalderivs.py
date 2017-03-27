@@ -92,6 +92,8 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
     # FIXME: validate these dimensions
     ref_values = L.FlattenedArray(reference_values,
         dims=(num_points, num_dofs, num_derivatives, reference_value_size))
+    # From evaluatebasis.py:
+    #ref_values = L.FlattenedArray(reference_values, dims=(num_points, num_dofs, reference_value_size))
 
     # Initialization (zeroing) and cutoffs outside valid range of orders
     setup_code = [
@@ -167,7 +169,14 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
     for idof, dof_data in enumerate(data["dofs_data"]):
         embedded_degree = dof_data["embedded_degree"]
         basisvalues = basisvalues_for_degree[embedded_degree]
-        
+
+        # FIXME: Use reference_offset and num_components correctly!
+        # In ffc representation, this is extracted per dof
+        # (but will coincide for some dofs of piola mapped elements):
+        #reference_offset = dof_data["reference_offset"]
+        #num_components = dof_data["num_components"]
+        #L.AssignAdd(ref_values[ip, idof, reference_offset + c] # c < num_components
+
         # Compute the derivatives of the basisfunctions on the reference (FIAT) element,
         # as the dot product of the new coefficients and basisvalues.
         case_code = _compute_reference_derivatives(L, dof_data,
