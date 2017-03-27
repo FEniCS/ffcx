@@ -2,10 +2,11 @@
 """Work in progress translation of FFC evaluatebasis code to uflacs CNodes format."""
 
 from six import string_types
+import numpy
+import math
+
 from ffc.log import error
 from ffc.uflacs.backends.ufc.utils import generate_error
-
-import math
 
 
 # Used for various indices and arrays in this file
@@ -117,6 +118,10 @@ def generate_evaluate_reference_basis(L, data, parameters):
 
 
 def generate_expansion_coefficients(L, dofs_data):
+    # TODO: Use precision parameter to format coefficients to match
+    # legacy implementation and make regression tests more robust
+
+    all_tables = []
     tables_code = []
     coefficients_for_dof = []
     for idof, dof_data in enumerate(dofs_data):
@@ -124,19 +129,28 @@ def generate_expansion_coefficients(L, dofs_data):
         num_members = dof_data["num_expansion_members"]
         fiat_coefficients = dof_data["coeffs"]
 
-        # TODO: Check if any fiat_coefficients tables in expansion_coefficients
-        #   are equal and reuse instead of declaring new.
+        # Check if any fiat_coefficients tables in expansion_coefficients
+        # are equal and reuse instead of declaring new.
+        coefficients = None
+        # NB: O(n^2) loop over tables
+        for symbol, table in all_tables:
+            if table.shape == fiat_coefficients.shape and numpy.allclose(table, fiat_coefficients):
+                coefficients = symbol
+                break
 
         # Create separate variable name for coefficients table for each dof
-        coefficients = L.Symbol("coefficients%d" % idof)
+        if coefficients is None:
+            coefficients = L.Symbol("coefficients%d" % idof)
+            all_tables.append((coefficients, fiat_coefficients))
 
-        # Create static table with expansion coefficients computed by FIAT compile time.
-        tables_code += [L.ArrayDecl("static const double", coefficients,
-                                    (num_components, num_members),
-                                    values=fiat_coefficients)]
+            # Create static table with expansion coefficients computed by FIAT compile time.
+            tables_code += [L.ArrayDecl("static const double", coefficients,
+                                        (num_components, num_members),
+                                        values=fiat_coefficients)]
 
         # Store symbol reference for this dof
         coefficients_for_dof.append(coefficients)
+
     return tables_code, coefficients_for_dof
 
 
