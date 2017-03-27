@@ -81,7 +81,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
 
     # Loop indices
     ip = L.Symbol("ip") # point
-    i = L.Symbol("i")   # dof
+    idof = L.Symbol("i")   # dof
     c = L.Symbol("c")   # component
     r = L.Symbol("r")   # derivative number
 
@@ -139,51 +139,62 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
     # Generate all possible combinations of derivatives.
     combinations_code, combinations = _generate_combinations(L, tdim, max_degree, order, num_derivatives)
 
-    # Declare array for holding derivatives computed for one point and one dof at a time
+    # Define symbols for variables populated inside dof switch
     derivatives = L.Symbol("derivatives")
-    nds = tdim**max_degree * reference_value_size
-    derivatives_decl = L.ArrayDecl("double", derivatives, nds, values=0.0)
-    derivs = L.FlattenedArray(derivatives, dims=(reference_value_size, tdim**max_degree))
+    reference_offset = L.Symbol("reference_offset")
+    num_components = L.Symbol("num_components")
 
-    # Compute aux = dmats * basisvalues for all unique combinations
+    # Get number of components of each basis function (>1 for dofs of piola mapped subelements)
+    num_components_values = [dof_data["num_components"] for dof_data in data["dofs_data"]]
+
+    # Offset into parent mixed element to first component of each basis function
+    reference_offset_values = [dof_data["reference_offset"] for dof_data in data["dofs_data"]]
+
+    # Max dimensions for the reference derivatives for each dof
+    max_num_derivatives = tdim**max_degree
+    max_num_components = max(num_components_values)
+
+    # Add constant tables of these numbers
+    tables_code += [
+        L.ArrayDecl("const " + index_type, reference_offset, num_dofs, values=reference_offset_values),
+        L.ArrayDecl("const " + index_type, num_components, num_dofs, values=num_components_values),
+    ]
+
+    # Access reference derivatives compactly
+    derivs = L.FlattenedArray(derivatives, dims=(num_components[idof], num_derivatives))
+
+    # Compute aux[i] = sum_j dmats[i][j] * basisvalues[j] for all unique combinations
     all_aux_computation = []
     aux_names = {}
     aux_for_dof = {}
-    for idof, dof_data in enumerate(data["dofs_data"]):
+    for i_dof, dof_data in enumerate(data["dofs_data"]):
         embedded_degree = dof_data["embedded_degree"]
         basisvalues = basisvalues_for_degree[embedded_degree]
 
-        key = (dmats_names[idof].name, basisvalues.name)
+        key = (dmats_names[i_dof].name, basisvalues.name)
         aux = aux_names.get(key)
         if aux is None:
             aux_computation, aux = _compute_aux_dmats_basisvalues_products(L, dof_data,
-                idof, order, num_derivatives, combinations,
+                i_dof, order, num_derivatives, combinations,
                 dmats_names, basisvalues)
             aux_names[key] = aux
             all_aux_computation += aux_computation
 
-        aux_for_dof[idof] = aux
+        aux_for_dof[i_dof] = aux
 
     # Create code for all basis values (dofs).
     dof_cases = []
-    for idof, dof_data in enumerate(data["dofs_data"]):
+    for i_dof, dof_data in enumerate(data["dofs_data"]):
         embedded_degree = dof_data["embedded_degree"]
         basisvalues = basisvalues_for_degree[embedded_degree]
-
-        # FIXME: Use reference_offset and num_components correctly!
-        # In ffc representation, this is extracted per dof
-        # (but will coincide for some dofs of piola mapped elements):
-        #reference_offset = dof_data["reference_offset"]
-        #num_components = dof_data["num_components"]
-        #L.AssignAdd(ref_values[ip, idof, reference_offset + c] # c < num_components
 
         # Compute the derivatives of the basisfunctions on the reference (FIAT) element,
         # as the dot product of the new coefficients and basisvalues.
         case_code = _compute_reference_derivatives(L, dof_data,
-                        idof, num_derivatives, derivs,
+                        i_dof, num_derivatives, derivs,
                         coefficients_for_dof, aux_for_dof)
 
-        dof_cases.append((idof, case_code))
+        dof_cases.append((i_dof, case_code))
 
     # Loop over all dofs, entering a different switch case in each iteration.
     # This is a legacy from the previous implementation where the loop
@@ -195,19 +206,16 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
     # be easier to fix if mixed elements were handled separately!
     dof_loop_code = [
         L.Comment("Loop over all dofs"),
-        L.ForRange(i, 0, num_dofs, index_type=index_type, body=[
-            derivatives_decl,
-            L.Switch(i, dof_cases),
+        L.ForRange(idof, 0, num_dofs, index_type=index_type, body=[
+            L.ArrayDecl("double", derivatives, max_num_components * max_num_derivatives),
+            L.Switch(idof, dof_cases),
             L.ForRange(r, 0, num_derivatives, index_type=index_type, body=[
-                L.ForRange(c, 0, reference_value_size, index_type=index_type, body=[
-                    # FIXME: Validate def_values dimensions
-                    L.Assign(ref_values[ip][i][r][c], derivs[c][r]),
+                L.ForRange(c, 0, num_components[idof], index_type=index_type, body=[
+                    L.Assign(ref_values[ip][idof][r][reference_offset[idof] + c], derivs[c][r]),  # FIXME: validate ref_values dims
                 ]),
             ])
         ]),
     ]
-
-    # FIXME check what accumulation_code did
 
     # Define loop over points
     final_loop_code = [
@@ -374,8 +382,8 @@ def _compute_aux_dmats_basisvalues_products(L, dof_data,
     return aux_computation, aux
 
 
-def _compute_reference_derivatives(L, dof_data,
-        idof, num_derivatives, derivatives,
+def _compute_reference_derivatives(L, dof_data, idof,
+        num_derivatives, derivatives,
         coefficients_for_dof, aux_for_dof):
     """Deprecated comment after refactoring, but contents are still relevant:
 
@@ -389,22 +397,26 @@ def _compute_reference_derivatives(L, dof_data,
     # Get shape of derivative matrix (they should all have the same shape)
     shape_dmats = numpy.shape(dof_data["dmats"][0])
 
-    # Get number of components.
-    num_components = dof_data["num_components"]  # FIXME: Is this the number of components of the subelement?
-
-    # Declare pointer to array that holds derivatives on the FIAT element
-    #code += [L.Comment("Declare array of derivatives on FIAT element.")]
+    # Get number of components of this basis function
+    # (>1 for dofs of piola mapped subelements)
+    num_components = dof_data["num_components"]
 
     # Compute derivatives for all derivatives and components for this particular idof
     code = [
         L.Comment("Compute reference derivatives for dof %d." % idof),
-        L.ForRange(r, 0, num_derivatives, index_type=index_type, body=
+        # Accumulate sum_s coefficients[s] * aux[s]
+        L.ForRange(r, 0, num_derivatives, index_type=index_type, body=[
+            # Unrolled loop over components of basis function
+            L.Assign(derivatives[c][r], 0.0)
+            for c in range(num_components)
+            ] + [
             L.ForRange(s, 0, shape_dmats[0], index_type=index_type, body=[
-                # Unrolled loop over components
-                L.AssignAdd(derivatives[c][r], coefficients_for_dof[idof][c][s] * aux_for_dof[idof][s])
+                # Unrolled loop over components of basis function
+                L.AssignAdd(derivatives[c][r],
+                            coefficients_for_dof[idof][c][s] * aux_for_dof[idof][s])
                 for c in range(num_components)
             ])
-        )
+        ])
     ]
     return code
 
