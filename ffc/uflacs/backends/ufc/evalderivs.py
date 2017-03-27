@@ -367,8 +367,9 @@ def _compute_dmats(L, num_dmats, shape_dmats,
     dmats_old = L.Symbol("dmats_old")
 
     # Create dmats matrix by multiplication
-    dmats_i = dmats_names[idof][combinations[deriv_index, s]]
-    dmats_i0 = dmats_names[idof][combinations[deriv_index, 0]]
+    comb = L.Symbol("comb")
+
+    dmats_name = dmats_names[idof]
 
     # Local helper function for loops over t,u < shape_dmats
     def tu_loops(body):
@@ -380,8 +381,9 @@ def _compute_dmats(L, num_dmats, shape_dmats,
 
     code = [
         L.Comment("Initialize dmats."),
+        L.VariableDecl(index_type, comb, combinations[deriv_index, 0]),
         tu_loops(
-            L.Assign(dmats[t, u], dmats_i0[t, u])
+            L.Assign(dmats[t, u], dmats_name[comb, t, u])
         ),
         L.Comment("Looping derivative order to generate dmats."),
         L.ForRange(s, 1, order, index_type=index_type, body=[
@@ -395,9 +397,10 @@ def _compute_dmats(L, num_dmats, shape_dmats,
                 L.Assign(dmats[t, u], L.LiteralFloat(0.0))
             ),
             L.Comment("Update dmats using an inner product."),
+            L.Assign(comb, combinations[deriv_index, s]),
             tu_loops(
                 L.ForRange(tu, 0, shape_dmats[0], index_type=index_type, body=
-                        L.AssignAdd(dmats[t, u], dmats_i[t, tu] * dmats_old[tu, u])
+                        L.AssignAdd(dmats[t, u], dmats_name[comb, t, tu] * dmats_old[tu, u])
                 )
             ),
         ])
