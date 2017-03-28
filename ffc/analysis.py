@@ -114,6 +114,8 @@ def analyze_ufl_objects(ufl_objects, kind, parameters):
 
     # Sort elements
     unique_elements = sort_elements(unique_elements)
+    #unique_coordinate_elements = sort_elements(unique_coordinate_elements)
+    unique_coordinate_elements = sorted(unique_coordinate_elements, key=lambda x: repr(x))
 
     # Check for schemes for QuadratureElements
     for element in unique_elements:
