@@ -76,9 +76,8 @@ def jit_generate(ufl_object, module_name, signature, parameters):
     for dep in dependent_ufl_objects["element"]:
         dep_module_name = jit(dep, parameters, indirect=True)
         dependencies.append(dep_module_name)
-
     for dep in dependent_ufl_objects["coordinate_mapping"]:
-        dep_module_name = jit(ufl.Mesh(dep, ufl_id=0), parameters, indirect=True)
+        dep_module_name = jit(dep, parameters, indirect=True)
         dependencies.append(dep_module_name)
     return code_h, code_c, dependencies
 

@@ -131,14 +131,14 @@ def _extract_includes(full_ir, code_integrals):
 def _finite_element_jit_includes(ir):
     classnames = ir["create_sub_element"]
     postfix = "_finite_element"
-    return [classname.split(postfix)[0] + ".h"
+    return [classname.rpartition(postfix)[0] + ".h"
             for classname in classnames]
 
 
 def _dofmap_jit_includes(ir):
     classnames = ir["create_sub_dofmap"]
     postfix = "_dofmap"
-    return [classname.split(postfix)[0] + ".h"
+    return [classname.rpartition(postfix)[0] + ".h"
             for classname in classnames]
 
 
@@ -148,7 +148,7 @@ def _coordinate_mapping_jit_includes(ir):
         ir["scalar_coordinate_finite_element_classname"]
         ]
     postfix = "_finite_element"
-    return [classname.split(postfix)[0] + ".h"
+    return [classname.rpartition(postfix)[0] + ".h"
             for classname in classnames]
 
 
@@ -161,14 +161,13 @@ def _form_jit_includes(ir):
         ir["create_coordinate_finite_element"]
         ))
     postfix = "_finite_element"
-    includes = [classname.split(postfix)[0] + ".h"
+    includes = [classname.rpartition(postfix)[0] + ".h"
                 for classname in classnames]
 
     classnames = ir["create_coordinate_mapping"]
     postfix = "_coordinate_mapping"
-    includes += [classname.split(postfix)[0] + ".h"
+    includes += [classname.rpartition(postfix)[0] + ".h"
                  for classname in classnames]
-
     return includes
 
 

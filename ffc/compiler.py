@@ -118,6 +118,8 @@ __all__ = ["compile_form", "compile_element"]
 from time import time
 import os
 
+import ufl
+
 # FFC modules
 from ffc.log import info, info_green, warning, error
 from ffc.parameters import validate_parameters
@@ -148,10 +150,10 @@ def compile_element(elements, object_names=None,
                                prefix, parameters, jit)
 
 
-def compile_coordinate_mapping(elements, object_names=None,
+def compile_coordinate_mapping(meshes, object_names=None,
                                prefix="Mesh", parameters=None, jit=False):
-    """This function generates UFC code for a given UFL element or list of UFL elements."""
-    return compile_ufl_objects(elements, "coordinate_mapping", object_names,
+    """This function generates UFC code for a given UFL mesh or list of UFL meshes."""
+    return compile_ufl_objects(meshes, "coordinate_mapping", object_names,
                                prefix, parameters, jit)
 
 
@@ -214,19 +216,22 @@ def compile_ufl_objects(ufl_objects, kind, object_names=None,
         # Must use processed elements from analysis here
         form_datas, unique_elements, element_numbers, unique_coordinate_elements = analysis
 
-        # Avoid returning self as dependency for infinite recursion
-        unique_elements = tuple(element
-            for element in unique_elements
-            if element not in ufl_objects)
-        unique_coordinate_elements = tuple(element
-            for element in unique_coordinate_elements
-            if element not in ufl_objects)
+        # Wrap coordinate elements in Mesh object to represent that
+        # we want a ufc::coordinate_mapping not a ufc::finite_element
+        unique_meshes = [ufl.Mesh(element, ufl_id=0)
+                         for element in unique_coordinate_elements]
 
+        # Avoid returning self as dependency for infinite recursion
+        unique_elements = tuple(element for element in unique_elements
+                                if element not in ufl_objects)
+        unique_meshes = tuple(mesh for mesh in unique_meshes
+                              if mesh not in ufl_objects)
+
+        # Setup dependencies (these will be jitted before continuing to compile ufl_objects)
         dependent_ufl_objects = {
             "element": unique_elements,
-            "coordinate_mapping": unique_coordinate_elements,
+            "coordinate_mapping": unique_meshes,
             }
-
         return code_h, code_c, dependent_ufl_objects
     else:
         return code_h, code_c
