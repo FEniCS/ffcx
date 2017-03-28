@@ -111,7 +111,7 @@ def pdet_m1(L, A, m):
     A2 = A[0,0]*A[0,0]
     for i in range(1, m):
         A2 = A2 + A[i,0]*A[i,0]
-    return L.Call("std::sqrt", A2)
+    return L.Sqrt(A2)
 
 def adj_expr_2x2(A):
     return [[ A[1, 1], -A[0, 1]],
@@ -685,14 +685,14 @@ class ufc_coordinate_mapping(ufc_generator):
         if gdim == tdim:
             body = L.Assign(detJ, det_nn(J[ip], gdim))
         elif tdim == 1:
-            body = L.Assign(detJ, orientation_scaling*pdet_m1(A, gdim))
+            body = L.Assign(detJ, orientation_scaling*pdet_m1(L, J[ip], gdim))
         #elif tdim == 2 and gdim == 3:
-        #    body = L.Assign(detJ, orientation_scaling*pdet_32(A)) # Possible optimization not implemented here
+        #    body = L.Assign(detJ, orientation_scaling*pdet_32(L, J[ip])) # Possible optimization not implemented here
         else:
             JTJ = L.Symbol("JTJ")
             body = [
                 generate_compute_ATA(L, JTJ, J[ip], gdim, tdim),
-                L.Assign(detJ, orientation_scaling*L.Call("std::sqrt", det_nn(JTJ, tdim))),
+                L.Assign(detJ, orientation_scaling*L.Sqrt(det_nn(JTJ, tdim))),
                 ]
 
         # Carry out for all points

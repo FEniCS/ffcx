@@ -935,6 +935,9 @@ class Call(CExprOperator):
                     and self.function == other.function
                     and self.arguments == other.arguments)
 
+def Sqrt(x):
+    return Call("std::sqrt", x)
+
 
 ############## Convertion function to expression nodes
 
