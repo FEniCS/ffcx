@@ -105,6 +105,7 @@ public:
                                              const double * reference_values,
                                              const double * X,
                                              const double * J,
+                                             const double * detJ,
                                              const double * Jinv,
                                              int cell_orientation) const final override
   {
@@ -253,6 +254,7 @@ public:
                                              const double * reference_values,
                                              const double * X,
                                              const double * J,
+                                             const double * detJ,
                                              const double * Jinv,
                                              int cell_orientation) const final override;
 
@@ -409,6 +411,7 @@ void %(classname)s::transform_reference_basis_derivatives(double * values,
                                                           const double * reference_values,
                                                           const double * X,
                                                           const double * J,
+                                                          const double * detJ,
                                                           const double * Jinv,
                                                           int cell_orientation) const
 {

@@ -136,11 +136,35 @@ namespace ufc
     virtual const char * family() const = 0;
 
     /// Evaluate all basis functions at given point X in reference cell
+    ///
+    /// @param[out] reference_values
+    ///         Basis function values on reference element.
+    ///         Dimensions: reference_values[num_points][num_dofs][reference_value_size]
+    /// @param[in] num_points
+    ///         Number of points.
+    /// @param[in] X
+    ///         Reference cell coordinates.
+    ///         Dimensions: X[num_points][tdim]
+    ///
     virtual void evaluate_reference_basis(double * reference_values,
                                           std::size_t num_points,
                                           const double * X) const = 0;
 
     /// Evaluate specific order derivatives of all basis functions at given point X in reference cell
+    ///
+    /// @param[out] reference_values
+    ///         Basis function derivative values on reference element.
+    ///         Dimensions: reference_values[num_points][num_dofs][num_derivatives][reference_value_size]
+    ///         where num_derivatives = pow(order, tdim).
+    ///         TODO: Document ordering of derivatives for order > 1.
+    /// @param[in] order
+    ///         Derivative order to compute.
+    /// @param[in] num_points
+    ///         Number of points.
+    /// @param[in] X
+    ///         Reference cell coordinates.
+    ///         Dimensions: X[num_points][tdim]
+    ///
     virtual void evaluate_reference_basis_derivatives(double * reference_values,
                                                       std::size_t order,
                                                       std::size_t num_points,
@@ -148,14 +172,46 @@ namespace ufc
 
     /// Transform order n derivatives (can be 0) of all basis functions
     /// previously evaluated in points X in reference cell with given
-    /// Jacobian J and its inverse Jinv for each point
+    /// Jacobian J and its inverse K for each point
+    ///
+    /// @param[out] values
+    ///         Transformed basis function (derivative) values.
+    ///         Dimensions: values[num_points][num_dofs][num_derivatives][value_size]
+    ///         where num_derivatives = pow(order, tdim).
+    ///         TODO: Document ordering of derivatives for order > 1.
+    /// @param[in] order
+    ///         Derivative order to compute.
+    /// @param[in] num_points
+    ///         Number of points.
+    /// @param[in] reference_values
+    ///         Basis function derivative values on reference element.
+    ///         Dimensions: reference_values[num_points][num_dofs][num_derivatives][reference_value_size]
+    ///         where num_derivatives = pow(order, tdim).
+    ///         TODO: Document ordering of derivatives for order > 1.
+    /// @param[in] X
+    ///         Reference cell coordinates.
+    ///         Dimensions: X[num_points][tdim]
+    /// @param[in] J
+    ///         Jacobian of coordinate field, J = dx/dX.
+    ///         Dimensions: J[num_points][gdim][tdim]
+    /// @param[in] detJ
+    ///         (Pseudo-)Determinant of Jacobian.
+    ///         Dimensions: detJ[num_points]
+    /// @param[in] K
+    ///         (Pseudo-)Inverse of Jacobian of coordinate field.
+    ///         Dimensions: K[num_points][tdim][gdim]
+    /// @param[in] cell_orientation
+    ///         Orientation of the cell, 1 means flipped w.r.t. reference cell.
+    ///         Only relevant on manifolds (tdim < gdim).
+    ///
     virtual void transform_reference_basis_derivatives(double * values,
                                                        std::size_t order,
                                                        std::size_t num_points,
                                                        const double * reference_values,
                                                        const double * X,
                                                        const double * J,
-                                                       const double * Jinv,
+                                                       const double * detJ,
+                                                       const double * K,
                                                        int cell_orientation) const = 0;
 
     /// Evaluate basis function i at given point x in cell
@@ -740,7 +796,11 @@ namespace ufc
     /// Return the number of coefficients (n)
     virtual std::size_t num_coefficients() const = 0;
 
-    /// Return original coefficient position for each coefficient (0 <= i < n)
+    /// Return original coefficient position for each coefficient
+    ///
+    /// @param i
+    ///        Coefficient number, 0 <= i < n
+    ///
     virtual std::size_t original_coefficient_position(std::size_t i) const = 0;
 
 
@@ -754,9 +814,19 @@ namespace ufc
     virtual coordinate_mapping * create_coordinate_mapping() const = 0;
 
     /// Create a new finite element for argument function 0 <= i < r+n
+    ///
+    /// @param i
+    ///        Argument number if 0 <= i < r
+    ///        Coefficient number j=i-r if r+j <= i < r+n
+    ///
     virtual finite_element * create_finite_element(std::size_t i) const = 0;
 
     /// Create a new dofmap for argument function 0 <= i < r+n
+    ///
+    /// @param i
+    ///        Argument number if 0 <= i < r
+    ///        Coefficient number j=i-r if r+j <= i < r+n
+    ///
     virtual dofmap * create_dofmap(std::size_t i) const = 0;
 
 
