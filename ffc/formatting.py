@@ -118,8 +118,8 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
 
     # Generate code for coordinate_mappings
     for code_coordinate_mapping in code_coordinate_mappings:
-        code_h += _format_h("coordinate_mapping", code_coordinate_mapping, parameters)
-        code_c += _format_c("coordinate_mapping", code_coordinate_mapping, parameters)
+        code_h += _format_h("coordinate_mapping", code_coordinate_mapping, parameters, jit)
+        code_c += _format_c("coordinate_mapping", code_coordinate_mapping, parameters, jit)
 
     # Generate code for integrals
     for code_integral in code_integrals:

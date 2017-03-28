@@ -64,6 +64,8 @@ class ufc_generator(object):
         self._header_template = ufc_templates[basename + "_header"]
         self._implementation_template = ufc_templates[basename + "_implementation"]
         self._combined_template = ufc_templates[basename + "_combined"]
+        self._jit_header_template = ufc_templates[basename + "_jit_header"]
+        self._jit_implementation_template = ufc_templates[basename + "_jit_implementation"]
 
         r = re.compile(r"%\(([a-zA-Z0-9_]*)\)")
         self._header_keywords = set(r.findall(self._header_template))
@@ -160,12 +162,18 @@ class ufc_generator(object):
         # Return snippets, a dict of code strings
         return snippets
 
-    def generate(self, L, ir, parameters=None, snippets=None):
+    def generate(self, L, ir, parameters=None, snippets=None, jit=False):
         "Return composition of templates with generated snippets."
         if snippets is None:
             snippets = self.generate_snippets(L, ir, parameters)
-        h = self._header_template % snippets
-        cpp = self._implementation_template % snippets
+        if jit:
+            ht = self._jit_header_template
+            it = self._jit_implementation_template
+        else:
+            ht = self._header_template
+            it = self._implementation_template
+        h = ht % snippets
+        cpp = it % snippets
         return h, cpp
 
     def classname(self, L, ir):

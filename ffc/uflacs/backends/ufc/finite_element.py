@@ -24,6 +24,10 @@ from ffc.uflacs.backends.ufc.generator import ufc_generator
 from ffc.uflacs.backends.ufc.utils import generate_return_new_switch, generate_return_int_switch, generate_error
 
 
+# FIXME: Stop depending on legacy code
+from ffc.cpp import indent
+
+
 class ufc_finite_element(ufc_generator):
     "Each function maps to a keyword in the template. See documentation of ufc_generator."
     def __init__(self):
@@ -73,29 +77,28 @@ class ufc_finite_element(ufc_generator):
         return generate_return_new_switch(L, "i", classnames, factory=ir["jit"])
 
     def evaluate_basis(self, L, ir, parameters): # FIXME: Get rid of this
-        from ffc.codegeneration import _evaluate_basis, indent
+        from ffc.evaluatebasis import _evaluate_basis
         return indent(_evaluate_basis(ir["evaluate_basis"]), 4)
 
     def evaluate_basis_all(self, L, ir, parameters):
         # FIXME: port this, then translate into reference version
-        from ffc.codegeneration import _evaluate_basis_all, indent
+        from ffc.evaluatebasis import _evaluate_basis_all
         return indent(_evaluate_basis_all(ir["evaluate_basis"]), 4)
 
     def evaluate_basis_derivatives(self, L, ir, parameters): # FIXME: Get rid of this
         # FIXME: port this, then translate into reference version
-        from ffc.codegeneration import _evaluate_basis_derivatives, indent
+        from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives
         return indent(_evaluate_basis_derivatives(ir["evaluate_basis"]), 4)
 
     def evaluate_basis_derivatives_all(self, L, ir, parameters):
         # FIXME: port this, then translate into reference version
-        from ffc.codegeneration import _evaluate_basis_derivatives_all, indent
+        from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives_all
         return indent(_evaluate_basis_derivatives_all(ir["evaluate_basis"]), 4)
 
     def evaluate_dof(self, L, ir, parameters): # FIXME: Get rid of this
         # FIXME: port this, then translate into reference version
         # Codes generated together
         from ffc.evaluatedof import evaluate_dof_and_dofs
-        from ffc.codegeneration import indent
         (evaluate_dof_code, evaluate_dofs_code) \
           = evaluate_dof_and_dofs(ir["evaluate_dof"])
         return indent(evaluate_dof_code, 4)
@@ -125,19 +128,38 @@ class ufc_finite_element(ufc_generator):
         # FIXME: port this, then translate into reference version
         # Codes generated together
         from ffc.evaluatedof import evaluate_dof_and_dofs
-        from ffc.codegeneration import indent
         (evaluate_dof_code, evaluate_dofs_code) \
           = evaluate_dof_and_dofs(ir["evaluate_dof"])
         return indent(evaluate_dofs_code, 4)
 
     def interpolate_vertex_values(self, L, ir, parameters): # FIXME: port this
         # FIXME: port this, then translate into reference version
-        from ffc.codegeneration import interpolate_vertex_values, indent
+        from ffc.interpolatevertexvalues import interpolate_vertex_values
         return indent(interpolate_vertex_values(ir["interpolate_vertex_values"]), 4)
 
+    def _tabulate_dof_coordinates(ir):
+        # Aid mapping points from reference to physical element
+        from ffc.evaluatedof import affine_weights
+        coefficients = affine_weights(tdim)
+
+        # Generate code for each point and each component
+        code = []
+        for (i, coordinate) in enumerate(ir["points"]):
+
+            w = coefficients(coordinate)
+            for j in range(gdim):
+                # Compute physical coordinate
+                coords = [component(f_x(), (k * gdim + j,)) for k in range(tdim + 1)]
+                value = inner_product(w, coords)
+
+                # Assign coordinate
+                code.append(assign(component(coordinates, (i * gdim + j)), value))
+
+        return "\n".join(code)
+
     def tabulate_dof_coordinates(self, L, ir, parameters): # FIXME: port this
-        from ffc.codegeneration import _tabulate_dof_coordinates, indent
-        return indent(_tabulate_dof_coordinates(ir["tabulate_dof_coordinates"]), 4)
+        #from ffc.codegeneration import _tabulate_dof_coordinates
+        #return indent(_tabulate_dof_coordinates(ir["tabulate_dof_coordinates"]), 4)
 
         # TODO: For a transition period, let finite_element and dofmap depend on a class affine_<cellname>_domain?
         # TODO: Call _tabulate_dof_reference_coordinates to tabulate X[ndofs][tdim],
@@ -184,12 +206,13 @@ class ufc_finite_element(ufc_generator):
             L.ArrayDecl("const double", phi,
                         (len(points) * num_scalar_xdofs,),
                         values=phi_values),
-            L.ForRange(ip, 0, len(points), body=
-                L.ForRange(i, 0, gdim, body=
-                    L.ForRange(k, 0, num_scalar_xdofs, body=
-                        L.AssignAdd(dof_coordinates[ip][i],
-                                    coordinate_dofs[gdim*k + i]
-                                    * phi[ip*num_scalar_xdofs + k])))),
+            L.ForRanges(
+                (ip, 0, len(points)),
+                (i, 0, gdim),
+                (k, 0, num_scalar_xdofs),
+                body=L.AssignAdd(dof_coordinates[ip][i],
+                                 coordinate_dofs[gdim*k + i] * phi[ip*num_scalar_xdofs + k])
+            ),
             ]
         return code
 

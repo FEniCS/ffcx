@@ -34,6 +34,7 @@ class ufc_dofmap(ufc_generator):
 
 
     def needs_mesh_entities(self, L, needs_mesh_entities):
+        "needs_mesh_entities is a list of num dofs per entity."
         return generate_return_bool_switch(L, "d", needs_mesh_entities, False)
 
 
