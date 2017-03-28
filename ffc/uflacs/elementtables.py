@@ -42,7 +42,6 @@ from ffc.uflacs.backends.ffc.common import ufc_restriction_offset
 default_rtol = 1e-5
 default_atol = 1e-8
 
-
 table_origin_t = namedtuple("table_origin",
     ["element", "avg", "derivatives", "flat_component", "dofrange", "dofmap"])
 

@@ -42,10 +42,6 @@ from ffc.interpolatevertexvalues import interpolate_vertex_values
 from ffc.representation import pick_representation, ufc_integral_types
 
 
-# FIXME: This disables output of generated coordinate_mapping class, until implemented properly
-ENABLE_COORDINATE_MAPPING = False
-
-
 # Errors issued for non-implemented functions
 def _not_implemented(function_name, return_null=False):
     body = format["exception"]("%s not yet implemented." % function_name)
@@ -83,9 +79,6 @@ def generate_code(ir, parameters):
     info("Generating code for %d coordinate_mapping(s)" % len(ir_coordinate_mappings))
     code_coordinate_mappings = [_generate_coordinate_mapping_code(ir, parameters)
                                 for ir in ir_coordinate_mappings]
-
-    if not ENABLE_COORDINATE_MAPPING:
-        code_coordinate_mappings = []
 
     # Generate code for integrals
     info("Generating code for integrals")
@@ -171,11 +164,10 @@ def _form_jit_includes(ir):
     includes = [classname.split(postfix)[0] + ".h"
                 for classname in classnames]
 
-    if ENABLE_COORDINATE_MAPPING:
-        classnames = ir["create_coordinate_mapping"]
-        postfix = "_coordinate_mapping"
-        includes += [classname.split(postfix)[0] + ".h"
-                     for classname in classnames]
+    classnames = ir["create_coordinate_mapping"]
+    postfix = "_coordinate_mapping"
+    includes += [classname.split(postfix)[0] + ".h"
+                 for classname in classnames]
 
     return includes
 
@@ -327,6 +319,7 @@ def _old_generate_coordinate_mapping_code(ir, parameters):
 
     code["compute_physical_coordinates"] = ""
     code["compute_reference_coordinates"] = ""
+    code["compute_reference_geometry"] = ""
     code["compute_jacobians"] = ""
     code["compute_jacobian_determinants"] = ""
     code["compute_jacobian_inverses"] = ""
@@ -548,14 +541,14 @@ def _new_generate_form_code(ir, parameters):
 # Use the old ones:
 _generate_finite_element_code = _old_generate_finite_element_code
 _generate_dofmap_code = _old_generate_dofmap_code
-_generate_coordinate_mapping_code = _old_generate_coordinate_mapping_code
+#_generate_coordinate_mapping_code = _old_generate_coordinate_mapping_code
 _generate_integral_code = _old_generate_integral_code
 _generate_form_code = _old_generate_form_code
 
 # Unless overridden with the new ones:
 _generate_finite_element_code = _new_generate_finite_element_code
 _generate_dofmap_code = _new_generate_dofmap_code
-#_generate_coordinate_mapping_code = _new_generate_coordinate_mapping_code
+_generate_coordinate_mapping_code = _new_generate_coordinate_mapping_code
 #_generate_integral_code = _new_generate_integral_code
 _generate_form_code = _new_generate_form_code
 

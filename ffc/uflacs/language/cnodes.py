@@ -1493,7 +1493,7 @@ def _is_simple_if_body(body):
         if len(body.statements) > 1:
             return False
         body, = body.statements
-    return isinstance(body, (Return, AssignOp))
+    return isinstance(body, (Return, AssignOp, Break, Continue))
 
 
 class If(CStatement):
@@ -1748,6 +1748,15 @@ class ForRange(CStatement):
         return (isinstance(other, type(self))
                     and all(getattr(self, name) == getattr(self, name)
                             for name in attributes))
+
+
+def ForRanges(*ranges, **kwargs):
+    ranges = list(reversed(ranges))
+    code = kwargs["body"]
+    for r in ranges:
+        kwargs["body"] = code
+        code = ForRange(*r, **kwargs)
+    return code
 
 
 ############## Convertion function to statement nodes

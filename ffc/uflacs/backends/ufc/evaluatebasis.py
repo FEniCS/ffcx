@@ -90,6 +90,8 @@ def generate_evaluate_reference_basis(L, data, parameters):
 
         # Generate basis accumulation loop
         if num_components > 1:
+            # Could just simplify by using this generic code
+            # and dropping the below two special cases
             accumulation_code += [
                 L.ForRange(c, 0, num_components, index_type=index_type, body=
                     L.ForRange(r, 0, num_members, index_type=index_type, body=

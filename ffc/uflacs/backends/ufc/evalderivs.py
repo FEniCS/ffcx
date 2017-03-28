@@ -127,15 +127,6 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
     basisvalues_code, basisvalues_for_degree, need_fiat_coordinates = \
         generate_compute_basisvalues(L, data["dofs_data"], element_cellname, tdim, X, ip)
 
-    # Accumulate products of basisvalues and coefficients into values
-    accumulation_code = generate_accumulation_code(L,
-        data["dofs_data"],
-        num_derivatives,
-        coefficients_for_dof)
-
-    # Generate geo code.
-    geometry_code = [] # _geometry_related_code(L, data, tdim, gdim, element_cellname)  # FIXME
-
     # Generate all possible combinations of derivatives.
     combinations_code, combinations = _generate_combinations(L, tdim, max_degree, order, num_derivatives)
 
@@ -231,9 +222,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
         setup_code
         + dmats_code
         + tables_code
-        + geometry_code
         + combinations_code
-#        + dof_loop_code
         + final_loop_code
         )
     return code
@@ -314,12 +303,6 @@ def _generate_combinations(L, tdim, max_degree, order, num_derivatives):
     return code, combinations
 
 
-def generate_accumulation_code(L, dofs_data, num_derivatives, coefficients_for_dof):
-    code = []
-    # FIXME
-    return code
-
-
 def _compute_aux_dmats_basisvalues_products(L, dof_data,
         idof, order, num_derivatives, combinations,
         dmats_names, basisvalues):
@@ -334,9 +317,6 @@ def _compute_aux_dmats_basisvalues_products(L, dof_data,
     t = L.Symbol("t")
     u = L.Symbol("u")
     tu = L.Symbol("tu")
-
-    # Get number of components.
-    num_components = dof_data["num_components"]  # FIXME: Is this the number of components of the subelement?
 
     # Get shape of derivative matrix (they should all have the same shape) and
     # verify that it is a square matrix.

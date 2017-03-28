@@ -37,6 +37,11 @@ public:
       const double * x,
       const double * coordinate_dofs, double cell_orientation) const final override;
 
+  void compute_reference_geometry(
+      double * X, double * J, double * detJ, double * K, std::size_t num_points,
+      const double * x,
+      const double * coordinate_dofs, double cell_orientation) const final override;
+
   void compute_jacobians(
       double * J, std::size_t num_points,
       const double * X,
@@ -55,6 +60,11 @@ public:
       double * x, double * J, double * detJ, double * K, std::size_t num_points,
       const double * X,
       const double * coordinate_dofs, double cell_orientation) const final override;
+
+  void compute_midpoint_geometry(
+      double * x, double * J,
+      const double * coordinate_dofs) const final override;
+
 };
 """
 
@@ -120,6 +130,14 @@ void %(classname)s::compute_reference_coordinates(
 %(compute_reference_coordinates)s
 }
 
+void %(classname)s::compute_reference_geometry(
+    double * X, double * J, double * detJ, double * K, std::size_t num_points,
+    const double * x,
+    const double * coordinate_dofs, double cell_orientation) const final override
+{
+%(compute_reference_geometry)s
+}
+
 void %(classname)s::compute_jacobians(
     double * J, std::size_t num_points,
     const double * X,
@@ -149,6 +167,13 @@ void %(classname)s::compute_geometry(
     const double * coordinate_dofs, double cell_orientation) const final override
 {
 %(compute_geometry)s
+}
+
+void %(classname)s::compute_midpoint_geometry(
+    double * x, double * J,
+    const double * coordinate_dofs) const final override
+{
+%(compute_midpoint_geometry)s
 }
 """
 
@@ -218,6 +243,14 @@ public:
 %(compute_reference_coordinates)s
   }
 
+  void compute_reference_geometry(
+      double * X, double * J, double * detJ, double * K, std::size_t num_points,
+      const double * x,
+      const double * coordinate_dofs, double cell_orientation) const final override
+  {
+%(compute_reference_geometry)s
+  }
+
   void compute_jacobians(
       double * J, std::size_t num_points,
       const double * X,
@@ -247,6 +280,13 @@ public:
       const double * coordinate_dofs, double cell_orientation) const final override
   {
 %(compute_geometry)s
+  }
+
+  void compute_midpoint_geometry(
+      double * x, double * J,
+      const double * coordinate_dofs) const final override
+  {
+%(compute_midpoint_geometry)s
   }
 
 };

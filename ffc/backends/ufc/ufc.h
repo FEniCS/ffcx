@@ -146,6 +146,18 @@ namespace ufc
                                                       std::size_t num_points,
                                                       const double * X) const = 0;
 
+    /// Transform order n derivatives (can be 0) of all basis functions
+    /// previously evaluated in points X in reference cell with given
+    /// Jacobian J and its inverse Jinv for each point
+    virtual void transform_reference_basis_derivatives(double * values,
+                                                       std::size_t order,
+                                                       std::size_t num_points,
+                                                       const double * reference_values,
+                                                       const double * X,
+                                                       const double * J,
+                                                       const double * Jinv,
+                                                       int cell_orientation) const = 0;
+
     /// Evaluate basis function i at given point x in cell
     virtual void evaluate_basis(std::size_t i,
                                 double * values,
@@ -173,18 +185,6 @@ namespace ufc
                                                 const double * x,
                                                 const double * coordinate_dofs,
                                                 int cell_orientation) const = 0;
-
-    /// Transform order n derivatives (can be 0) of all basis functions
-    /// previously evaluated in points X in reference cell with given
-    /// Jacobian J and its inverse Jinv for each point
-    virtual void transform_reference_basis_derivatives(double * values,
-                                                       std::size_t order,
-                                                       std::size_t num_points,
-                                                       const double * reference_values,
-                                                       const double * X,
-                                                       const double * J,
-                                                       const double * Jinv,
-                                                       int cell_orientation) const = 0;
 
     // FIXME: cell argument only included here so we can pass it to the eval function...
 
@@ -328,25 +328,25 @@ namespace ufc
     /// Create dofmap object representing the coordinate parameterization
     virtual dofmap * create_coordinate_dofmap() const = 0;
 
-    /// Compute physical coordinates x from reference coordinates X, the inverse of compute_reference_coordinates
+    /// Compute physical coordinates x from reference coordinates X,
+    /// the inverse of compute_reference_coordinates
     virtual void compute_physical_coordinates(
         double * x, std::size_t num_points,
         const double * X,
         const double * coordinate_dofs) const = 0;
 
-    /// Compute reference coordinates X from physical coordinates x, the inverse of compute_physical_coordinates
+    /// Compute reference coordinates X from physical coordinates x,
+    /// the inverse of compute_physical_coordinates
     virtual void compute_reference_coordinates(
         double * X, std::size_t num_points,
         const double * x,
         const double * coordinate_dofs, double cell_orientation) const = 0;
 
-    // TODO: Can compute all this at no extra cost with the code in compute_reference_coordinates
     /// Compute X, J, detJ, K from physical coordinates x on a cell
-    //virtual void compute_reference_geometry(
-    //    double * X, double * J, double * detJ, double * K, std::size_t num_points,
-    //    const double * x,
-    //    const double * coordinate_dofs, double cell_orientation,
-    //    std::size_t iterations, double tolerance) const = 0;
+    virtual void compute_reference_geometry(
+        double * X, double * J, double * detJ, double * K, std::size_t num_points,
+        const double * x,
+        const double * coordinate_dofs, double cell_orientation) const = 0;
 
     /// Compute Jacobian of coordinate mapping J = dx/dX at reference coordinates X
     virtual void compute_jacobians(
@@ -370,6 +370,11 @@ namespace ufc
         double * x, double * J, double * detJ, double * K, std::size_t num_points,
         const double * X,
         const double * coordinate_dofs, double cell_orientation) const = 0;
+
+    /// Compute x and J at midpoint of cell
+    virtual void compute_midpoint_geometry(
+        double * x, double * J,
+        const double * coordinate_dofs) const = 0;
 
   };
 

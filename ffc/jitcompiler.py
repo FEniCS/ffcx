@@ -77,12 +77,9 @@ def jit_generate(ufl_object, module_name, signature, parameters):
         dep_module_name = jit(dep, parameters, indirect=True)
         dependencies.append(dep_module_name)
 
-    # FIXME: Make this work and turn it on:
-    ENABLE_COORDINATE_MAPPINGS = False
-    if ENABLE_COORDINATE_MAPPINGS:
-        for dep in dependent_ufl_objects["coordinate_mapping"]:
-            dep_module_name = jit(ufl.Mesh(dep, ufl_id=0), parameters, indirect=True)
-            dependencies.append(dep_module_name)
+    for dep in dependent_ufl_objects["coordinate_mapping"]:
+        dep_module_name = jit(ufl.Mesh(dep, ufl_id=0), parameters, indirect=True)
+        dependencies.append(dep_module_name)
     return code_h, code_c, dependencies
 
 

@@ -256,6 +256,36 @@ class ufc_finite_element(ufc_generator):
         return L.Comment("Missing implementation")
 
 
+''' TODO: Implement compatibility wrappers for evaluate_basis[_derivatives][_all]:
+
+    /// Evaluate order n derivatives of all basis functions at given point x in cell
+    virtual void evaluate_basis_derivatives_all(std::size_t order,
+                                                double * values,
+                                                const double * x,
+                                                const double * coordinate_dofs,
+                                                int cell_orientation) const
+    {
+      const std::size_t num_points = 1;
+      const std::size_t tdim = FIXME;
+      const std::size_t gdim = FIXME;
+
+      double X[FIXME*tdim];
+      double detJ[1];
+      double J[FIXME*tdim*gdim];
+      double K[FIXME*tdim*tdim];
+
+      affine_coordinate_mapping cm;
+      cm.compute_reference_geometry(X, J, detJ, K,
+          num_points, x, coordinate_dofs, cell_orientation, 0, 0.0);
+
+      double reference_values[FIXME];
+      evaluate_reference_basis_derivatives(reference_values, order, num_points, X);
+
+      transform_reference_basis_derivatives(values, order, num_points,
+                                            reference_values, X, J, Jinv, cell_orientation);
+    }
+'''
+
 
 """
 TODO: Document new ufc functions evaluate_reference_basis and evaluate_reference_basis_derivatives
