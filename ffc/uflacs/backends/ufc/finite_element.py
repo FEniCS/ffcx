@@ -231,12 +231,9 @@ class ufc_finite_element(ufc_generator):
         return generate_evaluate_reference_basis(L, data, parameters)
 
     def evaluate_reference_basis_derivatives(self, L, ir, parameters):
-        # FIXME: Need this to work to finish coordinate_mapping class
-        # FIXME: Need this to work to finish custom integrals for uflacs
         data = ir["evaluate_basis"]
         from ffc.uflacs.backends.ufc.evalderivs import generate_evaluate_reference_basis_derivatives
         return generate_evaluate_reference_basis_derivatives(L, data, parameters)
-        #return L.Comment("Missing implementation")
 
     def transform_reference_basis_derivatives(self, L, ir, parameters):
         '''

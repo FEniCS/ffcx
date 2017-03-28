@@ -274,6 +274,7 @@ class ufc_coordinate_mapping(ufc_generator):
             # General case with newton loop to solve F(X) = x(X) - x0 = 0
             return self._compute_reference_coordinates_newton(L, ir, output_all=True)
 
+    # TODO: Maybe we don't need this version, see what we need in dolfin first
     def compute_reference_coordinates(self, L, ir):
         degree = ir["coordinate_element_degree"]
         if degree == 1:
@@ -399,7 +400,7 @@ class ufc_coordinate_mapping(ufc_generator):
             ]
 
         # Stitch it together
-        code = L.StatementList(table_decls + decls + compute_x0 + compute_J0 + compute_K0 + compute_X)
+        code = table_decls + decls + compute_x0 + compute_J0 + compute_K0 + compute_X
         return code
 
     def _compute_reference_coordinates_newton(self, L, ir, output_all=False):
@@ -644,29 +645,23 @@ class ufc_coordinate_mapping(ufc_generator):
 
         # Symbols for local basis derivatives table
         dphi_sym = L.Symbol("dphi")
-        # FIXME: Match array layout of evaluate_reference_basis_derivatives
-        dphi = L.FlattenedArray(dphi_sym, dims=(tdim, num_dofs))
-
-        # Arguments to evaluate_reference_basis_derivatives
-        args = (dphi_sym, 1, 1, L.AddressOf(X[ip, 0]))
-
-        # Define scalar finite element instance (stateless, so placing this on the stack is free)
-        define_element = [L.VariableDecl(scalar_coordinate_element_classname, "xelement")]
-        func = "xelement.evaluate_reference_basis_derivatives"  # FIXME: Need this function to work!
+        dphi = L.FlattenedArray(dphi_sym, dims=(num_dofs, tdim))
 
         # For each point, compute basis derivatives and accumulate into the right J
-        code = L.StatementList(define_element + [
-            L.ArrayDecl("double", dphi_sym, (one_point*tdim*num_dofs,)),
-            L.ForRange(ip, 0, num_points, index_type=index_type, body=L.StatementList([
+        code = [
+            L.VariableDecl(scalar_coordinate_element_classname, "xelement"),
+            L.ArrayDecl("double", dphi_sym, (one_point*num_dofs*tdim,)),
+            L.ForRange(ip, 0, num_points, index_type=index_type, body=[
                 L.Comment("Compute basis derivatives of coordinate element"),
-                L.Call(func, args),
+                L.Call("xelement.evaluate_reference_basis_derivatives",
+                       (dphi_sym, 1, 1, L.AddressOf(X[ip, 0]))),
                 L.Comment("Compute J"),
                 L.ForRange(i, 0, gdim, index_type=index_type, body=
                     L.ForRange(j, 0, tdim, index_type=index_type, body=
                         L.ForRange(d, 0, num_dofs, index_type=index_type, body=
-                            L.AssignAdd(J[ip, i, j], coordinate_dofs[d, i]*dphi[j, d]))))
-                ]))
-            ])
+                            L.AssignAdd(J[ip, i, j], coordinate_dofs[d, i]*dphi[d, j]))))
+                ])
+            ]
         return code
 
     def compute_jacobian_determinants(self, L, ir):
@@ -684,20 +679,21 @@ class ufc_coordinate_mapping(ufc_generator):
         # Input geometry
         J = L.FlattenedArray(L.Symbol("J"), dims=(num_points, gdim, tdim))
         cell_orientation = L.Symbol("cell_orientation")
+        orientation_scaling = L.Conditional(L.EQ(cell_orientation, 1), -1.0, +1.0)
 
         # Assign det expression to detJ
         if gdim == tdim:
             body = L.Assign(detJ, det_nn(J[ip], gdim))
         elif tdim == 1:
-            body = L.Assign(detJ, cell_orientation*pdet_m1(A, gdim))
+            body = L.Assign(detJ, orientation_scaling*pdet_m1(A, gdim))
         #elif tdim == 2 and gdim == 3:
-        #    body = L.Assign(detJ, cell_orientation*pdet_32(A)) # Possible optimization not implemented here
+        #    body = L.Assign(detJ, orientation_scaling*pdet_32(A)) # Possible optimization not implemented here
         else:
             JTJ = L.Symbol("JTJ")
-            body = L.StatementList([
+            body = [
                 generate_compute_ATA(L, JTJ, J[ip], gdim, tdim),
-                L.Assign(detJ, cell_orientation*L.Call("std::sqrt", det_nn(JTJ, tdim))),
-                ])
+                L.Assign(detJ, orientation_scaling*L.Call("std::sqrt", det_nn(JTJ, tdim))),
+                ]
 
         # Carry out for all points
         code = L.ForRange(ip, 0, num_points, index_type=index_type, body=body)
@@ -752,7 +748,7 @@ class ufc_coordinate_mapping(ufc_generator):
             L.Call("compute_jacobian_determinants", (detJ, num_points, J, cell_orientation)),
             L.Call("compute_jacobian_inverses", (K, num_points, J, detJ)),
             ]
-        return L.StatementList(code)
+        return code
 
     def compute_midpoint_geometry(self, L, ir):
         # Dimensions
@@ -835,4 +831,4 @@ class ufc_coordinate_mapping(ufc_generator):
 
         # Reuse functions for detJ and K
         code = table_decls + xm_code + Jm_code
-        return L.StatementList(code)
+        return code

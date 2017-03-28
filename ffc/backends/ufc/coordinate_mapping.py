@@ -35,12 +35,12 @@ public:
   void compute_reference_coordinates(
       double * X, std::size_t num_points,
       const double * x,
-      const double * coordinate_dofs, double cell_orientation) const final override;
+      const double * coordinate_dofs, int cell_orientation) const final override;
 
   void compute_reference_geometry(
       double * X, double * J, double * detJ, double * K, std::size_t num_points,
       const double * x,
-      const double * coordinate_dofs, double cell_orientation) const final override;
+      const double * coordinate_dofs, int cell_orientation) const final override;
 
   void compute_jacobians(
       double * J, std::size_t num_points,
@@ -50,7 +50,7 @@ public:
   void compute_jacobian_determinants(
       double * detJ, std::size_t num_points,
       const double * J,
-      double cell_orientation) const final override;
+      int cell_orientation) const final override;
 
   void compute_jacobian_inverses(
       double * K, std::size_t num_points,
@@ -59,7 +59,7 @@ public:
   void compute_geometry(
       double * x, double * J, double * detJ, double * K, std::size_t num_points,
       const double * X,
-      const double * coordinate_dofs, double cell_orientation) const final override;
+      const double * coordinate_dofs, int cell_orientation) const final override;
 
   void compute_midpoint_geometry(
       double * x, double * J,
@@ -125,7 +125,7 @@ void %(classname)s::compute_physical_coordinates(
 void %(classname)s::compute_reference_coordinates(
     double * X, std::size_t num_points,
     const double * x,
-    const double * coordinate_dofs, double cell_orientation) const final override
+    const double * coordinate_dofs, int cell_orientation) const final override
 {
 %(compute_reference_coordinates)s
 }
@@ -133,7 +133,7 @@ void %(classname)s::compute_reference_coordinates(
 void %(classname)s::compute_reference_geometry(
     double * X, double * J, double * detJ, double * K, std::size_t num_points,
     const double * x,
-    const double * coordinate_dofs, double cell_orientation) const final override
+    const double * coordinate_dofs, int cell_orientation) const final override
 {
 %(compute_reference_geometry)s
 }
@@ -149,7 +149,7 @@ void %(classname)s::compute_jacobians(
 void %(classname)s::compute_jacobian_determinants(
     double * detJ, std::size_t num_points,
     const double * J,
-    double cell_orientation) const final override
+    int cell_orientation) const final override
 {
 %(compute_jacobian_determinants)s
 }
@@ -164,7 +164,7 @@ void %(classname)s::compute_jacobian_inverses(
 void %(classname)s::compute_geometry(
     double * x, double * J, double * detJ, double * K, std::size_t num_points,
     const double * X,
-    const double * coordinate_dofs, double cell_orientation) const final override
+    const double * coordinate_dofs, int cell_orientation) const final override
 {
 %(compute_geometry)s
 }
@@ -238,7 +238,7 @@ public:
   void compute_reference_coordinates(
       double * X, std::size_t num_points,
       const double * x,
-      const double * coordinate_dofs, double cell_orientation) const final override
+      const double * coordinate_dofs, int cell_orientation) const final override
   {
 %(compute_reference_coordinates)s
   }
@@ -246,7 +246,7 @@ public:
   void compute_reference_geometry(
       double * X, double * J, double * detJ, double * K, std::size_t num_points,
       const double * x,
-      const double * coordinate_dofs, double cell_orientation) const final override
+      const double * coordinate_dofs, int cell_orientation) const final override
   {
 %(compute_reference_geometry)s
   }
@@ -262,7 +262,7 @@ public:
   void compute_jacobian_determinants(
       double * detJ, std::size_t num_points,
       const double * J,
-      double cell_orientation) const final override
+      int cell_orientation) const final override
   {
 %(compute_jacobian_determinants)s
   }
@@ -277,7 +277,7 @@ public:
   void compute_geometry(
       double * x, double * J, double * detJ, double * K, std::size_t num_points,
       const double * X,
-      const double * coordinate_dofs, double cell_orientation) const final override
+      const double * coordinate_dofs, int cell_orientation) const final override
   {
 %(compute_geometry)s
   }

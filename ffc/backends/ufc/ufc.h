@@ -330,6 +330,19 @@ namespace ufc
 
     /// Compute physical coordinates x from reference coordinates X,
     /// the inverse of compute_reference_coordinates
+    ///
+    /// @param[out] x
+    ///         Physical coordinates.
+    ///         Dimensions: x[num_points][gdim]
+    /// @param[in] num_points
+    ///         Number of points.
+    /// @param[in] X
+    ///         Reference cell coordinates.
+    ///         Dimensions: X[num_points][tdim]
+    /// @param[in] coordinate_dofs
+    ///         Dofs of the coordinate field on the cell.
+    ///         Dimensions: coordinate_dofs[num_dofs][gdim].
+    ///
     virtual void compute_physical_coordinates(
         double * x, std::size_t num_points,
         const double * X,
@@ -337,41 +350,159 @@ namespace ufc
 
     /// Compute reference coordinates X from physical coordinates x,
     /// the inverse of compute_physical_coordinates
+    ///
+    /// @param[out] X
+    ///         Reference cell coordinates.
+    ///         Dimensions: X[num_points][tdim]
+    /// @param[in] num_points
+    ///         Number of points.
+    /// @param[in] x
+    ///         Physical coordinates.
+    ///         Dimensions: x[num_points][gdim]
+    /// @param[in] coordinate_dofs
+    ///         Dofs of the coordinate field on the cell.
+    ///         Dimensions: coordinate_dofs[num_dofs][gdim].
+    /// @param[in] cell_orientation
+    ///         Orientation of the cell, 1 means flipped w.r.t. reference cell.
+    ///         Only relevant on manifolds (tdim < gdim).
+    ///
     virtual void compute_reference_coordinates(
         double * X, std::size_t num_points,
         const double * x,
-        const double * coordinate_dofs, double cell_orientation) const = 0;
+        const double * coordinate_dofs, int cell_orientation) const = 0;
 
     /// Compute X, J, detJ, K from physical coordinates x on a cell
+    ///
+    /// @param[out] X
+    ///         Reference cell coordinates.
+    ///         Dimensions: X[num_points][tdim]
+    /// @param[out] J
+    ///         Jacobian of coordinate field, J = dx/dX.
+    ///         Dimensions: J[num_points][gdim][tdim]
+    /// @param[out] detJ
+    ///         (Pseudo-)Determinant of Jacobian.
+    ///         Dimensions: detJ[num_points]
+    /// @param[out] K
+    ///         (Pseudo-)Inverse of Jacobian of coordinate field.
+    ///         Dimensions: K[num_points][tdim][gdim]
+    /// @param[in] num_points
+    ///         Number of points.
+    /// @param[in] x
+    ///         Physical coordinates.
+    ///         Dimensions: x[num_points][gdim]
+    /// @param[in] coordinate_dofs
+    ///         Dofs of the coordinate field on the cell.
+    ///         Dimensions: coordinate_dofs[num_dofs][gdim].
+    /// @param[in] cell_orientation
+    ///         Orientation of the cell, 1 means flipped w.r.t. reference cell.
+    ///         Only relevant on manifolds (tdim < gdim).
+    ///
     virtual void compute_reference_geometry(
         double * X, double * J, double * detJ, double * K, std::size_t num_points,
         const double * x,
-        const double * coordinate_dofs, double cell_orientation) const = 0;
+        const double * coordinate_dofs, int cell_orientation) const = 0;
 
     /// Compute Jacobian of coordinate mapping J = dx/dX at reference coordinates X
+    ///
+    /// @param[out] J
+    ///         Jacobian of coordinate field, J = dx/dX.
+    ///         Dimensions: J[num_points][gdim][tdim]
+    /// @param[in] num_points
+    ///         Number of points.
+    /// @param[in] X
+    ///         Reference cell coordinates.
+    ///         Dimensions: X[num_points][tdim]
+    /// @param[in] coordinate_dofs
+    ///         Dofs of the coordinate field on the cell.
+    ///         Dimensions: coordinate_dofs[num_dofs][gdim].
+    ///
     virtual void compute_jacobians(
         double * J, std::size_t num_points,
         const double * X,
         const double * coordinate_dofs) const = 0;
 
     /// Compute determinants of (pseudo-)Jacobians J
+    ///
+    /// @param[out] detJ
+    ///         (Pseudo-)Determinant of Jacobian.
+    ///         Dimensions: detJ[num_points]
+    /// @param[in] num_points
+    ///         Number of points.
+    /// @param[in] J
+    ///         Jacobian of coordinate field, J = dx/dX.
+    ///         Dimensions: J[num_points][gdim][tdim]
+    /// @param[in] cell_orientation
+    ///         Orientation of the cell, 1 means flipped w.r.t. reference cell.
+    ///         Only relevant on manifolds (tdim < gdim).
+    ///
     virtual void compute_jacobian_determinants(
         double * detJ, std::size_t num_points,
         const double * J,
-        double cell_orientation) const = 0;
+        int cell_orientation) const = 0;
 
     /// Compute (pseudo-)inverses K of (pseudo-)Jacobians J
+    ///
+    /// @param[out] K
+    ///         (Pseudo-)Inverse of Jacobian of coordinate field.
+    ///         Dimensions: K[num_points][tdim][gdim]
+    /// @param[in] num_points
+    ///         Number of points.
+    /// @param[in] J
+    ///         Jacobian of coordinate field, J = dx/dX.
+    ///         Dimensions: J[num_points][gdim][tdim]
+    /// @param[in] detJ
+    ///         (Pseudo-)Determinant of Jacobian.
+    ///         Dimensions: detJ[num_points]
+    ///
     virtual void compute_jacobian_inverses(
         double * K, std::size_t num_points,
         const double * J, const double * detJ) const = 0;
 
     /// Combined (for convenience) computation of x, J, detJ, K from X and coordinate_dofs on a cell
+    ///
+    /// @param[out] x
+    ///         Physical coordinates.
+    ///         Dimensions: x[num_points][gdim]
+    /// @param[out] J
+    ///         Jacobian of coordinate field, J = dx/dX.
+    ///         Dimensions: J[num_points][gdim][tdim]
+    /// @param[out] detJ
+    ///         (Pseudo-)Determinant of Jacobian.
+    ///         Dimensions: detJ[num_points]
+    /// @param[out] K
+    ///         (Pseudo-)Inverse of Jacobian of coordinate field.
+    ///         Dimensions: K[num_points][tdim][gdim]
+    /// @param[in] num_points
+    ///         Number of points.
+    /// @param[in] X
+    ///         Reference cell coordinates.
+    ///         Dimensions: X[num_points][tdim]
+    /// @param[in] coordinate_dofs
+    ///         Dofs of the coordinate field on the cell.
+    ///         Dimensions: coordinate_dofs[num_dofs][gdim].
+    /// @param[in] cell_orientation
+    ///         Orientation of the cell, 1 means flipped w.r.t. reference cell.
+    ///         Only relevant on manifolds (tdim < gdim).
+    ///
     virtual void compute_geometry(
         double * x, double * J, double * detJ, double * K, std::size_t num_points,
         const double * X,
-        const double * coordinate_dofs, double cell_orientation) const = 0;
+        const double * coordinate_dofs, int cell_orientation) const = 0;
 
     /// Compute x and J at midpoint of cell
+    ///
+    /// @param[out] x
+    ///         Physical coordinates.
+    ///         Dimensions: x[num_points][gdim]
+    /// @param[out] J
+    ///         Jacobian of coordinate field, J = dx/dX.
+    ///         Dimensions: J[num_points][gdim][tdim]
+    /// @param[in] num_points
+    ///         Number of points.
+    /// @param[in] coordinate_dofs
+    ///         Dofs of the coordinate field on the cell.
+    ///         Dimensions: coordinate_dofs[num_dofs][gdim].
+    ///
     virtual void compute_midpoint_geometry(
         double * x, double * J,
         const double * coordinate_dofs) const = 0;
