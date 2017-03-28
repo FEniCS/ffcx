@@ -15,7 +15,7 @@ public:
 
   const char * signature() const final override;
 
-  coordinate_mapping * create() const final override;
+  ufc::coordinate_mapping * create() const final override;
 
   std::size_t geometric_dimension() const final override;
 
@@ -74,42 +74,42 @@ coordinate_mapping_implementation = """
 %(constructor)s
 }
 
-%(classname)s::~%(classname)s() override
+%(classname)s::~%(classname)s()
 {
 %(destructor)s
 }
 
-const char * %(classname)s::signature() const final override
+const char * %(classname)s::signature() const
 {
 %(signature)s
 }
 
-coordinate_mapping * %(classname)s::create() const final override
+ufc::coordinate_mapping * %(classname)s::create() const
 {
 %(create)s
 }
 
-std::size_t %(classname)s::geometric_dimension() const final override
+std::size_t %(classname)s::geometric_dimension() const
 {
 %(geometric_dimension)s
 }
 
-std::size_t %(classname)s::topological_dimension() const final override
+std::size_t %(classname)s::topological_dimension() const
 {
 %(topological_dimension)s
 }
 
-ufc::shape %(classname)s::cell_shape() const final override
+ufc::shape %(classname)s::cell_shape() const
 {
 %(cell_shape)s
 }
 
-ufc::finite_element * %(classname)s::create_coordinate_finite_element() const final override
+ufc::finite_element * %(classname)s::create_coordinate_finite_element() const
 {
 %(create_coordinate_finite_element)s
 }
 
-ufc::dofmap * %(classname)s::create_coordinate_dofmap() const final override
+ufc::dofmap * %(classname)s::create_coordinate_dofmap() const
 {
 %(create_coordinate_dofmap)s
 }
@@ -117,7 +117,7 @@ ufc::dofmap * %(classname)s::create_coordinate_dofmap() const final override
 void %(classname)s::compute_physical_coordinates(
     double * x, std::size_t num_points,
     const double * X,
-    const double * coordinate_dofs) const final override
+    const double * coordinate_dofs) const
 {
 %(compute_physical_coordinates)s
 }
@@ -125,7 +125,7 @@ void %(classname)s::compute_physical_coordinates(
 void %(classname)s::compute_reference_coordinates(
     double * X, std::size_t num_points,
     const double * x,
-    const double * coordinate_dofs, int cell_orientation) const final override
+    const double * coordinate_dofs, int cell_orientation) const
 {
 %(compute_reference_coordinates)s
 }
@@ -133,7 +133,7 @@ void %(classname)s::compute_reference_coordinates(
 void %(classname)s::compute_reference_geometry(
     double * X, double * J, double * detJ, double * K, std::size_t num_points,
     const double * x,
-    const double * coordinate_dofs, int cell_orientation) const final override
+    const double * coordinate_dofs, int cell_orientation) const
 {
 %(compute_reference_geometry)s
 }
@@ -141,7 +141,7 @@ void %(classname)s::compute_reference_geometry(
 void %(classname)s::compute_jacobians(
     double * J, std::size_t num_points,
     const double * X,
-    const double * coordinate_dofs) const final override
+    const double * coordinate_dofs) const
 {
 %(compute_jacobians)s
 }
@@ -149,14 +149,14 @@ void %(classname)s::compute_jacobians(
 void %(classname)s::compute_jacobian_determinants(
     double * detJ, std::size_t num_points,
     const double * J,
-    int cell_orientation) const final override
+    int cell_orientation) const
 {
 %(compute_jacobian_determinants)s
 }
 
 void %(classname)s::compute_jacobian_inverses(
     double * K, std::size_t num_points,
-    const double * J, const double * detJ) const final override
+    const double * J, const double * detJ) const
 {
 %(compute_jacobian_inverses)s
 }
@@ -164,14 +164,14 @@ void %(classname)s::compute_jacobian_inverses(
 void %(classname)s::compute_geometry(
     double * x, double * J, double * detJ, double * K, std::size_t num_points,
     const double * X,
-    const double * coordinate_dofs, int cell_orientation) const final override
+    const double * coordinate_dofs, int cell_orientation) const
 {
 %(compute_geometry)s
 }
 
 void %(classname)s::compute_midpoint_geometry(
     double * x, double * J,
-    const double * coordinate_dofs) const final override
+    const double * coordinate_dofs) const
 {
 %(compute_midpoint_geometry)s
 }
@@ -197,7 +197,7 @@ public:
 %(signature)s
   }
 
-  coordinate_mapping * create() const final override
+  ufc::coordinate_mapping * create() const final override
   {
 %(create)s
   }
