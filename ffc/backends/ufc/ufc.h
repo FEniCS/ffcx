@@ -18,7 +18,7 @@
 #include <vector>
 #include <cstddef>
 #include <stdexcept>
-
+x
 #include <ufc_geometry.h>
 
 #define CONCAT(a,b,c) #a "." #b "." #c
@@ -212,6 +212,7 @@ namespace ufc
                                                        int cell_orientation) const = 0;
 
     /// Evaluate basis function i at given point x in cell
+    /// FIXME: Needs additional argument: const ufc::coordinate_mapping * cm
     virtual void evaluate_basis(std::size_t i,
                                 double * values,
                                 const double * x,
@@ -219,12 +220,14 @@ namespace ufc
                                 int cell_orientation) const = 0;
 
     /// Evaluate all basis functions at given point x in cell
+    /// FIXME: Needs additional argument: const ufc::coordinate_mapping * cm
     virtual void evaluate_basis_all(double * values,
                                     const double * x,
                                     const double * coordinate_dofs,
                                     int cell_orientation) const = 0;
 
     /// Evaluate order n derivatives of basis function i at given point x in cell
+    /// FIXME: Needs additional argument: const ufc::coordinate_mapping * cm
     virtual void evaluate_basis_derivatives(std::size_t i,
                                             std::size_t n,
                                             double * values,
@@ -233,15 +236,16 @@ namespace ufc
                                             int cell_orientation) const = 0;
 
     /// Evaluate order n derivatives of all basis functions at given point x in cell
+    /// FIXME: Needs additional argument: const ufc::coordinate_mapping * cm
     virtual void evaluate_basis_derivatives_all(std::size_t n,
                                                 double * values,
                                                 const double * x,
                                                 const double * coordinate_dofs,
                                                 int cell_orientation) const = 0;
 
-    // FIXME: cell argument only included here so we can pass it to the eval function...
-
     /// Evaluate linear functional for dof i on the function f
+    /// The cell argument is only included here so we can pass it to the function.
+    /// FIXME: Needs additional argument: const ufc::coordinate_mapping * cm
     virtual double evaluate_dof(std::size_t i,
                                 const function& f,
                                 const double * coordinate_dofs,
@@ -249,6 +253,8 @@ namespace ufc
                                 const cell& c) const = 0;
 
     /// Evaluate linear functionals for all dofs on the function f
+    /// The cell argument is only included here so we can pass it to the function.
+    /// FIXME: Needs additional argument: const ufc::coordinate_mapping * cm
     virtual void evaluate_dofs(double * values,
                                const function& f,
                                const double * coordinate_dofs,
@@ -256,6 +262,7 @@ namespace ufc
                                const cell& c) const = 0;
 
     /// Interpolate vertex values from dof values
+    /// The cell argument is only included here so we can pass it to the function.
     /// FIXME: Remove this API version
     void interpolate_vertex_values(double * vertex_values,
                                    const double * dof_values,
@@ -265,12 +272,14 @@ namespace ufc
     { interpolate_vertex_values(vertex_values, dof_values, coordinate_dofs, cell_orientation); }
 
     /// Interpolate vertex values from dof values
+    /// FIXME: Needs additional argument: const ufc::coordinate_mapping * cm
     virtual void interpolate_vertex_values(double * vertex_values,
                                            const double * dof_values,
                                            const double * coordinate_dofs,
                                            int cell_orientation) const = 0;
 
     /// Tabulate the coordinates of all dofs on a cell
+    /// FIXME: Needs additional argument: const ufc::coordinate_mapping * cm
     virtual void tabulate_dof_coordinates(double * dof_coordinates,
                                           const double * coordinate_dofs) const = 0;
 
@@ -554,12 +563,10 @@ namespace ufc
     ///
     /// @param[out] x
     ///         Physical coordinates.
-    ///         Dimensions: x[num_points][gdim]
+    ///         Dimensions: x[gdim]
     /// @param[out] J
     ///         Jacobian of coordinate field, J = dx/dX.
-    ///         Dimensions: J[num_points][gdim][tdim]
-    /// @param[in] num_points
-    ///         Number of points.
+    ///         Dimensions: J[gdim][tdim]
     /// @param[in] coordinate_dofs
     ///         Dofs of the coordinate field on the cell.
     ///         Dimensions: coordinate_dofs[num_dofs][gdim].
