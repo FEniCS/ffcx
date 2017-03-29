@@ -14,49 +14,6 @@ from ffc.uflacs.backends.ufc.evaluatebasis import generate_expansion_coefficient
 # Used for various indices and arrays in this file
 index_type = "std::size_t"
 
-'''
-FIXME: Implement derivative mapping.
-FIXME: Implement piola mapping.
-
-// Example transformation code from evaluate_basis_derivatives:
-    double transform[2][2];
-    for (unsigned int j = 0; j < num_derivatives; j++)
-      for (unsigned int k = 0; k < num_derivatives; k++)
-        transform[j][k] = 1;
-    for (unsigned int row = 0; row < num_derivatives; row++)
-      for (unsigned int col = 0; col < num_derivatives; col++)
-        for (unsigned int k = 0; k < n; k++)
-          transform[row][col] *= Jinv[combinations[col][k]][combinations[row][k]];
-
-// Simplified:
-    double transform[max_derivatives][max_derivatives];
-    for (unsigned int row = 0; row < num_derivatives; row++)
-    {
-      for (unsigned int col = 0; col < num_derivatives; col++)
-      {
-        transform[row][col] = 1.0;
-        for (unsigned int k = 0; k < n; k++)
-          transform[row][col] *= Jinv[combinations[col][k]][combinations[row][k]];
-      }
-    }
-
-// Abstracted:
-    // K = Jinv
-    // C = combinations
-    // Mij = product_k  K[C[i][k]][C[j][k]]
-    // transform = M
-
-
-// Then:
-    // Reset values. Assuming that values is always an array.
-    for (unsigned int r = 0; r < num_derivatives; r++)
-      values[r] = 0.0;
-...
-      // Transform derivatives back to physical element
-      for (unsigned int r = 0; r < num_derivatives; r++)
-        for (unsigned int s = 0; s < num_derivatives; s++)
-          values[r] += transform[r][s] * derivatives[s];
-'''
 
 def generate_evaluate_reference_basis_derivatives(L, data, parameters):
     # Cutoff for feature to disable generation of this code (consider removing after benchmarking final result)
