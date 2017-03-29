@@ -253,6 +253,10 @@ def generate_tabulate_dmats(L, dofs_data):
             # (take transpose, FIAT_NEW PolynomialSet.tabulate()).
             matrix[i,...] = numpy.transpose(dmat)
 
+        # TODO: Use precision from parameters here
+        from ffc.uflacs.elementtables import clamp_table_small_numbers
+        matrix = clamp_table_small_numbers(matrix)
+
         # O(n^2) matrix matching...
         name = None
         for oldname, oldmatrix in all_matrices:

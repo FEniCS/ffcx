@@ -18,7 +18,7 @@
 
 # Note: Most of the code in this file is a direct translation from the old implementation in FFC
 
-
+import numpy
 from ufl import product
 from ffc.uflacs.backends.ufc.generator import ufc_generator
 from ffc.uflacs.backends.ufc.utils import generate_return_new_switch, generate_return_int_switch, generate_error
@@ -157,14 +157,7 @@ class ufc_finite_element(ufc_generator):
 
         return "\n".join(code)
 
-    def tabulate_dof_coordinates(self, L, ir, parameters): # FIXME: port this
-        #from ffc.codegeneration import _tabulate_dof_coordinates
-        #return indent(_tabulate_dof_coordinates(ir["tabulate_dof_coordinates"]), 4)
-
-        # TODO: For a transition period, let finite_element and dofmap depend on a class affine_<cellname>_domain?
-        # TODO: Call _tabulate_dof_reference_coordinates to tabulate X[ndofs][tdim],
-        # then call affine_domain::compute_physical_coordinates(x, X, coordinate_dofs)
-
+    def tabulate_dof_coordinates(self, L, ir, parameters):
         ir = ir["tabulate_dof_coordinates"]
 
         # Raise error if tabulate_dof_coordinates is ill-defined
@@ -192,28 +185,40 @@ class ufc_finite_element(ufc_generator):
         # Basis symbol
         phi = L.Symbol("phi")
 
-        # TODO: This is used where we still assume an affine mesh. Get rid of all places that use it.
+        # TODO: This is used where we still assume an affine mesh.
+        # Get rid of all places that use it.
         from ffc.evaluatedof import affine_weights
-        # TODO: This code assumes an affine coordinate field.
-        #       Ok for now in here, this function must be removed anyway.
+
         # Create code for evaluating affine coordinate basis functions
         num_scalar_xdofs = tdim + 1
         cg1_basis = affine_weights(tdim)
-        phi_values = [phi_comp for X in points for phi_comp in cg1_basis(X)]
+        phi_values = numpy.asarray([phi_comp for X in points for phi_comp in cg1_basis(X)])
         assert len(phi_values) == len(points) * num_scalar_xdofs
 
+        # TODO: Use presicion parameter here
+        from ffc.uflacs.elementtables import clamp_table_small_numbers
+        phi_values = clamp_table_small_numbers(phi_values)
+
         code = [
-            L.ArrayDecl("const double", phi,
-                        (len(points) * num_scalar_xdofs,),
-                        values=phi_values),
-            L.ForRanges(
-                (ip, 0, len(points)),
-                (i, 0, gdim),
-                (k, 0, num_scalar_xdofs),
-                body=L.AssignAdd(dof_coordinates[ip][i],
-                                 coordinate_dofs[gdim*k + i] * phi[ip*num_scalar_xdofs + k])
-            ),
-            ]
+            L.Assign(
+                dof_coordinates[ip][i],
+                sum(phi_values[ip*num_scalar_xdofs + k] * coordinate_dofs[gdim*k + i]
+                    for k in range(num_scalar_xdofs))
+            )
+            for ip in range(len(points))
+            for i in range(gdim)
+        ]
+
+        # FIXME: This code assumes an affine coordinate field.
+        #        To get around that limitation, make this function take another argument
+        #            const ufc::coordinate_mapping * cm
+        #        and generate code like this:
+        """
+        index_type X[tdim*num_dofs];
+        tabulate_dof_coordinates(X);
+        cm->compute_physical_coordinates(x, X, coordinate_dofs);
+        """
+
         return code
 
     def tabulate_reference_dof_coordinates(self, L, ir, parameters):

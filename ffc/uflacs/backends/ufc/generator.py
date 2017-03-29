@@ -136,7 +136,7 @@ class ufc_generator(object):
 
             # Indent body and format to str
             if isinstance(value, L.CStatement):
-                value = L.Indented(value.cs_format())
+                value = L.Indented(value.cs_format(precision=parameters["precision"]))
                 value = format_indented_lines(value)
             elif not isinstance(value, string_types):
                 error("Expecting code or string, not %s, returned from handler %s at %s." % (type(value), handlerstr, file_line))
