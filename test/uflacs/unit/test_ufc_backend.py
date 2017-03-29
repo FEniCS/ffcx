@@ -54,7 +54,7 @@ def basic_class_properties(classname):
 
 
 def mock_parameters():
-    return {}
+    return {"precision": 8}
 
 
 def mock_form_ir():
