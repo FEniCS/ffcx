@@ -656,12 +656,15 @@ class ufc_coordinate_mapping(ufc_generator):
                 L.Call("xelement.evaluate_reference_basis_derivatives",
                        (dphi_sym, 1, 1, L.AddressOf(X[ip, 0]))),
                 L.Comment("Compute J"),
-                L.ForRange(i, 0, gdim, index_type=index_type, body=
-                    L.ForRange(j, 0, tdim, index_type=index_type, body=
-                        L.ForRange(d, 0, num_dofs, index_type=index_type, body=
-                            L.AssignAdd(J[ip, i, j], coordinate_dofs[d, i]*dphi[d, j]))))
-                ])
-            ]
+                L.ForRanges(
+                    (i, 0, gdim),
+                    (j, 0, tdim),
+                    (d, 0, num_dofs),
+                    index_type=index_type,
+                    body=L.AssignAdd(J[ip, i, j], coordinate_dofs[d, i]*dphi[d, j])
+                )
+            ])
+        ]
         return code
 
     def compute_jacobian_determinants(self, L, ir):
