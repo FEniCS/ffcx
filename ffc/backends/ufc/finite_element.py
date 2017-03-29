@@ -169,8 +169,7 @@ public:
   void interpolate_vertex_values(double * vertex_values,
                                  const double * dof_values,
                                  const double * coordinate_dofs,
-                                 int cell_orientation,
-                                 const ufc::cell& c) const final override
+                                 int cell_orientation) const final override
   {
 %(interpolate_vertex_values)s
   }
@@ -297,8 +296,7 @@ public:
   void interpolate_vertex_values(double * vertex_values,
                                  const double * dof_values,
                                  const double * coordinate_dofs,
-                                 int cell_orientation,
-                                 const ufc::cell& c) const final override;
+                                 int cell_orientation) const final override;
 
   void tabulate_dof_coordinates(double * dof_coordinates,
                                 const double * coordinate_dofs) const final override;
@@ -475,8 +473,7 @@ void %(classname)s::evaluate_dofs(double * values,
 void %(classname)s::interpolate_vertex_values(double * vertex_values,
                                               const double * dof_values,
                                               const double * coordinate_dofs,
-                                              int cell_orientation,
-                                              const ufc::cell& c) const
+                                              int cell_orientation) const
 {
 %(interpolate_vertex_values)s
 }

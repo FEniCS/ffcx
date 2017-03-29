@@ -256,11 +256,19 @@ namespace ufc
                                const cell& c) const = 0;
 
     /// Interpolate vertex values from dof values
+    /// FIXME: Remove this API version
+    void interpolate_vertex_values(double * vertex_values,
+                                   const double * dof_values,
+                                   const double * coordinate_dofs,
+                                   int cell_orientation,
+                                   const cell& c) const
+    { interpolate_vertex_values(vertex_values, dof_values, coordinate_dofs, cell_orientation); }
+
+    /// Interpolate vertex values from dof values
     virtual void interpolate_vertex_values(double * vertex_values,
                                            const double * dof_values,
                                            const double * coordinate_dofs,
-                                           int cell_orientation,
-                                           const cell& c) const = 0;
+                                           int cell_orientation) const = 0;
 
     /// Tabulate the coordinates of all dofs on a cell
     virtual void tabulate_dof_coordinates(double * dof_coordinates,
