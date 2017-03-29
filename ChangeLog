@@ -1,7 +1,20 @@
-201x.x.x [201x-xx-xx]
+2017.1.0 [2017-xx-xx]
  - Let ffc -O parameter take an optional integer level like -O2, -O0
  - Implement blockwise optimizations in uflacs code generation
  - Expose uflacs optimization parameters through parameter system
+ - Reimplement code generation for all ufc classes with new
+ - New class ufc::coordinate_mapping which can map
+   between coordinates, compute jacobians, etc. for a
+   coordinate mapping parameterized by a specific finite element.
+ - New functions in ufc::finite_element:
+   - evaluate_reference_basis
+   - evaluate_reference_basis_derivatives
+   - transform_reference_basis_derivatives
+   - tabulate_reference_dof_coordinates
+ - New functions in ufc::dofmap:
+   - num_global_support_dofs
+   - num_element_support_dofs
+ - Improved docstrings for parts of ufc.h
 2016.2.0 [2016-11-30]
  - Jit compiler now compiles elements separately from forms to avoid duplicate work
  - Add parameter max_signature_length to optionally shorten signatures in the jit cache
