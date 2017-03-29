@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2007-2016 Kristian B. Oelgaard
+# Copyright (C) 2007-2017 Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #

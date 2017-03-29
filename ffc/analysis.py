@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2007-2016 Anders Logg, Martin Alnaes, Kristian B. Oelgaard,
+# Copyright (C) 2007-2017 Anders Logg, Martin Alnaes, Kristian B. Oelgaard,
 # and others
 #
 # This file is part of FFC.

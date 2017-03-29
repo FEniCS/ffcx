@@ -7,7 +7,7 @@ This module implements the generation of C++ code for the body of each
 UFC function from an (optimized) intermediate representation (OIR).
 """
 
-# Copyright (C) 2009-2016 Anders Logg, Martin Sandve Alnæs, Marie E. Rognes,
+# Copyright (C) 2009-2017 Anders Logg, Martin Sandve Alnæs, Marie E. Rognes,
 # Kristian B. Oelgaard, and others
 #
 # This file is part of FFC.

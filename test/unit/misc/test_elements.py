@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 "Unit tests for FFC"
 
-# Copyright (C) 2007-2016 Anders Logg and Garth N. Wells
+# Copyright (C) 2007-2017 Anders Logg and Garth N. Wells
 #
 # This file is part of FFC.
 #

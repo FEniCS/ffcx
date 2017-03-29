@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 "Quadrature representation class for UFL"
 
-# Copyright (C) 2009-2016 Kristian B. Oelgaard
+# Copyright (C) 2009-2017 Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -19,7 +19,7 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Anders Logg 2009, 2014
-# Modified by Martin Sandve Alnæs 2013-2016
+# Modified by Martin Sandve Alnæs 2013-2017
 
 # Python modules
 import six

@@ -2,7 +2,7 @@
 # Code generation format strings for UFC (Unified Form-assembly Code) version 2017.1.0.dev0
 # This code is released into the public domain.
 #
-# The FEniCS Project (http://www.fenicsproject.org/) 2006-2016.
+# The FEniCS Project (http://www.fenicsproject.org/) 2006-2017.
 
 form_combined = """
 class %(classname)s: public ufc::form

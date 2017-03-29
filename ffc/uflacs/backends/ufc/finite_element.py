@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2009-2016 Anders Logg and Martin Sandve Alnæs
+# Copyright (C) 2009-2017 Anders Logg and Martin Sandve Alnæs
 #
 # This file is part of UFLACS.
 #

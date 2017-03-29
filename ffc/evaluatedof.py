@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2009-2016 Marie E. Rognes
+# Copyright (C) 2009-2017 Marie E. Rognes
 #
 # This file is part of FFC.
 #

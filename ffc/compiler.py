@@ -90,7 +90,7 @@ The compiler stages are implemented by the following functions:
   format_code       (stage 5)
 """
 
-# Copyright (C) 2007-2016 Anders Logg
+# Copyright (C) 2007-2017 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -110,7 +110,7 @@ The compiler stages are implemented by the following functions:
 # Modified by Kristian B. Oelgaard, 2010.
 # Modified by Dag Lindbo, 2008.
 # Modified by Garth N. Wells, 2009.
-# Modified by Martin Sandve Alnæs, 2013-2016
+# Modified by Martin Sandve Alnæs, 2013-2017
 
 __all__ = ["compile_form", "compile_element"]
 

@@ -2,7 +2,7 @@
 """This module contains utility functions for some code shared between
 quadrature and tensor representation."""
 
-# Copyright (C) 2012-2016 Marie Rognes
+# Copyright (C) 2012-2017 Marie Rognes
 #
 # This file is part of FFC.
 #
@@ -19,7 +19,7 @@ quadrature and tensor representation."""
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Martin Sandve Alnæs 2013-2016
+# Modified by Martin Sandve Alnæs 2013-2017
 # Modified by Anders Logg 2014
 
 import numpy
