@@ -106,7 +106,7 @@ public:
                                              const double * X,
                                              const double * J,
                                              const double * detJ,
-                                             const double * Jinv,
+                                             const double * K,
                                              int cell_orientation) const final override
   {
 %(transform_reference_basis_derivatives)s
@@ -254,7 +254,7 @@ public:
                                              const double * X,
                                              const double * J,
                                              const double * detJ,
-                                             const double * Jinv,
+                                             const double * K,
                                              int cell_orientation) const final override;
 
   void evaluate_basis(std::size_t i,
@@ -410,7 +410,7 @@ void %(classname)s::transform_reference_basis_derivatives(double * values,
                                                           const double * X,
                                                           const double * J,
                                                           const double * detJ,
-                                                          const double * Jinv,
+                                                          const double * K,
                                                           int cell_orientation) const
 {
 %(transform_reference_basis_derivatives)s

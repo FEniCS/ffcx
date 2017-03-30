@@ -18,7 +18,7 @@
 #include <vector>
 #include <cstddef>
 #include <stdexcept>
-x
+
 #include <ufc_geometry.h>
 
 #define CONCAT(a,b,c) #a "." #b "." #c
@@ -37,7 +37,7 @@ namespace ufc
 {
 
   /// Valid cell shapes
-  enum class shape {vertex, interval, triangle, quadrilateral, tetrahedron, hexahedron};
+  enum class shape {interval, triangle, quadrilateral, tetrahedron, hexahedron, vertex};
 
   /// This class defines the data structure for a cell in a mesh.
   class cell
@@ -177,7 +177,7 @@ namespace ufc
     ///         where num_derivatives = pow(order, tdim).
     ///         TODO: Document ordering of derivatives for order > 1.
     /// @param[in] order
-    ///         Derivative order to compute.
+    ///         Derivative order to compute. Can be zero to just apply Piola mappings.
     /// @param[in] num_points
     ///         Number of points.
     /// @param[in] reference_values
