@@ -85,6 +85,9 @@ namespace ufc
 
   };
 
+  /// Forward declaration
+  class coordinate_mapping;
+
   /// This class defines the interface for a finite element.
   class finite_element
   {
@@ -212,54 +215,60 @@ namespace ufc
                                                        int cell_orientation) const = 0;
 
     /// Evaluate basis function i at given point x in cell
-    /// FIXME: Needs additional argument: const ufc::coordinate_mapping * cm
     virtual void evaluate_basis(std::size_t i,
                                 double * values,
                                 const double * x,
                                 const double * coordinate_dofs,
-                                int cell_orientation) const = 0;
+                                int cell_orientation,
+                                const ufc::coordinate_mapping * cm=nullptr
+                                ) const = 0;
 
     /// Evaluate all basis functions at given point x in cell
-    /// FIXME: Needs additional argument: const ufc::coordinate_mapping * cm
     virtual void evaluate_basis_all(double * values,
                                     const double * x,
                                     const double * coordinate_dofs,
-                                    int cell_orientation) const = 0;
+                                    int cell_orientation,
+                                    const ufc::coordinate_mapping * cm=nullptr
+                                    ) const = 0;
 
     /// Evaluate order n derivatives of basis function i at given point x in cell
-    /// FIXME: Needs additional argument: const ufc::coordinate_mapping * cm
     virtual void evaluate_basis_derivatives(std::size_t i,
                                             std::size_t n,
                                             double * values,
                                             const double * x,
                                             const double * coordinate_dofs,
-                                            int cell_orientation) const = 0;
+                                            int cell_orientation,
+                                            const ufc::coordinate_mapping * cm=nullptr
+                                            ) const = 0;
 
     /// Evaluate order n derivatives of all basis functions at given point x in cell
-    /// FIXME: Needs additional argument: const ufc::coordinate_mapping * cm
     virtual void evaluate_basis_derivatives_all(std::size_t n,
                                                 double * values,
                                                 const double * x,
                                                 const double * coordinate_dofs,
-                                                int cell_orientation) const = 0;
+                                                int cell_orientation,
+                                                const ufc::coordinate_mapping * cm=nullptr
+                                                ) const = 0;
 
     /// Evaluate linear functional for dof i on the function f
     /// The cell argument is only included here so we can pass it to the function.
-    /// FIXME: Needs additional argument: const ufc::coordinate_mapping * cm
     virtual double evaluate_dof(std::size_t i,
                                 const function& f,
                                 const double * coordinate_dofs,
                                 int cell_orientation,
-                                const cell& c) const = 0;
+                                const cell& c,
+                                const ufc::coordinate_mapping * cm=nullptr
+                                ) const = 0;
 
     /// Evaluate linear functionals for all dofs on the function f
     /// The cell argument is only included here so we can pass it to the function.
-    /// FIXME: Needs additional argument: const ufc::coordinate_mapping * cm
     virtual void evaluate_dofs(double * values,
                                const function& f,
                                const double * coordinate_dofs,
                                int cell_orientation,
-                               const cell& c) const = 0;
+                               const cell& c,
+                               const ufc::coordinate_mapping * cm=nullptr
+                               ) const = 0;
 
     /// Interpolate vertex values from dof values
     /// The cell argument is only included here so we can pass it to the function.
@@ -268,20 +277,24 @@ namespace ufc
                                    const double * dof_values,
                                    const double * coordinate_dofs,
                                    int cell_orientation,
-                                   const cell& c) const
-    { interpolate_vertex_values(vertex_values, dof_values, coordinate_dofs, cell_orientation); }
+                                   const cell& c,
+                                   const ufc::coordinate_mapping * cm=nullptr
+                                   ) const
+    { interpolate_vertex_values(vertex_values, dof_values, coordinate_dofs, cell_orientation, cm); }
 
     /// Interpolate vertex values from dof values
-    /// FIXME: Needs additional argument: const ufc::coordinate_mapping * cm
     virtual void interpolate_vertex_values(double * vertex_values,
                                            const double * dof_values,
                                            const double * coordinate_dofs,
-                                           int cell_orientation) const = 0;
+                                           int cell_orientation,
+                                           const ufc::coordinate_mapping * cm=nullptr
+                                           ) const = 0;
 
     /// Tabulate the coordinates of all dofs on a cell
-    /// FIXME: Needs additional argument: const ufc::coordinate_mapping * cm
     virtual void tabulate_dof_coordinates(double * dof_coordinates,
-                                          const double * coordinate_dofs) const = 0;
+                                          const double * coordinate_dofs,
+                                          const ufc::coordinate_mapping * cm=nullptr
+                                          ) const = 0;
 
     /// Tabulate the coordinates of all dofs on a reference cell
     virtual void tabulate_reference_dof_coordinates(double * reference_dof_coordinates) const = 0;
