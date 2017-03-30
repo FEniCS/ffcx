@@ -215,8 +215,9 @@ def _generate_includes(includes, parameters):
         ]
 
     default_cpp_includes = [
-        # FIXME: Avoid adding these includes if we don't need them:
+        # TODO: Avoid adding these includes if we don't need them:
         "#include <stdexcept>",
+        "#include <algorithm>",
         ]
 
     external_includes = set("#include <%s>" % inc for inc in parameters.get("external_includes", ()))

@@ -24,6 +24,7 @@
 
 from collections import defaultdict
 import numpy
+from six import string_types
 
 from ufl import product
 from ffc.uflacs.backends.ufc.generator import ufc_generator
@@ -59,7 +60,7 @@ def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J
         num_physical_components = gdim**2
         # g_il = K_ji G_jk K_kl = K_ji K_kl G_jk
         i0 = i // tdim  # i in the line above
-        l1 = i % tdim   # l ...
+        i1 = i % tdim   # l ...
         M_scale = 1.0
         M_row = [K[jj,i0]*K[kk,i1] for jj in range(tdim) for kk in range(tdim)]
     elif mapping == "double contravariant piola":
@@ -67,7 +68,7 @@ def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J
         num_physical_components = gdim**2
         # g_il = (det J)^(-2) Jij G_jk Jlk = (det J)^(-2) Jij Jlk G_jk
         i0 = i // tdim  # i in the line above
-        l1 = i % tdim   # l ...
+        i1 = i % tdim   # l ...
         M_scale = 1.0 / (detJ*detJ)
         M_row = [J[i0,jj]*J[i1,kk] for jj in range(tdim) for kk in range(tdim)]
     else:
@@ -383,17 +384,28 @@ class ufc_finite_element(ufc_generator):
 
     def evaluate_reference_basis(self, L, ir, parameters):
         data = ir["evaluate_basis"]
+        if isinstance(data, string_types):
+            msg = "evaluate_reference_basis: %s" % data
+            return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
+
         from ffc.uflacs.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
         return generate_evaluate_reference_basis(L, data, parameters)
 
     def evaluate_reference_basis_derivatives(self, L, ir, parameters):
         data = ir["evaluate_basis"]
+        if isinstance(data, string_types):
+            msg = "evaluate_reference_basis_derivatives: %s" % data
+            return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
+
         from ffc.uflacs.backends.ufc.evalderivs import generate_evaluate_reference_basis_derivatives
         return generate_evaluate_reference_basis_derivatives(L, data, parameters)
 
     def transform_reference_basis_derivatives(self, L, ir, parameters):
         data = ir["evaluate_basis"]
-        #return [L.Comment("Missing implementation")]
+        if isinstance(data, string_types):
+            msg = "transform_reference_basis_derivatives: %s" % data
+            return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
+
         # Get some known dimensions
         #element_cellname = data["cellname"]
         gdim = data["geometric_dimension"]
@@ -432,7 +444,11 @@ class ufc_finite_element(ufc_generator):
         from ffc.uflacs.backends.ufc.evalderivs import _generate_combinations
 
         combinations_code = []
-        if tdim == gdim:
+        if max_degree == 0:
+            # Don't need combinations
+            num_derivatives_t = 1  # TODO: I think this is the right thing to do to make this still work for order=0?
+            num_derivatives_g = 1
+        elif tdim == gdim:
             num_derivatives_t = L.Symbol("num_derivatives")
             num_derivatives_g = num_derivatives_t
             combinations_code += [
@@ -479,16 +495,19 @@ class ufc_finite_element(ufc_generator):
                 index_type=index_type,
                 body=L.Assign(transform[r, s], 1.0)
             ),
-            # Compute transform matrix entries, each a product of K entries
-            L.ForRanges(
-                (r, 0, num_derivatives_g),
-                (s, 0, num_derivatives_t),
-                (k, 0, order),
-                index_type=index_type,
-                body=L.AssignMul(transform[r, s],
-                                 K[ip, combinations_t[s, k], combinations_g[r, k]])
-            ),
-        ]
+            ]
+        if max_degree > 0:
+            transform_matrix_code += [
+                # Compute transform matrix entries, each a product of K entries
+                L.ForRanges(
+                    (r, 0, num_derivatives_g),
+                    (s, 0, num_derivatives_t),
+                    (k, 0, order),
+                    index_type=index_type,
+                    body=L.AssignMul(transform[r, s],
+                                     K[ip, combinations_t[s, k], combinations_g[r, k]])
+                ),
+            ]
 
         # Initialize values to 0, will be added to inside loops
         values_init_code = [
@@ -576,7 +595,6 @@ class ufc_finite_element(ufc_generator):
                             index_type=index_type, body=[
                                 L.AssignAdd(values[ip, idof, r, physical_offset + i],
                                             transform[r, s] * mapped_value)
-
                         ])
                 ])
             ]

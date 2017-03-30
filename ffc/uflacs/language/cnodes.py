@@ -271,15 +271,27 @@ class CExpr(CNode):
             return other
         return Div(other, self)
 
+    # TODO: Error check types? Can't do that exactly as symbols here have no type.
     __truediv__ = __div__
-
     __rtruediv__ = __rdiv__
+    __floordiv__ = __div__
+    __rfloordiv__ = __rdiv__
 
-    def __floordiv__(self, other):
-        return NotImplemented
+    def __mod__(self, other):
+        other = as_cexpr(other)
+        if is_zero_cexpr(other):
+            raise ValueError("Division by zero!")
+        if is_zero_cexpr(self):
+            return self
+        return Mod(self, other)
 
-    def __rfloordiv__(self, other):
-        return NotImplemented
+    def __rmod__(self, other):
+        other = as_cexpr(other)
+        if is_zero_cexpr(self):
+            raise ValueError("Division by zero!")
+        if is_zero_cexpr(other):
+            return other
+        return Mod(other, self)
 
 
 class CExprOperator(CExpr):
