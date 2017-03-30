@@ -16,9 +16,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
-# Note: Most of the code in this file is a direct translation from the old implementation in FFC
 
+# Note: Much of the code in this file is a direct translation
+# from the old implementation in FFC, although some improvements
+# have been made to the generated code.
+
+
+from collections import defaultdict
 import numpy
+
 from ufl import product
 from ffc.uflacs.backends.ufc.generator import ufc_generator
 from ffc.uflacs.backends.ufc.utils import generate_return_new_switch, generate_return_int_switch, generate_error
@@ -26,6 +32,47 @@ from ffc.uflacs.backends.ufc.utils import generate_return_new_switch, generate_r
 
 # FIXME: Stop depending on legacy code
 from ffc.cpp import indent
+
+
+index_type = "std::size_t"
+
+
+def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J, detJ, K):
+    # Select transformation to apply
+    if mapping == "affine":
+        assert num_reference_components == 1
+        num_physical_components = 1
+        M_scale = 1
+        M_row = [1]  # M_row[0] == 1
+    elif mapping == "contravariant piola":
+        assert num_reference_components == tdim
+        num_physical_components = gdim
+        M_scale = 1.0 / detJ
+        M_row = [J[i, jj] for jj in range(tdim)]
+    elif mapping == "covariant piola":
+        assert num_reference_components == tdim
+        num_physical_components = gdim
+        M_scale = 1.0 / detJ
+        M_row = [K[jj, i] for jj in range(tdim)]
+    elif mapping == "double covariant piola":
+        assert num_reference_components == tdim**2
+        num_physical_components = gdim**2
+        # g_il = K_ji G_jk K_kl = K_ji K_kl G_jk
+        i0 = i // tdim  # i in the line above
+        l1 = i % tdim   # l ...
+        M_scale = 1.0
+        M_row = [K[jj,i0]*K[kk,i1] for jj in range(tdim) for kk in range(tdim)]
+    elif mapping == "double contravariant piola":
+        assert num_reference_components == tdim**2
+        num_physical_components = gdim**2
+        # g_il = (det J)^(-2) Jij G_jk Jlk = (det J)^(-2) Jij Jlk G_jk
+        i0 = i // tdim  # i in the line above
+        l1 = i % tdim   # l ...
+        M_scale = 1.0 / (detJ*detJ)
+        M_row = [J[i0,jj]*J[i1,kk] for jj in range(tdim) for kk in range(tdim)]
+    else:
+        error("Unknown mapping: %s" % mapping)
+    return M_scale, M_row, num_physical_components
 
 
 class ufc_finite_element(ufc_generator):
@@ -76,32 +123,109 @@ class ufc_finite_element(ufc_generator):
         classnames = ir["create_sub_element"]
         return generate_return_new_switch(L, "i", classnames, factory=ir["jit"])
 
-    def evaluate_basis(self, L, ir, parameters): # FIXME: Get rid of this
-        from ffc.evaluatebasis import _evaluate_basis
-        return indent(_evaluate_basis(ir["evaluate_basis"]), 4)
+    def evaluate_basis(self, L, ir, parameters):
+        # FIXME: Get rid of this
+        use_legacy = 1
+        if use_legacy:
+            from ffc.evaluatebasis import _evaluate_basis
+            return indent(_evaluate_basis(ir["evaluate_basis"]), 4)
 
     def evaluate_basis_all(self, L, ir, parameters):
-        # FIXME: port this, then translate into reference version
-        from ffc.evaluatebasis import _evaluate_basis_all
-        return indent(_evaluate_basis_all(ir["evaluate_basis"]), 4)
+        # FIXME: port this
+        use_legacy = 1
+        if use_legacy:
+            from ffc.evaluatebasis import _evaluate_basis_all
+            return indent(_evaluate_basis_all(ir["evaluate_basis"]), 4)
 
-    def evaluate_basis_derivatives(self, L, ir, parameters): # FIXME: Get rid of this
-        # FIXME: port this, then translate into reference version
-        from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives
-        return indent(_evaluate_basis_derivatives(ir["evaluate_basis"]), 4)
+    def evaluate_basis_derivatives(self, L, ir, parameters):
+        # FIXME: Get rid of this
+        # FIXME: port this
+        use_legacy = 1
+        if use_legacy:
+            from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives
+            return indent(_evaluate_basis_derivatives(ir["evaluate_basis"]), 4)
 
     def evaluate_basis_derivatives_all(self, L, ir, parameters):
-        # FIXME: port this, then translate into reference version
-        from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives_all
-        return indent(_evaluate_basis_derivatives_all(ir["evaluate_basis"]), 4)
+        # FIXME: port this
+        use_legacy = 1
+        if use_legacy:
+            from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives_all
+            return indent(_evaluate_basis_derivatives_all(ir["evaluate_basis"]), 4)
 
-    def evaluate_dof(self, L, ir, parameters): # FIXME: Get rid of this
-        # FIXME: port this, then translate into reference version
-        # Codes generated together
-        from ffc.evaluatedof import evaluate_dof_and_dofs
-        (evaluate_dof_code, evaluate_dofs_code) \
-          = evaluate_dof_and_dofs(ir["evaluate_dof"])
-        return indent(evaluate_dof_code, 4)
+        """
+        // Legacy version:
+        evaluate_basis_derivatives_all(std::size_t n,
+                                       double * values,
+                                       const double * x,
+                                       const double * coordinate_dofs,
+                                       int cell_orientation)
+        // Suggestion for new version:
+        new_evaluate_basis_derivatives(double * values,
+                                       std::size_t order,
+                                       std::size_t num_points,
+                                       const double * x,
+                                       const double * coordinate_dofs,
+                                       int cell_orientation,
+                                       const ufc::coordinate_mapping * cm)
+        """
+
+        # TODO: This is a refactoring step to allow rewriting code
+        # generation to use coordinate_mapping in one stage, before
+        # making it available as an argument from dolfin in the next stage.
+        affine_coordinate_mapping_classname = ir["affine_coordinate_mapping_classname"]
+
+        # Output arguments:
+        values = L.Symbol("values")
+
+        # Input arguments:
+        #order = L.Symbol("order")
+        order = L.Symbol("n")
+        x = L.Symbol("x")
+        coordinate_dofs = L.Symbol("coordinate_dofs")
+        cell_orientation = L.Symbol("cell_orientation")
+
+        # Internal variables:
+        #num_points = L.Symbol("num_points")
+        num_points = 1  # Always 1 in legacy API
+        reference_values = L.Symbol("reference_values")
+        X = L.Symbol("X")
+        J = L.Symbol("J")
+        detJ = L.Symbol("detJ")
+        K = L.Symbol("K")
+        ip = L.Symbol("ip")
+
+        gdim = ir["geometric_dimension"]
+        tdim = ir["topological_dimension"]
+
+        code = [
+            # Create local affine coordinate mapping object
+            # TODO: Get this as input instead to support non-affine
+            L.VariableDecl(affine_coordinate_mapping_classname, "cm"),
+            L.ForRange(ip, 0, num_points, index_type=index_type, body=[
+                L.ArrayDecl("double", X, (tdim,)),
+                L.ArrayDecl("double", J, (gdim*tdim,)),
+                L.ArrayDecl("double", detJ, (1,)),
+                L.ArrayDecl("double", K, (tdim*gdim,)),
+                L.Call("cm.compute_reference_geometry",
+                       (X, J, detJ, K, num_points, x, coordinate_dofs, cell_orientation)),
+                L.Call("evaluate_reference_basis_derivatives",
+                       (reference_values, order, num_points, X)),
+                L.Call("transform_reference_basis_derivatives",
+                       (values, order, num_points, reference_values, X, J, detJ, K, cell_orientation)),
+            ])
+        ]
+        return code
+
+    def evaluate_dof(self, L, ir, parameters):
+        # FIXME: Get rid of this
+        # FIXME: port this
+        use_legacy = 1
+        if use_legacy:
+            # Codes generated together
+            from ffc.evaluatedof import evaluate_dof_and_dofs
+            (evaluate_dof_code, evaluate_dofs_code) \
+              = evaluate_dof_and_dofs(ir["evaluate_dof"])
+            return indent(evaluate_dof_code, 4)
 
     def evaluate_dofs(self, L, ir, parameters):
         """Generate code for evaluate_dofs."""
@@ -126,16 +250,20 @@ class ufc_finite_element(ufc_generator):
           element->evaluate_dofs(fdofs, fvalues, J, detJ, K)
         """
         # FIXME: port this, then translate into reference version
-        # Codes generated together
-        from ffc.evaluatedof import evaluate_dof_and_dofs
-        (evaluate_dof_code, evaluate_dofs_code) \
-          = evaluate_dof_and_dofs(ir["evaluate_dof"])
-        return indent(evaluate_dofs_code, 4)
+        use_legacy = 1
+        if use_legacy:
+            # Codes generated together
+            from ffc.evaluatedof import evaluate_dof_and_dofs
+            (evaluate_dof_code, evaluate_dofs_code) \
+              = evaluate_dof_and_dofs(ir["evaluate_dof"])
+            return indent(evaluate_dofs_code, 4)
 
-    def interpolate_vertex_values(self, L, ir, parameters): # FIXME: port this
-        # FIXME: port this, then translate into reference version
-        from ffc.interpolatevertexvalues import interpolate_vertex_values
-        return indent(interpolate_vertex_values(ir["interpolate_vertex_values"]), 4)
+    def interpolate_vertex_values(self, L, ir, parameters):
+        # FIXME: port this
+        use_legacy = 1
+        if use_legacy:
+            from ffc.interpolatevertexvalues import interpolate_vertex_values
+            return indent(interpolate_vertex_values(ir["interpolate_vertex_values"]), 4)
 
     def _tabulate_dof_coordinates(ir):
         # Aid mapping points from reference to physical element
@@ -195,7 +323,7 @@ class ufc_finite_element(ufc_generator):
         phi_values = numpy.asarray([phi_comp for X in points for phi_comp in cg1_basis(X)])
         assert len(phi_values) == len(points) * num_scalar_xdofs
 
-        # TODO: Use presicion parameter here
+        # TODO: Use precision parameter here
         from ffc.uflacs.elementtables import clamp_table_small_numbers
         phi_values = clamp_table_small_numbers(phi_values)
 
@@ -264,128 +392,208 @@ class ufc_finite_element(ufc_generator):
         return generate_evaluate_reference_basis_derivatives(L, data, parameters)
 
     def transform_reference_basis_derivatives(self, L, ir, parameters):
-        '''
-        (double * values,
-        std::size_t order,
-        std::size_t num_points,
-        const double * reference_values,
-        const double * X,
-        const double * J,
-        const double * Jinv,
-        int cell_orientation) const = 0;
-        '''
-        # FIXME: Need this to work to fully replace old evaluate_basis[_derivatives]
         data = ir["evaluate_basis"]
-        #from ffc.uflacs.backends.ufc.evalderivs import generate_evaluate_reference_basis_derivatives
-        #return generate_evaluate_reference_basis_derivatives(L, data, parameters)
-        return L.Comment("Missing implementation")
+        #return [L.Comment("Missing implementation")]
+        # Get some known dimensions
+        #element_cellname = data["cellname"]
+        gdim = data["geometric_dimension"]
+        tdim = data["topological_dimension"]
+        max_degree = data["max_degree"]
+        reference_value_size = data["reference_value_size"]
+        physical_value_size = data["physical_value_size"]
+        num_dofs = len(data["dofs_data"])
 
+        max_g_d = gdim**max_degree
+        max_t_d = tdim**max_degree
 
-''' TODO: Implement compatibility wrappers for evaluate_basis[_derivatives][_all]:
+        # Output arguments
+        values_symbol = L.Symbol("values")
 
-    /// Evaluate order n derivatives of all basis functions at given point x in cell
-    virtual void evaluate_basis_derivatives_all(std::size_t order,
-                                                double * values,
-                                                const double * x,
-                                                const double * coordinate_dofs,
-                                                int cell_orientation) const
-    {
-      const std::size_t num_points = 1;
-      const std::size_t tdim = FIXME;
-      const std::size_t gdim = FIXME;
+        # Input arguments
+        order = L.Symbol("order")
+        num_points = L.Symbol("num_points")  # FIXME: Currently assuming 1 point?
+        reference_values = L.Symbol("reference_values")
+        J = L.Symbol("J")
+        detJ = L.Symbol("detJ")
+        K = L.Symbol("K")
 
-      double X[FIXME*tdim];
-      double detJ[1];
-      double J[FIXME*tdim*gdim];
-      double K[FIXME*tdim*tdim];
+        # Internal variables
+        transform = L.Symbol("transform")
 
-      affine_coordinate_mapping cm;
-      cm.compute_reference_geometry(X, J, detJ, K,
-          num_points, x, coordinate_dofs, cell_orientation, 0, 0.0);
+        # Indices, I've tried to use these for a consistent purpose
+        ip = L.Symbol("ip") # point
+        i = L.Symbol("i")   # physical component
+        j = L.Symbol("j")   # reference component
+        k = L.Symbol("k")   # order
+        r = L.Symbol("r")   # physical derivative number
+        s = L.Symbol("s")   # reference derivative number
+        d = L.Symbol("d")   # dof
 
-      double reference_values[FIXME];
-      evaluate_reference_basis_derivatives(reference_values, order, num_points, X);
+        from ffc.uflacs.backends.ufc.evalderivs import _generate_combinations
 
-      transform_reference_basis_derivatives(values, order, num_points,
-                                            reference_values, X, J, Jinv, cell_orientation);
-    }
-'''
+        combinations_code = []
+        if tdim == gdim:
+            num_derivatives_t = L.Symbol("num_derivatives")
+            num_derivatives_g = num_derivatives_t
+            combinations_code += [
+                L.VariableDecl("const " + index_type, num_derivatives_t,
+                               L.Call("std::pow", (tdim, order))),
+            ]
 
+            # Add array declarations of combinations
+            combinations_code_t, combinations_t = _generate_combinations(L, tdim, max_degree, order, num_derivatives_t)
+            combinations_code += combinations_code_t
+            combinations_g = combinations_t
+        else:
+            num_derivatives_t = L.Symbol("num_derivatives_t")
+            num_derivatives_g = L.Symbol("num_derivatives_g")
+            combinations_code += [
+                L.VariableDecl("const " + index_type, num_derivatives_t,
+                               L.Call("std::pow", (tdim, order))),
+                L.VariableDecl("const " + index_type, num_derivatives_g,
+                               L.Call("std::pow", (gdim, order))),
+            ]
+            # Add array declarations of combinations
+            combinations_code_t, combinations_t = _generate_combinations(L, tdim, max_degree, order, num_derivatives_t, suffix="_t")
+            combinations_code_g, combinations_g = _generate_combinations(L, gdim, max_degree, order, num_derivatives_g, suffix="_g")
+            combinations_code += combinations_code_t
+            combinations_code += combinations_code_g
 
-"""
-TODO: Document new ufc functions evaluate_reference_basis and evaluate_reference_basis_derivatives
+        # Define expected dimensions of argument arrays
+        J = L.FlattenedArray(J, dims=(num_points, gdim, tdim))
+        detJ = L.FlattenedArray(detJ, dims=(num_points,))
+        K = L.FlattenedArray(K, dims=(num_points, tdim, gdim))
 
-TODO: Add support for mappings to finite_element, something like:
+        values = L.FlattenedArray(values_symbol,
+            dims=(num_points, num_dofs, num_derivatives_g, physical_value_size))
+        reference_values = L.FlattenedArray(reference_values,
+            dims=(num_points, num_dofs, num_derivatives_t, reference_value_size))
 
-    /// Return true if the basis needs to be mapped between physical and reference frames
-    virtual bool needs_mapping() const = 0;
+        # Generate code to compute the derivative transform matrix
+        transform_matrix_code = [
+            # Initialize transform matrix to all 1.0
+            L.ArrayDecl("double", transform, (max_g_d, max_t_d)),
+            L.ForRanges(
+                (r, 0, num_derivatives_g),
+                (s, 0, num_derivatives_t),
+                index_type=index_type,
+                body=L.Assign(transform[r, s], 1.0)
+            ),
+            # Compute transform matrix entries, each a product of K entries
+            L.ForRanges(
+                (r, 0, num_derivatives_g),
+                (s, 0, num_derivatives_t),
+                (k, 0, order),
+                index_type=index_type,
+                body=L.AssignMul(transform[r, s],
+                                 K[ip, combinations_t[s, k], combinations_g[r, k]])
+            ),
+        ]
 
-    /// This is the transform_basis_derivatives function added above:
-    /// Map values from reference frame to physical frame
-    virtual void map_from_reference_values(double * values, const double * J) const = 0;
+        # Initialize values to 0, will be added to inside loops
+        values_init_code = [
+            L.MemZero(values_symbol, num_points * num_dofs * num_derivatives_g * physical_value_size),
+            ]
 
-    /// Map values from physical frame to reference frame
-    virtual void map_to_reference_values(double * values, const double * J) const = 0;
+        # Make offsets available in generated code
+        reference_offsets = L.Symbol("reference_offsets")
+        physical_offsets = L.Symbol("physical_offsets")
+        dof_attributes_code = [
+            L.ArrayDecl("const " + index_type, reference_offsets, (num_dofs,),
+                        values=[dof_data["reference_offset"] for dof_data in data["dofs_data"]]),
+            L.ArrayDecl("const " + index_type, physical_offsets, (num_dofs,),
+                        values=[dof_data["physical_offset"] for dof_data in data["dofs_data"]]),
+            ]
 
-    // TODO: Need mapping of derivatives as well
-"""
+        # Build dof lists for each mapping type
+        mapping_dofs = defaultdict(list)
+        for idof, dof_data in enumerate(data["dofs_data"]):
+            mapping_dofs[dof_data["mapping"]].append(idof)
 
+        # Generate code for each mapping type
+        d = L.Symbol("d")
+        transform_apply_code = []
+        for mapping in sorted(mapping_dofs):
+            # Get list of dofs using this mapping
+            idofs = mapping_dofs[mapping]
 
-"""
-TODO: Remove unused ufc::cell from interpolate_vertex_values
-"""
+            # Select iteration approach over dofs
+            if idofs == list(range(idofs[0], idofs[-1]+1)):
+                # Contiguous
+                dofrange = (d, idofs[0], idofs[-1]+1)
+                idof = d
+            else:
+                # Stored const array of dof indices
+                idofs_symbol = L.Symbol("%s_dofs" % mapping.replace(" ", "_"))
+                dof_attributes_code += [
+                    L.ArrayDecl("const " + index_type, idofs_symbol,
+                                (len(idofs),), values=idofs),
+                ]
+                dofrange = (d, 0, len(idofs))
+                idof = idofs_symbol[d]
 
+            # NB! Array access to offsets, these are not Python integers
+            reference_offset = reference_offsets[idof]
+            physical_offset = physical_offsets[idof]
 
-''' /// FUTURE SPLIT IMPLEMENTATION OF EVALUATE_BASIS:
-    /// Evaluate basis function i at given point x in cell
-    virtual void evaluate_basis(std::size_t i,
-                                double* values,
-                                const double* x,
-                                const double* coordinate_dofs,
-                                int cell_orientation) const;
-    /// Evaluate all basis functions at given point x in cell
-    virtual void evaluate_basis_all(double* values,
-                                    const double* x,
-                                    const double* coordinate_dofs,
-                                    int cell_orientation) const
-    ... and derivatives
-    {
-      const std::size_t gdim = 3;
-      const std::size_t tdim = 2;
-      const std::size_t num_points = 1;
+            # How many components does each basis function with this mapping have?
+            # This should be uniform, i.e. there should be only one element in this set:
+            num_reference_components, = set(data["dofs_data"][i]["num_components"] for i in idofs)
 
-      // domain::
-      double X[num_points*tdim]; // X[i] -> X[ip*tdim + i]
-      compute_reference_coordinates(X, num_points, x, coordinate_dofs, cell_orientation);
+            M_scale, M_row, num_physical_components = generate_element_mapping(
+                mapping, i,
+                num_reference_components, tdim, gdim,
+                J[ip], detJ[ip], K[ip]
+            )
 
-      // domain::
-      double J[num_points*gdim*tdim]; // J[i,j] -> J[ip*gdim*tdim + i*tdim + j]
-      compute_jacobians(J, num_points, X, coordinate_dofs, cell_orientation);
+            transform_apply_body = [
+                L.AssignAdd(values[ip, idof, r, physical_offset + k],
+                            transform[r, s] * reference_values[ip, idof, s, reference_offset + k])
+                for k in range(num_physical_components)
+            ]
 
-      // domain::
-      double detJ[num_points]; // detJ -> detJ[ip]
-      compute_jacobian_determinants(detJ, num_points, J);
+            msg = "Using %s transform to map values back to the physical element." % mapping.replace("piola", "Piola")
 
-      // domain::
-      double K[num_points*tdim*gdim]; // K[i,j] -> K[ip*tdim*gdim + i*gdim + j]
-      compute_jacobian_inverses(K, num_points, J, detJ);
+            mapped_value = L.Symbol("mapped_value")
+            transform_apply_code += [
+                L.ForRanges(
+                    dofrange,
+                    (s, 0, num_derivatives_t),
+                    (i, 0, num_physical_components),
+                    index_type=index_type, body=[
+                        # Unrolled application of mapping to one physical component,
+                        # for affine this automatically reduces to
+                        #   mapped_value = reference_values[..., reference_offset]
+                        L.Comment(msg),
+                        L.VariableDecl("const double", mapped_value,
+                                       M_scale * sum(M_row[jj] * reference_values[ip, idof, s, reference_offset + jj]
+                                                     for jj in range(num_reference_components))),
+                        # Apply derivative transformation, for order=0 this reduces to
+                        # values[ip,idof,0,physical_offset+i] = transform[0,0]*mapped_value
+                        L.Comment("Mapping derivatives back to the physical element"),
+                        L.ForRanges(
+                            (r, 0, num_derivatives_g),
+                            index_type=index_type, body=[
+                                L.AssignAdd(values[ip, idof, r, physical_offset + i],
+                                            transform[r, s] * mapped_value)
 
-      // domain:: (inverse of compute_reference_coordinates)
-      //double x[num_points*gdim]; // x[i] -> x[ip*gdim + i]
-      //compute_physical_coordinates(x, num_points, X, K, coordinate_dofs, cell_orientation);
+                        ])
+                ])
+            ]
 
-      // domain:: (combining the above)
-      //compute_geometry(x, J, detJ, K, num_points, X, coordinate_dofs, cell_orientation);
+        # Transform for each point
+        point_loop_code = [
+            L.ForRange(ip, 0, num_points, index_type=index_type, body=(
+                transform_matrix_code
+                + transform_apply_code
+            ))
+        ]
 
-      // phi[ip*ndofs*rvs + idof*rvs + jcomp]
-      double reference_basis_values[num_points*num_dofs*reference_value_size];
-      compute_reference_basis(reference_basis_values, num_points, X);
-
-      // phi[ip*nder*ndofs*rvs + iderivative*ndofs*rvs + idof*rvs + jcomp]
-      double reference_basis_derivatives[num_points*num_derivatives*num_dofs*reference_value_size];
-      compute_reference_basis_derivatives(reference_basis_derivatives, derivative_order, num_points, X);
-
-      double physical_basis_values[num_points*num_dofs*value_size]; // phi -> phi[ip*ndofs*pvs + idof*pvs + icomp]
-      compute_physical_basis[_derivatives](physical_basis_values, num_points, reference_basis_values, J, detJ, K);
-    }
-'''
+        # Join code
+        code = (
+            combinations_code
+            + values_init_code
+            + dof_attributes_code
+            + point_loop_code
+        )
+        return code

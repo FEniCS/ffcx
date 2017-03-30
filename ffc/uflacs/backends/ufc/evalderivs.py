@@ -237,9 +237,9 @@ def generate_tabulate_dmats(L, dofs_data):
     return dmats_names, dmats_code
 
 
-def _generate_combinations(L, tdim, max_degree, order, num_derivatives):
+def _generate_combinations(L, tdim, max_degree, order, num_derivatives, suffix=""):
     max_num_derivatives = tdim**max_degree
-    combinations = L.Symbol("combinations")
+    combinations = L.Symbol("combinations" + suffix)
 
     # This precomputes the combinations for each order and stores in code as table
     # Python equivalent precomputed for each valid order:
