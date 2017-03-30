@@ -120,14 +120,14 @@ def MemZeroRange(name, begin, end):
 def MemZero(name, size):
     name = as_cexpr_or_string_symbol(name)
     size = as_cexpr(size)
-    return Call("std::fill", (name, name + size, LiteralFloat(0.0)))
+    return Call("std::fill_n", (name, size, LiteralFloat(0.0)))
 
 
 def MemCopy(src, dst, size):
     src = as_cexpr_or_string_symbol(src)
     dst = as_cexpr_or_string_symbol(dst)
     size = as_cexpr(size)
-    return Call("std::copy", (src, src + size, dst))
+    return Call("std::copy_n", (src, size, dst))
 
 
 ############## CNode core
@@ -765,7 +765,7 @@ class AssignBitOr(AssignOp):
 
 class FlattenedArray(object):
     """Syntax carrying object only, will get translated on __getitem__ to ArrayAccess."""
-    __slots__ = ("array", "strides", "offset")
+    __slots__ = ("array", "strides", "offset", "dims")
     def __init__(self, array, dummy=None, dims=None, strides=None, offset=None):
         assert dummy is None, "Please use keyword arguments for strides or dims."
 
@@ -783,6 +783,7 @@ class FlattenedArray(object):
             assert dims is not None, "Please provide either strides or dims."
             assert isinstance(dims, (list, tuple))
             dims = tuple(as_cexpr(i) for i in dims)
+            self.dims = dims
             n = len(dims)
             literal_one = LiteralInt(1)
             strides = [literal_one]*n
@@ -796,6 +797,7 @@ class FlattenedArray(object):
                 else:
                     strides[i] = d * s
         else:
+            self.dims = None
             assert isinstance(strides, (list, tuple))
             strides = tuple(as_cexpr(i) for i in strides)
         self.strides = strides
@@ -1234,7 +1236,7 @@ def commented_code_list(code, comments):
     return code
 
 
-class Pragma(CStatement):  # TODO: Improve on this with a use case later
+class Pragma(CStatement):
     "Pragma comments used for compiler-specific annotations."
     __slots__ = ("comment",)
     is_scoped = True
@@ -1378,11 +1380,19 @@ class ArrayDecl(CStatement):
     """
     __slots__ = ("typename", "symbol", "sizes", "alignas", "padlen", "values")
     is_scoped = False
-    def __init__(self, typename, symbol, sizes, values=None, alignas=None, padlen=0):
+    def __init__(self, typename, symbol, sizes=None, values=None, alignas=None, padlen=0):
         assert isinstance(typename, string_types)
         self.typename = typename
 
-        self.symbol = as_symbol(symbol)
+        if isinstance(symbol, FlattenedArray):
+            if sizes is None:
+                assert symbol.dims is not None
+                sizes = symbol.dims
+            elif symbol.dims is not None:
+                assert symbol.dims == sizes
+            self.symbol = symbol.array
+        else:
+            self.symbol = as_symbol(symbol)
 
         if isinstance(sizes, int):
             sizes = (sizes,)
