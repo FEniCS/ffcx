@@ -453,7 +453,7 @@ void %(classname)s::evaluate_basis(std::size_t i,
                                    const double * x,
                                    const double * coordinate_dofs,
                                    int cell_orientation,
-                                   const ufc::coordinate_mapping * cm=nullptr
+                                   const ufc::coordinate_mapping * cm
                                    ) const
 {
 %(evaluate_basis)s
@@ -463,7 +463,7 @@ void %(classname)s::evaluate_basis_all(double * values,
                                        const double * x,
                                        const double * coordinate_dofs,
                                        int cell_orientation,
-                                       const ufc::coordinate_mapping * cm=nullptr
+                                       const ufc::coordinate_mapping * cm
                                        ) const
 {
 %(evaluate_basis_all)s
@@ -475,7 +475,7 @@ void %(classname)s::evaluate_basis_derivatives(std::size_t i,
                                                const double * x,
                                                const double * coordinate_dofs,
                                                int cell_orientation,
-                                               const ufc::coordinate_mapping * cm=nullptr
+                                               const ufc::coordinate_mapping * cm
                                                ) const
 {
 %(evaluate_basis_derivatives)s
@@ -486,7 +486,7 @@ void %(classname)s::evaluate_basis_derivatives_all(std::size_t n,
                                                    const double * x,
                                                    const double * coordinate_dofs,
                                                    int cell_orientation,
-                                                   const ufc::coordinate_mapping * cm=nullptr
+                                                   const ufc::coordinate_mapping * cm
                                                    ) const
 {
 %(evaluate_basis_derivatives_all)s
@@ -497,7 +497,7 @@ double %(classname)s::evaluate_dof(std::size_t i,
                                    const double * coordinate_dofs,
                                    int cell_orientation,
                                    const ufc::cell& c,
-                                   const ufc::coordinate_mapping * cm=nullptr
+                                   const ufc::coordinate_mapping * cm
                                    ) const
 {
 %(evaluate_dof)s
@@ -508,7 +508,7 @@ void %(classname)s::evaluate_dofs(double * values,
                                   const double * coordinate_dofs,
                                   int cell_orientation,
                                   const ufc::cell& c,
-                                  const ufc::coordinate_mapping * cm=nullptr
+                                  const ufc::coordinate_mapping * cm
                                   ) const
 {
 %(evaluate_dofs)s
@@ -517,8 +517,8 @@ void %(classname)s::evaluate_dofs(double * values,
 void %(classname)s::interpolate_vertex_values(double * vertex_values,
                                               const double * dof_values,
                                               const double * coordinate_dofs,
-                                              int cell_orientation
-                                              const ufc::coordinate_mapping * cm=nullptr
+                                              int cell_orientation,
+                                              const ufc::coordinate_mapping * cm
                                               ) const
 {
 %(interpolate_vertex_values)s
@@ -526,7 +526,7 @@ void %(classname)s::interpolate_vertex_values(double * vertex_values,
 
 void %(classname)s::tabulate_dof_coordinates(double * dof_coordinates,
                                              const double * coordinate_dofs,
-                                             const ufc::coordinate_mapping * cm=nullptr
+                                             const ufc::coordinate_mapping * cm
                                              ) const
 {
 %(tabulate_dof_coordinates)s
