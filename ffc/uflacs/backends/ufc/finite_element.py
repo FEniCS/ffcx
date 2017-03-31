@@ -43,7 +43,6 @@ from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives
 from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives_all
 from ffc.interpolatevertexvalues import interpolate_vertex_values
 from ffc.evaluatedof import evaluate_dof_and_dofs
-from ffc.evaluatedof import evaluate_dof_and_dofs
 from ffc.evaluatedof import affine_weights
 
 
