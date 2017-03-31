@@ -315,7 +315,7 @@ def test_mock_dofmap():
     print(cpp)
 
 
-@pytest.mark.skip("mock ir for evaluate basis is currently incomplete")
+@pytest.mark.skipif(True, reason="mock ir for evaluate basis is currently incomplete")
 def test_mock_finite_element():
     h, cpp = compile_mock_finite_element()
     print(h)
