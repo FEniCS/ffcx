@@ -402,7 +402,7 @@ def _num_global_support_dofs(fiat_element):
             return 1
         return 0
     num_reals = 0
-    for (i, e) in enumerate(fiat_element.elements()):
+    for e in fiat_element.elements():
         if isinstance(e, SpaceOfReals):
             num_reals += 1
     return num_reals
@@ -419,7 +419,7 @@ def _global_dimension(fiat_element):
     elements = []
     reals = []
     num_reals = 0
-    for (i, e) in enumerate(fiat_element.elements()):
+    for e in fiat_element.elements():
         if not isinstance(e, SpaceOfReals):
             elements += [e]
         else:
