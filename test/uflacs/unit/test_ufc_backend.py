@@ -152,7 +152,7 @@ def mock_evaluate_basis_ir():
             "reference_offset": 3,
             "physical_offset": 5,
             "mapping": "affine",
-            "dmats": [], # FIXME: Mock dmats data
+            "dmats": numpy.zeros([]), # FIXME: Mock dmats data
         },
         {
             "embedded_degree": 1,
@@ -162,7 +162,7 @@ def mock_evaluate_basis_ir():
             "reference_offset": 3,
             "physical_offset": 5,
             "mapping": "affine",
-            "dmats": [], # FIXME: Mock dmats data
+            "dmats": numpy.zeros([]), # FIXME: Mock dmats data
         }
     ]
     data = {
@@ -179,7 +179,7 @@ def mock_evaluate_basis_ir():
     return data
 
 
-@pytest.mark.skip("mock ir for evaluate basis is currently incomplete")
+@pytest.mark.skipif(True, reason="mock ir for evaluate basis is currently incomplete")
 def test_mock_evaluate_basis():
     from ffc.uflacs.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
     import ffc.uflacs.language.cnodes as L
