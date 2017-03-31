@@ -36,6 +36,9 @@ from ffc.cpp import set_exception_handling, set_float_formatting
 # FFC code generation modules
 from ffc.representation import pick_representation, ufc_integral_types
 
+import ffc.uflacs.language.cnodes as L
+from ffc.uflacs.backends.ufc.generators import ufc_integral, ufc_finite_element, ufc_dofmap, ufc_coordinate_mapping, ufc_form
+
 
 # Errors issued for non-implemented functions
 def _not_implemented(function_name, return_null=False):
@@ -271,43 +274,27 @@ def _generate_integral_code(ir, parameters):
 
     return code
 
-
 # TODO: Replace the above with this, currently something is not working
 def _new_generate_integral_code(ir, parameters):
     "Generate code for integrals from intermediate representation."
-    import ffc.uflacs.language.cnodes as L
-    from ffc.uflacs.backends.ufc.integrals import ufc_integral
-    code = ufc_integral(ir["integral_type"]).generate_snippets(L, ir, parameters)
-    return code
+    return ufc_integral(ir["integral_type"]).generate_snippets(L, ir, parameters)
 
 
 def _generate_finite_element_code(ir, parameters):
     "Generate code for finite_element from intermediate representation."
-    import ffc.uflacs.language.cnodes as L
-    from ffc.uflacs.backends.ufc.finite_element import ufc_finite_element
-    code = ufc_finite_element().generate_snippets(L, ir, parameters)
-    return code
+    return ufc_finite_element().generate_snippets(L, ir, parameters)
 
 
 def _generate_dofmap_code(ir, parameters):
     "Generate code for dofmap from intermediate representation."
-    import ffc.uflacs.language.cnodes as L
-    from ffc.uflacs.backends.ufc.dofmap import ufc_dofmap
-    code = ufc_dofmap().generate_snippets(L, ir, parameters)
-    return code
+    return ufc_dofmap().generate_snippets(L, ir, parameters)
 
 
 def _generate_coordinate_mapping_code(ir, parameters):
     "Generate code for coordinate_mapping from intermediate representation."
-    import ffc.uflacs.language.cnodes as L
-    from ffc.uflacs.backends.ufc.coordinate_mapping import ufc_coordinate_mapping
-    code = ufc_coordinate_mapping().generate_snippets(L, ir, parameters)
-    return code
+    return ufc_coordinate_mapping().generate_snippets(L, ir, parameters)
 
 
 def _generate_form_code(ir, parameters):
     "Generate code for coordinate_mapping from intermediate representation."
-    import ffc.uflacs.language.cnodes as L
-    from ffc.uflacs.backends.ufc.form import ufc_form
-    code = ufc_form().generate_snippets(L, ir, parameters)
-    return code
+    return ufc_form().generate_snippets(L, ir, parameters)

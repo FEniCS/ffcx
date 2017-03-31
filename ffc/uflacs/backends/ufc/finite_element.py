@@ -30,9 +30,21 @@ from ufl import product
 from ffc.uflacs.backends.ufc.generator import ufc_generator
 from ffc.uflacs.backends.ufc.utils import generate_return_new_switch, generate_return_int_switch, generate_error
 
+from ffc.uflacs.elementtables import clamp_table_small_numbers
+from ffc.uflacs.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
+from ffc.uflacs.backends.ufc.evalderivs import generate_evaluate_reference_basis_derivatives
+from ffc.uflacs.backends.ufc.evalderivs import _generate_combinations
 
 # FIXME: Stop depending on legacy code
 from ffc.cpp import indent
+from ffc.evaluatebasis import _evaluate_basis
+from ffc.evaluatebasis import _evaluate_basis_all
+from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives
+from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives_all
+from ffc.interpolatevertexvalues import interpolate_vertex_values
+from ffc.evaluatedof import evaluate_dof_and_dofs
+from ffc.evaluatedof import evaluate_dof_and_dofs
+from ffc.evaluatedof import affine_weights
 
 
 index_type = "std::size_t"
@@ -128,14 +140,12 @@ class ufc_finite_element(ufc_generator):
         # FIXME: Get rid of this
         use_legacy = 1
         if use_legacy:
-            from ffc.evaluatebasis import _evaluate_basis
             return indent(_evaluate_basis(ir["evaluate_basis"]), 4)
 
     def evaluate_basis_all(self, L, ir, parameters):
         # FIXME: port this
         use_legacy = 1
         if use_legacy:
-            from ffc.evaluatebasis import _evaluate_basis_all
             return indent(_evaluate_basis_all(ir["evaluate_basis"]), 4)
 
     def evaluate_basis_derivatives(self, L, ir, parameters):
@@ -143,14 +153,12 @@ class ufc_finite_element(ufc_generator):
         # FIXME: port this
         use_legacy = 1
         if use_legacy:
-            from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives
             return indent(_evaluate_basis_derivatives(ir["evaluate_basis"]), 4)
 
     def evaluate_basis_derivatives_all(self, L, ir, parameters):
         # FIXME: port this
         use_legacy = 1
         if use_legacy:
-            from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives_all
             return indent(_evaluate_basis_derivatives_all(ir["evaluate_basis"]), 4)
 
         """
@@ -223,7 +231,6 @@ class ufc_finite_element(ufc_generator):
         use_legacy = 1
         if use_legacy:
             # Codes generated together
-            from ffc.evaluatedof import evaluate_dof_and_dofs
             (evaluate_dof_code, evaluate_dofs_code) \
               = evaluate_dof_and_dofs(ir["evaluate_dof"])
             return indent(evaluate_dof_code, 4)
@@ -254,7 +261,6 @@ class ufc_finite_element(ufc_generator):
         use_legacy = 1
         if use_legacy:
             # Codes generated together
-            from ffc.evaluatedof import evaluate_dof_and_dofs
             (evaluate_dof_code, evaluate_dofs_code) \
               = evaluate_dof_and_dofs(ir["evaluate_dof"])
             return indent(evaluate_dofs_code, 4)
@@ -263,12 +269,10 @@ class ufc_finite_element(ufc_generator):
         # FIXME: port this
         use_legacy = 1
         if use_legacy:
-            from ffc.interpolatevertexvalues import interpolate_vertex_values
             return indent(interpolate_vertex_values(ir["interpolate_vertex_values"]), 4)
 
     def _tabulate_dof_coordinates(ir):
         # Aid mapping points from reference to physical element
-        from ffc.evaluatedof import affine_weights
         coefficients = affine_weights(tdim)
 
         # Generate code for each point and each component
@@ -314,10 +318,7 @@ class ufc_finite_element(ufc_generator):
         # Basis symbol
         phi = L.Symbol("phi")
 
-        # TODO: This is used where we still assume an affine mesh.
-        # Get rid of all places that use it.
-        from ffc.evaluatedof import affine_weights
-
+        # TODO: Get rid of all places that use affine_weights, assumes affine mesh
         # Create code for evaluating affine coordinate basis functions
         num_scalar_xdofs = tdim + 1
         cg1_basis = affine_weights(tdim)
@@ -325,7 +326,6 @@ class ufc_finite_element(ufc_generator):
         assert len(phi_values) == len(points) * num_scalar_xdofs
 
         # TODO: Use precision parameter here
-        from ffc.uflacs.elementtables import clamp_table_small_numbers
         phi_values = clamp_table_small_numbers(phi_values)
 
         code = [
@@ -388,7 +388,6 @@ class ufc_finite_element(ufc_generator):
             msg = "evaluate_reference_basis: %s" % data
             return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
 
-        from ffc.uflacs.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
         return generate_evaluate_reference_basis(L, data, parameters)
 
     def evaluate_reference_basis_derivatives(self, L, ir, parameters):
@@ -397,7 +396,6 @@ class ufc_finite_element(ufc_generator):
             msg = "evaluate_reference_basis_derivatives: %s" % data
             return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
 
-        from ffc.uflacs.backends.ufc.evalderivs import generate_evaluate_reference_basis_derivatives
         return generate_evaluate_reference_basis_derivatives(L, data, parameters)
 
     def transform_reference_basis_derivatives(self, L, ir, parameters):
@@ -440,8 +438,6 @@ class ufc_finite_element(ufc_generator):
         r = L.Symbol("r")   # physical derivative number
         s = L.Symbol("s")   # reference derivative number
         d = L.Symbol("d")   # dof
-
-        from ffc.uflacs.backends.ufc.evalderivs import _generate_combinations
 
         combinations_code = []
         if max_degree == 0:
