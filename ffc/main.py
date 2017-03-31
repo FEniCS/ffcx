@@ -202,8 +202,9 @@ def main(args=None):
     # Set log_level
     push_level(parameters["log_level"])
 
+    # FIXME: This is terrible!
     # Set UFL precision
-    ufl.constantvalue.precision = int(parameters["precision"])
+    #ufl.constantvalue.precision = int(parameters["precision"])
 
     # Print a versioning message if verbose output was requested
     if parameters["log_level"] <= INFO:

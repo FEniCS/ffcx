@@ -53,6 +53,11 @@ def generate_integral_code(ir, prefix, parameters):
     code["tabulate_tensor"] = indent(_tabulate_tensor(ir, prefix, parameters), 4)
     code["additional_includes_set"] = ir["additional_includes_set"]
 
+    precision = ir["integrals_metadata"].get("precision")
+    if precision is not None and precision != parameters["precision"]:
+        warning("Ignoring precision in integral metadata compiled "
+                "using quadrature representation. Not implemented.")
+
     return code
 
 

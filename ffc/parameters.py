@@ -31,12 +31,14 @@ _FFC_GENERATE_PARAMETERS = {
     "format": "ufc",           # code generation format
     "representation": "auto",  # form representation / code
                                # generation strategy
-    "quadrature_rule": "auto", # quadrature rule used for
+    "quadrature_rule": None,   # quadrature rule used for
                                # integration of element tensors
-    "quadrature_degree": -1,   # quadrature degree used for
+                               # (None is auto)
+    "quadrature_degree": None, # quadrature degree used for
                                # computing integrals
-    "precision": 0,            # precision used when writing
-                               # numbers (0 for max precision)
+                               # (None is auto)
+    "precision": None,         # precision used when writing
+                               # numbers (None for max precision)
     "epsilon": 1e-14,          # machine precision, used for
                                # dropping zero terms in tables
     "split": False,            # split generated code into .h and
@@ -115,10 +117,7 @@ def validate_parameters(parameters):
     if parameters is not None:
         p.update(parameters)
 
-    #if isinstance(p["optimize"], bool):
-    #    p["optimize"] = 1 if p["optimize"] else 0
-    if isinstance(p["optimize"], int):
-        p["optimize"] = bool(p["optimize"])
+    _validate_parameters(p)
 
     return p
 
@@ -129,12 +128,44 @@ def validate_jit_parameters(parameters):
     if parameters is not None:
         p.update(parameters)
 
-    #if isinstance(p["optimize"], bool):
-    #    p["optimize"] = 1 if p["optimize"] else 0
-    if isinstance(p["optimize"], int):
-        p["optimize"] = bool(p["optimize"])
+    _validate_parameters(p)
 
     return p
+
+
+def _validate_parameters(parameters):
+    """Does some casting of parameter values in place on the
+    provided dictionary"""
+
+    # Cast int optimize flag to bool
+    if isinstance(parameters["optimize"], int):
+        parameters["optimize"] = bool(parameters["optimize"])
+
+    # Convert all legal default values to None
+    if parameters["quadrature_rule"] in ["auto", None, "None"]:
+        parameters["quadrature_rule"] = None
+
+    # Convert all legal default values to None and
+    # cast nondefaults from str to int
+    if parameters["quadrature_degree"] in ["auto", -1, None, "None"]:
+        parameters["quadrature_degree"] = None
+    else:
+        try:
+            parameters["quadrature_degree"] = int(parameters["quadrature_degree"])
+        except Exception:
+            error("Failed to convert quadrature degree '%s' to int"
+                  % parameters.get("quadrature_degree"))
+
+    # Convert all legal default values to None and
+    # cast nondefaults from str to int
+    if parameters["precision"] in ["auto", None, "None"]:
+        parameters["precision"] = None
+    else:
+        try:
+            parameters["precision"] = int(parameters["precision"])
+        except Exception:
+            error("Failed to convert precision '%s' to int"
+                  % parameters.get("precision"))
 
 
 def compilation_relevant_parameters(parameters):

@@ -135,7 +135,8 @@ def compute_ir(analysis, prefix, parameters, jit=False):
 
     # Set code generation parameters (this is not actually a 'formatting'
     # parameter, used for table value clamping as well)
-    set_float_formatting(int(parameters["precision"]))
+    # FIXME: Global state?!
+    set_float_formatting(parameters["precision"])
 
     # Extract data from analysis
     form_datas, elements, element_numbers, coordinate_elements = analysis

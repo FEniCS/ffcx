@@ -33,7 +33,7 @@ def generate_integral_code(ir, prefix, parameters):
     info("Generating code from ffc.uflacs representation")
 
     # FIXME: Is this the right precision value to use? Make it default to None or 0.
-    precision = parameters["precision"]
+    precision = ir["integrals_metadata"]["precision"]
 
     # Create FFC C++ backend
     backend = FFCBackend(ir, parameters)

@@ -29,6 +29,9 @@ forms, including automatic selection of elements, degrees and
 form representation type.
 """
 
+import numpy
+from six import string_types
+
 import os
 import copy
 from itertools import chain
@@ -46,6 +49,7 @@ from ufl import custom_integral_types
 from ffc.log import info, begin, end, warning, debug, error, ffc_assert, warning_blue
 from ffc.utils import all_equal
 from ffc.tensor import estimate_cost
+from ffc.cpp import default_precision
 
 
 def analyze_forms(forms, parameters):
@@ -324,6 +328,7 @@ def _extract_common_quadrature_degree(integral_metadatas):
             error("Invalid non-integer quadrature degree %s" % (str(d),))
     qd = max(quadrature_degrees)
     if not all_equal(quadrature_degrees):
+        # FIXME: Shouldn't we raise here?
         # TODO: This may be loosened up without too much effort,
         # if the form compiler handles mixed integration degree,
         # something that most of the pipeline seems to be ready for.
@@ -337,7 +342,7 @@ def _autoselect_quadrature_degree(integral_metadata, integral, form_data):
     pd = integral_metadata["estimated_polynomial_degree"]
 
     # Special case: handling -1 as "auto" for quadrature_degree
-    if qd == -1:
+    if qd in [-1, None]:
         qd = "auto"
 
     # TODO: Add other options here
@@ -375,6 +380,7 @@ def _extract_common_quadrature_rule(integral_metadatas):
         qr = quadrature_rules[0]
     else:
         qr = "canonical"
+        # FIXME: Shouldn't we raise here?
         info("Quadrature rule must be equal within each sub domain, using %s rule." % qr)
     return qr
 
@@ -382,7 +388,7 @@ def _extract_common_quadrature_rule(integral_metadatas):
 def _autoselect_quadrature_rule(integral_metadata, integral, form_data):
     # Automatic selection of quadrature rule
     qr = integral_metadata["quadrature_rule"]
-    if qr == "auto":
+    if qr in ["auto", None]:
         # Just use default for now.
         qr = "default"
         info("quadrature_rule:   auto --> %s" % qr)
@@ -401,14 +407,23 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
     # Extract unique representation among these single-domain integrals
     # (Generating code with different representations within a
     # single tabulate_tensor is considered not worth the effort)
-    representations = set(md["representation"] for md in integral_metadatas
-                          if md["representation"] != "auto")
+    representations  = set(md["representation"] for md in integral_metadatas
+                           if md["representation"] != "auto")
+    optimize_values  = set(md["optimize"] for md in integral_metadatas)
+    precision_values = set(md["precision"] for md in integral_metadatas)
 
     if len(representations) > 1:
-        error("Integral representation must be equal within each sub domain or 'auto', got %s." % (str(sorted(representations)),))
+        error("Integral representation must be equal within each sub domain or 'auto', got %s." % (str(sorted(str(v) for v in representations)),))
+    if len(optimize_values) > 1:
+        error("Integral 'optimize' metadata must be equal within each sub domain or not set, got %s." % (str(sorted(str(v) for v in optimize_values)),))
+    if len(precision_values) > 1:
+        error("Integral 'precision' metadata must be equal within each sub domain or not set, got %s." % (str(sorted(str(v) for v in precision_values)),))
 
     # The one and only non-auto representation found, or get from parameters
-    r, = representations or (parameters["representation"],)
+    r, = representations  or (parameters["representation"],)
+    o, = optimize_values  or (parameters["optimize"],)
+    # FIXME: Default param value is zero which is not interpreted well by tsfc!
+    p, = precision_values or (parameters["precision"],)
 
     # If it's still auto, try to determine which representation is best for these integrals
     if r == "auto":
@@ -446,15 +461,30 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
     else:
         info("representation:    %s" % r)
 
-    return r
+    if p is None:
+        p = default_precision
+
+    return r, o, p
 
 
 def _attach_integral_metadata(form_data, form_r_family, parameters):
     "Attach integral metadata"
     # TODO: A nicer data flow would avoid modifying the form_data at all.
 
-    # Recognized metadata keys
-    metadata_keys = ("representation", "quadrature_degree", "quadrature_rule")
+    # Parameter values which make sense "per integrals" or "per integral"
+    metadata_keys = (
+        "representation",
+        "optimize",
+        # TODO: Could have finer optimize (sub)parameters here later
+        "precision",
+        # NOTE: We don't pass precision to quadrature and tensor, it's not
+        #       worth resolving set_float_formatting hack for (almost)
+        #       deprecated backends
+        "quadrature_degree",
+        "quadrature_rule",
+    )
+
+    # Get defaults from parameters
     metadata_parameters = {key: parameters[key] for key in metadata_keys if key in parameters}
 
     # Iterate over integral collections
@@ -473,10 +503,14 @@ def _attach_integral_metadata(form_data, form_r_family, parameters):
             integral_metadatas[i].update(integral.metadata() or {})
 
         # Determine representation, must be equal for all integrals on same subdomain
-        r = _determine_representation(integral_metadatas, ida, form_data, form_r_family, parameters)
+        r, o, p = _determine_representation(integral_metadatas, ida, form_data, form_r_family, parameters)
         for i, integral in enumerate(ida.integrals):
             integral_metadatas[i]["representation"] = r
+            integral_metadatas[i]["optimize"] = o
+            integral_metadatas[i]["precision"] = p
         ida.metadata["representation"] = r
+        ida.metadata["optimize"] = o
+        ida.metadata["precision"] = p
 
         # Determine automated updates to metadata values
         for i, integral in enumerate(ida.integrals):

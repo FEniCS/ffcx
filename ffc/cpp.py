@@ -27,13 +27,18 @@ import re
 import numpy
 import platform
 from six import string_types
+from six.moves import zip
 
 # UFL modules
 from ufl import custom_integral_types
 
 # FFC modules
 from ffc.log import debug, error
-from six.moves import zip
+
+
+# Default precision for formatting floats
+default_precision = numpy.finfo("double").precision + 1  # == 16
+
 
 # ufc class names
 
@@ -691,9 +696,9 @@ def count_ops(code):
 def set_float_formatting(precision):
     "Set floating point formatting based on precision."
 
-    # FIXME: Temporary workaround to be able to change default from 15 to 0
-    if not precision:
-        precision = 15
+    # Set default if not set
+    if precision is None:
+        precision = default_precision
 
     # Options for float formatting
     # f1     = "%%.%df" % precision

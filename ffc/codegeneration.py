@@ -54,7 +54,7 @@ def generate_code(ir, parameters):
 
     # FIXME: This has global side effects
     # Set code generation parameters
-    set_float_formatting(int(parameters["precision"]))
+    set_float_formatting(parameters["precision"])
     set_exception_handling(parameters["convert_exceptions_to_warnings"])
 
     # Extract representations

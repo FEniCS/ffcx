@@ -37,17 +37,18 @@ def optimize_ir(ir, parameters):
 
     begin("Compiler stage 3: Optimizing intermediate representation")
 
-    # Check if optimization is requested
-    if not parameters["optimize"]:
-        info("Skipping optimizations, add -O to optimize")
-        end()
-        return ir
-
     # Extract representations
     ir_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
 
-    # Iterate over integrals
-    oir_integrals = [_optimize_integral_ir(ir, parameters) for ir in ir_integrals]
+    # Check if optimization is requested
+    if not any(ir["integrals_metadata"]["optimize"] for ir in ir_integrals):
+        info(r"Skipping optimizations, add -O or attach {'optimize': True} "
+             "metadata to integrals")
+
+    # Call on every bunch of integrals wich are compiled together
+    oir_integrals = [_optimize_integral_ir(ir, parameters)
+                     if ir["integrals_metadata"]["optimize"] else ir
+                     for ir in ir_integrals]
 
     end()
 
