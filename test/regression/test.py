@@ -188,7 +188,6 @@ known_tsfc_failures = set([
     "CustomIntegral.ufl",
     "CustomMixedIntegral.ufl",
     "CustomVectorIntegral.ufl",
-    "PointMeasure.ufl",
     "MetaData.ufl",
     # Failures
     "AdaptivePoisson.ufl",    # FIXME: is it fixable?
