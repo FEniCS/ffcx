@@ -193,7 +193,6 @@ known_tsfc_failures = set([
     "AdaptivePoisson.ufl",    # FIXME: is it fixable?
     "MathFunctions.ufl",      # FIXME: should be easy
     "QuadratureElement.ufl",  # FIXME: is it fixable?
-    "RestrictedElement.ufl",  # FIXME: is it fixable?
 ])
 
 
