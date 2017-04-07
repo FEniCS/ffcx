@@ -605,6 +605,6 @@ def _find_compatible_representations(integrals, elements):
     # Use quadrature representation if we have a quadrature element
     if any(e.family() == "Quadrature" for e in sub_elements):
         # TODO: Test with uflacs, might need a little adjustment:
-        compatible &= set(("quadrature", "uflacs"))
+        compatible &= set(("quadrature", "uflacs", "tsfc"))
 
     return compatible
