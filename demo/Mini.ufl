@@ -22,11 +22,12 @@
 
 # Compile this form with FFC: ffc Mini.ufl
 
-P1 = VectorElement("Lagrange", triangle, 1)
-B = VectorElement("Bubble", triangle, 3)
+P1 = FiniteElement("Lagrange", triangle, 1)
+B = FiniteElement("Bubble", triangle, 3)
+V = VectorElement(P1 + B)
 Q = FiniteElement("CG", triangle, 1)
 
-Mini =  (P1 + B)*Q
+Mini = V*Q
 (u, p) = TrialFunctions(Mini)
 (v, q) = TestFunctions(Mini)
 

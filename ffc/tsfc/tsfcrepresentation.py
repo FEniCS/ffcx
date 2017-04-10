@@ -37,6 +37,9 @@ def compute_integral_ir(integral_data,
     # Initialise representation
     ir = initialize_integral_ir("tsfc", integral_data, form_data, form_id)
 
+    # TSFC treats None and unset differently, so remove None values.
+    parameters = {k: v for k, v in parameters.items() if v is not None}
+
     # Store tsfc generated part separately
     ir["tsfc"] = compile_integral(integral_data, form_data, None, parameters,
                                   interface=ufc_interface)

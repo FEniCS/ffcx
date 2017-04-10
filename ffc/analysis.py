@@ -597,7 +597,7 @@ def _find_compatible_representations(integrals, elements):
     # Use quadrature for vertex integrals
     if any(integral.integral_type() == "vertex" for integral in integrals):
         # TODO: Test with uflacs, I think this works fine now:
-        compatible &= set(("quadrature", "uflacs"))
+        compatible &= set(("quadrature", "uflacs", "tsfc"))
 
     # Get ALL sub elements, needed to check for restrictions of EnrichedElements.
     sub_elements = []
@@ -607,6 +607,6 @@ def _find_compatible_representations(integrals, elements):
     # Use quadrature representation if we have a quadrature element
     if any(e.family() == "Quadrature" for e in sub_elements):
         # TODO: Test with uflacs, might need a little adjustment:
-        compatible &= set(("quadrature", "uflacs"))
+        compatible &= set(("quadrature", "uflacs", "tsfc"))
 
     return compatible

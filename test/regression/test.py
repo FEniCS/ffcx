@@ -186,14 +186,10 @@ known_tsfc_failures = set([
     "CustomIntegral.ufl",
     "CustomMixedIntegral.ufl",
     "CustomVectorIntegral.ufl",
-    "PointMeasure.ufl",
     "MetaData.ufl",
     # Failures
     "AdaptivePoisson.ufl",    # FIXME: is it fixable?
-    "Mini.ufl",               # FIXME: will fix later
     "MathFunctions.ufl",      # FIXME: should be easy
-    "QuadratureElement.ufl",  # FIXME: is it fixable?
-    "RestrictedElement.ufl",  # FIXME: is it fixable?
 ])
 
 

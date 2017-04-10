@@ -26,4 +26,4 @@ g = Coefficient(element)
 
 a = inner(grad(u), grad(v))*dx()
 L = f*v*dx() + g*v*ds()
-M = u*dx()
+M = v*dx()
