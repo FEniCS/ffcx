@@ -328,7 +328,7 @@ class ufc_finite_element(ufc_generator):
     def interpolate_vertex_values(self, L, ir, parameters):
         # FIXME: port this
         legacy_code = indent(interpolate_vertex_values(ir["interpolate_vertex_values"]), 4)
-        print(legacy_code)
+ #       print(legacy_code)
 
         # Add code for Jacobian if necessary
         code = []
@@ -357,14 +357,13 @@ class ufc_finite_element(ufc_generator):
         space_offset = 0
         for data in irdata["element_data"]:
             # Add vertex interpolation for this element
-            code.append(L.Comment("Evaluate function and change variables"))
+            code += [L.Comment("Evaluate function and change variables")]
 
             # Extract vertex values for all basis functions
             vertex_values = data["basis_values"]
             value_size = data["physical_value_size"]
             space_dim = data["space_dim"]
             mapping = data["mapping"]
-            print("mapping = ", mapping)
 
             # Map basis values according to element mapping. Assumes single
             # mapping for each (non-mixed) element
@@ -390,9 +389,9 @@ class ufc_finite_element(ufc_generator):
                         w = []
                         for index in range(space_dim):
                             acc_sum = 0.0
-                            for i in range(tdim):
-                                components = clamp_table_small_numbers(values_at_vertex[i])
-                                acc_sum += components[index]*J[i+k*tdim]
+                            for p in range(tdim):
+                                components = clamp_table_small_numbers(values_at_vertex[p])
+                                acc_sum += J[p+k*tdim]*components[index]
                             acc_sum /= detJ
                             w.append(acc_sum)
                     elif mapping == 'covariant piola':
@@ -400,9 +399,9 @@ class ufc_finite_element(ufc_generator):
                         w = []
                         for index in range(space_dim):
                             acc_sum = 0.0
-                            for i in range(tdim):
-                                components = clamp_table_small_numbers(values_at_vertex[i])
-                                acc_sum += components[index]*K[k+i*gdim]
+                            for p in range(tdim):
+                                components = clamp_table_small_numbers(values_at_vertex[p])
+                                acc_sum += K[k+p*gdim]*components[index]
                             w.append(acc_sum)
                     elif mapping == 'double covariant piola':
                         K = L.Symbol("K")
@@ -414,13 +413,25 @@ class ufc_finite_element(ufc_generator):
                                     components = clamp_table_small_numbers(values_at_vertex[p][q])
                                     acc_sum += K[k//tdim + p*gdim]*components[index]*K[k%tdim + q*gdim]
                             w.append(acc_sum)
+                    elif mapping == 'double contravariant piola':
+                        J = L.Symbol("J")
+                        detJ = L.Symbol("detJ")
+                        w = []
+                        for index in range(space_dim):
+                            acc_sum = 0.0
+                            for p in range(tdim):
+                                for q in range(tdim):
+                                    components = clamp_table_small_numbers(values_at_vertex[p][q])
+                                    acc_sum += J[p + (k//tdim)*tdim]*components[index]*J[q + (k%tdim)*tdim]
+                            acc_sum /= detJ
+                            acc_sum /= detJ
+                            w.append(acc_sum)
                     else:
-                        raise RuntimeError("oops - not implemented yet")
+                        raise RuntimeError("Mapping not implemented")
 
                     # Contract coefficients and basis functions
                     dof_values = L.Symbol("dof_values")
-                    dof_list = [dof_values[i + space_offset]
-                                for i in range(space_dim)]
+                    dof_list = [dof_values[i + space_offset] for i in range(space_dim)]
                     acc_value = 0.0
                     for p, q in zip(dof_list, w):
                         acc_value += p*q
@@ -428,16 +439,14 @@ class ufc_finite_element(ufc_generator):
                     # Assign value to correct vertex
                     index = j * total_dim + (k + value_offset)
                     v_values = L.Symbol("vertex_values")
-                    code.append(L.Assign(v_values[index], acc_value))
+                    code += [L.Assign(v_values[index], acc_value)]
 
             # Update offsets for value- and space dimension
             value_offset += data["physical_value_size"]
             space_offset += data["space_dim"]
 
-        print(L.StatementList(code))
-        if mapping == 'double covariant piola':
-            raise RuntimeError
-        return legacy_code
+#        print(L.StatementList(code))
+        return code
 
     def tabulate_dof_coordinates(self, L, ir, parameters):
         ir = ir["tabulate_dof_coordinates"]
