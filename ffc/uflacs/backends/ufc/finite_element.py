@@ -328,7 +328,7 @@ class ufc_finite_element(ufc_generator):
     def interpolate_vertex_values(self, L, ir, parameters):
         # FIXME: port this
         legacy_code = indent(interpolate_vertex_values(ir["interpolate_vertex_values"]), 4)
-        print (legacy_code)
+        print(legacy_code)
 
         # Add code for Jacobian if necessary
         code = []
@@ -348,8 +348,6 @@ class ufc_finite_element(ufc_generator):
                          L.Comment("(If cell_orientation == 1 = down, multiply det(J) by -1)"),
                          L.ElseIf(L.EQ(cell_orientation, 1),
                                   [L.AssignMul(detJ , -1)])]
-
-        print(L.StatementList(code))
 
         # Compute total value dimension for (mixed) element
         total_dim = irdata["physical_value_size"]
@@ -389,12 +387,23 @@ class ufc_finite_element(ufc_generator):
                     # FIXME: non-affine mappings
                     # components = change_of_variables(values_at_vertex, k)
 
-                    components = values_at_vertex[k]
-                    components = clamp_table_small_numbers(components)
+                    if mapping == 'affine':
+                        components = values_at_vertex[k]
+                        components = clamp_table_small_numbers(components)
 
-                    if (mapping == 'contravariant piola'):
+                    elif mapping == 'contravariant piola':
                         detJ = L.Symbol("detJ")
                         J = L.Symbol("J")
+
+                        for index in range(space_dim):
+                            acc_sum = 0.0
+                            for jt in range(tdim):
+                                components = values_at_vertex[jt]
+                                components = list(clamp_table_small_numbers(components))
+                                acc_sum += components[index]*J[k+jt*gdim]
+                            acc_sum /= detJ
+                            components[index] = acc_sum
+#                            code += [L.Assign(value, acc_sum)]
 #                        change_of_variables = [multiply([1.0/detJ, inner([J[k, j, gdim, tdim]) for j in range(tdim)],
 #                                                    [components[j][index] for j in range(tdim)]])
 #                                               for index in range(space_dim)]
@@ -403,20 +412,14 @@ class ufc_finite_element(ufc_generator):
                     dof_values = L.Symbol("dof_values")
                     dof_list = [dof_values[i + space_offset]
                                 for i in range(space_dim)]
-
-                    first = True
+                    acc_value = 0.0
                     for p,val in enumerate(components):
-                        if abs(val) > 0.0:
-                            if first:
-                                code += [L.Assign(value, dof_list[p]*val)]
-                            else:
-                                code += [L.AssignAdd(value, dof_list[p]*val)]
-                            first = False
+                        acc_value += dof_list[p]*val
 
                     # Assign value to correct vertex
                     index = j * total_dim + (k + value_offset)
                     v_values = L.Symbol("vertex_values")
-                    code.append(L.Assign(v_values[index], value))
+                    code.append(L.Assign(v_values[index], acc_value))
 
             # Update offsets for value- and space dimension
             value_offset += data["physical_value_size"]
