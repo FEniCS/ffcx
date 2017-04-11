@@ -188,7 +188,7 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     info("Computing representation of integrals")
     irs = [_compute_integral_ir(fd, form_id, prefix, element_numbers, classnames, parameters, jit)
            for (form_id, fd) in enumerate(form_datas)]
-    ir_integrals = [ir for ir in chain(*irs) if ir is not None]
+    ir_integrals = list(chain(*irs))
 
     # Compute representation of forms
     info("Computing representation of forms")
