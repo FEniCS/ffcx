@@ -112,7 +112,6 @@ def evaluate_dof_and_dofs(ir):
 
     return (dof_code, dofs_code)
 
-
 def _generate_common_code(ir):
 
     # Define necessary geometry information based on the ir

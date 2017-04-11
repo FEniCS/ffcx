@@ -11,7 +11,7 @@ from ffc.uflacs.backends.ufc.utils import generate_error
 
 # Used for various indices and arrays in this file
 index_type = "std::size_t"
-    
+
 
 def generate_evaluate_reference_basis(L, data, parameters):
     """Generate code to evaluate element basisfunctions at an arbitrary point on the reference element.

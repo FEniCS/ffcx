@@ -38,7 +38,7 @@ from ffc.uflacs.backends.ufc.evalderivs import _generate_combinations
 # FIXME: Stop depending on legacy code
 from ffc.cpp import indent
 from ffc.evaluatebasis import _evaluate_basis
-from ffc.evaluatebasis import _evaluate_basis_all
+# from ffc.evaluatebasis import _evaluate_basis_all
 from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives
 from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives_all
 from ffc.interpolatevertexvalues import interpolate_vertex_values
@@ -48,6 +48,23 @@ from ffc.evaluatedof import affine_weights
 
 index_type = "std::size_t"
 
+def jacobian(L, gdim, tdim, element_cellname):
+    J = L.Symbol("J")
+    coordinate_dofs = L.Symbol("coordinate_dofs")
+    code = [L.Comment("Compute Jacobian"),
+            L.ArrayDecl("double", J, (gdim*tdim,)),
+            L.Call("compute_jacobian_"+element_cellname+"_"+str(gdim)+"d",(J, coordinate_dofs))]
+    return code
+
+def inverse_jacobian(L, gdim, tdim, element_cellname):
+    K = L.Symbol("K")
+    J = L.Symbol("J")
+    detJ = L.Symbol("detJ")
+    code = [L.Comment("Compute Inverse Jacobian and determinant"),
+            L.ArrayDecl("double", K, (gdim*tdim,)),
+            L.VariableDecl("double", detJ),
+            L.Call("compute_jacobian_inverse_"+element_cellname+"_"+str(gdim)+"d",(K, detJ, J))]
+    return code
 
 def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J, detJ, K):
     # Select transformation to apply
@@ -142,17 +159,61 @@ class ufc_finite_element(ufc_generator):
             return indent(_evaluate_basis(ir["evaluate_basis"]), 4)
 
     def evaluate_basis_all(self, L, ir, parameters):
-        # FIXME: port this
-        use_legacy = 1
-        if use_legacy:
-            return indent(_evaluate_basis_all(ir["evaluate_basis"]), 4)
+
+        data=ir["evaluate_basis"]
+        physical_value_size = data["physical_value_size"]
+        space_dimension = data["space_dimension"]
+
+        x = L.Symbol("x")
+        coordinate_dofs = L.Symbol("coordinate_dofs")
+        cell_orientation = L.Symbol("cell_orientation")
+        values = L.Symbol("values")
+
+        # Special case where space dimension is one (constant elements).
+        if space_dimension == 1:
+            code = [L.Comment("Element is constant, calling evaluate_basis."),
+                    L.Call("evaluate_basis",
+                           (0, values, x, coordinate_dofs, cell_orientation))]
+            return code
+
+        index_type = "std::size_t"
+        r = L.Symbol("r")
+        dof_values = L.Symbol("dof_values")
+        if physical_value_size == 1:
+            code = [ L.Comment("Helper variable to hold value of a single dof."),
+                     L.VariableDecl("double", dof_values, 0.0),
+                     L.Comment("Loop dofs and call evaluate_basis"),
+                     L.ForRange(r, 0, space_dimension, index_type=index_type,
+                                body=[L.Call("evaluate_basis",
+                                             (r, L.AddressOf(dof_values), x,
+                                              coordinate_dofs, cell_orientation)),
+                                      L.Assign(values[r], dof_values)]
+                               )
+                   ]
+        else:
+            s = L.Symbol("s")
+            code = [L.Comment("Helper variable to hold values of a single dof."),
+                    L.ArrayDecl("double", dof_values, physical_value_size, 0.0),
+                    L.Comment("Loop dofs and call evaluate_basis"),
+                    L.ForRange(r, 0, space_dimension, index_type=index_type,
+                               body=[L.Call("evaluate_basis",
+                                             (r, dof_values, x,
+                                              coordinate_dofs, cell_orientation)),
+                                     L.ForRange(s, 0, physical_value_size,
+                                                index_type=index_type,
+                                                body=[L.Assign(values[r*physical_value_size+s], dof_values[s])])
+                                    ]
+                              )
+                   ]
+
+        return code
 
     def evaluate_basis_derivatives(self, L, ir, parameters):
         # FIXME: Get rid of this
         # FIXME: port this
-        use_legacy = 1
-        if use_legacy:
-            return indent(_evaluate_basis_derivatives(ir["evaluate_basis"]), 4)
+        legacy_code = indent(_evaluate_basis_derivatives(ir["evaluate_basis"]), 4)
+        return legacy_code
+
 
     def evaluate_basis_derivatives_all(self, L, ir, parameters):
         # FIXME: port this
@@ -266,28 +327,103 @@ class ufc_finite_element(ufc_generator):
 
     def interpolate_vertex_values(self, L, ir, parameters):
         # FIXME: port this
-        use_legacy = 1
-        if use_legacy:
-            return indent(interpolate_vertex_values(ir["interpolate_vertex_values"]), 4)
+        legacy_code = indent(interpolate_vertex_values(ir["interpolate_vertex_values"]), 4)
+        print (legacy_code)
 
-    def _tabulate_dof_coordinates(ir):
-        # Aid mapping points from reference to physical element
-        coefficients = affine_weights(tdim)
-
-        # Generate code for each point and each component
+        # Add code for Jacobian if necessary
         code = []
-        for (i, coordinate) in enumerate(ir["points"]):
+        irdata = ir["interpolate_vertex_values"]
+        gdim = irdata["geometric_dimension"]
+        tdim = irdata["topological_dimension"]
+        element_cellname = ir["evaluate_basis"]["cellname"]
+        if irdata["needs_jacobian"]:
+            code += jacobian(L, gdim, tdim, element_cellname)
+            code += inverse_jacobian(L, gdim, tdim, element_cellname)
+            if irdata["needs_oriented"] and tdim != gdim:
+                detJ = L.Symbol("detJ")
+                cell_orientation = L.Symbol("cell_orientation")
+                code += [L.Comment("Check orientation"),
+                         L.If(L.EQ(cell_orientation, -1),
+                              [L.Throw("std::runtime_error", "cell orientation must be defined (not -1)")]),
+                         L.Comment("(If cell_orientation == 1 = down, multiply det(J) by -1)"),
+                         L.ElseIf(L.EQ(cell_orientation, 1),
+                                  [L.AssignMul(detJ , -1)])]
 
-            w = coefficients(coordinate)
-            for j in range(gdim):
-                # Compute physical coordinate
-                coords = [component(f_x(), (k * gdim + j,)) for k in range(tdim + 1)]
-                value = inner_product(w, coords)
+        print(L.StatementList(code))
 
-                # Assign coordinate
-                code.append(assign(component(coordinates, (i * gdim + j)), value))
+        # Compute total value dimension for (mixed) element
+        total_dim = irdata["physical_value_size"]
 
-        return "\n".join(code)
+        # Generate code for each element
+        value_offset = 0
+        space_offset = 0
+        for data in irdata["element_data"]:
+            # Add vertex interpolation for this element
+            code.append(L.Comment("Evaluate function and change variables"))
+
+            # Extract vertex values for all basis functions
+            vertex_values = data["basis_values"]
+            print("vv = ", vertex_values)
+            value_size = data["physical_value_size"]
+            space_dim = data["space_dim"]
+            mapping = data["mapping"]
+            print("mapping = ", mapping)
+
+            # Map basis values according to element mapping. Assumes single
+            # mapping for each (non-mixed) element
+            #            change_of_variables = _change_variables(data["mapping"], gdim, tdim, space_dim)
+
+            # Create code for each value dimension:
+
+            value = L.Symbol("value")
+            code += [L.VariableDecl("double", value)]
+
+            for k in range(value_size):
+                # Create code for each vertex x_j
+                for (j, values_at_vertex) in enumerate(vertex_values):
+
+                    if value_size == 1:
+                        values_at_vertex = [values_at_vertex]
+
+                    # Map basis functions using appropriate mapping
+                    # FIXME: non-affine mappings
+                    # components = change_of_variables(values_at_vertex, k)
+
+                    components = values_at_vertex[k]
+                    components = clamp_table_small_numbers(components)
+
+                    if (mapping == 'contravariant piola'):
+                        detJ = L.Symbol("detJ")
+                        J = L.Symbol("J")
+#                        change_of_variables = [multiply([1.0/detJ, inner([J[k, j, gdim, tdim]) for j in range(tdim)],
+#                                                    [components[j][index] for j in range(tdim)]])
+#                                               for index in range(space_dim)]
+
+                    # Contract coefficients and basis functions
+                    dof_values = L.Symbol("dof_values")
+                    dof_list = [dof_values[i + space_offset]
+                                for i in range(space_dim)]
+
+                    first = True
+                    for p,val in enumerate(components):
+                        if abs(val) > 0.0:
+                            if first:
+                                code += [L.Assign(value, dof_list[p]*val)]
+                            else:
+                                code += [L.AssignAdd(value, dof_list[p]*val)]
+                            first = False
+
+                    # Assign value to correct vertex
+                    index = j * total_dim + (k + value_offset)
+                    v_values = L.Symbol("vertex_values")
+                    code.append(L.Assign(v_values[index], value))
+
+            # Update offsets for value- and space dimension
+            value_offset += data["physical_value_size"]
+            space_offset += data["space_dim"]
+
+        print(L.StatementList(code))
+        return legacy_code
 
     def tabulate_dof_coordinates(self, L, ir, parameters):
         ir = ir["tabulate_dof_coordinates"]
