@@ -361,7 +361,6 @@ class ufc_finite_element(ufc_generator):
 
             # Extract vertex values for all basis functions
             vertex_values = data["basis_values"]
-            print("vv = ", vertex_values)
             value_size = data["physical_value_size"]
             space_dim = data["space_dim"]
             mapping = data["mapping"]
@@ -372,10 +371,6 @@ class ufc_finite_element(ufc_generator):
             #            change_of_variables = _change_variables(data["mapping"], gdim, tdim, space_dim)
 
             # Create code for each value dimension:
-
-            value = L.Symbol("value")
-            code += [L.VariableDecl("double", value)]
-
             for k in range(value_size):
                 # Create code for each vertex x_j
                 for (j, values_at_vertex) in enumerate(vertex_values):
@@ -388,33 +383,28 @@ class ufc_finite_element(ufc_generator):
                     # components = change_of_variables(values_at_vertex, k)
 
                     if mapping == 'affine':
-                        components = values_at_vertex[k]
-                        components = clamp_table_small_numbers(components)
-
+                        w = clamp_table_small_numbers(values_at_vertex[k])
                     elif mapping == 'contravariant piola':
                         detJ = L.Symbol("detJ")
                         J = L.Symbol("J")
-
+                        w = []
                         for index in range(space_dim):
                             acc_sum = 0.0
-                            for jt in range(tdim):
-                                components = values_at_vertex[jt]
-                                components = list(clamp_table_small_numbers(components))
-                                acc_sum += components[index]*J[k+jt*gdim]
+                            for i in range(tdim):
+                                components = clamp_table_small_numbers(values_at_vertex[i])
+                                acc_sum += components[index]*J[i+k*tdim]
                             acc_sum /= detJ
-                            components[index] = acc_sum
-#                            code += [L.Assign(value, acc_sum)]
-#                        change_of_variables = [multiply([1.0/detJ, inner([J[k, j, gdim, tdim]) for j in range(tdim)],
-#                                                    [components[j][index] for j in range(tdim)]])
-#                                               for index in range(space_dim)]
+                            w.append(acc_sum)
+                    else:
+                        raise RuntimeError("oops - not implemented yet")
 
                     # Contract coefficients and basis functions
                     dof_values = L.Symbol("dof_values")
                     dof_list = [dof_values[i + space_offset]
                                 for i in range(space_dim)]
                     acc_value = 0.0
-                    for p,val in enumerate(components):
-                        acc_value += dof_list[p]*val
+                    for p,q in zip(dof_list, w):
+                        acc_value += p*q
 
                     # Assign value to correct vertex
                     index = j * total_dim + (k + value_offset)
