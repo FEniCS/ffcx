@@ -379,7 +379,7 @@ class ufc_finite_element(ufc_generator):
                         values_at_vertex = [values_at_vertex]
 
                     # Map basis functions using appropriate mapping
-                    # FIXME: non-affine mappings
+                    # FIXME: sort out all non-affine mappings and make into a function
                     # components = change_of_variables(values_at_vertex, k)
 
                     if mapping == 'affine':
@@ -395,6 +395,25 @@ class ufc_finite_element(ufc_generator):
                                 acc_sum += components[index]*J[i+k*tdim]
                             acc_sum /= detJ
                             w.append(acc_sum)
+                    elif mapping == 'covariant piola':
+                        K = L.Symbol("K")
+                        w = []
+                        for index in range(space_dim):
+                            acc_sum = 0.0
+                            for i in range(tdim):
+                                components = clamp_table_small_numbers(values_at_vertex[i])
+                                acc_sum += components[index]*K[k+i*gdim]
+                            w.append(acc_sum)
+                    elif mapping == 'double covariant piola':
+                        K = L.Symbol("K")
+                        w = []
+                        for index in range(space_dim):
+                            acc_sum = 0.0
+                            for p in range(tdim):
+                                for q in range(tdim):
+                                    components = clamp_table_small_numbers(values_at_vertex[p][q])
+                                    acc_sum += K[k//tdim + p*gdim]*components[index]*K[k%tdim + q*gdim]
+                            w.append(acc_sum)
                     else:
                         raise RuntimeError("oops - not implemented yet")
 
@@ -403,7 +422,7 @@ class ufc_finite_element(ufc_generator):
                     dof_list = [dof_values[i + space_offset]
                                 for i in range(space_dim)]
                     acc_value = 0.0
-                    for p,q in zip(dof_list, w):
+                    for p, q in zip(dof_list, w):
                         acc_value += p*q
 
                     # Assign value to correct vertex
@@ -416,6 +435,8 @@ class ufc_finite_element(ufc_generator):
             space_offset += data["space_dim"]
 
         print(L.StatementList(code))
+        if mapping == 'double covariant piola':
+            raise RuntimeError
         return legacy_code
 
     def tabulate_dof_coordinates(self, L, ir, parameters):
