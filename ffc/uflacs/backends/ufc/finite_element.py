@@ -328,7 +328,7 @@ class ufc_finite_element(ufc_generator):
     def interpolate_vertex_values(self, L, ir, parameters):
         # FIXME: port this
         legacy_code = indent(interpolate_vertex_values(ir["interpolate_vertex_values"]), 4)
- #       print(legacy_code)
+        # print(legacy_code)
 
         # Add code for Jacobian if necessary
         code = []
@@ -411,7 +411,7 @@ class ufc_finite_element(ufc_generator):
                             for p in range(tdim):
                                 for q in range(tdim):
                                     components = clamp_table_small_numbers(values_at_vertex[p][q])
-                                    acc_sum += K[k//tdim + p*gdim]*components[index]*K[k%tdim + q*gdim]
+                                    acc_sum += K[k//tdim + p*gdim]*components[index]*K[k % tdim + q*gdim]
                             w.append(acc_sum)
                     elif mapping == 'double contravariant piola':
                         J = L.Symbol("J")
@@ -422,7 +422,7 @@ class ufc_finite_element(ufc_generator):
                             for p in range(tdim):
                                 for q in range(tdim):
                                     components = clamp_table_small_numbers(values_at_vertex[p][q])
-                                    acc_sum += J[p + (k//tdim)*tdim]*components[index]*J[q + (k%tdim)*tdim]
+                                    acc_sum += J[p + (k//tdim)*tdim]*components[index]*J[q + (k % tdim)*tdim]
                             acc_sum /= detJ
                             acc_sum /= detJ
                             w.append(acc_sum)
