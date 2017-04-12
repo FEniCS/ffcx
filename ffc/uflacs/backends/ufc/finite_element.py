@@ -338,25 +338,6 @@ def compute_basis_values(L, data, dof_data):
         def _idx3d(p, q, r):
             return (p + q + r) * (p + q + r + 1) * (p + q + r + 2) // 6 + (q + r) * (q + r + 1) // 2 + r
 
-        #     # FIAT_NEW.expansions.TetrahedronExpansionSet.
-
-        #     # Compute helper factors.
-        #     # FIAT_NEW code
-        #     # factor1 = 0.5 * ( 2.0 + 2.0*x + y + z )
-        #     # factor2 = (0.5*(y+z))**2
-        #     # factor3 = 0.5 * ( 1 + 2.0 * y + z )
-        #     # factor4 = 0.5 * ( 1 - z )
-        #     # factor5 = factor4 ** 2
-        #     fac1 = create_product([float_0_5, float_2 + float_2 * symbol_x + symbol_y + symbol_z])
-        #     fac2 = create_product([float_0_25, symbol_y + symbol_z, symbol_y + symbol_z])
-        #     fac3 = create_product([float_0_5, float_1 + float_2 * symbol_y + symbol_z])
-        #     fac4 = create_product([float_0_5, float_1 - symbol_z])
-        #     code += [f_decl(f_double, str(f1), fac1)]
-        #     code += [f_decl(f_double, str(f2), fac2)]
-        #     code += [f_decl(f_double, str(f3), fac3)]
-        #     code += [f_decl(f_double, str(f4), fac4)]
-        #     code += [f_decl(f_double, str(f5), f4 * f4)]
-
         code += [L.Comment("Compute basisvalues")]
 
         # The initial value basisvalue 0 is always 1.0.
@@ -370,11 +351,11 @@ def compute_basis_values(L, data, dof_data):
             X = L.Symbol("X")
             Y = L.Symbol("Y")
             Z = L.Symbol("Z")
-            f1 = 0.5 * ( 2.0 + 2.0*X + Y + Z )
-            f2 = (0.5*(Y+Z))
+            f1 = 0.5*(2.0 + 2.0*X + Y + Z )
+            f2 = 0.5*(Y + Z)
             f2 = f2*f2
-            f3 = 0.5 * ( 1 + 2.0 * Y + Z )
-            f4 = 0.5 * ( 1 - Z )
+            f3 = 0.5*( 1 + 2.0 * Y + Z )
+            f4 = 0.5*( 1 - Z )
             f5 = f4*f4
             # The initial value of basisfunction 1 is equal to f1.
             # FIAT_NEW code
@@ -534,9 +515,9 @@ def compute_values(L, data, dof_data):
     gdim = data["geometric_dimension"]
 
     # FIXME: Apply transformation if applicable.
-    # mapping = dof_data["mapping"]
-    # if mapping == "affine":
-    #     pass
+    mapping = dof_data["mapping"]
+    if mapping == "affine":
+        pass
     # elif mapping == "contravariant piola":
     #     code += ["", f_comment("Using contravariant Piola transform to map values back to the physical element")]
     #     # Get temporary values before mapping.
@@ -616,8 +597,8 @@ def compute_values(L, data, dof_data):
     #         value = f_mul([f_inv(f_detJ(None)), f_inv(f_detJ(None)), value])
     #         name = f_component(f_values, p + offset)
     #         code += [f_assign(name, value)]
-    # else:
-    #     error("Unknown mapping: %s" % mapping)
+    else:
+        error("Unknown mapping: %s" % mapping)
 
     return code
 
