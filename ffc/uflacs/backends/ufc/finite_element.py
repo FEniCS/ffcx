@@ -66,6 +66,561 @@ def inverse_jacobian(L, gdim, tdim, element_cellname):
             L.Call("compute_jacobian_inverse_"+element_cellname+"_"+str(gdim)+"d",(K, detJ, J))]
     return code
 
+def orientation(L):
+    detJ = L.Symbol("detJ")
+    cell_orientation = L.Symbol("cell_orientation")
+    code = [L.Comment("Check orientation"),
+            L.If(L.EQ(cell_orientation, -1),
+                 [L.Throw("std::runtime_error", "cell orientation must be defined (not -1)")]),
+            L.Comment("(If cell_orientation == 1 = down, multiply det(J) by -1)"),
+            L.ElseIf(L.EQ(cell_orientation, 1),
+                     [L.AssignMul(detJ , -1)])]
+    return code
+
+def fiat_coordinate_mapping(L, cellname, gdim):
+
+    # Code used in evaluatebasis[|derivatives]
+    x = L.Symbol("x")
+    coordinate_dofs = L.Symbol("coordinate_dofs")
+
+    if cellname == "interval":
+        J = L.Symbol("J")
+        detJ = L.Symbol("detJ")
+        X = L.Symbol("X")
+        if gdim == 1:
+            code = [L.Comment("Get coordinates and map to the reference (FIAT) element"),
+                    L.VariableDecl("double", X, (2*x[0] - coordinate_dofs[0] - coordinate_dofs[1])/J[0])]
+        elif gdim == 2:
+            code = [L.Comment("Get coordinates and map to the reference (FIAT) element"),
+                    L.VariableDecl("double", X, 2*(L.Sqrt(L.Call("std::pow",x[0] - coordinate_dofs[0])) + L.Sqrt(L.Call("std::pow", x[1] - coordinate_dofs[1])))/detJ - 1.0)]
+        elif gdim == 3:
+            code = [L.Comment("Get coordinates and map to the reference (FIAT) element"),
+                    L.VariableDecl("double ", X, 2*(L.Sqrt(L.Call("std::pow", (x[0] - coordinate_dofs[0], 2)) + L.Call("std::pow", (x[1] - coordinate_dofs[1], 2)) + L.Call("std::pow", (x[2] - coordinate_dofs[2], 2)))/ detJ) - 1.0)]
+        else:
+            raise RuntimeError("Invalid gdim for Interval")
+    elif cellname == "triangle":
+        X = L.Symbol("X")
+        Y = L.Symbol("Y")
+        if gdim == 2:
+            C0 = L.Symbol("C0")
+            C1 = L.Symbol("C1")
+            J = L.Symbol("J")
+            detJ = L.Symbol("detJ")
+            code = [L.Comment("Compute constants"),
+                    L.VariableDecl("const double", C0, coordinate_dofs[2] + coordinate_dofs[4]),
+                    L.VariableDecl("const double", C1, coordinate_dofs[3] + coordinate_dofs[5]),
+                    L.Comment("Get coordinates and map to the reference (FIAT) element"),
+                    L.VariableDecl("double", X, (J[1]*(C1 - 2.0*x[1]) + J[3]*(2.0*x[0] - C0)) / detJ),
+                    L.VariableDecl("double", Y, (J[0]*(2.0*x[1] - C1) + J[2]*(C0 - 2.0*x[0])) / detJ)]
+        elif gdim == 3:
+            K = L.Symbol("K")
+            code = [L.Comment("P_FFC = J^dag (p - b), P_FIAT = 2*P_FFC - (1, 1)"),
+                    L.VariableDecl("double", X, 2*(K[0]*(x[0] - coordinate_dofs[0])
+                                                 + K[1]*(x[1] - coordinate_dofs[1])
+                                                 + K[2]*(x[2] - coordinate_dofs[2])) - 1.0),
+                    L.VariableDecl("double", Y, 2*(K[3]*(x[0] - coordinate_dofs[0])
+                                                 + K[4]*(x[1] - coordinate_dofs[1])
+                                                 + K[5]*(x[2] - coordinate_dofs[2])) - 1.0)]
+        else:
+            raise RuntimeError("Invalid gdim for Triangle")
+    elif cellname == 'tetrahedron' and gdim == 3:
+        C0 = L.Symbol("C0")
+        C1 = L.Symbol("C1")
+        C2 = L.Symbol("C2")
+        X = L.Symbol("X")
+        Y = L.Symbol("Y")
+        Z = L.Symbol("Z")
+        J = L.Symbol("J")
+        detJ = L.Symbol("detJ")
+        d = L.Symbol("d")
+
+        code = [L.Comment("Compute constants"),
+                L.VariableDecl("const double", C0, coordinate_dofs[9]  + coordinate_dofs[6] + coordinate_dofs[3]  - coordinate_dofs[0]),
+                L.VariableDecl("const double", C1, coordinate_dofs[10] + coordinate_dofs[7] + coordinate_dofs[4]  - coordinate_dofs[1]),
+                L.VariableDecl("const double", C2, coordinate_dofs[11] + coordinate_dofs[8] + coordinate_dofs[5]  - coordinate_dofs[2]),
+                L.Comment("Compute subdeterminants"),
+                L.ArrayDecl("const double", d, 9, [J[4]*J[8] - J[5]*J[7],
+                                                   J[5]*J[6] - J[3]*J[8],
+                                                   J[3]*J[7] - J[4]*J[6],
+                                                   J[2]*J[7] - J[1]*J[8],
+                                                   J[0]*J[8] - J[2]*J[6],
+                                                   J[1]*J[6] - J[0]*J[7],
+                                                   J[1]*J[5] - J[2]*J[4],
+                                                   J[2]*J[3] - J[0]*J[5],
+                                                   J[0]*J[4] - J[1]*J[3]]),
+                L.Comment("Get coordinates and map to the reference (FIAT) element"),
+                L.VariableDecl("double", X, (d[0]*(2.0*x[0] - C0) + d[3]*(2.0*x[1] - C1) + d[6]*(2.0*x[2] - C2)) / detJ),
+                L.VariableDecl("double", Y, (d[1]*(2.0*x[0] - C0) + d[4]*(2.0*x[1] - C1) + d[7]*(2.0*x[2] - C2)) / detJ),
+                L.VariableDecl("double", Z, (d[2]*(2.0*x[0] - C0) + d[5]*(2.0*x[1] - C1) + d[8]*(2.0*x[2] - C2)) / detJ)]
+
+    return code
+
+def compute_basis_values(L, data, dof_data):
+    # Get embedded degree.
+    embedded_degree = dof_data["embedded_degree"]
+
+    # Create zero array for basisvalues.
+    # Get number of members of the expansion set.
+    num_mem = dof_data["num_expansion_members"]
+    code = [L.Comment("Array of basisvalues")]
+    basisvalues = L.Symbol("basisvalues")
+    code += [L.ArrayDecl("double", basisvalues, num_mem, 0.0)]
+
+    # Get the element cell name
+    element_cellname = data["cellname"]
+
+    def _jrc(a, b, n):
+        an = float((2 * n + 1 + a + b) * (2 * n + 2 + a + b)) / float(2 * (n + 1) * (n + 1 + a + b))
+        bn = float((a * a - b * b) * (2 * n + 1 + a + b)) / float(2 * (n + 1) * (2 * n + a + b) * (n + 1 + a + b))
+        cn = float((n + a) * (n + b) * (2 * n + 2 + a + b)) / float((n + 1) * (n + 1 + a + b) * (2 * n + a + b))
+        return (an, bn, cn)
+
+    # 1D
+    if (element_cellname == "interval"):
+        # FIAT_NEW.expansions.LineExpansionSet.
+        # FIAT_NEW code
+        # psitilde_as = jacobi.eval_jacobi_batch(0,0,n,ref_pts)
+        # FIAT_NEW.jacobi.eval_jacobi_batch(a,b,n,xs)
+        # The initial value basisvalue 0 is always 1.0
+        # FIAT_NEW code
+        # for ii in range(result.shape[1]):
+        #    result[0,ii] = 1.0 + xs[ii,0] - xs[ii,0]
+        code += [L.Comment("Compute basisvalues")]
+        code += [L.Assign(basisvalues[0], 1.0)]
+
+        # Only continue if the embedded degree is larger than zero.
+        if embedded_degree > 0:
+
+            # FIAT_NEW.jacobi.eval_jacobi_batch(a,b,n,xs).
+            # result[1,:] = 0.5 * ( a - b + ( a + b + 2.0 ) * xsnew )
+            # The initial value basisvalue 1 is always x
+            X = L.Symbol("X")
+            code += [L.Assign(basisvalues[1], X)]
+
+            # Only active is embedded_degree > 1.
+            if embedded_degree > 1:
+                # FIAT_NEW.jacobi.eval_jacobi_batch(a,b,n,xs).
+                # apb = a + b (equal to 0 because of function arguments)
+                # for k in range(2,n+1):
+                #    a1 = 2.0 * k * ( k + apb ) * ( 2.0 * k + apb - 2.0 )
+                #    a2 = ( 2.0 * k + apb - 1.0 ) * ( a * a - b * b )
+                #    a3 = ( 2.0 * k + apb - 2.0 )  \
+                #        * ( 2.0 * k + apb - 1.0 ) \
+                #        * ( 2.0 * k + apb )
+                #    a4 = 2.0 * ( k + a - 1.0 ) * ( k + b - 1.0 ) \
+                #        * ( 2.0 * k + apb )
+                #    a2 = a2 / a1
+                #    a3 = a3 / a1
+                #    a4 = a4 / a1
+                #    result[k,:] = ( a2 + a3 * xsnew ) * result[k-1,:] \
+                #        - a4 * result[k-2,:]
+
+                # The below implements the above (with a = b = apb = 0)
+                for r in range(2, embedded_degree + 1):
+
+                    # Define helper variables
+                    a1 = 2.0 * r * r * (2.0 * r - 2.0)
+                    a3 = ((2.0 * r - 2.0) * (2.0 * r - 1.0) * (2.0 * r)) / a1
+                    a4 = (2.0 * (r - 1.0) * (r - 1.0) * (2.0 * r)) / a1
+
+                    code += [L.Assign(basisvalues[r], X*basisvalues[r-1]*a3 - basisvalues[r-2]*a4)]
+
+        # Scale values.
+        # FIAT_NEW.expansions.LineExpansionSet.
+        # FIAT_NEW code
+        # results = numpy.zeros( ( n+1 , len(pts) ) , type( pts[0][0] ) )
+        # for k in range( n + 1 ):
+        #    results[k,:] = psitilde_as[k,:] * math.sqrt( k + 0.5 )
+
+        r = L.Symbol("r")
+        code += [L.ForRange(r, 0, embedded_degree + 1,
+                            index_type="int", body=[L.AssignMul(basisvalues[r], L.Sqrt(r + 0.5))])]
+
+    # 2D
+    elif (element_cellname == "triangle"):
+         # FIAT_NEW.expansions.TriangleExpansionSet.
+
+        # Compute helper factors
+        # FIAT_NEW code
+        # f1 = (1.0+2*x+y)/2.0
+        # f2 = (1.0 - y) / 2.0
+        # f3 = f2**2
+        X = L.Symbol("X")
+        Y = L.Symbol("Y")
+        f1 = (1 + 2*X + Y)/2
+        f2 = (1 - Y)/2
+        f3 = f2*f2
+
+        code += [L.Comment("Compute basisvalues")]
+        # The initial value basisvalue 0 is always 1.0.
+        # FIAT_NEW code
+        # for ii in range( results.shape[1] ):
+        #    results[0,ii] = 1.0 + apts[ii,0]-apts[ii,0]+apts[ii,1]-apts[ii,1]
+
+        code += [L.Assign(basisvalues[0], 1.0)]
+
+        def _idx2d(p, q):
+            return (p + q) * (p + q + 1) // 2 + q
+
+        # Only continue if the embedded degree is larger than zero.
+        if embedded_degree > 0:
+            # The initial value of basisfunction 1 is equal to f1.
+            # FIAT_NEW code
+            # results[idx(1,0),:] = f1
+            code += [L.Assign(basisvalues[1], f1)]
+
+            # NOTE: KBO: The order of the loops is VERY IMPORTANT!!
+
+            # FIAT_NEW code (loop 1 in FIAT)
+            # for p in range(1,n):
+            #    a = (2.0*p+1)/(1.0+p)
+            #    b = p / (p+1.0)
+            #    results[idx(p+1,0)] = a * f1 * results[idx(p,0),:] \
+            #        - p/(1.0+p) * f3 *results[idx(p-1,0),:]
+            # FIXME: KBO: Is there an error in FIAT? why is b not used?
+
+            # Only active is embedded_degree > 1.
+            for r in range(1, embedded_degree):
+                rr = _idx2d((r + 1), 0)
+                ss = _idx2d(r, 0)
+                tt = _idx2d(r - 1, 0)
+                A = (2 * r + 1.0) / (r + 1)
+                B = r / (1.0 + r)
+                code += [L.Assign(basisvalues[rr],
+                                  basisvalues[ss]*A*f1 - basisvalues[tt]*B*f3)]
+
+            # FIAT_NEW code (loop 2 in FIAT).
+            # for p in range(n):
+            #    results[idx(p,1),:] = 0.5 * (1+2.0*p+(3.0+2.0*p)*y) \
+            #        * results[idx(p,0)]
+
+            for r in range(0, embedded_degree):
+                # (p+q)*(p+q+1)//2 + q
+                rr = _idx2d(r, 1)
+                ss = _idx2d(r, 0)
+                A = 0.5 * (1 + 2 * r)
+                B = 0.5 * (3 + 2 * r)
+                C = A + B*Y
+                code += [L.Assign(basisvalues[rr],basisvalues[ss]*C)]
+
+
+            # FIAT_NEW code (loop 3 in FIAT).
+            # for p in range(n-1):
+            #    for q in range(1,n-p):
+            #        (a1,a2,a3) = jrc(2*p+1,0,q)
+            #        results[idx(p,q+1),:] \
+            #            = ( a1 * y + a2 ) * results[idx(p,q)] \
+            #            - a3 * results[idx(p,q-1)]
+            # Only active is embedded_degree > 1.
+            for r in range(0, embedded_degree - 1):
+                for s in range(1, embedded_degree - r):
+                    rr = _idx2d(r, (s + 1))
+                    ss = _idx2d(r, s)
+                    tt = _idx2d(r, s - 1)
+                    A, B, C = _jrc(2 * r + 1, 0, s)
+                    code += [L.Assign(basisvalues[rr],
+                                      basisvalues[ss]*(B + A*Y) - basisvalues[tt]*C)]
+
+            # FIAT_NEW code (loop 4 in FIAT).
+            # for p in range(n+1):
+            #    for q in range(n-p+1):
+            #        results[idx(p,q),:] *= math.sqrt((p+0.5)*(p+q+1.0))
+
+            for r in range(0, embedded_degree + 1):
+                for s in range(0, embedded_degree + 1 - r):
+                    rr = _idx2d(r, s)
+                    A = (r + 0.5) * (r + s + 1)
+                    code += [L.AssignMul(basisvalues[rr], L.Sqrt(A))]
+
+    # 3D
+    elif (element_cellname == "tetrahedron"):
+        # FIAT_NEW code (compute index function) TetrahedronExpansionSet.
+        def _idx3d(p, q, r):
+            return (p + q + r) * (p + q + r + 1) * (p + q + r + 2) // 6 + (q + r) * (q + r + 1) // 2 + r
+
+        #     # FIAT_NEW.expansions.TetrahedronExpansionSet.
+
+        #     # Compute helper factors.
+        #     # FIAT_NEW code
+        #     # factor1 = 0.5 * ( 2.0 + 2.0*x + y + z )
+        #     # factor2 = (0.5*(y+z))**2
+        #     # factor3 = 0.5 * ( 1 + 2.0 * y + z )
+        #     # factor4 = 0.5 * ( 1 - z )
+        #     # factor5 = factor4 ** 2
+        #     fac1 = create_product([float_0_5, float_2 + float_2 * symbol_x + symbol_y + symbol_z])
+        #     fac2 = create_product([float_0_25, symbol_y + symbol_z, symbol_y + symbol_z])
+        #     fac3 = create_product([float_0_5, float_1 + float_2 * symbol_y + symbol_z])
+        #     fac4 = create_product([float_0_5, float_1 - symbol_z])
+        #     code += [f_decl(f_double, str(f1), fac1)]
+        #     code += [f_decl(f_double, str(f2), fac2)]
+        #     code += [f_decl(f_double, str(f3), fac3)]
+        #     code += [f_decl(f_double, str(f4), fac4)]
+        #     code += [f_decl(f_double, str(f5), f4 * f4)]
+
+        code += [L.Comment("Compute basisvalues")]
+
+        # The initial value basisvalue 0 is always 1.0.
+        # FIAT_NEW code
+        # for ii in range( results.shape[1] ):
+        #    results[0,ii] = 1.0 + apts[ii,0]-apts[ii,0]+apts[ii,1]-apts[ii,1]
+        code += [L.Assign(basisvalues[0], 1.0)]
+
+        # Only continue if the embedded degree is larger than zero.
+        if embedded_degree > 0:
+            X = L.Symbol("X")
+            Y = L.Symbol("Y")
+            Z = L.Symbol("Z")
+            f1 = 0.5 * ( 2.0 + 2.0*X + Y + Z )
+            f2 = (0.5*(Y+Z))
+            f2 = f2*f2
+            f3 = 0.5 * ( 1 + 2.0 * Y + Z )
+            f4 = 0.5 * ( 1 - Z )
+            f5 = f4*f4
+            # The initial value of basisfunction 1 is equal to f1.
+            # FIAT_NEW code
+            # results[idx(1,0),:] = f1
+            code += [L.Assign(basisvalues[1], f1)]
+
+            # NOTE: KBO: The order of the loops is VERY IMPORTANT!!
+            # FIAT_NEW code (loop 1 in FIAT).
+            # for p in range(1,n):
+            #    a1 = ( 2.0 * p + 1.0 ) / ( p + 1.0 )
+            #    a2 = p / (p + 1.0)
+            #    results[idx(p+1,0,0)] = a1 * factor1 * results[idx(p,0,0)] \
+            #        -a2 * factor2 * results[ idx(p-1,0,0) ]
+            for r in range(1, embedded_degree):
+                rr = _idx3d((r + 1), 0, 0)
+                ss = _idx3d(r, 0, 0)
+                tt = _idx3d((r - 1), 0, 0)
+                A = (2 * r + 1.0) / (r + 1)
+                B = r / (r + 1.0)
+                code += [L.Assign(basisvalues[rr], A*f1*basisvalues[ss] - B*f2*basisvalues[tt])]
+
+            # FIAT_NEW code (loop 2 in FIAT).
+            # q = 1
+            # for p in range(0,n):
+            #    results[idx(p,1,0)] = results[idx(p,0,0)] \
+            #        * ( p * (1.0 + y) + ( 2.0 + 3.0 * y + z ) / 2 )
+
+            for r in range(0, embedded_degree):
+                rr = _idx3d(r, 1, 0)
+                ss = _idx3d(r, 0, 0)
+                code += [L.Assign(basisvalues[rr],
+                                  basisvalues[ss]*(0.5*(2 + 3*Y + Z) + r*(1 + Y)))]
+
+            # FIAT_NEW code (loop 3 in FIAT).
+            # for p in range(0,n-1):
+            #    for q in range(1,n-p):
+            #        (aq,bq,cq) = jrc(2*p+1,0,q)
+            #        qmcoeff = aq * factor3 + bq * factor4
+            #        qm1coeff = cq * factor5
+            #        results[idx(p,q+1,0)] = qmcoeff * results[idx(p,q,0)] \
+            #            - qm1coeff * results[idx(p,q-1,0)]
+
+            for r in range(0, embedded_degree - 1):
+                for s in range(1, embedded_degree - r):
+                    rr = _idx3d(r, (s + 1), 0)
+                    ss = _idx3d(r, s, 0)
+                    tt = _idx3d(r, s - 1, 0)
+                    (A, B, C) = _jrc(2 * r + 1, 0, s)
+                    code += [f_assign(basisvalues[rr],
+                                      (A*f3 + B*f4)*basisvalues[ss] - C*f5*basisvalues[tt])]
+
+            # FIAT_NEW code (loop 4 in FIAT).
+            # now handle r=1
+            # for p in range(n):
+            #    for q in range(n-p):
+            #        results[idx(p,q,1)] = results[idx(p,q,0)] \
+            #            * ( 1.0 + p + q + ( 2.0 + q + p ) * z )
+            for r in range(0, embedded_degree):
+                for s in range(0, embedded_degree - r):
+                    rr = _idx3d(r, s, 1)
+                    ss = _idx3d(r, s, 0)
+                    code += [L.Assign(basisvalues[rr],
+                                      basisvalues[ss]*(1 + r + s + (2 + r + s)*Z))]
+
+            # FIAT_NEW code (loop 5 in FIAT).
+            # general r by recurrence
+            # for p in range(n-1):
+            #     for q in range(0,n-p-1):
+            #         for r in range(1,n-p-q):
+            #             ar,br,cr = jrc(2*p+2*q+2,0,r)
+            #             results[idx(p,q,r+1)] = \
+            #                         (ar * z + br) * results[idx(p,q,r) ] \
+            #                         - cr * results[idx(p,q,r-1) ]
+            for r in range(embedded_degree - 1):
+                for s in range(0, embedded_degree - r - 1):
+                    for t in range(1, embedded_degree - r - s):
+                        rr = _idx3d(r, s, (t + 1))
+                        ss = _idx3d(r, s, t)
+                        tt = _idx3d(r, s, t - 1)
+
+                        (A, B, C) = _jrc(2 * r + 2 * s + 2, 0, t)
+                        code += [L.Assign(basisvalues[rr],
+                                          basisvalues[ss]*(A*Z + b) - basisvalues[tt]*C)]
+
+            # FIAT_NEW code (loop 6 in FIAT).
+            # for p in range(n+1):
+            #    for q in range(n-p+1):
+            #        for r in range(n-p-q+1):
+            #            results[idx(p,q,r)] *= math.sqrt((p+0.5)*(p+q+1.0)*(p+q+r+1.5))
+            for r in range(embedded_degree + 1):
+                for s in range(embedded_degree - r + 1):
+                    for t in range(embedded_degree - r - s + 1):
+                        rr = _idx3d(r, s, t)
+                        A = (r + 0.5) * (r + s + 1) * (r + s + t + 1.5)
+                        code += [L.AssignMul(basisvalues[rr], L.Sqrt(A))]
+
+    else:
+        error("Cannot compute basis values for shape: %d" % element_cellname)
+
+    return code
+
+def tabulate_coefficients(L, dof_data):
+    """This function tabulates the element coefficients that are
+    generated by FIAT at compile time."""
+
+    # Get coefficients from basis functions, computed by FIAT at compile time.
+    coefficients = dof_data["coeffs"]
+
+    # Initialise return code.
+    code = [L.Comment("Table(s) of coefficients")]
+
+    # Get number of members of the expansion set.
+    num_mem = dof_data["num_expansion_members"]
+
+    # Generate tables for each component.
+    for i, coeffs in enumerate(coefficients):
+
+        # Variable name for coefficients.
+        name = L.Symbol("coefficients%d"%i)
+
+        # Generate array of values.
+        code += [L.ArrayDecl("static const double", name, num_mem, coeffs)]
+
+    return code
+
+def compute_values(L, data, dof_data):
+    """This function computes the value of the basisfunction as the dot product
+    of the coefficients and basisvalues."""
+
+    # Initialise return code.
+    code = [L.Comment("Compute value(s)")]
+
+    # Get dof data.
+    num_components = dof_data["num_components"]
+    reference_offset = dof_data["reference_offset"]
+    physical_offset = dof_data["physical_offset"]
+    offset = reference_offset  # physical_offset # FIXME: Should be physical offset but that breaks tests
+
+    basisvalues = L.Symbol("basisvalues")
+    values = L.Symbol("values")
+    r = L.Symbol("r")
+    lines = []
+    if data["reference_value_size"] != 1:
+        # Loop number of components.
+        for i in range(num_components):
+            coefficients = L.Symbol("coefficients%d"%i)
+            lines += [L.AssignAdd(values[i+offset], coefficients[r]*basisvalues[r])]
+    else:
+        coefficients = L.Symbol("coefficients0")
+        lines = [L.AssignAdd(L.Dereference(values), coefficients[r]*basisvalues[r])]
+
+    # Get number of members of the expansion set and generate loop.
+    num_mem = dof_data["num_expansion_members"]
+    code += [L.ForRange(r, 0, num_mem, index_type="int", body=lines)]
+
+    tdim = data["topological_dimension"]
+    gdim = data["geometric_dimension"]
+
+    # FIXME: Apply transformation if applicable.
+    # mapping = dof_data["mapping"]
+    # if mapping == "affine":
+    #     pass
+    # elif mapping == "contravariant piola":
+    #     code += ["", f_comment("Using contravariant Piola transform to map values back to the physical element")]
+    #     # Get temporary values before mapping.
+    #     code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))
+    #              for i in range(num_components)]
+    #     # Create names for inner product.
+    #     basis_col = [f_tmp_ref(j) for j in range(tdim)]
+    #     for i in range(gdim):
+    #         # Create Jacobian.
+    #         jacobian_row = [f_trans("J", i, j, gdim, tdim, None) for j in range(tdim)]
+
+    #         # Create inner product and multiply by inverse of Jacobian.
+    #         inner = f_group(f_inner(jacobian_row, basis_col))
+    #         value = f_mul([f_inv(f_detJ(None)), inner])
+    #         name = f_component(f_values, i + offset)
+    #         code += [f_assign(name, value)]
+    # elif mapping == "covariant piola":
+    #     code += ["", f_comment("Using covariant Piola transform to map values back to the physical element")]
+    #     # Get temporary values before mapping.
+    #     code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))
+    #              for i in range(num_components)]
+    #     # Create names for inner product.
+    #     tdim = data["topological_dimension"]
+    #     gdim = data["geometric_dimension"]
+    #     basis_col = [f_tmp_ref(j) for j in range(tdim)]
+    #     for i in range(gdim):
+    #         # Create inverse of Jacobian.
+    #         inv_jacobian_column = [f_trans("JINV", j, i, tdim, gdim, None) for j in range(tdim)]
+
+    #         # Create inner product of basis values and inverse of Jacobian.
+    #         value = f_group(f_inner(inv_jacobian_column, basis_col))
+    #         name = f_component(f_values, i + offset)
+    #         code += [f_assign(name, value)]
+    # elif mapping == "double covariant piola":
+    #     code += ["", f_comment("Using double covariant Piola transform to map values back to the physical element")]
+    #     # Get temporary values before mapping.
+    #     code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))
+    #              for i in range(num_components)]
+    #     # Create names for inner product.
+    #     tdim = data["topological_dimension"]
+    #     gdim = data["geometric_dimension"]
+    #     basis_col = [f_tmp_ref(j) for j in range(num_components)]
+    #     for p in range(num_components):
+    #         # unflatten the indices
+    #         i = p // tdim
+    #         l = p % tdim
+    #         # g_il = K_ji G_jk K_kl
+    #         value = f_group(f_inner(
+    #             [f_inner([f_trans("JINV", j, i, tdim, gdim, None)
+    #                       for j in range(tdim)],
+    #                      [basis_col[j * tdim + k] for j in range(tdim)])
+    #              for k in range(tdim)],
+    #             [f_trans("JINV", k, l, tdim, gdim, None)
+    #              for k in range(tdim)]))
+    #         name = f_component(f_values, p + offset)
+    #         code += [f_assign(name, value)]
+    # elif mapping == "double contravariant piola":
+    #     code += ["", f_comment("Using double contravariant Piola transform to map values back to the physical element")]
+    #     # Get temporary values before mapping.
+    #     code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))\
+    #               for i in range(num_components)]
+    #     # Create names for inner product.
+    #     tdim = data["topological_dimension"]
+    #     gdim = data["geometric_dimension"]
+    #     basis_col = [f_tmp_ref(j) for j in range(num_components)]
+    #     for p in range(num_components):
+    #         # unflatten the indices
+    #         i = p // tdim
+    #         l = p % tdim
+    #         # g_il = (det J)^(-2) Jij G_jk Jlk
+    #         value = f_group(f_inner(
+    #             [f_inner([f_trans("J", i, j, tdim, gdim, None)
+    #                       for j in range(tdim)],
+    #                      [basis_col[j * tdim + k] for j in range(tdim)])
+    #              for k in range(tdim)],
+    #             [f_trans("J", l, k, tdim, gdim, None) for k in range(tdim)]))
+    #         value = f_mul([f_inv(f_detJ(None)), f_inv(f_detJ(None)), value])
+    #         name = f_component(f_values, p + offset)
+    #         code += [f_assign(name, value)]
+    # else:
+    #     error("Unknown mapping: %s" % mapping)
+
+    return code
+
 def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J, detJ, K):
     # Select transformation to apply
     if mapping == "affine":
@@ -153,10 +708,61 @@ class ufc_finite_element(ufc_generator):
         return generate_return_new_switch(L, "i", classnames, factory=ir["jit"])
 
     def evaluate_basis(self, L, ir, parameters):
-        # FIXME: Get rid of this
-        use_legacy = 1
-        if use_legacy:
-            return indent(_evaluate_basis(ir["evaluate_basis"]), 4)
+        legacy_code = indent(_evaluate_basis(ir["evaluate_basis"]), 4)
+        print(legacy_code)
+
+        data = ir["evaluate_basis"]
+        if isinstance(data, string_types):
+            return format["exception"]("evaluate_basis: %s" % data)
+
+        # Get the element cell name and geometric dimension.
+        element_cellname = data["cellname"]
+        gdim = data["geometric_dimension"]
+        tdim = data["topological_dimension"]
+
+        # Generate run time code to evaluate an element basisfunction at an
+        # arbitrary point. The value(s) of the basisfunction is/are
+        # computed as in FIAT as the dot product of the coefficients (computed at compile time)
+        # and basisvalues which are dependent on the coordinate and thus have to be computed at
+        # run time.
+
+        # The function should work for all elements supported by FIAT, but it remains
+        # untested for tensor valued elements.
+
+        # Get code snippets for Jacobian, Inverse of Jacobian and mapping of
+        # coordinates from physical element to the FIAT reference element.
+
+        code = jacobian(L, gdim, tdim, element_cellname)
+        code += inverse_jacobian(L, gdim, tdim, element_cellname)
+        if data["needs_oriented"]:
+            code += orientation(L)
+
+        code += fiat_coordinate_mapping(L, element_cellname, gdim)
+
+        # # Get value shape and reset values. This should also work for TensorElement,
+        # # scalar are empty tuples, therefore (1,) in which case value_shape = 1.
+
+        reference_value_size = data["reference_value_size"]
+        code += [L.Comment("Reset values")]
+        dof_values = L.Symbol("values")
+        if reference_value_size == 1:
+            # Reset values as a pointer.
+            code += [L.Assign(L.Dereference(dof_values), 0.0)]
+        else:
+            code += [L.Assign(dof_values, 0.0)]
+
+        # Create code for all basis values (dofs).
+        dof_cases = []
+        for f, dof_data in enumerate(data["dofs_data"]):
+            dof_code = compute_basis_values(L, data, dof_data)
+            dof_code += tabulate_coefficients(L, dof_data)
+            dof_code += compute_values(L, data, dof_data)
+            dof_cases.append((f, dof_code))
+
+        code += [L.Switch(L.Symbol("i"), dof_cases)]
+
+        print(L.StatementList(code))
+        return legacy_code
 
     def evaluate_basis_all(self, L, ir, parameters):
 
@@ -326,13 +932,17 @@ class ufc_finite_element(ufc_generator):
             return indent(evaluate_dofs_code, 4)
 
     def interpolate_vertex_values(self, L, ir, parameters):
-        # FIXME: port this
         legacy_code = indent(interpolate_vertex_values(ir["interpolate_vertex_values"]), 4)
-        # print(legacy_code)
+        #        print(legacy_code)
+
+        irdata = ir["interpolate_vertex_values"]
+        # Raise error if interpolate_vertex_values is ill-defined
+        if not irdata:
+            msg = "interpolate_vertex_values is not defined for this element"
+            return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
 
         # Add code for Jacobian if necessary
         code = []
-        irdata = ir["interpolate_vertex_values"]
         gdim = irdata["geometric_dimension"]
         tdim = irdata["topological_dimension"]
         element_cellname = ir["evaluate_basis"]["cellname"]
@@ -340,14 +950,7 @@ class ufc_finite_element(ufc_generator):
             code += jacobian(L, gdim, tdim, element_cellname)
             code += inverse_jacobian(L, gdim, tdim, element_cellname)
             if irdata["needs_oriented"] and tdim != gdim:
-                detJ = L.Symbol("detJ")
-                cell_orientation = L.Symbol("cell_orientation")
-                code += [L.Comment("Check orientation"),
-                         L.If(L.EQ(cell_orientation, -1),
-                              [L.Throw("std::runtime_error", "cell orientation must be defined (not -1)")]),
-                         L.Comment("(If cell_orientation == 1 = down, multiply det(J) by -1)"),
-                         L.ElseIf(L.EQ(cell_orientation, 1),
-                                  [L.AssignMul(detJ , -1)])]
+                code += orientation(L)
 
         # Compute total value dimension for (mixed) element
         total_dim = irdata["physical_value_size"]
@@ -365,10 +968,6 @@ class ufc_finite_element(ufc_generator):
             space_dim = data["space_dim"]
             mapping = data["mapping"]
 
-            # Map basis values according to element mapping. Assumes single
-            # mapping for each (non-mixed) element
-            #            change_of_variables = _change_variables(data["mapping"], gdim, tdim, space_dim)
-
             # Create code for each value dimension:
             for k in range(value_size):
                 # Create code for each vertex x_j
@@ -377,12 +976,14 @@ class ufc_finite_element(ufc_generator):
                     if value_size == 1:
                         values_at_vertex = [values_at_vertex]
 
+                    values = clamp_table_small_numbers(values_at_vertex)
+
                     # Map basis functions using appropriate mapping
                     # FIXME: sort out all non-affine mappings and make into a function
                     # components = change_of_variables(values_at_vertex, k)
 
                     if mapping == 'affine':
-                        w = clamp_table_small_numbers(values_at_vertex[k])
+                        w = values[k]
                     elif mapping == 'contravariant piola':
                         detJ = L.Symbol("detJ")
                         J = L.Symbol("J")
@@ -390,8 +991,7 @@ class ufc_finite_element(ufc_generator):
                         for index in range(space_dim):
                             acc_sum = 0.0
                             for p in range(tdim):
-                                components = clamp_table_small_numbers(values_at_vertex[p])
-                                acc_sum += J[p+k*tdim]*components[index]
+                                acc_sum += J[p+k*tdim]*values[p][index]
                             acc_sum /= detJ
                             w.append(acc_sum)
                     elif mapping == 'covariant piola':
@@ -400,8 +1000,7 @@ class ufc_finite_element(ufc_generator):
                         for index in range(space_dim):
                             acc_sum = 0.0
                             for p in range(tdim):
-                                components = clamp_table_small_numbers(values_at_vertex[p])
-                                acc_sum += K[k+p*gdim]*components[index]
+                                acc_sum += K[k+p*gdim]*values[p][index]
                             w.append(acc_sum)
                     elif mapping == 'double covariant piola':
                         K = L.Symbol("K")
@@ -410,8 +1009,7 @@ class ufc_finite_element(ufc_generator):
                             acc_sum = 0.0
                             for p in range(tdim):
                                 for q in range(tdim):
-                                    components = clamp_table_small_numbers(values_at_vertex[p][q])
-                                    acc_sum += K[k//tdim + p*gdim]*components[index]*K[k % tdim + q*gdim]
+                                    acc_sum += K[k//tdim + p*gdim]*values[p][q][index]*K[k % tdim + q*gdim]
                             w.append(acc_sum)
                     elif mapping == 'double contravariant piola':
                         J = L.Symbol("J")
@@ -421,10 +1019,8 @@ class ufc_finite_element(ufc_generator):
                             acc_sum = 0.0
                             for p in range(tdim):
                                 for q in range(tdim):
-                                    components = clamp_table_small_numbers(values_at_vertex[p][q])
-                                    acc_sum += J[p + (k//tdim)*tdim]*components[index]*J[q + (k % tdim)*tdim]
-                            acc_sum /= detJ
-                            acc_sum /= detJ
+                                    acc_sum += J[p + (k//tdim)*tdim]*values[p][q][index]*J[q + (k % tdim)*tdim]
+                            acc_sum /= (detJ*detJ)
                             w.append(acc_sum)
                     else:
                         raise RuntimeError("Mapping not implemented")
@@ -445,7 +1041,7 @@ class ufc_finite_element(ufc_generator):
             value_offset += data["physical_value_size"]
             space_offset += data["space_dim"]
 
-#        print(L.StatementList(code))
+            #        print(L.StatementList(code))
         return code
 
     def tabulate_dof_coordinates(self, L, ir, parameters):
