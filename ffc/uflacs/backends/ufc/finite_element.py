@@ -32,6 +32,7 @@ from ffc.uflacs.backends.ufc.utils import generate_return_new_switch, generate_r
 
 from ffc.uflacs.elementtables import clamp_table_small_numbers
 from ffc.uflacs.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
+from ffc.uflacs.backends.ufc.evaluatebasis import _generate_compute_basisvalues
 from ffc.uflacs.backends.ufc.evalderivs import generate_evaluate_reference_basis_derivatives
 from ffc.uflacs.backends.ufc.evalderivs import _generate_combinations
 
@@ -43,10 +44,125 @@ from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives
 from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives_all
 from ffc.interpolatevertexvalues import interpolate_vertex_values
 from ffc.evaluatedof import evaluate_dof_and_dofs
-from ffc.evaluatedof import affine_weights
-
+# from ffc.evaluatedof import affine_weights
 
 index_type = "std::size_t"
+
+def affine_weights(dim):
+    "Compute coefficents for mapping from reference to physical element"
+
+    if dim == 1:
+        return lambda x: (1.0 - x[0], x[0])
+    elif dim == 2:
+        return lambda x: (1.0 - x[0] - x[1], x[0], x[1])
+    elif dim == 3:
+        return lambda x: (1.0 - x[0] - x[1] - x[2], x[0], x[1], x[2])
+
+def _change_variables(mapping, gdim, tdim, offset):
+    """Generate code for mapping function values according to
+    'mapping' and offset.
+
+    The basics of how to map a field from a physical to the reference
+    domain. (For the inverse approach -- see interpolatevertexvalues)
+
+    Let g be a field defined on a physical domain T with physical
+    coordinates x. Let T_0 be a reference domain with coordinates
+    X. Assume that F: T_0 -> T such that
+
+      x = F(X)
+
+    Let J be the Jacobian of F, i.e J = dx/dX and let K denote the
+    inverse of the Jacobian K = J^{-1}. Then we (currently) have the
+    following four types of mappings:
+
+    'affine' mapping for g:
+
+      G(X) = g(x)
+
+    For vector fields g:
+
+    'contravariant piola' mapping for g:
+
+      G(X) = det(J) K g(x)   i.e  G_i(X) = det(J) K_ij g_j(x)
+
+    'covariant piola' mapping for g:
+
+      G(X) = J^T g(x)          i.e  G_i(X) = J^T_ij g(x) = J_ji g_j(x)
+
+    'double covariant piola' mapping for g:
+
+      G(X) = J^T g(x) J     i.e. G_il(X) = J_ji g_jk(x) J_kl
+
+    'double contravariant piola' mapping for g:
+
+      G(X) = det(J)^2 K g(x) K^T  i.e. G_il(X)=(detJ)^2 K_ij g_jk K_lk
+
+    """
+
+    # meg: Various mappings must be handled both here and in
+    # interpolate_vertex_values. Could this be abstracted out?
+
+    values = L.Symbol("values")
+    offset = L.Symbol("offset")
+
+    if mapping == "affine":
+        return [values[offset]]
+    elif mapping == "contravariant piola":
+        # Map each component from physical to reference using inverse
+        # contravariant piola
+        detJ = L.Symbol("detJ")
+        K = L.Symbol("K")
+        w = []
+        for i in range(tdim):
+            inner = 0.0
+            for j in range(gdim):
+                inner += values[j + offset]*K[i*gdim + j]
+            w.append(inner*detJ)
+        return w
+
+    elif mapping == "covariant piola":
+        # Map each component from physical to reference using inverse
+        # covariant piola
+        detJ = L.Symbol("detJ")
+        J = L.Symbol("J")
+        w = []
+        for i in range(tdim):
+            inner = 0.0
+            for j in range(gdim):
+                inner += values[j + offset]*J[j*tdim + i]
+            w.append(inner)
+        return w
+
+    elif mapping == "double covariant piola":
+        # physical to reference pullback as a covariant 2-tensor
+        w = []
+        J = L.Symbol("J")
+        for i in range(tdim):
+            for l in range(tdim):
+                inner = 0.0
+                for k in range(gdim):
+                    for j in range(gdim):
+                        inner += J[j*tdim + i] * values[j * tdim + k + offset] * J[k*tdim + l]
+                w.append(inner)
+        return w
+
+    elif mapping == "double contravariant piola":
+        # physical to reference using double contravariant piola
+        w = []
+        K = Symbol("K")
+        detJ = Symbol("detJ")
+        for i in range(tdim):
+            for l in range(tdim):
+                inner = 0.0
+                for k in range(gdim):
+                    for j in range(gdim):
+                        inner += K[i*tdim + j] * values[j*tdim + k + offset] * K[l*tdim + k]
+                w.append(inner*detJ*detJ)
+        return w
+
+    else:
+        raise Exception("The mapping (%s) is not allowed" % mapping)
+
 
 def jacobian(L, gdim, tdim, element_cellname):
     J = L.Symbol("J")
@@ -86,20 +202,19 @@ def fiat_coordinate_mapping(L, cellname, gdim):
     if cellname == "interval":
         J = L.Symbol("J")
         detJ = L.Symbol("detJ")
-        X = L.Symbol("X")
+        Y = L.Symbol("Y")
         if gdim == 1:
             code = [L.Comment("Get coordinates and map to the reference (FIAT) element"),
-                    L.VariableDecl("double", X, (2*x[0] - coordinate_dofs[0] - coordinate_dofs[1])/J[0])]
+                    L.ArrayDecl("double", Y, 1, [(2*x[0] - coordinate_dofs[0] - coordinate_dofs[1])/J[0]])]
         elif gdim == 2:
             code = [L.Comment("Get coordinates and map to the reference (FIAT) element"),
-                    L.VariableDecl("double", X, 2*(L.Sqrt(L.Call("std::pow",x[0] - coordinate_dofs[0])) + L.Sqrt(L.Call("std::pow", x[1] - coordinate_dofs[1])))/detJ - 1.0)]
+                    L.ArrayDecl("double", Y, 1, [2*(L.Sqrt(L.Call("std::pow",x[0] - coordinate_dofs[0])) + L.Sqrt(L.Call("std::pow", x[1] - coordinate_dofs[1])))/detJ - 1.0])]
         elif gdim == 3:
             code = [L.Comment("Get coordinates and map to the reference (FIAT) element"),
-                    L.VariableDecl("double ", X, 2*(L.Sqrt(L.Call("std::pow", (x[0] - coordinate_dofs[0], 2)) + L.Call("std::pow", (x[1] - coordinate_dofs[1], 2)) + L.Call("std::pow", (x[2] - coordinate_dofs[2], 2)))/ detJ) - 1.0)]
+                    L.ArrayDecl("double", Y, 1, [2*(L.Sqrt(L.Call("std::pow", (x[0] - coordinate_dofs[0], 2)) + L.Call("std::pow", (x[1] - coordinate_dofs[1], 2)) + L.Call("std::pow", (x[2] - coordinate_dofs[2], 2)))/ detJ) - 1.0])]
         else:
             raise RuntimeError("Invalid gdim for Interval")
     elif cellname == "triangle":
-        X = L.Symbol("X")
         Y = L.Symbol("Y")
         if gdim == 2:
             C0 = L.Symbol("C0")
@@ -110,26 +225,24 @@ def fiat_coordinate_mapping(L, cellname, gdim):
                     L.VariableDecl("const double", C0, coordinate_dofs[2] + coordinate_dofs[4]),
                     L.VariableDecl("const double", C1, coordinate_dofs[3] + coordinate_dofs[5]),
                     L.Comment("Get coordinates and map to the reference (FIAT) element"),
-                    L.VariableDecl("double", X, (J[1]*(C1 - 2.0*x[1]) + J[3]*(2.0*x[0] - C0)) / detJ),
-                    L.VariableDecl("double", Y, (J[0]*(2.0*x[1] - C1) + J[2]*(C0 - 2.0*x[0])) / detJ)]
+                    L.ArrayDecl("double", Y, 2, [(J[1]*(C1 - 2.0*x[1]) + J[3]*(2.0*x[0] - C0)) / detJ,
+                                                 (J[0]*(2.0*x[1] - C1) + J[2]*(C0 - 2.0*x[0])) / detJ])]
         elif gdim == 3:
             K = L.Symbol("K")
             code = [L.Comment("P_FFC = J^dag (p - b), P_FIAT = 2*P_FFC - (1, 1)"),
-                    L.VariableDecl("double", X, 2*(K[0]*(x[0] - coordinate_dofs[0])
-                                                 + K[1]*(x[1] - coordinate_dofs[1])
-                                                 + K[2]*(x[2] - coordinate_dofs[2])) - 1.0),
-                    L.VariableDecl("double", Y, 2*(K[3]*(x[0] - coordinate_dofs[0])
-                                                 + K[4]*(x[1] - coordinate_dofs[1])
-                                                 + K[5]*(x[2] - coordinate_dofs[2])) - 1.0)]
+                    L.ArrayDecl("double", Y, 2, [2*(K[0]*(x[0] - coordinate_dofs[0])
+                                                    + K[1]*(x[1] - coordinate_dofs[1])
+                                                    + K[2]*(x[2] - coordinate_dofs[2])) - 1.0,
+                                                 2*(K[3]*(x[0] - coordinate_dofs[0])
+                                                    + K[4]*(x[1] - coordinate_dofs[1])
+                                                    + K[5]*(x[2] - coordinate_dofs[2])) - 1.0])]
         else:
             raise RuntimeError("Invalid gdim for Triangle")
     elif cellname == 'tetrahedron' and gdim == 3:
         C0 = L.Symbol("C0")
         C1 = L.Symbol("C1")
         C2 = L.Symbol("C2")
-        X = L.Symbol("X")
         Y = L.Symbol("Y")
-        Z = L.Symbol("Z")
         J = L.Symbol("J")
         detJ = L.Symbol("detJ")
         d = L.Symbol("d")
@@ -149,13 +262,22 @@ def fiat_coordinate_mapping(L, cellname, gdim):
                                                    J[2]*J[3] - J[0]*J[5],
                                                    J[0]*J[4] - J[1]*J[3]]),
                 L.Comment("Get coordinates and map to the reference (FIAT) element"),
-                L.VariableDecl("double", X, (d[0]*(2.0*x[0] - C0) + d[3]*(2.0*x[1] - C1) + d[6]*(2.0*x[2] - C2)) / detJ),
-                L.VariableDecl("double", Y, (d[1]*(2.0*x[0] - C0) + d[4]*(2.0*x[1] - C1) + d[7]*(2.0*x[2] - C2)) / detJ),
-                L.VariableDecl("double", Z, (d[2]*(2.0*x[0] - C0) + d[5]*(2.0*x[1] - C1) + d[8]*(2.0*x[2] - C2)) / detJ)]
+                L.ArrayDecl("double", Y, 3, [(d[0]*(2.0*x[0] - C0) + d[3]*(2.0*x[1] - C1) + d[6]*(2.0*x[2] - C2)) / detJ,
+                                             (d[1]*(2.0*x[0] - C0) + d[4]*(2.0*x[1] - C1) + d[7]*(2.0*x[2] - C2)) / detJ,
+                                             (d[2]*(2.0*x[0] - C0) + d[5]*(2.0*x[1] - C1) + d[8]*(2.0*x[2] - C2)) / detJ])]
 
     return code
 
 def compute_basis_values(L, data, dof_data):
+    basisvalues = L.Symbol("basisvalues")
+    Y = L.Symbol("Y")
+    element_cellname = data["cellname"]
+    embedded_degree = dof_data["embedded_degree"]
+    num_members = dof_data["num_expansion_members"]
+    return _generate_compute_basisvalues(L, basisvalues, Y, element_cellname, embedded_degree, num_members)
+
+def _x_compute_basis_values(L, data, dof_data):
+    # FIXME: remove this, duplicate implementation...
     # Get embedded degree.
     embedded_degree = dof_data["embedded_degree"]
 
@@ -238,7 +360,7 @@ def compute_basis_values(L, data, dof_data):
 
     # 2D
     elif (element_cellname == "triangle"):
-         # FIAT_NEW.expansions.TriangleExpansionSet.
+        # FIAT_NEW.expansions.TriangleExpansionSet.
 
         # Compute helper factors
         # FIAT_NEW code
@@ -474,7 +596,7 @@ def tabulate_coefficients(L, dof_data):
     for i, coeffs in enumerate(coefficients):
 
         # Variable name for coefficients.
-        name = L.Symbol("coefficients%d"%i)
+        name = L.Symbol("coefficients%d" % i)
 
         # Generate array of values.
         code += [L.ArrayDecl("static const double", name, num_mem, coeffs)]
@@ -501,7 +623,7 @@ def compute_values(L, data, dof_data):
     if data["reference_value_size"] != 1:
         # Loop number of components.
         for i in range(num_components):
-            coefficients = L.Symbol("coefficients%d"%i)
+            coefficients = L.Symbol("coefficients%d" % i)
             lines += [L.AssignAdd(values[i+offset], coefficients[r]*basisvalues[r])]
     else:
         coefficients = L.Symbol("coefficients0")
@@ -524,7 +646,7 @@ def compute_values(L, data, dof_data):
         # Get temporary values before mapping.
         tmp_ref = []
         for i in range(num_components):
-            tmp_ref.append(L.Symbol("tmp_ref%d"%i))
+            tmp_ref.append(L.Symbol("tmp_ref%d" % i))
         code += [L.VariableDecl("const double", tmp_ref[i], values[i + offset])
                  for i in range(num_components)]
 
@@ -548,7 +670,7 @@ def compute_values(L, data, dof_data):
         # Get temporary values before mapping.
         tmp_ref = []
         for i in range(num_components):
-            tmp_ref.append(L.Symbol("tmp_ref%d"%i))
+            tmp_ref.append(L.Symbol("tmp_ref%d" % i))
         code += [L.VariableDecl("const double", tmp_ref[i], values[i + offset])
                  for i in range(num_components)]
 
@@ -569,7 +691,7 @@ def compute_values(L, data, dof_data):
         # Get temporary values before mapping.
         basis_col = []
         for i in range(num_components):
-            basis_col.append(L.Symbol("tmp_ref%d"%i))
+            basis_col.append(L.Symbol("tmp_ref%d" % i))
         code += [L.VariableDecl("const double", basis_col[i], values[i + offset])
                  for i in range(num_components)]
 
@@ -605,10 +727,9 @@ def compute_values(L, data, dof_data):
         # Get temporary values before mapping.
         basis_col = []
         for i in range(num_components):
-            basis_col.append(L.Symbol("tmp_ref%d"%i))
+            basis_col.append(L.Symbol("tmp_ref%d" % i))
         code += [L.VariableDecl("const double", basis_col[i], values[i + offset])
                  for i in range(num_components)]
-
 
         J = L.Symbol("J")
         detJ = L.Symbol("detJ")
@@ -636,7 +757,6 @@ def compute_values(L, data, dof_data):
                 inner += acc_list[k]*J[l*gdim + k]
 
             code += [L.Assign(values[p + offset], inner/(detJ*detJ))]
-
     else:
         error("Unknown mapping: %s" % mapping)
 
@@ -783,6 +903,7 @@ class ufc_finite_element(ufc_generator):
         code += [L.Switch(L.Symbol("i"), dof_cases)]
 
         print(L.StatementList(code))
+        quit()
         return legacy_code
 
     def evaluate_basis_all(self, L, ir, parameters):
@@ -951,6 +1072,8 @@ class ufc_finite_element(ufc_generator):
               = evaluate_dof_and_dofs(ir["evaluate_dof"])
             return indent(evaluate_dofs_code, 4)
 
+
+
     def interpolate_vertex_values(self, L, ir, parameters):
         legacy_code = indent(interpolate_vertex_values(ir["interpolate_vertex_values"]), 4)
         #        print(legacy_code)
@@ -1009,11 +1132,10 @@ class ufc_finite_element(ufc_generator):
                         J = L.Symbol("J")
                         w = []
                         for index in range(space_dim):
-                            acc_sum = 0.0
+                            inner = 0.0
                             for p in range(tdim):
-                                acc_sum += J[p+k*tdim]*values[p][index]
-                            acc_sum /= detJ
-                            w.append(acc_sum)
+                                inner += J[p+k*tdim]*values[p][index]
+                            w.append(acc_sum/detJ)
                     elif mapping == 'covariant piola':
                         K = L.Symbol("K")
                         w = []
@@ -1061,7 +1183,7 @@ class ufc_finite_element(ufc_generator):
             value_offset += data["physical_value_size"]
             space_offset += data["space_dim"]
 
-            #        print(L.StatementList(code))
+    #        print(L.StatementList(code))
         return code
 
     def tabulate_dof_coordinates(self, L, ir, parameters):
