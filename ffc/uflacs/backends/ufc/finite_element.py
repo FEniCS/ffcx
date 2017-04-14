@@ -853,7 +853,7 @@ class ufc_finite_element(ufc_generator):
 
     def evaluate_basis(self, L, ir, parameters):
         legacy_code = indent(_evaluate_basis(ir["evaluate_basis"]), 4)
-        print(legacy_code)
+        #        print(legacy_code)
 
         data = ir["evaluate_basis"]
         if isinstance(data, string_types):
@@ -881,10 +881,12 @@ class ufc_finite_element(ufc_generator):
         if data["needs_oriented"]:
             code += orientation(L)
 
-        code += fiat_coordinate_mapping(L, element_cellname, gdim)
-
-        # # Get value shape and reset values. This should also work for TensorElement,
-        # # scalar are empty tuples, therefore (1,) in which case value_shape = 1.
+        need_mp = False
+        for  dof_data in data["dofs_data"]:
+            if dof_data['embedded_degree'] > 0 :
+                need_mp = True
+        if need_mp:
+            code += fiat_coordinate_mapping(L, element_cellname, gdim)
 
         reference_value_size = data["reference_value_size"]
         code += [L.Comment("Reset values")]
@@ -905,7 +907,7 @@ class ufc_finite_element(ufc_generator):
 
         code += [L.Switch(L.Symbol("i"), dof_cases)]
 
-        print(L.StatementList(code))
+        #        print(L.StatementList(code))
         return code
 
     def evaluate_basis_all(self, L, ir, parameters):
@@ -1135,7 +1137,7 @@ class ufc_finite_element(ufc_generator):
                             inner = 0.0
                             for p in range(tdim):
                                 inner += J[p+k*tdim]*values[p][index]
-                            w.append(acc_sum/detJ)
+                            w.append(inner/detJ)
                     elif mapping == 'covariant piola':
                         K = L.Symbol("K")
                         w = []
