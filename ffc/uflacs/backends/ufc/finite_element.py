@@ -881,11 +881,7 @@ class ufc_finite_element(ufc_generator):
         if data["needs_oriented"]:
             code += orientation(L)
 
-        need_mp = False
-        for  dof_data in data["dofs_data"]:
-            if dof_data['embedded_degree'] > 0 :
-                need_mp = True
-        if need_mp:
+        if any((d["embedded_degree"] > 0) for d in data["dofs_data"]):
             code += fiat_coordinate_mapping(L, element_cellname, gdim)
 
         reference_value_size = data["reference_value_size"]
