@@ -358,11 +358,10 @@ def _x_evaluate_dof_and_dofs(L, ir):
             result = L.Symbol("result")
             code += [L.VariableDecl("double", result)]
 
-        if needs_jacobian:
+        if needs_jacobian or needs_inverse_jacobian:
             code += jacobian(L, gdim, tdim, element_cellname)
 
         if needs_inverse_jacobian:
-            code += jacobian(L, gdim, tdim, element_cellname)
             code += inverse_jacobian(L, gdim, tdim, element_cellname)
             code += orientation(L)
 
