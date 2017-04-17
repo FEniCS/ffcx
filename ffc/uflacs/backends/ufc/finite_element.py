@@ -38,13 +38,15 @@ from ffc.uflacs.backends.ufc.evalderivs import _generate_combinations
 
 # FIXME: Stop depending on legacy code
 from ffc.cpp import indent
-from ffc.evaluatebasis import _evaluate_basis
+# from ffc.evaluatebasis import _evaluate_basis
 # from ffc.evaluatebasis import _evaluate_basis_all
 from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives
 from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives_all
 # from ffc.interpolatevertexvalues import interpolate_vertex_values
 from ffc.evaluatedof import evaluate_dof_and_dofs
 # from ffc.evaluatedof import affine_weights
+from ufl.permutation import build_component_numbering
+from ffc.utils import pick_first
 
 index_type = "std::size_t"
 
@@ -58,7 +60,7 @@ def affine_weights(dim):
     elif dim == 3:
         return lambda x: (1.0 - x[0] - x[1] - x[2], x[0], x[1], x[2])
 
-def _change_variables(mapping, gdim, tdim, offset):
+def _change_variables(L, mapping, gdim, tdim, offset):
     """Generate code for mapping function values according to
     'mapping' and offset.
 
@@ -102,8 +104,7 @@ def _change_variables(mapping, gdim, tdim, offset):
     # meg: Various mappings must be handled both here and in
     # interpolate_vertex_values. Could this be abstracted out?
 
-    values = L.Symbol("values")
-    offset = L.Symbol("offset")
+    values = L.Symbol("vals")
 
     if mapping == "affine":
         return [values[offset]]
@@ -112,11 +113,12 @@ def _change_variables(mapping, gdim, tdim, offset):
         # contravariant piola
         detJ = L.Symbol("detJ")
         K = L.Symbol("K")
+        K = L.FlattenedArray(K, dims=(tdim, gdim))
         w = []
         for i in range(tdim):
             inner = 0.0
             for j in range(gdim):
-                inner += values[j + offset]*K[i*gdim + j]
+                inner += values[j + offset]*K[i, j]
             w.append(inner*detJ)
         return w
 
@@ -125,11 +127,12 @@ def _change_variables(mapping, gdim, tdim, offset):
         # covariant piola
         detJ = L.Symbol("detJ")
         J = L.Symbol("J")
+        J = L.FlattenedArray(J, dims=(gdim, tdim))
         w = []
         for i in range(tdim):
             inner = 0.0
             for j in range(gdim):
-                inner += values[j + offset]*J[j*tdim + i]
+                inner += values[j + offset]*J[j, i]
             w.append(inner)
         return w
 
@@ -137,26 +140,28 @@ def _change_variables(mapping, gdim, tdim, offset):
         # physical to reference pullback as a covariant 2-tensor
         w = []
         J = L.Symbol("J")
+        J = L.FlattenedArray(J, dims=(gdim, tdim))
         for i in range(tdim):
             for l in range(tdim):
                 inner = 0.0
                 for k in range(gdim):
                     for j in range(gdim):
-                        inner += J[j*tdim + i] * values[j * tdim + k + offset] * J[k*tdim + l]
+                        inner += J[j, i] * values[j*tdim + k + offset] * J[k, l]
                 w.append(inner)
         return w
 
     elif mapping == "double contravariant piola":
         # physical to reference using double contravariant piola
         w = []
-        K = Symbol("K")
-        detJ = Symbol("detJ")
+        K = L.Symbol("K")
+        K = L.FlattenedArray(K, dims=(tdim, gdim))
+        detJ = L.Symbol("detJ")
         for i in range(tdim):
             for l in range(tdim):
                 inner = 0.0
                 for k in range(gdim):
                     for j in range(gdim):
-                        inner += K[i*tdim + j] * values[j*tdim + k + offset] * K[l*tdim + k]
+                        inner += K[i, j] * values[j*tdim + k + offset] * K[l, k]
                 w.append(inner*detJ*detJ)
         return w
 
@@ -164,12 +169,238 @@ def _change_variables(mapping, gdim, tdim, offset):
         raise Exception("The mapping (%s) is not allowed" % mapping)
 
 
+def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim,
+                                   offset=0):
+    "Generate c++ for-loop for multiple points (integral bodies)"
+
+    result = L.Symbol("result")
+    code = [L.Assign(result, 0.0)]
+    points = list(dof.keys())
+    n = len(points)
+
+    # Get number of tokens per point
+    tokens = [dof[x] for x in points]
+    len_tokens = pick_first([len(t) for t in tokens])
+
+    # Declare points
+    #    points = format["list"]([format["list"](x) for x in points])
+    X_i = L.Symbol("X_%d"%i)
+    code += [L.ArrayDecl("double", X_i, [n, tdim], points)]
+
+    # Declare components
+    components = [[c[0] for (w, c) in token] for token in tokens]
+    #    components = format["list"]([format["list"](c) for c in components])
+    D_i = L.Symbol("D_%d"%i)
+    code += [L.ArrayDecl("int", D_i, [n, len_tokens], components)]
+
+    # Declare weights
+    weights = [[w for (w, c) in token] for token in tokens]
+    #    weights = format["list"]([format["list"](w) for w in weights])
+    W_i = L.Symbol("W_%d"%i)
+    code += [L.ArrayDecl("double", W_i, [n, len_tokens], weights)]
+
+    # Declare copy variable:
+    copy_i = L.Symbol("copy_%d"%i)
+    code += [L.ArrayDecl("double", copy_i, tdim)]
+
+    # Add loop over points
+    code += [L.Comment("Loop over points")]
+
+    # Map the points from the reference onto the physical element
+    r = L.Symbol("r")
+    w0 = L.Symbol("w0")
+    w1 = L.Symbol("w1")
+    w2 = L.Symbol("w2")
+    w3 = L.Symbol("w3")
+    d = L.Symbol("d")
+    y = L.Symbol("y")
+    coordinate_dofs = L.Symbol("coordinate_dofs")
+    if tdim == 1:
+        lines_r = [L.Comment("Evaluate basis functions for affine mapping"),
+                   L.VariableDecl("const double", w0, 1 - X_i*d[r][0]),
+                   L.VariableDecl("const double", w1, X_i*d[r][0]),
+                   L.Comment("Compute affine mapping y = F(X)")]
+        for j in range(gdim):
+            lines_r += [L.Assign(y[j],
+                                 w0*coordinate_dofs[j] + w1*coordinate_dofs[j + gdim])]
+    elif tdim == 2:
+        lines_r = [L.Comment("Evaluate basis functions for affine mapping"),
+                   L.VariableDecl("const double", w0, 1 - X_i*d[r][0] - X_i*d[r][1]),
+                   L.VariableDecl("const double", w1, X_i*d[r][0]),
+                   L.VariableDecl("const double", w2, X_i*d[r][1]),
+                   L.Comment("Compute affine mapping y = F(X)")]
+        for j in range(gdim):
+            lines_r += [L.Assign(y[j],
+                                 w0*coordinate_dofs[j]
+                                 + w1*coordinate_dofs[j + gdim]
+                                 + w2*coordinate_dofs[j + 2*gdim])]
+    elif tdim == 3:
+        lines_r = [L.Comment("Evaluate basis functions for affine mapping"),
+                   L.VariableDecl("const double", w0, 1 - X_i*d[r][0] - X_i*d[r][1] - X_i*d[r][2]),
+                   L.VariableDecl("const double", w1, X_i*d[r][0]),
+                   L.VariableDecl("const double", w2, X_i*d[r][1]),
+                   L.VariableDecl("const double", w3, X_i*d[r][2]),
+                   L.Comment("Compute affine mapping y = F(X)")]
+        for j in range(gdim):
+            lines_r += [L.Assign(y[j],
+                                 w0*coordinate_dofs[j]
+                                 + w1*coordinate_dofs[j + gdim]
+                                 + w2*coordinate_dofs[j + 2*gdim]
+                                 + w3*coordinate_dofs[j + 3*gdim])]
+
+    # Evaluate function at physical point
+    lines_r += [L.Comment("Evaluate function at physical point")]
+    y = L.Symbol("y")
+    vals = L.Symbol("vals")
+    c = L.Symbol("c")
+    lines_r += [L.Call("f.evaluate",(y, vals, c))]
+
+    # Map function values to the reference element
+    lines_r += [L.Comment("Map function to reference element")]
+    F = _change_variables(L, mapping, gdim, tdim, offset)
+    lines_r += [L.Assign(copy_i[k], F_k)
+                for (k, F_k) in enumerate(F)]
+
+    # Add loop over directional components
+    lines_r += [L.Comment("Loop over directions")]
+
+    s = L.Symbol("s")
+    lines_r += [L.ForRange(s, 0, len_tokens, index_type=index_type,
+                       body=[L.AssignAdd(result, copy_i[D_i[r, s]] * W_i[r, s])])]
+
+    # Generate loop over r and add to code.
+    code += [L.ForRange(r, 0, n, index_type=index_type, body=lines_r)]
+    #    print(L.StatementList(code))
+    return (code, result)
+
+def _generate_body(L, i, dof, mapping, gdim, tdim, offset=0):
+    "Generate code for a single dof."
+
+    # EnrichedElement is handled by having [None, ..., None] dual basis
+    if not dof:
+        msg = "evaluate_dof(s) for enriched element not implemented."
+        return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
+
+    points = list(dof.keys())
+
+    # Generate different code if multiple points. (Otherwise ffc
+    # compile time blows up.)
+    if len(points) > 1:
+        return _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim,
+                                              offset)
+
+    # Get weights for mapping reference point to physical
+    x = points[0]
+    w = affine_weights(tdim)(x)
+
+    # Map point onto physical element: y = F_K(x)
+    code = []
+
+    y = L.Symbol("y")
+    coordinate_dofs = L.Symbol("coordinate_dofs")
+    vals = L.Symbol("vals")
+    c = L.Symbol("c")
+    for j in range(gdim):
+        yy = 0.0
+        for k in range(tdim + 1):
+            yy += w[k]*coordinate_dofs[k*gdim + j]
+        code += [L.Assign(y[j], yy)]
+
+    # Evaluate function at physical point
+    code += [L.Call("f.evaluate", (vals, y, c))]
+
+    # Map function values to the reference element
+    F = _change_variables(L, mapping, gdim, tdim, offset)
+
+    # Simple affine functions deserve special case:
+    if len(F) == 1:
+        return (code, dof[x][0][0]*F[0])
+
+    # Flatten multi-indices
+    (index_map, _) = build_component_numbering([tdim] * len(dof[x][0][1]), ())
+    # Take inner product between components and weights
+    value = 0.0
+    for (w, k) in dof[x]:
+        value += w*F[index_map[k]]
+
+    # Return eval code and value
+    return (code, value)
+
+def _x_evaluate_dof_and_dofs(L, ir):
+    "Generate code for evaluate_dof and evaluate_dof."
+
+    gdim = ir["geometric_dimension"]
+    tdim = ir["topological_dimension"]
+
+    # element_cellname = ir["element_cellname"]
+    element_cellname = ['interval', 'triangle', 'tetrahedron'][tdim - 1]
+
+    # Enriched element, no dofs defined
+    if not any(ir["dofs"]):
+        code = []
+    else:
+        # Declare variable for storing the result and physical coordinates
+        code = [L.Comment("Declare variables for result of evaluation")]
+        vals = L.Symbol("vals")
+        code += [L.ArrayDecl("double", vals, ir["physical_value_size"])]
+        code += [L.Comment("Declare variable for physical coordinates")]
+        y = L.Symbol("y")
+        code += [L.ArrayDecl("double", y, gdim)]
+
+        # Check whether Jacobians are necessary.
+        needs_inverse_jacobian = any(["contravariant piola" in m
+                                      for m in ir["mappings"]])
+        needs_jacobian = any(["covariant piola" in m for m in ir["mappings"]])
+
+        # Intermediate variable needed for multiple point dofs
+        needs_temporary = any(len(dof) > 1 for dof in ir["dofs"])
+        if needs_temporary:
+            result = L.Symbol("result")
+            code += [L.VariableDecl("double", result)]
+
+        if needs_jacobian:
+            code += jacobian(L, gdim, tdim, element_cellname)
+
+        if needs_inverse_jacobian:
+            code += jacobian(L, gdim, tdim, element_cellname)
+            code += inverse_jacobian(L, gdim, tdim, element_cellname)
+            code += orientation(L)
+
+    # Extract variables
+    mappings = ir["mappings"]
+    offsets = ir["physical_offsets"]
+
+    # Generate bodies for each degree of freedom
+    cases = []
+    for (i, dof) in enumerate(ir["dofs"]):
+        c, r = _generate_body(L, i, dof, mappings[i], gdim, tdim, offsets[i])
+        c += [L.Return(r)]
+        cases.append((i, c))
+
+    code += [L.Switch(L.Symbol("i"), cases)]
+    code += [L.Return(0.0)]
+    return code
+
+    # Construct dict with eval code as keys to remove duplicate eval code
+    #    cases_opt = OrderedDict((case[0], []) for case in cases)
+    #for i, (evl, res) in enumerate(cases):
+    #cases_opt[evl].append((i, res))
+    # Combine each case with assignments for evaluate_dofs
+    #dofs_code = reqs
+    #for evl, results in six.iteritems(cases_opt):
+    #    dofs_code += evl + "\n"
+    #    for i, res in results:
+    #        dofs_code += format["assign"](component(f_values, i), res) + "\n"
+    #dofs_code = dofs_code.rstrip("\n")
+    #return (dof_code, dofs_code)
+
 def jacobian(L, gdim, tdim, element_cellname):
     J = L.Symbol("J")
     coordinate_dofs = L.Symbol("coordinate_dofs")
     code = [L.Comment("Compute Jacobian"),
             L.ArrayDecl("double", J, (gdim*tdim,)),
-            L.Call("compute_jacobian_"+element_cellname+"_"+str(gdim)+"d",(J, coordinate_dofs))]
+            L.Call("compute_jacobian_"+element_cellname+"_"+str(gdim)+"d",
+                   (J, coordinate_dofs))]
     return code
 
 def inverse_jacobian(L, gdim, tdim, element_cellname):
@@ -275,309 +506,6 @@ def compute_basis_values(L, data, dof_data):
     embedded_degree = dof_data["embedded_degree"]
     num_members = dof_data["num_expansion_members"]
     return _generate_compute_basisvalues(L, basisvalues, Y, element_cellname, embedded_degree, num_members)
-
-def _x_compute_basis_values(L, data, dof_data):
-    # FIXME: remove this, duplicate implementation...
-    # Get embedded degree.
-    embedded_degree = dof_data["embedded_degree"]
-
-    # Create zero array for basisvalues.
-    # Get number of members of the expansion set.
-    num_mem = dof_data["num_expansion_members"]
-    code = [L.Comment("Array of basisvalues")]
-    basisvalues = L.Symbol("basisvalues")
-    code += [L.ArrayDecl("double", basisvalues, num_mem, 0.0)]
-
-    # Get the element cell name
-    element_cellname = data["cellname"]
-
-    def _jrc(a, b, n):
-        an = float((2 * n + 1 + a + b) * (2 * n + 2 + a + b)) / float(2 * (n + 1) * (n + 1 + a + b))
-        bn = float((a * a - b * b) * (2 * n + 1 + a + b)) / float(2 * (n + 1) * (2 * n + a + b) * (n + 1 + a + b))
-        cn = float((n + a) * (n + b) * (2 * n + 2 + a + b)) / float((n + 1) * (n + 1 + a + b) * (2 * n + a + b))
-        return (an, bn, cn)
-
-    # 1D
-    if (element_cellname == "interval"):
-        # FIAT_NEW.expansions.LineExpansionSet.
-        # FIAT_NEW code
-        # psitilde_as = jacobi.eval_jacobi_batch(0,0,n,ref_pts)
-        # FIAT_NEW.jacobi.eval_jacobi_batch(a,b,n,xs)
-        # The initial value basisvalue 0 is always 1.0
-        # FIAT_NEW code
-        # for ii in range(result.shape[1]):
-        #    result[0,ii] = 1.0 + xs[ii,0] - xs[ii,0]
-        code += [L.Comment("Compute basisvalues")]
-        code += [L.Assign(basisvalues[0], 1.0)]
-
-        # Only continue if the embedded degree is larger than zero.
-        if embedded_degree > 0:
-
-            # FIAT_NEW.jacobi.eval_jacobi_batch(a,b,n,xs).
-            # result[1,:] = 0.5 * ( a - b + ( a + b + 2.0 ) * xsnew )
-            # The initial value basisvalue 1 is always x
-            X = L.Symbol("X")
-            code += [L.Assign(basisvalues[1], X)]
-
-            # Only active is embedded_degree > 1.
-            if embedded_degree > 1:
-                # FIAT_NEW.jacobi.eval_jacobi_batch(a,b,n,xs).
-                # apb = a + b (equal to 0 because of function arguments)
-                # for k in range(2,n+1):
-                #    a1 = 2.0 * k * ( k + apb ) * ( 2.0 * k + apb - 2.0 )
-                #    a2 = ( 2.0 * k + apb - 1.0 ) * ( a * a - b * b )
-                #    a3 = ( 2.0 * k + apb - 2.0 )  \
-                #        * ( 2.0 * k + apb - 1.0 ) \
-                #        * ( 2.0 * k + apb )
-                #    a4 = 2.0 * ( k + a - 1.0 ) * ( k + b - 1.0 ) \
-                #        * ( 2.0 * k + apb )
-                #    a2 = a2 / a1
-                #    a3 = a3 / a1
-                #    a4 = a4 / a1
-                #    result[k,:] = ( a2 + a3 * xsnew ) * result[k-1,:] \
-                #        - a4 * result[k-2,:]
-
-                # The below implements the above (with a = b = apb = 0)
-                for r in range(2, embedded_degree + 1):
-
-                    # Define helper variables
-                    a1 = 2.0 * r * r * (2.0 * r - 2.0)
-                    a3 = ((2.0 * r - 2.0) * (2.0 * r - 1.0) * (2.0 * r)) / a1
-                    a4 = (2.0 * (r - 1.0) * (r - 1.0) * (2.0 * r)) / a1
-
-                    code += [L.Assign(basisvalues[r], X*basisvalues[r-1]*a3 - basisvalues[r-2]*a4)]
-
-        # Scale values.
-        # FIAT_NEW.expansions.LineExpansionSet.
-        # FIAT_NEW code
-        # results = numpy.zeros( ( n+1 , len(pts) ) , type( pts[0][0] ) )
-        # for k in range( n + 1 ):
-        #    results[k,:] = psitilde_as[k,:] * math.sqrt( k + 0.5 )
-
-        r = L.Symbol("r")
-        code += [L.ForRange(r, 0, embedded_degree + 1,
-                            index_type=index_type, body=[L.AssignMul(basisvalues[r], L.Sqrt(r + 0.5))])]
-
-    # 2D
-    elif (element_cellname == "triangle"):
-        # FIAT_NEW.expansions.TriangleExpansionSet.
-
-        # Compute helper factors
-        # FIAT_NEW code
-        # f1 = (1.0+2*x+y)/2.0
-        # f2 = (1.0 - y) / 2.0
-        # f3 = f2**2
-        X = L.Symbol("X")
-        Y = L.Symbol("Y")
-        f1 = (1 + 2*X + Y)/2
-        f2 = (1 - Y)/2
-        f3 = f2*f2
-
-        code += [L.Comment("Compute basisvalues")]
-        # The initial value basisvalue 0 is always 1.0.
-        # FIAT_NEW code
-        # for ii in range( results.shape[1] ):
-        #    results[0,ii] = 1.0 + apts[ii,0]-apts[ii,0]+apts[ii,1]-apts[ii,1]
-
-        code += [L.Assign(basisvalues[0], 1.0)]
-
-        def _idx2d(p, q):
-            return (p + q) * (p + q + 1) // 2 + q
-
-        # Only continue if the embedded degree is larger than zero.
-        if embedded_degree > 0:
-            # The initial value of basisfunction 1 is equal to f1.
-            # FIAT_NEW code
-            # results[idx(1,0),:] = f1
-            code += [L.Assign(basisvalues[1], f1)]
-
-            # NOTE: KBO: The order of the loops is VERY IMPORTANT!!
-
-            # FIAT_NEW code (loop 1 in FIAT)
-            # for p in range(1,n):
-            #    a = (2.0*p+1)/(1.0+p)
-            #    b = p / (p+1.0)
-            #    results[idx(p+1,0)] = a * f1 * results[idx(p,0),:] \
-            #        - p/(1.0+p) * f3 *results[idx(p-1,0),:]
-            # FIXME: KBO: Is there an error in FIAT? why is b not used?
-
-            # Only active is embedded_degree > 1.
-            for r in range(1, embedded_degree):
-                rr = _idx2d((r + 1), 0)
-                ss = _idx2d(r, 0)
-                tt = _idx2d(r - 1, 0)
-                A = (2 * r + 1.0) / (r + 1)
-                B = r / (1.0 + r)
-                code += [L.Assign(basisvalues[rr],
-                                  basisvalues[ss]*A*f1 - basisvalues[tt]*B*f3)]
-
-            # FIAT_NEW code (loop 2 in FIAT).
-            # for p in range(n):
-            #    results[idx(p,1),:] = 0.5 * (1+2.0*p+(3.0+2.0*p)*y) \
-            #        * results[idx(p,0)]
-
-            for r in range(0, embedded_degree):
-                # (p+q)*(p+q+1)//2 + q
-                rr = _idx2d(r, 1)
-                ss = _idx2d(r, 0)
-                A = 0.5 * (1 + 2 * r)
-                B = 0.5 * (3 + 2 * r)
-                C = A + B*Y
-                code += [L.Assign(basisvalues[rr],basisvalues[ss]*C)]
-
-
-            # FIAT_NEW code (loop 3 in FIAT).
-            # for p in range(n-1):
-            #    for q in range(1,n-p):
-            #        (a1,a2,a3) = jrc(2*p+1,0,q)
-            #        results[idx(p,q+1),:] \
-            #            = ( a1 * y + a2 ) * results[idx(p,q)] \
-            #            - a3 * results[idx(p,q-1)]
-            # Only active is embedded_degree > 1.
-            for r in range(0, embedded_degree - 1):
-                for s in range(1, embedded_degree - r):
-                    rr = _idx2d(r, (s + 1))
-                    ss = _idx2d(r, s)
-                    tt = _idx2d(r, s - 1)
-                    A, B, C = _jrc(2 * r + 1, 0, s)
-                    code += [L.Assign(basisvalues[rr],
-                                      basisvalues[ss]*(B + A*Y) - basisvalues[tt]*C)]
-
-            # FIAT_NEW code (loop 4 in FIAT).
-            # for p in range(n+1):
-            #    for q in range(n-p+1):
-            #        results[idx(p,q),:] *= math.sqrt((p+0.5)*(p+q+1.0))
-
-            for r in range(0, embedded_degree + 1):
-                for s in range(0, embedded_degree + 1 - r):
-                    rr = _idx2d(r, s)
-                    A = (r + 0.5) * (r + s + 1)
-                    code += [L.AssignMul(basisvalues[rr], L.Sqrt(A))]
-
-    # 3D
-    elif (element_cellname == "tetrahedron"):
-        # FIAT_NEW code (compute index function) TetrahedronExpansionSet.
-        def _idx3d(p, q, r):
-            return (p + q + r) * (p + q + r + 1) * (p + q + r + 2) // 6 + (q + r) * (q + r + 1) // 2 + r
-
-        code += [L.Comment("Compute basisvalues")]
-
-        # The initial value basisvalue 0 is always 1.0.
-        # FIAT_NEW code
-        # for ii in range( results.shape[1] ):
-        #    results[0,ii] = 1.0 + apts[ii,0]-apts[ii,0]+apts[ii,1]-apts[ii,1]
-        code += [L.Assign(basisvalues[0], 1.0)]
-
-        # Only continue if the embedded degree is larger than zero.
-        if embedded_degree > 0:
-            X = L.Symbol("X")
-            Y = L.Symbol("Y")
-            Z = L.Symbol("Z")
-            f1 = 0.5*(2.0 + 2.0*X + Y + Z )
-            f2 = 0.5*(Y + Z)
-            f2 = f2*f2
-            f3 = 0.5*( 1 + 2.0 * Y + Z )
-            f4 = 0.5*( 1 - Z )
-            f5 = f4*f4
-            # The initial value of basisfunction 1 is equal to f1.
-            # FIAT_NEW code
-            # results[idx(1,0),:] = f1
-            code += [L.Assign(basisvalues[1], f1)]
-
-            # NOTE: KBO: The order of the loops is VERY IMPORTANT!!
-            # FIAT_NEW code (loop 1 in FIAT).
-            # for p in range(1,n):
-            #    a1 = ( 2.0 * p + 1.0 ) / ( p + 1.0 )
-            #    a2 = p / (p + 1.0)
-            #    results[idx(p+1,0,0)] = a1 * factor1 * results[idx(p,0,0)] \
-            #        -a2 * factor2 * results[ idx(p-1,0,0) ]
-            for r in range(1, embedded_degree):
-                rr = _idx3d((r + 1), 0, 0)
-                ss = _idx3d(r, 0, 0)
-                tt = _idx3d((r - 1), 0, 0)
-                A = (2 * r + 1.0) / (r + 1)
-                B = r / (r + 1.0)
-                code += [L.Assign(basisvalues[rr], A*f1*basisvalues[ss] - B*f2*basisvalues[tt])]
-
-            # FIAT_NEW code (loop 2 in FIAT).
-            # q = 1
-            # for p in range(0,n):
-            #    results[idx(p,1,0)] = results[idx(p,0,0)] \
-            #        * ( p * (1.0 + y) + ( 2.0 + 3.0 * y + z ) / 2 )
-
-            for r in range(0, embedded_degree):
-                rr = _idx3d(r, 1, 0)
-                ss = _idx3d(r, 0, 0)
-                code += [L.Assign(basisvalues[rr],
-                                  basisvalues[ss]*(0.5*(2 + 3*Y + Z) + r*(1 + Y)))]
-
-            # FIAT_NEW code (loop 3 in FIAT).
-            # for p in range(0,n-1):
-            #    for q in range(1,n-p):
-            #        (aq,bq,cq) = jrc(2*p+1,0,q)
-            #        qmcoeff = aq * factor3 + bq * factor4
-            #        qm1coeff = cq * factor5
-            #        results[idx(p,q+1,0)] = qmcoeff * results[idx(p,q,0)] \
-            #            - qm1coeff * results[idx(p,q-1,0)]
-
-            for r in range(0, embedded_degree - 1):
-                for s in range(1, embedded_degree - r):
-                    rr = _idx3d(r, (s + 1), 0)
-                    ss = _idx3d(r, s, 0)
-                    tt = _idx3d(r, s - 1, 0)
-                    (A, B, C) = _jrc(2 * r + 1, 0, s)
-                    code += [L.Assign(basisvalues[rr],
-                                      (A*f3 + B*f4)*basisvalues[ss] - C*f5*basisvalues[tt])]
-
-            # FIAT_NEW code (loop 4 in FIAT).
-            # now handle r=1
-            # for p in range(n):
-            #    for q in range(n-p):
-            #        results[idx(p,q,1)] = results[idx(p,q,0)] \
-            #            * ( 1.0 + p + q + ( 2.0 + q + p ) * z )
-            for r in range(0, embedded_degree):
-                for s in range(0, embedded_degree - r):
-                    rr = _idx3d(r, s, 1)
-                    ss = _idx3d(r, s, 0)
-                    code += [L.Assign(basisvalues[rr],
-                                      basisvalues[ss]*(1 + r + s + (2 + r + s)*Z))]
-
-            # FIAT_NEW code (loop 5 in FIAT).
-            # general r by recurrence
-            # for p in range(n-1):
-            #     for q in range(0,n-p-1):
-            #         for r in range(1,n-p-q):
-            #             ar,br,cr = jrc(2*p+2*q+2,0,r)
-            #             results[idx(p,q,r+1)] = \
-            #                         (ar * z + br) * results[idx(p,q,r) ] \
-            #                         - cr * results[idx(p,q,r-1) ]
-            for r in range(embedded_degree - 1):
-                for s in range(0, embedded_degree - r - 1):
-                    for t in range(1, embedded_degree - r - s):
-                        rr = _idx3d(r, s, (t + 1))
-                        ss = _idx3d(r, s, t)
-                        tt = _idx3d(r, s, t - 1)
-
-                        (A, B, C) = _jrc(2 * r + 2 * s + 2, 0, t)
-                        code += [L.Assign(basisvalues[rr],
-                                          basisvalues[ss]*(A*Z + B) - basisvalues[tt]*C)]
-
-            # FIAT_NEW code (loop 6 in FIAT).
-            # for p in range(n+1):
-            #    for q in range(n-p+1):
-            #        for r in range(n-p-q+1):
-            #            results[idx(p,q,r)] *= math.sqrt((p+0.5)*(p+q+1.0)*(p+q+r+1.5))
-            for r in range(embedded_degree + 1):
-                for s in range(embedded_degree - r + 1):
-                    for t in range(embedded_degree - r - s + 1):
-                        rr = _idx3d(r, s, t)
-                        A = (r + 0.5) * (r + s + 1) * (r + s + t + 1.5)
-                        code += [L.AssignMul(basisvalues[rr], L.Sqrt(A))]
-
-    else:
-        error("Cannot compute basis values for shape: %d" % element_cellname)
-
-    return code
 
 def tabulate_coefficients(L, dof_data):
     """This function tabulates the element coefficients that are
@@ -852,12 +780,15 @@ class ufc_finite_element(ufc_generator):
         return generate_return_new_switch(L, "i", classnames, factory=ir["jit"])
 
     def evaluate_basis(self, L, ir, parameters):
-        legacy_code = indent(_evaluate_basis(ir["evaluate_basis"]), 4)
+        #        legacy_code = indent(_evaluate_basis(ir["evaluate_basis"]), 4)
         #        print(legacy_code)
 
         data = ir["evaluate_basis"]
-        if isinstance(data, string_types):
-            return format["exception"]("evaluate_basis: %s" % data)
+
+        # FIXME: does this make sense?
+        if not data:
+            msg = "evaluate_basis is not defined for this element"
+            return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
 
         # Get the element cell name and geometric dimension.
         element_cellname = data["cellname"]
@@ -902,7 +833,6 @@ class ufc_finite_element(ufc_generator):
             dof_cases.append((f, dof_code))
 
         code += [L.Switch(L.Symbol("i"), dof_cases)]
-
         #        print(L.StatementList(code))
         return code
 
@@ -1038,9 +968,14 @@ class ufc_finite_element(ufc_generator):
         use_legacy = 1
         if use_legacy:
             # Codes generated together
-            (evaluate_dof_code, evaluate_dofs_code) \
+            (legacy_code, evaluate_dofs_code) \
               = evaluate_dof_and_dofs(ir["evaluate_dof"])
-            return indent(evaluate_dof_code, 4)
+        #        print(legacy_code)
+        code = _x_evaluate_dof_and_dofs(L, ir["evaluate_dof"])
+        # print(L.StatementList(new_code))
+        #        return indent(legacy_code, 4)
+        return code
+
 
     def evaluate_dofs(self, L, ir, parameters):
         """Generate code for evaluate_dofs."""
