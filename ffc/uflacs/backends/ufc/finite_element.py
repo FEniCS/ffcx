@@ -201,7 +201,7 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim,
 
     # Declare copy variable:
     copy_i = L.Symbol("copy_%d" % i)
-    code += [L.ArrayDecl("double",/ copy_i, tdim)]
+    code += [L.ArrayDecl("double", copy_i, tdim)]
 
     # Add loop over points
     code += [L.Comment("Loop over points")]
