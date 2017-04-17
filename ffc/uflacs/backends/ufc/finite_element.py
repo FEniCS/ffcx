@@ -184,24 +184,24 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim,
 
     # Declare points
     #    points = format["list"]([format["list"](x) for x in points])
-    X_i = L.Symbol("X_%d"%i)
+    X_i = L.Symbol("X_%d" % i)
     code += [L.ArrayDecl("double", X_i, [n, tdim], points)]
 
     # Declare components
     components = [[c[0] for (w, c) in token] for token in tokens]
     #    components = format["list"]([format["list"](c) for c in components])
-    D_i = L.Symbol("D_%d"%i)
+    D_i = L.Symbol("D_%d" % i)
     code += [L.ArrayDecl("int", D_i, [n, len_tokens], components)]
 
     # Declare weights
     weights = [[w for (w, c) in token] for token in tokens]
     #    weights = format["list"]([format["list"](w) for w in weights])
-    W_i = L.Symbol("W_%d"%i)
+    W_i = L.Symbol("W_%d" % i)
     code += [L.ArrayDecl("double", W_i, [n, len_tokens], weights)]
 
     # Declare copy variable:
-    copy_i = L.Symbol("copy_%d"%i)
-    code += [L.ArrayDecl("double", copy_i, tdim)]
+    copy_i = L.Symbol("copy_%d" % i)
+    code += [L.ArrayDecl("double",/ copy_i, tdim)]
 
     # Add loop over points
     code += [L.Comment("Loop over points")]
