@@ -492,11 +492,11 @@ class ufc_coordinate_mapping(ufc_generator):
 
         decls = [
             L.Comment("Declare intermediate arrays to hold results of compute_geometry call"),
-            L.ArrayDecl("double", xk, (gdim,)),
+            L.ArrayDecl("double", xk, (gdim,), 0.0),
             ]
         if not output_all:
             decls += [
-                L.ArrayDecl("double", J, (gdim*tdim,)),
+                L.ArrayDecl("double", J, (gdim*tdim,), 0.0),
                 L.ArrayDecl("double", detJ, (1,)),
                 L.ArrayDecl("double", K, (tdim*gdim,)),
                 ]
@@ -507,7 +507,7 @@ class ufc_coordinate_mapping(ufc_generator):
         # which is the affine approximation starting at the midpoint.
         midpoint_geometry = [
             L.Comment("Compute K = J^-1 and x at midpoint of cell"),
-            L.ArrayDecl("double", xm, (gdim,)),
+            L.ArrayDecl("double", xm, (gdim,), 0.0),
             L.ArrayDecl("double", Km, (tdim*gdim,)),
             L.Call("compute_midpoint_geometry", (xm, J, coordinate_dofs)),
             L.Call("compute_jacobian_determinants", (detJ, one_point, J, cell_orientation)),

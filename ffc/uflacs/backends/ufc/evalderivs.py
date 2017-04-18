@@ -155,7 +155,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
     dof_loop_code = [
         L.Comment("Loop over all dofs"),
         L.ForRange(idof, 0, num_dofs, index_type=index_type, body=[
-            L.ArrayDecl("double", derivatives, max_num_components * max_num_derivatives),
+            L.ArrayDecl("double", derivatives, max_num_components * max_num_derivatives, 0.0),
             L.Switch(idof, dof_cases),
             L.ForRange(r, 0, num_derivatives, index_type=index_type, body=[
                 L.ForRange(c, 0, num_components[idof], index_type=index_type, body=[
