@@ -33,6 +33,7 @@ from ffc.uflacs.backends.ufc.utils import generate_return_new_switch, generate_r
 from ffc.uflacs.elementtables import clamp_table_small_numbers
 from ffc.uflacs.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
 from ffc.uflacs.backends.ufc.evaluatebasis import _generate_compute_basisvalues
+from ffc.uflacs.backends.ufc.evaluatebasisderivatives import _x_evaluate_basis_derivatives_all
 from ffc.uflacs.backends.ufc.evalderivs import generate_evaluate_reference_basis_derivatives
 from ffc.uflacs.backends.ufc.evalderivs import _generate_combinations
 
@@ -933,9 +934,13 @@ class ufc_finite_element(ufc_generator):
 
     def evaluate_basis_derivatives_all(self, L, ir, parameters):
         # FIXME: port this
-        use_legacy = 1
+        use_legacy = 0
         if use_legacy:
-            return indent(_evaluate_basis_derivatives_all(ir["evaluate_basis"]), 4)
+            legacy_code = indent(_evaluate_basis_derivatives_all(ir["evaluate_basis"]), 4)
+            print(legacy_code)
+        code = _x_evaluate_basis_derivatives_all(L, ir["evaluate_basis"])
+        #        print(L.StatementList(new_code))
+        return code
 
         """
         // Legacy version:
