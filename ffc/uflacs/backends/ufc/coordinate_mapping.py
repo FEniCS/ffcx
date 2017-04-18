@@ -498,7 +498,7 @@ class ufc_coordinate_mapping(ufc_generator):
             decls += [
                 L.ArrayDecl("double", J, (gdim*tdim,), 0.0),
                 L.ArrayDecl("double", detJ, (1,)),
-                L.ArrayDecl("double", K, (tdim*gdim,)),
+                L.ArrayDecl("double", K, (tdim*gdim,), 0.0),
                 ]
 
         # By computing x and K at the cell midpoint once,
