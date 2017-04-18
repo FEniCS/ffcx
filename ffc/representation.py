@@ -42,9 +42,7 @@ import ufl
 from ffc.utils import compute_permutations, product
 from ffc.log import info, error, begin, end
 from ffc.fiatinterface import create_element, reference_cell
-from ffc.mixedelement import MixedElement
-from ffc.fiatinterface import EnrichedElement, HDivTrace, SpaceOfReals
-from ffc.quadratureelement import QuadratureElement
+from ffc.fiatinterface import EnrichedElement, HDivTrace, MixedElement, SpaceOfReals, QuadratureElement
 from ffc.cpp import set_float_formatting
 from ffc.cpp import make_classname, make_integral_classname
 

@@ -31,12 +31,13 @@ import ufl
 import FIAT
 from FIAT.enriched import EnrichedElement
 from FIAT.hdiv_trace import HDivTrace
+from FIAT.mixed import MixedElement
 from FIAT.P0 import P0
 from FIAT.restricted import RestrictedElement
+from FIAT.quadrature_element import QuadratureElement
 
 # FFC modules
 from ffc.log import debug, error
-from ffc.mixedelement import MixedElement
 
 # Dictionary mapping from cellname to dimension
 from ufl.cell import cellname2dim
@@ -59,6 +60,10 @@ supported_families = ("Brezzi-Douglas-Marini",
                       "Quadrature",
                       "Regge",
                       "Hellan-Herrmann-Johnson")
+
+# Default quadrature element degree
+default_quadrature_degree = 1
+default_quadrature_scheme = "canonical"
 
 # Cache for computed elements
 _cache = {}
@@ -141,7 +146,20 @@ def _create_fiat_element(ufl_element):
     # FIXME: AL: Should this really be here?
     # Handle QuadratureElement
     elif family == "Quadrature":
-        element = QuadratureElement(ufl_element)
+        # Compute number of points per axis from the degree of the element
+        if degree is None:
+            degree = default_quadrature_degree
+        scheme = ufl_element.quadrature_scheme()
+        if scheme is None:
+            scheme = default_quadrature_scheme
+
+        # Create quadrature (only interested in points)
+        # TODO: KBO: What should we do about quadrature functions that live on ds, dS?
+        # Get cell and facet names.
+        points, weights = create_quadrature(cellname, degree, scheme)
+
+        # Make element
+        element = QuadratureElement(fiat_cell, points)
 
     else:
         # Check if finite element family is supported by FIAT
@@ -299,7 +317,3 @@ def _create_restricted_element(ufl_element):
         return MixedElement(elements)
 
     error("Cannot create restricted element from %s" % str(ufl_element))
-
-
-# Import FFC module with circular dependency
-from ffc.quadratureelement import QuadratureElement
