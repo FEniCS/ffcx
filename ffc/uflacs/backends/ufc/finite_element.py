@@ -43,7 +43,7 @@ from ffc.cpp import indent
 from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives
 from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives_all
 # from ffc.interpolatevertexvalues import interpolate_vertex_values
-from ffc.evaluatedof import evaluate_dof_and_dofs
+# from ffc.evaluatedof import evaluate_dof_and_dofs
 # from ffc.evaluatedof import affine_weights
 from ufl.permutation import build_component_numbering
 from ffc.utils import pick_first
@@ -325,8 +325,8 @@ def _generate_body(L, i, dof, mapping, gdim, tdim, offset=0):
     # Return eval code and value
     return (code, value)
 
-def _x_evaluate_dof_and_dofs(L, ir):
-    "Generate code for evaluate_dof and evaluate_dof."
+def _x_evaluate_dof(L, ir):
+    "Generate code for evaluate_dof."
 
     gdim = ir["geometric_dimension"]
     tdim = ir["topological_dimension"]
@@ -379,18 +379,59 @@ def _x_evaluate_dof_and_dofs(L, ir):
     code += [L.Return(0.0)]
     return code
 
-    # Construct dict with eval code as keys to remove duplicate eval code
-    #    cases_opt = OrderedDict((case[0], []) for case in cases)
-    #for i, (evl, res) in enumerate(cases):
-    #cases_opt[evl].append((i, res))
-    # Combine each case with assignments for evaluate_dofs
-    #dofs_code = reqs
-    #for evl, results in six.iteritems(cases_opt):
-    #    dofs_code += evl + "\n"
-    #    for i, res in results:
-    #        dofs_code += format["assign"](component(f_values, i), res) + "\n"
-    #dofs_code = dofs_code.rstrip("\n")
-    #return (dof_code, dofs_code)
+def _x_evaluate_dofs(L, ir):
+    "Generate code for evaluate_dofs."
+    # FIXME: consolidate with evaluate_dofs
+    # FIXME: replace
+
+    gdim = ir["geometric_dimension"]
+    tdim = ir["topological_dimension"]
+
+    # element_cellname = ir["element_cellname"]
+    element_cellname = ['interval', 'triangle', 'tetrahedron'][tdim - 1]
+
+    # Enriched element, no dofs defined
+    if not any(ir["dofs"]):
+        code = []
+    else:
+        # Declare variable for storing the result and physical coordinates
+        code = [L.Comment("Declare variables for result of evaluation")]
+        vals = L.Symbol("vals")
+        code += [L.ArrayDecl("double", vals, ir["physical_value_size"])]
+        code += [L.Comment("Declare variable for physical coordinates")]
+        y = L.Symbol("y")
+        code += [L.ArrayDecl("double", y, gdim)]
+
+        # Check whether Jacobians are necessary.
+        needs_inverse_jacobian = any(["contravariant piola" in m
+                                      for m in ir["mappings"]])
+        needs_jacobian = any(["covariant piola" in m for m in ir["mappings"]])
+
+        # Intermediate variable needed for multiple point dofs
+        needs_temporary = any(len(dof) > 1 for dof in ir["dofs"])
+        if needs_temporary:
+            result = L.Symbol("result")
+            code += [L.VariableDecl("double", result)]
+
+        if needs_jacobian or needs_inverse_jacobian:
+            code += jacobian(L, gdim, tdim, element_cellname)
+
+        if needs_inverse_jacobian:
+            code += inverse_jacobian(L, gdim, tdim, element_cellname)
+            code += orientation(L)
+
+    # Extract variables
+    mappings = ir["mappings"]
+    offsets = ir["physical_offsets"]
+
+    # Generate bodies for each degree of freedom
+    values = L.Symbol("values")
+    for (i, dof) in enumerate(ir["dofs"]):
+        c, r = _generate_body(L, i, dof, mappings[i], gdim, tdim, offsets[i])
+        code += c
+        code += [L.Assign(values[i], r)]
+
+    return code
 
 def jacobian(L, gdim, tdim, element_cellname):
     J = L.Symbol("J")
@@ -963,13 +1004,13 @@ class ufc_finite_element(ufc_generator):
     def evaluate_dof(self, L, ir, parameters):
         # FIXME: Get rid of this
         # FIXME: port this
-        use_legacy = 1
+        use_legacy = 0
         if use_legacy:
             # Codes generated together
             (legacy_code, evaluate_dofs_code) \
               = evaluate_dof_and_dofs(ir["evaluate_dof"])
         #        print(legacy_code)
-        code = _x_evaluate_dof_and_dofs(L, ir["evaluate_dof"])
+        code = _x_evaluate_dof(L, ir["evaluate_dof"])
         # print(L.StatementList(new_code))
         #        return indent(legacy_code, 4)
         return code
@@ -998,12 +1039,16 @@ class ufc_finite_element(ufc_generator):
           element->evaluate_dofs(fdofs, fvalues, J, detJ, K)
         """
         # FIXME: port this, then translate into reference version
-        use_legacy = 1
+        use_legacy = 0
         if use_legacy:
             # Codes generated together
             (evaluate_dof_code, evaluate_dofs_code) \
               = evaluate_dof_and_dofs(ir["evaluate_dof"])
-            return indent(evaluate_dofs_code, 4)
+            legacy_code = indent(evaluate_dofs_code, 4)
+            print(legacy_code)
+        code = _x_evaluate_dofs(L, ir["evaluate_dof"])
+        #        print(L.StatementList(code))
+        return code
 
     def interpolate_vertex_values(self, L, ir, parameters):
         # legacy_code = indent(interpolate_vertex_values(ir["interpolate_vertex_values"]), 4)
