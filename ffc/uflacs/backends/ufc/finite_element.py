@@ -212,22 +212,21 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim,
     w1 = L.Symbol("w1")
     w2 = L.Symbol("w2")
     w3 = L.Symbol("w3")
-    d = L.Symbol("d")
     y = L.Symbol("y")
     coordinate_dofs = L.Symbol("coordinate_dofs")
     if tdim == 1:
         lines_r = [L.Comment("Evaluate basis functions for affine mapping"),
-                   L.VariableDecl("const double", w0, 1 - X_i*d[r][0]),
-                   L.VariableDecl("const double", w1, X_i*d[r][0]),
+                   L.VariableDecl("const double", w0, 1 - X_i[r][0]),
+                   L.VariableDecl("const double", w1, X_i[r][0]),
                    L.Comment("Compute affine mapping y = F(X)")]
         for j in range(gdim):
             lines_r += [L.Assign(y[j],
                                  w0*coordinate_dofs[j] + w1*coordinate_dofs[j + gdim])]
     elif tdim == 2:
         lines_r = [L.Comment("Evaluate basis functions for affine mapping"),
-                   L.VariableDecl("const double", w0, 1 - X_i*d[r][0] - X_i*d[r][1]),
-                   L.VariableDecl("const double", w1, X_i*d[r][0]),
-                   L.VariableDecl("const double", w2, X_i*d[r][1]),
+                   L.VariableDecl("const double", w0, 1 - X_i[r][0] - X_i[r][1]),
+                   L.VariableDecl("const double", w1, X_i[r][0]),
+                   L.VariableDecl("const double", w2, X_i[r][1]),
                    L.Comment("Compute affine mapping y = F(X)")]
         for j in range(gdim):
             lines_r += [L.Assign(y[j],
@@ -236,10 +235,10 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim,
                                  + w2*coordinate_dofs[j + 2*gdim])]
     elif tdim == 3:
         lines_r = [L.Comment("Evaluate basis functions for affine mapping"),
-                   L.VariableDecl("const double", w0, 1 - X_i*d[r][0] - X_i*d[r][1] - X_i*d[r][2]),
-                   L.VariableDecl("const double", w1, X_i*d[r][0]),
-                   L.VariableDecl("const double", w2, X_i*d[r][1]),
-                   L.VariableDecl("const double", w3, X_i*d[r][2]),
+                   L.VariableDecl("const double", w0, 1 - X_i[r][0] - X_i[r][1] - X_i[r][2]),
+                   L.VariableDecl("const double", w1, X_i[r][0]),
+                   L.VariableDecl("const double", w2, X_i[r][1]),
+                   L.VariableDecl("const double", w3, X_i[r][2]),
                    L.Comment("Compute affine mapping y = F(X)")]
         for j in range(gdim):
             lines_r += [L.Assign(y[j],
