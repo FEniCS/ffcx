@@ -236,7 +236,7 @@ def _generate_transform(L, element_cellname, gdim, tdim, max_degree):
 
     return code
 
-def _x_evaluate_basis_derivatives(L, data):
+def generate_evaluate_basis_derivatives(L, data):
     """Evaluate the derivatives of an element basisfunction at a point. The values are
     computed as in FIAT as the matrix product of the coefficients (computed at compile time),
     basisvalues which are dependent on the coordinate and thus have to be computed at
@@ -314,7 +314,7 @@ def _x_evaluate_basis_derivatives(L, data):
     code += [L.Switch(L.Symbol("i"), dof_cases)]
     return code
 
-def _x_evaluate_basis_derivatives_all(L, data):
+def generate_evaluate_basis_derivatives_all(L, data):
     """Like evaluate_basis, but return the values of all basis
     functions (dofs)."""
 
