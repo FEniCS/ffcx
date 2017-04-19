@@ -1,4 +1,5 @@
 
+from ffc.uflacs.backends.ufc.jacobian import jacobian, inverse_jacobian, orientation
 from ufl.permutation import build_component_numbering
 from ffc.utils import pick_first
 

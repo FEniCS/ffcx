@@ -33,8 +33,8 @@ from ffc.uflacs.backends.ufc.utils import generate_return_new_switch, generate_r
 from ffc.uflacs.elementtables import clamp_table_small_numbers
 from ffc.uflacs.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
 from ffc.uflacs.backends.ufc.evaluatebasis import _generate_compute_basisvalues, tabulate_coefficients
-from ffc.uflacs.backends.ufc.evaluatebasisderivatives import _evaluate_basis_derivatives_all
-from ffc.uflacs.backends.ufc.evaluatebasisderivatives import _evaluate_basis_derivatives
+from ffc.uflacs.backends.ufc.evaluatebasisderivatives import generate_evaluate_basis_derivatives_all
+from ffc.uflacs.backends.ufc.evaluatebasisderivatives import generate_evaluate_basis_derivatives
 from ffc.uflacs.backends.ufc.evalderivs import generate_evaluate_reference_basis_derivatives
 from ffc.uflacs.backends.ufc.evalderivs import _generate_combinations
 from ffc.uflacs.backends.ufc.evaluatedof import generate_evaluate_dof, generate_evaluate_dofs, affine_weights
@@ -173,9 +173,6 @@ class ufc_finite_element(ufc_generator):
         return generate_return_new_switch(L, "i", classnames, factory=ir["jit"])
 
     def evaluate_basis(self, L, ir, parameters):
-        #        legacy_code = indent(_evaluate_basis(ir["evaluate_basis"]), 4)
-        #        print(legacy_code)
-
         data = ir["evaluate_basis"]
 
         # FIXME: does this make sense?
