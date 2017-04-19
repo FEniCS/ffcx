@@ -1,3 +1,25 @@
+# -*- coding: utf-8 -*-
+# Copyright (C) 2009-2017 Anders Logg and Martin Sandve Alnæs, Chris Richardson
+#
+# This file is part of UFLACS.
+#
+# UFLACS is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# UFLACS is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
+
+
+# Note: Much of the code in this file is a direct translation
+# from the old implementation in FFC, although some improvements
+# have been made to the generated code.
 
 from ffc.uflacs.backends.ufc.jacobian import jacobian, inverse_jacobian, orientation
 from ufl.permutation import build_component_numbering
@@ -220,6 +242,7 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim,
     w3 = L.Symbol("w3")
     y = L.Symbol("y")
     coordinate_dofs = L.Symbol("coordinate_dofs")
+
     if tdim == 1:
         lines_r = [L.Comment("Evaluate basis functions for affine mapping"),
                    L.VariableDecl("const double", w0, 1 - X_i[r][0]),

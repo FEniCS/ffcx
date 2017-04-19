@@ -223,7 +223,6 @@ class ufc_finite_element(ufc_generator):
             dof_cases.append((f, dof_code))
 
         code += [L.Switch(L.Symbol("i"), dof_cases)]
-        #        print(L.StatementList(code))
         return code
 
     def evaluate_basis_all(self, L, ir, parameters):
@@ -376,9 +375,6 @@ class ufc_finite_element(ufc_generator):
         return generate_evaluate_dofs(L, ir["evaluate_dof"])
 
     def interpolate_vertex_values(self, L, ir, parameters):
-        # legacy_code = indent(interpolate_vertex_values(ir["interpolate_vertex_values"]), 4)
-        #        print(legacy_code)
-
         irdata = ir["interpolate_vertex_values"]
         # Raise error if interpolate_vertex_values is ill-defined
         if not irdata:
@@ -484,7 +480,6 @@ class ufc_finite_element(ufc_generator):
             value_offset += data["physical_value_size"]
             space_offset += data["space_dim"]
 
-            #        print(L.StatementList(code))
         return code
 
     def tabulate_dof_coordinates(self, L, ir, parameters):
