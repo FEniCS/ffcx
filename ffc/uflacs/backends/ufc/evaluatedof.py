@@ -25,6 +25,8 @@ from ffc.uflacs.backends.ufc.jacobian import jacobian, inverse_jacobian, orienta
 from ufl.permutation import build_component_numbering
 from ffc.utils import pick_first
 
+index_type="std::size_t"
+
 def affine_weights(dim):
     "Compute coefficents for mapping from reference to physical element"
 
