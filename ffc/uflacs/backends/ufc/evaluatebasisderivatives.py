@@ -7,16 +7,468 @@ import math
 
 from ffc.log import error
 from ffc.uflacs.backends.ufc.utils import generate_error
+from ffc.uflacs.backends.ufc.evaluatebasis import _generate_compute_basisvalues, tabulate_coefficients
+from ffc.uflacs.backends.ufc.evalderivs import _generate_combinations
+from ffc.uflacs.backends.ufc.jacobian import jacobian, inverse_jacobian, orientation, fiat_coordinate_mapping
 
 # Used for various indices and arrays in this file
 index_type = "std::size_t"
+
+def _compute_reference_derivatives(L, data, dof_data):
+    """Compute derivatives on the reference element by recursively multiply coefficients with
+    the relevant derivatives of the polynomial base until the requested order of derivatives
+    has been reached. After this take the dot product with the basisvalues."""
+
+    # Prefetch formats to speed up code generation
+
+    tdim = data["topological_dimension"]
+    gdim = data["geometric_dimension"]
+    max_degree = data["max_degree"]
+
+    if tdim == gdim:
+        num_derivs_t = L.Symbol("num_derivatives")
+        num_derivs_g = L.Symbol("num_derivatives")
+        _t = ""
+        _g = ""
+    else:
+        num_derivs_t = L.Symbol("num_derivatives_t")
+        num_derivs_g = L.Symbol("num_derivatives_g")
+        _t = "_t"
+        _g = "_g"
+
+    # Get number of components.
+    num_components = dof_data["num_components"]
+
+    # Get shape of derivative matrix (they should all have the same shape) and
+    # verify that it is a square matrix.
+    shape_dmats = dof_data["dmats"][0].shape
+    if shape_dmats[0] != shape_dmats[1]:
+        error("Something is wrong with the dmats:\n%s" % str(dof_data["dmats"]))
+
+    code = [L.Comment("Compute reference derivatives.")]
+
+    # Declare pointer to array that holds derivatives on the FIAT element
+    code += [L.Comment("Declare array of derivatives on FIAT element.")]
+    # The size of the array of reference derivatives is equal to the number of derivatives
+    # times the number of components of the basis element
+    num_vals = num_components*num_derivs_t
+    nds = tdim**max_degree * num_components
+
+    derivatives = L.Symbol("derivatives")
+    code += [L.ArrayDecl("double", derivatives, nds, 0.0)]
+
+    mapping = dof_data["mapping"]
+    if "piola" in mapping:
+        # In either of the Piola cases, the value space of the derivatives is the geometric dimension rather than the topological dimension.
+        code += [L.Comment("Declare array of reference derivatives on physical element.")]
+
+        _p = "_p"
+        num_components_p = gdim
+
+        nds = tdim**max_degree * gdim
+        derivatives_p = L.Symbol("derivatives_p")
+        code += [L.ArrayDecl("double", derivatives_p, nds, 0.0)]
+    else:
+        _p = ""
+        num_components_p = num_components
+
+    # Declare matrix of dmats (which will hold the matrix product of all combinations)
+    # and dmats_old which is needed in order to perform the matrix product.
+    code += [L.Comment("Declare derivative matrix (of polynomial basis).")]
+    value = numpy.eye(shape_dmats[0])
+    dmats = L.Symbol("dmats")
+    code += [L.ArrayDecl("double", dmats, shape_dmats, value)]
+    code += [L.Comment("Declare (auxiliary) derivative matrix (of polynomial basis).")]
+    dmats_old = L.Symbol("dmats_old")
+    code += [L.ArrayDecl("double", dmats_old, shape_dmats, value)]
+
+    r = L.Symbol("r")
+    s = L.Symbol("s")
+    t = L.Symbol("t")
+    n = L.Symbol("n")
+
+    lines = [L.Comment("Reset dmats to identity"),
+             L.MemZero(dmats, shape_dmats[0]*shape_dmats[1]),
+             L.ForRange(t, 0, shape_dmats[0], index_type=index_type, body=[L.Assign(dmats[t][t], 1.0)])]
+
+    lines_s = [L.MemCopy(dmats, dmats_old, shape_dmats[0]*shape_dmats[1]),
+               L.MemZero(dmats, shape_dmats[0]*shape_dmats[1])]
+
+    lines_s += [L.Comment("Update dmats using an inner product.")]
+
+    # Create dmats matrix by multiplication
+    comb = L.Symbol("combinations" + _t)
+
+    for i in range(len(dof_data["dmats"])):
+        lines_s += [L.Comment("_dmats_product(shape_dmats, comb[r][s], %d)" % i)]
+        dmats_i = L.Symbol("dmats%d" % i)
+        u = L.Symbol("u")
+        tu = L.Symbol("tu")
+        lines_comb = [L.ForRange(t, 0, shape_dmats[0], index_type=index_type,
+              body = [L.ForRange(u, 0, shape_dmats[1], index_type=index_type,
+              body = [L.ForRange(tu, 0, shape_dmats[1], index_type=index_type,
+              body = [L.AssignAdd(dmats[t][u], dmats_old[tu][u] * dmats_i[t][tu])])])])]
+
+        lines_s += [L.If(L.EQ(comb[n - 1][r][s], i), lines_comb)]
+
+    lines += [L.Comment("Looping derivative order to generate dmats."),
+              L.ForRange(s, 0, n, index_type=index_type, body=lines_s)]
+
+    # Compute derivatives for all components
+    lines_c = []
+    basisvalues = L.Symbol("basisvalues")
+    for i in range(num_components):
+        coeffs = L.Symbol("coefficients%d" % i)
+        lines_c += [L.AssignAdd(derivatives[i*num_derivs_t + r], coeffs[s]*dmats[s,t]*basisvalues[t])]
+    lines += [L.ForRange(s, 0, shape_dmats[0], index_type=index_type,
+        body=[L.ForRange(t, 0, shape_dmats[1], index_type=index_type, body=lines_c)])]
+
+    code += [L.Comment("Loop possible derivatives."),
+             L.ForRange(r, 0, num_derivs_t, index_type=index_type, body=lines)]
+
+    return code
+
+    # Apply transformation if applicable.
+    if mapping == "affine":
+        pass
+    elif mapping == "contravariant piola":
+        lines += ["", f_comment
+                  ("Using contravariant Piola transform to map values back to the physical element.")]
+        # Get temporary values before mapping.
+        lines += [f_const_double(f_tmp(i),
+                  f_component(f_derivatives, f_matrix_index(i, f_r, f_num_derivs(_t)))) for i in range(num_components)]
+
+        # Create names for inner product.
+        basis_col = [f_tmp(j) for j in range(tdim)]
+        for i in range(num_components_p):
+            # Create Jacobian.
+            jacobian_row = [f_transform("J", i, j, gdim, tdim, None) for j in range(tdim)]
+
+            # Create inner product and multiply by inverse of Jacobian.
+            inner = [f_mul([jacobian_row[j], basis_col[j]]) for j in range(tdim)]
+            sum_ = f_group(f_add(inner))
+            value = f_mul([f_inv(f_detJ(None)), sum_])
+            name = f_component(f_derivatives + _p, f_matrix_index(i, f_r, f_num_derivs(_t)))
+            lines += [f_assign(name, value)]
+    elif mapping == "covariant piola":
+        lines += ["", f_comment
+                  ("Using covariant Piola transform to map values back to the physical element")]
+        # Get temporary values before mapping.
+        lines += [f_const_double(f_tmp(i),
+                  f_component(f_derivatives, f_matrix_index(i, f_r, f_num_derivs(_t)))) for i in range(num_components)]
+        # Create names for inner product.
+        basis_col = [f_tmp(j) for j in range(tdim)]
+        for i in range(num_components_p):
+            # Create inverse of Jacobian.
+            inv_jacobian_column = [f_transform("JINV", j, i, tdim, gdim, None) for j in range(tdim)]
+
+            # Create inner product of basis and inverse of Jacobian.
+            inner = [f_mul([inv_jacobian_column[j], basis_col[j]]) for j in range(tdim)]
+            value = f_group(f_add(inner))
+            name = f_component(f_derivatives + _p, f_matrix_index(i, f_r, f_num_derivs(_t)))
+            lines += [f_assign(name, value)]
+    elif mapping == "double covariant piola":
+        code += ["", f_comment("Using double covariant Piola transform to map values back to the physical element")]
+        lines += [f_const_double(f_tmp(i),
+                                 f_component(f_derivatives,
+                                             f_matrix_index(i, f_r, f_num_derivs(_t))))
+                  for i in range(num_components)]
+        basis_col = [f_tmp(j) for j in range(num_components)]
+        for p in range(num_components):
+            # unflatten the indices
+            i = p // tdim
+            l = p % tdim
+            # g_il = K_ji G_jk K_kl
+            value = f_group(f_inner(
+                [f_inner([f_transform("JINV", j, i, tdim, gdim, None)
+                          for j in range(tdim)],
+                         [basis_col[j * tdim + k] for j in range(tdim)])
+                 for k in range(tdim)],
+                [f_transform("JINV", k, l, tdim, gdim, None)
+                 for k in range(tdim)]))
+            name = f_component(f_derivatives + _p, f_matrix_index(p, f_r, f_num_derivs(_t)))
+            lines += [f_assign(name, value)]
+    elif mapping == "double contravariant piola":
+        code += ["", f_comment("Using double contravariant Piola transform to map values back to the physical element.")]
+        lines += [f_const_double(
+            f_tmp(i),
+            f_component(f_derivatives,
+                        f_matrix_index(i, f_r, f_num_derivs(_t))))
+                  for i in range(num_components)]
+        basis_col = [f_tmp(j) for j in range(num_components)]
+        for p in range(num_components):
+            # unflatten the indices
+            i = p // tdim
+            l = p % tdim
+            # g_il = (det J)^(-2) Jij G_jk Jlk
+            value = f_group(f_inner(
+                [f_inner([f_transform("J", i, j, tdim, gdim, None)
+                          for j in range(tdim)],
+                         [basis_col[j * tdim + k] for j in range(tdim)])
+                 for k in range(tdim)],
+                [f_transform("J", l, k, tdim, gdim, None)
+                 for k in range(tdim)]))
+            value = f_mul([f_inv(f_detJ(None)), f_inv(f_detJ(None)), value])
+            name = f_component(f_derivatives+_p,
+                               f_matrix_index(p, f_r, f_num_derivs(_t)))
+            lines += [f_assign(name, value)]
+    else:
+        error("Unknown mapping: %s" % mapping)
+
+    # Generate loop over number of derivatives.
+    # Loop all derivatives and compute value of the derivative as:
+    # deriv_on_ref[r] = coeff[dof][s]*dmat[s][t]*basis[t]
+    code += [f_comment("Loop possible derivatives.")]
+    loop_vars = [(f_r, 0, f_num_derivs(_t))]
+    code += f_loop(lines, loop_vars)
+
+    return code
+
+
+def _transform_derivatives(L, data, dof_data):
+    """Transform derivatives back to the physical element by applying the
+    transformation matrix."""
+
+    tdim = data["topological_dimension"]
+    gdim = data["geometric_dimension"]
+
+    if tdim == gdim:
+        num_derivs_t = L.Symbol("num_derivatives")
+        num_derivs_g = L.Symbol("num_derivatives")
+    else:
+        num_derivs_t = L.Symbol("num_derivatives_t")
+        num_derivs_g = L.Symbol("num_derivatives_g")
+
+    # Get number of components and offset.
+    num_components = dof_data["num_components"]
+    reference_offset = dof_data["reference_offset"]
+    physical_offset = dof_data["physical_offset"]
+    offset = reference_offset  # physical_offset # FIXME: Should be physical offset but that breaks tests
+
+    mapping = dof_data["mapping"]
+    if "piola" in mapping:
+        # In either of the Piola cases, the value space of the derivatives
+        # is the geometric dimension rather than the topological dimension.
+        derivatives = L.Symbol("derivatives_p")
+        num_components_p = gdim
+    else:
+        derivatives = L.Symbol("derivatives")
+        num_components_p = num_components
+
+    code = [L.Comment("Transform derivatives back to physical element")]
+
+    lines = []
+    r = L.Symbol("r")
+    s = L.Symbol("s")
+    transform = L.Symbol("transform")
+    values = L.Symbol("values")
+    for i in range(num_components_p):
+        lines += [L.AssignAdd(values[(offset + i)*num_derivs_g + r],
+                              transform[r, s]*derivatives[i*num_derivs_t + s])]
+
+    code += [L.ForRange(r, 0, num_derivs_g, index_type=index_type,
+                        body=[L.ForRange(s, 0, num_derivs_t, index_type=index_type, body=lines)])]
+
+    return code
+
+def _tabulate_dmats(L, dof_data):
+    "Tabulate the derivatives of the polynomial base"
+
+    # Get derivative matrices (coefficients) of basis functions, computed by FIAT at compile time.
+
+    code = [L.Comment("Tables of derivatives of the polynomial base (transpose).")]
+
+    # Generate tables for each spatial direction.
+    for i, dmat in enumerate(dof_data["dmats"]):
+
+        # Extract derivatives for current direction (take transpose, FIAT_NEW PolynomialSet.tabulate()).
+        matrix = numpy.transpose(dmat)
+
+        # Get shape and check dimension (This is probably not needed).
+        #        shape = numpy.shape(matrix)
+        if not (matrix.shape[0] == matrix.shape[1] == dof_data["num_expansion_members"]):
+            error("Something is wrong with the shape of dmats.")
+
+        # Declare varable name for coefficients.
+        table = L.Symbol("dmats%d" % i)
+        code += [L.ArrayDecl("double", table, matrix.shape, matrix)]
+
+    return code
+
+def _generate_dof_code(L, data, dof_data):
+    "Generate code for a basis."
+
+    basisvalues = L.Symbol("basisvalues")
+    Y = L.Symbol("Y")
+    element_cellname = data["cellname"]
+    embedded_degree = dof_data["embedded_degree"]
+    num_members = dof_data["num_expansion_members"]
+    code = _generate_compute_basisvalues(L, basisvalues, Y, element_cellname, embedded_degree, num_members)
+
+    # Tabulate coefficients.
+    code += tabulate_coefficients(L, dof_data)
+
+    # Tabulate coefficients for derivatives.
+    code += _tabulate_dmats(L, dof_data)
+
+    # Compute the derivatives of the basisfunctions on the reference (FIAT) element,
+    # as the dot product of the new coefficients and basisvalues.
+    code += _compute_reference_derivatives(L, data, dof_data)
+
+    # Transform derivatives to physical element by multiplication with the transformation matrix.
+    code += _transform_derivatives(L, data, dof_data)
+
+    return code
+
+def _generate_transform(L, element_cellname, gdim, tdim, max_degree):
+    """Generate the transformation matrix, which is used to transform
+    derivatives from reference element back to the physical element."""
+
+    max_g_d = gdim**max_degree
+    max_t_d = tdim**max_degree
+
+    K = L.Symbol("K")
+    transform = L.Symbol("transform")
+    col = L.Symbol("col")
+    row = L.Symbol("row")
+    comb_g = L.Symbol("combinations_g")
+    comb_t = L.Symbol("combinations_t")
+    num_derivatives_g = L.Symbol("num_derivatives_g")
+    num_derivatives_t = L.Symbol("num_derivatives_t")
+
+    K = L.FlattenedArray(K, dims=(tdim, gdim))
+
+    code = [L.Comment("Declare transformation matrix")]
+    code += [L.ArrayDecl("double", transform, (max_g_d, max_t_d), numpy.ones((max_g_d, max_t_d)))]
+    code += [L.Comment("Construct transformation matrix")]
+    k = L.Symbol("k")
+    n = L.Symbol("n")
+    inner_loop = L.ForRange(col, 0, num_derivatives_t, index_type=index_type,
+           body=[L.ForRange(k, 0, n, index_type=index_type,
+           body=[L.AssignMul(transform[row][col], K[comb_t[n-1][col][k], comb_g[n-1][row][k]])])])
+
+    code += [L.ForRange(row, 0, num_derivatives_g, index_type=index_type, body=inner_loop)]
+
+    return code
+
+def _x_evaluate_basis_derivatives(L, data):
+    """Evaluate the derivatives of an element basisfunction at a point. The values are
+    computed as in FIAT as the matrix product of the coefficients (computed at compile time),
+    basisvalues which are dependent on the coordinate and thus have to be computed at
+    run time and combinations (depending on the order of derivative) of dmats
+    tables which hold the derivatives of the expansion coefficients."""
+
+    if isinstance(data, string_types):
+        msg = "evaluate_basis_derivatives: %s" % data
+        return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
+
+    # Initialise return code.
+    code = []
+
+    # Get the element cell domain, geometric and topological dimension.
+    element_cellname = data["cellname"]
+    gdim = data["geometric_dimension"]
+    tdim = data["topological_dimension"]
+    max_degree = data["max_degree"]
+    physical_value_size = data["physical_value_size"]
+
+    # Compute number of derivatives that has to be computed, and
+    # declare an array to hold the values of the derivatives on the
+    # reference element.
+    values = L.Symbol("values")
+    n = L.Symbol("n")
+    dofs = L.Symbol("dofs")
+    x = L.Symbol("x")
+    coordinate_dofs = L.Symbol("coordinate_dofs")
+    cell_orientation = L.Symbol("cell_orientation")
+
+    if tdim == gdim:
+
+        num_derivatives = L.Symbol("num_derivatives")
+        code += [L.VariableDecl("double", num_derivatives, L.Call("std::pow", (tdim, n)))]
+
+        # Reset all values.
+        code += [L.MemZero(values, physical_value_size*num_derivatives)]
+
+        # Handle values of argument 'n'.
+        code += [L.Comment("Call evaluate_basis_all if order of derivatives is equal to zero.")]
+        code += [L.If(L.EQ(n, 0), [L.Call("evaluate_basis", (dofs, values, x, coordinate_dofs, cell_orientation)), L.Return()])]
+        code += [L.Comment("If order of derivatives is greater than the maximum polynomial degree, return zeros.")]
+        code += [L.If(L.GT(n, max_degree), [L.Return()])]
+
+        # If max_degree is zero, return code (to avoid declarations such as
+        # combinations[1][0]) and because there's nothing to compute.)
+        if max_degree == 0:
+            return code
+
+        # Generate geo code.
+        code += jacobian(L, tdim, gdim, element_cellname)
+        code += inverse_jacobian(L, tdim, gdim, element_cellname)
+        if data["needs_oriented"]:
+            code += orientation(L, tdim, gdim)
+
+        code += fiat_coordinate_mapping(L, element_cellname, gdim)
+
+        # Generate all possible combinations of derivatives.
+        combinations_code_t, combinations_t = _generate_combinations(L, tdim, max_degree, n, num_derivatives)
+        code += [L.Comment("_generate_combinations(tdim, "", max_degree)")]
+        code += combinations_code_t
+    else:
+        _t = "_t"
+        _g = "_g"
+
+        num_derivatives_t = L.Symbol("num_derivatives_t")
+        code += [L.VariableDecl("int", num_derivatives_t, L.Call("std::pow", (tdim, n)))]
+        num_derivatives_g = L.Symbol("num_derivatives_g")
+        code += [L.VariableDecl("int", num_derivatives_g, L.Call("std::pow", (gdim, n)))]
+
+        # Reset all values.
+        code += [L.MemZero(values, physical_value_size*num_derivatives_g)]
+
+        # Handle values of argument 'n'.
+        code += [L.Comment("Call evaluate_basis_all if order of derivatives is equal to zero.")]
+        code += [L.If(L.EQ(n, 0), [L.Call("evaluate_basis", (dofs, values, x, coordinate_dofs, cell_orientation)), L.Return()])]
+        code += [L.Comment("If order of derivatives is greater than the maximum polynomial degree, return zeros.")]
+        code += [L.If(L.GT(n, max_degree), [L.Return()])]
+
+        # If max_degree is zero, return code (to avoid declarations such as
+        # combinations[1][0]) and because there's nothing to compute.)
+        if max_degree == 0:
+            return code
+
+        # Generate geo code.
+        code += jacobian(L, tdim, gdim, element_cellname)
+        code += inverse_jacobian(L, tdim, gdim, element_cellname)
+        if data["needs_oriented"]:
+            code += orientation(L, tdim, gdim)
+
+        code += fiat_coordinate_mapping(L, element_cellname, gdim)
+
+        # Generate all possible combinations of derivatives.
+        combinations_code_t, combinations_t = _generate_combinations(L, tdim, max_degree, n, num_derivatives_t, "_t")
+        code += [L.Comment("_generate_combinations(tdim, _t, max_degree)")]
+        code += combinations_code_t
+        combinations_code_g, combinations_g = _generate_combinations(L, gdim, max_degree, n, num_derivatives_g, "_g")
+        code += [L.Comment("_generate_combinations(gdim, _g, max_degree)")]
+        code += combinations_code_g
+
+    # Generate the transformation matrix.
+    code += _generate_transform(L, element_cellname, gdim, tdim, max_degree)
+
+    # Create code for all basis values (dofs).
+    dof_cases = []
+    for i, dof_data in enumerate(data["dofs_data"]):
+        dof_cases.append((i, _generate_dof_code(L, data, dof_data)))
+    code += [L.Switch(L.Symbol("i"), dof_cases)]
+    return code
 
 def _x_evaluate_basis_derivatives_all(L, data):
     """Like evaluate_basis, but return the values of all basis
     functions (dofs)."""
 
     if isinstance(data, string_types):
-        return format["exception"]("evaluate_basis_derivatives_all: %s" % data)
+        msg = "evaluate_basis_derivatives_all: %s" % data
+        return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
 
     # Initialise return code
     code = []
@@ -59,17 +511,15 @@ def _x_evaluate_basis_derivatives_all(L, data):
 
     # Compute number of derivatives.
     if tdim == gdim:
-        _g = ""
+        num_derivatives = L.Symbol("num_derivatives")
     else:
-        _g = "_g"
-
-    num_derivatives = L.Symbol("num_derivatives"+_g)
+        num_derivatives = L.Symbol("num_derivatives_g")
 
     # If n == 0, call evaluate_basis.
     code += [L.Comment("Call evaluate_basis_all if order of derivatives is equal to zero.")]
     code += [L.If(L.EQ(n, 0), [L.Call("evaluate_basis_all", (values, x, coordinate_dofs, cell_orientation)), L.Return()])]
 
-    code += [L.Assign(num_derivatives, L.Call("std::pow", (gdim, n)))]
+    code += [L.VariableDecl("unsigned int", num_derivatives, L.Call("std::pow", (gdim, n)))]
 
     num_vals = physical_value_size * num_derivatives
 
