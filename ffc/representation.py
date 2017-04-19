@@ -418,7 +418,9 @@ def _global_dimension(fiat_element):
             elements += [e]
         else:
             num_reals += 1
-    fiat_element = MixedElement(elements)
+    fiat_cell, = set(e.get_reference_element()
+                     for e in fiat_element.elements())
+    fiat_element = MixedElement(elements, ref_el=fiat_cell)
     return (_num_dofs_per_entity(fiat_element), num_reals)
 
 
