@@ -37,7 +37,7 @@ from ffc.uflacs.backends.ufc.evaluatebasisderivatives import _x_evaluate_basis_d
 from ffc.uflacs.backends.ufc.evaluatebasisderivatives import _x_evaluate_basis_derivatives
 from ffc.uflacs.backends.ufc.evalderivs import generate_evaluate_reference_basis_derivatives
 from ffc.uflacs.backends.ufc.evalderivs import _generate_combinations
-from ffc.uflacs.backends.ufc.jacobian import jacobian, inverse_jacobian, orientation, fiat_coordinate_mapping
+from ffc.uflacs.backends.ufc.jacobian import jacobian, inverse_jacobian, orientation, fiat_coordinate_mapping, _mapping_transform
 
 # FIXME: Stop depending on legacy code
 from ffc.cpp import indent
@@ -444,6 +444,7 @@ def compute_basis_values(L, data, dof_data):
     num_members = dof_data["num_expansion_members"]
     return _generate_compute_basisvalues(L, basisvalues, Y, element_cellname, embedded_degree, num_members)
 
+
 def compute_values(L, data, dof_data):
     """This function computes the value of the basisfunction as the dot product
     of the coefficients and basisvalues."""
@@ -474,135 +475,7 @@ def compute_values(L, data, dof_data):
     num_mem = dof_data["num_expansion_members"]
     code += [L.ForRange(r, 0, num_mem, index_type=index_type, body=lines)]
 
-    tdim = data["topological_dimension"]
-    gdim = data["geometric_dimension"]
-
-    # Apply transformation if applicable.
-    mapping = dof_data["mapping"]
-    if mapping == "affine":
-        pass
-    elif mapping == "contravariant piola":
-        code += [L.Comment("Using contravariant Piola transform to map values back to the physical element")]
-
-        # Get temporary values before mapping.
-        tmp_ref = []
-        for i in range(num_components):
-            tmp_ref.append(L.Symbol("tmp_ref%d" % i))
-        code += [L.VariableDecl("const double", tmp_ref[i], values[i + offset])
-                 for i in range(num_components)]
-
-
-        # Create names for inner product.
-        basis_col = [tmp_ref[j] for j in range(tdim)]
-        J = L.Symbol("J")
-        J = L.FlattenedArray(J, dims=(gdim, tdim))
-        detJ = L.Symbol("detJ")
-        for i in range(gdim):
-            # Create Jacobian.
-            jacobian_row = [ J[i, j] for j in range(tdim) ]
-
-            # Create inner product and multiply by inverse of Jacobian.
-            inner = 0.0
-            for a,b in zip(jacobian_row, basis_col):
-                inner += a*b
-            value = inner/detJ
-            code += [L.Assign(values[i + offset], inner/detJ)]
-
-    elif mapping == "covariant piola":
-        code += [L.Comment("Using covariant Piola transform to map values back to the physical element")]
-        # Get temporary values before mapping.
-        tmp_ref = []
-        for i in range(num_components):
-            tmp_ref.append(L.Symbol("tmp_ref%d" % i))
-        code += [L.VariableDecl("const double", tmp_ref[i], values[i + offset])
-                 for i in range(num_components)]
-
-        basis_col = [tmp_ref[j] for j in range(tdim)]
-        K = L.Symbol("K")
-        K = L.FlattenedArray(K, dims=(tdim, gdim))
-        for i in range(gdim):
-            # Create inverse of Jacobian.
-            inv_jacobian_column = [K[j, i] for j in range(tdim)]
-
-            # Create inner product of basis values and inverse of Jacobian.
-            inner = 0.0
-            for a, b in zip(inv_jacobian_column, basis_col):
-                inner += a*b
-            code += [L.Assign(values[i + offset], inner)]
-
-    elif mapping == "double covariant piola":
-        code += [L.Comment("Using double covariant Piola transform to map values back to the physical element")]
-        # Get temporary values before mapping.
-        basis_col = []
-        for i in range(num_components):
-            basis_col.append(L.Symbol("tmp_ref%d" % i))
-        code += [L.VariableDecl("const double", basis_col[i], values[i + offset])
-                 for i in range(num_components)]
-
-        # value = f_group(f_inner(
-        #     [f_inner([f_trans("JINV", j, i, tdim, gdim, None)
-        #               for j in range(tdim)],
-        #              [basis_col[j * tdim + k] for j in range(tdim)])
-        #      for k in range(tdim)],
-        #     [f_trans("JINV", k, l, tdim, gdim, None)
-        #      for k in range(tdim)]))
-
-        K = L.Symbol("K")
-        for p in range(num_components):
-            # unflatten the indices
-            i = p // tdim
-            l = p % tdim
-            # g_il = K_ji G_jk K_kl
-            acc_list = []
-            for k in range(tdim):
-                acc = 0.0
-                for j in range(tdim):
-                    acc += K[j*gdim +i]*basis_col[j*tdim + k]
-                acc_list.append(acc)
-            inner = 0.0
-            for k in range(tdim):
-                inner += acc_list[k]*K[k*gdim + l]
-
-            code += [L.Assign(values[p + offset], inner)]
-
-    elif mapping == "double contravariant piola":
-        code += [L.Comment("Using double contravariant Piola transform to map values back to the physical element")]
-
-        # Get temporary values before mapping.
-        basis_col = []
-        for i in range(num_components):
-            basis_col.append(L.Symbol("tmp_ref%d" % i))
-        code += [L.VariableDecl("const double", basis_col[i], values[i + offset])
-                 for i in range(num_components)]
-
-        J = L.Symbol("J")
-        detJ = L.Symbol("detJ")
-        for p in range(num_components):
-            # unflatten the indices
-            i = p // tdim
-            l = p % tdim
-
-            # g_il = (det J)^(-2) Jij G_jk Jlk
-            #         value = f_group(f_inner(
-            #             [f_inner([f_trans("J", i, j, tdim, gdim, None)
-            #                       for j in range(tdim)],
-            #                      [basis_col[j * tdim + k] for j in range(tdim)])
-            #              for k in range(tdim)],
-            #             [f_trans("J", l, k, tdim, gdim, None) for k in range(tdim)]))
-
-            acc_list = []
-            for k in range(tdim):
-                acc = 0.0
-                for j in range(tdim):
-                    acc += J[i*gdim + j]*basis_col[j*tdim + k]
-                acc_list.append(acc)
-            inner = 0.0
-            for k in range(tdim):
-                inner += acc_list[k]*J[l*gdim + k]
-
-            code += [L.Assign(values[p + offset], inner/(detJ*detJ))]
-    else:
-        error("Unknown mapping: %s" % mapping)
+    code += _mapping_transform(L, data, dof_data, values, offset)
 
     return code
 
@@ -802,9 +675,9 @@ class ufc_finite_element(ufc_generator):
         # FIXME: Get rid of this
         # FIXME: port this
         legacy_code = indent(_evaluate_basis_derivatives(ir["evaluate_basis"]), 4)
-        # print(legacy_code)
+        #        print(legacy_code)
         code = _x_evaluate_basis_derivatives(L, ir["evaluate_basis"])
-        #        print(L.StatementList(code))
+        # print(L.StatementList(code))
         return code
 
 
