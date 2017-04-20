@@ -652,12 +652,16 @@ def _generate_offsets(ufl_element, reference_offset=0, physical_offset=0):
 def _evaluate_dof(ufl_element, fiat_element):
     "Compute intermediate representation of evaluate_dof."
     cell = ufl_element.cell()
+    if fiat_element.is_nodal():
+        dofs = [L.pt_dict for L in fiat_element.dual_basis()]
+    else:
+        dofs = [None] * fiat_element.space_dimension()
     return {"mappings": fiat_element.mapping(),
             "reference_value_size": ufl_element.reference_value_size(),
             "physical_value_size": ufl_element.value_size(),
             "geometric_dimension": cell.geometric_dimension(),
             "topological_dimension": cell.topological_dimension(),
-            "dofs": [L.pt_dict if L else None for L in fiat_element.dual_basis()],
+            "dofs": dofs,
             "physical_offsets": _generate_physical_offsets(ufl_element)}
 
 
