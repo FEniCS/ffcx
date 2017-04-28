@@ -1,0 +1,14 @@
+include AUTHORS
+include COPYING
+include COPYING.LESSER
+include ChangeLog
+include ChangeLog.uflacs
+include INSTALL
+include LICENSE
+include requirements.txt
+recursive-include bench *
+recursive-include demo *
+recursive-include doc *
+recursive-include ffc *.in
+recursive-include libs *
+recursive-include test *
