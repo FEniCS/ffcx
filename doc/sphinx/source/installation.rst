@@ -56,7 +56,12 @@ and in turn their additional dependencies:
         docker pull quay.io/fenicsproject/dev:latest
         docker run -ti --rm quay.io/fenicsproject/dev:latest
         sudo apt-get update && sudo apt-get -y install glpk-utils && \
-          ${FENICS_PYTHON} -m pip install --prefix=${FENICS_PREFIX} --no-cache-dir \
+          pip2 install --prefix=${FENICS_PREFIX} --no-cache-dir \
+          git+https://github.com/blechta/tsfc.git \
+          git+https://github.com/blechta/COFFEE.git \
+          git+https://github.com/blechta/FInAT.git \
+          singledispatch networkx pulp && \
+          pip3 install --prefix=${FENICS_PREFIX} --no-cache-dir \
           git+https://github.com/blechta/tsfc.git \
           git+https://github.com/blechta/COFFEE.git \
           git+https://github.com/blechta/FInAT.git \
