@@ -61,10 +61,6 @@ supported_families = ("Brezzi-Douglas-Marini",
                       "Regge",
                       "Hellan-Herrmann-Johnson")
 
-# Default quadrature element degree
-default_quadrature_degree = 1
-default_quadrature_scheme = "canonical"
-
 # Cache for computed elements
 _cache = {}
 
@@ -147,11 +143,9 @@ def _create_fiat_element(ufl_element):
     # Handle QuadratureElement
     elif family == "Quadrature":
         # Compute number of points per axis from the degree of the element
-        if degree is None:
-            degree = default_quadrature_degree
         scheme = ufl_element.quadrature_scheme()
-        if scheme is None:
-            scheme = default_quadrature_scheme
+        assert degree is not None
+        assert scheme is not None
 
         # Create quadrature (only interested in points)
         # TODO: KBO: What should we do about quadrature functions that live on ds, dS?
