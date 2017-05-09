@@ -57,14 +57,14 @@ and in turn their additional dependencies:
         docker run -ti --rm quay.io/fenicsproject/dev:latest
         sudo apt-get update && sudo apt-get -y install glpk-utils && \
           pip2 install --prefix=${FENICS_PREFIX} --no-cache-dir \
-          git+https://github.com/blechta/tsfc.git \
-          git+https://github.com/blechta/COFFEE.git \
-          git+https://github.com/blechta/FInAT.git \
+          git+https://github.com/blechta/tsfc.git@2017.1.0 \
+          git+https://github.com/blechta/COFFEE.git@2017.1.0 \
+          git+https://github.com/blechta/FInAT.git@2017.1.0 \
           singledispatch networkx pulp && \
           pip3 install --prefix=${FENICS_PREFIX} --no-cache-dir \
-          git+https://github.com/blechta/tsfc.git \
-          git+https://github.com/blechta/COFFEE.git \
-          git+https://github.com/blechta/FInAT.git \
+          git+https://github.com/blechta/tsfc.git@2017.1.0 \
+          git+https://github.com/blechta/COFFEE.git@2017.1.0 \
+          git+https://github.com/blechta/FInAT.git@2017.1.0 \
           singledispatch networkx pulp && \
           sudo apt-get clean && \
           sudo rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
