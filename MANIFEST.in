@@ -12,3 +12,4 @@ recursive-include doc *
 recursive-include ffc *.in
 recursive-include libs *
 recursive-include test *
+global-exclude __pycache__ *.pyc
