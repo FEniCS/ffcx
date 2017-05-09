@@ -12,7 +12,7 @@ if sys.version_info < (2, 7):
     print("Python 2.7 or higher required, please upgrade.")
     sys.exit(1)
 
-VERSION = "2017.1.0.dev0"
+VERSION = "2017.1.0"
 
 URL = "https://bitbucket.org/fenics-project/ffc/"
 

@@ -1,7 +1,7 @@
 Changelog
 =========
 
-2017.1.0 (unreleased)
+2017.1.0 (2017-05-09)
 ---------------------
 
 - Let ffc -O parameter take an optional integer level like -O2, -O0

@@ -1,0 +1,20 @@
+===========================
+Changes in version 2017.1.0
+===========================
+
+FFC 22017.1.0 was released on 2017-05-09.
+
+Summary of changes
+==================
+
+- Add experimental ``tsfc`` representation; for installation see
+  `the reference manual
+  <https://fenics.readthedocs.io/projects/ffc/en/latest/installation.html>`_
+
+
+Detailed changes
+================
+
+- Let ffc -O parameter take an optional integer level like -O2, -O0
+- Implement blockwise optimizations in uflacs code generation
+- Expose uflacs optimization parameters through parameter system

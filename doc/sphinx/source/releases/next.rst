@@ -11,10 +11,6 @@ Summary of changes
           be published (and renamed) to list the most important
           changes in the new release.
 
-- Add experimental ``tsfc`` representation; for installation see
-  `the reference manual
-  <https://fenics.readthedocs.io/projects/ffc/en/latest/installation.html>`_
-
 
 Detailed changes
 ================
