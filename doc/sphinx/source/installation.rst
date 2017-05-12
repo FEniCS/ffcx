@@ -32,6 +32,8 @@ FFC also depends on the following FEniCS Python packages:
 These packages will be automatically installed as part of the
 installation of FFC, if not already present on your system.
 
+.. _tsfc_requirements:
+
 TSFC requirements
 -----------------
 

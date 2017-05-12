@@ -8,8 +8,7 @@ Summary of changes
 ==================
 
 - Add experimental ``tsfc`` representation; for installation see
-  `the reference manual
-  <https://fenics.readthedocs.io/projects/ffc/en/latest/installation.html>`_
+  :ref:`tsfc_requirements`
 
 
 Detailed changes
