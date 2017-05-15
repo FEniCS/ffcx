@@ -141,7 +141,7 @@ class UFL2CNodesMixin(object):
         return self._cmath("tanh", op)
 
     def atan_2(self, o, y, x):
-        return self._cmath("atan_2", (y, x))
+        return self._cmath("atan2", (y, x))
 
     def acos(self, o, op):
         return self._cmath("acos", op)
