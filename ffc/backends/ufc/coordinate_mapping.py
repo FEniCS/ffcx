@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-# Code generation format strings for UFC (Unified Form-assembly Code) v. 2017.1.0dev.
+# Code generation format strings for UFC (Unified Form-assembly Code) v. 2017.2.0.dev0
 # This code is released into the public domain.
 #
-# The FEniCS Project (http://www.fenicsproject.org/) 2006-2017.
+# The FEniCS Project (http://www.fenicsproject.org/) 2006-2017
 
 
 coordinate_mapping_combined = """

@@ -3,7 +3,6 @@ from __future__ import print_function
 
 import os
 import sys
-import re
 import subprocess
 import string
 
@@ -13,8 +12,7 @@ if sys.version_info < (2, 7):
     print("Python 2.7 or higher required, please upgrade.")
     sys.exit(1)
 
-VERSION = re.findall('__version__ = "(.*)"',
-                     open('ffc/__init__.py', 'r').read())[0]
+VERSION = "2017.2.0.dev0"
 
 URL = "https://bitbucket.org/fenics-project/ffc/"
 

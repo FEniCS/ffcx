@@ -151,8 +151,15 @@ def _analyze_form(form, parameters):
     if form.empty():
         error("Form (%s) seems to be zero: cannot compile it." % str(form))
 
-    # Check representation parameters to figure out how to preprocess
-    r = _extract_representation_family(form, parameters)
+    # Hack to override representation with environment variable
+    forced_r = os.environ.get("FFC_FORCE_REPRESENTATION")
+    if forced_r:
+        warning("representation:    forced by $FFC_FORCE_REPRESENTATION to '%s'" % forced_r)
+        r = forced_r
+        r = "legacy" if r in ["quadrature", "tensor"] else r
+    else:
+        # Check representation parameters to figure out how to preprocess
+        r = _extract_representation_family(form, parameters)
     debug("Preprocessing form using '%s' representation family." % r)
 
     # Compute form metadata
@@ -463,6 +470,13 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
 
     if p is None:
         p = default_precision
+
+    # Hack to override representation with environment variable
+    forced_r = os.environ.get("FFC_FORCE_REPRESENTATION")
+    if forced_r:
+        r = forced_r
+        warning("representation:    forced by $FFC_FORCE_REPRESENTATION to '%s'" % r)
+        return r, o, p
 
     return r, o, p
 
