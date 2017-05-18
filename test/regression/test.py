@@ -423,6 +423,9 @@ def build_programs(bench, permissive, debug, verbose):
     # Get boost flags
     boost_cflags, boost_linkflags = find_boost_cflags()
 
+    # Get compiler
+    compiler = os.getenv("CXX", "g++")
+
     # Set compiler options
     compiler_options = " -Wall"
     if not permissive:
@@ -465,8 +468,8 @@ def build_programs(bench, permissive, debug, verbose):
         filename = generate_test_code(f)
 
         # Compile test code
-        command = "g++ %s -o %s.bin %s.cpp %s" % \
-                  (cpp_flags, prefix, prefix, ld_flags)
+        command = "%s %s -o %s.bin %s.cpp %s" % \
+                  (compiler, cpp_flags, prefix, prefix, ld_flags)
         ok = run_command(command, verbose)
 
         # Store compile command for easy reproduction

@@ -59,3 +59,7 @@ __pycache__
 
 # setuptools temps
 *.egg-info/
+
+# Release
+/dist
+/release
