@@ -376,10 +376,17 @@ class ufc_finite_element(ufc_generator):
 
     def interpolate_vertex_values(self, L, ir, parameters):
         irdata = ir["interpolate_vertex_values"]
+
         # Raise error if interpolate_vertex_values is ill-defined
         if not irdata:
             msg = "interpolate_vertex_values is not defined for this element"
-            return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
+            return [generate_error(L, msg, parameters["convert_exceptions_to_warnings"])]
+
+        # Handle unsupported elements.
+        if isinstance(irdata, string_types):
+            msg = "interpolate_vertex_values: %s" % irdata
+            return [generate_error(L, msg, parameters["convert_exceptions_to_warnings"])]
+
 
         # Add code for Jacobian if necessary
         code = []
