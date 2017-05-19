@@ -296,8 +296,8 @@ def generate_evaluate_basis_derivatives(L, data):
     code += [L.If(L.GT(n, max_degree), [L.Return()])]
 
     # Generate geo code.
-    code += jacobian(L, tdim, gdim, element_cellname)
-    code += inverse_jacobian(L, tdim, gdim, element_cellname)
+    code += jacobian(L, gdim, tdim, element_cellname)
+    code += inverse_jacobian(L, gdim, tdim, element_cellname)
     if data["needs_oriented"]:
         code += orientation(L)
 
