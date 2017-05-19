@@ -205,7 +205,7 @@ class ufc_finite_element(ufc_generator):
 
         code = jacobian(L, gdim, tdim, element_cellname)
         code += inverse_jacobian(L, gdim, tdim, element_cellname)
-        if data["needs_oriented"]:
+        if data["needs_oriented"] and tdim != gdim:
             code += orientation(L)
 
         if any((d["embedded_degree"] > 0) for d in data["dofs_data"]):

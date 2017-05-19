@@ -340,7 +340,8 @@ def generate_evaluate_dof(L, ir):
 
         if needs_inverse_jacobian:
             code += inverse_jacobian(L, gdim, tdim, element_cellname)
-            code += orientation(L)
+            if tdim != gdim :
+                code += orientation(L)
 
     # Extract variables
     mappings = ir["mappings"]
@@ -397,7 +398,8 @@ def generate_evaluate_dofs(L, ir):
 
         if needs_inverse_jacobian:
             code += inverse_jacobian(L, gdim, tdim, element_cellname)
-            code += orientation(L)
+            if tdim != gdim :
+                code += orientation(L)
 
     # Extract variables
     mappings = ir["mappings"]

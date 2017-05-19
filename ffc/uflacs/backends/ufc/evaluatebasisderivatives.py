@@ -298,7 +298,7 @@ def generate_evaluate_basis_derivatives(L, data):
     # Generate geo code.
     code += jacobian(L, gdim, tdim, element_cellname)
     code += inverse_jacobian(L, gdim, tdim, element_cellname)
-    if data["needs_oriented"]:
+    if data["needs_oriented"] and tdim != gdim:
         code += orientation(L)
 
     code += fiat_coordinate_mapping(L, element_cellname, gdim)
