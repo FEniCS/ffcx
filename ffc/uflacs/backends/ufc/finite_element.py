@@ -180,6 +180,12 @@ class ufc_finite_element(ufc_generator):
             msg = "evaluate_basis is not defined for this element"
             return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
 
+        # Handle unsupported elements.
+        if isinstance(data, string_types):
+            msg = "evaluate_basis: %s" % data
+            return [generate_error(L, msg, parameters["convert_exceptions_to_warnings"])]
+
+
         # Get the element cell name and geometric dimension.
         element_cellname = data["cellname"]
         gdim = data["geometric_dimension"]
@@ -226,8 +232,13 @@ class ufc_finite_element(ufc_generator):
         return code
 
     def evaluate_basis_all(self, L, ir, parameters):
-
         data=ir["evaluate_basis"]
+
+        # Handle unsupported elements.
+        if isinstance(data, string_types):
+            msg = "evaluate_basis_all: %s" % data
+            return [generate_error(L, msg, parameters["convert_exceptions_to_warnings"])]
+
         physical_value_size = data["physical_value_size"]
         space_dimension = data["space_dimension"]
 
@@ -386,7 +397,6 @@ class ufc_finite_element(ufc_generator):
         if isinstance(irdata, string_types):
             msg = "interpolate_vertex_values: %s" % irdata
             return [generate_error(L, msg, parameters["convert_exceptions_to_warnings"])]
-
 
         # Add code for Jacobian if necessary
         code = []

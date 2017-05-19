@@ -245,7 +245,7 @@ def generate_evaluate_basis_derivatives(L, data):
 
     if isinstance(data, string_types):
         msg = "evaluate_basis_derivatives: %s" % data
-        return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
+        return generate_error(L, msg, False)
 
     # Initialise return code.
     code = []
@@ -267,12 +267,17 @@ def generate_evaluate_basis_derivatives(L, data):
     coordinate_dofs = L.Symbol("coordinate_dofs")
     cell_orientation = L.Symbol("cell_orientation")
 
-    _t, _g = ("", "") if tdim == gdim else ("_t", "_g")
-    num_derivatives_t = L.Symbol("num_derivatives" + _t)
-    num_derivatives_g = L.Symbol("num_derivatives" + _g)
-
-    code += [L.VariableDecl("std::size_t", num_derivatives_t, L.Call("std::pow", (tdim, n)))]
-    if tdim != gdim:
+    if tdim == gdim:
+        _t, _g = ("", "")
+        num_derivatives_t = L.Symbol("num_derivatives")
+        num_derivatives_g = L.Symbol("num_derivatives")
+        code += [L.VariableDecl("std::size_t", num_derivatives_t, L.Call("std::pow", (tdim, n)))]
+    else:
+        _t, _g = ("_t", "_g")
+        num_derivatives_t = L.Symbol("num_derivatives_t")
+        num_derivatives_g = L.Symbol("num_derivatives_g")
+        if max_degree > 0:
+            code += [L.VariableDecl("std::size_t", num_derivatives_t, L.Call("std::pow", (tdim, n)))]
         code += [L.VariableDecl("std::size_t", num_derivatives_g, L.Call("std::pow", (gdim, n)))]
 
     # Reset all values.
@@ -281,13 +286,14 @@ def generate_evaluate_basis_derivatives(L, data):
     # Handle values of argument 'n'.
     code += [L.Comment("Call evaluate_basis_all if order of derivatives is equal to zero.")]
     code += [L.If(L.EQ(n, 0), [L.Call("evaluate_basis", (L.Symbol("i"), values, x, coordinate_dofs, cell_orientation)), L.Return()])]
-    code += [L.Comment("If order of derivatives is greater than the maximum polynomial degree, return zeros.")]
-    code += [L.If(L.GT(n, max_degree), [L.Return()])]
 
     # If max_degree is zero, return code (to avoid declarations such as
     # combinations[1][0]) and because there's nothing to compute.)
     if max_degree == 0:
         return code
+
+    code += [L.Comment("If order of derivatives is greater than the maximum polynomial degree, return zeros.")]
+    code += [L.If(L.GT(n, max_degree), [L.Return()])]
 
     # Generate geo code.
     code += jacobian(L, tdim, gdim, element_cellname)
@@ -320,7 +326,7 @@ def generate_evaluate_basis_derivatives_all(L, data):
 
     if isinstance(data, string_types):
         msg = "evaluate_basis_derivatives_all: %s" % data
-        return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
+        return generate_error(L, msg, False)
 
     # Initialise return code
     code = []
