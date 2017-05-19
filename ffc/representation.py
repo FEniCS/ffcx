@@ -40,12 +40,9 @@ import ufl
 
 # FFC modules
 from ffc.utils import compute_permutations, product
-from ffc.log import info, error, begin, end, debug_ir, warning
+from ffc.log import info, error, begin, end
 from ffc.fiatinterface import create_element, reference_cell
-from ffc.mixedelement import MixedElement
-from ffc.enrichedelement import EnrichedElement, SpaceOfReals
-from ffc.fiatinterface import HDivTrace
-from ffc.quadratureelement import QuadratureElement
+from ffc.fiatinterface import EnrichedElement, HDivTrace, MixedElement, SpaceOfReals, QuadratureElement
 from ffc.cpp import set_float_formatting
 from ffc.cpp import make_classname, make_integral_classname
 
@@ -248,7 +245,6 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit
     # Create FIAT element
     fiat_element = create_element(ufl_element)
     cell = ufl_element.cell()
-    cellname = cell.cellname()
 
     # Precompute repeatedly used items
     num_dofs_per_entity = _num_dofs_per_entity(fiat_element)
@@ -256,8 +252,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit
     facet_dofs = _tabulate_facet_dofs(fiat_element, cell)
     entity_closure_dofs, num_dofs_per_entity_closure = \
         _tabulate_entity_closure_dofs(fiat_element, cell)
-    
-    
+
     # Store id
     ir = {"id": element_numbers[ufl_element]}
     ir["classname"] = classnames["dofmap"][ufl_element]
@@ -417,14 +412,15 @@ def _global_dimension(fiat_element):
         return (_num_dofs_per_entity(fiat_element), 0)
 
     elements = []
-    reals = []
     num_reals = 0
     for e in fiat_element.elements():
         if not isinstance(e, SpaceOfReals):
             elements += [e]
         else:
             num_reals += 1
-    fiat_element = MixedElement(elements)
+    fiat_cell, = set(e.get_reference_element()
+                     for e in fiat_element.elements())
+    fiat_element = MixedElement(elements, ref_el=fiat_cell)
     return (_num_dofs_per_entity(fiat_element), num_reals)
 
 
@@ -625,9 +621,6 @@ def _generate_physical_offsets(ufl_element, offset=0):
 def _generate_offsets(ufl_element, reference_offset=0, physical_offset=0):
     """Generate offsets: i.e value offset for each basis function
     relative to a physical element representation."""
-    cell = ufl_element.cell()
-    gdim = cell.geometric_dimension()
-    tdim = cell.topological_dimension()
 
     if isinstance(ufl_element, ufl.MixedElement):
         offsets = []
@@ -659,12 +652,16 @@ def _generate_offsets(ufl_element, reference_offset=0, physical_offset=0):
 def _evaluate_dof(ufl_element, fiat_element):
     "Compute intermediate representation of evaluate_dof."
     cell = ufl_element.cell()
+    if fiat_element.is_nodal():
+        dofs = [L.pt_dict for L in fiat_element.dual_basis()]
+    else:
+        dofs = [None] * fiat_element.space_dimension()
     return {"mappings": fiat_element.mapping(),
             "reference_value_size": ufl_element.reference_value_size(),
             "physical_value_size": ufl_element.value_size(),
             "geometric_dimension": cell.geometric_dimension(),
             "topological_dimension": cell.topological_dimension(),
-            "dofs": [L.pt_dict if L else None for L in fiat_element.dual_basis()],
+            "dofs": dofs,
             "physical_offsets": _generate_physical_offsets(ufl_element)}
 
 
