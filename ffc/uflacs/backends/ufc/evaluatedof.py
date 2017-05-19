@@ -284,7 +284,7 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim,
     y = L.Symbol("y")
     vals = L.Symbol("vals")
     c = L.Symbol("c")
-    lines_r += [L.Call("f.evaluate",(y, vals, c))]
+    lines_r += [L.Call("f.evaluate",(vals, y, c))]
 
     # Map function values to the reference element
     lines_r += [L.Comment("Map function to reference element")]
