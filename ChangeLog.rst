@@ -4,7 +4,19 @@ Changelog
 2017.2.0 (unreleased)
 ---------------------
 
-- Nothing changed yet
+- Reimplement code generation for all ufc classes with new
+- New class ufc::coordinate_mapping which can map
+  between coordinates, compute jacobians, etc. for a
+  coordinate mapping parameterized by a specific finite element.
+- New functions in ufc::finite_element:
+  - evaluate_reference_basis
+  - evaluate_reference_basis_derivatives
+  - transform_reference_basis_derivatives
+  - tabulate_reference_dof_coordinates
+- New functions in ufc::dofmap:
+  - num_global_support_dofs
+  - num_element_support_dofs
+- Improved docstrings for parts of ufc.h
 
 2017.1.0 (2017-05-09)
 ---------------------

@@ -40,6 +40,16 @@ public:
 %(global_dimension)s
   }
 
+  std::size_t num_global_support_dofs() const final override
+  {
+%(num_global_support_dofs)s
+  }
+
+  std::size_t num_element_support_dofs() const final override
+  {
+%(num_element_support_dofs)s
+  }
+
   std::size_t num_element_dofs() const final override
   {
 %(num_element_dofs)s
@@ -122,6 +132,10 @@ public:
   std::size_t global_dimension(const std::vector<std::size_t>&
                                num_global_entities) const final override;
 
+  std::size_t num_global_support_dofs() const final override;
+
+  std::size_t num_element_support_dofs() const final override;
+
   std::size_t num_element_dofs() const final override;
 
   std::size_t num_facet_dofs() const final override;
@@ -182,6 +196,16 @@ std::size_t %(classname)s::global_dimension(const std::vector<std::size_t>&
                                             num_global_entities) const
 {
 %(global_dimension)s
+}
+
+std::size_t %(classname)s::num_global_support_dofs() const
+{
+%(num_global_support_dofs)s
+}
+
+std::size_t %(classname)s::num_element_support_dofs() const
+{
+%(num_element_support_dofs)s
 }
 
 std::size_t %(classname)s::num_element_dofs() const

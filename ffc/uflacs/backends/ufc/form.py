@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2009-2016 Anders Logg and Martin Sandve Alnæs
+# Copyright (C) 2009-2017 Anders Logg and Martin Sandve Alnæs
 #
 # This file is part of UFLACS.
 #
@@ -23,6 +23,13 @@ from ffc.uflacs.backends.ufc.generator import ufc_generator, integral_name_templ
 from ffc.uflacs.backends.ufc.utils import generate_return_new, generate_return_new_switch
 
 
+def create_delegate(integral_type, declname, impl):
+    def _delegate(self, L, ir, parameters):
+        return impl(self, L, ir, parameters, integral_type, declname)
+    _delegate.__doc__ = impl.__doc__ % {"declname": declname, "integral_type": integral_type}
+    return _delegate
+
+
 def add_ufc_form_integral_methods(cls):
     """This function generates methods on the class it decorates,
     for each integral name template and for each integral type.
@@ -42,57 +49,53 @@ def add_ufc_form_integral_methods(cls):
         impl = getattr(cls, implname)
         for integral_type in ufc_integral_types:
             declname = template % (integral_type,)
-
-            # Binding variables explicitly because Python closures don't
-            # capture the value of integral_type for each iteration here
-            def _delegate(self, L, ir, integral_type=integral_type, declname=declname, impl=impl):
-                return impl(self, L, ir, integral_type, declname)
-            _delegate.__doc__ = impl.__doc__ % {"declname": declname, "integral_type": integral_type}
-
+            _delegate = create_delegate(integral_type, declname, impl)
             setattr(cls, declname, _delegate)
     return cls
 
 
 @add_ufc_form_integral_methods
 class ufc_form(ufc_generator):
+    """Each function maps to a keyword in the template. See documentation of ufc_generator.
+
+    The exceptions are functions on the form
+        def _*_foo_*(self, L, ir, parameters, integral_type, declname)
+    which add_ufc_form_integral_methods will duplicate for foo = each integral type.
+    """
     def __init__(self):
         ufc_generator.__init__(self, "form")
 
-    def topological_dimension(self, L, ir):
-        "Default implementation of returning topological dimension fetched from ir."
-        tdim = ir["topological_dimension"]
-        return L.Return(L.LiteralInt(tdim))
+    def num_coefficients(self, L, num_coefficients):
+        return L.Return(num_coefficients)
 
-    def geometric_dimension(self, L, ir):
-        "Default implementation of returning geometric dimension fetched from ir."
-        gdim = ir["geometric_dimension"]
-        return L.Return(L.LiteralInt(gdim))
-
-    def num_coefficients(self, L, ir):
-        value = ir["num_coefficients"]
-        return L.Return(L.LiteralInt(value))
-
-    def rank(self, L, ir):
-        value = ir["rank"]
-        return L.Return(L.LiteralInt(value))
+    def rank(self, L, rank):
+        return L.Return(rank)
 
     def original_coefficient_position(self, L, ir):
         i = L.Symbol("i")
-
         positions = ir["original_coefficient_position"]
 
-        position = L.Symbol("position")
+        # Check argument
+        msg = "Invalid original coefficient index."
+        code = [
+            L.If(L.GE(i, len(positions)),
+                L.Throw("std::runtime_error", msg))
+            ]
 
-        # Throwing a lot into the 'typename' string here but
-        # no plans for building a full C++ type system
-        typename = "static const std::vector<std::size_t>"
-        initializer_list = L.VerbatimExpr("{" + ", ".join(str(i) for i in positions) + "}")
-        code = L.StatementList([
-            L.VariableDecl(typename, position, value=initializer_list),
-            L.Return(position[i]),
-            ])
+        if positions:
+            # Throwing a lot into the 'typename' string here but
+            # no plans for building a full C++ type system
+            typename = "static const std::vector<std::size_t>"
+            position = L.Symbol("position")
+            initializer_list = L.VerbatimExpr("{" + ", ".join(str(i) for i in positions) + "}")
+            code += [
+                L.VariableDecl(typename, position, value=initializer_list),
+                L.Return(position[i]),
+                ]
+            return code
+        else:
+            code += [L.Return(i)]
         return code
-
 
     def create_coordinate_finite_element(self, L, ir):
         classnames = ir["create_coordinate_finite_element"]
@@ -106,7 +109,7 @@ class ufc_form(ufc_generator):
 
     def create_coordinate_mapping(self, L, ir):
         classnames = ir["create_coordinate_mapping"]
-        assert len(classnames) == 1
+        assert len(classnames) == 1  # list of length 1 until we support multiple domains
         return generate_return_new(L, classnames[0], factory=ir["jit"])
 
     def create_finite_element(self, L, ir):
@@ -122,38 +125,32 @@ class ufc_form(ufc_generator):
 
     # This group of functions are repeated for each
     # foo_integral by add_ufc_form_integral_methods:
-    
-    def _max_foo_subdomain_id(self, L, ir, integral_type, declname):
+
+    def _max_foo_subdomain_id(self, L, ir, parameters, integral_type, declname):
         "Return implementation of ufc::form::%(declname)s()."
         # e.g. max_subdomain_id = ir["max_cell_subdomain_id"]
         max_subdomain_id = ir[declname]
-        return L.Return(L.LiteralInt(max_subdomain_id))
+        return L.Return(int(max_subdomain_id))
 
-    def _has_foo_integrals(self, L, ir, integral_type, declname):
+    def _has_foo_integrals(self, L, ir, parameters, integral_type, declname):
         "Return implementation of ufc::form::%(declname)s()."
         # e.g. has_integrals = ir["has_cell_integrals"]
         has_integrals = ir[declname]
-        return L.Return(L.LiteralBool(has_integrals))
+        return L.Return(bool(has_integrals))
 
-    def _create_foo_integral(self, L, ir, integral_type, declname):
+    def _create_foo_integral(self, L, ir, parameters, integral_type, declname):
         "Return implementation of ufc::form::%(declname)s()."
-        #print("CREATE_FOO_INTEGRAL", id(ir), ir)
-        form_id = ir["id"]
-        prefix = ir["prefix"]
+        # e.g. subdomain_ids, classnames = ir["create_cell_integral"]
+        subdomain_ids, classnames = ir[declname]
         subdomain_id = L.Symbol("subdomain_id")
-        subdomain_ids = ir[declname] # e.g. ir["create_cell_integral"]
-        classnames = [make_integral_classname(prefix, integral_type, form_id, i)
-                      for i in subdomain_ids]
         return generate_return_new_switch(L, subdomain_id, classnames,
                                           subdomain_ids, factory=ir["jit"])
 
-    def _create_default_foo_integral(self, L, ir, integral_type, declname):
+    def _create_default_foo_integral(self, L, ir, parameters, integral_type, declname):
         "Return implementation of ufc::form::%(declname)s()."
-        subdomain_id = ir[declname] # e.g. ir["create_default_cell_integral"]
-        if subdomain_id is None:
+        # e.g. classname = ir["create_default_cell_integral"]
+        classname = ir[declname]
+        if classname is None:
             return L.Return(L.Null())
         else:
-            form_id = ir["id"]
-            prefix = ir["prefix"]
-            classname = make_integral_classname(prefix, integral_type, form_id, subdomain_id)
             return generate_return_new(L, classname, factory=ir["jit"])

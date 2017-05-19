@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2011-2016 Martin Sandve Alnæs
+# Copyright (C) 2011-2017 Martin Sandve Alnæs
 #
 # This file is part of UFLACS.
 #
@@ -42,7 +42,6 @@ from ffc.uflacs.backends.ffc.common import ufc_restriction_offset
 default_rtol = 1e-5
 default_atol = 1e-8
 
-
 table_origin_t = namedtuple("table_origin",
     ["element", "avg", "derivatives", "flat_component", "dofrange", "dofmap"])
 
@@ -71,11 +70,11 @@ def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
         return numpy.allclose(a, b, rtol=rtol, atol=atol)
 
 
-def clamp_table_small_numbers(table, rtol=default_rtol, atol=default_atol):
+def clamp_table_small_numbers(table, rtol=default_rtol, atol=default_atol, numbers=(-1.0, -0.5, 0.0, 0.5, 1.0)):
     "Clamp almost 0,1,-1 values to integers. Returns new table."
     # Get shape of table and number of columns, defined as the last axis
     table = numpy.asarray(table)
-    for n in (-1.0, -0.5, 0.0, 0.5, 1.0):
+    for n in numbers:
         table[numpy.where(numpy.isclose(table, n, rtol=rtol, atol=atol))] = n
     return table
 

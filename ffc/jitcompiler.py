@@ -2,7 +2,7 @@
 """This module provides a just-in-time (JIT) form compiler.
 It uses dijitso to wrap the generated code into a Python module."""
 
-# Copyright (C) 2007-2016 Anders Logg
+# Copyright (C) 2007-2017 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -23,12 +23,13 @@ It uses dijitso to wrap the generated code into a Python module."""
 # Modified by Ilmar Wilbers, 2008
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Joachim Haga, 2011.
-# Modified by Martin Sandve Alnæs, 2013-2016
+# Modified by Martin Sandve Alnæs, 2013-2017
 
 # Python modules
 import os
 import sys
 from hashlib import sha1
+from six import string_types
 
 # FEniCS modules
 import ufl
@@ -75,12 +76,23 @@ def jit_generate(ufl_object, module_name, signature, parameters):
     for dep in dependent_ufl_objects["element"]:
         dep_module_name = jit(dep, parameters, indirect=True)
         dependencies.append(dep_module_name)
-    if 0:  # FIXME: Enable coordinate mapping generation when ready
-        for dep in dependent_ufl_objects["coordinate_mapping"]:
-            dep_module_name = jit(ufl.Mesh(dep, ufl_id=0), parameters, indirect=True)
-            dependencies.append(dep_module_name)
-
+    for dep in dependent_ufl_objects["coordinate_mapping"]:
+        dep_module_name = jit(dep, parameters, indirect=True)
+        dependencies.append(dep_module_name)
     return code_h, code_c, dependencies
+
+
+def _string_tuple(param):
+    "Split a : separated string or convert a list to a tuple."
+    if isinstance(param, (tuple, list)):
+        pass
+    elif isinstance(param, string_types):
+        param = param.split(":")
+    else:
+        param = ()
+    param = tuple(p for p in param if p)
+    assert all(isinstance(p, string_types) for p in param)
+    return param
 
 
 def jit_build(ufl_object, module_name, parameters):
@@ -97,7 +109,9 @@ def jit_build(ufl_object, module_name, parameters):
     build_params["debug"] = not parameters["cpp_optimize"]
     build_params["cxxflags_opt"] = tuple(parameters["cpp_optimize_flags"].split())
     build_params["cxxflags_debug"] = ("-O0",)
-    build_params["include_dirs"] = get_ufc_include_path()
+    build_params["include_dirs"] = (get_ufc_include_path(),) + _string_tuple(parameters.get("external_include_dirs"))
+    build_params["lib_dirs"] = _string_tuple(parameters.get("external_library_dirs"))
+    build_params["libs"] = _string_tuple(parameters.get("external_libraries"))
 
     # Interpreting FFC default "" as None, use "." if you want to point to curdir
     cache_dir = parameters.get("cache_dir") or None

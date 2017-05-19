@@ -33,7 +33,7 @@ from ufl import custom_integral_types
 
 # FFC modules
 from ffc.log import ffc_assert, error, warning
-from ffc.cpp import format, remove_unused
+from ffc.cpp import format, remove_unused, indent
 
 from ffc.representationutils import initialize_integral_code
 
@@ -49,8 +49,8 @@ def generate_integral_code(ir, prefix, parameters):
 
     # Generate code
     code = initialize_integral_code(ir, prefix, parameters)
-    code["num_cells"] = ret(ir["num_cells"])
-    code["tabulate_tensor"] = _tabulate_tensor(ir, prefix, parameters)
+    code["num_cells"] = indent(ret(ir["num_cells"]), 4)
+    code["tabulate_tensor"] = indent(_tabulate_tensor(ir, prefix, parameters), 4)
     code["additional_includes_set"] = ir["additional_includes_set"]
 
     precision = ir["integrals_metadata"].get("precision")

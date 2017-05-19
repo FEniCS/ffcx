@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2007-2016 Kristian B. Oelgaard
+# Copyright (C) 2007-2017 Kristian B. Oelgaard
 #
 # This file is part of FFC.
 #
@@ -736,7 +736,8 @@ def _transform_derivatives(data, dof_data):
 
     mapping = dof_data["mapping"]
     if "piola" in mapping:
-        # In either of the Piola cases, the value space of the derivatives is the geometric dimension rather than the topological dimension.
+        # In either of the Piola cases, the value space of the derivatives
+        # is the geometric dimension rather than the topological dimension.
         _p = "_p"
         num_components_p = data["geometric_dimension"]
     else:

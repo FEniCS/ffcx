@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Martin Sandve Alnæs, 2013-2016
+# Modified by Martin Sandve Alnæs, 2013-2017
 
 _test_code = """\
 #include "../../ufctest.h"

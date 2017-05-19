@@ -234,12 +234,12 @@ def test_class_array_access():
 
 
 def test_while_loop():
-    code = While("--k < 3", [])
+    code = While(VerbatimExpr("--k < 3"), [])
     actual = str(code)
     expected = "while (--k < 3)\n{\n}"
     assert actual == expected
 
-    code = While("--k < 3", body=["ting;", "tang;"])
+    code = While(VerbatimExpr("--k < 3"), body=["ting;", "tang;"])
     actual = str(code)
     expected = "while (--k < 3)\n{\n    ting;\n    tang;\n}"
     assert actual == expected

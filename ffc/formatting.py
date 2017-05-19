@@ -10,7 +10,7 @@ It relies on templates for UFC code available as part of the module
 ufc_utils.
 """
 
-# Copyright (C) 2009-2016 Anders Logg
+# Copyright (C) 2009-2017 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -55,7 +55,8 @@ def generate_factory_functions(prefix, kind, classname):
 
 def generate_jit_factory_functions(code, prefix):
     # Extract code
-    code_elements, code_dofmaps, code_coordinate_mappings, code_integrals, code_forms = code
+    (code_finite_elements, code_dofmaps, code_coordinate_mappings,
+         code_integrals, code_forms, includes) = code
 
     if code_forms:
         # Direct jit of form
@@ -68,7 +69,7 @@ def generate_jit_factory_functions(code, prefix):
     else:
         # Direct jit of element
         code_h, code_c = generate_factory_functions(
-            prefix, "finite_element", code_elements[-1]["classname"])
+            prefix, "finite_element", code_finite_elements[-1]["classname"])
         fh, fc = generate_factory_functions(
             prefix, "dofmap", code_dofmaps[-1]["classname"])
         code_h += fh
@@ -82,7 +83,8 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
     begin("Compiler stage 5: Formatting code")
 
     # Extract code
-    code_elements, code_dofmaps, code_coordinate_mappings, code_integrals, code_forms = code
+    (code_finite_elements, code_dofmaps, code_coordinate_mappings,
+         code_integrals, code_forms, includes) = code
 
     # Generate code for comment on top of file
     code_h_pre = _generate_comment(parameters) + "\n"
@@ -93,7 +95,7 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
     code_c_pre += format["header_c"] % {"prefix": prefix}
 
     # Add includes
-    includes_h, includes_c = _generate_additional_includes(code)
+    includes_h, includes_c = _generate_includes(includes, parameters)
     code_h_pre += includes_h
     code_c_pre += includes_c
 
@@ -104,10 +106,10 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
     if jit:
         code_c += visibility_snippet
 
-    # Generate code for elements
-    for code_element in code_elements:
-        code_h += _format_h("finite_element", code_element, parameters, jit)
-        code_c += _format_c("finite_element", code_element, parameters, jit)
+    # Generate code for finite_elements
+    for code_finite_element in code_finite_elements:
+        code_h += _format_h("finite_element", code_finite_element, parameters, jit)
+        code_c += _format_c("finite_element", code_finite_element, parameters, jit)
 
     # Generate code for dofmaps
     for code_dofmap in code_dofmaps:
@@ -116,8 +118,8 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
 
     # Generate code for coordinate_mappings
     for code_coordinate_mapping in code_coordinate_mappings:
-        code_h += _format_h("coordinate_mapping", code_coordinate_mapping, parameters)
-        code_c += _format_c("coordinate_mapping", code_coordinate_mapping, parameters)
+        code_h += _format_h("coordinate_mapping", code_coordinate_mapping, parameters, jit)
+        code_c += _format_c("coordinate_mapping", code_coordinate_mapping, parameters, jit)
 
     # Generate code for integrals
     for code_integral in code_integrals:
@@ -128,13 +130,6 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
     for code_form in code_forms:
         code_h += _format_h("form", code_form, parameters, jit)
         code_c += _format_c("form", code_form, parameters, jit)
-
-    # Add factory functions named "..._main" to construct
-    # the main jit object this module
-    if 0: # jit: # should be part of templates now, right? FIXME Remove?
-        fh, fc = generate_jit_factory_functions(code, prefix)
-        code_h += fh
-        code_c += fc
 
     # Add wrappers
     if wrapper_code:
@@ -213,22 +208,24 @@ def _generate_comment(parameters):
     return comment
 
 
-def _generate_additional_includes(code):
-    s = set()
-    s.add("#include <ufc.h>")
+def _generate_includes(includes, parameters):
 
-    for code_foo in code:
-        # FIXME: Avoid adding these includes if we don't need them
-        # s.add("#include <cmath>")
-        s.add("#include <stdexcept>")
+    default_h_includes = [
+        "#include <ufc.h>",
+        ]
 
-        for c in code_foo:
-            s.update(c.get("additional_includes_set", ()))
+    default_cpp_includes = [
+        # TODO: Avoid adding these includes if we don't need them:
+        "#include <stdexcept>",
+        "#include <algorithm>",
+        ]
 
-    if s:
-        includes = "\n".join(sorted(s)) + "\n"
-    else:
-        includes = ""
+    external_includes = set("#include <%s>" % inc for inc in parameters.get("external_includes", ()))
 
-    # TODO: move includes to cpp file if possible
-    return includes, ""
+    s = set(default_h_includes + default_cpp_includes) | includes
+
+    s2 = (set(default_cpp_includes) | external_includes) - s
+
+    includes_h = "\n".join(sorted(s)) + "\n" if s else ""
+    includes_cpp = "\n".join(sorted(s2)) + "\n" if s2 else ""
+    return includes_h, includes_cpp

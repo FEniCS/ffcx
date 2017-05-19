@@ -28,7 +28,7 @@ option --bench.
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Martin Sandve Alnæs, 2013-2016
+# Modified by Martin Sandve Alnæs, 2013-2017
 # Modified by Johannes Ring, 2013
 # Modified by Kristian B. Oelgaard, 2013
 # Modified by Garth N. Wells, 2014
@@ -36,7 +36,7 @@ option --bench.
 # FIXME: Need to add many more test cases. Quite a few DOLFIN forms
 # failed after the FFC tests passed.
 
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 import os
 import sys
 import shutil
@@ -56,9 +56,7 @@ from ffc import get_ufc_cxx_flags
 from ffc.backends.ufc import get_include_path as get_ufc_include
 from ufctest import generate_test_code
 
-# Parameters TODO: Can make this a cmdline argument, and start
-# crashing programs in debugger automatically?
-debug = False
+# Parameters
 output_tolerance = 1e-5
 demo_directory = "../../../../demo"
 bench_directory = "../../../../bench"
@@ -195,7 +193,7 @@ known_tsfc_failures = set([
 _command_timings = []
 
 
-def run_command(command):
+def run_command(command, verbose):
     "Run command and collect errors in log file."
     global _command_timings
 
@@ -204,7 +202,6 @@ def run_command(command):
         output = as_native_str(subprocess.check_output(command, shell=True))
         t2 = time.time()
         _command_timings.append((command, t2 - t1))
-        verbose = False  # FIXME: Set from --verbose
         if verbose:
             print(output)
         return True
@@ -266,7 +263,7 @@ def generate_test_cases(bench, only_forms, skip_forms):
     end()
 
 
-def generate_code(args, only_forms, skip_forms):
+def generate_code(args, only_forms, skip_forms, debug):
     "Generate code for all test cases."
     global _command_timings
 
@@ -412,7 +409,7 @@ Forms using bessel functions will fail to build.
     return boost_cflags, boost_linkflags
 
 
-def build_programs(bench, permissive):
+def build_programs(bench, permissive, debug, verbose):
     "Build test programs for all test cases."
 
     # Get a list of all files
@@ -473,7 +470,7 @@ def build_programs(bench, permissive):
         # Compile test code
         command = "%s %s -o %s.bin %s.cpp %s" % \
                   (compiler, cpp_flags, prefix, prefix, ld_flags)
-        ok = run_command(command)
+        ok = run_command(command, verbose)
 
         # Store compile command for easy reproduction
         with open("%s.build" % (prefix,), "w") as f:
@@ -490,7 +487,7 @@ def build_programs(bench, permissive):
     return failures
 
 
-def run_programs(bench):
+def run_programs(bench, debug, verbose):
     "Run generated programs."
 
     # This matches argument parsing in the generated main files
@@ -505,10 +502,9 @@ def run_programs(bench):
 
     # Iterate over all files
     for f in test_programs:
-
         # Compile test code
         prefix = f.split(".bin")[0]
-        ok = run_command(".%s%s.bin %s" % (os.path.sep, prefix, bench))
+        ok = run_command(".%s%s.bin %s" % (os.path.sep, prefix, bench), verbose)
 
         # Check status
         if ok:
@@ -599,6 +595,8 @@ def main(args):
     skip_code_diff = "--skip-code-diff" in args
     skip_validate = "--skip-validate" in args
     bench = "--bench" in args
+    debug = "--debug" in args
+    verbose = ("--verbose" in args) or debug  # debug implies verbose
 
     permissive = "--permissive" in args or bench
     tolerant = "--tolerant" in args
@@ -618,12 +616,18 @@ def main(args):
         "--skip-code-diff",
         "--skip-validate",
         "--bench",
+        "--debug",
+        "--verbose",
         "--permissive",
         "--tolerant",
         "--print-timing",
         "--help",
     )
     args = [arg for arg in args if arg not in flags]
+
+    # Hack: add back --verbose for ffc.main to see
+    if verbose:
+        args = args + ["--verbose"]
 
     if show_help:
         info("Valid arguments:\n" + "\n".join(flags))
@@ -721,7 +725,7 @@ def main(args):
         generate_test_cases(bench, only_forms, skip_forms)
 
         # Generate code
-        failures = generate_code(args + argument.split(), only_forms, skip_forms)
+        failures = generate_code(args + argument.split(), only_forms, skip_forms, debug)
         if failures:
             fails[argument]["generate_code"] = failures
 
@@ -748,11 +752,11 @@ def main(args):
         if skip_run:
             info_blue("Skipping program execution")
         else:
-            failures = build_programs(bench, permissive)
+            failures = build_programs(bench, permissive, debug, verbose)
             if failures:
                 fails[argument]["build_programs"] = failures
 
-            failures = run_programs(bench)
+            failures = run_programs(bench, debug, verbose)
             if failures:
                 fails[argument]["run_programs"] = failures
 
@@ -788,15 +792,33 @@ def main(args):
         return 0
     else:
         info_red("Regression tests failed")
+        info_red("")
+        info_red("Long summary:")
         for argument in test_cases:
-            if fails[argument]:
-                info_red("  Failures for %s:" % argument)
+            if not fails[argument]:
+                info_green("  No failures with args '%s'" % argument)
             else:
-                info_green("  No failures for %s" % argument)
-            for phase, failures in fails[argument].items():
-                info_red("    %d failures in %s:" % (len(failures), phase))
-                for f in failures:
-                    info_red("      %s" % (f,))
+                info_red("  Failures with args '%s':" % argument)
+                for phase, failures in fails[argument].items():
+                    info_red("    %d failures in %s:" % (len(failures), phase))
+                    for f in failures:
+                        info_red("      %s" % (f,))
+        info_red("")
+        info_red("Short summary:")
+        phase_fails = defaultdict(int)
+        for argument in test_cases:
+            if not fails[argument]:
+                info_green("  No failures with args '%s'" % argument)
+            else:
+                info_red("  Number of failures with args '%s':" % argument)
+                for phase, failures in fails[argument].items():
+                    info_red("    %d failures in %s." % (len(failures), phase))
+                    phase_fails[phase] += len(failures)
+        info_red("")
+        info_red("Total failures for all args:")
+        for phase, count in phase_fails.items():
+            info_red("    %s: %d failed" % (phase, count))
+        info_red("")
         info_red("Error messages stored in %s" % logfile)
         return 1
 

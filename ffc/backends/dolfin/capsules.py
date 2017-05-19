@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2008-2016 Martin Sandve Alnes
+# Copyright (C) 2008-2017 Martin Sandve Alnes
 #
 # This file is part of DOLFIN.
 #

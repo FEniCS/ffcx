@@ -28,6 +28,10 @@ def test_cnode_expression_precedence():
 def test_cnode_expressions():
     A = Symbol("A")
     B = Symbol("B")
+    i = Symbol("i")
+    j = Symbol("j")
+    x = Symbol("x")
+    y = Symbol("y")
 
     # Literals
     assert str(LiteralInt(123)) == "123"
@@ -64,13 +68,13 @@ def test_cnode_expressions():
     assert str(Neg(1)) == "-1"
     assert str(Not(1)) == "!1"
     assert str(BitNot(1)) == "~1"
-    assert str(PreIncrement("i")) == "++i"
-    assert str(PostIncrement("i")) == "i++"
-    assert str(PreDecrement("i")) == "--i"
-    assert str(PostDecrement("i")) == "i--"
+    assert str(PreIncrement(i)) == "++i"
+    assert str(PostIncrement(i)) == "i++"
+    assert str(PreDecrement(i)) == "--i"
+    assert str(PostDecrement(i)) == "i--"
     assert str(Call(Symbol("f"), [])) == "f()"
-    assert str(Call("f", ["x", 3, Mul("y", 8.0)])) == "f(x, 3, y * 8.0)"
-    assert str(Call("sin", Mul("theta", 3.0))) == "sin(theta * 3.0)"
+    assert str(Call("f", [x, 3, Mul(y, 8.0)])) == "f(x, 3, y * 8.0)"
+    assert str(Call("sin", Mul(B, 3.0))) == "sin(B * 3.0)"
 
     # Binary operators
     assert str(Add(1, 2)) == "1 + 2"
@@ -127,9 +131,10 @@ def test_cnode_assignments():
 
 
 def test_cnode_variable_declarations():
+    y = Symbol("y")
     assert str(VariableDecl("foo", "x")) == "foo x;"
     assert str(VariableDecl("int", "n", 1)) == "int n = 1;"
-    assert str(VariableDecl("double", "x", Mul("y", 3.0))) == "double x = y * 3.0;"
+    assert str(VariableDecl("double", "x", Mul(y, 3.0))) == "double x = y * 3.0;"
 
 
 def test_1d_initializer_list():
@@ -231,7 +236,7 @@ def test_cnode_statements():
     assert str(Break()) == "break;"
     assert str(Continue()) == "continue;"
     assert str(Return(Add(1, 2))) == "return 1 + 2;"
-    assert str(Case("x")) == "case x:"
+    assert str(Case(3)) == "case 3:"
     assert str(Default()) == "default:"
 
     code = "for (std::vector<int>::iterator it = v.begin(); it != v.end(); ++it)\n{    /* foobar */\n}"
@@ -239,22 +244,24 @@ def test_cnode_statements():
 
 
 def test_cnode_loop_statements():
-    body = [Assign("x", 3), AssignAdd("x", 5)]
+    i, j, x, y, A = [Symbol(ch) for ch in "ijxyA"]
+
+    body = [Assign("x", 3), AssignAdd(x, 5)]
     body_fmt = "{\n    x = 3;\n    x += 5;\n}"
     assert str(Scope(body)) == body_fmt
     assert str(Namespace("foo", body)) == "namespace foo\n" + body_fmt
-    assert str(If(LT("x", 4.0), body)) == "if (x < 4.0)\n" + body_fmt
-    assert str(ElseIf(LT("x", 4.0), body)) == "else if (x < 4.0)\n" + body_fmt
+    assert str(If(LT(x, 4.0), body)) == "if (x < 4.0)\n" + body_fmt
+    assert str(ElseIf(LT(x, 4.0), body)) == "else if (x < 4.0)\n" + body_fmt
     assert str(Else(body)) == "else\n" + body_fmt
-    assert str(While(LT("x", 4.0), body)) == "while (x < 4.0)\n" + body_fmt
-    assert str(Do(LT("x", 4.0), body)) == "do\n" + body_fmt + " while (x < 4.0);"
-    assert str(For(VariableDecl("int", "i", 0), LT("i", 4), PreIncrement("i"), body)) == "for (int i = 0; i < 4; ++i)\n" + body_fmt
+    assert str(While(LT(x, 4.0), body)) == "while (x < 4.0)\n" + body_fmt
+    assert str(Do(LT(x, 4.0), body)) == "do\n" + body_fmt + " while (x < 4.0);"
+    assert str(For(VariableDecl("int", "i", 0), LT(i, 4), PreIncrement(i), body)) == "for (int i = 0; i < 4; ++i)\n" + body_fmt
 
     assert str(ForRange("i", 3, 7, Comment("body"))) == "for (int i = 3; i < 7; ++i)\n{\n    // body\n}"
 
     # Using assigns as both statements and expressions
-    assert str(While(LT(AssignAdd("x", 4.0), 17.0), AssignAdd("A", "y"))) == "while ((x += 4.0) < 17.0)\n{\n    A += y;\n}"
-    assert str(ForRange("i", 3, 7, AssignAdd("A", "i"))) == "for (int i = 3; i < 7; ++i)\n    A += i;"
+    assert str(While(LT(AssignAdd("x", 4.0), 17.0), AssignAdd("A", y))) == "while ((x += 4.0) < 17.0)\n{\n    A += y;\n}"
+    assert str(ForRange("i", 3, 7, AssignAdd("A", i))) == "for (int i = 3; i < 7; ++i)\n    A += i;"
 
 
 def test_cnode_loop_helpers():
@@ -281,6 +288,7 @@ for (int i = 0; i < 2; ++i)
 
 
 def test_cnode_switch_statements():
+    i, j, x, y, A = [Symbol(ch) for ch in "ijxyA"]
     assert str(Switch("x", [])) == "switch (x)\n{\n}"
     assert str(Switch("x", [], default=Assign("i", 3))) == "switch (x)\n{\ndefault:\n    {\n        i = 3;\n    }\n}"
 

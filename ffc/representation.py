@@ -13,7 +13,7 @@ function "foo", one should only need to use the data stored
 in the intermediate representation under the key "foo".
 """
 
-# Copyright (C) 2009-2016 Anders Logg, Martin Sandve Alnæs, Marie E. Rognes,
+# Copyright (C) 2009-2017 Anders Logg, Martin Sandve Alnæs, Marie E. Rognes,
 # Kristian B. Oelgaard, and others
 #
 # This file is part of FFC.
@@ -171,17 +171,17 @@ def compute_ir(analysis, prefix, parameters, jit=False):
 
     # Compute representation of elements
     info("Computing representation of %d elements" % len(elements))
-    ir_elements = [_compute_element_ir(e, element_numbers, classnames, jit)
+    ir_elements = [_compute_element_ir(e, element_numbers, classnames, parameters, jit)
                    for e in elements]
 
     # Compute representation of dofmaps
     info("Computing representation of %d dofmaps" % len(elements))
-    ir_dofmaps = [_compute_dofmap_ir(e, element_numbers, classnames, jit)
+    ir_dofmaps = [_compute_dofmap_ir(e, element_numbers, classnames, parameters, jit)
                   for e in elements]
 
     # Compute representation of coordinate mappings
     info("Computing representation of %d coordinate mappings" % len(coordinate_elements))
-    ir_coordinate_mappings = [_compute_coordinate_mapping_ir(e, element_numbers, classnames, jit)
+    ir_coordinate_mappings = [_compute_coordinate_mapping_ir(e, element_numbers, classnames, parameters, jit)
                               for e in coordinate_elements]
 
     # Compute and flatten representation of integrals
@@ -200,7 +200,7 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     return ir_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms
 
 
-def _compute_element_ir(ufl_element, element_numbers, classnames, jit):
+def _compute_element_ir(ufl_element, element_numbers, classnames, parameters, jit):
     "Compute intermediate representation of element."
 
     # Create FIAT element
@@ -227,7 +227,7 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, jit):
     ir["degree"] = ufl_element.degree()
     ir["family"] = ufl_element.family()
 
-    ir["evaluate_basis"] = _evaluate_basis(ufl_element, fiat_element)
+    ir["evaluate_basis"] = _evaluate_basis(ufl_element, fiat_element, parameters["epsilon"])
     ir["evaluate_dof"] = _evaluate_dof(ufl_element, fiat_element)
     ir["interpolate_vertex_values"] = _interpolate_vertex_values(ufl_element,
                                                                  fiat_element)
@@ -242,7 +242,7 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, jit):
     return ir
 
 
-def _compute_dofmap_ir(ufl_element, element_numbers, classnames, jit=False):
+def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit=False):
     "Compute intermediate representation of dofmap."
 
     # Create FIAT element
@@ -271,6 +271,8 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, jit=False):
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
     ir["global_dimension"] = _global_dimension(fiat_element)
+    ir["num_global_support_dofs"] = _num_global_support_dofs(fiat_element)
+    ir["num_element_support_dofs"] = fiat_element.space_dimension() - ir["num_global_support_dofs"]
     ir["num_element_dofs"] = fiat_element.space_dimension()
     ir["num_facet_dofs"] = len(facet_dofs[0])
     ir["num_entity_dofs"] = num_dofs_per_entity
@@ -340,7 +342,7 @@ def _tabulate_coordinate_mapping_basis(ufl_element):
 
 
 def _compute_coordinate_mapping_ir(ufl_coordinate_element, element_numbers,
-                                   classnames, jit=False):
+                                   classnames, parameters, jit=False):
     "Compute intermediate representation of coordinate mapping."
 
     cell = ufl_coordinate_element.cell()
@@ -393,6 +395,19 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element, element_numbers,
     return ir
 
 
+def _num_global_support_dofs(fiat_element):
+    "Compute number of global support dofs."
+    if not isinstance(fiat_element, MixedElement):
+        if isinstance(fiat_element, SpaceOfReals):
+            return 1
+        return 0
+    num_reals = 0
+    for e in fiat_element.elements():
+        if isinstance(e, SpaceOfReals):
+            num_reals += 1
+    return num_reals
+
+
 def _global_dimension(fiat_element):
     "Compute intermediate representation for global_dimension."
 
@@ -404,7 +419,7 @@ def _global_dimension(fiat_element):
     elements = []
     reals = []
     num_reals = 0
-    for (i, e) in enumerate(fiat_element.elements()):
+    for e in fiat_element.elements():
         if not isinstance(e, SpaceOfReals):
             elements += [e]
         else:
@@ -451,6 +466,9 @@ def _compute_integral_ir(form_data, form_id, prefix, element_numbers, classnames
                                    element_numbers,
                                    classnames,
                                    parameters)
+
+        # Remember jit status
+        ir["jit"] = jit
 
         # Build classname
         ir["classname"] = make_integral_classname(prefix, itg_data.integral_type,
@@ -660,7 +678,7 @@ def _extract_elements(fiat_element):
     return new_elements
 
 
-def _evaluate_basis(ufl_element, fiat_element):
+def _evaluate_basis(ufl_element, fiat_element, epsilon):
     "Compute intermediate representation for evaluate_basis."
     cell = ufl_element.cell()
     cellname = cell.cellname()
@@ -705,6 +723,10 @@ def _evaluate_basis(ufl_element, fiat_element):
         num_expansion_members = e.get_num_members(e.degree())
         dmats = e.dmats()
 
+        # Clamp dmats zeros
+        dmats = numpy.asarray(dmats)
+        dmats[numpy.where(numpy.isclose(dmats, 0.0, rtol=epsilon, atol=epsilon))] = 0.0
+
         # Extracted parts of dd below that are common for the element
         # here.  These dict entries are added to each dof_data dict
         # for each dof, because that's what the code generation
@@ -735,6 +757,10 @@ def _evaluate_basis(ufl_element, fiat_element):
                                 for q in range(e.value_shape()[1])]
             else:
                 error("Unknown situation with num_components > 1")
+
+            # Clamp coefficient zeros
+            coefficients = numpy.asarray(coefficients)
+            coefficients[numpy.where(numpy.isclose(coefficients, 0.0, rtol=epsilon, atol=epsilon))] = 0.0
 
             dof_data = {
                 "coeffs": coefficients,

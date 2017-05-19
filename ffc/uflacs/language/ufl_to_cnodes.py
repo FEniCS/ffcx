@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2011-2016 Martin Sandve Alnæs
+# Copyright (C) 2011-2017 Martin Sandve Alnæs
 #
 # This file is part of UFLACS.
 #
@@ -106,7 +106,9 @@ class UFL2CNodesMixin(object):
     # === Formatting rules for cmath functions ===
 
     def math_function(self, o, op):
-        return self._cmath(o._name, op)
+        # Fallback for unhandled MathFunction subclass: attempting to just call it.
+        # TODO: Introduce a UserFunction to UFL to keep it separate from MathFunction?
+        return self.L.Call(o._name, op)
 
     def sqrt(self, o, op):
         return self._cmath("sqrt", op)

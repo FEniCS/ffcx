@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2005-2016 Anders Logg
+# Copyright (C) 2005-2017 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -24,6 +24,7 @@ from ffc.log import INFO
 # Comments from other places in code:
 # FIXME: Document option -fconvert_exceptions_to_warnings
 
+
 # NB! Parameters in the generate and build sets are
 # included in jit signature, cache and log are not.
 _FFC_GENERATE_PARAMETERS = {
@@ -39,11 +40,7 @@ _FFC_GENERATE_PARAMETERS = {
     "precision": None,         # precision used when writing
                                # numbers (None for max precision)
     "epsilon": 1e-14,          # machine precision, used for
-                               # dropping zero terms
-                               # (tensor repr)
-                               # FIXME: Remove option epsilon and just rely on
-                               # precision?  Seems that this can be done once
-                               # tensor repr is removed
+                               # dropping zero terms in tables
     "split": False,            # split generated code into .h and
                                # .cpp file
     "form_postfix": True,      # postfix form name with "Function",
@@ -55,10 +52,14 @@ _FFC_GENERATE_PARAMETERS = {
     "max_signature_length": 0,  # set to positive integer to shorten signatures
     "generate_dummy_tabulate_tensor": False,  # set to True to replace tabulate_tensor body with no-op
     "add_tabulate_tensor_timing": False,      # set to True to add timing inside tabulate_tensor
+    "external_includes": "",    # ':' separated list of include filenames to add to generated code
 }
 _FFC_BUILD_PARAMETERS = {
     "cpp_optimize": True,          # optimization for the C++ compiler
     "cpp_optimize_flags": "-O2",   # optimization flags for the C++ compiler
+    "external_libraries": "",      # ':' separated list of libraries to link JIT compiled libraries with
+    "external_library_dirs": "",   # ':' separated list of library search dirs to add when JIT compiling
+    "external_include_dirs": "",   # ':' separated list of include dirs to add when JIT compiling
 }
 _FFC_CACHE_PARAMETERS = {
     "cache_dir": "",        # cache dir used by Instant

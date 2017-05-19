@@ -6,7 +6,7 @@
 It parses command-line arguments and generates code from input UFL form files.
 """
 
-# Copyright (C) 2004-2016 Anders Logg
+# Copyright (C) 2004-2017 Anders Logg
 #
 # This file is part of FFC.
 #
