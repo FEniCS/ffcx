@@ -21,6 +21,7 @@
 # from the old implementation in FFC, although some improvements
 # have been made to the generated code.
 
+from ffc.uflacs.backends.ufc.utils import generate_error
 from ffc.uflacs.backends.ufc.jacobian import jacobian, inverse_jacobian, orientation
 from ufl.permutation import build_component_numbering
 from ffc.utils import pick_first
@@ -152,7 +153,7 @@ def _generate_body(L, i, dof, mapping, gdim, tdim, offset=0):
     # EnrichedElement is handled by having [None, ..., None] dual basis
     if not dof:
         msg = "evaluate_dof(s) for enriched element not implemented."
-        return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
+        return ([generate_error(L, msg, False)], 0.0)
 
     points = list(dof.keys())
 
@@ -329,7 +330,7 @@ def generate_evaluate_dof(L, ir):
         needs_jacobian = any(["covariant piola" in m for m in ir["mappings"]])
 
         # Intermediate variable needed for multiple point dofs
-        needs_temporary = any(len(dof) > 1 for dof in ir["dofs"])
+        needs_temporary = any(dof is not None and len(dof) > 1 for dof in ir["dofs"])
         if needs_temporary:
             result = L.Symbol("result")
             code += [L.VariableDecl("double", result)]
@@ -364,6 +365,7 @@ def generate_evaluate_dofs(L, ir):
     gdim = ir["geometric_dimension"]
     tdim = ir["topological_dimension"]
 
+    # FIXME: should be like this:
     # element_cellname = ir["element_cellname"]
     element_cellname = ['interval', 'triangle', 'tetrahedron'][tdim - 1]
 
@@ -385,7 +387,7 @@ def generate_evaluate_dofs(L, ir):
         needs_jacobian = any(["covariant piola" in m for m in ir["mappings"]])
 
         # Intermediate variable needed for multiple point dofs
-        needs_temporary = any(len(dof) > 1 for dof in ir["dofs"])
+        needs_temporary = any(dof is not None and len(dof) > 1 for dof in ir["dofs"])
         if needs_temporary:
             result = L.Symbol("result")
             code += [L.VariableDecl("double", result)]
