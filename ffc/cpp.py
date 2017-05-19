@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 "This module defines rules and algorithms for generating C++ code."
 
-# Copyright (C) 2009-2016 Anders Logg
+# Copyright (C) 2009-2017 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -20,7 +20,8 @@
 #
 # Modified by Kristian B. Oelgaard 2011
 # Modified by Marie E. Rognes 2010
-# Modified by Martin Sandve Alnæs 2013-2016
+# Modified by Martin Sandve Alnæs 2013-2017
+# Modified by Chris Richardson 2017
 
 # Python modules
 import re
@@ -237,10 +238,10 @@ format.update({
                                   % (i, format["argument basis num"], format["argument basis num"], j),
     "dereference pointer": lambda n: "*%s" % n,
     "reference variable": lambda n: "&%s" % n,
-    "call basis": lambda i, s: "_evaluate_basis(%s, %s, x, coordinate_dofs, cell_orientation);" % (i, s),
-    "call basis_all": "_evaluate_basis_all(values, x, coordinate_dofs, cell_orientation);",
-    "call basis_derivatives": lambda i, s: "_evaluate_basis_derivatives(%s, n, %s, x, coordinate_dofs, cell_orientation);" % (i, s),
-    "call basis_derivatives_all": lambda i, s: "_evaluate_basis_derivatives_all(n, %s, x, coordinate_dofs, cell_orientation);" % s,
+    "call basis": lambda i, s: "evaluate_basis(%s, %s, x, coordinate_dofs, cell_orientation);" % (i, s),
+    "call basis_all": "evaluate_basis_all(values, x, coordinate_dofs, cell_orientation);",
+    "call basis_derivatives": lambda i, s: "evaluate_basis_derivatives(%s, n, %s, x, coordinate_dofs, cell_orientation);" % (i, s),
+    "call basis_derivatives_all": lambda i, s: "evaluate_basis_derivatives_all(n, %s, x, coordinate_dofs, cell_orientation);" % s,
 
     # quadrature code generators
     "integration points": "ip",
