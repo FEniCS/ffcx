@@ -153,7 +153,7 @@ def _generate_body(L, i, dof, mapping, gdim, tdim, offset=0):
     # EnrichedElement is handled by having [None, ..., None] dual basis
     if not dof:
         msg = "evaluate_dof(s) for enriched element not implemented."
-        return ([generate_error(L, msg, False)], 0.0)
+        return ([generate_error(L, msg, True)], 0.0)
 
     points = list(dof.keys())
 

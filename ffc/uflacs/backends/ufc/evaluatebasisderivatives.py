@@ -245,7 +245,7 @@ def generate_evaluate_basis_derivatives(L, data):
 
     if isinstance(data, string_types):
         msg = "evaluate_basis_derivatives: %s" % data
-        return generate_error(L, msg, False)
+        return [generate_error(L, msg, True)]
 
     # Initialise return code.
     code = []
@@ -326,7 +326,7 @@ def generate_evaluate_basis_derivatives_all(L, data):
 
     if isinstance(data, string_types):
         msg = "evaluate_basis_derivatives_all: %s" % data
-        return generate_error(L, msg, False)
+        return [generate_error(L, msg, True)]
 
     # Initialise return code
     code = []
