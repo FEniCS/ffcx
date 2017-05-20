@@ -253,7 +253,7 @@ def _mapping_transform(L, data, dof_data, values, offset, width=1):
             for k in range(tdim):
                 inner += acc_list[k]*J[l*gdim + k]
 
-        code += [L.Assign(values[p*width + offset], inner/(detJ*detJ))]
+            code += [L.Assign(values[p*width + offset], inner/(detJ*detJ))]
     else:
         error("Unknown mapping: %s" % mapping)
     return code
