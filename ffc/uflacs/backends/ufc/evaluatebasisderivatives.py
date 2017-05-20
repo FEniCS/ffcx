@@ -51,7 +51,7 @@ def _compute_reference_derivatives(L, data, dof_data):
     if "piola" in mapping:
         # In either of the Piola cases, the value space of the derivatives is the geometric dimension rather than the topological dimension.
         code += [L.Comment("Declare array of reference derivatives on physical element.")]
-        nds = tdim**max_degree * gdim
+        nds = gdim**max_degree * num_components
 
     derivatives = L.Symbol("derivatives")
     code += [L.ArrayDecl("double", derivatives, nds, 0.0)]
