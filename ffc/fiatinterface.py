@@ -23,21 +23,21 @@
 # Modified by Lizao Li, 2015, 2016
 
 # Python modules
-import six
 import numpy
 from numpy import array
 
 # UFL and FIAT modules
 import ufl
-from ufl.utils.sorting import sorted_by_key
 import FIAT
+from FIAT.enriched import EnrichedElement
 from FIAT.hdiv_trace import HDivTrace
+from FIAT.mixed import MixedElement
+from FIAT.P0 import P0
+from FIAT.restricted import RestrictedElement
+from FIAT.quadrature_element import QuadratureElement
 
 # FFC modules
 from ffc.log import debug, error
-from ffc.mixedelement import MixedElement
-from ffc.restrictedelement import RestrictedElement
-from ffc.enrichedelement import EnrichedElement, SpaceOfReals
 
 # Dictionary mapping from cellname to dimension
 from ufl.cell import cellname2dim
@@ -63,6 +63,10 @@ supported_families = ("Brezzi-Douglas-Marini",
 
 # Cache for computed elements
 _cache = {}
+
+
+class SpaceOfReals(P0):
+    """Constant over the entire domain, rather than just cellwise."""
 
 
 def reference_cell(dim):
@@ -97,12 +101,12 @@ def create_element(ufl_element):
         elements = _extract_elements(ufl_element)
         element = MixedElement(elements)
 
-    # Create element union (implemented by FFC)
+    # Create element union
     elif isinstance(ufl_element, ufl.EnrichedElement):
         elements = [create_element(e) for e in ufl_element._elements]
-        element = EnrichedElement(elements)
+        element = EnrichedElement(*elements)
 
-    # Create restricted element(implemented by FFC)
+    # Create restricted element
     elif isinstance(ufl_element, ufl.RestrictedElement):
         element = _create_restricted_element(ufl_element)
 
@@ -128,27 +132,30 @@ def _create_fiat_element(ufl_element):
     if family not in supported_families:
         error("This element family (%s) is not supported by FFC." % family)
 
+    # Create FIAT cell
+    fiat_cell = reference_cell(cellname)
+
     # Handle the space of the constant
     if family == "Real":
-        dg0_element = ufl.FiniteElement("DG", cell, 0)
-        constant = _create_fiat_element(dg0_element)
-        element = SpaceOfReals(constant)
+        element = SpaceOfReals(fiat_cell)
 
     # FIXME: AL: Should this really be here?
     # Handle QuadratureElement
     elif family == "Quadrature":
-        element = QuadratureElement(ufl_element)
+        # Compute number of points per axis from the degree of the element
+        scheme = ufl_element.quadrature_scheme()
+        assert degree is not None
+        assert scheme is not None
+
+        # Create quadrature (only interested in points)
+        # TODO: KBO: What should we do about quadrature functions that live on ds, dS?
+        # Get cell and facet names.
+        points, weights = create_quadrature(cellname, degree, scheme)
+
+        # Make element
+        element = QuadratureElement(fiat_cell, points)
 
     else:
-        # Create FIAT cell
-        fiat_cell = reference_cell(cellname)
-
-        # Handle Bubble element as RestrictedElement of P_{k} to interior
-        if family == "Bubble":
-            V = FIAT.supported_elements["Lagrange"](fiat_cell, degree)
-            tdim = cell.topological_dimension()
-            return RestrictedElement(V, _indices(V, "interior", tdim), None)
-
         # Check if finite element family is supported by FIAT
         if family not in FIAT.supported_elements:
             error("Sorry, finite element of type \"%s\" are not supported by FIAT.", family)
@@ -296,8 +303,7 @@ def _create_restricted_element(ufl_element):
     # If simple element -> create RestrictedElement from fiat_element
     if isinstance(base_element, ufl.FiniteElement):
         element = _create_fiat_element(base_element)
-        tdim = ufl_element.cell().topological_dimension()
-        return RestrictedElement(element, _indices(element, restriction_domain, tdim), restriction_domain)
+        return RestrictedElement(element, restriction_domain=restriction_domain)
 
     # If restricted mixed element -> convert to mixed restricted element
     if isinstance(base_element, ufl.MixedElement):
@@ -305,41 +311,3 @@ def _create_restricted_element(ufl_element):
         return MixedElement(elements)
 
     error("Cannot create restricted element from %s" % str(ufl_element))
-
-
-def _indices(element, restriction_domain, tdim):
-    "Extract basis functions indices that correspond to restriction_domain."
-
-    # FIXME: The restriction_domain argument in FFC/UFL needs to be re-thought and
-    # cleaned-up.
-
-    # If restriction_domain is "interior", pick basis functions associated with
-    # cell.
-    if restriction_domain == "interior":
-        return element.entity_dofs()[tdim][0]
-
-    # Pick basis functions associated with
-    # the topological degree of the restriction_domain and of all lower
-    # dimensions.
-    if restriction_domain == "facet":
-        rdim = tdim - 1
-    elif restriction_domain == "face":
-        rdim = 2
-    elif restriction_domain == "edge":
-        rdim = 1
-    elif restriction_domain == "vertex":
-        rdim = 0
-    else:
-        error("Restriction to domain: %s, is not supported." % repr(restriction_domain))
-
-    entity_dofs = element.entity_dofs()
-    indices = []
-    for dim in range(rdim + 1):
-        entities = entity_dofs[dim]
-        for (entity, index) in sorted_by_key(entities):
-            indices += index
-    return indices
-
-
-# Import FFC module with circular dependency
-from ffc.quadratureelement import QuadratureElement
