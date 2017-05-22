@@ -568,13 +568,12 @@ def _compute_reference_derivatives(data, dof_data):
     code += [""]
 
     mapping = dof_data["mapping"]
-    if "piola" in mapping:
+    if "piola" in mapping and "double" not in mapping:
         # In either of the Piola cases, the value space of the derivatives is the geometric dimension rather than the topological dimension.
         code += [f_comment("Declare array of reference derivatives on physical element.")]
 
         _p = "_p"
         num_components_p = gdim
-
         nds = tdim**max_degree * gdim
         code += [format["declaration"](f_double, f_component(f_derivatives + _p, f_int(nds)))]
         line = [f_assign(f_component(f_derivatives + _p, f_r), f_float(0.0))]
@@ -666,7 +665,7 @@ def _compute_reference_derivatives(data, dof_data):
                  for k in range(tdim)],
                 [f_transform("JINV", k, l, tdim, gdim, None)
                  for k in range(tdim)]))
-            name = f_component(f_derivatives + _p, f_matrix_index(p, f_r, f_num_derivs(_t)))
+            name = f_component(f_derivatives, f_matrix_index(p, f_r, f_num_derivs(_t)))
             lines += [f_assign(name, value)]
     elif mapping == "double contravariant piola":
         code += ["", f_comment("Using double contravariant Piola transform to map values back to the physical element.")]
@@ -689,7 +688,7 @@ def _compute_reference_derivatives(data, dof_data):
                 [f_transform("J", l, k, tdim, gdim, None)
                  for k in range(tdim)]))
             value = f_mul([f_inv(f_detJ(None)), f_inv(f_detJ(None)), value])
-            name = f_component(f_derivatives+_p,
+            name = f_component(f_derivatives,
                                f_matrix_index(p, f_r, f_num_derivs(_t)))
             lines += [f_assign(name, value)]
     else:
@@ -735,7 +734,7 @@ def _transform_derivatives(data, dof_data):
     offset = reference_offset  # physical_offset # FIXME: Should be physical offset but that breaks tests
 
     mapping = dof_data["mapping"]
-    if "piola" in mapping:
+    if "piola" in mapping and "double" not in mapping:
         # In either of the Piola cases, the value space of the derivatives
         # is the geometric dimension rather than the topological dimension.
         _p = "_p"
