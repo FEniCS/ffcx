@@ -176,7 +176,7 @@ def _tabulate_dmats(L, dof_data):
 
         # Declare varable name for coefficients.
         table = L.Symbol("dmats%d" % i)
-        code += [L.ArrayDecl("double", table, matrix.shape, matrix)]
+        code += [L.ArrayDecl("static const double", table, matrix.shape, matrix)]
 
     return code
 
