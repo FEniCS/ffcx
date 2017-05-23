@@ -27,7 +27,7 @@ from ufl import FiniteElement, MixedElement
 from ufl.utils.py23 import as_native_str
 import ffc
 from ffc.log import error
-from ffc.mixedelement import MixedElement as FFCMixedElement
+from ffc.fiatinterface import MixedElement as FFCMixedElement
 from ffc.fiatinterface import create_element, reference_cell
 
 # Local imports
