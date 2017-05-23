@@ -46,17 +46,20 @@ def _compute_reference_derivatives(L, data, dof_data):
     # times the number of components of the basis element
     num_vals = num_components*num_derivs_t
     nds = tdim**max_degree * num_components
+    derivatives = L.Symbol("derivatives")
+    code += [L.ArrayDecl("double", derivatives, nds, 0.0)]
 
     mapping = dof_data["mapping"]
-    if "piola" in mapping and gdim > num_components :
+    if "piola" in mapping and "double" not in mapping :
         # In either of the Piola cases,
         # the value space of the derivatives is the geometric dimension
         # rather than the topological dimension.
         # Increase size of derivatives array if needed
         nds = tdim**max_degree * gdim
-
-    derivatives = L.Symbol("derivatives")
-    code += [L.ArrayDecl("double", derivatives, nds, 0.0)]
+        derivatives_p = L.Symbol("derivatives_p")
+        code += [L.ArrayDecl("double", derivatives_p, nds, 0.0)]
+    else:
+        derivatives_p = L.Symbol("derivatives")
 
     # Declare matrix of dmats (which will hold the matrix product of all combinations)
     # and dmats_old which is needed in order to perform the matrix product.
@@ -134,7 +137,7 @@ def _transform_derivatives(L, data, dof_data):
     offset = reference_offset  # physical_offset # FIXME: Should be physical offset but that breaks tests
 
     mapping = dof_data["mapping"]
-    if "piola" in mapping:
+    if "piola" in mapping and "double" not in mapping:
         # In either of the Piola cases, the value space of the derivatives
         # is the geometric dimension rather than the topological dimension.
         num_components = gdim
