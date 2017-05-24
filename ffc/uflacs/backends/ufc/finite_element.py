@@ -425,6 +425,12 @@ class ufc_finite_element(ufc_generator):
             space_dim = data["space_dim"]
             mapping = data["mapping"]
 
+            J = L.Symbol("J")
+            J = L.FlattenedArray(J, dims=(gdim, tdim))
+            detJ = L.Symbol("detJ")
+            K = L.Symbol("K")
+            K = L.FlattenedArray(K, dims=(tdim, gdim))
+
             # Create code for each value dimension:
             for k in range(value_size):
                 # Create code for each vertex x_j
@@ -439,59 +445,37 @@ class ufc_finite_element(ufc_generator):
                     # FIXME: sort out all non-affine mappings and make into a function
                     # components = change_of_variables(values_at_vertex, k)
 
+                    w = []
                     if mapping == 'affine':
                         w = values[k]
                     elif mapping == 'contravariant piola':
-                        detJ = L.Symbol("detJ")
-                        J = L.Symbol("J")
-                        w = []
                         for index in range(space_dim):
-                            inner = 0.0
-                            for p in range(tdim):
-                                inner += J[p+k*tdim]*values[p][index]
-                            w.append(inner/detJ)
+                            w += [sum(J[k, p]*values[p][index]
+                                      for p in range(tdim))/detJ]
                     elif mapping == 'covariant piola':
-                        K = L.Symbol("K")
-                        w = []
                         for index in range(space_dim):
-                            acc_sum = 0.0
-                            for p in range(tdim):
-                                acc_sum += K[k+p*gdim]*values[p][index]
-                            w.append(acc_sum)
+                            w += [sum(K[p, k]*values[p][index]
+                                      for p in range(tdim))]
                     elif mapping == 'double covariant piola':
-                        K = L.Symbol("K")
-                        w = []
                         for index in range(space_dim):
-                            acc_sum = 0.0
-                            for p in range(tdim):
-                                for q in range(tdim):
-                                    acc_sum += K[k//tdim + p*gdim]*values[p][q][index]*K[k % tdim + q*gdim]
-                            w.append(acc_sum)
+                            w += [sum(K[p, k//tdim]*values[p][q][index]*K[q, k % tdim]
+                                      for q in range(tdim) for p in range(tdim))]
                     elif mapping == 'double contravariant piola':
-                        J = L.Symbol("J")
-                        detJ = L.Symbol("detJ")
-                        w = []
                         for index in range(space_dim):
-                            acc_sum = 0.0
-                            for p in range(tdim):
-                                for q in range(tdim):
-                                    acc_sum += J[p + (k//tdim)*tdim]*values[p][q][index]*J[q + (k % tdim)*tdim]
-                            acc_sum /= (detJ*detJ)
-                            w.append(acc_sum)
+                            w += [sum(J[k//tdim, p]*values[p][q][index]*J[k % tdim, q]
+                                      for q in range(tdim) for p in range(tdim))/(detJ*detJ)]
                     else:
-                        raise RuntimeError("Mapping not implemented")
+                        error("Unknown mapping: %s" % mapping)
 
                     # Contract coefficients and basis functions
                     dof_values = L.Symbol("dof_values")
                     dof_list = [dof_values[i + space_offset] for i in range(space_dim)]
-                    acc_value = 0.0
-                    for p, q in zip(dof_list, w):
-                        acc_value += p*q
+                    value = sum(p*q for (p, q) in zip(dof_list, w))
 
                     # Assign value to correct vertex
                     index = j * total_dim + (k + value_offset)
                     v_values = L.Symbol("vertex_values")
-                    code += [L.Assign(v_values[index], acc_value)]
+                    code += [L.Assign(v_values[index], value)]
 
             # Update offsets for value- and space dimension
             value_offset += data["physical_value_size"]
@@ -770,11 +754,11 @@ class ufc_finite_element(ufc_generator):
                 J[ip], detJ[ip], K[ip]
             )
 
-            transform_apply_body = [
-                L.AssignAdd(values[ip, idof, r, physical_offset + k],
-                            transform[r, s] * reference_values[ip, idof, s, reference_offset + k])
-                for k in range(num_physical_components)
-            ]
+#            transform_apply_body = [
+#                L.AssignAdd(values[ip, idof, r, physical_offset + k],
+#                            transform[r, s] * reference_values[ip, idof, s, reference_offset + k])
+#                for k in range(num_physical_components)
+#            ]
 
             msg = "Using %s transform to map values back to the physical element." % mapping.replace("piola", "Piola")
 
