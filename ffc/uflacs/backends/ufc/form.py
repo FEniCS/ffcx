@@ -77,12 +77,13 @@ class ufc_form(ufc_generator):
 
         # Check argument
         msg = "Invalid original coefficient index."
-        code = [
+
+        if positions:
+            code = [
             L.If(L.GE(i, len(positions)),
                 L.Throw("std::runtime_error", msg))
             ]
 
-        if positions:
             # Throwing a lot into the 'typename' string here but
             # no plans for building a full C++ type system
             typename = "static const std::vector<std::size_t>"
@@ -94,7 +95,8 @@ class ufc_form(ufc_generator):
                 ]
             return code
         else:
-            code += [L.Return(i)]
+            code = [ L.Throw("std::runtime_error", msg),
+                     L.Return(i) ]
         return code
 
     def create_coordinate_finite_element(self, L, ir):
