@@ -222,9 +222,8 @@ def _extract_representation_family(form, parameters):
         representations.remove("auto")
 
     # Sanity check
-    ffc_assert(len(representations.intersection((
-        'quadrature', 'auto', None))) == 0,
-        "Unexpected representation family candidates '%s'." % representations)
+    ffc_assert(len(representations.intersection(('auto', None))) == 0,
+               "Unexpected representation family candidates '%s'." % representations)
 
     # No representations requested, find compatible representations
     compatible = _find_compatible_representations(form.integrals(), [])
