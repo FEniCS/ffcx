@@ -126,61 +126,6 @@ known_uflacs_failures = set([
     "MetaData.ufl",
 ])
 
-known_tensor_failures = set([
-#    "AdaptivePoisson.ufl",
-    "AlgebraOperators.ufl",
-    "BiharmonicHHJ.ufl",
-    "BiharmonicRegge.ufl",
-    "Biharmonic.ufl",
-    "CellGeometry.ufl",
-    "CoefficientOperators.ufl",
-#    "Components.ufl",
-    "Conditional.ufl",
-#    "Constant.ufl",
-    "CustomIntegral.ufl",
-    "CustomMixedIntegral.ufl",
-    "CustomVectorIntegral.ufl",
-#    "Elasticity.ufl",
-#    "EnergyNorm.ufl",
-#    "Equation.ufl",
-    "FacetIntegrals.ufl",
-#    "FacetRestrictionAD.ufl",
-#    "Heat.ufl",
-    "HyperElasticity.ufl",
-#    "Mass.ufl",
-    "MathFunctions.ufl",
-    "MetaData.ufl",
-#    "Mini.ufl",
-#    "MixedCoefficient.ufl",
-#    "MixedMixedElement.ufl",
-#    "MixedPoissonDual.ufl",
-#    "MixedPoisson.ufl",
-#    "NavierStokes.ufl",
-#    "NeumannProblem.ufl",
-    "Normals.ufl",
-#    "Optimization.ufl",
-#    "P5tet.ufl",
-#    "P5tri.ufl",
-    "PointMeasure.ufl",
-#    "Poisson1D.ufl",
-    "PoissonDG.ufl",
-    "PoissonQuad.ufl",
-#    "Poisson.ufl",
-#    "ProjectionManifold.ufl",
-    "QuadratureElement.ufl",
-#    "ReactionDiffusion.ufl",
-#    "RestrictedElement.ufl",
-    "SpatialCoordinates.ufl",
-#    "StabilisedStokes.ufl",
-#    "Stokes.ufl",
-#    "SubDomains.ufl",
-#    "SubDomain.ufl",
-    "TensorWeightedPoisson.ufl",
-#    "TraceElement.ufl",
-#    "VectorLaplaceGradCurl.ufl",
-#    "VectorPoisson.ufl",
-])
-
 known_tsfc_failures = set([
     # Expected not to work
     "CustomIntegral.ufl",
@@ -583,7 +528,6 @@ def main(args):
     # Check command-line arguments TODO: Use argparse
     only_auto  = "--only-auto" in args
     use_auto   = "--skip-auto" not in args
-    use_tensor = "--skip-tensor" not in args
     use_uflacs = "--skip-uflacs" not in args
     use_quad   = "--skip-quad" not in args
     use_tsfc   = "--use-tsfc" in args
@@ -606,7 +550,6 @@ def main(args):
     flags = (
         "--only-auto",
         "--skip-auto",
-        "--skip-tensor",
         "--skip-uflacs",
         "--skip-quad",
         "--use-tsfc",
@@ -674,8 +617,6 @@ def main(args):
     else:
         if use_auto:
             test_cases += ["-r auto"]
-        if use_tensor:
-            test_cases += ["-r tensor"]
         if use_uflacs:
             test_cases += ["-r uflacs -O0", "-r uflacs -O"]
         if use_quad:
@@ -709,9 +650,6 @@ def main(args):
         if "quadrature" in argument and not only_forms:
             skip_forms = known_quad_failures
             info_blue("Skipping forms known to fail with quadrature:\n" + "\n".join(sorted(skip_forms)))
-        elif "tensor" in argument and not only_forms:
-            skip_forms = known_tensor_failures
-            info_blue("Skipping forms known to fail with tensor:\n" + "\n".join(sorted(skip_forms)))
         elif "uflacs" in argument and not only_forms:
             skip_forms = known_uflacs_failures
             info_blue("Skipping forms known to fail with uflacs:\n" + "\n".join(sorted(skip_forms)))

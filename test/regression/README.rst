@@ -67,15 +67,15 @@ regression data with the commit id from ``ffc-regression-data-id`` in
 How to inspect diff in output from executed generated code
 ==========================================================
 
-Say you have differences in the output of PoissonDG,
-you can diff the ``.json`` files (NB! within some tolerance
-on the floating point accuracy!) like this::
+Say you have differences in the output of PoissonDG, you can diff the
+``.json`` files (NB! within some tolerance on the floating point
+accuracy!) like this::
 
   python recdiff.py ffc-reference-data/r_uflacs/PoissonDG.json output/r_uflacs/PoissonDG.json
   python recdiff.py output/r_uflacs/PoissonDG.json output/r_tensor/PoissonDG.json
 
-Pick any combination of ``ffc-reference-data | output`` and
-``r_foo | r_bar`` you want to compare.
+Pick any combination of ``ffc-reference-data | output`` and ``r_foo |
+r_bar`` you want to compare.
 
 
 How to manually delete old reference data
@@ -93,6 +93,6 @@ in the data repository, this approach allows deleting reference data::
   cd ..
   git commit ffc-regression-data-id -m"Manually updated reference id."
 
-This is not automated because it happens rarely.
-Probably a good idea to coordinate with other devs so they
-don't introduce the deleted files with another branch.
+This is not automated because it happens rarely.  Probably a good idea
+to coordinate with other devs so they don't introduce the deleted
+files with another branch.

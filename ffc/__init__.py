@@ -35,9 +35,6 @@ from .parameters import default_parameters, default_jit_parameters
 # Import plotting
 from .plot import *
 
-# Import useful extra functionality
-from .extras import *
-
 # List of supported elements
 try:
 
@@ -62,4 +59,3 @@ except:
 
 # Import main function, entry point to script
 from ffc.main import main
-

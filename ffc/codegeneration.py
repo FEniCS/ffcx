@@ -258,7 +258,8 @@ def _generate_integral_code(ir, parameters):
     # TODO: Drop prefix argument and get from ir:
     code = r.generate_integral_code(ir, ir["prefix"], parameters)
 
-    # Hack for benchmarking overhead in assembler with empty tabulate_tensor
+    # Hack for benchmarking overhead in assembler with empty
+    # tabulate_tensor
     if parameters["generate_dummy_tabulate_tensor"]:
         code["tabulate_tensor"] = ""
 

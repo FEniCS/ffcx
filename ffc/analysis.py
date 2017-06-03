@@ -48,7 +48,6 @@ from ufl import custom_integral_types
 # FFC modules
 from ffc.log import info, begin, end, warning, debug, error, ffc_assert, warning_blue
 from ffc.utils import all_equal
-from ffc.tensor import estimate_cost
 from ffc.cpp import default_precision
 
 
@@ -156,35 +155,37 @@ def _analyze_form(form, parameters):
     if forced_r:
         warning("representation:    forced by $FFC_FORCE_REPRESENTATION to '%s'" % forced_r)
         r = forced_r
-        r = "legacy" if r in ["quadrature", "tensor"] else r
     else:
-        # Check representation parameters to figure out how to preprocess
+        # Check representation parameters to figure out how to
+        # preprocess
         r = _extract_representation_family(form, parameters)
     debug("Preprocessing form using '%s' representation family." % r)
 
     # Compute form metadata
     if r == "uflacs":
-        # Temporary workaround to let uflacs have a different preprocessing pipeline
-        # than the legacy representations quadrature and tensor. This approach imposes
-        # a limitation that e.g. uflacs and tensor representation cannot be mixed in the same form.
+        # Temporary workaround to let uflacs have a different
+        # preprocessing pipeline than the legacy quadrature
+        # representation. This approach imposes a limitation that,
+        # e.g. uflacs and qudrature, representations cannot be mixed
+        # in the same form.
         from ufl.classes import Jacobian
         form_data = compute_form_data(form,
                                       do_apply_function_pullbacks=True,
                                       do_apply_integral_scaling=True,
                                       do_apply_geometry_lowering=True,
                                       preserve_geometry_types=(Jacobian,),
-                                      do_apply_restrictions=True,
-                                      )
+                                      do_apply_restrictions=True)
     elif r == "tsfc":
         try:
-            # TSFC provides compute_form_data wrapper using correct kwargs
+            # TSFC provides compute_form_data wrapper using correct
+            # kwargs
             from tsfc.ufl_utils import compute_form_data as tsfc_compute_form_data
         except ImportError:
             error("Failed to import tsfc.ufl_utils.compute_form_data when asked "
                   "for tsfc representation.")
         form_data = tsfc_compute_form_data(form)
-    elif r == "legacy":
-        # quadrature or tensor representation
+    elif r == "quadrature":
+        # quadrature representation
         form_data = compute_form_data(form)
     else:
         error("Unexpected representation family '%s' for form preprocessing." % r)
@@ -200,42 +201,33 @@ def _analyze_form(form, parameters):
 
 
 def _extract_representation_family(form, parameters):
-    """Return 'uflacs', 'tsfc' or 'legacy', or raise error. This
-    takes care of (a) compatibility between representations due to
-    differences in preprocessing, (b) choosing uflacs for
-    higher-order geometries.
+    """Return 'uflacs', 'tsfc' or 'quadrature', or raise error. This takes
+    care of (a) compatibility between representations due to
+    differences in preprocessing, (b) choosing uflacs for higher-order
+    geometries.
 
     NOTE: Final representation is picked later by
     ``_determine_representation``.
+
     """
+
     # Fetch all representation choice requests from metadata
     representations = set(integral.metadata().get("representation", "auto")
                           for integral in form.integrals())
 
-    # If auto is present, add parameters value (which may still be auto)
-    # and then remove auto so there's no auto in the set
+    # If auto is present, add parameters value (which may still be
+    # auto) and then remove auto so there's no auto in the set
     if "auto" in representations:
         representations.add(parameters["representation"])
         representations.remove("auto")
 
-    # Translate quadrature/tensor to legacy
-    for r in list(representations):
-        if r in ['quadrature', 'tensor']:
-            representations.remove(r)
-            representations.add('legacy')
-
     # Sanity check
     ffc_assert(len(representations.intersection((
-        'quadrature', 'tensor', 'auto', None))) == 0,
+        'quadrature', 'auto', None))) == 0,
         "Unexpected representation family candidates '%s'." % representations)
 
     # No representations requested, find compatible representations
     compatible = _find_compatible_representations(form.integrals(), [])
-    # Translate quadrature/tensor to legacy
-    for r in list(compatible):
-        if r in ['quadrature', 'tensor']:
-            compatible.remove(r)
-            compatible.add('legacy')
 
     if len(representations) == 1:
         r = representations.pop()
@@ -251,10 +243,11 @@ def _extract_representation_family(form, parameters):
             # NOTE: Need to pick the same default as in _auto_select_representation
             return "uflacs"
     else:
-        # Don't tolerate user requests for mixing old and new representation
-        # families in same form due to restrictions in preprocessing
+        # Don't tolerate user requests for mixing old and new
+        # representation families in same form due to restrictions in
+        # preprocessing
         assert len(representations) > 1
-        error("Cannot mix legacy (quadrature, tensor), uflacs, or tsfc "
+        error("Cannot mix quadrature, uflacs, or tsfc "
               "representation in single form.")
 
 
@@ -262,45 +255,41 @@ def _validate_representation_choice(form_data,
                                     preprocessing_representation_family):
     """Check that effective representations
 
-    * do not mix legacy, uflacs and tsfc,
+    * do not mix quadrature, uflacs and tsfc,
     * implement higher-order geometry,
     * match employed preprocessing strategy.
 
     This function is final check that everything is compatible due
     to the mess in this file. Better safe than sorry...
+
     """
-    # Fetch all representations from integral metadata
-    # (this should by now be populated with parameters or defaults instead of auto)
+
+    # Fetch all representations from integral metadata (this should by
+    # now be populated with parameters or defaults instead of auto)
     representations = set()
     for ida in form_data.integral_data:
         representations.add(ida.metadata["representation"])
         for integral in ida.integrals:
             representations.add(integral.metadata()["representation"])
 
-    # Translate quadrature/tensor to legacy
-    for r in list(representations):
-        if r in ['quadrature', 'tensor']:
-            representations.remove(r)
-            representations.add('legacy')
-
     # No integrals
     if len(representations) == 0:
         return
 
-    # Require unique family; allow legacy only with affine meshes
+    # Require unique family; allow quadrature only with affine meshes
     if len(representations) != 1:
         error("Failed to extract unique representation family. "
               "Got '%s'." % representations)
 
     if _has_higher_order_geometry(form_data.preprocessed_form):
-        ffc_assert('legacy' not in representations,
-            "Did not expect legacy representation for higher-order geometry.")
+        ffc_assert('quadrature' not in representations,
+            "Did not expect quadrature representation for higher-order geometry.")
 
     # Check preprocessing strategy
     ffc_assert(preprocessing_representation_family in representations,
-        "Form has been preprocessed using '%s' representaion family, "
-        "while '%s' representations have been set for integrals."
-        % (preprocessing_representation_family, representations))
+               "Form has been preprocessed using '%s' representaion family, "
+               "while '%s' representations have been set for integrals."
+               % (preprocessing_representation_family, representations))
 
 
 def _has_custom_integrals(o):
@@ -379,9 +368,9 @@ def _check_quadrature_degree(degree, top_dim):
 
 
 def _extract_common_quadrature_rule(integral_metadatas):
-    # Check that quadrature rule is the same
-    # (To support mixed rules would be some work since num_points is
-    #  used to identify quadrature rules in large parts of the pipeline)
+    # Check that quadrature rule is the same (To support mixed rules
+    # would be some work since num_points is used to identify
+    # quadrature rules in large parts of the pipeline)
     quadrature_rules = [md["quadrature_rule"] for md in integral_metadatas]
     if all_equal(quadrature_rules):
         qr = quadrature_rules[0]
@@ -408,12 +397,13 @@ def _autoselect_quadrature_rule(integral_metadata, integral, form_data):
     return qr
 
 
-def _determine_representation(integral_metadatas, ida, form_data, form_r_family, parameters):
+def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
+                              parameters):
     "Determine one unique representation considering all integrals together."
 
-    # Extract unique representation among these single-domain integrals
-    # (Generating code with different representations within a
-    # single tabulate_tensor is considered not worth the effort)
+    # Extract unique representation among these single-domain
+    # integrals (Generating code with different representations within
+    # a single tabulate_tensor is considered not worth the effort)
     representations  = set(md["representation"] for md in integral_metadatas
                            if md["representation"] != "auto")
     optimize_values  = set(md["optimize"] for md in integral_metadatas)
@@ -432,7 +422,8 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
     # FIXME: Default param value is zero which is not interpreted well by tsfc!
     p, = precision_values or (parameters["precision"],)
 
-    # If it's still auto, try to determine which representation is best for these integrals
+    # If it's still auto, try to determine which representation is
+    # best for these integrals
     if r == "auto":
         # Find representations compatible with these integrals
         compatible = _find_compatible_representations(ida.integrals,
@@ -443,25 +434,14 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
         elif len(compatible) == 1:
             r, = compatible
         else:
-            # NOTE: Need to pick the same default as in _extract_representation_family
+            # NOTE: Need to pick the same default as in
+            # _extract_representation_family
             if form_r_family == "uflacs":
                 r = "uflacs"
             elif form_r_family == "tsfc":
                 r = "tsfc"
-            elif form_r_family == "legacy":
-                if "tensor" not in compatible:
-                    r = "quadrature"
-                elif "quadrature" not in compatible:
-                    r = "tensor"
-                else:
-                    r = "tensor"
-                    # Use quadrature if tensor representation is not possible or too costly
-                    for integral in ida.integrals:
-                        tensor_cost = estimate_cost(integral, form_data.function_replace_map)
-                        debug("Estimated cost of tensor representation: " + str(tensor_cost))
-                        if tensor_cost == -1 or tensor_cost > 3:
-                            r = "quadrature"
-                            break
+            elif form_r_family == "quadrature":
+                r = "quadrature"
             else:
                 error("Invalid form representation family %s." % (form_r_family,))
         info("representation:    auto --> %s" % r)
@@ -491,8 +471,8 @@ def _attach_integral_metadata(form_data, form_r_family, parameters):
         "optimize",
         # TODO: Could have finer optimize (sub)parameters here later
         "precision",
-        # NOTE: We don't pass precision to quadrature and tensor, it's not
-        #       worth resolving set_float_formatting hack for (almost)
+        # NOTE: We don't pass precision to quadrature, it's not
+        #       worth resolving set_float_formatting hack for
         #       deprecated backends
         "quadrature_degree",
         "quadrature_rule",
@@ -516,8 +496,10 @@ def _attach_integral_metadata(form_data, form_r_family, parameters):
         for i, integral in enumerate(ida.integrals):
             integral_metadatas[i].update(integral.metadata() or {})
 
-        # Determine representation, must be equal for all integrals on same subdomain
-        r, o, p = _determine_representation(integral_metadatas, ida, form_data, form_r_family, parameters)
+        # Determine representation, must be equal for all integrals on
+        # same subdomain
+        r, o, p = _determine_representation(integral_metadatas, ida, form_data,
+                                            form_r_family, parameters)
         for i, integral in enumerate(ida.integrals):
             integral_metadatas[i]["representation"] = r
             integral_metadatas[i]["optimize"] = o
@@ -528,8 +510,10 @@ def _attach_integral_metadata(form_data, form_r_family, parameters):
 
         # Determine automated updates to metadata values
         for i, integral in enumerate(ida.integrals):
-            qr = _autoselect_quadrature_rule(integral_metadatas[i], integral, form_data)
-            qd = _autoselect_quadrature_degree(integral_metadatas[i], integral, form_data)
+            qr = _autoselect_quadrature_rule(integral_metadatas[i], integral,
+                                             form_data)
+            qd = _autoselect_quadrature_degree(integral_metadatas[i], integral,
+                                               form_data)
             integral_metadatas[i]["quadrature_rule"] = qr
             integral_metadatas[i]["quadrature_degree"] = qd
 
@@ -539,7 +523,8 @@ def _attach_integral_metadata(form_data, form_r_family, parameters):
         ida.metadata["quadrature_rule"] = qr
         ida.metadata["quadrature_degree"] = qd
 
-        # Add common num_cells (I believe this must be equal but I'm not that into this work)
+        # Add common num_cells (I believe this must be equal but I'm
+        # not that into this work)
         num_cells = set(md.get("num_cells") for md in integral_metadatas)
         if len(num_cells) != 1:
             error("Found integrals with different num_cells metadata on same subdomain: %s" % (str(list(num_cells)),))
@@ -547,10 +532,10 @@ def _attach_integral_metadata(form_data, form_r_family, parameters):
         ida.metadata["num_cells"] = num_cells
 
         # Reconstruct integrals to avoid modifying the input integral,
-        # which would affect the signature computation if the
-        # integral was used again in the user program.
-        # Modifying attributes of form_data.integral_data is less problematic
-        # since it's lifetime is internal to the form compiler pipeline.
+        # which would affect the signature computation if the integral
+        # was used again in the user program.  Modifying attributes of
+        # form_data.integral_data is less problematic since it's
+        # lifetime is internal to the form compiler pipeline.
         for i, integral in enumerate(ida.integrals):
             ida.integrals[i] = integral.reconstruct(metadata=integral_metadatas[i])
 
@@ -560,7 +545,8 @@ def _attach_integral_metadata(form_data, form_r_family, parameters):
     # Validate consistency of schemes for QuadratureElements
     # TODO: Can loosen up this a bit, only needs to be consistent
     # with the integrals that the elements are used in
-    _validate_quadrature_schemes_of_elements(quad_schemes, form_data.unique_sub_elements)
+    _validate_quadrature_schemes_of_elements(quad_schemes,
+                                             form_data.unique_sub_elements)
 
 
 def _validate_quadrature_schemes_of_elements(quad_schemes, elements):
@@ -590,15 +576,15 @@ def _get_sub_elements(element):
 
 
 def _find_compatible_representations(integrals, elements):
-    """
-    Automatically select a suitable representation for integral.
-    Note that the selection is made for each integral, not for
-    each term. This means that terms which are grouped by UFL
-    into the same integral (if their measures are equal) will
-    necessarily get the same representation.
+    """Automatically select a suitable representation for integral.  Note
+    that the selection is made for each integral, not for each
+    term. This means that terms which are grouped by UFL into the same
+    integral (if their measures are equal) will necessarily get the
+    same representation.
+
     """
     # All representations
-    compatible = set(("uflacs", "quadrature", "tensor", "tsfc"))
+    compatible = set(("uflacs", "quadrature", "tsfc"))
 
     # Check for non-affine meshes
     if _has_higher_order_geometry(integrals):
@@ -613,7 +599,8 @@ def _find_compatible_representations(integrals, elements):
         # TODO: Test with uflacs, I think this works fine now:
         compatible &= set(("quadrature", "uflacs", "tsfc"))
 
-    # Get ALL sub elements, needed to check for restrictions of EnrichedElements.
+    # Get ALL sub elements, needed to check for restrictions of
+    # EnrichedElements.
     sub_elements = []
     for e in elements:
         sub_elements += _get_sub_elements(e)
