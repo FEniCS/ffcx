@@ -216,6 +216,7 @@ def _generate_includes(includes, parameters):
 
     default_cpp_includes = [
         # TODO: Avoid adding these includes if we don't need them:
+        "#include <iostream>",
         "#include <stdexcept>",
         "#include <algorithm>",
         ]
