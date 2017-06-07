@@ -141,8 +141,8 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
 
         case_code =  [L.Comment("Compute reference derivatives for dof %d." % i_dof),
                       # Accumulate sum_s coefficients[s] * aux[s]
-                      aux_declaration,
                       L.ForRange(r, 0, num_derivatives, index_type=index_type, body=[
+                          aux_declaration,
                           all_aux_computation,
                           _compute_reference_derivatives(L, dof_data,
                                                          i_dof, num_derivatives, derivs,
