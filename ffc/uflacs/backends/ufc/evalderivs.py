@@ -122,7 +122,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
         key = (dmats_names[i_dof].name, basisvalues.name)
         aux = aux_names.get(key)
         if aux is None:
-            aux_computation, aux, aux_declaration = _compute_aux_dmats_basisvalues_products(L, dof_data,
+            aux_computation, aux = _compute_aux_dmats_basisvalues_products(L, dof_data,
                 i_dof, order, num_derivatives, combinations,
                 dmats_names, basisvalues)
             aux_names[key] = aux
@@ -142,7 +142,6 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
         case_code =  [L.Comment("Compute reference derivatives for dof %d." % i_dof),
                       # Accumulate sum_s coefficients[s] * aux[s]
                       L.ForRange(r, 0, num_derivatives, index_type=index_type, body=[
-                          aux_declaration,
                           all_aux_computation,
                           _compute_reference_derivatives(L, dof_data,
                                                          i_dof, num_derivatives, derivs,
@@ -189,7 +188,6 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
         + final_loop_code
         )
 
-    print(L.StatementList(code))
     return code
 
 
@@ -320,13 +318,13 @@ def _compute_aux_dmats_basisvalues_products(L, dof_data,
     # Generate loop over number of derivatives.
     # Loop all derivatives and compute value of the derivative as:
     # deriv_on_ref[r] = coeff[dof][s]*dmat[s][t]*basis[t]
-    aux_computation = [
-            temp_dmats_declarations
-            + dmats_computation
-            + aux_accumulation
+    aux_computation = [ aux_declaration,
+                        temp_dmats_declarations
+                        + dmats_computation
+                        + aux_accumulation
     ]
 
-    return aux_computation, aux, aux_declaration
+    return aux_computation, aux
 
 
 def _compute_reference_derivatives(L, dof_data, idof,
