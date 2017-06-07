@@ -25,7 +25,7 @@ GTESTINCDIR=-I${GTEST_DIR}/include
 GTESTLIBS=-L${GTEST_DIR}/lib -lgtest -lpthread
 
 # Flags set for easy debugging
-CXXFLAGS?=-g -O0 -std=c++11 -Wall
+CXXFLAGS?=-g -O0 -std=c++11
 
 .PHONY: clean
 
