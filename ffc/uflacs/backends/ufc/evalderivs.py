@@ -122,7 +122,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
         key = (dmats_names[i_dof].name, basisvalues.name)
         aux = aux_names.get(key)
         if aux is None:
-            aux_computation, aux = _compute_aux_dmats_basisvalues_products(L, dof_data,
+            aux_computation, aux, aux_declaration = _compute_aux_dmats_basisvalues_products(L, dof_data,
                 i_dof, order, num_derivatives, combinations,
                 dmats_names, basisvalues)
             aux_names[key] = aux
@@ -138,9 +138,16 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
 
         # Compute the derivatives of the basisfunctions on the reference (FIAT) element,
         # as the dot product of the new coefficients and basisvalues.
-        case_code = _compute_reference_derivatives(L, dof_data,
-                        i_dof, num_derivatives, derivs,
-                        coefficients_for_dof, aux_for_dof)
+
+        case_code =  [L.Comment("Compute reference derivatives for dof %d." % i_dof),
+                      # Accumulate sum_s coefficients[s] * aux[s]
+                      aux_declaration,
+                      L.ForRange(r, 0, num_derivatives, index_type=index_type, body=[
+                          all_aux_computation,
+                          _compute_reference_derivatives(L, dof_data,
+                                                         i_dof, num_derivatives, derivs,
+                                                         coefficients_for_dof, aux_for_dof)])
+                      ]
 
         dof_cases.append((i_dof, case_code))
 
@@ -157,7 +164,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
         L.ForRange(idof, 0, num_dofs, index_type=index_type, body=[
             L.ArrayDecl("double", derivatives, max_num_components * max_num_derivatives, 0.0),
             L.Switch(idof, dof_cases),
-            L.ForRange(r, 0, num_derivatives, index_type=index_type, body=[
+            L.ForRange(r, 0, num_derivatives, index_type=index_type, body= [
                 L.ForRange(c, 0, num_components[idof], index_type=index_type, body=[
                     L.Assign(ref_values[ip][idof][r][reference_offset[idof] + c], derivs[c][r]),  # FIXME: validate ref_values dims
                 ]),
@@ -169,7 +176,6 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
     final_loop_code = [
         L.ForRange(ip, 0, num_points, index_type=index_type, body=
             basisvalues_code
-            + all_aux_computation
             + dof_loop_code
             )
         ]
@@ -182,6 +188,8 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
         + combinations_code
         + final_loop_code
         )
+
+    print(L.StatementList(code))
     return code
 
 
@@ -313,14 +321,12 @@ def _compute_aux_dmats_basisvalues_products(L, dof_data,
     # Loop all derivatives and compute value of the derivative as:
     # deriv_on_ref[r] = coeff[dof][s]*dmat[s][t]*basis[t]
     aux_computation = [
-        aux_declaration,
-        L.ForRange(r, 0, num_derivatives, index_type=index_type, body=
             temp_dmats_declarations
             + dmats_computation
             + aux_accumulation
-        )
     ]
-    return aux_computation, aux
+
+    return aux_computation, aux, aux_declaration
 
 
 def _compute_reference_derivatives(L, dof_data, idof,
@@ -344,9 +350,6 @@ def _compute_reference_derivatives(L, dof_data, idof,
 
     # Compute derivatives for all derivatives and components for this particular idof
     code = [
-        L.Comment("Compute reference derivatives for dof %d." % idof),
-        # Accumulate sum_s coefficients[s] * aux[s]
-        L.ForRange(r, 0, num_derivatives, index_type=index_type, body=[
             # Unrolled loop over components of basis function
             L.Assign(derivatives[c][r], 0.0)
             for c in range(num_components)
@@ -357,7 +360,6 @@ def _compute_reference_derivatives(L, dof_data, idof,
                             coefficients_for_dof[idof][c][s] * aux_for_dof[idof][s])
                 for c in range(num_components)
             ])
-        ])
     ]
     return code
 
