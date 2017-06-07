@@ -110,27 +110,36 @@ TEST(ScalarLagrangeIntervalP1, basis_derivatives)
 }
 */
 
+
 TEST(ScalarLagrangeTriangleP1, basis)
 {
-
   // Points
-  boost::multi_array<double, 2> X(boost::extents[3][2]);
-  X[0][0] = 0.0;  X[0][1] = 0.0;
+  boost::multi_array<double, 2> X(boost::extents[2][2]);
+  X[0][0] = 0.5;  X[0][1] = 0.0;
   X[1][0] = 1.0;  X[1][1] = 0.0;
-  X[2][0] = 0.0;  X[2][0] = 1.0;
+  //X[2][0] = 0.5;  X[2][1] = 0.0;
 
   // Cell vertices
   boost::multi_array<double, 2> v(boost::extents[3][2]);
   v[0][0] = 0.0;  v[0][1] = 0.0;
   v[1][0] = 1.0;  v[1][1] = 0.0;
-  v[2][0] = 0.0;  v[2][0] = 1.0;
+  v[2][0] = 0.0;  v[2][1] = 1.0;
 
   auto f = lagrange::evaluate_basis(X, v, 1);
-  for (auto fx : f)
-    std::cout << "Basis function eval: " << fx << std::endl;
+  for (std::size_t i = 0; i < f.shape()[0]; ++i)
+  {
+    std::cout << "Basis index: " << i << std::endl;
+    for (std::size_t j = 0; j < f.shape()[1]; ++j)
+    {
+      std::cout << "  Point " << j << ", val: " << f[i][j] << std::endl;
+    }
+  }
+  //for (auto fx : f)
+  //  std::cout << "Basis function eval: " << fx << std::endl;
 
   std::cout << "----------------" << std::endl;
 }
+
 
 
 TEST(ScalarLagrangeTriangleP1, basis_derivatives)
