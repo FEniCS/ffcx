@@ -55,7 +55,8 @@ def xcomb(items, n):
                 yield [items[i]] + cc
 
 
-# Elements, supported by FFC and FIAT, and their supported shape and orders
+# Elements, supported by FFC and FIAT, and their supported shape and
+# orders
 # TODO: This is not used anywhere, was it before? What is the purpose?
 single_elements = [{"family": "Lagrange",
                     "shapes": ["interval", "triangle", "tetrahedron"],
@@ -280,7 +281,11 @@ def get_data(ufl_element):
 
 _gcc_t = 0.0
 def get_ffc_values(ufl_element):
-    "Get the values from evaluate_basis and evaluate_basis_derivatives."
+    """Get the values from evaluate_basis and
+    evaluate_basis_derivatives.
+
+    """
+
     global _gcc_t
 
     # Get data from element and tabulate basis values
@@ -295,14 +300,16 @@ def get_ffc_values(ufl_element):
                "dim": geo_dim,
                "num_points": len(points),
                "points": matrix(points),
-               "cell_ref_coords": "double cell_ref_coords[{}][{}] = {}".format(num_coords, geo_dim, matrix(ref_coords)),
+               "cell_ref_coords": "double cell_ref_coords[{}][{}] = {}".format(num_coords,
+                                                                               geo_dim,
+                                                                               matrix(ref_coords)),
                "num_coords": num_coords}
     t = time.time()
 
     compile_gcc_code(evaluate_basis_code_fiat % options)
 
-    # This shows c++ spends ~70% of the total test time, so
-    # reusing subelement code should allow reducing this drastically
+    # This shows c++ spends ~70% of the total test time, so reusing
+    # subelement code should allow reducing this drastically
     _gcc_t += time.time() - t
     print("total gcc time: %.2f s" % (_gcc_t,))
 
@@ -402,10 +409,11 @@ def intmpdir(tmpdir):
     Deletes and re-creates directory from previous test runs but lets
     the directory stay after the test run for eventual inspection.
 
-    Returns the directory name, derived from the test file and function
-    plus a sequence number to work with parameterized tests.
+    Returns the directory name, derived from the test file and
+    function plus a sequence number to work with parameterized tests.
 
     Changes the current directory to the tempdir and resets cwd afterwards.
+
     """
     cwd = os.getcwd()
     path = tmpdir.strpath
