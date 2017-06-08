@@ -6,7 +6,7 @@ from ffc.compiler import compile_element
 f = open('lagrange_elements.h', 'w')
 #for cell in (interval, triangle, tetrahedron):
 for cell in (triangle,):
-    for p in range(1, 2):
+    for p in range(1, 3):
         element = FiniteElement("Lagrange", cell, p)
         header, implementation = compile_element(element,
                                                  prefix=str(cell) + "_" + str(p))
