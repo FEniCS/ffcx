@@ -1,12 +1,15 @@
 #include <gtest/gtest.h>
 
+#include <eigen3/Eigen/Core>
+#include <eigen3/Eigen/Dense>
+
 #include <ufc.h>
 #include <ufc_geometry.h>
 #include <boost/multi_array.hpp>
 #include "lagrange_elements.h"
 #include "../../uflacs/crosslanguage/cppsupport/mock_cells.h"
 
-
+#include "lagrange_poly.h"
 
 namespace
 {
@@ -41,9 +44,9 @@ namespace
         {
           for (std::size_t k = 0; k < ref_value_size; ++k)
           {
-            std::cout << "Test (basis, component, size): " << point << ", " << comp << ", " << k << std::endl;
-            std::cout << "  ref, computed: " << v_ref[point][basis][comp][k] << ", " << v[point][basis][comp][k] << std::endl;
-            //EXPECT_NEAR(v_ref[point][basis][comp][k], v[point][basis][comp][k], 1.0e-13);
+            //std::cout << "Test (basis, component, size): " << point << ", " << comp << ", " << k << std::endl;
+            //std::cout << "  ref, computed: " << v_ref[point][basis][comp][k] << ", " << v[point][basis][comp][k] << std::endl;
+            EXPECT_NEAR(v_ref[point][basis][comp][k], v[point][basis][comp][k], 1.0e-13);
           }
         }
       }
@@ -107,6 +110,38 @@ TEST(ScalarLagrangeIntervalP1, basis_derivatives)
 }
 */
 
+
+TEST(ScalarLagrangeTriangleP1, basis)
+{
+  // Points
+  boost::multi_array<double, 2> X(boost::extents[2][2]);
+  X[0][0] = 0.5;  X[0][1] = 0.0;
+  X[1][0] = 1.0;  X[1][1] = 0.0;
+  //X[2][0] = 0.5;  X[2][1] = 0.0;
+
+  // Cell vertices
+  boost::multi_array<double, 2> v(boost::extents[3][2]);
+  v[0][0] = 0.0;  v[0][1] = 0.0;
+  v[1][0] = 1.0;  v[1][1] = 0.0;
+  v[2][0] = 0.0;  v[2][1] = 1.0;
+
+  auto f = lagrange::evaluate_basis(X, v, 1);
+  for (std::size_t i = 0; i < f.shape()[0]; ++i)
+  {
+    std::cout << "Basis index: " << i << std::endl;
+    for (std::size_t j = 0; j < f.shape()[1]; ++j)
+    {
+      std::cout << "  Point " << j << ", val: " << f[i][j] << std::endl;
+    }
+  }
+  //for (auto fx : f)
+  //  std::cout << "Basis function eval: " << fx << std::endl;
+
+  std::cout << "----------------" << std::endl;
+}
+
+
+
 TEST(ScalarLagrangeTriangleP1, basis_derivatives)
 {
   // Create element
@@ -136,6 +171,7 @@ TEST(ScalarLagrangeTriangleP1, basis_derivatives)
     v_ref[p][2][0][0] = 0.0;
     v_ref[p][2][1][0] = 1.0;
   }
+
 
   mock_cell cell;
   cell.fill_reference_triangle(2);
