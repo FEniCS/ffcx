@@ -102,15 +102,50 @@ namespace lagrange
     return A;
   }
 
-  // Evaluate a polynomial at collection of points
-  std::vector<double> eval(const boost::multi_array<double, 2>& points,
-                           const boost::multi_array<unsigned int, 2>& monomials,
-                           const std::vector<double>& coefficients)
+  void derivative(std::vector<double>& coefficients,
+                  boost::multi_array<unsigned int, 2>& monomials,
+                  const unsigned int component)
   {
+    const std::size_t pdim = monomials.shape()[0];
+    const std::size_t gdim = monomials.shape()[1];
+    assert(component < gdim);
+
+    boost::multi_array<unsigned int, 2> m_diff = monomials;
+    std::vector<double> c_diff = coefficients;
+    for (std::size_t i = 0; i < pdim; ++i)
+    {
+      m_diff[i][component] = monomials[i][component] - 1;
+      c_diff[i] = coefficients[i]*monomials[i][component];
+    }
+
+    monomials = m_diff;
+    coefficients = c_diff;
+  }
+
+  // Evaluate a polynomial at collection of points
+  std::vector<double>
+    eval_polynomial(const boost::multi_array<double, 2>& points,
+                    const boost::multi_array<unsigned int, 2> monomials0,
+                    const std::vector<double> coefficients0,
+                    const std::vector<unsigned int> diff)
+  {
+    // Copy
+    boost::multi_array<unsigned int, 2> monomials = monomials0;
+    std::vector<double> coefficients = coefficients0;
+
     // Geometric dimension
     const std::size_t gdim = points.shape()[1];
     assert(!monomials.empty());
     assert(monomials[0].size() == gdim);
+    assert(diff.size() == gdim);
+
+    // Differentiate
+    for (std::size_t i = 0; i < diff.size(); ++i)
+    {
+      assert(diff.size() == gdim);
+      for (std::size_t j = 0; j < diff[i]; ++j)
+        derivative(coefficients, monomials, i);
+    }
 
     // Vector to hold values at each point
     std::vector<double> f;
@@ -141,10 +176,11 @@ namespace lagrange
   }
 
   // Evaluates Lagrange (scalar) basis functions at points on affine
-  // cells, returning f[basis_index][point]
-  boost::multi_array<double, 2> evaluate_basis(const boost::multi_array<double, 2>& x,
+  // cells, returning f[basis_index][point][num_derivs]
+  boost::multi_array<double, 3> evaluate_basis(const boost::multi_array<double, 2>& x,
                                                const boost::multi_array<double, 2>& vertices,
-                                               int degree)
+                                               int degree,
+                                               int diff_order)
   {
     // Geometric dim
     const std::size_t gdim = x.shape()[1];
@@ -154,7 +190,7 @@ namespace lagrange
     const std::size_t num_points = x.shape()[0];
 
     // Build monomials
-    const boost::multi_array<unsigned int, 2> p = poly_basis(degree, gdim);
+    const boost::multi_array<unsigned int, 2> poly = poly_basis(degree, gdim);
     //for (auto d : p)
     //{
     //  std::cout << "Mono: " << std::endl;
@@ -165,11 +201,11 @@ namespace lagrange
     //}
 
     // Dimension of polynomial space
-    const std::size_t dim = p.shape()[0];
+    const std::size_t dim = poly.shape()[0];
     //std::cout << "Poly space dim: " << dim << std::endl;
 
     // Build Vandermonde matrix
-    const MatrixXd A = vandermonde(p, vertices);
+    const MatrixXd A = vandermonde(poly, vertices);
     //Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
     //std::cout << A.format(CleanFmt) << std::endl;
 
@@ -177,11 +213,14 @@ namespace lagrange
     Eigen::FullPivLU<MatrixXd> LU(A);
 
     // Iterate over basis functions and evaluate at points
-    boost::multi_array<double, 2> f(boost::extents[dim][num_points]);
-    for (std::size_t i = 0; i < dim; ++i)
+    int diff_dim = 1;
+    if (diff_order > 0)
+      diff_dim = gdim;
+    boost::multi_array<double, 3> f(boost::extents[dim][num_points][diff_dim]);
+    for (std::size_t d = 0; d < dim; ++d)
     {
       VectorXd b = VectorXd::Zero(dim);
-      b[i] = 1.0;
+      b[d] = 1.0;
 
       // Solve and copy coefficients into a vector
       const VectorXd c = LU.solve(b);
@@ -189,16 +228,37 @@ namespace lagrange
       //for (std::size_t k = 0; k < c.rows(); ++k)
       //  std::cout << "C: " << c[k] << std::endl;
 
-      // Evaluate basis function i at each point
-      std::vector<double> fp = eval(x, p, coeff);
+      // Evaluate basis function i at each point in x
+      std::vector<std::vector<unsigned int>> diff;
+      if (diff_order == 0)
+        diff.push_back(std::vector<unsigned int>(gdim, 0));
+      else if (diff_order == 1)
+      {
+        std::cout << "Diff order 1" << std::endl;
+        diff.resize(gdim);
+        for (std::size_t c = 0; c < gdim; ++c)
+        {
+          diff[c] = std::vector<unsigned int>(gdim, 0);
+          diff[c][c] = 1;
+        }
+      }
 
-      // Copy result in top return array
-      std::copy(std::begin(fp), std::end(fp), f[i].begin());
+      std::cout << "****Diff size: " << diff.size() << std::endl;
+      for (std::size_t df = 0; df < diff.size(); ++df)
+      {
+        std::cout << "  Diff: " << df << std::endl;
+        for (std::size_t ii = 0; ii < diff[df].size(); ++ii)
+          std::cout << "    " << diff[df][ii] << std::endl;
 
-      //for (auto _f : fp)
-      //  std::cout << "   Basis function eval: " << _f << std::endl;
+        std::vector<double> fp = eval_polynomial(x, poly, coeff, diff[df]);
 
-      //f.insert(std::end(f), std::begin(fp), std::end(fp));
+        // Copy result into return array
+        for (std::size_t p = 0; p < num_points; ++p)
+        {
+          std::cout << "Test vals: " << fp[p] << std::endl;
+          f[d][p][df] = fp[p];
+        }
+      }
     }
 
     return f;
