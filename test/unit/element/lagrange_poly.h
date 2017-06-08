@@ -18,7 +18,7 @@
 
 namespace lagrange
 {
-  // This collection of function computes Lagrange polynomial on
+  // This collection of functions computes Lagrange polynomial on
   // simplices via the Vandermonde matrix. It is used to test UFC
   // code, and the approach is not advocated for production runs. It
   // is used to test the FFC-genereted basis evaluation code.
@@ -78,7 +78,9 @@ namespace lagrange
                        const boost::multi_array<double, 2>& X)
   {
     const std::size_t dim = monomials.shape()[0];
+    std::cout << "** pdim: " << dim << std::endl;
     const std::size_t gdim = X.shape()[1];
+    std::cout << "** gdim: " << gdim << std::endl;
     assert(X.shape()[0] == dim);
     assert(monomials.shape()[1] == gdim);
 
@@ -157,7 +159,6 @@ namespace lagrange
 
     // Build monomials
     const boost::multi_array<unsigned int, 2> p = poly_basis(degree, gdim);
-    /*
     for (auto d : p)
     {
       std::cout << "Mono: " << std::endl;
@@ -166,15 +167,15 @@ namespace lagrange
         std::cout << "    " << e << std::endl;
       }
     }
-    */
 
     // Dimension of polynomial space
     const std::size_t dim = p.shape()[0];
+    std::cout << "Poly space dim: " << dim << std::endl;
 
     // Build Vandermonde matrix
     const MatrixXd A = vandermonde(p, vertices);
-    //Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
-    //std::cout << A.format(CleanFmt) << std::endl;
+    Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+    std::cout << A.format(CleanFmt) << std::endl;
 
     // Factorize Vandermonde matrix
     Eigen::FullPivLU<MatrixXd> LU(A);
