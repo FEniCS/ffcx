@@ -13,6 +13,67 @@
 
 namespace
 {
+  // Tests computes derivatives on a reference cell (using
+  // ufc::finite_element::evaluate_basis_reference and
+  // ufc::finite_element::evaluate_basis_aa)
+  void test_eval_basis_reference(const ufc::finite_element& e,
+                                 const boost::multi_array<double, 2>& X)
+  {
+
+    // Number of points
+    const std::size_t num_points = X.shape()[0];
+
+    const std::size_t dim = e.space_dimension();
+    const std::size_t gdim = e.geometric_dimension();
+    const std::size_t degree = e.degree();
+    const std::size_t ref_value_size = e.reference_value_size();
+
+    // Get dof coordinates on reference cell
+    boost::multi_array<double, 2> v(boost::extents[dim][gdim]);
+    e.tabulate_reference_dof_coordinates(v.data());
+
+    // Compute reference values
+    auto f_ref = lagrange::evaluate_basis(X, v, degree);
+
+    // Compute values via FFC (reference version)
+    boost::multi_array<double, 3> f(boost::extents[num_points][dim][ref_value_size]);
+    std::fill_n(f.data(), f.num_elements(), 100.0);
+    e.evaluate_reference_basis(f.data(), X.shape()[0], X.data());
+
+    // Check values
+    // Loop over basis functions
+    for (std::size_t i = 0; i < f_ref.shape()[0]; ++i)
+    {
+      // Loop over points
+      for (std::size_t j = 0; j < f_ref.shape()[1]; ++j)
+        EXPECT_NEAR(f_ref[i][j], f[j][i][0], 1.0e-13);
+    }
+
+    // Test real space ufc::finite_element::evaluate_basis
+    mock_cell cell;
+    if (e.cell_shape() == ufc::shape::interval)
+      cell.fill_reference_interval(gdim);
+    else if (e.cell_shape() == ufc::shape::triangle)
+      cell.fill_reference_triangle(gdim);
+    else if (e.cell_shape() == ufc::shape::tetrahedron)
+      cell.fill_reference_tetrahedron(gdim);
+    else
+      std::cerr << "Wrong cell type" << std::endl;
+
+    // Loop over points
+    std::vector<double> f_eval(dim);
+    for (std::size_t j = 0; j < f_ref.shape()[1]; ++j)
+    {
+      std::vector<double> p(X[j].begin(), X[j].end());
+      e.evaluate_basis_all(f_eval.data(), p.data(), cell.coordinate_dofs, 0);
+
+      // Loop over basis functions
+      for (std::size_t i = 0; i < f_ref.shape()[0]; ++i)
+        EXPECT_NEAR(f_ref[i][j], f_eval[i], 1.0e-13);
+    }
+  }
+
+
   // Tests computes derivatives on a reference cell (using reference
   // and physical version)
   void test_reference_derivatives(const ufc::finite_element& e,
@@ -40,12 +101,7 @@ namespace
       for (std::size_t basis = 0; basis < space_dim; ++basis)
         for (std::size_t comp = 0; comp < gdim; ++comp)
           for (std::size_t k = 0; k < ref_value_size; ++k)
-          {
-            //std::cout << "Test (basis, component, size): " << point << ", " << comp << ", " << k << std::endl;
-            //std::cout << "  ref, computed: " << v_ref[point][basis][comp][k] << ", " << v[point][basis][comp][k] << std::endl;
             EXPECT_NEAR(v_ref[point][basis][comp][k], v[point][basis][comp][k], 1.0e-13);
-          }
-
 
    // Compute derivatives on real element using mock element which
    // corresponds to reference cell
@@ -53,8 +109,6 @@ namespace
     for (std::size_t p = 0; p < num_points; ++p)
     {
       std::vector<double> _x(X[p].begin(), X[p].end());
-      std::cout <<  std::endl;
-      std::cout << "Calling basis derivs" << std::endl;
       e.evaluate_basis_derivatives_all(1, w.data(), _x.data(),
                                        cell.coordinate_dofs, 0);
       for (std::size_t basis = 0; basis < space_dim; ++basis)
@@ -103,76 +157,79 @@ TEST(ScalarLagrangeIntervalP1, basis_derivatives)
 
 
 
-TEST(ScalarLagrangeTriangle, eval_basis)
+TEST(ScalarLagrange, eval_basis)
 {
-  // Points at which to evaluate basis
-  boost::multi_array<double, 2> X(boost::extents[4][2]);
-  X[0][0] = 0.5;  X[0][1] = 0.0;
-  X[1][0] = 1.0;  X[1][1] = 0.0;
-  X[2][0] = 0.5;  X[2][1] = 0.0;
-  X[3][0] = 0.5;  X[3][1] = 0.5;
-
-  // Number of points
-  const std::size_t num_points = X.shape()[0];
-
-  // Lists of elements to test
-  std::vector<std::shared_ptr<ufc::finite_element>> elements
-    = {std::make_shared<triangle_1_finite_element_0>(),
-       std::make_shared<triangle_2_finite_element_0>(),
-       std::make_shared<triangle_3_finite_element_0>(),
-       std::make_shared<triangle_4_finite_element_0>()};
-
-  // Iterate over elements
-  for (auto e : elements)
+  // Interval elements
   {
-    assert(e);
-    const std::size_t dim = e->space_dimension();
-    const std::size_t gdim = e->geometric_dimension();
-    const std::size_t degree = e->degree();
-    const std::size_t ref_value_size = e->reference_value_size();
+    // Points at which to evaluate basis
+    boost::multi_array<double, 2> X(boost::extents[4][1]);
+    X[0][0] = 0.5;  X[1][0] = 1.0; X[2][0] = 0.5; X[3][0] = 0.5;
 
-    // Get dof coordinates on reference cell
-    boost::multi_array<double, 2> v(boost::extents[dim][gdim]);
-    e->tabulate_reference_dof_coordinates(v.data());
+    // Lists of elements to test
+    std::vector<std::shared_ptr<ufc::finite_element>> elements
+      = {std::make_shared<interval_1_finite_element_0>(),
+         std::make_shared<interval_2_finite_element_0>(),
+         std::make_shared<interval_3_finite_element_0>(),
+         std::make_shared<interval_4_finite_element_0>()};
 
-    // Compute reference values
-    std::cout << "Poly degree: " << degree << std::endl;
-    auto f_ref = lagrange::evaluate_basis(X, v, degree);
-
-    // Compute values via FFC (reference version)
-    boost::multi_array<double, 3> f(boost::extents[num_points][dim][ref_value_size]);
-    std::fill_n(f.data(), f.num_elements(), 100.0);
-    e->evaluate_reference_basis(f.data(), X.shape()[0], X.data());
-
-    // Check values
-    // Loop over basis functions
-    for (std::size_t i = 0; i < f_ref.shape()[0]; ++i)
+    // Iterate over elements
+    for (auto e : elements)
     {
-      // Loop over points
-      for (std::size_t j = 0; j < f_ref.shape()[1]; ++j)
-      {
-        EXPECT_NEAR(f_ref[i][j], f[j][i][0], 1.0e-13);
-      }
-    }
-
-    // Test real space ufc::finite_element::evaluate_basis
-    mock_cell cell;
-    cell.fill_reference_triangle(gdim);
-    // Loop over points
-    std::vector<double> f_eval(dim);
-    for (std::size_t j = 0; j < f_ref.shape()[1]; ++j)
-    {
-      std::vector<double> p(X[j].begin(), X[j].end());
-      std::cout << "Point: " << p[0] << ", " << p[1] << std::endl;
-      e->evaluate_basis_all(f_eval.data(), p.data(), cell.coordinate_dofs, 0);
-
-      // Loop over basis functions
-      for (std::size_t i = 0; i < f_ref.shape()[0]; ++i)
-        EXPECT_NEAR(f_ref[i][j], f_eval[i], 1.0e-13);
+      assert(e);
+      test_eval_basis_reference(*e, X);
     }
   }
-}
 
+
+  // Triangles
+  {
+    // Points at which to evaluate basis
+    boost::multi_array<double, 2> X(boost::extents[4][2]);
+    X[0][0] = 0.5;  X[0][1] = 0.0;
+    X[1][0] = 1.0;  X[1][1] = 0.0;
+    X[2][0] = 0.5;  X[2][1] = 0.0;
+    X[3][0] = 0.5;  X[3][1] = 0.5;
+
+    // Lists of elements to test
+    std::vector<std::shared_ptr<ufc::finite_element>> elements
+      = {std::make_shared<triangle_1_finite_element_0>(),
+         std::make_shared<triangle_2_finite_element_0>(),
+         std::make_shared<triangle_3_finite_element_0>(),
+         std::make_shared<triangle_4_finite_element_0>()};
+
+    // Iterate over elements
+    for (auto e : elements)
+    {
+      assert(e);
+      test_eval_basis_reference(*e, X);
+    }
+  }
+
+  // Tetrahedra
+  {
+    // Points at which to evaluate basis
+    boost::multi_array<double, 2> X(boost::extents[4][3]);
+    X[0][0] = 0.5;  X[0][1] = 0.0; X[0][2] = 0.0;
+    X[1][0] = 1.0;  X[1][1] = 0.0; X[0][2] = 1.0;
+    X[2][0] = 0.5;  X[2][1] = 0.0; X[0][2] = 0.0;
+    X[3][0] = 0.5;  X[3][1] = 0.5; X[0][2] = 0.2;
+
+    // Lists of elements to test
+    std::vector<std::shared_ptr<ufc::finite_element>> elements
+      = {std::make_shared<tetrahedron_1_finite_element_0>(),
+         std::make_shared<tetrahedron_2_finite_element_0>(),
+         std::make_shared<tetrahedron_3_finite_element_0>(),
+         std::make_shared<tetrahedron_4_finite_element_0>()};
+
+    // Iterate over elements
+    for (auto e : elements)
+    {
+      assert(e);
+      test_eval_basis_reference(*e, X);
+    }
+
+  }
+}
 
 
 TEST(ScalarLagrangeTriangleP1, basis_derivatives)

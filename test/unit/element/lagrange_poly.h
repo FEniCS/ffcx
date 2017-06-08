@@ -78,9 +78,7 @@ namespace lagrange
                        const boost::multi_array<double, 2>& X)
   {
     const std::size_t dim = monomials.shape()[0];
-    std::cout << "** pdim: " << dim << std::endl;
     const std::size_t gdim = X.shape()[1];
-    std::cout << "** gdim: " << gdim << std::endl;
     assert(X.shape()[0] == dim);
     assert(monomials.shape()[1] == gdim);
 
@@ -90,8 +88,6 @@ namespace lagrange
     {
       // Get point for this row
       const auto xp = X[i];
-      //std::cout << "Point (a) : " << xp[0] << ", " << xp[1] << std::endl;
-      //std::cout << "Point (b) : " << X[i][0] << ", " << X[i][1] << std::endl;
 
       // Fill columns for current point
       for (std::size_t j = 0; j < dim; ++j)
@@ -159,23 +155,23 @@ namespace lagrange
 
     // Build monomials
     const boost::multi_array<unsigned int, 2> p = poly_basis(degree, gdim);
-    for (auto d : p)
-    {
-      std::cout << "Mono: " << std::endl;
-      for (auto e : d)
-      {
-        std::cout << "    " << e << std::endl;
-      }
-    }
+    //for (auto d : p)
+    //{
+    //  std::cout << "Mono: " << std::endl;
+    //  for (auto e : d)
+    //  {
+    //    std::cout << "    " << e << std::endl;
+    //  }
+    //}
 
     // Dimension of polynomial space
     const std::size_t dim = p.shape()[0];
-    std::cout << "Poly space dim: " << dim << std::endl;
+    //std::cout << "Poly space dim: " << dim << std::endl;
 
     // Build Vandermonde matrix
     const MatrixXd A = vandermonde(p, vertices);
-    Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
-    std::cout << A.format(CleanFmt) << std::endl;
+    //Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+    //std::cout << A.format(CleanFmt) << std::endl;
 
     // Factorize Vandermonde matrix
     Eigen::FullPivLU<MatrixXd> LU(A);
