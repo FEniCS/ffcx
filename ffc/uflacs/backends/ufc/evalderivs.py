@@ -115,7 +115,11 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
     all_aux_computation = []
     aux_names = {}
     aux_for_dof = {}
+
+    # Create code for all basis values (dofs).
+    dof_cases = []
     for i_dof, dof_data in enumerate(data["dofs_data"]):
+
         embedded_degree = dof_data["embedded_degree"]
         basisvalues = basisvalues_for_degree[embedded_degree]
 
@@ -123,16 +127,12 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
         aux = aux_names.get(key)
         if aux is None:
             aux_computation, aux = _compute_aux_dmats_basisvalues_products(L, dof_data,
-                i_dof, order, num_derivatives, combinations,
-                dmats_names, basisvalues)
+                                           i_dof, order, num_derivatives, combinations,
+                                                              dmats_names, basisvalues)
             aux_names[key] = aux
-            all_aux_computation += aux_computation
 
         aux_for_dof[i_dof] = aux
 
-    # Create code for all basis values (dofs).
-    dof_cases = []
-    for i_dof, dof_data in enumerate(data["dofs_data"]):
         embedded_degree = dof_data["embedded_degree"]
         basisvalues = basisvalues_for_degree[embedded_degree]
 
@@ -142,7 +142,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
         case_code =  [L.Comment("Compute reference derivatives for dof %d." % i_dof),
                       # Accumulate sum_s coefficients[s] * aux[s]
                       L.ForRange(r, 0, num_derivatives, index_type=index_type, body=[
-                          all_aux_computation,
+                          aux_computation,
                           _compute_reference_derivatives(L, dof_data,
                                                          i_dof, num_derivatives, derivs,
                                                          coefficients_for_dof, aux_for_dof)])
@@ -294,34 +294,41 @@ def _compute_aux_dmats_basisvalues_products(L, dof_data,
     # Declare matrix of dmats (which will hold the matrix product of all combinations)
     # and dmats_old which is needed in order to perform the matrix product.
     dmats = L.Symbol("dmats")
-    temp_dmats_declarations = [
-        L.Comment("Declare derivative matrix (of polynomial basis)."),
-        L.ArrayDecl("double", dmats, shape_dmats),
-        ]
+    dmats_old = L.Symbol("dmats_old")
 
-    # Compute dmats as a recursive matrix product
-    dmats_computation = _compute_dmats(L, len(dof_data["dmats"]), shape_dmats,
-                                       dmats, dmats_names, idof, order, combinations,
-                                       [s, t, u, tu], r)
+    # Create dmats matrix by multiplication
+    comb = L.Symbol("comb")
+
+    dmats_name = dmats_names[idof]
 
     # Accumulate aux = dmats * basisvalues
     aux = L.Symbol("aux_%s_%s" % (dmats_names[idof], basisvalues))
-    aux_declaration = L.ArrayDecl("double", aux, shape_dmats[0], values=0)
-    aux_accumulation = [
-        L.ForRange(s, 0, shape_dmats[0], index_type=index_type, body=[
-            L.ForRange(t, 0, shape_dmats[1], index_type=index_type, body=[
-                L.AssignAdd(aux[s], dmats[s, t] * basisvalues[t])
-            ])
-        ])
-    ]
 
     # Generate loop over number of derivatives.
     # Loop all derivatives and compute value of the derivative as:
     # deriv_on_ref[r] = coeff[dof][s]*dmat[s][t]*basis[t]
-    aux_computation = [ aux_declaration,
-                        temp_dmats_declarations
-                        + dmats_computation
-                        + aux_accumulation
+    aux_computation = [ L.ArrayDecl("double", aux, shape_dmats[0], values=0),
+                        L.Comment("Declare derivative matrix (of polynomial basis)."),
+                        L.ArrayDecl("double", dmats, shape_dmats),
+                        L.Comment("Initialize dmats."),
+                        L.VariableDecl(index_type, comb, combinations[r, 0]),
+                        L.MemCopy(L.AddressOf(dmats_name[comb][0][0]),  L.AddressOf(dmats[0][0]), shape_dmats[0]*shape_dmats[1]),
+                        L.Comment("Looping derivative order to generate dmats."),
+                        L.ForRange(s, 1, order, index_type=index_type, body=[
+                            L.Comment("Store previous dmats matrix."),
+                            L.ArrayDecl("double", dmats_old, shape_dmats),
+                            L.MemCopy(L.AddressOf(dmats[0][0]),  L.AddressOf(dmats_old[0][0]), shape_dmats[0]*shape_dmats[1]),
+                            L.Comment("Resetting dmats."),
+                            L.MemZero(L.AddressOf(dmats[0][0]), shape_dmats[0]*shape_dmats[1]),
+                            L.Comment("Update dmats using an inner product."),
+                            L.Assign(comb, combinations[r, s]),
+                            L.ForRange(t, 0, shape_dmats[0], index_type=index_type, body=
+                               L.ForRange(u, 0, shape_dmats[1], index_type=index_type, body=
+                                  L.ForRange(tu, 0, shape_dmats[0], index_type=index_type, body=
+                                     L.AssignAdd(dmats[t, u], dmats_name[comb, t, tu] * dmats_old[tu, u]))))]),
+                        L.ForRange(s, 0, shape_dmats[0], index_type=index_type, body=
+                                   L.ForRange(t, 0, shape_dmats[1], index_type=index_type, body=
+                                              L.AssignAdd(aux[s], dmats[s, t] * basisvalues[t])))
     ]
 
     return aux_computation, aux
@@ -358,55 +365,5 @@ def _compute_reference_derivatives(L, dof_data, idof,
                             coefficients_for_dof[idof][c][s] * aux_for_dof[idof][s])
                 for c in range(num_components)
             ])
-    ]
-    return code
-
-
-def _compute_dmats(L, num_dmats, shape_dmats,
-                   dmats, dmats_names, idof, order, combinations,
-                   available_indices, deriv_index):
-    "Compute values of dmats as a matrix product."
-    s, t, u, tu = available_indices
-
-    dmats_old = L.Symbol("dmats_old")
-
-    # Create dmats matrix by multiplication
-    comb = L.Symbol("comb")
-
-    dmats_name = dmats_names[idof]
-
-    # Local helper function for loops over t,u < shape_dmats
-    def tu_loops(body):
-        return L.ForRange(t, 0, shape_dmats[0], index_type=index_type, body=
-                   L.ForRange(u, 0, shape_dmats[1], index_type=index_type, body=
-                       body
-                   )
-               )
-
-    code = [
-        L.Comment("Initialize dmats."),
-        L.VariableDecl(index_type, comb, combinations[deriv_index, 0]),
-        tu_loops(
-            L.Assign(dmats[t, u], dmats_name[comb, t, u])
-        ),
-        L.Comment("Looping derivative order to generate dmats."),
-        L.ForRange(s, 1, order, index_type=index_type, body=[
-            L.Comment("Store previous dmats matrix."),
-            L.ArrayDecl("double", dmats_old, shape_dmats),
-            tu_loops(
-                L.Assign(dmats_old[t, u], dmats[t, u])
-            ),
-            L.Comment("Resetting dmats."),
-            tu_loops(
-                L.Assign(dmats[t, u], L.LiteralFloat(0.0))
-            ),
-            L.Comment("Update dmats using an inner product."),
-            L.Assign(comb, combinations[deriv_index, s]),
-            tu_loops(
-                L.ForRange(tu, 0, shape_dmats[0], index_type=index_type, body=
-                        L.AssignAdd(dmats[t, u], dmats_name[comb, t, tu] * dmats_old[tu, u])
-                )
-            ),
-        ])
     ]
     return code
