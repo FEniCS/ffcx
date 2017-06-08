@@ -13,6 +13,40 @@
 
 namespace
 {
+  // Return list of elements
+  std::vector<std::shared_ptr<ufc::finite_element>>
+  get_lagrange_elements(ufc::shape shape)
+  {
+    std::vector<std::shared_ptr<ufc::finite_element>> elements;
+    if (shape == ufc::shape::interval)
+    {
+      elements = {std::make_shared<interval_1_finite_element_0>(),
+                  std::make_shared<interval_2_finite_element_0>(),
+                  std::make_shared<interval_3_finite_element_0>(),
+                  std::make_shared<interval_4_finite_element_0>()};
+
+    }
+    else if (shape == ufc::shape::triangle)
+    {
+      elements = {std::make_shared<triangle_1_finite_element_0>(),
+                  std::make_shared<triangle_2_finite_element_0>(),
+                  std::make_shared<triangle_3_finite_element_0>(),
+                  std::make_shared<triangle_4_finite_element_0>()};
+    }
+    else if (shape == ufc::shape::tetrahedron)
+    {
+      elements = {std::make_shared<tetrahedron_1_finite_element_0>(),
+                  std::make_shared<tetrahedron_2_finite_element_0>(),
+                  std::make_shared<tetrahedron_3_finite_element_0>(),
+                  std::make_shared<tetrahedron_4_finite_element_0>()};
+    }
+    else
+      std::cerr << "Unsupported cell type" << std::endl;
+
+    return elements;
+  }
+
+
   // Tests basis evaluations on a reference cell (using
   // ufc::finite_element::evaluate_basis_reference and
   // ufc::finite_element::evaluate_basis_aa)
@@ -94,8 +128,6 @@ namespace
     auto f_ref = lagrange::evaluate_basis(X, v, degree, 1);
 
     // Compute values via FFC (reference version)
-    //boost::multi_array<double, 4> f(boost::extents[num_points][dim][gdim][ref_value_size]);
-    //std::fill_n(f.data(), f.num_elements(), 100.0);
     boost::multi_array<double, 4> f(boost::extents[num_points][dim][gdim][ref_value_size]);
     e.evaluate_reference_basis_derivatives(f.data(), 1, num_points, X.data());
 
@@ -108,7 +140,6 @@ namespace
       {
         // Loop over derivative components
         for (std::size_t r = 0; r < f_ref.shape()[2]; ++r)
-          //std::cout << "Ref: " << f_ref[i][j][r] << std::endl;
           EXPECT_NEAR(f_ref[i][j][r], f[j][i][r][0], 1.0e-13);
       }
     }
@@ -132,25 +163,12 @@ namespace
       e.evaluate_basis_derivatives_all(1, f_eval.data(), point.data(),
                                        cell.coordinate_dofs, 0);
 
-      std::cout << "!!! old" << std::endl;
-      for (std::size_t kk = 0; kk < dim*gdim; ++kk)
-      {
-        std::cout << f_eval[kk] << std::endl;
-      }
-      std::cout << "------" << std::endl;
-
-
       // Loop over basis functions
-      std::cout << "---" << std::endl;
       for (std::size_t d = 0; d < f_ref.shape()[0]; ++d)
       {
         // Loop over derivative components
         for (std::size_t r = 0; r < f_ref.shape()[2]; ++r)
-        {
-          std::cout << f_ref[d][p][r] << ", " << f_eval[gdim*d + r] << std::endl;
           EXPECT_NEAR(f_ref[d][p][r], f_eval[gdim*d + r], 1.0e-12);
-         }
-
       }
     }
   }
@@ -202,14 +220,8 @@ TEST(FiniteElementScalarLagrange, eval_basis)
     boost::multi_array<double, 2> X(boost::extents[4][1]);
     X[0][0] = 0.5;  X[1][0] = 1.0; X[2][0] = 0.5; X[3][0] = 0.5;
 
-    // Lists of elements to test
-    std::vector<std::shared_ptr<ufc::finite_element>> elements
-      = {std::make_shared<interval_1_finite_element_0>(),
-         std::make_shared<interval_2_finite_element_0>(),
-         std::make_shared<interval_3_finite_element_0>(),
-         std::make_shared<interval_4_finite_element_0>()};
-
-    // Iterate over elements
+    // Lists of elements and test
+    auto elements =  get_lagrange_elements(ufc::shape::interval);
     for (auto e : elements)
     {
       assert(e);
@@ -226,14 +238,8 @@ TEST(FiniteElementScalarLagrange, eval_basis)
     X[2][0] = 0.5;  X[2][1] = 0.0;
     X[3][0] = 0.5;  X[3][1] = 0.5;
 
-    // Lists of elements to test
-    std::vector<std::shared_ptr<ufc::finite_element>> elements
-      = {std::make_shared<triangle_1_finite_element_0>(),
-         std::make_shared<triangle_2_finite_element_0>(),
-         std::make_shared<triangle_3_finite_element_0>(),
-         std::make_shared<triangle_4_finite_element_0>()};
-
-    // Iterate over elements
+    // Get lists of elements and test
+    auto elements =  get_lagrange_elements(ufc::shape::triangle);
     for (auto e : elements)
     {
       assert(e);
@@ -250,14 +256,8 @@ TEST(FiniteElementScalarLagrange, eval_basis)
     X[2][0] = 0.5;  X[2][1] = 0.0; X[0][2] = 0.0;
     X[3][0] = 0.5;  X[3][1] = 0.5; X[0][2] = 0.2;
 
-    // Lists of elements to test
-    std::vector<std::shared_ptr<ufc::finite_element>> elements
-      = {std::make_shared<tetrahedron_1_finite_element_0>(),
-         std::make_shared<tetrahedron_2_finite_element_0>(),
-         std::make_shared<tetrahedron_3_finite_element_0>(),
-         std::make_shared<tetrahedron_4_finite_element_0>()};
-
-    // Iterate over elements
+    // Get lists of elements and test
+    auto elements =  get_lagrange_elements(ufc::shape::tetrahedron);
     for (auto e : elements)
     {
       assert(e);
@@ -269,28 +269,20 @@ TEST(FiniteElementScalarLagrange, eval_basis)
 
 TEST(FiniteElementScalarLagrange, eval_basis_d)
 {
-  /*
   // Interval elements
   {
     // Points at which to evaluate basis
     boost::multi_array<double, 2> X(boost::extents[4][1]);
     X[0][0] = 0.5;  X[1][0] = 1.0; X[2][0] = 0.5; X[3][0] = 0.5;
 
-    // Lists of elements to test
-    std::vector<std::shared_ptr<ufc::finite_element>> elements
-      = {std::make_shared<interval_1_finite_element_0>(),
-         std::make_shared<interval_2_finite_element_0>(),
-         std::make_shared<interval_3_finite_element_0>(),
-         std::make_shared<interval_4_finite_element_0>()};
-
-    // Iterate over elements
+    // Get lists of elements and test
+    auto elements =  get_lagrange_elements(ufc::shape::interval);
     for (auto e : elements)
     {
       assert(e);
       test_reference_derivatives(*e, X);
     }
   }
-  */
 
   // Triangles
   {
@@ -301,14 +293,8 @@ TEST(FiniteElementScalarLagrange, eval_basis_d)
     X[2][0] = 0.5;  X[2][1] = 0.0;
     X[3][0] = 0.5;  X[3][1] = 0.5;
 
-    // Lists of elements to test
-    std::vector<std::shared_ptr<ufc::finite_element>> elements
-      = {std::make_shared<triangle_1_finite_element_0>(),
-         std::make_shared<triangle_2_finite_element_0>(),
-         std::make_shared<triangle_3_finite_element_0>(),
-         std::make_shared<triangle_4_finite_element_0>()};
-
-    // Iterate over elements
+    // Get lists of elements and test
+    auto elements =  get_lagrange_elements(ufc::shape::triangle);
     for (auto e : elements)
     {
       assert(e);
@@ -325,14 +311,8 @@ TEST(FiniteElementScalarLagrange, eval_basis_d)
     X[2][0] = 0.5;  X[2][1] = 0.0; X[0][2] = 0.0;
     X[3][0] = 0.5;  X[3][1] = 0.5; X[0][2] = 0.2;
 
-    // Lists of elements to test
-    std::vector<std::shared_ptr<ufc::finite_element>> elements
-      = {std::make_shared<tetrahedron_1_finite_element_0>(),
-         std::make_shared<tetrahedron_2_finite_element_0>(),
-         std::make_shared<tetrahedron_3_finite_element_0>(),
-         std::make_shared<tetrahedron_4_finite_element_0>()};
-
-    // Iterate over elements
+    // Get lists of elements and test
+    auto elements =  get_lagrange_elements(ufc::shape::tetrahedron);
     for (auto e : elements)
     {
       assert(e);
@@ -341,136 +321,23 @@ TEST(FiniteElementScalarLagrange, eval_basis_d)
   }
 }
 
-  /*
-TEST(ScalarLagrangeTriangleP1, basis_derivatives)
+TEST(FiniteElementScalarLagrange, cell_shape)
 {
-  // Create element
-  triangle_1_finite_element_0 e;
+  // Shapes
+  std::set<ufc::shape> shapes = {ufc::shape::interval,
+                                 ufc::shape::triangle,
+                                 ufc::shape::tetrahedron};
 
-  // dims
-  const std::size_t gdim = e.geometric_dimension();
-  const std::size_t space_dim = e.space_dimension();
-  const std::size_t ref_value_size = e.reference_value_size();
-
-  // Points on reference element to test
-  boost::multi_array<double, 2> X(boost::extents[3][2]);
-  X[0][0] = 0.0;  X[0][1] = 0.0;
-  X[1][0] = 0.25; X[1][1] = 0.25;
-  X[2][0] = 0.9;  X[2][0] = 0.01;
-
-  // Reference solution
-  boost::multi_array<double, 4> v_ref(boost::extents[3][space_dim][gdim][ref_value_size]);
-  for (std::size_t p = 0; p < X.shape()[0]; ++p)
+  for (auto shape : shapes)
   {
-    v_ref[p][0][0][0] = -1.0;
-    v_ref[p][0][1][0] = -1.0;
-
-    v_ref[p][1][0][0] = 1.0;
-    v_ref[p][1][1][0] = 0.0;
-
-    v_ref[p][2][0][0] = 0.0;
-    v_ref[p][2][1][0] = 1.0;
-  }
-
-
-  mock_cell cell;
-  cell.fill_reference_triangle(2);
-  test_reference_derivatives(e, X, v_ref, cell);
-}
-
-
-TEST(ScalarLagrangeInterval, cell_shape)
-{
-  interval_1_finite_element_0 e1_int;
-  EXPECT_EQ(e1_int.cell_shape(), ufc::shape::interval);
-
-  triangle_1_finite_element_0 e1_tri;
-  EXPECT_EQ(e1_tri.cell_shape(), ufc::shape::triangle);
-
-  tetrahedron_1_finite_element_0 e1_tet;
-  EXPECT_EQ(e1_tet.cell_shape(), ufc::shape::tetrahedron);
-}
-
-
-TEST(ScalarLagrangeInterval, cell_shape)
-{
-  interval_1_finite_element_0 e1_int;
-  EXPECT_EQ(e1_int.cell_shape(), ufc::shape::interval);
-
-  triangle_1_finite_element_0 e1_tri;
-  EXPECT_EQ(e1_tri.cell_shape(), ufc::shape::triangle);
-
-  tetrahedron_1_finite_element_0 e1_tet;
-  EXPECT_EQ(e1_tet.cell_shape(), ufc::shape::tetrahedron);
-}
-
-
-
-TEST(P1_Lagrange, cell_shape)
-{
-  interval_1_finite_element_0 e1_int;
-  EXPECT_EQ(e1_int.cell_shape(), ufc::shape::interval);
-
-  triangle_1_finite_element_0 e1_tri;
-  EXPECT_EQ(e1_tri.cell_shape(), ufc::shape::triangle);
-
-  tetrahedron_1_finite_element_0 e1_tet;
-  EXPECT_EQ(e1_tet.cell_shape(), ufc::shape::tetrahedron);
-}
-
-TEST(P1_Lagrange, evaluate_reference_basis_derivatives)
-{
-  {
-    interval_1_finite_element_0 e;
-    std::vector<double> X = {0.2, 0.5, 1.0};
-    std::vector<double> v(X.size()*2);
-    e.evaluate_reference_basis_derivatives(v.data(), 1, X.size(), X.data());
-    EXPECT_FLOAT_EQ(v[0], -1.0);
-    EXPECT_FLOAT_EQ(v[1], 1.0);
-
-    EXPECT_FLOAT_EQ(v[2], -1.0);
-    EXPECT_FLOAT_EQ(v[3], 1.0);
-
-    EXPECT_FLOAT_EQ(v[4], -1.0);
-    EXPECT_FLOAT_EQ(v[5], 1.0);
-  }
-
-  {
-    triangle_1_finite_element_0 e;
-    std::vector<double> X = {0.2, 0.5};
-    std::vector<double> v((X.size()/2)*3*2);
-    e.evaluate_reference_basis_derivatives(v.data(), 1, X.size()/2, X.data());
-    EXPECT_FLOAT_EQ(v[0], -1.0);
-    EXPECT_FLOAT_EQ(v[1], -1.0);
-
-    EXPECT_FLOAT_EQ(v[2], 1.0);
-    EXPECT_NEAR(v[3], 0.0, 1.0e-12);
-
-    EXPECT_FLOAT_EQ(v[4], 0.0);
-    EXPECT_FLOAT_EQ(v[5], 1.0);
-  }
-
-  {
-    mock_cell triangle;
-    triangle.fill_reference_triangle(2);
-
-    triangle_1_finite_element_0 e;
-    std::vector<double> X = {0.2, 0.5};
-    std::vector<double> v((X.size()/2)*3*2);
-
-    e.evaluate_basis_derivatives_all(1, v.data(), X.data(),
-                                 triangle.coordinate_dofs, 0);
-    EXPECT_FLOAT_EQ(v[0], -1.0);
-    EXPECT_FLOAT_EQ(v[1], -1.0);
-
-    EXPECT_FLOAT_EQ(v[2], 1.0);
-    EXPECT_NEAR(v[3], 0.0, 1.0e-12);
-
-    EXPECT_FLOAT_EQ(v[4], 0.0);
-    EXPECT_FLOAT_EQ(v[5], 1.0);
+    auto elements = get_lagrange_elements(shape);
+    for (auto e : elements)
+    {
+      assert(e);
+      EXPECT_EQ(e->cell_shape(), shape);
+    }
   }
 }
-*/
 
 int main(int argc, char **argv)
 {

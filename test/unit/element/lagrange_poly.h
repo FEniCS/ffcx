@@ -234,7 +234,7 @@ namespace lagrange
         diff.push_back(std::vector<unsigned int>(gdim, 0));
       else if (diff_order == 1)
       {
-        std::cout << "Diff order 1" << std::endl;
+        //std::cout << "Diff order 1" << std::endl;
         diff.resize(gdim);
         for (std::size_t c = 0; c < gdim; ++c)
         {
@@ -243,19 +243,19 @@ namespace lagrange
         }
       }
 
-      std::cout << "****Diff size: " << diff.size() << std::endl;
+      //std::cout << "****Diff size: " << diff.size() << std::endl;
       for (std::size_t df = 0; df < diff.size(); ++df)
       {
-        std::cout << "  Diff: " << df << std::endl;
-        for (std::size_t ii = 0; ii < diff[df].size(); ++ii)
-          std::cout << "    " << diff[df][ii] << std::endl;
+        //std::cout << "  Diff: " << df << std::endl;
+        //for (std::size_t ii = 0; ii < diff[df].size(); ++ii)
+        //  std::cout << "    " << diff[df][ii] << std::endl;
 
         std::vector<double> fp = eval_polynomial(x, poly, coeff, diff[df]);
 
         // Copy result into return array
         for (std::size_t p = 0; p < num_points; ++p)
         {
-          std::cout << "Test vals: " << fp[p] << std::endl;
+          //std::cout << "Test vals: " << fp[p] << std::endl;
           f[d][p][df] = fp[p];
         }
       }
