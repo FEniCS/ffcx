@@ -18,7 +18,7 @@
 
 namespace lagrange
 {
-  // This collection of function computes Lagrange polynomial on
+  // This collection of functions computes Lagrange polynomial on
   // simplices via the Vandermonde matrix. It is used to test UFC
   // code, and the approach is not advocated for production runs. It
   // is used to test the FFC-genereted basis evaluation code.
@@ -88,8 +88,6 @@ namespace lagrange
     {
       // Get point for this row
       const auto xp = X[i];
-      //std::cout << "Point (a) : " << xp[0] << ", " << xp[1] << std::endl;
-      //std::cout << "Point (b) : " << X[i][0] << ", " << X[i][1] << std::endl;
 
       // Fill columns for current point
       for (std::size_t j = 0; j < dim; ++j)
@@ -157,19 +155,18 @@ namespace lagrange
 
     // Build monomials
     const boost::multi_array<unsigned int, 2> p = poly_basis(degree, gdim);
-    /*
-    for (auto d : p)
-    {
-      std::cout << "Mono: " << std::endl;
-      for (auto e : d)
-      {
-        std::cout << "    " << e << std::endl;
-      }
-    }
-    */
+    //for (auto d : p)
+    //{
+    //  std::cout << "Mono: " << std::endl;
+    //  for (auto e : d)
+    //  {
+    //    std::cout << "    " << e << std::endl;
+    //  }
+    //}
 
     // Dimension of polynomial space
     const std::size_t dim = p.shape()[0];
+    //std::cout << "Poly space dim: " << dim << std::endl;
 
     // Build Vandermonde matrix
     const MatrixXd A = vandermonde(p, vertices);
