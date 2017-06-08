@@ -15,9 +15,12 @@ from ffc.uflacs.backends.ufc.jacobian import jacobian, inverse_jacobian, orienta
 index_type = "std::size_t"
 
 def _compute_reference_derivatives(L, data, dof_data):
-    """Compute derivatives on the reference element by recursively multiply coefficients with
-    the relevant derivatives of the polynomial base until the requested order of derivatives
-    has been reached. After this take the dot product with the basisvalues."""
+    """Compute derivatives on the reference element by recursively
+    multiply coefficients with the relevant derivatives of the
+    polynomial base until the requested order of derivatives has been
+    reached. After this take the dot product with the basisvalues.
+
+    """
 
     # Prefetch formats to speed up code generation
 
@@ -32,8 +35,8 @@ def _compute_reference_derivatives(L, data, dof_data):
     # Get number of components.
     num_components = dof_data["num_components"]
 
-    # Get shape of derivative matrix (they should all have the same shape) and
-    # verify that it is a square matrix.
+    # Get shape of derivative matrix (they should all have the same
+    # shape) and verify that it is a square matrix.
     shape_dmats = dof_data["dmats"][0].shape
     if shape_dmats[0] != shape_dmats[1]:
         error("Something is wrong with the dmats:\n%s" % str(dof_data["dmats"]))
@@ -42,24 +45,26 @@ def _compute_reference_derivatives(L, data, dof_data):
 
     # Declare pointer to array that holds derivatives on the FIAT element
     code += [L.Comment("Declare array of derivatives on FIAT element.")]
-    # The size of the array of reference derivatives is equal to the number of derivatives
-    # times the number of components of the basis element
+    # The size of the array of reference derivatives is equal to the
+    # number of derivatives times the number of components of the
+    # basis element
     num_vals = num_components*num_derivs_t
     nds = tdim**max_degree * num_components
 
     mapping = dof_data["mapping"]
     if "piola" in mapping and "double" not in mapping and gdim > num_components :
-        # In either of the Piola cases,
-        # the value space of the derivatives is the geometric dimension
-        # rather than the topological dimension.
-        # Increase size of derivatives array if needed.
+        # In either of the Piola cases, the value space of the
+        # derivatives is the geometric dimension rather than the
+        # topological dimension.  Increase size of derivatives array
+        # if needed.
         nds = tdim**max_degree * gdim
 
     derivatives = L.Symbol("derivatives")
     code += [L.ArrayDecl("double", derivatives, nds, 0.0)]
 
-    # Declare matrix of dmats (which will hold the matrix product of all combinations)
-    # and dmats_old which is needed in order to perform the matrix product.
+    # Declare matrix of dmats (which will hold the matrix product of
+    # all combinations) and dmats_old which is needed in order to
+    # perform the matrix product.
     code += [L.Comment("Declare derivative matrix (of polynomial basis).")]
     value = numpy.eye(shape_dmats[0])
     dmats = L.Symbol("dmats")
@@ -116,6 +121,7 @@ def _compute_reference_derivatives(L, data, dof_data):
 
     return code
 
+
 def _transform_derivatives(L, data, dof_data):
     """Transform derivatives back to the physical element by applying the
     transformation matrix."""
@@ -156,17 +162,20 @@ def _transform_derivatives(L, data, dof_data):
 
     return code
 
+
 def _tabulate_dmats(L, dof_data):
     "Tabulate the derivatives of the polynomial base"
 
-    # Get derivative matrices (coefficients) of basis functions, computed by FIAT at compile time.
+    # Get derivative matrices (coefficients) of basis functions,
+    # computed by FIAT at compile time.
 
     code = [L.Comment("Tables of derivatives of the polynomial base (transpose).")]
 
     # Generate tables for each spatial direction.
     for i, dmat in enumerate(dof_data["dmats"]):
 
-        # Extract derivatives for current direction (take transpose, FIAT_NEW PolynomialSet.tabulate()).
+        # Extract derivatives for current direction (take transpose,
+        # FIAT_NEW PolynomialSet.tabulate()).
         matrix = numpy.transpose(dmat)
 
         # Get shape and check dimension (This is probably not needed).
@@ -179,6 +188,7 @@ def _tabulate_dmats(L, dof_data):
         code += [L.ArrayDecl("static const double", table, matrix.shape, matrix)]
 
     return code
+
 
 def _generate_dof_code(L, data, dof_data):
     "Generate code for a basis."
@@ -196,18 +206,24 @@ def _generate_dof_code(L, data, dof_data):
     # Tabulate coefficients for derivatives.
     code += _tabulate_dmats(L, dof_data)
 
-    # Compute the derivatives of the basisfunctions on the reference (FIAT) element,
-    # as the dot product of the new coefficients and basisvalues.
+    # Compute the derivatives of the basisfunctions on the reference
+    # (FIAT) element, as the dot product of the new coefficients and
+    # basisvalues.
     code += _compute_reference_derivatives(L, data, dof_data)
 
-    # Transform derivatives to physical element by multiplication with the transformation matrix.
+    # Transform derivatives to physical element by multiplication with
+    # the transformation matrix.
     code += _transform_derivatives(L, data, dof_data)
 
     return code
 
+
 def _generate_transform(L, element_cellname, gdim, tdim, max_degree):
     """Generate the transformation matrix, which is used to transform
-    derivatives from reference element back to the physical element."""
+    derivatives from reference element back to the physical
+    element.
+
+    """
 
     max_g_d = gdim**max_degree
     max_t_d = tdim**max_degree
@@ -238,12 +254,17 @@ def _generate_transform(L, element_cellname, gdim, tdim, max_degree):
 
     return code
 
+
 def generate_evaluate_basis_derivatives(L, data):
-    """Evaluate the derivatives of an element basisfunction at a point. The values are
-    computed as in FIAT as the matrix product of the coefficients (computed at compile time),
-    basisvalues which are dependent on the coordinate and thus have to be computed at
-    run time and combinations (depending on the order of derivative) of dmats
-    tables which hold the derivatives of the expansion coefficients."""
+    """Evaluate the derivatives of an element basisfunction at a
+    point. The values are computed as in FIAT as the matrix product of
+    the coefficients (computed at compile time), basisvalues which are
+    dependent on the coordinate and thus have to be computed at run
+    time and combinations (depending on the order of derivative) of
+    dmats tables which hold the derivatives of the expansion
+    coefficients.
+
+    """
 
     if isinstance(data, string_types):
         msg = "evaluate_basis_derivatives: %s" % data
@@ -397,8 +418,8 @@ def generate_evaluate_basis_derivatives_all(L, data):
     dof_values = L.Symbol("dof_values")
     code += [L.ArrayDecl("double", dof_values, (nds,), 0.0)]
 
-    # Create loop over dofs that calls evaluate_basis_derivatives for a single dof and
-    # inserts the values into the global array.
+    # Create loop over dofs that calls evaluate_basis_derivatives for
+    # a single dof and inserts the values into the global array.
     code += [L.Comment("Loop dofs and call evaluate_basis_derivatives.")]
 
     values = L.FlattenedArray(values, dims=(space_dimension, num_vals))
