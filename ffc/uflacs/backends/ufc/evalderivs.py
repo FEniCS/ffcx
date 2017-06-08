@@ -2,7 +2,6 @@
 """Work in progress translation of FFC evaluatebasis code to uflacs CNodes format."""
 
 from six import string_types
-import math
 import numpy
 
 from ffc.log import error
@@ -48,7 +47,8 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
 
     # FIXME: validate these dimensions
     ref_values = L.FlattenedArray(reference_values,
-        dims=(num_points, num_dofs, num_derivatives, reference_value_size))
+                                  dims=(num_points, num_dofs, num_derivatives,
+                                        reference_value_size))
     # From evaluatebasis.py:
     #ref_values = L.FlattenedArray(reference_values, dims=(num_points, num_dofs, reference_value_size))
 
@@ -159,10 +159,10 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
 
         # Unrolled loop over components of basis function
         n = dof_data["num_components"]
-        compute_ref_derivs_code = [L.Assign(derivs[c][r], 0.0) for c in range(n)]
+        compute_ref_derivs_code = [L.Assign(derivs[cc][r], 0.0) for cc in range(n)]
 
         compute_ref_derivs_code += [L.ForRange(s, 0, shape_dmats[0], index_type=index_type, body=
-                                               [L.AssignAdd(derivs[c][r], coefficients_for_dof[i_dof][c][s] * aux[s]) for c in range(n)])]
+                                               [L.AssignAdd(derivs[cc][r], coefficients_for_dof[i_dof][cc][s] * aux[s]) for cc in range(n)])]
 
         embedded_degree = dof_data["embedded_degree"]
         basisvalues = basisvalues_for_degree[embedded_degree]
