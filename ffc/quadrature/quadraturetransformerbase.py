@@ -24,17 +24,18 @@ transformers to translate UFL expressions."""
 # Modified by Lizao Li, 2015
 # Modified by Anders Logg, 2015
 
-# Python modules.
+# Python modules
+import functools
 from six.moves import zip
 from numpy import shape, array
 
-# UFL Classes.
+# UFL Classes
 from ufl.classes import FixedIndex, Index
 from ufl.utils.stacks import StackDict, Stack
 from ufl.permutation import build_component_numbering
 from ufl import custom_integral_types
 
-# UFL Algorithms.
+# UFL Algorithms
 from ufl.algorithms import Transformer
 
 # FFC modules.
@@ -42,13 +43,54 @@ from ffc.log import ffc_assert, error
 from ffc.fiatinterface import MixedElement, create_element, map_facet_points
 from ffc.cpp import format
 
-# FFC tensor modules.
-from ffc.tensor.multiindex import MultiIndex as FFCMultiIndex
+# FFC utils
+from ffc.utils import listcopy
 from ffc.representationutils import transform_component
 
 # Utility and optimisation functions for quadraturegenerator.
 from ffc.quadrature.quadratureutils import create_psi_tables
 from ffc.quadrature.symbolics import BASIS, IP, GEO
+
+
+class FFCMultiIndex:
+    """A MultiIndex represents a list of indices and holds the following
+    data:
+
+        rank    - rank of multiindex
+        dims    - a list of dimensions
+        indices - a list of all possible multiindex values
+
+    """
+
+    def __init__(self, dims):
+        "Create multiindex from given list of ranges"
+
+        def outer_join(a, b):
+            """Let a be a list of lists and b a list. We append each element of b
+            to each list in a and return the resulting list of lists.
+
+            """
+            outer = []
+            for i in range(len(a)):
+                for j in range(len(b)):
+                    outer += [a[i] + [b[j]]]
+            return outer
+
+        def build_indices(dims):
+            "Create a list of all index combinations."
+            if not dims:
+                return [[]]
+            ranges = listcopy(dims)
+            return functools.reduce(outer_join, ranges, [[]])
+
+        self.rank = len(dims)
+        self.dims = [len(dim) for dim in dims]
+        self.indices = build_indices(dims)
+        return
+
+    def __str__(self):
+        "Return informal string representation (pretty-print)."
+        return "rank = %d dims = %s indices = %s" % (self.rank, str(self.dims), str(self.indices))
 
 
 class QuadratureTransformerBase(Transformer):
