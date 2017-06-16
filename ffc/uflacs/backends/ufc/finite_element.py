@@ -402,7 +402,7 @@ class ufc_finite_element(ufc_generator):
         code = []
         gdim = irdata["geometric_dimension"]
         tdim = irdata["topological_dimension"]
-        element_cellname = ir["evaluate_basis"]["cellname"]
+        element_cellname = ir["cell_shape"]
         if irdata["needs_jacobian"]:
             code += jacobian(L, gdim, tdim, element_cellname)
             code += inverse_jacobian(L, gdim, tdim, element_cellname)
