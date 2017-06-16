@@ -278,7 +278,7 @@ format.update({
 })
 
 # Code snippets
-from ffc.codesnippets import *
+from ffc.quadrature.codesnippets import *
 
 format.update({
     "compute_jacobian": lambda tdim, gdim, r=None:

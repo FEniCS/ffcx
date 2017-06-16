@@ -38,7 +38,7 @@ from ufl.classes import Operator
 
 # FFC modules.
 from ffc.log import error, ffc_assert
-from ffc.cpp import format
+from ffc.quadrature.cpp import format
 
 # Utility and optimisation functions for quadraturegenerator.
 from ffc.quadrature.quadraturetransformerbase import QuadratureTransformerBase

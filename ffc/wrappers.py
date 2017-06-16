@@ -23,7 +23,7 @@ from itertools import chain
 # FFC modules
 from ffc.log import begin, end, info, error
 from ffc.utils import all_equal
-from ffc.cpp import make_classname
+from ffc.classname import make_classname
 from ffc.backends.dolfin.wrappers import generate_dolfin_code
 from ffc.backends.dolfin.capsules import UFCElementNames, UFCFormNames
 

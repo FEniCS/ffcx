@@ -24,7 +24,7 @@ from ufl.utils.sorting import sorted_by_key
 
 # FFC modules.
 from ffc.log import error
-from ffc.cpp import format
+from ffc.quadrature.cpp import format
 
 # FFC quadrature modules.
 from .symbolics import create_float

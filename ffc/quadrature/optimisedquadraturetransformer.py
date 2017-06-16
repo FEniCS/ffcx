@@ -37,7 +37,7 @@ from ufl.classes import Operator
 
 # FFC modules.
 from ffc.log import error, ffc_assert
-from ffc.cpp import format
+from ffc.quadrature.cpp import format
 from ffc.quadrature.quadraturetransformerbase import QuadratureTransformerBase
 from ffc.quadrature.quadratureutils import create_permutations
 

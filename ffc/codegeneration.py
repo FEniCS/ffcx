@@ -30,23 +30,14 @@ from ufl import product
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code, dstr
-from ffc.cpp import format, indent
-from ffc.cpp import set_exception_handling, set_float_formatting
 
 # FFC code generation modules
 from ffc.representation import pick_representation, ufc_integral_types
 
 import ffc.uflacs.language.cnodes as L
+from ffc.uflacs.language.format_lines import format_indented_lines
+from ffc.uflacs.backends.ufc.utils import generate_error
 from ffc.uflacs.backends.ufc.generators import ufc_integral, ufc_finite_element, ufc_dofmap, ufc_coordinate_mapping, ufc_form
-
-
-# Errors issued for non-implemented functions
-def _not_implemented(function_name, return_null=False):
-    body = format["exception"]("%s not yet implemented." % function_name)
-    if return_null:
-        body += "\n" + format["return"](0)
-    return body
-
 
 def generate_code(ir, parameters):
     "Generate code from intermediate representation."
@@ -57,8 +48,8 @@ def generate_code(ir, parameters):
 
     # FIXME: This has global side effects
     # Set code generation parameters
-    set_float_formatting(parameters["precision"])
-    set_exception_handling(parameters["convert_exceptions_to_warnings"])
+    # set_float_formatting(parameters["precision"])
+    # set_exception_handling(parameters["convert_exceptions_to_warnings"])
 
     # Extract representations
     ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
@@ -234,20 +225,19 @@ def _generate_tabulate_tensor_comment(ir, parameters):
     integrals_metadata = ir["integrals_metadata"]
     integral_metadata = ir["integral_metadata"]
 
-    comment  = format["comment"]("This function was generated using '%s' representation" % r) + "\n"
-    comment += format["comment"]("with the following integrals metadata:") + "\n"
-    comment += format["comment"]("") + "\n"
-    comment += "\n".join([format["comment"]("  " + l) for l in dstr(integrals_metadata).split("\n")][:-1])
-    comment += "\n"
+    comment  = [ L.Comment("This function was generated using '%s' representation" % r),
+                 L.Comment("with the following integrals metadata:"),
+                 L.Comment(""),
+                 L.Comment("\n".join(dstr(integrals_metadata).split("\n")[:-1]))
+                 ]
     for i, metadata in enumerate(integral_metadata):
-        comment += format["comment"]("") + "\n"
-        comment += format["comment"]("and the following integral %d metadata:" % i) + "\n"
-        comment += format["comment"]("") + "\n"
-        comment += "\n".join([format["comment"]("  " + l) for l in dstr(metadata).split("\n")][:-1])
-        comment += "\n"
+        comment += [ L.Comment(""),
+                     L.Comment("and the following integral %d metadata:" % i),
+                     L.Comment(""),
+                     L.Comment("\n".join(dstr(metadata).split("\n")[:-1]))
+                   ]
 
-    return comment
-
+    return format_indented_lines(L.StatementList(comment).cs_format(0), 1)
 
 def _generate_integral_code(ir, parameters):
     "Generate code for integrals from intermediate representation."
@@ -271,7 +261,7 @@ def _generate_integral_code(ir, parameters):
         code["additional_includes_set"].add("#include <iostream>")
 
     # Generate comment
-    code["tabulate_tensor_comment"] = indent(_generate_tabulate_tensor_comment(ir, parameters), 4)
+    code["tabulate_tensor_comment"] = _generate_tabulate_tensor_comment(ir, parameters)
 
     return code
 

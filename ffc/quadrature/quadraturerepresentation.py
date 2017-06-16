@@ -35,6 +35,8 @@ from ffc.log import ffc_assert, info, error
 from ffc.utils import product
 from ffc.fiatinterface import create_element
 
+from ffc.quadrature.cpp import set_float_formatting
+
 from ffc.representationutils import initialize_integral_ir
 from ffc.quadrature.tabulate_basis import tabulate_basis
 from ffc.quadrature.parameters import parse_optimise_parameters
@@ -52,6 +54,8 @@ def compute_integral_ir(itg_data,
     "Compute intermediate represention of integral."
 
     info("Computing quadrature representation")
+
+    set_float_formatting(parameters["precision"])
 
     # Initialise representation
     ir = initialize_integral_ir("quadrature", itg_data, form_data, form_id)
@@ -243,7 +247,7 @@ def _extract_element_data(element_map, classnames):
 
             # Get element classname
             element_classname = classnames["finite_element"][ufl_element]
-    
+
             # Store data
             element_data[counter] = {"physical_value_size": value_size,
                                      "num_element_dofs": fiat_element.space_dimension(),

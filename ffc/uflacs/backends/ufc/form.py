@@ -18,7 +18,7 @@
 
 # Note: Most of the code in this file is a direct translation from the old implementation in FFC
 
-from ffc.cpp import make_integral_classname
+from ffc.classname import make_integral_classname
 from ffc.uflacs.backends.ufc.generator import ufc_generator, integral_name_templates, ufc_integral_types
 from ffc.uflacs.backends.ufc.utils import generate_return_new, generate_return_new_switch
 

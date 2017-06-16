@@ -41,7 +41,7 @@ from ufl.algorithms import Transformer
 # FFC modules.
 from ffc.log import ffc_assert, error
 from ffc.fiatinterface import MixedElement, create_element, map_facet_points
-from ffc.cpp import format
+from ffc.quadrature.cpp import format
 
 # FFC utils
 from ffc.utils import listcopy

@@ -48,8 +48,9 @@ from ufl import custom_integral_types
 # FFC modules
 from ffc.log import info, begin, end, warning, debug, error, ffc_assert, warning_blue
 from ffc.utils import all_equal
-from ffc.cpp import default_precision
 
+# Default precision for formatting floats
+default_precision = numpy.finfo("double").precision + 1  # == 16
 
 def analyze_forms(forms, parameters):
     """

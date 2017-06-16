@@ -48,7 +48,7 @@ from ffc.compiler import compile_form, compile_element, compile_coordinate_mappi
 from ffc.backends.ufc import get_include_path as get_ufc_include_path
 from ffc.backends.ufc import get_ufc_signature, get_ufc_templates_signature
 from ffc import __version__ as FFC_VERSION
-from ffc.cpp import make_classname
+from ffc.classname import make_classname
 
 
 def jit_generate(ufl_object, module_name, signature, parameters):
