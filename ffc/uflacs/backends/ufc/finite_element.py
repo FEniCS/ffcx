@@ -496,6 +496,9 @@ class ufc_finite_element(ufc_generator):
         tdim = ir["tdim"]
         points = ir["points"]
 
+        # Extract cellshape
+        element_cellname = ir["cell_shape"]
+
         # Output argument
         dof_coordinates = L.FlattenedArray(L.Symbol("dof_coordinates"),
                                            dims=(len(points), gdim))
@@ -513,8 +516,8 @@ class ufc_finite_element(ufc_generator):
 
         # TODO: Get rid of all places that use affine_weights, assumes affine mesh
         # Create code for evaluating affine coordinate basis functions
-        num_scalar_xdofs = tdim + 1
-        cg1_basis = affine_weights(tdim)
+        num_scalar_xdofs = _num_scalar_xdofs(element_cellname)
+        cg1_basis = affine_weights(element_cellname)
         phi_values = numpy.asarray([phi_comp for X in points for phi_comp in cg1_basis(X)])
         assert len(phi_values) == len(points) * num_scalar_xdofs
 
@@ -804,3 +807,10 @@ class ufc_finite_element(ufc_generator):
             + point_loop_code
         )
         return code
+
+
+def _num_scalar_xdofs(cellname):
+    """Returns number of dofs for a given cellshape."""
+
+    num_scalar_xdofs_dict = {"interval": 2, "triangle": 3, "tetrahedron": 4, "quadrilateral": 4, "hexahedron": 8}
+    return num_scalar_xdofs_dict[cellname]
