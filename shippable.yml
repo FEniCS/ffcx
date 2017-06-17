@@ -5,12 +5,13 @@ python:
 
 build:
   ci:
-    - apt-get install cmake
+    - apt-get --no-install-recommends -qq install cmake
     - pip install flake8 pytest
     - pip install git+https://bitbucket.org/fenics-project/fiat.git@master
     - pip install git+https://bitbucket.org/fenics-project/ufl.git@master
     - pip install git+https://bitbucket.org/fenics-project/dijitso.git@master
     - pip install -e .
+    - pip install libs/ufc_wrappers/
     - python -m flake8 ffc/
     - python -m pytest -v ./test/unit
     - python -m pytest -v ./test/uflacs
