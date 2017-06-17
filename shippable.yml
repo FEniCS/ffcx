@@ -12,6 +12,4 @@ build:
     - pip install -e .
     - python -m flake8 ffc/
     - python -m pytest -v ./test/unit
-
-post_ci:
-  - echo "post test"
+    - python -m pytest -v ./test/uflacs
