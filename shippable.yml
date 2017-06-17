@@ -6,7 +6,7 @@ python:
 build:
   ci:
     - apt-get --no-install-recommends -qq install cmake
-    - pip install flake8 pytest
+    - pip install flake8 numpy pytest
     - pip install git+https://bitbucket.org/fenics-project/fiat.git@master
     - pip install git+https://bitbucket.org/fenics-project/ufl.git@master
     - pip install git+https://bitbucket.org/fenics-project/dijitso.git@master
