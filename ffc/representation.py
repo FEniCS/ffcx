@@ -660,7 +660,8 @@ def _evaluate_dof(ufl_element, fiat_element):
             "geometric_dimension": cell.geometric_dimension(),
             "topological_dimension": cell.topological_dimension(),
             "dofs": dofs,
-            "physical_offsets": _generate_physical_offsets(ufl_element)}
+            "physical_offsets": _generate_physical_offsets(ufl_element),
+            "cell_shape": cell.cellname()}
 
 
 def _extract_elements(fiat_element):
@@ -791,6 +792,7 @@ def _tabulate_dof_coordinates(ufl_element, element):
     data["tdim"] = cell.topological_dimension()
     data["gdim"] = cell.geometric_dimension()
     data["points"] = [sorted(L.pt_dict.keys())[0] for L in element.dual_basis()]
+    data["cell_shape"] = cell.cellname()
     return data
 
 
