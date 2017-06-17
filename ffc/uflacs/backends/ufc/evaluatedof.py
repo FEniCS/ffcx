@@ -187,7 +187,7 @@ def _generate_body(L, i, dof, mapping, gdim, tdim, element_cellname, offset=0):
     c = L.Symbol("c")
     for j in range(gdim):
         yy = 0.0
-        for k in range(tdim + 1):
+        for k in range(len(w)):
             yy += w[k]*coordinate_dofs[k*gdim + j]
         code += [L.Assign(y[j], yy)]
 
