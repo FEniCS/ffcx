@@ -1,0 +1,16 @@
+language: python
+python:
+  - 2.7
+  - 3.6
+
+build:
+  ci:
+    - pip install git+https://bitbucket.org/fenics-project/fiat.git@master
+    - pip install git+https://bitbucket.org/fenics-project/ufl.git@master
+    - pip install git+https://bitbucket.org/fenics-project/dijitso.git@master
+    - pip install -e .
+    - python -m flake8 ffc/
+    - python -m pytest -v ./test/unit
+
+post_ci:
+  - echo "post test"
