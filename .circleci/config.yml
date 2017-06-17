@@ -17,7 +17,7 @@ jobs:
           command: pip3 install git+https://bitbucket.org/fenics-project/dijitso.git@master
       - run:
           name: Install FFC
-          command: pip3 install . -e
+          command: pip3 install -e .
       - run:
           name: Build pybind wrapper
           command: pip3 install libs/ufc_wrappers/
