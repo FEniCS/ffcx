@@ -5,6 +5,7 @@ python:
 
 build:
   ci:
+    - apt-get install cmake
     - pip install flake8 pytest
     - pip install git+https://bitbucket.org/fenics-project/fiat.git@master
     - pip install git+https://bitbucket.org/fenics-project/ufl.git@master
