@@ -28,8 +28,8 @@ from ffc.utils import pick_first
 
 index_type="std::size_t"
 
-def affine_weights(cellname):
-    "Compute coefficents for mapping from reference to physical element"
+def reference_to_physical_map(cellname):
+    "Returns a map from reference coordinates to physical element coordinates"
 
     if cellname == "interval":
         return lambda x: (1.0 - x[0], x[0])
@@ -176,7 +176,7 @@ def _generate_body(L, i, dof, mapping, gdim, tdim, cell_shape, offset=0):
 
     # Get weights for mapping reference point to physical
     x = points[0]
-    w = affine_weights(cell_shape)(x)
+    w = reference_to_physical_map(cell_shape)(x)
 
     # Map point onto physical element: y = F_K(x)
     code = []

@@ -37,7 +37,7 @@ from ffc.uflacs.backends.ufc.evaluatebasisderivatives import generate_evaluate_b
 from ffc.uflacs.backends.ufc.evaluatebasisderivatives import generate_evaluate_basis_derivatives
 from ffc.uflacs.backends.ufc.evalderivs import generate_evaluate_reference_basis_derivatives
 from ffc.uflacs.backends.ufc.evalderivs import _generate_combinations
-from ffc.uflacs.backends.ufc.evaluatedof import generate_evaluate_dof, generate_evaluate_dofs, affine_weights
+from ffc.uflacs.backends.ufc.evaluatedof import generate_evaluate_dof, generate_evaluate_dofs, reference_to_physical_map
 
 from ffc.uflacs.backends.ufc.jacobian import jacobian, inverse_jacobian, orientation, fiat_coordinate_mapping, _mapping_transform
 
@@ -514,10 +514,9 @@ class ufc_finite_element(ufc_generator):
         # Basis symbol
         phi = L.Symbol("phi")
 
-        # TODO: Get rid of all places that use affine_weights, assumes affine mesh
-        # Create code for evaluating affine coordinate basis functions
+        # Create code for evaluating coordinate mapping
         num_scalar_xdofs = _num_scalar_xdofs(cell_shape)
-        cg1_basis = affine_weights(cell_shape)
+        cg1_basis = reference_to_physical_map(cell_shape)
         phi_values = numpy.asarray([phi_comp for X in points for phi_comp in cg1_basis(X)])
         assert len(phi_values) == len(points) * num_scalar_xdofs
 
