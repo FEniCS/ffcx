@@ -515,7 +515,7 @@ class ufc_finite_element(ufc_generator):
         phi = L.Symbol("phi")
 
         # Create code for evaluating coordinate mapping
-        num_scalar_xdofs = _num_scalar_xdofs(cell_shape)
+        num_scalar_xdofs = _num_vertices(cell_shape)
         cg1_basis = reference_to_physical_map(cell_shape)
         phi_values = numpy.asarray([phi_comp for X in points for phi_comp in cg1_basis(X)])
         assert len(phi_values) == len(points) * num_scalar_xdofs
@@ -808,8 +808,8 @@ class ufc_finite_element(ufc_generator):
         return code
 
 
-def _num_scalar_xdofs(cellname):
-    """Returns number of dofs for a given cellshape."""
+def _num_vertices(cell_shape):
+    """Returns number of vertices for a given cell shape."""
 
-    num_scalar_xdofs_dict = {"interval": 2, "triangle": 3, "tetrahedron": 4, "quadrilateral": 4, "hexahedron": 8}
-    return num_scalar_xdofs_dict[cellname]
+    num_vertices_dict = {"interval": 2, "triangle": 3, "tetrahedron": 4, "quadrilateral": 4, "hexahedron": 8}
+    return num_vertices_dict[cell_shape]
