@@ -163,8 +163,10 @@ namespace ufc_wrappers
 
     element.def("num_sub_elements", &ufc::finite_element::num_sub_elements);
 
-    element.def("create_sub_element", &ufc::finite_element::create_sub_element);
-  element.def("create", &ufc::finite_element::create);
+    element.def("create_sub_element", &ufc::finite_element::create_sub_element,
+                py::return_value_policy::take_ownership);
+    element.def("create", &ufc::finite_element::create,
+                py::return_value_policy::take_ownership);
   }
 
 }
