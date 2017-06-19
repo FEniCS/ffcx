@@ -158,7 +158,7 @@ def _change_variables(L, mapping, gdim, tdim, offset):
     else:
         raise Exception("The mapping (%s) is not allowed" % mapping)
 
-def _generate_body(L, i, dof, mapping, gdim, tdim, element_cellname, offset=0):
+def _generate_body(L, i, dof, mapping, gdim, tdim, cell_shape, offset=0):
     "Generate code for a single dof."
 
     # EnrichedElement is handled by having [None, ..., None] dual basis
@@ -176,7 +176,7 @@ def _generate_body(L, i, dof, mapping, gdim, tdim, element_cellname, offset=0):
 
     # Get weights for mapping reference point to physical
     x = points[0]
-    w = affine_weights(element_cellname)(x)
+    w = affine_weights(cell_shape)(x)
 
     # Map point onto physical element: y = F_K(x)
     code = []
@@ -320,7 +320,7 @@ def generate_evaluate_dof(L, ir):
     gdim = ir["geometric_dimension"]
     tdim = ir["topological_dimension"]
 
-    element_cellname = ir["cell_shape"]
+    cell_shape = ir["cell_shape"]
 
     # Enriched element, no dofs defined
     if not any(ir["dofs"]):
@@ -346,10 +346,10 @@ def generate_evaluate_dof(L, ir):
             code += [L.VariableDecl("double", result)]
 
         if needs_jacobian or needs_inverse_jacobian:
-            code += jacobian(L, gdim, tdim, element_cellname)
+            code += jacobian(L, gdim, tdim, cell_shape)
 
         if needs_inverse_jacobian:
-            code += inverse_jacobian(L, gdim, tdim, element_cellname)
+            code += inverse_jacobian(L, gdim, tdim, cell_shape)
             if tdim != gdim :
                 code += orientation(L)
 
@@ -360,7 +360,7 @@ def generate_evaluate_dof(L, ir):
     # Generate bodies for each degree of freedom
     cases = []
     for (i, dof) in enumerate(ir["dofs"]):
-        c, r = _generate_body(L, i, dof, mappings[i], gdim, tdim, element_cellname, offsets[i])
+        c, r = _generate_body(L, i, dof, mappings[i], gdim, tdim, cell_shape, offsets[i])
         c += [L.Return(r)]
         cases.append((i, c))
 
@@ -376,7 +376,7 @@ def generate_evaluate_dofs(L, ir):
     gdim = ir["geometric_dimension"]
     tdim = ir["topological_dimension"]
 
-    element_cellname = ir["cell_shape"]
+    cell_shape = ir["cell_shape"]
 
     # Enriched element, no dofs defined
     if not any(ir["dofs"]):
@@ -402,10 +402,10 @@ def generate_evaluate_dofs(L, ir):
             code += [L.VariableDecl("double", result)]
 
         if needs_jacobian or needs_inverse_jacobian:
-            code += jacobian(L, gdim, tdim, element_cellname)
+            code += jacobian(L, gdim, tdim, cell_shape)
 
         if needs_inverse_jacobian:
-            code += inverse_jacobian(L, gdim, tdim, element_cellname)
+            code += inverse_jacobian(L, gdim, tdim, cell_shape)
             if tdim != gdim :
                 code += orientation(L)
 
@@ -416,7 +416,7 @@ def generate_evaluate_dofs(L, ir):
     # Generate bodies for each degree of freedom
     values = L.Symbol("values")
     for (i, dof) in enumerate(ir["dofs"]):
-        c, r = _generate_body(L, i, dof, mappings[i], gdim, tdim, element_cellname, offsets[i])
+        c, r = _generate_body(L, i, dof, mappings[i], gdim, tdim, cell_shape, offsets[i])
         code += c
         code += [L.Assign(values[i], r)]
 

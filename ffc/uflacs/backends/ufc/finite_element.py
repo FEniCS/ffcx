@@ -402,10 +402,10 @@ class ufc_finite_element(ufc_generator):
         code = []
         gdim = irdata["geometric_dimension"]
         tdim = irdata["topological_dimension"]
-        element_cellname = ir["cell_shape"]
+        cell_shape = ir["cell_shape"]
         if irdata["needs_jacobian"]:
-            code += jacobian(L, gdim, tdim, element_cellname)
-            code += inverse_jacobian(L, gdim, tdim, element_cellname)
+            code += jacobian(L, gdim, tdim, cell_shape)
+            code += inverse_jacobian(L, gdim, tdim, cell_shape)
             if irdata["needs_oriented"] and tdim != gdim:
                 code += orientation(L)
 
@@ -497,7 +497,7 @@ class ufc_finite_element(ufc_generator):
         points = ir["points"]
 
         # Extract cellshape
-        element_cellname = ir["cell_shape"]
+        cell_shape = ir["cell_shape"]
 
         # Output argument
         dof_coordinates = L.FlattenedArray(L.Symbol("dof_coordinates"),
@@ -516,8 +516,8 @@ class ufc_finite_element(ufc_generator):
 
         # TODO: Get rid of all places that use affine_weights, assumes affine mesh
         # Create code for evaluating affine coordinate basis functions
-        num_scalar_xdofs = _num_scalar_xdofs(element_cellname)
-        cg1_basis = affine_weights(element_cellname)
+        num_scalar_xdofs = _num_scalar_xdofs(cell_shape)
+        cg1_basis = affine_weights(cell_shape)
         phi_values = numpy.asarray([phi_comp for X in points for phi_comp in cg1_basis(X)])
         assert len(phi_values) == len(points) * num_scalar_xdofs
 
