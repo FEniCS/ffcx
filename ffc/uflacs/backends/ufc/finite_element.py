@@ -514,6 +514,7 @@ class ufc_finite_element(ufc_generator):
         # Basis symbol
         phi = L.Symbol("phi")
 
+        # TODO: Get rid of all places that use reference_to_physical_map, it is restricted to a basis of degree 1
         # Create code for evaluating coordinate mapping
         num_scalar_xdofs = _num_vertices(cell_shape)
         cg1_basis = reference_to_physical_map(cell_shape)
