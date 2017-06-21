@@ -232,7 +232,7 @@ class ufc_finite_element(ufc_generator):
             no_cm_code += fiat_coordinate_mapping(L, element_cellname, gdim)
 
         code += [L.If(cm, L.Call("cm->compute_reference_geometry",
-                                (X, J, detJ, K, 1, x, coordinate_dofs, cell_orientation))),
+                                (X, J, L.AddressOf(detJ), K, 1, x, coordinate_dofs, cell_orientation))),
                  L.Else(no_cm_code)]
 
         reference_value_size = data["reference_value_size"]
@@ -245,7 +245,7 @@ class ufc_finite_element(ufc_generator):
         physical_values = L.Symbol("values")
         code += [L.Comment("Push forward"),
                  L.Call("transform_reference_basis_derivatives",(physical_values, 0, 1,
-                                                              ref_values, X, J, detJ, K,
+                                                              ref_values, X, J, L.AddressOf(detJ), K,
                                                               cell_orientation))
                  ]
 

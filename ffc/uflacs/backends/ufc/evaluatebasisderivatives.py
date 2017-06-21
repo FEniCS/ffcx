@@ -194,11 +194,11 @@ def _generate_dof_code(L, data, dof_data):
     "Generate code for a basis."
 
     basisvalues = L.Symbol("basisvalues")
-    Y = L.Symbol("Y")
+    X = L.Symbol("X")
     element_cellname = data["cellname"]
     embedded_degree = dof_data["embedded_degree"]
     num_members = dof_data["num_expansion_members"]
-    code = _generate_compute_basisvalues(L, basisvalues, Y, element_cellname, embedded_degree, num_members)
+    code = _generate_compute_basisvalues(L, basisvalues, X, element_cellname, embedded_degree, num_members)
 
     # Tabulate coefficients.
     code += tabulate_coefficients(L, dof_data)
