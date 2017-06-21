@@ -14,5 +14,7 @@ build:
     - pip install -e .
     - pip install libs/ufc_wrappers/
     - python -m flake8 ffc/
+    - python test/factory/generate_wrappers.py
+    - pip install test/factory/
     - python -m pytest -v ./test/unit
     - python -m pytest -v ./test/uflacs
