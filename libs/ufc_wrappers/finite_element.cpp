@@ -49,10 +49,11 @@ namespace ufc_wrappers
                                         int orientation);
 
   // Remove from UFC
-  double evaluate_basis(ufc::finite_element &instance, std::size_t i,
-                        py::array_t<double> x,
-                        py::array_t<double> coordinate_dofs,
-                        int cell_orientation);
+  py::array_t<double>
+  evaluate_basis(ufc::finite_element &instance, std::size_t i,
+                 py::array_t<double> x,
+                 py::array_t<double> coordinate_dofs,
+                 int cell_orientation);
 
   // Remove from UFC
   py::array_t<double> evaluate_basis_all(ufc::finite_element &instance,
