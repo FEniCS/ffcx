@@ -238,7 +238,6 @@ namespace ufc_wrappers
     check_array_shape(coordinate_dofs, {tdim + 1, gdim});
 
     // Shape of data to be computed and returned, and create
-    //std::vector<std::size_t> size = {gdim};
     py::array_t<double, py::array::c_style> f(gdim);
 
     // Call UFC function
