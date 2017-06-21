@@ -55,7 +55,7 @@ def fiat_coordinate_mapping(L, cellname, gdim):
 
     # Code used in evaluatebasis[|derivatives]
     x = L.Symbol("x")
-    Y = L.Symbol("Y")
+    X = L.Symbol("X")
     coordinate_dofs = L.Symbol("coordinate_dofs")
 
     if cellname == "interval":
@@ -63,13 +63,13 @@ def fiat_coordinate_mapping(L, cellname, gdim):
         detJ = L.Symbol("detJ")
         if gdim == 1:
             code = [L.Comment("Get coordinates and map to the reference (FIAT) element"),
-                    L.ArrayDecl("double", Y, 1, [(2*x[0] - coordinate_dofs[0] - coordinate_dofs[1])/J[0]])]
+                    L.ArrayDecl("double", X, 1, [(2*x[0] - coordinate_dofs[0] - coordinate_dofs[1])/J[0]])]
         elif gdim == 2:
             code = [L.Comment("Get coordinates and map to the reference (FIAT) element"),
-                    L.ArrayDecl("double", Y, 1, [2*(L.Sqrt(L.Call("std::pow", (x[0] - coordinate_dofs[0], 2)) + L.Call("std::pow", (x[1] - coordinate_dofs[1], 2))))/detJ - 1.0])]
+                    L.ArrayDecl("double", X, 1, [2*(L.Sqrt(L.Call("std::pow", (x[0] - coordinate_dofs[0], 2)) + L.Call("std::pow", (x[1] - coordinate_dofs[1], 2))))/detJ - 1.0])]
         elif gdim == 3:
             code = [L.Comment("Get coordinates and map to the reference (FIAT) element"),
-                    L.ArrayDecl("double", Y, 1, [2*(L.Sqrt(L.Call("std::pow", (x[0] - coordinate_dofs[0], 2)) + L.Call("std::pow", (x[1] - coordinate_dofs[1], 2)) + L.Call("std::pow", (x[2] - coordinate_dofs[2], 2))))/ detJ - 1.0])]
+                    L.ArrayDecl("double", X, 1, [2*(L.Sqrt(L.Call("std::pow", (x[0] - coordinate_dofs[0], 2)) + L.Call("std::pow", (x[1] - coordinate_dofs[1], 2)) + L.Call("std::pow", (x[2] - coordinate_dofs[2], 2))))/ detJ - 1.0])]
         else:
             error("Cannot compute interval with gdim: %d" % gdim)
     elif cellname == "triangle":
@@ -82,12 +82,12 @@ def fiat_coordinate_mapping(L, cellname, gdim):
                     L.VariableDecl("const double", C0, coordinate_dofs[2] + coordinate_dofs[4]),
                     L.VariableDecl("const double", C1, coordinate_dofs[3] + coordinate_dofs[5]),
                     L.Comment("Get coordinates and map to the reference (FIAT) element"),
-                    L.ArrayDecl("double", Y, 2, [(J[1]*(C1 - 2.0*x[1]) + J[3]*(2.0*x[0] - C0)) / detJ,
+                    L.ArrayDecl("double", X, 2, [(J[1]*(C1 - 2.0*x[1]) + J[3]*(2.0*x[0] - C0)) / detJ,
                                                  (J[0]*(2.0*x[1] - C1) + J[2]*(C0 - 2.0*x[0])) / detJ])]
         elif gdim == 3:
             K = L.Symbol("K")
             code = [L.Comment("P_FFC = J^dag (p - b), P_FIAT = 2*P_FFC - (1, 1)"),
-                    L.ArrayDecl("double", Y, 2, [2*(K[0]*(x[0] - coordinate_dofs[0])
+                    L.ArrayDecl("double", X, 2, [2*(K[0]*(x[0] - coordinate_dofs[0])
                                                     + K[1]*(x[1] - coordinate_dofs[1])
                                                     + K[2]*(x[2] - coordinate_dofs[2])) - 1.0,
                                                  2*(K[3]*(x[0] - coordinate_dofs[0])
@@ -118,7 +118,7 @@ def fiat_coordinate_mapping(L, cellname, gdim):
                                                    J[2]*J[3] - J[0]*J[5],
                                                    J[0]*J[4] - J[1]*J[3]]),
                 L.Comment("Get coordinates and map to the reference (FIAT) element"),
-                L.ArrayDecl("double", Y, 3, [(d[0]*(2.0*x[0] - C0) + d[3]*(2.0*x[1] - C1) + d[6]*(2.0*x[2] - C2)) / detJ,
+                L.ArrayDecl("double", X, 3, [(d[0]*(2.0*x[0] - C0) + d[3]*(2.0*x[1] - C1) + d[6]*(2.0*x[2] - C2)) / detJ,
                                              (d[1]*(2.0*x[0] - C0) + d[4]*(2.0*x[1] - C1) + d[7]*(2.0*x[2] - C2)) / detJ,
                                              (d[2]*(2.0*x[0] - C0) + d[5]*(2.0*x[1] - C1) + d[8]*(2.0*x[2] - C2)) / detJ])]
     else:
