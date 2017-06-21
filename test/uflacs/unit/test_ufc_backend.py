@@ -8,10 +8,8 @@ from ffc.uflacs.backends.ufc.generators import *
 
 import ffc.uflacs.language.cnodes as L
 
-from ffc.cpp import format as cpp_format
-from ffc.cpp import set_float_formatting
-if "floating point" not in cpp_format:
-    set_float_formatting(precision=8)
+# from ffc.cpp import set_float_formatting
+# set_float_formatting(precision=8)
 
 
 # TODO: Make this a feature of dijitso: dijitso show-function modulehash functionname
