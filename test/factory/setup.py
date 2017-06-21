@@ -40,7 +40,7 @@ ext_modules = [
                   get_pybind_include(),
                   get_pybind_include(user=True)
               ],
-        language='c++'
+              language='c++'
     ),
 ]
 
@@ -95,8 +95,11 @@ class BuildExt(build_ext):
                 opts.append('-fvisibility=default')
         elif ct == 'msvc':
             opts.append('/DVERSION_INFO=\\"%s\\"' % self.distribution.get_version())
+
+        opts += ['-O0']
         for ext in self.extensions:
             ext.extra_compile_args = opts
+
         build_ext.build_extensions(self)
 
 

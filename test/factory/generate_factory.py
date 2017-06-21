@@ -150,7 +150,7 @@ def build_ufl_element_list():
 
     # Mixed elements
     for cell in (interval, triangle, tetrahedron):
-        for p in range(1, 4):
+        for p in range(1, 3):
             e0 = FiniteElement("Lagrange", cell, p+1)
             e1 = FiniteElement("Lagrange", cell, p)
             e2 = VectorElement("Lagrange", cell, p+1)
@@ -200,7 +200,8 @@ def compile_elements_to_cpp(elements, outpath):
         f_cpp = open(os.path.join(outpath, filename_cpp), 'w')
 
         for i, prefix, e, num_sub_elements in element_data:
-            header, implementation = compile_element(e, prefix=prefix, parameters={"split": True})
+            header, implementation = compile_element(e, prefix=prefix,
+                                                     parameters={"split": True})
 
             # Adjust include in implementation
             old_include = '#include "' + str(prefix) + '.h\"'
