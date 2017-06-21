@@ -262,7 +262,8 @@ def main():
     # Save element data to pickle file
     filename = os.path.join(dir, "ffc-test-factory",
                             "element_factory_data.p")
-    pickle.dump((elements_hash, elements), open(filename, "wb"))
+    pickle.dump((elements_hash, elements), open(filename, "wb"),
+                pickle.HIGHEST_PROTOCOL)
 
 
 if __name__ == "__main__":
