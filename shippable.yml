@@ -8,13 +8,18 @@ build:
     - apt-get -qq -y --no-install-recommends install cmake
     - pip install --upgrade pip
     - pip install flake8 pytest
+
     - pip install git+https://bitbucket.org/fenics-project/fiat.git@master
     - pip install git+https://bitbucket.org/fenics-project/ufl.git@master
     - pip install git+https://bitbucket.org/fenics-project/dijitso.git@master
+
     - pip install -e .
     - pip install libs/ufc_wrappers/
+
     - python -m flake8 ffc/
     - python test/factory/generate_wrappers.py
     - pip install test/factory/
-    - python -m pytest -v ./test/unit
+
+     - mkdir -p shippable/testresults
+    - python -m pytest --junitxml=shippable/testresults/nosetests.xml ./test/unit
     - python -m pytest -v ./test/uflacs
