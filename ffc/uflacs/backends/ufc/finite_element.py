@@ -191,21 +191,23 @@ class ufc_finite_element(ufc_generator):
         gdim = data["geometric_dimension"]
         tdim = data["topological_dimension"]
 
-        # Generate run time code to evaluate an element basisfunction at an
-        # arbitrary point. The value(s) of the basisfunction is/are
-        # computed as in FIAT as the dot product of the coefficients (computed at compile time)
-        # and basisvalues which are dependent on the coordinate and thus have to be computed at
-        # run time.
+        # Generate run time code to evaluate an element basisfunction
+        # at an arbitrary point. The value(s) of the basisfunction
+        # is/are computed as in FIAT as the dot product of the
+        # coefficients (computed at compile time) and basisvalues
+        # which are dependent on the coordinate and thus have to be
+        # computed at run time.
 
-        # The function should work for all elements supported by FIAT, but it remains
-        # untested for tensor valued elements.
+        # The function should work for all elements supported by FIAT,
+        # but it remains untested for tensor valued elements.
 
-        # Get code snippets for Jacobian, Inverse of Jacobian and mapping of
-        # coordinates from physical element to the FIAT reference element.
+        # Get code snippets for Jacobian, Inverse of Jacobian and
+        # mapping of coordinates from physical element to the FIAT
+        # reference element.
 
         cm = L.Symbol("cm")
         X = L.Symbol("X")
-        code = [L.ArrayDecl("double", X, (tdim))]
+        code = [L.ArrayDecl("double", X, (tdim), values=0)]
 
         J = L.Symbol("J")
         code += [L.ArrayDecl("double", J, (gdim*tdim,))]
@@ -229,7 +231,12 @@ class ufc_finite_element(ufc_generator):
             no_cm_code += orientation(L)
 
         if any((d["embedded_degree"] > 0) for d in data["dofs_data"]):
-            no_cm_code += fiat_coordinate_mapping(L, element_cellname, gdim)
+            i = L.Symbol("i")
+            k = L.Symbol("k")
+            no_cm_code += [L.Comment("Map to FFC reference element coordinate"),
+                           L.ForRange(i, 0, tdim, index_type=index_type,
+                                      body=[L.ForRange(k, 0, gdim, index_type=index_type,
+                                                       body=[L.AssignAdd(X[i], K[i*gdim + k]*x[k])])])]
 
         code += [L.If(cm, L.Call("cm->compute_reference_geometry",
                                 (X, J, L.AddressOf(detJ), K, 1, x, coordinate_dofs, cell_orientation))),
