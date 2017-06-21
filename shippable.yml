@@ -20,6 +20,6 @@ build:
     - python test/factory/generate_factory.py
     - pip install test/factory/
 
-     - mkdir -p shippable/testresults
+    - mkdir -p shippable/testresults
     - python -m pytest --junitxml=shippable/testresults/nosetests.xml ./test/unit
     - python -m pytest -v ./test/uflacs
