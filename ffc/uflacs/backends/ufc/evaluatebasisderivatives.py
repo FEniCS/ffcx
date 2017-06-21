@@ -324,6 +324,8 @@ def generate_evaluate_basis_derivatives(L, data):
     if data["needs_oriented"] and tdim != gdim:
         code += orientation(L)
 
+    X = L.Symbol("X")
+    code += [L.ArrayDecl("double", X, (tdim))]
     code += fiat_coordinate_mapping(L, element_cellname, gdim)
 
     # Generate all possible combinations of derivatives.
