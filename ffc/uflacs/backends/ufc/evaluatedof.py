@@ -28,15 +28,26 @@ from ffc.utils import pick_first
 
 index_type="std::size_t"
 
-def affine_weights(dim):
-    "Compute coefficents for mapping from reference to physical element"
+def reference_to_physical_map(cellname):
+    "Returns a map from reference coordinates to physical element coordinates"
 
-    if dim == 1:
+    if cellname == "interval":
         return lambda x: (1.0 - x[0], x[0])
-    elif dim == 2:
+    elif cellname == "triangle":
         return lambda x: (1.0 - x[0] - x[1], x[0], x[1])
-    elif dim == 3:
+    elif cellname == "tetrahedron":
         return lambda x: (1.0 - x[0] - x[1] - x[2], x[0], x[1], x[2])
+    elif cellname == "quadrilateral":
+        return lambda x: ((1-x[0])*(1-x[1]), (1-x[0])*x[1], x[0]*(1-x[1]), x[0]*x[1])
+    elif cellname == "hexahedron":
+        return lambda x: ((1-x[0])*(1-x[1])*(1-x[2]),
+            (1-x[0])*(1-x[1])*x[2],
+            (1-x[0])*x[1]*(1-x[2]),
+            (1-x[0])*x[1]*x[2],
+            x[0]*(1-x[1])*(1-x[2]),
+            x[0]*(1-x[1])*x[2],
+            x[0]*x[1]*(1-x[2]),
+            x[0]*x[1]*x[2])
 
 
 def _change_variables(L, mapping, gdim, tdim, offset):
@@ -147,7 +158,7 @@ def _change_variables(L, mapping, gdim, tdim, offset):
     else:
         raise Exception("The mapping (%s) is not allowed" % mapping)
 
-def _generate_body(L, i, dof, mapping, gdim, tdim, offset=0):
+def _generate_body(L, i, dof, mapping, gdim, tdim, cell_shape, offset=0):
     "Generate code for a single dof."
 
     # EnrichedElement is handled by having [None, ..., None] dual basis
@@ -165,7 +176,7 @@ def _generate_body(L, i, dof, mapping, gdim, tdim, offset=0):
 
     # Get weights for mapping reference point to physical
     x = points[0]
-    w = affine_weights(tdim)(x)
+    w = reference_to_physical_map(cell_shape)(x)
 
     # Map point onto physical element: y = F_K(x)
     code = []
@@ -176,7 +187,7 @@ def _generate_body(L, i, dof, mapping, gdim, tdim, offset=0):
     c = L.Symbol("c")
     for j in range(gdim):
         yy = 0.0
-        for k in range(tdim + 1):
+        for k in range(len(w)):
             yy += w[k]*coordinate_dofs[k*gdim + j]
         code += [L.Assign(y[j], yy)]
 
@@ -309,8 +320,7 @@ def generate_evaluate_dof(L, ir):
     gdim = ir["geometric_dimension"]
     tdim = ir["topological_dimension"]
 
-    # element_cellname = ir["element_cellname"]
-    element_cellname = ['interval', 'triangle', 'tetrahedron'][tdim - 1]
+    cell_shape = ir["cell_shape"]
 
     # Enriched element, no dofs defined
     if not any(ir["dofs"]):
@@ -336,10 +346,10 @@ def generate_evaluate_dof(L, ir):
             code += [L.VariableDecl("double", result)]
 
         if needs_jacobian or needs_inverse_jacobian:
-            code += jacobian(L, gdim, tdim, element_cellname)
+            code += jacobian(L, gdim, tdim, cell_shape)
 
         if needs_inverse_jacobian:
-            code += inverse_jacobian(L, gdim, tdim, element_cellname)
+            code += inverse_jacobian(L, gdim, tdim, cell_shape)
             if tdim != gdim :
                 code += orientation(L)
 
@@ -350,7 +360,7 @@ def generate_evaluate_dof(L, ir):
     # Generate bodies for each degree of freedom
     cases = []
     for (i, dof) in enumerate(ir["dofs"]):
-        c, r = _generate_body(L, i, dof, mappings[i], gdim, tdim, offsets[i])
+        c, r = _generate_body(L, i, dof, mappings[i], gdim, tdim, cell_shape, offsets[i])
         c += [L.Return(r)]
         cases.append((i, c))
 
@@ -366,9 +376,7 @@ def generate_evaluate_dofs(L, ir):
     gdim = ir["geometric_dimension"]
     tdim = ir["topological_dimension"]
 
-    # FIXME: should be like this:
-    # element_cellname = ir["element_cellname"]
-    element_cellname = ['interval', 'triangle', 'tetrahedron'][tdim - 1]
+    cell_shape = ir["cell_shape"]
 
     # Enriched element, no dofs defined
     if not any(ir["dofs"]):
@@ -394,10 +402,10 @@ def generate_evaluate_dofs(L, ir):
             code += [L.VariableDecl("double", result)]
 
         if needs_jacobian or needs_inverse_jacobian:
-            code += jacobian(L, gdim, tdim, element_cellname)
+            code += jacobian(L, gdim, tdim, cell_shape)
 
         if needs_inverse_jacobian:
-            code += inverse_jacobian(L, gdim, tdim, element_cellname)
+            code += inverse_jacobian(L, gdim, tdim, cell_shape)
             if tdim != gdim :
                 code += orientation(L)
 
@@ -408,7 +416,7 @@ def generate_evaluate_dofs(L, ir):
     # Generate bodies for each degree of freedom
     values = L.Symbol("values")
     for (i, dof) in enumerate(ir["dofs"]):
-        c, r = _generate_body(L, i, dof, mappings[i], gdim, tdim, offsets[i])
+        c, r = _generate_body(L, i, dof, mappings[i], gdim, tdim, cell_shape, offsets[i])
         code += c
         code += [L.Assign(values[i], r)]
 

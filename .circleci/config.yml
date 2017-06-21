@@ -1,0 +1,26 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: quay.io/fenicsproject/pipelines:latest
+    working_directory: /home/fenics/working
+    steps:
+      - checkout
+      - run:
+          name: Install FIAT
+          command: pip3 install git+https://bitbucket.org/fenics-project/fiat.git@master
+      - run:
+          name: Install UFL
+          command: pip3 install git+https://bitbucket.org/fenics-project/ufl.git@master
+      - run:
+          name: Install Dijitso
+          command: pip3 install git+https://bitbucket.org/fenics-project/dijitso.git@master
+      - run:
+          name: Install FFC
+          command: pip3 install -e .
+      - run:
+          name: Build pybind wrapper
+          command: pip3 install libs/ufc_wrappers/
+      - run:
+          name: Run unit tests
+          command: python3 -m pytest -v ./test/unit

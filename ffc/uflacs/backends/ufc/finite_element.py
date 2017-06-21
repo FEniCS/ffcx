@@ -37,7 +37,7 @@ from ffc.uflacs.backends.ufc.evaluatebasisderivatives import generate_evaluate_b
 from ffc.uflacs.backends.ufc.evaluatebasisderivatives import generate_evaluate_basis_derivatives
 from ffc.uflacs.backends.ufc.evalderivs import generate_evaluate_reference_basis_derivatives
 from ffc.uflacs.backends.ufc.evalderivs import _generate_combinations
-from ffc.uflacs.backends.ufc.evaluatedof import generate_evaluate_dof, generate_evaluate_dofs, affine_weights
+from ffc.uflacs.backends.ufc.evaluatedof import generate_evaluate_dof, generate_evaluate_dofs, reference_to_physical_map
 
 from ffc.uflacs.backends.ufc.jacobian import jacobian, inverse_jacobian, orientation, fiat_coordinate_mapping, _mapping_transform
 
@@ -402,10 +402,10 @@ class ufc_finite_element(ufc_generator):
         code = []
         gdim = irdata["geometric_dimension"]
         tdim = irdata["topological_dimension"]
-        element_cellname = ir["evaluate_basis"]["cellname"]
+        cell_shape = ir["cell_shape"]
         if irdata["needs_jacobian"]:
-            code += jacobian(L, gdim, tdim, element_cellname)
-            code += inverse_jacobian(L, gdim, tdim, element_cellname)
+            code += jacobian(L, gdim, tdim, cell_shape)
+            code += inverse_jacobian(L, gdim, tdim, cell_shape)
             if irdata["needs_oriented"] and tdim != gdim:
                 code += orientation(L)
 
@@ -496,6 +496,9 @@ class ufc_finite_element(ufc_generator):
         tdim = ir["tdim"]
         points = ir["points"]
 
+        # Extract cellshape
+        cell_shape = ir["cell_shape"]
+
         # Output argument
         dof_coordinates = L.FlattenedArray(L.Symbol("dof_coordinates"),
                                            dims=(len(points), gdim))
@@ -511,10 +514,10 @@ class ufc_finite_element(ufc_generator):
         # Basis symbol
         phi = L.Symbol("phi")
 
-        # TODO: Get rid of all places that use affine_weights, assumes affine mesh
-        # Create code for evaluating affine coordinate basis functions
-        num_scalar_xdofs = tdim + 1
-        cg1_basis = affine_weights(tdim)
+        # TODO: Get rid of all places that use reference_to_physical_map, it is restricted to a basis of degree 1
+        # Create code for evaluating coordinate mapping
+        num_scalar_xdofs = _num_vertices(cell_shape)
+        cg1_basis = reference_to_physical_map(cell_shape)
         phi_values = numpy.asarray([phi_comp for X in points for phi_comp in cg1_basis(X)])
         assert len(phi_values) == len(points) * num_scalar_xdofs
 
@@ -804,3 +807,10 @@ class ufc_finite_element(ufc_generator):
             + point_loop_code
         )
         return code
+
+
+def _num_vertices(cell_shape):
+    """Returns number of vertices for a given cell shape."""
+
+    num_vertices_dict = {"interval": 2, "triangle": 3, "tetrahedron": 4, "quadrilateral": 4, "hexahedron": 8}
+    return num_vertices_dict[cell_shape]
