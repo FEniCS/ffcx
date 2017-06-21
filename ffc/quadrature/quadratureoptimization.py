@@ -23,7 +23,7 @@ from ufl.utils.sorting import sorted_by_key
 
 # FFC modules
 from ffc.log import info, error
-from ffc.cpp import format
+from ffc.quadrature.cpp import format
 from ffc.quadrature.symbolics import optimise_code, BASIS, IP, GEO
 from ffc.quadrature.symbolics import create_product, create_sum, create_symbol, create_fraction
 

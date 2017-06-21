@@ -23,7 +23,7 @@ import time
 from ffc.quadrature.reduce_operations import operation_count, expand_operations, reduce_operations
 from ffc.quadrature.symbolics import *
 from ffc.quadrature.sumobj import _group_fractions
-from ffc.cpp import format, set_float_formatting
+from ffc.quadrature.cpp import format, set_float_formatting
 from ffc.parameters import FFC_PARAMETERS
 set_float_formatting(FFC_PARAMETERS['precision'])
 from ffc.log import error, push_level, pop_level, CRITICAL

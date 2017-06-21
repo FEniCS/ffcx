@@ -28,11 +28,11 @@ from ufl.measure import integral_type_to_measure_name, point_integral_types, fac
 from ufl.cell import cellname2facetname
 
 from ffc.log import error
-from ffc.cpp import make_integral_classname
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import create_quadrature
 from ffc.fiatinterface import map_facet_points
 from ffc.fiatinterface import reference_cell_vertices
+from ffc.classname import make_integral_classname
 
 
 def create_quadrature_points_and_weights(integral_type, cell, degree, rule):

@@ -43,9 +43,7 @@ from ffc.utils import compute_permutations, product
 from ffc.log import info, error, begin, end
 from ffc.fiatinterface import create_element, reference_cell
 from ffc.fiatinterface import EnrichedElement, HDivTrace, MixedElement, SpaceOfReals, QuadratureElement
-from ffc.cpp import set_float_formatting
-from ffc.cpp import make_classname, make_integral_classname
-
+from ffc.classname import make_classname, make_integral_classname
 
 # List of supported integral types
 ufc_integral_types = ("cell",
@@ -131,7 +129,7 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     # Set code generation parameters (this is not actually a 'formatting'
     # parameter, used for table value clamping as well)
     # FIXME: Global state?!
-    set_float_formatting(parameters["precision"])
+    #    set_float_formatting(parameters["precision"])
 
     # Extract data from analysis
     form_datas, elements, element_numbers, coordinate_elements = analysis

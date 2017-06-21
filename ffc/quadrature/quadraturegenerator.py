@@ -33,7 +33,7 @@ from ufl import custom_integral_types
 
 # FFC modules
 from ffc.log import ffc_assert, error, warning
-from ffc.cpp import format, remove_unused, indent
+from ffc.quadrature.cpp import format, remove_unused, indent
 
 from ffc.representationutils import initialize_integral_code
 

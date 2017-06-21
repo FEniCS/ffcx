@@ -25,7 +25,7 @@ from functools import reduce
 
 # FFC modules
 from ffc.log import error
-from ffc.cpp import format
+from ffc.quadrature.cpp import format
 
 # FFC quadrature modules
 from .symbolics import create_float

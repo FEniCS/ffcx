@@ -30,7 +30,7 @@ import numpy
 
 # FFC modules.
 from ffc.log import debug, error
-from ffc.cpp import format
+from ffc.quadrature.cpp import format
 
 
 def create_psi_tables(tables, eliminate_zeros, entity_type):

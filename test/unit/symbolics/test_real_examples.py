@@ -22,7 +22,7 @@ import time
 
 # FFC modules
 from ffc.quadrature.symbolics import *
-from ffc.cpp import format, set_float_formatting
+from ffc.quadrature.cpp import format, set_float_formatting
 from ffc.parameters import FFC_PARAMETERS
 set_float_formatting(FFC_PARAMETERS['precision'])
 

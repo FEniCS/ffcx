@@ -22,7 +22,7 @@ from ufl.utils.sorting import sorted_by_key
 
 # FFC modules
 from ffc.log import error
-from ffc.cpp import format
+from ffc.quadrature.cpp import format
 
 # TODO: Use proper errors, not just RuntimeError.
 # TODO: Change all if value == 0.0 to something more safe.
