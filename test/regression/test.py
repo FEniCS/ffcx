@@ -725,7 +725,7 @@ def main(args):
     for argument in test_cases:
         info_blue("Total time for %s: %.1f s" % (argument, test_case_timings[argument]))
 
-    if not os.path.isfile(logfile) or os.stat(logfile).st_size == 0:
+    if not fails:
         info_green("Regression tests OK")
         return 0
     else:
