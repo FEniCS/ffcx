@@ -237,7 +237,7 @@ class ufc_finite_element(ufc_generator):
             no_cm_code += [L.Comment("Map to FFC reference element coordinate"),
                            L.ForRange(i, 0, tdim, index_type=index_type,
                                       body=[L.ForRange(k, 0, gdim, index_type=index_type,
-                                                       body=[L.AssignAdd(X[i], K[i*gdim + k]*x[k])])])]
+                                                       body=[L.AssignAdd(X[i], K[i*gdim + k]*(x[k] - coordinate_dofs[k]) )])])]
 
         code += [L.If(cm, L.Call("cm->compute_reference_geometry",
                                 (X, J, L.AddressOf(detJ), K, 1, x, coordinate_dofs, cell_orientation))),
