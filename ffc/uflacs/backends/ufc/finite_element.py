@@ -250,17 +250,18 @@ class ufc_finite_element(ufc_generator):
                  L.ArrayDecl("double", ref_values, num_dofs*reference_value_size),
                  L.Call("evaluate_reference_basis",(ref_values, 1, X))]
 
+        physical_value_size = data["physical_value_size"]
         physical_values = L.Symbol("physical_values")
         i = L.Symbol("i")
         k = L.Symbol("k")
         values = L.Symbol("values")
         code += [L.Comment("Push forward"),
-                 L.ArrayDecl("double", physical_values, num_dofs*reference_value_size),
+                 L.ArrayDecl("double", physical_values, num_dofs*physical_value_size),
                  L.Call("transform_reference_basis_derivatives",(physical_values, 0, 1,
-                                                              ref_values, X, J, L.AddressOf(detJ), K,
+                                                                 ref_values, X, J, L.AddressOf(detJ), K,
                                                                  cell_orientation)),
-                               L.ForRange(k, 0, reference_value_size, index_type=index_type, body=[
-                                L.Assign(values[k], physical_values[reference_value_size*i + k])
+                 L.ForRange(k, 0, physical_value_size, index_type=index_type, body=[
+                     L.Assign(values[k], physical_values[physical_value_size*i + k])
                  ])]
 
         return code
