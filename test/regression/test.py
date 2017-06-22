@@ -725,7 +725,11 @@ def main(args):
     for argument in test_cases:
         info_blue("Total time for %s: %.1f s" % (argument, test_case_timings[argument]))
 
-    if not fails:
+    num_failures = sum(len(failures_phase)
+                       for failures_args in fails.values()
+                       for failures_phase in failures_args.values())
+
+    if num_failures == 0:
         info_green("Regression tests OK")
         return 0
     else:
