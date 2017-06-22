@@ -104,11 +104,11 @@ class BuildExt(build_ext):
 
 
 class BuildPyCommand(setuptools.command.build_py.build_py):
-  """Custom build command to generate pybind11 wrappers."""
+    """Custom build command to generate pybind11 wrappers."""
 
-  def run(self):
-      generate_factory.main()
-      setuptools.command.build_py.build_py.run(self)
+    def run(self):
+        generate_factory.main()
+        setuptools.command.build_py.build_py.run(self)
 
 
 setup(

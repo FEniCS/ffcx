@@ -231,7 +231,7 @@ def generate_code(args, only_forms, skip_forms, debug):
     for f in form_files:
         options = [special.get(f, "")]
         options.extend(args)
-        options.extend(["-f", "precision=8", "-fconvert_exceptions_to_warnings"])
+        options.extend(["-f", "precision=8", "-f", "epsilon=1e-7",  "-fconvert_exceptions_to_warnings"])
         options.append(f)
         options = list(filter(None, options))
 
@@ -725,7 +725,7 @@ def main(args):
     for argument in test_cases:
         info_blue("Total time for %s: %.1f s" % (argument, test_case_timings[argument]))
 
-    if not os.path.isfile(logfile) or os.stat(logfile).st_size == 0:
+    if not fails:
         info_green("Regression tests OK")
         return 0
     else:
