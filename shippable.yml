@@ -4,10 +4,8 @@ python:
   - 3.6
 
 build:
-  pre_ci:
-
   ci:
-    if [ "$BRANCH" == "next" ] ; then export DEP_BRANCH_NAME="next" ; else export DEP_BRANCH_NAME="master" ; fi
+    - if [ "$BRANCH" == "next" ] ; then export DEP_BRANCH_NAME="next" ; else export DEP_BRANCH_NAME="master" ; fi
 
     - apt-get -qq -y --no-install-recommends install cmake
     - pip install --upgrade pip
