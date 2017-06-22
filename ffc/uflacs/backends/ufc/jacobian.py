@@ -51,11 +51,11 @@ def orientation(L):
                      [L.AssignMul(detJ , -1)])]
     return code
 
-def fiat_coordinate_mapping(L, cellname, gdim):
+def fiat_coordinate_mapping(L, cellname, gdim, ref_coord_symbol="Y"):
 
     # Code used in evaluatebasis[|derivatives]
     x = L.Symbol("x")
-    Y = L.Symbol("Y")
+    Y = L.Symbol(ref_coord_symbol)
     coordinate_dofs = L.Symbol("coordinate_dofs")
 
     if cellname == "interval":

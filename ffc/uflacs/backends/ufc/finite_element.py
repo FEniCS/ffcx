@@ -232,12 +232,14 @@ class ufc_finite_element(ufc_generator):
             no_cm_code += orientation(L)
 
         if any((d["embedded_degree"] > 0) for d in data["dofs_data"]):
-            i = L.Symbol("i")
             k = L.Symbol("k")
-            no_cm_code += [L.Comment("Map to FFC reference element coordinate"),
-                           L.ForRange(i, 0, tdim, index_type=index_type,
-                                      body=[L.ForRange(k, 0, gdim, index_type=index_type,
-                                                       body=[L.AssignAdd(X[i], K[i*gdim + k]*(x[k] - coordinate_dofs[k]) )])])]
+            Y = L.Symbol("Y")
+            no_cm_code += fiat_coordinate_mapping(L, element_cellname, gdim)
+            if element_cellname in ('interval', 'triangle', 'tetrahedron'):
+                no_cm_code += [L.Comment("Map to FFC reference coordinate"),
+                               L.ForRange(k, 0, tdim, index_type=index_type, body=[L.Assign(X[k], (Y[k] + 1.0)/2.0)])]
+            else:
+                no_cm_code += [L.ForRange(k, 0, tdim, index_type=index_type, body=[L.Assign(X[k], Y[k])])]
 
         code += [L.If(cm, L.Call("cm->compute_reference_geometry",
                                 (X, J, L.AddressOf(detJ), K, 1, x, coordinate_dofs, cell_orientation))),
