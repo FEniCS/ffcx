@@ -152,14 +152,16 @@ namespace ufc_wrappers
   }
 
   // Remove from UFC
-  double evaluate_basis(ufc::finite_element &instance, std::size_t i,
-                        py::array_t<double> x,
-                        py::array_t<double> coordinate_dofs,
-                        int cell_orientation)
+  py::array_t<double> evaluate_basis(ufc::finite_element &instance,
+                                     std::size_t i,
+                                     py::array_t<double> x,
+                                     py::array_t<double> coordinate_dofs,
+                                     int cell_orientation)
   {
     // Dimensions
     const std::size_t gdim = instance.geometric_dimension();
     const std::size_t tdim = instance.topological_dimension();
+    const std::size_t ref_size = instance.reference_value_size();
 
     // Extract point data (x)
     py::buffer_info info_x = x.request();
@@ -171,8 +173,10 @@ namespace ufc_wrappers
     // FIXME: this assumes an affine map
     check_array_shape(coordinate_dofs, {tdim + 1, gdim});
 
-    double values;
-    instance.evaluate_basis(i, &values, x.data(), coordinate_dofs.data(),
+    // Shape of data to be computed and returned, and create
+    py::array_t<double, py::array::c_style> values(ref_size);
+
+    instance.evaluate_basis(i, values.mutable_data(), x.data(), coordinate_dofs.data(),
                             cell_orientation, nullptr);
 
     return values;
@@ -234,7 +238,6 @@ namespace ufc_wrappers
     check_array_shape(coordinate_dofs, {tdim + 1, gdim});
 
     // Shape of data to be computed and returned, and create
-    //std::vector<std::size_t> size = {gdim};
     py::array_t<double, py::array::c_style> f(gdim);
 
     // Call UFC function
