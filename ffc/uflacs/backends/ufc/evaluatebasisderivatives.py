@@ -194,11 +194,12 @@ def _generate_dof_code(L, data, dof_data):
     "Generate code for a basis."
 
     basisvalues = L.Symbol("basisvalues")
-    X = L.Symbol("X")
+    Y = L.Symbol("Y")
     element_cellname = data["cellname"]
     embedded_degree = dof_data["embedded_degree"]
     num_members = dof_data["num_expansion_members"]
-    code = _generate_compute_basisvalues(L, basisvalues, X, element_cellname, embedded_degree, num_members)
+    code = _generate_compute_basisvalues(L, basisvalues, Y, element_cellname,
+                                         embedded_degree, num_members)
 
     # Tabulate coefficients.
     code += tabulate_coefficients(L, dof_data)
@@ -300,7 +301,8 @@ def generate_evaluate_basis_derivatives(L, data):
         num_derivatives_t = L.Symbol("num_derivatives_t")
         num_derivatives_g = L.Symbol("num_derivatives_g")
         if max_degree > 0:
-            code += [L.VariableDecl("std::size_t", num_derivatives_t, L.Call("std::pow", (tdim, n)))]
+            code += [L.VariableDecl("std::size_t", num_derivatives_t,
+                                    L.Call("std::pow", (tdim, n)))]
         code += [L.VariableDecl("std::size_t", num_derivatives_g, L.Call("std::pow", (gdim, n)))]
 
     # Reset all values.
@@ -308,10 +310,12 @@ def generate_evaluate_basis_derivatives(L, data):
 
     # Handle values of argument 'n'.
     code += [L.Comment("Call evaluate_basis_all if order of derivatives is equal to zero.")]
-    code += [L.If(L.EQ(n, 0), [L.Call("evaluate_basis", (L.Symbol("i"), values, x, coordinate_dofs, cell_orientation)), L.Return()])]
+    code += [L.If(L.EQ(n, 0), [L.Call("evaluate_basis", (L.Symbol("i"), values,
+                                                         x, coordinate_dofs, cell_orientation)),
+                               L.Return()])]
 
-    # If max_degree is zero, return code (to avoid declarations such as
-    # combinations[1][0]) and because there's nothing to compute.)
+    # If max_degree is zero, return code (to avoid declarations such
+    # as combinations[1][0]) and because there's nothing to compute.)
     if max_degree == 0:
         return code
 
@@ -324,15 +328,19 @@ def generate_evaluate_basis_derivatives(L, data):
     if data["needs_oriented"] and tdim != gdim:
         code += orientation(L)
 
-    X = L.Symbol("X")
-    code += [L.ArrayDecl("double", X, (tdim))]
+    Y = L.Symbol("Y")
+    code += [L.ArrayDecl("double", Y, (tdim))]
     code += fiat_coordinate_mapping(L, element_cellname, gdim)
 
     # Generate all possible combinations of derivatives.
-    combinations_code_t, combinations_t = _generate_combinations(L, tdim, max_degree, n, num_derivatives_t, _t)
+    combinations_code_t, combinations_t = _generate_combinations(L, tdim,
+                                                                 max_degree, n,
+                                                                 num_derivatives_t, _t)
     code += combinations_code_t
     if tdim != gdim:
-        combinations_code_g, combinations_g = _generate_combinations(L, gdim, max_degree, n, num_derivatives_g, "_g")
+        combinations_code_g, combinations_g = _generate_combinations(L, gdim,
+                                                                     max_degree, n,
+                                                                     num_derivatives_g, "_g")
         code += combinations_code_g
 
     # Generate the transformation matrix.
@@ -344,6 +352,7 @@ def generate_evaluate_basis_derivatives(L, data):
         dof_cases.append((i, _generate_dof_code(L, data, dof_data)))
     code += [L.Switch(L.Symbol("i"), dof_cases)]
     return code
+
 
 def generate_evaluate_basis_derivatives_all(L, data):
     """Like evaluate_basis, but return the values of all basis
