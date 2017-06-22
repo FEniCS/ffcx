@@ -45,11 +45,12 @@ index_type = "std::size_t"
 
 def compute_basis_values(L, data, dof_data):
     basisvalues = L.Symbol("basisvalues")
-    X = L.Symbol("X")
+    Y = L.Symbol("Y")
     element_cellname = data["cellname"]
     embedded_degree = dof_data["embedded_degree"]
     num_members = dof_data["num_expansion_members"]
-    return _generate_compute_basisvalues(L, basisvalues, X, element_cellname, embedded_degree, num_members)
+    return _generate_compute_basisvalues(L, basisvalues, Y, element_cellname,
+                                         embedded_degree, num_members)
 
 
 def compute_values(L, data, dof_data):
