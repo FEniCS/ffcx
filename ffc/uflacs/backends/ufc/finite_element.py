@@ -61,9 +61,7 @@ def compute_values(L, data, dof_data):
 
     # Get dof data.
     num_components = dof_data["num_components"]
-    reference_offset = dof_data["reference_offset"]
     physical_offset = dof_data["physical_offset"]
-    offset = reference_offset  # physical_offset # FIXME: Should be physical offset but that breaks tests
 
     basisvalues = L.Symbol("basisvalues")
     values = L.Symbol("values")
@@ -73,7 +71,7 @@ def compute_values(L, data, dof_data):
         # Loop number of components.
         for i in range(num_components):
             coefficients = L.Symbol("coefficients%d" % i)
-            lines += [L.AssignAdd(values[i+offset], coefficients[r]*basisvalues[r])]
+            lines += [L.AssignAdd(values[i + physical_offset], coefficients[r]*basisvalues[r])]
     else:
         coefficients = L.Symbol("coefficients0")
         lines = [L.AssignAdd(L.Dereference(values), coefficients[r]*basisvalues[r])]
@@ -82,7 +80,7 @@ def compute_values(L, data, dof_data):
     num_mem = dof_data["num_expansion_members"]
     code += [L.ForRange(r, 0, num_mem, index_type=index_type, body=lines)]
 
-    code += _mapping_transform(L, data, dof_data, values, offset)
+    code += _mapping_transform(L, data, dof_data, values, physical_offset)
 
     return code
 
@@ -101,7 +99,7 @@ def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J
     elif mapping == "covariant piola":
         assert num_reference_components == tdim
         num_physical_components = gdim
-        M_scale = 1.0 / detJ
+        M_scale = 1.0
         M_row = [K[jj, i] for jj in range(tdim)]
     elif mapping == "double covariant piola":
         assert num_reference_components == tdim**2
