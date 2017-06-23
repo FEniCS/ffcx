@@ -184,7 +184,6 @@ class ufc_finite_element(ufc_generator):
             msg = "evaluate_basis: %s" % data
             return [generate_error(L, msg, parameters["convert_exceptions_to_warnings"])]
 
-
         # Get the element cell name and geometric dimension.
         element_cellname = data["cellname"]
         gdim = data["geometric_dimension"]
