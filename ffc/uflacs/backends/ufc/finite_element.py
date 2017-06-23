@@ -101,7 +101,7 @@ def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J
     elif mapping == "covariant piola":
         assert num_reference_components == tdim
         num_physical_components = gdim
-        M_scale = 1.0 / detJ
+        M_scale = 1.0
         M_row = [K[jj, i] for jj in range(tdim)]
     elif mapping == "double covariant piola":
         assert num_reference_components == tdim**2
