@@ -271,18 +271,6 @@ namespace ufc
                                ) const = 0;
 
     /// Interpolate vertex values from dof values
-    /// The cell argument is only included here so we can pass it to the function.
-    /// FIXME: Remove this API version
-    void interpolate_vertex_values(double * vertex_values,
-                                   const double * dof_values,
-                                   const double * coordinate_dofs,
-                                   int cell_orientation,
-                                   const cell& c,
-                                   const ufc::coordinate_mapping * cm=nullptr
-                                   ) const
-    { interpolate_vertex_values(vertex_values, dof_values, coordinate_dofs, cell_orientation, cm); }
-
-    /// Interpolate vertex values from dof values
     virtual void interpolate_vertex_values(double * vertex_values,
                                            const double * dof_values,
                                            const double * coordinate_dofs,
