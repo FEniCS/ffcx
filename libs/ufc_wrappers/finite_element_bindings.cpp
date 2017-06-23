@@ -334,8 +334,7 @@ namespace ufc_wrappers
   py::array_t<double> interpolate_vertex_values(ufc::finite_element &instance,
                                                 py::array_t<double> dof_values,
                                                 py::array_t<double> coordinate_dofs,
-                                                int cell_orientation,
-                                                ufc::cell& cell)
+                                                int cell_orientation)
   {
     // Dimensions
     const std::size_t gdim = instance.geometric_dimension();
@@ -362,7 +361,7 @@ namespace ufc_wrappers
     instance.interpolate_vertex_values(vertex_values.mutable_data(),
                                        dof_values.data(),
                                        coordinate_dofs.data(),
-                                       cell_orientation, cell, nullptr);
+                                       cell_orientation, nullptr);
 
     return vertex_values;
   }
