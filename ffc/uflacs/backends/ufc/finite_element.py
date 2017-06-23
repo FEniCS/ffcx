@@ -183,7 +183,6 @@ class ufc_finite_element(ufc_generator):
             msg = "evaluate_basis: %s" % data
             return [generate_error(L, msg, parameters["convert_exceptions_to_warnings"])]
 
-
         # Get the element cell name and geometric dimension.
         element_cellname = data["cellname"]
         gdim = data["geometric_dimension"]
@@ -209,14 +208,14 @@ class ufc_finite_element(ufc_generator):
         if any((d["embedded_degree"] > 0) for d in data["dofs_data"]):
             code += fiat_coordinate_mapping(L, element_cellname, gdim)
 
-        reference_value_size = data["reference_value_size"]
+        physical_value_size = data["physical_value_size"]
         code += [L.Comment("Reset values")]
         dof_values = L.Symbol("values")
-        if reference_value_size == 1:
+        if physical_value_size == 1:
             # Reset values as a pointer.
             code += [L.Assign(L.Dereference(dof_values), 0.0)]
         else:
-            code += [L.MemZero(dof_values, reference_value_size)]
+            code += [L.MemZero(dof_values, physical_value_size)]
 
         # Create code for all basis values (dofs).
         dof_cases = []
