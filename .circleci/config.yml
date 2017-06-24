@@ -26,5 +26,6 @@ jobs:
           command: |
             python3 test/factory/generate_factory.py
             pip3 install test/factory/
+      - run:
           name: Run unit tests
           command: python3 -m pytest -v ./test/unit
