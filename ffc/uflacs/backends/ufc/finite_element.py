@@ -49,7 +49,8 @@ def compute_basis_values(L, data, dof_data):
     element_cellname = data["cellname"]
     embedded_degree = dof_data["embedded_degree"]
     num_members = dof_data["num_expansion_members"]
-    return _generate_compute_basisvalues(L, basisvalues, Y, element_cellname, embedded_degree, num_members)
+    return _generate_compute_basisvalues(L, basisvalues, Y, element_cellname,
+                                         embedded_degree, num_members)
 
 
 def compute_values(L, data, dof_data):
@@ -188,44 +189,80 @@ class ufc_finite_element(ufc_generator):
         gdim = data["geometric_dimension"]
         tdim = data["topological_dimension"]
 
-        # Generate run time code to evaluate an element basisfunction at an
-        # arbitrary point. The value(s) of the basisfunction is/are
-        # computed as in FIAT as the dot product of the coefficients (computed at compile time)
-        # and basisvalues which are dependent on the coordinate and thus have to be computed at
-        # run time.
+        # Generate run time code to evaluate an element basisfunction
+        # at an arbitrary point. The value(s) of the basisfunction
+        # is/are computed as in FIAT as the dot product of the
+        # coefficients (computed at compile time) and basisvalues
+        # which are dependent on the coordinate and thus have to be
+        # computed at run time.
 
-        # The function should work for all elements supported by FIAT, but it remains
-        # untested for tensor valued elements.
+        # The function should work for all elements supported by FIAT,
+        # but it remains untested for tensor valued elements.
 
-        # Get code snippets for Jacobian, Inverse of Jacobian and mapping of
-        # coordinates from physical element to the FIAT reference element.
+        # Get code snippets for Jacobian, Inverse of Jacobian and
+        # mapping of coordinates from physical element to the FIAT
+        # reference element.
 
-        code = jacobian(L, gdim, tdim, element_cellname)
-        code += inverse_jacobian(L, gdim, tdim, element_cellname)
+        cm = L.Symbol("cm")
+        X = L.Symbol("X")
+        code = [L.ArrayDecl("double", X, (tdim), values=0)]
+
+        J = L.Symbol("J")
+        code += [L.ArrayDecl("double", J, (gdim*tdim,))]
+
+        detJ = L.Symbol("detJ")
+        code += [L.VariableDecl("double", detJ)]
+
+        K = L.Symbol("K")
+        code += [L.ArrayDecl("double", K, (gdim*tdim,))]
+
+        x = L.Symbol("x")
+        coordinate_dofs = L.Symbol("coordinate_dofs")
+        cell_orientation = L.Symbol("cell_orientation")
+
+        no_cm_code = [  L.Call("compute_jacobian_"+element_cellname+"_"+str(gdim)+"d",
+                               (J, coordinate_dofs)),
+                        L.Call("compute_jacobian_inverse_"+element_cellname+"_"+str(gdim)+"d",
+                               (K, detJ, J))]
+
         if data["needs_oriented"] and tdim != gdim:
-            code += orientation(L)
+            no_cm_code += orientation(L)
 
         if any((d["embedded_degree"] > 0) for d in data["dofs_data"]):
-            code += fiat_coordinate_mapping(L, element_cellname, gdim)
+            k = L.Symbol("k")
+            Y = L.Symbol("Y")
+            no_cm_code += fiat_coordinate_mapping(L, element_cellname, gdim)
+            if element_cellname in ('interval', 'triangle', 'tetrahedron'):
+                no_cm_code += [L.Comment("Map to FFC reference coordinate"),
+                               L.ForRange(k, 0, tdim, index_type=index_type, body=[L.Assign(X[k], (Y[k] + 1.0)/2.0)])]
+            else:
+                no_cm_code += [L.ForRange(k, 0, tdim, index_type=index_type, body=[L.Assign(X[k], Y[k])])]
+
+        code += [L.If(cm, L.Call("cm->compute_reference_geometry",
+                                (X, J, L.AddressOf(detJ), K, 1, x, coordinate_dofs, cell_orientation))),
+                 L.Else(no_cm_code)]
+
+        reference_value_size = data["reference_value_size"]
+        num_dofs = len(data["dofs_data"])
+        ref_values = L.Symbol("ref_values")
+        code += [L.Comment("Evaluate basis on reference element"),
+                 L.ArrayDecl("double", ref_values, num_dofs*reference_value_size),
+                 L.Call("evaluate_reference_basis",(ref_values, 1, X))]
 
         physical_value_size = data["physical_value_size"]
-        code += [L.Comment("Reset values")]
-        dof_values = L.Symbol("values")
-        if physical_value_size == 1:
-            # Reset values as a pointer.
-            code += [L.Assign(L.Dereference(dof_values), 0.0)]
-        else:
-            code += [L.MemZero(dof_values, physical_value_size)]
+        physical_values = L.Symbol("physical_values")
+        i = L.Symbol("i")
+        k = L.Symbol("k")
+        values = L.Symbol("values")
+        code += [L.Comment("Push forward"),
+                 L.ArrayDecl("double", physical_values, num_dofs*physical_value_size),
+                 L.Call("transform_reference_basis_derivatives",(physical_values, 0, 1,
+                                                                 ref_values, X, J, L.AddressOf(detJ), K,
+                                                                 cell_orientation)),
+                 L.ForRange(k, 0, physical_value_size, index_type=index_type, body=[
+                     L.Assign(values[k], physical_values[physical_value_size*i + k])
+                 ])]
 
-        # Create code for all basis values (dofs).
-        dof_cases = []
-        for f, dof_data in enumerate(data["dofs_data"]):
-            dof_code = compute_basis_values(L, data, dof_data)
-            dof_code += tabulate_coefficients(L, dof_data)
-            dof_code += compute_values(L, data, dof_data)
-            dof_cases.append((f, dof_code))
-
-        code += [L.Switch(L.Symbol("i"), dof_cases)]
         return code
 
     def evaluate_basis_all(self, L, ir, parameters):
