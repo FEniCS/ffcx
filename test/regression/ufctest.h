@@ -363,8 +363,7 @@ void test_finite_element(ufc::finite_element& element, int id, Printer& printer)
   element.interpolate_vertex_values(vertex_values.data(),
                                     dof_values.data(),
                                     coordinate_dofs.data(),
-                                    1,
-                                    c);
+                                    1);
   printer.print_vector("interpolate_vertex_values", vertex_values);
 
   // tabulate_coordinates
