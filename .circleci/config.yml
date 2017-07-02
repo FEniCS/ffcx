@@ -8,7 +8,9 @@ jobs:
       - checkout
       - run:
           name: Install dependencies  # Install with sudo as tests not run as superuser in circleci/python
-          command: sudo pip install cmake flake8 libboost-math-dev numpy pybind11 pytest six --upgrade
+          command: |
+            sudo apt-get update && sudo apt-get install libboost-math-dev
+            sudo pip install cmake flake8 numpy pybind11 pytest six --upgrade
       - run:
           name: Install FIAT
           command: pip install git+https://bitbucket.org/fenics-project/fiat.git@master --user
