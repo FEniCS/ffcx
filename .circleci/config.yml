@@ -2,25 +2,35 @@ version: 2
 jobs:
   build:
     docker:
-      - image: quay.io/fenicsproject/pipelines:latest
-    working_directory: /home/fenics/working
+      - image: circleci/python:3.6
+    working_directory:  ~/ffc-test
     steps:
       - checkout
       - run:
+          name: Install dependencies  # Install with sudo as tests not run as superuser in circleci/python
+          command: sudo pip install flake8 numpy pybind11 pytest six --upgrade
+      - run:
           name: Install FIAT
-          command: pip3 install git+https://bitbucket.org/fenics-project/fiat.git@master
+          command: pip install git+https://bitbucket.org/fenics-project/fiat.git@master --user
       - run:
           name: Install UFL
-          command: pip3 install git+https://bitbucket.org/fenics-project/ufl.git@master
+          command: pip install git+https://bitbucket.org/fenics-project/ufl.git@master --user
       - run:
           name: Install Dijitso
-          command: pip3 install git+https://bitbucket.org/fenics-project/dijitso.git@master
+          command: pip install git+https://bitbucket.org/fenics-project/dijitso.git@master --user
       - run:
           name: Install FFC
-          command: pip3 install -e .
+          command: pip install -e . --user
       - run:
           name: Install pybind factory
-          command: pip3 install pybind11 ./libs/ffc-factory/
+          command: pip install ./libs/ffc-factory/ --user
       - run:
           name: Run unit tests
-          command: python3 -m pytest -v ./test/unit
+          command: |
+            python -m pytest -v ./test/unit
+            python -m pytest -v ./test/uflacs
+      - run:
+          name: Run regression tests
+          command: |
+            cd test/regression
+            python test.py
