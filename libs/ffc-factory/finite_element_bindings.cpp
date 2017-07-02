@@ -38,7 +38,7 @@ namespace ufc_wrappers
     const auto& x_shape = x_info.shape;
     for (std::size_t i =0; i < shape.size();++i)
     {
-      if (x_shape[i] != (ssize_t)shape[i])
+      if ((std::size_t) x_shape[i] != shape[i])
         throw std::runtime_error("NumPy array has wrong size");
     }
   }

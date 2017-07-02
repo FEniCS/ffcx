@@ -4,6 +4,8 @@ pipelines:
   default:
     - step:
         script:
+          - pip2 install pybind11 flake8 --upgrade
+          - pip3 install pybind11 flake8 --upgrade
           - pip2 install git+https://bitbucket.org/fenics-project/fiat.git@master
           - pip2 install git+https://bitbucket.org/fenics-project/ufl.git@master
           - pip2 install git+https://bitbucket.org/fenics-project/dijitso.git@master
@@ -24,6 +26,8 @@ pipelines:
     next:
       - step:
           script:
+          - pip2 install pybind11 flake8 --upgrade
+          - pip3 install pybind11 flake8 --upgrade
           - pip2 install git+https://bitbucket.org/fenics-project/fiat.git@next
           - pip2 install git+https://bitbucket.org/fenics-project/ufl.git@next
           - pip2 install git+https://bitbucket.org/fenics-project/dijitso.git@next

@@ -9,13 +9,13 @@ build:
 
     - apt-get -qq -y --no-install-recommends install cmake
     - pip install --upgrade pip
-    - pip install flake8 pytest
+    - pip install flake8 pybind11 pytest
     - pip install git+https://bitbucket.org/fenics-project/fiat.git@"${DEP_BRANCH_NAME}"
     - pip install git+https://bitbucket.org/fenics-project/ufl.git@"${DEP_BRANCH_NAME}"
     - pip install git+https://bitbucket.org/fenics-project/dijitso.git@"${DEP_BRANCH_NAME}"
 
     - pip install -e .
-    - pip install libs/ffc-factory
+    - pip install libs/ffc-factory/
 
     - python -m flake8 ffc/
 

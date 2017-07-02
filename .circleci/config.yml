@@ -20,7 +20,7 @@ jobs:
           command: pip3 install -e .
       - run:
           name: Install pybind factory
-          command: pip3 install libs/ffc-factory/
+          command: pip3 install pybind11 ./libs/ffc-factory/
       - run:
           name: Run unit tests
           command: python3 -m pytest -v ./test/unit

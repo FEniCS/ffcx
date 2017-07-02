@@ -27,8 +27,11 @@ namespace ufc_wrappers
   void dofmap(py::module& m);
 }
 
-PYBIND11_MODULE(ffc_factory, m)
+//PYBIND11_MODULE(ffc_factory, m)
+PYBIND11_PLUGIN(ffc_factory)
 {
+  pybind11::module m("ffc_factory", "Factory for wrapping FFC JIT-compiled objects");
+
   // Create finite_element submodule
   py::module finite_element = m.def_submodule("finite_element",
                                               "UFC finite_element");
@@ -51,4 +54,6 @@ PYBIND11_MODULE(ffc_factory, m)
           ufc::dofmap * p = reinterpret_cast<ufc::dofmap *>(e);
           return std::shared_ptr<const ufc::dofmap>(p);
         });
+
+  return m.ptr();
 }
