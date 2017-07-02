@@ -15,8 +15,9 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
-
+#include <memory>
 #include <pybind11/pybind11.h>
+#include <ufc.h>
 
 namespace py = pybind11;
 
@@ -26,11 +27,8 @@ namespace ufc_wrappers
   void dofmap(py::module& m);
 }
 
-PYBIND11_PLUGIN(ufc_wrappers)
+PYBIND11_MODULE(ffc_factory, m)
 {
-  // Create module
-  py::module m("ufc_wrappers", "UFC wrappers");
-
   // Create finite_element submodule
   py::module finite_element = m.def_submodule("finite_element",
                                               "UFC finite_element");
@@ -40,5 +38,17 @@ PYBIND11_PLUGIN(ufc_wrappers)
   py::module dofmap = m.def_submodule("dofmap", "UFC dofmap");
   ufc_wrappers::dofmap(dofmap);
 
-  return m.ptr();
+  // Factory functions
+  m.def("make_ufc_finite_element",
+        [](std::uintptr_t e)
+        {
+          ufc::finite_element * p = reinterpret_cast<ufc::finite_element *>(e);
+          return std::shared_ptr<const ufc::finite_element>(p);
+        });
+  m.def("make_ufc_dofmap",
+        [](std::uintptr_t e)
+        {
+          ufc::dofmap * p = reinterpret_cast<ufc::dofmap *>(e);
+          return std::shared_ptr<const ufc::dofmap>(p);
+        });
 }

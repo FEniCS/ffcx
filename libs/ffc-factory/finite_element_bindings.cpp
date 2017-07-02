@@ -32,13 +32,13 @@ namespace ufc_wrappers
                          const std::vector<std::size_t> shape)
   {
     const py::buffer_info x_info = x.request();
-    if (x_info.ndim != shape.size())
+    if ((std::size_t) x_info.ndim != shape.size())
       throw std::runtime_error("NumPy array has wrong number of dimensions");
 
-    const std::vector<size_t>& x_shape = x_info.shape;
+    const auto& x_shape = x_info.shape;
     for (std::size_t i =0; i < shape.size();++i)
     {
-      if (x_shape[i] != shape[i])
+      if (x_shape[i] != (ssize_t)shape[i])
         throw std::runtime_error("NumPy array has wrong size");
     }
   }
@@ -55,7 +55,7 @@ namespace ufc_wrappers
 
     // Extract point data
     const py::buffer_info x_info = x.request();
-    const std::vector<size_t>& x_shape = x_info.shape;
+    const auto& x_shape = x_info.shape;
     const std::size_t num_points = x_shape[0];
     check_array_shape(x, {num_points, tdim});
 
@@ -79,7 +79,7 @@ namespace ufc_wrappers
 
     // Extract point data
     py::buffer_info x_info = x.request();
-    const std::vector<size_t>& x_shape = x_info.shape;
+    const auto& x_shape = x_info.shape;
     const std::size_t num_points = x_shape[0];
     check_array_shape(x, {num_points, tdim});
 
@@ -115,7 +115,7 @@ namespace ufc_wrappers
 
     // Extract reference value data (reference_values)
     py::buffer_info info_reference_values = reference_values.request();
-    const std::vector<size_t>& shape_reference_values = info_reference_values.shape;
+    const auto& shape_reference_values = info_reference_values.shape;
     const std::size_t num_points = shape_reference_values[0];
     check_array_shape(reference_values, {num_points, num_dofs, num_derivs,
           ref_size});

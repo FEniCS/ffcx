@@ -1,60 +1,130 @@
-import itertools
+# -*- coding: utf-8 -*-
+# Copyright (C) 2017 Garth N. Wells
+#
+# This file is part of FFC.
+#
+# FFC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# FFC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with FFC. If not, see <http://www.gnu.org/licenses/>.
+
 import numpy as np
 import pytest
 
+from ufl import FiniteElement, VectorElement, MixedElement
+from ufl import interval, triangle, tetrahedron
 import ffc
-import ffc_test_factory
-import ffc_test_factory.factory
+import ffc_factory
 
 
-@pytest.fixture()
-def build_element_list():
-    element_data = ffc_test_factory.load()
-    elements = [(ufl_e, i) for family, data in element_data.items() for i, name, ufl_e, index in data]
-    element_ids = [str(ufl_e) for family, data in element_data.items() for i, name, ufl_e, index in data]
-
-    return elements, element_ids
-
-
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def point_data():
-    # Some random points (1D, 3D, 3D)
-    points = {1: [(0.114,), (0.349,), (0.986,)],
-              2: [(0.114, 0.854), (0.349, 0.247), (0.986, 0.045)],
-              #2: [(0.114, 0.854)],
-              3: [(0.114, 0.854, 0.126), (0.349, 0.247, 0.457),
-                  (0.986, 0.045, 0.127)]}
-
-    return points
+    """Points are which evaluate functions are tested"""
+    p = {1: [(0.114,), (0.349,), (0.986,)],
+         2: [(0.114, 0.854), (0.349, 0.247), (0.986, 0.045)],
+         3: [(0.114, 0.854, 0.126), (0.349, 0.247, 0.457),
+             (0.986, 0.045, 0.127)]}
+    return p
 
 
-# @pytest.fixture(params=elements, ids=element_ids)
-# @pytest.fixture(params=elements, ids=build_element_list)
-@pytest.fixture(params=build_element_list()[0],
-                ids=build_element_list()[1])
-def element(request, point_data):
+@pytest.fixture(scope="module")
+def build_ufl_element_list():
+    """Build collection of UFL elements"""
 
-    # Extract UFC index and UFL element
-    ufl_element, i = request.param
+    elements = []
 
-    # Create UFC element
-    ufc_element = ffc_test_factory.factory.create_element(i)
+    # Lagrange elements
+    for cell in (interval, triangle, tetrahedron):
+        for p in range(1, 2):
+            elements.append(FiniteElement("Lagrange", cell, p))
+            elements.append(VectorElement("Lagrange", cell, p))
+            elements.append(FiniteElement("Discontinuous Lagrange", cell, p-1))
 
-    # Get geometric dim
-    gdim = ufc_element.geometric_dimension()
+    # Vector elements
+    for cell in (triangle, tetrahedron):
+        for p in range(1, 2):
+            elements.append(FiniteElement("RT", cell, p))
+            elements.append(FiniteElement("BDM", cell, p))
+            elements.append(FiniteElement("N1curl", cell, p))
+            elements.append(FiniteElement("N2curl", cell, p))
+            elements.append(FiniteElement("Discontinuous Raviart-Thomas", cell, p))
 
-    return ufl_element, ufc_element, point_data[gdim]
+    # Mixed elements
+    for cell in (interval, triangle, tetrahedron):
+        for p in range(1, 3):
+            e0 = FiniteElement("Lagrange", cell, p+1)
+            e1 = FiniteElement("Lagrange", cell, p)
+            e2 = VectorElement("Lagrange", cell, p+1)
+
+            elements.append(MixedElement([e0, e0]))
+            elements.append(MixedElement([e0, e1]))
+            elements.append(MixedElement([e1, e0]))
+            elements.append(MixedElement([e2, e1]))
+            elements.append(MixedElement([MixedElement([e1, e1]), e0]))
+
+    for cell in (triangle, tetrahedron):
+        for p in range(1, 2):
+            e0 = FiniteElement("Lagrange", cell, p+1)
+            e1 = FiniteElement("Lagrange", cell, p)
+            e2 = VectorElement("Lagrange", cell, p+1)
+            e3 = FiniteElement("BDM", cell, p)
+            e4 = FiniteElement("RT", cell, p+1)
+            e5 = FiniteElement("N1curl", cell, p)
+
+            elements.append(MixedElement([e1, e2]))
+            elements.append(MixedElement([e3, MixedElement([e4, e5])]))
+
+    # Misc elements
+    for cell in (triangle,):
+        for p in range(1, 2):
+            elements.append(FiniteElement("HHJ", cell, p))
+
+    for cell in (triangle, tetrahedron):
+        elements.append(FiniteElement("CR", cell, 1))
+        for p in range(1, 2):
+            elements.append(FiniteElement("Regge", cell, p))
+
+    return elements
 
 
-def test_evaluate_reference_basis_vs_fiat(element):
-    """Tests ufc::finite_element::evaluate_reference_basis against data
-    from FIAT
+def element_id(e):
+    """Return element string signature as ID"""
+    return str(e)
+
+
+@pytest.fixture(params=build_ufl_element_list(), ids=element_id, scope="module")
+def element_pair(request):
+    """Given a UFL element, returns UFL element and a JIT-compiled and
+    wrapped UFC element.
 
     """
-    ufl_element, ufc_element, points = element
+
+    ufl_element = request.param
+    ufc_element, ufc_dofmap = ffc.jit(ufl_element, parameters=None)
+    ufc_element = ffc_factory.make_ufc_finite_element(ufc_element)
+    return ufl_element, ufc_element
+
+
+def test_evaluate_reference_basis_vs_fiat(element_pair, point_data):
+    """Tests ufc::finite_element::evaluate_reference_basis against data
+    from FIAT.
+
+    """
+
+    ufl_element, ufc_element = element_pair
 
     # Get geometric and topological dimensions
     tdim = ufc_element.topological_dimension()
+
+    points = point_data[tdim]
 
     # Create FIAT element via FFC
     fiat_element = ffc.fiatinterface.create_element(ufl_element)
@@ -84,7 +154,6 @@ def test_evaluate_reference_basis_vs_fiat(element):
     values_fiat = values_fiat.transpose((2, 0, 1))
 
     # Check values
-    # print("UFC __________   ", values_ufc.shape)
     assert np.allclose(values_ufc, values_fiat)
 
     # FIXME: This could be fragile because it depend on the order of
@@ -96,15 +165,21 @@ def test_evaluate_reference_basis_vs_fiat(element):
     assert n == len(ufl_subelements)
     for i, ufl_e in enumerate(ufl_subelements):
         ufc_sub_element = ufc_element.create_sub_element(i)
-        test_evaluate_reference_basis_vs_fiat((ufl_e, ufc_sub_element, points))
+        test_evaluate_reference_basis_vs_fiat((ufl_e, ufc_sub_element), point_data)
 
 
-def test_evaluate_basis_vs_fiat(element):
+def test_evaluate_basis_vs_fiat(element_pair, point_data):
     """Tests ufc::finite_element::evaluate_basis and
-    ufc::finite_element::evaluate_basis_all against data from FIAT
+    ufc::finite_element::evaluate_basis_all against data from FIAT.
 
     """
-    ufl_element, ufc_element, points = element
+
+    ufl_element, ufc_element = element_pair
+
+    # Get geometric and topological dimensions
+    gdim = ufc_element.geometric_dimension()
+
+    points = point_data[gdim]
 
     # Get geometric and topological dimensions
     tdim = ufc_element.topological_dimension()
@@ -152,21 +227,24 @@ def test_evaluate_basis_vs_fiat(element):
     assert n == len(ufl_subelements)
     for i, ufl_e in enumerate(ufl_subelements):
         ufc_sub_element = ufc_element.create_sub_element(i)
-        test_evaluate_basis_vs_fiat((ufl_e, ufc_sub_element, points))
+        test_evaluate_basis_vs_fiat((ufl_e, ufc_sub_element), point_data)
 
 
 @pytest.mark.parametrize("order", range(4))
-def test_evaluate_reference_basis_deriv_vs_fiat(element, order):
-    """Tests ufc::finite_element::evaluate_reference_basis_derivatives against data
-    from FIAT
+def test_evaluate_reference_basis_deriv_vs_fiat(order, element_pair,
+                                                point_data):
+    """Tests ufc::finite_element::evaluate_reference_basis_derivatives
+    against data from FIAT.
 
     """
 
-    ufl_element, ufc_element, points = element
+    ufl_element, ufc_element = element_pair
 
     # Get geometric and topological dimensions
     tdim = ufc_element.geometric_dimension()
     gdim = ufc_element.topological_dimension()
+
+    points = point_data[tdim]
 
     # Create FIAT element via FFC
     fiat_element = ffc.fiatinterface.create_element(ufl_element)
@@ -237,4 +315,4 @@ def test_evaluate_reference_basis_deriv_vs_fiat(element, order):
     assert n == len(ufl_subelements)
     for i, ufl_e in enumerate(ufl_subelements):
         ufc_sub_element = ufc_element.create_sub_element(i)
-        test_evaluate_reference_basis_deriv_vs_fiat((ufl_e, ufc_sub_element, points), order)
+        test_evaluate_reference_basis_deriv_vs_fiat(order, (ufl_e, ufc_sub_element), point_data)

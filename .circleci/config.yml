@@ -19,13 +19,8 @@ jobs:
           name: Install FFC
           command: pip3 install -e .
       - run:
-          name: Install pybind wrapper
-          command: pip3 install libs/ufc_wrappers/
-      - run:
-          name: Build and install test factory
-          command: |
-            python3 test/factory/generate_factory.py
-            pip3 install test/factory/
+          name: Install pybind factory
+          command: pip3 install libs/ffc-factory/
       - run:
           name: Run unit tests
           command: python3 -m pytest -v ./test/unit

@@ -1,4 +1,4 @@
-from setuptools import setup, Extension
+from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
 import sys
 import setuptools
@@ -23,7 +23,7 @@ class get_pybind_include(object):
 
 
 ext_modules = [
-    Extension('ufc_wrappers',
+    Extension('ffc_factory',
               ['interface.cpp',
                'dofmap.cpp',
                'finite_element.cpp',
@@ -93,13 +93,14 @@ class BuildExt(build_ext):
         build_ext.build_extensions(self)
 
 
-setup(name='ufc_wrappers',
+setup(name='ffc-factory',
       version=__version__,
       author='FEniCS Project',
       author_email='fenics-dev@googlegroups.com',
       url='https://fenicsproject.org',
       description='Python wrappers for UFC using pybind11',
       long_description='',
+      packages=find_packages(),
       ext_modules=ext_modules,
       install_requires=['pybind11>=1.7',
                         'ffc'],

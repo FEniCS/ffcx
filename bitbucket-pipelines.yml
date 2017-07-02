@@ -14,9 +14,10 @@ pipelines:
           - pip3 install -e .
           - python2 -m flake8 ffc/
           - python3 -m flake8 ffc/
+          - pip2 install libs/ffc-factory/
           - python2 -m pytest -v ./test/unit
           - python2 -m pytest -v ./test/uflacs
-          - pip3 install libs/ufc_wrappers/
+          - pip3 install libs/ffc-factory/
           - python3 -m pytest -v ./test/unit
           - python3 -m pytest -v ./test/uflacs
   branches:
@@ -33,9 +34,10 @@ pipelines:
           - pip3 install -e .
           - python2 -m flake8 ffc/
           - python3 -m flake8 ffc/
+          - pip2 install libs/ffc-factory/
           - python2 -m pytest -v ./test/unit
           - python2 -m pytest -v ./test/uflacs
-          - pip3 install libs/ufc_wrappers/
+          - pip3 install libs/ffc-factory/
           - python3 -m pytest -v ./test/unit
           - python3 -m pytest -v ./test/uflacs
     maint:
