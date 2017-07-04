@@ -827,32 +827,17 @@ def _tabulate_dofs(element, cell):
 def _tabulate_facet_dofs(element, cell):
     "Compute intermediate representation of tabulate_facet_dofs."
 
-    # Compute incidences
-    incidence = __compute_incidence(cell.topological_dimension())
-
     # Get topological dimension
-    D = max([pair[0][0] for pair in incidence])
+    D = cell.topological_dimension()
 
     # Get the number of facets
     num_facets = cell.num_facets()
 
-    # Find out which entities are incident to each facet
-    incident = num_facets * [None]
-    for facet in range(num_facets):
-        incident[facet] = [pair[1] for pair in incidence
-                           if incidence[pair] is True and pair[0] == (D - 1, facet)]
-
     # Make list of dofs
-    facet_dofs = []
-    entity_dofs = element.entity_dofs()
+    facet_dofs = list(element.entity_closure_dofs()[D-1].values())
 
-    for facet in range(num_facets):
-        facet_dofs += [[]]
-        for dim in entity_dofs:
-            for entity in entity_dofs[dim]:
-                if (dim, entity) in incident[facet]:
-                    facet_dofs[facet] += entity_dofs[dim][entity]
-        facet_dofs[facet].sort()
+    assert num_facets == len(facet_dofs)
+
     return facet_dofs
 
 
