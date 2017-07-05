@@ -4,10 +4,11 @@ Changelog
 2017.2.0 (unreleased)
 ---------------------
 
-- Reimplement code generation for all ufc classes with new
-- New class ufc::coordinate_mapping which can map
-  between coordinates, compute jacobians, etc. for a
-  coordinate mapping parameterized by a specific finite element.
+- Some fixes for ufc::eval for esoteric element combinations
+- Reimplement code generation for all ufc classes with new class
+  ufc::coordinate_mapping which can map between coordinates, compute
+  jacobians, etc. for a coordinate mapping parameterized by a specific
+  finite element.
 - New functions in ufc::finite_element:
   - evaluate_reference_basis
   - evaluate_reference_basis_derivatives
