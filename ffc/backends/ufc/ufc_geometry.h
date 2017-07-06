@@ -242,10 +242,10 @@ static const unsigned int tetrahedron_edge_vertices[UFC_NUM_EDGES_IN_TETRAHEDRON
   };
 
 static const unsigned int quadrilateral_edge_vertices[UFC_NUM_EDGES_IN_QUADRILATERAL][2] = {
-  {0, 2},
-  {1, 3},
   {0, 1},
   {2, 3},
+  {0, 2},
+  {1, 3},
   };
 
 static const unsigned int hexahedron_edge_vertices[UFC_NUM_EDGES_IN_HEXAHEDRON][2] = {
