@@ -45,6 +45,8 @@ from ffc.fiatinterface import create_element, reference_cell
 from ffc.fiatinterface import EnrichedElement, HDivTrace, MixedElement, SpaceOfReals, QuadratureElement
 from ffc.classname import make_classname, make_integral_classname
 
+from six import itervalues
+
 # List of supported integral types
 ufc_integral_types = ("cell",
                       "exterior_facet",
@@ -834,7 +836,7 @@ def _tabulate_facet_dofs(element, cell):
     num_facets = cell.num_facets()
 
     # Make list of dofs
-    facet_dofs = list(element.entity_closure_dofs()[D-1].values())
+    facet_dofs = list(itervalues(element.entity_closure_dofs()[D-1]))
 
     assert num_facets == len(facet_dofs)
 
