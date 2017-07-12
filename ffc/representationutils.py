@@ -75,7 +75,7 @@ def map_integral_points(points, integral_type, cell, entity):
         return numpy.asarray(points)
     elif entity_dim == tdim - 1:
         assert points.shape[1] == tdim - 1
-        return numpy.asarray(map_facet_points(points, entity))
+        return numpy.asarray(map_facet_points(points, entity, cell.cellname()))
     elif entity_dim == 0:
         return numpy.asarray([reference_cell_vertices(cell.cellname())[entity]])
     else:

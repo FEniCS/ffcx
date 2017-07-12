@@ -99,7 +99,7 @@ def _map_entity_points(cellname, tdim, points, entity_dim, entity):
         assert entity == 0
         return points
     elif entity_dim == tdim-1:
-        return map_facet_points(points, entity)
+        return map_facet_points(points, entity, cellname)
     elif entity_dim == 0:
         return (reference_cell_vertices(cellname)[entity],)
 

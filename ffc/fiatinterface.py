@@ -245,7 +245,7 @@ def create_quadrature(shape, degree, scheme="default"):
     return points, weights
 
 
-def map_facet_points(points, facet):
+def map_facet_points(points, facet, cellname):
     """
     Map points from the e (UFC) reference simplex of dimension d - 1
     to a given facet on the (UFC) reference simplex of dimension d.
@@ -261,8 +261,8 @@ def map_facet_points(points, facet):
     if dim == 1:
         return [[(0.0,), (1.0,)][facet]]
 
-    # Get the FIAT reference cell for this dimension
-    fiat_cell = reference_cell(dim)
+    # Get the FIAT reference cell
+    fiat_cell = reference_cell(cellname)
 
     # Extract vertex coordinates from cell and map of facet index to
     # indicent vertex indices
