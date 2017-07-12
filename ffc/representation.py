@@ -34,6 +34,7 @@ in the intermediate representation under the key "foo".
 # Python modules
 from itertools import chain
 import numpy
+from six.moves import range
 
 # Import UFL
 import ufl
@@ -688,6 +689,13 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
         if (len(e.value_shape()) > 1) and (e.num_sub_elements() != 1):
             return "Function not supported/implemented for TensorElements."
 
+    # Skip this function for TensorProductElement if get_coeffs is not implemented
+    for e in elements:
+        try:
+            e.get_coeffs()
+        except NotImplementedError:
+            return "Function is not supported/implemented."
+
     # Handle QuadratureElement, not supported because the basis is
     # only defined at the dof coordinates where the value is 1, so not
     # very interesting.
@@ -859,35 +867,18 @@ def _tabulate_facet_dofs(element, cell):
 def _tabulate_entity_closure_dofs(element, cell):
     "Compute intermediate representation of tabulate_entity_closure_dofs."
 
-    # Compute incidences
-    incidence = __compute_incidence(cell.topological_dimension())
-
     # Get topological dimension
-    D = max([pair[0][0] for pair in incidence])
+    D = cell.topological_dimension()
 
-    entity_dofs = element.entity_dofs()
+    # Get entity closure dofs from FIAT element
+    fiat_entity_closure_dofs = element.entity_closure_dofs()
 
     entity_closure_dofs = {}
-    for d0 in range(D + 1):
-        # Find out which entities are incident to each entity of dim d0
-        incident = {}
-        for e0 in entity_dofs[d0]:
-            incident[(d0, e0)] = [pair[1] for pair in incidence
-                                  if incidence[pair] is True and pair[0] == (d0, e0)]
+    for d0 in sorted(fiat_entity_closure_dofs.keys()):
+        for e0 in sorted(fiat_entity_closure_dofs[d0].keys()):
+            entity_closure_dofs[(d0, e0)] = fiat_entity_closure_dofs[d0][e0]
 
-        # Make list of dofs
-        for e0 in entity_dofs[d0]:
-            dofs = []
-            for d1 in entity_dofs:
-                for e1 in entity_dofs[d1]:
-                    if (d1, e1) in incident[(d0, e0)]:
-                        dofs += entity_dofs[d1][e1]
-            entity_closure_dofs[(d0, e0)] = sorted(dofs)
-
-    num_entity_closure_dofs = [max(len(dofs)
-                               for (d, e), dofs in entity_closure_dofs.items()
-                               if d == dim)
-                           for dim in range(D + 1)]
+    num_entity_closure_dofs = sorted(set([len(entity_closure_dofs[d0]) for d0 in sorted(entity_closure_dofs.keys())]))
 
     return entity_closure_dofs, num_entity_closure_dofs
 
@@ -1003,7 +994,8 @@ def _num_dofs_per_entity(fiat_element):
     Example: Lagrange of degree 3 on triangle: [1, 2, 1]
     """
     entity_dofs = fiat_element.entity_dofs()
-    return [len(entity_dofs[e][0]) for e in range(len(entity_dofs.keys()))]
+    return [len(entity_dofs[e][0]) for e in sorted(entity_dofs.keys())]
+
 
 # These two are copied from old ffc
 
