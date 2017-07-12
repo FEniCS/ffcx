@@ -876,7 +876,7 @@ def _tabulate_entity_closure_dofs(element, cell):
     entity_closure_dofs = {}
     for d0 in sorted(fiat_entity_closure_dofs.keys()):
         for e0 in sorted(fiat_entity_closure_dofs[d0].keys()):
-            entity_closure_dofs[(d0, e0)] = fiat_entity_closure_dofs[d0][e0]
+            entity_closure_dofs[(d0, e0)] = sorted(fiat_entity_closure_dofs[d0][e0])
 
     num_entity_closure_dofs = sorted(set([len(entity_closure_dofs[d0]) for d0 in sorted(entity_closure_dofs.keys())]))
 
