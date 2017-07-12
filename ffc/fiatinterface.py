@@ -35,6 +35,7 @@ from FIAT.mixed import MixedElement
 from FIAT.P0 import P0
 from FIAT.restricted import RestrictedElement
 from FIAT.quadrature_element import QuadratureElement
+from FIAT.tensor_product import FlattenedDimensions
 
 # FFC modules
 from ffc.log import debug, error
@@ -59,7 +60,9 @@ supported_families = ("Brezzi-Douglas-Marini",
                       "Bubble",
                       "Quadrature",
                       "Regge",
-                      "Hellan-Herrmann-Johnson")
+                      "Hellan-Herrmann-Johnson",
+                      "Q",
+                      "TensorProductElement")
 
 # Cache for computed elements
 _cache = {}
@@ -69,16 +72,14 @@ class SpaceOfReals(P0):
     """Constant over the entire domain, rather than just cellwise."""
 
 
-def reference_cell(dim):
-    if isinstance(dim, int):
-        return FIAT.ufc_simplex(dim)
-    else:
-        return FIAT.ufc_simplex(cellname2dim[dim])
+def reference_cell(cellname):
+    "Return FIAT reference cell"
+    return FIAT.ufc_cell(cellname)
 
 
-def reference_cell_vertices(dim):
-    "Return dict of coordinates of reference cell vertices for this 'dim'."
-    cell = reference_cell(dim)
+def reference_cell_vertices(cellname):
+    "Return dict of coordinates of reference cell vertices for this 'cellname'."
+    cell = reference_cell(cellname)
     return cell.get_vertices()
 
 
@@ -132,6 +133,19 @@ def _create_fiat_element(ufl_element):
     if family not in supported_families:
         error("This element family (%s) is not supported by FFC." % family)
 
+    # Handle quadrilateral case by reconstructing the element with cell TensorProductCell (interval x interval)
+    if cellname == "quadrilateral":
+        quadrilateral_tpc = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
+        return FlattenedDimensions(_create_fiat_element(ufl_element.reconstruct(cell = quadrilateral_tpc)))
+
+    # Handle hexahedron case by reconstructing the element with cell TensorProductCell (quadrilateral x interval)
+    # This creates TensorProductElement(TensorProductElement(interval, interval), interval)
+    # Therefore dof entities consists of nested tuples, example: ((0, 1), 1)
+
+    elif cellname == "hexahedron":
+        hexahedron_tpc = ufl.TensorProductCell(ufl.Cell("quadrilateral"), ufl.Cell("interval"))
+        return FlattenedDimensions(_create_fiat_element(ufl_element.reconstruct(cell = hexahedron_tpc)))
+
     # Create FIAT cell
     fiat_cell = reference_cell(cellname)
 
@@ -160,12 +174,20 @@ def _create_fiat_element(ufl_element):
         if family not in FIAT.supported_elements:
             error("Sorry, finite element of type \"%s\" are not supported by FIAT.", family)
 
-        # Create FIAT finite element
         ElementClass = FIAT.supported_elements[family]
-        if degree is None:
-            element = ElementClass(fiat_cell)
+
+        # Create tensor product FIAT finite element
+        if isinstance(ufl_element, ufl.TensorProductElement):
+            A = create_element(ufl_element.sub_elements()[0])
+            B = create_element(ufl_element.sub_elements()[1])
+            element = ElementClass(A, B)
+
+        # Create normal FIAT finite element
         else:
-            element = ElementClass(fiat_cell, degree)
+            if degree is None:
+                element = ElementClass(fiat_cell)
+            else:
+                element = ElementClass(fiat_cell, degree)
 
     # Consistency check between UFL and FIAT elements.
     if element.value_shape() != ufl_element.reference_value_shape():
