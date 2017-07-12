@@ -986,58 +986,6 @@ def _num_dofs_per_entity(fiat_element):
     return [len(entity_dofs[e][0]) for e in sorted(entity_dofs.keys())]
 
 
-# These two are copied from old ffc
-
-
-def __compute_incidence(D):
-    "Compute which entities are incident with which"
-
-    # Compute the incident vertices for each entity
-    sub_simplices = []
-    for dim in range(D + 1):
-        sub_simplices += [__compute_sub_simplices(D, dim)]
-
-    # Check which entities are incident, d0 --> d1 for d0 >= d1
-    incidence = {}
-    for d0 in range(0, D + 1):
-        for i0 in range(len(sub_simplices[d0])):
-            for d1 in range(d0 + 1):
-                for i1 in range(len(sub_simplices[d1])):
-                    incidence[((d0, i0), (d1, i1))] = all(v in sub_simplices[d0][i0]
-                                                          for v in sub_simplices[d1][i1])
-    return incidence
-
-
-def __compute_sub_simplices(D, d):
-    """Compute vertices for all sub simplices of dimension d (code
-    taken from Exterior)."""
-
-    # Number of vertices
-    num_vertices = D + 1
-
-    # Special cases: d = 0 and d = D
-    if d == 0:
-        return [[i] for i in range(num_vertices)]
-    elif d == D:
-        return [list(range(num_vertices))]
-
-    # Compute all permutations of num_vertices - (d + 1)
-    permutations = compute_permutations(num_vertices - d - 1, num_vertices)
-
-    # Iterate over sub simplices
-    sub_simplices = []
-    for i in range(len(permutations)):
-
-        # Pick tuple i among permutations (non-incident vertices)
-        remove = permutations[i]
-
-        # Remove vertices, keeping d + 1 vertices
-        vertices = [v for v in range(num_vertices) if v not in remove]
-        sub_simplices += [vertices]
-
-    return sub_simplices
-
-
 def uses_integral_moments(fiat_element):
     "True if element uses integral moments for its degrees of freedom."
     integrals = set(["IntegralMoment", "FrobeniusIntegralMoment"])
