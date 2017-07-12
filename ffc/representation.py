@@ -840,6 +840,8 @@ def _tabulate_facet_dofs(element, cell):
 
     assert num_facets == len(facet_dofs)
 
+    facet_dofs = [sorted(facet_dofs[facet]) for facet in range(num_facets)]
+
     return facet_dofs
 
 
