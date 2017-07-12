@@ -689,13 +689,6 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
         if (len(e.value_shape()) > 1) and (e.num_sub_elements() != 1):
             return "Function not supported/implemented for TensorElements."
 
-    # Skip this function for TensorProductElement if get_coeffs is not implemented
-    for e in elements:
-        try:
-            e.get_coeffs()
-        except NotImplementedError:
-            return "Function is not supported/implemented."
-
     # Handle QuadratureElement, not supported because the basis is
     # only defined at the dof coordinates where the value is 1, so not
     # very interesting.
@@ -704,6 +697,13 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
             return "Function not supported/implemented for QuadratureElement."
         if isinstance(e, HDivTrace):
             return "Function not supported for Trace elements"
+
+    # Skip this function for TensorProductElement if get_coeffs is not implemented
+    for e in elements:
+        try:
+            e.get_coeffs()
+        except NotImplementedError:
+            return "Function is not supported/implemented."
 
     # Initialise data with 'global' values.
     data = {"reference_value_size": ufl_element.reference_value_size(),
