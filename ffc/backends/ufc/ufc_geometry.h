@@ -433,7 +433,6 @@ static const double quadrilateral_reference_facet_normals[UFC_NUM_FACETS_IN_QUAD
   {  1.0,  0.0 },
   };
 
-// FIXME: Insert quad conventions here
 static const double hexahedron_reference_facet_normals[UFC_NUM_FACETS_IN_HEXAHEDRON][UFC_TDIM_3] = {
   { -1.0,  0.0,  0.0},
   {  1.0,  0.0,  0.0},
