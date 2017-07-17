@@ -366,7 +366,6 @@ static const double hexahedron_reference_edge_vectors[UFC_NUM_EDGES_IN_HEXAHEDRO
   { 1.0,  0.0,  0.0},
   };
 
-// FIXME: Insert quad conventions here
 // Edge vectors for each quadrilateral facet of a hexahedron
 static const double hexahedron_facet_reference_edge_vectors[UFC_NUM_FACETS_IN_HEXAHEDRON][UFC_NUM_EDGES_IN_QUADRILATERAL][UFC_TDIM_3] = {
   { // facet 0
