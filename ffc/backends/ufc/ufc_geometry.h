@@ -125,20 +125,13 @@ static const double tetrahedron_midpoint[UFC_TDIM_3] = {
   0.25, 0.25, 0.25
   };
 
-// FIXME: Insert quad conventions here
-/*
 static const double quadrilateral_midpoint[UFC_TDIM_2] = {
   0.5, 0.5
   };
-*/
 
-// FIXME: Insert hex conventions here - what is definition of
-// barycenter?
-/*
 static const double hexahedron_midpoint[UFC_TDIM_3] = {
   0.5, 0.5, 0.5
   };
-*/
 
 /// --- Local reference cell facet midpoints by UFC conventions ---
 
@@ -160,15 +153,12 @@ static const double tetrahedron_facet_midpoint[UFC_NUM_FACETS_IN_TETRAHEDRON][UF
   {1.0/3.0, 1.0/3.0, 0.0},
   };
 
-// FIXME: Insert quad conventions here
-/*
 static const double quadrilateral_facet_midpoint[UFC_NUM_FACETS_IN_QUADRILATERAL][UFC_TDIM_2] = {
-  {0.0, 0.0},
-  {0.0, 0.0},
-  {0.0, 0.0},
-  {0.0, 0.0},
+  {0.0, 0.5},
+  {1.0, 0.5},
+  {0.5, 0.0},
+  {0.5, 1.0},
   };
-*/
 
 // FIXME: Insert quad conventions here
 /*
