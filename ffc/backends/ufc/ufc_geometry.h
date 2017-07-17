@@ -193,8 +193,8 @@ static const double tetrahedron_facet_orientations[UFC_NUM_FACETS_IN_TETRAHEDRON
 /*
 static const double quadrilateral_facet_orientations[UFC_NUM_FACETS_IN_QUADRILATERAL] = {
   +1.0,
-  +1.0,
-  +1.0,
+  -1.0,
+  -1.0,
   +1.0,
   };
 */
@@ -203,11 +203,11 @@ static const double quadrilateral_facet_orientations[UFC_NUM_FACETS_IN_QUADRILAT
 /*
 static const double hexahedron_facet_orientations[UFC_NUM_FACETS_IN_HEXAHEDRON] = {
   +1.0,
+  -1.0,
+  -1.0,
   +1.0,
   +1.0,
-  +1.0,
-  +1.0,
-  +1.0,
+  -1.0,
   };
 */
 
