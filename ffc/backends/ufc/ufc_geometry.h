@@ -498,17 +498,14 @@ static const double quadrilateral_reference_facet_jacobian[UFC_NUM_FACETS_IN_QUA
   { { 1.0}, { 0.0} },
   };
 
-// FIXME: Insert quad conventions here
-/*
 static const double hexahedron_reference_facet_jacobian[UFC_NUM_FACETS_IN_HEXAHEDRON][UFC_TDIM_3][UFC_TDIM_3-1] = {
-  { { 0.0,  0.0}, {0.0, 0.0}, {0.0, 0.0} },
-  { { 0.0,  0.0}, {0.0, 0.0}, {0.0, 0.0} },
-  { { 0.0,  0.0}, {0.0, 0.0}, {0.0, 0.0} },
-  { { 0.0,  0.0}, {0.0, 0.0}, {0.0, 0.0} },
-  { { 0.0,  0.0}, {0.0, 0.0}, {0.0, 0.0} },
-  { { 0.0,  0.0}, {0.0, 0.0}, {0.0, 0.0} },
+  { { 0.0,  0.0}, {1.0, 0.0}, {0.0, 1.0} },
+  { { 0.0,  0.0}, {1.0, 0.0}, {0.0, 1.0} },
+  { { 1.0,  0.0}, {0.0, 0.0}, {0.0, 1.0} },
+  { { 1.0,  0.0}, {0.0, 0.0}, {0.0, 1.0} },
+  { { 1.0,  0.0}, {0.0, 1.0}, {0.0, 0.0} },
+  { { 1.0,  0.0}, {0.0, 1.0}, {0.0, 0.0} },
   };
-*/
 
 /// --- Coordinate mappings from reference facet cell to reference cell by UFC conventions ---
 
