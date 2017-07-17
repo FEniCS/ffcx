@@ -344,8 +344,6 @@ static const double tetrahedron_facet_reference_edge_vectors[UFC_NUM_FACETS_IN_T
   },
   };
 
-// FIXME: Insert quad conventions here
-
 static const double quadrilateral_reference_edge_vectors[UFC_NUM_EDGES_IN_QUADRILATERAL][UFC_TDIM_2] = {
   { 0.0, 1.0},
   { 0.0, 1.0},
@@ -353,21 +351,19 @@ static const double quadrilateral_reference_edge_vectors[UFC_NUM_EDGES_IN_QUADRI
   { 1.0, 0.0},
   };
 
-
-// FIXME: Insert quad conventions here
 static const double hexahedron_reference_edge_vectors[UFC_NUM_EDGES_IN_HEXAHEDRON][UFC_TDIM_3] = {
-  { 1.0,  0.0,  0.0},
-  { 1.0,  0.0,  0.0},
-  { 1.0,  0.0,  0.0},
-  { 1.0,  0.0,  0.0},
-  { 0.0,  1.0,  0.0},
-  { 0.0,  1.0,  0.0},
-  { 0.0,  1.0,  0.0},
-  { 0.0,  1.0,  0.0},
   { 0.0,  0.0,  1.0},
   { 0.0,  0.0,  1.0},
   { 0.0,  0.0,  1.0},
   { 0.0,  0.0,  1.0},
+  { 0.0,  1.0,  0.0},
+  { 0.0,  1.0,  0.0},
+  { 0.0,  1.0,  0.0},
+  { 0.0,  1.0,  0.0},
+  { 1.0,  0.0,  0.0},
+  { 1.0,  0.0,  0.0},
+  { 1.0,  0.0,  0.0},
+  { 1.0,  0.0,  0.0},
   };
 
 // FIXME: Insert quad conventions here
