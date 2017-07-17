@@ -160,17 +160,14 @@ static const double quadrilateral_facet_midpoint[UFC_NUM_FACETS_IN_QUADRILATERAL
   {0.5, 1.0},
   };
 
-// FIXME: Insert quad conventions here
-/*
 static const double hexahedron_facet_midpoint[UFC_NUM_FACETS_IN_HEXAHEDRON][UFC_TDIM_3] = {
   {0.0, 0.5, 0.5},
-  {0.0, 0.5, 0.5},
-  {0.0, 0.5, 0.5},
-  {0.0, 0.5, 0.5},
-  {0.0, 0.5, 0.5},
-  {0.0, 0.5, 0.5},
+  {1.0, 0.5, 0.5},
+  {0.5, 0.0, 0.5},
+  {0.5, 1.0, 0.5},
+  {0.5, 0.5, 0.0},
+  {0.5, 0.5, 1.0},
   };
-*/
 
 /// --- Local reference cell facet orientations by UFC conventions ---
 
