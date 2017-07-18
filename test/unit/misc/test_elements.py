@@ -42,6 +42,10 @@ def element_coords(cell):
         return [(0, 0), (1, 0), (0, 1)]
     elif cell == "tetrahedron":
         return [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)]
+    elif cell == "quadrilateral":
+        return [(0, 0), (1, 0), (0, 1), (1, 1)]
+    elif cell == "hexahedron":
+        return [(0, 0, 0), (1, 0, 0), (0, 1, 0), (1, 1, 0), (0, 0, 1), (1, 0, 1), (0, 1, 1), (1, 1, 1)]
     else:
         RuntimeError("Unknown cell type")
 
@@ -57,6 +61,11 @@ def test_continuous_lagrange(degree, expected_dim):
     P = create_element(FiniteElement("Lagrange", "triangle", degree))
     assert P.space_dimension() == expected_dim
 
+@pytest.mark.parametrize("degree, expected_dim", [(1, 4), (2, 9), (3, 16)])
+def test_continuous_lagrange_quadrilateral(degree, expected_dim):
+    "Test space dimensions of continuous TensorProduct elements (quadrilateral)."
+    P = create_element(FiniteElement("Lagrange", "quadrilateral", degree))
+    assert P.space_dimension() == expected_dim
 
 @pytest.mark.parametrize("degree, expected_dim", [(0, 1), (1, 3), (2, 6), (3, 10)])
 def test_discontinuous_lagrange(degree, expected_dim):
@@ -135,12 +144,25 @@ supported (non-mixed) for low degrees"""
                                   lambda x: ( x[2], x[2], 1.0 - x[0] - x[1]),
                                   lambda x: (x[1], 1.0 - x[0] - x[2], x[1]),
                                   lambda x: (1.0 - x[1] - x[2], x[0], x[0])]
-
+    reference_quadrilateral_1 = [lambda x: (1-x[0])*(1-x[1]),
+                                 lambda x: (1-x[0])*x[1],
+                                 lambda x: x[0]*(1-x[1]),
+                                 lambda x: x[0]*x[1]]
+    reference_hexahedron_1 = [lambda x: (1-x[0])*(1-x[1])*(1-x[2]),
+                              lambda x: (1-x[0])*(1-x[1])*x[2],
+                              lambda x: (1-x[0])*x[1]*(1-x[2]),
+                              lambda x: (1-x[0])*x[1]*x[2],
+                              lambda x: x[0]*(1-x[1])*(1-x[2]),
+                              lambda x: x[0]*(1-x[1])*x[2],
+                              lambda x: x[0]*x[1]*(1-x[2]),
+                              lambda x: x[0]*x[1]*x[2]]
 
     # Tests to perform
     tests = [("Lagrange", "interval", 1, reference_interval_1),
              ("Lagrange", "triangle", 1, reference_triangle_1),
              ("Lagrange", "tetrahedron", 1, reference_tetrahedron_1),
+             ("Lagrange", "quadrilateral", 1, reference_quadrilateral_1),
+             ("Lagrange", "hexahedron", 1, reference_hexahedron_1),
              ("Discontinuous Lagrange", "interval", 1, reference_interval_1),
              ("Discontinuous Lagrange", "triangle", 1, reference_triangle_1),
              ("Discontinuous Lagrange", "tetrahedron", 1, reference_tetrahedron_1),

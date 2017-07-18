@@ -34,6 +34,7 @@ in the intermediate representation under the key "foo".
 # Python modules
 from itertools import chain
 import numpy
+from six.moves import range
 
 # Import UFL
 import ufl
@@ -44,6 +45,8 @@ from ffc.log import info, error, begin, end
 from ffc.fiatinterface import create_element, reference_cell
 from ffc.fiatinterface import EnrichedElement, HDivTrace, MixedElement, SpaceOfReals, QuadratureElement
 from ffc.classname import make_classname, make_integral_classname
+
+from six import itervalues
 
 # List of supported integral types
 ufc_integral_types = ("cell",
@@ -697,6 +700,13 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
         if isinstance(e, HDivTrace):
             return "Function not supported for Trace elements"
 
+    # Skip this function for TensorProductElement if get_coeffs is not implemented
+    for e in elements:
+        try:
+            e.get_coeffs()
+        except NotImplementedError:
+            return "Function is not supported/implemented."
+
     # Initialise data with 'global' values.
     data = {"reference_value_size": ufl_element.reference_value_size(),
             "physical_value_size": ufl_element.value_size(),
@@ -827,67 +837,37 @@ def _tabulate_dofs(element, cell):
 def _tabulate_facet_dofs(element, cell):
     "Compute intermediate representation of tabulate_facet_dofs."
 
-    # Compute incidences
-    incidence = __compute_incidence(cell.topological_dimension())
-
     # Get topological dimension
-    D = max([pair[0][0] for pair in incidence])
+    D = cell.topological_dimension()
 
     # Get the number of facets
     num_facets = cell.num_facets()
 
-    # Find out which entities are incident to each facet
-    incident = num_facets * [None]
-    for facet in range(num_facets):
-        incident[facet] = [pair[1] for pair in incidence
-                           if incidence[pair] is True and pair[0] == (D - 1, facet)]
-
     # Make list of dofs
-    facet_dofs = []
-    entity_dofs = element.entity_dofs()
+    facet_dofs = list(itervalues(element.entity_closure_dofs()[D-1]))
 
-    for facet in range(num_facets):
-        facet_dofs += [[]]
-        for dim in entity_dofs:
-            for entity in entity_dofs[dim]:
-                if (dim, entity) in incident[facet]:
-                    facet_dofs[facet] += entity_dofs[dim][entity]
-        facet_dofs[facet].sort()
+    assert num_facets == len(facet_dofs)
+
+    facet_dofs = [sorted(facet_dofs[facet]) for facet in range(num_facets)]
+
     return facet_dofs
 
 
 def _tabulate_entity_closure_dofs(element, cell):
     "Compute intermediate representation of tabulate_entity_closure_dofs."
 
-    # Compute incidences
-    incidence = __compute_incidence(cell.topological_dimension())
-
     # Get topological dimension
-    D = max([pair[0][0] for pair in incidence])
+    D = cell.topological_dimension()
 
-    entity_dofs = element.entity_dofs()
+    # Get entity closure dofs from FIAT element
+    fiat_entity_closure_dofs = element.entity_closure_dofs()
 
     entity_closure_dofs = {}
-    for d0 in range(D + 1):
-        # Find out which entities are incident to each entity of dim d0
-        incident = {}
-        for e0 in entity_dofs[d0]:
-            incident[(d0, e0)] = [pair[1] for pair in incidence
-                                  if incidence[pair] is True and pair[0] == (d0, e0)]
+    for d0 in sorted(fiat_entity_closure_dofs.keys()):
+        for e0 in sorted(fiat_entity_closure_dofs[d0].keys()):
+            entity_closure_dofs[(d0, e0)] = sorted(fiat_entity_closure_dofs[d0][e0])
 
-        # Make list of dofs
-        for e0 in entity_dofs[d0]:
-            dofs = []
-            for d1 in entity_dofs:
-                for e1 in entity_dofs[d1]:
-                    if (d1, e1) in incident[(d0, e0)]:
-                        dofs += entity_dofs[d1][e1]
-            entity_closure_dofs[(d0, e0)] = sorted(dofs)
-
-    num_entity_closure_dofs = [max(len(dofs)
-                               for (d, e), dofs in entity_closure_dofs.items()
-                               if d == dim)
-                           for dim in range(D + 1)]
+    num_entity_closure_dofs = [len(fiat_entity_closure_dofs[d0][0]) for d0 in sorted(fiat_entity_closure_dofs.keys())]
 
     return entity_closure_dofs, num_entity_closure_dofs
 
@@ -1003,58 +983,7 @@ def _num_dofs_per_entity(fiat_element):
     Example: Lagrange of degree 3 on triangle: [1, 2, 1]
     """
     entity_dofs = fiat_element.entity_dofs()
-    return [len(entity_dofs[e][0]) for e in range(len(entity_dofs.keys()))]
-
-# These two are copied from old ffc
-
-
-def __compute_incidence(D):
-    "Compute which entities are incident with which"
-
-    # Compute the incident vertices for each entity
-    sub_simplices = []
-    for dim in range(D + 1):
-        sub_simplices += [__compute_sub_simplices(D, dim)]
-
-    # Check which entities are incident, d0 --> d1 for d0 >= d1
-    incidence = {}
-    for d0 in range(0, D + 1):
-        for i0 in range(len(sub_simplices[d0])):
-            for d1 in range(d0 + 1):
-                for i1 in range(len(sub_simplices[d1])):
-                    incidence[((d0, i0), (d1, i1))] = all(v in sub_simplices[d0][i0]
-                                                          for v in sub_simplices[d1][i1])
-    return incidence
-
-
-def __compute_sub_simplices(D, d):
-    """Compute vertices for all sub simplices of dimension d (code
-    taken from Exterior)."""
-
-    # Number of vertices
-    num_vertices = D + 1
-
-    # Special cases: d = 0 and d = D
-    if d == 0:
-        return [[i] for i in range(num_vertices)]
-    elif d == D:
-        return [list(range(num_vertices))]
-
-    # Compute all permutations of num_vertices - (d + 1)
-    permutations = compute_permutations(num_vertices - d - 1, num_vertices)
-
-    # Iterate over sub simplices
-    sub_simplices = []
-    for i in range(len(permutations)):
-
-        # Pick tuple i among permutations (non-incident vertices)
-        remove = permutations[i]
-
-        # Remove vertices, keeping d + 1 vertices
-        vertices = [v for v in range(num_vertices) if v not in remove]
-        sub_simplices += [vertices]
-
-    return sub_simplices
+    return [len(entity_dofs[e][0]) for e in sorted(entity_dofs.keys())]
 
 
 def uses_integral_moments(fiat_element):

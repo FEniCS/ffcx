@@ -1250,7 +1250,13 @@ class QuadratureTransformerBase(Transformer):
         w, points = self.quad_weights[num_ip]
 
         if self.facet0 is not None:
-            points = map_facet_points(points, self.facet0)
+            # Extract the geometric dimension of the points we want to map
+            dim = len(points[0]) + 1
+
+            dim2cellname = ["interval", "triangle", "tetrahedron"]
+            cellname = dim2cellname[dim-1]
+
+            points = map_facet_points(points, self.facet0, cellname)
             name = f_FEA(num_ip, self.facet0)
         elif self.vertex is not None:
             error("Spatial coordinates (x) not implemented for point measure (dP)")  # TODO: Implement this, should be just the point.
