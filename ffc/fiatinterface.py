@@ -35,7 +35,8 @@ from FIAT.mixed import MixedElement
 from FIAT.P0 import P0
 from FIAT.restricted import RestrictedElement
 from FIAT.quadrature_element import QuadratureElement
-from FIAT.tensor_product import FlattenedDimensions
+from FIAT.tensor_product import TensorProductElement, FlattenedDimensions
+from FIAT.reference_element import LINE, TRIANGLE, TETRAHEDRON, QUADRILATERAL, HEXAHEDRON, UFCInterval
 
 # FFC modules
 from ffc.log import debug, error
@@ -68,7 +69,7 @@ supported_families = ("Brezzi-Douglas-Marini",
 _cache = {}
 
 
-class SpaceOfReals(P0):
+class SpaceOfReals(object):
     """Constant over the entire domain, rather than just cellwise."""
 
 
@@ -133,25 +134,25 @@ def _create_fiat_element(ufl_element):
     if family not in supported_families:
         error("This element family (%s) is not supported by FFC." % family)
 
-    # Handle quadrilateral case by reconstructing the element with cell TensorProductCell (interval x interval)
-    if cellname == "quadrilateral":
-        quadrilateral_tpc = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
-        return FlattenedDimensions(_create_fiat_element(ufl_element.reconstruct(cell = quadrilateral_tpc)))
-
-    # Handle hexahedron case by reconstructing the element with cell TensorProductCell (quadrilateral x interval)
-    # This creates TensorProductElement(TensorProductElement(interval, interval), interval)
-    # Therefore dof entities consists of nested tuples, example: ((0, 1), 1)
-
-    elif cellname == "hexahedron":
-        hexahedron_tpc = ufl.TensorProductCell(ufl.Cell("quadrilateral"), ufl.Cell("interval"))
-        return FlattenedDimensions(_create_fiat_element(ufl_element.reconstruct(cell = hexahedron_tpc)))
-
     # Create FIAT cell
     fiat_cell = reference_cell(cellname)
 
+    if family == "Q":
+        # Handle quadrilateral case by reconstructing the element with cell TensorProductCell (interval x interval)
+        if cellname == "quadrilateral":
+            quadrilateral_tpc = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
+            return FlattenedDimensions(_create_fiat_element(ufl_element.reconstruct(cell = quadrilateral_tpc)))
+
+        # Handle hexahedron case by reconstructing the element with cell TensorProductCell (quadrilateral x interval)
+        # This creates TensorProductElement(TensorProductElement(interval, interval), interval)
+        # Therefore dof entities consists of nested tuples, example: ((0, 1), 1)
+        elif cellname == "hexahedron":
+            hexahedron_tpc = ufl.TensorProductCell(ufl.Cell("quadrilateral"), ufl.Cell("interval"))
+            return FlattenedDimensions(_create_fiat_element(ufl_element.reconstruct(cell = hexahedron_tpc)))
+
     # Handle the space of the constant
-    if family == "Real":
-        element = SpaceOfReals(fiat_cell)
+    elif family == "Real":
+        element = _choose_space_of_reals(fiat_cell)
 
     # FIXME: AL: Should this really be here?
     # Handle QuadratureElement
@@ -333,3 +334,21 @@ def _create_restricted_element(ufl_element):
         return MixedElement(elements)
 
     error("Cannot create restricted element from %s" % str(ufl_element))
+
+
+def _choose_space_of_reals(ref_el):
+    "Choose correct SpaceOfReals based on reference element shape and return correct Real fiat_element."
+
+    global SpaceOfReals
+
+    if ref_el.get_shape() in [LINE, TRIANGLE, TETRAHEDRON]:
+        SpaceOfReals = type('SpaceOfReals', (P0,), dict(SpaceOfReals.__dict__))
+        fiat_element = SpaceOfReals(ref_el)
+    elif ref_el.get_shape() == QUADRILATERAL:
+        SpaceOfReals = type('SpaceOfReals', (FlattenedDimensions,), dict(SpaceOfReals.__dict__))
+        fiat_element = SpaceOfReals(TensorProductElement(P0(UFCInterval()), P0(UFCInterval())))
+    elif ref_el.get_shape() == HEXAHEDRON:
+        SpaceOfReals = type('SpaceOfReals', (FlattenedDimensions,), dict(SpaceOfReals.__dict__))
+        fiat_element = SpaceOfReals(TensorProductElement(TensorProductElement(P0(UFCInterval()), P0(UFCInterval())), P0(UFCInterval())))
+
+    return fiat_element
