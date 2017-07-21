@@ -137,27 +137,27 @@ def _create_fiat_element(ufl_element):
     # Create FIAT cell
     fiat_cell = reference_cell(cellname)
 
-    if family in ["Q", "DQ"]:
-        # Handle quadrilateral case by reconstructing the element with cell TensorProductCell (interval x interval)
-        if cellname == "quadrilateral":
-            quadrilateral_tpc = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
-            return FlattenedDimensions(_create_fiat_element(ufl_element.reconstruct(cell = quadrilateral_tpc)))
-
-        # Handle hexahedron case by reconstructing the element with cell TensorProductCell (quadrilateral x interval)
-        # This creates TensorProductElement(TensorProductElement(interval, interval), interval)
-        # Therefore dof entities consists of nested tuples, example: ((0, 1), 1)
-        elif cellname == "hexahedron":
-            hexahedron_tpc = ufl.TensorProductCell(ufl.Cell("quadrilateral"), ufl.Cell("interval"))
-            return FlattenedDimensions(_create_fiat_element(ufl_element.reconstruct(cell = hexahedron_tpc)))
-
     # Handle the space of the constant
-    elif family == "Real":
+    if family == "Real":
         element = _create_fiat_element(ufl.FiniteElement("DG", cell, 0))
         element.__class__ = type('SpaceOfReals', (type(element), SpaceOfReals), {})
+        return element
+
+    # Handle quadrilateral case by reconstructing the element with cell TensorProductCell (interval x interval)
+    if cellname == "quadrilateral":
+        quadrilateral_tpc = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
+        return FlattenedDimensions(_create_fiat_element(ufl_element.reconstruct(cell = quadrilateral_tpc)))
+
+    # Handle hexahedron case by reconstructing the element with cell TensorProductCell (quadrilateral x interval)
+    # This creates TensorProductElement(TensorProductElement(interval, interval), interval)
+    # Therefore dof entities consists of nested tuples, example: ((0, 1), 1)
+    elif cellname == "hexahedron":
+        hexahedron_tpc = ufl.TensorProductCell(ufl.Cell("quadrilateral"), ufl.Cell("interval"))
+        return FlattenedDimensions(_create_fiat_element(ufl_element.reconstruct(cell = hexahedron_tpc)))
 
     # FIXME: AL: Should this really be here?
     # Handle QuadratureElement
-    elif family == "Quadrature":
+    if family == "Quadrature":
         # Compute number of points per axis from the degree of the element
         scheme = ufl_element.quadrature_scheme()
         assert degree is not None
