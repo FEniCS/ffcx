@@ -35,8 +35,7 @@ from FIAT.mixed import MixedElement
 from FIAT.P0 import P0
 from FIAT.restricted import RestrictedElement
 from FIAT.quadrature_element import QuadratureElement
-from FIAT.tensor_product import TensorProductElement, FlattenedDimensions
-from FIAT.reference_element import LINE, TRIANGLE, TETRAHEDRON, QUADRILATERAL, HEXAHEDRON, UFCInterval
+from FIAT.tensor_product import FlattenedDimensions
 
 # FFC modules
 from ffc.log import debug, error
@@ -63,6 +62,7 @@ supported_families = ("Brezzi-Douglas-Marini",
                       "Regge",
                       "Hellan-Herrmann-Johnson",
                       "Q",
+                      "DQ",
                       "TensorProductElement")
 
 # Cache for computed elements
@@ -137,7 +137,7 @@ def _create_fiat_element(ufl_element):
     # Create FIAT cell
     fiat_cell = reference_cell(cellname)
 
-    if family == "Q":
+    if family in ["Q", "DQ"]:
         # Handle quadrilateral case by reconstructing the element with cell TensorProductCell (interval x interval)
         if cellname == "quadrilateral":
             quadrilateral_tpc = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
@@ -152,7 +152,8 @@ def _create_fiat_element(ufl_element):
 
     # Handle the space of the constant
     elif family == "Real":
-        element = _choose_space_of_reals(fiat_cell)
+        element = _create_fiat_element(ufl.FiniteElement("DG", cell, 0))
+        element.__class__ = type('SpaceOfReals', (type(element), SpaceOfReals), {})
 
     # FIXME: AL: Should this really be here?
     # Handle QuadratureElement
@@ -334,21 +335,3 @@ def _create_restricted_element(ufl_element):
         return MixedElement(elements)
 
     error("Cannot create restricted element from %s" % str(ufl_element))
-
-
-def _choose_space_of_reals(ref_el):
-    "Choose correct SpaceOfReals based on reference element shape and return correct Real fiat_element."
-
-    global SpaceOfReals
-
-    if ref_el.get_shape() in [LINE, TRIANGLE, TETRAHEDRON]:
-        SpaceOfReals = type('SpaceOfReals', (P0,), dict(SpaceOfReals.__dict__))
-        fiat_element = SpaceOfReals(ref_el)
-    elif ref_el.get_shape() == QUADRILATERAL:
-        SpaceOfReals = type('SpaceOfReals', (FlattenedDimensions,), dict(SpaceOfReals.__dict__))
-        fiat_element = SpaceOfReals(TensorProductElement(P0(UFCInterval()), P0(UFCInterval())))
-    elif ref_el.get_shape() == HEXAHEDRON:
-        SpaceOfReals = type('SpaceOfReals', (FlattenedDimensions,), dict(SpaceOfReals.__dict__))
-        fiat_element = SpaceOfReals(TensorProductElement(TensorProductElement(P0(UFCInterval()), P0(UFCInterval())), P0(UFCInterval())))
-
-    return fiat_element
