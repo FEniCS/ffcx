@@ -88,7 +88,7 @@ def get_git_commit_hash():
         print('Stored git commit hash will be set to "unknown"!')
         return "unknown"
     else:
-        return hash.strip()
+        return hash.decode("ascii").strip()
 
 
 def write_config_file(infile, outfile, variables={}):
