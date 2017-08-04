@@ -37,9 +37,6 @@ def compute_integral_ir(integral_data,
     # TSFC treats None and unset differently, so remove None values.
     parameters = {k: v for k, v in parameters.items() if v is not None}
 
-    # Unoptimized unless optimize_integral_ir called
-    parameters.setdefault("mode", "vanilla")
-
     # Delay TSFC compilation
     ir["compile_integral"] = (integral_data, form_data, None, parameters)
 

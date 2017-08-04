@@ -34,8 +34,12 @@ def generate_integral_code(ir, prefix, parameters):
     # Generate generic ffc code snippets
     code = initialize_integral_code(ir, prefix, parameters)
 
-    # Generate tabulate_tensor body
+    # Go unoptimized if TSFC mode has not been set yet
     integral_data, form_data, prefix, parameters = ir["compile_integral"]
+    parameters = parameters.copy()
+    parameters.setdefault("mode", "vanilla")
+
+    # Generate tabulate_tensor body
     ast = compile_integral(integral_data, form_data, None, parameters,
                            interface=ufc_interface)
 
