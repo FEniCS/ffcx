@@ -56,7 +56,6 @@ and in turn their additional dependencies:
 
         docker pull quay.io/fenicsproject/dev:latest
         docker run -ti --rm quay.io/fenicsproject/dev:latest
-        sudo apt-get update && sudo apt-get -y install glpk-utils && \
           pip2 install --prefix=${FENICS_PREFIX} --no-cache-dir \
           git+https://github.com/blechta/tsfc.git \
           git+https://github.com/blechta/COFFEE.git \
@@ -67,8 +66,7 @@ and in turn their additional dependencies:
           git+https://github.com/blechta/COFFEE.git \
           git+https://github.com/blechta/FInAT.git \
           singledispatch networkx pulp && \
-          sudo apt-get clean && \
-          sudo rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+          sudo rm -rf /tmp/* /var/tmp/*
 
     The first two commands (or their modification, or
     ``fenicsproject`` helper script) are to be run on a host,
