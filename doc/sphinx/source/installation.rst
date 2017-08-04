@@ -56,7 +56,7 @@ and in turn their additional dependencies:
 
         docker pull quay.io/fenicsproject/dev:latest
         docker run -ti --rm quay.io/fenicsproject/dev:latest
-          pip2 install --prefix=${FENICS_PREFIX} --no-cache-dir \
+        pip2 install --prefix=${FENICS_PREFIX} --no-cache-dir \
           git+https://github.com/blechta/tsfc.git \
           git+https://github.com/blechta/COFFEE.git \
           git+https://github.com/blechta/FInAT.git \
