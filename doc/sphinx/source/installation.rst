@@ -48,8 +48,7 @@ and in turn their additional dependencies:
 
 * singledispatch [2]_
 * networkx [2]_
-* PuLP [2]_, [4]_
-* GLPK [3]_, [4]_
+* PuLP [2]_
 
 .. note:: TSFC requirements are not installed in FEniCS Docker
     images by default yet but they can be easilly installed
@@ -57,8 +56,7 @@ and in turn their additional dependencies:
 
         docker pull quay.io/fenicsproject/dev:latest
         docker run -ti --rm quay.io/fenicsproject/dev:latest
-        sudo apt-get update && sudo apt-get -y install glpk-utils && \
-          pip2 install --prefix=${FENICS_PREFIX} --no-cache-dir \
+        pip2 install --prefix=${FENICS_PREFIX} --no-cache-dir \
           git+https://github.com/blechta/tsfc.git \
           git+https://github.com/blechta/COFFEE.git \
           git+https://github.com/blechta/FInAT.git \
@@ -68,8 +66,7 @@ and in turn their additional dependencies:
           git+https://github.com/blechta/COFFEE.git \
           git+https://github.com/blechta/FInAT.git \
           singledispatch networkx pulp && \
-          sudo apt-get clean && \
-          sudo rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+          sudo rm -rf /tmp/* /var/tmp/*
 
     The first two commands (or their modification, or
     ``fenicsproject`` helper script) are to be run on a host,
@@ -82,13 +79,6 @@ and in turn their additional dependencies:
    compatible with FFC and updated frequently from upstream.
 
 .. [2] Pip-installable.
-
-.. [3] Binary package; ``glpsol`` executable needed. Version
-    ``GLPSOL: GLPK LP/MIP Solver, v4.57`` from Ubuntu 16.04
-    ``glpk-utils`` package is known to produce the same
-    references as our test system.
-
-.. [4] Needed for certain COFFEE optimizations.
 
 Installation instructions
 =========================

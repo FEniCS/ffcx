@@ -20,9 +20,6 @@ from __future__ import absolute_import
 from ffc.log import info
 from ffc.representationutils import initialize_integral_ir
 
-from tsfc.driver import compile_integral
-import tsfc.kernel_interface.ufc as ufc_interface
-
 
 def compute_integral_ir(integral_data,
                         form_data,
@@ -40,11 +37,7 @@ def compute_integral_ir(integral_data,
     # TSFC treats None and unset differently, so remove None values.
     parameters = {k: v for k, v in parameters.items() if v is not None}
 
-    # TSFC has switched to default "coffee" mode
-    parameters.setdefault("mode", "vanilla")
-
-    # Store tsfc generated part separately
-    ir["tsfc"] = compile_integral(integral_data, form_data, None, parameters,
-                                  interface=ufc_interface)
+    # Delay TSFC compilation
+    ir["compile_integral"] = (integral_data, form_data, None, parameters)
 
     return ir
