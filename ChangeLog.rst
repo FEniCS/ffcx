@@ -18,6 +18,8 @@ Changelog
   - num_global_support_dofs
   - num_element_support_dofs
 - Improved docstrings for parts of ufc.h
+- FFC now accepts Q and DQ finite element families defined on quadrilaterals and hexahedrons
+- Some fixes for ufc_geometry.h for quadrilateral and hexahedron cells
 
 2017.1.0 (2017-05-09)
 ---------------------
