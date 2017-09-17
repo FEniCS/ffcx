@@ -21,10 +21,13 @@
 from ufl.corealg.multifunction import MultiFunction
 from ufl.permutation import build_component_numbering
 from ufl.measure import custom_integral_types
+from ufl.finiteelement import MixedElement
 
 from ffc.log import error, warning, debug
+from ffc.fiatinterface import create_element
 
 from ffc.uflacs.backends.ffc.symbols import FFCBackendSymbols
+from ffc.uflacs.backends.ffc.common import num_coordinate_component_dofs
 
 
 class FFCBackendAccess(MultiFunction):
@@ -97,7 +100,7 @@ class FFCBackendAccess(MultiFunction):
             idof = begin + iq
             return self.symbols.coefficient_dof_access(mt.terminal, idof)
         else:
-            # Return symbol, see definitions for computation 
+            # Return symbol, see definitions for computation
             return self.symbols.coefficient_value(mt)  #, num_points)
 
 
@@ -278,6 +281,124 @@ class FFCBackendAccess(MultiFunction):
         table = L.Symbol("{0}_facet_orientations".format(cellname))
         facet = self.symbols.entity("facet", mt.restriction)
         return table[facet]
+
+
+    def physical_cell_vertices(self, e, mt, tabledata, num_points):
+        L = self.language
+
+        # Get properties of domain
+        domain = mt.terminal.ufl_domain()
+        gdim = domain.geometric_dimension()
+        coordinate_element = domain.ufl_coordinate_element()
+
+        # Get dimension and dofmap of scalar element
+        assert isinstance(coordinate_element, MixedElement)
+        assert coordinate_element.value_shape() == (gdim,)
+        assert len(set(coordinate_element.sub_elements())) == 1
+        fiat_scalar_element = create_element(coordinate_element.sub_elements()[0])
+        vertex_scalar_dofs = fiat_scalar_element.entity_dofs()[0]
+        num_scalar_dofs = fiat_scalar_element.space_dimension()
+
+        # Get dof and component
+        dofs = vertex_scalar_dofs[mt.component[0]]
+        assert len(dofs) == 1
+        dof = dofs[0]
+        component = mt.component[1]
+
+        expr = self.symbols.domain_dof_access(dof, component,
+                                              gdim, num_scalar_dofs,
+                                              mt.restriction)
+        return expr
+
+
+    def physical_cell_edge_vectors(self, e, mt, tabledata, num_points):
+        L = self.language
+
+        # Get properties of domain
+        domain = mt.terminal.ufl_domain()
+        cellname = domain.ufl_cell().cellname()
+        gdim = domain.geometric_dimension()
+        coordinate_element = domain.ufl_coordinate_element()
+
+        if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
+            pass
+        elif cellname == "interval":
+            error("The physical cell edge vectors doesn't make sense for interval cell.")
+        else:
+            error("Unhandled cell types {0}.".format(cellname))
+
+        # Get dimension and dofmap of scalar element
+        assert isinstance(coordinate_element, MixedElement)
+        assert coordinate_element.value_shape() == (gdim,)
+        assert len(set(coordinate_element.sub_elements())) == 1
+        fiat_scalar_element = create_element(coordinate_element.sub_elements()[0])
+        vertex_scalar_dofs = fiat_scalar_element.entity_dofs()[0]
+        num_scalar_dofs = fiat_scalar_element.space_dimension()
+
+        # Get edge vertices
+        edge = mt.component[0]
+        edge_vertices = fiat_scalar_element.get_reference_element().get_topology()[1][edge]
+        assert len(edge_vertices) == 2
+
+        # Get dofs and component
+        dofs0 = vertex_scalar_dofs[edge_vertices[0]]
+        dofs1 = vertex_scalar_dofs[edge_vertices[1]]
+        assert len(dofs0) == 1 and len(dofs1) == 1
+        component = mt.component[1]
+
+        expr = (
+            self.symbols.domain_dof_access(dofs0[0], component, gdim, num_scalar_dofs,
+                                           mt.restriction)
+          - self.symbols.domain_dof_access(dofs1[0], component, gdim, num_scalar_dofs,
+                                           mt.restriction)
+        )
+        return expr
+
+
+    def physical_facet_edge_vectors(self, e, mt, tabledata, num_points):
+        L = self.language
+
+        # Get properties of domain
+        domain = mt.terminal.ufl_domain()
+        cellname = domain.ufl_cell().cellname()
+        gdim = domain.geometric_dimension()
+        coordinate_element = domain.ufl_coordinate_element()
+
+        if cellname in ("tetrahedron", "hexahedron"):
+            pass
+        elif cellname in ("interval", "triangle", "quadrilateral"):
+            error("The physical facet edge vectors doesn't make sense for {0} cell.".format(cellname))
+        else:
+            error("Unhandled cell types {0}.".format(cellname))
+
+        # Get dimension and dofmap of scalar element
+        assert isinstance(coordinate_element, MixedElement)
+        assert coordinate_element.value_shape() == (gdim,)
+        assert len(set(coordinate_element.sub_elements())) == 1
+        fiat_scalar_element = create_element(coordinate_element.sub_elements()[0])
+        vertex_scalar_dofs = fiat_scalar_element.entity_dofs()[0]
+        num_scalar_dofs = fiat_scalar_element.space_dimension()
+
+        # Get edge vertices
+        facet = self.symbols.entity("facet", mt.restriction)
+        facet_edge = mt.component[0]
+        edge = fiat_scalar_element.get_reference_element().get_connectivity()[(2,1)][facet][facet_edge]
+        edge_vertices = fiat_scalar_element.get_reference_element().get_topology()[1][edge]
+        assert len(edge_vertices) == 2
+
+        # Get dofs and component
+        dofs0 = vertex_scalar_dofs[edge_vertices[0]]
+        dofs1 = vertex_scalar_dofs[edge_vertices[1]]
+        assert len(dofs0) == 1 and len(dofs1) == 1
+        component = mt.component[1]
+
+        expr = (
+            self.symbols.domain_dof_access(dofs0[0], component, gdim, num_scalar_dofs,
+                                           mt.restriction)
+          - self.symbols.domain_dof_access(dofs1[0], component, gdim, num_scalar_dofs,
+                                           mt.restriction)
+        )
+        return expr
 
 
     def _expect_symbolic_lowering(self, e, mt, tabledata, num_points):

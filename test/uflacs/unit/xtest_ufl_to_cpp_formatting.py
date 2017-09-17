@@ -67,6 +67,8 @@ def test_cpp_formatting_of_geometry():
     assert expr2cpp(ny) == "n[1]"
     Kv = ufl.CellVolume(ufl.triangle)
     assert expr2cpp(Kv) == "volume"
+    Kh = ufl.CellDiameter(ufl.triangle)
+    assert expr2cpp(Kh) == "diameter"
     Kr = ufl.Circumradius(ufl.triangle)
     assert expr2cpp(Kr) == "circumradius"
 

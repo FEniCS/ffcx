@@ -70,6 +70,11 @@ class FFCBackendSymbols(object):
         self.restriction_postfix = { r: ufc_restriction_postfix(r)
                                      for r in ("+", "-", None) }
 
+        # TODO: Make this configurable for easy experimentation with dolfin!
+        # Coordinate dofs for each component are interleaved? Must match dolfin.
+        # True = XYZXYZXYZXYZ, False = XXXXYYYYZZZZ
+        self.interleaved_components = True
+
 
     def element_tensor(self):
         "Symbol for the element tensor itself."
@@ -167,21 +172,18 @@ class FFCBackendSymbols(object):
         return self.S(format_mt_name("J", mt))
 
 
-    def domain_dof_access(self, dof, component, gdim, num_scalar_dofs,
-                          restriction, interleaved_components):
+    def domain_dof_access(self, dof, component, gdim, num_scalar_dofs, restriction):
         # FIXME: Add domain number or offset!
         vc = self.S("coordinate_dofs" + ufc_restriction_postfix(restriction))
-        if interleaved_components:
+        if self.interleaved_components:
             return vc[gdim*dof + component]
         else:
             return vc[num_scalar_dofs*component + dof]
 
 
-    def domain_dofs_access(self, gdim, num_scalar_dofs, restriction,
-                           interleaved_components):
+    def domain_dofs_access(self, gdim, num_scalar_dofs, restriction):
         # FIXME: Add domain number or offset!
-        return [self.domain_dof_access(dof, component, gdim, num_scalar_dofs,
-                                       restriction, interleaved_components)
+        return [self.domain_dof_access(dof, component, gdim, num_scalar_dofs, restriction)
                 for component in range(gdim)
                 for dof in range(num_scalar_dofs)]
 

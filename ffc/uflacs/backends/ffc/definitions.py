@@ -39,10 +39,6 @@ class FFCBackendDefinitions(MultiFunction):
         self.symbols = symbols
         self.parameters = parameters
 
-        # TODO: Make this configurable for easy experimentation with dolfin!
-        # Coordinate dofs for each component are interleaved? Must match dolfin.
-        self.interleaved_components = True # parameters["interleaved_coordinate_component_dofs"]
-
 
     # === Generate code to define variables for ufl types ===
 
@@ -155,8 +151,7 @@ class FFCBackendDefinitions(MultiFunction):
             debug("Not expecting ones for %s." % (e._ufl_class_.__name__,))
             # Inlined version (we know this is bounded by a small number)
             dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs,
-                                                         mt.restriction,
-                                                         self.interleaved_components)
+                                                         mt.restriction)
             values = [dof_access[idof] for idof in tabledata.dofmap]
             value = L.Sum(values)
             code = [
@@ -165,8 +160,7 @@ class FFCBackendDefinitions(MultiFunction):
         elif inline:
             # Inlined version (we know this is bounded by a small number)
             dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs,
-                                                         mt.restriction,
-                                                         self.interleaved_components)
+                                                         mt.restriction)
             # Inlined loop to accumulate linear combination of dofs and tables
             value = L.Sum([dof_access[idof] * FE[i]
                            for i, idof in enumerate(tabledata.dofmap)])
@@ -181,7 +175,7 @@ class FFCBackendDefinitions(MultiFunction):
             ic = self.symbols.coefficient_dof_sum_index()
             dof_access = self.symbols.domain_dof_access(ic + begin, mt.flat_component,
                                                         gdim, num_scalar_dofs,
-                                                        mt.restriction, self.interleaved_components)
+                                                        mt.restriction)
 
             # Loop to accumulate linear combination of dofs and tables
             code = [
@@ -270,6 +264,16 @@ class FFCBackendDefinitions(MultiFunction):
     cell_edge_vectors = _expect_table
     facet_edge_vectors = _expect_table
     facet_orientation = _expect_table
+
+
+    def _expect_physical_coords(self, e, mt, tabledata, num_points, access):
+        "These quantities refer to coordinate_dofs"
+        # TODO: Generate more efficient inline code for Max/MinCell/FacetEdgeLength
+        #       and CellDiameter here rather than lowering these quantities?
+        return []
+    physical_cell_vertices = _expect_physical_coords
+    physical_cell_edge_vectors = _expect_physical_coords
+    physical_facet_edge_vectors = _expect_physical_coords
 
 
     def _expect_symbolic_lowering(self, e, mt, tabledata, num_points, access):
