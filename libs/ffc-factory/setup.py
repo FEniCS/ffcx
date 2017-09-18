@@ -93,7 +93,7 @@ class BuildExt(build_ext):
         build_ext.build_extensions(self)
 
 
-setup(name='ffc-factory',
+setup(name='fenics-ffc-factory',
       version=__version__,
       author='FEniCS Project',
       author_email='fenics-dev@googlegroups.com',
@@ -103,6 +103,6 @@ setup(name='ffc-factory',
       packages=find_packages(),
       ext_modules=ext_modules,
       setup_requires=['pybind11>=1.7',
-                      'ffc'],
+                      'fenics-ffc'],
       cmdclass={'build_ext': BuildExt},
       zip_safe=False,)
