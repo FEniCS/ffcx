@@ -13,6 +13,7 @@ if sys.version_info < (2, 7):
     sys.exit(1)
 
 VERSION = "2017.2.0.dev0"
+RESTRICT_REQUIREMENTS = ">=2017.1.0.dev0,<2017.2"
 
 URL = "https://bitbucket.org/fenics-project/ffc/"
 
@@ -54,7 +55,7 @@ Topic :: Software Development :: Code Generators
 def tarball():
     if "dev" in VERSION:
         return None
-    return URL + "downloads/ffc-%s.tar.gz" % VERSION
+    return URL + "downloads/fenics-ffc-%s.tar.gz" % VERSION
 
 
 def get_installation_prefix():
@@ -126,7 +127,7 @@ def run_install():
                   [os.path.join("doc", "man", "man1", "ffc.1.gz")])]
 
     # Call distutils to perform installation
-    setup(name="FFC",
+    setup(name="fenics-ffc",
           description="The FEniCS Form Compiler",
           version=VERSION,
           author=AUTHORS,
@@ -145,9 +146,9 @@ def run_install():
           data_files=data_files,
           install_requires=["numpy",
                             "six",
-                            "fiat==%s" % VERSION,
-                            "ufl==%s" % VERSION,
-                            "dijitso==%s" % VERSION],
+                            "fiat==%s" % RESTRICT_REQUIREMENTS,
+                            "ufl==%s" % RESTRICT_REQUIREMENTS,
+                            "dijitso==%s" % RESTRICT_REQUIREMENTS],
           zip_safe=False)
 
 

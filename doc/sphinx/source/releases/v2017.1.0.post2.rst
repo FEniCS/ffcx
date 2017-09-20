@@ -1,0 +1,10 @@
+===========================
+Changes in version 2017.1.0
+===========================
+
+FFC 2017.1.0.post2 was released on 2017-09-12.
+
+Summary of changes
+==================
+
+- Change PyPI package name to fenics-ffc.

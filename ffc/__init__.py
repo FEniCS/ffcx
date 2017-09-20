@@ -16,7 +16,7 @@ The interface consists of the following functions:
 
 import pkg_resources
 
-__version__ = pkg_resources.get_distribution("ffc").version
+__version__ = pkg_resources.get_distribution("fenics-ffc").version
 
 from ffc.git_commit_hash import git_commit_hash
 
