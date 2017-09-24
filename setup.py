@@ -12,7 +12,21 @@ if sys.version_info < (2, 7):
     print("Python 2.7 or higher required, please upgrade.")
     sys.exit(1)
 
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+
 VERSION = "2017.2.0.dev0"
+RESTRICT_REQUIREMENTS = ">=2017.2.0.dev0,<2017.3"
+
+if on_rtd:
+    REQUIREMENTS = []
+else:
+    REQUIREMENTS = [
+        "numpy",
+        "six",
+        "fenics-fiat%s" % RESTRICT_REQUIREMENTS,
+        "fenics-ufl%s" % RESTRICT_REQUIREMENTS,
+        "fenics-dijitso%s" % RESTRICT_REQUIREMENTS,
+    ]
 
 URL = "https://bitbucket.org/fenics-project/ffc/"
 
@@ -54,7 +68,7 @@ Topic :: Software Development :: Code Generators
 def tarball():
     if "dev" in VERSION:
         return None
-    return URL + "downloads/ffc-%s.tar.gz" % VERSION
+    return URL + "downloads/fenics-ffc-%s.tar.gz" % VERSION
 
 
 def get_installation_prefix():
@@ -126,7 +140,7 @@ def run_install():
                   [os.path.join("doc", "man", "man1", "ffc.1.gz")])]
 
     # Call distutils to perform installation
-    setup(name="FFC",
+    setup(name="fenics-ffc",
           description="The FEniCS Form Compiler",
           version=VERSION,
           author=AUTHORS,
@@ -143,11 +157,7 @@ def run_install():
           #scripts=scripts,  # Using entry_points instead
           entry_points=entry_points,
           data_files=data_files,
-          install_requires=["numpy",
-                            "six",
-                            "fiat==%s" % VERSION,
-                            "ufl==%s" % VERSION,
-                            "dijitso==%s" % VERSION],
+          install_requires=REQUIREMENTS,
           zip_safe=False)
 
 

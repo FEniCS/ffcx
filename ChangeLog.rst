@@ -21,6 +21,11 @@ Changelog
 - FFC now accepts Q and DQ finite element families defined on quadrilaterals and hexahedrons
 - Some fixes for ufc_geometry.h for quadrilateral and hexahedron cells
 
+2017.1.0.post2 (2017-09-12)
+---------------------------
+
+- Change PyPI package name to fenics-ffc.
+
 2017.1.0 (2017-05-09)
 ---------------------
 

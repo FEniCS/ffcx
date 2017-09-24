@@ -135,7 +135,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
         tu = L.Symbol("tu")
         aux_computation_code = [ L.ArrayDecl("double", aux, shape_dmats[0], values=0),
                             L.Comment("Declare derivative matrix (of polynomial basis)."),
-                            L.ArrayDecl("double", dmats, shape_dmats),
+                            L.ArrayDecl("double", dmats, shape_dmats, values=0),
                             L.Comment("Initialize dmats."),
                             L.VariableDecl(index_type, comb, combinations[r, 0]),
                             L.MemCopy(L.AddressOf(dmats_name[comb][0][0]),  L.AddressOf(dmats[0][0]), shape_dmats[0]*shape_dmats[1]),
