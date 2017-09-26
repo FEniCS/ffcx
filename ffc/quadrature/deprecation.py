@@ -4,11 +4,11 @@ class QuadratureRepresentationDeprecationWarning(DeprecationWarning):
     """Warning about deprecation of quadrature representation"""
     def __init__(self):
         msg = """
-*** ==================================================== ***
-*** FFC: quadrature representaion is deprecated! It will ***
-*** likely be removed in 2018.1.0 release. Use uflacs    ***
-*** representation instead.                              ***
-*** ==================================================== ***"""
+*** ===================================================== ***
+*** FFC: quadrature representation is deprecated! It will ***
+*** likely be removed in 2018.1.0 release. Use uflacs     ***
+*** representation instead.                               ***
+*** ===================================================== ***"""
         super(QuadratureRepresentationDeprecationWarning, self).__init__(msg)
 
 
