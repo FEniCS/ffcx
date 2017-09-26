@@ -621,6 +621,9 @@ def main(args):
             test_cases += ["-r uflacs -O0", "-r uflacs -O"]
         if use_quad:
             test_cases += ["-r quadrature -O0", "-r quadrature -O"]
+            import warnings
+            from ffc.quadrature.deprecation import QuadratureRepresentationDeprecationWarning
+            warnings.simplefilter("once", QuadratureRepresentationDeprecationWarning)
         if use_tsfc:
             test_cases += ["-r tsfc -O0", "-r tsfc -O"]
             # Silence good-performance messages by COFFEE
