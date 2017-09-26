@@ -261,8 +261,8 @@ class FFCBackendDefinitions(MultiFunction):
     reference_facet_volume = _expect_table
     reference_normal = _expect_table
     cell_facet_jacobian = _expect_table
-    cell_edge_vectors = _expect_table
-    facet_edge_vectors = _expect_table
+    reference_cell_edge_vectors = _expect_table
+    reference_facet_edge_vectors = _expect_table
     facet_orientation = _expect_table
 
 
@@ -271,9 +271,9 @@ class FFCBackendDefinitions(MultiFunction):
         # TODO: Generate more efficient inline code for Max/MinCell/FacetEdgeLength
         #       and CellDiameter here rather than lowering these quantities?
         return []
-    physical_cell_vertices = _expect_physical_coords
-    physical_cell_edge_vectors = _expect_physical_coords
-    physical_facet_edge_vectors = _expect_physical_coords
+    cell_vertices = _expect_physical_coords
+    cell_edge_vectors = _expect_physical_coords
+    facet_edge_vectors = _expect_physical_coords
 
 
     def _expect_symbolic_lowering(self, e, mt, tabledata, num_points, access):

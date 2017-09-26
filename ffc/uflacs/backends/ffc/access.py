@@ -240,7 +240,7 @@ class FFCBackendAccess(MultiFunction):
             error("Unhandled cell types {0}.".format(cellname))
 
 
-    def cell_edge_vectors(self, e, mt, tabledata, num_points):
+    def reference_cell_edge_vectors(self, e, mt, tabledata, num_points):
         L = self.language
         cellname = mt.terminal.ufl_domain().ufl_cell().cellname()
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
@@ -252,7 +252,7 @@ class FFCBackendAccess(MultiFunction):
             error("Unhandled cell types {0}.".format(cellname))
 
 
-    def facet_edge_vectors(self, e, mt, tabledata, num_points):
+    def reference_facet_edge_vectors(self, e, mt, tabledata, num_points):
         L = self.language
         cellname = mt.terminal.ufl_domain().ufl_cell().cellname()
         if cellname in ("tetrahedron", "hexahedron"):
@@ -283,7 +283,7 @@ class FFCBackendAccess(MultiFunction):
         return table[facet]
 
 
-    def physical_cell_vertices(self, e, mt, tabledata, num_points):
+    def cell_vertices(self, e, mt, tabledata, num_points):
         L = self.language
 
         # Get properties of domain
@@ -311,7 +311,7 @@ class FFCBackendAccess(MultiFunction):
         return expr
 
 
-    def physical_cell_edge_vectors(self, e, mt, tabledata, num_points):
+    def cell_edge_vectors(self, e, mt, tabledata, num_points):
         L = self.language
 
         # Get properties of domain
@@ -355,7 +355,7 @@ class FFCBackendAccess(MultiFunction):
         return expr
 
 
-    def physical_facet_edge_vectors(self, e, mt, tabledata, num_points):
+    def facet_edge_vectors(self, e, mt, tabledata, num_points):
         L = self.language
 
         # Get properties of domain
