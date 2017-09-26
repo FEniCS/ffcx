@@ -329,8 +329,9 @@ class FFCBackendAccess(MultiFunction):
         # Get dimension and dofmap of scalar element
         assert isinstance(coordinate_element, MixedElement)
         assert coordinate_element.value_shape() == (gdim,)
-        assert len(set(coordinate_element.sub_elements())) == 1
-        fiat_scalar_element = create_element(coordinate_element.sub_elements()[0])
+        ufl_scalar_element, = set(coordinate_element.sub_elements())
+        assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
+        fiat_scalar_element = create_element(ufl_scalar_element)
         vertex_scalar_dofs = fiat_scalar_element.entity_dofs()[0]
         num_scalar_dofs = fiat_scalar_element.space_dimension()
 
@@ -372,8 +373,9 @@ class FFCBackendAccess(MultiFunction):
         # Get dimension and dofmap of scalar element
         assert isinstance(coordinate_element, MixedElement)
         assert coordinate_element.value_shape() == (gdim,)
-        assert len(set(coordinate_element.sub_elements())) == 1
-        fiat_scalar_element = create_element(coordinate_element.sub_elements()[0])
+        ufl_scalar_element, = set(coordinate_element.sub_elements())
+        assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
+        fiat_scalar_element = create_element(ufl_scalar_element)
         vertex_scalar_dofs = fiat_scalar_element.entity_dofs()[0]
         num_scalar_dofs = fiat_scalar_element.space_dimension()
 
