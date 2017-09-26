@@ -294,15 +294,14 @@ class FFCBackendAccess(MultiFunction):
         # Get dimension and dofmap of scalar element
         assert isinstance(coordinate_element, MixedElement)
         assert coordinate_element.value_shape() == (gdim,)
-        assert len(set(coordinate_element.sub_elements())) == 1
-        fiat_scalar_element = create_element(coordinate_element.sub_elements()[0])
+        ufl_scalar_element, = set(coordinate_element.sub_elements())
+        assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
+        fiat_scalar_element = create_element(ufl_scalar_element)
         vertex_scalar_dofs = fiat_scalar_element.entity_dofs()[0]
         num_scalar_dofs = fiat_scalar_element.space_dimension()
 
         # Get dof and component
-        dofs = vertex_scalar_dofs[mt.component[0]]
-        assert len(dofs) == 1
-        dof = dofs[0]
+        dof, = vertex_scalar_dofs[mt.component[0]]
         component = mt.component[1]
 
         expr = self.symbols.domain_dof_access(dof, component,
@@ -338,18 +337,17 @@ class FFCBackendAccess(MultiFunction):
         # Get edge vertices
         edge = mt.component[0]
         edge_vertices = fiat_scalar_element.get_reference_element().get_topology()[1][edge]
-        assert len(edge_vertices) == 2
+        vertex0, vertex1 = edge_vertices
 
         # Get dofs and component
-        dofs0 = vertex_scalar_dofs[edge_vertices[0]]
-        dofs1 = vertex_scalar_dofs[edge_vertices[1]]
-        assert len(dofs0) == 1 and len(dofs1) == 1
+        dof0, = vertex_scalar_dofs[vertex0]
+        dof1, = vertex_scalar_dofs[vertex1]
         component = mt.component[1]
 
         expr = (
-            self.symbols.domain_dof_access(dofs0[0], component, gdim, num_scalar_dofs,
+            self.symbols.domain_dof_access(dof0, component, gdim, num_scalar_dofs,
                                            mt.restriction)
-          - self.symbols.domain_dof_access(dofs1[0], component, gdim, num_scalar_dofs,
+          - self.symbols.domain_dof_access(dof1, component, gdim, num_scalar_dofs,
                                            mt.restriction)
         )
         return expr
@@ -384,18 +382,17 @@ class FFCBackendAccess(MultiFunction):
         facet_edge = mt.component[0]
         edge = fiat_scalar_element.get_reference_element().get_connectivity()[(2,1)][facet][facet_edge]
         edge_vertices = fiat_scalar_element.get_reference_element().get_topology()[1][edge]
-        assert len(edge_vertices) == 2
+        vertex0, vertex1 = edge_vertices
 
         # Get dofs and component
-        dofs0 = vertex_scalar_dofs[edge_vertices[0]]
-        dofs1 = vertex_scalar_dofs[edge_vertices[1]]
-        assert len(dofs0) == 1 and len(dofs1) == 1
+        dof0, = vertex_scalar_dofs[vertex0]
+        dof1, = vertex_scalar_dofs[vertex1]
         component = mt.component[1]
 
         expr = (
-            self.symbols.domain_dof_access(dofs0[0], component, gdim, num_scalar_dofs,
+            self.symbols.domain_dof_access(dof0, component, gdim, num_scalar_dofs,
                                            mt.restriction)
-          - self.symbols.domain_dof_access(dofs1[0], component, gdim, num_scalar_dofs,
+          - self.symbols.domain_dof_access(dof1, component, gdim, num_scalar_dofs,
                                            mt.restriction)
         )
         return expr
