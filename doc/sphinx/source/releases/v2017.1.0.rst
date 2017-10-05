@@ -2,7 +2,7 @@
 Changes in version 2017.1.0
 ===========================
 
-FFC 22017.1.0 was released on 2017-05-09.
+FFC 2017.1.0 was released on 2017-05-09.
 
 Summary of changes
 ==================

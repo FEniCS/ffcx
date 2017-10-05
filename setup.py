@@ -14,7 +14,7 @@ if sys.version_info < (2, 7):
 
 on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
-VERSION = "2017.2.0.dev0"
+VERSION = "2017.2.0"
 RESTRICT_REQUIREMENTS = ">=2017.2.0.dev0,<2017.3"
 
 if on_rtd:
@@ -27,6 +27,8 @@ else:
         "fenics-ufl%s" % RESTRICT_REQUIREMENTS,
         "fenics-dijitso%s" % RESTRICT_REQUIREMENTS,
     ]
+
+
 
 URL = "https://bitbucket.org/fenics-project/ffc/"
 
