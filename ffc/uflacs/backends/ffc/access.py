@@ -382,21 +382,12 @@ class FFCBackendAccess(MultiFunction):
         # Get edge vertices
         facet = self.symbols.entity("facet", mt.restriction)
         facet_edge = mt.component[0]
-        # FIXME: Need to implement injection of facet_edge_vertices from FIAT
-        #edge = fiat_scalar_element.get_reference_element().get_connectivity()[(2,1)][facet][facet_edge]
-        #edge_vertices = fiat_scalar_element.get_reference_element().get_topology()[1][edge]
-        #vertex0, vertex1 = edge_vertices
-        # Workaround for FIXME: using table from ufc_geometry.h
         facet_edge_vertices = L.Symbol("{0}_facet_edge_vertices".format(cellname))
         vertex0 = facet_edge_vertices[facet][facet_edge][0]
         vertex1 = facet_edge_vertices[facet][facet_edge][1]
 
         # Get dofs and component
         component = mt.component[1]
-        # FIXME: Need to implement injection of facet_edge_vertices from FIAT
-        #dof0, = vertex_scalar_dofs[vertex0]
-        #dof1, = vertex_scalar_dofs[vertex1]
-        # Workaround for FIXME: assuming vertex_scalar dofs is identity mapping
         assert coordinate_element.degree() == 1, "Assuming degree 1 element"
         dof0 = vertex0
         dof1 = vertex1
