@@ -101,7 +101,7 @@ def __ffc_implementation_of__generate_apply_mapping_to_computed_values(L):
         for p in range(num_components):
             # unflatten the indices
             i = p // tdim
-            l = p % tdim
+            l = p % tdim  # noqa: E741
             # g_il = K_ji G_jk K_kl
             value = f_group(f_inner(
                 [f_inner([f_trans("JINV", j, i, tdim, gdim, None)
@@ -125,7 +125,7 @@ def __ffc_implementation_of__generate_apply_mapping_to_computed_values(L):
         for p in range(num_components):
             # unflatten the indices
             i = p // tdim
-            l = p % tdim
+            l = p % tdim  # noqa: E741
             # g_il = (detJ)^(-2) J_ij G_jk J_lk
             value = f_group(f_inner(
                 [f_inner([f_trans("J", i, j, tdim, gdim, None)

@@ -120,7 +120,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         if permutations:
             for key, val in permutations.items():
                 # Sort key in order to create a unique key.
-                l = sorted(key)
+                l = sorted(key)  # noqa: E741
 
                 # TODO: I think this check can be removed for speed
                 # since we just have a list of objects we should never

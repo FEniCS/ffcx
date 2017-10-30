@@ -60,7 +60,7 @@ class ErrorControlGenerator:
             self.lhs, self.rhs = F
             try:
                 self.goal = action(M, u)
-            except:
+            except Exception:
                 self.goal = M    # Allow functionals as input as well
             self.weak_residual = self.rhs - action(self.lhs, u)
         else:

@@ -37,7 +37,7 @@ try:
     from soya.label3d import Label3D
     from soya.sdlconst import QUIT
     _soya_imported = True
-except:
+except ImportError:
     _soya_imported = False
 
 # Colors for elements
@@ -302,7 +302,7 @@ def Arrow(scene, x, n, center=False):
 
     # Dimensions for arrow
     L = 0.3
-    l = 0.35 * L
+    l = 0.35 * L  # noqa: E741
     r = 0.04 * L
     R = 0.125 * L
 
