@@ -109,7 +109,7 @@ def get_simple_variables(expression, format):
             # Try to convert variable to floats and back (so '2' == '2.0' etc.)
             try:
                 v = format_float(float(v))
-            except:
+            except Exception:
                 pass
             if v in variables:
                 variables[v][0] += 1
@@ -153,7 +153,7 @@ def group_vars(expr, format):
                 try:
                     f = float(v)
                     factor *= f
-                except:
+                except Exception:
                     new_var.append(v)
             else:
                 factor = 0
@@ -234,7 +234,7 @@ def is_constant(variable, format, constants=[], from_is_constant=False):
     add = format["add"](["", ""])
     mult = format["multiply"](["", ""])
 
-    l = access[0]
+    l = access[0]  # noqa: E741
     r = access[1]
 
     if not variable.count(l) == variable.count(r):
@@ -297,7 +297,7 @@ def is_constant(variable, format, constants=[], from_is_constant=False):
                         try:
                             int(index)
                             const_index = True
-                        except:
+                        except Exception:
                             # Last resort, call recursively
                             if is_constant(index, format, constants, True):
                                 const_index = True
@@ -333,7 +333,7 @@ def is_constant(variable, format, constants=[], from_is_constant=False):
                     float(v)
                     const_var = True
                     continue
-                except:
+                except Exception:
                     pass
 
             # I no tests resulted in a constant variable, there is no
@@ -357,7 +357,7 @@ def expand_operations(expression, format):
     add = format["add"](["", ""])
     mult = format["multiply"](["", ""])
     group = format["grouping"]("")
-    l = group[0]
+    l = group[0]  # noqa: E741
     r = group[1]
 
     # Check that we have the same number of left/right parenthesis in
@@ -668,7 +668,7 @@ def get_indices(variable, format, from_get_indices=False):
     format_access = format["array access"]
     access = format_access("")
 
-    l = access[0]
+    l = access[0]  # noqa: E741
     r = access[1]
 
     indices = []
@@ -681,7 +681,7 @@ def get_indices(variable, format, from_get_indices=False):
             for m in mults:
                 try:
                     float(m)
-                except:
+                except Exception:
                     if m not in indices:
                         indices.append(m)
     else:
@@ -699,7 +699,7 @@ def get_indices(variable, format, from_get_indices=False):
             if left == 0 and inside:
                 try:
                     eval(index)
-                except:
+                except Exception:
                     indices += get_indices(index, format, True)
                 index = ""
                 inside = False
@@ -731,7 +731,7 @@ def get_variables(expression, variables, format, constants=[]):
     access = format_access("")
     format_F = format["function value"]
 
-    l = access[0]
+    l = access[0]  # noqa: E741
 
     # If we don't have any access operators in expression,
     # we don't have any variables

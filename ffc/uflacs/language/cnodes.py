@@ -166,7 +166,7 @@ class CExpr(CNode):
     def __str__(self):
         try:
             s = self.ce_format()
-        except:
+        except Exception:
             if CNode.debug:
                 print("Error in CExpr string formatting. Inspect self.")
                 import IPython; IPython.embed()
@@ -1052,7 +1052,7 @@ class CStatement(CNode):
     def __str__(self):
         try:
             s = self.cs_format()
-        except:
+        except Exception:
             if CNode.debug:
                 print("Error in CStatement string formatting. Inspect self.")
                 import IPython; IPython.embed()

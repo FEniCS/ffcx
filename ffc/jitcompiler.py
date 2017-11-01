@@ -229,6 +229,11 @@ def jit(ufl_object, parameters=None, indirect=False):
     else:
         # FIXME: Streamline number of return arguments here across kinds
         if kind == "form":
+            if parameters.get("representation") == "quadrature" or \
+                    any(itg.metadata().get("representation") == "quadrature" for itg in ufl_object.integrals()):
+                from ffc.quadrature.deprecation import issue_deprecation_warning
+                issue_deprecation_warning()
+
             compiled_form = _instantiate_form(module, module_name)
             return (compiled_form, module, module_name)
             # TODO: module, module_name are never used in dolfin, drop?

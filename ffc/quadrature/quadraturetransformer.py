@@ -158,7 +158,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         if permutations:
             for key, val in sorted(permutations.items()):
                 # Sort key in order to create a unique key.
-                l = sorted(key)
+                l = sorted(key)  # noqa: E741
 
                 # Loop products, don't multiply by '1' and if we encounter a None the product is zero.
                 # TODO: Need to find a way to remove and J_inv00 terms that might

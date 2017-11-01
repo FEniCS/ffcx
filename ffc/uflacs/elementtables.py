@@ -490,9 +490,9 @@ def is_ones_table(table, rtol=default_rtol, atol=default_atol):
 
 def is_quadrature_table(table, rtol=default_rtol, atol=default_atol):
     num_entities, num_points, num_dofs = table.shape
-    I = numpy.eye(num_points)
+    Id = numpy.eye(num_points)
     return (num_points == num_dofs
-            and all(numpy.allclose(table[i, :, :], I, rtol=rtol, atol=atol)
+            and all(numpy.allclose(table[i, :, :], Id, rtol=rtol, atol=atol)
                     for i in range(num_entities)))
 
 

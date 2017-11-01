@@ -30,32 +30,24 @@ from ffc.jitcompiler import jit
 from ffc.backends.ufc import get_include_path, get_ufc_cxx_flags, get_ufc_signature, ufc_signature
 
 # Import default parameters
-from .parameters import default_parameters, default_jit_parameters
+from ffc.parameters import default_parameters, default_jit_parameters
 
 # Import plotting
-from .plot import *
+from ffc.plot import *
 
-# List of supported elements
-try:
+# Duplicate list of supported elements from FIAT
+from FIAT import supported_elements
+supported_elements = sorted(supported_elements.keys())
 
-    # Import list of supported elements from FIAT
-    from FIAT import supported_elements
-    supported_elements = sorted(supported_elements.keys())
+# Append elements that we can plot
+from ffc.plot import element_colors
+supported_elements_for_plotting = list(set(supported_elements).union(set(element_colors.keys())))
+supported_elements_for_plotting.sort()
 
-    # Append elements that we can plot
-    from .plot import element_colors
-    supported_elements_for_plotting = list(set(supported_elements).union(set(element_colors.keys())))
-    supported_elements_for_plotting.sort()
-
-    # Remove elements from list that we don't support or don't trust
-    supported_elements.remove("Argyris")
-    supported_elements.remove("Hermite")
-    supported_elements.remove("Morley")
-
-except:
-
-    supported_elements = []
-    supported_elements_for_plotting = []
+# Remove elements from list that we don't support or don't trust
+supported_elements.remove("Argyris")
+supported_elements.remove("Hermite")
+supported_elements.remove("Morley")
 
 # Import main function, entry point to script
 from ffc.main import main

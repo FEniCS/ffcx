@@ -40,6 +40,7 @@ from ffc.quadrature.cpp import set_float_formatting
 from ffc.representationutils import initialize_integral_ir
 from ffc.quadrature.tabulate_basis import tabulate_basis
 from ffc.quadrature.parameters import parse_optimise_parameters
+from ffc.quadrature.deprecation import issue_deprecation_warning
 
 from ffc.quadrature.quadraturetransformer import QuadratureTransformer
 from ffc.quadrature.optimisedquadraturetransformer import QuadratureTransformerOpt
@@ -54,6 +55,8 @@ def compute_integral_ir(itg_data,
     "Compute intermediate represention of integral."
 
     info("Computing quadrature representation")
+
+    issue_deprecation_warning()
 
     set_float_formatting(parameters["precision"])
 

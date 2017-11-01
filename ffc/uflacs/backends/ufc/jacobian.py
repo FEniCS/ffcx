@@ -171,7 +171,7 @@ def _mapping_transform(L, data, dof_data, values, offset, width=1):
         for p in range(num_components):
             # unflatten the indices
             i = p // tdim
-            l = p % tdim
+            l = p % tdim  # noqa: E741
             # g_il = K_ji G_jk K_kl
             inner = sum(K[j, i]*tmp_ref[j*tdim + k]*K[k, l]
                         for j in range(tdim) for k in range(tdim))
@@ -184,7 +184,7 @@ def _mapping_transform(L, data, dof_data, values, offset, width=1):
         for p in range(num_components):
             # unflatten the indices
             i = p // tdim
-            l = p % tdim
+            l = p % tdim  # noqa: E741
             inner = sum(J[i, j]*tmp_ref[j*tdim + k]*J[l, k]
                         for j in range(tdim) for k in range(tdim))
 

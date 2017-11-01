@@ -886,7 +886,7 @@ class QuadratureTransformerBase(Transformer):
         # Try to evaluate entry ("3*6 + 2" --> "20").
         try:
             entry = str(eval(entry))
-        except:
+        except Exception:
             pass
         return loop, entry
 
@@ -1061,7 +1061,7 @@ class QuadratureTransformerBase(Transformer):
         # Try to evaluate basis map ("3 + 2" --> "5").
         try:
             basis_map = str(eval(basis_map))
-        except:
+        except Exception:
             pass
 
         # Create mapping (index, map, loop_range, space_dim).
@@ -1171,7 +1171,7 @@ class QuadratureTransformerBase(Transformer):
         try:
             coefficient_access = str(eval(coefficient_access))
             C_ACCESS = GEO
-        except:
+        except Exception:
             C_ACCESS = IP
         # Format coefficient access
         coefficient = format["coefficient"](str(ufl_function.count()),
