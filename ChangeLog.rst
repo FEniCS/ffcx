@@ -1,7 +1,7 @@
 Changelog
 =========
 
-2017.2.0 (2017-09-19)
+2017.2.0 (2017-11-30)
 ---------------------
 
 - Some fixes for ufc::eval for esoteric element combinations
