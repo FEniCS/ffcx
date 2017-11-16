@@ -103,13 +103,13 @@ def testProduct():
     assert p14.ops() == 0
 
     # Test hash
-    l = [p3]
+    ll = [p3]
     d = {p3: 0}
     p10 = Product([f1, s0, s1])
 
-    assert p3 in l
+    assert p3 in ll
     assert p3 in d
-    assert p10 in l
+    assert p10 in ll
     assert p10 in d
-    assert p2 not in l
+    assert p2 not in ll
     assert p2 not in d

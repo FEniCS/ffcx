@@ -56,11 +56,11 @@ def testFloat():
     # it does something else entirely, and is affected by precision in indirect ways.
 
     # Test hash
-    l = [f0]
+    ll = [f0]
     d = {f0: 0}
-    assert f0 in l
+    assert f0 in ll
     assert f0 in d
-    assert f4 in l
+    assert f4 in ll
     assert f4 in d
-    assert f1 not in l
+    assert f1 not in ll
     assert f1 not in d

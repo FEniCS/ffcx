@@ -81,5 +81,5 @@ def testElasWeighted():
     opt_code = optimise_code(expr, ip_consts, geo_consts, trans_set)
 
     G = [eval(str(list(geo_consts.items())[0][0]))]
-    I = [eval(str(list(ip_consts.items())[0][0]))]
+    I = [eval(str(list(ip_consts.items())[0][0]))]  # noqa: E741
     assert round(eval(str(expr)) - eval(str(opt_code))) == 0.0
