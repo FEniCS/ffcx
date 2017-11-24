@@ -150,7 +150,7 @@ def test_rebuild_expression_from_graph_on_products_with_indices():
     u = Coefficient(U)
     v = Coefficient(V)
     w = Coefficient(W)
-    i, j, k, l = indices(4)
+    i, j = indices(2)
 
     # Test fixed index
     fixed = [u * v[0], v[1] * v[0], w[0, 1] * w[0, 0]]

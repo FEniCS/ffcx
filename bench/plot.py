@@ -27,14 +27,14 @@ from pylab import *
 results = {}
 try:
     output = open("bench.log").read()
-except:
+except Exception:
     output = open("results/bench.log").read()
 for line in output.split("\n"):
     if "," not in line: continue
     test_case, test_option, timing = [w.strip() for w in line.split(",")]
     try:
         form, degree = test_case.split("_")
-    except:
+    except Exception:
         form, dim, degree = test_case.split("_")
         form = form + "_" + dim
     if form not in results:

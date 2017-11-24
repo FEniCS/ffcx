@@ -46,7 +46,7 @@ def xtest_dependency_construction():
     v = Coefficient(V)
     w = Coefficient(W)
 
-    i, j, k, l = indices(4)
+    i, = indices(1)
 
     expressions = [as_ufl(1),
                    as_ufl(3.14),
