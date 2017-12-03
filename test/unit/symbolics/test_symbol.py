@@ -56,11 +56,11 @@ def testSymbol():
     assert s4.ops() == 0
 
     # Test hash
-    l = [s0]
+    ll = [s0]
     d = {s0: 0}
     s5 = Symbol('x', BASIS)
 
-    assert s0 in l
+    assert s0 in ll
     assert s0 in d
-    assert s5 in l
+    assert s5 in ll
     assert s5 in d

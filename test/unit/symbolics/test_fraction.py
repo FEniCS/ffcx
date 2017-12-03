@@ -76,10 +76,10 @@ def testFraction():
     assert F5.ops() == 0
 
     # Test hash
-    l = [F2]
+    ll = [F2]
     d = {F2: 0}
 
-    assert F2 in l
+    assert F2 in ll
     assert F2 in d
-    assert F6 in l
+    assert F6 in ll
     assert F6 in d

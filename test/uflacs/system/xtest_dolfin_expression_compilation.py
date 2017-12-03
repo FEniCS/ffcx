@@ -493,7 +493,7 @@ def test_dolfin_expression_compilation_of_index_notation(dolfin):
     u.interpolate(dolfin.Expression(("x[0]", "x[1]")))
 
     # Define ufl expression with index notation
-    i, j, k, l = ufl.indices(4)
+    i, j = ufl.indices(2)
     uexpr = ((u[0]*u + u[1]*u)[i]*u[j])*(u[i]*u[j])
 
     # Define expected output from compilation

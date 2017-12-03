@@ -143,6 +143,10 @@ def _create_fiat_element(ufl_element):
         element.__class__ = type('SpaceOfReals', (type(element), SpaceOfReals), {})
         return element
 
+    # Refuse to work with DQ elements until it is rigorously tested they work
+    if family == "DQ" and degree >= 1:
+        error("Sorry, DQ elements need a bit more love.")
+
     # Handle quadrilateral case by reconstructing the element with cell TensorProductCell (interval x interval)
     if cellname == "quadrilateral":
         quadrilateral_tpc = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"))

@@ -84,10 +84,10 @@ def testSum():
     assert S9.ops() == 0
 
     # Test hash
-    l = [S2]
+    ll = [S2]
     d = {S2: 0}
 
-    assert S2 in l
+    assert S2 in ll
     assert S2 in d
-    assert S10 in l
+    assert S10 in ll
     assert S10 in d
