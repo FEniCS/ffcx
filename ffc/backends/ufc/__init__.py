@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Code generation format strings for UFC (Unified Form-assembly Code) version 2017.2.0.dev0
+"""Code generation format strings for UFC (Unified Form-assembly Code)
 
 Five format strings are defined for each of the following UFC classes:
 
