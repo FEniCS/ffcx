@@ -51,7 +51,7 @@ import ffc
 from ffc.log import begin, end, info, info_red, info_green, info_blue
 from ffc.log import ffc_logger, ERROR
 from ufl.log import ufl_logger
-from ufl.utils.py23 import as_native_str
+from ufl.utils.str import as_native_str
 from ffc import get_ufc_cxx_flags
 from ffc.backends.ufc import get_include_path as get_ufc_include
 from ufctest import generate_test_code
