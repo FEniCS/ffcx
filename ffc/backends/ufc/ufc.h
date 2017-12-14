@@ -1,4 +1,4 @@
-/// This is UFC (Unified Form-assembly Code) v. 2017.2.0
+/// This is UFC (Unified Form-assembly Code)
 /// This code is released into the public domain.
 ///
 /// The FEniCS Project (http://www.fenicsproject.org/) 2006-2017.
@@ -10,8 +10,8 @@
 #ifndef __UFC_H
 #define __UFC_H
 
-#define UFC_VERSION_MAJOR 2017
-#define UFC_VERSION_MINOR 2
+#define UFC_VERSION_MAJOR 2018
+#define UFC_VERSION_MINOR 1
 #define UFC_VERSION_MAINTENANCE 0
 #define UFC_VERSION_RELEASE 1
 

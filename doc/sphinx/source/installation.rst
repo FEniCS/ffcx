@@ -54,17 +54,17 @@ and in turn their additional dependencies:
     images by default yet but they can be easilly installed
     on demand::
 
-        docker pull quay.io/fenicsproject/stable:2017.2.0
-        docker run -ti --rm quay.io/fenicsproject/stable:2017.2.0
+        docker pull quay.io/fenicsproject/dev
+        docker run -ti --rm quay.io/fenicsproject/dev
         pip2 install --prefix=${FENICS_PREFIX} --no-cache-dir \
-          git+https://github.com/blechta/tsfc.git@2017.2.0 \
-          git+https://github.com/blechta/COFFEE.git@2017.2.0 \
-          git+https://github.com/blechta/FInAT.git@2017.2.0 \
+          git+https://github.com/blechta/tsfc.git \
+          git+https://github.com/blechta/COFFEE.git \
+          git+https://github.com/blechta/FInAT.git \
           singledispatch networkx pulp && \
           pip3 install --prefix=${FENICS_PREFIX} --no-cache-dir \
-          git+https://github.com/blechta/tsfc.git@2017.2.0 \
-          git+https://github.com/blechta/COFFEE.git@2017.2.0 \
-          git+https://github.com/blechta/FInAT.git@2017.2.0 \
+          git+https://github.com/blechta/tsfc.git \
+          git+https://github.com/blechta/COFFEE.git \
+          git+https://github.com/blechta/FInAT.git \
           singledispatch networkx pulp && \
           sudo rm -rf /tmp/* /var/tmp/*
 
