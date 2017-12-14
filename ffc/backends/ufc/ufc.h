@@ -13,7 +13,7 @@
 #define UFC_VERSION_MAJOR 2018
 #define UFC_VERSION_MINOR 1
 #define UFC_VERSION_MAINTENANCE 0
-#define UFC_VERSION_RELEASE 1
+#define UFC_VERSION_RELEASE 0
 
 #include <vector>
 #include <cstddef>
