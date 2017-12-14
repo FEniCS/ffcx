@@ -20,8 +20,6 @@
 
 import numpy
 
-from six.moves import xrange as range
-
 from ffc.uflacs.analysis.crsarray import CRSArray, sufficient_int
 
 

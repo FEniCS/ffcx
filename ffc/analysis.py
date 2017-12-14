@@ -18,8 +18,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
-
 """
 Compiler stage 1: Analysis
 --------------------------
@@ -30,8 +28,6 @@ form representation type.
 """
 
 import numpy
-from six import string_types
-
 import os
 import copy
 from itertools import chain

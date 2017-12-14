@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
-from six import string_types
 import numbers
 import re
 
@@ -57,7 +56,7 @@ def format_value(value, precision=None):
         return format_float(float(value), precision=precision)
     elif isinstance(value, numbers.Integral):
         return format_int(int(value))
-    elif isinstance(value, string_types):
+    elif isinstance(value, str):
         # FIXME: Is this ever used?
         assert '"' not in value
         return '"' + value + '"'

@@ -22,7 +22,6 @@
 # Modified by Martin Sandve Alnæs 2013-2017
 
 # Python modules
-import six
 import collections
 
 # UFL modules
@@ -239,8 +238,8 @@ def _extract_element_data(element_map, classnames):
 
     # Iterate over map
     element_data = {}
-    for elements in six.itervalues(element_map):
-        for ufl_element, counter in six.iteritems(elements):
+    for elements in element_map.values():
+        for ufl_element, counter in elements.items():
 
             # Create corresponding FIAT element
             fiat_element = create_element(ufl_element)

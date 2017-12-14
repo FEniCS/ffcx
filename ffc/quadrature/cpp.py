@@ -27,8 +27,6 @@
 import re
 import numpy
 import platform
-from six import string_types
-from six.moves import zip
 
 # UFL modules
 from ufl import custom_integral_types
@@ -414,7 +412,7 @@ def _inner_product(v, w):
         return format["float"](0)
 
     # Straightforward handling when we only have strings
-    if isinstance(v[0], string_types):
+    if isinstance(v[0], str):
         return _add([_multiply([v[i], w[i]]) for i in range(len(v))])
 
     # Fancy handling of negative numbers etc

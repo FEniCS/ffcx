@@ -18,8 +18,6 @@
 
 """Tools for precomputed tables of terminal values."""
 
-from __future__ import print_function  # used in some debugging
-
 from collections import namedtuple
 import numpy
 
@@ -308,7 +306,7 @@ def get_modified_terminal_element(mt):
     # Change derivatives format for table lookup
     tdim = mt.terminal.ufl_domain().topological_dimension()
     local_derivatives = derivative_listing_to_counts(ld, tdim)
-    
+
     return element, mt.averaged, local_derivatives, fc
 
 

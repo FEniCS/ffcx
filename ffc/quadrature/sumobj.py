@@ -18,8 +18,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
-import six
-
 from ufl.utils.sorting import sorted_by_key
 
 # FFC modules.
@@ -406,11 +404,11 @@ class Sum(Expr):
         if terms_reductions:
             # Invert dictionary of terms.
             reductions_terms = dict([((v[0], tuple(v[1])), k) for k,
-                                     v in six.iteritems(terms_reductions)])
+                                     v in terms_reductions.items()])
 
             # Create a sorted list of those variables that give the
             # highest reduction.
-            sorted_reduc_var = sorted(six.iterkeys(reductions_terms),
+            sorted_reduc_var = sorted(reductions_terms.keys(),
                                       reverse=True)
 
             # Create a new dictionary of terms that should be reduced,
@@ -431,7 +429,7 @@ class Sum(Expr):
             # Reduce each set of terms with appropriate variables.
             all_reduced_terms = []
             reduced_expressions = []
-            for reduc_var, terms in sorted(six.iteritems(reduction_vars)):
+            for reduc_var, terms in sorted(reduction_vars.items()):
 
                 # Add current terms to list of all variables that have
                 # been reduced.
@@ -552,7 +550,7 @@ def _group_fractions(expr):
 
     # Loop all fractions and create new ones using an appropriate
     # numerator.
-    for k, v in sorted(six.iteritems(fracs)):
+    for k, v in sorted(fracs.items()):
         if v[0] > 1:
             # TODO: Is it possible to avoid expanding the Sum?  I
             # think we have to because x/a + 2*x/a -> 3*x/a.

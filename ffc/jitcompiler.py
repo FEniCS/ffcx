@@ -29,7 +29,6 @@ It uses dijitso to wrap the generated code into a Python module."""
 import os
 import sys
 from hashlib import sha1
-from six import string_types
 
 # FEniCS modules
 import ufl
@@ -86,12 +85,12 @@ def _string_tuple(param):
     "Split a : separated string or convert a list to a tuple."
     if isinstance(param, (tuple, list)):
         pass
-    elif isinstance(param, string_types):
+    elif isinstance(param, str):
         param = param.split(":")
     else:
         param = ()
     param = tuple(p for p in param if p)
-    assert all(isinstance(p, string_types) for p in param)
+    assert all(isinstance(p, str) for p in param)
     return param
 
 

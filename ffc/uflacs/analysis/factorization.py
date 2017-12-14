@@ -19,9 +19,6 @@
 """Algorithms for factorizing argument dependent monomials."""
 
 import numpy
-
-from six import itervalues, iterkeys, iteritems
-from six.moves import xrange as range
 from itertools import chain
 
 from ufl import as_ufl, conditional
@@ -59,7 +56,7 @@ def _build_argument_indices_from_arg_sets(V, arg_sets):
     "Build ordered list of indices to modified arguments."
     # Build set of all indices of V referring to modified arguments
     arg_indices = set()
-    for js in itervalues(arg_sets):
+    for js in arg_sets.values():
         arg_indices.update(js)
 
     # Make a canonical ordering of vertex indices for modified arguments
@@ -304,7 +301,7 @@ def compute_argument_factorization(SV, SV_deps, SV_targets, rank):
     #av2sv = arg_indices
     sv2av = { si: ai for ai, si in enumerate(arg_indices) }
     assert all(AV[ai] == SV[si] for ai, si in enumerate(arg_indices))
-    assert all(AV[ai] == SV[si] for si, ai in iteritems(sv2av))
+    assert all(AV[ai] == SV[si] for si, ai in sv2av.items())
 
     # Data structure for building non-argument factors
     FV = []
@@ -415,7 +412,7 @@ def rebuild_scalar_graph_from_factorization(AV, FV, IM):
             SV.append(h)
 
     # Add factorization monomials
-    argkeys = sorted(iterkeys(IM))
+    argkeys = sorted(IM.keys())
     fs = []
     for argkey in argkeys:
         # Start with coefficients

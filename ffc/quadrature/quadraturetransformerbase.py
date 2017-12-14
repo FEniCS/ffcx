@@ -26,7 +26,6 @@ transformers to translate UFL expressions."""
 
 # Python modules
 import functools
-from six.moves import zip
 from numpy import shape, array
 
 # UFL Classes

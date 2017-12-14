@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
-from six import string_types
-
 # TODO: Move these to uflacs.language utils?
 
 
@@ -31,7 +29,7 @@ def generate_return_new(L, classname, factory):
 def generate_return_new_switch(L, i, classnames, args=None, factory=False):
     # TODO: UFC functions of this type could be replaced with return vector<shared_ptr<T>>{objects}.
 
-    if isinstance(i, string_types):
+    if isinstance(i, str):
         i = L.Symbol(i)
 
     if factory:
@@ -57,7 +55,7 @@ def generate_return_new_switch(L, i, classnames, args=None, factory=False):
 def generate_return_literal_switch(L, i, values, default, literal_type, typename=None):
     # TODO: UFC functions of this type could be replaced with return vector<T>{values}.
 
-    if isinstance(i, string_types):
+    if isinstance(i, str):
         i = L.Symbol(i)
     return_default = L.Return(literal_type(default))
 

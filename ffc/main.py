@@ -29,8 +29,6 @@ It parses command-line arguments and generates code from input UFL form files.
 # Modified by Kristian B. Oelgaard 2010.
 # Modified by Martin Sandve Alnæs 2017.
 
-from __future__ import print_function
-
 # Python modules.
 import sys
 import getopt

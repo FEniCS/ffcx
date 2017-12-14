@@ -17,7 +17,6 @@
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
 import re
-from six import string_types
 
 from ffc.log import error, warning
 import ffc.backends.ufc
@@ -138,7 +137,7 @@ class ufc_generator(object):
             if isinstance(value, L.CStatement):
                 value = L.Indented(value.cs_format(precision=parameters["precision"]))
                 value = format_indented_lines(value)
-            elif not isinstance(value, string_types):
+            elif not isinstance(value, str):
                 error("Expecting code or string, not %s, returned from handler %s at %s." % (type(value), handlerstr, file_line))
 
             # Store formatted code in snippets dict

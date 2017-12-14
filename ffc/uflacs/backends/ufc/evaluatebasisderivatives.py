@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """Work in progress translation of FFC evaluatebasisderivatives code to uflacs CNodes format."""
 
-from six import string_types
 import numpy
 import math
 
@@ -266,7 +265,7 @@ def generate_evaluate_basis_derivatives(L, data):
 
     """
 
-    if isinstance(data, string_types):
+    if isinstance(data, str):
         msg = "evaluate_basis_derivatives: %s" % data
         return [generate_error(L, msg, True)]
 
@@ -347,7 +346,7 @@ def generate_evaluate_basis_derivatives_all(L, data):
     """Like evaluate_basis, but return the values of all basis
     functions (dofs)."""
 
-    if isinstance(data, string_types):
+    if isinstance(data, str):
         msg = "evaluate_basis_derivatives_all: %s" % data
         return [generate_error(L, msg, True)]
 

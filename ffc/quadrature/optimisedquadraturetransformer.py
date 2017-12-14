@@ -20,11 +20,6 @@
 #
 # Modified by Anders Logg, 2009
 
-
-from six import iterkeys
-from six.moves import xrange as range
-from six import advance_iterator as next
-
 # UFL common.
 from ufl.utils.sorting import sorted_by_key
 from ufl.measure import custom_integral_types, point_integral_types
@@ -48,7 +43,7 @@ from ffc.quadrature.symbolics import (create_float, create_symbol,
 
 
 def firstkey(d):
-    return next(iterkeys(d))
+    return next(d.keys())
 
 
 class QuadratureTransformerOpt(QuadratureTransformerBase):

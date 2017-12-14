@@ -18,8 +18,6 @@
 
 """Algorithms for value numbering within computational graphs."""
 
-from six.moves import xrange as range
-
 from ufl import product
 from ufl.permutation import compute_indices
 from ufl.corealg.multifunction import MultiFunction

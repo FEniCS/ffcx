@@ -20,8 +20,6 @@
 
 import numpy
 
-from six.moves import xrange as range
-
 from ufl.classes import (GeometricQuantity, ConstantValue,
                          Argument, Coefficient,
                          Grad, Restricted, Indexed,

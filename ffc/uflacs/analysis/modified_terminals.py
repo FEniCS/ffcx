@@ -18,10 +18,6 @@
 
 """Definitions of 'modified terminals', a core concept in uflacs."""
 
-from __future__ import print_function # used in some debugging
-
-from six.moves import zip
-
 from ufl.permutation import build_component_numbering
 from ufl.classes import (FormArgument, Argument,
                          Indexed, FixedIndex,
@@ -101,7 +97,7 @@ class ModifiedTerminal(object):
         """
         t = self.terminal  # FIXME: Terminal is not sortable...
         rv = self.reference_value
-        #bs = self.base_shape 
+        #bs = self.base_shape
         #bsy = self.base_symmetry
         #c = self.component
         fc = self.flat_component

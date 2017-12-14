@@ -20,8 +20,6 @@
 
 import numpy
 
-from six import iteritems
-
 from ufl.classes import MultiIndex, Label
 
 from ffc.uflacs.analysis.modified_terminals import is_modified_terminal
@@ -61,7 +59,7 @@ def count_nodes_with_unique_post_traversal(expr, e2i=None, skip_terminal_modifie
 def build_array_from_counts(e2i):
     nv = len(e2i)
     V = numpy.empty(nv, dtype=object)
-    for e, i in iteritems(e2i):
+    for e, i in e2i.items():
         V[i] = e
     return V
 

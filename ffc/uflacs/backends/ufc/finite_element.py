@@ -24,7 +24,6 @@
 
 from collections import defaultdict
 import numpy
-from six import string_types
 
 from ufl import product
 from ffc.uflacs.backends.ufc.generator import ufc_generator
@@ -180,7 +179,7 @@ class ufc_finite_element(ufc_generator):
             return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
 
         # Handle unsupported elements.
-        if isinstance(data, string_types):
+        if isinstance(data, str):
             msg = "evaluate_basis: %s" % data
             return [generate_error(L, msg, parameters["convert_exceptions_to_warnings"])]
 
@@ -269,7 +268,7 @@ class ufc_finite_element(ufc_generator):
         data=ir["evaluate_basis"]
 
         # Handle unsupported elements.
-        if isinstance(data, string_types):
+        if isinstance(data, str):
             msg = "evaluate_basis_all: %s" % data
             return [generate_error(L, msg, parameters["convert_exceptions_to_warnings"])]
 
@@ -428,7 +427,7 @@ class ufc_finite_element(ufc_generator):
             return [generate_error(L, msg, parameters["convert_exceptions_to_warnings"])]
 
         # Handle unsupported elements.
-        if isinstance(irdata, string_types):
+        if isinstance(irdata, str):
             msg = "interpolate_vertex_values: %s" % irdata
             return [generate_error(L, msg, parameters["convert_exceptions_to_warnings"])]
 
@@ -614,7 +613,7 @@ class ufc_finite_element(ufc_generator):
 
     def evaluate_reference_basis(self, L, ir, parameters):
         data = ir["evaluate_basis"]
-        if isinstance(data, string_types):
+        if isinstance(data, str):
             msg = "evaluate_reference_basis: %s" % data
             return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
 
@@ -622,7 +621,7 @@ class ufc_finite_element(ufc_generator):
 
     def evaluate_reference_basis_derivatives(self, L, ir, parameters):
         data = ir["evaluate_basis"]
-        if isinstance(data, string_types):
+        if isinstance(data, str):
             msg = "evaluate_reference_basis_derivatives: %s" % data
             return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
 
@@ -630,7 +629,7 @@ class ufc_finite_element(ufc_generator):
 
     def transform_reference_basis_derivatives(self, L, ir, parameters):
         data = ir["evaluate_basis"]
-        if isinstance(data, string_types):
+        if isinstance(data, str):
             msg = "transform_reference_basis_derivatives: %s" % data
             return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
 

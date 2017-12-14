@@ -16,9 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import print_function  # used in some debugging
-
-from six import string_types
 import numpy
 import numbers
 
@@ -424,7 +421,7 @@ class Symbol(CExprTerminal):
     precedence = PRECEDENCE.SYMBOL
 
     def __init__(self, name):
-        assert isinstance(name, string_types)
+        assert isinstance(name, str)
         self.name = name
 
     def ce_format(self, precision=None):
@@ -442,7 +439,7 @@ class VerbatimExpr(CExprTerminal):
     precedence = PRECEDENCE.LOWEST
 
     def __init__(self, codestring):
-        assert isinstance(codestring, string_types)
+        assert isinstance(codestring, str)
         self.codestring = codestring
 
     def ce_format(self, precision=None):
@@ -455,7 +452,7 @@ class VerbatimExpr(CExprTerminal):
 class New(CExpr):
     __slots__ = ("typename",)
     def __init__(self, typename):
-        assert isinstance(typename, string_types)
+        assert isinstance(typename, str)
         self.typename = typename
 
     def ce_format(self, precision=None):
@@ -787,7 +784,7 @@ class FlattenedArray(object):
         elif isinstance(array, Symbol):
             self.array = array
         else:
-            assert isinstance(array, string_types)
+            assert isinstance(array, str)
             self.array = Symbol(array)
 
         # Allow expressions or literals as strides or dims and offset
@@ -845,7 +842,7 @@ class ArrayAccess(CExprOperator):
 
     def __init__(self, array, indices):
         # Typecheck array argument
-        if isinstance(array, string_types):
+        if isinstance(array, str):
             array = Symbol(array)
         if isinstance(array, Symbol):
             self.array = array
@@ -977,32 +974,32 @@ def as_cexpr(node):
         return LiteralInt(node)
     elif isinstance(node, numbers.Real):
         return LiteralFloat(node)
-    elif isinstance(node, string_types):
+    elif isinstance(node, str):
         raise RuntimeError("Got string for CExpr, this is ambiguous: %s" % (node,))
     else:
         raise RuntimeError("Unexpected CExpr type %s:\n%s" % (type(node), str(node)))
 
 
 def as_cexpr_or_string_symbol(node):
-    if isinstance(node, string_types):
+    if isinstance(node, str):
         return Symbol(node)
     return as_cexpr(node)
 
 
 def as_cexpr_or_verbatim(node):
-    if isinstance(node, string_types):
+    if isinstance(node, str):
         return VerbatimExpr(node)
     return as_cexpr(node)
 
 
 def as_cexpr_or_literal(node):
-    if isinstance(node, string_types):
+    if isinstance(node, str):
         return LiteralString(node)
     return as_cexpr(node)
 
 
 def as_symbol(symbol):
-    if isinstance(symbol, string_types):
+    if isinstance(symbol, str):
         symbol = Symbol(symbol)
     assert isinstance(symbol, Symbol)
     return symbol
@@ -1068,7 +1065,7 @@ class VerbatimStatement(CStatement):
     is_scoped = False
 
     def __init__(self, codestring):
-        assert isinstance(codestring, string_types)
+        assert isinstance(codestring, str)
         self.codestring = codestring
 
     def cs_format(self, precision=None):
@@ -1119,7 +1116,7 @@ class Using(CStatement):
     __slots__ = ("name",)
     is_scoped = True
     def __init__(self, name):
-        assert isinstance(name, string_types)
+        assert isinstance(name, str)
         self.name = name
 
     def cs_format(self, precision=None):
@@ -1199,8 +1196,8 @@ class Throw(CStatement):
     __slots__ = ("exception", "message")
     is_scoped = True
     def __init__(self, exception, message):
-        assert isinstance(exception, string_types)
-        assert isinstance(message, string_types)
+        assert isinstance(exception, str)
+        assert isinstance(message, str)
         self.exception = exception
         self.message = message
 
@@ -1219,7 +1216,7 @@ class Comment(CStatement):
     __slots__ = ("comment",)
     is_scoped = True
     def __init__(self, comment):
-        assert isinstance(comment, string_types)
+        assert isinstance(comment, str)
         self.comment = comment
 
     def cs_format(self, precision=None):
@@ -1253,7 +1250,7 @@ class Pragma(CStatement):
     __slots__ = ("comment",)
     is_scoped = True
     def __init__(self, comment):
-        assert isinstance(comment, string_types)
+        assert isinstance(comment, str)
         self.comment = comment
 
     def cs_format(self, precision=None):
@@ -1274,7 +1271,7 @@ class VariableDecl(CStatement):
     def __init__(self, typename, symbol, value=None):
 
         # No type system yet, just using strings
-        assert isinstance(typename, string_types)
+        assert isinstance(typename, str)
         self.typename = typename
 
         # Allow Symbol or just a string
@@ -1393,7 +1390,7 @@ class ArrayDecl(CStatement):
     __slots__ = ("typename", "symbol", "sizes", "alignas", "padlen", "values")
     is_scoped = False
     def __init__(self, typename, symbol, sizes=None, values=None, alignas=None, padlen=0):
-        assert isinstance(typename, string_types)
+        assert isinstance(typename, str)
         self.typename = typename
 
         if isinstance(symbol, FlattenedArray):
@@ -1495,7 +1492,7 @@ class Namespace(CStatement):
     __slots__ = ("name", "body")
     is_scoped = True
     def __init__(self, name, body):
-        assert isinstance(name, string_types)
+        assert isinstance(name, str)
         self.name = name
         self.body = as_cstatement(body)
 
@@ -1510,7 +1507,7 @@ class Namespace(CStatement):
 
 
 def _is_scoped_statement(body):
-    return 
+    return
 
 
 def _is_simple_if_body(body):
@@ -1617,7 +1614,7 @@ class Do(CStatement):
 
 
 def as_pragma(pragma):
-    if isinstance(pragma, string_types):
+    if isinstance(pragma, str):
         return Pragma(pragma)
     elif isinstance(pragma, Pragma):
         return pragma
@@ -1646,7 +1643,7 @@ class For(CStatement):
         # The C model here is a bit crude and this causes trouble
         # in the init statement/expression here:
         init = self.init.cs_format(precision)
-        assert isinstance(init, string_types)
+        assert isinstance(init, str)
         init = init.rstrip(" ;")
 
         check = self.check.ce_format(precision)
@@ -1809,7 +1806,7 @@ def as_cstatement(node):
             return as_cstatement(node[0])
         else:
             return StatementList(node)
-    elif isinstance(node, string_types):
+    elif isinstance(node, str):
         # Backdoor for flexibility in code generation to allow verbatim pasted statements
         return VerbatimStatement(node)
     else:

@@ -20,9 +20,6 @@
 
 import numpy
 
-from six.moves import zip
-from six.moves import xrange as range
-
 from ufl import product
 from ufl.permutation import compute_indices
 

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """Work in progress translation of FFC evaluatebasis code to uflacs CNodes format."""
 
-from six import string_types
 import numpy
 
 from ffc.log import error
@@ -16,7 +15,7 @@ index_type = "std::size_t"
 
 def generate_evaluate_reference_basis_derivatives(L, data, parameters):
     # Cutoff for feature to disable generation of this code (consider removing after benchmarking final result)
-    if isinstance(data, string_types):
+    if isinstance(data, str):
         msg = "evaluate_reference_basis_derivatives: %s" % (data,)
         return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
 
