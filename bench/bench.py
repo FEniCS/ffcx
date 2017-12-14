@@ -20,8 +20,6 @@ timings."""
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import print_function
-
 import os
 import glob
 import sys

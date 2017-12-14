@@ -8,13 +8,13 @@ import string
 
 from setuptools import setup, find_packages
 
-if sys.version_info < (2, 7):
-    print("Python 2.7 or higher required, please upgrade.")
+if sys.version_info < (3, 5):
+    print("Python 3.5 or higher required, please upgrade.")
     sys.exit(1)
 
 on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
-VERSION = "2017.2.0"
+VERSION = "2017.2.0.dev0"
 RESTRICT_REQUIREMENTS = ">=2017.2.0.dev0,<2017.3"
 
 if on_rtd:
@@ -22,7 +22,6 @@ if on_rtd:
 else:
     REQUIREMENTS = [
         "numpy",
-        "six",
         "fenics-fiat%s" % RESTRICT_REQUIREMENTS,
         "fenics-ufl%s" % RESTRICT_REQUIREMENTS,
         "fenics-dijitso%s" % RESTRICT_REQUIREMENTS,
@@ -32,12 +31,8 @@ else:
 
 URL = "https://bitbucket.org/fenics-project/ffc/"
 
-if sys.version_info[0] == 2:
-    ENTRY_POINTS = {'console_scripts': ['ffc = ffc.__main__:main',
-                                        'ffc-2 = ffc.__main__:main']}
-else:
-    ENTRY_POINTS = {'console_scripts': ['ffc = ffc.__main__:main',
-                                        'ffc-3 = ffc.__main__:main']}
+ENTRY_POINTS = {'console_scripts': ['ffc = ffc.__main__:main',
+                                    'ffc-3 = ffc.__main__:main']}
 
 AUTHORS = """\
 Anders Logg, Kristian Oelgaard, Marie Rognes, Garth N. Wells,
@@ -55,10 +50,7 @@ Operating System :: POSIX :: Linux
 Operating System :: MacOS :: MacOS X
 Operating System :: Microsoft :: Windows
 Programming Language :: Python
-Programming Language :: Python :: 2
-Programming Language :: Python :: 2.7
 Programming Language :: Python :: 3
-Programming Language :: Python :: 3.4
 Programming Language :: Python :: 3.5
 Programming Language :: Python :: 3.6
 Topic :: Scientific/Engineering :: Mathematics

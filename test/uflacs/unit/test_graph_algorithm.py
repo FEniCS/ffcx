@@ -3,9 +3,6 @@
 Tests of graph representation of expressions.
 """
 
-from __future__ import print_function
-
-from six.moves import xrange as range
 from ufl import *
 from ufl import product
 from ufl.permutation import compute_indices

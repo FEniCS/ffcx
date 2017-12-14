@@ -19,8 +19,6 @@
 # First added:  2010-05-11
 # Last changed: 2010-05-11
 
-from __future__ import print_function
-
 def print_table(values, title):
     "Print nicely formatted table."
 

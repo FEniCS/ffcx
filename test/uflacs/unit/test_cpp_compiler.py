@@ -3,13 +3,10 @@
 Tests of generic C++ compilation code.
 """
 
-from __future__ import print_function
-
 # FIXME: These are all disabled, don't remember why, turn them on again!
 
 import numpy
 
-from six.moves import zip
 
 import ufl
 from ufl import as_ufl

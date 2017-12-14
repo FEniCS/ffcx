@@ -1,7 +1,6 @@
 #!/usr/bin/env py.test
 # -*- coding: utf-8 -*-
 
-from six.moves import xrange as range
 import ufl
 from ufl import *
 #from ufl import product

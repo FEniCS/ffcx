@@ -2,9 +2,6 @@
 """
 Tests of CNode formatting.
 """
-
-from __future__ import print_function
-
 from ffc.uflacs.language.cnodes import *
 
 

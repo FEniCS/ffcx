@@ -3,8 +3,6 @@
 from within Python tests using py.test.
 
 """
-from __future__ import print_function
-
 import pytest
 import os
 import inspect

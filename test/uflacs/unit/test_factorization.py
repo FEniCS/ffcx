@@ -3,7 +3,6 @@
 Tests of algorithm for factorization of integrand w.r.t. Argument terms.
 """
 
-from six.moves import xrange as range
 from ufl import *
 from ffc.uflacs.analysis.factorization import compute_argument_factorization
 

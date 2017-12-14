@@ -22,7 +22,6 @@
 # Modified by Lizao Li, 2016
 
 
-from __future__ import print_function
 import pytest
 import os
 import sys

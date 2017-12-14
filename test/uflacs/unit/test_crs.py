@@ -3,7 +3,6 @@
 Tests of CRSArray data structure.
 """
 
-from six.moves import xrange
 from ffc.uflacs.analysis.crsarray import CRSArray
 
 
