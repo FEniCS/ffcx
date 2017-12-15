@@ -3,7 +3,7 @@ To install FFC, type
     pip install --prefix=/path/to/install/ .
 
 This will install FFC in the default Python path of your system,
-something like /path/to/install/lib/python2.7/site-packages/.
+something like /path/to/install/lib/python3.6/site-packages/.
 
 To specify C++ compiler and/or compiler flags used for compiling UFC
 and JITing, set environment variables CXX, CXXFLAGS respectively
