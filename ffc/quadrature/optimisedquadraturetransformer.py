@@ -43,7 +43,7 @@ from ffc.quadrature.symbolics import (create_float, create_symbol,
 
 
 def firstkey(d):
-    return next(d.keys())
+    return next(iter(d))
 
 
 class QuadratureTransformerOpt(QuadratureTransformerBase):

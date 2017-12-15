@@ -44,7 +44,7 @@ from ffc.quadrature.symbolics import IP
 
 
 def firstkey(d):
-    return next(d.keys())
+    return next(iter(d))
 
 
 class QuadratureTransformer(QuadratureTransformerBase):
