@@ -122,24 +122,15 @@ def generate_namespace_typedefs(forms, common_function_space, error_control):
         forms_of_rank = [form for form in forms if form.rank == rank]
         if len(forms_of_rank) == 1:
             pairs += [("Form_%s" % forms_of_rank[0].name, aliases[rank])]
-            if not error_control:  # FIXME: Issue #91
-                pairs += [("MultiMeshForm_%s" % forms_of_rank[0].name,
-                           "MultiMesh" + aliases[rank])]
             if aliases[rank] in extra_aliases:
                 extra_alias = extra_aliases[aliases[rank]]
                 pairs += [("Form_%s" % forms_of_rank[0].name, extra_alias)]
-                if not error_control:  # FIXME: Issue #91
-                    pairs += [("MultiMeshForm_%s" % forms_of_rank[0].name,
-                               "MultiMesh" + extra_alias)]
 
     # Keepin' it simple: Add typedef for FunctionSpace if term applies
     if common_function_space:
         for i, form in enumerate(forms):
             if form.rank:
                 pairs += [("Form_%s::TestSpace" % form.name, "FunctionSpace")]
-                if not error_control:  # FIXME: Issue #91
-                    pairs += [("Form_%s::MultiMeshTestSpace" % form.name,
-                               "MultiMeshFunctionSpace")]
                 break
 
     # Add specialized typedefs when adding error control wrapppers

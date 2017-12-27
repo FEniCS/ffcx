@@ -25,7 +25,6 @@
 from .includes import snippets
 
 __all__ = ["apply_function_space_template",
-           "apply_multimesh_function_space_template",
            "extract_coefficient_spaces",
            "generate_typedefs"]
 
@@ -66,9 +65,6 @@ def generate_typedefs(form, classname, error_control):
     # Generate typedef data for test/trial spaces
     pairs += [("%s_FunctionSpace_%d" % (classname, i),
               snippets["functionspace"][i]) for i in range(form.rank)]
-    if not error_control:  # FIXME: Issue #91
-        pairs += [("%s_MultiMeshFunctionSpace_%d" % (classname, i),
-                   snippets["multimeshfunctionspace"][i]) for i in range(form.rank)]
 
     # Generate typedefs for coefficient spaces
     pairs += [("%s_FunctionSpace_%d" % (classname, form.rank + i),
@@ -107,40 +103,8 @@ public:
 """
 
 
-multimesh_function_space_template = """\
-class %(classname)s: public dolfin::MultiMeshFunctionSpace
-{
-public:
-
-  // Constructor for multimesh function space
-  %(classname)s(std::shared_ptr<const dolfin::MultiMesh> multimesh): dolfin::MultiMeshFunctionSpace(multimesh)
-  {
-    // Create and add standard function spaces
-    for (std::size_t part = 0; part < multimesh->num_parts(); part++)
-    {
-      std::shared_ptr<const dolfin::FunctionSpace> V(new %(single_name)s(multimesh->part(part)));
-      add(V);
-    }
-
-    // Build multimesh function space
-    build();
-  }
-
-};
-"""
-
-
 def apply_function_space_template(name, element_name, dofmap_name):
     args = {"classname": name,
             "ufc_finite_element_classname": element_name,
             "ufc_dofmap_classname": dofmap_name}
     return function_space_template % args
-
-
-def apply_multimesh_function_space_template(name, single_name, element_name,
-                                            dofmap_name):
-    args = {"classname": name,
-            "single_name": single_name,
-            "ufc_finite_element_classname": element_name,
-            "ufc_dofmap_classname": dofmap_name}
-    return multimesh_function_space_template % args
