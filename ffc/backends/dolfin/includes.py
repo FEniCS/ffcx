@@ -20,8 +20,7 @@ dolfin_includes = """\
 #include <dolfin/fem/Form.h>
 #include <dolfin/function/FunctionSpace.h>
 #include <dolfin/function/GenericFunction.h>
-#include <dolfin/function/CoefficientAssigner.h>
-#include <dolfin/la/GenericVector.h>"""
+#include <dolfin/function/CoefficientAssigner.h>"""
 
 
 snippets = {"shared_ptr_space":
