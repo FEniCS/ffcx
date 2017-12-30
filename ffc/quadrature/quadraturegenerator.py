@@ -259,14 +259,6 @@ def _tabulate_tensor(ir, prefix, parameters):
 
     elif integral_type in custom_integral_types:
 
-        # Set number of cells
-        if integral_type == "cutcell":
-            num_cells = 1
-        elif integral_type == "interface":
-            num_cells = 2
-        elif integral_type == "overlap":
-            num_cells = 2
-
         # Warning that more than two cells in only partly supported.
         # The missing piece is to couple multiple cells to
         # restrictions other than '+' and '-'.

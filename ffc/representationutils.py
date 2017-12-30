@@ -160,11 +160,7 @@ _entity_types = {
     "exterior_facet": "facet",
     "interior_facet": "facet",
     "vertex": "vertex",
-    # "point":          "vertex", # TODO: Not sure, clarify here what 'entity_type' refers to?
-    "custom": "cell",
-    "cutcell": "cell",
-    "interface": "cell",  # "facet"  # TODO: ?
-    "overlap": "cell",
+    "custom": "cell"
     }
 
 

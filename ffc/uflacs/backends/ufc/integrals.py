@@ -93,15 +93,3 @@ class ufc_custom_integral(ufc_integral):
     def num_cells(self, L, ir):
         value = ir["num_cells"]
         return L.Return(L.LiteralInt(value))
-
-class ufc_interface_integral(ufc_integral):
-    def __init__(self):
-        ufc_integral.__init__(self, "interface")
-
-class ufc_overlap_integral(ufc_integral):
-    def __init__(self):
-        ufc_integral.__init__(self, "overlap")
-
-class ufc_cutcell_integral(ufc_integral):
-    def __init__(self):
-        ufc_integral.__init__(self, "cutcell")

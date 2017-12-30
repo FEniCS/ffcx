@@ -50,10 +50,7 @@ ufc_integral_types = ("cell",
                       "exterior_facet",
                       "interior_facet",
                       "vertex",
-                      "custom",
-                      "cutcell",
-                      "interface",
-                      "overlap")
+                      "custom")
 
 
 def pick_representation(representation):

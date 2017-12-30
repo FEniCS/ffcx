@@ -7,9 +7,6 @@ Five format strings are defined for each of the following UFC classes:
     exterior_facet_integral
     interior_facet_integral
     custom_integral
-    cutcell_integral
-    interface_integral
-    overlap_integral
     function
 
     finite_element
@@ -102,7 +99,7 @@ extern "C" DLL_EXPORT %(basename)s * create_%(publicname)s()
 
 def all_ufc_classnames():
     "Build list of all classnames."
-    integral_names = ["cell", "exterior_facet", "interior_facet", "vertex", "custom", "cutcell", "interface", "overlap"]
+    integral_names = ["cell", "exterior_facet", "interior_facet", "vertex", "custom"]
     integral_classnames = [integral_name + "_integral" for integral_name in integral_names]
     jitable_classnames = ["finite_element", "dofmap", "coordinate_mapping", "form"]
     classnames = ["function"] + jitable_classnames + integral_classnames

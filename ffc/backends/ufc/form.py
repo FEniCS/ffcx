@@ -89,21 +89,6 @@ public:
 %(max_custom_subdomain_id)s
   }
 
-  std::size_t max_cutcell_subdomain_id() const final override
-  {
-%(max_cutcell_subdomain_id)s
-  }
-
-  std::size_t max_interface_subdomain_id() const final override
-  {
-%(max_interface_subdomain_id)s
-  }
-
-  std::size_t max_overlap_subdomain_id() const final override
-  {
-%(max_overlap_subdomain_id)s
-  }
-
   bool has_cell_integrals() const final override
   {
 %(has_cell_integrals)s
@@ -127,21 +112,6 @@ public:
   bool has_custom_integrals() const final override
   {
 %(has_custom_integrals)s
-  }
-
-  bool has_cutcell_integrals() const final override
-  {
-%(has_cutcell_integrals)s
-  }
-
-  bool has_interface_integrals() const final override
-  {
-%(has_interface_integrals)s
-  }
-
-  bool has_overlap_integrals() const final override
-  {
-%(has_overlap_integrals)s
   }
 
   ufc::cell_integral * create_cell_integral(std::size_t subdomain_id) const final override
@@ -169,21 +139,6 @@ public:
 %(create_custom_integral)s
   }
 
-  ufc::cutcell_integral * create_cutcell_integral(std::size_t subdomain_id) const final override
-  {
-%(create_cutcell_integral)s
-  }
-
-  ufc::interface_integral * create_interface_integral(std::size_t subdomain_id) const final override
-  {
-%(create_interface_integral)s
-  }
-
-  ufc::overlap_integral * create_overlap_integral(std::size_t subdomain_id) const final override
-  {
-%(create_overlap_integral)s
-  }
-
   ufc::cell_integral * create_default_cell_integral() const final override
   {
 %(create_default_cell_integral)s
@@ -209,20 +164,6 @@ public:
 %(create_default_custom_integral)s
   }
 
-  ufc::cutcell_integral * create_default_cutcell_integral() const final override
-  {
-%(create_default_cutcell_integral)s
-  }
-
-  ufc::interface_integral * create_default_interface_integral() const final override
-  {
-%(create_default_interface_integral)s
-  }
-
-  ufc::overlap_integral * create_default_overlap_integral() const final override
-  {
-%(create_default_overlap_integral)s
-  }
 
 };
 """
@@ -264,12 +205,6 @@ public:
 
   std::size_t max_custom_subdomain_id() const final override;
 
-  std::size_t max_cutcell_subdomain_id() const final override;
-
-  std::size_t max_interface_subdomain_id() const final override;
-
-  std::size_t max_overlap_subdomain_id() const final override;
-
   bool has_cell_integrals() const final override;
 
   bool has_exterior_facet_integrals() const final override;
@@ -279,12 +214,6 @@ public:
   bool has_vertex_integrals() const final override;
 
   bool has_custom_integrals() const final override;
-
-  bool has_cutcell_integrals() const final override;
-
-  bool has_interface_integrals() const final override;
-
-  bool has_overlap_integrals() const final override;
 
   ufc::cell_integral * create_cell_integral(std::size_t i) const final override;
 
@@ -296,12 +225,6 @@ public:
 
   ufc::custom_integral * create_custom_integral(std::size_t i) const final override;
 
-  ufc::cutcell_integral * create_cutcell_integral(std::size_t i) const final override;
-
-  ufc::interface_integral * create_interface_integral(std::size_t i) const final override;
-
-  ufc::overlap_integral * create_overlap_integral(std::size_t i) const final override;
-
   ufc::cell_integral * create_default_cell_integral() const final override;
 
   ufc::exterior_facet_integral * create_default_exterior_facet_integral() const final override;
@@ -311,12 +234,6 @@ public:
   ufc::vertex_integral * create_default_vertex_integral() const final override;
 
   ufc::custom_integral * create_default_custom_integral() const final override;
-
-  ufc::cutcell_integral * create_default_cutcell_integral() const final override;
-
-  ufc::interface_integral * create_default_interface_integral() const final override;
-
-  ufc::overlap_integral * create_default_overlap_integral() const final override;
 
 };
 """
@@ -402,21 +319,6 @@ std::size_t %(classname)s::max_custom_subdomain_id() const
 %(max_custom_subdomain_id)s
 }
 
-std::size_t %(classname)s::max_cutcell_subdomain_id() const
-{
-%(max_cutcell_subdomain_id)s
-}
-
-std::size_t %(classname)s::max_interface_subdomain_id() const
-{
-%(max_interface_subdomain_id)s
-}
-
-std::size_t %(classname)s::max_overlap_subdomain_id() const
-{
-%(max_overlap_subdomain_id)s
-}
-
 bool %(classname)s::has_cell_integrals() const
 {
 %(has_cell_integrals)s
@@ -440,21 +342,6 @@ bool %(classname)s::has_vertex_integrals() const
 bool %(classname)s::has_custom_integrals() const
 {
 %(has_custom_integrals)s
-}
-
-bool %(classname)s::has_cutcell_integrals() const
-{
-%(has_cutcell_integrals)s
-}
-
-bool %(classname)s::has_interface_integrals() const
-{
-%(has_interface_integrals)s
-}
-
-bool %(classname)s::has_overlap_integrals() const
-{
-%(has_overlap_integrals)s
 }
 
 ufc::cell_integral * %(classname)s::create_cell_integral(std::size_t subdomain_id) const
@@ -482,21 +369,6 @@ ufc::custom_integral * %(classname)s::create_custom_integral(std::size_t subdoma
 %(create_custom_integral)s
 }
 
-ufc::cutcell_integral * %(classname)s::create_cutcell_integral(std::size_t subdomain_id) const
-{
-%(create_cutcell_integral)s
-}
-
-ufc::interface_integral * %(classname)s::create_interface_integral(std::size_t subdomain_id) const
-{
-%(create_interface_integral)s
-}
-
-ufc::overlap_integral * %(classname)s::create_overlap_integral(std::size_t subdomain_id) const
-{
-%(create_overlap_integral)s
-}
-
 ufc::cell_integral * %(classname)s::create_default_cell_integral() const
 {
 %(create_default_cell_integral)s
@@ -522,18 +394,4 @@ ufc::custom_integral * %(classname)s::create_default_custom_integral() const
 %(create_default_custom_integral)s
 }
 
-ufc::cutcell_integral * %(classname)s::create_default_cutcell_integral() const
-{
-%(create_default_cutcell_integral)s
-}
-
-ufc::interface_integral * %(classname)s::create_default_interface_integral() const
-{
-%(create_default_interface_integral)s
-}
-
-ufc::overlap_integral * %(classname)s::create_default_overlap_integral() const
-{
-%(create_default_overlap_integral)s
-}
 """
