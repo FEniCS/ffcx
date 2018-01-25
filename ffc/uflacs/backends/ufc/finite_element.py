@@ -36,7 +36,7 @@ from ffc.uflacs.backends.ufc.evaluatebasisderivatives import generate_evaluate_b
 from ffc.uflacs.backends.ufc.evaluatebasisderivatives import generate_evaluate_basis_derivatives
 from ffc.uflacs.backends.ufc.evalderivs import generate_evaluate_reference_basis_derivatives
 from ffc.uflacs.backends.ufc.evalderivs import _generate_combinations
-from ffc.uflacs.backends.ufc.evaluatedof import generate_evaluate_dof, generate_evaluate_dofs, reference_to_physical_map
+from ffc.uflacs.backends.ufc.evaluatedof import generate_evaluate_dofs, reference_to_physical_map
 
 from ffc.uflacs.backends.ufc.jacobian import jacobian, inverse_jacobian, orientation, fiat_coordinate_mapping, _mapping_transform
 
@@ -389,11 +389,8 @@ class ufc_finite_element(ufc_generator):
         ]
         return code
 
-    def evaluate_dof(self, L, ir, parameters):
-        return generate_evaluate_dof(L, ir["evaluate_dof"])
 
-
-    def evaluate_dofs(self, L, ir, parameters):
+    def map_dofs(self, L, ir, parameters):
         """Generate code for evaluate_dofs."""
         """
         - evaluate_dof needs to be split into invert_mapping + evaluate_dof or similar?

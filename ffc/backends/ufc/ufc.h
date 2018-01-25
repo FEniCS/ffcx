@@ -250,25 +250,13 @@ namespace ufc
                                                 const ufc::coordinate_mapping * cm=nullptr
                                                 ) const = 0;
 
-    /// Evaluate linear functional for dof i on the function f
-    /// The cell argument is only included here so we can pass it to the function.
-    virtual double evaluate_dof(std::size_t i,
-                                const function& f,
-                                const double * coordinate_dofs,
-                                int cell_orientation,
-                                const cell& c,
-                                const ufc::coordinate_mapping * cm=nullptr
-                                ) const = 0;
-
-    /// Evaluate linear functionals for all dofs on the function f
-    /// The cell argument is only included here so we can pass it to the function.
-    virtual void evaluate_dofs(double * values,
-                               const function& f,
-                               const double * coordinate_dofs,
-                               int cell_orientation,
-                               const cell& c,
-                               const ufc::coordinate_mapping * cm=nullptr
-                               ) const = 0;
+    /// Map dofs from vals to values
+    virtual void map_dofs(double * values,
+                          const double *vals,
+                          const double * coordinate_dofs,
+                          int cell_orientation,
+                          const ufc::coordinate_mapping * cm=nullptr
+                          ) const = 0;
 
     /// Interpolate vertex values from dof values
     virtual void interpolate_vertex_values(double * vertex_values,
