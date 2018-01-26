@@ -70,21 +70,6 @@ namespace ufc
 
   };
 
-  /// This class defines the interface for a general tensor-valued function.
-  class function
-  {
-  public:
-
-    /// Destructor
-    virtual ~function() {}
-
-    /// Evaluate function at given point in cell
-    virtual void evaluate(double * values,
-                          const double * coordinates,
-                          const cell& c) const = 0;
-
-  };
-
   /// Forward declaration
   class coordinate_mapping;
 
