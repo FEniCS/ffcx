@@ -185,16 +185,6 @@ def _generate_body(L, i, dof, mapping, gdim, tdim, cell_shape, offset=0):
     coordinate_dofs = L.Symbol("coordinate_dofs")
     vals = L.Symbol("vals")
 
-    # c = L.Symbol("c")
-    #     for j in range(gdim):
-    #    yy = 0.0
-    #        for k in range(len(w)):
-    #            yy += w[k]*coordinate_dofs[k*gdim + j]
-    #        code += [L.Assign(y[j], yy)]
-
-    # Evaluate function at physical point
-    #    code += [L.Call("f.evaluate", (vals, y, c))]
-
     # Map function values to the reference element
     F = _change_variables(L, mapping, gdim, tdim, offset)
 
@@ -315,10 +305,9 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim,
     code += [L.ForRange(r, 0, n, index_type=index_type, body=lines_r)]
     return (code, result)
 
-def generate_evaluate_dofs(L, ir):
-    "Generate code for evaluate_dofs."
-    # FIXME: consolidate with evaluate_dofs
-    # FIXME: replace
+def generate_map_dofs(L, ir):
+    "Generate code for map_dofs."
+    # Maps values input in array 'vals' to output array 'values'
 
     gdim = ir["geometric_dimension"]
     tdim = ir["topological_dimension"]
