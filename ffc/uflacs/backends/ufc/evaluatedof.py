@@ -184,15 +184,6 @@ def _generate_body(L, i, dof, mapping, gdim, tdim, cell_shape, offset=0):
     y = L.Symbol("y")
     coordinate_dofs = L.Symbol("coordinate_dofs")
     vals = L.Symbol("vals")
-    c = L.Symbol("c")
-    for j in range(gdim):
-        yy = 0.0
-        for k in range(len(w)):
-            yy += w[k]*coordinate_dofs[k*gdim + j]
-        code += [L.Assign(y[j], yy)]
-
-    # Evaluate function at physical point
-    code += [L.Call("f.evaluate", (vals, y, c))]
 
     # Map function values to the reference element
     F = _change_variables(L, mapping, gdim, tdim, offset)
@@ -314,8 +305,9 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim,
     code += [L.ForRange(r, 0, n, index_type=index_type, body=lines_r)]
     return (code, result)
 
-def generate_evaluate_dof(L, ir):
-    "Generate code for evaluate_dof."
+def generate_map_dofs(L, ir):
+    "Generate code for map_dofs."
+    # Maps values input in array 'vals' to output array 'values'
 
     gdim = ir["geometric_dimension"]
     tdim = ir["topological_dimension"]
@@ -326,70 +318,7 @@ def generate_evaluate_dof(L, ir):
     if not any(ir["dofs"]):
         code = []
     else:
-        # Declare variable for storing the result and physical coordinates
-        code = [L.Comment("Declare variables for result of evaluation")]
-        vals = L.Symbol("vals")
-        code += [L.ArrayDecl("double", vals, ir["physical_value_size"])]
-        code += [L.Comment("Declare variable for physical coordinates")]
-        y = L.Symbol("y")
-        code += [L.ArrayDecl("double", y, gdim)]
-
-        # Check whether Jacobians are necessary.
-        needs_inverse_jacobian = any(["contravariant piola" in m
-                                      for m in ir["mappings"]])
-        needs_jacobian = any(["covariant piola" in m for m in ir["mappings"]])
-
-        # Intermediate variable needed for multiple point dofs
-        needs_temporary = any(dof is not None and len(dof) > 1 for dof in ir["dofs"])
-        if needs_temporary:
-            result = L.Symbol("result")
-            code += [L.VariableDecl("double", result)]
-
-        if needs_jacobian or needs_inverse_jacobian:
-            code += jacobian(L, gdim, tdim, cell_shape)
-
-        if needs_inverse_jacobian:
-            code += inverse_jacobian(L, gdim, tdim, cell_shape)
-            if tdim != gdim :
-                code += orientation(L)
-
-    # Extract variables
-    mappings = ir["mappings"]
-    offsets = ir["physical_offsets"]
-
-    # Generate bodies for each degree of freedom
-    cases = []
-    for (i, dof) in enumerate(ir["dofs"]):
-        c, r = _generate_body(L, i, dof, mappings[i], gdim, tdim, cell_shape, offsets[i])
-        c += [L.Return(r)]
-        cases.append((i, c))
-
-    code += [L.Switch(L.Symbol("i"), cases)]
-    code += [L.Return(0.0)]
-    return code
-
-def generate_evaluate_dofs(L, ir):
-    "Generate code for evaluate_dofs."
-    # FIXME: consolidate with evaluate_dofs
-    # FIXME: replace
-
-    gdim = ir["geometric_dimension"]
-    tdim = ir["topological_dimension"]
-
-    cell_shape = ir["cell_shape"]
-
-    # Enriched element, no dofs defined
-    if not any(ir["dofs"]):
         code = []
-    else:
-        # Declare variable for storing the result and physical coordinates
-        code = [L.Comment("Declare variables for result of evaluation")]
-        vals = L.Symbol("vals")
-        code += [L.ArrayDecl("double", vals, ir["physical_value_size"])]
-        code += [L.Comment("Declare variable for physical coordinates")]
-        y = L.Symbol("y")
-        code += [L.ArrayDecl("double", y, gdim)]
-
         # Check whether Jacobians are necessary.
         needs_inverse_jacobian = any(["contravariant piola" in m
                                       for m in ir["mappings"]])
@@ -415,8 +344,9 @@ def generate_evaluate_dofs(L, ir):
 
     # Generate bodies for each degree of freedom
     values = L.Symbol("values")
+    value_size = ir["physical_value_size"]
     for (i, dof) in enumerate(ir["dofs"]):
-        c, r = _generate_body(L, i, dof, mappings[i], gdim, tdim, cell_shape, offsets[i])
+        c, r = _generate_body(L, i, dof, mappings[i], gdim, tdim, cell_shape, offsets[i] + i*value_size)
         code += c
         code += [L.Assign(values[i], r)]
 

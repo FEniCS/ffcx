@@ -156,26 +156,14 @@ public:
 %(evaluate_basis_derivatives_all)s
   }
 
-  double evaluate_dof(std::size_t i,
-                      const ufc::function& f,
-                      const double * coordinate_dofs,
-                      int cell_orientation,
-                      const ufc::cell& c,
-                      const ufc::coordinate_mapping * cm=nullptr
-                      ) const final override
+  void map_dofs(double * values,
+                const double *vals,
+                const double * coordinate_dofs,
+                int cell_orientation,
+                const ufc::coordinate_mapping * cm=nullptr
+                ) const final override
   {
-%(evaluate_dof)s
-  }
-
-  void evaluate_dofs(double * values,
-                             const ufc::function& f,
-                             const double * coordinate_dofs,
-                             int cell_orientation,
-                             const ufc::cell& c,
-                             const ufc::coordinate_mapping * cm=nullptr
-                             ) const final override
-  {
-%(evaluate_dofs)s
+%(map_dofs)s
   }
 
   void interpolate_vertex_values(double * vertex_values,
@@ -305,21 +293,12 @@ public:
                                       const ufc::coordinate_mapping * cm=nullptr
                                       ) const final override;
 
-  double evaluate_dof(std::size_t i,
-                      const ufc::function& f,
-                      const double * coordinate_dofs,
-                      int cell_orientation,
-                      const ufc::cell& c,
-                      const ufc::coordinate_mapping * cm=nullptr
-                      ) const final override;
-
-  void evaluate_dofs(double * values,
-                     const ufc::function& f,
-                     const double * coordinate_dofs,
-                     int cell_orientation,
-                     const ufc::cell& c,
-                     const ufc::coordinate_mapping * cm=nullptr
-                     ) const final override;
+  void map_dofs(double * values,
+                const double *vals,
+                const double * coordinate_dofs,
+                int cell_orientation,
+                const ufc::coordinate_mapping * cm=nullptr
+                ) const final override;
 
   void interpolate_vertex_values(double * vertex_values,
                                  const double * dof_values,
@@ -492,26 +471,14 @@ void %(classname)s::evaluate_basis_derivatives_all(std::size_t n,
 %(evaluate_basis_derivatives_all)s
 }
 
-double %(classname)s::evaluate_dof(std::size_t i,
-                                   const ufc::function& f,
-                                   const double * coordinate_dofs,
-                                   int cell_orientation,
-                                   const ufc::cell& c,
-                                   const ufc::coordinate_mapping * cm
-                                   ) const
+void %(classname)s::map_dofs(double * values,
+                             const double *vals,
+                             const double * coordinate_dofs,
+                             int cell_orientation,
+                             const ufc::coordinate_mapping * cm
+                             ) const
 {
-%(evaluate_dof)s
-}
-
-void %(classname)s::evaluate_dofs(double * values,
-                                  const ufc::function& f,
-                                  const double * coordinate_dofs,
-                                  int cell_orientation,
-                                  const ufc::cell& c,
-                                  const ufc::coordinate_mapping * cm
-                                  ) const
-{
-%(evaluate_dofs)s
+%(map_dofs)s
 }
 
 void %(classname)s::interpolate_vertex_values(double * vertex_values,

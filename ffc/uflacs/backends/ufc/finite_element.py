@@ -36,7 +36,7 @@ from ffc.uflacs.backends.ufc.evaluatebasisderivatives import generate_evaluate_b
 from ffc.uflacs.backends.ufc.evaluatebasisderivatives import generate_evaluate_basis_derivatives
 from ffc.uflacs.backends.ufc.evalderivs import generate_evaluate_reference_basis_derivatives
 from ffc.uflacs.backends.ufc.evalderivs import _generate_combinations
-from ffc.uflacs.backends.ufc.evaluatedof import generate_evaluate_dof, generate_evaluate_dofs, reference_to_physical_map
+from ffc.uflacs.backends.ufc.evaluatedof import generate_map_dofs, reference_to_physical_map
 
 from ffc.uflacs.backends.ufc.jacobian import jacobian, inverse_jacobian, orientation, fiat_coordinate_mapping, _mapping_transform
 
@@ -389,34 +389,10 @@ class ufc_finite_element(ufc_generator):
         ]
         return code
 
-    def evaluate_dof(self, L, ir, parameters):
-        return generate_evaluate_dof(L, ir["evaluate_dof"])
 
-
-    def evaluate_dofs(self, L, ir, parameters):
-        """Generate code for evaluate_dofs."""
-        """
-        - evaluate_dof needs to be split into invert_mapping + evaluate_dof or similar?
-
-          f = M fhat;  nu(f) = nu(M fhat) = nuhat(M^-1 f) = sum_i w_i M^-1 f(x_i)
-
-          // Get fixed set of points on reference element
-          num_points = element->num_dof_evaluation_points();
-          double X[num_points*tdim];
-          element->tabulate_dof_evaluation_points(X);
-
-          // Compute geometry in these points
-          domain->compute_geometry(reference_points, num_point, X, J, detJ, K, coordinate_dofs, cell_orientation);
-
-          // Computed by dolfin
-          for ip
-            fvalues[ip][:] = f.evaluate(point[ip])[:];
-
-          // Finally: nu_j(f) = sum_component sum_ip weights[j][ip][component] fvalues[ip][component]
-          element->evaluate_dofs(fdofs, fvalues, J, detJ, K)
-        """
-        # FIXME: translate into reference version
-        return generate_evaluate_dofs(L, ir["evaluate_dof"])
+    def map_dofs(self, L, ir, parameters):
+        """Generate code for map_dofs()"""
+        return generate_map_dofs(L, ir["evaluate_dof"])
 
     def interpolate_vertex_values(self, L, ir, parameters):
         irdata = ir["interpolate_vertex_values"]
