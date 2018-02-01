@@ -54,7 +54,6 @@ from ffc.backends.ufc import __version__ as UFC_VERSION
 from ffc.backends.ufc import get_include_path
 from ffc.compiler import compile_form, compile_element
 from ffc.formatting import write_code
-from ffc.errorcontrol import compile_with_error_control
 
 
 def print_error(msg):
@@ -85,13 +84,7 @@ the FFC man page which may invoked by 'man ffc' (if installed).
 
 
 def compile_ufl_data(ufd, prefix, parameters):
-    if parameters["error_control"]:
-        code_h, code_c = compile_with_error_control(ufd.forms,
-                                                    ufd.object_names,
-                                                    ufd.reserved_objects,
-                                                    prefix,
-                                                    parameters)
-    elif len(ufd.forms) > 0:
+    if len(ufd.forms) > 0:
         code_h, code_c = compile_form(ufd.forms, ufd.object_names,
                                       prefix=prefix,
                                       parameters=parameters)
@@ -192,8 +185,6 @@ def main(args=None):
             parameters["optimize"] = bool(int(arg))
         elif opt in ("-o", "--output-directory"):
             parameters["output_dir"] = arg
-        elif opt in ("-e", "--error-control"):
-            parameters["error_control"] = True
         elif opt in ("-p", "--profile"):
             enable_profile = True
 

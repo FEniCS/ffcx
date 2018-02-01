@@ -48,13 +48,12 @@ def _generate_dolfin_wrapper(analysis, prefix, object_names, parameters):
     begin("Compiler stage 4.1: Generating additional wrapper code")
 
     # Encapsulate data
-    (capsules, common_space) = _encapsulate(prefix, object_names, analysis, parameters)
+    (capsules, common_space) = _encapsulate(prefix, object_names, analysis,
+                                            parameters)
 
     # Generate code
     info("Generating wrapper code for DOLFIN")
-    code = generate_dolfin_code(prefix, "",
-                                capsules, common_space,
-                                error_control=parameters["error_control"])
+    code = generate_dolfin_code(prefix, "", capsules, common_space)
     code += "\n\n"
     end()
 
@@ -74,13 +73,6 @@ def _encapsulate(prefix, object_names, analysis, parameters):
     # Special case: single element
     if num_form_datas == 0:
         capsules = _encapsule_element(prefix, elements)
-
-    # Special case: with error control
-    elif parameters["error_control"] and num_form_datas == 11:
-        capsules = [_encapsule_form(prefix, object_names, form_data, i, element_map)
-                    for (i, form_data) in enumerate(form_datas[:num_form_datas - 1])]
-        capsules += [_encapsule_form(prefix, object_names, form_datas[-1], num_form_datas - 1,
-                                     element_map, "GoalFunctional")]
     # Otherwise: generate standard capsules for each form
     else:
         capsules = [_encapsule_form(prefix, object_names, form_data, i, element_map) for

@@ -24,19 +24,19 @@
 
 from .includes import snippets
 from .functionspace import *
-from .goalfunctional import generate_update_ec
 
 __all__ = ["generate_form"]
 
 
-def generate_form(form, classname, error_control):
-    """Generate dolfin wrapper code associated with a form including
-    code for function spaces used in form and typedefs
+def generate_form(form, classname):
+    """Generate dolfin wrapper code associated with a form including code
+    for function spaces used in form and typedefs
 
     @param form:
         A UFCFormNames instance
     @param classname
         Name of Form class.
+
     """
 
     blocks = []
@@ -53,13 +53,13 @@ def generate_form(form, classname, error_control):
                for i in range(form.num_coefficients)]
 
     # Generate Form subclass
-    blocks += [generate_form_class(form, classname, error_control)]
+    blocks += [generate_form_class(form, classname)]
 
     # Return code
     return "\n".join(blocks)
 
 
-def generate_form_class(form, classname, error_control):
+def generate_form_class(form, classname):
     "Generate dolfin wrapper code for a single Form class."
 
     # Generate constructors
@@ -69,13 +69,11 @@ def generate_form_class(form, classname, error_control):
     (number, name) = generate_coefficient_map_data(form)
 
     # Generate typedefs for FunctionSpace subclasses for Coefficients
-    typedefs = ["  // Typedefs", generate_typedefs(form, classname, error_control), ""]
+    typedefs = ["  // Typedefs", generate_typedefs(form, classname), ""]
 
     # Member variables for coefficients
     members = ["  dolfin::CoefficientAssigner %s;" % coefficient
                for coefficient in form.coefficient_names]
-    if form.superclassname == "GoalFunctional":
-        members += [generate_update_ec(form)]
 
     # Group typedefs and members together for inserting into template
     additionals = "\n".join(typedefs + ["  // Coefficients"] + members)

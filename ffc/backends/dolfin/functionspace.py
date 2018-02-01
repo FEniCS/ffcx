@@ -56,9 +56,11 @@ def extract_coefficient_spaces(forms):
     return [spaces[name] for name in names]
 
 
-def generate_typedefs(form, classname, error_control):
-    """Generate typedefs for test, trial and coefficient spaces
-    relative to a function space."""
+def generate_typedefs(form, classname):
+    """Generate typedefs for test, trial and coefficient spaces relative
+    to a function space.
+
+    """
 
     pairs = []
 

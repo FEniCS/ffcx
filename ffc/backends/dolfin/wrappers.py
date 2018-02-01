@@ -34,9 +34,8 @@ __all__ = ["generate_dolfin_code"]
 parameters = {"use_common_coefficient_names": True}
 
 
-def generate_dolfin_code(prefix, header, forms,
-                         common_function_space=False, add_guards=False,
-                         error_control=False):
+def generate_dolfin_code(prefix, header, forms, common_function_space=False,
+                         add_guards=False):
     """Generate complete dolfin wrapper code with given generated names.
 
     @param prefix:
@@ -54,8 +53,7 @@ def generate_dolfin_code(prefix, header, forms,
     """
 
     # Generate dolfin namespace
-    namespace = generate_dolfin_namespace(prefix, forms, common_function_space,
-                                          error_control)
+    namespace = generate_dolfin_namespace(prefix, forms, common_function_space)
 
     # Collect pieces of code
     code = [incl.dolfin_tag, header, incl.stl_includes, incl.dolfin_includes,
@@ -72,8 +70,7 @@ def generate_dolfin_code(prefix, header, forms,
     return "\n".join(code)
 
 
-def generate_dolfin_namespace(prefix, forms, common_function_space=False,
-                              error_control=False):
+def generate_dolfin_namespace(prefix, forms, common_function_space=False):
 
     # Allow forms to represent a single space, and treat separately
     if isinstance(forms, UFCElementNames):
@@ -87,11 +84,10 @@ def generate_dolfin_namespace(prefix, forms, common_function_space=False,
     code = [apply_function_space_template(*space) for space in spaces]
 
     # Generate code for forms
-    code += [generate_form(form, "Form_%s" % form.name, error_control) for form in forms]
+    code += [generate_form(form, "Form_%s" % form.name) for form in forms]
 
     # Generate namespace typedefs (Bilinear/Linear & Test/Trial/Function)
-    code += [generate_namespace_typedefs(forms, common_function_space,
-                                         error_control)]
+    code += [generate_namespace_typedefs(forms, common_function_space)]
 
     # Wrap code in namespace block
     code = "\nnamespace %s\n{\n\n%s\n}" % (prefix, "\n".join(code))
@@ -108,7 +104,7 @@ def generate_single_function_space(prefix, space):
     return code
 
 
-def generate_namespace_typedefs(forms, common_function_space, error_control):
+def generate_namespace_typedefs(forms, common_function_space):
 
     # Generate typedefs as (fro, to) pairs of strings
     pairs = []
@@ -133,10 +129,6 @@ def generate_namespace_typedefs(forms, common_function_space, error_control):
                 pairs += [("Form_%s::TestSpace" % form.name, "FunctionSpace")]
                 break
 
-    # Add specialized typedefs when adding error control wrapppers
-    if error_control:
-        pairs += error_control_pairs(forms)
-
     # Combine data to typedef code
     typedefs = "\n".join("typedef %s %s;" % (to, fro) for (to, fro) in pairs)
 
@@ -144,11 +136,3 @@ def generate_namespace_typedefs(forms, common_function_space, error_control):
     if not typedefs:
         return ""
     return "// Class typedefs\n" + typedefs + "\n"
-
-
-def error_control_pairs(forms):
-    assert (len(forms) == 11), "Expecting 11 error control forms"
-
-    return [("Form_%s" % forms[8].name, "BilinearForm"),
-            ("Form_%s" % forms[9].name, "LinearForm"),
-            ("Form_%s" % forms[10].name, "GoalFunctional")]

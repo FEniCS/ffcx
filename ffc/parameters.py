@@ -47,7 +47,6 @@ _FFC_GENERATE_PARAMETERS = {
                                # "LinearForm" or BilinearForm
     "convert_exceptions_to_warnings": False,   # convert all exceptions to warning
                                                # in generated code
-    "error_control": False,   # with error control
     "optimize": True,         # turn on optimization for code generation
     "max_signature_length": 0,  # set to positive integer to shorten signatures
     "generate_dummy_tabulate_tensor": False,  # set to True to replace tabulate_tensor body with no-op
@@ -197,4 +196,3 @@ def compute_jit_parameters_signature(parameters):
     from ufl.utils.sorting import canonicalize_metadata
     parameters = compilation_relevant_parameters(parameters)
     return str(canonicalize_metadata(parameters))
-
