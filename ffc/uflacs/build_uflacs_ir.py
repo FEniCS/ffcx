@@ -279,10 +279,12 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                     integrands, tensor_shape,
                     coefficient_numbering,
                     quadrature_rules, parameters):
-    # The intermediate representation dict we're building and returning here
+    # The intermediate representation dict we're building and
+    # returning here
     ir = {}
 
-    # Extract uflacs specific optimization and code generation parameters
+    # Extract uflacs specific optimization and code generation
+    # parameters
     p = parse_uflacs_optimization_parameters(parameters, integral_type)
 
     # Pass on parameters for consumption in code generation
@@ -317,7 +319,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         )
 
     if integral_type == "expression":
-        # TODO: Figure out how to get non-integrand expressions in here, this is just a draft:
+        # TODO: Figure out how to get non-integrand expressions in
+        #       here, this is just a draft:
         # Analyse all expressions in one list
         assert isinstance(integrands, (tuple, list))
         all_num_points = [None]
@@ -338,10 +341,11 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         V, V_deps, V_targets = build_scalar_graph(expressions)
 
         # Build terminal_data from V here before factorization.
-        # Then we can use it to derive table properties for all modified terminals,
-        # and then use that to rebuild the scalar graph more efficiently before
-        # argument factorization. We can build terminal_data again after factorization
-        # if that's necessary.
+        # Then we can use it to derive table properties for all
+        # modified terminals, and then use that to rebuild the scalar
+        # graph more efficiently before argument factorization. We can
+        # build terminal_data again after factorization if that's
+        # necessary.
         initial_terminal_indices = [i for i, v in enumerate(V)
                                     if is_modified_terminal(v)]
         initial_terminal_data = [analyse_modified_terminal(V[i])
@@ -372,9 +376,9 @@ def build_uflacs_ir(cell, integral_type, entitytype,
             if deps:
                 V[i] = V[i]._ufl_expr_reconstruct_(*deps)
 
-        # Rebuild scalar target expressions and graph
-        # (this may be overkill and possible to optimize
-        # away if it turns out to be costly)
+        # Rebuild scalar target expressions and graph (this may be
+        # overkill and possible to optimize away if it turns out to be
+        # costly)
         expressions = [V[i] for i in V_targets]
 
         # Rebuild scalar list-based graph representation
@@ -385,7 +389,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         (argument_factorizations, modified_arguments,
              FV, FV_deps, FV_targets) = \
             compute_argument_factorization(SV, SV_deps, SV_targets, len(tensor_shape))
-        assert len(SV_targets) == len(argument_factorizations)       
+        assert len(SV_targets) == len(argument_factorizations)
 
         # TODO: Still expecting one target variable in code generation
         assert len(argument_factorizations) == 1
@@ -395,7 +399,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         for i in range(len(modified_arguments)):
             modified_arguments[i] = analyse_modified_terminal(modified_arguments[i])
 
-        # Build set of modified_terminal indices into factorized_vertices
+        # Build set of modified_terminal indices into
+        # factorized_vertices
         modified_terminal_indices = [i for i, v in enumerate(FV)
                                      if is_modified_terminal(v)]
 
@@ -436,7 +441,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                         pir["mt_tabledata"][mt] = mt_unique_table_reference.get(mt)
                     pir["V_mts"].append(mt)
 
-        # Extend piecewise modified_arguments list with unique new items
+        # Extend piecewise modified_arguments list with unique new
+        # items
         for mt in modified_arguments:
             ma = piecewise_modified_argument_indices.get(mt)
             if ma is None:
@@ -470,8 +476,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 block_restrictions.append(r)
             block_restrictions = tuple(block_restrictions)
 
-            # Store piecewise status for fi and translate
-            # index to piecewise scope if relevant
+            # Store piecewise status for fi and translate index to
+            # piecewise scope if relevant
             factor_is_piecewise = FV_piecewise[fi]
             if factor_is_piecewise:
                 factor_index = pe2i[FV[fi]]
@@ -487,7 +493,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 #    for j
                 #        B[i,j] = fw*U[i]*V[j] = 0 if i != iq or j != iq
                 BQ[iq] = B[iq,iq] = fw
-            for (iq) 
+            for (iq)
                 A[iq+offset0, iq+offset1] = BQ[iq]
             """
             # One argument in quadrature element
@@ -512,22 +518,24 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 block_mode = "preintegrated"
             elif p["enable_premultiplication"] and (rank > 0
                     and all(tt in piecewise_ttypes for tt in ttypes)):
-                # Integrate functional in quadloop, scale block after quadloop
+                # Integrate functional in quadloop, scale block after
+                # quadloop
                 block_mode = "premultiplied"
             elif p["enable_sum_factorization"]:
                 if (rank == 2 and any(tt in piecewise_ttypes for tt in ttypes)):
                     # Partial computation in quadloop of f*u[i],
-                    # compute (f*u[i])*v[i] outside quadloop,
-                    # (or with u,v swapped)
+                    # compute (f*u[i])*v[i] outside quadloop, (or with
+                    # u,v swapped)
                     block_mode = "partial"
                 else:
-                    # Full runtime integration of f*u[i]*v[j],
-                    # can still do partial computation in quadloop of f*u[i]
-                    # but must compute (f*u[i])*v[i] as well inside quadloop.
-                    # (or with u,v swapped)
+                    # Full runtime integration of f*u[i]*v[j], can
+                    # still do partial computation in quadloop of
+                    # f*u[i] but must compute (f*u[i])*v[i] as well
+                    # inside quadloop.  (or with u,v swapped)
                     block_mode = "full"
             else:
-                # Use full runtime integration with nothing fancy going on
+                # Use full runtime integration with nothing fancy
+                # going on
                 block_mode = "safe"
 
             # Carry out decision
@@ -596,9 +604,11 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 if pname is None:
                     # Cache miss, precompute block
                     if integral_type == "interior_facet":
-                        ptable = multiply_block_interior_facets(0, unames, ttypes, unique_tables, unique_table_num_dofs)
+                        ptable = multiply_block_interior_facets(0, unames, ttypes, unique_tables,
+                                                                unique_table_num_dofs)
                     else:
-                        ptable = multiply_block(0, unames, ttypes, unique_tables, unique_table_num_dofs)
+                        ptable = multiply_block(0, unames, ttypes, unique_tables,
+                                                unique_table_num_dofs)
                     pname = "PM%d" % (len(cache,))
                     cache[unames] = pname
                     unique_tables[pname] = ptable
@@ -618,7 +628,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 # B[...] = FI * u * v;            generated after quadloop
                 # A[blockmap] += B[...];          generated after quadloop
                 raise NotImplementedError("scaled block mode not implemented.")
-                # (probably need mostly the same data as premultiplied, except no P table name or values)
+                # (probably need mostly the same data as
+                # premultiplied, except no P table name or values)
                 block_is_piecewise = False
 
             elif block_mode in ("partial", "full", "safe"):
@@ -675,7 +686,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 # Insert in varying expr_ir for this quadrature loop
                 block_contributions[blockmap].append(blockdata)
 
-        # Figure out which table names are referenced in unstructured partition
+        # Figure out which table names are referenced in unstructured
+        # partition
         active_table_names = set()
         for i, mt in zip(modified_terminal_indices, modified_terminals):
             tr = mt_unique_table_reference.get(mt)
@@ -710,7 +722,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         # Add to global set of all tables
         for name, table in unique_tables.items():
             tbl = ir["unique_tables"].get(name)
-            if tbl is not None and not numpy.allclose(tbl, table, rtol=p["table_rtol"], atol=p["table_atol"]):
+            if tbl is not None and not numpy.allclose(tbl, table, rtol=p["table_rtol"],
+                                                      atol=p["table_atol"]):
                 error("Table values mismatch with same name.")
         ir["unique_tables"].update(unique_tables)
 
@@ -762,7 +775,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         # (array) FV-index -> UFL subexpression
         expr_ir["V"] = FV
 
-        # (array) V indices for each input expression component in flattened order
+        # (array) V indices for each input expression component in
+        # flattened order
         expr_ir["V_targets"] = FV_targets
 
         ### Result of factorization:
@@ -806,9 +820,12 @@ def build_uflacs_ir(cell, integral_type, entitytype,
 
 
 def build_scalar_graph(expressions):
-    """Build list representation of expression graph covering the given expressions.
+    """Build list representation of expression graph covering the given
+    expressions.
 
-    TODO: Renaming, refactoring and cleanup of the graph building algorithms used in here
+    TODO: Renaming, refactoring and cleanup of the graph building
+    algorithms used in here
+
     """
 
     # Build the initial coarse computational graph of the expression
@@ -868,8 +885,8 @@ def analyse_dependencies(V, V_deps, V_targets,
             # not sure which cases this will cover (if any)
             varying_indices.append(i)
 
-    # Mark every subexpression that is computed
-    # from the spatially dependent terminals
+    # Mark every subexpression that is computed from the spatially
+    # dependent terminals
     varying, num_varying = mark_image(inv_deps, varying_indices)
 
     # The rest of the subexpressions are piecewise constant (1-1=0, 1-0=1)
@@ -959,4 +976,3 @@ def old_code_useful_for_optimization():
     expr_oir["target_registers"] = target_registers
     return expr_oir
 """
-

@@ -200,7 +200,8 @@ def compile_ufl_objects(ufl_objects, kind, object_names=None,
 
     # Stage 4.1: generate wrappers
     cpu_time = time()
-    wrapper_code = generate_wrapper_code(analysis, prefix, object_names, parameters)
+    wrapper_code = generate_wrapper_code(analysis, prefix, object_names,
+                                         parameters)
     _print_timing(4.1, time() - cpu_time)
 
     # Stage 5: format code

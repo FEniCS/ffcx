@@ -23,7 +23,8 @@ def optimize_integral_ir(ir, parameters):
 
     info("Optimizing uflacs representation")
 
-    # TODO: Implement optimization of ssa representation prior to code generation here.
+    # TODO: Implement optimization of ssa representation prior to code
+    # generation here.
     oir = ir
 
     return oir

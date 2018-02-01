@@ -45,7 +45,9 @@ def pick_first(sequence):
 
 def listcopy(sequence):
     """Create a copy of the list, calling the copy constructor on each
-    object in the list (problems when using copy.deepcopy)."""
+    object in the list (problems when using copy.deepcopy).
+
+    """
     if not sequence:
         return []
     else:
@@ -69,7 +71,10 @@ def compute_permutations(k, n, skip=[]):
 
 
 def insert_nested_dict(root, keys, value):
-    "Set root[keys[0]][...][keys[-1]] = value, creating subdicts on the way if missing."
+    """Set root[keys[0]][...][keys[-1]] = value, creating subdicts on the
+    way if missing.
+
+    """
     for k in keys[:-1]:
         d = root.get(k)
         if d is None:
