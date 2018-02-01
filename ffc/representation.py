@@ -42,7 +42,8 @@ import ufl
 from ffc.utils import compute_permutations, product
 from ffc.log import info, error, begin, end
 from ffc.fiatinterface import create_element, reference_cell
-from ffc.fiatinterface import EnrichedElement, HDivTrace, MixedElement, SpaceOfReals, QuadratureElement
+from ffc.fiatinterface import (EnrichedElement, HDivTrace,
+                               MixedElement, SpaceOfReals, QuadratureElement)
 from ffc.classname import make_classname, make_integral_classname
 
 # List of supported integral types
@@ -54,10 +55,11 @@ ufc_integral_types = ("cell",
 
 
 def pick_representation(representation):
-    "Return one of the specialized code generation modules from a representation string."
-    if representation == "quadrature":
-        from ffc import quadrature as r
-    elif representation == "uflacs":
+    """Return one of the specialized code generation modules from a
+    representation string.
+
+    """
+    if representation == "uflacs":
         from ffc import uflacs as r
     elif representation == "tsfc":
         from ffc import tsfc as r
@@ -107,7 +109,7 @@ def make_all_element_classnames(prefix, elements, coordinate_elements,
         classnames = {
             "finite_element": {
                 e: make_classname(prefix, "finite_element", element_numbers[e])
-                for e in elements },
+                for e in elements},
             "dofmap": {
                 e: make_classname(prefix, "dofmap", element_numbers[e])
                 for e in elements },

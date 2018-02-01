@@ -43,14 +43,12 @@ Compiler stage 2: Code representation
 Compiler stage 3: Optimization
 ------------------------------
 
+  FIXME: Update text
+
   Input:  Intermediate Representation (IR)
   Output: Optimized Intermediate Representation (OIR)
 
   This stage examines the IR and performs optimizations.
-
-  Optimization is currently disabled as a separate stage
-  but is implemented as part of the code generation for
-  quadrature representation.
 
 Compiler stage 4: Code generation
 ---------------------------------
@@ -165,7 +163,7 @@ def compile_ufl_objects(ufl_objects, kind, object_names=None,
     # Reset timing
     cpu_time_0 = time()
 
-    # Note that jit will always pass validated parameters so 
+    # Note that jit will always pass validated parameters so
     # this is only for commandline and direct call from python
     if not jit:
         parameters = validate_parameters(parameters)

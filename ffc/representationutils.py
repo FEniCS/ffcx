@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """This module contains utility functions for some code shared between
-quadrature and tensor representation."""
+representations.
+
+"""
 
 # Copyright (C) 2012-2017 Marie Rognes
 #
@@ -23,8 +25,9 @@ quadrature and tensor representation."""
 # Modified by Anders Logg 2014
 
 import numpy
-
-from ufl.measure import integral_type_to_measure_name, point_integral_types, facet_integral_types, custom_integral_types
+from ufl.measure import (integral_type_to_measure_name,
+                         point_integral_types, facet_integral_types,
+                         custom_integral_types)
 from ufl.cell import cellname2facetname
 
 from ffc.log import error
@@ -36,7 +39,7 @@ from ffc.classname import make_integral_classname
 
 
 def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
-    "Create quadrature rule and return points and weights."
+    """Create quadrature rule and return points and weights."""
     if integral_type == "cell":
         (points, weights) = create_quadrature(cell.cellname(), degree, rule)
     elif integral_type in facet_integral_types:
@@ -51,7 +54,10 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
 
 
 def integral_type_to_entity_dim(integral_type, tdim):
-    "Given integral_type and domain tdim, return the tdim of the integration entity."
+    """Given integral_type and domain tdim, return the tdim of the
+    integration entity.
+
+    """
     if integral_type == "cell":
         entity_dim = tdim
     elif integral_type in facet_integral_types:
@@ -82,68 +88,6 @@ def map_integral_points(points, integral_type, cell, entity):
         error("Can't map points from entity_dim=%s" % (entity_dim,))
 
 
-def transform_component(component, offset, ufl_element):
-    """
-    This function accounts for the fact that if the geometrical and
-    topological dimension does not match, then for native vector
-    elements, in particular the Piola-mapped ones, the physical value
-    dimensions and the reference value dimensions are not the
-    same. This has certain consequences for mixed elements, aka 'fun
-    with offsets'.
-    """
-    # This code is used for tensor/monomialtransformation.py and
-    # quadrature/quadraturetransformerbase.py.
-
-    cell = ufl_element.cell()
-    gdim = cell.geometric_dimension()
-    tdim = cell.topological_dimension()
-
-    # Do nothing if we are not in a special case: The special cases
-    # occur if we have piola mapped elements (for which value_shape !=
-    # ()), and if gdim != tdim)
-    if gdim == tdim:
-        return component, offset
-    all_mappings = create_element(ufl_element).mapping()
-    special_case = (any(['piola' in m for m in all_mappings])
-                    and ufl_element.num_sub_elements() > 1)
-    if not special_case:
-        return component, offset
-
-    # Extract lists of reference and physical value dimensions by
-    # sub-element
-    reference_value_dims = []
-    physical_value_dims = []
-    for sub_element in ufl_element.sub_elements():
-        assert (len(sub_element.value_shape()) < 2), \
-            "Vector-valued assumption failed"
-        if sub_element.value_shape() == ():
-            reference_value_dims += [1]
-            physical_value_dims += [1]
-        else:
-            reference_value_dims += [sub_element.value_shape()[0]
-                                     - (gdim - tdim)]
-            physical_value_dims += [sub_element.value_shape()[0]]
-
-    # Figure out which sub-element number 'component' is in,
-    # 'sub_element_number' contains the result
-    tot = physical_value_dims[0]
-    for sub_element_number in range(len(physical_value_dims)):
-        if component < tot:
-            break
-        else:
-            tot += physical_value_dims[sub_element_number + 1]
-
-    # Compute the new reference offset:
-    reference_offset = sum(reference_value_dims[:sub_element_number])
-    physical_offset = sum(physical_value_dims[:sub_element_number])
-    shift = physical_offset - reference_offset
-
-    # Compute the component relative to the reference frame
-    reference_component = component - shift
-
-    return reference_component, reference_offset
-
-
 def needs_oriented_jacobian(form_data):
     # Check whether this form needs an oriented jacobian (only forms
     # involgin contravariant piola mappings seem to need it)
@@ -155,13 +99,11 @@ def needs_oriented_jacobian(form_data):
 
 
 # Mapping from recognized domain types to entity types
-_entity_types = {
-    "cell": "cell",
-    "exterior_facet": "facet",
-    "interior_facet": "facet",
-    "vertex": "vertex",
-    "custom": "cell"
-    }
+_entity_types = {"cell": "cell",
+                 "exterior_facet": "facet",
+                 "interior_facet": "facet",
+                "vertex": "vertex",
+                 "custom": "cell"}
 
 
 def entity_type_from_integral_type(integral_type):
@@ -170,7 +112,9 @@ def entity_type_from_integral_type(integral_type):
 
 def initialize_integral_ir(representation, itg_data, form_data, form_id):
     """Initialize a representation dict with common information that is
-    expected independently of which representation is chosen."""
+    expected independently of which representation is chosen.
+
+    """
 
     entitytype = entity_type_from_integral_type(itg_data.integral_type)
     cell = itg_data.domain.ufl_cell()
@@ -178,7 +122,8 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
     tdim = cell.topological_dimension()
     assert all(tdim == itg.ufl_domain().topological_dimension() for itg in itg_data.integrals)
 
-    # Set number of cells if not set  TODO: Get automatically from number of domains
+    # Set number of cells if not set TODO: Get automatically from
+    # number of domains
     num_cells = itg_data.metadata.get("num_cells")
 
     return {"representation": representation,
@@ -193,12 +138,12 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
             "num_vertices": cell.num_vertices(),
             "needs_oriented": needs_oriented_jacobian(form_data),
             "num_cells": num_cells,
-            "enabled_coefficients": itg_data.enabled_coefficients,
-            }
+            "enabled_coefficients": itg_data.enabled_coefficients}
 
 
 def generate_enabled_coefficients(enabled_coefficients):
-    # TODO: I don't know how to implement this using the format dict, this will do for now:
+    # TODO: I don't know how to implement this using the format dict,
+    # this will do for now:
     initializer_list = ", ".join("true" if enabled else "false"
                                  for enabled in enabled_coefficients)
     code = '\n'.join([
@@ -209,7 +154,10 @@ def generate_enabled_coefficients(enabled_coefficients):
 
 
 def initialize_integral_code(ir, prefix, parameters):
-    "Representation independent default initialization of code dict for integral from intermediate representation."
+    """Representation independent default initialization of code dict for
+    integral from intermediate representation.
+
+    """
     code = {}
     code["class_type"] = ir["integral_type"] + "_integral"
     code["classname"] = make_integral_classname(prefix, ir["integral_type"], ir["form_id"], ir["subdomain_id"])

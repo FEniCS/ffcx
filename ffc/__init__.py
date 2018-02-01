@@ -32,17 +32,9 @@ from ffc.backends.ufc import get_include_path, get_ufc_cxx_flags, get_ufc_signat
 # Import default parameters
 from ffc.parameters import default_parameters, default_jit_parameters
 
-# Import plotting
-from ffc.plot import *
-
 # Duplicate list of supported elements from FIAT
 from FIAT import supported_elements
 supported_elements = sorted(supported_elements.keys())
-
-# Append elements that we can plot
-from ffc.plot import element_colors
-supported_elements_for_plotting = list(set(supported_elements).union(set(element_colors.keys())))
-supported_elements_for_plotting.sort()
 
 # Remove elements from list that we don't support or don't trust
 supported_elements.remove("Argyris")
