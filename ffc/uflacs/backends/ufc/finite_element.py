@@ -42,48 +42,6 @@ from ffc.uflacs.backends.ufc.jacobian import jacobian, inverse_jacobian, orienta
 
 index_type = "std::size_t"
 
-def compute_basis_values(L, data, dof_data):
-    basisvalues = L.Symbol("basisvalues")
-    Y = L.Symbol("Y")
-    element_cellname = data["cellname"]
-    embedded_degree = dof_data["embedded_degree"]
-    num_members = dof_data["num_expansion_members"]
-    return _generate_compute_basisvalues(L, basisvalues, Y, element_cellname,
-                                         embedded_degree, num_members)
-
-
-def compute_values(L, data, dof_data):
-    """This function computes the value of the basisfunction as the dot product
-    of the coefficients and basisvalues."""
-
-    # Initialise return code.
-    code = [L.Comment("Compute value(s)")]
-
-    # Get dof data.
-    num_components = dof_data["num_components"]
-    physical_offset = dof_data["physical_offset"]
-
-    basisvalues = L.Symbol("basisvalues")
-    values = L.Symbol("values")
-    r = L.Symbol("r")
-    lines = []
-    if data["reference_value_size"] != 1:
-        # Loop number of components.
-        for i in range(num_components):
-            coefficients = L.Symbol("coefficients%d" % i)
-            lines += [L.AssignAdd(values[i + physical_offset], coefficients[r]*basisvalues[r])]
-    else:
-        coefficients = L.Symbol("coefficients0")
-        lines = [L.AssignAdd(L.Dereference(values), coefficients[r]*basisvalues[r])]
-
-    # Get number of members of the expansion set and generate loop.
-    num_mem = dof_data["num_expansion_members"]
-    code += [L.ForRange(r, 0, num_mem, index_type=index_type, body=lines)]
-
-    code += _mapping_transform(L, data, dof_data, values, physical_offset)
-
-    return code
-
 def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J, detJ, K):
     # Select transformation to apply
     if mapping == "affine":
