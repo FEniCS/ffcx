@@ -21,14 +21,14 @@
 from ffc.log import error
 
 from ufl.corealg.multifunction import MultiFunction
-#from ufl.corealg.map_dag import map_expr_dag
 
 
-class UFL2CNodesMixin(object):
-    """Rules collection mixin for a UFL to CNodes translator class."""
+class UFL2CNodesTranslatorCpp(MultiFunction):
+    """UFL to CNodes translator class."""
     def __init__(self, language):
-        self.L = language
+        MultiFunction.__init__(self)
 
+        self.L = language
         self.force_floats = False
         self.enable_strength_reduction = False
 
@@ -43,9 +43,6 @@ class UFL2CNodesMixin(object):
     def zero(self, o):
         return self.L.LiteralFloat(0.0)
 
-    #def complex_value(self, o):
-    #    return self.L.ComplexValue(complex(o))
-
     def float_value(self, o):
         return self.L.LiteralFloat(float(o))
 
@@ -58,9 +55,6 @@ class UFL2CNodesMixin(object):
 
     def sum(self, o, a, b):
         return self.L.Add(a, b)
-
-    #def sub(self, o, a, b): # Not in UFL
-    #    return self.L.Sub(a, b)
 
     def product(self, o, a, b):
         return self.L.Mul(a, b)
@@ -106,21 +100,19 @@ class UFL2CNodesMixin(object):
     # === Formatting rules for cmath functions ===
 
     def math_function(self, o, op):
-        # Fallback for unhandled MathFunction subclass: attempting to just call it.
-        # TODO: Introduce a UserFunction to UFL to keep it separate from MathFunction?
+        # Fallback for unhandled MathFunction subclass:
+        # attempting to just call it.
         return self.L.Call(o._name, op)
+
+    def _cmath(self, name, op):
+        return self.L.Call("std::" + name, op)
 
     def sqrt(self, o, op):
         return self._cmath("sqrt", op)
 
-    #def cbrt(self, o, op):  # Not in UFL
-    #    return self._cmath("cbrt", op)
-
-    # cmath also has log10 etc
     def ln(self, o, op):
         return self._cmath("log", op)
 
-    # cmath also has exp2 etc
     def exp(self, o, op):
         return self._cmath("exp", op)
 
@@ -154,59 +146,23 @@ class UFL2CNodesMixin(object):
     def atan(self, o, op):
         return self._cmath("atan", op)
 
-    #def acosh(self, o, op):  # Not in UFL
-    #    return self._cmath("acosh", op)
-
-    #def asinh(self, o, op):  # Not in UFL
-    #    return self._cmath("asinh", op)
-
-    #def atanh(self, o, op):  # Not in UFL
-    #    return self._cmath("atanh", op)
-
     def erf(self, o, op):
         return self._cmath("erf", op)
 
-    #def erfc(self, o, op):  # Not in UFL
-    #    # C++11 stl has this function
-    #    return self._cmath("erfc", op)
-
-
-class RulesForC(object):
-    def _cmath(self, name, op):
-        return self.L.Call(name, op)
-
     def power(self, o, a, b):
-        return self.L.Call("pow", (a, b))
+        return self._cmath("pow", (a, b))
 
     def abs(self, o, op):
-        return self.L.Call("fabs", op)
+        return self._cmath("abs", op)
 
     def min_value(self, o, a, b):
-        return self.L.Call("fmin", (a, b))
+        return self.L._cmath("min", (a, b))
 
     def max_value(self, o, a, b):
-        return self.L.Call("fmax", (a, b))
-
-    # ignoring bessel functions
-
-
-class RulesForCpp(object):
-    def _cmath(self, name, op):
-        return self.L.Call("std::" + name, op)
-
-    def power(self, o, a, b):
-        return self.L.Call("std::pow", (a, b))
-
-    def abs(self, o, op):
-        return self.L.Call("std::abs", op)
-
-    def min_value(self, o, a, b):
-        return self.L.Call("std::min", (a, b))
-
-    def max_value(self, o, a, b):
-        return self.L.Call("std::max", (a, b))
+        return self.L._cmath("max", (a, b))
 
     # === Formatting rules for bessel functions ===
+    # Currently in boost; will be in C++17
 
     def _bessel(self, o, n, v, name):
         return self.L.Call("boost::math::" + name, (n, v))
@@ -222,17 +178,3 @@ class RulesForCpp(object):
 
     def bessel_y(self, o, n, v):
         return self._bessel(o, n, v, "cyl_neumann")
-
-
-class UFL2CNodesTranslatorC(MultiFunction, UFL2CNodesMixin, RulesForC):
-    """UFL to CNodes translator class."""
-    def __init__(self, language):
-        MultiFunction.__init__(self)
-        UFL2CNodesMixin.__init__(self, language)
-
-
-class UFL2CNodesTranslatorCpp(MultiFunction, UFL2CNodesMixin, RulesForCpp):
-    """UFL to CNodes translator class."""
-    def __init__(self, language):
-        MultiFunction.__init__(self)
-        UFL2CNodesMixin.__init__(self, language)
