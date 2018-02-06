@@ -84,13 +84,9 @@ class ufc_form(ufc_generator):
                 L.Throw("std::runtime_error", msg))
             ]
 
-            # Throwing a lot into the 'typename' string here but
-            # no plans for building a full C++ type system
-            typename = "static const std::vector<std::size_t>"
             position = L.Symbol("position")
-            initializer_list = L.VerbatimExpr("{" + ", ".join(str(i) for i in positions) + "}")
             code += [
-                L.VariableDecl(typename, position, value=initializer_list),
+                L.ArrayDecl("static const std::size_t", position, len(positions), positions),
                 L.Return(position[i]),
                 ]
             return code

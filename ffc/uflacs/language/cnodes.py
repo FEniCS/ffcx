@@ -317,9 +317,6 @@ class Null(CExprLiteral):
     precedence = PRECEDENCE.LITERAL
 
     def ce_format(self, precision=None):
-        # C or old C++ version
-        #return "NULL"
-        # C++11 version
         return "nullptr"
 
     def __eq__(self, other):
@@ -842,8 +839,6 @@ class ArrayAccess(CExprOperator):
 
     def __init__(self, array, indices):
         # Typecheck array argument
-        if isinstance(array, str):
-            array = Symbol(array)
         if isinstance(array, Symbol):
             self.array = array
         elif isinstance(array, ArrayDecl):
@@ -1415,14 +1410,6 @@ class ArrayDecl(CStatement):
 
         self.alignas = alignas
         self.padlen = padlen
-
-    def __getitem__(self, indices):
-        """Allow using array declaration object as the array when indexed.
-
-        A = ArrayDecl("int", "A", (2,3))
-        code = [A, Assign(A[0,0], 1.0)]
-        """
-        return ArrayAccess(self, indices)
 
     def cs_format(self, precision=None):
         # Pad innermost array dimension

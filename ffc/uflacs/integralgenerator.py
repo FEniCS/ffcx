@@ -182,12 +182,6 @@ class IntegralGenerator(object):
 
         parts = []
 
-        # TODO: Is this needed? Find a test case to check.
-        parts += [
-            #L.VerbatimStatement("_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);"),
-            #L.VerbatimStatement("std::fesetenv(FE_DFL_DISABLE_SSE_DENORMS_ENV);"),
-            ]
-
         # Generate the tables of quadrature points and weights
         parts += self.generate_quadrature_tables()
 
@@ -445,7 +439,7 @@ class IntegralGenerator(object):
 
 
             ### Preparations for quadrature rules
-            # 
+            #
             varying_ir = self.ir["varying_irs"][num_points]
 
             # Copy quadrature weights for this chunk
