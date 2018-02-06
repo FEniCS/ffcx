@@ -111,7 +111,6 @@ def float_product(factors):
 def MemZeroRange(name, begin, end):
     name = as_cexpr_or_string_symbol(name)
     return Call("std::fill", (name + begin, name + end, LiteralFloat(0.0)))
-    #return Call("std::fill", (AddressOf(name[begin]), AddressOf(name[end]), LiteralFloat(0.0)))
 
 
 def MemZero(name, size):
@@ -428,24 +427,6 @@ class Symbol(CExprTerminal):
         return isinstance(other, Symbol) and self.name == other.name
 
 
-class VerbatimExpr(CExprTerminal):
-    """A verbatim copy of an expression source string.
-
-    Handled as having the lowest precedence which will introduce parentheses around it most of the time."""
-    __slots__ = ("codestring",)
-    precedence = PRECEDENCE.LOWEST
-
-    def __init__(self, codestring):
-        assert isinstance(codestring, str)
-        self.codestring = codestring
-
-    def ce_format(self, precision=None):
-        return self.codestring
-
-    def __eq__(self, other):
-        return isinstance(other, VerbatimExpr) and self.codestring == other.codestring
-
-
 class New(CExpr):
     __slots__ = ("typename",)
     def __init__(self, typename):
@@ -552,11 +533,6 @@ class NaryOp(CExprOperator):
 
 
 ############## CExpr unary operators
-
-class Dereference(PrefixUnaryOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.DEREFERENCE
-    op = "*"
 
 class AddressOf(PrefixUnaryOp):
     __slots__ = ()
@@ -978,12 +954,6 @@ def as_cexpr(node):
 def as_cexpr_or_string_symbol(node):
     if isinstance(node, str):
         return Symbol(node)
-    return as_cexpr(node)
-
-
-def as_cexpr_or_verbatim(node):
-    if isinstance(node, str):
-        return VerbatimExpr(node)
     return as_cexpr(node)
 
 
@@ -1475,28 +1445,6 @@ class Scope(CStatement):
                     and self.body == other.body)
 
 
-class Namespace(CStatement):
-    __slots__ = ("name", "body")
-    is_scoped = True
-    def __init__(self, name, body):
-        assert isinstance(name, str)
-        self.name = name
-        self.body = as_cstatement(body)
-
-    def cs_format(self, precision=None):
-        return ("namespace " + self.name,
-                "{", Indented(self.body.cs_format(precision)), "}")
-
-    def __eq__(self, other):
-        return (isinstance(other, type(self))
-                    and self.name == other.name
-                    and self.body == other.body)
-
-
-def _is_scoped_statement(body):
-    return
-
-
 def _is_simple_if_body(body):
     if isinstance(body, StatementList):
         if len(body.statements) > 1:
@@ -1566,96 +1514,12 @@ class Else(CStatement):
                     and self.body == other.body)
 
 
-class While(CStatement):
-    __slots__ = ("condition", "body")
-    is_scoped = True
-    def __init__(self, condition, body):
-        self.condition = as_cexpr(condition)
-        self.body = as_cstatement(body)
-
-    def cs_format(self, precision=None):
-        return ("while (" + self.condition.ce_format(precision) + ")",
-                "{", Indented(self.body.cs_format(precision)), "}")
-
-    def __eq__(self, other):
-        return (isinstance(other, type(self))
-                    and self.condition == other.condition
-                    and self.body == other.body)
-
-
-class Do(CStatement):
-    __slots__ = ("condition", "body")
-    is_scoped = True
-    def __init__(self, condition, body):
-        self.condition = as_cexpr(condition)
-        self.body = as_cstatement(body)
-
-    def cs_format(self, precision=None):
-        return ("do", "{", Indented(self.body.cs_format(precision)),
-                "} while (" + self.condition.ce_format(precision) + ");")
-
-    def __eq__(self, other):
-        return (isinstance(other, type(self))
-                    and self.condition == other.condition
-                    and self.body == other.body)
-
-
-def as_pragma(pragma):
-    if isinstance(pragma, str):
-        return Pragma(pragma)
-    elif isinstance(pragma, Pragma):
-        return pragma
-    return None
-
-
 def is_simple_inner_loop(code):
-    if isinstance(code, (ForRange, For)) and code.pragma is None and is_simple_inner_loop(code.body):
+    if isinstance(code, ForRange) and code.pragma is None and is_simple_inner_loop(code.body):
         return True
     if isinstance(code, Statement) and isinstance(code.expr, AssignOp):
         return True
     return False
-
-
-class For(CStatement):
-    __slots__ = ("init", "check", "update", "body", "pragma")
-    is_scoped = True
-    def __init__(self, init, check, update, body, pragma=None):
-        self.init = as_cstatement(init)
-        self.check = as_cexpr_or_verbatim(check)
-        self.update = as_cexpr_or_verbatim(update)
-        self.body = as_cstatement(body)
-        self.pragma = as_pragma(pragma)
-
-    def cs_format(self, precision=None):
-        # The C model here is a bit crude and this causes trouble
-        # in the init statement/expression here:
-        init = self.init.cs_format(precision)
-        assert isinstance(init, str)
-        init = init.rstrip(" ;")
-
-        check = self.check.ce_format(precision)
-        update = self.update.ce_format(precision)
-
-        prelude = "for (" + init + "; " + check + "; " + update + ")"
-        body = Indented(self.body.cs_format(precision))
-
-        # Reduce size of code with lots of simple loops by dropping {} in obviously safe cases
-        if is_simple_inner_loop(self.body):
-            code = (prelude, body)
-        else:
-            code = (prelude, "{", body, "}")
-
-        # Add pragma prefix if requested
-        if self.pragma is not None:
-            code = (self.pragma.cs_format(),) + code
-
-        return code
-
-    def __eq__(self, other):
-        attributes = ("init", "check", "update", "body")
-        return (isinstance(other, type(self))
-                    and all(getattr(self, name) == getattr(self, name)
-                            for name in attributes))
 
 
 class Switch(CStatement):
@@ -1768,7 +1632,7 @@ def ForRanges(*ranges, **kwargs):
     return code
 
 
-############## Convertion function to statement nodes
+############## Conversion function to statement nodes
 
 def as_cstatement(node):
     "Perform type checking on node and wrap in a suitable statement type if necessary."
