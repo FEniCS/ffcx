@@ -283,14 +283,6 @@ namespace ufc
     /// Return a string identifying the dofmap
     virtual const char * signature() const = 0;
 
-    /// Return true iff mesh entities of topological dimension d are
-    /// needed
-    virtual bool needs_mesh_entities(std::size_t d) const = 0;
-
-    /// Return the dimension of the global finite element function space
-    virtual std::size_t global_dimension(const std::vector<std::size_t>&
-                                         num_global_mesh_entities) const = 0;
-
     /// Return the dimension of the local finite element function space
     /// Return the number of dofs with global support (i.e. global constants)
     virtual std::size_t num_global_support_dofs() const = 0;

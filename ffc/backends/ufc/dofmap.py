@@ -24,17 +24,6 @@ public:
 %(signature)s
   }
 
-  bool needs_mesh_entities(std::size_t d) const final override
-  {
-%(needs_mesh_entities)s
-  }
-
-  std::size_t global_dimension(const std::vector<std::size_t>&
-                               num_global_entities) const final override
-  {
-%(global_dimension)s
-  }
-
   std::size_t num_global_support_dofs() const final override
   {
 %(num_global_support_dofs)s
@@ -120,11 +109,6 @@ public:
 
   const char * signature() const final override;
 
-  bool needs_mesh_entities(std::size_t d) const final override;
-
-  std::size_t global_dimension(const std::vector<std::size_t>&
-                               num_global_entities) const final override;
-
   std::size_t num_global_support_dofs() const final override;
 
   std::size_t num_element_support_dofs() const final override;
@@ -173,17 +157,6 @@ dofmap_implementation = """
 const char * %(classname)s::signature() const
 {
 %(signature)s
-}
-
-bool %(classname)s::needs_mesh_entities(std::size_t d) const
-{
-%(needs_mesh_entities)s
-}
-
-std::size_t %(classname)s::global_dimension(const std::vector<std::size_t>&
-                                            num_global_entities) const
-{
-%(global_dimension)s
 }
 
 std::size_t %(classname)s::num_global_support_dofs() const

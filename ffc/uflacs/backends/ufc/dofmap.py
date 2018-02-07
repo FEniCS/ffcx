@@ -29,38 +29,6 @@ class ufc_dofmap(ufc_generator):
         ufc_generator.__init__(self, "dofmap")
 
 
-    def needs_mesh_entities(self, L, needs_mesh_entities):
-        "needs_mesh_entities is a list of num dofs per entity."
-        return generate_return_bool_switch(L, "d", needs_mesh_entities, False)
-
-
-    def global_dimension(self, L, ir):
-        # A list of num dofs per entity
-        num_entity_dofs, num_global_dofs = ir["global_dimension"]
-
-        # Input array
-        entities = L.Symbol("num_global_entities")
-
-        # Accumulate number of dofs per entity times given number of entities in mesh
-        entity_dofs = []
-        for dim, num in enumerate(num_entity_dofs):
-            if num == 1:
-                entity_dofs.append(entities[dim])
-            elif num > 1:
-                entity_dofs.append(num * entities[dim])
-
-        if entity_dofs:
-            dimension = L.Sum(entity_dofs)
-        else:
-            dimension = 0
-
-        # Add global dofs if any
-        if num_global_dofs:
-            dimension = dimension + num_global_dofs
-
-        return L.Return(dimension)
-
-
     def num_global_support_dofs(self, L, num_global_support_dofs):
         return L.Return(num_global_support_dofs)
 
