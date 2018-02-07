@@ -223,9 +223,6 @@ class IntegralGenerator(object):
         # Generate code to fill in A
         all_finalizeparts = []
 
-        # Generate code to set A = 0
-        #all_finalizeparts += self.generate_tensor_reset()
-
         # Generate code to compute piecewise constant scalar factors
         # and set A at corresponding nonzero components
         all_finalizeparts += self.generate_preintegrated_dofblock_partition()
@@ -334,19 +331,6 @@ class IntegralGenerator(object):
             "PI* dimensions: [entities][dofs][dofs] or [entities][dofs]",
             "PM* dimensions: [entities][dofs][dofs]",
             ])
-        return parts
-
-
-    def generate_tensor_reset(self):
-        "Generate statements for resetting the element tensor to zero."
-        L = self.backend.language
-        A = self.backend.symbols.element_tensor()
-        A_shape = self.ir["tensor_shape"]
-        A_size = product(A_shape)
-        parts = [
-            L.Comment("Reset element tensor"),
-            L.MemZero(A, A_size),
-            ]
         return parts
 
 
