@@ -61,10 +61,7 @@ def generate_dolfin_code(prefix, header, forms, common_function_space=False,
 
     # Add ifdefs/endifs if specified
     if add_guards:
-        guard_name = ("%s_h" % prefix).upper()
-        preguard = "#ifndef %s\n#define %s\n" % (guard_name, guard_name)
-        postguard = "\n#endif\n\n"
-        code = [preguard] + code + [postguard]
+        code = ["#pragma once\n\n"] + code
 
     # Return code
     return "\n".join(code)

@@ -50,17 +50,13 @@ format_template = { "ufc comment" : """\
 // contains DOLFIN-specific wrappers that depend on DOLFIN.
 """,
                     "header_h" : """\
-#ifndef __%(prefix_upper)s_H
-#define __%(prefix_upper)s_H
+#pragma once
 """,
 
                     "header_c" : """\
 #include "%(prefix)s.h"
 """,
 
-                    "footer" : """\
-#endif
-"""
                     }
 
 
@@ -117,7 +113,7 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
     code_c_pre = _generate_comment(parameters) + "\n"
 
     # Generate code for header
-    code_h_pre += format_template["header_h"] % {"prefix_upper": prefix.upper()}
+    code_h_pre += format_template["header_h"]
     code_c_pre += format_template["header_c"] % {"prefix": prefix}
 
     # Add includes
@@ -160,9 +156,6 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
     # Add wrappers
     if wrapper_code:
         code_h += wrapper_code
-
-    # Generate code for footer
-    code_h += format_template["footer"]
 
     # Add headers to body
     code_h = code_h_pre + code_h
