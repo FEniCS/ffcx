@@ -287,9 +287,6 @@ namespace ufc
     /// needed
     virtual bool needs_mesh_entities(std::size_t d) const = 0;
 
-    /// Return the topological dimension of the associated cell shape
-    virtual std::size_t topological_dimension() const = 0;
-
     /// Return the dimension of the global finite element function space
     virtual std::size_t global_dimension(const std::vector<std::size_t>&
                                          num_global_mesh_entities) const = 0;

@@ -29,11 +29,6 @@ public:
 %(needs_mesh_entities)s
   }
 
-  std::size_t topological_dimension() const final override
-  {
-%(topological_dimension)s
-  }
-
   std::size_t global_dimension(const std::vector<std::size_t>&
                                num_global_entities) const final override
   {
@@ -127,8 +122,6 @@ public:
 
   bool needs_mesh_entities(std::size_t d) const final override;
 
-  std::size_t topological_dimension() const final override;
-
   std::size_t global_dimension(const std::vector<std::size_t>&
                                num_global_entities) const final override;
 
@@ -185,11 +178,6 @@ const char * %(classname)s::signature() const
 bool %(classname)s::needs_mesh_entities(std::size_t d) const
 {
 %(needs_mesh_entities)s
-}
-
-std::size_t %(classname)s::topological_dimension() const
-{
-%(topological_dimension)s
 }
 
 std::size_t %(classname)s::global_dimension(const std::vector<std::size_t>&
