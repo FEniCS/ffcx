@@ -162,6 +162,7 @@ def generate_constructor(form, classname, space_tag, coefficient_tag=None):
     else:
         arguments = [argument]
         assignments = [assign]
+        f_spaces = "{}"
 
     # Add coefficients to argument/assignment lists if specified
     if coefficient_tag is not None:
