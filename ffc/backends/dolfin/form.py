@@ -158,6 +158,7 @@ def generate_constructor(form, classname, space_tag, coefficient_tag=None):
     if form.rank > 0:
         arguments = [argument % (name % i) for i in reversed(range(form.rank))]
         assignments = [assign % (i, name % i) for i in range(form.rank)]
+        f_spaces = "{" + ", ".join([name %i for i in range(form.rank)]) + "}"
     else:
         arguments = [argument]
         assignments = [assign]
@@ -188,8 +189,8 @@ def generate_constructor(form, classname, space_tag, coefficient_tag=None):
 
     # Wrap code into template
     args = {"classname": classname,
-            "rank": form.rank,
-            "num_coefficients": form.num_coefficients,
+            "ufc_form": "std::make_shared<const %s>()" % form.ufc_form_classname,
+            "spaces": f_spaces,
             "arguments": arguments,
             "initializers": initializers,
             "body": body,
@@ -230,7 +231,7 @@ public:
 form_constructor_template = """\
   // Constructor
   %(classname)s(%(arguments)s):
-    dolfin::%(superclass)s(%(rank)d, %(num_coefficients)d)%(initializers)s
+    dolfin::%(superclass)s(%(ufc_form)s, %(spaces)s)%(initializers)s
   {
 %(body)s
   }"""
