@@ -1,5 +1,5 @@
 =============================
-FFC: The FEniCS Form Compiler
+FFC-X: The FEniCS Form Compiler (experimental)
 =============================
 
 FFC-X
