@@ -2,6 +2,12 @@
 FFC: The FEniCS Form Compiler
 =============================
 
+FFC-X
+-----
+
+FFC-X is an experimental version of FEniCS FFC which is being actively developed, but is **not ready for production use**. Many new experimental features may come and go as development proceeds.
+
+
 FFC is a compiler for finite element variational forms. From a
 high-level description of the form, it generates efficient low-level
 C++ code that can be used to assemble the corresponding discrete
