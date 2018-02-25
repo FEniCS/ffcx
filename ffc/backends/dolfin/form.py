@@ -155,14 +155,15 @@ def generate_constructor(form, classname, space_tag, coefficient_tag=None):
 
     # Construct list of arguments and function space assignments
     name = "V%d"
+
     if form.rank > 0:
         arguments = [argument % (name % i) for i in reversed(range(form.rank))]
-        assignments = [assign % (i, name % i) for i in range(form.rank)]
-        f_spaces = "{" + ", ".join([name %i for i in range(form.rank)]) + "}"
     else:
         arguments = [argument]
-        assignments = [assign]
-        f_spaces = "{}"
+
+    f_spaces = "{" + ", ".join([name %i for i in range(form.rank)]) + "}"
+
+    assignments = []
 
     # Add coefficients to argument/assignment lists if specified
     if coefficient_tag is not None:
@@ -171,13 +172,6 @@ def generate_constructor(form, classname, space_tag, coefficient_tag=None):
         if form.rank > 0:  # FIXME: To match old generated code only
             assignments += [""]
         assignments += [assign % (name, name) for name in form.coefficient_names]
-
-    # Add assignment of _ufc_form variable
-    line = "\n    _ufc_form = std::make_shared<const %s>();"
-    # FIXME: To match old generated code only
-    if form.rank == 0 and coefficient_tag is None:
-        line = "    _ufc_form = std::make_shared<const %s>();"
-    assignments += [line % form.ufc_form_classname]
 
     # Construct list for initialization of Coefficient references
     initializers = ["%s(*this, %d)" % (name, number)
