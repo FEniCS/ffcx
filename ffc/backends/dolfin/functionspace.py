@@ -93,7 +93,7 @@ public:
   }
 
   // Constructor for constrained function space
-  %(classname)s(std::shared_ptr<const dolfin::Mesh> mesh, std::shared_ptr<const dolfin::SubDomain> constrained_domain):
+  %(classname)s(std::shared_ptr<const dolfin::Mesh> mesh, std::shared_ptr<const dolfin::mesh::SubDomain> constrained_domain):
     dolfin::FunctionSpace(mesh,
                           std::make_shared<const dolfin::FiniteElement>(std::make_shared<%(ufc_finite_element_classname)s>()),
                           std::make_shared<const dolfin::DofMap>(std::make_shared<%(ufc_dofmap_classname)s>(), *mesh, constrained_domain))
