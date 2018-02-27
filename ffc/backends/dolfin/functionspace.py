@@ -86,8 +86,8 @@ public:
   // Constructor for standard function space
   %(classname)s(std::shared_ptr<const dolfin::Mesh> mesh):
     dolfin::FunctionSpace(mesh,
-                          std::make_shared<const dolfin::FiniteElement>(std::make_shared<%(ufc_finite_element_classname)s>()),
-                          std::make_shared<const dolfin::DofMap>(std::make_shared<%(ufc_dofmap_classname)s>(), *mesh))
+                          std::make_shared<const dolfin::fem::FiniteElement>(std::make_shared<%(ufc_finite_element_classname)s>()),
+                          std::make_shared<const dolfin::fem::DofMap>(std::make_shared<%(ufc_dofmap_classname)s>(), *mesh))
   {
     // Do nothing
   }
@@ -95,8 +95,8 @@ public:
   // Constructor for constrained function space
   %(classname)s(std::shared_ptr<const dolfin::Mesh> mesh, std::shared_ptr<const dolfin::mesh::SubDomain> constrained_domain):
     dolfin::FunctionSpace(mesh,
-                          std::make_shared<const dolfin::FiniteElement>(std::make_shared<%(ufc_finite_element_classname)s>()),
-                          std::make_shared<const dolfin::DofMap>(std::make_shared<%(ufc_dofmap_classname)s>(), *mesh, constrained_domain))
+                          std::make_shared<const dolfin::fem::FiniteElement>(std::make_shared<%(ufc_finite_element_classname)s>()),
+                          std::make_shared<const dolfin::fem::DofMap>(std::make_shared<%(ufc_dofmap_classname)s>(), *mesh, constrained_domain))
   {
     // Do nothing
   }
