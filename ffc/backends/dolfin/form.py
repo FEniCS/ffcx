@@ -123,7 +123,7 @@ dolfin::dolfin_error("generated code for class %s",
 
 
 def generate_form_constructors(form, classname):
-    """Generate the dolfin::Form constructors for different
+    """Generate the dolfin::fem::Form constructors for different
     combinations of references/shared pointers etc."""
 
     # FIXME: This can be simplied now that we don't create reference version
@@ -196,7 +196,7 @@ def generate_constructor(form, classname, space_tag, coefficient_tag=None):
 
 
 form_class_template = """\
-class %(classname)s: public dolfin::%(superclass)s
+class %(classname)s: public dolfin::fem::%(superclass)s
 {
 public:
 
@@ -226,7 +226,7 @@ public:
 form_constructor_template = """\
   // Constructor
   %(classname)s(%(arguments)s):
-    dolfin::%(superclass)s(%(ufc_form)s, %(spaces)s)%(initializers)s
+    dolfin::fem::%(superclass)s(%(ufc_form)s, %(spaces)s)%(initializers)s
   {
 %(body)s
   }"""
