@@ -27,7 +27,7 @@ snippets = {"shared_ptr_space":
             ("std::shared_ptr<const dolfin::function::FunctionSpace> %s",
              "    _function_spaces[%d] = %s;"),
             "shared_ptr_mesh":
-            ("std::shared_ptr<const dolfin::Mesh> mesh",
+            ("std::shared_ptr<const dolfin::mesh::Mesh> mesh",
              "    _mesh = mesh;"),
             "shared_ptr_coefficient":
             ("std::shared_ptr<const dolfin::function::GenericFunction> %s",
