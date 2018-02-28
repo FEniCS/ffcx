@@ -72,7 +72,7 @@ def generate_form_class(form, classname):
     typedefs = ["  // Typedefs", generate_typedefs(form, classname), ""]
 
     # Member variables for coefficients
-    members = ["  dolfin::CoefficientAssigner %s;" % coefficient
+    members = ["  dolfin::function::CoefficientAssigner %s;" % coefficient
                for coefficient in form.coefficient_names]
 
     # Group typedefs and members together for inserting into template

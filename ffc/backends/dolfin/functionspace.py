@@ -79,13 +79,13 @@ def generate_typedefs(form, classname):
 
 
 function_space_template = """\
-class %(classname)s: public dolfin::FunctionSpace
+class %(classname)s: public dolfin::function::FunctionSpace
 {
 public:
 
   // Constructor for standard function space
   %(classname)s(std::shared_ptr<const dolfin::Mesh> mesh):
-    dolfin::FunctionSpace(mesh,
+    dolfin::function::FunctionSpace(mesh,
                           std::make_shared<const dolfin::fem::FiniteElement>(std::make_shared<%(ufc_finite_element_classname)s>()),
                           std::make_shared<const dolfin::fem::DofMap>(std::make_shared<%(ufc_dofmap_classname)s>(), *mesh))
   {
@@ -94,7 +94,7 @@ public:
 
   // Constructor for constrained function space
   %(classname)s(std::shared_ptr<const dolfin::Mesh> mesh, std::shared_ptr<const dolfin::mesh::SubDomain> constrained_domain):
-    dolfin::FunctionSpace(mesh,
+    dolfin::function::FunctionSpace(mesh,
                           std::make_shared<const dolfin::fem::FiniteElement>(std::make_shared<%(ufc_finite_element_classname)s>()),
                           std::make_shared<const dolfin::fem::DofMap>(std::make_shared<%(ufc_dofmap_classname)s>(), *mesh, constrained_domain))
   {
