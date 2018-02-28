@@ -95,7 +95,7 @@ def generate_coefficient_map_data(form):
     # Write error if no coefficients
     if form.num_coefficients == 0:
         message = '''\
-dolfin::dolfin_error("generated code for class %s",
+dolfin::log::dolfin_error("generated code for class %s",
                          "access coefficient data",
                          "There are no coefficients");''' % form.superclassname
         num = "\n    %s\n    return 0;" % message
@@ -113,7 +113,7 @@ dolfin::dolfin_error("generated code for class %s",
 
     # Create final return
     message = '''\
-dolfin::dolfin_error("generated code for class %s",
+dolfin::log::dolfin_error("generated code for class %s",
                          "access coefficient data",
                          "Invalid coefficient");''' % form.superclassname
     num += "\n    %s\n    return 0;" % message
