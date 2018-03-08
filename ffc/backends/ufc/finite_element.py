@@ -166,16 +166,6 @@ public:
 %(map_dofs)s
   }
 
-  void interpolate_vertex_values(double * vertex_values,
-                                 const double * dof_values,
-                                 const double * coordinate_dofs,
-                                 int cell_orientation,
-                                 const ufc::coordinate_mapping * cm=nullptr
-                                 ) const final override
-  {
-%(interpolate_vertex_values)s
-  }
-
   void tabulate_dof_coordinates(double * dof_coordinates,
                                 const double * coordinate_dofs,
                                 const ufc::coordinate_mapping * cm=nullptr
@@ -299,13 +289,6 @@ public:
                 int cell_orientation,
                 const ufc::coordinate_mapping * cm=nullptr
                 ) const final override;
-
-  void interpolate_vertex_values(double * vertex_values,
-                                 const double * dof_values,
-                                 const double * coordinate_dofs,
-                                 int cell_orientation,
-                                 const ufc::coordinate_mapping * cm=nullptr
-                                 ) const final override;
 
   void tabulate_dof_coordinates(double * dof_coordinates,
                                 const double * coordinate_dofs,
@@ -479,16 +462,6 @@ void %(classname)s::map_dofs(double * values,
                              ) const
 {
 %(map_dofs)s
-}
-
-void %(classname)s::interpolate_vertex_values(double * vertex_values,
-                                              const double * dof_values,
-                                              const double * coordinate_dofs,
-                                              int cell_orientation,
-                                              const ufc::coordinate_mapping * cm
-                                              ) const
-{
-%(interpolate_vertex_values)s
 }
 
 void %(classname)s::tabulate_dof_coordinates(double * dof_coordinates,

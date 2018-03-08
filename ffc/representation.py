@@ -221,8 +221,6 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, parameters, ji
 
     ir["evaluate_basis"] = _evaluate_basis(ufl_element, fiat_element, parameters["epsilon"])
     ir["evaluate_dof"] = _evaluate_dof(ufl_element, fiat_element)
-    ir["interpolate_vertex_values"] = _interpolate_vertex_values(ufl_element,
-                                                                 fiat_element)
     ir["tabulate_dof_coordinates"] = _tabulate_dof_coordinates(ufl_element,
                                                                fiat_element)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
@@ -866,68 +864,6 @@ def _tabulate_entity_closure_dofs(element, cell):
     num_entity_closure_dofs = [len(fiat_entity_closure_dofs[d0][0]) for d0 in sorted(fiat_entity_closure_dofs.keys())]
 
     return entity_closure_dofs, num_entity_closure_dofs
-
-
-def _interpolate_vertex_values(ufl_element, fiat_element):
-    "Compute intermediate representation of interpolate_vertex_values."
-
-    # Check for QuadratureElement
-    for e in all_elements(fiat_element):
-        if isinstance(e, QuadratureElement):
-            return "Function is not supported/implemented for QuadratureElement."
-        if isinstance(e, HDivTrace):
-            return "Function is not implemented for HDivTrace."
-
-    cell = ufl_element.cell()
-    cellname = cell.cellname()
-    tdim = cell.topological_dimension()
-    gdim = cell.geometric_dimension()
-
-    ir = {}
-    ir["geometric_dimension"] = gdim
-    ir["topological_dimension"] = tdim
-
-    # Check whether computing the Jacobian is necessary
-    mappings = fiat_element.mapping()
-    ir["needs_jacobian"] = any("piola" in m for m in mappings)
-    ir["needs_oriented"] = needs_oriented_jacobian(fiat_element)
-
-    # See note in _evaluate_dofs
-    ir["reference_value_size"] = ufl_element.reference_value_size()
-    ir["physical_value_size"] = ufl_element.value_size()
-
-    # Get vertices of reference cell
-    fiat_cell = reference_cell(cellname)
-    vertices = fiat_cell.get_vertices()
-
-    # Compute data for each constituent element
-    all_fiat_elm = all_elements(fiat_element)
-    ir["element_data"] = [
-        {
-            # NB! value_shape of fiat element e means reference_value_shape
-           "reference_value_size": product(e.value_shape()),
-
-           # FIXME: THIS IS A BUG:
-           "physical_value_size": product(e.value_shape()),  # FIXME: Get from corresponding ufl element?
-
-           "basis_values": e.tabulate(0, vertices)[(0,) * tdim].transpose(),
-           "mapping": e.mapping()[0],
-           "space_dim": e.space_dimension(),
-        }
-        for e in all_fiat_elm]
-
-    # FIXME: Temporary hack!
-    if len(ir["element_data"]) == 1:
-        ir["element_data"][0]["physical_value_size"] = ir["physical_value_size"]
-
-    # Consistency check, related to note in _evaluate_dofs
-    # This will fail for e.g. (RT1 x DG0) on a manifold because of the above bug
-    if sum(data["physical_value_size"] for data in ir["element_data"]) != ir["physical_value_size"]:
-        ir = "Failed to set physical value size correctly for subelements."
-    elif sum(data["reference_value_size"] for data in ir["element_data"]) != ir["reference_value_size"]:
-        ir = "Failed to set reference value size correctly for subelements."
-
-    return ir
 
 
 def _has_foo_integrals(prefix, form_id, integral_type, form_data):
