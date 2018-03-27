@@ -199,42 +199,6 @@ namespace ufc
                                                        const double * K,
                                                        int cell_orientation) const = 0;
 
-    /// Evaluate basis function i at given point x in cell
-    virtual void evaluate_basis(std::size_t i,
-                                double * values,
-                                const double * x,
-                                const double * coordinate_dofs,
-                                int cell_orientation,
-                                const ufc::coordinate_mapping * cm=nullptr
-                                ) const = 0;
-
-    /// Evaluate all basis functions at given point x in cell
-    virtual void evaluate_basis_all(double * values,
-                                    const double * x,
-                                    const double * coordinate_dofs,
-                                    int cell_orientation,
-                                    const ufc::coordinate_mapping * cm=nullptr
-                                    ) const = 0;
-
-    /// Evaluate order n derivatives of basis function i at given point x in cell
-    virtual void evaluate_basis_derivatives(std::size_t i,
-                                            std::size_t n,
-                                            double * values,
-                                            const double * x,
-                                            const double * coordinate_dofs,
-                                            int cell_orientation,
-                                            const ufc::coordinate_mapping * cm=nullptr
-                                            ) const = 0;
-
-    /// Evaluate order n derivatives of all basis functions at given point x in cell
-    virtual void evaluate_basis_derivatives_all(std::size_t n,
-                                                double * values,
-                                                const double * x,
-                                                const double * coordinate_dofs,
-                                                int cell_orientation,
-                                                const ufc::coordinate_mapping * cm=nullptr
-                                                ) const = 0;
-
     /// Map dofs from vals to values
     virtual void map_dofs(double * values,
                           const double *vals,

@@ -112,56 +112,6 @@ public:
 %(transform_reference_basis_derivatives)s
   }
 
-  void evaluate_basis(std::size_t i,
-                      double * values,
-                      const double * x,
-                      const double * coordinate_dofs,
-                      int cell_orientation,
-                      const ufc::coordinate_mapping * cm=nullptr
-                      ) const final override
-  {
-%(evaluate_basis)s
-  }
-
-  void evaluate_basis_all(double * values,
-                          const double * x,
-                          const double * coordinate_dofs,
-                          int cell_orientation,
-                          const ufc::coordinate_mapping * cm=nullptr
-                          ) const final override
-  {
-%(evaluate_basis_all)s
-  }
-
-  void evaluate_basis_derivatives(std::size_t i,
-                                  std::size_t n,
-                                  double * values,
-                                  const double * x,
-                                  const double * coordinate_dofs,
-                                  int cell_orientation,
-                                  const ufc::coordinate_mapping * cm=nullptr
-                                  ) const final override
-  {
-%(evaluate_basis_derivatives)s
-  }
-
-  void evaluate_basis_derivatives_all(std::size_t n,
-                                      double * values,
-                                      const double * x,
-                                      const double * coordinate_dofs,
-                                      int cell_orientation,
-                                      const ufc::coordinate_mapping * cm=nullptr
-                                      ) const final override
-  {
-%(evaluate_basis_derivatives_all)s
-  }
-
-  void map_dofs(double * values,
-                const double *vals,
-                const double * coordinate_dofs,
-                int cell_orientation,
-                const ufc::coordinate_mapping * cm=nullptr
-                ) const final override
   {
 %(map_dofs)s
   }
@@ -250,38 +200,6 @@ public:
                                              const double * detJ,
                                              const double * K,
                                              int cell_orientation) const final override;
-
-  void evaluate_basis(std::size_t i,
-                      double * values,
-                      const double * x,
-                      const double * coordinate_dofs,
-                      int cell_orientation,
-                      const ufc::coordinate_mapping * cm=nullptr
-                      ) const final override;
-
-  void evaluate_basis_all(double * values,
-                          const double * x,
-                          const double * coordinate_dofs,
-                          int cell_orientation,
-                          const ufc::coordinate_mapping * cm=nullptr
-                          ) const final override;
-
-  void evaluate_basis_derivatives(std::size_t i,
-                                  std::size_t n,
-                                  double * values,
-                                  const double * x,
-                                  const double * coordinate_dofs,
-                                  int cell_orientation,
-                                  const ufc::coordinate_mapping * cm=nullptr
-                                  ) const final override;
-
-  void evaluate_basis_derivatives_all(std::size_t n,
-                                      double * values,
-                                      const double * x,
-                                      const double * coordinate_dofs,
-                                      int cell_orientation,
-                                      const ufc::coordinate_mapping * cm=nullptr
-                                      ) const final override;
 
   void map_dofs(double * values,
                 const double *vals,
@@ -408,50 +326,6 @@ void %(classname)s::transform_reference_basis_derivatives(double * values,
                                                           int cell_orientation) const
 {
 %(transform_reference_basis_derivatives)s
-}
-
-void %(classname)s::evaluate_basis(std::size_t i,
-                                   double * values,
-                                   const double * x,
-                                   const double * coordinate_dofs,
-                                   int cell_orientation,
-                                   const ufc::coordinate_mapping * cm
-                                   ) const
-{
-%(evaluate_basis)s
-}
-
-void %(classname)s::evaluate_basis_all(double * values,
-                                       const double * x,
-                                       const double * coordinate_dofs,
-                                       int cell_orientation,
-                                       const ufc::coordinate_mapping * cm
-                                       ) const
-{
-%(evaluate_basis_all)s
-}
-
-void %(classname)s::evaluate_basis_derivatives(std::size_t i,
-                                               std::size_t n,
-                                               double * values,
-                                               const double * x,
-                                               const double * coordinate_dofs,
-                                               int cell_orientation,
-                                               const ufc::coordinate_mapping * cm
-                                               ) const
-{
-%(evaluate_basis_derivatives)s
-}
-
-void %(classname)s::evaluate_basis_derivatives_all(std::size_t n,
-                                                   double * values,
-                                                   const double * x,
-                                                   const double * coordinate_dofs,
-                                                   int cell_orientation,
-                                                   const ufc::coordinate_mapping * cm
-                                                   ) const
-{
-%(evaluate_basis_derivatives_all)s
 }
 
 void %(classname)s::map_dofs(double * values,
