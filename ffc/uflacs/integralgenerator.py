@@ -17,6 +17,7 @@ from ffc.uflacs.language.cnodes import pad_dim, pad_innermost_dim
 from ufl import product
 from ufl.classes import Condition
 from ufl.measure import custom_integral_types, point_integral_types
+from ufl.utils.indexflattening import shape_to_strides
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,13 @@ class IntegralGenerator(object):
         # Set of counters used for assigning names to intermediate variables
         # TODO: Should this be part of the backend symbols? Doesn't really matter now.
         self.symbol_counters = defaultdict(int)
+
+        # Whether pre-integration tables should be inlined - or added as static arrays
+        self._inline_tables = None
+        # Whether to unroll the tabulate_tensor assignments
+        self._unroll_tables = None
+        # The maximum size of any preintegration table in order to perform unrolling
+        self.max_unroll_table_size = 1024
 
     def get_includes(self):
         """Return list of include statements needed to support generated code."""
@@ -289,7 +297,6 @@ class IntegralGenerator(object):
 
         tables = self.ir["unique_tables"]
         table_types = self.ir["unique_table_types"]
-        inline_tables = self.ir["integral_type"] == "cell"
 
         alignas = self.ir["params"]["alignas"]
         padlen = self.ir["params"]["padlen"]
@@ -301,6 +308,17 @@ class IntegralGenerator(object):
             # Define all tables
             table_names = sorted(tables)
 
+        # Check whether it is ok to unroll all assignments involving the tables
+        self._inline_tables = self.ir["integral_type"] == "cell"
+        self._unroll_tables = True
+        for name in table_names:
+            table = tables[name]
+
+            if table.size > self.max_unroll_table_size:
+                self._inline_tables = False
+                self._unroll_tables = False
+                break
+
         for name in table_names:
             table = tables[name]
 
@@ -311,7 +329,7 @@ class IntegralGenerator(object):
                 p = padlen
 
             # Skip tables that are inlined in code generation
-            if inline_tables and name[:2] == "PI":
+            if self._inline_tables and name[:2] == "PI":
                 continue
 
             decl = L.ArrayDecl(
@@ -936,24 +954,22 @@ class IntegralGenerator(object):
                   for blockdata in contributions if blockdata.block_mode == "preintegrated"]
 
         # Get symbol, dimensions, and loop index symbols for A
+        A = self.backend.symbols.element_tensor()
         A_shape = self.ir["tensor_shape"]
         A_size = product(A_shape)
-        A_rank = len(A_shape)
+        A_strides = shape_to_strides(A_shape)
 
-        # TODO: there's something like shape2strides(A_shape) somewhere
-        A_strides = [1] * A_rank
-        for i in reversed(range(0, A_rank - 1)):
-            A_strides[i] = A_strides[i + 1] * A_shape[i + 1]
-
+        # List for unrolled assignments
         A_values = [0.0] * A_size
+        # List of statements when not unrolling
+        parts = []
 
-        for blockmap, blockdata in blocks:
+        for block_id, (blockmap, blockdata) in enumerate(blocks):
             # Accumulate A[blockmap[...]] += f*PI[...]
 
             # Get table for inlining
             tables = self.ir["unique_tables"]
             table = tables[blockdata.name]
-            inline_table = self.ir["integral_type"] == "cell"
 
             # Get factor expression
             v = self.ir["piecewise_ir"]["V"][blockdata.factor_index]
@@ -964,14 +980,16 @@ class IntegralGenerator(object):
             PI = L.Symbol(blockdata.name)
             # block_rank = len(blockmap)
 
-            # # Override dof index with quadrature loop index for arguments with
-            # # quadrature element, to index B like B[iq*num_dofs + iq]
-            # arg_indices = tuple(
-            #     self.backend.symbols.argument_loop_index(i) for i in range(block_rank))
+            # Indices used to index A
+            A_index_symbols = tuple(self.backend.symbols.argument_loop_index(i)
+                                for i in range(block_rank))
+            # Indices used to index PI
+            P_index_symbols = tuple(self.backend.symbols.argument_loop_index(i)
+                                for i in range(block_rank, 2*block_rank))
 
             # Define indices into preintegrated block
             P_entity_indices = self.get_entities(blockdata)
-            if inline_table:
+            if self._inline_tables:
                 assert P_entity_indices == (L.LiteralInt(0), )
                 assert table.shape[0] == 1
 
@@ -979,27 +997,95 @@ class IntegralGenerator(object):
             blockshape = [len(DM) for DM in blockmap]
             blockrange = [range(d) for d in blockshape]
 
-            for ii in itertools.product(*blockrange):
-                A_ii = sum(A_strides[i] * blockmap[i][ii[i]] for i in range(len(ii)))
+            if self._unroll_tables:
+                # Generate unrolled assignments for the current block
+
+                for ii in itertools.product(*blockrange):
+                    A_ii = sum(A_strides[i] * blockmap[i][ii[i]]
+                               for i in range(len(ii)))
+                    if blockdata.transposed:
+                        P_arg_indices = (ii[1], ii[0])
+                    else:
+                        P_arg_indices = ii
+
+                    if self._inline_tables:
+                        # Extract float value of PI[P_ii]
+                        Pval = table[0]  # always entity 0
+                        for i in P_arg_indices:
+                            Pval = Pval[i]
+                        A_rhs = Pval * f
+                    else:
+                        # Index the static preintegrated table:
+                        P_ii = P_entity_indices + P_arg_indices
+                        A_rhs = f * PI[P_ii]
+
+                    A_values[A_ii] = A_values[A_ii] + A_rhs
+            else:
+                # Don't unroll, generate assignment loops
+                # TODO: Allow mixed unrolled/non unrolled assignments?
+
+                # Make sure that we can use PI as static array
+                assert not self._inline_tables
+
+                # Accumulate index expression 'A_idx' used as 'A[A_idx]' in the loop, e.g. A_idx = i*3 + j
+                A_idx = sum(A_strides[i] * index_symbol for i, index_symbol in enumerate(A_index_symbols))
+
+                # Get the index tuple used to index the pre-integrated table
+                P_arg_indices = P_index_symbols
+                # Transpose the PI indices, if block is transposed
                 if blockdata.transposed:
-                    P_arg_indices = (ii[1], ii[0])
-                else:
-                    P_arg_indices = ii
+                    P_arg_indices = tuple(reversed(P_arg_indices))
 
-                if inline_table:
-                    # Extract float value of PI[P_ii]
-                    Pval = table[0]  # always entity 0
-                    for i in P_arg_indices:
-                        Pval = Pval[i]
-                    A_rhs = Pval * f
-                else:
-                    # Index the static preintegrated table:
-                    P_ii = P_entity_indices + P_arg_indices
-                    A_rhs = f * PI[P_ii]
+                # Initialize the central assignment statement
+                P_ii = P_entity_indices + P_arg_indices
+                A_rhs = f * PI[P_ii]
+                loop_code = L.AssignAdd(A[A_idx], A_rhs)
 
-                A_values[A_ii] = A_values[A_ii] + A_rhs
+                # Construct nested loops, starting with inner-most dimension
+                for sub_blockmap, A_arg_index, P_arg_index in zip(reversed(blockmap), reversed(A_index_symbols),
+                                                                  reversed(P_index_symbols)):
+                    # Append increment of PI index to inner code
+                    loop_code = [loop_code, L.PreIncrement(P_arg_index)]
 
-        return self.generate_tensor_value_initialization(A_values)
+                    # Check whether the current bock map is a contiguous range
+                    if (sub_blockmap[-1] - sub_blockmap[0] + 1) == len(sub_blockmap):
+                        # We have contiguous indices in the blockmap, a single loop is enough
+                        loop_code = [L.ForRange(A_arg_index, sub_blockmap[0], sub_blockmap[-1] + 1, loop_code)]
+                    else:
+                        # Split blockmap into contiguous sub-ranges -> multiple loops
+
+                        loop_block = []
+                        # The groupby statement yields these contiguous sub-ranges
+                        for k, group in itertools.groupby(enumerate(sub_blockmap), key=lambda x: x[0] - x[1]):
+                            contiguous_range = list(group)
+                            loop_interval = contiguous_range[0][1], contiguous_range[-1][1] + 1
+
+                            # Check whether we really need a loop
+                            if loop_interval[1] - loop_interval[0] > 1:
+                                loop_block += [L.ForRange(A_arg_index, loop_interval[0], loop_interval[1], loop_code)]
+                            else:
+                                # TODO: Remove scope by explicitly replacing Symbol A_arg_index with Literal loop_interval[0] in all subexpression
+                                loop_block += [L.Scope([
+                                    L.VariableDecl("int", A_arg_index, loop_interval[0]),
+                                    loop_code]
+                                )]
+                        loop_code = loop_block
+
+                    # Reset the currently inner-most PI table index
+                    loop_code += [L.Assign(P_arg_index, 0)]
+
+                # Define the P index variables before the loop code
+                loop_code = [L.VariableDecl("int", P_arg_index, 0) for P_arg_index in P_arg_indices] + loop_code
+                # Add a comment and scope to keep index variables enclosed
+                parts += [L.Scope(loop_code)]
+
+        if self._unroll_tables:
+            parts = self.generate_tensor_value_initialization(A_values)
+        else:
+            # If we have assignment loops, zero all entries of A first
+            parts = [L.MemZero(A, A_size)] + parts
+
+        return parts
 
     def generate_tensor_value_initialization(self, A_values):
         parts = []
