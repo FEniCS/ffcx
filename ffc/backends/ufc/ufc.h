@@ -39,37 +39,6 @@ namespace ufc
   /// Valid cell shapes
   enum class shape {interval, triangle, quadrilateral, tetrahedron, hexahedron, vertex};
 
-  /// This class defines the data structure for a cell in a mesh.
-  class cell
-  {
-  public:
-
-    /// Shape of the cell
-    shape cell_shape;
-
-    /// Topological dimension of the mesh
-    std::size_t topological_dimension;
-
-    /// Geometric dimension of the mesh
-    std::size_t geometric_dimension;
-
-    /// Array of global indices for the mesh entities of the cell
-    std::vector<std::vector<std::size_t> > entity_indices;
-
-    /// Cell index (short-cut for entity_indices[topological_dimension][0])
-    std::size_t index;
-
-    /// Local facet index
-    int local_facet;
-
-    /// Cell orientation
-    int orientation;
-
-    /// Unique mesh identifier
-    int mesh_identifier;
-
-  };
-
   /// Forward declaration
   class coordinate_mapping;
 
