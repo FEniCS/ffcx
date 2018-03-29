@@ -112,6 +112,12 @@ public:
 %(transform_reference_basis_derivatives)s
   }
 
+  void map_dofs(double * values,
+                const double *vals,
+                const double * coordinate_dofs,
+                int cell_orientation,
+                const ufc::coordinate_mapping * cm=nullptr
+                ) const final override
   {
 %(map_dofs)s
   }
