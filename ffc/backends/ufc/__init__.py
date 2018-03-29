@@ -7,7 +7,6 @@ Five format strings are defined for each of the following UFC classes:
     exterior_facet_integral
     interior_facet_integral
     custom_integral
-    function
 
     finite_element
     dofmap
@@ -48,7 +47,6 @@ __license__ = "This code is released into the public domain"
 import os
 from hashlib import sha1
 
-from ffc.backends.ufc.function import *
 from ffc.backends.ufc.finite_element import *
 from ffc.backends.ufc.dofmap import *
 from ffc.backends.ufc.coordinate_mapping import *
@@ -102,7 +100,7 @@ def all_ufc_classnames():
     integral_names = ["cell", "exterior_facet", "interior_facet", "vertex", "custom"]
     integral_classnames = [integral_name + "_integral" for integral_name in integral_names]
     jitable_classnames = ["finite_element", "dofmap", "coordinate_mapping", "form"]
-    classnames = ["function"] + jitable_classnames + integral_classnames
+    classnames = jitable_classnames + integral_classnames
     return classnames
 
 

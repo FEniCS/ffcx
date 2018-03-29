@@ -226,6 +226,7 @@ class ufc_coordinate_mapping(ufc_generator):
             # (stateless, so placing this on the stack is basically free)
             L.VariableDecl(scalar_coordinate_element_classname, "xelement"),
             L.ArrayDecl("double", phi_sym, (one_point*num_dofs,)),
+            L.MemZero(x.array, num_points * gdim),
             L.ForRange(ip, 0, num_points, index_type=index_type, body=[
                 L.Comment("Compute basis values of coordinate element"),
                 L.Call("xelement.evaluate_reference_basis", (phi_sym, 1, L.AddressOf(X[ip, 0]))),
@@ -288,6 +289,8 @@ class ufc_coordinate_mapping(ufc_generator):
         # Input cell data
         coordinate_dofs = L.FlattenedArray(L.Symbol("coordinate_dofs"), dims=(num_dofs, gdim))
         cell_orientation = L.Symbol("cell_orientation")
+
+        init_input = [L.MemZero(X.array, num_points * tdim)]
 
         if output_all:
             decls = []
@@ -375,7 +378,7 @@ class ufc_coordinate_mapping(ufc_generator):
             ]
 
         # Stitch it together
-        code = table_decls + decls + compute_x0 + compute_J0 + compute_K0 + compute_X
+        code = init_input + table_decls + decls + compute_x0 + compute_J0 + compute_K0 + compute_X
         return code
 
     def _compute_reference_coordinates_newton(self, L, ir, output_all=False):
@@ -626,6 +629,7 @@ class ufc_coordinate_mapping(ufc_generator):
         code = [
             L.VariableDecl(scalar_coordinate_element_classname, "xelement"),
             L.ArrayDecl("double", dphi_sym, (one_point*num_dofs*tdim,)),
+            L.MemZero(J.array, num_points * gdim * tdim),
             L.ForRange(ip, 0, num_points, index_type=index_type, body=[
                 L.Comment("Compute basis derivatives of coordinate element"),
                 L.Call("xelement.evaluate_reference_basis_derivatives",
@@ -699,6 +703,7 @@ class ufc_coordinate_mapping(ufc_generator):
         # Carry out for all points
         return L.ForRange(ip, 0, num_points, index_type=index_type, body=body)
 
+
     def compute_geometry(self, L, ir):
         # Output geometry
         x = L.Symbol("x")
@@ -727,6 +732,7 @@ class ufc_coordinate_mapping(ufc_generator):
             L.Call("compute_jacobian_inverses", (K, num_points, J, detJ)),
             ]
         return code
+
 
     def compute_midpoint_geometry(self, L, ir):
         # Dimensions
@@ -786,13 +792,18 @@ class ufc_coordinate_mapping(ufc_generator):
         j = L.Symbol("j")
         d = L.Symbol("d")
 
+        # Initialise arrays to zero
+        init_array = [L.MemZero(Jf.array, gdim*tdim),]
+
         xm_code = [
             L.Comment("Compute x"),
-            L.ForRanges(
-                (i, 0, gdim),
-                (d, 0, num_dofs),
+            L.ForRange(i, 0, gdim,
                 index_type=index_type,
-                body=L.AssignAdd(x[i], coordinate_dofs[d, i]*phi_Xm[d])
+                body=[
+                    L.Assign(x[i], 0.0),
+                    L.ForRange(d, 0, num_dofs,
+                    index_type=index_type,
+                    body=L.AssignAdd(x[i], coordinate_dofs[d, i]*phi_Xm[d]))]
             ),
         ]
 
@@ -808,5 +819,5 @@ class ufc_coordinate_mapping(ufc_generator):
         ]
 
         # Reuse functions for detJ and K
-        code = table_decls + xm_code + Jm_code
+        code = table_decls + init_array + xm_code + Jm_code
         return code
