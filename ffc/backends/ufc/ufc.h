@@ -83,7 +83,8 @@ namespace ufc
     /// Return the number of components of the reference value space
     virtual std::size_t reference_value_size() const = 0;
 
-    /// Return the maximum polynomial degree of the finite element function space
+    /// Return the maximum polynomial degree of the finite element
+    /// function space
     virtual std::size_t degree() const = 0;
 
     /// Return the family of the finite element function space
@@ -176,12 +177,6 @@ namespace ufc
                           const ufc::coordinate_mapping * cm=nullptr
                           ) const = 0;
 
-    /// Tabulate the coordinates of all dofs on a cell
-    virtual void tabulate_dof_coordinates(double * dof_coordinates,
-                                          const double * coordinate_dofs,
-                                          const ufc::coordinate_mapping * cm=nullptr
-                                          ) const = 0;
-
     /// Tabulate the coordinates of all dofs on a reference cell
     virtual void tabulate_reference_dof_coordinates(double * reference_dof_coordinates) const = 0;
 
@@ -196,8 +191,8 @@ namespace ufc
 
   };
 
-  /// This class defines the interface for a local-to-global mapping of
-  /// degrees of freedom (dofs).
+  /// This class defines the interface for a local-to-global mapping
+  /// of degrees of freedom (dofs).
   class dofmap
   {
   public:

@@ -158,7 +158,6 @@ class ufc_finite_element(ufc_generator):
         i = L.Symbol("i")
         k = L.Symbol("k")
         ip = L.Symbol("ip")
-
         # Basis symbol
         phi = L.Symbol("phi")
 
