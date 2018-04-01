@@ -122,14 +122,6 @@ public:
 %(map_dofs)s
   }
 
-  void tabulate_dof_coordinates(double * dof_coordinates,
-                                const double * coordinate_dofs,
-                                const ufc::coordinate_mapping * cm=nullptr
-                                ) const final override
-  {
-%(tabulate_dof_coordinates)s
-  }
-
   void tabulate_reference_dof_coordinates(double * reference_dof_coordinates) const final override
   {
 %(tabulate_reference_dof_coordinates)s
@@ -213,11 +205,6 @@ public:
                 int cell_orientation,
                 const ufc::coordinate_mapping * cm=nullptr
                 ) const final override;
-
-  void tabulate_dof_coordinates(double * dof_coordinates,
-                                const double * coordinate_dofs,
-                                const ufc::coordinate_mapping * cm=nullptr
-                                ) const final override;
 
   void tabulate_reference_dof_coordinates(double * reference_dof_coordinates) const final override;
 
@@ -342,14 +329,6 @@ void %(classname)s::map_dofs(double * values,
                              ) const
 {
 %(map_dofs)s
-}
-
-void %(classname)s::tabulate_dof_coordinates(double * dof_coordinates,
-                                             const double * coordinate_dofs,
-                                             const ufc::coordinate_mapping * cm
-                                             ) const
-{
-%(tabulate_dof_coordinates)s
 }
 
 void %(classname)s::tabulate_reference_dof_coordinates(double * reference_dof_coordinates) const

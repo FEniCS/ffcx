@@ -130,69 +130,6 @@ class ufc_finite_element(ufc_generator):
         """Generate code for map_dofs()"""
         return generate_map_dofs(L, ir["evaluate_dof"])
 
-
-    def tabulate_dof_coordinates(self, L, ir, parameters):
-        ir = ir["tabulate_dof_coordinates"]
-
-        # Raise error if tabulate_dof_coordinates is ill-defined
-        if not ir:
-            msg = "tabulate_dof_coordinates is not defined for this element"
-            return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
-
-        # Extract coordinates and cell dimension
-        gdim = ir["gdim"]
-        tdim = ir["tdim"]
-        points = ir["points"]
-
-        # Extract cellshape
-        cell_shape = ir["cell_shape"]
-
-        # Output argument
-        dof_coordinates = L.FlattenedArray(L.Symbol("dof_coordinates"),
-                                           dims=(len(points), gdim))
-
-        # Input argument
-        coordinate_dofs = L.Symbol("coordinate_dofs")
-
-        # Loop indices
-        i = L.Symbol("i")
-        k = L.Symbol("k")
-        ip = L.Symbol("ip")
-        # Basis symbol
-        phi = L.Symbol("phi")
-
-        # TODO: Get rid of all places that use reference_to_physical_map, it is restricted to a basis of degree 1
-        # Create code for evaluating coordinate mapping
-        num_scalar_xdofs = _num_vertices(cell_shape)
-        cg1_basis = reference_to_physical_map(cell_shape)
-        phi_values = numpy.asarray([phi_comp for X in points for phi_comp in cg1_basis(X)])
-        assert len(phi_values) == len(points) * num_scalar_xdofs
-
-        # TODO: Use precision parameter here
-        phi_values = clamp_table_small_numbers(phi_values)
-
-        code = [
-            L.Assign(
-                dof_coordinates[ip][i],
-                sum(phi_values[ip*num_scalar_xdofs + k] * coordinate_dofs[gdim*k + i]
-                    for k in range(num_scalar_xdofs))
-            )
-            for ip in range(len(points))
-            for i in range(gdim)
-        ]
-
-        # FIXME: This code assumes an affine coordinate field.
-        #        To get around that limitation, make this function take another argument
-        #            const ufc::coordinate_mapping * cm
-        #        and generate code like this:
-        """
-        index_type X[tdim*num_dofs];
-        tabulate_dof_coordinates(X);
-        cm->compute_physical_coordinates(x, X, coordinate_dofs);
-        """
-
-        return code
-
     def tabulate_reference_dof_coordinates(self, L, ir, parameters):
         # TODO: Change signature to avoid copy? E.g.
         # virtual const std::vector<double> & tabulate_reference_dof_coordinates() const = 0;
