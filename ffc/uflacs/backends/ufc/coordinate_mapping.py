@@ -26,7 +26,7 @@ from ffc.uflacs.backends.ufc.utils import generate_return_new
 index_type = "int64_t"
 
 
-### Code generation utilities:
+# Code generation utilities:
 
 def generate_compute_ATA(L, ATA, A, m, n, index_prefix=""):
     "Generate code to declare and compute ATA[i,j] = sum_k A[k,i]*A[k,j] with given A shaped (m,n)."
@@ -48,18 +48,22 @@ def generate_compute_ATA(L, ATA, A, m, n, index_prefix=""):
     ]
     return L.StatementList(code)
 
+
 def cross_expr(a, b):
     def cr(i, j):
         return a[i]*b[j] - a[j]*b[i]
     return [cr(1, 2), cr(2, 0), cr(0, 1)]
 
+
 def generate_cross_decl(c, a, b):
     return L.ArrayDecl("double", c, values=cross_expr(a, b))
 
-### Inline math expressions:
+# Inline math expressions:
+
 
 def det_22(B, i, j, k, l):
     return B[i, k]*B[j, l] - B[i, l]*B[j, k]
+
 
 def codet_nn(A, rows, cols):
     n = len(rows)
@@ -74,6 +78,7 @@ def codet_nn(A, rows, cols):
             parts.append(A[r, c] * codet_nn(A, subrows, subcols))
         return sum(parts[1:], parts[0])
 
+
 def det_nn(A, n):
     if n == 1:
         return A[0, 0]
@@ -81,16 +86,19 @@ def det_nn(A, n):
         ns = list(range(n))
         return codet_nn(A, ns, ns)
 
+
 def pdet_m1(L, A, m):
     # Special inlined case 1xm for simpler expression
-    A2 = A[0,0]*A[0,0]
+    A2 = A[0, 0]*A[0, 0]
     for i in range(1, m):
-        A2 = A2 + A[i,0]*A[i,0]
+        A2 = A2 + A[i, 0]*A[i, 0]
     return L.Sqrt(A2)
 
+
 def adj_expr_2x2(A):
-    return [[ A[1, 1], -A[0, 1]],
+    return [[A[1, 1], -A[0, 1]],
             [-A[1, 0],  A[0, 0]]]
+
 
 def adj_expr_3x3(A):
     return [[A[2, 2]*A[1, 1] - A[1, 2]*A[2, 1],
@@ -103,6 +111,7 @@ def adj_expr_3x3(A):
              A[0, 1]*A[2, 0] - A[0, 0]*A[2, 1],
              A[0, 0]*A[1, 1] - A[0, 1]*A[1, 0]]]
 
+
 def generate_assign_inverse(L, K, J, detJ, gdim, tdim):
     if gdim == tdim:
         if gdim == 1:
@@ -113,14 +122,14 @@ def generate_assign_inverse(L, K, J, detJ, gdim, tdim):
             adj_values = adj_expr_3x3(J)
         else:
             error("Not implemented.")
-        return L.StatementList([L.Assign(K[j,i], adj_values[j][i] / detJ)
+        return L.StatementList([L.Assign(K[j, i], adj_values[j][i] / detJ)
                                 for j in range(tdim) for i in range(gdim)])
     else:
         if tdim == 1:
             # Simpler special case for embedded 1d
-            prods = [J[i,0]*J[i,0] for i in range(gdim)]
+            prods = [J[i, 0]*J[i, 0] for i in range(gdim)]
             s = sum(prods[1:], prods[0])
-            return L.StatementList([L.Assign(K[0,i], J[i,0] / s)
+            return L.StatementList([L.Assign(K[0, i], J[i, 0] / s)
                                     for i in range(gdim)])
         else:
             # Generic formulation of Penrose-Moore pseudo-inverse of J: (J.T*J)^-1 * J.T
@@ -159,12 +168,13 @@ def generate_assign_inverse(L, K, J, detJ, gdim, tdim):
                     index_type=index_type,
                     body=L.AssignAdd(K[k, i], JTJinvf[k, j] * J[i, j])
                 ),
-                ]
+            ]
             return L.StatementList(code)
 
 
 class ufc_coordinate_mapping(ufc_generator):
     "Each function maps to a keyword in the template. See documentation of ufc_generator."
+
     def __init__(self):
         ufc_generator.__init__(self, "coordinate_mapping")
 
@@ -202,7 +212,8 @@ class ufc_coordinate_mapping(ufc_generator):
         d = L.Symbol("d")
 
         # Input cell data
-        coordinate_dofs = L.FlattenedArray(L.Symbol("coordinate_dofs"), dims=(num_dofs, gdim))
+        coordinate_dofs = L.FlattenedArray(
+            L.Symbol("coordinate_dofs"), dims=(num_dofs, gdim))
 
         # Output geometry
         x = L.FlattenedArray(L.Symbol("x"), dims=(num_points, gdim))
@@ -226,10 +237,13 @@ class ufc_coordinate_mapping(ufc_generator):
             # (stateless, so placing this on the stack is basically free)
             L.VariableDecl(scalar_coordinate_element_classname, "xelement"),
             L.ArrayDecl("double", phi_sym, (one_point*num_dofs,)),
-            L.MemZero(x.array, num_points * gdim),
+            L.ForRange(i, 0, num_points * gdim,
+                       index_type=index_type,
+                       body=L.Assign(x.array[i], 0.0)),
             L.ForRange(ip, 0, num_points, index_type=index_type, body=[
                 L.Comment("Compute basis values of coordinate element"),
-                L.Call("xelement.evaluate_reference_basis", (phi_sym, 1, L.AddressOf(X[ip, 0]))),
+                L.Call("xelement.evaluate_reference_basis",
+                       (phi_sym, 1, L.AddressOf(X[ip, 0]))),
                 L.Comment("Compute x"),
                 L.ForRanges(
                     (i, 0, gdim),
@@ -271,10 +285,11 @@ class ufc_coordinate_mapping(ufc_generator):
         num_dofs = ir["num_scalar_coordinate_element_dofs"]
 
         # Loop indices
-        ip = L.Symbol("ip") # point
+        ip = L.Symbol("ip")  # point
         i = L.Symbol("i")   # gdim
         j = L.Symbol("j")   # tdim
         k = L.Symbol("k")   # sum iteration
+        l = L.Symbol("l")   # zero X array
 
         # Output geometry
         X = L.FlattenedArray(L.Symbol("X"), dims=(num_points, tdim))
@@ -287,10 +302,13 @@ class ufc_coordinate_mapping(ufc_generator):
         x = L.FlattenedArray(L.Symbol("x"), dims=(num_points, gdim))
 
         # Input cell data
-        coordinate_dofs = L.FlattenedArray(L.Symbol("coordinate_dofs"), dims=(num_dofs, gdim))
+        coordinate_dofs = L.FlattenedArray(
+            L.Symbol("coordinate_dofs"), dims=(num_dofs, gdim))
         cell_orientation = L.Symbol("cell_orientation")
 
-        init_input = [L.MemZero(X.array, num_points * tdim)]
+        init_input = [L.ForRange(l, 0, num_points * tdim,
+                                 index_type=index_type,
+                                 body=L.Assign(X.array[l], 0.0))]
 
         if output_all:
             decls = []
@@ -324,9 +342,11 @@ class ufc_coordinate_mapping(ufc_generator):
 
         # Table declarations
         table_decls = [
-            L.ArrayDecl("const double", phi_X0, sizes=x_table.shape, values=x_table),
-            L.ArrayDecl("const double", dphi_X0, sizes=J_table.shape, values=J_table),
-            ]
+            L.ArrayDecl("const double", phi_X0,
+                        sizes=x_table.shape, values=x_table),
+            L.ArrayDecl("const double", dphi_X0,
+                        sizes=J_table.shape, values=J_table),
+        ]
 
         # Compute x0 = x(X=0) (optimized by precomputing basis at X=0)
         x0 = L.Symbol("x0")
@@ -353,18 +373,18 @@ class ufc_coordinate_mapping(ufc_generator):
                 index_type=index_type,
                 body=[
                     L.Assign(J[i, j], 0.0),
-                    L.ForRange(k, 0, num_dofs, index_type=index_type, body=
-                        L.AssignAdd(J[i, j], coordinate_dofs[k, i] * dphi_X0[j, k])
-                    )
+                    L.ForRange(k, 0, num_dofs, index_type=index_type, body=L.AssignAdd(J[i, j], coordinate_dofs[k, i] * dphi_X0[j, k])
+                               )
                 ]
             ),
-            ]
+        ]
 
         # Compute K = inv(J) (and intermediate value det(J))
         compute_K0 = [
-            L.Call("compute_jacobian_determinants", (detJsym, 1, Jsym, cell_orientation)),
+            L.Call("compute_jacobian_determinants",
+                   (detJsym, 1, Jsym, cell_orientation)),
             L.Call("compute_jacobian_inverses", (Ksym, 1, Jsym, detJsym)),
-            ]
+        ]
 
         # Compute X = K0*(x-x0) for each physical point x
         compute_X = [
@@ -375,10 +395,11 @@ class ufc_coordinate_mapping(ufc_generator):
                 index_type=index_type,
                 body=L.AssignAdd(X[ip, j], K[j, i]*(x[ip, i] - x0[i]))
             )
-            ]
+        ]
 
         # Stitch it together
-        code = init_input + table_decls + decls + compute_x0 + compute_J0 + compute_K0 + compute_X
+        code = init_input + table_decls + decls + \
+            compute_x0 + compute_J0 + compute_K0 + compute_X
         return code
 
     def _compute_reference_coordinates_newton(self, L, ir, output_all=False):
@@ -429,7 +450,7 @@ class ufc_coordinate_mapping(ufc_generator):
         one_point = 1
 
         # Loop indices
-        ip = L.Symbol("ip") # point
+        ip = L.Symbol("ip")  # point
         i = L.Symbol("i")   # gdim
         j = L.Symbol("j")   # tdim
         k = L.Symbol("k")   # iteration
@@ -494,15 +515,16 @@ class ufc_coordinate_mapping(ufc_generator):
         Kf = L.FlattenedArray(K, dims=(tdim, gdim))
 
         decls = [
-            L.Comment("Declare intermediate arrays to hold results of compute_geometry call"),
+            L.Comment(
+                "Declare intermediate arrays to hold results of compute_geometry call"),
             L.ArrayDecl("double", xk, (gdim,), 0.0),
-            ]
+        ]
         if not output_all:
             decls += [
                 L.ArrayDecl("double", J, (gdim*tdim,), 0.0),
                 L.ArrayDecl("double", detJ, (1,)),
                 L.ArrayDecl("double", K, (tdim*gdim,), 0.0),
-                ]
+            ]
 
         # By computing x and K at the cell midpoint once,
         # we can optimize the first iteration for each target point
@@ -513,7 +535,8 @@ class ufc_coordinate_mapping(ufc_generator):
             L.ArrayDecl("double", xm, (gdim,), 0.0),
             L.ArrayDecl("double", Km, (tdim*gdim,)),
             L.Call("compute_midpoint_geometry", (xm, J, coordinate_dofs)),
-            L.Call("compute_jacobian_determinants", (detJ, one_point, J, cell_orientation)),
+            L.Call("compute_jacobian_determinants",
+                   (detJ, one_point, J, cell_orientation)),
             L.Call("compute_jacobian_inverses", (Km, one_point, J, detJ)),
         ]
 
@@ -521,20 +544,25 @@ class ufc_coordinate_mapping(ufc_generator):
         # declare Xk = initial value
         newton_init = [
             L.Comment("Declare xgoal to hold the current x coordinate value"),
-            L.ArrayDecl("const double", xgoal, (gdim,), values=[x[ip][iv] for iv in range(gdim)]),
-            L.Comment("Declare Xk iterate with initial value equal to reference cell midpoint"),
-            L.ArrayDecl("double", Xk, (tdim,), values=[Xm[c] for c in range(tdim)]),
+            L.ArrayDecl("const double", xgoal, (gdim,), values=[
+                        x[ip][iv] for iv in range(gdim)]),
+            L.Comment(
+                "Declare Xk iterate with initial value equal to reference cell midpoint"),
+            L.ArrayDecl("double", Xk, (tdim,), values=[
+                        Xm[c] for c in range(tdim)]),
             L.ForRanges(
                 (j, 0, tdim),
                 (i, 0, gdim),
                 index_type=index_type,
-                body=L.AssignAdd(Xk[j], Kf[j,i] * (xgoal[i] - xm[i]))
+                body=L.AssignAdd(Xk[j], Kf[j, i] * (xgoal[i] - xm[i]))
             )
         ]
 
         part1 = [
-            L.Comment("Compute K = J^-1 for one point, (J and detJ are only used as"),
-            L.Comment("intermediate storage inside compute_geometry, not used out here"),
+            L.Comment(
+                "Compute K = J^-1 for one point, (J and detJ are only used as"),
+            L.Comment(
+                "intermediate storage inside compute_geometry, not used out here"),
             L.Call("compute_geometry",
                    (xk, J, detJ, K, one_point,
                     Xk, coordinate_dofs, cell_orientation)),
@@ -550,20 +578,21 @@ class ufc_coordinate_mapping(ufc_generator):
                 (j, 0, tdim),
                 (i, 0, gdim),
                 index_type=index_type,
-                body=L.AssignAdd(dX[j], Kf[j,i]*(xgoal[i] - xk[i]))
+                body=L.AssignAdd(dX[j], Kf[j, i]*(xgoal[i] - xk[i]))
             ),
 
             L.Comment("Compute |dX|^2"),
             L.VariableDecl("double", dX2, value=0.0),
             L.ForRange(j, 0, tdim, index_type=index_type,
-                body=L.AssignAdd(dX2, dX[j]*dX[j])),
+                       body=L.AssignAdd(dX2, dX[j]*dX[j])),
 
-            L.Comment("Break if converged (before X += dX such that X,J,detJ,K are consistent)"),
+            L.Comment(
+                "Break if converged (before X += dX such that X,J,detJ,K are consistent)"),
             L.If(L.LT(dX2, epsilon), L.Break()),
 
             L.Comment("Update Xk += dX"),
             L.ForRange(j, 0, tdim, index_type=index_type,
-                body=L.AssignAdd(Xk[j], dX[j])),
+                       body=L.AssignAdd(Xk[j], dX[j])),
         ]
 
         # Use this instead to have a fixed iteration number
@@ -573,7 +602,7 @@ class ufc_coordinate_mapping(ufc_generator):
                 (j, 0, tdim),
                 (i, 0, gdim),
                 index_type=index_type,
-                body=L.AssignAdd(Xk[j], Kf[j,i]*(xgoal[i] - xk[i]))
+                body=L.AssignAdd(Xk[j], Kf[j, i]*(xgoal[i] - xk[i]))
             ),
         ]
 
@@ -583,10 +612,10 @@ class ufc_coordinate_mapping(ufc_generator):
                 newton_init,
                 # Loop until convergence
                 L.ForRange(k, 0, max_iter, index_type=index_type,
-                    body=newton_body),
+                           body=newton_body),
                 # Copy X[ip] = Xk
                 L.ForRange(j, 0, tdim, index_type=index_type,
-                    body=L.Assign(X[ip][j], Xk[j])),
+                           body=L.Assign(X[ip][j], Xk[j])),
             ])
         ]
 
@@ -608,8 +637,11 @@ class ufc_coordinate_mapping(ufc_generator):
         j = L.Symbol("j")
         d = L.Symbol("d")
 
+        l = L.Symbol("l")  # Array zeroing index
+
         # Input cell data
-        coordinate_dofs = L.FlattenedArray(L.Symbol("coordinate_dofs"), dims=(num_dofs, gdim))
+        coordinate_dofs = L.FlattenedArray(
+            L.Symbol("coordinate_dofs"), dims=(num_dofs, gdim))
 
         # Output geometry
         J = L.FlattenedArray(L.Symbol("J"), dims=(num_points, gdim, tdim))
@@ -629,7 +661,9 @@ class ufc_coordinate_mapping(ufc_generator):
         code = [
             L.VariableDecl(scalar_coordinate_element_classname, "xelement"),
             L.ArrayDecl("double", dphi_sym, (one_point*num_dofs*tdim,)),
-            L.MemZero(J.array, num_points * gdim * tdim),
+            L.ForRange(l, 0, num_points * gdim * tdim,
+                       index_type=index_type,
+                       body=L.Assign(J.array[l], 0.0)),
             L.ForRange(ip, 0, num_points, index_type=index_type, body=[
                 L.Comment("Compute basis derivatives of coordinate element"),
                 L.Call("xelement.evaluate_reference_basis_derivatives",
@@ -640,7 +674,8 @@ class ufc_coordinate_mapping(ufc_generator):
                     (j, 0, tdim),
                     (d, 0, num_dofs),
                     index_type=index_type,
-                    body=L.AssignAdd(J[ip, i, j], coordinate_dofs[d, i]*dphi[d, j])
+                    body=L.AssignAdd(
+                        J[ip, i, j], coordinate_dofs[d, i]*dphi[d, j])
                 )
             ])
         ]
@@ -661,21 +696,22 @@ class ufc_coordinate_mapping(ufc_generator):
         # Input geometry
         J = L.FlattenedArray(L.Symbol("J"), dims=(num_points, gdim, tdim))
         cell_orientation = L.Symbol("cell_orientation")
-        orientation_scaling = L.Conditional(L.EQ(cell_orientation, 1), -1.0, +1.0)
+        orientation_scaling = L.Conditional(
+            L.EQ(cell_orientation, 1), -1.0, +1.0)
 
         # Assign det expression to detJ
         if gdim == tdim:
             body = L.Assign(detJ, det_nn(J[ip], gdim))
         elif tdim == 1:
             body = L.Assign(detJ, orientation_scaling*pdet_m1(L, J[ip], gdim))
-        #elif tdim == 2 and gdim == 3:
+        # elif tdim == 2 and gdim == 3:
         #    body = L.Assign(detJ, orientation_scaling*pdet_32(L, J[ip])) # Possible optimization not implemented here
         else:
             JTJ = L.Symbol("JTJ")
             body = [
                 generate_compute_ATA(L, JTJ, J[ip], gdim, tdim),
                 L.Assign(detJ, orientation_scaling*L.Sqrt(det_nn(JTJ, tdim))),
-                ]
+            ]
 
         # Carry out for all points
         code = L.ForRange(ip, 0, num_points, index_type=index_type, body=body)
@@ -703,7 +739,6 @@ class ufc_coordinate_mapping(ufc_generator):
         # Carry out for all points
         return L.ForRange(ip, 0, num_points, index_type=index_type, body=body)
 
-
     def compute_geometry(self, L, ir):
         # Output geometry
         x = L.Symbol("x")
@@ -722,17 +757,19 @@ class ufc_coordinate_mapping(ufc_generator):
         cell_orientation = L.Symbol("cell_orientation")
 
         # All arguments
-        args = (x, J, detJ, K, num_points, X, coordinate_dofs, cell_orientation)
+        args = (x, J, detJ, K, num_points, X,
+                coordinate_dofs, cell_orientation)
 
         # Just chain calls to other functions here
         code = [
-            L.Call("compute_physical_coordinates", (x, num_points, X, coordinate_dofs)),
+            L.Call("compute_physical_coordinates",
+                   (x, num_points, X, coordinate_dofs)),
             L.Call("compute_jacobians", (J, num_points, X, coordinate_dofs)),
-            L.Call("compute_jacobian_determinants", (detJ, num_points, J, cell_orientation)),
+            L.Call("compute_jacobian_determinants",
+                   (detJ, num_points, J, cell_orientation)),
             L.Call("compute_jacobian_inverses", (K, num_points, J, detJ)),
-            ]
+        ]
         return code
-
 
     def compute_midpoint_geometry(self, L, ir):
         # Dimensions
@@ -763,9 +800,11 @@ class ufc_coordinate_mapping(ufc_generator):
 
         # Table declarations
         table_decls = [
-            L.ArrayDecl("const double", phi_Xm, sizes=xm_table.shape, values=xm_table),
-            L.ArrayDecl("const double", dphi_Xm, sizes=Jm_table.shape, values=Jm_table),
-            ]
+            L.ArrayDecl("const double", phi_Xm,
+                        sizes=xm_table.shape, values=xm_table),
+            L.ArrayDecl("const double", dphi_Xm,
+                        sizes=Jm_table.shape, values=Jm_table),
+        ]
 
         # Symbol for ufc_geometry cell midpoint definition
         cellname = ir["cell_shape"]
@@ -785,26 +824,30 @@ class ufc_coordinate_mapping(ufc_generator):
 
         # Input cell data
         coordinate_dofs = L.Symbol("coordinate_dofs")
-        coordinate_dofs = L.FlattenedArray(coordinate_dofs, dims=(num_dofs, gdim))
+        coordinate_dofs = L.FlattenedArray(
+            coordinate_dofs, dims=(num_dofs, gdim))
         Jf = L.FlattenedArray(J, dims=(gdim, tdim))
 
         i = L.Symbol("i")
         j = L.Symbol("j")
         d = L.Symbol("d")
+        l = L.Symbol("l")  # Index for zeroing arrays
 
         # Initialise arrays to zero
-        init_array = [L.MemZero(Jf.array, gdim*tdim),]
+        init_array = [L.ForRange(l, 0, gdim * tdim,
+                                 index_type=index_type,
+                                 body=L.Assign(Jf.array[l], 0.0))]
 
         xm_code = [
             L.Comment("Compute x"),
             L.ForRange(i, 0, gdim,
-                index_type=index_type,
-                body=[
-                    L.Assign(x[i], 0.0),
-                    L.ForRange(d, 0, num_dofs,
-                    index_type=index_type,
-                    body=L.AssignAdd(x[i], coordinate_dofs[d, i]*phi_Xm[d]))]
-            ),
+                       index_type=index_type,
+                       body=[
+                           L.Assign(x[i], 0.0),
+                           L.ForRange(d, 0, num_dofs,
+                                      index_type=index_type,
+                                      body=L.AssignAdd(x[i], coordinate_dofs[d, i]*phi_Xm[d]))]
+                       ),
         ]
 
         Jm_code = [

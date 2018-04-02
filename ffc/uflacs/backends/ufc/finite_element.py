@@ -40,6 +40,7 @@ from ffc.uflacs.backends.ufc.jacobian import jacobian, inverse_jacobian, orienta
 
 index_type = "int64_t"
 
+
 def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J, detJ, K):
     # Select transformation to apply
     if mapping == "affine":
@@ -64,7 +65,8 @@ def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J
         i0 = i // tdim  # i in the line above
         i1 = i % tdim   # l ...
         M_scale = 1.0
-        M_row = [K[jj,i0]*K[kk,i1] for jj in range(tdim) for kk in range(tdim)]
+        M_row = [K[jj, i0]*K[kk, i1]
+                 for jj in range(tdim) for kk in range(tdim)]
     elif mapping == "double contravariant piola":
         assert num_reference_components == tdim**2
         num_physical_components = gdim**2
@@ -72,7 +74,8 @@ def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J
         i0 = i // tdim  # i in the line above
         i1 = i % tdim   # l ...
         M_scale = 1.0 / (detJ*detJ)
-        M_row = [J[i0,jj]*J[i1,kk] for jj in range(tdim) for kk in range(tdim)]
+        M_row = [J[i0, jj]*J[i1, kk]
+                 for jj in range(tdim) for kk in range(tdim)]
     else:
         error("Unknown mapping: %s" % mapping)
     return M_scale, M_row, num_physical_components
@@ -80,6 +83,7 @@ def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J
 
 class ufc_finite_element(ufc_generator):
     "Each function maps to a keyword in the template. See documentation of ufc_generator."
+
     def __init__(self):
         ufc_generator.__init__(self, "finite_element")
 
@@ -201,7 +205,8 @@ class ufc_finite_element(ufc_generator):
 
         # Input arguments
         order = L.Symbol("order")
-        num_points = L.Symbol("num_points")  # FIXME: Currently assuming 1 point?
+        # FIXME: Currently assuming 1 point?
+        num_points = L.Symbol("num_points")
         reference_values = L.Symbol("reference_values")
         J = L.Symbol("J")
         detJ = L.Symbol("detJ")
@@ -211,7 +216,7 @@ class ufc_finite_element(ufc_generator):
         transform = L.Symbol("transform")
 
         # Indices, I've tried to use these for a consistent purpose
-        ip = L.Symbol("ip") # point
+        ip = L.Symbol("ip")  # point
         i = L.Symbol("i")   # physical component
         j = L.Symbol("j")   # reference component
         k = L.Symbol("k")   # order
@@ -219,10 +224,13 @@ class ufc_finite_element(ufc_generator):
         s = L.Symbol("s")   # reference derivative number
         d = L.Symbol("d")   # dof
 
+        l = L.Symbol("d")   # zeroing arrays
+
         combinations_code = []
         if max_degree == 0:
             # Don't need combinations
-            num_derivatives_t = 1  # TODO: I think this is the right thing to do to make this still work for order=0?
+            # TODO: I think this is the right thing to do to make this still work for order=0?
+            num_derivatives_t = 1
             num_derivatives_g = 1
         elif tdim == gdim:
             num_derivatives_t = L.Symbol("num_derivatives")
@@ -233,7 +241,8 @@ class ufc_finite_element(ufc_generator):
             ]
 
             # Add array declarations of combinations
-            combinations_code_t, combinations_t = _generate_combinations(L, tdim, max_degree, order, num_derivatives_t)
+            combinations_code_t, combinations_t = _generate_combinations(
+                L, tdim, max_degree, order, num_derivatives_t)
             combinations_code += combinations_code_t
             combinations_g = combinations_t
         else:
@@ -246,8 +255,10 @@ class ufc_finite_element(ufc_generator):
                                L.Call("pow", (gdim, order))),
             ]
             # Add array declarations of combinations
-            combinations_code_t, combinations_t = _generate_combinations(L, tdim, max_degree, order, num_derivatives_t, suffix="_t")
-            combinations_code_g, combinations_g = _generate_combinations(L, gdim, max_degree, order, num_derivatives_g, suffix="_g")
+            combinations_code_t, combinations_t = _generate_combinations(
+                L, tdim, max_degree, order, num_derivatives_t, suffix="_t")
+            combinations_code_g, combinations_g = _generate_combinations(
+                L, gdim, max_degree, order, num_derivatives_g, suffix="_g")
             combinations_code += combinations_code_t
             combinations_code += combinations_code_g
 
@@ -257,9 +268,9 @@ class ufc_finite_element(ufc_generator):
         K = L.FlattenedArray(K, dims=(num_points, tdim, gdim))
 
         values = L.FlattenedArray(values_symbol,
-            dims=(num_points, num_dofs, num_derivatives_g, physical_value_size))
+                                  dims=(num_points, num_dofs, num_derivatives_g, physical_value_size))
         reference_values = L.FlattenedArray(reference_values,
-            dims=(num_points, num_dofs, num_derivatives_t, reference_value_size))
+                                            dims=(num_points, num_dofs, num_derivatives_t, reference_value_size))
 
         # Generate code to compute the derivative transform matrix
         transform_matrix_code = [
@@ -271,7 +282,7 @@ class ufc_finite_element(ufc_generator):
                 index_type=index_type,
                 body=L.Assign(transform[r, s], 1.0)
             ),
-            ]
+        ]
         if max_degree > 0:
             transform_matrix_code += [
                 # Compute transform matrix entries, each a product of K entries
@@ -287,8 +298,11 @@ class ufc_finite_element(ufc_generator):
 
         # Initialize values to 0, will be added to inside loops
         values_init_code = [
-            L.MemZero(values_symbol, num_points * num_dofs * num_derivatives_g * physical_value_size),
-            ]
+            L.ForRange(l, 0, num_points * num_dofs *
+                       num_derivatives_g * physical_value_size,
+                       index_type=index_type,
+                       body=L.Assign(values_symbol[l], 0.0)),
+        ]
 
         # Make offsets available in generated code
         reference_offsets = L.Symbol("reference_offsets")
@@ -298,7 +312,7 @@ class ufc_finite_element(ufc_generator):
                         values=[dof_data["reference_offset"] for dof_data in data["dofs_data"]]),
             L.ArrayDecl("const " + index_type, physical_offsets, (num_dofs,),
                         values=[dof_data["physical_offset"] for dof_data in data["dofs_data"]]),
-            ]
+        ]
 
         # Build dof lists for each mapping type
         mapping_dofs = defaultdict(list)
@@ -333,7 +347,8 @@ class ufc_finite_element(ufc_generator):
 
             # How many components does each basis function with this mapping have?
             # This should be uniform, i.e. there should be only one element in this set:
-            num_reference_components, = set(data["dofs_data"][i]["num_components"] for i in idofs)
+            num_reference_components, = set(
+                data["dofs_data"][i]["num_components"] for i in idofs)
 
             M_scale, M_row, num_physical_components = generate_element_mapping(
                 mapping, i,
@@ -347,7 +362,8 @@ class ufc_finite_element(ufc_generator):
 #                for k in range(num_physical_components)
 #            ]
 
-            msg = "Using %s transform to map values back to the physical element." % mapping.replace("piola", "Piola")
+            msg = "Using %s transform to map values back to the physical element." % mapping.replace(
+                "piola", "Piola")
 
             mapped_value = L.Symbol("mapped_value")
             transform_apply_code += [
@@ -365,14 +381,15 @@ class ufc_finite_element(ufc_generator):
                                                      for jj in range(num_reference_components))),
                         # Apply derivative transformation, for order=0 this reduces to
                         # values[ip,idof,0,physical_offset+i] = transform[0,0]*mapped_value
-                        L.Comment("Mapping derivatives back to the physical element"),
+                        L.Comment(
+                            "Mapping derivatives back to the physical element"),
                         L.ForRanges(
                             (r, 0, num_derivatives_g),
                             index_type=index_type, body=[
                                 L.AssignAdd(values[ip, idof, r, physical_offset + i],
                                             transform[r, s] * mapped_value)
-                        ])
-                ])
+                            ])
+                    ])
             ]
 
         # Transform for each point
@@ -396,5 +413,6 @@ class ufc_finite_element(ufc_generator):
 def _num_vertices(cell_shape):
     """Returns number of vertices for a given cell shape."""
 
-    num_vertices_dict = {"interval": 2, "triangle": 3, "tetrahedron": 4, "quadrilateral": 4, "hexahedron": 8}
+    num_vertices_dict = {"interval": 2, "triangle": 3,
+                         "tetrahedron": 4, "quadrilateral": 4, "hexahedron": 8}
     return num_vertices_dict[cell_shape]

@@ -29,7 +29,7 @@ from ffc.log import error, warning
 
 from ffc.uflacs.build_uflacs_ir import get_common_block_data
 from ffc.uflacs.elementtables import piecewise_ttypes
-from ffc.uflacs.language.cnodes import pad_innermost_dim, pad_dim, MemZero, MemZeroRange
+from ffc.uflacs.language.cnodes import pad_innermost_dim, pad_dim, MemZeroRange
 
 
 class IntegralGenerator(object):
@@ -1054,13 +1054,17 @@ class IntegralGenerator(object):
         init_mode = self.ir["params"]["tensor_init_mode"]
         z = L.LiteralFloat(0.0)
 
+        l = L.Symbol("l")  # Index for zeroing arrays
+
         if init_mode == "direct":
             # Generate A[i] = A_values[i] including zeros
             for i in range(A_size):
                 parts += [L.Assign(A[i], A_values[i])]
         elif init_mode == "upfront":
             # Zero everything first
-            parts += [L.MemZero(A, A_size)]
+            parts += [L.ForRange(l, 0, A_size,
+                                 index_type=index_type,
+                                 body=L.Assign(A.array[l], 0.0))]
 
             # Generate A[i] = A_values[i] skipping zeros
             for i in range(A_size):
