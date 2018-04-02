@@ -24,27 +24,27 @@ public:
 %(signature)s
   }
 
-  int num_global_support_dofs() const final override
+  int64_t num_global_support_dofs() const final override
   {
 %(num_global_support_dofs)s
   }
 
-  int num_element_support_dofs() const final override
+  int64_t num_element_support_dofs() const final override
   {
 %(num_element_support_dofs)s
   }
 
-  int num_element_dofs() const final override
+  int64_t num_element_dofs() const final override
   {
 %(num_element_dofs)s
   }
 
-  int num_facet_dofs() const final override
+  int64_t num_facet_dofs() const final override
   {
 %(num_facet_dofs)s
   }
 
-  int num_entity_dofs(int d) const final override
+  int64_t num_entity_dofs(int64_t d) const final override
   {
 %(num_entity_dofs)s
   }
