@@ -8,7 +8,7 @@ from ffc.log import error
 from ffc.uflacs.backends.ufc.utils import generate_error
 
 # Used for various indices and arrays in this file
-index_type = "std::size_t"
+index_type = "int64_t"
 
 
 def tabulate_coefficients(L, dof_data):
@@ -296,7 +296,7 @@ def _generate_compute_interval_basisvalues(L, basisvalues, Y, embedded_degree, n
     # Scale values
     p = L.Symbol("p")
     code += [L.ForRange(p, 0, embedded_degree + 1, index_type=index_type,
-                        body=L.AssignMul(basisvalues[p], L.Call("std::sqrt", (0.5 + p,))))]
+                        body=L.AssignMul(basisvalues[p], L.Call("sqrt", (0.5 + p,))))]
     return code
 
 
@@ -397,7 +397,7 @@ def _generate_compute_triangle_basisvalues(L, basisvalues, Y, embedded_degree, n
         for s in range(0, embedded_degree + 1 - r):
             rr = _idx2d(r, s)
             A = (r + 0.5)*(r + s + 1)
-            code += [L.AssignMul(basisvalues[rr], L.Call("std::sqrt", (A,)))]
+            code += [L.AssignMul(basisvalues[rr], L.Call("sqrt", (A,)))]
 
     return code
 
@@ -545,6 +545,6 @@ def _generate_compute_tetrahedron_basisvalues(L, basisvalues, Y, embedded_degree
             for t in range(0, embedded_degree - r - s + 1):
                 rr = _idx3d(r, s, t)
                 A = (r + 0.5)*(r + s + 1)*(r + s + t + 1.5)
-                code += [L.AssignMul(basisvalues[rr], L.Call("std::sqrt", (A,)))]
+                code += [L.AssignMul(basisvalues[rr], L.Call("sqrt", (A,)))]
 
     return code

@@ -91,7 +91,7 @@ class ufc_dofmap(ufc_generator):
         # Declare offset if needed
         if need_offset:
             offset = L.Symbol("offset")
-            code.append(L.VariableDecl("std::size_t", offset, value=0))
+            code.append(L.VariableDecl("int64_t", offset, value=0))
         else:
             offset = 0
 

@@ -10,7 +10,7 @@ from ffc.uflacs.backends.ufc.evaluatebasis import generate_expansion_coefficient
 
 
 # Used for various indices and arrays in this file
-index_type = "std::size_t"
+index_type = "int64_t"
 
 
 def generate_evaluate_reference_basis_derivatives(L, data, parameters):
@@ -60,7 +60,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
             ]),
         # Compute number of derivatives of this order
         L.VariableDecl("const " + index_type, num_derivatives,
-                       value=L.Call("std::pow", (tdim, order))),
+                       value=L.Call("pow", (tdim, order))),
         # Reset output values to zero
         L.MemZero(reference_values, reference_values_size),
         # Cutoff for higher order than we have

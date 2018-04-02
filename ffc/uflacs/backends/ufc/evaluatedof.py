@@ -26,7 +26,7 @@ from ffc.uflacs.backends.ufc.jacobian import jacobian, inverse_jacobian, orienta
 from ufl.permutation import build_component_numbering
 from ffc.utils import pick_first
 
-index_type="std::size_t"
+index_type="int64_t"
 
 def reference_to_physical_map(cellname):
     "Returns a map from reference coordinates to physical element coordinates"

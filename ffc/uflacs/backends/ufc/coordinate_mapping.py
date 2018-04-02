@@ -23,7 +23,7 @@ from ffc.uflacs.backends.ufc.utils import generate_return_new
 # TODO: Test everything here! Cover all combinations of gdim,tdim=1,2,3!
 
 
-index_type = "std::size_t"
+index_type = "int64_t"
 
 
 ### Code generation utilities:

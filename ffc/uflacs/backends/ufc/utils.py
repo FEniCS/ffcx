@@ -81,7 +81,7 @@ def generate_return_literal_switch(L, i, values, default, literal_type, typename
 
 
 def generate_return_sizet_switch(L, i, values, default):
-    return generate_return_literal_switch(L, i, values, default, L.LiteralInt, "std::size_t")
+    return generate_return_literal_switch(L, i, values, default, L.LiteralInt, "int64_t")
 
 
 def generate_return_int_switch(L, i, values, default):

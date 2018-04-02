@@ -66,10 +66,10 @@ def fiat_coordinate_mapping(L, cellname, gdim, ref_coord_symbol="Y"):
                     L.ArrayDecl("double", Y, 1, [(2*x[0] - coordinate_dofs[0] - coordinate_dofs[1])/J[0]])]
         elif gdim == 2:
             code = [L.Comment("Get coordinates and map to the reference (FIAT) element"),
-                    L.ArrayDecl("double", Y, 1, [2*(L.Sqrt(L.Call("std::pow", (x[0] - coordinate_dofs[0], 2)) + L.Call("std::pow", (x[1] - coordinate_dofs[1], 2))))/detJ - 1.0])]
+                    L.ArrayDecl("double", Y, 1, [2*(L.Sqrt(L.Call("pow", (x[0] - coordinate_dofs[0], 2)) + L.Call("pow", (x[1] - coordinate_dofs[1], 2))))/detJ - 1.0])]
         elif gdim == 3:
             code = [L.Comment("Get coordinates and map to the reference (FIAT) element"),
-                    L.ArrayDecl("double", Y, 1, [2*(L.Sqrt(L.Call("std::pow", (x[0] - coordinate_dofs[0], 2)) + L.Call("std::pow", (x[1] - coordinate_dofs[1], 2)) + L.Call("std::pow", (x[2] - coordinate_dofs[2], 2))))/ detJ - 1.0])]
+                    L.ArrayDecl("double", Y, 1, [2*(L.Sqrt(L.Call("pow", (x[0] - coordinate_dofs[0], 2)) + L.Call("pow", (x[1] - coordinate_dofs[1], 2)) + L.Call("pow", (x[2] - coordinate_dofs[2], 2))))/ detJ - 1.0])]
         else:
             error("Cannot compute interval with gdim: %d" % gdim)
     elif cellname == "triangle":

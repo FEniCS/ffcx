@@ -38,7 +38,7 @@ from ffc.uflacs.backends.ufc.evaluatedof import generate_map_dofs, reference_to_
 
 from ffc.uflacs.backends.ufc.jacobian import jacobian, inverse_jacobian, orientation, fiat_coordinate_mapping, _mapping_transform
 
-index_type = "std::size_t"
+index_type = "int64_t"
 
 def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J, detJ, K):
     # Select transformation to apply
@@ -229,7 +229,7 @@ class ufc_finite_element(ufc_generator):
             num_derivatives_g = num_derivatives_t
             combinations_code += [
                 L.VariableDecl("const " + index_type, num_derivatives_t,
-                               L.Call("std::pow", (tdim, order))),
+                               L.Call("pow", (tdim, order))),
             ]
 
             # Add array declarations of combinations
@@ -241,9 +241,9 @@ class ufc_finite_element(ufc_generator):
             num_derivatives_g = L.Symbol("num_derivatives_g")
             combinations_code += [
                 L.VariableDecl("const " + index_type, num_derivatives_t,
-                               L.Call("std::pow", (tdim, order))),
+                               L.Call("pow", (tdim, order))),
                 L.VariableDecl("const " + index_type, num_derivatives_g,
-                               L.Call("std::pow", (gdim, order))),
+                               L.Call("pow", (gdim, order))),
             ]
             # Add array declarations of combinations
             combinations_code_t, combinations_t = _generate_combinations(L, tdim, max_degree, order, num_derivatives_t, suffix="_t")

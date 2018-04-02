@@ -29,52 +29,52 @@ public:
 %(cell_shape)s
   }
 
-  std::size_t topological_dimension() const final override
+  int64_t topological_dimension() const final override
   {
 %(topological_dimension)s
   }
 
-  std::size_t geometric_dimension() const final override
+  int64_t geometric_dimension() const final override
   {
 %(geometric_dimension)s
   }
 
-  std::size_t space_dimension() const final override
+  int64_t space_dimension() const final override
   {
 %(space_dimension)s
   }
 
-  std::size_t value_rank() const final override
+  int64_t value_rank() const final override
   {
 %(value_rank)s
   }
 
-  std::size_t value_dimension(std::size_t i) const final override
+  int64_t value_dimension(int64_t i) const final override
   {
 %(value_dimension)s
   }
 
-  std::size_t value_size() const final override
+  int64_t value_size() const final override
   {
 %(value_size)s
   }
 
-  std::size_t reference_value_rank() const final override
+  int64_t reference_value_rank() const final override
   {
 %(reference_value_rank)s
   }
 
-  std::size_t reference_value_dimension(std::size_t i) const final override
+  int64_t reference_value_dimension(int64_t i) const final override
   {
 %(reference_value_dimension)s
   }
 
-  std::size_t reference_value_size() const final override
+  int64_t reference_value_size() const final override
   {
 %(reference_value_size)s
   }
 
-  std::size_t degree() const final override
+  int64_t degree() const final override
   {
 %(degree)s
   }
@@ -85,23 +85,23 @@ public:
   }
 
   void evaluate_reference_basis(double * reference_values,
-                                std::size_t num_points,
+                                int64_t num_points,
                                 const double * X) const final override
   {
 %(evaluate_reference_basis)s
   }
 
   void evaluate_reference_basis_derivatives(double * reference_values,
-                                            std::size_t order,
-                                            std::size_t num_points,
+                                            int64_t order,
+                                            int64_t num_points,
                                             const double * X) const final override
   {
 %(evaluate_reference_basis_derivatives)s
   }
 
   void transform_reference_basis_derivatives(double * values,
-                                             std::size_t order,
-                                             std::size_t num_points,
+                                             int64_t order,
+                                             int64_t num_points,
                                              const double * reference_values,
                                              const double * X,
                                              const double * J,
@@ -127,12 +127,12 @@ public:
 %(tabulate_reference_dof_coordinates)s
   }
 
-  std::size_t num_sub_elements() const final override
+  int64_t num_sub_elements() const final override
   {
 %(num_sub_elements)s
   }
 
-  ufc::finite_element * create_sub_element(std::size_t i) const final override
+  ufc::finite_element * create_sub_element(int64_t i) const final override
   {
 %(create_sub_element)s
   }
@@ -158,40 +158,40 @@ public:
 
   ufc::shape cell_shape() const final override;
 
-  std::size_t topological_dimension() const final override;
+  int64_t topological_dimension() const final override;
 
-  std::size_t geometric_dimension() const final override;
+  int64_t geometric_dimension() const final override;
 
-  std::size_t space_dimension() const final override;
+  int64_t space_dimension() const final override;
 
-  std::size_t value_rank() const final override;
+  int64_t value_rank() const final override;
 
-  std::size_t value_dimension(std::size_t i) const final override;
+  int64_t value_dimension(int64_t i) const final override;
 
-  std::size_t value_size() const final override;
+  int64_t value_size() const final override;
 
-  std::size_t reference_value_rank() const final override;
+  int64_t reference_value_rank() const final override;
 
-  std::size_t reference_value_dimension(std::size_t i) const final override;
+  int64_t reference_value_dimension(int64_t i) const final override;
 
-  std::size_t reference_value_size() const final override;
+  int64_t reference_value_size() const final override;
 
-  std::size_t degree() const final override;
+  int64_t degree() const final override;
 
   const char * family() const final override;
 
   void evaluate_reference_basis(double * reference_values,
-                                std::size_t num_points,
+                                int64_t num_points,
                                 const double * X) const final override;
 
   void evaluate_reference_basis_derivatives(double * reference_values,
-                                            std::size_t order,
-                                            std::size_t num_points,
+                                            int64_t order,
+                                            int64_t num_points,
                                             const double * X) const final override;
 
   void transform_reference_basis_derivatives(double * values,
-                                             std::size_t order,
-                                             std::size_t num_points,
+                                             int64_t order,
+                                             int64_t num_points,
                                              const double * reference_values,
                                              const double * X,
                                              const double * J,
@@ -208,9 +208,9 @@ public:
 
   void tabulate_reference_dof_coordinates(double * reference_dof_coordinates) const final override;
 
-  std::size_t num_sub_elements() const final override;
+  int64_t num_sub_elements() const final override;
 
-  ufc::finite_element * create_sub_element(std::size_t i) const final override;
+  ufc::finite_element * create_sub_element(int64_t i) const final override;
 
   ufc::finite_element * create() const final override;
 
@@ -238,52 +238,52 @@ ufc::shape %(classname)s::cell_shape() const
 %(cell_shape)s
 }
 
-std::size_t %(classname)s::topological_dimension() const
+int64_t %(classname)s::topological_dimension() const
 {
 %(topological_dimension)s
 }
 
-std::size_t %(classname)s::geometric_dimension() const
+int64_t %(classname)s::geometric_dimension() const
 {
 %(geometric_dimension)s
 }
 
-std::size_t %(classname)s::space_dimension() const
+int64_t %(classname)s::space_dimension() const
 {
 %(space_dimension)s
 }
 
-std::size_t %(classname)s::value_rank() const
+int64_t %(classname)s::value_rank() const
 {
 %(value_rank)s
 }
 
-std::size_t %(classname)s::value_dimension(std::size_t i) const
+int64_t %(classname)s::value_dimension(int64_t i) const
 {
 %(value_dimension)s
 }
 
-std::size_t %(classname)s::value_size() const
+int64_t %(classname)s::value_size() const
 {
 %(value_size)s
 }
 
-std::size_t %(classname)s::reference_value_rank() const
+int64_t %(classname)s::reference_value_rank() const
 {
 %(reference_value_rank)s
 }
 
-std::size_t %(classname)s::reference_value_dimension(std::size_t i) const
+int64_t %(classname)s::reference_value_dimension(int64_t i) const
 {
 %(reference_value_dimension)s
 }
 
-std::size_t %(classname)s::reference_value_size() const
+int64_t %(classname)s::reference_value_size() const
 {
 %(reference_value_size)s
 }
 
-std::size_t %(classname)s::degree() const
+int64_t %(classname)s::degree() const
 {
 %(degree)s
 }
@@ -294,23 +294,23 @@ const char * %(classname)s::family() const
 }
 
 void %(classname)s::evaluate_reference_basis(double * reference_values,
-                                             std::size_t num_points,
+                                             int64_t num_points,
                                              const double * X) const
 {
 %(evaluate_reference_basis)s
 }
 
 void %(classname)s::evaluate_reference_basis_derivatives(double * reference_values,
-                                                         std::size_t order,
-                                                         std::size_t num_points,
+                                                         int64_t order,
+                                                         int64_t num_points,
                                                          const double * X) const
 {
 %(evaluate_reference_basis_derivatives)s
 }
 
 void %(classname)s::transform_reference_basis_derivatives(double * values,
-                                                          std::size_t order,
-                                                          std::size_t num_points,
+                                                          int64_t order,
+                                                          int64_t num_points,
                                                           const double * reference_values,
                                                           const double * X,
                                                           const double * J,
@@ -336,12 +336,12 @@ void %(classname)s::tabulate_reference_dof_coordinates(double * reference_dof_co
 %(tabulate_reference_dof_coordinates)s
 }
 
-std::size_t %(classname)s::num_sub_elements() const
+int64_t %(classname)s::num_sub_elements() const
 {
 %(num_sub_elements)s
 }
 
-ufc::finite_element * %(classname)s::create_sub_element(std::size_t i) const
+ufc::finite_element * %(classname)s::create_sub_element(int64_t i) const
 {
 %(create_sub_element)s
 }

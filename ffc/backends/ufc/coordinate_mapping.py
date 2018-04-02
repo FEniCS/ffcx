@@ -30,12 +30,12 @@ public:
 %(create)s
   }
 
-  std::size_t geometric_dimension() const final override
+  int64_t geometric_dimension() const final override
   {
 %(geometric_dimension)s
   }
 
-  std::size_t topological_dimension() const final override
+  int64_t topological_dimension() const final override
   {
 %(topological_dimension)s
   }
@@ -56,7 +56,7 @@ public:
   }
 
   void compute_physical_coordinates(
-      double * x, std::size_t num_points,
+      double * x, int64_t num_points,
       const double * X,
       const double * coordinate_dofs) const final override
   {
@@ -64,7 +64,7 @@ public:
   }
 
   void compute_reference_coordinates(
-      double * X, std::size_t num_points,
+      double * X, int64_t num_points,
       const double * x,
       const double * coordinate_dofs, int cell_orientation) const final override
   {
@@ -72,7 +72,7 @@ public:
   }
 
   void compute_reference_geometry(
-      double * X, double * J, double * detJ, double * K, std::size_t num_points,
+      double * X, double * J, double * detJ, double * K, int64_t num_points,
       const double * x,
       const double * coordinate_dofs, int cell_orientation) const final override
   {
@@ -80,7 +80,7 @@ public:
   }
 
   void compute_jacobians(
-      double * J, std::size_t num_points,
+      double * J, int64_t num_points,
       const double * X,
       const double * coordinate_dofs) const final override
   {
@@ -88,7 +88,7 @@ public:
   }
 
   void compute_jacobian_determinants(
-      double * detJ, std::size_t num_points,
+      double * detJ, int64_t num_points,
       const double * J,
       int cell_orientation) const final override
   {
@@ -96,14 +96,14 @@ public:
   }
 
   void compute_jacobian_inverses(
-      double * K, std::size_t num_points,
+      double * K, int64_t num_points,
       const double * J, const double * detJ) const final override
   {
 %(compute_jacobian_inverses)s
   }
 
   void compute_geometry(
-      double * x, double * J, double * detJ, double * K, std::size_t num_points,
+      double * x, double * J, double * detJ, double * K, int64_t num_points,
       const double * X,
       const double * coordinate_dofs, int cell_orientation) const final override
   {
@@ -134,9 +134,9 @@ public:
 
   ufc::coordinate_mapping * create() const final override;
 
-  std::size_t geometric_dimension() const final override;
+  int64_t geometric_dimension() const final override;
 
-  std::size_t topological_dimension() const final override;
+  int64_t topological_dimension() const final override;
 
   ufc::shape cell_shape() const final override;
 
@@ -145,36 +145,36 @@ public:
   ufc::dofmap * create_coordinate_dofmap() const final override;
 
   void compute_physical_coordinates(
-      double * x, std::size_t num_points,
+      double * x, int64_t num_points,
       const double * X,
       const double * coordinate_dofs) const final override;
 
   void compute_reference_coordinates(
-      double * X, std::size_t num_points,
+      double * X, int64_t num_points,
       const double * x,
       const double * coordinate_dofs, int cell_orientation) const final override;
 
   void compute_reference_geometry(
-      double * X, double * J, double * detJ, double * K, std::size_t num_points,
+      double * X, double * J, double * detJ, double * K, int64_t num_points,
       const double * x,
       const double * coordinate_dofs, int cell_orientation) const final override;
 
   void compute_jacobians(
-      double * J, std::size_t num_points,
+      double * J, int64_t num_points,
       const double * X,
       const double * coordinate_dofs) const final override;
 
   void compute_jacobian_determinants(
-      double * detJ, std::size_t num_points,
+      double * detJ, int64_t num_points,
       const double * J,
       int cell_orientation) const final override;
 
   void compute_jacobian_inverses(
-      double * K, std::size_t num_points,
+      double * K, int64_t num_points,
       const double * J, const double * detJ) const final override;
 
   void compute_geometry(
-      double * x, double * J, double * detJ, double * K, std::size_t num_points,
+      double * x, double * J, double * detJ, double * K, int64_t num_points,
       const double * X,
       const double * coordinate_dofs, int cell_orientation) const final override;
 
@@ -207,12 +207,12 @@ ufc::coordinate_mapping * %(classname)s::create() const
 %(create)s
 }
 
-std::size_t %(classname)s::geometric_dimension() const
+int64_t %(classname)s::geometric_dimension() const
 {
 %(geometric_dimension)s
 }
 
-std::size_t %(classname)s::topological_dimension() const
+int64_t %(classname)s::topological_dimension() const
 {
 %(topological_dimension)s
 }
@@ -233,7 +233,7 @@ ufc::dofmap * %(classname)s::create_coordinate_dofmap() const
 }
 
 void %(classname)s::compute_physical_coordinates(
-    double * x, std::size_t num_points,
+    double * x, int64_t num_points,
     const double * X,
     const double * coordinate_dofs) const
 {
@@ -241,7 +241,7 @@ void %(classname)s::compute_physical_coordinates(
 }
 
 void %(classname)s::compute_reference_coordinates(
-    double * X, std::size_t num_points,
+    double * X, int64_t num_points,
     const double * x,
     const double * coordinate_dofs, int cell_orientation) const
 {
@@ -249,7 +249,7 @@ void %(classname)s::compute_reference_coordinates(
 }
 
 void %(classname)s::compute_reference_geometry(
-    double * X, double * J, double * detJ, double * K, std::size_t num_points,
+    double * X, double * J, double * detJ, double * K, int64_t num_points,
     const double * x,
     const double * coordinate_dofs, int cell_orientation) const
 {
@@ -257,7 +257,7 @@ void %(classname)s::compute_reference_geometry(
 }
 
 void %(classname)s::compute_jacobians(
-    double * J, std::size_t num_points,
+    double * J, int64_t num_points,
     const double * X,
     const double * coordinate_dofs) const
 {
@@ -265,7 +265,7 @@ void %(classname)s::compute_jacobians(
 }
 
 void %(classname)s::compute_jacobian_determinants(
-    double * detJ, std::size_t num_points,
+    double * detJ, int64_t num_points,
     const double * J,
     int cell_orientation) const
 {
@@ -273,14 +273,14 @@ void %(classname)s::compute_jacobian_determinants(
 }
 
 void %(classname)s::compute_jacobian_inverses(
-    double * K, std::size_t num_points,
+    double * K, int64_t num_points,
     const double * J, const double * detJ) const
 {
 %(compute_jacobian_inverses)s
 }
 
 void %(classname)s::compute_geometry(
-    double * x, double * J, double * detJ, double * K, std::size_t num_points,
+    double * x, double * J, double * detJ, double * K, int64_t num_points,
     const double * X,
     const double * coordinate_dofs, int cell_orientation) const
 {

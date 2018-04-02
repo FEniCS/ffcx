@@ -104,7 +104,7 @@ public:
   void tabulate_tensor(double * A,
                        const double * const * w,
                        const double * coordinate_dofs,
-                       std::size_t facet,
+                       int64_t facet,
                        int cell_orientation) const final override
   {
 %(tabulate_tensor_comment)s
@@ -128,7 +128,7 @@ public:
   void tabulate_tensor(double * A,
                        const double * const * w,
                        const double * coordinate_dofs,
-                       std::size_t facet,
+                       int64_t facet,
                        int cell_orientation) const final override;
 
 };
@@ -153,7 +153,7 @@ const std::vector<bool> & %(classname)s::enabled_coefficients() const
 void %(classname)s::tabulate_tensor(double * A,
                                     const double * const * w,
                                     const double * coordinate_dofs,
-                                    std::size_t facet,
+                                    int64_t facet,
                                     int cell_orientation) const
 {
 %(tabulate_tensor_comment)s
@@ -185,8 +185,8 @@ public:
                        const double * const * w,
                        const double * coordinate_dofs_0,
                        const double * coordinate_dofs_1,
-                       std::size_t facet_0,
-                       std::size_t facet_1,
+                       int64_t facet_0,
+                       int64_t facet_1,
                        int cell_orientation_0,
                        int cell_orientation_1) const final override
   {
@@ -212,8 +212,8 @@ public:
                        const double * const * w,
                        const double * coordinate_dofs_0,
                        const double * coordinate_dofs_1,
-                       std::size_t facet_0,
-                       std::size_t facet_1,
+                       int64_t facet_0,
+                       int64_t facet_1,
                        int cell_orientation_0,
                        int cell_orientation_1) const final override;
 
@@ -240,8 +240,8 @@ void %(classname)s::tabulate_tensor(double * A,
                                     const double * const * w,
                                     const double * coordinate_dofs_0,
                                     const double * coordinate_dofs_1,
-                                    std::size_t facet_0,
-                                    std::size_t facet_1,
+                                    int64_t facet_0,
+                                    int64_t facet_1,
                                     int cell_orientation_0,
                                     int cell_orientation_1) const
 {
@@ -273,7 +273,7 @@ public:
   void tabulate_tensor(double * A,
                        const double * const * w,
                        const double * coordinate_dofs,
-                       std::size_t vertex,
+                       int64_t vertex,
                        int cell_orientation) const final override
   {
 %(tabulate_tensor_comment)s
@@ -297,7 +297,7 @@ public:
   void tabulate_tensor(double * A,
                        const double * const * w,
                        const double * coordinate_dofs,
-                       std::size_t vertex,
+                       int64_t vertex,
                        int cell_orientation) const final override;
 
 };
@@ -322,7 +322,7 @@ const std::vector<bool> & %(classname)s::enabled_coefficients() const
 void %(classname)s::tabulate_tensor(double * A,
                                     const double * const * w,
                                     const double * coordinate_dofs,
-                                    std::size_t vertex,
+                                    int64_t vertex,
                                     int cell_orientation) const
 {
 %(tabulate_tensor_comment)s
@@ -350,7 +350,7 @@ public:
 %(enabled_coefficients)s
   }
 
-  std::size_t num_cells() const final override
+  int64_t num_cells() const final override
   {
 %(num_cells)s
   }
@@ -358,7 +358,7 @@ public:
   void tabulate_tensor(double * A,
                        const double * const * w,
                        const double * coordinate_dofs,
-                       std::size_t num_quadrature_points,
+                       int64_t num_quadrature_points,
                        const double * quadrature_points,
                        const double * quadrature_weights,
                        const double * facet_normals,
@@ -382,12 +382,12 @@ public:
 
   const std::vector<bool> & enabled_coefficients() const final override;
 
-  std::size_t num_cells() const final override;
+  int64_t num_cells() const final override;
 
   void tabulate_tensor(double * A,
                        const double * const * w,
                        const double * coordinate_dofs,
-                       std::size_t num_quadrature_points,
+                       int64_t num_quadrature_points,
                        const double * quadrature_points,
                        const double * quadrature_weights,
                        const double * facet_normals,
@@ -412,7 +412,7 @@ const std::vector<bool> & %(classname)s::enabled_coefficients() const
 %(enabled_coefficients)s
 }
 
-std::size_t %(classname)s::num_cells() const
+int64_t %(classname)s::num_cells() const
 {
 %(num_cells)s
 }
@@ -420,7 +420,7 @@ std::size_t %(classname)s::num_cells() const
 void %(classname)s::tabulate_tensor(double * A,
                                     const double * const * w,
                                     const double * coordinate_dofs,
-                                    std::size_t num_quadrature_points,
+                                    int64_t num_quadrature_points,
                                     const double * quadrature_points,
                                     const double * quadrature_weights,
                                     const double * facet_normals,

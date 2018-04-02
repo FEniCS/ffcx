@@ -24,68 +24,68 @@ public:
 %(signature)s
   }
 
-  std::size_t num_global_support_dofs() const final override
+  int num_global_support_dofs() const final override
   {
 %(num_global_support_dofs)s
   }
 
-  std::size_t num_element_support_dofs() const final override
+  int num_element_support_dofs() const final override
   {
 %(num_element_support_dofs)s
   }
 
-  std::size_t num_element_dofs() const final override
+  int num_element_dofs() const final override
   {
 %(num_element_dofs)s
   }
 
-  std::size_t num_facet_dofs() const final override
+  int num_facet_dofs() const final override
   {
 %(num_facet_dofs)s
   }
 
-  std::size_t num_entity_dofs(std::size_t d) const final override
+  int num_entity_dofs(int d) const final override
   {
 %(num_entity_dofs)s
   }
 
-  std::size_t num_entity_closure_dofs(std::size_t d) const final override
+  int64_t num_entity_closure_dofs(int64_t d) const final override
   {
 %(num_entity_closure_dofs)s
   }
 
-  void tabulate_dofs(std::size_t * dofs,
-                     const std::vector<std::size_t>& num_global_entities,
-                     const std::vector<std::vector<std::size_t>>& entity_indices) const final override
+  void tabulate_dofs(int64_t * dofs,
+                     const std::vector<int64_t>& num_global_entities,
+                     const std::vector<std::vector<int64_t>>& entity_indices) const final override
   {
 %(tabulate_dofs)s
   }
 
-  void tabulate_facet_dofs(std::size_t * dofs,
-                           std::size_t facet) const final override
+  void tabulate_facet_dofs(int64_t * dofs,
+                           int64_t facet) const final override
   {
 %(tabulate_facet_dofs)s
   }
 
-  void tabulate_entity_dofs(std::size_t * dofs,
-                            std::size_t d, std::size_t i) const final override
+  void tabulate_entity_dofs(int64_t * dofs,
+                            int64_t d, int64_t i) const final override
   {
 %(tabulate_entity_dofs)s
   }
 
-  void tabulate_entity_closure_dofs(std::size_t * dofs,
-                                    std::size_t d, std::size_t i) const final override
+  void tabulate_entity_closure_dofs(int64_t * dofs,
+                                    int64_t d, int64_t i) const final override
   {
 %(tabulate_entity_closure_dofs)s
   }
 
 
-  std::size_t num_sub_dofmaps() const final override
+  int64_t num_sub_dofmaps() const final override
   {
 %(num_sub_dofmaps)s
   }
 
-  ufc::dofmap * create_sub_dofmap(std::size_t i) const final override
+  ufc::dofmap * create_sub_dofmap(int64_t i) const final override
   {
 %(create_sub_dofmap)s
   }
@@ -109,34 +109,34 @@ public:
 
   const char * signature() const final override;
 
-  std::size_t num_global_support_dofs() const final override;
+  int64_t num_global_support_dofs() const final override;
 
-  std::size_t num_element_support_dofs() const final override;
+  int64_t num_element_support_dofs() const final override;
 
-  std::size_t num_element_dofs() const final override;
+  int64_t num_element_dofs() const final override;
 
-  std::size_t num_facet_dofs() const final override;
+  int64_t num_facet_dofs() const final override;
 
-  std::size_t num_entity_dofs(std::size_t d) const final override;
+  int64_t num_entity_dofs(int64_t d) const final override;
 
-  std::size_t num_entity_closure_dofs(std::size_t d) const final override;
+  int64_t num_entity_closure_dofs(int64_t d) const final override;
 
-  void tabulate_dofs(std::size_t * dofs,
-                     const std::vector<std::size_t>& num_global_entities,
-                     const std::vector<std::vector<std::size_t>>& entity_indices) const final override;
+  void tabulate_dofs(int64_t * dofs,
+                     const std::vector<int64_t>& num_global_entities,
+                     const std::vector<std::vector<int64_t>>& entity_indices) const final override;
 
-  void tabulate_facet_dofs(std::size_t * dofs,
-                           std::size_t facet) const final override;
+  void tabulate_facet_dofs(int64_t * dofs,
+                           int64_t facet) const final override;
 
-  void tabulate_entity_dofs(std::size_t * dofs,
-                            std::size_t d, std::size_t i) const final override;
+  void tabulate_entity_dofs(int64_t * dofs,
+                            int64_t d, int64_t i) const final override;
 
-  void tabulate_entity_closure_dofs(std::size_t * dofs,
-                            std::size_t d, std::size_t i) const final override;
+  void tabulate_entity_closure_dofs(int64_t * dofs,
+                            int64_t d, int64_t i) const final override;
 
-  std::size_t num_sub_dofmaps() const final override;
+  int64_t num_sub_dofmaps() const final override;
 
-  ufc::dofmap * create_sub_dofmap(std::size_t i) const final override;
+  ufc::dofmap * create_sub_dofmap(int64_t i) const final override;
 
   ufc::dofmap * create() const final override;
 
@@ -159,67 +159,67 @@ const char * %(classname)s::signature() const
 %(signature)s
 }
 
-std::size_t %(classname)s::num_global_support_dofs() const
+int64_t %(classname)s::num_global_support_dofs() const
 {
 %(num_global_support_dofs)s
 }
 
-std::size_t %(classname)s::num_element_support_dofs() const
+int64_t %(classname)s::num_element_support_dofs() const
 {
 %(num_element_support_dofs)s
 }
 
-std::size_t %(classname)s::num_element_dofs() const
+int64_t %(classname)s::num_element_dofs() const
 {
 %(num_element_dofs)s
 }
 
-std::size_t %(classname)s::num_facet_dofs() const
+int64_t %(classname)s::num_facet_dofs() const
 {
 %(num_facet_dofs)s
 }
 
-std::size_t %(classname)s::num_entity_dofs(std::size_t d) const
+int64_t %(classname)s::num_entity_dofs(int64_t d) const
 {
 %(num_entity_dofs)s
 }
 
-std::size_t %(classname)s::num_entity_closure_dofs(std::size_t d) const
+int64_t %(classname)s::num_entity_closure_dofs(int64_t d) const
 {
 %(num_entity_closure_dofs)s
 }
 
-void %(classname)s::tabulate_dofs(std::size_t * dofs,
-                                  const std::vector<std::size_t>& num_global_entities,
-                                  const std::vector<std::vector<std::size_t>>& entity_indices) const
+void %(classname)s::tabulate_dofs(int64_t * dofs,
+                                  const std::vector<int64_t>& num_global_entities,
+                                  const std::vector<std::vector<int64_t>>& entity_indices) const
 {
 %(tabulate_dofs)s
 }
 
-void %(classname)s::tabulate_facet_dofs(std::size_t * dofs,
-                                        std::size_t facet) const
+void %(classname)s::tabulate_facet_dofs(int64_t * dofs,
+                                        int64_t facet) const
 {
 %(tabulate_facet_dofs)s
 }
 
-void %(classname)s::tabulate_entity_dofs(std::size_t * dofs,
-                                         std::size_t d, std::size_t i) const
+void %(classname)s::tabulate_entity_dofs(int64_t * dofs,
+                                         int64_t d, int64_t i) const
 {
 %(tabulate_entity_dofs)s
 }
 
-void %(classname)s::tabulate_entity_closure_dofs(std::size_t * dofs,
-                                             std::size_t d, std::size_t i) const
+void %(classname)s::tabulate_entity_closure_dofs(int64_t * dofs,
+                                             int64_t d, int64_t i) const
 {
 %(tabulate_entity_closure_dofs)s
 }
 
-std::size_t %(classname)s::num_sub_dofmaps() const
+int64_t %(classname)s::num_sub_dofmaps() const
 {
 %(num_sub_dofmaps)s
 }
 
-ufc::dofmap * %(classname)s::create_sub_dofmap(std::size_t i) const
+ufc::dofmap * %(classname)s::create_sub_dofmap(int64_t i) const
 {
 %(create_sub_dofmap)s
 }
