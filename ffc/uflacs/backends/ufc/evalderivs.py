@@ -40,7 +40,8 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
     c = L.Symbol("c")   # component
     r = L.Symbol("r")   # derivative number
 
-    l = L.Symbol("l")   # zeroing arrays
+    l0 = L.Symbol("l0")   # zeroing arrays
+    l1 = L.Symbol("l1")   # zeroing arrays
 
     # Define symbol for number of derivatives of given order
     num_derivatives = L.Symbol("num_derivatives")
@@ -66,9 +67,9 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
         L.VariableDecl("const " + index_type, num_derivatives,
                        value=L.Call("pow", (tdim, order))),
         # Reset output values to zero
-        L.ForRange(l, 0, reference_values_size,
+        L.ForRange(l0, 0, reference_values_size,
                    index_type=index_type,
-                   body=L.Assign(reference_values[l], 0.0)),
+                   body=L.Assign(reference_values[l0], 0.0)),
 
         # Cutoff for higher order than we have
         L.If(L.GT(order, max_degree),
@@ -166,9 +167,11 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
                                     L.MemCopy(L.AddressOf(dmats[0][0]),  L.AddressOf(
                                         dmats_old[0][0]), shape_dmats[0]*shape_dmats[1]),
                                     L.Comment("Resetting dmats."),
-                                    L.ForRange(l, 0, shape_dmats[0]*shape_dmats[1],
+                                    L.ForRange(l0, 0, shape_dmats[0],
                                                index_type=index_type,
-                                               body=L.Assign(dmats[l], 0.0)),
+                                               body=L.ForRange(l1, 0, shape_dmats[1],
+                                                               index_type=index_type,
+                                                               body=L.Assign(dmats[l0][l1], 0.0))),
                                     L.Comment(
                                         "Update dmats using an inner product."),
                                     L.Assign(comb, combinations[r, s]),
