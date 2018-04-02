@@ -113,6 +113,7 @@ def MemZeroRange(name, begin, end):
     return Call("std::fill", (name + begin, name + end, LiteralFloat(0.0)))
 
 
+# Note: removed as part of C++ -> C transition
 # def MemZero(name, size):
 #     name = as_cexpr_or_string_symbol(name)
 #     size = as_cexpr(size)
