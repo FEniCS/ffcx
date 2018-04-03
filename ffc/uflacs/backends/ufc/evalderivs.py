@@ -43,7 +43,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
     l0 = L.Symbol("l0")   # zeroing arrays
     l1 = L.Symbol("l1")   # zeroing arrays
 
-    # Return statement (values indicates that function is implemented)
+    # Return statement (value indicates that function is implemented)
     ret = L.Return(0)
 
     # Define symbol for number of derivatives of given order
