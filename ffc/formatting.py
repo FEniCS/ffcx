@@ -118,9 +118,8 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
     code_c_pre += format_template["header_c"] % {"prefix": prefix}
 
     # Add includes
-    includes_h, includes_c = _generate_includes(includes, parameters)
+    includes_h  = _generate_includes(includes, parameters)
     code_h_pre += includes_h
-    code_c_pre += includes_c
 
     # Header and implementation code
     code_h = ""
@@ -231,20 +230,15 @@ def _generate_comment(parameters):
 def _generate_includes(includes, parameters):
 
     default_h_includes = [
-        "#include <string.h>",
+        "#include <string.h>",  # This should really be set by the backend
         "#include <ufc.h>",
-        ]
-
-    default_cpp_includes = [
-        # TODO: Avoid adding these includes if we don't need them:
         ]
 
     external_includes = set("#include <%s>" % inc for inc in parameters.get("external_includes", ()))
 
-    s = set(default_h_includes + default_cpp_includes) | includes
+    s = set(default_h_includes) | includes
 
-    s2 = (set(default_cpp_includes) | external_includes) - s
+    s2 = external_includes - s
 
-    includes_h = "\n".join(sorted(s)) + "\n" if s else ""
-    includes_cpp = "\n".join(sorted(s2)) + "\n" if s2 else ""
-    return includes_h, includes_cpp
+    includes = "\n".join(sorted(s)) + "\n" if s else ""
+    return includes
