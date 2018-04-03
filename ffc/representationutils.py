@@ -146,10 +146,13 @@ def generate_enabled_coefficients(enabled_coefficients):
     # this will do for now:
     initializer_list = ", ".join("true" if enabled else "false"
                                  for enabled in enabled_coefficients)
-    code = '\n'.join([
-        "static const std::vector<bool> enabled({%s});" % initializer_list,
-        "return enabled;",
-    ])
+    if enabled_coefficients:
+        code = '\n'.join([
+            "static const bool enabled[{}] = {{ {} }};".format(len(enabled_coefficients), initializer_list),
+            "return enabled;",
+        ])
+    else:
+        code = "return NULL;"
     return code
 
 

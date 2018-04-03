@@ -19,7 +19,7 @@ public:
 %(destructor)s
   }
 
-  const std::vector<bool> & enabled_coefficients() const final override
+  const bool* enabled_coefficients() const final override
   {
 %(enabled_coefficients)s
   }
@@ -45,7 +45,7 @@ public:
 
   ~%(classname)s() override;
 
-  const std::vector<bool> & enabled_coefficients() const final override;
+  const bool* enabled_coefficients() const final override;
 
   void tabulate_tensor(double * A,
                        const double * const * w,
@@ -66,7 +66,7 @@ cell_integral_implementation = """
 %(destructor)s
 }
 
-const std::vector<bool> & %(classname)s::enabled_coefficients() const
+const bool* %(classname)s::enabled_coefficients() const
 {
 %(enabled_coefficients)s
 }
@@ -96,7 +96,7 @@ public:
 %(destructor)s
   }
 
-  const std::vector<bool> & enabled_coefficients() const final override
+  const bool* enabled_coefficients() const final override
   {
 %(enabled_coefficients)s
   }
@@ -123,7 +123,7 @@ public:
 
   ~%(classname)s() override;
 
-  const std::vector<bool> & enabled_coefficients() const final override;
+  const bool* enabled_coefficients() const final override;
 
   void tabulate_tensor(double * A,
                        const double * const * w,
@@ -145,7 +145,7 @@ exterior_facet_integral_implementation = """
 %(destructor)s
 }
 
-const std::vector<bool> & %(classname)s::enabled_coefficients() const
+const bool* %(classname)s::enabled_coefficients() const
 {
 %(enabled_coefficients)s
 }
@@ -176,7 +176,7 @@ public:
 %(destructor)s
   }
 
-  const std::vector<bool> & enabled_coefficients() const final override
+  const bool* enabled_coefficients() const final override
   {
 %(enabled_coefficients)s
   }
@@ -206,7 +206,7 @@ public:
 
   ~%(classname)s() override;
 
-  const std::vector<bool> & enabled_coefficients() const final override;
+  const bool* enabled_coefficients() const final override;
 
   void tabulate_tensor(double * A,
                        const double * const * w,
@@ -231,7 +231,7 @@ interior_facet_integral_implementation = """
 %(destructor)s
 }
 
-const std::vector<bool> & %(classname)s::enabled_coefficients() const
+const bool* %(classname)s::enabled_coefficients() const
 {
 %(enabled_coefficients)s
 }
@@ -265,7 +265,7 @@ public:
 %(destructor)s
   }
 
-  const std::vector<bool> & enabled_coefficients() const final override
+  const bool* enabled_coefficients() const final override
   {
 %(enabled_coefficients)s
   }
@@ -292,7 +292,7 @@ public:
 
   ~%(classname)s() override;
 
-  const std::vector<bool> & enabled_coefficients() const final override;
+  const bool* enabled_coefficients() const final override;
 
   void tabulate_tensor(double * A,
                        const double * const * w,
@@ -314,7 +314,7 @@ vertex_integral_implementation = """
 %(destructor)s
 }
 
-const std::vector<bool> & %(classname)s::enabled_coefficients() const
+const bool* %(classname)s::enabled_coefficients() const
 {
 %(enabled_coefficients)s
 }
@@ -345,7 +345,7 @@ public:
 %(destructor)s
   }
 
-  const std::vector<bool> & enabled_coefficients() const final override
+  const bool* enabled_coefficients() const final override
   {
 %(enabled_coefficients)s
   }
@@ -380,7 +380,7 @@ public:
 
   ~%(classname)s() override;
 
-  const std::vector<bool> & enabled_coefficients() const final override;
+  const bool* enabled_coefficients() const final override;
 
   int64_t num_cells() const final override;
 
@@ -407,7 +407,7 @@ custom_integral_implementation = """
 %(destructor)s
 }
 
-const std::vector<bool> & %(classname)s::enabled_coefficients() const
+const bool* %(classname)s::enabled_coefficients() const
 {
 %(enabled_coefficients)s
 }

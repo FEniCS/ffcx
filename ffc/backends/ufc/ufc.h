@@ -15,10 +15,7 @@
 #define UFC_VERSION_MAINTENANCE 0
 #define UFC_VERSION_RELEASE 0
 
-#include <stdexcept>
 #include <stdint.h>
-#include <vector>
-
 #include <ufc_geometry.h>
 
 #define CONCAT(a, b, c) #a "." #b "." #c
@@ -179,7 +176,7 @@ public:
   /// Map dofs from vals to values
   virtual void map_dofs(double *values, const double *vals,
                         const double *coordinate_dofs, int cell_orientation,
-                        const ufc::coordinate_mapping *cm = nullptr) const = 0;
+                        const ufc::coordinate_mapping *cm = NULL) const = 0;
 
   /// Tabulate the coordinates of all dofs on a reference cell
   virtual void tabulate_reference_dof_coordinates(
@@ -469,7 +466,11 @@ public:
   virtual ~integral() {}
 
   /// Tabulate which form coefficients are used by this integral
-  virtual const std::vector<bool> &enabled_coefficients() const = 0;
+  virtual const bool* enabled_coefficients() const = 0;
+
+  // FIXME: Is this required?
+  // Number of coefficients
+  //virtual int64_t num_coefficients() const = 0;
 };
 
 /// This class defines the interface for the tabulation of the cell

@@ -116,7 +116,7 @@ public:
                 const double *vals,
                 const double * coordinate_dofs,
                 int cell_orientation,
-                const ufc::coordinate_mapping * cm=nullptr
+                const ufc::coordinate_mapping * cm=NULL
                 ) const final override
   {
 %(map_dofs)s
@@ -203,7 +203,7 @@ public:
                 const double *vals,
                 const double * coordinate_dofs,
                 int cell_orientation,
-                const ufc::coordinate_mapping * cm=nullptr
+                const ufc::coordinate_mapping * cm=NULL
                 ) const final override;
 
   void tabulate_reference_dof_coordinates(double * reference_dof_coordinates) const final override;

@@ -26,7 +26,8 @@ from ffc.uflacs.backends.ufc.utils import generate_return_new, generate_return_n
 def create_delegate(integral_type, declname, impl):
     def _delegate(self, L, ir, parameters):
         return impl(self, L, ir, parameters, integral_type, declname)
-    _delegate.__doc__ = impl.__doc__ % {"declname": declname, "integral_type": integral_type}
+    _delegate.__doc__ = impl.__doc__ % {
+        "declname": declname, "integral_type": integral_type}
     return _delegate
 
 
@@ -62,6 +63,7 @@ class ufc_form(ufc_generator):
         def _*_foo_*(self, L, ir, parameters, integral_type, declname)
     which add_ufc_form_integral_methods will duplicate for foo = each integral type.
     """
+
     def __init__(self):
         ufc_generator.__init__(self, "form")
 
@@ -80,19 +82,20 @@ class ufc_form(ufc_generator):
 
         if positions:
             code = [
-            L.If(L.GE(i, len(positions)),
-                L.Throw("std::runtime_error", msg))
+                L.If(L.GE(i, len(positions)),
+                     [L.Comment(msg),
+                      L.Return(-1)])
             ]
 
             position = L.Symbol("position")
             code += [
-                L.ArrayDecl("static const int64_t", position, len(positions), positions),
+                L.ArrayDecl("static const int64_t", position,
+                            len(positions), positions),
                 L.Return(position[i]),
-                ]
+            ]
             return code
         else:
-            code = [ L.Throw("std::runtime_error", msg),
-                     L.Return(i) ]
+            code = [L.Comment(msg), L.Return(-1)]
         return code
 
     def create_coordinate_finite_element(self, L, ir):
@@ -107,7 +110,8 @@ class ufc_form(ufc_generator):
 
     def create_coordinate_mapping(self, L, ir):
         classnames = ir["create_coordinate_mapping"]
-        assert len(classnames) == 1  # list of length 1 until we support multiple domains
+        # list of length 1 until we support multiple domains
+        assert len(classnames) == 1
         return generate_return_new(L, classnames[0], factory=ir["jit"])
 
     def create_finite_element(self, L, ir):
@@ -119,7 +123,6 @@ class ufc_form(ufc_generator):
         i = L.Symbol("i")
         classnames = ir["create_dofmap"]
         return generate_return_new_switch(L, i, classnames, factory=ir["jit"])
-
 
     # This group of functions are repeated for each
     # foo_integral by add_ufc_form_integral_methods:

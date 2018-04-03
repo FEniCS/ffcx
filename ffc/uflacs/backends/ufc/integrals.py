@@ -20,7 +20,7 @@ from ffc.uflacs.backends.ufc.generator import ufc_generator, ufc_integral_types
 from ufl.utils.formatting import dstr
 
 
-# (This is currently not in use, see ffc/codegeneration.py for current status)
+# NOTE: This is currently not in use, see ffc/codegeneration.py for current status
 class ufc_integral(ufc_generator):
     "Each function maps to a keyword in the template. See documentation of ufc_generator."
     def __init__(self, integral_type):
@@ -28,6 +28,7 @@ class ufc_integral(ufc_generator):
         ufc_generator.__init__(self, integral_type + "_integral")
 
     def enabled_coefficients(self, L, ir):
+        # FIXME: Needs updating for interface change to plain C.
         enabled_coefficients = ir["enabled_coefficients"]
         initializer_list = ", ".join("true" if enabled else "false"
                                      for enabled in enabled_coefficients)

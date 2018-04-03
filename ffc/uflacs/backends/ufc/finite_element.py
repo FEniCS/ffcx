@@ -220,7 +220,7 @@ class ufc_finite_element(ufc_generator):
         s = L.Symbol("s")   # reference derivative number
         d = L.Symbol("d")   # dof
 
-        l = L.Symbol("d")   # zeroing arrays
+        l = L.Symbol("l")   # zeroing arrays
 
         combinations_code = []
         if max_degree == 0:
