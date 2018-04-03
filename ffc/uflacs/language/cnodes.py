@@ -977,7 +977,7 @@ class Call(CExprOperator):
 
 
 def Sqrt(x):
-    return Call("std::sqrt", x)
+    return Call("sqrt", x)
 
 
 # Convertion function to expression nodes

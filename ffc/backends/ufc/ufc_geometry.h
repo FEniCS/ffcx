@@ -1,31 +1,14 @@
 // This file provides utility functions for computing geometric quantities.
 // This code is released into the public domain.
 //
-// The FEniCS Project (http://www.fenicsproject.org/) 2013-2015.
+// The FEniCS Project (http://www.fenicsproject.org/) 2013-2018.
 
 #pragma once
 
-#include <algorithm>
 #include <math.h>
 
 /// A note regarding data structures. All matrices are represented as
-/// row-major flattened raw C++ arrays. Benchmarks indicate that when
-/// optimization (-O1 and up) is used, the following conditions hold:
-///
-/// 1. std::vector is just as fast as raw C++ arrays for indexing.
-///
-/// 2. Flattened arrays are twice as fast as nested arrays, both for
-///    std:vector and raw C++ arrays.
-///
-/// 3. Defining an array by 'std::vector<double> x(n)', where n is a
-///    literal, leads to dynamic allocation and results in significant
-///    slowdowns compared to the definition 'double x[n]'.
-///
-/// The conclusion is that we should use flattened raw C++ arrays in
-/// the interfaces for these utility functions, since some of the
-/// arrays passed to these functions (in particular Jacobians) are
-/// created inside the generated functions (tabulate_tensor). Note
-/// that an std::vector x may also be passed as raw pointer by &x[0].
+/// row-major flattened raw C arrays.
 
 // TODO: Should signatures of compute_<foo>_<cell>_<n>d match for each foo?
 //       On one hand the snippets use different quantities, on the other
@@ -1093,8 +1076,8 @@ inline void compute_min_facet_edge_length_tetrahedron_3d(
             (coordinate_dofs[3 * vertex1 + 2] -
              coordinate_dofs[3 * vertex0 + 2]);
   }
-  min_edge_length = sqrt(std::min(
-      std::min(edge_lengths_sqr[1], edge_lengths_sqr[1]), edge_lengths_sqr[2]));
+  min_edge_length = sqrt(fmin(
+      fmin(edge_lengths_sqr[1], edge_lengths_sqr[1]), edge_lengths_sqr[2]));
 }
 
 ///--- Compute max facet edge lengths ---
@@ -1123,6 +1106,6 @@ compute_max_facet_edge_length_tetrahedron_3d(double &max_edge_length,
             (coordinate_dofs[3 * vertex1 + 2] -
              coordinate_dofs[3 * vertex0 + 2]);
   }
-  max_edge_length = sqrt(std::max(
-      std::max(edge_lengths_sqr[0], edge_lengths_sqr[1]), edge_lengths_sqr[2]));
+  max_edge_length = sqrt(fmax(
+      fmax(edge_lengths_sqr[0], edge_lengths_sqr[1]), edge_lengths_sqr[2]));
 }

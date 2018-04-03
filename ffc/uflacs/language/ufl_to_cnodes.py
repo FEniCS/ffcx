@@ -105,7 +105,7 @@ class UFL2CNodesTranslatorCpp(MultiFunction):
         return self.L.Call(o._name, op)
 
     def _cmath(self, name, op):
-        return self.L.Call("std::" + name, op)
+        return self.L.Call(name, op)
 
     def sqrt(self, o, op):
         return self._cmath("sqrt", op)

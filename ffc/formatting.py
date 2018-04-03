@@ -51,6 +51,7 @@ format_template = { "ufc comment" : """\
 """,
                     "header_h" : """\
 #pragma once
+
 """,
 
                     "header_c" : """\
@@ -237,7 +238,6 @@ def _generate_includes(includes, parameters):
         # TODO: Avoid adding these includes if we don't need them:
         "#include <iostream>",
         "#include <stdexcept>",
-        "#include <algorithm>",
         ]
 
     external_includes = set("#include <%s>" % inc for inc in parameters.get("external_includes", ()))
