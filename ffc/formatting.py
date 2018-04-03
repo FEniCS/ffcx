@@ -231,6 +231,7 @@ def _generate_includes(includes, parameters):
 
     default_h_includes = [
         "#include <string.h>",  # This should really be set by the backend
+        "#include <stdlib.h>",  # This should really be set by the backend
         "#include <ufc.h>",
         ]
 
