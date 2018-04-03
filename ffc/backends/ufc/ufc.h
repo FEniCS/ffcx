@@ -105,7 +105,7 @@ public:
   ///         Reference cell coordinates.
   ///         Dimensions: X[num_points][tdim]
   ///
-  virtual void evaluate_reference_basis(double *reference_values,
+  virtual int evaluate_reference_basis(double *reference_values,
                                         int64_t num_points,
                                         const double *X) const = 0;
 
@@ -126,7 +126,7 @@ public:
   ///         Reference cell coordinates.
   ///         Dimensions: X[num_points][tdim]
   ///
-  virtual void evaluate_reference_basis_derivatives(double *reference_values,
+  virtual int evaluate_reference_basis_derivatives(double *reference_values,
                                                     int64_t order,
                                                     int64_t num_points,
                                                     const double *X) const = 0;
@@ -168,7 +168,7 @@ public:
   ///         Orientation of the cell, 1 means flipped w.r.t. reference cell.
   ///         Only relevant on manifolds (tdim < gdim).
   ///
-  virtual void transform_reference_basis_derivatives(
+  virtual int transform_reference_basis_derivatives(
       double *values, int64_t order, int64_t num_points,
       const double *reference_values, const double *X, const double *J,
       const double *detJ, const double *K, int cell_orientation) const = 0;

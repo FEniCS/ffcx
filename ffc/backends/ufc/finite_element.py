@@ -84,30 +84,30 @@ public:
 %(family)s
   }
 
-  void evaluate_reference_basis(double * reference_values,
-                                int64_t num_points,
-                                const double * X) const final override
+  int evaluate_reference_basis(double * reference_values,
+                               int64_t num_points,
+                               const double * X) const final override
   {
 %(evaluate_reference_basis)s
   }
 
-  void evaluate_reference_basis_derivatives(double * reference_values,
-                                            int64_t order,
-                                            int64_t num_points,
-                                            const double * X) const final override
+  int evaluate_reference_basis_derivatives(double * reference_values,
+                                           int64_t order,
+                                           int64_t num_points,
+                                           const double * X) const final override
   {
 %(evaluate_reference_basis_derivatives)s
   }
 
-  void transform_reference_basis_derivatives(double * values,
-                                             int64_t order,
-                                             int64_t num_points,
-                                             const double * reference_values,
-                                             const double * X,
-                                             const double * J,
-                                             const double * detJ,
-                                             const double * K,
-                                             int cell_orientation) const final override
+  int transform_reference_basis_derivatives(double * values,
+                                            int64_t order,
+                                            int64_t num_points,
+                                            const double * reference_values,
+                                            const double * X,
+                                            const double * J,
+                                            const double * detJ,
+                                            const double * K,
+                                            int cell_orientation) const final override
   {
 %(transform_reference_basis_derivatives)s
   }
@@ -180,24 +180,24 @@ public:
 
   const char * family() const final override;
 
-  void evaluate_reference_basis(double * reference_values,
-                                int64_t num_points,
-                                const double * X) const final override;
+  int evaluate_reference_basis(double * reference_values,
+                               int64_t num_points,
+                               const double * X) const final override;
 
-  void evaluate_reference_basis_derivatives(double * reference_values,
+  int evaluate_reference_basis_derivatives(double * reference_values,
                                             int64_t order,
                                             int64_t num_points,
                                             const double * X) const final override;
 
-  void transform_reference_basis_derivatives(double * values,
-                                             int64_t order,
-                                             int64_t num_points,
-                                             const double * reference_values,
-                                             const double * X,
-                                             const double * J,
-                                             const double * detJ,
-                                             const double * K,
-                                             int cell_orientation) const final override;
+  int transform_reference_basis_derivatives(double * values,
+                                            int64_t order,
+                                            int64_t num_points,
+                                            const double * reference_values,
+                                            const double * X,
+                                            const double * J,
+                                            const double * detJ,
+                                            const double * K,
+                                            int cell_orientation) const final override;
 
   void map_dofs(double * values,
                 const double *vals,
@@ -293,30 +293,30 @@ const char * %(classname)s::family() const
 %(family)s
 }
 
-void %(classname)s::evaluate_reference_basis(double * reference_values,
-                                             int64_t num_points,
-                                             const double * X) const
+int %(classname)s::evaluate_reference_basis(double * reference_values,
+                                            int64_t num_points,
+                                            const double * X) const
 {
 %(evaluate_reference_basis)s
 }
 
-void %(classname)s::evaluate_reference_basis_derivatives(double * reference_values,
-                                                         int64_t order,
-                                                         int64_t num_points,
-                                                         const double * X) const
+int %(classname)s::evaluate_reference_basis_derivatives(double * reference_values,
+                                                        int64_t order,
+                                                        int64_t num_points,
+                                                        const double * X) const
 {
 %(evaluate_reference_basis_derivatives)s
 }
 
-void %(classname)s::transform_reference_basis_derivatives(double * values,
-                                                          int64_t order,
-                                                          int64_t num_points,
-                                                          const double * reference_values,
-                                                          const double * X,
-                                                          const double * J,
-                                                          const double * detJ,
-                                                          const double * K,
-                                                          int cell_orientation) const
+int %(classname)s::transform_reference_basis_derivatives(double * values,
+                                                         int64_t order,
+                                                         int64_t num_points,
+                                                         const double * reference_values,
+                                                         const double * X,
+                                                         const double * J,
+                                                         const double * detJ,
+                                                         const double * K,
+                                                         int cell_orientation) const
 {
 %(transform_reference_basis_derivatives)s
 }

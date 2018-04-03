@@ -43,6 +43,9 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
     l0 = L.Symbol("l0")   # zeroing arrays
     l1 = L.Symbol("l1")   # zeroing arrays
 
+    # Return statement (values indicates that function is implemented)
+    ret = L.Return(0)
+
     # Define symbol for number of derivatives of given order
     num_derivatives = L.Symbol("num_derivatives")
     reference_values_size = num_points * num_dofs * \
@@ -61,7 +64,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
         L.If(L.EQ(order, 0), [
             L.Call("evaluate_reference_basis",
                    (reference_values, num_points, X)),
-            L.Return()
+            ret
         ]),
         # Compute number of derivatives of this order
         L.VariableDecl("const " + index_type, num_derivatives,
@@ -73,7 +76,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
 
         # Cutoff for higher order than we have
         L.If(L.GT(order, max_degree),
-             L.Return()),
+             ret),
     ]
 
     # If max_degree is zero, we don't need to generate any more code
@@ -241,6 +244,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
         + tables_code
         + combinations_code
         + final_loop_code
+        + [ret]
     )
 
     return code

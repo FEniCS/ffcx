@@ -74,7 +74,8 @@ def generate_evaluate_reference_basis(L, data, parameters):
 
     # Output values
     reference_values = L.Symbol("reference_values")
-    ref_values = L.FlattenedArray(reference_values, dims=(num_points, num_dofs, reference_value_size))
+    ref_values = L.FlattenedArray(reference_values, dims=(
+        num_points, num_dofs, reference_value_size))
 
     # Loop indices
     ip = L.Symbol("ip")
@@ -82,25 +83,30 @@ def generate_evaluate_reference_basis(L, data, parameters):
     c = L.Symbol("c")
     r = L.Symbol("r")
 
+    # Return statement (value indicates that function is implemented)
+    ret = L.Return(0)
+
     # Generate code with static tables of expansion coefficients
-    tables_code, coefficients_for_dof = generate_expansion_coefficients(L, data["dofs_data"])
+    tables_code, coefficients_for_dof = generate_expansion_coefficients(
+        L, data["dofs_data"])
 
     # Reset reference_values[:] to 0
     reset_values_code = [
         L.ForRange(k, 0, num_points*num_dofs*reference_value_size,
                    index_type=index_type,
                    body=L.Assign(reference_values[k], 0.0))
-        ]
+    ]
     setup_code = tables_code + reset_values_code
 
     # Generate code to compute tables of basisvalues
     basisvalues_code, basisvalues_for_degree, need_fiat_coordinates = \
-        generate_compute_basisvalues(L, data["dofs_data"], element_cellname, tdim, X, ip)
+        generate_compute_basisvalues(
+            L, data["dofs_data"], element_cellname, tdim, X, ip)
 
     # Accumulate products of basisvalues and coefficients into values
     accumulation_code = [
         L.Comment("Accumulate products of coefficients and basisvalues"),
-        ]
+    ]
     for idof, dof_data in enumerate(data["dofs_data"]):
         embedded_degree = dof_data["embedded_degree"]
         num_components = dof_data["num_components"]
@@ -126,16 +132,17 @@ def generate_evaluate_reference_basis(L, data, parameters):
                                            index_type=index_type,
                                            body=L.AssignAdd(ref_values[ip, idof, reference_offset + c],
                                                             coefficients[c, r] * basisvalues[r])))
-                ]
+            ]
         elif num_members > 1:
             accumulation_code += [
                 L.ForRange(r, 0, num_members, index_type=index_type,
                            body=L.AssignAdd(ref_values[ip, idof, reference_offset], coefficients[0, r] * basisvalues[r]))
-                ]
+            ]
         else:
             accumulation_code += [
-                L.AssignAdd(ref_values[ip, idof, reference_offset], coefficients[0, 0] * basisvalues[0])
-                ]
+                L.AssignAdd(ref_values[ip, idof, reference_offset],
+                            coefficients[0, 0] * basisvalues[0])
+            ]
 
         # TODO: Move this mapping to its own ufc function
         # e.g. finite_element::apply_element_mapping(reference_values,
@@ -146,8 +153,9 @@ def generate_evaluate_reference_basis(L, data, parameters):
     code = [
         setup_code,
         L.ForRange(ip, 0, num_points, index_type=index_type,
-                   body=basisvalues_code + accumulation_code)
-        ]
+                   body=basisvalues_code + accumulation_code),
+        ret
+    ]
     return code
 
 
@@ -191,7 +199,7 @@ def generate_expansion_coefficients(L, dofs_data):
 def generate_compute_basisvalues(L, dofs_data, element_cellname, tdim, X, ip):
     basisvalues_code = [
         L.Comment("Compute basisvalues for each relevant embedded degree"),
-        ]
+    ]
     basisvalues_for_degree = {}
     need_fiat_coordinates = False
     Y = L.Symbol("Y")
@@ -204,7 +212,8 @@ def generate_compute_basisvalues(L, dofs_data, element_cellname, tdim, X, ip):
             num_members = dof_data["num_expansion_members"]
 
             basisvalues = L.Symbol("basisvalues%d" % embedded_degree)
-            bfcode = _generate_compute_basisvalues(L, basisvalues, Y, element_cellname, embedded_degree, num_members)
+            bfcode = _generate_compute_basisvalues(
+                L, basisvalues, Y, element_cellname, embedded_degree, num_members)
             basisvalues_code += [L.StatementList(bfcode)]
 
             # Store symbol reference for this degree
@@ -213,10 +222,11 @@ def generate_compute_basisvalues(L, dofs_data, element_cellname, tdim, X, ip):
     if need_fiat_coordinates:
         # Mapping from UFC reference cell coordinate X to FIAT reference cell coordinate Y
         fiat_coordinate_mapping = [
-            L.Comment("Map from UFC reference coordinate X to FIAT reference coordinate Y"),
+            L.Comment(
+                "Map from UFC reference coordinate X to FIAT reference coordinate Y"),
             L.ArrayDecl("const double", Y, (tdim,),
                         values=[2.0*X[ip*tdim + jj]-1.0 for jj in range(tdim)]),
-            ]
+        ]
         basisvalues_code = fiat_coordinate_mapping + basisvalues_code
 
     return basisvalues_code, basisvalues_for_degree, need_fiat_coordinates
@@ -227,11 +237,14 @@ def _generate_compute_basisvalues(L, basisvalues, Y, element_cellname, embedded_
 
     # Branch off to cell specific implementations
     if element_cellname == "interval":
-        code = _generate_compute_interval_basisvalues(L, basisvalues, Y, embedded_degree, num_members)
+        code = _generate_compute_interval_basisvalues(
+            L, basisvalues, Y, embedded_degree, num_members)
     elif element_cellname == "triangle":
-        code = _generate_compute_triangle_basisvalues(L, basisvalues, Y, embedded_degree, num_members)
+        code = _generate_compute_triangle_basisvalues(
+            L, basisvalues, Y, embedded_degree, num_members)
     elif element_cellname == "tetrahedron":
-        code = _generate_compute_tetrahedron_basisvalues(L, basisvalues, Y, embedded_degree, num_members)
+        code = _generate_compute_tetrahedron_basisvalues(
+            L, basisvalues, Y, embedded_degree, num_members)
     else:
         error()
 
@@ -241,7 +254,8 @@ def _generate_compute_basisvalues(L, basisvalues, Y, element_cellname, embedded_
 def _jrc(a, b, n):
     an = float((2*n+1+a+b) * (2*n+2+a+b))/float(2*(n+1) * (n+1+a+b))
     bn = float((a*a-b*b) * (2*n+1+a+b))/float(2*(n+1) * (2*n+a+b) * (n+1+a+b))
-    cn = float((n+a) * (n+b) * (2*n+2+a+b))/float((n+1) * (n+1+a+b) * (2*n+a+b))
+    cn = float((n+a) * (n+b) * (2*n+2+a+b)) / \
+        float((n+1) * (n+1+a+b) * (2*n+a+b))
     return (an, bn, cn)
 
 
@@ -436,7 +450,8 @@ def _generate_compute_tetrahedron_basisvalues(L, basisvalues, Y, embedded_degree
     # FIAT_NEW code
     # results[idx(1,0),:] = f1
     f1 = L.Symbol("tmp1_%d" % embedded_degree)
-    code += [L.VariableDecl("const double", f1, 0.5*(2.0 + 2.0*Y[0] + Y[1] + Y[2]))]
+    code += [L.VariableDecl("const double", f1, 0.5 *
+                            (2.0 + 2.0*Y[0] + Y[1] + Y[2]))]
     code += [L.Assign(basisvalues[1], f1)]
 
     # NOTE: KBO: The order of the loops is VERY IMPORTANT!!
@@ -450,7 +465,8 @@ def _generate_compute_tetrahedron_basisvalues(L, basisvalues, Y, embedded_degree
     # Only active if embedded_degree > 1.
     if embedded_degree > 1:
         f2 = L.Symbol("tmp2_%d" % embedded_degree)
-        code += [L.VariableDecl("const double", f2, 0.25*(Y[1] + Y[2])*(Y[1] + Y[2]))]
+        code += [L.VariableDecl("const double", f2,
+                                0.25*(Y[1] + Y[2])*(Y[1] + Y[2]))]
     for r in range(1, embedded_degree):
         rr = _idx3d((r + 1), 0, 0)
         ss = _idx3d(r, 0, 0)
@@ -486,7 +502,8 @@ def _generate_compute_tetrahedron_basisvalues(L, basisvalues, Y, embedded_degree
         f3 = L.Symbol("tmp3_%d" % embedded_degree)
         f4 = L.Symbol("tmp4_%d" % embedded_degree)
         f5 = L.Symbol("tmp5_%d" % embedded_degree)
-        code += [L.VariableDecl("const double", f3, 0.5*(1.0 + 2.0*Y[1] + Y[2]))]
+        code += [L.VariableDecl("const double", f3,
+                                0.5*(1.0 + 2.0*Y[1] + Y[2]))]
         code += [L.VariableDecl("const double", f4, 0.5*(1.0 - Y[2]))]
         code += [L.VariableDecl("const double", f5, f4*f4)]
     for r in range(0, embedded_degree - 1):

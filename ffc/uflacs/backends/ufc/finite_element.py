@@ -165,24 +165,27 @@ class ufc_finite_element(ufc_generator):
     def evaluate_reference_basis(self, L, ir, parameters):
         data = ir["evaluate_basis"]
         if isinstance(data, str):
-            msg = "evaluate_reference_basis: %s" % data
-            return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
+            # Function has not been requested
+            msg = "evaluate_reference_basis: {}".format(data)
+            return [L.Comment(msg), L.Return(-1)]
 
         return generate_evaluate_reference_basis(L, data, parameters)
 
     def evaluate_reference_basis_derivatives(self, L, ir, parameters):
         data = ir["evaluate_basis"]
         if isinstance(data, str):
-            msg = "evaluate_reference_basis_derivatives: %s" % data
-            return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
+            # Function has not been requested
+            msg = "evaluate_reference_basis_derivatives: {}".format(data)
+            return [L.Comment(msg), L.Return(-1)]
 
         return generate_evaluate_reference_basis_derivatives(L, data, parameters)
 
     def transform_reference_basis_derivatives(self, L, ir, parameters):
         data = ir["evaluate_basis"]
         if isinstance(data, str):
-            msg = "transform_reference_basis_derivatives: %s" % data
-            return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
+            # Function has not been requested
+            msg = "transform_reference_basis_derivatives: {}".format(data)
+            return [L.Comment(msg), L.Return(-1)]
 
         # Get some known dimensions
         #element_cellname = data["cellname"]
