@@ -113,18 +113,19 @@ def MemZeroRange(name, begin, end):
     return Call("std::fill", (name + begin, name + end, LiteralFloat(0.0)))
 
 
-# Note: removed as part of C++ -> C transition
+# Note: removed as part of C++ -> C transition. Not using memset because
+# it is not safe for floats
 # def MemZero(name, size):
 #     name = as_cexpr_or_string_symbol(name)
 #     size = as_cexpr(size)
 #     return Call("std::fill_n", (name, size, LiteralFloat(0.0)))
 
 
-def MemCopy(src, dst, size):
+def MemCopy(src, dst, size, type):
     src = as_cexpr_or_string_symbol(src)
     dst = as_cexpr_or_string_symbol(dst)
-    size = as_cexpr(size)
-    return Call("std::copy_n", (src, size, dst))
+    size = as_cexpr_or_string_symbol("{}*sizeof({})".format(size, type))
+    return Call("memcpy", (dst, src, size))
 
 
 # CNode core

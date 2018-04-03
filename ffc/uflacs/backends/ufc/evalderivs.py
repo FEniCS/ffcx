@@ -157,7 +157,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
                                 L.VariableDecl(index_type, comb,
                                                combinations[r, 0]),
                                 L.MemCopy(L.AddressOf(dmats_name[comb][0][0]),  L.AddressOf(
-                                    dmats[0][0]), shape_dmats[0]*shape_dmats[1]),
+                                    dmats[0][0]), shape_dmats[0]*shape_dmats[1], "double"),
                                 L.Comment(
                                     "Looping derivative order to generate dmats."),
                                 L.ForRange(s, 1, order, index_type=index_type, body=[
@@ -165,7 +165,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
                                     L.ArrayDecl(
                                         "double", dmats_old, shape_dmats),
                                     L.MemCopy(L.AddressOf(dmats[0][0]),  L.AddressOf(
-                                        dmats_old[0][0]), shape_dmats[0]*shape_dmats[1]),
+                                        dmats_old[0][0]), shape_dmats[0]*shape_dmats[1], "double"),
                                     L.Comment("Resetting dmats."),
                                     L.ForRange(l0, 0, shape_dmats[0],
                                                index_type=index_type,
