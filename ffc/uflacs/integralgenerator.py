@@ -29,7 +29,7 @@ from ffc.log import error, warning
 
 from ffc.uflacs.build_uflacs_ir import get_common_block_data
 from ffc.uflacs.elementtables import piecewise_ttypes
-from ffc.uflacs.language.cnodes import pad_innermost_dim, pad_dim, MemZeroRange
+from ffc.uflacs.language.cnodes import pad_innermost_dim, pad_dim
 
 
 class IntegralGenerator(object):
@@ -71,7 +71,7 @@ class IntegralGenerator(object):
         includes = set()
 
         # Get std::fill used by MemZero
-        includes.add("#include <algorithm>")
+        #includes.add("#include <algorithm>")
 
         # For controlling floating point environment
         #includes.add("#include <cfenv>")
@@ -95,7 +95,7 @@ class IntegralGenerator(object):
 
         # Only return the necessary headers
         if cmath_names & self._ufl_names:
-            includes.add("#include <cmath>")
+            includes.add("#include <math.h>")
 
         if boost_math_names & self._ufl_names:
             includes.add("#include <boost/math/special_functions.hpp>")
@@ -1063,8 +1063,8 @@ class IntegralGenerator(object):
         elif init_mode == "upfront":
             # Zero everything first
             parts += [L.ForRange(l, 0, A_size,
-                                 index_type=index_type,
-                                 body=L.Assign(A.array[l], 0.0))]
+                                 index_type="int",
+                                 body=L.Assign(A[l], 0.0))]
 
             # Generate A[i] = A_values[i] skipping zeros
             for i in range(A_size):
@@ -1084,7 +1084,9 @@ class IntegralGenerator(object):
                     if zero_end == zero_begin + 1:
                         parts += [L.Assign(A[zero_begin], 0.0)]
                     elif zero_end > zero_begin:
-                        parts += [L.MemZeroRange(A, zero_begin, zero_end)]
+                        parts += [L.ForRange(l, zero_begin, zero_end,
+                                 index_type="int",
+                                 body=L.Assign(A[l], 0.0))]
                     zero_begin = i + 1
                     zero_end = zero_begin
                     # Set A[i] value
@@ -1093,7 +1095,9 @@ class IntegralGenerator(object):
             if zero_end == zero_begin + 1:
                 parts += [L.Assign(A[zero_begin], 0.0)]
             elif zero_end > zero_begin:
-                parts += [L.MemZeroRange(A, zero_begin, zero_end)]
+                parts += [L.ForRange(l, zero_begin, zero_end,
+                                 index_type="int",
+                                 body=L.Assign(A[l], 0.0))]
         else:
             error("Invalid init_mode parameter %s" % (init_mode,))
 

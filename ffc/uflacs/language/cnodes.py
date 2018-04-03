@@ -108,9 +108,11 @@ def float_product(factors):
         return Product(factors)
 
 
-def MemZeroRange(name, begin, end):
-    name = as_cexpr_or_string_symbol(name)
-    return Call("std::fill", (name + begin, name + end, LiteralFloat(0.0)))
+# Note: removed as part of C++ -> C transition. Not using memset because
+# it is not safe for floats
+# def MemZeroRange(name, begin, end):
+#     name = as_cexpr_or_string_symbol(name)
+#     return Call("std::fill", (name + begin, name + end, LiteralFloat(0.0)))
 
 
 # Note: removed as part of C++ -> C transition. Not using memset because
