@@ -16,7 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
-# Note: Most of the code in this file is a direct translation from the old implementation in FFC
+# Note: Most of the code in this file is a direct translation from the
+# old implementation in FFC
 
 
 from ffc.uflacs.backends.ufc.generator import ufc_generator

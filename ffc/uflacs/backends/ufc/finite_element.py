@@ -135,10 +135,6 @@ class ufc_finite_element(ufc_generator):
         return generate_map_dofs(L, ir["evaluate_dof"])
 
     def tabulate_reference_dof_coordinates(self, L, ir, parameters):
-        # TODO: Change signature to avoid copy? E.g.
-        # virtual const std::vector<double> & tabulate_reference_dof_coordinates() const = 0;
-        # See integral::enabled_coefficients for example
-
         # TODO: ensure points is a numpy array,
         #   get tdim from points.shape[1],
         #   place points in ir directly instead of the subdict

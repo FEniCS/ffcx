@@ -229,9 +229,10 @@ public:
   virtual int64_t num_entity_closure_dofs(int64_t d) const = 0;
 
   /// Tabulate the local-to-global mapping of dofs on a cell
-  virtual void tabulate_dofs(
-      int64_t *dofs, const std::vector<int64_t> &num_global_entities,
-      const std::vector<std::vector<int64_t>> &entity_indices) const = 0;
+  ///   num_global_entities[num_entities_per_cell]
+  ///   entity_indices[tdim][local_index ]
+  virtual void tabulate_dofs(int64_t *dofs, const int64_t* num_global_entities,
+                             const int64_t** entity_indices) const = 0;
 
   /// Tabulate the local-to-local mapping from facet dofs to cell dofs
   virtual void tabulate_facet_dofs(int64_t *dofs, int64_t facet) const = 0;

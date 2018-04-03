@@ -231,6 +231,7 @@ def _generate_comment(parameters):
 def _generate_includes(includes, parameters):
 
     default_h_includes = [
+        "#include <string.h>",
         "#include <ufc.h>",
         ]
 

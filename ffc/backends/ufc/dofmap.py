@@ -55,8 +55,8 @@ public:
   }
 
   void tabulate_dofs(int64_t * dofs,
-                     const std::vector<int64_t>& num_global_entities,
-                     const std::vector<std::vector<int64_t>>& entity_indices) const final override
+                     const int64_t* num_global_entities,
+                     const int64_t** entity_indices) const final override
   {
 %(tabulate_dofs)s
   }
@@ -122,8 +122,8 @@ public:
   int64_t num_entity_closure_dofs(int64_t d) const final override;
 
   void tabulate_dofs(int64_t * dofs,
-                     const std::vector<int64_t>& num_global_entities,
-                     const std::vector<std::vector<int64_t>>& entity_indices) const final override;
+                     const int64_t* num_global_entities,
+                     const int64_t** entity_indices) const final override;
 
   void tabulate_facet_dofs(int64_t * dofs,
                            int64_t facet) const final override;
@@ -190,8 +190,8 @@ int64_t %(classname)s::num_entity_closure_dofs(int64_t d) const
 }
 
 void %(classname)s::tabulate_dofs(int64_t * dofs,
-                                  const std::vector<int64_t>& num_global_entities,
-                                  const std::vector<std::vector<int64_t>>& entity_indices) const
+                                  const int64_t* num_global_entities,
+                                  const int64_t** entity_indices) const
 {
 %(tabulate_dofs)s
 }
