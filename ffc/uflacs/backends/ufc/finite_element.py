@@ -157,7 +157,8 @@ class ufc_finite_element(ufc_generator):
         dof_X_values = [X[jj] for X in points for jj in range(tdim)]
         decl = L.ArrayDecl("static const double", dof_X,
                            (len(points) * tdim,), values=dof_X_values)
-        copy = L.MemCopy(dof_X, reference_dof_coordinates, tdim*len(points), "double")
+        copy = L.MemCopy(dof_X, reference_dof_coordinates,
+                         tdim*len(points), "double")
 
         code = [decl, copy]
         return code
@@ -405,6 +406,7 @@ class ufc_finite_element(ufc_generator):
             + values_init_code
             + dof_attributes_code
             + point_loop_code
+            + [L.Comment(msg), L.Return(0)]
         )
         return code
 
