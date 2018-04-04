@@ -20,12 +20,10 @@
 
 
 def generate_return_new(L, classname, factory):
-    print(L.Return(L.New(classname)))
-    return L.Return(L.Call("YYYYcreate_" + classname))
-    # if factory:
-    #     return L.Return(L.Call("create_" + classname))
-    # else:
-    #     return L.Return(L.New(classname))
+    if factory:
+        return L.Return(L.Call("create_" + classname))
+    else:
+        return L.Return(L.New(classname))
 
 
 def generate_return_new_switch(L, i, classnames, args=None, factory=False):
