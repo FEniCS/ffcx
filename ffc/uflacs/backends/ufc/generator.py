@@ -38,7 +38,7 @@ integral_name_templates = (
     "has_%s_integrals",
     "create_%s_integral",
     "create_default_%s_integral",
-    )
+)
 
 
 class ufc_generator(object):
@@ -58,34 +58,40 @@ class ufc_generator(object):
     result in attempts at informative errors, meaning errors
     will often be caught early when making changes.
     """
+
     def __init__(self, basename):
         ufc_templates = ffc.backends.ufc.templates
         self._header_template = ufc_templates[basename + "_header"]
-        self._implementation_template = ufc_templates[basename + "_implementation"]
+        self._implementation_template = ufc_templates[basename +
+                                                      "_implementation"]
         self._combined_template = ufc_templates[basename + "_combined"]
-        self._jit_header_template = ufc_templates[basename + "_jit_header"]
-        self._jit_implementation_template = ufc_templates[basename + "_jit_implementation"]
 
         r = re.compile(r"%\(([a-zA-Z0-9_]*)\)")
         self._header_keywords = set(r.findall(self._header_template))
-        self._implementation_keywords = set(r.findall(self._implementation_template))
+        self._implementation_keywords = set(
+            r.findall(self._implementation_template))
         self._combined_keywords = set(r.findall(self._combined_template))
 
-        self._keywords = sorted(self._header_keywords | self._implementation_keywords)
+        self._keywords = sorted(self._header_keywords |
+                                self._implementation_keywords)
 
         # Do some ufc interface template checking, to catch bugs
         # early when we change the ufc interface templates
         if set(self._keywords) != set(self._combined_keywords):
             a = set(self._header_keywords) - set(self._combined_keywords)
-            b = set(self._implementation_keywords) - set(self._combined_keywords)
+            b = set(self._implementation_keywords) - \
+                set(self._combined_keywords)
             c = set(self._combined_keywords) - set(self._keywords)
             msg = "Templates do not have matching sets of keywords:"
             if a:
-                msg += "\n  Header template keywords '%s' are not in the combined template." % (sorted(a),)
+                msg += "\n  Header template keywords '%s' are not in the combined template." % (
+                    sorted(a),)
             if b:
-                msg += "\n  Implementation template keywords '%s' are not in the combined template." % (sorted(b),)
+                msg += "\n  Implementation template keywords '%s' are not in the combined template." % (
+                    sorted(b),)
             if c:
-                msg += "\n  Combined template keywords '%s' are not in the header or implementation templates." % (sorted(c),)
+                msg += "\n  Combined template keywords '%s' are not in the header or implementation templates." % (
+                    sorted(c),)
             error(msg)
 
     def generate_snippets(self, L, ir, parameters):
@@ -101,9 +107,10 @@ class ufc_generator(object):
             # Call self.<keyword>(*args) to get value to insert in snippets
             method = getattr(self, kw)
             vn = method.__code__.co_varnames[:method.__code__.co_argcount]
-            file_line = "%s:%s" % (method.__code__.co_filename, method.__code__.co_firstlineno)
+            file_line = "%s:%s" % (
+                method.__code__.co_filename, method.__code__.co_firstlineno)
 
-            #if handlerstr == "ufc_dofmap.create":
+            # if handlerstr == "ufc_dofmap.create":
             #    import ipdb; ipdb.set_trace()
 
             # Always pass L
@@ -117,46 +124,53 @@ class ufc_generator(object):
             elif vn[0] in ir:
                 args += (ir[vn[0]],)
             else:
-                error("Cannot find key '%s' in ir, argument to %s at %s." % (vn[0], handlerstr, file_line))
+                error("Cannot find key '%s' in ir, argument to %s at %s." %
+                      (vn[0], handlerstr, file_line))
             vn = vn[1:]
 
             # Optionally pass parameters
             if vn == ("parameters",):
                 args += (parameters,)
             elif vn:
-                error("Invalid argument names %s to %s at %s." % (vn, handlerstr, file_line))
+                error("Invalid argument names %s to %s at %s." %
+                      (vn, handlerstr, file_line))
 
             # Call handler
             value = method(*args)
-
 
             if isinstance(value, list):
                 value = L.StatementList(value)
 
             # Indent body and format to str
             if isinstance(value, L.CStatement):
-                value = L.Indented(value.cs_format(precision=parameters["precision"]))
+                value = L.Indented(value.cs_format(
+                    precision=parameters["precision"]))
                 value = format_indented_lines(value)
             elif not isinstance(value, str):
-                error("Expecting code or string, not %s, returned from handler %s at %s." % (type(value), handlerstr, file_line))
+                error("Expecting code or string, not %s, returned from handler %s at %s." % (
+                    type(value), handlerstr, file_line))
 
             # Store formatted code in snippets dict
             snippets[kw] = value
 
         # Error checking (can detect some bugs early when changing the ufc interface)
         # Get all attributes of subclass class (skip "_foo")
-        attrs = set(name for name in dir(self) if not (name.startswith("_") or name.startswith("generate")))
+        attrs = set(name for name in dir(self) if not (
+            name.startswith("_") or name.startswith("generate")))
         # Get all attributes of this base class (skip "_foo" and "generate*")
-        base_attrs = set(name for name in dir(ufc_generator) if not (name.startswith("_") or name.startswith("generate")))
+        base_attrs = set(name for name in dir(ufc_generator) if not (
+            name.startswith("_") or name.startswith("generate")))
         # The template keywords should not contain any names not among the class attributes
         missing = set(self._keywords) - attrs
         if missing:
-            warning("*** Missing generator functions:\n%s" % ('\n'.join(map(str, sorted(missing))),))
+            warning("*** Missing generator functions:\n%s" %
+                    ('\n'.join(map(str, sorted(missing))),))
         # The class attributes should not contain any names not among the template keywords
         # (this is strict, a useful check when changing ufc, but can be dropped)
         unused = attrs - set(self._keywords) - base_attrs
         if unused:
-            warning("*** Unused generator functions:\n%s" % ('\n'.join(map(str, sorted(unused))),))
+            warning("*** Unused generator functions:\n%s" %
+                    ('\n'.join(map(str, sorted(unused))),))
 
         # Return snippets, a dict of code strings
         return snippets
@@ -166,8 +180,8 @@ class ufc_generator(object):
         if snippets is None:
             snippets = self.generate_snippets(L, ir, parameters)
         if jit:
-            ht = self._jit_header_template
-            it = self._jit_implementation_template
+            ht = self._header_template
+            it = self._implementation_template
         else:
             ht = self._header_template
             it = self._implementation_template

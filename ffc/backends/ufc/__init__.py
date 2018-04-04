@@ -18,15 +18,13 @@ The strings are named:
     '<classname>_header'
     '<classname>_implementation'
     '<classname>_combined'
-    '<classname>_jit_header'
-    '<classname>_jit_implementation'
 
-The header and implementation contain the definition and declaration
-of the class respectively, and are meant to be placed in .h and .cpp files,
-while the combined version is for an implementation within a single .h header.
-The _jit_ versions are used in the jit compiler and contains some additional
-factory functions exported as extern "C" to allow construction of compiled
-objects through ctypes without dealing with C++ ABI and name mangling issues.
+The header and implementation contain the definition and declaration of
+the class respectively, and are meant to be placed in .h and .cpp files,
+while the combined version is for an implementation within a single .h
+header. Some additional factory functions exported as extern "C" to
+allow construction of compiled objects through ctypes without dealing
+with C++ ABI and name mangling issues.
 
 Each string has at least the following format variables: 'classname',
 'members', 'constructor', 'destructor', plus one for each interface
@@ -58,24 +56,27 @@ from ffc.backends.ufc.form import *
 # a relative path w.r.t. curdir on startup
 _include_path = os.path.dirname(os.path.abspath(__file__))
 
+
 def get_include_path():
     "Return location of UFC header files"
     return _include_path
 
-
-# Platform specific snippets for controlling visilibity of exported symbols in generated shared libraries
-visibility_snippet = """
-// Based on https://gcc.gnu.org/wiki/Visibility
-#if defined _WIN32 || defined __CYGWIN__
-    #ifdef __GNUC__
-        #define DLL_EXPORT __attribute__ ((dllexport))
-    #else
-        #define DLL_EXPORT __declspec(dllexport)
-    #endif
-#else
-    #define DLL_EXPORT __attribute__ ((visibility ("default")))
-#endif
-"""
+# NOTE: seems this had no effect since dijitso doesn't use -fvisibility
+#
+# # Platform specific snippets for controlling visilibity of exported
+# # symbols in generated shared libraries
+# visibility_snippet = """
+# // Based on https://gcc.gnu.org/wiki/Visibility
+# #if defined _WIN32 || defined __CYGWIN__
+#     #ifdef __GNUC__
+#         #define DLL_EXPORT __attribute__ ((dllexport))
+#     #else
+#         #define DLL_EXPORT __declspec(dllexport)
+#     #endif
+# #else
+#     #define DLL_EXPORT __attribute__ ((visibility ("default")))
+# #endif
+# """
 
 
 # Generic factory function signature
@@ -88,18 +89,27 @@ extern "C" %(basename)s * create_%(publicname)s();
 # and note that publicname and privatename does not need to match, allowing
 # multiple factory functions to return the same object.
 factory_impl = """
-extern "C" DLL_EXPORT %(basename)s * create_%(publicname)s()
+extern "C" %(basename)s * create_%(publicname)s()
 {
   return new %(privatename)s();
 }
 """
+# factory_impl = """
+# extern "C" DLL_EXPORT %(basename)s * create_%(publicname)s()
+# {
+#   return new %(privatename)s();
+# }
+# """
 
 
 def all_ufc_classnames():
     "Build list of all classnames."
-    integral_names = ["cell", "exterior_facet", "interior_facet", "vertex", "custom"]
-    integral_classnames = [integral_name + "_integral" for integral_name in integral_names]
-    jitable_classnames = ["finite_element", "dofmap", "coordinate_mapping", "form"]
+    integral_names = ["cell", "exterior_facet",
+                      "interior_facet", "vertex", "custom"]
+    integral_classnames = [integral_name +
+                           "_integral" for integral_name in integral_names]
+    jitable_classnames = ["finite_element",
+                          "dofmap", "coordinate_mapping", "form"]
     classnames = jitable_classnames + integral_classnames
     return classnames
 
@@ -120,8 +130,9 @@ def _build_templates():
             "basename": "ufc::" + classname,
             "publicname": "%(classname)s",
             "privatename": "%(classname)s",
-            }
-        jit_header = header + _fac_decl
+        }
+        header += _fac_decl
+        combined += _fac_decl
 
         # Construct jit implementation template with class declaration,
         # factory function implementation, and class definition
@@ -129,15 +140,14 @@ def _build_templates():
             "basename": "ufc::" + classname,
             "publicname": "%(classname)s",
             "privatename": "%(classname)s",
-            }
-        jit_implementation = implementation + _fac_impl
+        }
+        implementation += _fac_impl
+        combined += _fac_impl
 
         # Store all in templates dict
         templates[classname + "_header"] = header
         templates[classname + "_implementation"] = implementation
         templates[classname + "_combined"] = combined
-        templates[classname + "_jit_header"] = jit_header
-        templates[classname + "_jit_implementation"] = jit_implementation
 
     return templates
 
@@ -189,7 +199,7 @@ def get_ufc_cxx_flags():
 
     Used internally in some tests.
     """
-    return ["-std=c++11"]
+    return ["-std=c++14"]
 
 
 # ufc_signature() already introduced to FFC standard in 1.7.0dev,
