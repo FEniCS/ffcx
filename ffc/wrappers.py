@@ -73,7 +73,7 @@ def _encapsulate(prefix, object_names, classnames, analysis, parameters):
 
     # Special case: single element
     if num_form_datas == 0:
-        capsules = _encapsule_element(prefix, elements)
+        capsules = _encapsule_element(prefix, classnames, elements)
     # Otherwise: generate standard capsules for each form
     else:
         capsules = [_encapsule_form(prefix, object_names, classnames, form_data, i, element_map) for
@@ -112,9 +112,9 @@ def _encapsule_form(prefix, object_names, classnames, form_data, i, element_map,
     return form_names
 
 
-def _encapsule_element(prefix, elements):
+def _encapsule_element(prefix, classnames, elements):
     element_number = len(elements) - 1  # eh? this doesn't make any sense
     args = ("0",
-            [make_classname(prefix, "finite_element", element_number)],
-            [make_classname(prefix, "dofmap", element_number)])
+            [classname["elements"][element_number]],
+            [classname["dofmaps"][element_number]])
     return UFCElementNames(*args)
