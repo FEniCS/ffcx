@@ -34,7 +34,7 @@ _FFC_GENERATE_PARAMETERS = {
     "quadrature_rule": None,   # quadrature rule used for
                                # integration of element tensors
                                # (None is auto)
-    "quadrature_degree": None, # quadrature degree used for
+    "quadrature_degree": None,  # quadrature degree used for
                                # computing integrals
                                # (None is auto)
     "precision": None,         # precision used when writing
@@ -49,16 +49,22 @@ _FFC_GENERATE_PARAMETERS = {
                                                # in generated code
     "optimize": True,         # turn on optimization for code generation
     "max_signature_length": 0,  # set to positive integer to shorten signatures
-    "generate_dummy_tabulate_tensor": False,  # set to True to replace tabulate_tensor body with no-op
-    "add_tabulate_tensor_timing": False,      # set to True to add timing inside tabulate_tensor
-    "external_includes": "",    # ':' separated list of include filenames to add to generated code
+    # set to True to replace tabulate_tensor body with no-op
+    "generate_dummy_tabulate_tensor": False,
+    # set to True to add timing inside tabulate_tensor
+    "add_tabulate_tensor_timing": False,
+    # ':' separated list of include filenames to add to generated code
+    "external_includes": "",
 }
 _FFC_BUILD_PARAMETERS = {
     "cpp_optimize": True,          # optimization for the C++ compiler
     "cpp_optimize_flags": "-O2",   # optimization flags for the C++ compiler
-    "external_libraries": "",      # ':' separated list of libraries to link JIT compiled libraries with
-    "external_library_dirs": "",   # ':' separated list of library search dirs to add when JIT compiling
-    "external_include_dirs": "",   # ':' separated list of include dirs to add when JIT compiling
+    # ':' separated list of libraries to link JIT compiled libraries with
+    "external_libraries": "",
+    # ':' separated list of library search dirs to add when JIT compiling
+    "external_library_dirs": "",
+    # ':' separated list of include dirs to add when JIT compiling
+    "external_include_dirs": "",
 }
 _FFC_CACHE_PARAMETERS = {
     "cache_dir": "",        # cache dir used by Instant
@@ -114,6 +120,8 @@ def default_jit_parameters():
     # Don't postfix form names
     parameters["form_postfix"] = False
 
+    parameters["split"] = True
+
     return parameters
 
 
@@ -157,7 +165,8 @@ def _validate_parameters(parameters):
         parameters["quadrature_degree"] = None
     else:
         try:
-            parameters["quadrature_degree"] = int(parameters["quadrature_degree"])
+            parameters["quadrature_degree"] = int(
+                parameters["quadrature_degree"])
         except Exception:
             error("Failed to convert quadrature degree '%s' to int"
                   % parameters.get("quadrature_degree"))

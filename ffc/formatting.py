@@ -100,7 +100,7 @@ def generate_jit_factory_functions(code, prefix):
     return code_h, code_c
 
 
-def format_code(code, wrapper_code, prefix, parameters, jit=False):
+def format_code(code, wrapper_code, prefix, parameters):
     "Format given code in UFC format. Returns two strings with header and source file contents."
 
     begin("Compiler stage 5: Formatting code")
@@ -127,37 +127,38 @@ def format_code(code, wrapper_code, prefix, parameters, jit=False):
 
     # if jit:
     #     code_c += visibility_snippet
+    split = parameters["split"]
 
     # Generate code for finite_elements
     for code_finite_element in code_finite_elements:
         code_h += _format_h("finite_element",
-                            code_finite_element, parameters, jit)
+                            code_finite_element, split)
         code_c += _format_c("finite_element",
-                            code_finite_element, parameters, jit)
+                            code_finite_element, split)
 
     # Generate code for dofmaps
     for code_dofmap in code_dofmaps:
-        code_h += _format_h("dofmap", code_dofmap, parameters, jit)
-        code_c += _format_c("dofmap", code_dofmap, parameters, jit)
+        code_h += _format_h("dofmap", code_dofmap, split)
+        code_c += _format_c("dofmap", code_dofmap, split)
 
     # Generate code for coordinate_mappings
     for code_coordinate_mapping in code_coordinate_mappings:
         code_h += _format_h("coordinate_mapping",
-                            code_coordinate_mapping, parameters, jit)
+                            code_coordinate_mapping, split)
         code_c += _format_c("coordinate_mapping",
-                            code_coordinate_mapping, parameters, jit)
+                            code_coordinate_mapping, split)
 
     # Generate code for integrals
     for code_integral in code_integrals:
         code_h += _format_h(code_integral["class_type"],
-                            code_integral, parameters, jit)
+                            code_integral, split)
         code_c += _format_c(code_integral["class_type"],
-                            code_integral, parameters, jit)
+                            code_integral, split)
 
     # Generate code for form
     for code_form in code_forms:
-        code_h += _format_h("form", code_form, parameters, jit)
-        code_c += _format_c("form", code_form, parameters, jit)
+        code_h += _format_h("form", code_form, split)
+        code_c += _format_c("form", code_form, split)
 
     # Add wrappers
     if wrapper_code:
@@ -180,21 +181,17 @@ def write_code(code_h, code_c, prefix, parameters):
         _write_file(code_c, prefix, ".cpp", parameters)
 
 
-def _format_h(class_type, code, parameters, jit=False):
+def _format_h(class_type, code, split):
     "Format header code for given class type."
-    if jit:
-        return templates[class_type + "_header"] % code + "\n"
-    elif parameters["split"]:
+    if split:
         return templates[class_type + "_header"] % code + "\n"
     else:
         return templates[class_type + "_combined"] % code + "\n"
 
 
-def _format_c(class_type, code, parameters, jit=False):
+def _format_c(class_type, code, split):
     "Format implementation code for given class type."
-    if jit:
-        return templates[class_type + "_implementation"] % code + "\n"
-    elif parameters["split"]:
+    if split:
         return templates[class_type + "_implementation"] % code + "\n"
     else:
         return ""

@@ -206,7 +206,7 @@ def compile_ufl_objects(ufl_objects, kind, object_names=None,
 
     # Stage 5: format code
     cpu_time = time()
-    code_h, code_c = format_code(code, wrapper_code, prefix, parameters, jit)
+    code_h, code_c = format_code(code, wrapper_code, prefix, parameters)
     _print_timing(5, time() - cpu_time)
 
     info_green("FFC finished in %g seconds.", time() - cpu_time_0)
@@ -230,7 +230,7 @@ def compile_ufl_objects(ufl_objects, kind, object_names=None,
         dependent_ufl_objects = {
             "element": unique_elements,
             "coordinate_mapping": unique_meshes,
-            }
+        }
         return code_h, code_c, dependent_ufl_objects
     else:
         return code_h, code_c
