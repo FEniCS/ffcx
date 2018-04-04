@@ -87,37 +87,20 @@ def make_coordinate_mapping_jit_classname(ufl_mesh, parameters):
 
 
 def make_all_element_classnames(prefix, elements, coordinate_elements,
-                                element_numbers, parameters, jit):
-    jit = True
-    if jit:
-        # Make unique classnames to match separately jit-compiled
-        # module
-        classnames = {
-            "finite_element": {
-                e: make_finite_element_jit_classname(e, parameters)
-                for e in elements },
-            "dofmap": {
-                e: make_dofmap_jit_classname(e, parameters)
-                for e in elements },
-            "coordinate_mapping": {
-                e: make_coordinate_mapping_jit_classname(e, parameters)
-                for e in coordinate_elements },
-            }
-    else:
-        # Make unique classnames only within this module (using a
-        # shared prefix and element numbers that are only unique
-        # within this module)
-        classnames = {
-            "finite_element": {
-                e: make_classname(prefix, "finite_element", element_numbers[e])
-                for e in elements},
-            "dofmap": {
-                e: make_classname(prefix, "dofmap", element_numbers[e])
-                for e in elements },
-            "coordinate_mapping": {
-                e: make_classname(prefix, "coordinate_mapping", element_numbers[e])
-                for e in coordinate_elements },
-            }
+                                element_numbers, parameters):
+    # Make unique classnames to match separately jit-compiled
+    # module
+    classnames = {
+        "finite_element": {
+            e: make_finite_element_jit_classname(e, parameters)
+            for e in elements },
+        "dofmap": {
+            e: make_dofmap_jit_classname(e, parameters)
+            for e in elements },
+        "coordinate_mapping": {
+            e: make_coordinate_mapping_jit_classname(e, parameters)
+            for e in coordinate_elements },
+        }
 
     return classnames
 
@@ -139,7 +122,7 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     classnames = make_all_element_classnames(prefix, elements,
                                              coordinate_elements,
                                              element_numbers,
-                                             parameters, jit)
+                                             parameters)
 
     # Skip processing elements if jitting forms
     # NB! it's important that this happens _after_ the element numbers and classnames

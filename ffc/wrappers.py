@@ -23,7 +23,6 @@ from itertools import chain
 # FFC modules
 from ffc.log import begin, end, info, error
 from ffc.utils import all_equal
-from ffc.classname import make_classname
 from ffc.backends.dolfin.wrappers import generate_dolfin_code
 from ffc.backends.dolfin.capsules import UFCElementNames, UFCFormNames
 
@@ -47,7 +46,6 @@ def _generate_dolfin_wrapper(analysis, prefix, object_names, classnames, paramet
 
     begin("Compiler stage 4.1: Generating additional wrapper code")
 
-    print("Oname:", object_names)
     # Encapsulate data
     (capsules, common_space) = _encapsulate(prefix, object_names, classnames, analysis,
                                             parameters)
@@ -115,6 +113,6 @@ def _encapsule_form(prefix, object_names, classnames, form_data, i, element_map,
 def _encapsule_element(prefix, classnames, elements):
     element_number = len(elements) - 1  # eh? this doesn't make any sense
     args = ("0",
-            [classname["elements"][element_number]],
-            [classname["dofmaps"][element_number]])
+            [classnames["elements"][element_number]],
+            [classnames["dofmaps"][element_number]])
     return UFCElementNames(*args)
