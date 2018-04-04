@@ -58,25 +58,24 @@ from ffc.backends.ufc.form import *
 # a relative path w.r.t. curdir on startup
 _include_path = os.path.dirname(os.path.abspath(__file__))
 
-
 def get_include_path():
     "Return location of UFC header files"
     return _include_path
 
 
-# # Platform specific snippets for controlling visilibity of exported symbols in generated shared libraries
-# visibility_snippet = """
-# // Based on https://gcc.gnu.org/wiki/Visibility
-# #if defined _WIN32 || defined __CYGWIN__
-#     #ifdef __GNUC__
-#         #define DLL_EXPORT __attribute__ ((dllexport))
-#     #else
-#         #define DLL_EXPORT __declspec(dllexport)
-#     #endif
-# #else
-#     #define DLL_EXPORT __attribute__ ((visibility ("default")))
-# #endif
-# """
+# Platform specific snippets for controlling visilibity of exported symbols in generated shared libraries
+visibility_snippet = """
+// Based on https://gcc.gnu.org/wiki/Visibility
+#if defined _WIN32 || defined __CYGWIN__
+    #ifdef __GNUC__
+        #define DLL_EXPORT __attribute__ ((dllexport))
+    #else
+        #define DLL_EXPORT __declspec(dllexport)
+    #endif
+#else
+    #define DLL_EXPORT __attribute__ ((visibility ("default")))
+#endif
+"""
 
 
 # Generic factory function signature
@@ -89,27 +88,18 @@ extern "C" %(basename)s * create_%(publicname)s();
 # and note that publicname and privatename does not need to match, allowing
 # multiple factory functions to return the same object.
 factory_impl = """
-extern "C" %(basename)s * create_%(publicname)s()
+extern "C" DLL_EXPORT %(basename)s * create_%(publicname)s()
 {
   return new %(privatename)s();
 }
 """
-# factory_impl = """
-# extern "C" DLL_EXPORT %(basename)s * create_%(publicname)s()
-# {
-#   return new %(privatename)s();
-# }
-# """
 
 
 def all_ufc_classnames():
     "Build list of all classnames."
-    integral_names = ["cell", "exterior_facet",
-                      "interior_facet", "vertex", "custom"]
-    integral_classnames = [integral_name +
-                           "_integral" for integral_name in integral_names]
-    jitable_classnames = ["finite_element",
-                          "dofmap", "coordinate_mapping", "form"]
+    integral_names = ["cell", "exterior_facet", "interior_facet", "vertex", "custom"]
+    integral_classnames = [integral_name + "_integral" for integral_name in integral_names]
+    jitable_classnames = ["finite_element", "dofmap", "coordinate_mapping", "form"]
     classnames = jitable_classnames + integral_classnames
     return classnames
 
@@ -130,9 +120,8 @@ def _build_templates():
             "basename": "ufc::" + classname,
             "publicname": "%(classname)s",
             "privatename": "%(classname)s",
-        }
+            }
         jit_header = header + _fac_decl
-        header = header + _fac_decl
 
         # Construct jit implementation template with class declaration,
         # factory function implementation, and class definition
@@ -140,11 +129,8 @@ def _build_templates():
             "basename": "ufc::" + classname,
             "publicname": "%(classname)s",
             "privatename": "%(classname)s",
-        }
+            }
         jit_implementation = implementation + _fac_impl
-        implementation = implementation + _fac_impl
-
-        combined = combined + _fac_impl
 
         # Store all in templates dict
         templates[classname + "_header"] = header

@@ -62,7 +62,6 @@ def jit_generate(ufl_object, module_name, signature, parameters):
     elif isinstance(ufl_object, ufl.Mesh):
         compile_object = compile_coordinate_mapping
 
-    print("PPPPP", parameters)
     code_h, code_c, dependent_ufl_objects = compile_object(ufl_object,
             prefix=module_name, parameters=parameters, jit=True)
 
