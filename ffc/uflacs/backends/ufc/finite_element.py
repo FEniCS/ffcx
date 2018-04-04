@@ -224,7 +224,7 @@ class ufc_finite_element(ufc_generator):
         s = L.Symbol("s")   # reference derivative number
         d = L.Symbol("d")   # dof
 
-        l = L.Symbol("l")   # zeroing arrays
+        iz = L.Symbol("l")   # zeroing arrays
 
         combinations_code = []
         if max_degree == 0:
@@ -298,10 +298,10 @@ class ufc_finite_element(ufc_generator):
 
         # Initialize values to 0, will be added to inside loops
         values_init_code = [
-            L.ForRange(l, 0, num_points * num_dofs *
+            L.ForRange(iz, 0, num_points * num_dofs *
                        num_derivatives_g * physical_value_size,
                        index_type=index_type,
-                       body=L.Assign(values_symbol[l], 0.0)),
+                       body=L.Assign(values_symbol[iz], 0.0)),
         ]
 
         # Make offsets available in generated code

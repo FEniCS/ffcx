@@ -289,7 +289,7 @@ class ufc_coordinate_mapping(ufc_generator):
         i = L.Symbol("i")   # gdim
         j = L.Symbol("j")   # tdim
         k = L.Symbol("k")   # sum iteration
-        l = L.Symbol("l")   # zero X array
+        iz = L.Symbol("l")   # zero X array
 
         # Output geometry
         X = L.FlattenedArray(L.Symbol("X"), dims=(num_points, tdim))
@@ -306,9 +306,9 @@ class ufc_coordinate_mapping(ufc_generator):
             L.Symbol("coordinate_dofs"), dims=(num_dofs, gdim))
         cell_orientation = L.Symbol("cell_orientation")
 
-        init_input = [L.ForRange(l, 0, num_points * tdim,
+        init_input = [L.ForRange(iz, 0, num_points * tdim,
                                  index_type=index_type,
-                                 body=L.Assign(X.array[l], 0.0))]
+                                 body=L.Assign(X.array[iz], 0.0))]
 
         if output_all:
             decls = []
@@ -637,7 +637,7 @@ class ufc_coordinate_mapping(ufc_generator):
         j = L.Symbol("j")
         d = L.Symbol("d")
 
-        l = L.Symbol("l")  # Array zeroing index
+        iz = L.Symbol("l")  # Array zeroing index
 
         # Input cell data
         coordinate_dofs = L.FlattenedArray(
@@ -661,9 +661,9 @@ class ufc_coordinate_mapping(ufc_generator):
         code = [
             L.VariableDecl(scalar_coordinate_element_classname, "xelement"),
             L.ArrayDecl("double", dphi_sym, (one_point*num_dofs*tdim,)),
-            L.ForRange(l, 0, num_points * gdim * tdim,
+            L.ForRange(iz, 0, num_points * gdim * tdim,
                        index_type=index_type,
-                       body=L.Assign(J.array[l], 0.0)),
+                       body=L.Assign(J.array[iz], 0.0)),
             L.ForRange(ip, 0, num_points, index_type=index_type, body=[
                 L.Comment("Compute basis derivatives of coordinate element"),
                 L.Call("xelement.evaluate_reference_basis_derivatives",
@@ -831,12 +831,12 @@ class ufc_coordinate_mapping(ufc_generator):
         i = L.Symbol("i")
         j = L.Symbol("j")
         d = L.Symbol("d")
-        l = L.Symbol("l")  # Index for zeroing arrays
+        iz = L.Symbol("l")  # Index for zeroing arrays
 
         # Initialise arrays to zero
-        init_array = [L.ForRange(l, 0, gdim * tdim,
+        init_array = [L.ForRange(iz, 0, gdim * tdim,
                                  index_type=index_type,
-                                 body=L.Assign(Jf.array[l], 0.0))]
+                                 body=L.Assign(Jf.array[iz], 0.0))]
 
         xm_code = [
             L.Comment("Compute x"),
