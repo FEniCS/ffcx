@@ -88,6 +88,7 @@ def make_coordinate_mapping_jit_classname(ufl_mesh, parameters):
 
 def make_all_element_classnames(prefix, elements, coordinate_elements,
                                 element_numbers, parameters, jit):
+    jit = True
     if jit:
         # Make unique classnames to match separately jit-compiled
         # module
@@ -117,6 +118,7 @@ def make_all_element_classnames(prefix, elements, coordinate_elements,
                 e: make_classname(prefix, "coordinate_mapping", element_numbers[e])
                 for e in coordinate_elements },
             }
+
     return classnames
 
 
@@ -227,7 +229,6 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, parameters, ji
     ir["create_sub_element"] = [classnames["finite_element"][e]
                                 for e in ufl_element.sub_elements()]
 
-    # debug_ir(ir, "finite_element")
 
     return ir
 

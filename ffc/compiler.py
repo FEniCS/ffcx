@@ -113,6 +113,7 @@ The compiler stages are implemented by the following functions:
 __all__ = ["compile_form", "compile_element"]
 
 # Python modules
+from collections import defaultdict
 from time import time
 import os
 
@@ -198,9 +199,24 @@ def compile_ufl_objects(ufl_objects, kind, object_names=None,
     code = generate_code(oir, parameters)
     _print_timing(4, time() - cpu_time)
 
-    # Stage 4.1: generate wrappers
+    # Stage 4.1: generate wrappers, e.g. for DOLFIN C++
     cpu_time = time()
-    wrapper_code = generate_wrapper_code(analysis, prefix, object_names,
+    #print(code[0][0]["classname"])
+    #print(analysis, prefix, object_names)
+    #print(object_names)
+    # for o in code:
+    #     print("*********************")
+    #     for p in o:
+    #         print("---------------------")
+    #         print(o)
+
+    # Extract class names from the IR
+    classnames = defaultdict(list)
+    for ir, o in zip(code, ["elements", "dofmaps", "coordinate_maps", "integrals", "forms"]):
+        for e in ir:
+            classnames[o].append(e["classname"])
+
+    wrapper_code = generate_wrapper_code(analysis, prefix, object_names, classnames,
                                          parameters)
     _print_timing(4.1, time() - cpu_time)
 
