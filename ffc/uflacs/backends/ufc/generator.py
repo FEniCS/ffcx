@@ -175,16 +175,13 @@ class ufc_generator(object):
         # Return snippets, a dict of code strings
         return snippets
 
-    def generate(self, L, ir, parameters=None, snippets=None, jit=False):
+    # FIXME: is this function still used? Doesn't seem to be called from anywhere
+    def generate(self, L, ir, parameters=None, snippets=None):
         "Return composition of templates with generated snippets."
         if snippets is None:
             snippets = self.generate_snippets(L, ir, parameters)
-        if jit:
-            ht = self._header_template
-            it = self._implementation_template
-        else:
-            ht = self._header_template
-            it = self._implementation_template
+        ht = self._header_template
+        it = self._implementation_template
         h = ht % snippets
         cpp = it % snippets
         return h, cpp
