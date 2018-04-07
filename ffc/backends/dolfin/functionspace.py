@@ -12,8 +12,8 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Lesser General Public License for more details.
-#
 # You should have received a copy of the GNU Lesser General Public License
+#
 # along with DOLFIN. If not, see <http://www.gnu.org/licenses/>.
 #
 # Based on original implementation by Martin Alnes and Anders Logg
@@ -92,16 +92,22 @@ public:
     // Do nothing
   }
 
-  // Constructor for constrained function space
-  %(classname)s(std::shared_ptr<const dolfin::mesh::Mesh> mesh, std::shared_ptr<const dolfin::mesh::SubDomain> constrained_domain):
-    dolfin::function::FunctionSpace(mesh,
-                          std::make_shared<const dolfin::fem::FiniteElement>(std::make_shared<%(ufc_finite_element_classname)s>()),
-                          std::make_shared<const dolfin::fem::DofMap>(std::make_shared<%(ufc_dofmap_classname)s>(), *mesh, constrained_domain))
-  {
-    // Do nothing
-  }
-
 };
+
+struct DOLFINFunctionSpace* %(classname)s_factory()
+{
+  /*
+  In C rather than C++:
+  struct DOLFINFunctionSpace* space = malloc(sizeof(*space));
+  */
+  struct DOLFINFunctionSpace* space = (DOLFINFunctionSpace*) malloc(sizeof(*space));
+
+  space->element = create_%(ufc_finite_element_classname)s;
+  space->dofmap = create_%(ufc_dofmap_classname)s;
+
+  return space;
+}
+
 """
 
 

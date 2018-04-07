@@ -55,9 +55,25 @@ def generate_dolfin_code(prefix, header, forms, common_function_space=False,
     # Generate dolfin namespace
     namespace = generate_dolfin_namespace(prefix, forms, common_function_space)
 
+    function_space_struct = """
+struct DOLFINFunctionSpace
+{
+  ufc::finite_element* (*element)(void);
+  ufc::dofmap* (*dofmap)(void);
+};
+"""
+
+    form_struct = """
+struct DOLFINForm
+{
+  std::size_t (*coefficient_number)(const std::string name);
+  std::string (*coefficient_name)(std::size_t i);
+};
+"""
+
     # Collect pieces of code
     code = [incl.dolfin_tag, header, incl.stl_includes, incl.dolfin_includes,
-            namespace]
+            function_space_struct, namespace]
 
     # Add ifdefs/endifs if specified
     if add_guards:
