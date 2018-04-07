@@ -55,7 +55,6 @@ def extract_coefficient_spaces(forms):
     names = sorted(spaces.keys())
     return [spaces[name] for name in names]
 
-
 def generate_typedefs(form, classname):
     """Generate typedefs for test, trial and coefficient spaces relative
     to a function space.
@@ -74,7 +73,16 @@ def generate_typedefs(form, classname):
               for i in range(form.num_coefficients)]
 
     # Combine data to typedef code
-    code = "\n".join("  typedef %s %s;" % (to, fro) for (to, fro) in pairs)
+    code = "\n".join("  typedef {} {};".format(to, fro) for (to, fro) in pairs)
+
+    # Add convenience pointers to factory functions
+    template0 = "  static constexpr dolfin_function_space_factory_ptr {}_factory = {}_FunctionSpace_{}_factory;"
+    factory0 = "\n".join(template0.format(snippets["functionspace"][i], classname, i) for i in range(form.rank))
+
+    template1 = "  static constexpr dolfin_function_space_factory_ptr CoefficientSpace_{}_factory = {}_FunctionSpace_{}_factory;"
+    factory1 = "\n".join(template1.format(form.coefficient_names[i], classname, form.rank + i) for i in range(form.num_coefficients))
+
+    code += "\n" + factory0 + "\n" + factory1
     return code
 
 
@@ -101,10 +109,8 @@ struct DOLFINFunctionSpace* %(classname)s_factory()
   struct DOLFINFunctionSpace* space = malloc(sizeof(*space));
   */
   struct DOLFINFunctionSpace* space = (DOLFINFunctionSpace*) malloc(sizeof(*space));
-
   space->element = create_%(ufc_finite_element_classname)s;
   space->dofmap = create_%(ufc_dofmap_classname)s;
-
   return space;
 }
 

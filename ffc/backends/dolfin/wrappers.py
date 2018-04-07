@@ -23,7 +23,7 @@
 # Last changed: 2015-11-05
 
 from . import includes as incl
-from .functionspace import *
+from .functionspace import (extract_coefficient_spaces, apply_function_space_template)
 from .form import generate_form
 from .capsules import UFCElementNames
 
@@ -61,15 +61,16 @@ struct DOLFINFunctionSpace
   ufc::finite_element* (*element)(void);
   ufc::dofmap* (*dofmap)(void);
 };
+typedef DOLFINFunctionSpace* (*dolfin_function_space_factory_ptr)(void);
 """
 
-    form_struct = """
-struct DOLFINForm
-{
-  std::size_t (*coefficient_number)(const std::string name);
-  std::string (*coefficient_name)(std::size_t i);
-};
-"""
+#     form_struct = """
+# struct DOLFINForm
+# {
+#   std::size_t (*coefficient_number)(const std::string name);
+#   std::string (*coefficient_name)(std::size_t i);
+# };
+# """
 
     # Collect pieces of code
     code = [incl.dolfin_tag, header, incl.stl_includes, incl.dolfin_includes,
@@ -139,7 +140,7 @@ def generate_namespace_typedefs(forms, common_function_space):
     if common_function_space:
         for i, form in enumerate(forms):
             if form.rank:
-                pairs += [("Form_%s::TestSpace" % form.name, "FunctionSpace")]
+                pairs += [("Form_{}::TestSpace".format(form.name), "FunctionSpace")]
                 break
 
     # Combine data to typedef code

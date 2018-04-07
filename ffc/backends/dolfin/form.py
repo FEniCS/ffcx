@@ -23,7 +23,7 @@
 # Last changed: 2016-03-02
 
 from .includes import snippets
-from .functionspace import *
+from .functionspace import generate_typedefs, apply_function_space_template
 
 __all__ = ["generate_form"]
 
@@ -48,9 +48,17 @@ def generate_form(form, classname):
                     form.ufc_dofmap_classnames[i]) for i in range(form.rank)]
 
     # Add typedefs CoefficientSpace_z -> Form_x_FunctionSpace_y
-    blocks += ["typedef CoefficientSpace_%s %s_FunctionSpace_%d;\n"
+    blocks += ["typedef CoefficientSpace_%s %s_FunctionSpace_%d;"
                % (form.coefficient_names[i], classname, form.rank + i)
                for i in range(form.num_coefficients)]
+
+    # Add factory functions
+    template = "static constexpr dolfin_function_space_factory_ptr {}_FunctionSpace_{}_factory = CoefficientSpace_{}_factory;"
+    blocks += [template.format(classname, form.rank + i, form.coefficient_names[i]) for i in range(form.num_coefficients)]
+
+    blocks += ["\n"]
+
+    #blocks += ["// HereHere"]
 
     # Generate Form subclass
     blocks += [generate_form_class(form, classname)]
