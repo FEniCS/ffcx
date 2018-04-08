@@ -686,4 +686,13 @@ public:
 };
 }
 
+struct dolfin_function_space
+{
+  // Factory function to return a ufc::finite_element
+  ufc::finite_element* (*element)(void);
+
+  // Factory function to return a ufc::dofmap
+  ufc::dofmap* (*dofmap)(void);
+};
+
 #endif

@@ -102,13 +102,13 @@ public:
 
 };
 
-struct DOLFINFunctionSpace* %(classname)s_factory()
+dolfin_function_space* %(classname)s_factory()
 {
   /*
   In C rather than C++:
-  struct DOLFINFunctionSpace* space = malloc(sizeof(*space));
+  dolfin_function_space* space = malloc(sizeof(*space));
   */
-  struct DOLFINFunctionSpace* space = (DOLFINFunctionSpace*) malloc(sizeof(*space));
+  dolfin_function_space* space = (dolfin_function_space*) malloc(sizeof(*space));
   space->element = create_%(ufc_finite_element_classname)s;
   space->dofmap = create_%(ufc_dofmap_classname)s;
   return space;
