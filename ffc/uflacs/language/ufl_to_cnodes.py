@@ -153,7 +153,7 @@ class UFL2CNodesTranslatorCpp(MultiFunction):
         return self._cmath("pow", (a, b))
 
     def abs(self, o, op):
-        return self._cmath("abs", op)
+        return self._cmath("fabs", op)
 
     def min_value(self, o, a, b):
         return self._cmath("min", (a, b))
