@@ -236,19 +236,6 @@ def generate_constructor(form, classname, space_tag, coefficient_tag=None):
 
 
 form_class_template = """\
-class %(classname)s: public dolfin::fem::%(superclass)s
-{
-public:
-
-%(constructors)s
-
-  // Destructor
-  ~%(classname)s()
-  {}
-
-%(members)s
-};
-
 /// Return the number of the coefficient with this name
 int %(classname)s_coefficient_number(const char* name)
 {

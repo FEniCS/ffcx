@@ -14,16 +14,6 @@ stl_includes = """\
 
 dolfin_includes = """\
 // DOLFIN includes
-#include <dolfin/fem/Form.h>
-
-namespace dolfin
-{
-namespace function
-{
-  class FunctionsSpace;
-  class GenericFunction;
-}
-}
 """
 
 snippets = {"shared_ptr_space":

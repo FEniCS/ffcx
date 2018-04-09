@@ -146,15 +146,17 @@ def generate_namespace_typedefs(forms, common_function_space):
     #             break
 
     # Combine data to typedef code
-    typedefs = "\n".join("typedef {} {};".format(to, fro) for (to, fro) in pairs)
-    typedefs += "\n"
-    typedefs += "\n".join("static constexpr dolfin_form_factory_ptr {}_factory = {}_factory;".format(fro, to) for (to, fro) in pairs)
+    # typedefs = "\n".join("typedef {} {};".format(to, fro) for (to, fro) in pairs)
+    # typedefs += "\n"
+    typedefs = "\n".join("static constexpr dolfin_form_factory_ptr {}_factory = {}_factory;".format(fro, to) for (to, fro) in pairs)
 
     # Keepin' it simple: Add typedef for function space factory if term applies
     if common_function_space:
         for i, form in enumerate(forms):
             if form.rank:
-                typedefs += "\n\nstatic constexpr dolfin_function_space_factory_ptr FunctionSpace_factory = Form_{}::TestSpace_factory;".format(form.name)
+                # FIXME: Is this naming robust?
+                typedefs += "\n\nstatic constexpr dolfin_function_space_factory_ptr FunctionSpace_factory = Form_{}_FunctionSpace_0_factory;".format(form.name)
+                #typedefs += "\n\nstatic constexpr dolfin_function_space_factory_ptr FunctionSpace_factory = Form_{}::TestSpace_factory;".format(form.name)
                 break
 
     # Return typedefs or ""
