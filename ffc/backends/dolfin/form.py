@@ -80,8 +80,9 @@ def generate_form_class(form, classname):
     typedefs = ["  // Typedefs (function spaces)", generate_typedefs(form, classname), ""]
 
     # Member variables for coefficients
-    members = ["  dolfin::function::CoefficientAssigner %s;" % coefficient
-               for coefficient in form.coefficient_names]
+    # members = ["  dolfin::function::CoefficientAssigner %s;" % coefficient
+    #            for coefficient in form.coefficient_names]
+    members = []
 
     # Group typedefs and members together for inserting into template
     additionals = "\n".join(typedefs + ["  // Coefficients"] + members)
@@ -177,9 +178,9 @@ def generate_form_constructors(form, classname):
     constructors = []
     for space in spaces:
         constructors += [generate_constructor(form, classname, space)]
-        if form.num_coefficients > 0:
-            constructors += [generate_constructor(form, classname, space, coeff)
-                             for coeff in coeffs]
+        # if form.num_coefficients > 0:
+        #     constructors += [generate_constructor(form, classname, space, coeff)
+        #                      for coeff in coeffs]
 
     # Return joint constructor code
     return "\n\n".join(constructors)
@@ -212,8 +213,9 @@ def generate_constructor(form, classname, space_tag, coefficient_tag=None):
         assignments += [assign % (name, name) for name in form.coefficient_names]
 
     # Construct list for initialization of Coefficient references
-    initializers = ["%s(*this, %d)" % (name, number)
-                    for (number, name) in enumerate(form.coefficient_names)]
+    # initializers = ["%s(*this, %d)" % (name, number)
+    #                 for (number, name) in enumerate(form.coefficient_names)]
+    initializers = []
 
     # Join lists together
     arguments = ", ".join(arguments)

@@ -15,10 +15,16 @@ stl_includes = """\
 dolfin_includes = """\
 // DOLFIN includes
 #include <dolfin/fem/Form.h>
-#include <dolfin/function/FunctionSpace.h>
-#include <dolfin/function/GenericFunction.h>
-#include <dolfin/function/CoefficientAssigner.h>"""
 
+namespace dolfin
+{
+namespace function
+{
+  class FunctionsSpace;
+  class GenericFunction;
+}
+}
+"""
 
 snippets = {"shared_ptr_space":
             ("std::shared_ptr<const dolfin::function::FunctionSpace> %s",
