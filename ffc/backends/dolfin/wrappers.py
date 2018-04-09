@@ -136,17 +136,17 @@ def generate_namespace_typedefs(forms, common_function_space):
                 extra_alias = extra_aliases[aliases[rank]]
                 pairs += [("Form_%s" % forms_of_rank[0].name, extra_alias)]
 
-    # Keepin' it simple: Add typedef for FunctionSpace if term applies
-    if common_function_space:
-        for i, form in enumerate(forms):
-            if form.rank:
-                pairs += [("Form_{}::TestSpace".format(form.name), "FunctionSpace")]
-                break
+    # # Keepin' it simple: Add typedef for FunctionSpace if term applies
+    # if common_function_space:
+    #     for i, form in enumerate(forms):
+    #         if form.rank:
+    #             pairs += [("Form_{}::TestSpace".format(form.name), "FunctionSpace")]
+    #             break
 
     # Combine data to typedef code
     typedefs = "\n".join("typedef %s %s;" % (to, fro) for (to, fro) in pairs)
 
-    # Keepin' it simple: Add typedef for FunctionSpace if term applies
+    # Keepin' it simple: Add typedef for function space factory if term applies
     if common_function_space:
         for i, form in enumerate(forms):
             if form.rank:

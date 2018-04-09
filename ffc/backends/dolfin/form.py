@@ -77,7 +77,7 @@ def generate_form_class(form, classname):
     (number, name) = generate_coefficient_map_data(form)
 
     # Generate typedefs for FunctionSpace subclasses for Coefficients
-    typedefs = ["  // Typedefs", generate_typedefs(form, classname), ""]
+    typedefs = ["  // Typedefs (function spaces)", generate_typedefs(form, classname), ""]
 
     # Member variables for coefficients
     members = ["  dolfin::function::CoefficientAssigner %s;" % coefficient
