@@ -88,12 +88,46 @@ def generate_form_class(form, classname):
 
     # Wrap functions in class body
     code = ""
-    code += apply_form_template(classname, constructors, number, name,
+    code += apply_form_template(classname, form, constructors, number, name,
                                 additionals, form.superclassname)
     code += "\n"
 
     # Return code
     return code
+
+
+# def generate_coefficient_map_data(form):
+#     """Generate data for code for the functions
+#     Form::coefficient_number and Form::coefficient_name."""
+
+#     # Write error if no coefficients
+#     if form.num_coefficients == 0:
+#         message = '''\
+# dolfin::log::dolfin_error("generated code for class %s",
+#                          "access coefficient data",
+#                          "There are no coefficients");''' % form.superclassname
+#         num = "\n    %s\n    return 0;" % message
+#         name = '\n    %s\n    return "unnamed";' % message
+#         return (num, name)
+
+#     # Otherwise create switch
+#     ifstr = "if "
+#     num = ""
+#     name = '    switch (i)\n    {\n'
+#     for i, coeff in enumerate(form.coefficient_names):
+#         num += '    %s(name == "%s")\n      return %d;\n' % (ifstr, coeff, i)
+#         name += '    case %d:\n      return "%s";\n' % (i, coeff)
+#         ifstr = 'else if '
+
+#     # Create final return
+#     message = '''\
+# dolfin::log::dolfin_error("generated code for class %s",
+#                          "access coefficient data",
+#                          "Invalid coefficient");''' % form.superclassname
+#     num += "\n    %s\n    return 0;" % message
+#     name += '    }\n\n    %s\n    return "unnamed";' % message
+
+#     return (num, name)
 
 
 def generate_coefficient_map_data(form):
@@ -102,12 +136,8 @@ def generate_coefficient_map_data(form):
 
     # Write error if no coefficients
     if form.num_coefficients == 0:
-        message = '''\
-dolfin::log::dolfin_error("generated code for class %s",
-                         "access coefficient data",
-                         "There are no coefficients");''' % form.superclassname
-        num = "\n    %s\n    return 0;" % message
-        name = '\n    %s\n    return "unnamed";' % message
+        num = "  return -1;"
+        name = "  return NULL;"
         return (num, name)
 
     # Otherwise create switch
@@ -115,7 +145,7 @@ dolfin::log::dolfin_error("generated code for class %s",
     num = ""
     name = '    switch (i)\n    {\n'
     for i, coeff in enumerate(form.coefficient_names):
-        num += '    %s(name == "%s")\n      return %d;\n' % (ifstr, coeff, i)
+        num += '    %s(strcmp(name, "%s") == 0)\n      return %d;\n' % (ifstr, coeff, i)
         name += '    case %d:\n      return "%s";\n' % (i, coeff)
         ifstr = 'else if '
 
@@ -124,8 +154,8 @@ dolfin::log::dolfin_error("generated code for class %s",
 dolfin::log::dolfin_error("generated code for class %s",
                          "access coefficient data",
                          "Invalid coefficient");''' % form.superclassname
-    num += "\n    %s\n    return 0;" % message
-    name += '    }\n\n    %s\n    return "unnamed";' % message
+    num += "\n return -1;"
+    name += "    }\n\n  return NULL;"
 
     return (num, name)
 
@@ -214,32 +244,30 @@ public:
   ~%(classname)s()
   {}
 
-  /// Return the number of the coefficient with this name
-  virtual std::size_t coefficient_number(const std::string& name) const
-  {
-%(coefficient_number)s
-  }
-
-  /// Return the name of the coefficient with this number
-  virtual std::string coefficient_name(std::size_t i) const
-  {
-%(coefficient_name)s
-  }
-
 %(members)s
 };
 
 /// Return the number of the coefficient with this name
-std::size_t %(classname)s_coefficient_number(const std::string& name)
+int %(classname)s_coefficient_number(const char* name)
 {
 %(coefficient_number)s
 }
 
 /// Return the name of the coefficient with this number
-std::string %(classname)s_coefficient_name(std::size_t i)
+const char* %(classname)s_coefficient_name(int i)
 {
 %(coefficient_name)s
 }
+
+dolfin_form* %(classname)s_factory()
+{
+  dolfin_form* form = (dolfin_form*) malloc(sizeof(*form));
+  form->form = create_%(ufc_form)s;
+  form->coefficient_name_map = %(classname)s_coefficient_name;
+  form->coefficient_number_map = %(classname)s_coefficient_number;
+  return form;
+}
+
 """
 
 # Template code for Form constructor
@@ -252,9 +280,10 @@ form_constructor_template = """\
   }"""
 
 
-def apply_form_template(classname, constructors, number, name, members,
+def apply_form_template(classname, form, constructors, number, name, members,
                         superclass):
     args = {"classname": classname,
+            "ufc_form": form.ufc_form_classname,
             "superclass": superclass,
             "constructors": constructors,
             "coefficient_number": number,

@@ -9,14 +9,11 @@ dolfin_tag = "// DOLFIN wrappers"
 
 stl_includes = """\
 // Standard library includes
-#include <string>
+#include <string.h>
 """
 
 dolfin_includes = """\
 // DOLFIN includes
-#include <dolfin/mesh/Mesh.h>
-#include <dolfin/fem/FiniteElement.h>
-#include <dolfin/fem/DofMap.h>
 #include <dolfin/fem/Form.h>
 #include <dolfin/function/FunctionSpace.h>
 #include <dolfin/function/GenericFunction.h>
