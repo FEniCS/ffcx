@@ -228,6 +228,18 @@ public:
 
 %(members)s
 };
+
+/// Return the number of the coefficient with this name
+std::size_t %(classname)s_coefficient_number(const std::string& name)
+{
+%(coefficient_number)s
+}
+
+/// Return the name of the coefficient with this number
+std::string %(classname)s_coefficient_name(std::size_t i)
+{
+%(coefficient_name)s
+}
 """
 
 # Template code for Form constructor
