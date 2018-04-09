@@ -48,9 +48,9 @@ def generate_form(form, classname):
                     form.ufc_dofmap_classnames[i]) for i in range(form.rank)]
 
     # Add typedefs CoefficientSpace_z -> Form_x_FunctionSpace_y
-    blocks += ["typedef CoefficientSpace_%s %s_FunctionSpace_%d;"
-               % (form.coefficient_names[i], classname, form.rank + i)
-               for i in range(form.num_coefficients)]
+    # blocks += ["typedef CoefficientSpace_%s %s_FunctionSpace_%d;"
+    #            % (form.coefficient_names[i], classname, form.rank + i)
+    #            for i in range(form.num_coefficients)]
 
     # Add factory functions
     template = "static constexpr dolfin_function_space_factory_ptr {}_FunctionSpace_{}_factory = CoefficientSpace_{}_factory;"

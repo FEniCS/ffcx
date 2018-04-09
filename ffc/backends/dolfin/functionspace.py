@@ -63,14 +63,14 @@ def generate_typedefs(form, classname):
 
     pairs = []
 
-    # Generate typedef data for test/trial spaces
-    pairs += [("%s_FunctionSpace_%d" % (classname, i),
-              snippets["functionspace"][i]) for i in range(form.rank)]
+    # # Generate typedef data for test/trial spaces
+    # pairs += [("%s_FunctionSpace_%d" % (classname, i),
+    #           snippets["functionspace"][i]) for i in range(form.rank)]
 
-    # Generate typedefs for coefficient spaces
-    pairs += [("%s_FunctionSpace_%d" % (classname, form.rank + i),
-               "CoefficientSpace_%s" % form.coefficient_names[i])
-              for i in range(form.num_coefficients)]
+    # # Generate typedefs for coefficient spaces
+    # pairs += [("%s_FunctionSpace_%d" % (classname, form.rank + i),
+    #            "CoefficientSpace_%s" % form.coefficient_names[i])
+    #           for i in range(form.num_coefficients)]
 
     # Combine data to typedef code
     code = "\n".join("  typedef {} {};".format(to, fro) for (to, fro) in pairs)
@@ -87,21 +87,6 @@ def generate_typedefs(form, classname):
 
 
 function_space_template = """\
-class %(classname)s: public dolfin::function::FunctionSpace
-{
-public:
-
-  // Constructor for standard function space
-  %(classname)s(std::shared_ptr<const dolfin::mesh::Mesh> mesh):
-    dolfin::function::FunctionSpace(mesh,
-                          std::make_shared<const dolfin::fem::FiniteElement>(std::make_shared<%(ufc_finite_element_classname)s>()),
-                          std::make_shared<const dolfin::fem::DofMap>(std::make_shared<%(ufc_dofmap_classname)s>(), *mesh))
-  {
-    // Do nothing
-  }
-
-};
-
 dolfin_function_space* %(classname)s_factory()
 {
   /*

@@ -56,6 +56,7 @@ def generate_dolfin_code(prefix, header, forms, common_function_space=False,
     namespace = generate_dolfin_namespace(prefix, forms, common_function_space)
 
     function_space_struct = """
+// Note: moved to ufc.h
 //struct dolfin_function_space
 //{
 //  ufc::finite_element* (*element)(void);
@@ -152,8 +153,6 @@ def generate_namespace_typedefs(forms, common_function_space):
             if form.rank:
                 typedefs += "\n\nstatic constexpr dolfin_function_space_factory_ptr FunctionSpace_factory = Form_{}::TestSpace_factory;".format(form.name)
                 break
-
-    print(typedefs)
 
     # Return typedefs or ""
     if not typedefs:
