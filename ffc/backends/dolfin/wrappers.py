@@ -63,6 +63,7 @@ def generate_dolfin_code(prefix, header, forms, common_function_space=False,
 //  ufc::dofmap* (*dofmap)(void);
 //};
 typedef dolfin_function_space* (*dolfin_function_space_factory_ptr)(void);
+typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
 """
 
 #     form_struct = """
@@ -145,7 +146,9 @@ def generate_namespace_typedefs(forms, common_function_space):
     #             break
 
     # Combine data to typedef code
-    typedefs = "\n".join("typedef %s %s;" % (to, fro) for (to, fro) in pairs)
+    typedefs = "\n".join("typedef {} {};".format(to, fro) for (to, fro) in pairs)
+    typedefs += "\n"
+    typedefs += "\n".join("static constexpr dolfin_form_factory_ptr {}_factory = {}_factory;".format(fro, to) for (to, fro) in pairs)
 
     # Keepin' it simple: Add typedef for function space factory if term applies
     if common_function_space:
