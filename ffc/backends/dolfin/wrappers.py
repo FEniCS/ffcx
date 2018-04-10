@@ -46,11 +46,15 @@ def generate_dolfin_code(prefix, forms, common_function_space=False):
 // Typedefs for convenience factory functions
 typedef dolfin_function_space* (*dolfin_function_space_factory_ptr)(void);
 typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
+
 """
     code += factory_typedefs
 
     # Generate body of dolfin wappers
-    namespace = generate_dolfin_namespace(prefix, forms, common_function_space)
+    if isinstance(forms, UFCElementNames):
+        namespace = generate_single_function_space(prefix, forms)
+    else:
+        namespace = generate_dolfin_namespace(prefix, forms, common_function_space)
 
     code += "\n".join([namespace])
 
@@ -59,10 +63,6 @@ typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
 
 def generate_dolfin_namespace(prefix, forms, common_function_space=False):
 
-    # Allow forms to represent a single space, and treat separately
-    if isinstance(forms, UFCElementNames):
-        return generate_single_function_space(prefix, forms)
-
     # Extract (common) coefficient spaces
     assert(parameters["use_common_coefficient_names"])
     spaces = extract_coefficient_spaces(forms)
@@ -70,10 +70,10 @@ def generate_dolfin_namespace(prefix, forms, common_function_space=False):
     # Generate code for common coefficient spaces
     code = [apply_function_space_template(*space) for space in spaces]
 
-    # Generate code for forms
-    code += [generate_form(form, "Form_%s" % form.name) for form in forms]
+    # Generate code for forms, including function spaces for test/trial functions
+    code += [generate_form(form, "Form_{}".format(form.name)) for form in forms]
 
-    # Generate namespace typedefs (Bilinear/Linear & Test/Trial/Function)
+    # Generate 'top-level' typedefs (Bilinear/Linear & Test/Trial/Function)
     code += [generate_namespace_typedefs(forms, common_function_space)]
 
     # Wrap code in namespace block
@@ -86,8 +86,8 @@ def generate_dolfin_namespace(prefix, forms, common_function_space=False):
 def generate_single_function_space(prefix, space):
     code = apply_function_space_template("FunctionSpace",
                                          space.ufc_finite_element_classnames[0],
-                                         space.ufc_dofmap_classnames[0])
-    code = "\nnamespace %s\n{\n\n%s\n}" % (prefix, code)
+                                         space.ufc_dofmap_classnames[0],
+                                         space.ufc_coordinate_mapping_classnames[0])
     return code
 
 
@@ -104,22 +104,13 @@ def generate_namespace_typedefs(forms, common_function_space):
     for rank in sorted(range(len(aliases)), reverse=True):
         forms_of_rank = [form for form in forms if form.rank == rank]
         if len(forms_of_rank) == 1:
-            pairs += [("Form_%s" % forms_of_rank[0].name, aliases[rank])]
+            pairs += [("Form_{}".format(forms_of_rank[0].name), aliases[rank])]
             if aliases[rank] in extra_aliases:
                 extra_alias = extra_aliases[aliases[rank]]
-                pairs += [("Form_%s" % forms_of_rank[0].name, extra_alias)]
-
-    # # Keepin' it simple: Add typedef for FunctionSpace if term applies
-    # if common_function_space:
-    #     for i, form in enumerate(forms):
-    #         if form.rank:
-    #             pairs += [("Form_{}::TestSpace".format(form.name), "FunctionSpace")]
-    #             break
+                pairs += [("Form_{}".format(forms_of_rank[0].name), extra_alias)]
 
     # Combine data to typedef code
-    # typedefs = "\n".join("typedef {} {};".format(to, fro) for (to, fro) in pairs)
-    # typedefs += "\n"
-    typedefs = "\n".join("static constexpr dolfin_form_factory_ptr {}_factory = {}_factory;".format(fro, to) for (to, fro) in pairs)
+    typedefs = "\n".join("constexpr dolfin_form_factory_ptr {}_factory = {}_factory;".format(fro, to) for (to, fro) in pairs)
 
     # Keepin' it simple: Add typedef for function space factory if term applies
     if common_function_space:
@@ -127,10 +118,9 @@ def generate_namespace_typedefs(forms, common_function_space):
             if form.rank:
                 # FIXME: Is this naming robust?
                 typedefs += "\n\nstatic constexpr dolfin_function_space_factory_ptr FunctionSpace_factory = Form_{}_FunctionSpace_0_factory;".format(form.name)
-                #typedefs += "\n\nstatic constexpr dolfin_function_space_factory_ptr FunctionSpace_factory = Form_{}::TestSpace_factory;".format(form.name)
                 break
 
     # Return typedefs or ""
     if not typedefs:
         return ""
-    return "// Class typedefs\n" + typedefs + "\n"
+    return "// High-level typedefs\n" + typedefs + "\n"

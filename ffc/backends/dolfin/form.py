@@ -17,16 +17,8 @@
 # along with DOLFIN. If not, see <http://www.gnu.org/licenses/>.
 #
 # Based on original implementation by Martin Alnes and Anders Logg
-#
-# Modified by Anders Logg 2015
-#
-# Last changed: 2016-03-02
 
-from .includes import snippets
 from .functionspace import generate_typedefs, apply_function_space_template
-
-__all__ = ["generate_form"]
-
 
 def generate_form(form, classname):
     """Generate dolfin wrapper code associated with a form including code
@@ -41,26 +33,19 @@ def generate_form(form, classname):
 
     blocks = []
 
-    # Generate code for Form_x_FunctionSpace_y subclasses
+    # Generate code for "Form_x_FunctionSpace_y" factories
     wrap = apply_function_space_template
-    blocks += [wrap("%s_FunctionSpace_%d" % (classname, i),
+    blocks += [wrap("{}_FunctionSpace_{}".format(classname, i),
                     form.ufc_finite_element_classnames[i],
                     form.ufc_dofmap_classnames[i],
                     form.ufc_coordinate_mapping_classnames[i]) for i in range(form.rank)]
 
-    # Add typedefs CoefficientSpace_z -> Form_x_FunctionSpace_y
-    # blocks += ["typedef CoefficientSpace_%s %s_FunctionSpace_%d;"
-    #            % (form.coefficient_names[i], classname, form.rank + i)
-    #            for i in range(form.num_coefficients)]
-
-    # Add factory functions
-    template = "static constexpr dolfin_function_space_factory_ptr {}_FunctionSpace_{}_factory = CoefficientSpace_{}_factory;"
+    # Add factory function typedefs, e.g. Form_L_FunctionSpace_1_factory = CoefficientSpace_f_factory
+    template = "constexpr dolfin_function_space_factory_ptr {}_FunctionSpace_{}_factory = CoefficientSpace_{}_factory;"
     blocks += [template.format(classname, form.rank + i, form.coefficient_names[i])
                for i in range(form.num_coefficients)]
 
     blocks += ["\n"]
-
-    #blocks += ["// HereHere"]
 
     # Generate Form subclass
     blocks += [generate_form_class(form, classname)]
