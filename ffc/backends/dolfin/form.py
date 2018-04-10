@@ -45,7 +45,8 @@ def generate_form(form, classname):
     wrap = apply_function_space_template
     blocks += [wrap("%s_FunctionSpace_%d" % (classname, i),
                     form.ufc_finite_element_classnames[i],
-                    form.ufc_dofmap_classnames[i]) for i in range(form.rank)]
+                    form.ufc_dofmap_classnames[i],
+                    form.ufc_coordinate_mapping_classnames[i]) for i in range(form.rank)]
 
     # Add typedefs CoefficientSpace_z -> Form_x_FunctionSpace_y
     # blocks += ["typedef CoefficientSpace_%s %s_FunctionSpace_%d;"
@@ -54,7 +55,8 @@ def generate_form(form, classname):
 
     # Add factory functions
     template = "static constexpr dolfin_function_space_factory_ptr {}_FunctionSpace_{}_factory = CoefficientSpace_{}_factory;"
-    blocks += [template.format(classname, form.rank + i, form.coefficient_names[i]) for i in range(form.num_coefficients)]
+    blocks += [template.format(classname, form.rank + i, form.coefficient_names[i])
+               for i in range(form.num_coefficients)]
 
     blocks += ["\n"]
 
@@ -77,7 +79,8 @@ def generate_form_class(form, classname):
     (number, name) = generate_coefficient_map_data(form)
 
     # Generate typedefs for FunctionSpace subclasses for Coefficients
-    typedefs = ["  // Typedefs (function spaces)", generate_typedefs(form, classname), ""]
+    typedefs = ["  // Typedefs (function spaces)",
+                generate_typedefs(form, classname), ""]
 
     # Member variables for coefficients
     # members = ["  dolfin::function::CoefficientAssigner %s;" % coefficient
@@ -200,7 +203,7 @@ def generate_constructor(form, classname, space_tag, coefficient_tag=None):
     else:
         arguments = [argument]
 
-    f_spaces = "{" + ", ".join([name %i for i in range(form.rank)]) + "}"
+    f_spaces = "{" + ", ".join([name % i for i in range(form.rank)]) + "}"
 
     assignments = []
 
@@ -210,7 +213,8 @@ def generate_constructor(form, classname, space_tag, coefficient_tag=None):
         arguments += [argument % name for name in form.coefficient_names]
         if form.rank > 0:  # FIXME: To match old generated code only
             assignments += [""]
-        assignments += [assign % (name, name) for name in form.coefficient_names]
+        assignments += [assign % (name, name)
+                        for name in form.coefficient_names]
 
     # Construct list for initialization of Coefficient references
     # initializers = ["%s(*this, %d)" % (name, number)

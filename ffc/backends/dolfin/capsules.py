@@ -25,7 +25,8 @@ class UFCFormNames:
 
     def __init__(self, name, coefficient_names, ufc_form_classname,
                  ufc_finite_element_classnames, ufc_dofmap_classnames,
-                 superclassname='Form'):
+                 ufc_coordinate_mapping_classnames,
+                 superclassname):
         """Arguments:
 
         @param name:
@@ -38,6 +39,9 @@ class UFCFormNames:
             List of names of ufc::finite_element subclasses (length
             rank + num_coefficients).
         @param ufc_dofmap_classnames:
+            List of names of ufc::dofmap subclasses (length rank +
+            num_coefficients).
+        @param ufc_coordinatemapping_classnames:
             List of names of ufc::dofmap subclasses (length rank +
             num_coefficients).
         @param superclassname (optional):
@@ -53,6 +57,7 @@ class UFCFormNames:
         self.ufc_form_classname = ufc_form_classname
         self.ufc_finite_element_classnames = ufc_finite_element_classnames
         self.ufc_dofmap_classnames = ufc_dofmap_classnames
+        self.ufc_coordinate_mapping_classnames = ufc_coordinate_mapping_classnames
         self.superclassname = superclassname
 
     def __str__(self):
@@ -64,6 +69,7 @@ class UFCFormNames:
         s += "ufc_form_classname:        %s\n" % str(self.ufc_form_classname)
         s += "finite_element_classnames: %s\n" % str(self.ufc_finite_element_classnames)
         s += "ufc_dofmap_classnames:    %s\n" % str(self.ufc_dofmap_classnames)
+        s += "ufc_coordinate_mapping_classnames:    %s\n" % str(self.ufc_coordinate_mapping_classnames)
         return s
 
 
@@ -73,15 +79,18 @@ class UFCElementNames:
 
     def __init__(self, name,
                  ufc_finite_element_classnames,
-                 ufc_dofmap_classnames):
+                 ufc_dofmap_classnames,
+                 ufc_coordinate_mapping_classnames):
         """Arguments:
 
         """
         assert len(ufc_finite_element_classnames) == len(ufc_dofmap_classnames)
+        assert len(ufc_finite_element_classnames) == len(ufc_coordinate_mapping_classnames)
 
         self.name = name
         self.ufc_finite_element_classnames = ufc_finite_element_classnames
         self.ufc_dofmap_classnames = ufc_dofmap_classnames
+        self.ufc_coordinate_mapping_classnames = ufc_coordinate_mapping_classnames
 
     def __str__(self):
         s = "UFCFiniteElementNames instance:\n"
@@ -90,5 +99,7 @@ class UFCElementNames:
         s += "finite_element_classnames: %s\n"  \
             % str(self.ufc_finite_element_classnames)
         s += "ufc_dofmap_classnames:    %s\n" \
+            % str(self.ufc_dofmap_classnames)
+        s += "ufc_coordinate_mapping_classnames:    %s\n" \
             % str(self.ufc_dofmap_classnames)
         return s

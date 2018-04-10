@@ -693,6 +693,9 @@ struct dolfin_function_space
 
   // Pointer to factory function that creates a new ufc::dofmap
   ufc::dofmap* (*dofmap)(void);
+
+  // Pointer to factory function that creates a new ufc::coordinate_mapping
+  ufc::coordinate_mapping* (*coordinate_mapping)(void);
 };
 
 struct dolfin_form

@@ -91,21 +91,15 @@ def _encapsule_form(prefix, object_names, classnames, form_data, i, element_map,
     if superclassname is None:
         superclassname = "Form"
 
+    print(classnames)
     form_names = UFCFormNames(
         object_names.get(id(form_data.original_form), "%d" % i),
         [object_names.get(id(obj), "w%d" % j) for j, obj in enumerate(form_data.reduced_coefficients)],
         classnames["forms"][i],
         [classnames["elements"][j] for j in element_numbers],
         [classnames["dofmaps"][j] for j in element_numbers],
+        [classnames["coordinate_maps"][j] for j in element_numbers],
         superclassname)
-
-    # form_names = UFCFormNames(
-    #     object_names.get(id(form_data.original_form), "%d" % i),
-    #     [object_names.get(id(obj), "w%d" % j) for j, obj in enumerate(form_data.reduced_coefficients)],
-    #     make_classname(prefix, "form", i),
-    #     [make_classname(prefix, "finite_element", j) for j in element_numbers],
-    #     [make_classname(prefix, "dofmap", j) for j in element_numbers],
-    #     superclassname)
 
     return form_names
 
@@ -114,5 +108,6 @@ def _encapsule_element(prefix, classnames, elements):
     element_number = len(elements) - 1  # eh? this doesn't make any sense
     args = ("0",
             [classnames["elements"][element_number]],
-            [classnames["dofmaps"][element_number]])
+            [classnames["dofmaps"][element_number]],
+            [classnames["coordinate_mapppings"][element_number]])
     return UFCElementNames(*args)
