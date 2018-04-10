@@ -32,6 +32,148 @@ const char UFC_VERSION[] = EVALUATOR(UFC_VERSION_MAJOR, UFC_VERSION_MINOR,
 #undef CONCAT
 #undef EVALUATOR
 
+
+struct ufc_finite_element
+{
+  /// String identifying the finite element
+  const char *signature;
+
+  /// Return the cell shape
+  //virtual shape cell_shape() const = 0;
+
+  /// Return the topological dimension of the cell shape
+  int topological_dimension;
+
+  /// Return the geometric dimension of the cell shape
+  int geometric_dimension;
+
+  /// Return the dimension of the finite element function space
+  int space_dimension;
+
+  /// Return the rank of the value space
+  int value_rank;
+
+  /// Return the dimension of the value space for axis i
+  //int value_dimension(int64_t i);
+
+  /// Return the number of components of the value space
+  int value_size;
+
+  /// Return the rank of the reference value space
+  int reference_value_rank;
+
+  /// Return the dimension of the reference value space for axis i
+  // int reference_value_dimension(int64_t i);
+
+  /// Return the number of components of the reference value space
+  int reference_value_size;
+
+  /// Return the maximum polynomial degree of the finite element
+  /// function space
+  int degre;
+
+  /// Return the family of the finite element function space
+  const char *family;
+
+  /// Evaluate all basis functions at given point X in reference cell
+  ///
+  /// @param[out] reference_values
+  ///         Basis function values on reference element.
+  ///         Dimensions:
+  ///         reference_values[num_points][num_dofs][reference_value_size]
+  /// @param[in] num_points
+  ///         Number of points.
+  /// @param[in] X
+  ///         Reference cell coordinates.
+  ///         Dimensions: X[num_points][tdim]
+  ///
+  // int evaluate_reference_basis(double *reference_values,
+  //                              int64_t num_points,
+  //                              const double *X) const = 0;
+
+  /// Evaluate specific order derivatives of all basis functions at given point
+  /// X in reference cell
+  ///
+  /// @param[out] reference_values
+  ///         Basis function derivative values on reference element.
+  ///         Dimensions:
+  ///         reference_values[num_points][num_dofs][num_derivatives][reference_value_size]
+  ///         where num_derivatives = pow(order, tdim).
+  ///         TODO: Document ordering of derivatives for order > 1.
+  /// @param[in] order
+  ///         Derivative order to compute.
+  /// @param[in] num_points
+  ///         Number of points.
+  /// @param[in] X
+  ///         Reference cell coordinates.
+  ///         Dimensions: X[num_points][tdim]
+  ///
+  // int evaluate_reference_basis_derivatives(double *reference_values,
+  //                                          int64_t order,
+  //                                          int64_t num_points,
+  //                                          const double *X) const = 0;
+
+  /// Transform order n derivatives (can be 0) of all basis functions
+  /// previously evaluated in points X in reference cell with given
+  /// Jacobian J and its inverse K for each point
+  ///
+  /// @param[out] values
+  ///         Transformed basis function (derivative) values.
+  ///         Dimensions:
+  ///         values[num_points][num_dofs][num_derivatives][value_size]
+  ///         where num_derivatives = pow(order, tdim).
+  ///         TODO: Document ordering of derivatives for order > 1.
+  /// @param[in] order
+  ///         Derivative order to compute. Can be zero to just apply Piola
+  ///         mappings.
+  /// @param[in] num_points
+  ///         Number of points.
+  /// @param[in] reference_values
+  ///         Basis function derivative values on reference element.
+  ///         Dimensions:
+  ///         reference_values[num_points][num_dofs][num_derivatives][reference_value_size]
+  ///         where num_derivatives = pow(order, tdim).
+  ///         TODO: Document ordering of derivatives for order > 1.
+  /// @param[in] X
+  ///         Reference cell coordinates.
+  ///         Dimensions: X[num_points][tdim]
+  /// @param[in] J
+  ///         Jacobian of coordinate field, J = dx/dX.
+  ///         Dimensions: J[num_points][gdim][tdim]
+  /// @param[in] detJ
+  ///         (Pseudo-)Determinant of Jacobian.
+  ///         Dimensions: detJ[num_points]
+  /// @param[in] K
+  ///         (Pseudo-)Inverse of Jacobian of coordinate field.
+  ///         Dimensions: K[num_points][tdim][gdim]
+  /// @param[in] cell_orientation
+  ///         Orientation of the cell, 1 means flipped w.r.t. reference cell.
+  ///         Only relevant on manifolds (tdim < gdim).
+  ///
+  // int transform_reference_basis_derivatives(
+  //     double *values, int64_t order, int64_t num_points,
+  //     const double *reference_values, const double *X, const double *J,
+  //     const double *detJ, const double *K, int cell_orientation) const = 0;
+
+  /// Map dofs from vals to values
+//  void map_dofs(double *values, const double *vals,
+//                const double *coordinate_dofs, int cell_orientation,
+//                const ufc::coordinate_mapping *cm = NULL) const = 0;
+
+  /// Tabulate the coordinates of all dofs on a reference cell
+  // void tabulate_reference_dof_coordinates(double *reference_dof_coordinates);
+
+  /// Return the number of sub elements (for a mixed element)
+  int num_sub_elements;
+
+  /// Create a new finite element for sub element i (for a mixed element)
+  // finite_element *create_sub_element(int64_t i);
+
+  /// Create a new class instance
+  // finite_element *create();
+
+};
+
 namespace ufc {
 
 /// Valid cell shapes
