@@ -30,7 +30,6 @@ __all__ = ["generate_wrapper_code"]
 
 # FIXME: More clean-ups needed here.
 
-
 def generate_wrapper_code(analysis, prefix, object_names, classnames, parameters):
     "Generate code for additional wrappers."
 
@@ -39,7 +38,8 @@ def generate_wrapper_code(analysis, prefix, object_names, classnames, parameters
         return None
 
     # Return dolfin wrapper
-    return _generate_dolfin_wrapper(analysis, prefix, object_names, classnames, parameters)
+    return _generate_dolfin_wrapper(analysis, prefix, object_names, classnames,
+                                    parameters)
 
 
 def _generate_dolfin_wrapper(analysis, prefix, object_names, classnames, parameters):
@@ -52,7 +52,7 @@ def _generate_dolfin_wrapper(analysis, prefix, object_names, classnames, paramet
 
     # Generate code
     info("Generating wrapper code for DOLFIN")
-    code = generate_dolfin_code(prefix, "", capsules, common_space)
+    code = generate_dolfin_code(prefix, capsules, common_space)
     code += "\n\n"
     end()
 

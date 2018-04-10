@@ -93,10 +93,7 @@ def generate_typedefs(form, classname):
 function_space_template = """\
 dolfin_function_space* %(classname)s_factory()
 {
-  /*
-  In C rather than C++:
-  dolfin_function_space* space = malloc(sizeof(*space));
-  */
+  /* dolfin_function_space* space = malloc(sizeof(*space)); // In C rather than C++: */
   dolfin_function_space* space = (dolfin_function_space*) malloc(sizeof(*space));
   space->element = create_%(ufc_finite_element_classname)s;
   space->dofmap = create_%(ufc_dofmap_classname)s;

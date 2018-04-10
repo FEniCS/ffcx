@@ -3,18 +3,8 @@
 #
 # Modified by Anders Logg 2015
 
-__all__ = ["dolfin_tag", "stl_includes", "dolfin_includes", "snippets"]
+#__all__ = ["dolfin_tag", "stl_includes", "dolfin_includes", "snippets"]
 
-dolfin_tag = "// DOLFIN wrappers"
-
-stl_includes = """\
-// Standard library includes
-#include <string.h>
-"""
-
-dolfin_includes = """\
-// DOLFIN includes
-"""
 
 snippets = {"shared_ptr_space":
             ("std::shared_ptr<const dolfin::function::FunctionSpace> %s",

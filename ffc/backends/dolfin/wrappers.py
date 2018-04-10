@@ -17,73 +17,44 @@
 # along with DOLFIN. If not, see <http://www.gnu.org/licenses/>.
 #
 # Based on original implementation by Martin Alnes and Anders Logg
-#
-# Modified by Anders Logg 2015
-#
-# Last changed: 2015-11-05
 
-from . import includes as incl
 from .functionspace import (extract_coefficient_spaces, apply_function_space_template)
 from .form import generate_form
 from .capsules import UFCElementNames
-
-__all__ = ["generate_dolfin_code"]
 
 # NB: generate_dolfin_namespace(...) assumes that if a coefficient has
 # the same name in multiple forms, it is indeed the same coefficient:
 parameters = {"use_common_coefficient_names": True}
 
 
-def generate_dolfin_code(prefix, header, forms, common_function_space=False,
-                         add_guards=False):
+def generate_dolfin_code(prefix, forms, common_function_space=False):
     """Generate complete dolfin wrapper code with given generated names.
 
     @param prefix:
-        String, prefix for all form names.
-    @param header:
-        Code that will be inserted at the top of the file.
+        String, prefix for all form names
     @param forms:
         List of UFCFormNames instances or single UFCElementNames.
     @param common_function_space:
         True if common function space, otherwise False
-    @param add_guards:
-        True iff guards (ifdefs) should be added
-    @param error_control:
-        True iff adaptivity typedefs (ifdefs) should be added
     """
 
-    # Generate dolfin namespace
-    namespace = generate_dolfin_namespace(prefix, forms, common_function_space)
+    # Tag
+    code = "// DOLFIN helper functions wrappers\n"
 
-    function_space_struct = """
-// Note: moved to ufc.h
-//struct dolfin_function_space
-//{
-//  ufc::finite_element* (*element)(void);
-//  ufc::dofmap* (*dofmap)(void);
-//};
+    # Typedefs for convenience factory functions
+    factory_typedefs = """
+// Typedefs for convenience factory functions
 typedef dolfin_function_space* (*dolfin_function_space_factory_ptr)(void);
 typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
 """
+    code += factory_typedefs
 
-#     form_struct = """
-# struct DOLFINForm
-# {
-#   std::size_t (*coefficient_number)(const std::string name);
-#   std::string (*coefficient_name)(std::size_t i);
-# };
-# """
+    # Generate body of dolfin wappers
+    namespace = generate_dolfin_namespace(prefix, forms, common_function_space)
 
-    # Collect pieces of code
-    code = [incl.dolfin_tag, header, incl.stl_includes, incl.dolfin_includes,
-            function_space_struct, namespace]
+    code += "\n".join([namespace])
 
-    # Add ifdefs/endifs if specified
-    if add_guards:
-        code = ["#pragma once\n\n"] + code
-
-    # Return code
-    return "\n".join(code)
+    return code
 
 
 def generate_dolfin_namespace(prefix, forms, common_function_space=False):
@@ -106,7 +77,7 @@ def generate_dolfin_namespace(prefix, forms, common_function_space=False):
     code += [generate_namespace_typedefs(forms, common_function_space)]
 
     # Wrap code in namespace block
-    code = "\nnamespace %s\n{\n\n%s\n}" % (prefix, "\n".join(code))
+    code = "\n".join(code)
 
     # Return code
     return code
