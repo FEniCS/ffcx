@@ -88,13 +88,15 @@ def _encapsulate(prefix, object_names, classnames, analysis, parameters):
 def _encapsule_form(prefix, object_names, classnames, form_data, i, element_map):
     element_numbers = [element_map[e] for e in form_data.argument_elements + form_data.coefficient_elements]
 
+    # FIXME: Figure what to do with coordinate maps. Can there be more than 1?
+    assert len(classnames["coordinate_maps"]) == 1
     form_names = UFCFormNames(
         object_names.get(id(form_data.original_form), "%d" % i),
         [object_names.get(id(obj), "w%d" % j) for j, obj in enumerate(form_data.reduced_coefficients)],
         classnames["forms"][i],
         [classnames["elements"][j] for j in element_numbers],
         [classnames["dofmaps"][j] for j in element_numbers],
-        [classnames["coordinate_maps"][j] for j in element_numbers])
+        [classnames["coordinate_maps"]])
 
     return form_names
 

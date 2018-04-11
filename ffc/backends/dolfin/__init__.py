@@ -125,12 +125,13 @@ def generate_form(form, prefix, classname):
     """
 
     # Generate code for "Form_x_FunctionSpace_y" factories
+    assert(len(form.ufc_coordinate_mapping_classnames) == 1)
     wrap = FUNCTION_SPACE_TEMPLATE
     blocks = [wrap.format(**{"prefix" : prefix,
                              "classname" : "{}_FunctionSpace_{}".format(classname, i),
                              "finite_element_classname" : form.ufc_finite_element_classnames[i],
                              "dofmap_classname" : form.ufc_dofmap_classnames[i],
-                             "coordinate_map_classname" : form.ufc_coordinate_mapping_classnames[i]}) for i in range(form.rank)]
+                             "coordinate_map_classname" : form.ufc_coordinate_mapping_classnames[0]}) for i in range(form.rank)]
 
     # Add factory function typedefs, e.g. Form_L_FunctionSpace_1_factory = CoefficientSpace_f_factory
     blocks += ["// Coefficient function spaces for form \"{}\"".format(classname)]
@@ -212,10 +213,11 @@ def extract_coefficient_spaces(forms):
                 continue
 
             # Map element name, dof map name, etc to this coefficient
+            assert len(form.ufc_coordinate_mapping_classnames) == 1
             spaces[name] = ("CoefficientSpace_{}".format(name),
                             form.ufc_finite_element_classnames[form.rank + i],
                             form.ufc_dofmap_classnames[form.rank + i],
-                            form.ufc_coordinate_mapping_classnames[form.rank + i])
+                            form.ufc_coordinate_mapping_classnames[0])
 
     # Return coefficient spaces sorted alphabetically by coefficient name
     names = sorted(spaces.keys())
