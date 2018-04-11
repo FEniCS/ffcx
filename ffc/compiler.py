@@ -226,9 +226,7 @@ def compile_ufl_objects(ufl_objects,
 
     # Extract class names from the IR
     classnames = defaultdict(list)
-    for ir, o in zip(
-            code,
-        ["elements", "dofmaps", "coordinate_maps", "integrals", "forms"]):
+    for ir, o in zip(code, ["elements", "dofmaps", "coordinate_maps", "integrals", "forms"]):
         for e in ir:
             classnames[o].append(e["classname"])
 
