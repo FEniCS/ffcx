@@ -20,34 +20,33 @@ import os
 import copy
 from ffc.log import INFO
 
-
 # Comments from other places in code:
 # FIXME: Document option -fconvert_exceptions_to_warnings
-
 
 # NB! Parameters in the generate and build sets are
 # included in jit signature, cache and log are not.
 _FFC_GENERATE_PARAMETERS = {
-    "format": "ufc",           # code generation format
+    "format": "ufc",  # code generation format
     "representation": "auto",  # form representation / code
-                               # generation strategy
-    "quadrature_rule": None,   # quadrature rule used for
-                               # integration of element tensors
-                               # (None is auto)
+    # generation strategy
+    "quadrature_rule": None,  # quadrature rule used for
+    # integration of element tensors
+    # (None is auto)
     "quadrature_degree": None,  # quadrature degree used for
-                               # computing integrals
-                               # (None is auto)
-    "precision": None,         # precision used when writing
-                               # numbers (None for max precision)
-    "epsilon": 1e-14,          # machine precision, used for
-                               # dropping zero terms in tables
-    "split": False,            # split generated code into .h and
-                               # .cpp file
-    "form_postfix": True,      # postfix form name with "Function",
-                               # "LinearForm" or BilinearForm
-    "convert_exceptions_to_warnings": False,   # convert all exceptions to warning
-                                               # in generated code
-    "optimize": True,         # turn on optimization for code generation
+    # computing integrals
+    # (None is auto)
+    "precision": None,  # precision used when writing
+    # numbers (None for max precision)
+    "epsilon": 1e-14,  # machine precision, used for
+    # dropping zero terms in tables
+    "split": False,  # split generated code into .h and
+    # .cpp file
+    "form_postfix": True,  # postfix form name with "Function",
+    # "LinearForm" or BilinearForm
+    "convert_exceptions_to_warnings":
+    False,  # convert all exceptions to warning
+    # in generated code
+    "optimize": True,  # turn on optimization for code generation
     "max_signature_length": 0,  # set to positive integer to shorten signatures
     # set to True to replace tabulate_tensor body with no-op
     "generate_dummy_tabulate_tensor": False,
@@ -57,8 +56,8 @@ _FFC_GENERATE_PARAMETERS = {
     "external_includes": "",
 }
 _FFC_BUILD_PARAMETERS = {
-    "cpp_optimize": True,          # optimization for the C++ compiler
-    "cpp_optimize_flags": "-O2",   # optimization flags for the C++ compiler
+    "cpp_optimize": True,  # optimization for the C++ compiler
+    "cpp_optimize_flags": "-O2",  # optimization flags for the C++ compiler
     # ':' separated list of libraries to link JIT compiled libraries with
     "external_libraries": "",
     # ':' separated list of library search dirs to add when JIT compiling
@@ -67,13 +66,13 @@ _FFC_BUILD_PARAMETERS = {
     "external_include_dirs": "",
 }
 _FFC_CACHE_PARAMETERS = {
-    "cache_dir": "",        # cache dir used by Instant
-    "output_dir": ".",      # output directory for generated code
+    "cache_dir": "",  # cache dir used by Instant
+    "output_dir": ".",  # output directory for generated code
 }
 _FFC_LOG_PARAMETERS = {
     "log_level": INFO + 5,  # log level, displaying only
-                            # messages with level >= log_level
-    "log_prefix": "",       # log prefix
+    # messages with level >= log_level
+    "log_prefix": "",  # log prefix
 }
 FFC_PARAMETERS = {}
 FFC_PARAMETERS.update(_FFC_BUILD_PARAMETERS)
@@ -87,10 +86,15 @@ def split_parameters(parameters):
 
     """
     params = {
-        "cache": {k: parameters[k] for k in _FFC_CACHE_PARAMETERS.keys()},
-        "build": {k: parameters[k] for k in _FFC_BUILD_PARAMETERS.keys()},
-        "generate": {k: parameters[k] for k in _FFC_GENERATE_PARAMETERS.keys()},
-        "log": {k: parameters[k] for k in _FFC_LOG_PARAMETERS.keys()},
+        "cache": {k: parameters[k]
+                  for k in _FFC_CACHE_PARAMETERS.keys()},
+        "build": {k: parameters[k]
+                  for k in _FFC_BUILD_PARAMETERS.keys()},
+        "generate":
+        {k: parameters[k]
+         for k in _FFC_GENERATE_PARAMETERS.keys()},
+        "log": {k: parameters[k]
+                for k in _FFC_LOG_PARAMETERS.keys()},
     }
     return params
 
@@ -168,8 +172,8 @@ def _validate_parameters(parameters):
             parameters["quadrature_degree"] = int(
                 parameters["quadrature_degree"])
         except Exception:
-            error("Failed to convert quadrature degree '%s' to int"
-                  % parameters.get("quadrature_degree"))
+            error("Failed to convert quadrature degree '%s' to int" %
+                  parameters.get("quadrature_degree"))
 
     # Convert all legal default values to None and
     # cast nondefaults from str to int
@@ -179,8 +183,8 @@ def _validate_parameters(parameters):
         try:
             parameters["precision"] = int(parameters["precision"])
         except Exception:
-            error("Failed to convert precision '%s' to int"
-                  % parameters.get("precision"))
+            error("Failed to convert precision '%s' to int" %
+                  parameters.get("precision"))
 
 
 def compilation_relevant_parameters(parameters):

@@ -58,7 +58,7 @@ def compute_permutations(k, n, skip=[]):
     """Compute all permutations of k elements from (0, n) in rising order.
     Any elements that are contained in the list skip are not included."""
     if k == 1:
-        return [(i,) for i in range(n) if i not in skip]
+        return [(i, ) for i in range(n) if i not in skip]
     pp = compute_permutations(k - 1, n, skip)
     permutations = []
     for i in range(n):

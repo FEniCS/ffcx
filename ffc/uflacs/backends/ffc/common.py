@@ -15,9 +15,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>
-
 """FFC/UFC specific symbol naming."""
-
 
 from ffc.log import error
 
@@ -36,16 +34,16 @@ def num_coordinate_component_dofs(coordinate_element):
     tdim = cell.topological_dimension()
     cellname = cell.cellname()
     d = 0
-    for entity_dim in range(tdim+1):
+    for entity_dim in range(tdim + 1):
         # n = dofs per cell entity
         if entity_dim == 0:
             n = 1
         elif entity_dim == 1:
             n = degree - 1
         elif entity_dim == 2:
-            n = (degree - 2)*(degree - 1) // 2
+            n = (degree - 2) * (degree - 1) // 2
         elif entity_dim == 3:
-            n = (degree - 3)*(degree - 2)*(degree - 1) // 6
+            n = (degree - 3) * (degree - 2) * (degree - 1) // 6
         else:
             error("Entity dimension out of range")
         # Accumulate

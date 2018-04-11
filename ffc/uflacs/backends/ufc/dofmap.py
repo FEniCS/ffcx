@@ -19,40 +19,33 @@
 # Note: Most of the code in this file is a direct translation from the
 # old implementation in FFC
 
-
 from ffc.uflacs.backends.ufc.generator import ufc_generator
 from ffc.uflacs.backends.ufc.utils import generate_return_new_switch, generate_return_sizet_switch, generate_return_bool_switch
 
 
 class ufc_dofmap(ufc_generator):
     "Each function maps to a keyword in the template. See documentation of ufc_generator."
+
     def __init__(self):
         ufc_generator.__init__(self, "dofmap")
-
 
     def num_global_support_dofs(self, L, num_global_support_dofs):
         return L.Return(num_global_support_dofs)
 
-
     def num_element_support_dofs(self, L, num_element_support_dofs):
         return L.Return(num_element_support_dofs)
-
 
     def num_element_dofs(self, L, num_element_dofs):
         return L.Return(num_element_dofs)
 
-
     def num_facet_dofs(self, L, num_facet_dofs):
         return L.Return(num_facet_dofs)
-
 
     def num_entity_dofs(self, L, num_entity_dofs):
         return generate_return_sizet_switch(L, "d", num_entity_dofs, 0)
 
-
     def num_entity_closure_dofs(self, L, num_entity_closure_dofs):
         return generate_return_sizet_switch(L, "d", num_entity_closure_dofs, 0)
-
 
     def tabulate_dofs(self, L, ir):
         # Input arguments
@@ -73,7 +66,8 @@ class ufc_dofmap(ufc_generator):
 
         # Extract representation
         #(dofs_per_element, num_dofs_per_element, need_offset, fakes) = ir # names from original ffc code
-        (subelement_dofs, num_dofs_per_subelement, need_offset, is_subelement_real) = ir
+        (subelement_dofs, num_dofs_per_subelement, need_offset,
+         is_subelement_real) = ir
 
         #len(is_subelement_real) == len(subelement_dofs) == len(num_dofs_per_subelement) == number of combined (flattened) subelements?
         #is_subelement_real[subelement_number] is bool, is subelement Real?
@@ -110,7 +104,8 @@ class ufc_dofmap(ufc_generator):
                 continue
 
             # Generate code for each degree of freedom for each dimension
-            for (cell_entity_dim, dofs_on_cell_entity) in enumerate(entity_dofs):
+            for (cell_entity_dim,
+                 dofs_on_cell_entity) in enumerate(entity_dofs):
                 num_dofs_per_mesh_entity = len(dofs_on_cell_entity[0])
                 assert all(num_dofs_per_mesh_entity == len(dofs)
                            for dofs in dofs_on_cell_entity)
@@ -120,11 +115,13 @@ class ufc_dofmap(ufc_generator):
                     continue
 
                 # For each cell entity of this dimension
-                for (cell_entity_index, dofs) in enumerate(dofs_on_cell_entity):
+                for (cell_entity_index,
+                     dofs) in enumerate(dofs_on_cell_entity):
                     # dofs is a list of the local dofs that live on this cell entity
 
                     # find offset for this particular mesh entity
-                    entity_offset = len(dofs) * entity_indices[cell_entity_dim, cell_entity_index]
+                    entity_offset = len(dofs) * entity_indices[
+                        cell_entity_dim, cell_entity_index]
 
                     for (j, dof) in enumerate(dofs):
                         # dof is the local dof index on the subelement
@@ -132,17 +129,19 @@ class ufc_dofmap(ufc_generator):
                         # on this particular cell/mesh entity
                         local_dof_index = subelement_offset + dof
                         global_dof_index = offset + entity_offset + j
-                        code.append(L.Assign(dofs_variable[local_dof_index], global_dof_index))
+                        code.append(
+                            L.Assign(dofs_variable[local_dof_index],
+                                     global_dof_index))
 
                 # Update offset corresponding to mesh entity:
                 if need_offset:
-                    value = num_dofs_per_mesh_entity * num_mesh_entities[cell_entity_dim]
+                    value = num_dofs_per_mesh_entity * num_mesh_entities[
+                        cell_entity_dim]
                     code.append(L.AssignAdd(offset, value))
 
             subelement_offset += num_dofs_per_subelement[subelement_index]
 
         return L.StatementList(code)
-
 
     def tabulate_facet_dofs(self, L, ir):
         all_facet_dofs = ir["tabulate_facet_dofs"]
@@ -154,15 +153,16 @@ class ufc_dofmap(ufc_generator):
         # For each facet, copy all_facet_dofs[facet][:] into output argument array dofs[:]
         cases = []
         for f, single_facet_dofs in enumerate(all_facet_dofs):
-            assignments = [L.Assign(dofs[i], dof)
-                           for (i, dof) in enumerate(single_facet_dofs)]
+            assignments = [
+                L.Assign(dofs[i], dof)
+                for (i, dof) in enumerate(single_facet_dofs)
+            ]
             if assignments:
                 cases.append((f, L.StatementList(assignments)))
         if cases:
             return L.Switch(facet, cases, autoscope=False)
         else:
             return L.NoOp()
-
 
     def tabulate_entity_dofs(self, L, ir):
         entity_dofs, num_dofs_per_entity = ir["tabulate_entity_dofs"]
@@ -203,7 +203,6 @@ class ufc_dofmap(ufc_generator):
         else:
             return L.NoOp()
 
-
     def tabulate_entity_closure_dofs(self, L, ir):
         # Extract variables from ir
         entity_closure_dofs, entity_dofs, num_dofs_per_entity = \
@@ -243,11 +242,10 @@ class ufc_dofmap(ufc_generator):
         else:
             return L.NoOp()
 
-
     def num_sub_dofmaps(self, L, num_sub_dofmaps):
         return L.Return(num_sub_dofmaps)
 
-
     def create_sub_dofmap(self, L, ir):
         classnames = ir["create_sub_dofmap"]
-        return generate_return_new_switch(L, "i", classnames, factory=ir["jit"])
+        return generate_return_new_switch(
+            L, "i", classnames, factory=ir["jit"])

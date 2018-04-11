@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
-
 # Note: Much of the code in this file is a direct translation
 # from the old implementation in FFC, although some improvements
 # have been made to the generated code.
@@ -26,7 +25,8 @@ from ffc.uflacs.backends.ufc.jacobian import jacobian, inverse_jacobian, orienta
 from ufl.permutation import build_component_numbering
 from ffc.utils import pick_first
 
-index_type="int64_t"
+index_type = "int64_t"
+
 
 def reference_to_physical_map(cellname):
     "Returns a map from reference coordinates to physical element coordinates"
@@ -38,16 +38,9 @@ def reference_to_physical_map(cellname):
     elif cellname == "tetrahedron":
         return lambda x: (1.0 - x[0] - x[1] - x[2], x[0], x[1], x[2])
     elif cellname == "quadrilateral":
-        return lambda x: ((1-x[0])*(1-x[1]), (1-x[0])*x[1], x[0]*(1-x[1]), x[0]*x[1])
+        return lambda x: ((1 - x[0]) * (1 - x[1]), (1 - x[0]) * x[1], x[0] * (1 - x[1]), x[0] * x[1])
     elif cellname == "hexahedron":
-        return lambda x: ((1-x[0])*(1-x[1])*(1-x[2]),
-            (1-x[0])*(1-x[1])*x[2],
-            (1-x[0])*x[1]*(1-x[2]),
-            (1-x[0])*x[1]*x[2],
-            x[0]*(1-x[1])*(1-x[2]),
-            x[0]*(1-x[1])*x[2],
-            x[0]*x[1]*(1-x[2]),
-            x[0]*x[1]*x[2])
+        return lambda x: ((1 - x[0]) * (1 - x[1]) * (1 - x[2]), (1 - x[0]) * (1 - x[1]) * x[2], (1 - x[0]) * x[1] * (1 - x[2]), (1 - x[0]) * x[1] * x[2], x[0] * (1 - x[1]) * (1 - x[2]), x[0] * (1 - x[1]) * x[2], x[0] * x[1] * (1 - x[2]), x[0] * x[1] * x[2])
 
 
 def _change_variables(L, mapping, gdim, tdim, offset):
@@ -108,8 +101,8 @@ def _change_variables(L, mapping, gdim, tdim, offset):
         for i in range(tdim):
             inner = 0.0
             for j in range(gdim):
-                inner += values[j + offset]*K[i, j]
-            w.append(inner*detJ)
+                inner += values[j + offset] * K[i, j]
+            w.append(inner * detJ)
         return w
 
     elif mapping == "covariant piola":
@@ -122,7 +115,7 @@ def _change_variables(L, mapping, gdim, tdim, offset):
         for i in range(tdim):
             inner = 0.0
             for j in range(gdim):
-                inner += values[j + offset]*J[j, i]
+                inner += values[j + offset] * J[j, i]
             w.append(inner)
         return w
 
@@ -136,7 +129,8 @@ def _change_variables(L, mapping, gdim, tdim, offset):
                 inner = 0.0
                 for k in range(gdim):
                     for j in range(gdim):
-                        inner += J[j, i] * values[j*tdim + k + offset] * J[k, l]
+                        inner += J[j, i] * values[j * tdim
+                                                  + k + offset] * J[k, l]
                 w.append(inner)
         return w
 
@@ -151,12 +145,14 @@ def _change_variables(L, mapping, gdim, tdim, offset):
                 inner = 0.0
                 for k in range(gdim):
                     for j in range(gdim):
-                        inner += K[i, j] * values[j*tdim + k + offset] * K[l, k]
-                w.append(inner*detJ*detJ)
+                        inner += K[i, j] * values[j * tdim
+                                                  + k + offset] * K[l, k]
+                w.append(inner * detJ * detJ)
         return w
 
     else:
         raise Exception("The mapping (%s) is not allowed" % mapping)
+
 
 def _generate_body(L, i, dof, mapping, gdim, tdim, cell_shape, offset=0):
     "Generate code for a single dof."
@@ -190,20 +186,20 @@ def _generate_body(L, i, dof, mapping, gdim, tdim, cell_shape, offset=0):
 
     # Simple affine functions deserve special case:
     if len(F) == 1:
-        return (code, dof[x][0][0]*F[0])
+        return (code, dof[x][0][0] * F[0])
 
     # Flatten multi-indices
     (index_map, _) = build_component_numbering([tdim] * len(dof[x][0][1]), ())
     # Take inner product between components and weights
     value = 0.0
     for (w, k) in dof[x]:
-        value += w*F[index_map[k]]
+        value += w * F[index_map[k]]
 
     # Return eval code and value
     return (code, value)
 
-def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim,
-                                   offset=0):
+
+def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset=0):
     "Generate c++ for-loop for multiple points (integral bodies)"
 
     result = L.Symbol("result")
@@ -249,61 +245,81 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim,
     coordinate_dofs = L.Symbol("coordinate_dofs")
 
     if tdim == 1:
-        lines_r = [L.Comment("Evaluate basis functions for affine mapping"),
-                   L.VariableDecl("const double", w0, 1 - X_i[r][0]),
-                   L.VariableDecl("const double", w1, X_i[r][0]),
-                   L.Comment("Compute affine mapping y = F(X)")]
+        lines_r = [
+            L.Comment("Evaluate basis functions for affine mapping"),
+            L.VariableDecl("const double", w0, 1 - X_i[r][0]),
+            L.VariableDecl("const double", w1, X_i[r][0]),
+            L.Comment("Compute affine mapping y = F(X)")
+        ]
         for j in range(gdim):
-            lines_r += [L.Assign(y[j],
-                                 w0*coordinate_dofs[j] + w1*coordinate_dofs[j + gdim])]
+            lines_r += [
+                L.Assign(
+                    y[j],
+                    w0 * coordinate_dofs[j] + w1 * coordinate_dofs[j + gdim])
+            ]
     elif tdim == 2:
-        lines_r = [L.Comment("Evaluate basis functions for affine mapping"),
-                   L.VariableDecl("const double", w0, 1 - X_i[r][0] - X_i[r][1]),
-                   L.VariableDecl("const double", w1, X_i[r][0]),
-                   L.VariableDecl("const double", w2, X_i[r][1]),
-                   L.Comment("Compute affine mapping y = F(X)")]
+        lines_r = [
+            L.Comment("Evaluate basis functions for affine mapping"),
+            L.VariableDecl("const double", w0, 1 - X_i[r][0] - X_i[r][1]),
+            L.VariableDecl("const double", w1, X_i[r][0]),
+            L.VariableDecl("const double", w2, X_i[r][1]),
+            L.Comment("Compute affine mapping y = F(X)")
+        ]
         for j in range(gdim):
-            lines_r += [L.Assign(y[j],
-                                 w0*coordinate_dofs[j]
-                                 + w1*coordinate_dofs[j + gdim]
-                                 + w2*coordinate_dofs[j + 2*gdim])]
+            lines_r += [
+                L.Assign(
+                    y[j],
+                    w0 * coordinate_dofs[j] + w1 * coordinate_dofs[j + gdim] +
+                    w2 * coordinate_dofs[j + 2 * gdim])
+            ]
     elif tdim == 3:
-        lines_r = [L.Comment("Evaluate basis functions for affine mapping"),
-                   L.VariableDecl("const double", w0, 1 - X_i[r][0] - X_i[r][1] - X_i[r][2]),
-                   L.VariableDecl("const double", w1, X_i[r][0]),
-                   L.VariableDecl("const double", w2, X_i[r][1]),
-                   L.VariableDecl("const double", w3, X_i[r][2]),
-                   L.Comment("Compute affine mapping y = F(X)")]
+        lines_r = [
+            L.Comment("Evaluate basis functions for affine mapping"),
+            L.VariableDecl("const double", w0,
+                           1 - X_i[r][0] - X_i[r][1] - X_i[r][2]),
+            L.VariableDecl("const double", w1, X_i[r][0]),
+            L.VariableDecl("const double", w2, X_i[r][1]),
+            L.VariableDecl("const double", w3, X_i[r][2]),
+            L.Comment("Compute affine mapping y = F(X)")
+        ]
         for j in range(gdim):
-            lines_r += [L.Assign(y[j],
-                                 w0*coordinate_dofs[j]
-                                 + w1*coordinate_dofs[j + gdim]
-                                 + w2*coordinate_dofs[j + 2*gdim]
-                                 + w3*coordinate_dofs[j + 3*gdim])]
+            lines_r += [
+                L.Assign(
+                    y[j],
+                    w0 * coordinate_dofs[j] + w1 * coordinate_dofs[j + gdim] +
+                    w2 * coordinate_dofs[j + 2 * gdim] +
+                    w3 * coordinate_dofs[j + 3 * gdim])
+            ]
 
     # Evaluate function at physical point
     lines_r += [L.Comment("Evaluate function at physical point")]
     y = L.Symbol("y")
     vals = L.Symbol("vals")
     c = L.Symbol("c")
-    lines_r += [L.Call("f.evaluate",(vals, y, c))]
+    lines_r += [L.Call("f.evaluate", (vals, y, c))]
 
     # Map function values to the reference element
     lines_r += [L.Comment("Map function to reference element")]
     F = _change_variables(L, mapping, gdim, tdim, offset)
-    lines_r += [L.Assign(copy_i[k], F_k)
-                for (k, F_k) in enumerate(F)]
+    lines_r += [L.Assign(copy_i[k], F_k) for (k, F_k) in enumerate(F)]
 
     # Add loop over directional components
     lines_r += [L.Comment("Loop over directions")]
 
     s = L.Symbol("s")
-    lines_r += [L.ForRange(s, 0, len_tokens, index_type=index_type,
-                       body=[L.AssignAdd(result, copy_i[D_i[r, s]] * W_i[r, s])])]
+    lines_r += [
+        L.ForRange(
+            s,
+            0,
+            len_tokens,
+            index_type=index_type,
+            body=[L.AssignAdd(result, copy_i[D_i[r, s]] * W_i[r, s])])
+    ]
 
     # Generate loop over r and add to code.
     code += [L.ForRange(r, 0, n, index_type=index_type, body=lines_r)]
     return (code, result)
+
 
 def generate_map_dofs(L, ir):
     "Generate code for map_dofs."
@@ -320,12 +336,13 @@ def generate_map_dofs(L, ir):
     else:
         code = []
         # Check whether Jacobians are necessary.
-        needs_inverse_jacobian = any(["contravariant piola" in m
-                                      for m in ir["mappings"]])
+        needs_inverse_jacobian = any(
+            ["contravariant piola" in m for m in ir["mappings"]])
         needs_jacobian = any(["covariant piola" in m for m in ir["mappings"]])
 
         # Intermediate variable needed for multiple point dofs
-        needs_temporary = any(dof is not None and len(dof) > 1 for dof in ir["dofs"])
+        needs_temporary = any(
+            dof is not None and len(dof) > 1 for dof in ir["dofs"])
         if needs_temporary:
             result = L.Symbol("result")
             code += [L.VariableDecl("double", result)]
@@ -335,7 +352,7 @@ def generate_map_dofs(L, ir):
 
         if needs_inverse_jacobian:
             code += inverse_jacobian(L, gdim, tdim, cell_shape)
-            if tdim != gdim :
+            if tdim != gdim:
                 code += orientation(L)
 
     # Extract variables
@@ -346,7 +363,8 @@ def generate_map_dofs(L, ir):
     values = L.Symbol("values")
     value_size = ir["physical_value_size"]
     for (i, dof) in enumerate(ir["dofs"]):
-        c, r = _generate_body(L, i, dof, mappings[i], gdim, tdim, cell_shape, offsets[i] + i*value_size)
+        c, r = _generate_body(L, i, dof, mappings[i], gdim, tdim, cell_shape,
+                              offsets[i] + i * value_size)
         code += c
         code += [L.Assign(values[i], r)]
 

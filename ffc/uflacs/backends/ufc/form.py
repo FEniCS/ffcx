@@ -26,8 +26,11 @@ from ffc.uflacs.backends.ufc.utils import generate_return_new, generate_return_n
 def create_delegate(integral_type, declname, impl):
     def _delegate(self, L, ir, parameters):
         return impl(self, L, ir, parameters, integral_type, declname)
+
     _delegate.__doc__ = impl.__doc__ % {
-        "declname": declname, "integral_type": integral_type}
+        "declname": declname,
+        "integral_type": integral_type
+    }
     return _delegate
 
 
@@ -46,10 +49,10 @@ def add_ufc_form_integral_methods(cls):
     dummy_integral_type = "foo"
 
     for template in integral_name_templates:
-        implname = "_" + (template % (dummy_integral_type,))
+        implname = "_" + (template % (dummy_integral_type, ))
         impl = getattr(cls, implname)
         for integral_type in ufc_integral_types:
-            declname = template % (integral_type,)
+            declname = template % (integral_type, )
             _delegate = create_delegate(integral_type, declname, impl)
             setattr(cls, declname, _delegate)
     return cls
@@ -83,14 +86,13 @@ class ufc_form(ufc_generator):
         if positions:
             code = [
                 L.If(L.GE(i, len(positions)),
-                     [L.Comment(msg),
-                      L.Return(-1)])
+                     [L.Comment(msg), L.Return(-1)])
             ]
 
             position = L.Symbol("position")
             code += [
-                L.ArrayDecl("static const int64_t", position,
-                            len(positions), positions),
+                L.ArrayDecl("static const int64_t", position, len(positions),
+                            positions),
                 L.Return(position[i]),
             ]
             return code
@@ -127,7 +129,8 @@ class ufc_form(ufc_generator):
     # This group of functions are repeated for each
     # foo_integral by add_ufc_form_integral_methods:
 
-    def _max_foo_subdomain_id(self, L, ir, parameters, integral_type, declname):
+    def _max_foo_subdomain_id(self, L, ir, parameters, integral_type,
+                              declname):
         "Return implementation of ufc::form::%(declname)s()."
         # e.g. max_subdomain_id = ir["max_cell_subdomain_id"]
         max_subdomain_id = ir[declname]
@@ -144,10 +147,11 @@ class ufc_form(ufc_generator):
         # e.g. subdomain_ids, classnames = ir["create_cell_integral"]
         subdomain_ids, classnames = ir[declname]
         subdomain_id = L.Symbol("subdomain_id")
-        return generate_return_new_switch(L, subdomain_id, classnames,
-                                          subdomain_ids, factory=ir["jit"])
+        return generate_return_new_switch(
+            L, subdomain_id, classnames, subdomain_ids, factory=ir["jit"])
 
-    def _create_default_foo_integral(self, L, ir, parameters, integral_type, declname):
+    def _create_default_foo_integral(self, L, ir, parameters, integral_type,
+                                     declname):
         "Return implementation of ufc::form::%(declname)s()."
         # e.g. classname = ir["create_default_cell_integral"]
         classname = ir[declname]

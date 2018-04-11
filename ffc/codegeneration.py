@@ -39,6 +39,7 @@ from ffc.uflacs.language.format_lines import format_indented_lines
 from ffc.uflacs.backends.ufc.utils import generate_error
 from ffc.uflacs.backends.ufc.generators import ufc_integral, ufc_finite_element, ufc_dofmap, ufc_coordinate_mapping, ufc_form
 
+
 def generate_code(ir, parameters):
     "Generate code from intermediate representation."
 
@@ -56,28 +57,32 @@ def generate_code(ir, parameters):
 
     # Generate code for finite_elements
     info("Generating code for %d finite_element(s)" % len(ir_finite_elements))
-    code_finite_elements = [_generate_finite_element_code(ir, parameters)
-                            for ir in ir_finite_elements]
+    code_finite_elements = [
+        _generate_finite_element_code(ir, parameters)
+        for ir in ir_finite_elements
+    ]
 
     # Generate code for dofmaps
     info("Generating code for %d dofmap(s)" % len(ir_dofmaps))
-    code_dofmaps = [_generate_dofmap_code(ir, parameters)
-                    for ir in ir_dofmaps]
+    code_dofmaps = [_generate_dofmap_code(ir, parameters) for ir in ir_dofmaps]
 
     # Generate code for coordinate_mappings
-    info("Generating code for %d coordinate_mapping(s)" % len(ir_coordinate_mappings))
-    code_coordinate_mappings = [_generate_coordinate_mapping_code(ir, parameters)
-                                for ir in ir_coordinate_mappings]
+    info("Generating code for %d coordinate_mapping(s)" %
+         len(ir_coordinate_mappings))
+    code_coordinate_mappings = [
+        _generate_coordinate_mapping_code(ir, parameters)
+        for ir in ir_coordinate_mappings
+    ]
 
     # Generate code for integrals
     info("Generating code for integrals")
-    code_integrals = [_generate_integral_code(ir, parameters)
-                      for ir in ir_integrals]
+    code_integrals = [
+        _generate_integral_code(ir, parameters) for ir in ir_integrals
+    ]
 
     # Generate code for forms
     info("Generating code for forms")
-    code_forms = [_generate_form_code(ir, parameters)
-                  for ir in ir_forms]
+    code_forms = [_generate_form_code(ir, parameters) for ir in ir_forms]
 
     # Extract additional includes
     includes = _extract_includes(full_ir, code_integrals)
@@ -97,8 +102,7 @@ def _extract_includes(full_ir, code_integrals):
         includes.update(code["additional_includes_set"])
 
     # Includes for dependencies in jit mode
-    jit = any(full_ir[i][j]["jit"]
-              for i in range(len(full_ir))
+    jit = any(full_ir[i][j]["jit"] for i in range(len(full_ir))
               for j in range(len(full_ir[i])))
     if jit:
         dep_includes = set()
@@ -120,43 +124,47 @@ def _extract_includes(full_ir, code_integrals):
 def _finite_element_jit_includes(ir):
     classnames = ir["create_sub_element"]
     postfix = "_finite_element"
-    return [classname.rpartition(postfix)[0] + ".h"
-            for classname in classnames]
+    return [
+        classname.rpartition(postfix)[0] + ".h" for classname in classnames
+    ]
 
 
 def _dofmap_jit_includes(ir):
     classnames = ir["create_sub_dofmap"]
     postfix = "_dofmap"
-    return [classname.rpartition(postfix)[0] + ".h"
-            for classname in classnames]
+    return [
+        classname.rpartition(postfix)[0] + ".h" for classname in classnames
+    ]
 
 
 def _coordinate_mapping_jit_includes(ir):
     classnames = [
         ir["coordinate_finite_element_classname"],
         ir["scalar_coordinate_finite_element_classname"]
-        ]
+    ]
     postfix = "_finite_element"
-    return [classname.rpartition(postfix)[0] + ".h"
-            for classname in classnames]
+    return [
+        classname.rpartition(postfix)[0] + ".h" for classname in classnames
+    ]
 
 
 def _form_jit_includes(ir):
     # Gather all header names for classes that are separately compiled
     # For finite_element and dofmap the module and header name is the prefix,
     # extracted here with .split, and equal for both classes so we skip dofmap here:
-    classnames = list(chain(
-        ir["create_finite_element"],
-        ir["create_coordinate_finite_element"]
-        ))
+    classnames = list(
+        chain(ir["create_finite_element"],
+              ir["create_coordinate_finite_element"]))
     postfix = "_finite_element"
-    includes = [classname.rpartition(postfix)[0] + ".h"
-                for classname in classnames]
+    includes = [
+        classname.rpartition(postfix)[0] + ".h" for classname in classnames
+    ]
 
     classnames = ir["create_coordinate_mapping"]
     postfix = "_coordinate_mapping"
-    includes += [classname.rpartition(postfix)[0] + ".h"
-                 for classname in classnames]
+    includes += [
+        classname.rpartition(postfix)[0] + ".h" for classname in classnames
+    ]
     return includes
 
 
@@ -225,19 +233,22 @@ def _generate_tabulate_tensor_comment(ir, parameters):
     integrals_metadata = ir["integrals_metadata"]
     integral_metadata = ir["integral_metadata"]
 
-    comment  = [ L.Comment("This function was generated using '%s' representation" % r),
-                 L.Comment("with the following integrals metadata:"),
-                 L.Comment(""),
-                 L.Comment("\n".join(dstr(integrals_metadata).split("\n")[:-1]))
-                 ]
+    comment = [
+        L.Comment("This function was generated using '%s' representation" % r),
+        L.Comment("with the following integrals metadata:"),
+        L.Comment(""),
+        L.Comment("\n".join(dstr(integrals_metadata).split("\n")[:-1]))
+    ]
     for i, metadata in enumerate(integral_metadata):
-        comment += [ L.Comment(""),
-                     L.Comment("and the following integral %d metadata:" % i),
-                     L.Comment(""),
-                     L.Comment("\n".join(dstr(metadata).split("\n")[:-1]))
-                   ]
+        comment += [
+            L.Comment(""),
+            L.Comment("and the following integral %d metadata:" % i),
+            L.Comment(""),
+            L.Comment("\n".join(dstr(metadata).split("\n")[:-1]))
+        ]
 
     return format_indented_lines(L.StatementList(comment).cs_format(0), 1)
+
 
 def _generate_integral_code(ir, parameters):
     "Generate code for integrals from intermediate representation."
@@ -256,19 +267,23 @@ def _generate_integral_code(ir, parameters):
     # Wrapping tabulate_tensor in a timing snippet for benchmarking
     if parameters["add_tabulate_tensor_timing"]:
         code["tabulate_tensor"] = tt_timing_template % code["tabulate_tensor"]
-        code["additional_includes_set"] = code.get("additional_includes_set", set())
+        code["additional_includes_set"] = code.get("additional_includes_set",
+                                                   set())
         code["additional_includes_set"].add("#include <chrono>")
         code["additional_includes_set"].add("#include <iostream>")
 
     # Generate comment
-    code["tabulate_tensor_comment"] = _generate_tabulate_tensor_comment(ir, parameters)
+    code["tabulate_tensor_comment"] = _generate_tabulate_tensor_comment(
+        ir, parameters)
 
     return code
+
 
 # TODO: Replace the above with this, currently something is not working
 def _new_generate_integral_code(ir, parameters):
     "Generate code for integrals from intermediate representation."
-    return ufc_integral(ir["integral_type"]).generate_snippets(L, ir, parameters)
+    return ufc_integral(ir["integral_type"]).generate_snippets(
+        L, ir, parameters)
 
 
 def _generate_finite_element_code(ir, parameters):

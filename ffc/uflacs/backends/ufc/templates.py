@@ -19,6 +19,7 @@
 import re
 from ffc.backends.ufc import *
 
+
 def extract_keywords(template):
     r = re.compile(r"%\(([a-zA-Z0-9_]*)\)")
     return set(r.findall(template))

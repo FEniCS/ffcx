@@ -23,6 +23,7 @@ from ufl.utils.formatting import dstr
 # NOTE: This is currently not in use, see ffc/codegeneration.py for current status
 class ufc_integral(ufc_generator):
     "Each function maps to a keyword in the template. See documentation of ufc_generator."
+
     def __init__(self, integral_type):
         assert integral_type in ufc_integral_types
         ufc_generator.__init__(self, integral_type + "_integral")
@@ -30,13 +31,14 @@ class ufc_integral(ufc_generator):
     def enabled_coefficients(self, L, ir):
         # FIXME: Needs updating for interface change to plain C.
         enabled_coefficients = ir["enabled_coefficients"]
-        initializer_list = ", ".join("true" if enabled else "false"
-                                     for enabled in enabled_coefficients)
+        initializer_list = ", ".join(
+            "true" if enabled else "false" for enabled in enabled_coefficients)
         code = L.StatementList([
             # Cheating a bit with verbatim:
-            L.VerbatimStatement("static const std::vector<bool> enabled({%s});" % initializer_list),
+            L.VerbatimStatement("static const std::vector<bool> enabled({%s});"
+                                % initializer_list),
             L.Return(L.Symbol("enabled")),
-            ])
+        ])
         return code
 
     def tabulate_tensor(self, L, ir):
@@ -53,10 +55,10 @@ class ufc_integral(ufc_generator):
         integrals_metadata = ir["integrals_metadata"]
         integral_metadata = ir["integral_metadata"]
 
-        lines  = [
+        lines = [
             "This function was generated using '%s' representation" % r,
-            "with the following integrals metadata:",
-            ""]
+            "with the following integrals metadata:", ""
+        ]
         lines += [("  " + l) for l in dstr(integrals_metadata).split("\n")]
         lines += [""]
         for i, metadata in enumerate(integral_metadata):
@@ -64,7 +66,7 @@ class ufc_integral(ufc_generator):
                 "",
                 "and the following integral %d metadata:" % i,
                 "",
-                ]
+            ]
             lines += [("  " + l) for l in dstr(metadata).split("\n")][:-1]
             lines += [""]
 
@@ -75,17 +77,21 @@ class ufc_cell_integral(ufc_integral):
     def __init__(self):
         ufc_integral.__init__(self, "cell")
 
+
 class ufc_exterior_facet_integral(ufc_integral):
     def __init__(self):
         ufc_integral.__init__(self, "exterior_facet")
+
 
 class ufc_interior_facet_integral(ufc_integral):
     def __init__(self):
         ufc_integral.__init__(self, "interior_facet")
 
+
 class ufc_vertex_integral(ufc_integral):
     def __init__(self):
         ufc_integral.__init__(self, "vertex")
+
 
 class ufc_custom_integral(ufc_integral):
     def __init__(self):

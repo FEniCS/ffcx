@@ -15,5 +15,4 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
-
 """The FFC specific backend to the UFLACS form compiler algorithms."""

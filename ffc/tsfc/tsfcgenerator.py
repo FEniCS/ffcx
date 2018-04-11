@@ -40,23 +40,25 @@ def generate_integral_code(ir, prefix, parameters):
     parameters.setdefault("mode", "vanilla")
 
     # Generate tabulate_tensor body
-    ast = compile_integral(integral_data, form_data, None, parameters,
-                           interface=ufc_interface)
+    ast = compile_integral(
+        integral_data, form_data, None, parameters, interface=ufc_interface)
 
     # COFFEE vectorize
     knl = ASTKernel(ast)
     knl.plan_cpu(dict(optlevel='Ov'))
 
     tsfc_code = "".join(b.gencode() for b in ast.body)
-    tsfc_code = tsfc_code.replace("#pragma coffee", "//#pragma coffee") # FIXME
+    tsfc_code = tsfc_code.replace("#pragma coffee",
+                                  "//#pragma coffee")  # FIXME
     code["tabulate_tensor"] = tsfc_code
 
     includes = set()
     includes.update(ir.get("additional_includes_set", ()))
     includes.update(ast.headers)
     includes.add("#include <cstring>")  # memset
-    if any(node.funcall.symbol.startswith("boost::math::")
-           for node in Find(coffee.FunCall).visit(ast)[coffee.FunCall]):
+    if any(
+            node.funcall.symbol.startswith("boost::math::")
+            for node in Find(coffee.FunCall).visit(ast)[coffee.FunCall]):
         includes.add("#include <boost/math/special_functions.hpp>")
     code["additional_includes_set"] = includes
 

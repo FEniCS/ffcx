@@ -33,9 +33,11 @@ def generate_return_new_switch(L, i, classnames, args=None, factory=False):
         i = L.Symbol(i)
 
     if factory:
+
         def create(classname):
             return L.Call("create_" + classname)
     else:
+
         def create(classname):
             return L.New(classname)
 
@@ -52,7 +54,12 @@ def generate_return_new_switch(L, i, classnames, args=None, factory=False):
         return default
 
 
-def generate_return_literal_switch(L, i, values, default, literal_type, typename=None):
+def generate_return_literal_switch(L,
+                                   i,
+                                   values,
+                                   default,
+                                   literal_type,
+                                   typename=None):
     # TODO: UFC functions of this type could be replaced with return vector<T>{values}.
 
     if isinstance(i, str):
@@ -63,17 +70,14 @@ def generate_return_literal_switch(L, i, values, default, literal_type, typename
         # Store values in static table and return from there
         V = L.Symbol("return_values")
         decl = L.ArrayDecl("static const %s" % typename, V, len(values),
-                            [literal_type(k) for k in values])
-        return L.StatementList([
-            decl,
-            L.If(L.GE(i, len(values)),
-                 return_default),
-            L.Return(V[i])
-            ])
+                           [literal_type(k) for k in values])
+        return L.StatementList(
+            [decl,
+             L.If(L.GE(i, len(values)), return_default),
+             L.Return(V[i])])
     elif values:
         # Need typename to create static array, fallback to switch
-        cases = [(j, L.Return(literal_type(k)))
-                 for j, k in enumerate(values)]
+        cases = [(j, L.Return(literal_type(k))) for j, k in enumerate(values)]
         return L.Switch(i, cases, default=return_default)
     else:
         # No values, just return default
@@ -81,21 +85,25 @@ def generate_return_literal_switch(L, i, values, default, literal_type, typename
 
 
 def generate_return_sizet_switch(L, i, values, default):
-    return generate_return_literal_switch(L, i, values, default, L.LiteralInt, "int64_t")
+    return generate_return_literal_switch(L, i, values, default, L.LiteralInt,
+                                          "int64_t")
 
 
 def generate_return_int_switch(L, i, values, default):
-    return generate_return_literal_switch(L, i, values, default, L.LiteralInt, "int")
+    return generate_return_literal_switch(L, i, values, default, L.LiteralInt,
+                                          "int")
 
 
 def generate_return_bool_switch(L, i, values, default):
-    return generate_return_literal_switch(L, i, values, default, L.LiteralBool, "bool")
+    return generate_return_literal_switch(L, i, values, default, L.LiteralBool,
+                                          "bool")
 
 
 # TODO: Better error handling
 def generate_error(L, msg, emit_warning):
     if emit_warning:
-        return L.VerbatimStatement('std::cerr << "*** FFC warning: " << "%s" << std::endl;' % (msg,))
+        return L.VerbatimStatement(
+            'std::cerr << "*** FFC warning: " << "%s" << std::endl;' % (msg, ))
     else:
         return L.Throw('std::runtime_error', msg)
 

@@ -15,7 +15,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>
-
 """Collection of FFC specific pieces for the code generation phase."""
 
 import ffc.uflacs.language.cnodes
@@ -28,6 +27,7 @@ from ffc.uflacs.backends.ffc.definitions import FFCBackendDefinitions
 
 class FFCBackend(object):
     "Class collecting all aspects of the FFC backend."
+
     def __init__(self, ir, parameters):
 
         # This is the seam where cnodes/C++ is chosen for the ffc backend
@@ -36,5 +36,7 @@ class FFCBackend(object):
 
         coefficient_numbering = ir["coefficient_numbering"]
         self.symbols = FFCBackendSymbols(self.language, coefficient_numbering)
-        self.definitions = FFCBackendDefinitions(ir, self.language, self.symbols, parameters)
-        self.access = FFCBackendAccess(ir, self.language, self.symbols, parameters)
+        self.definitions = FFCBackendDefinitions(ir, self.language,
+                                                 self.symbols, parameters)
+        self.access = FFCBackendAccess(ir, self.language, self.symbols,
+                                       parameters)

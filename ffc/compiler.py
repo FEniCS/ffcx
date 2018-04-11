@@ -135,29 +135,42 @@ def _print_timing(stage, timing):
     info("Compiler stage %s finished in %g seconds.\n" % (str(stage), timing))
 
 
-def compile_form(forms, object_names=None,
-                 prefix="Form", parameters=None, jit=False):
+def compile_form(forms,
+                 object_names=None,
+                 prefix="Form",
+                 parameters=None,
+                 jit=False):
     """This function generates UFC code for a given UFL form or list of UFL forms."""
-    return compile_ufl_objects(forms, "form", object_names,
-                               prefix, parameters, jit)
+    return compile_ufl_objects(forms, "form", object_names, prefix, parameters,
+                               jit)
 
 
-def compile_element(elements, object_names=None,
-                    prefix="Element", parameters=None, jit=False):
+def compile_element(elements,
+                    object_names=None,
+                    prefix="Element",
+                    parameters=None,
+                    jit=False):
     """This function generates UFC code for a given UFL element or list of UFL elements."""
-    return compile_ufl_objects(elements, "element", object_names,
-                               prefix, parameters, jit)
+    return compile_ufl_objects(elements, "element", object_names, prefix,
+                               parameters, jit)
 
 
-def compile_coordinate_mapping(meshes, object_names=None,
-                               prefix="Mesh", parameters=None, jit=False):
+def compile_coordinate_mapping(meshes,
+                               object_names=None,
+                               prefix="Mesh",
+                               parameters=None,
+                               jit=False):
     """This function generates UFC code for a given UFL mesh or list of UFL meshes."""
     return compile_ufl_objects(meshes, "coordinate_mapping", object_names,
                                prefix, parameters, jit)
 
 
-def compile_ufl_objects(ufl_objects, kind, object_names=None,
-                        prefix=None, parameters=None, jit=False):
+def compile_ufl_objects(ufl_objects,
+                        kind,
+                        object_names=None,
+                        prefix=None,
+                        parameters=None,
+                        jit=False):
     """This function generates UFC code for a given UFL form or list of UFL forms."""
     info("Compiling %s %s\n" % (kind, prefix))
 
@@ -171,11 +184,12 @@ def compile_ufl_objects(ufl_objects, kind, object_names=None,
 
     # Check input arguments
     if not isinstance(ufl_objects, (list, tuple)):
-        ufl_objects = (ufl_objects,)
+        ufl_objects = (ufl_objects, )
     if not ufl_objects:
         return "", ""
     if prefix != os.path.basename(prefix):
-        error("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix))
+        error("Invalid prefix, looks like a full path? prefix='{}'.".format(
+            prefix))
     if object_names is None:
         object_names = {}
 
@@ -212,12 +226,14 @@ def compile_ufl_objects(ufl_objects, kind, object_names=None,
 
     # Extract class names from the IR
     classnames = defaultdict(list)
-    for ir, o in zip(code, ["elements", "dofmaps", "coordinate_maps", "integrals", "forms"]):
+    for ir, o in zip(
+            code,
+        ["elements", "dofmaps", "coordinate_maps", "integrals", "forms"]):
         for e in ir:
             classnames[o].append(e["classname"])
 
-    wrapper_code = generate_wrapper_code(analysis, prefix, object_names, classnames,
-                                         parameters)
+    wrapper_code = generate_wrapper_code(analysis, prefix, object_names,
+                                         classnames, parameters)
     _print_timing(4.1, time() - cpu_time)
 
     # Stage 5: format code
@@ -233,14 +249,16 @@ def compile_ufl_objects(ufl_objects, kind, object_names=None,
 
         # Wrap coordinate elements in Mesh object to represent that
         # we want a ufc::coordinate_mapping not a ufc::finite_element
-        unique_meshes = [ufl.Mesh(element, ufl_id=0)
-                         for element in unique_coordinate_elements]
+        unique_meshes = [
+            ufl.Mesh(element, ufl_id=0)
+            for element in unique_coordinate_elements
+        ]
 
         # Avoid returning self as dependency for infinite recursion
         unique_elements = tuple(element for element in unique_elements
                                 if element not in ufl_objects)
-        unique_meshes = tuple(mesh for mesh in unique_meshes
-                              if mesh not in ufl_objects)
+        unique_meshes = tuple(
+            mesh for mesh in unique_meshes if mesh not in ufl_objects)
 
         # Setup dependencies (these will be jitted before continuing to compile ufl_objects)
         dependent_ufl_objects = {

@@ -25,6 +25,7 @@
 
 # ufc class names
 
+
 def make_classname(prefix, basename, signature):
     pre = prefix.lower() + "_" if prefix else ""
     sig = str(signature).lower()

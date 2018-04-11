@@ -52,7 +52,8 @@ from ffc.classname import make_classname
 
 def jit_generate(ufl_object, module_name, signature, parameters):
     "Callback function passed to dijitso.jit: generate code and return as strings."
-    log(INFO + 5, "Calling FFC just-in-time (JIT) compiler, this may take some time.")
+    log(INFO + 5,
+        "Calling FFC just-in-time (JIT) compiler, this may take some time.")
 
     # Generate actual code for this object
     if isinstance(ufl_object, ufl.Form):
@@ -62,8 +63,8 @@ def jit_generate(ufl_object, module_name, signature, parameters):
     elif isinstance(ufl_object, ufl.Mesh):
         compile_object = compile_coordinate_mapping
 
-    code_h, code_c, dependent_ufl_objects = compile_object(ufl_object,
-            prefix=module_name, parameters=parameters, jit=True)
+    code_h, code_c, dependent_ufl_objects = compile_object(
+        ufl_object, prefix=module_name, parameters=parameters, jit=True)
 
     # Jit compile dependent objects separately,
     # but pass indirect=True to skip instantiating objects.
@@ -106,10 +107,13 @@ def jit_build(ufl_object, module_name, parameters):
     # to get equivalent behaviour to instant code
     build_params = {}
     build_params["debug"] = not parameters["cpp_optimize"]
-    build_params["cxxflags_opt"] = tuple(parameters["cpp_optimize_flags"].split())
-    build_params["cxxflags_debug"] = ("-O0",)
-    build_params["include_dirs"] = (get_ufc_include_path(),) + _string_tuple(parameters.get("external_include_dirs"))
-    build_params["lib_dirs"] = _string_tuple(parameters.get("external_library_dirs"))
+    build_params["cxxflags_opt"] = tuple(
+        parameters["cpp_optimize_flags"].split())
+    build_params["cxxflags_debug"] = ("-O0", )
+    build_params["include_dirs"] = (get_ufc_include_path(), ) + _string_tuple(
+        parameters.get("external_include_dirs"))
+    build_params["lib_dirs"] = _string_tuple(
+        parameters.get("external_library_dirs"))
     build_params["libs"] = _string_tuple(parameters.get("external_libraries"))
 
     # Interpreting FFC default "" as None, use "." if you want to point to curdir
@@ -123,14 +127,16 @@ def jit_build(ufl_object, module_name, parameters):
     params = dijitso.validate_params({
         "cache": cache_params,
         "build": build_params,
-        "generator": parameters,  # ffc parameters, just passed on to jit_generate
+        "generator":
+        parameters,  # ffc parameters, just passed on to jit_generate
     })
 
     # Carry out jit compilation, calling jit_generate only if needed
-    module, signature = dijitso.jit(jitable=ufl_object,
-                                    name=module_name,
-                                    params=params,
-                                    generate=jit_generate)
+    module, signature = dijitso.jit(
+        jitable=ufl_object,
+        name=module_name,
+        params=params,
+        generate=jit_generate)
     return module
 
 
@@ -146,14 +152,15 @@ def compute_jit_prefix(ufl_object, parameters, kind=None):
         kind = "coordinate_mapping"
         ufl_object = ufl_object.ufl_coordinate_element()
         object_signature = repr(ufl_object)  # ** must match below
-    elif kind == "coordinate_mapping" and isinstance(ufl_object, ufl.FiniteElementBase):
+    elif kind == "coordinate_mapping" and isinstance(ufl_object,
+                                                     ufl.FiniteElementBase):
         # When coordinate mapping is represented by its coordinate element
         object_signature = repr(ufl_object)  # ** must match above
     elif isinstance(ufl_object, ufl.FiniteElementBase):
         kind = "element"
         object_signature = repr(ufl_object)
     else:
-        error("Unknown ufl object type %s" % (ufl_object.__class__.__name__,))
+        error("Unknown ufl object type %s" % (ufl_object.__class__.__name__, ))
 
     # Compute deterministic string of relevant parameters
     parameters_signature = compute_jit_parameters_signature(parameters)
@@ -172,7 +179,7 @@ def compute_jit_prefix(ufl_object, parameters, kind=None):
         get_ufc_signature(),
         get_ufc_templates_signature(),
         kind,
-        ]
+    ]
     string = ";".join(signatures)
     signature = sha1(string.encode('utf-8')).hexdigest()
 
@@ -220,7 +227,9 @@ def jit(ufl_object, parameters=None, indirect=False):
     if module is None:
         # TODO: To communicate directory name here, need dijitso params to call
         #fail_dir = dijitso.cache.create_fail_dir_path(signature, dijitso_cache_params)
-        raise FFCJitError("A directory with files to reproduce the jit build failure has been created.")
+        raise FFCJitError(
+            "A directory with files to reproduce the jit build failure has been created."
+        )
 
     # Construct instance of object from compiled code unless indirect
     if indirect:
@@ -239,7 +248,7 @@ def jit(ufl_object, parameters=None, indirect=False):
             cm = _instantiate_coordinate_mapping(module, module_name)
             return cm
         else:
-            error("Unknown kind %s" % (kind,))
+            error("Unknown kind %s" % (kind, ))
 
 
 def _instantiate_form(module, prefix):

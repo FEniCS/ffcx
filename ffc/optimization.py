@@ -18,7 +18,6 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Martin Sandve Alnæs, 2013
-
 """
 Compiler stage 5: optimization
 ------------------------------
@@ -46,9 +45,10 @@ def optimize_ir(ir, parameters):
              "metadata to integrals")
 
     # Call on every bunch of integrals wich are compiled together
-    oir_integrals = [_optimize_integral_ir(ir, parameters)
-                     if ir["integrals_metadata"]["optimize"] else ir
-                     for ir in ir_integrals]
+    oir_integrals = [
+        _optimize_integral_ir(ir, parameters)
+        if ir["integrals_metadata"]["optimize"] else ir for ir in ir_integrals
+    ]
 
     end()
 

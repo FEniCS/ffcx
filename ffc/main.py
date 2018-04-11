@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """This script is the command-line interface to FFC.
 
 It parses command-line arguments and generates code from input UFL form files.
@@ -69,8 +68,8 @@ UFC backend version {1}, signature {2}.
 For further information, visit https://bitbucket.org/fenics-project/ffc/.
 
 Python {3} on {4}
-""".format(FFC_VERSION, UFC_VERSION, get_ufc_signature(),
-           sys.version, sys.platform))
+""".format(FFC_VERSION, UFC_VERSION, get_ufc_signature(), sys.version,
+           sys.platform))
 
 
 def info_usage():
@@ -85,12 +84,11 @@ the FFC man page which may invoked by 'man ffc' (if installed).
 
 def compile_ufl_data(ufd, prefix, parameters):
     if len(ufd.forms) > 0:
-        code_h, code_c = compile_form(ufd.forms, ufd.object_names,
-                                      prefix=prefix,
-                                      parameters=parameters)
+        code_h, code_c = compile_form(
+            ufd.forms, ufd.object_names, prefix=prefix, parameters=parameters)
     else:
-        code_h, code_c = compile_element(ufd.elements, prefix=prefix,
-                                         parameters=parameters)
+        code_h, code_c = compile_element(
+            ufd.elements, prefix=prefix, parameters=parameters)
     return code_h, code_c
 
 
@@ -103,11 +101,11 @@ def main(args=None):
     try:
         if "-O" in args:
             args[args.index("-O")] = "-O2"
-        opts, args = getopt.getopt(args, "hIVSdvsl:r:f:O:o:q:ep",
-                                   ["help", "includes", "version", "signature", "debug", "verbose", "silent",
-                                    "language=", "representation=", "optimize=",
-                                    "output-directory=", "quadrature-rule=", "error-control",
-                                    "profile"])
+        opts, args = getopt.getopt(args, "hIVSdvsl:r:f:O:o:q:ep", [
+            "help", "includes", "version", "signature", "debug", "verbose",
+            "silent", "language=", "representation=", "optimize=",
+            "output-directory=", "quadrature-rule=", "error-control", "profile"
+        ])
     except getopt.GetoptError:
         info_usage()
         print_error("Illegal command-line arguments.")
@@ -227,7 +225,9 @@ def _compile_files(args, parameters, enable_profile):
 
         # Remove weird characters (file system allows more than the C
         # preprocessor)
-        prefix = re.subn("[^{}]".format(string.ascii_letters + string.digits + "_"), "!", prefix)[0]
+        prefix = re.subn(
+            "[^{}]".format(string.ascii_letters + string.digits + "_"), "!",
+            prefix)[0]
         prefix = re.subn("!+", "_", prefix)[0]
 
         # Turn on profiling

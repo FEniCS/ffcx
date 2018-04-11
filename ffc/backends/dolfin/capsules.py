@@ -49,9 +49,11 @@ class UFCFormNames:
         s += "name:                      %s\n" % self.name
         s += "coefficient_names:         %s\n" % str(self.coefficient_names)
         s += "ufc_form_classname:        %s\n" % str(self.ufc_form_classname)
-        s += "finite_element_classnames: %s\n" % str(self.ufc_finite_element_classnames)
+        s += "finite_element_classnames: %s\n" % str(
+            self.ufc_finite_element_classnames)
         s += "ufc_dofmap_classnames:    %s\n" % str(self.ufc_dofmap_classnames)
-        s += "ufc_coordinate_mapping_classnames:    %s\n" % str(self.ufc_coordinate_mapping_classnames)
+        s += "ufc_coordinate_mapping_classnames:    %s\n" % str(
+            self.ufc_coordinate_mapping_classnames)
         return s
 
 
@@ -65,7 +67,8 @@ class UFCElementNames:
 
         """
         assert len(ufc_finite_element_classnames) == len(ufc_dofmap_classnames)
-        assert len(ufc_finite_element_classnames) == len(ufc_coordinate_mapping_classnames)
+        assert len(ufc_finite_element_classnames) == len(
+            ufc_coordinate_mapping_classnames)
 
         self.name = name
         self.ufc_finite_element_classnames = ufc_finite_element_classnames
@@ -75,7 +78,10 @@ class UFCElementNames:
     def __str__(self):
         s = "UFCFiniteElementNames instance:\n"
         s += "name:                      {}\n".format(self.name)
-        s += "finite_element_classnames: {}\n".format(self.ufc_finite_element_classnames)
-        s += "ufc_dofmap_classnames:     {}\n".format(self.ufc_dofmap_classnames)
-        s += "ufc_coordinate_mapping_classnames: {}\n".format(self.ufc_dofmap_classnames)
+        s += "finite_element_classnames: {}\n".format(
+            self.ufc_finite_element_classnames)
+        s += "ufc_dofmap_classnames:     {}\n".format(
+            self.ufc_dofmap_classnames)
+        s += "ufc_coordinate_mapping_classnames: {}\n".format(
+            self.ufc_dofmap_classnames)
         return s

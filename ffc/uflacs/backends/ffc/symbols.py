@@ -15,7 +15,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>
-
 """FFC/UFC specific symbol naming."""
 
 from ffc.log import error
@@ -61,25 +60,26 @@ def format_mt_name(basename, mt):
 
 class FFCBackendSymbols(object):
     """FFC specific symbol definitions. Provides non-ufl symbols."""
+
     def __init__(self, language, coefficient_numbering):
         self.L = language
         self.S = self.L.Symbol
         self.coefficient_numbering = coefficient_numbering
 
         # Used for padding variable names based on restriction
-        self.restriction_postfix = { r: ufc_restriction_postfix(r)
-                                     for r in ("+", "-", None) }
+        self.restriction_postfix = {
+            r: ufc_restriction_postfix(r)
+            for r in ("+", "-", None)
+        }
 
         # TODO: Make this configurable for easy experimentation with dolfin!
         # Coordinate dofs for each component are interleaved? Must match dolfin.
         # True = XYZXYZXYZXYZ, False = XXXXYYYYZZZZ
         self.interleaved_components = True
 
-
     def element_tensor(self):
         "Symbol for the element tensor itself."
         return self.S("A")
-
 
     def entity(self, entitytype, restriction):
         "Entity index for lookup in element tables."
@@ -93,100 +93,86 @@ class FFCBackendSymbols(object):
         else:
             error("Unknown entitytype {}".format(entitytype))
 
-
     def cell_orientation_argument(self, restriction):
         "Cell orientation argument in ufc. Not same as cell orientation in generated code."
-        return self.S("cell_orientation" + ufc_restriction_postfix(restriction))
-
+        return self.S(
+            "cell_orientation" + ufc_restriction_postfix(restriction))
 
     def cell_orientation_internal(self, restriction):
         "Internal value for cell orientation in generated code."
         return self.S("co" + ufc_restriction_postfix(restriction))
-
 
     def argument_loop_index(self, iarg):
         "Loop index for argument #iarg."
         indices = ["i", "j", "k", "l"]
         return self.S(indices[iarg])
 
-
     def coefficient_dof_sum_index(self):
         """Index for loops over coefficient dofs, assumed to never be used in two nested loops."""
         return self.S("ic")
-
 
     def quadrature_loop_index(self):
         """Reusing a single index name for all quadrature loops,
         assumed not to be nested."""
         return self.S("iq")
 
-
     def num_custom_quadrature_points(self):
         "Number of quadrature points, argument to custom integrals."
         return self.S("num_quadrature_points")
-
 
     def custom_quadrature_weights(self):
         "Quadrature weights including cell measure scaling, argument to custom integrals."
         return self.S("quadrature_weights")
 
-
     def custom_quadrature_points(self):
         "Physical quadrature points, argument to custom integrals."
         return self.S("quadrature_points")
-
 
     def custom_weights_table(self):
         "Table for chunk of custom quadrature weights (including cell measure scaling)."
         return self.S("weights_chunk")
 
-
     def custom_points_table(self):
         "Table for chunk of custom quadrature points (physical coordinates)."
         return self.S("points_chunk")
 
-
     def weights_table(self, num_points):
         "Table of quadrature weights."
-        return self.S("weights%d" % (num_points,))
-
+        return self.S("weights%d" % (num_points, ))
 
     def points_table(self, num_points):
         "Table of quadrature points (points on the reference integration entity)."
-        return self.S("points%d" % (num_points,))
-
+        return self.S("points%d" % (num_points, ))
 
     def x_component(self, mt):
         "Physical coordinate component."
         return self.S(format_mt_name("x", mt))
 
-
     def X_component(self, mt):
         "Reference coordinate component."
         return self.S(format_mt_name("X", mt))
-
 
     def J_component(self, mt):
         "Jacobian component."
         # FIXME: Add domain number!
         return self.S(format_mt_name("J", mt))
 
-
-    def domain_dof_access(self, dof, component, gdim, num_scalar_dofs, restriction):
+    def domain_dof_access(self, dof, component, gdim, num_scalar_dofs,
+                          restriction):
         # FIXME: Add domain number or offset!
         vc = self.S("coordinate_dofs" + ufc_restriction_postfix(restriction))
         if self.interleaved_components:
-            return vc[gdim*dof + component]
+            return vc[gdim * dof + component]
         else:
-            return vc[num_scalar_dofs*component + dof]
-
+            return vc[num_scalar_dofs * component + dof]
 
     def domain_dofs_access(self, gdim, num_scalar_dofs, restriction):
         # FIXME: Add domain number or offset!
-        return [self.domain_dof_access(dof, component, gdim, num_scalar_dofs, restriction)
-                for component in range(gdim)
-                for dof in range(num_scalar_dofs)]
-
+        return [
+            self.domain_dof_access(dof, component, gdim, num_scalar_dofs,
+                                   restriction) for component in range(gdim)
+            for dof in range(num_scalar_dofs)
+        ]
 
     def coefficient_dof_access(self, coefficient, dof_number):
         # TODO: Add domain number?
@@ -194,12 +180,10 @@ class FFCBackendSymbols(object):
         w = self.S("w")
         return w[c, dof_number]
 
-
     def coefficient_value(self, mt):
         "Symbol for variable holding value or derivative component of coefficient."
         c = self.coefficient_numbering[mt.terminal]
-        return self.S(format_mt_name("w%d" % (c,), mt))
-
+        return self.S(format_mt_name("w%d" % (c, ), mt))
 
     def element_table(self, tabledata, entitytype, restriction):
         if tabledata.is_uniform:
