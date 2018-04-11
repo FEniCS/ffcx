@@ -27,9 +27,8 @@ class UFCFormNames:
         @param ufc_dofmap_classnames:
             List of names of ufc::dofmap subclasses (length rank +
             num_coefficients).
-        @param ufc_coordinatemapping_classnames:
-            List of names of ufc::dofmap subclasses (length rank +
-            num_coefficients).
+        @param ufc_coordinate_mapping_classnames:
+            List of names of ufc::coordinate_mapping subclasses
         """
         assert len(coefficient_names) <= len(ufc_dofmap_classnames)
         assert len(ufc_finite_element_classnames) == len(ufc_dofmap_classnames)
@@ -75,12 +74,8 @@ class UFCElementNames:
 
     def __str__(self):
         s = "UFCFiniteElementNames instance:\n"
-        s += "name:                      %s\n" \
-            % self.name
-        s += "finite_element_classnames: %s\n"  \
-            % str(self.ufc_finite_element_classnames)
-        s += "ufc_dofmap_classnames:    %s\n" \
-            % str(self.ufc_dofmap_classnames)
-        s += "ufc_coordinate_mapping_classnames:    %s\n" \
-            % str(self.ufc_dofmap_classnames)
+        s += "name:                      {}\n".format(self.name)
+        s += "finite_element_classnames: {}\n".format(self.ufc_finite_element_classnames)
+        s += "ufc_dofmap_classnames:     {}\n".format(self.ufc_dofmap_classnames)
+        s += "ufc_coordinate_mapping_classnames: {}\n".format(self.ufc_dofmap_classnames)
         return s

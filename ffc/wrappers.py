@@ -96,15 +96,18 @@ def _encapsule_form(prefix, object_names, classnames, form_data, i, element_map)
         classnames["forms"][i],
         [classnames["elements"][j] for j in element_numbers],
         [classnames["dofmaps"][j] for j in element_numbers],
-        [classnames["coordinate_maps"]])
+        [classnames["coordinate_maps"][0]])
 
     return form_names
 
 
 def _encapsule_element(prefix, classnames, elements):
+    # FIXME: Figure what to do with coordinate maps. Can there be more than 1?
+    assert len(classnames["coordinate_maps"]) == 0
     element_number = len(elements) - 1  # eh? this doesn't make any sense
     args = ("0",
             [classnames["elements"][element_number]],
             [classnames["dofmaps"][element_number]],
-            [classnames["coordinate_mapppings"][element_number]])
+            [None])
+            #[classnames["coordinate_mapppings"][element_number]])
     return UFCElementNames(*args)

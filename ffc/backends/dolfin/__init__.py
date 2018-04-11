@@ -38,14 +38,28 @@ typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
 """
     code += factory_typedefs
 
-    # Generate body of dolfin wappers
+    # FUNCTION_SPACE_TEMPLATE = """\
+    # dolfin_function_space* {prefix}{classname}()
+    # {{
+    # /* dolfin_function_space* space = malloc(sizeof(*space)); // In C rather than C++: */
+    # dolfin_function_space* space = (dolfin_function_space*) malloc(sizeof(*space));
+    # space->element = create_{finite_element_classname};
+    # space->dofmap = create_{dofmap_classname};
+    # space->coordinate_mapping = create_{coordinate_map_classname};
+    # return space;
+    # }}
+    # """
+
+    # Generate body of dolfin wrappers
     if isinstance(forms, UFCElementNames):
-        # FIXME: update
-        #code_blocks = generate_single_function_space(prefix, forms)
-        code = apply_function_space_template("FunctionSpace",
-                                         space.ufc_finite_element_classnames[0],
-                                         space.ufc_dofmap_classnames[0],
-                                         space.ufc_coordinate_mapping_classnames[0])
+        # NOTE: This is messy because and element doesn't (at the
+        # moment) have a coordinate map
+        cmap = forms.ufc_coordinate_mapping_classnames[0]
+        code += FUNCTION_SPACE_TEMPLATE.format(**{"prefix" : prefix,
+                                                 "classname" : "FunctionSpace",
+                                                 "finite_element_classname" : forms.ufc_finite_element_classnames[0],
+                                                 "dofmap_classname" : forms.ufc_dofmap_classnames[0],
+                                                 "coordinate_map_classname" : "create_{}".format(cmap) if cmap else "NULL"})
     else:
         # Generate wrappers for a form
         code_blocks = []
@@ -61,7 +75,7 @@ typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
                     "classname" : space[0],
                     "finite_element_classname" : space[1],
                     "dofmap_classname" : space[2],
-                    "coordinate_map_classname" : space[3]}
+                    "coordinate_map_classname" : "create_{}".format(str(space[3]))}
             code_blocks += [FUNCTION_SPACE_TEMPLATE.format(**args)]
         #code = [apply_function_space_template(*space) for space in spaces]
 
@@ -71,7 +85,7 @@ typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
         # Generate 'top-level' typedefs (Bilinear/Linear & Test/Trial/Function)
         code_blocks += [generate_namespace_typedefs(forms, prefix, common_function_space)]
 
-    code += "\n".join(code_blocks)
+        code += "\n".join(code_blocks)
 
     return code
 
@@ -125,13 +139,13 @@ def generate_form(form, prefix, classname):
     """
 
     # Generate code for "Form_x_FunctionSpace_y" factories
-    assert(len(form.ufc_coordinate_mapping_classnames) == 1)
+    assert(len(form.ufc_coordinate_mapping_classnames) == 1)  # FIXME: Is this always the case?
     wrap = FUNCTION_SPACE_TEMPLATE
     blocks = [wrap.format(**{"prefix" : prefix,
                              "classname" : "{}_FunctionSpace_{}".format(classname, i),
                              "finite_element_classname" : form.ufc_finite_element_classnames[i],
                              "dofmap_classname" : form.ufc_dofmap_classnames[i],
-                             "coordinate_map_classname" : form.ufc_coordinate_mapping_classnames[0]}) for i in range(form.rank)]
+                             "coordinate_map_classname" : "create_{}".format(form.ufc_coordinate_mapping_classnames[0])}) for i in range(form.rank)]
 
     # Add factory function typedefs, e.g. Form_L_FunctionSpace_1_factory = CoefficientSpace_f_factory
     blocks += ["// Coefficient function spaces for form \"{}\"".format(classname)]
@@ -278,7 +292,7 @@ dolfin_function_space* {prefix}{classname}()
   dolfin_function_space* space = (dolfin_function_space*) malloc(sizeof(*space));
   space->element = create_{finite_element_classname};
   space->dofmap = create_{dofmap_classname};
-  space->coordinate_mapping = create_{coordinate_map_classname};
+  space->coordinate_mapping = {coordinate_map_classname};
   return space;
 }}
 """
