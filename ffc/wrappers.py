@@ -85,11 +85,8 @@ def _encapsulate(prefix, object_names, classnames, analysis, parameters):
     return (capsules, common_space)
 
 
-def _encapsule_form(prefix, object_names, classnames, form_data, i, element_map, superclassname=None):
+def _encapsule_form(prefix, object_names, classnames, form_data, i, element_map):
     element_numbers = [element_map[e] for e in form_data.argument_elements + form_data.coefficient_elements]
-
-    if superclassname is None:
-        superclassname = "Form"
 
     form_names = UFCFormNames(
         object_names.get(id(form_data.original_form), "%d" % i),
@@ -97,8 +94,7 @@ def _encapsule_form(prefix, object_names, classnames, form_data, i, element_map,
         classnames["forms"][i],
         [classnames["elements"][j] for j in element_numbers],
         [classnames["dofmaps"][j] for j in element_numbers],
-        [classnames["coordinate_maps"][j] for j in element_numbers],
-        superclassname)
+        [classnames["coordinate_maps"][j] for j in element_numbers])
 
     return form_names
 

@@ -7,8 +7,6 @@
 #
 # Based on original implementation by Martin Alnes and Anders Logg
 
-from .includes import snippets
-
 
 def extract_coefficient_spaces(forms):
     """Extract a list of tuples
@@ -37,43 +35,35 @@ def extract_coefficient_spaces(forms):
     return [spaces[name] for name in names]
 
 
-def generate_typedefs(form, classname):
+def generate_typedefs(form, prefix, classname):
     """Generate typedefs for test, trial and coefficient spaces relative
     to a function space.
 
     """
 
+    snippets = {"functionspace" : ("TestSpace", "TrialSpace")}
+
     # Add convenience pointers to factory functions
-    template0 = "  constexpr dolfin_function_space_factory_ptr {}_factory = {}_FunctionSpace_{}_factory;"
-    factory0 = "\n".join(template0.format(
+    template0 = "constexpr dolfin_function_space_factory_ptr {0}{2}{1} = {0}{2}_FunctionSpace_{3};"
+    factory0 = "\n".join(template0.format(prefix,
         snippets["functionspace"][i], classname, i) for i in range(form.rank))
 
-    template1 = "  constexpr dolfin_function_space_factory_ptr CoefficientSpace_{}_factory = {}_FunctionSpace_{}_factory;"
-    factory1 = "\n".join(template1.format(
+    template1 = "constexpr dolfin_function_space_factory_ptr {0}{2}CoefficientSpace_{1} = {0}{2}_FunctionSpace_{3};"
+    factory1 = "\n".join(template1.format(prefix,
         form.coefficient_names[i], classname, form.rank + i) for i in range(form.num_coefficients))
 
-    code = "\n" + factory0 + "\n" + factory1
+    code = factory0 + "\n" + factory1
     return code
 
 
 function_space_template = """\
-dolfin_function_space* %(classname)s_factory()
-{
+dolfin_function_space* {prefix}{classname}()
+{{
   /* dolfin_function_space* space = malloc(sizeof(*space)); // In C rather than C++: */
   dolfin_function_space* space = (dolfin_function_space*) malloc(sizeof(*space));
-  space->element = create_%(ufc_finite_element_classname)s;
-  space->dofmap = create_%(ufc_dofmap_classname)s;
-  space->coordinate_mapping = create_%(ufc_coordinate_mapping_classname)s;
+  space->element = create_{finite_element_classname};
+  space->dofmap = create_{dofmap_classname};
+  space->coordinate_mapping = create_{coordinate_map_classname};
   return space;
-}
-
+}}
 """
-
-
-def apply_function_space_template(name, element_name, dofmap_name,
-                                  coordinate_mapping):
-    args = {"classname": name,
-            "ufc_finite_element_classname": element_name,
-            "ufc_dofmap_classname": dofmap_name,
-            "ufc_coordinate_mapping_classname": coordinate_mapping}
-    return function_space_template % args

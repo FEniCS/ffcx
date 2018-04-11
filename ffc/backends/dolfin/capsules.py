@@ -25,8 +25,7 @@ class UFCFormNames:
 
     def __init__(self, name, coefficient_names, ufc_form_classname,
                  ufc_finite_element_classnames, ufc_dofmap_classnames,
-                 ufc_coordinate_mapping_classnames,
-                 superclassname):
+                 ufc_coordinate_mapping_classnames):
         """Arguments:
 
         @param name:
@@ -44,8 +43,6 @@ class UFCFormNames:
         @param ufc_coordinatemapping_classnames:
             List of names of ufc::dofmap subclasses (length rank +
             num_coefficients).
-        @param superclassname (optional):
-            Name of dolfin super class (defaults to 'Form')
         """
         assert len(coefficient_names) <= len(ufc_dofmap_classnames)
         assert len(ufc_finite_element_classnames) == len(ufc_dofmap_classnames)
@@ -58,7 +55,6 @@ class UFCFormNames:
         self.ufc_finite_element_classnames = ufc_finite_element_classnames
         self.ufc_dofmap_classnames = ufc_dofmap_classnames
         self.ufc_coordinate_mapping_classnames = ufc_coordinate_mapping_classnames
-        self.superclassname = superclassname
 
     def __str__(self):
         s = "UFCFormNames instance:\n"
