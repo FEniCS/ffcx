@@ -4,6 +4,37 @@
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2006-2017.
 
+finite_element_declaration = """
+"""
+
+ufc_finite_element_combined = """
+struct {factory_name}
+{{
+  ufc_finite_element* element = (*ufc_finite_element) malloc(sizeof(*element));
+  element->signature = {signature};
+  element->ufc_shape = {cell_shape};
+  element->topological_dimension = {topological_dimension};
+  element->geometric_dimension = {geometric_dimension};
+  element->space_dimension = {space_dimension};
+  element->value_rank = {value_rank};
+  element->value_dimension = {value_dimension}};
+  element->value_size = {value_size};
+  element->reference_value_rank = {reference_dimension};
+  element->reference_value_dimension = {reference_value_dimension};
+  element->reference_value_size = {reference_value_size};
+  element->degree = {degree};
+  element->family = {family};
+  element->evaluate_reference_basis = {evaluate_reference_basis};
+  element->evaluate_reference_basis_derivatives = {evaluate_reference_basis_derivatives};
+  element->transform_reference_basis_derivatives = {transform_reference_basis_derivatives};
+  element->map_dofs = {map_dofs};
+  element->tabulate_reference_dof_coordinates = {tabulate_reference_dof_coordinates};
+  element->num_sub_elements = {num_sub_elements};
+  element->create_sub_element = create_sub_element;
+  element->create)() = {create};
+};
+"""
+
 finite_element_combined = """
 class %(classname)s: public ufc::finite_element
 {%(members)s
@@ -19,7 +50,7 @@ public:
 %(destructor)s
   }
 
-  const char * signature() const final override
+  const char * XXXsignature() const final override
   {
 %(signature)s
   }
