@@ -4,6 +4,12 @@
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2006-2017
 
+ufc_coordinate_mapping_combined = """
+struct {factory_name}
+{{
+}};
+"""
+
 
 coordinate_mapping_combined = """
 class %(classname)s: public ufc::coordinate_mapping

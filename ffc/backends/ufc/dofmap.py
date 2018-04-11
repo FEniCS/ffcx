@@ -4,6 +4,13 @@
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2006-2017.
 
+ufc_dofmap_combined = """
+struct {factory_name}
+{{
+};
+"""
+
+
 dofmap_combined = """
 class %(classname)s: public ufc::dofmap
 {%(members)s

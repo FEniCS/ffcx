@@ -4,6 +4,13 @@
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2006-2017.
 
+ufc_form_combined = """
+struct {factory_name}
+{{
+};
+"""
+
+
 form_combined = """
 class %(classname)s: public ufc::form
 {%(members)s

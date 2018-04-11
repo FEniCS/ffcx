@@ -17,12 +17,9 @@
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
 import re
-
 from ffc.log import error, warning
 import ffc.backends.ufc
-
 from ffc.uflacs.language.format_lines import format_indented_lines
-from ffc.uflacs.backends.ufc.templates import *
 
 #__all__ = (["ufc_form", "ufc_dofmap", "ufc_finite_element", "ufc_integral"]
 #           + ["ufc_%s_integral" % integral_type for integral_type in integral_types])
@@ -64,7 +61,23 @@ class ufc_generator(object):
                                                       + "_implementation"]
         self._combined_template = ufc_templates[basename + "_combined"]
 
+        # New UFC
+        print(ufc_templates.keys())
+        #self._new_combined_template = ufc_templates["ufc_"  + basename + "_combined"]
+        print("ufc_"  + basename + "_combined" )
+
         r = re.compile(r"%\(([a-zA-Z0-9_]*)\)")
+        r_new = re.compile(r"%\(([a-zA-Z0-9_]*)\)")
+
+        #print(self._new_combined_template)
+        # test = "Testing string: {testing0}, {testingA}  here"
+        # from string import Formatter
+        # fieldnames = [fname for _, fname, _, _ in Formatter().parse(test) if fname]
+        # print(fieldnames)
+
+        # ufc_combined_keywords = [fname for _, fname, _, _ in Formatter().parse(test) if fname]
+        # self._combined_keywords = set(r.findall(self._combined_template))
+
         self._header_keywords = set(r.findall(self._header_template))
         self._implementation_keywords = set(
             r.findall(self._implementation_template))

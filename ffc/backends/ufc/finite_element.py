@@ -32,8 +32,11 @@ struct {factory_name}
   element->num_sub_elements = {num_sub_elements};
   element->create_sub_element = create_sub_element;
   element->create)() = {create};
-};
+}};
 """
+
+
+
 
 finite_element_combined = """
 class %(classname)s: public ufc::finite_element
@@ -50,7 +53,7 @@ public:
 %(destructor)s
   }
 
-  const char * XXXsignature() const final override
+  const char * signature() const final override
   {
 %(signature)s
   }
