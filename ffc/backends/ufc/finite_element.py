@@ -5,7 +5,7 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2006-2017.
 
 ufc_finite_element_declaration = """
-ufc_finite_element* X{factory_name}();
+ufc_finite_element* {factory_name}();
 """
 
 
@@ -61,7 +61,7 @@ ufc_finite_element* create_sub_element_{factory_name}(int64_t i)
   {create_sub_element}
 }}
 
-ufc_finite_element* Xcreate_{factory_name}()
+ufc_finite_element* create_{factory_name}()
 {{
   ufc_finite_element* element = (ufc_finite_element*) malloc(sizeof(*element));
 
@@ -85,7 +85,7 @@ ufc_finite_element* Xcreate_{factory_name}()
   element->tabulate_reference_dof_coordinates = tabulate_reference_dof_coordinates_{factory_name};
   element->num_sub_elements = {num_sub_elements};
   element->create_sub_element = create_sub_element_{factory_name};
-  element->create = Xcreate_{factory_name};
+  element->create = create_{factory_name};
 
   return element;
 }};

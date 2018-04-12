@@ -103,7 +103,7 @@ class ufc_form(ufc_generator):
     def create_coordinate_finite_element(self, L, ir):
         classnames = ir["create_coordinate_finite_element"]
         assert len(classnames) == 1
-        return generate_return_new(L, classnames[0], factory=ir["jit"])
+        return generate_return_new(L, classnames[0], factory=True)
 
     def create_coordinate_dofmap(self, L, ir):
         classnames = ir["create_coordinate_dofmap"]
@@ -119,7 +119,7 @@ class ufc_form(ufc_generator):
     def create_finite_element(self, L, ir):
         i = L.Symbol("i")
         classnames = ir["create_finite_element"]
-        return generate_return_new_switch(L, i, classnames, factory=ir["jit"])
+        return generate_return_new_switch(L, i, classnames, factory=True)
 
     def create_dofmap(self, L, ir):
         i = L.Symbol("i")

@@ -51,7 +51,7 @@ public:
 %(cell_shape)s
   }
 
-  ufc::finite_element * create_coordinate_finite_element() const final override
+  ufc_finite_element * create_coordinate_finite_element() const final override
   {
 %(create_coordinate_finite_element)s
   }
@@ -146,7 +146,7 @@ public:
 
   ufc::shape cell_shape() const final override;
 
-  ufc::finite_element * create_coordinate_finite_element() const final override;
+  ufc_finite_element * create_coordinate_finite_element() const final override;
 
   ufc::dofmap * create_coordinate_dofmap() const final override;
 
@@ -228,7 +228,7 @@ ufc::shape %(classname)s::cell_shape() const
 %(cell_shape)s
 }
 
-ufc::finite_element * %(classname)s::create_coordinate_finite_element() const
+ufc_finite_element * %(classname)s::create_coordinate_finite_element() const
 {
 %(create_coordinate_finite_element)s
 }

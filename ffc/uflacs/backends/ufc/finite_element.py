@@ -508,8 +508,7 @@ def ufc_finite_element_generator(ir, parameters):
     d["tabulate_reference_dof_coordinates"] = L.StatementList(statements)
 
     statements = _create_sub_element_factory(L, ir)
-    # FIXME: (GNW) Adding 'X' for now to avoid clashes with old names
-    d["create_sub_element"] = str(statements).replace("create", "Xcreate")
+    d["create_sub_element"] = statements
 
     # Check that no keys are redundant or have been missed
     from string import Formatter

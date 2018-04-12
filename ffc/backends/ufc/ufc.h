@@ -131,151 +131,6 @@ enum class shape {
   vertex
 };
 
-/// This class defines the interface for a finite element.
-class finite_element {
-public:
-  /// Destructor
-  virtual ~finite_element() {}
-
-  /// Return a string identifying the finite element
-  virtual const char *signature() const = 0;
-
-  /// Return the cell shape
-  virtual shape cell_shape() const = 0;
-
-  /// Return the topological dimension of the cell shape
-  virtual int64_t topological_dimension() const = 0;
-
-  /// Return the geometric dimension of the cell shape
-  virtual int64_t geometric_dimension() const = 0;
-
-  /// Return the dimension of the finite element function space
-  virtual int64_t space_dimension() const = 0;
-
-  /// Return the rank of the value space
-  virtual int64_t value_rank() const = 0;
-
-  /// Return the dimension of the value space for axis i
-  virtual int64_t value_dimension(int64_t i) const = 0;
-
-  /// Return the number of components of the value space
-  virtual int64_t value_size() const = 0;
-
-  /// Return the rank of the reference value space
-  virtual int64_t reference_value_rank() const = 0;
-
-  /// Return the dimension of the reference value space for axis i
-  virtual int64_t reference_value_dimension(int64_t i) const = 0;
-
-  /// Return the number of components of the reference value space
-  virtual int64_t reference_value_size() const = 0;
-
-  /// Return the maximum polynomial degree of the finite element
-  /// function space
-  virtual int64_t degree() const = 0;
-
-  /// Return the family of the finite element function space
-  virtual const char *family() const = 0;
-
-  /// Evaluate all basis functions at given point X in reference cell
-  ///
-  /// @param[out] reference_values
-  ///         Basis function values on reference element.
-  ///         Dimensions:
-  ///         reference_values[num_points][num_dofs][reference_value_size]
-  /// @param[in] num_points
-  ///         Number of points.
-  /// @param[in] X
-  ///         Reference cell coordinates.
-  ///         Dimensions: X[num_points][tdim]
-  ///
-  virtual int evaluate_reference_basis(double *reference_values,
-                                       int64_t num_points,
-                                       const double *X) const = 0;
-
-  /// Evaluate specific order derivatives of all basis functions at given point
-  /// X in reference cell
-  ///
-  /// @param[out] reference_values
-  ///         Basis function derivative values on reference element.
-  ///         Dimensions:
-  ///         reference_values[num_points][num_dofs][num_derivatives][reference_value_size]
-  ///         where num_derivatives = pow(order, tdim).
-  ///         TODO: Document ordering of derivatives for order > 1.
-  /// @param[in] order
-  ///         Derivative order to compute.
-  /// @param[in] num_points
-  ///         Number of points.
-  /// @param[in] X
-  ///         Reference cell coordinates.
-  ///         Dimensions: X[num_points][tdim]
-  ///
-  virtual int evaluate_reference_basis_derivatives(double *reference_values,
-                                                   int64_t order,
-                                                   int64_t num_points,
-                                                   const double *X) const = 0;
-
-  /// Transform order n derivatives (can be 0) of all basis functions
-  /// previously evaluated in points X in reference cell with given
-  /// Jacobian J and its inverse K for each point
-  ///
-  /// @param[out] values
-  ///         Transformed basis function (derivative) values.
-  ///         Dimensions:
-  ///         values[num_points][num_dofs][num_derivatives][value_size]
-  ///         where num_derivatives = pow(order, tdim).
-  ///         TODO: Document ordering of derivatives for order > 1.
-  /// @param[in] order
-  ///         Derivative order to compute. Can be zero to just apply Piola
-  ///         mappings.
-  /// @param[in] num_points
-  ///         Number of points.
-  /// @param[in] reference_values
-  ///         Basis function derivative values on reference element.
-  ///         Dimensions:
-  ///         reference_values[num_points][num_dofs][num_derivatives][reference_value_size]
-  ///         where num_derivatives = pow(order, tdim).
-  ///         TODO: Document ordering of derivatives for order > 1.
-  /// @param[in] X
-  ///         Reference cell coordinates.
-  ///         Dimensions: X[num_points][tdim]
-  /// @param[in] J
-  ///         Jacobian of coordinate field, J = dx/dX.
-  ///         Dimensions: J[num_points][gdim][tdim]
-  /// @param[in] detJ
-  ///         (Pseudo-)Determinant of Jacobian.
-  ///         Dimensions: detJ[num_points]
-  /// @param[in] K
-  ///         (Pseudo-)Inverse of Jacobian of coordinate field.
-  ///         Dimensions: K[num_points][tdim][gdim]
-  /// @param[in] cell_orientation
-  ///         Orientation of the cell, 1 means flipped w.r.t. reference cell.
-  ///         Only relevant on manifolds (tdim < gdim).
-  ///
-  virtual int transform_reference_basis_derivatives(
-      double *values, int64_t order, int64_t num_points,
-      const double *reference_values, const double *X, const double *J,
-      const double *detJ, const double *K, int cell_orientation) const = 0;
-
-  /// Map dofs from vals to values
-  virtual void map_dofs(double *values, const double *vals,
-                        const double *coordinate_dofs, int cell_orientation,
-                        const ufc::coordinate_mapping *cm = NULL) const = 0;
-
-  /// Tabulate the coordinates of all dofs on a reference cell
-  virtual void tabulate_reference_dof_coordinates(
-      double *reference_dof_coordinates) const = 0;
-
-  /// Return the number of sub elements (for a mixed element)
-  virtual int64_t num_sub_elements() const = 0;
-
-  /// Create a new finite element for sub element i (for a mixed element)
-  virtual finite_element *create_sub_element(int64_t i) const = 0;
-
-  /// Create a new class instance
-  virtual finite_element *create() const = 0;
-};
-
 /// This class defines the interface for a local-to-global mapping
 /// of degrees of freedom (dofs).
 class dofmap {
@@ -359,7 +214,7 @@ public:
   virtual shape cell_shape() const = 0;
 
   /// Create finite_element object representing the coordinate parameterization
-  virtual finite_element *create_coordinate_finite_element() const = 0;
+  virtual ufc_finite_element *create_coordinate_finite_element() const = 0;
 
   /// Create dofmap object representing the coordinate parameterization
   virtual dofmap *create_coordinate_dofmap() const = 0;
@@ -678,7 +533,7 @@ public:
   virtual int64_t original_coefficient_position(int64_t i) const = 0;
 
   /// Create a new finite element for parameterization of coordinates
-  virtual finite_element *create_coordinate_finite_element() const = 0;
+  virtual ufc_finite_element *create_coordinate_finite_element() const = 0;
 
   /// Create a new dofmap for parameterization of coordinates
   virtual dofmap *create_coordinate_dofmap() const = 0;
@@ -692,7 +547,7 @@ public:
   ///        Argument number if 0 <= i < r
   ///        Coefficient number j=i-r if r+j <= i < r+n
   ///
-  virtual finite_element *create_finite_element(int64_t i) const = 0;
+  virtual ufc_finite_element *create_finite_element(int64_t i) const = 0;
 
   /// Create a new dofmap for argument function 0 <= i < r+n
   ///
@@ -771,8 +626,8 @@ public:
 } // namespace ufc
 
 struct dolfin_function_space {
-  // Pointer to factory function that creates a new ufc::finite_element
-  ufc::finite_element *(*element)(void);
+  // Pointer to factory function that creates a new ufc_finite_element
+  ufc_finite_element *(*element)(void);
 
   // Pointer to factory function that creates a new ufc::dofmap
   ufc::dofmap *(*dofmap)(void);

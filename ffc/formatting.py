@@ -135,19 +135,15 @@ def format_code(code, wrapper_code, prefix, parameters):
 
     # Generate code for new (C) finite_elements
     if split:
-        print("!!!!!!!!!!!!!!")
-        pass
-        #code_h += "".join([e[0] for e in ufc_code_finite_elements])
-        #code_c.join += e[1] for e in ufc_code_finite_elements
+        code_h = "".join([e[0] for e in ufc_code_finite_elements])
+        code_c = "".join([e[1] for e in ufc_code_finite_elements])
     else:
         code_h = "".join([e[1] for e in ufc_code_finite_elements])
-        #print(code_h)
-        #print([e[1] for e in ufc_code_finite_elements])
 
-    # Generate code for finite_elements
-    for code_finite_element in code_finite_elements:
-        code_h += _format_h("finite_element", code_finite_element, split)
-        code_c += _format_c("finite_element", code_finite_element, split)
+    # # Generate code for finite_elements
+    # for code_finite_element in code_finite_elements:
+    #     code_h += _format_h("finite_element", code_finite_element, split)
+    #     code_c += _format_c("finite_element", code_finite_element, split)
 
     # Generate code for dofmaps
     for code_dofmap in code_dofmaps:

@@ -184,7 +184,8 @@ class ufc_coordinate_mapping(ufc_generator):
 
     def create_coordinate_finite_element(self, L, ir):
         classname = ir["create_coordinate_finite_element"]
-        return generate_return_new(L, classname, factory=ir["jit"])
+        return generate_return_new(L, classname, factory=True)
+        #return generate_return_new(L, classname, factory=ir["jit"])
 
     def create_coordinate_dofmap(self, L, ir):
         classname = ir["create_coordinate_dofmap"]
@@ -223,14 +224,23 @@ class ufc_coordinate_mapping(ufc_generator):
         # Symbols for local basis values table
         phi_sym = L.Symbol("phi")
 
+        xelement = L.Symbol("xelement")
+
         # NB! Must match array layout of evaluate_reference_basis
         phi = L.FlattenedArray(phi_sym, dims=(num_dofs, ))
 
         # For each point, compute basis values and accumulate into the right x
         code = [
-            # Define scalar finite element instance
-            # (stateless, so placing this on the stack is basically free)
-            L.VariableDecl(scalar_coordinate_element_classname, "xelement"),
+            # Define scalar finite element instance (stateless, so
+            # placing this on the stack is basically free)
+            #L.VariableDecl(scalar_coordinate_element_classname, "xelement"),
+
+            # NOTE: (GNW) With the switch to C, we cannot allocate
+            # statically (at least not without a lot of extra code.).
+            # Change interface to pass in element.0
+            L.VariableDecl("ufc_finite_element*", xelement,
+                           L.Call("create_{}".format(scalar_coordinate_element_classname))),
+
             L.ArrayDecl("double", phi_sym, (one_point * num_dofs, )),
             L.ForRange(
                 i,
@@ -245,7 +255,7 @@ class ufc_coordinate_mapping(ufc_generator):
                 index_type=index_type,
                 body=[
                     L.Comment("Compute basis values of coordinate element"),
-                    L.Call("xelement.evaluate_reference_basis",
+                    L.Call("xelement->evaluate_reference_basis",
                            (phi_sym, 1, L.AddressOf(X[ip, 0]))),
                     L.Comment("Compute x"),
                     L.ForRanges(
@@ -253,8 +263,10 @@ class ufc_coordinate_mapping(ufc_generator):
                         index_type=index_type,
                         body=L.AssignAdd(x[ip, i],
                                          coordinate_dofs[d, i] * phi[d]))
-                ])
-        ]
+                ]),
+                L.Call("free", xelement)
+            ]
+
         return code
 
     def compute_reference_geometry(self, L, ir):
@@ -683,9 +695,17 @@ class ufc_coordinate_mapping(ufc_generator):
         dphi_sym = L.Symbol("dphi")
         dphi = L.FlattenedArray(dphi_sym, dims=(num_dofs, tdim))
 
+        xelement = L.Symbol("xelement")
+
         # For each point, compute basis derivatives and accumulate into the right J
         code = [
-            L.VariableDecl(scalar_coordinate_element_classname, "xelement"),
+            # L.VariableDecl(scalar_coordinate_element_classname, "xelement"),
+            # NOTE: (GNW) With the switch to C, we cannot allocate
+            # statically (at least not without a lot of extra code.).
+            # Change interface to pass in element.0
+            L.VariableDecl("ufc_finite_element*", xelement,
+                           L.Call("create_{}".format(scalar_coordinate_element_classname))),
+
             L.ArrayDecl("double", dphi_sym, (one_point * num_dofs * tdim, )),
             L.ForRange(
                 iz,
@@ -701,7 +721,7 @@ class ufc_coordinate_mapping(ufc_generator):
                 body=[
                     L.Comment(
                         "Compute basis derivatives of coordinate element"),
-                    L.Call("xelement.evaluate_reference_basis_derivatives",
+                    L.Call("xelement->evaluate_reference_basis_derivatives",
                            (dphi_sym, 1, 1, L.AddressOf(X[ip, 0]))),
                     L.Comment("Compute J"),
                     L.ForRanges(
@@ -709,8 +729,10 @@ class ufc_coordinate_mapping(ufc_generator):
                         index_type=index_type,
                         body=L.AssignAdd(J[ip, i, j],
                                          coordinate_dofs[d, i] * dphi[d, j]))
-                ])
+                ]),
+                L.Call("free", xelement)
         ]
+
         return code
 
     def compute_jacobian_determinants(self, L, ir):

@@ -46,7 +46,7 @@ public:
 %(original_coefficient_position)s
   }
 
-  ufc::finite_element * create_coordinate_finite_element() const final override
+  ufc_finite_element * create_coordinate_finite_element() const final override
   {
 %(create_coordinate_finite_element)s
   }
@@ -61,7 +61,7 @@ public:
 %(create_coordinate_mapping)s
   }
 
-  ufc::finite_element * create_finite_element(int64_t i) const final override
+  ufc_finite_element * create_finite_element(int64_t i) const final override
   {
 %(create_finite_element)s
   }
@@ -192,13 +192,13 @@ public:
 
   int64_t original_coefficient_position(int64_t i) const final override;
 
-  ufc::finite_element * create_coordinate_finite_element() const final override;
+  ufc_finite_element * create_coordinate_finite_element() const final override;
 
   ufc::dofmap * create_coordinate_dofmap() const final override;
 
   ufc::coordinate_mapping * create_coordinate_mapping() const final override;
 
-  ufc::finite_element * create_finite_element(int64_t i) const final override;
+  ufc_finite_element * create_finite_element(int64_t i) const final override;
 
   ufc::dofmap * create_dofmap(int64_t i) const final override;
 
@@ -276,7 +276,7 @@ int64_t %(classname)s::original_coefficient_position(int64_t i) const
 %(original_coefficient_position)s
 }
 
-ufc::finite_element * %(classname)s::create_coordinate_finite_element() const
+ufc_finite_element * %(classname)s::create_coordinate_finite_element() const
 {
 %(create_coordinate_finite_element)s
 }
@@ -291,7 +291,7 @@ ufc::coordinate_mapping * %(classname)s::create_coordinate_mapping() const
 %(create_coordinate_mapping)s
 }
 
-ufc::finite_element * %(classname)s::create_finite_element(int64_t i) const
+ufc_finite_element * %(classname)s::create_finite_element(int64_t i) const
 {
 %(create_finite_element)s
 }
