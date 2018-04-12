@@ -37,7 +37,11 @@ from ffc.representation import pick_representation, ufc_integral_types
 import ffc.uflacs.language.cnodes as L
 from ffc.uflacs.language.format_lines import format_indented_lines
 from ffc.uflacs.backends.ufc.utils import generate_error
-from ffc.uflacs.backends.ufc.generators import ufc_integral, ufc_finite_element, ufc_dofmap, ufc_coordinate_mapping, ufc_form
+
+from ffc.uflacs.backends.ufc.finite_element import ufc_finite_element
+from ffc.uflacs.backends.ufc.dofmap import ufc_dofmap
+from ffc.uflacs.backends.ufc.coordinate_mapping import ufc_coordinate_mapping
+from ffc.uflacs.backends.ufc.form import ufc_form
 
 
 def generate_code(ir, parameters):
