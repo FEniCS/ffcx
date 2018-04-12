@@ -38,15 +38,21 @@ enum ufc_shape {
   quadrilateral,
   tetrahedron,
   hexahedron,
-  vertex
+  vertex,
+  none
 };
+
+/// Forward declaration
+namespace ufc{
+class coordinate_mapping;
+}
 
 struct ufc_finite_element {
   /// String identifying the finite element
   const char *signature = NULL;
 
   /// Return the cell shape
-  ufc_shape cell_shape = -1;
+  ufc_shape cell_shape = none;
 
   /// Return the topological dimension of the cell shape
   int topological_dimension = -1;
@@ -87,7 +93,7 @@ struct ufc_finite_element {
 
   int (*evaluate_reference_basis_derivatives)(double *reference_values,
                                               int64_t order, int64_t num_points,
-                                              const double *X) NULL;
+                                              const double *X) = NULL;
 
   int (*transform_reference_basis_derivatives)(
       double *values, int64_t order, int64_t num_points,
@@ -97,7 +103,7 @@ struct ufc_finite_element {
   /// Map dofs from vals to values
   void (*map_dofs)(double *values, const double *vals,
                    const double *coordinate_dofs, int cell_orientation,
-                   const ufc::coordinate_mapping *cm = NULL) = NULL;
+                   const ufc::coordinate_mapping *cm) = NULL;
 
   /// Tabulate the coordinates of all dofs on a reference cell
   void (*tabulate_reference_dof_coordinates)(double *reference_dof_coordinates) = NULL;
@@ -123,9 +129,6 @@ enum class shape {
   hexahedron,
   vertex
 };
-
-/// Forward declaration
-class coordinate_mapping;
 
 /// This class defines the interface for a finite element.
 class finite_element {
