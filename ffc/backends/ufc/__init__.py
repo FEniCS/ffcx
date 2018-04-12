@@ -108,8 +108,7 @@ def all_ufc_classnames():
                       "interior_facet", "vertex", "custom"]
     integral_classnames = [integral_name +
                            "_integral" for integral_name in integral_names]
-    jitable_classnames = ["finite_element",
-                          "dofmap", "coordinate_mapping", "form"]
+    jitable_classnames = ["dofmap", "coordinate_mapping", "form"]
     classnames = jitable_classnames + integral_classnames
     return classnames
 

@@ -215,23 +215,15 @@ def compile_ufl_objects(ufl_objects,
 
     # Stage 4.1: generate wrappers, e.g. for DOLFIN C++
     cpu_time = time()
-    # print(code[0][0]["classname"])
-    #print(analysis, prefix, object_names)
-    # print(object_names)
-    # for o in code:
-    #     print("*********************")
-    #     for p in o:
-    #         print("---------------------")
-    #         print(o)
 
     # FIXME: Can this be avoided?
     # Extract class names from the IR and add to a dict
+    # ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
     classnames = defaultdict(list)
-    for ir, o in zip(
-        code,
-            ["elements", "dofmaps", "coordinate_maps", "integrals", "forms"]):
-        for e in ir:
-            classnames[o].append(e["classname"])
+    comp = ["elements", "dofmaps", "coordinate_maps", "integrals", "forms"]
+    for ir_comp, e_name in zip(ir, comp):
+        for e in ir_comp:
+            classnames[e_name].append(e["classname"])
 
     wrapper_code = generate_wrapper_code(analysis, prefix, object_names,
                                          classnames, parameters)

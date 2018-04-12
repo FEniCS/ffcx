@@ -4,6 +4,11 @@
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2006-2017.
 
+ufc_dofmap_declaration = """
+extern "C" ufc_dofmap* create_{factory_name}();
+"""
+
+
 ufc_dofmap_combined = """
 struct {factory_name}
 {{

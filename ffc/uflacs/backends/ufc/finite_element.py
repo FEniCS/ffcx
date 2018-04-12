@@ -41,7 +41,6 @@ from ffc.uflacs.backends.ufc.jacobian import (
 
 from ffc.backends.ufc.finite_element import ufc_finite_element_factory, ufc_finite_element_declaration
 
-
 index_type = "int64_t"
 
 
@@ -85,14 +84,15 @@ def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim,
         ]
     else:
         error("Unknown mapping: %s" % mapping)
+
     return M_scale, M_row, num_physical_components
 
 
-class ufc_finite_element(ufc_generator):
+class ufc_finite_element:
     "Each function maps to a keyword in the template. See documentation of ufc_generator."
 
     def __init__(self):
-        ufc_generator.__init__(self, "finite_element")
+        pass
 
     def cell_shape(self, L, cell_shape):
         return L.Return(L.Symbol("ufc::shape::" + cell_shape))
@@ -512,8 +512,11 @@ def ufc_finite_element_generator(ir, parameters):
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
-    fieldnames = [fname for _, fname, _, _ in Formatter().parse(
-        ufc_finite_element_factory) if fname]
+    fieldnames = [
+        fname
+        for _, fname, _, _ in Formatter().parse(ufc_finite_element_factory)
+        if fname
+    ]
     assert set(fieldnames) == set(
         d.keys()), "Mismatch between keys in template and in formattting dict"
 

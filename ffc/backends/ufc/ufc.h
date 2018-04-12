@@ -120,6 +120,61 @@ typedef struct ufc_finite_element {
   ufc_finite_element *(*create)() = NULL;
 } ufc_finite_element;
 
+typedef struct ufc_dofmap {
+
+  /// Return a string identifying the dofmap
+  const char *signature = NULL;
+
+  /// Return the dimension of the local finite element function space
+  /// Return the number of dofs with global support (i.e. global constants)
+  int64_t num_global_support_dofs = -1;
+
+  /// Return the dimension of the local finite element function space
+  /// for a cell (not including global support dofs)
+  int64_t num_element_support_dofs = -1;
+
+  /// Return the dimension of the local finite element function space
+  /// for a cell (old version including global support dofs)
+  int64_t num_element_dofs = -1;
+
+  /// Return the number of dofs on each cell facet
+  int64_t num_facet_dofs = -1;
+
+  /// Return the number of dofs associated with each cell entity of
+  /// dimension d
+  int64_t (*num_entity_dofs)(int64_t d) = NULL;
+
+  /// Return the number of dofs associated with the closure
+  /// of each cell entity dimension d
+  int64_t (*num_entity_closure_dofs)(int64_t d) = NULL;
+
+  /// Tabulate the local-to-global mapping of dofs on a cell
+  ///   num_global_entities[num_entities_per_cell]
+  ///   entity_indices[tdim][local_index ]
+  void (*tabulate_dofs)(int64_t *dofs, const int64_t *num_global_entities,
+                        const int64_t **entity_indices) = NULL;
+
+  /// Tabulate the local-to-local mapping from facet dofs to cell dofs
+  void (*tabulate_facet_dofs)(int64_t *dofs, int64_t facet) = NULL;
+
+  /// Tabulate the local-to-local mapping of dofs on entity (d, i)
+  void (*tabulate_entity_dofs)(int64_t *dofs, int64_t d, int64_t i) = NULL;
+
+  /// Tabulate the local-to-local mapping of dofs on the closure of
+  /// entity (d, i)
+  void (*tabulate_entity_closure_dofs)(int64_t *dofs, int64_t d, int64_t i) = NULL;
+
+  /// Return the number of sub dofmaps (for a mixed element)
+  int64_t num_sub_dofmaps = -1;
+
+  /// Create a new dofmap for sub dofmap i (for a mixed element)
+  ufc_dofmap* (*create_sub_dofmap)(int64_t i) = NULL;
+
+  /// Create a new class instance
+  ufc_dofmap* (*create)() = NULL;
+} ufc_dofmap;
+
+
 namespace ufc {
 
 /// Valid cell shapes

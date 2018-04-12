@@ -62,13 +62,9 @@ def generate_code(ir, parameters):
     ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
 
     # Generate code for finite_elements
-    info("Generating code for {} finite_element(s)".format(len(ir_finite_elements)))
+    info("Generating code for {} finite_element(s)".format(
+        len(ir_finite_elements)))
     code_finite_elements = [
-        _generate_finite_element_code(ir, parameters)
-        for ir in ir_finite_elements
-    ]
-    # New pure C UFC code
-    code_ufc_finite_elements = [
         ufc_finite_element_generator(ir, parameters)
         for ir in ir_finite_elements
     ]
@@ -101,7 +97,7 @@ def generate_code(ir, parameters):
     end()
 
     return (code_finite_elements, code_dofmaps, code_coordinate_mappings,
-            code_integrals, code_forms, includes, code_ufc_finite_elements)
+            code_integrals, code_forms, includes)
 
 
 def _extract_includes(full_ir, code_integrals):
