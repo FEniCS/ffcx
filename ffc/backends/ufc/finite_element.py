@@ -5,7 +5,7 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2006-2017.
 
 ufc_finite_element_declaration = """
-ufc_finite_element* {factory_name}();
+ufc_finite_element* create_{factory_name}();
 """
 
 

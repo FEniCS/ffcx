@@ -43,11 +43,11 @@ enum ufc_shape {
 };
 
 /// Forward declaration
-namespace ufc{
+namespace ufc {
 class coordinate_mapping;
 }
 
-struct ufc_finite_element {
+typedef struct ufc_finite_element {
   /// String identifying the finite element
   const char *signature = NULL;
 
@@ -107,17 +107,18 @@ struct ufc_finite_element {
 
   // FIXME: change to 'const double* reference_dof_coordinates()'
   /// Tabulate the coordinates of all dofs on a reference cell
-  void (*tabulate_reference_dof_coordinates)(double *reference_dof_coordinates) = NULL;
+  void (*tabulate_reference_dof_coordinates)(
+      double *reference_dof_coordinates) = NULL;
 
   /// Return the number of sub elements (for a mixed element)
   int num_sub_elements = -1;
 
   /// Create a new finite element for sub element i (for a mixed element)
-  ufc_finite_element* (*create_sub_element)(int64_t i) = NULL;
+  ufc_finite_element *(*create_sub_element)(int64_t i) = NULL;
 
   /// Create a new class instance
-  ufc_finite_element* (*create)() = NULL;
-};
+  ufc_finite_element *(*create)() = NULL;
+} ufc_finite_element;
 
 namespace ufc {
 
