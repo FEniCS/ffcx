@@ -46,7 +46,7 @@ struct ufc_finite_element {
   const char *signature = NULL;
 
   /// Return the cell shape
-  ufc_shape (*cell_shape)() = NULL;
+  ufc_shape cell_shape = -1;
 
   /// Return the topological dimension of the cell shape
   int topological_dimension = -1;

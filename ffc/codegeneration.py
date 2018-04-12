@@ -43,6 +43,8 @@ from ffc.uflacs.backends.ufc.dofmap import ufc_dofmap
 from ffc.uflacs.backends.ufc.coordinate_mapping import ufc_coordinate_mapping
 from ffc.uflacs.backends.ufc.form import ufc_form
 
+from ffc.uflacs.backends.ufc.finite_element import ufc_finite_element_generator
+
 
 def generate_code(ir, parameters):
     "Generate code from intermediate representation."
@@ -60,11 +62,16 @@ def generate_code(ir, parameters):
     ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
 
     # Generate code for finite_elements
-    info("Generating code for %d finite_element(s)" % len(ir_finite_elements))
+    info("Generating code for {} finite_element(s)".format(len(ir_finite_elements)))
     code_finite_elements = [
         _generate_finite_element_code(ir, parameters)
         for ir in ir_finite_elements
     ]
+    # New pure C UFC code
+    # code_ufc_finite_elements = [
+    #     ufc_finite_element_generator(ir, parameters)
+    #     for ir in ir_finite_elements
+    # ]
 
     # Generate code for dofmaps
     info("Generating code for %d dofmap(s)" % len(ir_dofmaps))

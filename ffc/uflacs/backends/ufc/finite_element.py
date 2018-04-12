@@ -25,7 +25,8 @@ import numpy
 
 from ufl import product
 from ffc.uflacs.backends.ufc.generator import ufc_generator
-from ffc.uflacs.backends.ufc.utils import generate_return_new_switch, generate_return_int_switch, generate_error
+from ffc.uflacs.backends.ufc.utils import (
+    generate_return_new_switch, generate_return_int_switch, generate_error)
 
 from ffc.uflacs.elementtables import clamp_table_small_numbers
 from ffc.uflacs.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
@@ -34,7 +35,12 @@ from ffc.uflacs.backends.ufc.evalderivs import generate_evaluate_reference_basis
 from ffc.uflacs.backends.ufc.evalderivs import _generate_combinations
 from ffc.uflacs.backends.ufc.evaluatedof import generate_map_dofs, reference_to_physical_map
 
-from ffc.uflacs.backends.ufc.jacobian import jacobian, inverse_jacobian, orientation, fiat_coordinate_mapping, _mapping_transform
+from ffc.uflacs.backends.ufc.jacobian import (
+    jacobian, inverse_jacobian, orientation, fiat_coordinate_mapping,
+    _mapping_transform)
+
+from ffc.backends.ufc.finite_element import ufc_finite_element_factory
+
 
 index_type = "int64_t"
 
@@ -445,4 +451,62 @@ def _num_vertices(cell_shape):
         "quadrilateral": 4,
         "hexahedron": 8
     }
+
     return num_vertices_dict[cell_shape]
+
+
+def ufc_finite_element_generator(ir, parameters):
+    #print(self._new_combined_template)
+    # test = "Testing string: {testing0}, {testingA}  here"
+    # from string import Formatter
+    # fieldnames = [fname for _, fname, _, _ in Formatter().parse(test) if fname]
+    # print(fieldnames)
+
+    # ufc_combined_keywords = [fname for _, fname, _, _ in Formatter().parse(test) if fname]
+    # self._combined_keywords = set(r.findall(self._combined_template))
+
+    #from collections import defaultdict
+    #d = defaultdict(str)
+    #d = defaultdict(lambda: 'NOT_IMPLEMENTED')
+
+    #print(ir.keys())
+
+    #s = ufc_finite_element_factory
+    d = {}
+    d["factory_name"] = ir["classname"]
+    d["signature"] = "\"{}\"".format(ir["signature"])
+    d["geometric_dimension"] = ir["geometric_dimension"]
+    d["topological_dimension"] = ir["topological_dimension"]
+    d["cell_shape"] = ir["cell_shape"]
+    d["space_dimension"] = ir["space_dimension"]
+    d["value_rank"] = len(ir["value_shape"])
+    d["value_dimension"] = "NULL"
+    d["value_size"] = product(ir["value_shape"])
+    d["reference_value_rank"] = len(ir["reference_value_shape"])
+    d["reference_value_dimension"] = "NULL"
+    d["reference_value_size"] = product(ir["reference_value_shape"])
+    d["degree"] = ir["degree"]
+    d["family"] = "\"{}\"".format(ir["family"])
+    d["evaluate_reference_basis"] = "NULL"
+    d["evaluate_reference_basis_derivatives"] = "NULL"
+    d["transform_reference_basis_derivatives"] = "NULL"
+    d["map_dofs"] = "NULL"
+    d["tabulate_reference_dof_coordinates"] = "NULL"
+    d["num_sub_elements"] = ir["num_sub_elements"]
+    d["create_sub_element"] = "NULL"
+    d["create"] = "NULL"
+
+    # Functions to generate
+    # - value_dimension
+    # - reference_value_dimension
+    # - evaluate_reference_basis
+    # - evaluate_reference_basis_derivatives
+    # - transform_reference_basis_derivatives
+    # - map_dofs
+    # - tabulate_reference_dof_coordinates
+    # - num_sub_elements
+    # - create_sub_element
+    # - create"
+
+    s = ufc_finite_element_factory.format_map(d)
+    return s

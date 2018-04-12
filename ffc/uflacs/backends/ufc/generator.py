@@ -61,23 +61,7 @@ class ufc_generator(object):
                                                       + "_implementation"]
         self._combined_template = ufc_templates[basename + "_combined"]
 
-        # New UFC
-        print(ufc_templates.keys())
-        #self._new_combined_template = ufc_templates["ufc_"  + basename + "_combined"]
-        print("ufc_"  + basename + "_combined" )
-
         r = re.compile(r"%\(([a-zA-Z0-9_]*)\)")
-        r_new = re.compile(r"%\(([a-zA-Z0-9_]*)\)")
-
-        #print(self._new_combined_template)
-        # test = "Testing string: {testing0}, {testingA}  here"
-        # from string import Formatter
-        # fieldnames = [fname for _, fname, _, _ in Formatter().parse(test) if fname]
-        # print(fieldnames)
-
-        # ufc_combined_keywords = [fname for _, fname, _, _ in Formatter().parse(test) if fname]
-        # self._combined_keywords = set(r.findall(self._combined_template))
-
         self._header_keywords = set(r.findall(self._header_template))
         self._implementation_keywords = set(
             r.findall(self._implementation_template))
