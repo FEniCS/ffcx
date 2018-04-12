@@ -215,9 +215,9 @@ def compile_ufl_objects(ufl_objects,
 
     # Stage 4.1: generate wrappers, e.g. for DOLFIN C++
     cpu_time = time()
-    #print(code[0][0]["classname"])
+    # print(code[0][0]["classname"])
     #print(analysis, prefix, object_names)
-    #print(object_names)
+    # print(object_names)
     # for o in code:
     #     print("*********************")
     #     for p in o:
@@ -228,8 +228,8 @@ def compile_ufl_objects(ufl_objects,
     # Extract class names from the IR and add to a dict
     classnames = defaultdict(list)
     for ir, o in zip(
-            code,
-        ["elements", "dofmaps", "coordinate_maps", "integrals", "forms"]):
+        code,
+            ["elements", "dofmaps", "coordinate_maps", "integrals", "forms"]):
         for e in ir:
             classnames[o].append(e["classname"])
 
