@@ -39,7 +39,7 @@ from ffc.uflacs.backends.ufc.jacobian import (
     jacobian, inverse_jacobian, orientation, fiat_coordinate_mapping,
     _mapping_transform)
 
-from ffc.backends.ufc.finite_element import ufc_finite_element_factory
+from ffc.backends.ufc.finite_element import ufc_finite_element_factory, ufc_finite_element_declaration
 
 
 index_type = "int64_t"
@@ -455,23 +455,13 @@ def _num_vertices(cell_shape):
     return num_vertices_dict[cell_shape]
 
 
+def _create_sub_element_factory(L, ir):
+    classnames = ir["create_sub_element"]
+    return generate_return_new_switch(L, "i", classnames, factory=True)
+
+
 def ufc_finite_element_generator(ir, parameters):
-    #print(self._new_combined_template)
-    # test = "Testing string: {testing0}, {testingA}  here"
-    # from string import Formatter
-    # fieldnames = [fname for _, fname, _, _ in Formatter().parse(test) if fname]
-    # print(fieldnames)
-
-    # ufc_combined_keywords = [fname for _, fname, _, _ in Formatter().parse(test) if fname]
-    # self._combined_keywords = set(r.findall(self._combined_template))
-
-    #from collections import defaultdict
-    #d = defaultdict(str)
-    #d = defaultdict(lambda: 'NOT_IMPLEMENTED')
-
-    #print(ir.keys())
-
-    #s = ufc_finite_element_factory
+    """Generate UFC code for a finite element"""
     d = {}
     d["factory_name"] = ir["classname"]
     d["signature"] = "\"{}\"".format(ir["signature"])
@@ -480,33 +470,59 @@ def ufc_finite_element_generator(ir, parameters):
     d["cell_shape"] = ir["cell_shape"]
     d["space_dimension"] = ir["space_dimension"]
     d["value_rank"] = len(ir["value_shape"])
-    d["value_dimension"] = "NULL"
     d["value_size"] = product(ir["value_shape"])
     d["reference_value_rank"] = len(ir["reference_value_shape"])
-    d["reference_value_dimension"] = "NULL"
     d["reference_value_size"] = product(ir["reference_value_shape"])
     d["degree"] = ir["degree"]
     d["family"] = "\"{}\"".format(ir["family"])
-    d["evaluate_reference_basis"] = "NULL"
-    d["evaluate_reference_basis_derivatives"] = "NULL"
-    d["transform_reference_basis_derivatives"] = "NULL"
-    d["map_dofs"] = "NULL"
-    d["tabulate_reference_dof_coordinates"] = "NULL"
     d["num_sub_elements"] = ir["num_sub_elements"]
-    d["create_sub_element"] = "NULL"
-    d["create"] = "NULL"
 
-    # Functions to generate
-    # - value_dimension
-    # - reference_value_dimension
-    # - evaluate_reference_basis
-    # - evaluate_reference_basis_derivatives
-    # - transform_reference_basis_derivatives
-    # - map_dofs
-    # - tabulate_reference_dof_coordinates
-    # - num_sub_elements
-    # - create_sub_element
-    # - create"
+    import ffc.uflacs.language.cnodes as L
+    generator = ufc_finite_element()
 
-    s = ufc_finite_element_factory.format_map(d)
-    return s
+    d["value_dimension"] = generator.value_dimension(L, ir["value_shape"])
+    d["reference_value_dimension"] = generator.reference_value_dimension(
+        L, ir["reference_value_shape"])
+
+    statements = generator.evaluate_reference_basis(L, ir, parameters)
+    assert isinstance(statements, list)
+    d["evaluate_reference_basis"] = L.StatementList(statements)
+
+    statements = generator.evaluate_reference_basis_derivatives(
+        L, ir, parameters)
+    assert isinstance(statements, list)
+    d["evaluate_reference_basis_derivatives"] = L.StatementList(statements)
+
+    statements = generator.transform_reference_basis_derivatives(
+        L, ir, parameters)
+    assert isinstance(statements, list)
+    d["transform_reference_basis_derivatives"] = L.StatementList(statements)
+
+    statements = generator.map_dofs(L, ir, parameters)
+    assert isinstance(statements, list)
+    d["map_dofs"] = L.StatementList(statements)
+
+    statements = generator.tabulate_reference_dof_coordinates(
+        L, ir, parameters)
+    assert isinstance(statements, list)
+    d["tabulate_reference_dof_coordinates"] = L.StatementList(statements)
+
+    statements = _create_sub_element_factory(L, ir)
+    # FIXME: (GNW) Adding 'X' for now to avoid clashes with old names
+    d["create_sub_element"] = str(statements).replace("create", "Xcreate")
+
+    # Check that no keys are redundant or have been missed
+    from string import Formatter
+    fieldnames = [fname for _, fname, _, _ in Formatter().parse(
+        ufc_finite_element_factory) if fname]
+    assert set(fieldnames) == set(
+        d.keys()), "Mismatch between keys in template and in formattting dict"
+
+    # Format implementation code
+    implementation = ufc_finite_element_factory.format_map(d)
+
+    # Format declaration
+    declaration = ufc_finite_element_declaration.format(
+        factory_name=ir["classname"])
+
+    return declaration, implementation

@@ -105,6 +105,7 @@ struct ufc_finite_element {
                    const double *coordinate_dofs, int cell_orientation,
                    const ufc::coordinate_mapping *cm) = NULL;
 
+  // FIXME: change to 'const double* reference_dof_coordinates()'
   /// Tabulate the coordinates of all dofs on a reference cell
   void (*tabulate_reference_dof_coordinates)(double *reference_dof_coordinates) = NULL;
 

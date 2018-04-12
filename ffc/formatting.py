@@ -111,7 +111,7 @@ def format_code(code, wrapper_code, prefix, parameters):
 
     # Extract code
     (code_finite_elements, code_dofmaps, code_coordinate_mappings,
-     code_integrals, code_forms, includes) = code
+     code_integrals, code_forms, includes, ufc_code_finite_elements) = code
 
     # Generate code for comment on top of file
     code_h_pre = _generate_comment(parameters) + "\n"
@@ -132,6 +132,17 @@ def format_code(code, wrapper_code, prefix, parameters):
     # if jit:
     #     code_c += visibility_snippet
     split = parameters["split"]
+
+    # Generate code for new (C) finite_elements
+    if split:
+        print("!!!!!!!!!!!!!!")
+        pass
+        #code_h += "".join([e[0] for e in ufc_code_finite_elements])
+        #code_c.join += e[1] for e in ufc_code_finite_elements
+    else:
+        code_h = "".join([e[1] for e in ufc_code_finite_elements])
+        #print(code_h)
+        #print([e[1] for e in ufc_code_finite_elements])
 
     # Generate code for finite_elements
     for code_finite_element in code_finite_elements:

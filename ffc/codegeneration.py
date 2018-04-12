@@ -68,10 +68,10 @@ def generate_code(ir, parameters):
         for ir in ir_finite_elements
     ]
     # New pure C UFC code
-    # code_ufc_finite_elements = [
-    #     ufc_finite_element_generator(ir, parameters)
-    #     for ir in ir_finite_elements
-    # ]
+    code_ufc_finite_elements = [
+        ufc_finite_element_generator(ir, parameters)
+        for ir in ir_finite_elements
+    ]
 
     # Generate code for dofmaps
     info("Generating code for %d dofmap(s)" % len(ir_dofmaps))
@@ -101,7 +101,7 @@ def generate_code(ir, parameters):
     end()
 
     return (code_finite_elements, code_dofmaps, code_coordinate_mappings,
-            code_integrals, code_forms, includes)
+            code_integrals, code_forms, includes, code_ufc_finite_elements)
 
 
 def _extract_includes(full_ir, code_integrals):

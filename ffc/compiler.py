@@ -224,7 +224,8 @@ def compile_ufl_objects(ufl_objects,
     #         print("---------------------")
     #         print(o)
 
-    # Extract class names from the IR
+    # FIXME: Can this be avoided?
+    # Extract class names from the IR and add to a dict
     classnames = defaultdict(list)
     for ir, o in zip(
             code,
