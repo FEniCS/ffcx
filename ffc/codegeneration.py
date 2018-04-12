@@ -44,6 +44,7 @@ from ffc.uflacs.backends.ufc.coordinate_mapping import ufc_coordinate_mapping
 from ffc.uflacs.backends.ufc.form import ufc_form
 
 from ffc.uflacs.backends.ufc.finite_element import ufc_finite_element_generator
+from ffc.uflacs.backends.ufc.dofmap import ufc_dofmap_generator
 
 
 def generate_code(ir, parameters):
@@ -72,6 +73,7 @@ def generate_code(ir, parameters):
     # Generate code for dofmaps
     info("Generating code for %d dofmap(s)" % len(ir_dofmaps))
     code_dofmaps = [_generate_dofmap_code(ir, parameters) for ir in ir_dofmaps]
+    ufc_code_dofmaps = [ufc_dofmap_generator(ir, parameters) for ir in ir_dofmaps]
 
     # Generate code for coordinate_mappings
     info("Generating code for %d coordinate_mapping(s)" %

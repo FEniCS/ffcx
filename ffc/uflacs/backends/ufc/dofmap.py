@@ -21,6 +21,7 @@
 
 from ffc.uflacs.backends.ufc.generator import ufc_generator
 from ffc.uflacs.backends.ufc.utils import generate_return_new_switch, generate_return_sizet_switch, generate_return_bool_switch
+from ffc.backends.ufc.dofmap import ufc_dofmap_factory, ufc_dofmap_declaration
 
 
 class ufc_dofmap(ufc_generator):
@@ -249,3 +250,69 @@ class ufc_dofmap(ufc_generator):
         classnames = ir["create_sub_dofmap"]
         return generate_return_new_switch(
             L, "i", classnames, factory=ir["jit"])
+
+
+def ufc_dofmap_generator(ir, parameters):
+    """Generate UFC code for a dofmap"""
+
+    d = {}
+    d["factory_name"] = ir["classname"]
+    d["signature"] = "\"{}\"".format(ir["signature"])
+    d["num_global_support_dofs"] = ir["num_global_support_dofs"]
+    d["num_element_support_dofs"] = ir["num_element_support_dofs"]
+    d["num_element_dofs"] = ir["num_element_dofs"]
+    d["num_facet_dofs"] = ir["num_facet_dofs"]
+    d["num_sub_dofmaps"] = ir["num_sub_dofmaps"]
+
+    # import ffc.uflacs.language.cnodes as L
+    # generator = ufc_finite_element()
+
+    # d["value_dimension"] = generator.value_dimension(L, ir["value_shape"])
+    # d["reference_value_dimension"] = generator.reference_value_dimension(
+    #     L, ir["reference_value_shape"])
+
+    # statements = generator.evaluate_reference_basis(L, ir, parameters)
+    # assert isinstance(statements, list)
+    # d["evaluate_reference_basis"] = L.StatementList(statements)
+
+    # statements = generator.evaluate_reference_basis_derivatives(
+    #     L, ir, parameters)
+    # assert isinstance(statements, list)
+    # d["evaluate_reference_basis_derivatives"] = L.StatementList(statements)
+
+    # statements = generator.transform_reference_basis_derivatives(
+    #     L, ir, parameters)
+    # assert isinstance(statements, list)
+    # d["transform_reference_basis_derivatives"] = L.StatementList(statements)
+
+    # statements = generator.map_dofs(L, ir, parameters)
+    # assert isinstance(statements, list)
+    # d["map_dofs"] = L.StatementList(statements)
+
+    # statements = generator.tabulate_reference_dof_coordinates(
+    #     L, ir, parameters)
+    # assert isinstance(statements, list)
+    # d["tabulate_reference_dof_coordinates"] = L.StatementList(statements)
+
+    # statements = _create_sub_element_factory(L, ir)
+    # d["create_sub_element"] = statements
+
+    # # Check that no keys are redundant or have been missed
+    # from string import Formatter
+    # fieldnames = [
+    #     fname
+    #     for _, fname, _, _ in Formatter().parse(ufc_finite_element_factory)
+    #     if fname
+    # ]
+    # assert set(fieldnames) == set(
+    #     d.keys()), "Mismatch between keys in template and in formattting dict"
+
+    # Format implementation code
+    implementation = ufc_dofmap_factory.format_map(d)
+
+    # Format declaration
+    declaration = ufc_dofmap_declaration.format(factory_name=ir["classname"])
+
+    print(implementation)
+
+    return declaration, implementation

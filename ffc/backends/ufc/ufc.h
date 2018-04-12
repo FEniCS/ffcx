@@ -120,6 +120,7 @@ typedef struct ufc_finite_element {
   ufc_finite_element *(*create)() = NULL;
 } ufc_finite_element;
 
+
 typedef struct ufc_dofmap {
 
   /// Return a string identifying the dofmap

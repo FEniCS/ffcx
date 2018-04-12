@@ -8,6 +8,33 @@ ufc_dofmap_declaration = """
 extern "C" ufc_dofmap* create_{factory_name}();
 """
 
+ufc_dofmap_factory = """
+// Code for dofmap {factory_name}
+
+extern "C" ufc_dofmap* create_{factory_name}()
+{{
+  ufc_dofmap* dofmap = (ufc_dofmap*) malloc(sizeof(*dofmap));
+  dofmap->signature = {signature};
+  dofmap->num_global_support_dofs = {num_global_support_dofs};
+  dofmap->num_element_support_dofs = {num_element_support_dofs};
+  dofmap->num_element_dofs = {num_element_dofs};
+  dofmap->num_facet_dofs = {num_facet_dofs};
+  dofmap->num_entity_dofs = NULL;
+  dofmap->num_entity_closure_dofs = NULL;
+  dofmap->tabulate_dofs = NULL;
+  dofmap->tabulate_facet_dofs = NULL;
+  dofmap->tabulate_entity_dofs = NULL;
+  dofmap->tabulate_entity_closure_dofs = NULL;
+  dofmap->num_sub_dofmaps = {num_sub_dofmaps};
+  dofmap->create_sub_dofmap = NULL;
+  dofmap->create = NULL;
+
+  return dofmap;
+}};
+
+// End of code for dofmap {factory_name}
+"""
+
 
 ufc_dofmap_combined = """
 struct {factory_name}
