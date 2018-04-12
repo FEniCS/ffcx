@@ -5,7 +5,7 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2006-2017.
 
 ufc_finite_element_declaration = """
-ufc_finite_element* create_{factory_name}();
+extern "C" ufc_finite_element* create_{factory_name}();
 """
 
 
@@ -61,7 +61,7 @@ ufc_finite_element* create_sub_element_{factory_name}(int64_t i)
   {create_sub_element}
 }}
 
-ufc_finite_element* create_{factory_name}()
+extern "C" ufc_finite_element* create_{factory_name}()
 {{
   ufc_finite_element* element = (ufc_finite_element*) malloc(sizeof(*element));
 
