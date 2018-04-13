@@ -56,7 +56,7 @@ public:
 %(create_coordinate_dofmap)s
    }
 
-  ufc::coordinate_mapping * create_coordinate_mapping() const final override
+  ufc_coordinate_mapping * create_coordinate_mapping() const final override
   {
 %(create_coordinate_mapping)s
   }
@@ -196,7 +196,7 @@ public:
 
   ufc_dofmap * create_coordinate_dofmap() const final override;
 
-  ufc::coordinate_mapping * create_coordinate_mapping() const final override;
+  ufc_coordinate_mapping * create_coordinate_mapping() const final override;
 
   ufc_finite_element * create_finite_element(int64_t i) const final override;
 
@@ -286,7 +286,7 @@ ufc_dofmap * %(classname)s::create_coordinate_dofmap() const
 %(create_coordinate_dofmap)s
 }
 
-ufc::coordinate_mapping * %(classname)s::create_coordinate_mapping() const
+ufc_coordinate_mapping * %(classname)s::create_coordinate_mapping() const
 {
 %(create_coordinate_mapping)s
 }

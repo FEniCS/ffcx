@@ -114,7 +114,7 @@ class ufc_form(ufc_generator):
         classnames = ir["create_coordinate_mapping"]
         # list of length 1 until we support multiple domains
         assert len(classnames) == 1
-        return generate_return_new(L, classnames[0], factory=ir["jit"])
+        return generate_return_new(L, classnames[0], factory=True)
 
     def create_finite_element(self, L, ir):
         i = L.Symbol("i")
