@@ -3,7 +3,7 @@
 Compiler stage 4: Code generation
 ---------------------------------
 
-This module implements the generation of C++ code for the body of each
+This module implements the generation of C code for the body of each
 UFC function from an (optimized) intermediate representation (OIR).
 """
 
@@ -71,13 +71,12 @@ def generate_code(ir, parameters):
     ]
 
     # Generate code for dofmaps
-    info("Generating code for %d dofmap(s)" % len(ir_dofmaps))
-    code_dofmaps = [_generate_dofmap_code(ir, parameters) for ir in ir_dofmaps]
-    ufc_code_dofmaps = [ufc_dofmap_generator(ir, parameters) for ir in ir_dofmaps]
+    info("Generating code for {} dofmap(s)".format(len(ir_dofmaps)))
+    code_dofmaps = [ufc_dofmap_generator(ir, parameters) for ir in ir_dofmaps]
 
     # Generate code for coordinate_mappings
-    info("Generating code for %d coordinate_mapping(s)" %
-         len(ir_coordinate_mappings))
+    info("Generating code for {} coordinate_mapping(s)".format(
+        len(ir_coordinate_mappings)))
     code_coordinate_mappings = [
         _generate_coordinate_mapping_code(ir, parameters)
         for ir in ir_coordinate_mappings

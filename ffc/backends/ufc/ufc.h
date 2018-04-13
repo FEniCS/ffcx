@@ -120,7 +120,6 @@ typedef struct ufc_finite_element {
   ufc_finite_element *(*create)() = NULL;
 } ufc_finite_element;
 
-
 typedef struct ufc_dofmap {
 
   /// Return a string identifying the dofmap
@@ -163,18 +162,18 @@ typedef struct ufc_dofmap {
 
   /// Tabulate the local-to-local mapping of dofs on the closure of
   /// entity (d, i)
-  void (*tabulate_entity_closure_dofs)(int64_t *dofs, int64_t d, int64_t i) = NULL;
+  void (*tabulate_entity_closure_dofs)(int64_t *dofs, int64_t d,
+                                       int64_t i) = NULL;
 
   /// Return the number of sub dofmaps (for a mixed element)
   int64_t num_sub_dofmaps = -1;
 
   /// Create a new dofmap for sub dofmap i (for a mixed element)
-  ufc_dofmap* (*create_sub_dofmap)(int64_t i) = NULL;
+  ufc_dofmap *(*create_sub_dofmap)(int64_t i) = NULL;
 
   /// Create a new class instance
-  ufc_dofmap* (*create)() = NULL;
+  ufc_dofmap *(*create)() = NULL;
 } ufc_dofmap;
-
 
 namespace ufc {
 
@@ -186,67 +185,6 @@ enum class shape {
   tetrahedron,
   hexahedron,
   vertex
-};
-
-/// This class defines the interface for a local-to-global mapping
-/// of degrees of freedom (dofs).
-class dofmap {
-public:
-  /// Destructor
-  virtual ~dofmap() {}
-
-  /// Return a string identifying the dofmap
-  virtual const char *signature() const = 0;
-
-  /// Return the dimension of the local finite element function space
-  /// Return the number of dofs with global support (i.e. global constants)
-  virtual int64_t num_global_support_dofs() const = 0;
-
-  /// Return the dimension of the local finite element function space
-  /// for a cell (not including global support dofs)
-  virtual int64_t num_element_support_dofs() const = 0;
-
-  /// Return the dimension of the local finite element function space
-  /// for a cell (old version including global support dofs)
-  virtual int64_t num_element_dofs() const = 0;
-
-  /// Return the number of dofs on each cell facet
-  virtual int64_t num_facet_dofs() const = 0;
-
-  /// Return the number of dofs associated with each cell
-  /// entity of dimension d
-  virtual int64_t num_entity_dofs(int64_t d) const = 0;
-
-  /// Return the number of dofs associated with the closure
-  /// of each cell entity dimension d
-  virtual int64_t num_entity_closure_dofs(int64_t d) const = 0;
-
-  /// Tabulate the local-to-global mapping of dofs on a cell
-  ///   num_global_entities[num_entities_per_cell]
-  ///   entity_indices[tdim][local_index ]
-  virtual void tabulate_dofs(int64_t *dofs, const int64_t *num_global_entities,
-                             const int64_t **entity_indices) const = 0;
-
-  /// Tabulate the local-to-local mapping from facet dofs to cell dofs
-  virtual void tabulate_facet_dofs(int64_t *dofs, int64_t facet) const = 0;
-
-  /// Tabulate the local-to-local mapping of dofs on entity (d, i)
-  virtual void tabulate_entity_dofs(int64_t *dofs, int64_t d,
-                                    int64_t i) const = 0;
-
-  /// Tabulate the local-to-local mapping of dofs on the closure of entity (d,
-  /// i)
-  virtual void tabulate_entity_closure_dofs(int64_t *dofs, int64_t d,
-                                            int64_t i) const = 0;
-
-  /// Return the number of sub dofmaps (for a mixed element)
-  virtual int64_t num_sub_dofmaps() const = 0;
-
-  /// Create a new dofmap for sub dofmap i (for a mixed element)
-  virtual dofmap *create_sub_dofmap(int64_t i) const = 0;
-
-  /// Create a new class instance
-  virtual dofmap *create() const = 0;
 };
 
 /// A representation of a coordinate mapping parameterized by a local finite
@@ -274,7 +212,7 @@ public:
   virtual ufc_finite_element *create_coordinate_finite_element() const = 0;
 
   /// Create dofmap object representing the coordinate parameterization
-  virtual dofmap *create_coordinate_dofmap() const = 0;
+  virtual ufc_dofmap *create_coordinate_dofmap() const = 0;
 
   /// Compute physical coordinates x from reference coordinates X,
   /// the inverse of compute_reference_coordinates
@@ -593,7 +531,7 @@ public:
   virtual ufc_finite_element *create_coordinate_finite_element() const = 0;
 
   /// Create a new dofmap for parameterization of coordinates
-  virtual dofmap *create_coordinate_dofmap() const = 0;
+  virtual ufc_dofmap *create_coordinate_dofmap() const = 0;
 
   /// Create a new coordinate mapping
   virtual coordinate_mapping *create_coordinate_mapping() const = 0;
@@ -612,7 +550,7 @@ public:
   ///        Argument number if 0 <= i < r
   ///        Coefficient number j=i-r if r+j <= i < r+n
   ///
-  virtual dofmap *create_dofmap(int64_t i) const = 0;
+  virtual ufc_dofmap *create_dofmap(int64_t i) const = 0;
 
   /// Return the upper bound on subdomain ids for cell integrals
   virtual int64_t max_cell_subdomain_id() const = 0;
@@ -686,8 +624,8 @@ struct dolfin_function_space {
   // Pointer to factory function that creates a new ufc_finite_element
   ufc_finite_element *(*element)(void);
 
-  // Pointer to factory function that creates a new ufc::dofmap
-  ufc::dofmap *(*dofmap)(void);
+  // Pointer to factory function that creates a new ufc_dofmap
+  ufc_dofmap *(*dofmap)(void);
 
   // Pointer to factory function that creates a new ufc::coordinate_mapping
   ufc::coordinate_mapping *(*coordinate_mapping)(void);

@@ -51,7 +51,7 @@ public:
 %(create_coordinate_finite_element)s
   }
 
-  ufc::dofmap * create_coordinate_dofmap() const final override
+  ufc_dofmap * create_coordinate_dofmap() const final override
   {
 %(create_coordinate_dofmap)s
    }
@@ -66,7 +66,7 @@ public:
 %(create_finite_element)s
   }
 
-  ufc::dofmap * create_dofmap(int64_t i) const final override
+  ufc_dofmap * create_dofmap(int64_t i) const final override
   {
 %(create_dofmap)s
   }
@@ -194,13 +194,13 @@ public:
 
   ufc_finite_element * create_coordinate_finite_element() const final override;
 
-  ufc::dofmap * create_coordinate_dofmap() const final override;
+  ufc_dofmap * create_coordinate_dofmap() const final override;
 
   ufc::coordinate_mapping * create_coordinate_mapping() const final override;
 
   ufc_finite_element * create_finite_element(int64_t i) const final override;
 
-  ufc::dofmap * create_dofmap(int64_t i) const final override;
+  ufc_dofmap * create_dofmap(int64_t i) const final override;
 
   int64_t max_cell_subdomain_id() const final override;
 
@@ -281,7 +281,7 @@ ufc_finite_element * %(classname)s::create_coordinate_finite_element() const
 %(create_coordinate_finite_element)s
 }
 
-ufc::dofmap * %(classname)s::create_coordinate_dofmap() const
+ufc_dofmap * %(classname)s::create_coordinate_dofmap() const
 {
 %(create_coordinate_dofmap)s
 }
@@ -296,7 +296,7 @@ ufc_finite_element * %(classname)s::create_finite_element(int64_t i) const
 %(create_finite_element)s
 }
 
-ufc::dofmap * %(classname)s::create_dofmap(int64_t i) const
+ufc_dofmap * %(classname)s::create_dofmap(int64_t i) const
 {
 %(create_dofmap)s
 }

@@ -108,7 +108,7 @@ class ufc_form(ufc_generator):
     def create_coordinate_dofmap(self, L, ir):
         classnames = ir["create_coordinate_dofmap"]
         assert len(classnames) == 1
-        return generate_return_new(L, classnames[0], factory=ir["jit"])
+        return generate_return_new(L, classnames[0], factory=True)
 
     def create_coordinate_mapping(self, L, ir):
         classnames = ir["create_coordinate_mapping"]
@@ -124,7 +124,7 @@ class ufc_form(ufc_generator):
     def create_dofmap(self, L, ir):
         i = L.Symbol("i")
         classnames = ir["create_dofmap"]
-        return generate_return_new_switch(L, i, classnames, factory=ir["jit"])
+        return generate_return_new_switch(L, i, classnames, factory=True)
 
     # This group of functions are repeated for each
     # foo_integral by add_ufc_form_integral_methods:

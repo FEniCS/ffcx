@@ -1,34 +1,25 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2009-2017 Anders Logg and Martin Sandve Alnæs
+# Copyright (C) 2009-2018 Anders Logg, Martin Sandve Alnæs and Garth N. Wells
 #
-# This file is part of UFLACS.
+# This file is part of FFV (https://www.fenicsproject.org)
 #
-# UFLACS is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 #
-# UFLACS is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
-
 # Note: Most of the code in this file is a direct translation from the
 # old implementation in FFC
 
-from ffc.uflacs.backends.ufc.generator import ufc_generator
-from ffc.uflacs.backends.ufc.utils import generate_return_new_switch, generate_return_sizet_switch, generate_return_bool_switch
+from ffc.uflacs.backends.ufc.utils import (generate_return_new_switch,
+                                           generate_return_sizet_switch,
+                                           generate_return_bool_switch)
 from ffc.backends.ufc.dofmap import ufc_dofmap_factory, ufc_dofmap_declaration
 
 
-class ufc_dofmap(ufc_generator):
-    "Each function maps to a keyword in the template. See documentation of ufc_generator."
+class ufc_dofmap:
+    "Each function maps to a keyword in the template."
 
     def __init__(self):
-        ufc_generator.__init__(self, "dofmap")
+        pass
+        #ufc_generator.__init__(self, "dofmap")
 
     def num_global_support_dofs(self, L, num_global_support_dofs):
         return L.Return(num_global_support_dofs)
@@ -59,9 +50,10 @@ class ufc_dofmap(ufc_generator):
         ir = ir["tabulate_dofs"]
         if ir is None:
             # Special case for SpaceOfReals, ir returns None
-            # FIXME: This is how the old code did in this case,
-            # is it correct? Is there only 1 dof?
-            # I guess VectorElement(Real) handled elsewhere?
+
+            # FIXME: This is how the old code did in this case, is it correct?
+            # Is there only 1 dof? I guess VectorElement(Real) handled
+            # elsewhere?
             code = [L.Assign(dofs_variable[0], 0)]
             return L.StatementList(code)
 
@@ -248,14 +240,15 @@ class ufc_dofmap(ufc_generator):
 
     def create_sub_dofmap(self, L, ir):
         classnames = ir["create_sub_dofmap"]
-        return generate_return_new_switch(
-            L, "i", classnames, factory=ir["jit"])
+        return generate_return_new_switch(L, "i", classnames, factory=True)
 
 
 def ufc_dofmap_generator(ir, parameters):
     """Generate UFC code for a dofmap"""
 
     d = {}
+
+    # Attributes
     d["factory_name"] = ir["classname"]
     d["signature"] = "\"{}\"".format(ir["signature"])
     d["num_global_support_dofs"] = ir["num_global_support_dofs"]
@@ -264,55 +257,33 @@ def ufc_dofmap_generator(ir, parameters):
     d["num_facet_dofs"] = ir["num_facet_dofs"]
     d["num_sub_dofmaps"] = ir["num_sub_dofmaps"]
 
-    # import ffc.uflacs.language.cnodes as L
-    # generator = ufc_finite_element()
+    import ffc.uflacs.language.cnodes as L
+    generator = ufc_dofmap()
 
-    # d["value_dimension"] = generator.value_dimension(L, ir["value_shape"])
-    # d["reference_value_dimension"] = generator.reference_value_dimension(
-    #     L, ir["reference_value_shape"])
+    # Functions
+    d["num_entity_dofs"] = generator.num_entity_dofs(L, ir["num_entity_dofs"])
+    d["num_entity_closure_dofs"] = generator.num_entity_closure_dofs(
+        L, ir["num_entity_closure_dofs"])
+    d["tabulate_dofs"] = generator.tabulate_dofs(L, ir)
+    d["tabulate_facet_dofs"] = generator.tabulate_facet_dofs(L, ir)
+    d["tabulate_entity_dofs"] = generator.tabulate_entity_dofs(L, ir)
+    d["tabulate_entity_closure_dofs"] = generator.tabulate_entity_closure_dofs(
+        L, ir)
+    d["create_sub_dofmap"] = generator.create_sub_dofmap(L, ir)
 
-    # statements = generator.evaluate_reference_basis(L, ir, parameters)
-    # assert isinstance(statements, list)
-    # d["evaluate_reference_basis"] = L.StatementList(statements)
-
-    # statements = generator.evaluate_reference_basis_derivatives(
-    #     L, ir, parameters)
-    # assert isinstance(statements, list)
-    # d["evaluate_reference_basis_derivatives"] = L.StatementList(statements)
-
-    # statements = generator.transform_reference_basis_derivatives(
-    #     L, ir, parameters)
-    # assert isinstance(statements, list)
-    # d["transform_reference_basis_derivatives"] = L.StatementList(statements)
-
-    # statements = generator.map_dofs(L, ir, parameters)
-    # assert isinstance(statements, list)
-    # d["map_dofs"] = L.StatementList(statements)
-
-    # statements = generator.tabulate_reference_dof_coordinates(
-    #     L, ir, parameters)
-    # assert isinstance(statements, list)
-    # d["tabulate_reference_dof_coordinates"] = L.StatementList(statements)
-
-    # statements = _create_sub_element_factory(L, ir)
-    # d["create_sub_element"] = statements
-
-    # # Check that no keys are redundant or have been missed
-    # from string import Formatter
-    # fieldnames = [
-    #     fname
-    #     for _, fname, _, _ in Formatter().parse(ufc_finite_element_factory)
-    #     if fname
-    # ]
-    # assert set(fieldnames) == set(
-    #     d.keys()), "Mismatch between keys in template and in formattting dict"
+    # Check that no keys are redundant or have been missed
+    from string import Formatter
+    fields = [
+        fname for _, fname, _, _ in Formatter().parse(ufc_dofmap_factory)
+        if fname
+    ]
+    assert set(fields) == set(
+        d.keys()), "Mismatch between keys in template and in formattting dict."
 
     # Format implementation code
     implementation = ufc_dofmap_factory.format_map(d)
 
     # Format declaration
     declaration = ufc_dofmap_declaration.format(factory_name=ir["classname"])
-
-    print(implementation)
 
     return declaration, implementation
