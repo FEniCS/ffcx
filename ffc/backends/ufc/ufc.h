@@ -43,9 +43,7 @@ enum ufc_shape {
 };
 
 /// Forward declaration
-namespace ufc {
-class coordinate_mapping;
-}
+struct ufc_coordinate_mapping;
 
 typedef struct ufc_finite_element {
   /// String identifying the finite element
@@ -103,7 +101,7 @@ typedef struct ufc_finite_element {
   /// Map dofs from vals to values
   void (*map_dofs)(double *values, const double *vals,
                    const double *coordinate_dofs, int cell_orientation,
-                   const ufc::coordinate_mapping *cm) = NULL;
+                   const ufc_coordinate_mapping *cm) = NULL;
 
   // FIXME: change to 'const double* reference_dof_coordinates()'
   /// Tabulate the coordinates of all dofs on a reference cell
@@ -175,44 +173,30 @@ typedef struct ufc_dofmap {
   ufc_dofmap *(*create)() = NULL;
 } ufc_dofmap;
 
-namespace ufc {
-
-/// Valid cell shapes
-enum class shape {
-  interval,
-  triangle,
-  quadrilateral,
-  tetrahedron,
-  hexahedron,
-  vertex
-};
-
-/// A representation of a coordinate mapping parameterized by a local finite
-/// element basis on each cell
-class coordinate_mapping {
-public:
-  virtual ~coordinate_mapping() {}
+/// A representation of a coordinate mapping parameterized by a local
+/// finite element basis on each cell
+typedef struct ufc_coordinate_mapping {
 
   /// Return coordinate_mapping signature string
-  virtual const char *signature() const = 0;
+  const char *signature = NULL;
 
   /// Create object of the same type
-  virtual coordinate_mapping *create() const = 0;
+  ufc_coordinate_mapping *(*create)() = NULL;
 
   /// Return geometric dimension of the coordinate_mapping
-  virtual int64_t geometric_dimension() const = 0;
+  int64_t geometric_dimension = -1;
 
   /// Return topological dimension of the coordinate_mapping
-  virtual int64_t topological_dimension() const = 0;
+  int64_t topological_dimension = -1;
 
   /// Return cell shape of the coordinate_mapping
-  virtual shape cell_shape() const = 0;
+  ufc_shape cell_shape = none;
 
   /// Create finite_element object representing the coordinate parameterization
-  virtual ufc_finite_element *create_coordinate_finite_element() const = 0;
+  ufc_finite_element *(*create_coordinate_finite_element)() = NULL;
 
   /// Create dofmap object representing the coordinate parameterization
-  virtual ufc_dofmap *create_coordinate_dofmap() const = 0;
+  ufc_dofmap *(*create_coordinate_dofmap)() = NULL;
 
   /// Compute physical coordinates x from reference coordinates X,
   /// the inverse of compute_reference_coordinates
@@ -229,9 +213,9 @@ public:
   ///         Dofs of the coordinate field on the cell.
   ///         Dimensions: coordinate_dofs[num_dofs][gdim].
   ///
-  virtual void
-  compute_physical_coordinates(double *x, int64_t num_points, const double *X,
-                               const double *coordinate_dofs) const = 0;
+  void (*compute_physical_coordinates)(double *x, int64_t num_points,
+                                       const double *X,
+                                       const double *coordinate_dofs) = NULL;
 
   /// Compute reference coordinates X from physical coordinates x,
   /// the inverse of compute_physical_coordinates
@@ -251,10 +235,10 @@ public:
   ///         Orientation of the cell, 1 means flipped w.r.t. reference cell.
   ///         Only relevant on manifolds (tdim < gdim).
   ///
-  virtual void compute_reference_coordinates(double *X, int64_t num_points,
-                                             const double *x,
-                                             const double *coordinate_dofs,
-                                             int cell_orientation) const = 0;
+  void (*compute_reference_coordinates)(double *X, int64_t num_points,
+                                        const double *x,
+                                        const double *coordinate_dofs,
+                                        int cell_orientation) = NULL;
 
   /// Compute X, J, detJ, K from physical coordinates x on a cell
   ///
@@ -282,11 +266,11 @@ public:
   ///         Orientation of the cell, 1 means flipped w.r.t. reference cell.
   ///         Only relevant on manifolds (tdim < gdim).
   ///
-  virtual void compute_reference_geometry(double *X, double *J, double *detJ,
-                                          double *K, int64_t num_points,
-                                          const double *x,
-                                          const double *coordinate_dofs,
-                                          int cell_orientation) const = 0;
+  void (*compute_reference_geometry)(double *X, double *J, double *detJ,
+                                     double *K, int64_t num_points,
+                                     const double *x,
+                                     const double *coordinate_dofs,
+                                     int cell_orientation) = NULL;
 
   /// Compute Jacobian of coordinate mapping J = dx/dX at reference coordinates
   /// X
@@ -303,8 +287,8 @@ public:
   ///         Dofs of the coordinate field on the cell.
   ///         Dimensions: coordinate_dofs[num_dofs][gdim].
   ///
-  virtual void compute_jacobians(double *J, int64_t num_points, const double *X,
-                                 const double *coordinate_dofs) const = 0;
+  void (*compute_jacobians)(double *J, int64_t num_points, const double *X,
+                            const double *coordinate_dofs) = NULL;
 
   /// Compute determinants of (pseudo-)Jacobians J
   ///
@@ -320,9 +304,9 @@ public:
   ///         Orientation of the cell, 1 means flipped w.r.t. reference cell.
   ///         Only relevant on manifolds (tdim < gdim).
   ///
-  virtual void compute_jacobian_determinants(double *detJ, int64_t num_points,
-                                             const double *J,
-                                             int cell_orientation) const = 0;
+  void (*compute_jacobian_determinants)(double *detJ, int64_t num_points,
+                                        const double *J,
+                                        int cell_orientation) = NULL;
 
   /// Compute (pseudo-)inverses K of (pseudo-)Jacobians J
   ///
@@ -338,9 +322,8 @@ public:
   ///         (Pseudo-)Determinant of Jacobian.
   ///         Dimensions: detJ[num_points]
   ///
-  virtual void compute_jacobian_inverses(double *K, int64_t num_points,
-                                         const double *J,
-                                         const double *detJ) const = 0;
+  void (*compute_jacobian_inverses)(double *K, int64_t num_points,
+                                    const double *J, const double *detJ) = NULL;
 
   /// Combined (for convenience) computation of x, J, detJ, K from X and
   /// coordinate_dofs on a cell
@@ -369,10 +352,10 @@ public:
   ///         Orientation of the cell, 1 means flipped w.r.t. reference cell.
   ///         Only relevant on manifolds (tdim < gdim).
   ///
-  virtual void compute_geometry(double *x, double *J, double *detJ, double *K,
-                                int64_t num_points, const double *X,
-                                const double *coordinate_dofs,
-                                int cell_orientation) const = 0;
+  void (*compute_geometry)(double *x, double *J, double *detJ, double *K,
+                           int64_t num_points, const double *X,
+                           const double *coordinate_dofs,
+                           int cell_orientation) = NULL;
 
   /// Compute x and J at midpoint of cell
   ///
@@ -386,9 +369,21 @@ public:
   ///         Dofs of the coordinate field on the cell.
   ///         Dimensions: coordinate_dofs[num_dofs][gdim].
   ///
-  virtual void
-  compute_midpoint_geometry(double *x, double *J,
-                            const double *coordinate_dofs) const = 0;
+  void (*compute_midpoint_geometry)(double *x, double *J,
+                                    const double *coordinate_dofs) = NULL;
+
+} ufc_coordinate_mapping;
+
+namespace ufc {
+
+/// Valid cell shapes
+enum class shape {
+  interval,
+  triangle,
+  quadrilateral,
+  tetrahedron,
+  hexahedron,
+  vertex
 };
 
 /// This class defines the shared interface for classes implementing
@@ -534,7 +529,7 @@ public:
   virtual ufc_dofmap *create_coordinate_dofmap() const = 0;
 
   /// Create a new coordinate mapping
-  virtual coordinate_mapping *create_coordinate_mapping() const = 0;
+  virtual ufc_coordinate_mapping *create_coordinate_mapping() const = 0;
 
   /// Create a new finite element for argument function 0 <= i < r+n
   ///
@@ -627,8 +622,8 @@ struct dolfin_function_space {
   // Pointer to factory function that creates a new ufc_dofmap
   ufc_dofmap *(*dofmap)(void);
 
-  // Pointer to factory function that creates a new ufc::coordinate_mapping
-  ufc::coordinate_mapping *(*coordinate_mapping)(void);
+  // Pointer to factory function that creates a new ufc_coordinate_mapping
+  ufc_coordinate_mapping *(*coordinate_mapping)(void);
 };
 
 struct dolfin_form {

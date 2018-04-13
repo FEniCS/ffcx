@@ -6,6 +6,14 @@
 
 ufc_finite_element_declaration = """
 extern "C" ufc_finite_element* create_{factory_name}();
+
+// Functions that are called in non-ufc_finite_element objects, so must be made visible
+int evaluate_reference_basis_derivatives_{factory_name}(double *reference_values,
+                                          int64_t order, int64_t num_points,
+                                          const double *X);
+int evaluate_reference_basis_{factory_name}(double *reference_values,
+                                            int64_t num_points,
+                                            const double *X);
 """
 
 
@@ -46,7 +54,7 @@ int transform_reference_basis_derivatives_{factory_name}(
 
 void map_dofs_{factory_name}(double *values, const double *vals,
                    const double *coordinate_dofs, int cell_orientation,
-                   const ufc::coordinate_mapping *cm)
+                   const ufc_coordinate_mapping *cm)
 {{
   {map_dofs}
 }}

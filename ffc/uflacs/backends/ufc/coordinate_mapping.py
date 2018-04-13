@@ -18,6 +18,8 @@
 
 from ffc.uflacs.backends.ufc.generator import ufc_generator
 from ffc.uflacs.backends.ufc.utils import generate_return_new
+from ffc.backends.ufc.coordinate_mapping import (
+    ufc_coordinate_mapping_factory, ufc_coordinate_mapping_declaration)
 
 # TODO: Test everything here! Cover all combinations of gdim,tdim=1,2,3!
 
@@ -166,11 +168,12 @@ def generate_assign_inverse(L, K, J, detJ, gdim, tdim):
             return L.StatementList(code)
 
 
-class ufc_coordinate_mapping(ufc_generator):
+class ufc_coordinate_mapping:
     "Each function maps to a keyword in the template. See documentation of ufc_generator."
 
     def __init__(self):
-        ufc_generator.__init__(self, "coordinate_mapping")
+        pass
+        #ufc_generator.__init__(self, "coordinate_mapping")
 
     def cell_shape(self, L, ir):
         name = ir["cell_shape"]
@@ -230,16 +233,6 @@ class ufc_coordinate_mapping(ufc_generator):
 
         # For each point, compute basis values and accumulate into the right x
         code = [
-            # Define scalar finite element instance (stateless, so
-            # placing this on the stack is basically free)
-            #L.VariableDecl(scalar_coordinate_element_classname, "xelement"),
-
-            # NOTE: (GNW) With the switch to C, we cannot allocate
-            # statically (at least not without a lot of extra code.).
-            # Change interface to pass in element.0
-            L.VariableDecl("ufc_finite_element*", xelement,
-                           L.Call("create_{}".format(scalar_coordinate_element_classname))),
-
             L.ArrayDecl("double", phi_sym, (one_point * num_dofs, )),
             L.ForRange(
                 i,
@@ -254,7 +247,7 @@ class ufc_coordinate_mapping(ufc_generator):
                 index_type=index_type,
                 body=[
                     L.Comment("Compute basis values of coordinate element"),
-                    L.Call("xelement->evaluate_reference_basis",
+                    L.Call("evaluate_reference_basis_{}".format(scalar_coordinate_element_classname),
                            (phi_sym, 1, L.AddressOf(X[ip, 0]))),
                     L.Comment("Compute x"),
                     L.ForRanges(
@@ -263,8 +256,7 @@ class ufc_coordinate_mapping(ufc_generator):
                         body=L.AssignAdd(x[ip, i],
                                          coordinate_dofs[d, i] * phi[d]))
                 ]),
-                L.Call("free", xelement)
-            ]
+        ]
 
         return code
 
@@ -290,6 +282,9 @@ class ufc_coordinate_mapping(ufc_generator):
             return self._compute_reference_coordinates_newton(L, ir)
 
     def _compute_reference_coordinates_affine(self, L, ir, output_all=False):
+        # Class name
+        classname = ir["classname"]
+
         # Dimensions
         gdim = ir["geometric_dimension"]
         tdim = ir["topological_dimension"]
@@ -402,9 +397,9 @@ class ufc_coordinate_mapping(ufc_generator):
 
         # Compute K = inv(J) (and intermediate value det(J))
         compute_K0 = [
-            L.Call("compute_jacobian_determinants",
+            L.Call("compute_jacobian_determinants_{}".format(classname),
                    (detJsym, 1, Jsym, cell_orientation)),
-            L.Call("compute_jacobian_inverses", (Ksym, 1, Jsym, detJsym)),
+            L.Call("compute_jacobian_inverses_{}".format(classname), (Ksym, 1, Jsym, detJsym)),
         ]
 
         # Compute X = K0*(x-x0) for each physical point x
@@ -694,17 +689,8 @@ class ufc_coordinate_mapping(ufc_generator):
         dphi_sym = L.Symbol("dphi")
         dphi = L.FlattenedArray(dphi_sym, dims=(num_dofs, tdim))
 
-        xelement = L.Symbol("xelement")
-
         # For each point, compute basis derivatives and accumulate into the right J
         code = [
-            # L.VariableDecl(scalar_coordinate_element_classname, "xelement"),
-            # NOTE: (GNW) With the switch to C, we cannot allocate
-            # statically (at least not without a lot of extra code.).
-            # Change interface to pass in element.0
-            L.VariableDecl("ufc_finite_element*", xelement,
-                           L.Call("create_{}".format(scalar_coordinate_element_classname))),
-
             L.ArrayDecl("double", dphi_sym, (one_point * num_dofs * tdim, )),
             L.ForRange(
                 iz,
@@ -720,7 +706,7 @@ class ufc_coordinate_mapping(ufc_generator):
                 body=[
                     L.Comment(
                         "Compute basis derivatives of coordinate element"),
-                    L.Call("xelement->evaluate_reference_basis_derivatives",
+                    L.Call("evaluate_reference_basis_derivatives_{}".format(scalar_coordinate_element_classname),
                            (dphi_sym, 1, 1, L.AddressOf(X[ip, 0]))),
                     L.Comment("Compute J"),
                     L.ForRanges(
@@ -729,7 +715,6 @@ class ufc_coordinate_mapping(ufc_generator):
                         body=L.AssignAdd(J[ip, i, j],
                                          coordinate_dofs[d, i] * dphi[d, j]))
                 ]),
-                L.Call("free", xelement)
         ]
 
         return code
@@ -795,6 +780,9 @@ class ufc_coordinate_mapping(ufc_generator):
         return L.ForRange(ip, 0, num_points, index_type=index_type, body=body)
 
     def compute_geometry(self, L, ir):
+        # Class name
+        classname = ir["classname"]
+
         # Output geometry
         x = L.Symbol("x")
         J = L.Symbol("J")
@@ -817,12 +805,12 @@ class ufc_coordinate_mapping(ufc_generator):
 
         # Just chain calls to other functions here
         code = [
-            L.Call("compute_physical_coordinates",
+            L.Call("compute_physical_coordinates_{}".format(classname),
                    (x, num_points, X, coordinate_dofs)),
-            L.Call("compute_jacobians", (J, num_points, X, coordinate_dofs)),
-            L.Call("compute_jacobian_determinants",
+            L.Call("compute_jacobians_{}".format(classname), (J, num_points, X, coordinate_dofs)),
+            L.Call("compute_jacobian_determinants_{}".format(classname),
                    (detJ, num_points, J, cell_orientation)),
-            L.Call("compute_jacobian_inverses", (K, num_points, J, detJ)),
+            L.Call("compute_jacobian_inverses_{}".format(classname), (K, num_points, J, detJ)),
         ]
         return code
 
@@ -930,3 +918,69 @@ class ufc_coordinate_mapping(ufc_generator):
         # Reuse functions for detJ and K
         code = table_decls + init_array + xm_code + Jm_code
         return code
+
+
+def ufc_coordinate_mapping_generator(ir, parameters):
+    """Generate UFC code for a coordinate mapping"""
+
+    d = {}
+
+    # Attributes
+    d["factory_name"] = ir["classname"]
+    d["signature"] = "\"{}\"".format(ir["signature"])
+    d["geometric_dimension"] = ir["geometric_dimension"]
+    d["topological_dimension"] = ir["topological_dimension"]
+    d["cell_shape"] = ir["cell_shape"]
+
+    import ffc.uflacs.language.cnodes as L
+    generator = ufc_coordinate_mapping()
+
+    # Functions
+    d["create_coordinate_finite_element"] = generator.create_coordinate_finite_element(L, ir)
+    d["create_coordinate_dofmap"] = generator.create_coordinate_dofmap(L, ir)
+
+    d["compute_physical_coordinates"] = generator.compute_physical_coordinates(L, ir)
+    statements = generator.compute_physical_coordinates(L, ir)
+    assert isinstance(statements, list)
+    d["compute_physical_coordinates"] = L.StatementList(statements)
+
+    statements = generator.compute_reference_coordinates(L, ir)
+    assert isinstance(statements, list)
+    d["compute_reference_coordinates"] = L.StatementList(statements)
+
+    statements = generator.compute_reference_geometry(L, ir)
+    assert isinstance(statements, list)
+    d["compute_reference_geometry"] = L.StatementList(statements)
+
+    statements = generator.compute_jacobians(L, ir)
+    assert isinstance(statements, list)
+    d["compute_jacobians"] = L.StatementList(statements)
+
+    d["compute_jacobian_determinants"] = generator.compute_jacobian_determinants(L, ir)
+    d["compute_jacobian_inverses"] = generator.compute_jacobian_inverses(L, ir)
+
+    statements = generator.compute_geometry(L, ir)
+    assert isinstance(statements, list)
+    d["compute_geometry"] = L.StatementList(statements)
+
+    statements = generator.compute_midpoint_geometry(L, ir)
+    assert isinstance(statements, list)
+    d["compute_midpoint_geometry"] = L.StatementList(statements)
+
+    # Check that no keys are redundant or have been missed
+    from string import Formatter
+    fields = [
+        fname for _, fname, _, _ in Formatter().parse(ufc_coordinate_mapping_factory)
+        if fname
+    ]
+    assert set(fields) == set(
+        d.keys()), "Mismatch between keys in template and in formattting dict."
+
+    # Format implementation code
+    implementation = ufc_coordinate_mapping_factory.format_map(d)
+
+    # Format declaration
+    declaration = ufc_coordinate_mapping_declaration.format(
+        factory_name=ir["classname"])
+
+    return declaration, implementation
