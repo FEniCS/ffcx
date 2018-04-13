@@ -185,11 +185,10 @@ class ufc_coordinate_mapping(ufc_generator):
     def create_coordinate_finite_element(self, L, ir):
         classname = ir["create_coordinate_finite_element"]
         return generate_return_new(L, classname, factory=True)
-        #return generate_return_new(L, classname, factory=ir["jit"])
 
     def create_coordinate_dofmap(self, L, ir):
         classname = ir["create_coordinate_dofmap"]
-        return generate_return_new(L, classname, factory=ir["jit"])
+        return generate_return_new(L, classname, factory=True)
 
     def compute_physical_coordinates(self, L, ir):
         num_dofs = ir["num_scalar_coordinate_element_dofs"]

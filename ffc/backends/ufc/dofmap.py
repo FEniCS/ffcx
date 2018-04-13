@@ -8,236 +8,65 @@ ufc_dofmap_declaration = """
 extern "C" ufc_dofmap* create_{factory_name}();
 """
 
+ufc_dofmap_factory = """
+// Code for dofmap {factory_name}
 
-ufc_dofmap_combined = """
-struct {factory_name}
+int64_t num_entity_dofs_{factory_name}(int64_t d)
 {{
-};
-"""
+{num_entity_dofs}
+}}
 
+int64_t num_entity_closure_dofs_{factory_name}(int64_t d)
+{{
+{num_entity_closure_dofs}
+}}
 
-dofmap_combined = """
-class %(classname)s: public ufc::dofmap
-{%(members)s
-public:
+void tabulate_dofs_{factory_name}(int64_t * dofs, const int64_t* num_global_entities,
+                                  const int64_t** entity_indices)
+{{
+{tabulate_dofs}
+}}
 
-  %(classname)s(%(constructor_arguments)s) : ufc::dofmap()%(initializer_list)s
-  {
-%(constructor)s
-  }
+void tabulate_facet_dofs_{factory_name}(int64_t * dofs, int64_t facet)
+{{
+{tabulate_facet_dofs}
+}}
 
-  ~%(classname)s() override
-  {
-%(destructor)s
-  }
+void tabulate_entity_dofs_{factory_name}(int64_t * dofs, int64_t d, int64_t i)
+{{
+{tabulate_entity_dofs}
+}}
 
-  const char * signature() const final override
-  {
-%(signature)s
-  }
+void tabulate_entity_closure_dofs_{factory_name}(int64_t * dofs, int64_t d, int64_t i)
+{{
+{tabulate_entity_closure_dofs}
+}}
 
-  int64_t num_global_support_dofs() const final override
-  {
-%(num_global_support_dofs)s
-  }
+ufc_dofmap* create_sub_dofmap_{factory_name}(int64_t i)
+{{
+{create_sub_dofmap}
+}}
 
-  int64_t num_element_support_dofs() const final override
-  {
-%(num_element_support_dofs)s
-  }
+extern "C" ufc_dofmap* create_{factory_name}()
+{{
+  ufc_dofmap* dofmap = (ufc_dofmap*) malloc(sizeof(*dofmap));
+  dofmap->signature = {signature};
+  dofmap->num_global_support_dofs = {num_global_support_dofs};
+  dofmap->num_element_support_dofs = {num_element_support_dofs};
+  dofmap->num_element_dofs = {num_element_dofs};
+  dofmap->num_facet_dofs = {num_facet_dofs};
+  dofmap->num_entity_dofs = num_entity_dofs_{factory_name};
+  dofmap->num_entity_closure_dofs = num_entity_closure_dofs_{factory_name};
+  dofmap->tabulate_dofs = tabulate_dofs_{factory_name};
+  dofmap->tabulate_facet_dofs = tabulate_facet_dofs_{factory_name};
+  dofmap->tabulate_entity_dofs = tabulate_entity_dofs_{factory_name};
+  dofmap->tabulate_entity_closure_dofs = tabulate_entity_closure_dofs_{factory_name};
+  dofmap->num_sub_dofmaps = {num_sub_dofmaps};
+  dofmap->create_sub_dofmap = create_sub_dofmap_{factory_name};
+  dofmap->create = create_{factory_name};
 
-  int64_t num_element_dofs() const final override
-  {
-%(num_element_dofs)s
-  }
+  return dofmap;
+}};
 
-  int64_t num_facet_dofs() const final override
-  {
-%(num_facet_dofs)s
-  }
-
-  int64_t num_entity_dofs(int64_t d) const final override
-  {
-%(num_entity_dofs)s
-  }
-
-  int64_t num_entity_closure_dofs(int64_t d) const final override
-  {
-%(num_entity_closure_dofs)s
-  }
-
-  void tabulate_dofs(int64_t * dofs,
-                     const int64_t* num_global_entities,
-                     const int64_t** entity_indices) const final override
-  {
-%(tabulate_dofs)s
-  }
-
-  void tabulate_facet_dofs(int64_t * dofs,
-                           int64_t facet) const final override
-  {
-%(tabulate_facet_dofs)s
-  }
-
-  void tabulate_entity_dofs(int64_t * dofs,
-                            int64_t d, int64_t i) const final override
-  {
-%(tabulate_entity_dofs)s
-  }
-
-  void tabulate_entity_closure_dofs(int64_t * dofs,
-                                    int64_t d, int64_t i) const final override
-  {
-%(tabulate_entity_closure_dofs)s
-  }
-
-
-  int64_t num_sub_dofmaps() const final override
-  {
-%(num_sub_dofmaps)s
-  }
-
-  ufc::dofmap * create_sub_dofmap(int64_t i) const final override
-  {
-%(create_sub_dofmap)s
-  }
-
-  ufc::dofmap * create() const final override
-  {
-%(create)s
-  }
-
-};
-"""
-
-dofmap_header = """
-class %(classname)s: public ufc::dofmap
-{%(members)s
-public:
-
-  %(classname)s(%(constructor_arguments)s);
-
-  ~%(classname)s() override;
-
-  const char * signature() const final override;
-
-  int64_t num_global_support_dofs() const final override;
-
-  int64_t num_element_support_dofs() const final override;
-
-  int64_t num_element_dofs() const final override;
-
-  int64_t num_facet_dofs() const final override;
-
-  int64_t num_entity_dofs(int64_t d) const final override;
-
-  int64_t num_entity_closure_dofs(int64_t d) const final override;
-
-  void tabulate_dofs(int64_t * dofs,
-                     const int64_t* num_global_entities,
-                     const int64_t** entity_indices) const final override;
-
-  void tabulate_facet_dofs(int64_t * dofs,
-                           int64_t facet) const final override;
-
-  void tabulate_entity_dofs(int64_t * dofs,
-                            int64_t d, int64_t i) const final override;
-
-  void tabulate_entity_closure_dofs(int64_t * dofs,
-                            int64_t d, int64_t i) const final override;
-
-  int64_t num_sub_dofmaps() const final override;
-
-  ufc::dofmap * create_sub_dofmap(int64_t i) const final override;
-
-  ufc::dofmap * create() const final override;
-
-};
-"""
-
-dofmap_implementation = """
-%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::dofmap()%(initializer_list)s
-{
-%(constructor)s
-}
-
-%(classname)s::~%(classname)s()
-{
-%(destructor)s
-}
-
-const char * %(classname)s::signature() const
-{
-%(signature)s
-}
-
-int64_t %(classname)s::num_global_support_dofs() const
-{
-%(num_global_support_dofs)s
-}
-
-int64_t %(classname)s::num_element_support_dofs() const
-{
-%(num_element_support_dofs)s
-}
-
-int64_t %(classname)s::num_element_dofs() const
-{
-%(num_element_dofs)s
-}
-
-int64_t %(classname)s::num_facet_dofs() const
-{
-%(num_facet_dofs)s
-}
-
-int64_t %(classname)s::num_entity_dofs(int64_t d) const
-{
-%(num_entity_dofs)s
-}
-
-int64_t %(classname)s::num_entity_closure_dofs(int64_t d) const
-{
-%(num_entity_closure_dofs)s
-}
-
-void %(classname)s::tabulate_dofs(int64_t * dofs,
-                                  const int64_t* num_global_entities,
-                                  const int64_t** entity_indices) const
-{
-%(tabulate_dofs)s
-}
-
-void %(classname)s::tabulate_facet_dofs(int64_t * dofs,
-                                        int64_t facet) const
-{
-%(tabulate_facet_dofs)s
-}
-
-void %(classname)s::tabulate_entity_dofs(int64_t * dofs,
-                                         int64_t d, int64_t i) const
-{
-%(tabulate_entity_dofs)s
-}
-
-void %(classname)s::tabulate_entity_closure_dofs(int64_t * dofs,
-                                             int64_t d, int64_t i) const
-{
-%(tabulate_entity_closure_dofs)s
-}
-
-int64_t %(classname)s::num_sub_dofmaps() const
-{
-%(num_sub_dofmaps)s
-}
-
-ufc::dofmap * %(classname)s::create_sub_dofmap(int64_t i) const
-{
-%(create_sub_dofmap)s
-}
-
-ufc::dofmap * %(classname)s::create() const
-{
-%(create)s
-}
+// End of code for dofmap {factory_name}
 """

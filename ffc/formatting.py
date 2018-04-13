@@ -140,10 +140,16 @@ def format_code(code, wrapper_code, prefix, parameters):
     else:
         code_h = "".join([e[1] for e in code_finite_elements])
 
-    # Generate code for dofmaps
-    for code_dofmap in code_dofmaps:
-        code_h += _format_h("dofmap", code_dofmap, split)
-        code_c += _format_c("dofmap", code_dofmap, split)
+    # Generate code for new (C) dofmaps
+    if split:
+        code_h += "".join([e[0] for e in code_dofmaps])
+        code_c += "".join([e[1] for e in code_dofmaps])
+    else:
+        code_h += "".join([e[1] for e in code_dofmaps])
+    # # Generate code for dofmaps
+    # for code_dofmap in code_dofmaps:
+    #     code_h += _format_h("dofmap", code_dofmap, split)
+    #     code_c += _format_c("dofmap", code_dofmap, split)
 
     # Generate code for coordinate_mappings
     for code_coordinate_mapping in code_coordinate_mappings:
