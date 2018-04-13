@@ -25,7 +25,8 @@ import numpy
 
 from ufl import product
 from ffc.uflacs.backends.ufc.generator import ufc_generator
-from ffc.uflacs.backends.ufc.utils import generate_return_new_switch, generate_return_int_switch, generate_error
+from ffc.uflacs.backends.ufc.utils import (
+    generate_return_new_switch, generate_return_int_switch, generate_error)
 
 from ffc.uflacs.elementtables import clamp_table_small_numbers
 from ffc.uflacs.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
@@ -34,7 +35,11 @@ from ffc.uflacs.backends.ufc.evalderivs import generate_evaluate_reference_basis
 from ffc.uflacs.backends.ufc.evalderivs import _generate_combinations
 from ffc.uflacs.backends.ufc.evaluatedof import generate_map_dofs, reference_to_physical_map
 
-from ffc.uflacs.backends.ufc.jacobian import jacobian, inverse_jacobian, orientation, fiat_coordinate_mapping, _mapping_transform
+from ffc.uflacs.backends.ufc.jacobian import (
+    jacobian, inverse_jacobian, orientation, fiat_coordinate_mapping,
+    _mapping_transform)
+
+from ffc.backends.ufc.finite_element import ufc_finite_element_factory, ufc_finite_element_declaration
 
 index_type = "int64_t"
 
@@ -79,14 +84,15 @@ def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim,
         ]
     else:
         error("Unknown mapping: %s" % mapping)
+
     return M_scale, M_row, num_physical_components
 
 
-class ufc_finite_element(ufc_generator):
+class ufc_finite_element:
     "Each function maps to a keyword in the template. See documentation of ufc_generator."
 
     def __init__(self):
-        ufc_generator.__init__(self, "finite_element")
+        pass
 
     def cell_shape(self, L, cell_shape):
         return L.Return(L.Symbol("ufc::shape::" + cell_shape))
@@ -445,4 +451,80 @@ def _num_vertices(cell_shape):
         "quadrilateral": 4,
         "hexahedron": 8
     }
+
     return num_vertices_dict[cell_shape]
+
+
+def _create_sub_element_factory(L, ir):
+    classnames = ir["create_sub_element"]
+    return generate_return_new_switch(L, "i", classnames, factory=True)
+
+
+def ufc_finite_element_generator(ir, parameters):
+    """Generate UFC code for a finite element"""
+    d = {}
+    d["factory_name"] = ir["classname"]
+    d["signature"] = "\"{}\"".format(ir["signature"])
+    d["geometric_dimension"] = ir["geometric_dimension"]
+    d["topological_dimension"] = ir["topological_dimension"]
+    d["cell_shape"] = ir["cell_shape"]
+    d["space_dimension"] = ir["space_dimension"]
+    d["value_rank"] = len(ir["value_shape"])
+    d["value_size"] = product(ir["value_shape"])
+    d["reference_value_rank"] = len(ir["reference_value_shape"])
+    d["reference_value_size"] = product(ir["reference_value_shape"])
+    d["degree"] = ir["degree"]
+    d["family"] = "\"{}\"".format(ir["family"])
+    d["num_sub_elements"] = ir["num_sub_elements"]
+
+    import ffc.uflacs.language.cnodes as L
+    generator = ufc_finite_element()
+
+    d["value_dimension"] = generator.value_dimension(L, ir["value_shape"])
+    d["reference_value_dimension"] = generator.reference_value_dimension(
+        L, ir["reference_value_shape"])
+
+    statements = generator.evaluate_reference_basis(L, ir, parameters)
+    assert isinstance(statements, list)
+    d["evaluate_reference_basis"] = L.StatementList(statements)
+
+    statements = generator.evaluate_reference_basis_derivatives(
+        L, ir, parameters)
+    assert isinstance(statements, list)
+    d["evaluate_reference_basis_derivatives"] = L.StatementList(statements)
+
+    statements = generator.transform_reference_basis_derivatives(
+        L, ir, parameters)
+    assert isinstance(statements, list)
+    d["transform_reference_basis_derivatives"] = L.StatementList(statements)
+
+    statements = generator.map_dofs(L, ir, parameters)
+    assert isinstance(statements, list)
+    d["map_dofs"] = L.StatementList(statements)
+
+    statements = generator.tabulate_reference_dof_coordinates(
+        L, ir, parameters)
+    assert isinstance(statements, list)
+    d["tabulate_reference_dof_coordinates"] = L.StatementList(statements)
+
+    statements = _create_sub_element_factory(L, ir)
+    d["create_sub_element"] = statements
+
+    # Check that no keys are redundant or have been missed
+    from string import Formatter
+    fieldnames = [
+        fname
+        for _, fname, _, _ in Formatter().parse(ufc_finite_element_factory)
+        if fname
+    ]
+    assert set(fieldnames) == set(
+        d.keys()), "Mismatch between keys in template and in formattting dict"
+
+    # Format implementation code
+    implementation = ufc_finite_element_factory.format_map(d)
+
+    # Format declaration
+    declaration = ufc_finite_element_declaration.format(
+        factory_name=ir["classname"])
+
+    return declaration, implementation

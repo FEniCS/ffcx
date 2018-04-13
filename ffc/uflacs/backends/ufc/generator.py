@@ -17,12 +17,9 @@
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
 import re
-
 from ffc.log import error, warning
 import ffc.backends.ufc
-
 from ffc.uflacs.language.format_lines import format_indented_lines
-from ffc.uflacs.backends.ufc.templates import *
 
 #__all__ = (["ufc_form", "ufc_dofmap", "ufc_finite_element", "ufc_integral"]
 #           + ["ufc_%s_integral" % integral_type for integral_type in integral_types])

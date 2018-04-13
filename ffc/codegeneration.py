@@ -37,7 +37,13 @@ from ffc.representation import pick_representation, ufc_integral_types
 import ffc.uflacs.language.cnodes as L
 from ffc.uflacs.language.format_lines import format_indented_lines
 from ffc.uflacs.backends.ufc.utils import generate_error
-from ffc.uflacs.backends.ufc.generators import ufc_integral, ufc_finite_element, ufc_dofmap, ufc_coordinate_mapping, ufc_form
+
+from ffc.uflacs.backends.ufc.finite_element import ufc_finite_element
+from ffc.uflacs.backends.ufc.dofmap import ufc_dofmap
+from ffc.uflacs.backends.ufc.coordinate_mapping import ufc_coordinate_mapping
+from ffc.uflacs.backends.ufc.form import ufc_form
+
+from ffc.uflacs.backends.ufc.finite_element import ufc_finite_element_generator
 
 
 def generate_code(ir, parameters):
@@ -56,9 +62,10 @@ def generate_code(ir, parameters):
     ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
 
     # Generate code for finite_elements
-    info("Generating code for %d finite_element(s)" % len(ir_finite_elements))
+    info("Generating code for {} finite_element(s)".format(
+        len(ir_finite_elements)))
     code_finite_elements = [
-        _generate_finite_element_code(ir, parameters)
+        ufc_finite_element_generator(ir, parameters)
         for ir in ir_finite_elements
     ]
 

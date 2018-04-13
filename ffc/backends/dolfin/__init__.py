@@ -303,18 +303,18 @@ def generate_function_space_typedefs(form, prefix, classname):
 
 FORM_CLASS_TEMPLATE = """\
 // Return the number of the coefficient with this name. Returns -1 if name does not exist.
-int {prefix}{classname}_coefficient_number(const char* name)
+inline int {prefix}{classname}_coefficient_number(const char* name)
 {{
 {coefficient_number}
 }}
 
 // Return the name of the coefficient with this number. Returns NULL if index is out-of-range.
-const char* {prefix}{classname}_coefficient_name(int i)
+inline  const char* {prefix}{classname}_coefficient_name(int i)
 {{
 {coefficient_name}
 }}
 
-dolfin_form* {prefix}{classname}()
+inline  dolfin_form* {prefix}{classname}()
 {{
   dolfin_form* form = (dolfin_form*) malloc(sizeof(*form));
   form->form = create_{ufc_form};
@@ -327,7 +327,7 @@ dolfin_form* {prefix}{classname}()
 """
 
 FUNCTION_SPACE_TEMPLATE = """\
-dolfin_function_space* {prefix}{classname}()
+inline  dolfin_function_space* {prefix}{classname}()
 {{
   /* dolfin_function_space* space = malloc(sizeof(*space)); // In C rather than C++: */
   dolfin_function_space* space = (dolfin_function_space*) malloc(sizeof(*space));

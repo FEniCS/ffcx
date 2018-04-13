@@ -27,17 +27,14 @@ def generate_return_new(L, classname, factory):
 
 
 def generate_return_new_switch(L, i, classnames, args=None, factory=False):
-    # TODO: UFC functions of this type could be replaced with return vector<shared_ptr<T>>{objects}.
 
     if isinstance(i, str):
         i = L.Symbol(i)
 
     if factory:
-
         def create(classname):
             return L.Call("create_" + classname)
     else:
-
         def create(classname):
             return L.New(classname)
 

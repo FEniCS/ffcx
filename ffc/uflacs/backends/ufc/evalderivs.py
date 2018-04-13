@@ -61,11 +61,16 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
     # Initialization (zeroing) and cutoffs outside valid range of orders
     setup_code = [
         # Cutoff to evaluate_basis for order 0
-        L.If(
-            L.EQ(order, 0), [
-                L.Call("evaluate_reference_basis",
-                       (reference_values, num_points, X)), ret
-            ]),
+
+        # FIXME: (GNW) This has been changed to avoid a function calling
+        # another function, since with the change to C we don't know to
+        # full name of the other function.
+        L.If(L.EQ(order, 0), [L.Return(-1)]),
+        # L.If(
+        #     L.EQ(order, 0), [
+        #         L.Call("evaluate_reference_basis",
+        #                (reference_values, num_points, X)), ret
+        #     ]),
         # Compute number of derivatives of this order
         L.VariableDecl(
             "const " + index_type,
