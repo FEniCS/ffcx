@@ -4,429 +4,80 @@
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2006-2017
 
-cell_integral_combined = """
-class %(classname)s: public ufc::cell_integral
-{%(members)s
-public:
-
-  %(classname)s(%(constructor_arguments)s) : ufc::cell_integral()%(initializer_list)s
-  {
-%(constructor)s
-  }
-
-  ~%(classname)s() override
-  {
-%(destructor)s
-  }
-
-  const bool* enabled_coefficients() const final override
-  {
-%(enabled_coefficients)s
-  }
-
-  void tabulate_tensor(double * A,
-                       const double * const * w,
-                       const double * coordinate_dofs,
-                       int cell_orientation) const final override
-  {
-%(tabulate_tensor_comment)s
-%(tabulate_tensor)s
-  }
-
-};
+ufc_integral_declaration = """
+extern "C" ufc_{type}_integral* create_{factory_name}();
 """
 
-cell_integral_header = """
-class %(classname)s: public ufc::cell_integral
-{%(members)s
-public:
-
-  %(classname)s(%(constructor_arguments)s);
-
-  ~%(classname)s() override;
-
-  const bool* enabled_coefficients() const final override;
-
-  void tabulate_tensor(double * A,
-                       const double * const * w,
-                       const double * coordinate_dofs,
-                       int cell_orientation) const final override;
-
-};
+tabulate_tensor_implementation = \
+{
+"cell" :
 """
-
-cell_integral_implementation = """
-%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::cell_integral()%(initializer_list)s
-{
-%(constructor)s
-}
-
-%(classname)s::~%(classname)s()
-{
-%(destructor)s
-}
-
-const bool* %(classname)s::enabled_coefficients() const
-{
-%(enabled_coefficients)s
-}
-
-void %(classname)s::tabulate_tensor(double * A,
-                                    const double * const * w,
-                                    const double * coordinate_dofs,
-                                    int cell_orientation) const
-{
-%(tabulate_tensor_comment)s
-%(tabulate_tensor)s
-}
+void tabulate_tensor_{factory_name}(double *A, const double *const *w,
+                                    const double *coordinate_dofs,
+                                    int cell_orientation)
+{{
+{tabulate_tensor}
+}}
+""",
+"exterior_facet" :
 """
-
-exterior_facet_integral_combined = """
-class %(classname)s: public ufc::exterior_facet_integral
-{%(members)s
-public:
-
-  %(classname)s(%(constructor_arguments)s) : ufc::exterior_facet_integral()%(initializer_list)s
-  {
-%(constructor)s
-  }
-
-  ~%(classname)s() override
-  {
-%(destructor)s
-  }
-
-  const bool* enabled_coefficients() const final override
-  {
-%(enabled_coefficients)s
-  }
-
-  void tabulate_tensor(double * A,
-                       const double * const * w,
-                       const double * coordinate_dofs,
-                       int64_t facet,
-                       int cell_orientation) const final override
-  {
-%(tabulate_tensor_comment)s
-%(tabulate_tensor)s
-  }
-
-};
+void tabulate_tensor_{factory_name}(double *A, const double *const *w,
+                                     const double *coordinate_dofs,
+                                     int64_t facet,
+                                     int cell_orientation)
+{{
+{tabulate_tensor}
+}}
+""",
+"interior_facet" :
 """
-
-exterior_facet_integral_header = """
-class %(classname)s: public ufc::exterior_facet_integral
-{%(members)s
-public:
-
-  %(classname)s(%(constructor_arguments)s);
-
-  ~%(classname)s() override;
-
-  const bool* enabled_coefficients() const final override;
-
-  void tabulate_tensor(double * A,
-                       const double * const * w,
-                       const double * coordinate_dofs,
-                       int64_t facet,
-                       int cell_orientation) const final override;
-
-};
+void tabulate_tensor_{factory_name}(double *A, const double *const *w,
+                          const double *coordinate_dofs_0,
+                          const double *coordinate_dofs_1, int64_t facet_0,
+                          int64_t facet_1, int cell_orientation_0,
+                          int cell_orientation_1)
+{{
+{tabulate_tensor}
+}}
+""",
+"vertex" :
 """
-
-exterior_facet_integral_implementation = """
-%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::exterior_facet_integral()%(initializer_list)s
-{
-%(constructor)s
-}
-
-%(classname)s::~%(classname)s()
-{
-%(destructor)s
-}
-
-const bool* %(classname)s::enabled_coefficients() const
-{
-%(enabled_coefficients)s
-}
-
-void %(classname)s::tabulate_tensor(double * A,
-                                    const double * const * w,
-                                    const double * coordinate_dofs,
-                                    int64_t facet,
-                                    int cell_orientation) const
-{
-%(tabulate_tensor_comment)s
-%(tabulate_tensor)s
-}
+void tabulate_tensor_{factory_name}(double *A, const double *const *w,
+                          const double *coordinate_dofs, int64_t vertex,
+                          int cell_orientation)
+{{
+{tabulate_tensor}
+}}
+""",
+"custom" :
 """
-
-interior_facet_integral_combined = """
-class %(classname)s: public ufc::interior_facet_integral
-{%(members)s
-public:
-
-  %(classname)s(%(constructor_arguments)s) : ufc::interior_facet_integral()%(initializer_list)s
-  {
-%(constructor)s
-  }
-
-  ~%(classname)s() override
-  {
-%(destructor)s
-  }
-
-  const bool* enabled_coefficients() const final override
-  {
-%(enabled_coefficients)s
-  }
-
-  void tabulate_tensor(double * A,
-                       const double * const * w,
-                       const double * coordinate_dofs_0,
-                       const double * coordinate_dofs_1,
-                       int64_t facet_0,
-                       int64_t facet_1,
-                       int cell_orientation_0,
-                       int cell_orientation_1) const final override
-  {
-%(tabulate_tensor_comment)s
-%(tabulate_tensor)s
-  }
-
-};
+void tabulate_tensor_{factory_name}(double *A, const double *const *w,
+                          const double *coordinate_dofs,
+                          int64_t num_quadrature_points,
+                          const double *quadrature_points,
+                          const double *quadrature_weights,
+                          const double *facet_normals,
+                          int cell_orientation)
+{{
+{tabulate_tensor}
+}}
 """
-
-interior_facet_integral_header = """
-class %(classname)s: public ufc::interior_facet_integral
-{%(members)s
-public:
-
-  %(classname)s(%(constructor_arguments)s);
-
-  ~%(classname)s() override;
-
-  const bool* enabled_coefficients() const final override;
-
-  void tabulate_tensor(double * A,
-                       const double * const * w,
-                       const double * coordinate_dofs_0,
-                       const double * coordinate_dofs_1,
-                       int64_t facet_0,
-                       int64_t facet_1,
-                       int cell_orientation_0,
-                       int cell_orientation_1) const final override;
-
-};
-"""
-
-interior_facet_integral_implementation = """
-%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::interior_facet_integral()%(initializer_list)s
-{
-%(constructor)s
 }
 
-%(classname)s::~%(classname)s()
-{
-%(destructor)s
-}
+ufc_integral_factory = """
+// Code for {type}_integral {factory_name}
 
-const bool* %(classname)s::enabled_coefficients() const
-{
-%(enabled_coefficients)s
-}
+{tabulate_tensor}
 
-void %(classname)s::tabulate_tensor(double * A,
-                                    const double * const * w,
-                                    const double * coordinate_dofs_0,
-                                    const double * coordinate_dofs_1,
-                                    int64_t facet_0,
-                                    int64_t facet_1,
-                                    int cell_orientation_0,
-                                    int cell_orientation_1) const
-{
-%(tabulate_tensor_comment)s
-%(tabulate_tensor)s
-}
-"""
+extern "C" ufc_{type}_integral* create_{factory_name}()
+{{
+  static const bool enabled{enabled_coefficients}
 
-vertex_integral_combined = """
-class %(classname)s: public ufc::vertex_integral
-{%(members)s
-public:
+  ufc_{type}_integral* integral = (ufc_{type}_integral*) malloc(sizeof(*integral));
+  integral->enabled_coefficients = enabled;
+  integral->tabulate_tensor = tabulate_tensor_{factory_name};
+  return integral;
+}};
 
-  %(classname)s(%(constructor_arguments)s) : ufc::vertex_integral()%(initializer_list)s
-  {
-%(constructor)s
-  }
-
-  ~%(classname)s() override
-  {
-%(destructor)s
-  }
-
-  const bool* enabled_coefficients() const final override
-  {
-%(enabled_coefficients)s
-  }
-
-  void tabulate_tensor(double * A,
-                       const double * const * w,
-                       const double * coordinate_dofs,
-                       int64_t vertex,
-                       int cell_orientation) const final override
-  {
-%(tabulate_tensor_comment)s
-%(tabulate_tensor)s
-  }
-
-};
-"""
-
-vertex_integral_header = """
-class %(classname)s: public ufc::vertex_integral
-{%(members)s
-public:
-
-  %(classname)s(%(constructor_arguments)s);
-
-  ~%(classname)s() override;
-
-  const bool* enabled_coefficients() const final override;
-
-  void tabulate_tensor(double * A,
-                       const double * const * w,
-                       const double * coordinate_dofs,
-                       int64_t vertex,
-                       int cell_orientation) const final override;
-
-};
-"""
-
-vertex_integral_implementation = """
-%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::vertex_integral()%(initializer_list)s
-{
-%(constructor)s
-}
-
-%(classname)s::~%(classname)s()
-{
-%(destructor)s
-}
-
-const bool* %(classname)s::enabled_coefficients() const
-{
-%(enabled_coefficients)s
-}
-
-void %(classname)s::tabulate_tensor(double * A,
-                                    const double * const * w,
-                                    const double * coordinate_dofs,
-                                    int64_t vertex,
-                                    int cell_orientation) const
-{
-%(tabulate_tensor_comment)s
-%(tabulate_tensor)s
-}
-"""
-
-custom_integral_combined = """\
-class %(classname)s: public ufc::custom_integral
-{%(members)s
-public:
-
-  %(classname)s(%(constructor_arguments)s) : ufc::custom_integral()%(initializer_list)s
-  {
-%(constructor)s
-  }
-
-  ~%(classname)s() override
-  {
-%(destructor)s
-  }
-
-  const bool* enabled_coefficients() const final override
-  {
-%(enabled_coefficients)s
-  }
-
-  int64_t num_cells() const final override
-  {
-%(num_cells)s
-  }
-
-  void tabulate_tensor(double * A,
-                       const double * const * w,
-                       const double * coordinate_dofs,
-                       int64_t num_quadrature_points,
-                       const double * quadrature_points,
-                       const double * quadrature_weights,
-                       const double * facet_normals,
-                       int cell_orientation) const final override
-  {
-%(tabulate_tensor_comment)s
-%(tabulate_tensor)s
-  }
-
-};
-"""
-
-custom_integral_header = """
-class %(classname)s: public ufc::custom_integral
-{%(members)s
-public:
-
-  %(classname)s(%(constructor_arguments)s);
-
-  ~%(classname)s() override;
-
-  const bool* enabled_coefficients() const final override;
-
-  int64_t num_cells() const final override;
-
-  void tabulate_tensor(double * A,
-                       const double * const * w,
-                       const double * coordinate_dofs,
-                       int64_t num_quadrature_points,
-                       const double * quadrature_points,
-                       const double * quadrature_weights,
-                       const double * facet_normals,
-                       int cell_orientation) const final override;
-
-};
-"""
-
-custom_integral_implementation = """
-%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::custom_integral()%(initializer_list)s
-{
-%(constructor)s
-}
-
-%(classname)s::~%(classname)s()
-{
-%(destructor)s
-}
-
-const bool* %(classname)s::enabled_coefficients() const
-{
-%(enabled_coefficients)s
-}
-
-int64_t %(classname)s::num_cells() const
-{
-%(num_cells)s
-}
-
-void %(classname)s::tabulate_tensor(double * A,
-                                    const double * const * w,
-                                    const double * coordinate_dofs,
-                                    int64_t num_quadrature_points,
-                                    const double * quadrature_points,
-                                    const double * quadrature_weights,
-                                    const double * facet_normals,
-                                    int cell_orientation) const
-{
-%(tabulate_tensor_comment)s
-%(tabulate_tensor)s
-}
+// End of code for {type}_integral {factory_name}
 """

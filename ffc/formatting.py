@@ -154,10 +154,16 @@ def format_code(code, wrapper_code, prefix, parameters):
     else:
         code_h += "".join([c[1] for c in code_coordinate_mappings])
 
-    # Generate code for integrals
-    for code_integral in code_integrals:
-        code_h += _format_h(code_integral["class_type"], code_integral, split)
-        code_c += _format_c(code_integral["class_type"], code_integral, split)
+    # Generate code for new (C) code_coordinate_mappings
+    if split:
+        code_h += "".join([integral[0] for integral in code_integrals])
+        code_c += "".join([integral[1] for integral in code_integrals])
+    else:
+        code_h += "".join([integral[1] for integral in code_integrals])
+    # # Generate code for integrals
+    # for code_integral in code_integrals:
+    #     code_h += _format_h(code_integral["class_type"], code_integral, split)
+    #     code_c += _format_c(code_integral["class_type"], code_integral, split)
 
     # Generate code for form
     for code_form in code_forms:

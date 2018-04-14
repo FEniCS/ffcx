@@ -148,7 +148,7 @@ class ufc_form(ufc_generator):
         subdomain_ids, classnames = ir[declname]
         subdomain_id = L.Symbol("subdomain_id")
         return generate_return_new_switch(
-            L, subdomain_id, classnames, subdomain_ids, factory=ir["jit"])
+            L, subdomain_id, classnames, subdomain_ids, factory=True)
 
     def _create_default_foo_integral(self, L, ir, parameters, integral_type,
                                      declname):
@@ -158,4 +158,4 @@ class ufc_form(ufc_generator):
         if classname is None:
             return L.Return(L.Null())
         else:
-            return generate_return_new(L, classname, factory=ir["jit"])
+            return generate_return_new(L, classname, factory=True)

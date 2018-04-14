@@ -154,12 +154,11 @@ def generate_enabled_coefficients(enabled_coefficients):
         "true" if enabled else "false" for enabled in enabled_coefficients)
     if enabled_coefficients:
         code = '\n'.join([
-            "static const bool enabled[{}] = {{ {} }};".format(
-                len(enabled_coefficients), initializer_list),
-            "return enabled;",
+            "[{}] = {{ {} }};".format(
+                len(enabled_coefficients), initializer_list)
         ])
     else:
-        code = "return NULL;"
+        code = "[] = {};"
     return code
 
 

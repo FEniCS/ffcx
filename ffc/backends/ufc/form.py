@@ -121,52 +121,52 @@ public:
 %(has_custom_integrals)s
   }
 
-  ufc::cell_integral * create_cell_integral(int64_t subdomain_id) const final override
+  ufc_cell_integral * create_cell_integral(int64_t subdomain_id) const final override
   {
 %(create_cell_integral)s
   }
 
-  ufc::exterior_facet_integral * create_exterior_facet_integral(int64_t subdomain_id) const final override
+  ufc_exterior_facet_integral * create_exterior_facet_integral(int64_t subdomain_id) const final override
   {
 %(create_exterior_facet_integral)s
   }
 
-  ufc::interior_facet_integral * create_interior_facet_integral(int64_t subdomain_id) const final override
+  ufc_interior_facet_integral * create_interior_facet_integral(int64_t subdomain_id) const final override
   {
 %(create_interior_facet_integral)s
   }
 
-  ufc::vertex_integral * create_vertex_integral(int64_t subdomain_id) const final override
+  ufc_vertex_integral * create_vertex_integral(int64_t subdomain_id) const final override
   {
 %(create_vertex_integral)s
   }
 
-  ufc::custom_integral * create_custom_integral(int64_t subdomain_id) const final override
+  ufc_custom_integral * create_custom_integral(int64_t subdomain_id) const final override
   {
 %(create_custom_integral)s
   }
 
-  ufc::cell_integral * create_default_cell_integral() const final override
+  ufc_cell_integral * create_default_cell_integral() const final override
   {
 %(create_default_cell_integral)s
   }
 
-  ufc::exterior_facet_integral * create_default_exterior_facet_integral() const final override
+  ufc_exterior_facet_integral * create_default_exterior_facet_integral() const final override
   {
 %(create_default_exterior_facet_integral)s
   }
 
-  ufc::interior_facet_integral * create_default_interior_facet_integral() const final override
+  ufc_interior_facet_integral * create_default_interior_facet_integral() const final override
   {
 %(create_default_interior_facet_integral)s
   }
 
-  ufc::vertex_integral * create_default_vertex_integral() const final override
+  ufc_vertex_integral * create_default_vertex_integral() const final override
   {
 %(create_default_vertex_integral)s
   }
 
-  ufc::custom_integral * create_default_custom_integral() const final override
+  ufc_custom_integral * create_default_custom_integral() const final override
   {
 %(create_default_custom_integral)s
   }
@@ -222,25 +222,25 @@ public:
 
   bool has_custom_integrals() const final override;
 
-  ufc::cell_integral * create_cell_integral(int64_t i) const final override;
+  ufc_cell_integral * create_cell_integral(int64_t i) const final override;
 
-  ufc::exterior_facet_integral * create_exterior_facet_integral(int64_t i) const final override;
+  ufc_exterior_facet_integral * create_exterior_facet_integral(int64_t i) const final override;
 
-  ufc::interior_facet_integral * create_interior_facet_integral(int64_t i) const final override;
+  ufc_interior_facet_integral * create_interior_facet_integral(int64_t i) const final override;
 
-  ufc::vertex_integral * create_vertex_integral(int64_t i) const final override;
+  ufc_vertex_integral * create_vertex_integral(int64_t i) const final override;
 
-  ufc::custom_integral * create_custom_integral(int64_t i) const final override;
+  ufc_custom_integral * create_custom_integral(int64_t i) const final override;
 
-  ufc::cell_integral * create_default_cell_integral() const final override;
+  ufc_cell_integral * create_default_cell_integral() const final override;
 
-  ufc::exterior_facet_integral * create_default_exterior_facet_integral() const final override;
+  ufc_exterior_facet_integral * create_default_exterior_facet_integral() const final override;
 
-  ufc::interior_facet_integral * create_default_interior_facet_integral() const final override;
+  ufc_interior_facet_integral * create_default_interior_facet_integral() const final override;
 
-  ufc::vertex_integral * create_default_vertex_integral() const final override;
+  ufc_vertex_integral * create_default_vertex_integral() const final override;
 
-  ufc::custom_integral * create_default_custom_integral() const final override;
+  ufc_custom_integral * create_default_custom_integral() const final override;
 
 };
 """
@@ -351,52 +351,52 @@ bool %(classname)s::has_custom_integrals() const
 %(has_custom_integrals)s
 }
 
-ufc::cell_integral * %(classname)s::create_cell_integral(int64_t subdomain_id) const
+ufc_cell_integral * %(classname)s::create_cell_integral(int64_t subdomain_id) const
 {
 %(create_cell_integral)s
 }
 
-ufc::exterior_facet_integral * %(classname)s::create_exterior_facet_integral(int64_t subdomain_id) const
+ufc_exterior_facet_integral * %(classname)s::create_exterior_facet_integral(int64_t subdomain_id) const
 {
 %(create_exterior_facet_integral)s
 }
 
-ufc::interior_facet_integral * %(classname)s::create_interior_facet_integral(int64_t subdomain_id) const
+ufc_interior_facet_integral * %(classname)s::create_interior_facet_integral(int64_t subdomain_id) const
 {
 %(create_interior_facet_integral)s
 }
 
-ufc::vertex_integral * %(classname)s::create_vertex_integral(int64_t subdomain_id) const
+ufc_vertex_integral * %(classname)s::create_vertex_integral(int64_t subdomain_id) const
 {
 %(create_vertex_integral)s
 }
 
-ufc::custom_integral * %(classname)s::create_custom_integral(int64_t subdomain_id) const
+ufc_custom_integral * %(classname)s::create_custom_integral(int64_t subdomain_id) const
 {
 %(create_custom_integral)s
 }
 
-ufc::cell_integral * %(classname)s::create_default_cell_integral() const
+ufc_cell_integral * %(classname)s::create_default_cell_integral() const
 {
 %(create_default_cell_integral)s
 }
 
-ufc::exterior_facet_integral * %(classname)s::create_default_exterior_facet_integral() const
+ufc_exterior_facet_integral * %(classname)s::create_default_exterior_facet_integral() const
 {
 %(create_default_exterior_facet_integral)s
 }
 
-ufc::interior_facet_integral * %(classname)s::create_default_interior_facet_integral() const
+ufc_interior_facet_integral * %(classname)s::create_default_interior_facet_integral() const
 {
 %(create_default_interior_facet_integral)s
 }
 
-ufc::vertex_integral * %(classname)s::create_default_vertex_integral() const
+ufc_vertex_integral * %(classname)s::create_default_vertex_integral() const
 {
 %(create_default_vertex_integral)s
 }
 
-ufc::custom_integral * %(classname)s::create_default_custom_integral() const
+ufc_custom_integral * %(classname)s::create_default_custom_integral() const
 {
 %(create_default_custom_integral)s
 }
