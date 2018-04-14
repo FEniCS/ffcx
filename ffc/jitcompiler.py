@@ -114,7 +114,11 @@ def jit_build(ufl_object, module_name, parameters):
         parameters.get("external_include_dirs"))
     build_params["lib_dirs"] = _string_tuple(
         parameters.get("external_library_dirs"))
-    build_params["libs"] = _string_tuple(parameters.get("external_libraries"))
+
+    # Use C compiler (not C++) and add some libs/options
+    build_params["cxx"] = os.getenv("CC", "cc")
+    build_params["libs"] = _string_tuple("m" + parameters.get("external_libraries"))
+    build_params["cxxflags"] = ["-Wall", "-shared", "-fPIC"]
 
     # Interpreting FFC default "" as None, use "." if you want to point to curdir
     cache_dir = parameters.get("cache_dir") or None
@@ -122,6 +126,9 @@ def jit_build(ufl_object, module_name, parameters):
         cache_params = {"cache_dir": cache_dir}
     else:
         cache_params = {}
+
+    # Use stanard C postfix
+    cache_params["src_postfix"] = ".c"
 
     # This will do some rudimenrary checking of the params and fill in dijitso defaults
     params = dijitso.validate_params({

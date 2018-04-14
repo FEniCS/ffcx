@@ -80,7 +80,7 @@ void compute_midpoint_geometry_{factory_name}(double * x, double * J,
 
 ufc_coordinate_mapping* create_{factory_name}()
 {{
-  ufc_coordinate_mapping* cmap = (ufc_coordinate_mapping*) malloc(sizeof(*cmap));
+  ufc_coordinate_mapping* cmap = malloc(sizeof(*cmap));
   const char* signature = {signature};
   cmap->create = create_{factory_name};
   cmap->geometric_dimension = {geometric_dimension};

@@ -102,14 +102,18 @@ def format_code(code, wrapper_code, prefix, parameters):
     code_h = ""
     code_c = ""
 
-    split = parameters["split"]
+    # Always split so we don't mix C and C++
+    split = True
+    # split = parameters["split"]
+
+    code_c += includes_h
 
     # Add code for new finite_elements
     if split:
-        code_h = "".join([e[0] for e in code_finite_elements])
-        code_c = "".join([e[1] for e in code_finite_elements])
+        code_h += "".join([e[0] for e in code_finite_elements])
+        code_c += "".join([e[1] for e in code_finite_elements])
     else:
-        code_h = "".join([e[1] for e in code_finite_elements])
+        code_h += "".join([e[1] for e in code_finite_elements])
 
     # Add code for dofmaps
     if split:
@@ -157,7 +161,7 @@ def write_code(code_h, code_c, prefix, parameters):
     # Write file(s)
     _write_file(code_h, prefix, ".h", parameters)
     if code_c:
-        _write_file(code_c, prefix, ".cpp", parameters)
+        _write_file(code_c, prefix, ".c", parameters)
 
 
 def _write_file(output, prefix, postfix, parameters):
@@ -198,6 +202,9 @@ def _generate_comment(parameters):
 def _generate_includes(includes, parameters):
 
     default_h_includes = [
+        "#include <math.h>",  # This should really be set by the backend
+        "#include <stdalign.h>",  # This should really be set by the backend
+        "#include <stdlib.h>",  # This should really be set by the backend
         "#include <string.h>",  # This should really be set by the backend
         "#include <ufc.h>",
     ]

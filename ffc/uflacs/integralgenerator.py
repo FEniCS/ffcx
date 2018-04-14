@@ -96,6 +96,8 @@ class IntegralGenerator(object):
         if cmath_names & self._ufl_names:
             includes.add("#include <math.h>")
 
+        includes.add("#include <stdalign.h>")
+
         if boost_math_names & self._ufl_names:
             includes.add("#include <boost/math/special_functions.hpp>")
 

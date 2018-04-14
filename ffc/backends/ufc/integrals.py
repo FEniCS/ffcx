@@ -73,7 +73,7 @@ ufc_{type}_integral* create_{factory_name}()
 {{
   static const bool enabled{enabled_coefficients}
 
-  ufc_{type}_integral* integral = (ufc_{type}_integral*) malloc(sizeof(*integral));
+  ufc_{type}_integral* integral = malloc(sizeof(*integral));
   integral->enabled_coefficients = enabled;
   integral->tabulate_tensor = tabulate_tensor_{factory_name};
   return integral;

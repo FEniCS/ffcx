@@ -14,6 +14,7 @@
 #define UFC_VERSION_MAINTENANCE 0
 #define UFC_VERSION_RELEASE 0
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <ufc_geometry.h>
 
@@ -31,153 +32,158 @@ const char UFC_VERSION[] = EVALUATOR(UFC_VERSION_MAJOR, UFC_VERSION_MINOR,
 #undef CONCAT
 #undef EVALUATOR
 
-enum ufc_shape
-{
-  interval,
-  triangle,
-  quadrilateral,
-  tetrahedron,
-  hexahedron,
-  vertex,
-  none
-};
+// typedef enum ufc_type
+// {
+//   interval = 10,
+//   triangle = 20,
+//   quadrilateral = 30,
+//   tetrahedron = 40,
+//   hexahedron = 50,
+//   vertex = 60,
+//   none = 300
+// } ufc_shape;
 
-/// Forward declaration
-struct ufc_coordinate_mapping;
+typedef enum
+{
+  interval = 10,
+  triangle = 20,
+  quadrilateral = 30,
+  tetrahedron = 40,
+  hexahedron = 50,
+  vertex = 60,
+} ufc_shape;
+
+/// Forward declarations
+typedef struct ufc_coordinate_mapping ufc_coordinate_mapping;
+typedef struct ufc_finite_element ufc_finite_element;
+typedef struct ufc_dofmap ufc_dofmap;
 
 typedef struct ufc_finite_element
 {
   /// String identifying the finite element
-  const char* signature = NULL;
+  const char* signature;
 
   /// Return the cell shape
-  ufc_shape cell_shape = none;
+  ufc_shape cell_shape;
 
   /// Return the topological dimension of the cell shape
-  int topological_dimension = -1;
+  int topological_dimension;
 
   /// Return the geometric dimension of the cell shape
-  int geometric_dimension = -1;
+  int geometric_dimension;
 
   /// Return the dimension of the finite element function space
-  int space_dimension = -1;
+  int space_dimension;
 
   /// Return the rank of the value space
-  int value_rank = -1;
+  int value_rank;
 
   /// Return the dimension of the value space for axis i
-  int (*value_dimension)(int64_t i) = NULL;
+  int (*value_dimension)(int64_t i);
 
   /// Return the number of components of the value space
-  int value_size = -1;
+  int value_size;
 
   /// Return the rank of the reference value space
-  int reference_value_rank = -1;
+  int reference_value_rank;
 
   /// Return the dimension of the reference value space for axis i
-  int (*reference_value_dimension)(int64_t i) = NULL;
+  int (*reference_value_dimension)(int64_t i);
 
   /// Return the number of components of the reference value space
-  int reference_value_size = -1;
+  int reference_value_size;
 
   /// Return the maximum polynomial degree of the finite element
   /// function space
-  int degree = -1;
+  int degree;
 
   /// Return the family of the finite element function space
-  const char* family = NULL;
+  const char* family;
 
   int (*evaluate_reference_basis)(double* reference_values, int64_t num_points,
-                                  const double* X)
-      = NULL;
+                                  const double* X);
 
   int (*evaluate_reference_basis_derivatives)(double* reference_values,
                                               int64_t order, int64_t num_points,
-                                              const double* X)
-      = NULL;
+                                              const double* X);
 
   int (*transform_reference_basis_derivatives)(
       double* values, int64_t order, int64_t num_points,
       const double* reference_values, const double* X, const double* J,
-      const double* detJ, const double* K, int cell_orientation)
-      = NULL;
+      const double* detJ, const double* K, int cell_orientation);
 
   /// Map dofs from vals to values
   void (*map_dofs)(double* values, const double* vals,
                    const double* coordinate_dofs, int cell_orientation,
-                   const ufc_coordinate_mapping* cm)
-      = NULL;
+                   const ufc_coordinate_mapping* cm);
 
   // FIXME: change to 'const double* reference_dof_coordinates()'
   /// Tabulate the coordinates of all dofs on a reference cell
-  void (*tabulate_reference_dof_coordinates)(double* reference_dof_coordinates)
-      = NULL;
+  void (*tabulate_reference_dof_coordinates)(double* reference_dof_coordinates);
 
   /// Return the number of sub elements (for a mixed element)
-  int num_sub_elements = -1;
+  int num_sub_elements;
 
   /// Create a new finite element for sub element i (for a mixed element)
-  ufc_finite_element* (*create_sub_element)(int64_t i) = NULL;
+  ufc_finite_element* (*create_sub_element)(int64_t i);
 
   /// Create a new class instance
-  ufc_finite_element* (*create)() = NULL;
+  ufc_finite_element* (*create)();
 } ufc_finite_element;
 
 typedef struct ufc_dofmap
 {
 
   /// Return a string identifying the dofmap
-  const char* signature = NULL;
+  const char* signature;
 
   /// Return the dimension of the local finite element function space
   /// Return the number of dofs with global support (i.e. global constants)
-  int64_t num_global_support_dofs = -1;
+  int64_t num_global_support_dofs;
 
   /// Return the dimension of the local finite element function space
   /// for a cell (not including global support dofs)
-  int64_t num_element_support_dofs = -1;
+  int64_t num_element_support_dofs;
 
   /// Return the dimension of the local finite element function space
   /// for a cell (old version including global support dofs)
-  int64_t num_element_dofs = -1;
+  int64_t num_element_dofs;
 
   /// Return the number of dofs on each cell facet
-  int64_t num_facet_dofs = -1;
+  int64_t num_facet_dofs;
 
   /// Return the number of dofs associated with each cell entity of
   /// dimension d
-  int64_t (*num_entity_dofs)(int64_t d) = NULL;
+  int64_t (*num_entity_dofs)(int64_t d);
 
   /// Return the number of dofs associated with the closure
   /// of each cell entity dimension d
-  int64_t (*num_entity_closure_dofs)(int64_t d) = NULL;
+  int64_t (*num_entity_closure_dofs)(int64_t d);
 
   /// Tabulate the local-to-global mapping of dofs on a cell
   ///   num_global_entities[num_entities_per_cell]
   ///   entity_indices[tdim][local_index ]
   void (*tabulate_dofs)(int64_t* dofs, const int64_t* num_global_entities,
-                        const int64_t** entity_indices)
-      = NULL;
+                        const int64_t** entity_indices);
 
   /// Tabulate the local-to-local mapping from facet dofs to cell dofs
-  void (*tabulate_facet_dofs)(int64_t* dofs, int64_t facet) = NULL;
+  void (*tabulate_facet_dofs)(int64_t* dofs, int64_t facet);
 
   /// Tabulate the local-to-local mapping of dofs on entity (d, i)
-  void (*tabulate_entity_dofs)(int64_t* dofs, int64_t d, int64_t i) = NULL;
+  void (*tabulate_entity_dofs)(int64_t* dofs, int64_t d, int64_t i);
 
   /// Tabulate the local-to-local mapping of dofs on the closure of
   /// entity (d, i)
-  void (*tabulate_entity_closure_dofs)(int64_t* dofs, int64_t d, int64_t i)
-      = NULL;
+  void (*tabulate_entity_closure_dofs)(int64_t* dofs, int64_t d, int64_t i);
 
   /// Return the number of sub dofmaps (for a mixed element)
-  int64_t num_sub_dofmaps = -1;
+  int64_t num_sub_dofmaps;
 
   /// Create a new dofmap for sub dofmap i (for a mixed element)
-  ufc_dofmap* (*create_sub_dofmap)(int64_t i) = NULL;
+  ufc_dofmap* (*create_sub_dofmap)(int64_t i);
 
   /// Create a new class instance
-  ufc_dofmap* (*create)() = NULL;
+  ufc_dofmap* (*create)();
 } ufc_dofmap;
 
 /// A representation of a coordinate mapping parameterized by a local
@@ -186,25 +192,25 @@ typedef struct ufc_coordinate_mapping
 {
 
   /// Return coordinate_mapping signature string
-  const char* signature = NULL;
+  const char* signature;
 
   /// Create object of the same type
-  ufc_coordinate_mapping* (*create)() = NULL;
+  ufc_coordinate_mapping* (*create)();
 
   /// Return geometric dimension of the coordinate_mapping
-  int64_t geometric_dimension = -1;
+  int64_t geometric_dimension;
 
   /// Return topological dimension of the coordinate_mapping
-  int64_t topological_dimension = -1;
+  int64_t topological_dimension;
 
   /// Return cell shape of the coordinate_mapping
-  ufc_shape cell_shape = none;
+  ufc_shape cell_shape;
 
   /// Create finite_element object representing the coordinate parameterization
-  ufc_finite_element* (*create_coordinate_finite_element)() = NULL;
+  ufc_finite_element* (*create_coordinate_finite_element)();
 
   /// Create dofmap object representing the coordinate parameterization
-  ufc_dofmap* (*create_coordinate_dofmap)() = NULL;
+  ufc_dofmap* (*create_coordinate_dofmap)();
 
   /// Compute physical coordinates x from reference coordinates X,
   /// the inverse of compute_reference_coordinates
@@ -223,8 +229,7 @@ typedef struct ufc_coordinate_mapping
   ///
   void (*compute_physical_coordinates)(double* x, int64_t num_points,
                                        const double* X,
-                                       const double* coordinate_dofs)
-      = NULL;
+                                       const double* coordinate_dofs);
 
   /// Compute reference coordinates X from physical coordinates x,
   /// the inverse of compute_physical_coordinates
@@ -247,8 +252,7 @@ typedef struct ufc_coordinate_mapping
   void (*compute_reference_coordinates)(double* X, int64_t num_points,
                                         const double* x,
                                         const double* coordinate_dofs,
-                                        int cell_orientation)
-      = NULL;
+                                        int cell_orientation);
 
   /// Compute X, J, detJ, K from physical coordinates x on a cell
   ///
@@ -280,8 +284,7 @@ typedef struct ufc_coordinate_mapping
                                      double* K, int64_t num_points,
                                      const double* x,
                                      const double* coordinate_dofs,
-                                     int cell_orientation)
-      = NULL;
+                                     int cell_orientation);
 
   /// Compute Jacobian of coordinate mapping J = dx/dX at reference coordinates
   /// X
@@ -299,8 +302,7 @@ typedef struct ufc_coordinate_mapping
   ///         Dimensions: coordinate_dofs[num_dofs][gdim].
   ///
   void (*compute_jacobians)(double* J, int64_t num_points, const double* X,
-                            const double* coordinate_dofs)
-      = NULL;
+                            const double* coordinate_dofs);
 
   /// Compute determinants of (pseudo-)Jacobians J
   ///
@@ -317,8 +319,7 @@ typedef struct ufc_coordinate_mapping
   ///         Only relevant on manifolds (tdim < gdim).
   ///
   void (*compute_jacobian_determinants)(double* detJ, int64_t num_points,
-                                        const double* J, int cell_orientation)
-      = NULL;
+                                        const double* J, int cell_orientation);
 
   /// Compute (pseudo-)inverses K of (pseudo-)Jacobians J
   ///
@@ -335,8 +336,7 @@ typedef struct ufc_coordinate_mapping
   ///         Dimensions: detJ[num_points]
   ///
   void (*compute_jacobian_inverses)(double* K, int64_t num_points,
-                                    const double* J, const double* detJ)
-      = NULL;
+                                    const double* J, const double* detJ);
 
   /// Combined (for convenience) computation of x, J, detJ, K from X and
   /// coordinate_dofs on a cell
@@ -367,8 +367,7 @@ typedef struct ufc_coordinate_mapping
   ///
   void (*compute_geometry)(double* x, double* J, double* detJ, double* K,
                            int64_t num_points, const double* X,
-                           const double* coordinate_dofs, int cell_orientation)
-      = NULL;
+                           const double* coordinate_dofs, int cell_orientation);
 
   /// Compute x and J at midpoint of cell
   ///
@@ -383,8 +382,7 @@ typedef struct ufc_coordinate_mapping
   ///         Dimensions: coordinate_dofs[num_dofs][gdim].
   ///
   void (*compute_midpoint_geometry)(double* x, double* J,
-                                    const double* coordinate_dofs)
-      = NULL;
+                                    const double* coordinate_dofs);
 
 } ufc_coordinate_mapping;
 
@@ -394,56 +392,51 @@ typedef struct ufc_coordinate_mapping
 
 typedef struct ufc_cell_integral
 {
-  const bool* enabled_coefficients = NULL;
-  int64_t num_cells = -1;
+  const bool* enabled_coefficients;
+  int64_t num_cells;
   void (*tabulate_tensor)(double* A, const double* const* w,
-                          const double* coordinate_dofs, int cell_orientation)
-      = NULL;
+                          const double* coordinate_dofs, int cell_orientation);
 } ufc_cell_integral;
 
 typedef struct ufc_exterior_facet_integral
 {
-  const bool* enabled_coefficients = NULL;
-  int64_t num_cells = -1;
+  const bool* enabled_coefficients;
+  int64_t num_cells;
   void (*tabulate_tensor)(double* A, const double* const* w,
                           const double* coordinate_dofs, int64_t facet,
-                          int cell_orientation)
-      = NULL;
+                          int cell_orientation);
 } ufc_exterior_facet_integral;
 
 typedef struct ufc_interior_facet_integral
 {
-  const bool* enabled_coefficients = NULL;
-  int64_t num_cells = -1;
+  const bool* enabled_coefficients;
+  int64_t num_cells;
   void (*tabulate_tensor)(double* A, const double* const* w,
                           const double* coordinate_dofs_0,
                           const double* coordinate_dofs_1, int64_t facet_0,
                           int64_t facet_1, int cell_orientation_0,
-                          int cell_orientation_1)
-      = NULL;
+                          int cell_orientation_1);
 } ufc_interior_facet_integral;
 
 typedef struct ufc_vertex_integral
 {
-  const bool* enabled_coefficients = NULL;
-  int64_t num_cells = -1;
+  const bool* enabled_coefficients;
+  int64_t num_cells;
   void (*tabulate_tensor)(double* A, const double* const* w,
                           const double* coordinate_dofs, int64_t vertex,
-                          int cell_orientation)
-      = NULL;
+                          int cell_orientation);
 } ufc_vertex_integral;
 
 typedef struct ufc_custom_integral
 {
-  const bool* enabled_coefficients = NULL;
-  int64_t num_cells = -1;
+  const bool* enabled_coefficients;
+  int64_t num_cells;
   void (*tabulate_tensor)(double* A, const double* const* w,
                           const double* coordinate_dofs,
                           int64_t num_quadrature_points,
                           const double* quadrature_points,
                           const double* quadrature_weights,
-                          const double* facet_normals, int cell_orientation)
-      = NULL;
+                          const double* facet_normals, int cell_orientation);
 } ufc_custom_integral;
 
 /// This class defines the interface for the assembly of the global
@@ -463,29 +456,29 @@ typedef struct ufc_custom_integral
 typedef struct ufc_form
 {
   /// String identifying the form
-  const char* signature = NULL;
+  const char* signature;
 
   /// Rank of the global tensor (r)
-  int64_t rank = -1;
+  int64_t rank;
 
   /// Number of coefficients (n)
-  int64_t num_coefficients = -1;
+  int64_t num_coefficients;
 
   /// Return original coefficient position for each coefficient
   ///
   /// @param i
   ///        Coefficient number, 0 <= i < n
   ///
-  int64_t (*original_coefficient_position)(int64_t i) = NULL;
+  int64_t (*original_coefficient_position)(int64_t i);
 
   /// Create a new finite element for parameterization of coordinates
-  ufc_finite_element* (*create_coordinate_finite_element)() = NULL;
+  ufc_finite_element* (*create_coordinate_finite_element)();
 
   /// Create a new dofmap for parameterization of coordinates
-  ufc_dofmap* (*create_coordinate_dofmap)() = NULL;
+  ufc_dofmap* (*create_coordinate_dofmap)();
 
   /// Create a new coordinate mapping
-  ufc_coordinate_mapping* (*create_coordinate_mapping)() = NULL;
+  ufc_coordinate_mapping* (*create_coordinate_mapping)();
 
   /// Create a new finite element for argument function 0 <= i < r+n
   ///
@@ -493,7 +486,7 @@ typedef struct ufc_form
   ///        Argument number if 0 <= i < r
   ///        Coefficient number j=i-r if r+j <= i < r+n
   ///
-  ufc_finite_element* (*create_finite_element)(int64_t i) = NULL;
+  ufc_finite_element* (*create_finite_element)(int64_t i);
 
   /// Create a new dofmap for argument function 0 <= i < r+n
   ///
@@ -501,22 +494,22 @@ typedef struct ufc_form
   ///        Argument number if 0 <= i < r
   ///        Coefficient number j=i-r if r+j <= i < r+n
   ///
-  ufc_dofmap* (*create_dofmap)(int64_t i) = NULL;
+  ufc_dofmap* (*create_dofmap)(int64_t i);
 
   /// Upper bound on subdomain ids for cell integrals
-  int64_t max_cell_subdomain_id = -1;
+  int64_t max_cell_subdomain_id;
 
   /// Upper bound on subdomain ids for exterior facet integrals
-  int64_t max_exterior_facet_subdomain_id = -1;
+  int64_t max_exterior_facet_subdomain_id;
 
   /// Upper bound on subdomain ids for interior facet integrals
-  int64_t max_interior_facet_subdomain_id = -1;
+  int64_t max_interior_facet_subdomain_id;
 
   /// Upper bound on subdomain ids for vertex integrals
-  int64_t max_vertex_subdomain_id = -1;
+  int64_t max_vertex_subdomain_id;
 
   /// Upper bound on subdomain ids for custom integrals
-  int64_t max_custom_subdomain_id = -1;
+  int64_t max_custom_subdomain_id;
 
   /// Whether form has any cell integrals
   bool has_cell_integrals;
@@ -534,43 +527,39 @@ typedef struct ufc_form
   bool has_custom_integrals;
 
   /// Create a new cell integral on sub domain subdomain_id
-  ufc_cell_integral* (*create_cell_integral)(int64_t subdomain_id) = NULL;
+  ufc_cell_integral* (*create_cell_integral)(int64_t subdomain_id);
 
   /// Create a new exterior facet integral on sub domain subdomain_id
   ufc_exterior_facet_integral* (*create_exterior_facet_integral)(
-      int64_t subdomain_id)
-      = NULL;
+      int64_t subdomain_id);
 
   /// Create a new interior facet integral on sub domain subdomain_id
   ufc_interior_facet_integral* (*create_interior_facet_integral)(
-      int64_t subdomain_id)
-      = NULL;
+      int64_t subdomain_id);
 
   /// Create a new vertex integral on sub domain subdomain_id
-  ufc_vertex_integral* (*create_vertex_integral)(int64_t subdomain_id) = NULL;
+  ufc_vertex_integral* (*create_vertex_integral)(int64_t subdomain_id);
 
   /// Create a new custom integral on sub domain subdomain_id
-  ufc_custom_integral* (*create_custom_integral)(int64_t subdomain_id) = NULL;
+  ufc_custom_integral* (*create_custom_integral)(int64_t subdomain_id);
 
   /// Create a new cell integral on everywhere else
-  ufc_cell_integral* (*create_default_cell_integral)() = NULL;
+  ufc_cell_integral* (*create_default_cell_integral)();
 
   /// Create a new exterior facet integral on everywhere else
-  ufc_exterior_facet_integral* (*create_default_exterior_facet_integral)()
-      = NULL;
+  ufc_exterior_facet_integral* (*create_default_exterior_facet_integral)();
 
   /// Create a new interior facet integral on everywhere else
-  ufc_interior_facet_integral* (*create_default_interior_facet_integral)()
-      = NULL;
+  ufc_interior_facet_integral* (*create_default_interior_facet_integral)();
 
   /// Create a new vertex integral on everywhere else
-  ufc_vertex_integral* (*create_default_vertex_integral)() = NULL;
+  ufc_vertex_integral* (*create_default_vertex_integral)();
 
   /// Create a new custom integral on everywhere else
-  ufc_custom_integral* (*create_default_custom_integral)() = NULL;
+  ufc_custom_integral* (*create_default_custom_integral)();
 } ufc_form;
 
-struct dolfin_function_space
+typedef struct dolfin_function_space
 {
   // Pointer to factory function that creates a new ufc_finite_element
   ufc_finite_element* (*element)(void);
@@ -580,9 +569,9 @@ struct dolfin_function_space
 
   // Pointer to factory function that creates a new ufc_coordinate_mapping
   ufc_coordinate_mapping* (*coordinate_mapping)(void);
-};
+} dolfin_function_space;
 
-struct dolfin_form
+typedef struct dolfin_form
 {
   // Pointer to factory function that returns a new ufc_form
   ufc_form* (*form)(void);
@@ -592,5 +581,4 @@ struct dolfin_form
 
   // Pointer to function that returns index of coefficient
   int (*coefficient_number_map)(const char* name);
-};
-
+} dolfin_form;

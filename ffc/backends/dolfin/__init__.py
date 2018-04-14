@@ -127,7 +127,7 @@ def generate_namespace_typedefs(forms, prefix, common_function_space):
 
     # Combine data to typedef code
     typedefs = "\n".join(
-        "constexpr dolfin_form_factory_ptr {0}{1} = {0}{2};".format(
+        "static dolfin_form_factory_ptr {0}{1} = {0}{2};".format(
             prefix, fro, to) for (to, fro) in pairs)
 
     # Keepin' it simple: Add typedef for function space factory if term applies
@@ -135,7 +135,7 @@ def generate_namespace_typedefs(forms, prefix, common_function_space):
         for i, form in enumerate(forms):
             if form.rank:
                 # FIXME: Is this naming robust?
-                typedefs += "\n\nstatic constexpr dolfin_function_space_factory_ptr {0}FunctionSpace = {0}Form_{1}_FunctionSpace_0;".format(
+                typedefs += "\n\nstatic dolfin_function_space_factory_ptr {0}FunctionSpace = {0}Form_{1}_FunctionSpace_0;".format(
                     prefix, form.name)
                 break
 
@@ -182,7 +182,7 @@ def generate_form(form, prefix, classname):
     blocks += [
         "// Coefficient function spaces for form \"{}\"".format(classname)
     ]
-    template = "constexpr dolfin_function_space_factory_ptr {0}{1}_FunctionSpace_{2} = {0}CoefficientSpace_{3};"
+    template = "static dolfin_function_space_factory_ptr {0}{1}_FunctionSpace_{2} = {0}CoefficientSpace_{3};"
     blocks += [
         template.format(prefix, classname, form.rank + i,
                         form.coefficient_names[i])
@@ -287,15 +287,19 @@ def generate_function_space_typedefs(form, prefix, classname):
     snippets = {"functionspace": ("TestSpace", "TrialSpace")}
 
     # Add convenience pointers to factory functions
-    template0 = "constexpr dolfin_function_space_factory_ptr {0}{2}{1} = {0}{2}_FunctionSpace_{3};"
+    template0 = "static dolfin_function_space_factory_ptr {0}{2}{1} = {0}{2}_FunctionSpace_{3};"
     factory0 = "\n".join(
         template0.format(prefix, snippets["functionspace"][i], classname, i)
         for i in range(form.rank))
 
-    template1 = "constexpr dolfin_function_space_factory_ptr {0}{2}CoefficientSpace_{1} = {0}{2}_FunctionSpace_{3};"
-    factory1 = "\n".join(
-        template1.format(prefix, form.coefficient_names[i], classname,
-                         form.rank + i) for i in range(form.num_coefficients))
+    factory1 = ""
+    # FIXME: (GNW) These are fucntion typedefs to functions typedefs,
+    # and are giving trouble with a C compiler (fine with C++)
+    #
+    # template1 = "dolfin_function_space_factory_ptr
+    # {0}{2}CoefficientSpace_{1} = {0}{2}_FunctionSpace_{3};" factory1 =
+    # "\n".join( template1.format(prefix, form.coefficient_names[i],
+    # classname, form.rank + i) for i in range(form.num_coefficients))
 
     code = factory0 + "\n" + factory1
     return code
@@ -303,18 +307,18 @@ def generate_function_space_typedefs(form, prefix, classname):
 
 FORM_CLASS_TEMPLATE = """\
 // Return the number of the coefficient with this name. Returns -1 if name does not exist.
-inline int {prefix}{classname}_coefficient_number(const char* name)
+static int {prefix}{classname}_coefficient_number(const char* name)
 {{
 {coefficient_number}
 }}
 
 // Return the name of the coefficient with this number. Returns NULL if index is out-of-range.
-inline  const char* {prefix}{classname}_coefficient_name(int i)
+static const char* {prefix}{classname}_coefficient_name(int i)
 {{
 {coefficient_name}
 }}
 
-inline  dolfin_form* {prefix}{classname}()
+static dolfin_form* {prefix}{classname}()
 {{
   dolfin_form* form = (dolfin_form*) malloc(sizeof(*form));
   form->form = create_{ufc_form};
@@ -327,9 +331,8 @@ inline  dolfin_form* {prefix}{classname}()
 """
 
 FUNCTION_SPACE_TEMPLATE = """\
-inline  dolfin_function_space* {prefix}{classname}()
+static dolfin_function_space* {prefix}{classname}()
 {{
-  /* dolfin_function_space* space = malloc(sizeof(*space)); // In C rather than C++: */
   dolfin_function_space* space = (dolfin_function_space*) malloc(sizeof(*space));
   space->element = create_{finite_element_classname};
   space->dofmap = create_{dofmap_classname};

@@ -6,6 +6,7 @@
 #pragma once
 
 #include <math.h>
+#include <stdbool.h>
 
 /// A note regarding data structures. All matrices are represented as
 /// row-major flattened raw C arrays.
@@ -55,24 +56,28 @@
 
 /// --- Local reference cell coordinates by UFC conventions ---
 
-static const double interval_vertices[UFC_NUM_VERTICES_IN_INTERVAL]
-                                     [UFC_TDIM_1] = {{0.0}, {1.0}};
+static const double interval_vertices[UFC_NUM_VERTICES_IN_INTERVAL][UFC_TDIM_1]
+    = {{0.0}, {1.0}};
 
-static const double triangle_vertices[UFC_NUM_VERTICES_IN_TRIANGLE]
-                                     [UFC_TDIM_2] = {
-                                         {0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}};
+static const double triangle_vertices[UFC_NUM_VERTICES_IN_TRIANGLE][UFC_TDIM_2]
+    = {{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}};
 
-static const double
-    tetrahedron_vertices[UFC_NUM_VERTICES_IN_TETRAHEDRON][UFC_TDIM_3] = {
-        {0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+static const double tetrahedron_vertices[UFC_NUM_VERTICES_IN_TETRAHEDRON]
+                                        [UFC_TDIM_3]
+    = {{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
 
-static const double
-    quadrilateral_vertices[UFC_NUM_VERTICES_IN_QUADRILATERAL][UFC_TDIM_2] = {
-        {0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0},
+static const double quadrilateral_vertices[UFC_NUM_VERTICES_IN_QUADRILATERAL]
+                                          [UFC_TDIM_2]
+    = {
+        {0.0, 0.0},
+        {0.0, 1.0},
+        {1.0, 0.0},
+        {1.0, 1.0},
 };
 
-static const double
-    hexahedron_vertices[UFC_NUM_VERTICES_IN_HEXAHEDRON][UFC_TDIM_3] = {
+static const double hexahedron_vertices[UFC_NUM_VERTICES_IN_HEXAHEDRON]
+                                       [UFC_TDIM_3]
+    = {
         {0.0, 0.0, 0.0}, {0.0, 0.0, 1.0}, {0.0, 1.0, 0.0}, {0.0, 1.0, 1.0},
         {1.0, 0.0, 0.0}, {1.0, 0.0, 1.0}, {1.0, 1.0, 0.0}, {1.0, 1.0, 1.0},
 };
@@ -92,28 +97,34 @@ static const double hexahedron_midpoint[UFC_TDIM_3] = {0.5, 0.5, 0.5};
 /// --- Local reference cell facet midpoints by UFC conventions ---
 
 static const double interval_facet_midpoint[UFC_NUM_FACETS_IN_INTERVAL]
-                                           [UFC_TDIM_1] = {{0.0}, {1.0}};
+                                           [UFC_TDIM_1]
+    = {{0.0}, {1.0}};
 
-static const double
-    triangle_facet_midpoint[UFC_NUM_FACETS_IN_TRIANGLE][UFC_TDIM_2] = {
-        {0.5, 0.5}, {0.0, 0.5}, {0.5, 0.0}};
+static const double triangle_facet_midpoint[UFC_NUM_FACETS_IN_TRIANGLE]
+                                           [UFC_TDIM_2]
+    = {{0.5, 0.5}, {0.0, 0.5}, {0.5, 0.0}};
 
 static const double tetrahedron_facet_midpoint[UFC_NUM_FACETS_IN_TETRAHEDRON]
-                                              [UFC_TDIM_3] = {
-                                                  {0.5, 0.5, 0.5},
-                                                  {0.0, 1.0 / 3.0, 1.0 / 3.0},
-                                                  {1.0 / 3.0, 0.0, 1.0 / 3.0},
-                                                  {1.0 / 3.0, 1.0 / 3.0, 0.0},
+                                              [UFC_TDIM_3]
+    = {
+        {0.5, 0.5, 0.5},
+        {0.0, 1.0 / 3.0, 1.0 / 3.0},
+        {1.0 / 3.0, 0.0, 1.0 / 3.0},
+        {1.0 / 3.0, 1.0 / 3.0, 0.0},
 };
 
 static const double
-    quadrilateral_facet_midpoint[UFC_NUM_FACETS_IN_QUADRILATERAL][UFC_TDIM_2] =
-        {
-            {0.0, 0.5}, {1.0, 0.5}, {0.5, 0.0}, {0.5, 1.0},
+    quadrilateral_facet_midpoint[UFC_NUM_FACETS_IN_QUADRILATERAL][UFC_TDIM_2]
+    = {
+        {0.0, 0.5},
+        {1.0, 0.5},
+        {0.5, 0.0},
+        {0.5, 1.0},
 };
 
-static const double
-    hexahedron_facet_midpoint[UFC_NUM_FACETS_IN_HEXAHEDRON][UFC_TDIM_3] = {
+static const double hexahedron_facet_midpoint[UFC_NUM_FACETS_IN_HEXAHEDRON]
+                                             [UFC_TDIM_3]
+    = {
         {0.0, 0.5, 0.5}, {1.0, 0.5, 0.5}, {0.5, 0.0, 0.5},
         {0.5, 1.0, 0.5}, {0.5, 0.5, 0.0}, {0.5, 0.5, 1.0},
 };
@@ -121,15 +132,16 @@ static const double
 /// --- Local reference cell facet orientations by UFC conventions ---
 
 static const double interval_facet_orientations[UFC_NUM_FACETS_IN_INTERVAL] = {
-    -1.0, +1.0,
+    -1.0,
+    +1.0,
 };
 
-static const double triangle_facet_orientations[UFC_NUM_FACETS_IN_TRIANGLE] = {
-    +1.0, -1.0, +1.0};
+static const double triangle_facet_orientations[UFC_NUM_FACETS_IN_TRIANGLE]
+    = {+1.0, -1.0, +1.0};
 
 static const double
-    tetrahedron_facet_orientations[UFC_NUM_FACETS_IN_TETRAHEDRON] = {
-        +1.0, -1.0, +1.0, -1.0};
+    tetrahedron_facet_orientations[UFC_NUM_FACETS_IN_TETRAHEDRON]
+    = {+1.0, -1.0, +1.0, -1.0};
 
 // FIXME: Insert quad conventions here
 /*
@@ -157,64 +169,75 @@ static const double hexahedron_facet_orientations[UFC_NUM_FACETS_IN_HEXAHEDRON]
 
 /// --- Local reference cell entity relations by UFC conventions ---
 
-static const unsigned int triangle_edge_vertices[UFC_NUM_EDGES_IN_TRIANGLE][2] =
-    {{1, 2}, {0, 2}, {0, 1}};
+static const unsigned int triangle_edge_vertices[UFC_NUM_EDGES_IN_TRIANGLE][2]
+    = {{1, 2}, {0, 2}, {0, 1}};
 
 static const unsigned int
-    tetrahedron_edge_vertices[UFC_NUM_EDGES_IN_TETRAHEDRON][2] = {
-        {2, 3}, {1, 3}, {1, 2}, {0, 3}, {0, 2}, {0, 1}};
+    tetrahedron_edge_vertices[UFC_NUM_EDGES_IN_TETRAHEDRON][2]
+    = {{2, 3}, {1, 3}, {1, 2}, {0, 3}, {0, 2}, {0, 1}};
 
 static const unsigned int
-    quadrilateral_edge_vertices[UFC_NUM_EDGES_IN_QUADRILATERAL][2] = {
-        {0, 1}, {2, 3}, {0, 2}, {1, 3},
+    quadrilateral_edge_vertices[UFC_NUM_EDGES_IN_QUADRILATERAL][2]
+    = {
+        {0, 1},
+        {2, 3},
+        {0, 2},
+        {1, 3},
 };
 
-static const unsigned int
-    hexahedron_edge_vertices[UFC_NUM_EDGES_IN_HEXAHEDRON][2] = {
+static const unsigned int hexahedron_edge_vertices[UFC_NUM_EDGES_IN_HEXAHEDRON]
+                                                  [2]
+    = {
         {0, 1}, {2, 3}, {4, 5}, {6, 7}, {0, 2}, {1, 3},
         {4, 6}, {5, 7}, {0, 4}, {1, 5}, {2, 6}, {3, 7},
 };
 
 /// --- Local reference cell entity relations by UFC conventions ---
 
-static const unsigned int interval_facet_vertices[UFC_NUM_FACETS_IN_INTERVAL]
-                                                 [1] = {{0}, {1}};
+static const unsigned int interval_facet_vertices[UFC_NUM_FACETS_IN_INTERVAL][1]
+    = {{0}, {1}};
 
-static const unsigned int
-    triangle_facet_vertices[UFC_NUM_FACETS_IN_TRIANGLE]
-                           [UFC_NUM_VERTICES_IN_INTERVAL] = {
-                               {1, 2}, {0, 2}, {0, 1}};
+static const unsigned int triangle_facet_vertices[UFC_NUM_FACETS_IN_TRIANGLE]
+                                                 [UFC_NUM_VERTICES_IN_INTERVAL]
+    = {{1, 2}, {0, 2}, {0, 1}};
 
 static const unsigned int
     tetrahedron_facet_vertices[UFC_NUM_FACETS_IN_TETRAHEDRON]
-                              [UFC_NUM_VERTICES_IN_TRIANGLE] = {
-                                  {1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
+                              [UFC_NUM_VERTICES_IN_TRIANGLE]
+    = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
 
 static const unsigned int
     tetrahedron_facet_edge_vertices[UFC_NUM_FACETS_IN_TETRAHEDRON]
                                    [UFC_NUM_FACETS_IN_TRIANGLE]
-                                   [UFC_NUM_VERTICES_IN_INTERVAL] = {
-                                       {{2, 3}, {1, 3}, {1, 2}},
-                                       {{2, 3}, {0, 3}, {0, 2}},
-                                       {{1, 3}, {0, 3}, {0, 1}},
-                                       {{1, 2}, {0, 2}, {0, 1}}};
+                                   [UFC_NUM_VERTICES_IN_INTERVAL]
+    = {{{2, 3}, {1, 3}, {1, 2}},
+       {{2, 3}, {0, 3}, {0, 2}},
+       {{1, 3}, {0, 3}, {0, 1}},
+       {{1, 2}, {0, 2}, {0, 1}}};
 
 static const unsigned int
     quadrilateral_facet_vertices[UFC_NUM_FACETS_IN_QUADRILATERAL]
-                                [UFC_NUM_VERTICES_IN_INTERVAL] = {
-                                    {0, 1}, {2, 3}, {0, 2}, {1, 3},
+                                [UFC_NUM_VERTICES_IN_INTERVAL]
+    = {
+        {0, 1},
+        {2, 3},
+        {0, 2},
+        {1, 3},
 };
 
 static const unsigned int
     hexahedron_facet_vertices[UFC_NUM_FACETS_IN_HEXAHEDRON]
-                             [UFC_NUM_VERTICES_IN_QUADRILATERAL] = {
-                                 {0, 1, 2, 3}, {4, 5, 6, 7}, {0, 1, 4, 5},
-                                 {2, 3, 6, 7}, {0, 2, 4, 6}, {1, 3, 5, 7},
+                             [UFC_NUM_VERTICES_IN_QUADRILATERAL]
+    = {
+        {0, 1, 2, 3}, {4, 5, 6, 7}, {0, 1, 4, 5},
+        {2, 3, 6, 7}, {0, 2, 4, 6}, {1, 3, 5, 7},
 };
 
-static const unsigned int hexahedron_facet_edge_vertices
-    [UFC_NUM_FACETS_IN_HEXAHEDRON][UFC_NUM_FACETS_IN_QUADRILATERAL]
-    [UFC_NUM_VERTICES_IN_INTERVAL] = {
+static const unsigned int
+    hexahedron_facet_edge_vertices[UFC_NUM_FACETS_IN_HEXAHEDRON]
+                                  [UFC_NUM_FACETS_IN_QUADRILATERAL]
+                                  [UFC_NUM_VERTICES_IN_INTERVAL]
+    = {
         {{0, 1}, {2, 3}, {0, 2}, {1, 3}}, {{4, 5}, {6, 7}, {4, 6}, {5, 7}},
         {{0, 1}, {4, 5}, {0, 4}, {1, 5}}, {{2, 3}, {6, 7}, {2, 6}, {3, 7}},
         {{0, 2}, {4, 6}, {0, 4}, {2, 6}}, {{1, 3}, {5, 7}, {1, 5}, {3, 7}},
@@ -223,22 +246,25 @@ static const unsigned int hexahedron_facet_edge_vertices
 /// --- Reference cell edge vectors by UFC conventions (edge vertex 1 - edge
 /// vertex 0 for each edge in cell) ---
 
-static const double
-    triangle_reference_edge_vectors[UFC_NUM_EDGES_IN_TRIANGLE][UFC_TDIM_2] = {
-        {-1.0, 1.0}, {0.0, 1.0}, {1.0, 0.0},
+static const double triangle_reference_edge_vectors[UFC_NUM_EDGES_IN_TRIANGLE]
+                                                   [UFC_TDIM_2]
+    = {
+        {-1.0, 1.0},
+        {0.0, 1.0},
+        {1.0, 0.0},
 };
 
 static const double
-    tetrahedron_reference_edge_vectors[UFC_NUM_EDGES_IN_TETRAHEDRON]
-                                      [UFC_TDIM_3] = {
-                                          {0.0, -1.0, 1.0}, {-1.0, 0.0, 1.0},
-                                          {-1.0, 1.0, 0.0}, {0.0, 0.0, 1.0},
-                                          {0.0, 1.0, 0.0},  {1.0, 0.0, 0.0},
+    tetrahedron_reference_edge_vectors[UFC_NUM_EDGES_IN_TETRAHEDRON][UFC_TDIM_3]
+    = {
+        {0.0, -1.0, 1.0}, {-1.0, 0.0, 1.0}, {-1.0, 1.0, 0.0},
+        {0.0, 0.0, 1.0},  {0.0, 1.0, 0.0},  {1.0, 0.0, 0.0},
 };
 
 // Edge vectors for each triangle facet of a tetrahedron
 static const double tetrahedron_facet_reference_edge_vectors
-    [UFC_NUM_FACETS_IN_TETRAHEDRON][UFC_NUM_EDGES_IN_TRIANGLE][UFC_TDIM_3] = {
+    [UFC_NUM_FACETS_IN_TETRAHEDRON][UFC_NUM_EDGES_IN_TRIANGLE][UFC_TDIM_3]
+    = {
         {
             // facet 0
             {0.0, -1.0, 1.0},
@@ -265,100 +291,115 @@ static const double tetrahedron_facet_reference_edge_vectors
         },
 };
 
-static const double quadrilateral_reference_edge_vectors
-    [UFC_NUM_EDGES_IN_QUADRILATERAL][UFC_TDIM_2] = {
-        {0.0, 1.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 0.0},
+static const double
+    quadrilateral_reference_edge_vectors[UFC_NUM_EDGES_IN_QUADRILATERAL]
+                                        [UFC_TDIM_2]
+    = {
+        {0.0, 1.0},
+        {0.0, 1.0},
+        {1.0, 0.0},
+        {1.0, 0.0},
 };
 
 static const double
-    hexahedron_reference_edge_vectors[UFC_NUM_EDGES_IN_HEXAHEDRON][UFC_TDIM_3] =
-        {
-            {0.0, 0.0, 1.0}, {0.0, 0.0, 1.0}, {0.0, 0.0, 1.0}, {0.0, 0.0, 1.0},
-            {0.0, 1.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 1.0, 0.0},
-            {1.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {1.0, 0.0, 0.0},
+    hexahedron_reference_edge_vectors[UFC_NUM_EDGES_IN_HEXAHEDRON][UFC_TDIM_3]
+    = {
+        {0.0, 0.0, 1.0}, {0.0, 0.0, 1.0}, {0.0, 0.0, 1.0}, {0.0, 0.0, 1.0},
+        {0.0, 1.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 1.0, 0.0},
+        {1.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {1.0, 0.0, 0.0},
 };
 
 // Edge vectors for each quadrilateral facet of a hexahedron
-static const double
-    hexahedron_facet_reference_edge_vectors[UFC_NUM_FACETS_IN_HEXAHEDRON]
-                                           [UFC_NUM_EDGES_IN_QUADRILATERAL]
-                                           [UFC_TDIM_3] = {
-                                               {
-                                                   // facet 0
-                                                   {0.0, 0.0, 1.0},
-                                                   {0.0, 0.0, 1.0},
-                                                   {0.0, 1.0, 0.0},
-                                                   {0.0, 1.0, 0.0},
-                                               },
-                                               {
-                                                   // facet 1
-                                                   {0.0, 0.0, 1.0},
-                                                   {0.0, 0.0, 1.0},
-                                                   {0.0, 1.0, 0.0},
-                                                   {0.0, 1.0, 0.0},
-                                               },
-                                               {
-                                                   // facet 2
-                                                   {0.0, 0.0, 1.0},
-                                                   {0.0, 0.0, 1.0},
-                                                   {1.0, 0.0, 0.0},
-                                                   {1.0, 0.0, 0.0},
-                                               },
-                                               {
-                                                   // facet 3
-                                                   {0.0, 0.0, 1.0},
-                                                   {0.0, 0.0, 1.0},
-                                                   {1.0, 0.0, 0.0},
-                                                   {1.0, 0.0, 0.0},
-                                               },
-                                               {
-                                                   // facet 4
-                                                   {0.0, 1.0, 0.0},
-                                                   {0.0, 1.0, 0.0},
-                                                   {1.0, 0.0, 0.0},
-                                                   {1.0, 0.0, 0.0},
-                                               },
-                                               {
-                                                   // facet 5
-                                                   {0.0, 1.0, 0.0},
-                                                   {0.0, 1.0, 0.0},
-                                                   {1.0, 0.0, 0.0},
-                                                   {1.0, 0.0, 0.0},
-                                               },
+static const double hexahedron_facet_reference_edge_vectors
+    [UFC_NUM_FACETS_IN_HEXAHEDRON][UFC_NUM_EDGES_IN_QUADRILATERAL][UFC_TDIM_3]
+    = {
+        {
+            // facet 0
+            {0.0, 0.0, 1.0},
+            {0.0, 0.0, 1.0},
+            {0.0, 1.0, 0.0},
+            {0.0, 1.0, 0.0},
+        },
+        {
+            // facet 1
+            {0.0, 0.0, 1.0},
+            {0.0, 0.0, 1.0},
+            {0.0, 1.0, 0.0},
+            {0.0, 1.0, 0.0},
+        },
+        {
+            // facet 2
+            {0.0, 0.0, 1.0},
+            {0.0, 0.0, 1.0},
+            {1.0, 0.0, 0.0},
+            {1.0, 0.0, 0.0},
+        },
+        {
+            // facet 3
+            {0.0, 0.0, 1.0},
+            {0.0, 0.0, 1.0},
+            {1.0, 0.0, 0.0},
+            {1.0, 0.0, 0.0},
+        },
+        {
+            // facet 4
+            {0.0, 1.0, 0.0},
+            {0.0, 1.0, 0.0},
+            {1.0, 0.0, 0.0},
+            {1.0, 0.0, 0.0},
+        },
+        {
+            // facet 5
+            {0.0, 1.0, 0.0},
+            {0.0, 1.0, 0.0},
+            {1.0, 0.0, 0.0},
+            {1.0, 0.0, 0.0},
+        },
 };
 
 /// --- Reference cell facet normals by UFC conventions (outwards pointing on
 /// reference cell) ---
 
 static const double interval_reference_facet_normals[UFC_NUM_FACETS_IN_INTERVAL]
-                                                    [UFC_TDIM_1] = {
-                                                        {-1.0}, {+1.0},
+                                                    [UFC_TDIM_1]
+    = {
+        {-1.0},
+        {+1.0},
+};
+
+static const double triangle_reference_facet_normals[UFC_NUM_FACETS_IN_TRIANGLE]
+                                                    [UFC_TDIM_2]
+    = {
+        {0.7071067811865476, 0.7071067811865476},
+        {-1.0, 0.0},
+        {0.0, -1.0},
 };
 
 static const double
-    triangle_reference_facet_normals[UFC_NUM_FACETS_IN_TRIANGLE][UFC_TDIM_2] = {
-        {0.7071067811865476, 0.7071067811865476}, {-1.0, 0.0}, {0.0, -1.0},
-};
-
-static const double tetrahedron_reference_facet_normals
-    [UFC_NUM_FACETS_IN_TETRAHEDRON][UFC_TDIM_3] = {
+    tetrahedron_reference_facet_normals[UFC_NUM_FACETS_IN_TETRAHEDRON]
+                                       [UFC_TDIM_3]
+    = {
         {0.5773502691896258, 0.5773502691896258, 0.5773502691896258},
         {-1.0, 0.0, 0.0},
         {0.0, -1.0, 0.0},
         {0.0, 0.0, -1.0},
 };
 
-static const double quadrilateral_reference_facet_normals
-    [UFC_NUM_FACETS_IN_QUADRILATERAL][UFC_TDIM_2] = {
-        {-1.0, 0.0}, {1.0, 0.0}, {0.0, -1.0}, {0.0, 1.0},
+static const double
+    quadrilateral_reference_facet_normals[UFC_NUM_FACETS_IN_QUADRILATERAL]
+                                         [UFC_TDIM_2]
+    = {
+        {-1.0, 0.0},
+        {1.0, 0.0},
+        {0.0, -1.0},
+        {0.0, 1.0},
 };
 
 static const double
-    hexahedron_reference_facet_normals[UFC_NUM_FACETS_IN_HEXAHEDRON]
-                                      [UFC_TDIM_3] = {
-                                          {-1.0, 0.0, 0.0}, {1.0, 0.0, 0.0},
-                                          {0.0, -1.0, 0.0}, {0.0, 1.0, 0.0},
-                                          {0.0, 0.0, -1.0}, {0.0, 0.0, 1.0},
+    hexahedron_reference_facet_normals[UFC_NUM_FACETS_IN_HEXAHEDRON][UFC_TDIM_3]
+    = {
+        {-1.0, 0.0, 0.0}, {1.0, 0.0, 0.0},  {0.0, -1.0, 0.0},
+        {0.0, 1.0, 0.0},  {0.0, 0.0, -1.0}, {0.0, 0.0, 1.0},
 };
 
 /// --- Reference cell volumes by UFC conventions ---
@@ -378,41 +419,55 @@ static const double hexahedron_reference_facet_volume = 1.0;
 /// --- Jacobians of reference facet cell to reference cell coordinate mappings
 /// by UFC conventions ---
 
-static const double triangle_reference_facet_jacobian
-    [UFC_NUM_FACETS_IN_TRIANGLE][UFC_TDIM_2][UFC_TDIM_2 - 1] = {
-        {{-1.0}, {1.0}}, {{0.0}, {1.0}}, {{1.0}, {0.0}},
+static const double
+    triangle_reference_facet_jacobian[UFC_NUM_FACETS_IN_TRIANGLE][UFC_TDIM_2]
+                                     [UFC_TDIM_2 - 1]
+    = {
+        {{-1.0}, {1.0}},
+        {{0.0}, {1.0}},
+        {{1.0}, {0.0}},
 };
 
-static const double tetrahedron_reference_facet_jacobian
-    [UFC_NUM_FACETS_IN_TETRAHEDRON][UFC_TDIM_3][UFC_TDIM_3 - 1] = {
+static const double
+    tetrahedron_reference_facet_jacobian[UFC_NUM_FACETS_IN_TETRAHEDRON]
+                                        [UFC_TDIM_3][UFC_TDIM_3 - 1]
+    = {
         {{-1.0, -1.0}, {1.0, 0.0}, {0.0, 1.0}},
         {{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}},
         {{1.0, 0.0}, {0.0, 0.0}, {0.0, 1.0}},
         {{1.0, 0.0}, {0.0, 1.0}, {0.0, 0.0}},
 };
 
-static const double quadrilateral_reference_facet_jacobian
-    [UFC_NUM_FACETS_IN_QUADRILATERAL][UFC_TDIM_2][UFC_TDIM_2 - 1] = {
-        {{0.0}, {1.0}}, {{0.0}, {1.0}}, {{1.0}, {0.0}}, {{1.0}, {0.0}},
+static const double
+    quadrilateral_reference_facet_jacobian[UFC_NUM_FACETS_IN_QUADRILATERAL]
+                                          [UFC_TDIM_2][UFC_TDIM_2 - 1]
+    = {
+        {{0.0}, {1.0}},
+        {{0.0}, {1.0}},
+        {{1.0}, {0.0}},
+        {{1.0}, {0.0}},
 };
 
 static const double
     hexahedron_reference_facet_jacobian[UFC_NUM_FACETS_IN_HEXAHEDRON]
-                                       [UFC_TDIM_3][UFC_TDIM_3 - 1] = {
-                                           {{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}},
-                                           {{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}},
-                                           {{1.0, 0.0}, {0.0, 0.0}, {0.0, 1.0}},
-                                           {{1.0, 0.0}, {0.0, 0.0}, {0.0, 1.0}},
-                                           {{1.0, 0.0}, {0.0, 1.0}, {0.0, 0.0}},
-                                           {{1.0, 0.0}, {0.0, 1.0}, {0.0, 0.0}},
+                                       [UFC_TDIM_3][UFC_TDIM_3 - 1]
+    = {
+        {{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}},
+        {{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}},
+        {{1.0, 0.0}, {0.0, 0.0}, {0.0, 1.0}},
+        {{1.0, 0.0}, {0.0, 0.0}, {0.0, 1.0}},
+        {{1.0, 0.0}, {0.0, 1.0}, {0.0, 0.0}},
+        {{1.0, 0.0}, {0.0, 1.0}, {0.0, 0.0}},
 };
 
 /// --- Coordinate mappings from reference facet cell to reference cell by UFC
 /// conventions ---
 
 inline void compute_reference_facet_to_reference_cell_coordinates_interval(
-    double Xc[UFC_TDIM_1], unsigned int facet) {
-  switch (facet) {
+    double Xc[UFC_TDIM_1], unsigned int facet)
+{
+  switch (facet)
+  {
   case 0:
     Xc[0] = 0.0;
     break;
@@ -423,9 +478,10 @@ inline void compute_reference_facet_to_reference_cell_coordinates_interval(
 }
 
 inline void compute_reference_facet_to_reference_cell_coordinates_triangle(
-    double Xc[UFC_TDIM_2], const double Xf[UFC_TDIM_2 - 1],
-    unsigned int facet) {
-  switch (facet) {
+    double Xc[UFC_TDIM_2], const double Xf[UFC_TDIM_2 - 1], unsigned int facet)
+{
+  switch (facet)
+  {
   case 0:
     Xc[0] = 1.0 - Xf[0];
     Xc[1] = Xf[0];
@@ -442,9 +498,10 @@ inline void compute_reference_facet_to_reference_cell_coordinates_triangle(
 }
 
 inline void compute_reference_facet_to_reference_cell_coordinates_tetrahedron(
-    double Xc[UFC_TDIM_3], const double Xf[UFC_TDIM_3 - 1],
-    unsigned int facet) {
-  switch (facet) {
+    double Xc[UFC_TDIM_3], const double Xf[UFC_TDIM_3 - 1], unsigned int facet)
+{
+  switch (facet)
+  {
   case 0:
     Xc[0] = 1.0 - Xf[0] - Xf[1];
     Xc[1] = Xf[0];
@@ -472,20 +529,23 @@ inline void compute_reference_facet_to_reference_cell_coordinates_tetrahedron(
 
 /// Compute Jacobian J for interval embedded in R^1
 inline void compute_jacobian_interval_1d(double J[UFC_GDIM_1 * UFC_TDIM_1],
-                                         const double coordinate_dofs[2]) {
+                                         const double coordinate_dofs[2])
+{
   J[0] = coordinate_dofs[1] - coordinate_dofs[0];
 }
 
 /// Compute Jacobian J for interval embedded in R^2
 inline void compute_jacobian_interval_2d(double J[UFC_GDIM_2 * UFC_TDIM_1],
-                                         const double coordinate_dofs[4]) {
+                                         const double coordinate_dofs[4])
+{
   J[0] = coordinate_dofs[2] - coordinate_dofs[0];
   J[1] = coordinate_dofs[3] - coordinate_dofs[1];
 }
 
 /// Compute Jacobian J for interval embedded in R^3
 inline void compute_jacobian_interval_3d(double J[UFC_GDIM_3 * UFC_TDIM_1],
-                                         const double coordinate_dofs[6]) {
+                                         const double coordinate_dofs[6])
+{
   J[0] = coordinate_dofs[3] - coordinate_dofs[0];
   J[1] = coordinate_dofs[4] - coordinate_dofs[1];
   J[2] = coordinate_dofs[5] - coordinate_dofs[2];
@@ -493,7 +553,8 @@ inline void compute_jacobian_interval_3d(double J[UFC_GDIM_3 * UFC_TDIM_1],
 
 /// Compute Jacobian J for triangle embedded in R^2
 inline void compute_jacobian_triangle_2d(double J[UFC_GDIM_2 * UFC_TDIM_2],
-                                         const double coordinate_dofs[6]) {
+                                         const double coordinate_dofs[6])
+{
   J[0] = coordinate_dofs[2] - coordinate_dofs[0];
   J[1] = coordinate_dofs[4] - coordinate_dofs[0];
   J[2] = coordinate_dofs[3] - coordinate_dofs[1];
@@ -502,7 +563,8 @@ inline void compute_jacobian_triangle_2d(double J[UFC_GDIM_2 * UFC_TDIM_2],
 
 /// Compute Jacobian J for triangle embedded in R^3
 inline void compute_jacobian_triangle_3d(double J[UFC_GDIM_3 * UFC_TDIM_2],
-                                         const double coordinate_dofs[9]) {
+                                         const double coordinate_dofs[9])
+{
   J[0] = coordinate_dofs[3] - coordinate_dofs[0];
   J[1] = coordinate_dofs[6] - coordinate_dofs[0];
   J[2] = coordinate_dofs[4] - coordinate_dofs[1];
@@ -513,7 +575,8 @@ inline void compute_jacobian_triangle_3d(double J[UFC_GDIM_3 * UFC_TDIM_2],
 
 /// Compute Jacobian J for tetrahedron embedded in R^3
 inline void compute_jacobian_tetrahedron_3d(double J[UFC_GDIM_3 * UFC_TDIM_3],
-                                            const double coordinate_dofs[12]) {
+                                            const double coordinate_dofs[12])
+{
   J[0] = coordinate_dofs[3] - coordinate_dofs[0];
   J[1] = coordinate_dofs[6] - coordinate_dofs[0];
   J[2] = coordinate_dofs[9] - coordinate_dofs[0];
@@ -529,29 +592,32 @@ inline void compute_jacobian_tetrahedron_3d(double J[UFC_GDIM_3 * UFC_TDIM_3],
 // updated to use the NEW ones below
 
 /// Compute Jacobian inverse K for interval embedded in R^1
-inline void compute_jacobian_inverse_interval_1d(double *K, double &det,
-                                                 const double *J) {
-  det = J[0];
-  K[0] = 1.0 / det;
+inline void compute_jacobian_inverse_interval_1d(double* K, double* det,
+                                                 const double* J)
+{
+  *det = J[0];
+  K[0] = 1.0 / *det;
 }
 
 /// Compute Jacobian (pseudo)inverse K for interval embedded in R^2
-inline void compute_jacobian_inverse_interval_2d(double *K, double &det,
-                                                 const double *J) {
+inline void compute_jacobian_inverse_interval_2d(double* K, double* det,
+                                                 const double* J)
+{
   const double det2 = J[0] * J[0] + J[1] * J[1];
-  det = sqrt(det2);
+  *det = sqrt(det2);
 
   K[0] = J[0] / det2;
   K[1] = J[1] / det2;
 }
 
 /// Compute Jacobian (pseudo)inverse K for interval embedded in R^3
-inline void compute_jacobian_inverse_interval_3d(double *K, double &det,
-                                                 const double *J) {
+inline void compute_jacobian_inverse_interval_3d(double* K, double* det,
+                                                 const double* J)
+{
   // TODO: Move computation of det to a separate function, det is often needed
   // when K is not
   const double det2 = J[0] * J[0] + J[1] * J[1] + J[2] * J[2];
-  det = sqrt(det2);
+  *det = sqrt(det2);
 
   K[0] = J[0] / det2;
   K[1] = J[1] / det2;
@@ -559,19 +625,21 @@ inline void compute_jacobian_inverse_interval_3d(double *K, double &det,
 }
 
 /// Compute Jacobian inverse K for triangle embedded in R^2
-inline void compute_jacobian_inverse_triangle_2d(double *K, double &det,
-                                                 const double *J) {
-  det = J[0] * J[3] - J[1] * J[2];
+inline void compute_jacobian_inverse_triangle_2d(double* K, double* det,
+                                                 const double* J)
+{
+  *det = J[0] * J[3] - J[1] * J[2];
 
-  K[0] = J[3] / det;
-  K[1] = -J[1] / det;
-  K[2] = -J[2] / det;
-  K[3] = J[0] / det;
+  K[0] = J[3] / *det;
+  K[1] = -J[1] / *det;
+  K[2] = -J[2] / *det;
+  K[3] = J[0] / *det;
 }
 
 /// Compute Jacobian (pseudo)inverse K for triangle embedded in R^3
-inline void compute_jacobian_inverse_triangle_3d(double *K, double &det,
-                                                 const double *J) {
+inline void compute_jacobian_inverse_triangle_3d(double* K, double* det,
+                                                 const double* J)
+{
   const double d_0 = J[2] * J[5] - J[4] * J[3];
   const double d_1 = J[4] * J[1] - J[0] * J[5];
   const double d_2 = J[0] * J[3] - J[2] * J[1];
@@ -583,7 +651,7 @@ inline void compute_jacobian_inverse_triangle_3d(double *K, double &det,
   const double den = c_0 * c_1 - c_2 * c_2;
 
   const double det2 = d_0 * d_0 + d_1 * d_1 + d_2 * d_2;
-  det = sqrt(det2);
+  *det = sqrt(det2);
 
   K[0] = (J[0] * c_1 - J[1] * c_2) / den;
   K[1] = (J[2] * c_1 - J[3] * c_2) / den;
@@ -594,8 +662,9 @@ inline void compute_jacobian_inverse_triangle_3d(double *K, double &det,
 }
 
 /// Compute Jacobian inverse K for tetrahedron embedded in R^3
-inline void compute_jacobian_inverse_tetrahedron_3d(double *K, double &det,
-                                                    const double *J) {
+inline void compute_jacobian_inverse_tetrahedron_3d(double* K, double* det,
+                                                    const double* J)
+{
   const double d_00 = J[4] * J[8] - J[5] * J[7];
   const double d_01 = J[5] * J[6] - J[3] * J[8];
   const double d_02 = J[3] * J[7] - J[4] * J[6];
@@ -606,51 +675,56 @@ inline void compute_jacobian_inverse_tetrahedron_3d(double *K, double &det,
   const double d_21 = J[2] * J[3] - J[0] * J[5];
   const double d_22 = J[0] * J[4] - J[1] * J[3];
 
-  det = J[0] * d_00 + J[3] * d_10 + J[6] * d_20;
+  *det = J[0] * d_00 + J[3] * d_10 + J[6] * d_20;
 
-  K[0] = d_00 / det;
-  K[1] = d_10 / det;
-  K[2] = d_20 / det;
-  K[3] = d_01 / det;
-  K[4] = d_11 / det;
-  K[5] = d_21 / det;
-  K[6] = d_02 / det;
-  K[7] = d_12 / det;
-  K[8] = d_22 / det;
+  K[0] = d_00 / *det;
+  K[1] = d_10 / *det;
+  K[2] = d_20 / *det;
+  K[3] = d_01 / *det;
+  K[4] = d_11 / *det;
+  K[5] = d_21 / *det;
+  K[6] = d_02 / *det;
+  K[7] = d_12 / *det;
+  K[8] = d_22 / *det;
 }
 
 //--- NEW Computation of Jacobian (sub)determinants ---
 
 /// Compute Jacobian determinant for interval embedded in R^1
 inline void compute_jacobian_determinants_interval_1d(
-    double &det, const double J[UFC_GDIM_1 * UFC_TDIM_1]) {
-  det = J[0];
+    double* det, const double J[UFC_GDIM_1 * UFC_TDIM_1])
+{
+  *det = J[0];
 }
 
 /// Compute Jacobian (pseudo)determinants for interval embedded in R^2
 inline void compute_jacobian_determinants_interval_2d(
-    double &det2, double &det, const double J[UFC_GDIM_2 * UFC_TDIM_1]) {
-  det2 = J[0] * J[0] + J[1] * J[1];
-  det = sqrt(det2);
+    double* det2, double* det, const double J[UFC_GDIM_2 * UFC_TDIM_1])
+{
+  *det2 = J[0] * J[0] + J[1] * J[1];
+  *det = sqrt(*det2);
 }
 
 /// Compute Jacobian (pseudo)determinants for interval embedded in R^3
 inline void compute_jacobian_determinants_interval_3d(
-    double &det2, double &det, const double J[UFC_GDIM_3 * UFC_TDIM_1]) {
-  det2 = J[0] * J[0] + J[1] * J[1] + J[2] * J[2];
-  det = sqrt(det2);
+    double* det2, double* det, const double J[UFC_GDIM_3 * UFC_TDIM_1])
+{
+  *det2 = J[0] * J[0] + J[1] * J[1] + J[2] * J[2];
+  *det = sqrt(*det2);
 }
 
 /// Compute Jacobian determinant for triangle embedded in R^2
 inline void compute_jacobian_determinants_triangle_2d(
-    double &det, const double J[UFC_GDIM_2 * UFC_TDIM_2]) {
-  det = J[0] * J[3] - J[1] * J[2];
+    double* det, const double J[UFC_GDIM_2 * UFC_TDIM_2])
+{
+  *det = J[0] * J[3] - J[1] * J[2];
 }
 
 /// Compute Jacobian (pseudo)determinants for triangle embedded in R^3
 inline void compute_jacobian_determinants_triangle_3d(
-    double &den, double &det2, double &det, double c[3],
-    const double J[UFC_GDIM_3 * UFC_TDIM_2]) {
+    double* den, double* det2, double* det, double c[3],
+    const double J[UFC_GDIM_3 * UFC_TDIM_2])
+{
   const double d_0 = J[2] * J[5] - J[4] * J[3];
   const double d_1 = J[4] * J[1] - J[0] * J[5];
   const double d_2 = J[0] * J[3] - J[2] * J[1];
@@ -659,15 +733,16 @@ inline void compute_jacobian_determinants_triangle_3d(
   c[1] = J[1] * J[1] + J[3] * J[3] + J[5] * J[5];
   c[2] = J[0] * J[1] + J[2] * J[3] + J[4] * J[5];
 
-  den = c[0] * c[1] - c[2] * c[2];
+  *den = c[0] * c[1] - c[2] * c[2];
 
-  det2 = d_0 * d_0 + d_1 * d_1 + d_2 * d_2;
-  det = sqrt(det2);
+  *det2 = d_0 * d_0 + d_1 * d_1 + d_2 * d_2;
+  *det = sqrt(*det2);
 }
 
 /// Compute Jacobian determinants for tetrahedron embedded in R^3
 inline void compute_jacobian_determinants_tetrahedron_3d(
-    double &det, double d[9], const double J[UFC_GDIM_3 * UFC_TDIM_3]) {
+    double* det, double d[9], const double J[UFC_GDIM_3 * UFC_TDIM_3])
+{
   d[0 * 3 + 0] = J[4] * J[8] - J[5] * J[7];
   d[0 * 3 + 1] = J[5] * J[6] - J[3] * J[8];
   d[0 * 3 + 2] = J[3] * J[7] - J[4] * J[6];
@@ -678,7 +753,7 @@ inline void compute_jacobian_determinants_tetrahedron_3d(
   d[2 * 3 + 1] = J[2] * J[3] - J[0] * J[5];
   d[2 * 3 + 2] = J[0] * J[4] - J[1] * J[3];
 
-  det = J[0] * d[0 * 3 + 0] + J[3] * d[1 * 3 + 0] + J[6] * d[2 * 3 + 0];
+  *det = J[0] * d[0 * 3 + 0] + J[3] * d[1 * 3 + 0] + J[6] * d[2 * 3 + 0];
 }
 
 //--- NEW Computation of Jacobian inverses ---
@@ -686,14 +761,16 @@ inline void compute_jacobian_determinants_tetrahedron_3d(
 /// Compute Jacobian inverse K for interval embedded in R^1
 inline void
 new_compute_jacobian_inverse_interval_1d(double K[UFC_TDIM_1 * UFC_GDIM_1],
-                                         double det) {
+                                         double det)
+{
   K[0] = 1.0 / det;
 }
 
 /// Compute Jacobian (pseudo)inverse K for interval embedded in R^2
 inline void new_compute_jacobian_inverse_interval_2d(
     double K[UFC_TDIM_1 * UFC_GDIM_2], double det2,
-    const double J[UFC_GDIM_2 * UFC_TDIM_1]) {
+    const double J[UFC_GDIM_2 * UFC_TDIM_1])
+{
   K[0] = J[0] / det2;
   K[1] = J[1] / det2;
 }
@@ -701,7 +778,8 @@ inline void new_compute_jacobian_inverse_interval_2d(
 /// Compute Jacobian (pseudo)inverse K for interval embedded in R^3
 inline void new_compute_jacobian_inverse_interval_3d(
     double K[UFC_TDIM_1 * UFC_GDIM_3], double det2,
-    const double J[UFC_GDIM_3 * UFC_TDIM_1]) {
+    const double J[UFC_GDIM_3 * UFC_TDIM_1])
+{
   K[0] = J[0] / det2;
   K[1] = J[1] / det2;
   K[2] = J[2] / det2;
@@ -710,7 +788,8 @@ inline void new_compute_jacobian_inverse_interval_3d(
 /// Compute Jacobian inverse K for triangle embedded in R^2
 inline void new_compute_jacobian_inverse_triangle_2d(
     double K[UFC_TDIM_2 * UFC_GDIM_2], double det,
-    const double J[UFC_GDIM_2 * UFC_TDIM_2]) {
+    const double J[UFC_GDIM_2 * UFC_TDIM_2])
+{
   K[0] = J[3] / det;
   K[1] = -J[1] / det;
   K[2] = -J[2] / det;
@@ -720,7 +799,8 @@ inline void new_compute_jacobian_inverse_triangle_2d(
 /// Compute Jacobian (pseudo)inverse K for triangle embedded in R^3
 inline void new_compute_jacobian_inverse_triangle_3d(
     double K[UFC_TDIM_2 * UFC_GDIM_3], double den, const double c[3],
-    const double J[UFC_GDIM_3 * UFC_TDIM_2]) {
+    const double J[UFC_GDIM_3 * UFC_TDIM_2])
+{
   K[0] = (J[0] * c[1] - J[1] * c[2]) / den;
   K[1] = (J[2] * c[1] - J[3] * c[2]) / den;
   K[2] = (J[4] * c[1] - J[5] * c[2]) / den;
@@ -732,7 +812,8 @@ inline void new_compute_jacobian_inverse_triangle_3d(
 /// Compute Jacobian inverse K for tetrahedron embedded in R^3
 inline void
 new_compute_jacobian_inverse_tetrahedron_3d(double K[UFC_TDIM_3 * UFC_GDIM_3],
-                                            double det, const double d[9]) {
+                                            double det, const double d[9])
+{
   K[0] = d[0 * 3 + 0] / det;
   K[1] = d[1 * 3 + 0] / det;
   K[2] = d[2 * 3 + 0] / det;
@@ -747,8 +828,9 @@ new_compute_jacobian_inverse_tetrahedron_3d(double K[UFC_TDIM_3 * UFC_GDIM_3],
 // --- Computation of edge, face, facet scaling factors
 
 /// Compute edge scaling factors for triangle embedded in R^2
-inline void compute_edge_scaling_factors_triangle_2d(
-    double dx[2], const double coordinate_dofs[6], int64_t facet) {
+static void compute_edge_scaling_factors_triangle_2d(
+    double dx[2], const double coordinate_dofs[6], int64_t facet)
+{
   // Get vertices on edge
   const unsigned int v0 = triangle_facet_vertices[facet][0];
   const unsigned int v1 = triangle_facet_vertices[facet][1];
@@ -760,14 +842,16 @@ inline void compute_edge_scaling_factors_triangle_2d(
 }
 
 /// Compute facet scaling factor for triangle embedded in R^2
-inline void compute_facet_scaling_factor_triangle_2d(double &det,
-                                                     const double dx[2]) {
-  det = sqrt(dx[0] * dx[0] + dx[1] * dx[1]);
+inline void compute_facet_scaling_factor_triangle_2d(double* det,
+                                                     const double dx[2])
+{
+  *det = sqrt(dx[0] * dx[0] + dx[1] * dx[1]);
 }
 
 /// Compute edge scaling factors for triangle embedded in R^3
-inline void compute_edge_scaling_factors_triangle_3d(
-    double dx[3], const double coordinate_dofs[9], int64_t facet) {
+static void compute_edge_scaling_factors_triangle_3d(
+    double dx[3], const double coordinate_dofs[9], int64_t facet)
+{
   // Get vertices on edge
   const unsigned int v0 = triangle_facet_vertices[facet][0];
   const unsigned int v1 = triangle_facet_vertices[facet][1];
@@ -780,88 +864,98 @@ inline void compute_edge_scaling_factors_triangle_3d(
 }
 
 /// Compute facet scaling factor for triangle embedded in R^3
-inline void compute_facet_scaling_factor_triangle_3d(double &det,
-                                                     const double dx[3]) {
-  det = sqrt(dx[0] * dx[0] + dx[1] * dx[1] + dx[2] * dx[2]);
+inline void compute_facet_scaling_factor_triangle_3d(double* det,
+                                                     const double dx[3])
+{
+  *det = sqrt(dx[0] * dx[0] + dx[1] * dx[1] + dx[2] * dx[2]);
 }
 
 /// Compute face scaling factors for tetrahedron embedded in R^3
-inline void compute_face_scaling_factors_tetrahedron_3d(
-    double a[3], const double coordinate_dofs[12], int64_t facet) {
+static void compute_face_scaling_factors_tetrahedron_3d(
+    double a[3], const double coordinate_dofs[12], int64_t facet)
+{
   // Get vertices on face
   const unsigned int v0 = tetrahedron_facet_vertices[facet][0];
   const unsigned int v1 = tetrahedron_facet_vertices[facet][1];
   const unsigned int v2 = tetrahedron_facet_vertices[facet][2];
 
   // Compute scale factor (area of face scaled by area of reference triangle)
-  a[0] = (coordinate_dofs[3 * v0 + 1] * coordinate_dofs[3 * v1 + 2] +
-          coordinate_dofs[3 * v0 + 2] * coordinate_dofs[3 * v2 + 1] +
-          coordinate_dofs[3 * v1 + 1] * coordinate_dofs[3 * v2 + 2]) -
-         (coordinate_dofs[3 * v2 + 1] * coordinate_dofs[3 * v1 + 2] +
-          coordinate_dofs[3 * v2 + 2] * coordinate_dofs[3 * v0 + 1] +
-          coordinate_dofs[3 * v1 + 1] * coordinate_dofs[3 * v0 + 2]);
+  a[0] = (coordinate_dofs[3 * v0 + 1] * coordinate_dofs[3 * v1 + 2]
+          + coordinate_dofs[3 * v0 + 2] * coordinate_dofs[3 * v2 + 1]
+          + coordinate_dofs[3 * v1 + 1] * coordinate_dofs[3 * v2 + 2])
+         - (coordinate_dofs[3 * v2 + 1] * coordinate_dofs[3 * v1 + 2]
+            + coordinate_dofs[3 * v2 + 2] * coordinate_dofs[3 * v0 + 1]
+            + coordinate_dofs[3 * v1 + 1] * coordinate_dofs[3 * v0 + 2]);
 
-  a[1] = (coordinate_dofs[3 * v0 + 2] * coordinate_dofs[3 * v1 + 0] +
-          coordinate_dofs[3 * v0 + 0] * coordinate_dofs[3 * v2 + 2] +
-          coordinate_dofs[3 * v1 + 2] * coordinate_dofs[3 * v2 + 0]) -
-         (coordinate_dofs[3 * v2 + 2] * coordinate_dofs[3 * v1 + 0] +
-          coordinate_dofs[3 * v2 + 0] * coordinate_dofs[3 * v0 + 2] +
-          coordinate_dofs[3 * v1 + 2] * coordinate_dofs[3 * v0 + 0]);
+  a[1] = (coordinate_dofs[3 * v0 + 2] * coordinate_dofs[3 * v1 + 0]
+          + coordinate_dofs[3 * v0 + 0] * coordinate_dofs[3 * v2 + 2]
+          + coordinate_dofs[3 * v1 + 2] * coordinate_dofs[3 * v2 + 0])
+         - (coordinate_dofs[3 * v2 + 2] * coordinate_dofs[3 * v1 + 0]
+            + coordinate_dofs[3 * v2 + 0] * coordinate_dofs[3 * v0 + 2]
+            + coordinate_dofs[3 * v1 + 2] * coordinate_dofs[3 * v0 + 0]);
 
-  a[2] = (coordinate_dofs[3 * v0 + 0] * coordinate_dofs[3 * v1 + 1] +
-          coordinate_dofs[3 * v0 + 1] * coordinate_dofs[3 * v2 + 0] +
-          coordinate_dofs[3 * v1 + 0] * coordinate_dofs[3 * v2 + 1]) -
-         (coordinate_dofs[3 * v2 + 0] * coordinate_dofs[3 * v1 + 1] +
-          coordinate_dofs[3 * v2 + 1] * coordinate_dofs[3 * v0 + 0] +
-          coordinate_dofs[3 * v1 + 0] * coordinate_dofs[3 * v0 + 1]);
+  a[2] = (coordinate_dofs[3 * v0 + 0] * coordinate_dofs[3 * v1 + 1]
+          + coordinate_dofs[3 * v0 + 1] * coordinate_dofs[3 * v2 + 0]
+          + coordinate_dofs[3 * v1 + 0] * coordinate_dofs[3 * v2 + 1])
+         - (coordinate_dofs[3 * v2 + 0] * coordinate_dofs[3 * v1 + 1]
+            + coordinate_dofs[3 * v2 + 1] * coordinate_dofs[3 * v0 + 0]
+            + coordinate_dofs[3 * v1 + 0] * coordinate_dofs[3 * v0 + 1]);
 }
 
 /// Compute facet scaling factor for tetrahedron embedded in R^3
-inline void compute_facet_scaling_factor_tetrahedron_3d(double &det,
-                                                        const double a[3]) {
-  det = sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
+inline void compute_facet_scaling_factor_tetrahedron_3d(double* det,
+                                                        const double a[3])
+{
+  *det = sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
 }
 
 ///--- Compute facet normal directions ---
 
 /// Compute facet direction for interval embedded in R^1
 inline void compute_facet_normal_direction_interval_1d(
-    bool &direction, const double coordinate_dofs[2], int64_t facet) {
-  direction = facet == 0 ? coordinate_dofs[0] > coordinate_dofs[1]
-                         : coordinate_dofs[1] > coordinate_dofs[0];
+    bool* direction, const double coordinate_dofs[2], int64_t facet)
+{
+  *direction = facet == 0 ? coordinate_dofs[0] > coordinate_dofs[1]
+                          : coordinate_dofs[1] > coordinate_dofs[0];
 }
 
 /// Compute facet direction for triangle embedded in R^2
-inline void
-compute_facet_normal_direction_triangle_2d(bool &direction,
+static void
+compute_facet_normal_direction_triangle_2d(bool* direction,
                                            const double coordinate_dofs[6],
-                                           const double dx[2], int64_t facet) {
+                                           const double dx[2], int64_t facet)
+{
   const unsigned int v0 = triangle_facet_vertices[facet][0];
-  direction = dx[1] * (coordinate_dofs[2 * facet] - coordinate_dofs[2 * v0]) -
-                  dx[0] * (coordinate_dofs[2 * facet + 1] -
-                           coordinate_dofs[2 * v0 + 1]) <
-              0;
+  *direction = dx[1] * (coordinate_dofs[2 * facet] - coordinate_dofs[2 * v0])
+                   - dx[0]
+                         * (coordinate_dofs[2 * facet + 1]
+                            - coordinate_dofs[2 * v0 + 1])
+               < 0;
 }
 
 /// Compute facet direction for tetrahedron embedded in R^3
-inline void compute_facet_normal_direction_tetrahedron_3d(
-    bool &direction, const double coordinate_dofs[9], const double a[3],
-    int64_t facet) {
+static void
+compute_facet_normal_direction_tetrahedron_3d(bool* direction,
+                                              const double coordinate_dofs[9],
+                                              const double a[3], int64_t facet)
+{
   const unsigned int v0 = tetrahedron_facet_vertices[facet][0];
-  direction =
-      a[0] * (coordinate_dofs[3 * facet] - coordinate_dofs[3 * v0]) +
-          a[1] *
-              (coordinate_dofs[3 * facet + 1] - coordinate_dofs[3 * v0 + 1]) +
-          a[2] *
-              (coordinate_dofs[3 * facet + 2] - coordinate_dofs[3 * v0 + 2]) <
-      0;
+  *direction = a[0] * (coordinate_dofs[3 * facet] - coordinate_dofs[3 * v0])
+                   + a[1]
+                         * (coordinate_dofs[3 * facet + 1]
+                            - coordinate_dofs[3 * v0 + 1])
+                   + a[2]
+                         * (coordinate_dofs[3 * facet + 2]
+                            - coordinate_dofs[3 * v0 + 2])
+               < 0;
 }
 
 ///--- Compute facet normal vectors ---
 
 /// Compute facet normal for interval embedded in R^1
 inline void compute_facet_normal_interval_1d(double n[UFC_GDIM_1],
-                                             bool direction) {
+                                             bool direction)
+{
   // Facet normals are 1.0 or -1.0:   (-1.0) <-- X------X --> (1.0)
   n[0] = direction ? 1.0 : -1.0;
 }
@@ -869,11 +963,15 @@ inline void compute_facet_normal_interval_1d(double n[UFC_GDIM_1],
 /// Compute facet normal for interval embedded in R^2
 inline void compute_facet_normal_interval_2d(double n[UFC_GDIM_2],
                                              const double coordinate_dofs[4],
-                                             int64_t facet) {
-  if (facet == 0) {
+                                             int64_t facet)
+{
+  if (facet == 0)
+  {
     n[0] = coordinate_dofs[0] - coordinate_dofs[2];
     n[1] = coordinate_dofs[1] - coordinate_dofs[3];
-  } else {
+  }
+  else
+  {
     n[0] = coordinate_dofs[2] - coordinate_dofs[0];
     n[1] = coordinate_dofs[3] - coordinate_dofs[1];
   }
@@ -885,12 +983,16 @@ inline void compute_facet_normal_interval_2d(double n[UFC_GDIM_2],
 /// Compute facet normal for interval embedded in R^3
 inline void compute_facet_normal_interval_3d(double n[UFC_GDIM_3],
                                              const double coordinate_dofs[6],
-                                             int64_t facet) {
-  if (facet == 0) {
+                                             int64_t facet)
+{
+  if (facet == 0)
+  {
     n[0] = coordinate_dofs[0] - coordinate_dofs[3];
     n[1] = coordinate_dofs[1] - coordinate_dofs[4];
     n[1] = coordinate_dofs[2] - coordinate_dofs[5];
-  } else {
+  }
+  else
+  {
     n[0] = coordinate_dofs[3] - coordinate_dofs[0];
     n[1] = coordinate_dofs[4] - coordinate_dofs[1];
     n[1] = coordinate_dofs[5] - coordinate_dofs[2];
@@ -904,16 +1006,18 @@ inline void compute_facet_normal_interval_3d(double n[UFC_GDIM_3],
 /// Compute facet normal for triangle embedded in R^2
 inline void compute_facet_normal_triangle_2d(double n[UFC_GDIM_2],
                                              const double dx[2],
-                                             const double det, bool direction) {
+                                             const double det, bool direction)
+{
   // Compute facet normals from the facet scale factor constants
   n[0] = direction ? dx[1] / det : -dx[1] / det;
   n[1] = direction ? -dx[0] / det : dx[0] / det;
 }
 
 /// Compute facet normal for triangle embedded in R^3
-inline void compute_facet_normal_triangle_3d(double n[UFC_GDIM_3],
+static void compute_facet_normal_triangle_3d(double n[UFC_GDIM_3],
                                              const double coordinate_dofs[6],
-                                             int64_t facet) {
+                                             int64_t facet)
+{
   // Compute facet normal for triangles in 3D
   const unsigned int vertex0 = facet;
 
@@ -926,12 +1030,12 @@ inline void compute_facet_normal_triangle_3d(double n[UFC_GDIM_3],
   n[1] = coordinate_dofs[3 * vertex2 + 1] - coordinate_dofs[3 * vertex0 + 1];
   n[2] = coordinate_dofs[3 * vertex2 + 2] - coordinate_dofs[3 * vertex0 + 2];
 
-  double t0 =
-      coordinate_dofs[3 * vertex2 + 0] - coordinate_dofs[3 * vertex1 + 0];
-  double t1 =
-      coordinate_dofs[3 * vertex2 + 1] - coordinate_dofs[3 * vertex1 + 1];
-  double t2 =
-      coordinate_dofs[3 * vertex2 + 2] - coordinate_dofs[3 * vertex1 + 2];
+  double t0
+      = coordinate_dofs[3 * vertex2 + 0] - coordinate_dofs[3 * vertex1 + 0];
+  double t1
+      = coordinate_dofs[3 * vertex2 + 1] - coordinate_dofs[3 * vertex1 + 1];
+  double t2
+      = coordinate_dofs[3 * vertex2 + 2] - coordinate_dofs[3 * vertex1 + 2];
   const double t_length = sqrt(t0 * t0 + t1 * t1 + t2 * t2);
   t0 /= t_length;
   t1 /= t_length;
@@ -954,7 +1058,8 @@ inline void compute_facet_normal_triangle_3d(double n[UFC_GDIM_3],
 inline void compute_facet_normal_tetrahedron_3d(double n[UFC_GDIM_3],
                                                 const double a[3],
                                                 const double det,
-                                                bool direction) {
+                                                bool direction)
+{
   // Compute facet normals from the facet scale factor constants
   n[0] = direction ? a[0] / det : -a[0] / det;
   n[1] = direction ? a[1] / det : -a[1] / det;
@@ -964,148 +1069,162 @@ inline void compute_facet_normal_tetrahedron_3d(double n[UFC_GDIM_3],
 ///--- Compute circumradius ---
 
 /// Compute circumradius for interval embedded in R^1
-inline void compute_circumradius_interval_1d(double &circumradius,
-                                             double volume) {
+inline void compute_circumradius_interval_1d(double* circumradius,
+                                             double volume)
+{
   // Compute circumradius; in 1D it is equal to half the cell length
-  circumradius = volume / 2.0;
+  *circumradius = volume / 2.0;
 }
 
 /// Compute circumradius for interval embedded in R^2
-inline void compute_circumradius_interval_2d(double &circumradius,
-                                             double volume) {
+inline void compute_circumradius_interval_2d(double* circumradius,
+                                             double volume)
+{
   // Compute circumradius of interval in 2D (1/2 volume)
-  circumradius = volume / 2.0;
+  *circumradius = volume / 2.0;
 }
 
 /// Compute circumradius for interval embedded in R^3
-inline void compute_circumradius_interval_3d(double &circumradius,
-                                             double volume) {
+inline void compute_circumradius_interval_3d(double* circumradius,
+                                             double volume)
+{
   // Compute circumradius of interval in 3D (1/2 volume)
-  circumradius = volume / 2.0;
+  *circumradius = volume / 2.0;
 }
 
 /// Compute circumradius for triangle embedded in R^2
 inline void compute_circumradius_triangle_2d(
-    double &circumradius, const double coordinate_dofs[6],
-    const double J[UFC_GDIM_2 * UFC_TDIM_2], double volume) {
+    double* circumradius, const double coordinate_dofs[6],
+    const double J[UFC_GDIM_2 * UFC_TDIM_2], double volume)
+{
   // Compute circumradius of triangle in 2D
-  const double v1v2 = sqrt((coordinate_dofs[4] - coordinate_dofs[2]) *
-                               (coordinate_dofs[4] - coordinate_dofs[2]) +
-                           (coordinate_dofs[5] - coordinate_dofs[3]) *
-                               (coordinate_dofs[5] - coordinate_dofs[3]));
+  const double v1v2 = sqrt((coordinate_dofs[4] - coordinate_dofs[2])
+                               * (coordinate_dofs[4] - coordinate_dofs[2])
+                           + (coordinate_dofs[5] - coordinate_dofs[3])
+                                 * (coordinate_dofs[5] - coordinate_dofs[3]));
   const double v0v2 = sqrt(J[3] * J[3] + J[1] * J[1]);
   const double v0v1 = sqrt(J[0] * J[0] + J[2] * J[2]);
 
-  circumradius = 0.25 * (v1v2 * v0v2 * v0v1) / volume;
+  *circumradius = 0.25 * (v1v2 * v0v2 * v0v1) / volume;
 }
 
 /// Compute circumradius for triangle embedded in R^3
 inline void compute_circumradius_triangle_3d(
-    double &circumradius, const double coordinate_dofs[9],
-    const double J[UFC_GDIM_3 * UFC_TDIM_2], double volume) {
+    double* circumradius, const double coordinate_dofs[9],
+    const double J[UFC_GDIM_3 * UFC_TDIM_2], double volume)
+{
   // Compute circumradius of triangle in 3D
-  const double v1v2 = sqrt((coordinate_dofs[6] - coordinate_dofs[3]) *
-                               (coordinate_dofs[6] - coordinate_dofs[3]) +
-                           (coordinate_dofs[7] - coordinate_dofs[4]) *
-                               (coordinate_dofs[7] - coordinate_dofs[4]) +
-                           (coordinate_dofs[8] - coordinate_dofs[5]) *
-                               (coordinate_dofs[8] - coordinate_dofs[5]));
+  const double v1v2 = sqrt((coordinate_dofs[6] - coordinate_dofs[3])
+                               * (coordinate_dofs[6] - coordinate_dofs[3])
+                           + (coordinate_dofs[7] - coordinate_dofs[4])
+                                 * (coordinate_dofs[7] - coordinate_dofs[4])
+                           + (coordinate_dofs[8] - coordinate_dofs[5])
+                                 * (coordinate_dofs[8] - coordinate_dofs[5]));
   const double v0v2 = sqrt(J[3] * J[3] + J[1] * J[1] + J[5] * J[5]);
   const double v0v1 = sqrt(J[0] * J[0] + J[2] * J[2] + J[4] * J[4]);
 
-  circumradius = 0.25 * (v1v2 * v0v2 * v0v1) / volume;
+  *circumradius = 0.25 * (v1v2 * v0v2 * v0v1) / volume;
 }
 
 /// Compute circumradius for tetrahedron embedded in R^3
 inline void compute_circumradius_tetrahedron_3d(
-    double &circumradius, const double coordinate_dofs[12],
-    const double J[UFC_GDIM_3 * UFC_TDIM_3], double volume) {
+    double* circumradius, const double coordinate_dofs[12],
+    const double J[UFC_GDIM_3 * UFC_TDIM_3], double volume)
+{
   // Compute circumradius
-  const double v1v2 = sqrt((coordinate_dofs[6] - coordinate_dofs[3]) *
-                               (coordinate_dofs[6] - coordinate_dofs[3]) +
-                           (coordinate_dofs[7] - coordinate_dofs[4]) *
-                               (coordinate_dofs[7] - coordinate_dofs[4]) +
-                           (coordinate_dofs[8] - coordinate_dofs[5]) *
-                               (coordinate_dofs[8] - coordinate_dofs[5]));
+  const double v1v2 = sqrt((coordinate_dofs[6] - coordinate_dofs[3])
+                               * (coordinate_dofs[6] - coordinate_dofs[3])
+                           + (coordinate_dofs[7] - coordinate_dofs[4])
+                                 * (coordinate_dofs[7] - coordinate_dofs[4])
+                           + (coordinate_dofs[8] - coordinate_dofs[5])
+                                 * (coordinate_dofs[8] - coordinate_dofs[5]));
   const double v0v2 = sqrt(J[1] * J[1] + J[4] * J[4] + J[7] * J[7]);
   const double v0v1 = sqrt(J[0] * J[0] + J[3] * J[3] + J[6] * J[6]);
   const double v0v3 = sqrt(J[2] * J[2] + J[5] * J[5] + J[8] * J[8]);
-  const double v1v3 = sqrt((coordinate_dofs[9] - coordinate_dofs[3]) *
-                               (coordinate_dofs[9] - coordinate_dofs[3]) +
-                           (coordinate_dofs[10] - coordinate_dofs[4]) *
-                               (coordinate_dofs[10] - coordinate_dofs[4]) +
-                           (coordinate_dofs[11] - coordinate_dofs[5]) *
-                               (coordinate_dofs[11] - coordinate_dofs[5]));
-  const double v2v3 = sqrt((coordinate_dofs[9] - coordinate_dofs[6]) *
-                               (coordinate_dofs[9] - coordinate_dofs[6]) +
-                           (coordinate_dofs[10] - coordinate_dofs[7]) *
-                               (coordinate_dofs[10] - coordinate_dofs[7]) +
-                           (coordinate_dofs[11] - coordinate_dofs[8]) *
-                               (coordinate_dofs[11] - coordinate_dofs[8]));
+  const double v1v3 = sqrt((coordinate_dofs[9] - coordinate_dofs[3])
+                               * (coordinate_dofs[9] - coordinate_dofs[3])
+                           + (coordinate_dofs[10] - coordinate_dofs[4])
+                                 * (coordinate_dofs[10] - coordinate_dofs[4])
+                           + (coordinate_dofs[11] - coordinate_dofs[5])
+                                 * (coordinate_dofs[11] - coordinate_dofs[5]));
+  const double v2v3 = sqrt((coordinate_dofs[9] - coordinate_dofs[6])
+                               * (coordinate_dofs[9] - coordinate_dofs[6])
+                           + (coordinate_dofs[10] - coordinate_dofs[7])
+                                 * (coordinate_dofs[10] - coordinate_dofs[7])
+                           + (coordinate_dofs[11] - coordinate_dofs[8])
+                                 * (coordinate_dofs[11] - coordinate_dofs[8]));
   const double la = v1v2 * v0v3;
   const double lb = v0v2 * v1v3;
   const double lc = v0v1 * v2v3;
   const double s = 0.5 * (la + lb + lc);
   const double area = sqrt(s * (s - la) * (s - lb) * (s - lc));
 
-  circumradius = area / (6.0 * volume);
+  *circumradius = area / (6.0 * volume);
 }
 
 ///--- Compute max facet edge lengths ---
 
 /// Compute min edge length in facet of tetrahedron embedded in R^3
-inline void compute_min_facet_edge_length_tetrahedron_3d(
-    double &min_edge_length, unsigned int facet,
-    const double coordinate_dofs[3 * 4]) {
+static void compute_min_facet_edge_length_tetrahedron_3d(
+    double* min_edge_length, unsigned int facet,
+    const double coordinate_dofs[3 * 4])
+{
   // TODO: Extract compute_facet_edge_lengths_tetrahedron_3d(), reuse between
   // min/max functions
   double edge_lengths_sqr[3];
-  for (unsigned int edge = 0; edge < 3; ++edge) {
-    const unsigned int vertex0 =
-        tetrahedron_facet_edge_vertices[facet][edge][0];
-    const unsigned int vertex1 =
-        tetrahedron_facet_edge_vertices[facet][edge][1];
-    edge_lengths_sqr[edge] =
-        (coordinate_dofs[3 * vertex1 + 0] - coordinate_dofs[3 * vertex0 + 0]) *
-            (coordinate_dofs[3 * vertex1 + 0] -
-             coordinate_dofs[3 * vertex0 + 0]) +
-        (coordinate_dofs[3 * vertex1 + 1] - coordinate_dofs[3 * vertex0 + 1]) *
-            (coordinate_dofs[3 * vertex1 + 1] -
-             coordinate_dofs[3 * vertex0 + 1]) +
-        (coordinate_dofs[3 * vertex1 + 2] - coordinate_dofs[3 * vertex0 + 2]) *
-            (coordinate_dofs[3 * vertex1 + 2] -
-             coordinate_dofs[3 * vertex0 + 2]);
+  for (unsigned int edge = 0; edge < 3; ++edge)
+  {
+    const unsigned int vertex0
+        = tetrahedron_facet_edge_vertices[facet][edge][0];
+    const unsigned int vertex1
+        = tetrahedron_facet_edge_vertices[facet][edge][1];
+    edge_lengths_sqr[edge]
+        = (coordinate_dofs[3 * vertex1 + 0] - coordinate_dofs[3 * vertex0 + 0])
+              * (coordinate_dofs[3 * vertex1 + 0]
+                 - coordinate_dofs[3 * vertex0 + 0])
+          + (coordinate_dofs[3 * vertex1 + 1]
+             - coordinate_dofs[3 * vertex0 + 1])
+                * (coordinate_dofs[3 * vertex1 + 1]
+                   - coordinate_dofs[3 * vertex0 + 1])
+          + (coordinate_dofs[3 * vertex1 + 2]
+             - coordinate_dofs[3 * vertex0 + 2])
+                * (coordinate_dofs[3 * vertex1 + 2]
+                   - coordinate_dofs[3 * vertex0 + 2]);
   }
-  min_edge_length = sqrt(fmin(
-      fmin(edge_lengths_sqr[1], edge_lengths_sqr[1]), edge_lengths_sqr[2]));
+  *min_edge_length = sqrt(fmin(fmin(edge_lengths_sqr[1], edge_lengths_sqr[1]),
+                               edge_lengths_sqr[2]));
 }
 
 ///--- Compute max facet edge lengths ---
 
 /// Compute max edge length in facet of tetrahedron embedded in R^3
-inline void
-compute_max_facet_edge_length_tetrahedron_3d(double &max_edge_length,
+static void
+compute_max_facet_edge_length_tetrahedron_3d(double* max_edge_length,
                                              unsigned int facet,
-                                             const double coordinate_dofs[12]) {
+                                             const double coordinate_dofs[12])
+{
   // TODO: Extract compute_facet_edge_lengths_tetrahedron_3d(), reuse between
   // min/max functions
   double edge_lengths_sqr[3];
-  for (unsigned int edge = 0; edge < 3; ++edge) {
-    const unsigned int vertex0 =
-        tetrahedron_facet_edge_vertices[facet][edge][0];
-    const unsigned int vertex1 =
-        tetrahedron_facet_edge_vertices[facet][edge][1];
-    edge_lengths_sqr[edge] =
-        (coordinate_dofs[3 * vertex1 + 0] - coordinate_dofs[3 * vertex0 + 0]) *
-            (coordinate_dofs[3 * vertex1 + 0] -
-             coordinate_dofs[3 * vertex0 + 0]) +
-        (coordinate_dofs[3 * vertex1 + 1] - coordinate_dofs[3 * vertex0 + 1]) *
-            (coordinate_dofs[3 * vertex1 + 1] -
-             coordinate_dofs[3 * vertex0 + 1]) +
-        (coordinate_dofs[3 * vertex1 + 2] - coordinate_dofs[3 * vertex0 + 2]) *
-            (coordinate_dofs[3 * vertex1 + 2] -
-             coordinate_dofs[3 * vertex0 + 2]);
+  for (unsigned int edge = 0; edge < 3; ++edge)
+  {
+    const unsigned int vertex0
+        = tetrahedron_facet_edge_vertices[facet][edge][0];
+    const unsigned int vertex1
+        = tetrahedron_facet_edge_vertices[facet][edge][1];
+    edge_lengths_sqr[edge]
+        = (coordinate_dofs[3 * vertex1 + 0] - coordinate_dofs[3 * vertex0 + 0])
+              * (coordinate_dofs[3 * vertex1 + 0]
+                 - coordinate_dofs[3 * vertex0 + 0])
+          + (coordinate_dofs[3 * vertex1 + 1]
+             - coordinate_dofs[3 * vertex0 + 1])
+                * (coordinate_dofs[3 * vertex1 + 1]
+                   - coordinate_dofs[3 * vertex0 + 1])
+          + (coordinate_dofs[3 * vertex1 + 2]
+             - coordinate_dofs[3 * vertex0 + 2])
+                * (coordinate_dofs[3 * vertex1 + 2]
+                   - coordinate_dofs[3 * vertex0 + 2]);
   }
-  max_edge_length = sqrt(fmax(
-      fmax(edge_lengths_sqr[0], edge_lengths_sqr[1]), edge_lengths_sqr[2]));
+  *max_edge_length = sqrt(fmax(fmax(edge_lengths_sqr[0], edge_lengths_sqr[1]),
+                               edge_lengths_sqr[2]));
 }

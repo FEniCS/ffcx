@@ -69,7 +69,7 @@ Compiler stage 5: Code formatting
   Output: C++ code files
 
   This stage examines the generated C++ code and formats it according
-  to the UFC format, generating as output one or more .h/.cpp files
+  to the UFC format, generating as output one or more .h/.c files
   conforming to the UFC format.
 
 The main interface is defined by the following two functions:

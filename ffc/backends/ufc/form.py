@@ -93,7 +93,7 @@ ufc_custom_integral* create_default_custom_integral_{factory_name}()
 
 ufc_form* create_{factory_name}()
 {{
-  ufc_form* form = (ufc_form*) malloc(sizeof(*form));
+  ufc_form* form = malloc(sizeof(*form));
 
   form->signature = {signature};
   form->rank = {rank};

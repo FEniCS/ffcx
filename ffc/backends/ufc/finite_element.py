@@ -71,7 +71,7 @@ ufc_finite_element* create_sub_element_{factory_name}(int64_t i)
 
 ufc_finite_element* create_{factory_name}()
 {{
-  ufc_finite_element* element = (ufc_finite_element*) malloc(sizeof(*element));
+  ufc_finite_element* element = malloc(sizeof(*element));
 
   element->signature = {signature};
   element->cell_shape = {cell_shape};
