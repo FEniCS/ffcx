@@ -374,6 +374,57 @@ typedef struct ufc_coordinate_mapping {
 
 } ufc_coordinate_mapping;
 
+
+// FIXME: Is this required for integrals?
+// Number of coefficients
+// int64_t num_coefficients() const = 0;
+
+typedef struct ufc_cell_integral {
+  const bool *enabled_coefficients = NULL;
+  int64_t num_cells = -1;
+  void (*tabulate_tensor)(double *A, const double *const *w,
+                          const double *coordinate_dofs,
+                          int cell_orientation) = NULL;
+} ufc_cell_integral;
+
+typedef struct ufc_exterior_facet_integral {
+  const bool *enabled_coefficients = NULL;
+  int64_t num_cells = -1;
+  void (*tabulate_tensor)(double *A, const double *const *w,
+                          const double *coordinate_dofs, int64_t facet,
+                          int cell_orientation) = NULL;
+} ufc_exterior_facet_integral;
+
+typedef struct ufc_interior_facet_integral {
+  const bool *enabled_coefficients = NULL;
+  int64_t num_cells = -1;
+  void (*tabulate_tensor)(double *A, const double *const *w,
+                          const double *coordinate_dofs_0,
+                          const double *coordinate_dofs_1, int64_t facet_0,
+                          int64_t facet_1, int cell_orientation_0,
+                          int cell_orientation_1) = NULL;
+} ufc_interior_facet_integral;
+
+typedef struct ufc_vertex_integral {
+  const bool *enabled_coefficients = NULL;
+  int64_t num_cells = -1;
+  void (*tabulate_tensor)(double *A, const double *const *w,
+                          const double *coordinate_dofs, int64_t vertex,
+                          int cell_orientation) = NULL;
+} ufc_vertex_integral;
+
+typedef struct ufc_custom_integral {
+  const bool *enabled_coefficients = NULL;
+  int64_t num_cells = -1;
+  void (*tabulate_tensor)(double *A, const double *const *w,
+                          const double *coordinate_dofs,
+                          int64_t num_quadrature_points,
+                          const double *quadrature_points,
+                          const double *quadrature_weights,
+                          const double *facet_normals,
+                          int cell_orientation) = NULL;
+} ufc_custom_integral;
+
 namespace ufc {
 
 /// Valid cell shapes
@@ -384,107 +435,6 @@ enum class shape {
   tetrahedron,
   hexahedron,
   vertex
-};
-
-/// This class defines the shared interface for classes implementing
-/// the tabulation of a tensor corresponding to the local contribution
-/// to a form from an integral.
-class integral {
-public:
-  /// Destructor
-  virtual ~integral() {}
-
-  /// Tabulate which form coefficients are used by this integral
-  virtual const bool *enabled_coefficients() const = 0;
-
-  // FIXME: Is this required?
-  // Number of coefficients
-  // virtual int64_t num_coefficients() const = 0;
-};
-
-/// This class defines the interface for the tabulation of the cell
-/// tensor corresponding to the local contribution to a form from
-/// the integral over a cell.
-class cell_integral : public integral {
-public:
-  /// Destructor
-  virtual ~cell_integral() {}
-
-  /// Tabulate the tensor for the contribution from a local cell
-  virtual void tabulate_tensor(double *A, const double *const *w,
-                               const double *coordinate_dofs,
-                               int cell_orientation) const = 0;
-};
-
-/// This class defines the interface for the tabulation of the
-/// exterior facet tensor corresponding to the local contribution to
-/// a form from the integral over an exterior facet.
-class exterior_facet_integral : public integral {
-public:
-  /// Destructor
-  virtual ~exterior_facet_integral() {}
-
-  /// Tabulate the tensor for the contribution from a local exterior facet
-  virtual void tabulate_tensor(double *A, const double *const *w,
-                               const double *coordinate_dofs, int64_t facet,
-                               int cell_orientation) const = 0;
-};
-
-/// This class defines the interface for the tabulation of the
-/// interior facet tensor corresponding to the local contribution to
-/// a form from the integral over an interior facet.
-class interior_facet_integral : public integral {
-public:
-  /// Destructor
-  virtual ~interior_facet_integral() {}
-
-  /// Tabulate the tensor for the contribution from a local interior facet
-  virtual void tabulate_tensor(double *A, const double *const *w,
-                               const double *coordinate_dofs_0,
-                               const double *coordinate_dofs_1, int64_t facet_0,
-                               int64_t facet_1, int cell_orientation_0,
-                               int cell_orientation_1) const = 0;
-};
-
-/// This class defines the interface for the tabulation of
-/// an expression evaluated at exactly one point.
-class vertex_integral : public integral {
-public:
-  /// Constructor
-  vertex_integral() {}
-
-  /// Destructor
-  virtual ~vertex_integral() {}
-
-  /// Tabulate the tensor for the contribution from the local vertex
-  virtual void tabulate_tensor(double *A, const double *const *w,
-                               const double *coordinate_dofs, int64_t vertex,
-                               int cell_orientation) const = 0;
-};
-
-/// This class defines the interface for the tabulation of the
-/// tensor corresponding to the local contribution to a form from
-/// the integral over a custom domain defined in terms of a set of
-/// quadrature points and weights.
-class custom_integral : public integral {
-public:
-  /// Constructor
-  custom_integral() {}
-
-  /// Destructor
-  virtual ~custom_integral(){};
-
-  /// Return the number of cells involved in evaluation of the integral
-  virtual int64_t num_cells() const = 0;
-
-  /// Tabulate the tensor for the contribution from a custom domain
-  virtual void tabulate_tensor(double *A, const double *const *w,
-                               const double *coordinate_dofs,
-                               int64_t num_quadrature_points,
-                               const double *quadrature_points,
-                               const double *quadrature_weights,
-                               const double *facet_normals,
-                               int cell_orientation) const = 0;
 };
 
 /// This class defines the interface for the assembly of the global
@@ -578,40 +528,40 @@ public:
   virtual bool has_custom_integrals() const = 0;
 
   /// Create a new cell integral on sub domain subdomain_id
-  virtual cell_integral *create_cell_integral(int64_t subdomain_id) const = 0;
+  virtual ufc_cell_integral *create_cell_integral(int64_t subdomain_id) const = 0;
 
   /// Create a new exterior facet integral on sub domain subdomain_id
-  virtual exterior_facet_integral *
+  virtual ufc_exterior_facet_integral *
   create_exterior_facet_integral(int64_t subdomain_id) const = 0;
 
   /// Create a new interior facet integral on sub domain subdomain_id
-  virtual interior_facet_integral *
+  virtual ufc_interior_facet_integral *
   create_interior_facet_integral(int64_t subdomain_id) const = 0;
 
   /// Create a new vertex integral on sub domain subdomain_id
-  virtual vertex_integral *
+  virtual ufc_vertex_integral *
   create_vertex_integral(int64_t subdomain_id) const = 0;
 
   /// Create a new custom integral on sub domain subdomain_id
-  virtual custom_integral *
+  virtual ufc_custom_integral *
   create_custom_integral(int64_t subdomain_id) const = 0;
 
   /// Create a new cell integral on everywhere else
-  virtual cell_integral *create_default_cell_integral() const = 0;
+  virtual ufc_cell_integral *create_default_cell_integral() const = 0;
 
   /// Create a new exterior facet integral on everywhere else
-  virtual exterior_facet_integral *
+  virtual ufc_exterior_facet_integral *
   create_default_exterior_facet_integral() const = 0;
 
   /// Create a new interior facet integral on everywhere else
-  virtual interior_facet_integral *
+  virtual ufc_interior_facet_integral *
   create_default_interior_facet_integral() const = 0;
 
   /// Create a new vertex integral on everywhere else
-  virtual vertex_integral *create_default_vertex_integral() const = 0;
+  virtual ufc_vertex_integral *create_default_vertex_integral() const = 0;
 
   /// Create a new custom integral on everywhere else
-  virtual custom_integral *create_default_custom_integral() const = 0;
+  virtual ufc_custom_integral *create_default_custom_integral() const = 0;
 };
 } // namespace ufc
 

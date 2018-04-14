@@ -46,6 +46,7 @@ from ffc.uflacs.backends.ufc.form import ufc_form
 from ffc.uflacs.backends.ufc.finite_element import ufc_finite_element_generator
 from ffc.uflacs.backends.ufc.dofmap import ufc_dofmap_generator
 from ffc.uflacs.backends.ufc.coordinate_mapping import ufc_coordinate_mapping_generator
+from ffc.uflacs.backends.ufc.integrals import ufc_integral_generator
 
 
 def generate_code(ir, parameters):
@@ -87,8 +88,11 @@ def generate_code(ir, parameters):
 
     # Generate code for integrals
     info("Generating code for integrals")
+    # code_integrals = [
+    #     _generate_integral_code(ir, parameters) for ir in ir_integrals
+    # ]
     code_integrals = [
-        _generate_integral_code(ir, parameters) for ir in ir_integrals
+        ufc_integral_generator(ir, parameters) for ir in ir_integrals
     ]
 
     # Generate code for forms
@@ -109,8 +113,8 @@ def _extract_includes(full_ir, code_integrals):
 
     # Includes added by representations
     includes = set()
-    for code in code_integrals:
-        includes.update(code["additional_includes_set"])
+    # for code in code_integrals:
+    #     includes.update(code["additional_includes_set"])
 
     # Includes for dependencies in jit mode
     jit = any(full_ir[i][j]["jit"] for i in range(len(full_ir))

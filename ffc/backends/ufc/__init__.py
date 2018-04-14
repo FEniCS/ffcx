@@ -104,12 +104,8 @@ extern "C" %(basename)s * create_%(publicname)s()
 
 def all_ufc_classnames():
     "Build list of all classnames."
-    integral_names = ["cell", "exterior_facet",
-                      "interior_facet", "vertex", "custom"]
-    integral_classnames = [integral_name +
-                           "_integral" for integral_name in integral_names]
     jitable_classnames = ["form"]
-    classnames = jitable_classnames + integral_classnames
+    classnames = jitable_classnames
     return classnames
 
 
