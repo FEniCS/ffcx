@@ -190,7 +190,7 @@ class ufc_finite_element:
             return [L.Comment(msg), L.Return(-1)]
 
         return generate_evaluate_reference_basis_derivatives(
-            L, data, parameters)
+            L, data, ir["classname"], parameters)
 
     def transform_reference_basis_derivatives(self, L, ir, parameters):
         data = ir["evaluate_basis"]

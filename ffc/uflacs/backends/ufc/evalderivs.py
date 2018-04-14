@@ -12,8 +12,9 @@ from ffc.uflacs.backends.ufc.evaluatebasis import generate_expansion_coefficient
 index_type = "int64_t"
 
 
-def generate_evaluate_reference_basis_derivatives(L, data, parameters):
-    # Cutoff for feature to disable generation of this code (consider removing after benchmarking final result)
+def generate_evaluate_reference_basis_derivatives(L, data, classname, parameters):
+    # Cutoff for feature to disable generation of this code (consider
+    # removing after benchmarking final result)
     if isinstance(data, str):
         msg = "evaluate_reference_basis_derivatives: %s" % (data, )
         return generate_error(L, msg,
@@ -65,12 +66,17 @@ def generate_evaluate_reference_basis_derivatives(L, data, parameters):
         # FIXME: (GNW) This has been changed to avoid a function calling
         # another function, since with the change to C we don't know to
         # full name of the other function.
-        L.If(L.EQ(order, 0), [L.Return(-1)]),
+        # L.If(L.EQ(order, 0), [L.Return(-1)]),
         # L.If(
         #     L.EQ(order, 0), [
         #         L.Call("evaluate_reference_basis",
         #                (reference_values, num_points, X)), ret
         #     ]),
+        L.If(
+            L.EQ(order, 0), [
+                L.Return(L.Call("evaluate_reference_basis_{}".format(classname),
+                         (reference_values, num_points, X)))
+            ]),
         # Compute number of derivatives of this order
         L.VariableDecl(
             "const " + index_type,
