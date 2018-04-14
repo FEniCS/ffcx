@@ -2,10 +2,10 @@
 # Code generation format strings for UFC (Unified Form-assembly Code)
 # This code is released into the public domain.
 #
-# The FEniCS Project (http://www.fenicsproject.org/) 2006-2017
+# The FEniCS Project (http://www.fenicsproject.org/) 2018
 
 ufc_coordinate_mapping_declaration = """
-extern "C" ufc_coordinate_mapping* create_{factory_name}();
+ufc_coordinate_mapping* create_{factory_name}();
 """
 
 ufc_coordinate_mapping_factory = """
@@ -78,7 +78,7 @@ void compute_midpoint_geometry_{factory_name}(double * x, double * J,
 }}
 
 
-extern "C" ufc_coordinate_mapping* create_{factory_name}()
+ufc_coordinate_mapping* create_{factory_name}()
 {{
   ufc_coordinate_mapping* cmap = (ufc_coordinate_mapping*) malloc(sizeof(*cmap));
   const char* signature = {signature};

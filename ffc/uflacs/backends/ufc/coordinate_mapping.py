@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
-from ffc.uflacs.backends.ufc.generator import ufc_generator
 from ffc.uflacs.backends.ufc.utils import generate_return_new
 from ffc.backends.ufc.coordinate_mapping import (
     ufc_coordinate_mapping_factory, ufc_coordinate_mapping_declaration)
@@ -169,11 +168,7 @@ def generate_assign_inverse(L, K, J, detJ, gdim, tdim):
 
 
 class ufc_coordinate_mapping:
-    "Each function maps to a keyword in the template. See documentation of ufc_generator."
-
-    def __init__(self):
-        pass
-        #ufc_generator.__init__(self, "coordinate_mapping")
+    "Each function maps to a keyword in the template."
 
     def cell_shape(self, L, ir):
         name = ir["cell_shape"]

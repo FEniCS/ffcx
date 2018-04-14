@@ -17,21 +17,14 @@
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
 from ffc.representation import pick_representation
-
-from ffc.uflacs.backends.ufc.generator import ufc_generator, ufc_integral_types
 from ufl.utils.formatting import dstr
 from ffc.backends.ufc.integrals import (ufc_integral_declaration,
-    tabulate_tensor_implementation, ufc_integral_factory)
+                                        tabulate_tensor_implementation,
+                                        ufc_integral_factory)
 
 
-
-# NOTE: This is currently not in use, see ffc/codegeneration.py for current status
-class ufc_integral(ufc_generator):
-    "Each function maps to a keyword in the template. See documentation of ufc_generator."
-
-    def __init__(self, integral_type):
-        assert integral_type in ufc_integral_types
-        ufc_generator.__init__(self, integral_type + "_integral")
+class ufc_integral:
+    "Each function maps to a keyword in the template.."
 
     def enabled_coefficients(self, L, ir):
         # FIXME: Needs updating for interface change to plain C.
@@ -114,8 +107,8 @@ def ufc_integral_generator(ir, parameters):
     integral_type = ir["integral_type"]
 
     # Format declaration
-    declaration = ufc_integral_declaration.format(type=integral_type,
-       factory_name=factory_name)
+    declaration = ufc_integral_declaration.format(
+        type=integral_type, factory_name=factory_name)
 
     # Select representation
     r = pick_representation(ir["representation"])
@@ -131,12 +124,14 @@ def ufc_integral_generator(ir, parameters):
 
     # Format tabulate tensor body
     tabulate_tensor_declaration = tabulate_tensor_implementation[integral_type]
-    tabulate_tensor_fn = tabulate_tensor_declaration.format(factory_name=factory_name,
-        tabulate_tensor=code["tabulate_tensor"])
+    tabulate_tensor_fn = tabulate_tensor_declaration.format(
+        factory_name=factory_name, tabulate_tensor=code["tabulate_tensor"])
 
     # Format implementation code
-    implementation = ufc_integral_factory.format(type=integral_type, factory_name=factory_name,
-                    enabled_coefficients=code["enabled_coefficients"],
-                    tabulate_tensor=tabulate_tensor_fn)
+    implementation = ufc_integral_factory.format(
+        type=integral_type,
+        factory_name=factory_name,
+        enabled_coefficients=code["enabled_coefficients"],
+        tabulate_tensor=tabulate_tensor_fn)
 
     return declaration, implementation

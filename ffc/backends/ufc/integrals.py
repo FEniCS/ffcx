@@ -2,10 +2,10 @@
 # Code generation format strings for UFC (Unified Form-assembly Code)
 # This code is released into the public domain.
 #
-# The FEniCS Project (http://www.fenicsproject.org/) 2006-2017
+# The FEniCS Project (http://www.fenicsproject.org/) 2018
 
 ufc_integral_declaration = """
-extern "C" ufc_{type}_integral* create_{factory_name}();
+ufc_{type}_integral* create_{factory_name}();
 """
 
 tabulate_tensor_implementation = \
@@ -69,7 +69,7 @@ ufc_integral_factory = """
 
 {tabulate_tensor}
 
-extern "C" ufc_{type}_integral* create_{factory_name}()
+ufc_{type}_integral* create_{factory_name}()
 {{
   static const bool enabled{enabled_coefficients}
 

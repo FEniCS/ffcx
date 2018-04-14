@@ -47,6 +47,7 @@ from ffc.uflacs.backends.ufc.finite_element import ufc_finite_element_generator
 from ffc.uflacs.backends.ufc.dofmap import ufc_dofmap_generator
 from ffc.uflacs.backends.ufc.coordinate_mapping import ufc_coordinate_mapping_generator
 from ffc.uflacs.backends.ufc.integrals import ufc_integral_generator
+from ffc.uflacs.backends.ufc.form import ufc_form_generator
 
 
 def generate_code(ir, parameters):
@@ -88,16 +89,13 @@ def generate_code(ir, parameters):
 
     # Generate code for integrals
     info("Generating code for integrals")
-    # code_integrals = [
-    #     _generate_integral_code(ir, parameters) for ir in ir_integrals
-    # ]
     code_integrals = [
         ufc_integral_generator(ir, parameters) for ir in ir_integrals
     ]
 
     # Generate code for forms
     info("Generating code for forms")
-    code_forms = [_generate_form_code(ir, parameters) for ir in ir_forms]
+    code_forms = [ufc_form_generator(ir, parameters) for ir in ir_forms]
 
     # Extract additional includes
     includes = _extract_includes(full_ir, code_integrals)
@@ -292,30 +290,3 @@ def _generate_integral_code(ir, parameters):
         ir, parameters)
 
     return code
-
-
-# TODO: Replace the above with this, currently something is not working
-def _new_generate_integral_code(ir, parameters):
-    "Generate code for integrals from intermediate representation."
-    return ufc_integral(ir["integral_type"]).generate_snippets(
-        L, ir, parameters)
-
-
-def _generate_finite_element_code(ir, parameters):
-    "Generate code for finite_element from intermediate representation."
-    return ufc_finite_element().generate_snippets(L, ir, parameters)
-
-
-def _generate_dofmap_code(ir, parameters):
-    "Generate code for dofmap from intermediate representation."
-    return ufc_dofmap().generate_snippets(L, ir, parameters)
-
-
-def _generate_coordinate_mapping_code(ir, parameters):
-    "Generate code for coordinate_mapping from intermediate representation."
-    return ufc_coordinate_mapping().generate_snippets(L, ir, parameters)
-
-
-def _generate_form_code(ir, parameters):
-    "Generate code for coordinate_mapping from intermediate representation."
-    return ufc_form().generate_snippets(L, ir, parameters)

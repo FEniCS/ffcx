@@ -19,9 +19,17 @@
 # Note: Most of the code in this file is a direct translation from the old implementation in FFC
 
 from ffc.classname import make_integral_classname
-from ffc.uflacs.backends.ufc.generator import ufc_generator, integral_name_templates, ufc_integral_types
 from ffc.uflacs.backends.ufc.utils import generate_return_new, generate_return_new_switch
+from ffc.backends.ufc.form import ufc_form_factory, ufc_form_declaration
+from ffc.representation import ufc_integral_types
 
+# These are the method names in ufc_form that are specialized for each integral type
+integral_name_templates = (
+    "max_%s_subdomain_id",
+    "has_%s_integrals",
+    "create_%s_integral",
+    "create_default_%s_integral",
+)
 
 def create_delegate(integral_type, declname, impl):
     def _delegate(self, L, ir, parameters):
@@ -59,16 +67,13 @@ def add_ufc_form_integral_methods(cls):
 
 
 @add_ufc_form_integral_methods
-class ufc_form(ufc_generator):
-    """Each function maps to a keyword in the template. See documentation of ufc_generator.
+class ufc_form:
+    """Each function maps to a keyword in the template.
 
     The exceptions are functions on the form
         def _*_foo_*(self, L, ir, parameters, integral_type, declname)
     which add_ufc_form_integral_methods will duplicate for foo = each integral type.
     """
-
-    def __init__(self):
-        ufc_generator.__init__(self, "form")
 
     def num_coefficients(self, L, num_coefficients):
         return L.Return(num_coefficients)
@@ -159,3 +164,86 @@ class ufc_form(ufc_generator):
             return L.Return(L.Null())
         else:
             return generate_return_new(L, classname, factory=True)
+
+
+def ufc_form_generator(ir, parameters):
+    """Generate UFC code for a form"""
+
+    factory_name = ir["classname"]
+
+    d = {}
+    d["factory_name"] = factory_name
+    d["signature"] = "\"{}\"".format(ir["signature"])
+    d["rank"] = ir["rank"]
+    d["num_coefficients"] = ir["num_coefficients"]
+
+    d["max_cell_subdomain_id"] = ir["max_cell_subdomain_id"]
+    d["max_exterior_facet_subdomain_id"] = ir[
+        "max_exterior_facet_subdomain_id"]
+    d["max_interior_facet_subdomain_id"] = ir[
+        "max_interior_facet_subdomain_id"]
+    d["max_vertex_subdomain_id"] = ir["max_vertex_subdomain_id"]
+    d["max_custom_subdomain_id"] = ir["max_custom_subdomain_id"]
+
+    d["has_cell_integrals"] = "true" if ir["has_cell_integrals"] else "false"
+    d["has_exterior_facet_integrals"] = "true" if ir[
+        "has_exterior_facet_integrals"] else "false"
+    d["has_interior_facet_integrals"] = "true" if ir[
+        "has_interior_facet_integrals"] else "false"
+    d["has_vertex_integrals"] = "true" if ir[
+        "has_vertex_integrals"] else "false"
+    d["has_custom_integrals"] = "true" if ir[
+        "has_custom_integrals"] else "false"
+
+    import ffc.uflacs.language.cnodes as L
+    generator = ufc_form()
+
+    statements = generator.original_coefficient_position(L, ir)
+    assert isinstance(statements, list)
+    d["original_coefficient_position"] = L.StatementList(statements)
+
+    d["create_coordinate_finite_element"] = generator.create_coordinate_finite_element(
+        L, ir)
+    d["create_coordinate_dofmap"] = generator.create_coordinate_dofmap(L, ir)
+    d["create_coordinate_mapping"] = generator.create_coordinate_mapping(L, ir)
+    d["create_finite_element"] = generator.create_finite_element(L, ir)
+    d["create_dofmap"] = generator.create_dofmap(L, ir)
+
+    d["create_cell_integral"] = generator.create_cell_integral(
+        L, ir, parameters)
+    d["create_interior_facet_integral"] = generator.create_interior_facet_integral(
+        L, ir, parameters)
+    d["create_exterior_facet_integral"] = generator.create_exterior_facet_integral(
+        L, ir, parameters)
+    d["create_vertex_integral"] = generator.create_vertex_integral(
+        L, ir, parameters)
+    d["create_custom_integral"] = generator.create_custom_integral(
+        L, ir, parameters)
+
+    d["create_default_cell_integral"] = generator.create_default_cell_integral(
+        L, ir, parameters)
+    d["create_default_interior_facet_integral"] = generator.create_default_interior_facet_integral(
+        L, ir, parameters)
+    d["create_default_exterior_facet_integral"] = generator.create_default_exterior_facet_integral(
+        L, ir, parameters)
+    d["create_default_vertex_integral"] = generator.create_default_vertex_integral(
+        L, ir, parameters)
+    d["create_default_custom_integral"] = generator.create_default_custom_integral(
+        L, ir, parameters)
+
+    # Check that no keys are redundant or have been missed
+    from string import Formatter
+    fields = [
+        fname for _, fname, _, _ in Formatter().parse(ufc_form_factory)
+        if fname
+    ]
+    assert set(fields) == set(
+        d.keys()), "Mismatch between keys in template and in formattting dict"
+
+    # Format implementation code
+    implementation = ufc_form_factory.format_map(d)
+
+    # Format declaration
+    declaration = ufc_form_declaration.format(factory_name=factory_name)
+
+    return declaration, implementation
