@@ -2,10 +2,10 @@
 # Code generation format strings for UFC (Unified Form-assembly Code)
 # This code is released into the public domain.
 #
-# The FEniCS Project (http://www.fenicsproject.org/) 2006-2017.
+# The FEniCS Project (http://www.fenicsproject.org/) 2018.
 
 ufc_dofmap_declaration = """
-extern "C" ufc_dofmap* create_{factory_name}();
+ufc_dofmap* create_{factory_name}();
 """
 
 ufc_dofmap_factory = """
@@ -47,7 +47,7 @@ ufc_dofmap* create_sub_dofmap_{factory_name}(int64_t i)
 {create_sub_dofmap}
 }}
 
-extern "C" ufc_dofmap* create_{factory_name}()
+ufc_dofmap* create_{factory_name}()
 {{
   ufc_dofmap* dofmap = (ufc_dofmap*) malloc(sizeof(*dofmap));
   dofmap->signature = {signature};

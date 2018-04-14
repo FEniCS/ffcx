@@ -10,7 +10,7 @@ It relies on templates for UFC code available as part of the module
 ufc_utils.
 """
 
-# Copyright (C) 2009-2017 Anders Logg
+# Copyright (C) 2009-2018 Anders Logg and Garth N. Wells
 #
 # This file is part of FFC.
 #
@@ -34,9 +34,6 @@ import os
 from ffc.log import info, error, begin, end, dstr
 from ffc import __version__ as FFC_VERSION
 from ffc.backends.ufc import __version__ as UFC_VERSION
-from ffc.classname import make_classname
-# from ffc.backends.ufc import templates, visibility_snippet, factory_decl, factory_impl
-from ffc.backends.ufc import templates, factory_decl, factory_impl
 from ffc.parameters import compilation_relevant_parameters
 
 format_template = {
@@ -64,44 +61,17 @@ format_template = {
 """,
 }
 
+c_extern_pre = """
+#ifdef __cplusplus
+extern "C" {
+#endif
+"""
 
-def generate_factory_functions(prefix, kind, classname):
-    publicname = make_classname(prefix, kind, "main")
-    code_h = factory_decl % {
-        "basename": "ufc::%s" % kind,
-        "publicname": publicname,
-    }
-    code_c = factory_impl % {
-        "basename": "ufc::%s" % kind,
-        "publicname": publicname,
-        "privatename": classname
-    }
-    return code_h, code_c
-
-
-def generate_jit_factory_functions(code, prefix):
-    # Extract code
-    (code_finite_elements, code_dofmaps, code_coordinate_mappings,
-     code_integrals, code_forms, includes) = code
-
-    if code_forms:
-        # Direct jit of form
-        code_h, code_c = generate_factory_functions(
-            prefix, "form", code_forms[-1]["classname"])
-    elif code_coordinate_mappings:
-        # Direct jit of coordinate mapping
-        code_h, code_c = generate_factory_functions(
-            prefix, "coordinate_mapping",
-            code_coordinate_mappings[-1]["classname"])
-    else:
-        # Direct jit of element
-        code_h, code_c = generate_factory_functions(
-            prefix, "finite_element", code_finite_elements[-1]["classname"])
-        fh, fc = generate_factory_functions(prefix, "dofmap",
-                                            code_dofmaps[-1]["classname"])
-        code_h += fh
-        code_c += fc
-    return code_h, code_c
+c_extern_post = """
+#ifdef __cplusplus
+}
+#endif
+"""
 
 
 def format_code(code, wrapper_code, prefix, parameters):
@@ -125,59 +95,56 @@ def format_code(code, wrapper_code, prefix, parameters):
     includes_h = _generate_includes(includes, parameters)
     code_h_pre += includes_h
 
+    code_h_pre += c_extern_pre
+    code_h_post = c_extern_post
+
     # Header and implementation code
     code_h = ""
     code_c = ""
 
-    # if jit:
-    #     code_c += visibility_snippet
     split = parameters["split"]
 
-    # Generate code for new (C) finite_elements
+    # Add code for new finite_elements
     if split:
         code_h = "".join([e[0] for e in code_finite_elements])
         code_c = "".join([e[1] for e in code_finite_elements])
     else:
         code_h = "".join([e[1] for e in code_finite_elements])
 
-    # Generate code for new (C) dofmaps
+    # Add code for dofmaps
     if split:
         code_h += "".join([e[0] for e in code_dofmaps])
         code_c += "".join([e[1] for e in code_dofmaps])
     else:
         code_h += "".join([e[1] for e in code_dofmaps])
 
-    # Generate code for new (C) code_coordinate_mappings
+    # Add code for code_coordinate mappings
     if split:
         code_h += "".join([c[0] for c in code_coordinate_mappings])
         code_c += "".join([c[1] for c in code_coordinate_mappings])
     else:
         code_h += "".join([c[1] for c in code_coordinate_mappings])
 
-    # Generate code for new (C) code_coordinate_mappings
+    # Add code for integrals
     if split:
         code_h += "".join([integral[0] for integral in code_integrals])
         code_c += "".join([integral[1] for integral in code_integrals])
     else:
         code_h += "".join([integral[1] for integral in code_integrals])
 
-    # Generate code for form
+    # Add code for form
     if split:
         code_h += "".join([form[0] for form in code_forms])
         code_c += "".join([form[1] for form in code_forms])
     else:
         code_h += "".join([form[1] for form in code_forms])
-    # # Generate code for form
-    # for code_form in code_forms:
-    #     code_h += _format_h("form", code_form, split)
-    #     code_c += _format_c("form", code_form, split)
 
     # Add wrappers
     if wrapper_code:
         code_h += wrapper_code
 
     # Add headers to body
-    code_h = code_h_pre + code_h
+    code_h = code_h_pre + code_h + code_h_post
     if code_c:
         code_c = code_c_pre + code_c
 
@@ -191,22 +158,6 @@ def write_code(code_h, code_c, prefix, parameters):
     _write_file(code_h, prefix, ".h", parameters)
     if code_c:
         _write_file(code_c, prefix, ".cpp", parameters)
-
-
-def _format_h(class_type, code, split):
-    "Format header code for given class type."
-    if split:
-        return templates[class_type + "_header"] % code + "\n"
-    else:
-        return templates[class_type + "_combined"] % code + "\n"
-
-
-def _format_c(class_type, code, split):
-    "Format implementation code for given class type."
-    if split:
-        return templates[class_type + "_implementation"] % code + "\n"
-    else:
-        return ""
 
 
 def _write_file(output, prefix, postfix, parameters):
@@ -256,7 +207,7 @@ def _generate_includes(includes, parameters):
 
     s = set(default_h_includes) | includes
 
-    s2 = external_includes - s
+    # s2 = external_includes - s
 
     includes = "\n".join(sorted(s)) + "\n" if s else ""
     return includes

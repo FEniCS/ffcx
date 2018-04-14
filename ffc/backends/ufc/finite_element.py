@@ -2,10 +2,10 @@
 # Code generation format strings for UFC (Unified Form-assembly Code)
 # This code is released into the public domain.
 #
-# The FEniCS Project (http://www.fenicsproject.org/) 2006-2017.
+# The FEniCS Project (http://www.fenicsproject.org/) 2018.
 
 ufc_finite_element_declaration = """
-extern "C" ufc_finite_element* create_{factory_name}();
+ufc_finite_element* create_{factory_name}();
 
 // Functions that are called in non-ufc_finite_element objects, so must be made visible
 int evaluate_reference_basis_derivatives_{factory_name}(double *reference_values,
@@ -69,7 +69,7 @@ ufc_finite_element* create_sub_element_{factory_name}(int64_t i)
   {create_sub_element}
 }}
 
-extern "C" ufc_finite_element* create_{factory_name}()
+ufc_finite_element* create_{factory_name}()
 {{
   ufc_finite_element* element = (ufc_finite_element*) malloc(sizeof(*element));
 

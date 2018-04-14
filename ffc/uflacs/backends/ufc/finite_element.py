@@ -24,7 +24,6 @@ from collections import defaultdict
 import numpy
 
 from ufl import product
-from ffc.uflacs.backends.ufc.generator import ufc_generator
 from ffc.uflacs.backends.ufc.utils import (
     generate_return_new_switch, generate_return_int_switch, generate_error)
 
@@ -89,7 +88,7 @@ def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim,
 
 
 class ufc_finite_element:
-    "Each function maps to a keyword in the template. See documentation of ufc_generator."
+    "Each function maps to a keyword in the template."
 
     def __init__(self):
         pass

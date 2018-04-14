@@ -19,10 +19,17 @@
 # Note: Most of the code in this file is a direct translation from the old implementation in FFC
 
 from ffc.classname import make_integral_classname
-from ffc.uflacs.backends.ufc.generator import ufc_generator, integral_name_templates, ufc_integral_types
 from ffc.uflacs.backends.ufc.utils import generate_return_new, generate_return_new_switch
 from ffc.backends.ufc.form import ufc_form_factory, ufc_form_declaration
+from ffc.representation import ufc_integral_types
 
+# These are the method names in ufc_form that are specialized for each integral type
+integral_name_templates = (
+    "max_%s_subdomain_id",
+    "has_%s_integrals",
+    "create_%s_integral",
+    "create_default_%s_integral",
+)
 
 def create_delegate(integral_type, declname, impl):
     def _delegate(self, L, ir, parameters):
@@ -60,18 +67,13 @@ def add_ufc_form_integral_methods(cls):
 
 
 @add_ufc_form_integral_methods
-#class ufc_form(ufc_generator):
 class ufc_form:
-    """Each function maps to a keyword in the template. See documentation of ufc_generator.
+    """Each function maps to a keyword in the template.
 
     The exceptions are functions on the form
         def _*_foo_*(self, L, ir, parameters, integral_type, declname)
     which add_ufc_form_integral_methods will duplicate for foo = each integral type.
     """
-
-    def __init__(self):
-        pass
-        #ufc_generator.__init__(self, "form")
 
     def num_coefficients(self, L, num_coefficients):
         return L.Return(num_coefficients)

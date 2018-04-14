@@ -45,7 +45,7 @@ from ffc.log import INFO
 from ffc.parameters import validate_jit_parameters, compute_jit_parameters_signature
 from ffc.compiler import compile_form, compile_element, compile_coordinate_mapping
 from ffc.backends.ufc import get_include_path as get_ufc_include_path
-from ffc.backends.ufc import get_ufc_signature, get_ufc_templates_signature
+from ffc.backends.ufc import get_ufc_signature
 from ffc import __version__ as FFC_VERSION
 from ffc.classname import make_classname
 
@@ -177,7 +177,6 @@ def compute_jit_prefix(ufl_object, parameters, kind=None):
         str(FFC_VERSION),
         str(jit_version_bump),
         get_ufc_signature(),
-        get_ufc_templates_signature(),
         kind,
     ]
     string = ";".join(signatures)
