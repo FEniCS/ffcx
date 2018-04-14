@@ -160,15 +160,17 @@ def format_code(code, wrapper_code, prefix, parameters):
         code_c += "".join([integral[1] for integral in code_integrals])
     else:
         code_h += "".join([integral[1] for integral in code_integrals])
-    # # Generate code for integrals
-    # for code_integral in code_integrals:
-    #     code_h += _format_h(code_integral["class_type"], code_integral, split)
-    #     code_c += _format_c(code_integral["class_type"], code_integral, split)
 
     # Generate code for form
-    for code_form in code_forms:
-        code_h += _format_h("form", code_form, split)
-        code_c += _format_c("form", code_form, split)
+    if split:
+        code_h += "".join([form[0] for form in code_forms])
+        code_c += "".join([form[1] for form in code_forms])
+    else:
+        code_h += "".join([form[1] for form in code_forms])
+    # # Generate code for form
+    # for code_form in code_forms:
+    #     code_h += _format_h("form", code_form, split)
+    #     code_c += _format_c("form", code_form, split)
 
     # Add wrappers
     if wrapper_code:

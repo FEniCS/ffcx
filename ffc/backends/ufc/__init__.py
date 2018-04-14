@@ -104,7 +104,7 @@ extern "C" %(basename)s * create_%(publicname)s()
 
 def all_ufc_classnames():
     "Build list of all classnames."
-    jitable_classnames = ["form"]
+    jitable_classnames = []
     classnames = jitable_classnames
     return classnames
 

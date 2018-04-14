@@ -47,6 +47,7 @@ from ffc.uflacs.backends.ufc.finite_element import ufc_finite_element_generator
 from ffc.uflacs.backends.ufc.dofmap import ufc_dofmap_generator
 from ffc.uflacs.backends.ufc.coordinate_mapping import ufc_coordinate_mapping_generator
 from ffc.uflacs.backends.ufc.integrals import ufc_integral_generator
+from ffc.uflacs.backends.ufc.form import ufc_form_generator
 
 
 def generate_code(ir, parameters):
@@ -97,7 +98,8 @@ def generate_code(ir, parameters):
 
     # Generate code for forms
     info("Generating code for forms")
-    code_forms = [_generate_form_code(ir, parameters) for ir in ir_forms]
+    #code_forms = [_generate_form_code(ir, parameters) for ir in ir_forms]
+    code_forms = [ufc_form_generator(ir, parameters) for ir in ir_forms]
 
     # Extract additional includes
     includes = _extract_includes(full_ir, code_integrals)
