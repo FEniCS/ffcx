@@ -102,55 +102,34 @@ def format_code(code, wrapper_code, prefix, parameters):
     code_h = ""
     code_c = ""
 
-    # Always split so we don't mix C and C++
-    split = True
-    # split = parameters["split"]
-
-    code_c += includes_h
-
     # Add code for new finite_elements
-    if split:
-        code_h += "".join([e[0] for e in code_finite_elements])
-        code_c += "".join([e[1] for e in code_finite_elements])
-    else:
-        code_h += "".join([e[1] for e in code_finite_elements])
+    code_h += "".join([e[0] for e in code_finite_elements])
+    code_c += "".join([e[1] for e in code_finite_elements])
 
     # Add code for dofmaps
-    if split:
-        code_h += "".join([e[0] for e in code_dofmaps])
-        code_c += "".join([e[1] for e in code_dofmaps])
-    else:
-        code_h += "".join([e[1] for e in code_dofmaps])
+    code_h += "".join([e[0] for e in code_dofmaps])
+    code_c += "".join([e[1] for e in code_dofmaps])
 
     # Add code for code_coordinate mappings
-    if split:
-        code_h += "".join([c[0] for c in code_coordinate_mappings])
-        code_c += "".join([c[1] for c in code_coordinate_mappings])
-    else:
-        code_h += "".join([c[1] for c in code_coordinate_mappings])
+    code_h += "".join([c[0] for c in code_coordinate_mappings])
+    code_c += "".join([c[1] for c in code_coordinate_mappings])
 
     # Add code for integrals
-    if split:
-        code_h += "".join([integral[0] for integral in code_integrals])
-        code_c += "".join([integral[1] for integral in code_integrals])
-    else:
-        code_h += "".join([integral[1] for integral in code_integrals])
+    code_h += "".join([integral[0] for integral in code_integrals])
+    code_c += "".join([integral[1] for integral in code_integrals])
 
     # Add code for form
-    if split:
-        code_h += "".join([form[0] for form in code_forms])
-        code_c += "".join([form[1] for form in code_forms])
-    else:
-        code_h += "".join([form[1] for form in code_forms])
+    code_h += "".join([form[0] for form in code_forms])
+    code_c += "".join([form[1] for form in code_forms])
 
     # Add wrappers
     if wrapper_code:
-        code_h += wrapper_code
+        code_h += wrapper_code[0]
+        code_c += wrapper_code[1]
 
     # Add headers to body
     code_h = code_h_pre + code_h + code_h_post
-    if code_c:
-        code_c = code_c_pre + code_c
+    code_c = code_c_pre + code_c
 
     end()
 

@@ -15,7 +15,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>
-
 """Rebuilding UFL expressions from linearized representation of computational graph."""
 
 import numpy
@@ -33,7 +32,6 @@ from ffc.uflacs.analysis.modified_terminals import is_modified_terminal
 
 
 class ReconstructScalarSubexpressions(MultiFunction):
-
     def __init__(self):
         super(ReconstructScalarSubexpressions, self).__init__()
 
@@ -47,6 +45,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
     # These types are not expected to be part of the graph at this point
     def unexpected(self, o, *args, **kwargs):
         error("Not expecting expression of type %s in here." % type(o))
+
     multi_index = unexpected
     expr_list = unexpected
     expr_mapping = unexpected
@@ -157,7 +156,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
 
         # Compute "macro-dimensions" before and after i in the total shape of a
         predim = product(summand.ufl_shape) * product(fid[:ipos])
-        postdim = product(fid[ipos+1:])
+        postdim = product(fid[ipos + 1:])
 
         # Map each flattened total component of summand to
         # flattened total component of indexsum o by removing
@@ -177,7 +176,6 @@ class ReconstructScalarSubexpressions(MultiFunction):
         #       i.e. emitting more expressions than there are symbols for this node.
         results = [sum(sop) for sop in sops]
         return results
-
 
     # TODO: To implement compound tensor operators such as dot and inner,
     # we need to identify which index to do the contractions over,
@@ -248,7 +246,9 @@ def rebuild_with_scalar_subexpressions(G, targets=None):
             else:
                 # Store single modified terminal expression component
                 if len(vs) != 1:
-                    error("Expecting single symbol for scalar valued modified terminal.")
+                    error(
+                        "Expecting single symbol for scalar valued modified terminal."
+                    )
                 ws = [v]
             # FIXME: Replace ws[:] with 0's if its table is empty
             # Possible redesign: loop over modified terminals only first,
@@ -299,9 +299,11 @@ def rebuild_with_scalar_subexpressions(G, targets=None):
         vs = G.V_symbols[ti]
         # Sanity check: assert that we've handled these symbols
         if any(W[s] is None for s in vs):
-            error("Expecting that all symbols in vs are handled at this point.")
+            error(
+                "Expecting that all symbols in vs are handled at this point.")
         scalar_target_expressions.append([W[s] for s in vs])
 
     # Return the scalar expressions for each of the components
-    assert len(scalar_target_expressions) == 1  # TODO: Currently expected by callers, fix those first
+    assert len(scalar_target_expressions
+               ) == 1  # TODO: Currently expected by callers, fix those first
     return scalar_target_expressions[0]  # ... TODO: then return list

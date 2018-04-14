@@ -15,23 +15,23 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>
-
 """Algorithms for the representation phase of the form compilation."""
 
-from ufl.classes import (ReferenceValue, ReferenceGrad, Grad,
-                         CellAvg, FacetAvg,
-                         PositiveRestricted, NegativeRestricted,
+from ufl.classes import (ReferenceValue, ReferenceGrad, Grad, CellAvg,
+                         FacetAvg, PositiveRestricted, NegativeRestricted,
                          Indexed)
 from ufl.corealg.multifunction import MultiFunction
 from ufl.corealg.map_dag import map_expr_dag
 
+modifier_precedence = [
+    ReferenceValue, ReferenceGrad, Grad, CellAvg, FacetAvg, PositiveRestricted,
+    NegativeRestricted, Indexed
+]
 
-modifier_precedence = [ReferenceValue, ReferenceGrad, Grad,
-                       CellAvg, FacetAvg,
-                       PositiveRestricted, NegativeRestricted,
-                       Indexed]
-
-modifier_precedence = { m._ufl_handler_name_: i for i, m in enumerate(modifier_precedence) }
+modifier_precedence = {
+    m._ufl_handler_name_: i
+    for i, m in enumerate(modifier_precedence)
+}
 
 # TODO: Move this to ufl?
 # TODO: Add expr._ufl_modifier_precedence_ ? Add Terminal first and Operator last in the above list.
@@ -58,9 +58,10 @@ def balance_modified_terminal(expr):
     assert expr._ufl_is_terminal_
 
     # Apply modifiers in order
-    layers = sorted(layers[:-1], key=lambda e: modifier_precedence[e._ufl_handler_name_])
+    layers = sorted(
+        layers[:-1], key=lambda e: modifier_precedence[e._ufl_handler_name_])
     for op in layers:
-        ops = (expr,) + op.ufl_operands[1:]
+        ops = (expr, ) + op.ufl_operands[1:]
         expr = op._ufl_expr_reconstruct_(*ops)
 
     # Preserve id if nothing has changed
@@ -68,7 +69,6 @@ def balance_modified_terminal(expr):
 
 
 class BalanceModifiers(MultiFunction):
-
     def expr(self, expr, *ops):
         return expr._ufl_expr_reconstruct_(*ops)
 

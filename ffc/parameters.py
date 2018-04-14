@@ -39,8 +39,6 @@ _FFC_GENERATE_PARAMETERS = {
     # numbers (None for max precision)
     "epsilon": 1e-14,  # machine precision, used for
     # dropping zero terms in tables
-    "split": False,  # split generated code into .h and
-    # .cpp file
     "form_postfix": True,  # postfix form name with "Function",
     # "LinearForm" or BilinearForm
     "convert_exceptions_to_warnings":
@@ -123,8 +121,6 @@ def default_jit_parameters():
 
     # Don't postfix form names
     parameters["form_postfix"] = False
-
-    parameters["split"] = True
 
     return parameters
 

@@ -31,6 +31,7 @@ integral_name_templates = (
     "create_default_%s_integral",
 )
 
+
 def create_delegate(integral_type, declname, impl):
     def _delegate(self, L, ir, parameters):
         return impl(self, L, ir, parameters, integral_type, declname)

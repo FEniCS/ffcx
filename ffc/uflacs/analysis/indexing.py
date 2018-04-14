@@ -15,7 +15,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
-
 """Algorithms for working with multiindices."""
 
 from ufl import product
@@ -159,4 +158,3 @@ def map_component_tensor_arg_components(tensor):
     assert all(isinstance(x, int) for x in d2)
     assert len(set(d2)) == len(d2)
     return d2
-

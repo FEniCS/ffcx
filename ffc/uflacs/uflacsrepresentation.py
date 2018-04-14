@@ -29,12 +29,8 @@ from ffc.uflacs.tools import collect_quadrature_rules, compute_quadrature_rules,
 from ffc.uflacs.build_uflacs_ir import build_uflacs_ir
 
 
-def compute_integral_ir(itg_data,
-                        form_data,
-                        form_id,
-                        element_numbers,
-                        classnames,
-                        parameters):
+def compute_integral_ir(itg_data, form_data, form_id, element_numbers,
+                        classnames, parameters):
     "Compute intermediate represention of integral."
 
     info("Computing uflacs representation")
@@ -47,13 +43,17 @@ def compute_integral_ir(itg_data,
 
     # Get element space dimensions
     unique_elements = element_numbers.keys()
-    ir["element_dimensions"] = { ufl_element: create_element(ufl_element).space_dimension()
-                                 for ufl_element in unique_elements }
+    ir["element_dimensions"] = {
+        ufl_element: create_element(ufl_element).space_dimension()
+        for ufl_element in unique_elements
+    }
 
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.
-    argument_dimensions = [ir["element_dimensions"][ufl_element]
-                           for ufl_element in form_data.argument_elements]
+    argument_dimensions = [
+        ir["element_dimensions"][ufl_element]
+        for ufl_element in form_data.argument_elements
+    ]
 
     # Compute shape of element tensor
     if ir["integral_type"] == "interior_facet":
@@ -67,15 +67,16 @@ def compute_integral_ir(itg_data,
     if integral_type in custom_integral_types:
         # Set quadrature degree to twice the highest element degree, to get
         # enough points to identify basis functions via table computations
-        max_element_degree = max([1] + [ufl_element.degree() for ufl_element in unique_elements])
-        rules = [("default", 2*max_element_degree)]
+        max_element_degree = max(
+            [1] + [ufl_element.degree() for ufl_element in unique_elements])
+        rules = [("default", 2 * max_element_degree)]
         quadrature_integral_type = "cell"
     else:
         # Collect which quadrature rules occur in integrals
         default_scheme = itg_data.metadata["quadrature_degree"]
         default_degree = itg_data.metadata["quadrature_rule"]
-        rules = collect_quadrature_rules(
-            itg_data.integrals, default_scheme, default_degree)
+        rules = collect_quadrature_rules(itg_data.integrals, default_scheme,
+                                         default_degree)
         quadrature_integral_type = integral_type
 
     # Compute actual points and weights
@@ -97,7 +98,8 @@ def compute_integral_ir(itg_data,
     if True:
         # Using the mapped coefficients, numbered by UFL
         coefficient_numbering = {}
-        sorted_coefficients = sorted_by_count(form_data.function_replace_map.keys())
+        sorted_coefficients = sorted_by_count(
+            form_data.function_replace_map.keys())
         for i, f in enumerate(sorted_coefficients):
             g = form_data.function_replace_map[f]
             coefficient_numbering[g] = i
@@ -107,9 +109,10 @@ def compute_integral_ir(itg_data,
         # TODO: We can avoid the replace call when proper Expression support is in place
         #       and element/domain assignment is removed from compute_form_data.
         integrands = {
-            num_points: replace(sorted_integrals[num_points].integrand(), form_data.function_replace_map)
+            num_points: replace(sorted_integrals[num_points].integrand(),
+                                form_data.function_replace_map)
             for num_points in sorted(sorted_integrals)
-            }
+        }
     else:
         pass
         #coefficient_numbering = {}
@@ -127,16 +130,11 @@ def compute_integral_ir(itg_data,
         #    }
         # then pass coefficient_element and coefficient_domain to the uflacs ir as well
 
-
     # Build the more uflacs-specific intermediate representation
-    uflacs_ir = build_uflacs_ir(itg_data.domain.ufl_cell(),
-                                itg_data.integral_type,
-                                ir["entitytype"],
-                                integrands,
-                                ir["tensor_shape"],
-                                coefficient_numbering,
-                                quadrature_rules,
-                                parameters)
+    uflacs_ir = build_uflacs_ir(
+        itg_data.domain.ufl_cell(), itg_data.integral_type, ir["entitytype"],
+        integrands, ir["tensor_shape"], coefficient_numbering,
+        quadrature_rules, parameters)
     ir.update(uflacs_ir)
 
     return ir

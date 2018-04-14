@@ -15,7 +15,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>
-
 """Algorithms for factorizing argument dependent monomials."""
 
 import numpy
@@ -64,6 +63,7 @@ def _build_argument_indices_from_arg_sets(V, arg_sets):
         "Return a key for sorting argument vertex indices based on the properties of the modified terminal."
         mt = analyse_modified_terminal(arg_ordering_key.V[i])
         return mt.argument_ordering_key()
+
     arg_ordering_key.V = V
     ordered_arg_indices = sorted(arg_indices, key=arg_ordering_key)
 
@@ -92,7 +92,8 @@ def build_argument_dependencies(dependencies, arg_indices):
     return A
 
 
-class Factors(object): # TODO: Refactor code in this file by using a class like this
+class Factors(
+        object):  # TODO: Refactor code in this file by using a class like this
     def __init__(self):
         self.FV = []
         self.e2fi = {}
@@ -188,7 +189,8 @@ def handle_product(v, si, deps, SV_factors, FV, sv2fv, e2fi):
             f0 = FV[fac0[k0]]
             for k1 in sorted(fac1):
                 f1 = FV[fac1[k1]]
-                argkey = tuple(sorted(k0 + k1))  # sort key for canonical representation
+                argkey = tuple(
+                    sorted(k0 + k1))  # sort key for canonical representation
                 factors[argkey] = add_to_fv(f0 * f1, FV, e2fi)
 
     return factors
@@ -255,7 +257,9 @@ def handle_conditional(v, si, deps, SV_factors, FV, sv2fv, e2fi):
 def handle_operator(v, si, deps, SV_factors, FV, sv2fv, e2fi):
     # Error checking
     if any(SV_factors[d] for d in deps):
-        error("Assuming that a {0} cannot be applied to arguments. If this is wrong please report a bug.".format(type(v)))
+        error(
+            "Assuming that a {0} cannot be applied to arguments. If this is wrong please report a bug.".
+            format(type(v)))
     # Record non-argument subexpression
     sv2fv[si] = add_to_fv(v, FV, e2fi)
     factors = noargs
@@ -299,7 +303,7 @@ def compute_argument_factorization(SV, SV_deps, SV_targets, rank):
     #A = build_argument_dependencies(SV_deps, arg_indices)
     AV = [SV[si] for si in arg_indices]
     #av2sv = arg_indices
-    sv2av = { si: ai for ai, si in enumerate(arg_indices) }
+    sv2av = {si: ai for ai, si in enumerate(arg_indices)}
     assert all(AV[ai] == SV[si] for ai, si in enumerate(arg_indices))
     assert all(AV[ai] == SV[si] for si, ai in sv2av.items())
 
@@ -334,15 +338,15 @@ def compute_argument_factorization(SV, SV_deps, SV_targets, rank):
         if not len(deps):
             if si in arg_indices:
                 # v is a modified Argument
-                factors = { (si,): one_index }
+                factors = {(si, ): one_index}
             else:
                 # v is a modified non-Argument terminal
                 si2fi[si] = add_to_fv(v, FV, e2fi)
                 factors = noargs
         else:
             # These quantities could be better input args to handlers:
-            #facs = [SV_factors[d] for d in deps]
-            #fs = [FV[sv2fv[d]] for d in deps]
+            # facs = [SV_factors[d] for d in deps]
+            # fs = [FV[sv2fv[d]] for d in deps]
             if isinstance(v, Sum):
                 handler = handle_sum
             elif isinstance(v, Product):
@@ -369,7 +373,7 @@ def compute_argument_factorization(SV, SV_deps, SV_targets, rank):
         if SV_factors[si] == {}:
             if rank == 0:
                 # Functionals and expressions: store as no args * factor
-                factors = { (): si2fi[si] }
+                factors = {(): si2fi[si]}
             else:
                 # Zero form of arity 1 or higher: make factors empty
                 factors = {}
@@ -377,8 +381,10 @@ def compute_argument_factorization(SV, SV_deps, SV_targets, rank):
             # Forms of arity 1 or higher:
             # Map argkeys from indices into SV to indices into AV,
             # and resort keys for canonical representation
-            factors = { tuple(sorted(sv2av[si] for si in argkey)): fi
-                        for argkey, fi in SV_factors[si].items() }
+            factors = {
+                tuple(sorted(sv2av[si] for si in argkey)): fi
+                for argkey, fi in SV_factors[si].items()
+            }
         # Expecting all term keys to have length == rank
         # (this assumption will eventually have to change if we
         # implement joint bilinear+linear form factorization here)
@@ -389,8 +395,7 @@ def compute_argument_factorization(SV, SV_deps, SV_targets, rank):
     FV_deps = compute_dependencies(e2fi, FV)
 
     # Indices into FV that are needed for final result
-    FV_targets = list(chain(sorted(IM.values())
-                            for IM in IMs))
+    FV_targets = list(chain(sorted(IM.values()) for IM in IMs))
 
     return IMs, AV, FV, FV_deps, FV_targets
 

@@ -15,7 +15,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
-
 """Main algorithm for building the uflacs intermediate representation."""
 
 import numpy
@@ -41,28 +40,22 @@ from ffc.uflacs.analysis.graph_ssa import compute_dependency_count, invert_depen
 from ffc.uflacs.analysis.factorization import compute_argument_factorization
 from ffc.uflacs.elementtables import build_optimized_tables, piecewise_ttypes, uniform_ttypes, clamp_table_small_numbers
 
-
 # Some quick internal structs, massive improvement to
 # readability and maintainability over just tuples...
 
-ma_data_t = namedtuple(
-    "ma_data_t",
-    ["ma_index", "tabledata"]
-    )
+ma_data_t = namedtuple("ma_data_t", ["ma_index", "tabledata"])
 
 common_block_data_fields = [
-    "block_mode",           # block mode name: "safe" | "full" | "preintegrated" | "premultiplied"
-    "ttypes",               # list of table types for each block rank
-    "factor_index",         # int: index of factor in vertex array
+    "block_mode",  # block mode name: "safe" | "full" | "preintegrated" | "premultiplied"
+    "ttypes",  # list of table types for each block rank
+    "factor_index",  # int: index of factor in vertex array
     "factor_is_piecewise",  # bool: factor is found in piecewise vertex array instead of quadloop specific vertex array
-    "unames",               # list of unique FE table names for each block rank
-    "restrictions",         # restriction "+" | "-" | None for each block rank
-    "transposed",           # block is the transpose of another
-    ]
-common_block_data_t = namedtuple(
-    "common_block_data_t",
-    common_block_data_fields
-    )
+    "unames",  # list of unique FE table names for each block rank
+    "restrictions",  # restriction "+" | "-" | None for each block rank
+    "transposed",  # block is the transpose of another
+]
+common_block_data_t = namedtuple("common_block_data_t",
+                                 common_block_data_fields)
 
 
 def get_common_block_data(blockdata):
@@ -71,38 +64,35 @@ def get_common_block_data(blockdata):
 
 preintegrated_block_data_t = namedtuple(
     "preintegrated_block_data_t",
-    common_block_data_fields + ["is_uniform", "name"]
-    )
+    common_block_data_fields + ["is_uniform", "name"])
 
 premultiplied_block_data_t = namedtuple(
     "premultiplied_block_data_t",
-    common_block_data_fields + ["is_uniform", "name"]
-    )
+    common_block_data_fields + ["is_uniform", "name"])
 
 partial_block_data_t = namedtuple(
     "partial_block_data_t",
-    common_block_data_fields + ["ma_data", "piecewise_ma_index"]
-    )
+    common_block_data_fields + ["ma_data", "piecewise_ma_index"])
 
-full_block_data_t = namedtuple(
-    "full_block_data_t",
-    common_block_data_fields + ["ma_data"]
-    )
+full_block_data_t = namedtuple("full_block_data_t",
+                               common_block_data_fields + ["ma_data"])
 
 
-def multiply_block_interior_facets(point_index, unames, ttypes, unique_tables, unique_table_num_dofs):
+def multiply_block_interior_facets(point_index, unames, ttypes, unique_tables,
+                                   unique_table_num_dofs):
     rank = len(unames)
     tables = [unique_tables.get(name) for name in unames]
     num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
 
-    num_entities = max([1] + [tbl.shape[0] for tbl in tables if tbl is not None])
-    ptable = numpy.zeros((num_entities,)*rank + num_dofs)
-    for facets in itertools.product(*[range(num_entities)]*rank):
+    num_entities = max(
+        [1] + [tbl.shape[0] for tbl in tables if tbl is not None])
+    ptable = numpy.zeros((num_entities, ) * rank + num_dofs)
+    for facets in itertools.product(*[range(num_entities)] * rank):
         vectors = []
         for i, tbl in enumerate(tables):
             if tbl is None:
                 assert ttypes[i] == "ones"
-                vectors.append(numpy.ones((num_dofs[i],)))
+                vectors.append(numpy.ones((num_dofs[i], )))
             else:
                 # Some tables are compacted along entities or points
                 e = 0 if tbl.shape[0] == 1 else facets[i]
@@ -119,19 +109,21 @@ def multiply_block_interior_facets(point_index, unames, ttypes, unique_tables, u
     return ptable
 
 
-def multiply_block(point_index, unames, ttypes, unique_tables, unique_table_num_dofs):
+def multiply_block(point_index, unames, ttypes, unique_tables,
+                   unique_table_num_dofs):
     rank = len(unames)
     tables = [unique_tables.get(name) for name in unames]
     num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
 
-    num_entities = max([1] + [tbl.shape[0] for tbl in tables if tbl is not None])
-    ptable = numpy.zeros((num_entities,) + num_dofs)
+    num_entities = max(
+        [1] + [tbl.shape[0] for tbl in tables if tbl is not None])
+    ptable = numpy.zeros((num_entities, ) + num_dofs)
     for entity in range(num_entities):
         vectors = []
         for i, tbl in enumerate(tables):
             if tbl is None:
                 assert ttypes[i] == "ones"
-                vectors.append(numpy.ones((num_dofs[i],)))
+                vectors.append(numpy.ones((num_dofs[i], )))
             else:
                 # Some tables are compacted along entities or points
                 e = 0 if tbl.shape[0] == 1 else entity
@@ -147,28 +139,34 @@ def multiply_block(point_index, unames, ttypes, unique_tables, unique_table_num_
     return ptable
 
 
-def integrate_block(weights, unames, ttypes, unique_tables, unique_table_num_dofs):
+def integrate_block(weights, unames, ttypes, unique_tables,
+                    unique_table_num_dofs):
     rank = len(unames)
     tables = [unique_tables.get(name) for name in unames]
     num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
 
-    num_entities = max([1] + [tbl.shape[0] for tbl in tables if tbl is not None])
-    ptable = numpy.zeros((num_entities,) + num_dofs)
+    num_entities = max(
+        [1] + [tbl.shape[0] for tbl in tables if tbl is not None])
+    ptable = numpy.zeros((num_entities, ) + num_dofs)
     for iq, w in enumerate(weights):
-        ptable[...] += w * multiply_block(iq, unames, ttypes, unique_tables, unique_table_num_dofs)
+        ptable[...] += w * multiply_block(iq, unames, ttypes, unique_tables,
+                                          unique_table_num_dofs)
 
     return ptable
 
 
-def integrate_block_interior_facets(weights, unames, ttypes, unique_tables, unique_table_num_dofs):
+def integrate_block_interior_facets(weights, unames, ttypes, unique_tables,
+                                    unique_table_num_dofs):
     rank = len(unames)
     tables = [unique_tables.get(name) for name in unames]
     num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
 
-    num_entities = max([1] + [tbl.shape[0] for tbl in tables if tbl is not None])
-    ptable = numpy.zeros((num_entities,)*rank + num_dofs)
+    num_entities = max(
+        [1] + [tbl.shape[0] for tbl in tables if tbl is not None])
+    ptable = numpy.zeros((num_entities, ) * rank + num_dofs)
     for iq, w in enumerate(weights):
-        mtable = multiply_block_interior_facets(iq, unames, ttypes, unique_tables, unique_table_num_dofs)
+        mtable = multiply_block_interior_facets(
+            iq, unames, ttypes, unique_tables, unique_table_num_dofs)
         ptable[...] += w * mtable
 
     return ptable
@@ -220,7 +218,7 @@ def uflacs_default_parameters(optimize):
         "alignas": 0,
         "padlen": 1,
         "use_symbol_array": True,
-        "tensor_init_mode": "upfront",   # interleaved | direct | upfront
+        "tensor_init_mode": "upfront",  # interleaved | direct | upfront
     }
     if optimize:
         # Override defaults if optimization is turned on
@@ -238,7 +236,8 @@ def uflacs_default_parameters(optimize):
             "alignas": 32,
             "padlen": 1,
             "use_symbol_array": True,
-            "tensor_init_mode": "interleaved",   # interleaved | direct | upfront
+            "tensor_init_mode":
+            "interleaved",  # interleaved | direct | upfront
         })
     return p
 
@@ -275,10 +274,8 @@ def parse_uflacs_optimization_parameters(parameters, integral_type):
     return p
 
 
-def build_uflacs_ir(cell, integral_type, entitytype,
-                    integrands, tensor_shape,
-                    coefficient_numbering,
-                    quadrature_rules, parameters):
+def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
+                    coefficient_numbering, quadrature_rules, parameters):
     # The intermediate representation dict we're building and
     # returning here
     ir = {}
@@ -311,12 +308,9 @@ def build_uflacs_ir(cell, integral_type, entitytype,
     # (in some cases it's just set to 1 in ufl integral scaling)
     tdim = cell.topological_dimension()
     expect_weight = (
-        integral_type not in ("expression",) + point_integral_types
-        and (entitytype == "cell"
-            or (entitytype == "facet" and tdim > 1)
-            or (integral_type in custom_integral_types)
-            )
-        )
+        integral_type not in ("expression", ) + point_integral_types
+        and (entitytype == "cell" or (entitytype == "facet" and tdim > 1) or
+             (integral_type in custom_integral_types)))
 
     if integral_type == "expression":
         # TODO: Figure out how to get non-integrand expressions in
@@ -346,15 +340,23 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         # graph more efficiently before argument factorization. We can
         # build terminal_data again after factorization if that's
         # necessary.
-        initial_terminal_indices = [i for i, v in enumerate(V)
-                                    if is_modified_terminal(v)]
-        initial_terminal_data = [analyse_modified_terminal(V[i])
-                                 for i in initial_terminal_indices]
-        unique_tables, unique_table_types, unique_table_num_dofs, mt_unique_table_reference = \
-            build_optimized_tables(num_points, quadrature_rules,
-                cell, integral_type, entitytype, initial_terminal_data,
-                ir["unique_tables"], p["enable_table_zero_compression"],
-                rtol=p["table_rtol"], atol=p["table_atol"])
+        initial_terminal_indices = [
+            i for i, v in enumerate(V) if is_modified_terminal(v)
+        ]
+        initial_terminal_data = [
+            analyse_modified_terminal(V[i]) for i in initial_terminal_indices
+        ]
+        unique_tables, unique_table_types, unique_table_num_dofs, mt_unique_table_reference = build_optimized_tables(
+            num_points,
+            quadrature_rules,
+            cell,
+            integral_type,
+            entitytype,
+            initial_terminal_data,
+            ir["unique_tables"],
+            p["enable_table_zero_compression"],
+            rtol=p["table_rtol"],
+            atol=p["table_atol"])
 
         # Replace some scalar modified terminals before reconstructing expressions
         # (could possibly use replace() on target expressions instead)
@@ -386,9 +388,9 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         assert all(i < len(SV) for i in SV_targets)
 
         # Compute factorization of arguments
-        (argument_factorizations, modified_arguments,
-             FV, FV_deps, FV_targets) = \
-            compute_argument_factorization(SV, SV_deps, SV_targets, len(tensor_shape))
+        (argument_factorizations, modified_arguments, FV, FV_deps,
+         FV_targets) = compute_argument_factorization(SV, SV_deps, SV_targets,
+                                                      len(tensor_shape))
         assert len(SV_targets) == len(argument_factorizations)
 
         # TODO: Still expecting one target variable in code generation
@@ -397,19 +399,22 @@ def build_uflacs_ir(cell, integral_type, entitytype,
 
         # Store modified arguments in analysed form
         for i in range(len(modified_arguments)):
-            modified_arguments[i] = analyse_modified_terminal(modified_arguments[i])
+            modified_arguments[i] = analyse_modified_terminal(
+                modified_arguments[i])
 
         # Build set of modified_terminal indices into
         # factorized_vertices
-        modified_terminal_indices = [i for i, v in enumerate(FV)
-                                     if is_modified_terminal(v)]
+        modified_terminal_indices = [
+            i for i, v in enumerate(FV) if is_modified_terminal(v)
+        ]
 
         # Build set of modified terminal ufl expressions
-        modified_terminals = [analyse_modified_terminal(FV[i])
-                              for i in modified_terminal_indices]
+        modified_terminals = [
+            analyse_modified_terminal(FV[i]) for i in modified_terminal_indices
+        ]
 
         # Make it easy to get mt object from FV index
-        FV_mts = [None]*len(FV)
+        FV_mts = [None] * len(FV)
         for i, mt in zip(modified_terminal_indices, modified_terminals):
             FV_mts[i] = mt
 
@@ -438,7 +443,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                     pir["V_active"].append(1)
                     mt = FV_mts[i]
                     if mt is not None:
-                        pir["mt_tabledata"][mt] = mt_unique_table_reference.get(mt)
+                        pir["mt_tabledata"][
+                            mt] = mt_unique_table_reference.get(mt)
                     pir["V_mts"].append(mt)
 
         # Extend piecewise modified_arguments list with unique new
@@ -455,7 +461,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         for ma_indices, fi in sorted(argument_factorization.items()):
             # Get a bunch of information about this term
             rank = len(ma_indices)
-            trs = tuple(mt_unique_table_reference[modified_arguments[ai]] for ai in ma_indices)
+            trs = tuple(mt_unique_table_reference[modified_arguments[ai]]
+                        for ai in ma_indices)
 
             unames = tuple(tr.name for tr in trs)
             ttypes = tuple(tr.ttype for tr in trs)
@@ -510,19 +517,20 @@ def build_uflacs_ir(cell, integral_type, entitytype,
             """
 
             # Decide how to handle code generation for this block
-            if p["enable_preintegration"] and (factor_is_piecewise
-                    and rank > 0 and "quadrature" not in ttypes):
+            if p["enable_preintegration"] and (factor_is_piecewise and rank > 0
+                                               and "quadrature" not in ttypes):
                 # - Piecewise factor is an absolute prerequisite
                 # - Could work for rank 0 as well but currently doesn't
                 # - Haven't considered how quadrature elements work out
                 block_mode = "preintegrated"
-            elif p["enable_premultiplication"] and (rank > 0
-                    and all(tt in piecewise_ttypes for tt in ttypes)):
+            elif p["enable_premultiplication"] and (rank > 0 and all(
+                    tt in piecewise_ttypes for tt in ttypes)):
                 # Integrate functional in quadloop, scale block after
                 # quadloop
                 block_mode = "premultiplied"
             elif p["enable_sum_factorization"]:
-                if (rank == 2 and any(tt in piecewise_ttypes for tt in ttypes)):
+                if (rank == 2
+                        and any(tt in piecewise_ttypes for tt in ttypes)):
                     # Partial computation in quadloop of f*u[i],
                     # compute (f*u[i])*v[i] outside quadloop, (or with
                     # u,v swapped)
@@ -551,7 +559,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 pname = cache.get(unames)
 
                 # Reuse transpose to save memory
-                if p["enable_block_transpose_reuse"] and pname is None and len(unames) == 2:
+                if p["enable_block_transpose_reuse"] and pname is None and len(
+                        unames) == 2:
                     pname = cache.get((unames[1], unames[0]))
                     if pname is not None:
                         # Cache hit on transpose
@@ -561,25 +570,27 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                     # Cache miss, precompute block
                     weights = quadrature_rules[num_points][1]
                     if integral_type == "interior_facet":
-                        ptable = integrate_block_interior_facets(weights, unames, ttypes,
-                            unique_tables, unique_table_num_dofs)
+                        ptable = integrate_block_interior_facets(
+                            weights, unames, ttypes, unique_tables,
+                            unique_table_num_dofs)
                     else:
                         ptable = integrate_block(weights, unames, ttypes,
-                            unique_tables, unique_table_num_dofs)
-                    ptable = clamp_table_small_numbers(ptable, rtol=p["table_rtol"], atol=p["table_atol"])
+                                                 unique_tables,
+                                                 unique_table_num_dofs)
+                    ptable = clamp_table_small_numbers(
+                        ptable, rtol=p["table_rtol"], atol=p["table_atol"])
 
-                    pname = "PI%d" % (len(cache,))
+                    pname = "PI%d" % (len(cache, ))
                     cache[unames] = pname
                     unique_tables[pname] = ptable
                     unique_table_types[pname] = "preintegrated"
 
                 assert factor_is_piecewise
-                block_unames = (pname,)
-                blockdata = preintegrated_block_data_t(block_mode, ttypes,
-                                                       factor_index, factor_is_piecewise,
-                                                       block_unames, block_restrictions,
-                                                       block_is_transposed, block_is_uniform,
-                                                       pname)
+                block_unames = (pname, )
+                blockdata = preintegrated_block_data_t(
+                    block_mode, ttypes, factor_index, factor_is_piecewise,
+                    block_unames, block_restrictions, block_is_transposed,
+                    block_is_uniform, pname)
                 block_is_piecewise = True
 
             elif block_mode == "premultiplied":
@@ -595,7 +606,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 pname = cache.get(unames)
 
                 # Reuse transpose to save memory
-                if p["enable_block_transpose_reuse"] and pname is None and len(unames) == 2:
+                if p["enable_block_transpose_reuse"] and pname is None and len(
+                        unames) == 2:
                     pname = cache.get((unames[1], unames[0]))
                     if pname is not None:
                         # Cache hit on transpose
@@ -604,22 +616,23 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 if pname is None:
                     # Cache miss, precompute block
                     if integral_type == "interior_facet":
-                        ptable = multiply_block_interior_facets(0, unames, ttypes, unique_tables,
-                                                                unique_table_num_dofs)
+                        ptable = multiply_block_interior_facets(
+                            0, unames, ttypes, unique_tables,
+                            unique_table_num_dofs)
                     else:
-                        ptable = multiply_block(0, unames, ttypes, unique_tables,
+                        ptable = multiply_block(0, unames, ttypes,
+                                                unique_tables,
                                                 unique_table_num_dofs)
-                    pname = "PM%d" % (len(cache,))
+                    pname = "PM%d" % (len(cache, ))
                     cache[unames] = pname
                     unique_tables[pname] = ptable
                     unique_table_types[pname] = "premultiplied"
 
-                block_unames = (pname,)
-                blockdata = premultiplied_block_data_t(block_mode, ttypes,
-                                                       factor_index, factor_is_piecewise,
-                                                       block_unames, block_restrictions,
-                                                       block_is_transposed, block_is_uniform,
-                                                       pname)
+                block_unames = (pname, )
+                blockdata = premultiplied_block_data_t(
+                    block_mode, ttypes, factor_index, factor_is_piecewise,
+                    block_unames, block_restrictions, block_is_transposed,
+                    block_is_uniform, pname)
                 block_is_piecewise = False
 
             elif block_mode == "scaled":  # TODO: Add mode, block is piecewise but choose not to be premultiplied
@@ -638,7 +651,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 ma_data = []
                 for i, ma in enumerate(ma_indices):
                     if trs[i].is_piecewise:
-                        ma_index = piecewise_modified_argument_indices[modified_arguments[ma]]
+                        ma_index = piecewise_modified_argument_indices[
+                            modified_arguments[ma]]
                     else:
                         block_is_piecewise = False
                         ma_index = ma
@@ -659,29 +673,28 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                             break
                     assert rank == 2
                     not_piecewise_ma_index = 1 - piecewise_ma_index
-                    block_unames = (unames[not_piecewise_ma_index],)
-                    blockdata = partial_block_data_t(block_mode,  ttypes,
-                                                     factor_index, factor_is_piecewise,
-                                                     block_unames, block_restrictions,
-                                                     block_is_transposed,
-                                                     tuple(ma_data), piecewise_ma_index)
+                    block_unames = (unames[not_piecewise_ma_index], )
+                    blockdata = partial_block_data_t(
+                        block_mode, ttypes, factor_index, factor_is_piecewise,
+                        block_unames, block_restrictions, block_is_transposed,
+                        tuple(ma_data), piecewise_ma_index)
                 elif block_mode in ("full", "safe"):
                     # Add to contributions:
                     # B[i] = sum_q weight * f * u[i] * v[j];  generated inside quadloop
                     # A[blockmap] += B[i];                    generated after quadloop
 
                     block_unames = unames
-                    blockdata = full_block_data_t(block_mode, ttypes,
-                                                  factor_index, factor_is_piecewise,
-                                                  block_unames, block_restrictions,
-                                                  block_is_transposed,
-                                                  tuple(ma_data))
+                    blockdata = full_block_data_t(
+                        block_mode, ttypes, factor_index, factor_is_piecewise,
+                        block_unames, block_restrictions, block_is_transposed,
+                        tuple(ma_data))
             else:
-                error("Invalid block_mode %s" % (block_mode,))
+                error("Invalid block_mode %s" % (block_mode, ))
 
             if block_is_piecewise:
                 # Insert in piecewise expr_ir
-                ir["piecewise_ir"]["block_contributions"][blockmap].append(blockdata)
+                ir["piecewise_ir"]["block_contributions"][blockmap].append(
+                    blockdata)
             else:
                 # Insert in varying expr_ir for this quadrature loop
                 block_contributions[blockmap].append(blockdata)
@@ -695,8 +708,9 @@ def build_uflacs_ir(cell, integral_type, entitytype,
                 active_table_names.add(tr.name)
 
         # Figure out which table names are referenced in blocks
-        for blockmap, contributions in chain(block_contributions.items(),
-                                             ir["piecewise_ir"]["block_contributions"].items()):
+        for blockmap, contributions in chain(
+                block_contributions.items(),
+                ir["piecewise_ir"]["block_contributions"].items()):
             for blockdata in contributions:
                 if blockdata.block_mode in ("preintegrated", "premultiplied"):
                     active_table_names.add(blockdata.name)
@@ -716,14 +730,16 @@ def build_uflacs_ir(cell, integral_type, entitytype,
             if ttype not in unused_ttypes:
                 if name in unique_tables:
                     keep_table_names.add(name)
-        unique_tables = { name: unique_tables[name]
-                          for name in keep_table_names }
+        unique_tables = {
+            name: unique_tables[name]
+            for name in keep_table_names
+        }
 
         # Add to global set of all tables
         for name, table in unique_tables.items():
             tbl = ir["unique_tables"].get(name)
-            if tbl is not None and not numpy.allclose(tbl, table, rtol=p["table_rtol"],
-                                                      atol=p["table_atol"]):
+            if tbl is not None and not numpy.allclose(
+                    tbl, table, rtol=p["table_rtol"], atol=p["table_atol"]):
                 error("Table values mismatch with same name.")
         ir["unique_tables"].update(unique_tables)
 
@@ -736,11 +752,11 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         # Figure out if we need to access CellCoordinate to
         # avoid generating quadrature point table otherwise
         if integral_type == "cell":
-            need_points = any(isinstance(mt.terminal, CellCoordinate)
-                              for mt in active_mts)
+            need_points = any(
+                isinstance(mt.terminal, CellCoordinate) for mt in active_mts)
         elif integral_type in facet_integral_types:
-            need_points = any(isinstance(mt.terminal, FacetCoordinate)
-                              for mt in active_mts)
+            need_points = any(
+                isinstance(mt.terminal, FacetCoordinate) for mt in active_mts)
         elif integral_type in custom_integral_types:
             need_points = True  # TODO: Always?
         else:
@@ -762,7 +778,8 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         debug("Blocks of each mode: \n" + summary)
 
         # If there are any blocks other than preintegrated we need weights
-        if expect_weight and any(mode != "preintegrated" for mode in block_modes):
+        if expect_weight and any(mode != "preintegrated"
+                                 for mode in block_modes):
             need_weights = True
         elif integral_type in custom_integral_types:
             need_weights = True  # TODO: Always?
@@ -779,7 +796,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         # flattened order
         expr_ir["V_targets"] = FV_targets
 
-        ### Result of factorization:
+        # Result of factorization:
         # (array) MA-index -> UFL expression of modified arguments
         expr_ir["modified_arguments"] = modified_arguments
 
@@ -788,7 +805,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
 
         expr_ir["block_contributions"] = block_contributions
 
-        ### Modified terminals
+        # Modified terminals
         # (array) list of FV-indices to modified terminals
         #expr_ir["modified_terminal_indices"] = modified_terminal_indices
 
@@ -802,7 +819,7 @@ def build_uflacs_ir(cell, integral_type, entitytype,
         # Metadata about each vertex
         #expr_ir["active"] = FV_active        # (array) FV-index -> bool
         #expr_ir["V_piecewise"] = FV_piecewise  # (array) FV-index -> bool
-        expr_ir["V_varying"] = FV_varying      # (array) FV-index -> bool
+        expr_ir["V_varying"] = FV_varying  # (array) FV-index -> bool
         expr_ir["V_mts"] = FV_mts
 
         # Store mapping from modified terminal object to
@@ -831,7 +848,9 @@ def build_scalar_graph(expressions):
     # Build the initial coarse computational graph of the expression
     G = build_graph(expressions)
 
-    assert len(expressions) == 1, "FIXME: Multiple expressions in graph building needs more work from this point on."
+    assert len(
+        expressions
+    ) == 1, "FIXME: Multiple expressions in graph building needs more work from this point on."
 
     # Build more fine grained computational graph of scalar subexpressions
     # TODO: Make it so that
@@ -840,7 +859,8 @@ def build_scalar_graph(expressions):
     scalar_expressions = rebuild_with_scalar_subexpressions(G)
 
     # Sanity check on number of scalar symbols/components
-    assert len(scalar_expressions) == sum(product(expr.ufl_shape) for expr in expressions)
+    assert len(scalar_expressions) == sum(
+        product(expr.ufl_shape) for expr in expressions)
 
     # Build new list representation of graph where all
     # vertices of V represent single scalar operations
@@ -852,10 +872,8 @@ def build_scalar_graph(expressions):
     return V, V_deps, V_targets
 
 
-def analyse_dependencies(V, V_deps, V_targets,
-                         modified_terminal_indices,
-                         modified_terminals,
-                         mt_unique_table_reference):
+def analyse_dependencies(V, V_deps, V_targets, modified_terminal_indices,
+                         modified_terminals, mt_unique_table_reference):
     # Count the number of dependencies every subexpr has
     V_depcount = compute_dependency_count(V_deps)
 
@@ -878,7 +896,7 @@ def analyse_dependencies(V, V_deps, V_targets,
                 varying_indices.append(i)
             else:
                 if ttype not in ("fixed", "piecewise", "ones", "zeros"):
-                    error("Invalid ttype %s" % (ttype,))
+                    error("Invalid ttype %s" % (ttype, ))
 
         elif not is_cellwise_constant(V[i]):
             # Keeping this check to be on the safe side,
@@ -905,7 +923,6 @@ def analyse_dependencies(V, V_deps, V_targets,
 
 
 # TODO: Consider comments below and do it or delete them.
-
 """ Old comments:
 
 Work for later::
@@ -921,8 +938,6 @@ Work for later::
           (e.g. to compile a,L,M together for nonlinear problems)
 
 """
-
-
 """ # Old comments:
 
     # TODO: Inspection of varying shows that factorization is
@@ -949,8 +964,6 @@ Work for later::
     # becomes
     #argument_factorization: (dict) tuple(entry for each(!) rank) -> V-index of monomial factor ## doesn't cover intermediate f*u in f*u*v!
 """
-
-
 """
 def old_code_useful_for_optimization():
 

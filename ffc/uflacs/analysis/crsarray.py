@@ -15,13 +15,14 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>
-
 """Compressed row storage 'matrix' (actually just a non-rectangular 2d array)."""
 
 import numpy
 
+
 def sufficient_int(maxval):
     return numpy.int16 if maxval < 2**15 else numpy.int32
+
 
 class CRSArray(object):
     """An array of variable length dense arrays.
@@ -35,6 +36,7 @@ class CRSArray(object):
     element on row i for 0<=i<=num_rows.
     There is no column index.
     """
+
     def __init__(self, row_capacity, element_capacity, dtype):
         itype = sufficient_int(element_capacity)
         self.row_offsets = numpy.zeros(row_capacity + 1, dtype=itype)
@@ -63,7 +65,7 @@ class CRSArray(object):
         return self.num_rows
 
     def __str__(self):
-        return "[%s]" % ('\n'.join(str(row) for row in self),)
+        return "[%s]" % ('\n'.join(str(row) for row in self), )
 
     @classmethod
     def from_rows(cls, rows, num_rows, num_elements, dtype):

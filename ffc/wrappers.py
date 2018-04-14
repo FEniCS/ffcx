@@ -55,11 +55,12 @@ def _generate_dolfin_wrapper(analysis, prefix, object_names, classnames,
 
     # Generate code
     info("Generating wrapper code for DOLFIN")
-    code = generate_dolfin_code(prefix, capsules, common_space)
-    code += "\n\n"
+    code_h, code_c = generate_dolfin_code(prefix, capsules, common_space)
+    code_h += "\n\n"
+    code_c += "\n\n"
     end()
 
-    return code
+    return code_h, code_c
 
 
 def _encapsulate(prefix, object_names, classnames, analysis, parameters):

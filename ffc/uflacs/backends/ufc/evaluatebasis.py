@@ -285,8 +285,8 @@ def _jrc(a, b, n):
     bn = float((a * a - b * b) *
                (2 * n + 1 + a + b)) / float(2 * (n + 1) * (2 * n + a + b) *
                                             (n + 1 + a + b))
-    cn = float((n+a) * (n+b) * (2*n+2+a+b)) / \
-        float((n+1) * (n+1+a+b) * (2*n+a+b))
+    cn = float((n + a) * (n + b) * (2 * n + 2 + a + b)) / \
+        float((n + 1) * (n + 1 + a + b) * (2 * n + a + b))
     return (an, bn, cn)
 
 

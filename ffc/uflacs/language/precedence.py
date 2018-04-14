@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
+
 class PRECEDENCE:
     "An enum-like class for C operator precedence levels."
     HIGHEST = 0
