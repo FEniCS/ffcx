@@ -41,7 +41,7 @@ from ufl.algorithms.analysis import extract_sub_elements
 from ufl import custom_integral_types
 
 # FFC modules
-from ffc.log import info, begin, end, warning, debug, error, ffc_assert, warning_blue
+from ffc.log import info, begin, end, warning, debug, error, warning_blue
 from ffc.utils import all_equal
 
 # Default precision for formatting floats
@@ -227,9 +227,9 @@ def _extract_representation_family(form, parameters):
         representations.remove("auto")
 
     # Sanity check
-    ffc_assert(
-        len(representations.intersection(('auto', None))) == 0,
-        "Unexpected representation family candidates '%s'." % representations)
+    assert len(
+        representations.intersection(('auto', None))
+    ) == 0, "Unexpected representation family candidates '%s'." % representations
 
     # No representations requested, find compatible representations
     compatible = _find_compatible_representations(form.integrals(), [])
@@ -289,16 +289,11 @@ def _validate_representation_choice(form_data,
               "Got '%s'." % representations)
 
     if _has_higher_order_geometry(form_data.preprocessed_form):
-        ffc_assert(
-            'quadrature' not in representations,
-            "Did not expect quadrature representation for higher-order geometry."
-        )
+        assert 'quadrature' not in representations, "Did not expect quadrature representation for higher-order geometry."
 
     # Check preprocessing strategy
-    ffc_assert(preprocessing_representation_family in representations,
-               "Form has been preprocessed using '%s' representaion family, "
-               "while '%s' representations have been set for integrals." %
-               (preprocessing_representation_family, representations))
+    assert preprocessing_representation_family in representations, "Form has been preprocessed using '{}' representaion family, while '{}' representations have been set for integrals.".format(
+        preprocessing_representation_family, representations)
 
 
 def _has_custom_integrals(o):

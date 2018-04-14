@@ -25,9 +25,7 @@ import operator
 import functools
 import itertools
 
-# FFC modules.
 from .log import error
-
 from ufl.utils.sequences import product
 
 

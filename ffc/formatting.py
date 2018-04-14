@@ -83,7 +83,7 @@ def format_code(code, wrapper_code, prefix, parameters):
     (code_finite_elements, code_dofmaps, code_coordinate_mappings,
      code_integrals, code_forms, includes) = code
 
-    # Generate code for comment on top of file
+    # Generate code for comment at top of file
     code_h_pre = _generate_comment(parameters) + "\n"
     code_c_pre = _generate_comment(parameters) + "\n"
 
@@ -91,20 +91,17 @@ def format_code(code, wrapper_code, prefix, parameters):
     code_h_pre += format_template["header_h"]
     code_c_pre += format_template["header_c"] % {"prefix": prefix}
 
-    # Add includes
+    # Generate includes and add to preamble
     includes_h = _generate_includes(includes, parameters)
     code_h_pre += includes_h
 
+    # Enclose header with 'extern "C"'
     code_h_pre += c_extern_pre
     code_h_post = c_extern_post
 
-    # Header and implementation code
-    code_h = ""
-    code_c = ""
-
     # Add code for new finite_elements
-    code_h += "".join([e[0] for e in code_finite_elements])
-    code_c += "".join([e[1] for e in code_finite_elements])
+    code_h = "".join([e[0] for e in code_finite_elements])
+    code_c = "".join([e[1] for e in code_finite_elements])
 
     # Add code for dofmaps
     code_h += "".join([e[0] for e in code_dofmaps])

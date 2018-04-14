@@ -213,7 +213,7 @@ def compile_ufl_objects(ufl_objects,
     code = generate_code(oir, parameters)
     _print_timing(4, time() - cpu_time)
 
-    # Stage 4.1: generate wrappers, e.g. for DOLFIN C++
+    # Stage 4.1: generate convenience wrappers, e.g. for DOLFIN
     cpu_time = time()
 
     # FIXME: Can this be avoided?

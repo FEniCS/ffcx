@@ -31,28 +31,16 @@ def generate_dolfin_code(prefix, forms, common_function_space=False):
 
     # Typedefs for convenience factory functions
     factory_typedefs = """
-// Typedefs for convenience factory functions
+// Typedefs for convenience pointers to functions (factories)
 typedef dolfin_function_space* (*dolfin_function_space_factory_ptr)(void);
 typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
 
 """
     code_h += factory_typedefs
 
-    # FUNCTION_SPACE_TEMPLATE = """\
-    # dolfin_function_space* {prefix}{classname}()
-    # {{
-    # /* dolfin_function_space* space = malloc(sizeof(*space)); // In C rather than C++: */
-    # dolfin_function_space* space = (dolfin_function_space*) malloc(sizeof(*space));
-    # space->element = create_{finite_element_classname};
-    # space->dofmap = create_{dofmap_classname};
-    # space->coordinate_mapping = create_{coordinate_map_classname};
-    # return space;
-    # }}
-    # """
-
     # Generate body of dolfin wrappers
     if isinstance(forms, UFCElementNames):
-        # NOTE: This is messy because and element doesn't (at the
+        # NOTE: This is messy because an element doesn't (at the
         # moment) have a coordinate map
         cmap = forms.ufc_coordinate_mapping_classnames[0]
         args = {
@@ -67,20 +55,16 @@ typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
             "coordinate_map_classname":
             "create_{}".format(cmap) if cmap else "NULL"
         }
-
         code_h += FUNCTION_SPACE_TEMPLATE_DECL.format_map(args)
         code_c += FUNCTION_SPACE_TEMPLATE_IMPL.format_map(args)
     else:
-        # Generate wrappers for a form
-        code_blocks_h = []
-        code_blocks_c = []
-
         # FIXME: Convert to dict
         # Extract (common) coefficient spaces
         assert (parameters["use_common_coefficient_names"])
         spaces = extract_coefficient_spaces(forms)
 
         # Generate dolfin_function_space code for common coefficient spaces
+        code_h += "// Coefficient spaces helpers (number: {})\n".format(len(spaces))
         for space in spaces:
             args = {
                 "prefix": prefix,
@@ -89,27 +73,18 @@ typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
                 "dofmap_classname": space[2],
                 "coordinate_map_classname": "create_{}".format(str(space[3]))
             }
-            code_blocks_h += [FUNCTION_SPACE_TEMPLATE_DECL.format_map(args)]
-            code_blocks_c += [FUNCTION_SPACE_TEMPLATE_IMPL.format_map(args)]
-        #code = [apply_function_space_template(*space) for space in spaces]
+            code_h += FUNCTION_SPACE_TEMPLATE_DECL.format_map(args)
+            code_c += FUNCTION_SPACE_TEMPLATE_IMPL.format_map(args)
 
-        # Generate code for forms (including function spaces for test/trial functions)
-        code_blocks_h += [
-            generate_form(form, prefix, "Form_{}".format(form.name))[0]
-            for form in forms
-        ]
-        code_blocks_c += [
-            generate_form(form, prefix, "Form_{}".format(form.name))[1]
-            for form in forms
-        ]
+        # code_h += "\n// Form function spaces helpers (number of forms: {})\n".format(len(forms))
+        for form in forms:
+            code_h += "\n// Form function spaces helpers (form '{}')\n".format(form.name)
+            code = generate_form(form, prefix, "Form_{}".format(form.name))
+            code_h += code[0]
+            code_c += code[1]
 
         # Generate 'top-level' typedefs (Bilinear/Linear & Test/Trial/Function)
-        code_blocks_h += [
-            generate_namespace_typedefs(forms, prefix, common_function_space)
-        ]
-
-    code_h += "\n".join(code_blocks_h)
-    code_c += "\n".join(code_blocks_c)
+        code_h += generate_namespace_typedefs(forms, prefix, common_function_space)
 
     return code_h, code_c
 
@@ -118,6 +93,8 @@ def generate_namespace_typedefs(forms, prefix, common_function_space):
 
     # Generate typedefs as (fro, to) pairs of strings
     pairs = []
+
+    typedefs_comment = "\n// High-level typedefs\n"
 
     # Add typedef for Functional/LinearForm/BilinearForm if only one
     # is present of each
@@ -149,10 +126,9 @@ def generate_namespace_typedefs(forms, prefix, common_function_space):
                     prefix, form.name)
                 break
 
-    # Return typedefs or ""
     if not typedefs:
-        return ""
-    return "// High-level typedefs\n" + typedefs + "\n"
+        return typedefs_comment + "//  - None"
+    return typedefs_comment + typedefs + "\n"
 
 
 def generate_form(form, prefix, classname):
@@ -204,12 +180,11 @@ def generate_form(form, prefix, classname):
         blocks_h += ["//   - None"]
     blocks_h += [""]
 
-    # Generate Form subclass
-    blocks_h += [generate_form_class(form, prefix, classname)[0]]
-    blocks_c += [generate_form_class(form, prefix, classname)[1]]
+    # Generate Form factory
+    code_h, code_c = generate_form_class(form, prefix, classname)
 
     # Return code
-    return "\n".join(blocks_h), "\n".join(blocks_c)
+    return "\n".join(blocks_h) + code_h, "\n".join(blocks_c) + code_c
 
 
 def generate_form_class(form, prefix, classname):
