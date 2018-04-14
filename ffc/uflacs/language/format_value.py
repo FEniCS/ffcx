@@ -23,7 +23,9 @@ _subs = (
     # Remove 0s after e+ or e-
     (re.compile(r"e[\+]0*(.)"), r"e\1"),
     (re.compile(r"e[\-]0*(.)"), r"e-\1"),
-    )
+)
+
+
 def format_float(x, precision=None):
     "Format a float value according to given precision."
     global _subs
@@ -63,4 +65,5 @@ def format_value(value, precision=None):
     elif hasattr(value, "ce_format"):
         return value.ce_format()
     else:
-        raise RuntimeError("Unexpected type %s:\n%s" % (type(value), str(value)))
+        raise RuntimeError("Unexpected type %s:\n%s" % (type(value),
+                                                        str(value)))

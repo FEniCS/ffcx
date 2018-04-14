@@ -63,7 +63,9 @@ def compute_quadrature_rules(rules, integral_type, cell):
         if num_points in quadrature_rules:
             assert quadrature_rules[num_points][0] == points
             assert quadrature_rules[num_points][0] == weights
-            error("This number of points is already present in the weight table:\n  %s" % (quadrature_rules,))
+            error(
+                "This number of points is already present in the weight table:\n  %s"
+                % (quadrature_rules, ))
 
         quadrature_rules[num_points] = (points, weights)
         quadrature_rule_sizes[rule] = num_points
@@ -98,12 +100,8 @@ def accumulate_integrals(itg_data, quadrature_rule_sizes):
     # Accumulate integrands in a canonical ordering defined by UFL
     sorted_integrals = {
         num_points: Integral(
-            sorted_expr_sum(integrands),
-            itg_data.integral_type,
-            itg_data.domain,
-            itg_data.subdomain_id,
-            {},
-            None)
+            sorted_expr_sum(integrands), itg_data.integral_type,
+            itg_data.domain, itg_data.subdomain_id, {}, None)
         for num_points, integrands in list(sorted_integrands.items())
-        }
+    }
     return sorted_integrals

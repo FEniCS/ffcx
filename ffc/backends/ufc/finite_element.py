@@ -6,16 +6,7 @@
 
 ufc_finite_element_declaration = """
 ufc_finite_element* create_{factory_name}();
-
-// Functions that are called in non-ufc_finite_element objects, so must be made visible
-int evaluate_reference_basis_derivatives_{factory_name}(double *reference_values,
-                                          int64_t order, int64_t num_points,
-                                          const double *X);
-int evaluate_reference_basis_{factory_name}(double *reference_values,
-                                            int64_t num_points,
-                                            const double *X);
 """
-
 
 ufc_finite_element_factory = """
 // Code for element {factory_name}
@@ -100,4 +91,3 @@ ufc_finite_element* create_{factory_name}()
 
 // End of code for element {factory_name}
 """
-

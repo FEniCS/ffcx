@@ -94,7 +94,7 @@ class FFCBackendAccess(MultiFunction):
             return self.symbols.coefficient_dof_access(mt.terminal, idof)
         else:
             # Return symbol, see definitions for computation
-            return self.symbols.coefficient_value(mt)  #, num_points)
+            return self.symbols.coefficient_value(mt)  # , num_points)
 
     def spatial_coordinate(self, e, mt, tabledata, num_points):
         #L = self.language
@@ -349,6 +349,7 @@ class FFCBackendAccess(MultiFunction):
             dof0, component, gdim, num_scalar_dofs, mt.restriction) -
                 self.symbols.domain_dof_access(
                     dof1, component, gdim, num_scalar_dofs, mt.restriction))
+
         return expr
 
     def facet_edge_vectors(self, e, mt, tabledata, num_points):
@@ -396,6 +397,7 @@ class FFCBackendAccess(MultiFunction):
             dof0, component, gdim, num_scalar_dofs, mt.restriction) -
                 self.symbols.domain_dof_access(
                     dof1, component, gdim, num_scalar_dofs, mt.restriction))
+
         return expr
 
     def _expect_symbolic_lowering(self, e, mt, tabledata, num_points):

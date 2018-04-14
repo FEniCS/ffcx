@@ -15,23 +15,17 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
-
 """Definitions of 'modified terminals', a core concept in uflacs."""
 
 from ufl.permutation import build_component_numbering
-from ufl.classes import (FormArgument, Argument,
-                         Indexed, FixedIndex,
-                         SpatialCoordinate, Jacobian,
-                         ReferenceValue,
-                         Grad, ReferenceGrad,
-                         Restricted,
-                         FacetAvg, CellAvg)
+from ufl.classes import (FormArgument, Argument, Indexed, FixedIndex,
+                         SpatialCoordinate, Jacobian, ReferenceValue, Grad,
+                         ReferenceGrad, Restricted, FacetAvg, CellAvg)
 
 from ffc.log import error
 
 
 class ModifiedTerminal(object):
-
     """A modified terminal expression is an object of a Terminal subtype, wrapped in terminal modifier types.
 
     The variables of this class are:
@@ -55,11 +49,10 @@ class ModifiedTerminal(object):
         - flat_component
 
     """
-    def __init__(self, expr, terminal, reference_value,
-                 base_shape, base_symmetry,
-                 component, flat_component,
-                 global_derivatives, local_derivatives,
-                 averaged, restriction):
+
+    def __init__(self, expr, terminal, reference_value, base_shape,
+                 base_symmetry, component, flat_component, global_derivatives,
+                 local_derivatives, averaged, restriction):
         # The original expression
         self.expr = expr
 
@@ -131,7 +124,8 @@ class ModifiedTerminal(object):
         return hash(self.as_tuple())
 
     def __eq__(self, other):
-        return isinstance(other, ModifiedTerminal) and self.as_tuple() == other.as_tuple()
+        return isinstance(
+            other, ModifiedTerminal) and self.as_tuple() == other.as_tuple()
 
     #def __lt__(self, other):
     #    error("Shouldn't use this?")
@@ -248,11 +242,12 @@ def analyse_modified_terminal(expr):
             averaged = "facet"
 
         elif t._ufl_terminal_modifiers_:
-            error("Missing handler for terminal modifier type %s, object is %s." % (type(t), repr(t)))
+            error(
+                "Missing handler for terminal modifier type %s, object is %s."
+                % (type(t), repr(t)))
 
         else:
             error("Unexpected type %s object %s." % (type(t), repr(t)))
-
 
     # Make canonical representation of derivatives
     global_derivatives = tuple(sorted(global_derivatives))
@@ -298,17 +293,18 @@ def analyse_modified_terminal(expr):
 
     # Assert that component is within the shape of the (reference) terminal
     if len(component) != len(base_shape):
-        error("Length of component does not match rank of (reference) terminal.")
+        error(
+            "Length of component does not match rank of (reference) terminal.")
     if not all(c >= 0 and c < d for c, d in zip(component, base_shape)):
-        error("Component indices %s are outside value shape %s" % (component, base_shape))
+        error("Component indices %s are outside value shape %s" % (component,
+                                                                   base_shape))
 
     # Flatten component
     vi2si, si2vi = build_component_numbering(base_shape, base_symmetry)
     flat_component = vi2si[component]
     # num_flat_components = len(si2vi)
 
-    return ModifiedTerminal(expr, t, reference_value,
-                            base_shape, base_symmetry,
-                            component, flat_component,
-                            global_derivatives, local_derivatives,
-                            averaged, restriction)
+    return ModifiedTerminal(expr, t, reference_value, base_shape,
+                            base_symmetry, component, flat_component,
+                            global_derivatives, local_derivatives, averaged,
+                            restriction)

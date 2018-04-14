@@ -8,10 +8,9 @@ ufc_integral_declaration = """
 ufc_{type}_integral* create_{factory_name}();
 """
 
-tabulate_tensor_implementation = \
-{
-"cell" :
-"""
+tabulate_tensor_implementation = {
+    "cell":
+    """
 void tabulate_tensor_{factory_name}(double *A, const double *const *w,
                                     const double *coordinate_dofs,
                                     int cell_orientation)
@@ -19,8 +18,8 @@ void tabulate_tensor_{factory_name}(double *A, const double *const *w,
 {tabulate_tensor}
 }}
 """,
-"exterior_facet" :
-"""
+    "exterior_facet":
+    """
 void tabulate_tensor_{factory_name}(double *A, const double *const *w,
                                      const double *coordinate_dofs,
                                      int64_t facet,
@@ -29,8 +28,8 @@ void tabulate_tensor_{factory_name}(double *A, const double *const *w,
 {tabulate_tensor}
 }}
 """,
-"interior_facet" :
-"""
+    "interior_facet":
+    """
 void tabulate_tensor_{factory_name}(double *A, const double *const *w,
                           const double *coordinate_dofs_0,
                           const double *coordinate_dofs_1, int64_t facet_0,
@@ -40,8 +39,8 @@ void tabulate_tensor_{factory_name}(double *A, const double *const *w,
 {tabulate_tensor}
 }}
 """,
-"vertex" :
-"""
+    "vertex":
+    """
 void tabulate_tensor_{factory_name}(double *A, const double *const *w,
                           const double *coordinate_dofs, int64_t vertex,
                           int cell_orientation)
@@ -49,8 +48,8 @@ void tabulate_tensor_{factory_name}(double *A, const double *const *w,
 {tabulate_tensor}
 }}
 """,
-"custom" :
-"""
+    "custom":
+    """
 void tabulate_tensor_{factory_name}(double *A, const double *const *w,
                           const double *coordinate_dofs,
                           int64_t num_quadrature_points,

@@ -191,7 +191,7 @@ def main(args=None):
 
     # FIXME: This is terrible!
     # Set UFL precision
-    #ufl.constantvalue.precision = int(parameters["precision"])
+    # ufl.constantvalue.precision = int(parameters["precision"])
 
     # Print a versioning message if verbose output was requested
     if parameters["log_level"] <= INFO:
@@ -239,7 +239,7 @@ def _compile_files(args, parameters, enable_profile):
         ufd = load_ufl_file(filename)
 
         # Previously wrapped in try-except, disabled to actually get information we need
-        #try:
+        # try:
 
         # Generate code
         code_h, code_c = compile_ufl_data(ufd, prefix, parameters)
@@ -247,7 +247,7 @@ def _compile_files(args, parameters, enable_profile):
         # Write to file
         write_code(code_h, code_c, prefix, parameters)
 
-        #except Exception as exception:
+        # except Exception as exception:
         #    # Catch exceptions only when not in debug mode
         #    if parameters["log_level"] <= DEBUG:
         #        raise

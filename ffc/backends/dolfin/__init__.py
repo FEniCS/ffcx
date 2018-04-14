@@ -26,7 +26,8 @@ def generate_dolfin_code(prefix, forms, common_function_space=False):
     """
 
     # Tag
-    code = "// DOLFIN helper functions wrappers\n"
+    code_h = "\n// DOLFIN helper functions\n"
+    code_c = "\n// DOLFIN helper functions\n"
 
     # Typedefs for convenience factory functions
     factory_typedefs = """
@@ -35,7 +36,7 @@ typedef dolfin_function_space* (*dolfin_function_space_factory_ptr)(void);
 typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
 
 """
-    code += factory_typedefs
+    code_h += factory_typedefs
 
     # FUNCTION_SPACE_TEMPLATE = """\
     # dolfin_function_space* {prefix}{classname}()
@@ -54,22 +55,25 @@ typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
         # NOTE: This is messy because and element doesn't (at the
         # moment) have a coordinate map
         cmap = forms.ufc_coordinate_mapping_classnames[0]
-        code += FUNCTION_SPACE_TEMPLATE.format(
-            **{
-                "prefix":
-                prefix,
-                "classname":
-                "FunctionSpace",
-                "finite_element_classname":
-                forms.ufc_finite_element_classnames[0],
-                "dofmap_classname":
-                forms.ufc_dofmap_classnames[0],
-                "coordinate_map_classname":
-                "create_{}".format(cmap) if cmap else "NULL"
-            })
+        args = {
+            "prefix":
+            prefix,
+            "classname":
+            "FunctionSpace",
+            "finite_element_classname":
+            forms.ufc_finite_element_classnames[0],
+            "dofmap_classname":
+            forms.ufc_dofmap_classnames[0],
+            "coordinate_map_classname":
+            "create_{}".format(cmap) if cmap else "NULL"
+        }
+
+        code_h += FUNCTION_SPACE_TEMPLATE_DECL.format_map(args)
+        code_c += FUNCTION_SPACE_TEMPLATE_IMPL.format_map(args)
     else:
         # Generate wrappers for a form
-        code_blocks = []
+        code_blocks_h = []
+        code_blocks_c = []
 
         # FIXME: Convert to dict
         # Extract (common) coefficient spaces
@@ -85,23 +89,29 @@ typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
                 "dofmap_classname": space[2],
                 "coordinate_map_classname": "create_{}".format(str(space[3]))
             }
-            code_blocks += [FUNCTION_SPACE_TEMPLATE.format(**args)]
+            code_blocks_h += [FUNCTION_SPACE_TEMPLATE_DECL.format_map(args)]
+            code_blocks_c += [FUNCTION_SPACE_TEMPLATE_IMPL.format_map(args)]
         #code = [apply_function_space_template(*space) for space in spaces]
 
         # Generate code for forms (including function spaces for test/trial functions)
-        code_blocks += [
-            generate_form(form, prefix, "Form_{}".format(form.name))
+        code_blocks_h += [
+            generate_form(form, prefix, "Form_{}".format(form.name))[0]
+            for form in forms
+        ]
+        code_blocks_c += [
+            generate_form(form, prefix, "Form_{}".format(form.name))[1]
             for form in forms
         ]
 
         # Generate 'top-level' typedefs (Bilinear/Linear & Test/Trial/Function)
-        code_blocks += [
+        code_blocks_h += [
             generate_namespace_typedefs(forms, prefix, common_function_space)
         ]
 
-        code += "\n".join(code_blocks)
+    code_h += "\n".join(code_blocks_h)
+    code_c += "\n".join(code_blocks_c)
 
-    return code
+    return code_h, code_c
 
 
 def generate_namespace_typedefs(forms, prefix, common_function_space):
@@ -127,15 +137,15 @@ def generate_namespace_typedefs(forms, prefix, common_function_space):
 
     # Combine data to typedef code
     typedefs = "\n".join(
-        "static dolfin_form_factory_ptr {0}{1} = {0}{2};".format(
-            prefix, fro, to) for (to, fro) in pairs)
+        "static const dolfin_form_factory_ptr {0}{1} = {0}{2};".format(prefix, fro, to)
+        for (to, fro) in pairs)
 
     # Keepin' it simple: Add typedef for function space factory if term applies
     if common_function_space:
         for i, form in enumerate(forms):
             if form.rank:
                 # FIXME: Is this naming robust?
-                typedefs += "\n\nstatic dolfin_function_space_factory_ptr {0}FunctionSpace = {0}Form_{1}_FunctionSpace_0;".format(
+                typedefs += "\n\nstatic const dolfin_function_space_factory_ptr {0}FunctionSpace = {0}Form_{1}_FunctionSpace_0;".format(
                     prefix, form.name)
                 break
 
@@ -158,45 +168,48 @@ def generate_form(form, prefix, classname):
 
     """
 
+    blocks_h = []
+    blocks_c = []
+
     # Generate code for "Form_x_FunctionSpace_y" factories
-    assert (len(form.ufc_coordinate_mapping_classnames) == 1
-            )  # FIXME: Is this always the case?
-    wrap = FUNCTION_SPACE_TEMPLATE
-    blocks = [
-        wrap.format(
-            **{
-                "prefix":
-                prefix,
-                "classname":
-                "{}_FunctionSpace_{}".format(classname, i),
-                "finite_element_classname":
-                form.ufc_finite_element_classnames[i],
-                "dofmap_classname":
-                form.ufc_dofmap_classnames[i],
-                "coordinate_map_classname":
-                "create_{}".format(form.ufc_coordinate_mapping_classnames[0])
-            }) for i in range(form.rank)
-    ]
+    # FIXME: Is this always the case?
+    assert (len(form.ufc_coordinate_mapping_classnames) == 1)
+    for i in range(form.rank):
+        args = {
+            "prefix":
+            prefix,
+            "classname":
+            "{}_FunctionSpace_{}".format(classname, i),
+            "finite_element_classname":
+            form.ufc_finite_element_classnames[i],
+            "dofmap_classname":
+            form.ufc_dofmap_classnames[i],
+            "coordinate_map_classname":
+            "create_{}".format(form.ufc_coordinate_mapping_classnames[0])
+        }
+        blocks_h += [FUNCTION_SPACE_TEMPLATE_DECL.format_map(args)]
+        blocks_c += [FUNCTION_SPACE_TEMPLATE_IMPL.format_map(args)]
 
     # Add factory function typedefs, e.g. Form_L_FunctionSpace_1_factory = CoefficientSpace_f_factory
-    blocks += [
-        "// Coefficient function spaces for form \"{}\"".format(classname)
+    blocks_h += [
+        "// Coefficient function space typedefs for form \"{}\"".format(classname)
     ]
-    template = "static dolfin_function_space_factory_ptr {0}{1}_FunctionSpace_{2} = {0}CoefficientSpace_{3};"
-    blocks += [
+    template = "static const dolfin_function_space_factory_ptr {0}{1}_FunctionSpace_{2} = {0}CoefficientSpace_{3};"
+    blocks_h += [
         template.format(prefix, classname, form.rank + i,
                         form.coefficient_names[i])
         for i in range(form.num_coefficients)
     ]
     if form.num_coefficients == 0:
-        blocks += ["// None"]
-    blocks += [""]
+        blocks_h += ["//   - None"]
+    blocks_h += [""]
 
     # Generate Form subclass
-    blocks += [generate_form_class(form, prefix, classname)]
+    blocks_h += [generate_form_class(form, prefix, classname)[0]]
+    blocks_c += [generate_form_class(form, prefix, classname)[1]]
 
     # Return code
-    return "\n".join(blocks)
+    return "\n".join(blocks_h), "\n".join(blocks_c)
 
 
 def generate_form_class(form, prefix, classname):
@@ -219,9 +232,10 @@ def generate_form_class(form, prefix, classname):
         "typedefs": typedefs
     }
 
-    code = FORM_CLASS_TEMPLATE.format(**args)
+    code_h = FORM_CLASS_TEMPLATE_DECL.format_map(args)
+    code_c = FORM_CLASS_TEMPLATE_IMPL.format_map(args)
 
-    return code
+    return code_h, code_c
 
 
 def generate_coefficient_map_data(form):
@@ -287,25 +301,29 @@ def generate_function_space_typedefs(form, prefix, classname):
     snippets = {"functionspace": ("TestSpace", "TrialSpace")}
 
     # Add convenience pointers to factory functions
-    template0 = "static dolfin_function_space_factory_ptr {0}{2}{1} = {0}{2}_FunctionSpace_{3};"
+    template0 = "static const dolfin_function_space_factory_ptr {0}{2}{1} = {0}{2}_FunctionSpace_{3};"
     factory0 = "\n".join(
         template0.format(prefix, snippets["functionspace"][i], classname, i)
         for i in range(form.rank))
 
-    factory1 = ""
-    # FIXME: (GNW) These are fucntion typedefs to functions typedefs,
+    # FIXME: (GNW) These are function typedefs to functions typedefs,
     # and are giving trouble with a C compiler (fine with C++)
-    #
-    # template1 = "dolfin_function_space_factory_ptr
-    # {0}{2}CoefficientSpace_{1} = {0}{2}_FunctionSpace_{3};" factory1 =
-    # "\n".join( template1.format(prefix, form.coefficient_names[i],
-    # classname, form.rank + i) for i in range(form.num_coefficients))
+    template1 = "// static dolfin_function_space_factory_ptr {0}{2}CoefficientSpace_{1} = {0}{2}_FunctionSpace_{3};"
+    factory1 = "\n".join(
+        template1.format(prefix, form.coefficient_names[i], classname,
+                         form.rank + i) for i in range(form.num_coefficients))
 
     code = factory0 + "\n" + factory1
     return code
 
 
-FORM_CLASS_TEMPLATE = """\
+FORM_CLASS_TEMPLATE_DECL = """\
+dolfin_form* {prefix}{classname}();
+
+{typedefs}
+"""
+
+FORM_CLASS_TEMPLATE_IMPL = """\
 // Return the number of the coefficient with this name. Returns -1 if name does not exist.
 static int {prefix}{classname}_coefficient_number(const char* name)
 {{
@@ -318,7 +336,7 @@ static const char* {prefix}{classname}_coefficient_name(int i)
 {coefficient_name}
 }}
 
-static dolfin_form* {prefix}{classname}()
+dolfin_form* {prefix}{classname}()
 {{
   dolfin_form* form = (dolfin_form*) malloc(sizeof(*form));
   form->form = create_{ufc_form};
@@ -326,12 +344,14 @@ static dolfin_form* {prefix}{classname}()
   form->coefficient_number_map = {prefix}{classname}_coefficient_number;
   return form;
 }}
-
-{typedefs}
 """
 
-FUNCTION_SPACE_TEMPLATE = """\
-static dolfin_function_space* {prefix}{classname}()
+FUNCTION_SPACE_TEMPLATE_DECL = """\
+dolfin_function_space* {prefix}{classname}();
+"""
+
+FUNCTION_SPACE_TEMPLATE_IMPL = """\
+dolfin_function_space* {prefix}{classname}()
 {{
   dolfin_function_space* space = (dolfin_function_space*) malloc(sizeof(*space));
   space->element = create_{finite_element_classname};

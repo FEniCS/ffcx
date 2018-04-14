@@ -18,6 +18,7 @@
 
 from ffc.log import info
 
+
 def optimize_integral_ir(ir, parameters):
     "Compute optimized intermediate representation of integral."
 

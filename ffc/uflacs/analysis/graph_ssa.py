@@ -15,15 +15,13 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
-
 """Algorithms for working with computational graphs."""
 
+import heapq
 import numpy
 
-from ufl.classes import (GeometricQuantity, ConstantValue,
-                         Argument, Coefficient,
-                         Grad, Restricted, Indexed,
-                         MathFunction)
+from ufl.classes import (GeometricQuantity, ConstantValue, Argument,
+                         Coefficient, Grad, Restricted, Indexed, MathFunction)
 from ufl.checks import is_cellwise_constant
 from ffc.log import error
 
@@ -39,7 +37,8 @@ def default_partition_seed(expr, rank):
     """
     # TODO: Use named constants for the partition numbers here
 
-    modifiers = (Grad, Restricted, Indexed)  # FIXME: Add CellAvg, FacetAvg types here, others?
+    modifiers = (Grad, Restricted,
+                 Indexed)  # FIXME: Add CellAvg, FacetAvg types here, others?
     if isinstance(expr, modifiers):
         return default_partition_seed(expr.ufl_operands[0], rank)
 
@@ -51,13 +50,15 @@ def default_partition_seed(expr, rank):
         return p
 
     elif isinstance(expr, Coefficient):
-        if is_cellwise_constant(expr):  # This is crap, doesn't include grad modifier
+        if is_cellwise_constant(
+                expr):  # This is crap, doesn't include grad modifier
             return 0
         else:
             return 2
 
     elif isinstance(expr, GeometricQuantity):
-        if is_cellwise_constant(expr):  # This is crap, doesn't include grad modifier
+        if is_cellwise_constant(
+                expr):  # This is crap, doesn't include grad modifier
             return 0
         else:
             return 1
@@ -69,7 +70,10 @@ def default_partition_seed(expr, rank):
         error("Don't know how to handle %s" % expr)
 
 
-def mark_partitions(V, active, dependencies, rank,
+def mark_partitions(V,
+                    active,
+                    dependencies,
+                    rank,
                     partition_seed=default_partition_seed,
                     partition_combiner=max):
     """FIXME: Cover this with tests.
@@ -123,6 +127,7 @@ def build_factorized_partitions():
     partitions["integrand"] = dict((np, dict()) for np in num_points)
 """
 
+
 def compute_dependency_count(dependencies):
     """FIXME: Test"""
     n = len(dependencies)
@@ -140,7 +145,7 @@ def invert_dependencies(dependencies, depcount):
     invdeps = [()] * n
     for i in range(n):
         for d in dependencies[i]:
-            invdeps[d] = invdeps[d] + (i,)
+            invdeps[d] = invdeps[d] + (i, )
     return CRSArray.from_rows(invdeps, n, m, int)
 
 
@@ -149,7 +154,7 @@ def default_cache_score_policy(vtype, ndeps, ninvdeps, partition):
     s = 1
 
     # Is the type particularly expensive to compute?
-    expensive = (MathFunction,)
+    expensive = (MathFunction, )
     if vtype in expensive:  # Could make a type-to-cost mapping, but this should do.
         s *= 20
 
@@ -157,7 +162,7 @@ def default_cache_score_policy(vtype, ndeps, ninvdeps, partition):
     s *= ndeps
 
     # If it is reused several times let that count significantly
-    s *= ninvdeps ** 3  # 1->1, 2->8, 3->27
+    s *= ninvdeps**3  # 1->1, 2->8, 3->27
 
     # Finally let partition count for something?
     # Or perhaps we need some more information, such as
@@ -166,7 +171,11 @@ def default_cache_score_policy(vtype, ndeps, ninvdeps, partition):
     return s
 
 
-def compute_cache_scores(V, active, dependencies, inverse_dependencies, partitions,
+def compute_cache_scores(V,
+                         active,
+                         dependencies,
+                         inverse_dependencies,
+                         partitions,
                          cache_score_policy=default_cache_score_policy):
     """FIXME: Cover with tests.
 
@@ -188,11 +197,8 @@ def compute_cache_scores(V, active, dependencies, inverse_dependencies, partitio
     return score
 
 
-import heapq
-
-
-def allocate_registers(active, partitions, targets,
-                       scores, max_registers, score_threshold):
+def allocate_registers(active, partitions, targets, scores, max_registers,
+                       score_threshold):
     """FIXME: Cover with tests.
 
     TODO: Allow reuse of registers, reducing memory usage.
@@ -211,8 +217,7 @@ def allocate_registers(active, partitions, targets,
     #mean_score = sum(scores) // n
 
     # Can allocate a number of registers up to given threshold
-    num_to_allocate = max(num_targets,
-                          min(max_registers, n) - num_targets)
+    num_to_allocate = max(num_targets, min(max_registers, n) - num_targets)
     to_allocate = set()
 
     # For now, just using an arbitrary heuristic algorithm to select m largest scores

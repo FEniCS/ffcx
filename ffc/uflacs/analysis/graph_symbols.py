@@ -15,7 +15,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
-
 """Assigning symbols to computational graph nodes."""
 
 import numpy
@@ -60,11 +59,14 @@ def build_node_sizes(V_shapes):
 
 
 def build_node_symbols(V, e2i, V_shapes, V_sizes):
-    """Tabulate scalar value numbering of all nodes in a a list based representation of an expression graph.
+    """Tabulate scalar value numbering of all nodes in a a list based representation of an
+    expression graph.
 
-    Returns:
-    V_symbols - CRSArray of symbols (value numbers) of each component of each node in V.
-    total_unique_symbols - The number of symbol values assigned to unique scalar components of the nodes in V.
+    Returns: V_symbols - CRSArray of symbols (value numbers) of each
+    component of each node in V.
+
+    total_unique_symbols - The number of symbol values assigned to
+    unique scalar components of the nodes in V.
     """
     # "Sparse" int matrix for storing variable number of entries (symbols) per row (vertex),
     # with a capasity bounded by the number of scalar subexpressions including repetitions
@@ -99,6 +101,7 @@ def build_graph_symbols(V, e2i, DEBUG):
     V_sizes = build_node_sizes(V_shapes)
 
     # Mark values with symbols
-    V_symbols, total_unique_symbols = build_node_symbols(V, e2i, V_shapes, V_sizes)
+    V_symbols, total_unique_symbols = build_node_symbols(
+        V, e2i, V_shapes, V_sizes)
 
     return V_shapes, V_symbols, total_unique_symbols

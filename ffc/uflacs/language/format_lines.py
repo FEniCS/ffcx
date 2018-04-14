@@ -15,7 +15,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
-
 """Tools for indentation-aware code string stitching.
 
 When formatting an AST into a string, it's better to collect
@@ -32,10 +31,12 @@ class Indented(object):
     substrings repeatedly.
     """
     # Try to keep memory overhead low:
-    __slots__ = ("body",)
+    __slots__ = ("body", )
+
     def __init__(self, body):
         # Body can be any valid snippet format
         self.body = body
+
 
 def iter_indented_lines(snippets, level=0):
     """Iterate over indented string lines from a snippets data structure.
@@ -55,14 +56,16 @@ def iter_indented_lines(snippets, level=0):
         for line in snippets.split("\n"):
             yield indentation + line
     elif isinstance(snippets, Indented):
-        for line in iter_indented_lines(snippets.body, level+1):
+        for line in iter_indented_lines(snippets.body, level + 1):
             yield line
     elif isinstance(snippets, (tuple, list)):
         for part in snippets:
             for line in iter_indented_lines(part, level):
                 yield line
     else:
-        raise RuntimeError("Unexpected type %s:\n%s" % (type(snippets), str(snippets)))
+        raise RuntimeError("Unexpected type %s:\n%s" % (type(snippets),
+                                                        str(snippets)))
+
 
 def format_indented_lines(snippets, level=0):
     "Format recursive sequences of indented lines as one string."
