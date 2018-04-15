@@ -22,7 +22,7 @@ void tabulate_tensor_{factory_name}(double *A, const double *const *w,
     """
 void tabulate_tensor_{factory_name}(double *A, const double *const *w,
                                      const double *coordinate_dofs,
-                                     int64_t facet,
+                                     int facet,
                                      int cell_orientation)
 {{
 {tabulate_tensor}
@@ -32,8 +32,8 @@ void tabulate_tensor_{factory_name}(double *A, const double *const *w,
     """
 void tabulate_tensor_{factory_name}(double *A, const double *const *w,
                           const double *coordinate_dofs_0,
-                          const double *coordinate_dofs_1, int64_t facet_0,
-                          int64_t facet_1, int cell_orientation_0,
+                          const double *coordinate_dofs_1, int facet_0,
+                          int facet_1, int cell_orientation_0,
                           int cell_orientation_1)
 {{
 {tabulate_tensor}
@@ -42,7 +42,7 @@ void tabulate_tensor_{factory_name}(double *A, const double *const *w,
     "vertex":
     """
 void tabulate_tensor_{factory_name}(double *A, const double *const *w,
-                          const double *coordinate_dofs, int64_t vertex,
+                          const double *coordinate_dofs, int vertex,
                           int cell_orientation)
 {{
 {tabulate_tensor}
@@ -52,7 +52,7 @@ void tabulate_tensor_{factory_name}(double *A, const double *const *w,
     """
 void tabulate_tensor_{factory_name}(double *A, const double *const *w,
                           const double *coordinate_dofs,
-                          int64_t num_quadrature_points,
+                          int num_quadrature_points,
                           const double *quadrature_points,
                           const double *quadrature_weights,
                           const double *facet_normals,

@@ -11,32 +11,32 @@ ufc_finite_element* create_{factory_name}();
 factory = """
 // Code for element {factory_name}
 
-int value_dimension_{factory_name}(int64_t i)
+int value_dimension_{factory_name}(int i)
 {{
   {value_dimension}
 }}
 
-int reference_value_dimension_{factory_name}(int64_t i)
+int reference_value_dimension_{factory_name}(int i)
 {{
   {reference_value_dimension}
 }}
 
 int evaluate_reference_basis_{factory_name}(double *reference_values,
-                                            int64_t num_points,
+                                            int num_points,
                                             const double *X)
 {{
   {evaluate_reference_basis}
 }}
 
 int evaluate_reference_basis_derivatives_{factory_name}(double *reference_values,
-                                          int64_t order, int64_t num_points,
+                                          int order, int num_points,
                                           const double *X)
 {{
   {evaluate_reference_basis_derivatives}
 }}
 
 int transform_reference_basis_derivatives_{factory_name}(
-    double *values, int64_t order, int64_t num_points,
+    double *values, int order, int num_points,
     const double *reference_values, const double *X, const double *J,
     const double *detJ, const double *K, int cell_orientation)
 {{
@@ -55,7 +55,7 @@ void tabulate_reference_dof_coordinates_{factory_name}(double *reference_dof_coo
   {tabulate_reference_dof_coordinates}
 }}
 
-ufc_finite_element* create_sub_element_{factory_name}(int64_t i)
+ufc_finite_element* create_sub_element_{factory_name}(int i)
 {{
   {create_sub_element}
 }}

@@ -21,34 +21,34 @@ ufc_dofmap* create_coordinate_dofmap_{factory_name}()
 {create_coordinate_dofmap}
 }}
 
-void compute_jacobians_{factory_name}(double * J, int64_t num_points,
+void compute_jacobians_{factory_name}(double * J, int num_points,
                                       const double * X,
                                       const double * coordinate_dofs)
 {{
 {compute_jacobians}
 }}
 
-void compute_jacobian_determinants_{factory_name}(double * detJ, int64_t num_points,
+void compute_jacobian_determinants_{factory_name}(double * detJ, int num_points,
                                                   const double * J, int cell_orientation)
 {{
 {compute_jacobian_determinants}
 }}
 
 void compute_jacobian_inverses_{factory_name}(
-    double * K, int64_t num_points,
+    double * K, int num_points,
     const double * J, const double * detJ)
 {{
 {compute_jacobian_inverses}
 }}
 
-void compute_physical_coordinates_{factory_name}(double * x, int64_t num_points,
+void compute_physical_coordinates_{factory_name}(double * x, int num_points,
                                                  const double * X, const double * coordinate_dofs)
 {{
 {compute_physical_coordinates}
 }}
 
 void compute_reference_coordinates_{factory_name}(
-    double * X, int64_t num_points,
+    double * X, int num_points,
     const double * x,
     const double * coordinate_dofs, int cell_orientation)
 {{
@@ -56,7 +56,7 @@ void compute_reference_coordinates_{factory_name}(
 }}
 
 void compute_reference_geometry_{factory_name}(
-    double * X, double * J, double * detJ, double * K, int64_t num_points,
+    double * X, double * J, double * detJ, double * K, int num_points,
     const double * x,
     const double * coordinate_dofs, int cell_orientation)
 {{
@@ -64,7 +64,7 @@ void compute_reference_geometry_{factory_name}(
 }}
 
 void compute_geometry_{factory_name}(
-    double * x, double * J, double * detJ, double * K, int64_t num_points,
+    double * x, double * J, double * detJ, double * K, int num_points,
     const double * X,
     const double * coordinate_dofs, int cell_orientation)
 {{

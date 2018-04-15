@@ -11,7 +11,7 @@ ufc_form* create_{factory_name}();
 factory = """
 // Code for form {factory_name}
 
-int64_t original_coefficient_position_{factory_name}(int64_t i)
+int original_coefficient_position_{factory_name}(int i)
 {{
 {original_coefficient_position}
 }}
@@ -31,37 +31,37 @@ ufc_coordinate_mapping* create_coordinate_mapping_{factory_name}()
 {create_coordinate_mapping}
 }}
 
-ufc_finite_element* create_finite_element_{factory_name}(int64_t i)
+ufc_finite_element* create_finite_element_{factory_name}(int i)
 {{
 {create_finite_element}
 }}
 
-ufc_dofmap* create_dofmap_{factory_name}(int64_t i)
+ufc_dofmap* create_dofmap_{factory_name}(int i)
 {{
 {create_dofmap}
 }}
 
-ufc_cell_integral* create_cell_integral_{factory_name}(int64_t subdomain_id)
+ufc_cell_integral* create_cell_integral_{factory_name}(int subdomain_id)
 {{
   {create_cell_integral}
 }}
 
-ufc_exterior_facet_integral* create_exterior_facet_integral_{factory_name}(int64_t subdomain_id)
+ufc_exterior_facet_integral* create_exterior_facet_integral_{factory_name}(int subdomain_id)
 {{
   {create_exterior_facet_integral}
 }}
 
-ufc_interior_facet_integral* create_interior_facet_integral_{factory_name}(int64_t subdomain_id)
+ufc_interior_facet_integral* create_interior_facet_integral_{factory_name}(int subdomain_id)
 {{
 {create_interior_facet_integral}
 }}
 
-ufc_vertex_integral* create_vertex_integral_{factory_name}(int64_t subdomain_id)
+ufc_vertex_integral* create_vertex_integral_{factory_name}(int subdomain_id)
 {{
 {create_vertex_integral}
 }}
 
-ufc_custom_integral* create_custom_integral_{factory_name}(int64_t subdomain_id)
+ufc_custom_integral* create_custom_integral_{factory_name}(int subdomain_id)
 {{
 {create_custom_integral}
 }}

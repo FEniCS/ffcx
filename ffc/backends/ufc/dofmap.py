@@ -11,12 +11,12 @@ ufc_dofmap* create_{factory_name}();
 factory = """
 // Code for dofmap {factory_name}
 
-int64_t num_entity_dofs_{factory_name}(int64_t d)
+int num_entity_dofs_{factory_name}(int d)
 {{
 {num_entity_dofs}
 }}
 
-int64_t num_entity_closure_dofs_{factory_name}(int64_t d)
+int num_entity_closure_dofs_{factory_name}(int d)
 {{
 {num_entity_closure_dofs}
 }}
@@ -27,22 +27,22 @@ void tabulate_dofs_{factory_name}(int64_t * dofs, const int64_t* num_global_enti
 {tabulate_dofs}
 }}
 
-void tabulate_facet_dofs_{factory_name}(int64_t * dofs, int64_t facet)
+void tabulate_facet_dofs_{factory_name}(int * dofs, int facet)
 {{
 {tabulate_facet_dofs}
 }}
 
-void tabulate_entity_dofs_{factory_name}(int64_t * dofs, int64_t d, int64_t i)
+void tabulate_entity_dofs_{factory_name}(int * dofs, int d, int i)
 {{
 {tabulate_entity_dofs}
 }}
 
-void tabulate_entity_closure_dofs_{factory_name}(int64_t * dofs, int64_t d, int64_t i)
+void tabulate_entity_closure_dofs_{factory_name}(int * dofs, int d, int i)
 {{
 {tabulate_entity_closure_dofs}
 }}
 
-ufc_dofmap* create_sub_dofmap_{factory_name}(int64_t i)
+ufc_dofmap* create_sub_dofmap_{factory_name}(int i)
 {{
 {create_sub_dofmap}
 }}
