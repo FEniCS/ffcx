@@ -12,6 +12,7 @@ from ffc.representation import pick_representation
 from ufl.utils.formatting import dstr
 from ffc.backends.ufc import integrals as ufc_integrals
 
+
 class Snippets:
     "Each function maps to a keyword in the template.."
 
@@ -112,7 +113,8 @@ def ufc_integral_generator(ir, parameters):
         code["tabulate_tensor"] = ""
 
     # Format tabulate tensor body
-    tabulate_tensor_declaration = ufc_integrals.tabulate_implementation[integral_type]
+    tabulate_tensor_declaration = ufc_integrals.tabulate_implementation[
+        integral_type]
     tabulate_tensor_fn = tabulate_tensor_declaration.format(
         factory_name=factory_name, tabulate_tensor=code["tabulate_tensor"])
 

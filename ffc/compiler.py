@@ -226,7 +226,7 @@ def compile_ufl_objects(ufl_objects,
             for e in ir_comp:
                 classnames[e_name].append(e["classname"])
         wrapper_code = generate_wrapper_code(analysis, prefix, object_names,
-                                            classnames, parameters)
+                                             classnames, parameters)
     else:
         return None
 

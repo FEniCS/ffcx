@@ -944,7 +944,7 @@ def ufc_coordinate_mapping_generator(ir, parameters):
     d["compute_jacobians"] = L.StatementList(statements)
 
     d["compute_jacobian_determinants"] = compute_jacobian_determinants(L, ir)
-    d["compute_jacobian_inverses"] =compute_jacobian_inverses(L, ir)
+    d["compute_jacobian_inverses"] = compute_jacobian_inverses(L, ir)
 
     statements = compute_geometry(L, ir)
     assert isinstance(statements, list)

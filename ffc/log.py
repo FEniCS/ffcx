@@ -41,4 +41,3 @@ for foo in log_functions:
 
 # Set default log level
 set_level(INFO)
-
