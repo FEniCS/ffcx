@@ -25,7 +25,6 @@ else:
     ]
 
 
-
 URL = "https://bitbucket.org/fenics-project/ffc/"
 
 ENTRY_POINTS = {'console_scripts': ['ffc = ffc.__main__:main',
@@ -154,7 +153,7 @@ def run_install():
                     "ffc.uflacs.language",
                     ],
           package_dir={"ffc": "ffc"},
-          package_data={"ffc" : [os.path.join('backends', 'ufc', '*.h')]},
+          package_data={"ffc": [os.path.join('backends', 'ufc', '*.h')]},
           #scripts=scripts,  # Using entry_points instead
           entry_points=entry_points,
           data_files=data_files,
