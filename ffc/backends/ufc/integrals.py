@@ -4,11 +4,11 @@
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2018
 
-ufc_integral_declaration = """
+declaration = """
 ufc_{type}_integral* create_{factory_name}();
 """
 
-tabulate_tensor_implementation = {
+tabulate_implementation = {
     "cell":
     """
 void tabulate_tensor_{factory_name}(double *A, const double *const *w,
@@ -63,7 +63,7 @@ void tabulate_tensor_{factory_name}(double *A, const double *const *w,
 """
 }
 
-ufc_integral_factory = """
+factory = """
 // Code for {type}_integral {factory_name}
 
 {tabulate_tensor}

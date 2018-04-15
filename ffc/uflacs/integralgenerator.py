@@ -25,7 +25,6 @@ from ufl.classes import ConstantValue, Condition
 from ufl.measure import custom_integral_types, point_integral_types
 
 from ffc.log import error, warning
-
 from ffc.uflacs.build_uflacs_ir import get_common_block_data
 from ffc.uflacs.elementtables import piecewise_ttypes
 from ffc.uflacs.language.cnodes import pad_innermost_dim, pad_dim

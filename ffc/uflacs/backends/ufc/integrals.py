@@ -1,29 +1,18 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2015-2017 Martin Sandve Alnæs
 #
-# This file is part of UFLACS.
+# This file is part of FFC (https://www.fenicsproject.org)
 #
-# UFLACS is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# UFLACS is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
 from ffc.representation import pick_representation
 from ufl.utils.formatting import dstr
-from ffc.backends.ufc.integrals import (ufc_integral_declaration,
-                                        tabulate_tensor_implementation,
-                                        ufc_integral_factory)
+from ffc.backends.ufc import integrals as ufc_integrals
 
-
-class ufc_integral:
+class Snippets:
     "Each function maps to a keyword in the template.."
 
     def enabled_coefficients(self, L, ir):
@@ -71,29 +60,29 @@ class ufc_integral:
         return [L.Comment(line) for line in lines]
 
 
-class ufc_cell_integral(ufc_integral):
+class ufc_cell_integral(Snippets):
     def __init__(self):
-        ufc_integral.__init__(self, "cell")
+        Snippets.__init__(self, "cell")
 
 
-class ufc_exterior_facet_integral(ufc_integral):
+class ufc_exterior_facet_integral(Snippets):
     def __init__(self):
-        ufc_integral.__init__(self, "exterior_facet")
+        Snippets.__init__(self, "exterior_facet")
 
 
-class ufc_interior_facet_integral(ufc_integral):
+class ufc_interior_facet_integral(Snippets):
     def __init__(self):
-        ufc_integral.__init__(self, "interior_facet")
+        Snippets.__init__(self, "interior_facet")
 
 
-class ufc_vertex_integral(ufc_integral):
+class ufc_vertex_integral(Snippets):
     def __init__(self):
-        ufc_integral.__init__(self, "vertex")
+        Snippets.__init__(self, "vertex")
 
 
-class ufc_custom_integral(ufc_integral):
+class ufc_custom_integral(Snippets):
     def __init__(self):
-        ufc_integral.__init__(self, "custom")
+        Snippets.__init__(self, "custom")
 
     def num_cells(self, L, ir):
         value = ir["num_cells"]
@@ -107,7 +96,7 @@ def ufc_integral_generator(ir, parameters):
     integral_type = ir["integral_type"]
 
     # Format declaration
-    declaration = ufc_integral_declaration.format(
+    declaration = ufc_integrals.declaration.format(
         type=integral_type, factory_name=factory_name)
 
     # Select representation
@@ -123,12 +112,12 @@ def ufc_integral_generator(ir, parameters):
         code["tabulate_tensor"] = ""
 
     # Format tabulate tensor body
-    tabulate_tensor_declaration = tabulate_tensor_implementation[integral_type]
+    tabulate_tensor_declaration = ufc_integrals.tabulate_implementation[integral_type]
     tabulate_tensor_fn = tabulate_tensor_declaration.format(
         factory_name=factory_name, tabulate_tensor=code["tabulate_tensor"])
 
     # Format implementation code
-    implementation = ufc_integral_factory.format(
+    implementation = ufc_integrals.factory.format(
         type=integral_type,
         factory_name=factory_name,
         enabled_coefficients=code["enabled_coefficients"],

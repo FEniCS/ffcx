@@ -20,15 +20,15 @@
 
 from ffc.classname import make_integral_classname
 from ffc.uflacs.backends.ufc.utils import generate_return_new, generate_return_new_switch
-from ffc.backends.ufc.form import ufc_form_factory, ufc_form_declaration
 from ffc.representation import ufc_integral_types
+from ffc.backends.ufc import form as ufc_form
 
 # These are the method names in ufc_form that are specialized for each integral type
 integral_name_templates = (
-    "max_%s_subdomain_id",
-    "has_%s_integrals",
-    "create_%s_integral",
-    "create_default_%s_integral",
+    "max_{}_subdomain_id",
+    "has_{}_integrals",
+    "create_{}_integral",
+    "create_default_{}_integral",
 )
 
 
@@ -58,17 +58,17 @@ def add_ufc_form_integral_methods(cls):
     dummy_integral_type = "foo"
 
     for template in integral_name_templates:
-        implname = "_" + (template % (dummy_integral_type, ))
+        implname = "_" + (template.format(dummy_integral_type))
         impl = getattr(cls, implname)
         for integral_type in ufc_integral_types:
-            declname = template % (integral_type, )
+            declname = template.format(integral_type)
             _delegate = create_delegate(integral_type, declname, impl)
             setattr(cls, declname, _delegate)
     return cls
 
 
 @add_ufc_form_integral_methods
-class ufc_form:
+class UFCForm:
     """Each function maps to a keyword in the template.
 
     The exceptions are functions on the form
@@ -197,7 +197,7 @@ def ufc_form_generator(ir, parameters):
         "has_custom_integrals"] else "false"
 
     import ffc.uflacs.language.cnodes as L
-    generator = ufc_form()
+    generator = UFCForm()
 
     statements = generator.original_coefficient_position(L, ir)
     assert isinstance(statements, list)
@@ -235,16 +235,16 @@ def ufc_form_generator(ir, parameters):
     # Check that no keys are redundant or have been missed
     from string import Formatter
     fields = [
-        fname for _, fname, _, _ in Formatter().parse(ufc_form_factory)
+        fname for _, fname, _, _ in Formatter().parse(ufc_form.factory)
         if fname
     ]
     assert set(fields) == set(
         d.keys()), "Mismatch between keys in template and in formattting dict"
 
     # Format implementation code
-    implementation = ufc_form_factory.format_map(d)
+    implementation = ufc_form.factory.format_map(d)
 
     # Format declaration
-    declaration = ufc_form_declaration.format(factory_name=factory_name)
+    declaration = ufc_form.declaration.format(factory_name=factory_name)
 
     return declaration, implementation

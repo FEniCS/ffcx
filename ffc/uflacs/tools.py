@@ -23,7 +23,6 @@ import numpy
 
 from ufl.sorting import sorted_expr_sum
 from ufl import custom_integral_types
-from ufl.classes import Integral
 from ffc.representationutils import create_quadrature_points_and_weights
 
 

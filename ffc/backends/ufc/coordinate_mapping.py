@@ -4,11 +4,11 @@
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2018
 
-ufc_coordinate_mapping_declaration = """
+declaration = """
 ufc_coordinate_mapping* create_{factory_name}();
 """
 
-ufc_coordinate_mapping_factory = """
+factory = """
 // Code for coordinate mapping {factory_name}
 
 ufc_finite_element* create_coordinate_finite_element_{factory_name}()

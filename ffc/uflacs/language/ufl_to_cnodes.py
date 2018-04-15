@@ -19,7 +19,6 @@
 """Tools for C/C++ expression formatting."""
 
 from ffc.log import error
-
 from ufl.corealg.multifunction import MultiFunction
 
 

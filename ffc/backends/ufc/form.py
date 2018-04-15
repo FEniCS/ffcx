@@ -4,11 +4,11 @@
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2018.
 
-ufc_form_declaration = """
+declaration = """
 ufc_form* create_{factory_name}();
 """
 
-ufc_form_factory = """
+factory = """
 // Code for form {factory_name}
 
 int64_t original_coefficient_position_{factory_name}(int64_t i)

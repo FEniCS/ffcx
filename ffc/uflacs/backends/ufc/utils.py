@@ -32,9 +32,11 @@ def generate_return_new_switch(L, i, classnames, args=None, factory=False):
         i = L.Symbol(i)
 
     if factory:
+
         def create(classname):
             return L.Call("create_" + classname)
     else:
+
         def create(classname):
             return L.New(classname)
 
@@ -103,34 +105,3 @@ def generate_error(L, msg, emit_warning):
             'std::cerr << "*** FFC warning: " << "%s" << std::endl;' % (msg, ))
     else:
         return L.Throw('std::runtime_error', msg)
-
-
-"""
-// TODO: UFC functions that return constant arrays
-// could use something like this to reduce copying,
-// returning pointers to static data:
-
-  template<T>
-  class array_view
-  {
-  public:
-    array_view(std::size_t size, const T * data):
-      size(size), data(data)
-    const std::size_t size;
-    const T * data;
-    const T operator[](std::size_t i) const
-    { return data[i]; }
-  };
-
-  array_view<int> form::original_coefficient_positions() const
-  {
-    static const int data = { 0, 1, 2, 5 };
-    return array_view<int>{4, data};
-  }
-
-  array_view<bool> integral::enabled_coefficients() const
-  {
-    static const bool data = { true, true, true, false, false, true };
-    return array_view<bool>{6, data};
-  }
-"""

@@ -4,11 +4,11 @@
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2018.
 
-ufc_dofmap_declaration = """
+declaration = """
 ufc_dofmap* create_{factory_name}();
 """
 
-ufc_dofmap_factory = """
+factory = """
 // Code for dofmap {factory_name}
 
 int64_t num_entity_dofs_{factory_name}(int64_t d)

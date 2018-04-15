@@ -4,11 +4,11 @@
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2018.
 
-ufc_finite_element_declaration = """
+declaration = """
 ufc_finite_element* create_{factory_name}();
 """
 
-ufc_finite_element_factory = """
+factory = """
 // Code for element {factory_name}
 
 int value_dimension_{factory_name}(int64_t i)
