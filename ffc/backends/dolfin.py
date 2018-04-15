@@ -7,14 +7,13 @@
 #
 # Based on original implementation by Martin Alnes and Anders Logg
 
-from .capsules import UFCElementNames
-
 # NB: generate_dolfin_namespace(...) assumes that if a coefficient has
 # the same name in multiple forms, it is indeed the same coefficient:
+
 parameters = {"use_common_coefficient_names": True}
 
 
-def generate_dolfin_code(prefix, forms, common_function_space=False):
+def generate_wrappers(prefix, forms, common_function_space=False):
     """Generate complete dolfin wrapper code with given generated names.
 
     @param prefix:
@@ -30,16 +29,15 @@ def generate_dolfin_code(prefix, forms, common_function_space=False):
     code_c = "\n// DOLFIN helper functions\n"
 
     # Typedefs for convenience factory functions
-    factory_typedefs = """
+    code_h += """
 // Typedefs for convenience pointers to functions (factories)
 typedef dolfin_function_space* (*dolfin_function_space_factory_ptr)(void);
 typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
 
 """
-    code_h += factory_typedefs
 
     # Generate body of dolfin wrappers
-    if isinstance(forms[0], UFCElementNames):  # Hack"
+    if all(isinstance(element, UFCElementNames) for element in forms):
         # NOTE: This is messy because an element doesn't (at the
         # moment) have a coordinate map
         for element in forms:
@@ -58,7 +56,7 @@ typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
             }
             code_h += FUNCTION_SPACE_TEMPLATE_DECL.format_map(args)
             code_c += FUNCTION_SPACE_TEMPLATE_IMPL.format_map(args)
-    else:
+    elif all(isinstance(form, UFCFormNames) for form in forms):
         # FIXME: Convert to dict
         # Extract (common) coefficient spaces
         assert (parameters["use_common_coefficient_names"])
@@ -89,6 +87,8 @@ typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
         # Generate 'top-level' typedefs (Bilinear/Linear & Test/Trial/Function)
         code_h += generate_namespace_typedefs(forms, prefix,
                                               common_function_space)
+    else:
+        raise TypeError("Unexpected (possibly mixed) type.")
 
     return code_h, code_c
 
@@ -340,3 +340,51 @@ dolfin_function_space* {prefix}{classname}()
   return space;
 }}
 """
+
+
+class UFCFormNames:
+
+    "Encapsulation of the names related to a generated UFC form."
+
+    def __init__(self, name, coefficient_names, ufc_form_classname,
+                 ufc_finite_element_classnames, ufc_dofmap_classnames,
+                 ufc_coordinate_mapping_classnames):
+        """Arguments:
+
+        @param name:
+            Name of form (e.g. 'a', 'L', 'M').
+        @param coefficient_names:
+            List of names of form coefficients (e.g. 'f', 'g').
+        @param ufc_form_classname:
+            Name of ufc::form subclass.
+        @param ufc_finite_element_classnames:
+            List of names of ufc::finite_element subclasses (length
+            rank + num_coefficients).
+        @param ufc_dofmap_classnames:
+            List of names of ufc::dofmap subclasses (length rank +
+            num_coefficients).
+        @param ufc_coordinate_mapping_classnames:
+            List of names of ufc::coordinate_mapping subclasses
+        """
+        assert len(coefficient_names) <= len(ufc_dofmap_classnames)
+        assert len(ufc_finite_element_classnames) == len(ufc_dofmap_classnames)
+
+        self.num_coefficients = len(coefficient_names)
+        self.rank = len(ufc_finite_element_classnames) - self.num_coefficients
+        self.name = name
+        self.coefficient_names = coefficient_names
+        self.ufc_form_classname = ufc_form_classname
+        self.ufc_finite_element_classnames = ufc_finite_element_classnames
+        self.ufc_dofmap_classnames = ufc_dofmap_classnames
+        self.ufc_coordinate_mapping_classnames = ufc_coordinate_mapping_classnames
+
+
+class UFCElementNames:
+    "Encapsulation of the names related to a generated UFC element."
+
+    def __init__(self, name, element_classname, dofmap_classname,
+                 coordinate_mapping_classname):
+        self.name = name
+        self.element_classname = element_classname
+        self.dofmap_classname = dofmap_classname
+        self.coordinate_mapping_classname = coordinate_mapping_classname

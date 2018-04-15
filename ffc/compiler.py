@@ -131,8 +131,8 @@ from ffc.wrappers import generate_wrapper_code
 
 
 def _print_timing(stage, timing):
-    "Print timing results."
-    info("Compiler stage %s finished in %g seconds.\n" % (str(stage), timing))
+    info("Compiler stage {stage} finished in {time} seconds.\n".format(
+        stage=stage, time=timing))
 
 
 def compile_form(forms,
@@ -216,17 +216,20 @@ def compile_ufl_objects(ufl_objects,
     # Stage 4.1: generate convenience wrappers, e.g. for DOLFIN
     cpu_time = time()
 
-    # FIXME: Can this be avoided?
-    # Extract class names from the IR and add to a dict
-    # ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
-    classnames = defaultdict(list)
-    comp = ["elements", "dofmaps", "coordinate_maps", "integrals", "forms"]
-    for ir_comp, e_name in zip(ir, comp):
-        for e in ir_comp:
-            classnames[e_name].append(e["classname"])
+    if parameters["format"] == "dolfin":
+        # FIXME: Can this be avoided?
+        # Extract class names from the IR and add to a dict
+        # ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
+        classnames = defaultdict(list)
+        comp = ["elements", "dofmaps", "coordinate_maps", "integrals", "forms"]
+        for ir_comp, e_name in zip(ir, comp):
+            for e in ir_comp:
+                classnames[e_name].append(e["classname"])
+        wrapper_code = generate_wrapper_code(analysis, prefix, object_names,
+                                            classnames, parameters)
+    else:
+        return None
 
-    wrapper_code = generate_wrapper_code(analysis, prefix, object_names,
-                                         classnames, parameters)
     _print_timing(4.1, time() - cpu_time)
 
     # Stage 5: format code

@@ -88,7 +88,10 @@ def compile_ufl_data(ufd, prefix, parameters):
             ufd.forms, ufd.object_names, prefix=prefix, parameters=parameters)
     else:
         code_h, code_c = compile_element(
-            ufd.elements, prefix=prefix, parameters=parameters)
+            ufd.elements,
+            ufd.object_names,
+            prefix=prefix,
+            parameters=parameters)
     return code_h, code_c
 
 
