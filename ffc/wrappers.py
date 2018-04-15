@@ -50,8 +50,8 @@ def _generate_dolfin_wrapper(analysis, prefix, object_names, classnames,
     begin("Compiler stage 4.1: Generating additional wrapper code")
 
     # Encapsulate data
-    (capsules, common_space) = _encapsulate(prefix, object_names, classnames,
-                                            analysis, parameters)
+    capsules, common_space = _encapsulate(prefix, object_names, classnames,
+                                          analysis, parameters)
 
     # Generate code
     info("Generating wrapper code for DOLFIN")
@@ -70,14 +70,22 @@ def _encapsulate(prefix, object_names, classnames, analysis, parameters):
 
     # FIXME: Encapsulate domains?
 
-    num_form_datas = len(form_datas)
-    common_space = False
-
-    # Special case: single element
-    if num_form_datas == 0:
-        capsules = _encapsule_element(prefix, classnames, elements)
-    # Otherwise: generate standard capsules for each form
+    if not form_datas:
+        # Generate capsules for each element
+        common_space = False
+        capsules = []
+        for i in range(len(elements)):
+            assert len(classnames["coordinate_maps"]) == 0
+            element_number = i
+            args = {
+                "name": i,
+                "element_classname": classnames["elements"][i],
+                "dofmap_classname": classnames["dofmaps"][i],
+                "coordinate_mapping_classname": None
+            }
+            capsules.append(UFCElementNames(**args))
     else:
+        # Generate capsules for each form
         capsules = [
             _encapsule_form(prefix, object_names, classnames, form_data, i,
                             element_map)
@@ -89,7 +97,7 @@ def _encapsulate(prefix, object_names, classnames, analysis, parameters):
             elements += form_data.argument_elements
         common_space = all_equal(elements)
 
-    return (capsules, common_space)
+    return capsules, common_space
 
 
 def _encapsule_form(prefix, object_names, classnames, form_data, i,
@@ -111,13 +119,3 @@ def _encapsule_form(prefix, object_names, classnames, form_data, i,
          for j in element_numbers], [classnames["coordinate_maps"][0]])
 
     return form_names
-
-
-def _encapsule_element(prefix, classnames, elements):
-    # FIXME: Figure what to do with coordinate maps. Can there be more than 1?
-    assert len(classnames["coordinate_maps"]) == 0
-    element_number = len(elements) - 1  # eh? this doesn't make any sense
-    args = ("0", [classnames["elements"][element_number]],
-            [classnames["dofmaps"][element_number]], [None])
-    #[classnames["coordinate_mapppings"][element_number]])
-    return UFCElementNames(*args)

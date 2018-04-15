@@ -58,30 +58,25 @@ class UFCFormNames:
 
 
 class UFCElementNames:
-
     "Encapsulation of the names related to a generated UFC element."
 
-    def __init__(self, name, ufc_finite_element_classnames,
-                 ufc_dofmap_classnames, ufc_coordinate_mapping_classnames):
+    def __init__(self, name, element_classname, dofmap_classname,
+                 coordinate_mapping_classname):
         """Arguments:
 
         """
-        assert len(ufc_finite_element_classnames) == len(ufc_dofmap_classnames)
-        assert len(ufc_finite_element_classnames) == len(
-            ufc_coordinate_mapping_classnames)
-
         self.name = name
-        self.ufc_finite_element_classnames = ufc_finite_element_classnames
-        self.ufc_dofmap_classnames = ufc_dofmap_classnames
-        self.ufc_coordinate_mapping_classnames = ufc_coordinate_mapping_classnames
+        self.element_classname = element_classname
+        self.dofmap_classname = dofmap_classname
+        self.coordinate_mapping_classname = coordinate_mapping_classname
 
     def __str__(self):
-        s = "UFCFiniteElementNames instance:\n"
-        s += "name:                      {}\n".format(self.name)
-        s += "finite_element_classnames: {}\n".format(
-            self.ufc_finite_element_classnames)
-        s += "ufc_dofmap_classnames:     {}\n".format(
-            self.ufc_dofmap_classnames)
-        s += "ufc_coordinate_mapping_classnames: {}\n".format(
-            self.ufc_dofmap_classnames)
+        s = "UFCFiniteElementNames:\n"
+        s += "name:                          {}\n".format(self.name)
+        s += "element_classname:             {}\n".format(
+            self.element_classname)
+        s += "dofmap_classname:              {}\n".format(
+            self.dofmap_classname)
+        s += "coordinate_mapping_classnames: {}\n".format(
+            self.coordinate_mapping_classname)
         return s

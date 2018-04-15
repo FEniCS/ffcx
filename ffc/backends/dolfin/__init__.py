@@ -39,24 +39,25 @@ typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
     code_h += factory_typedefs
 
     # Generate body of dolfin wrappers
-    if isinstance(forms, UFCElementNames):
+    if isinstance(forms[0], UFCElementNames):  # Hack"
         # NOTE: This is messy because an element doesn't (at the
         # moment) have a coordinate map
-        cmap = forms.ufc_coordinate_mapping_classnames[0]
-        args = {
-            "prefix":
-            prefix,
-            "classname":
-            "FunctionSpace",
-            "finite_element_classname":
-            forms.ufc_finite_element_classnames[0],
-            "dofmap_classname":
-            forms.ufc_dofmap_classnames[0],
-            "coordinate_map_classname":
-            "create_{}".format(cmap) if cmap else "NULL"
-        }
-        code_h += FUNCTION_SPACE_TEMPLATE_DECL.format_map(args)
-        code_c += FUNCTION_SPACE_TEMPLATE_IMPL.format_map(args)
+        for element in forms:
+            cmap = element.coordinate_mapping_classname
+            args = {
+                "prefix":
+                prefix,
+                "classname":
+                "FunctionSpace_{}".format(element.name),
+                "finite_element_classname":
+                element.element_classname,
+                "dofmap_classname":
+                element.dofmap_classname,
+                "coordinate_map_classname":
+                "create_{}".format(cmap) if cmap else "NULL"
+            }
+            code_h += FUNCTION_SPACE_TEMPLATE_DECL.format_map(args)
+            code_c += FUNCTION_SPACE_TEMPLATE_IMPL.format_map(args)
     else:
         # FIXME: Convert to dict
         # Extract (common) coefficient spaces
@@ -64,7 +65,8 @@ typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
         spaces = extract_coefficient_spaces(forms)
 
         # Generate dolfin_function_space code for common coefficient spaces
-        code_h += "// Coefficient spaces helpers (number: {})\n".format(len(spaces))
+        code_h += "// Coefficient spaces helpers (number: {})\n".format(
+            len(spaces))
         for space in spaces:
             args = {
                 "prefix": prefix,
@@ -78,13 +80,15 @@ typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
 
         # code_h += "\n// Form function spaces helpers (number of forms: {})\n".format(len(forms))
         for form in forms:
-            code_h += "\n// Form function spaces helpers (form '{}')\n".format(form.name)
+            code_h += "\n// Form function spaces helpers (form '{}')\n".format(
+                form.name)
             code = generate_form(form, prefix, "Form_{}".format(form.name))
             code_h += code[0]
             code_c += code[1]
 
         # Generate 'top-level' typedefs (Bilinear/Linear & Test/Trial/Function)
-        code_h += generate_namespace_typedefs(forms, prefix, common_function_space)
+        code_h += generate_namespace_typedefs(forms, prefix,
+                                              common_function_space)
 
     return code_h, code_c
 
@@ -114,8 +118,8 @@ def generate_namespace_typedefs(forms, prefix, common_function_space):
 
     # Combine data to typedef code
     typedefs = "\n".join(
-        "static const dolfin_form_factory_ptr {0}{1} = {0}{2};".format(prefix, fro, to)
-        for (to, fro) in pairs)
+        "static const dolfin_form_factory_ptr {0}{1} = {0}{2};".format(
+            prefix, fro, to) for (to, fro) in pairs)
 
     # Keepin' it simple: Add typedef for function space factory if term applies
     if common_function_space:
@@ -168,7 +172,8 @@ def generate_form(form, prefix, classname):
 
     # Add factory function typedefs, e.g. Form_L_FunctionSpace_1_factory = CoefficientSpace_f_factory
     blocks_h += [
-        "// Coefficient function space typedefs for form \"{}\"".format(classname)
+        "// Coefficient function space typedefs for form \"{}\"".format(
+            classname)
     ]
     template = "static const dolfin_function_space_factory_ptr {0}{1}_FunctionSpace_{2} = {0}CoefficientSpace_{3};"
     blocks_h += [
