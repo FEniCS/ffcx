@@ -3,8 +3,7 @@ import os
 import sys
 import subprocess
 import string
-
-from setuptools import setup, find_packages
+from setuptools import setup
 
 if sys.version_info < (3, 5):
     print("Python 3.5 or higher required, please upgrade.")
@@ -60,7 +59,7 @@ Topic :: Software Development :: Code Generators
 def tarball():
     if "dev" in VERSION:
         return None
-    return URL + "downloads/fenics-ffc-%s.tar.gz" % VERSION
+    return URL + "downloads/fenics-ffc-{}.tar.gz".format(VERSION)
 
 
 def get_installation_prefix():
@@ -89,7 +88,7 @@ def get_git_commit_hash():
         hash = subprocess.check_output(['git', 'rev-parse', 'HEAD'])
     except (OSError, subprocess.CalledProcessError) as e:
         print('Retrieving git commit hash did not succeed with exception:')
-        print('"%s"' % str(e))
+        print('"{}"'.format(e))
         print()
         print('Stored git commit hash will be set to "unknown"!')
         return "unknown"
@@ -143,7 +142,17 @@ def run_install():
           url=URL,
           download_url=tarball(),
           platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
-          packages=find_packages("."),
+          packages=["ffc",
+                    "ffc.backends",
+                    "ffc.backends.ufc",
+                    "ffc.tsfc",
+                    "ffc.uflacs",
+                    "ffc.uflacs.analysis",
+                    "ffc.uflacs.backends",
+                    "ffc.uflacs.backends.ffc",
+                    "ffc.uflacs.backends.ufc",
+                    "ffc.uflacs.language",
+                    ],
           package_dir={"ffc": "ffc"},
           package_data={"ffc" : [os.path.join('backends', 'ufc', '*.h')]},
           #scripts=scripts,  # Using entry_points instead
