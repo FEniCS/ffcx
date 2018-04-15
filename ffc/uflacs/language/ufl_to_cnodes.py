@@ -15,7 +15,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
-
 """Tools for C/C++ expression formatting."""
 
 from ffc.log import error
@@ -24,6 +23,7 @@ from ufl.corealg.multifunction import MultiFunction
 
 class UFL2CNodesTranslatorCpp(MultiFunction):
     """UFL to CNodes translator class."""
+
     def __init__(self, language):
         MultiFunction.__init__(self)
 
@@ -35,7 +35,8 @@ class UFL2CNodesTranslatorCpp(MultiFunction):
 
     def expr(self, o):
         "Generic fallback with error message for missing rules."
-        error("Missing C++ formatting rule for expr type {0}.".format(o._ufl_class_))
+        error("Missing C++ formatting rule for expr type {0}.".format(
+            o._ufl_class_))
 
     # === Formatting rules for scalar literals ===
 

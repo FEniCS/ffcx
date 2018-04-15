@@ -228,7 +228,7 @@ def compile_ufl_objects(ufl_objects,
         wrapper_code = generate_wrapper_code(analysis, prefix, object_names,
                                              classnames, parameters)
     else:
-        return None
+        wrapper_code = None
 
     _print_timing(4.1, time() - cpu_time)
 
@@ -237,14 +237,14 @@ def compile_ufl_objects(ufl_objects,
     code_h, code_c = format_code(code, wrapper_code, prefix, parameters)
     _print_timing(5, time() - cpu_time)
 
-    info_green("FFC finished in %g seconds.", time() - cpu_time_0)
+    info_green("FFC finished in {} seconds.".format(time() - cpu_time_0))
 
     if jit:
         # Must use processed elements from analysis here
         form_datas, unique_elements, element_numbers, unique_coordinate_elements = analysis
 
-        # Wrap coordinate elements in Mesh object to represent that
-        # we want a ufc::coordinate_mapping not a ufc::finite_element
+        # Wrap coordinate elements in Mesh object to represent that we
+        # want a ufc_coordinate_mapping not a ufc_finite_element
         unique_meshes = [
             ufl.Mesh(element, ufl_id=0)
             for element in unique_coordinate_elements
@@ -256,7 +256,8 @@ def compile_ufl_objects(ufl_objects,
         unique_meshes = tuple(
             mesh for mesh in unique_meshes if mesh not in ufl_objects)
 
-        # Setup dependencies (these will be jitted before continuing to compile ufl_objects)
+        # Setup dependencies (these will be jitted before continuing to
+        # compile ufl_objects)
         dependent_ufl_objects = {
             "element": unique_elements,
             "coordinate_mapping": unique_meshes,

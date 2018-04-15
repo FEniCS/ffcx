@@ -117,7 +117,8 @@ def jit_build(ufl_object, module_name, parameters):
 
     # Use C compiler (not C++) and add some libs/options
     build_params["cxx"] = os.getenv("CC", "cc")
-    build_params["libs"] = _string_tuple("m" + parameters.get("external_libraries"))
+    build_params["libs"] = _string_tuple(
+        "m" + parameters.get("external_libraries"))
     build_params["cxxflags"] = ["-Wall", "-shared", "-fPIC"]
 
     # Interpreting FFC default "" as None, use "." if you want to point to curdir
