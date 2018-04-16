@@ -19,8 +19,7 @@ from ffc.log import info
 from ffc.representationutils import initialize_integral_ir
 
 
-def compute_integral_ir(integral_data, form_data, form_id, element_numbers,
-                        classnames, parameters):
+def compute_integral_ir(integral_data, form_data, form_id, element_numbers, classnames, parameters):
     "Compute intermediate represention of integral."
 
     info("Computing tsfc representation")

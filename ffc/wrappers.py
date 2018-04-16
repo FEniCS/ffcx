@@ -22,14 +22,12 @@ from . import utils
 from .backends import dolfin
 
 
-def generate_wrapper_code(analysis, prefix, object_names, classnames,
-                          parameters):
+def generate_wrapper_code(analysis, prefix, object_names, classnames, parameters):
 
     begin("Compiler stage 4.1: Generating additional wrapper code")
 
     # Encapsulate data
-    capsules, common_space = _encapsulate(prefix, object_names, classnames,
-                                          analysis, parameters)
+    capsules, common_space = _encapsulate(prefix, object_names, classnames, analysis, parameters)
 
     # Generate code
     info("Generating wrapper code for DOLFIN")
@@ -52,8 +50,7 @@ def _encapsulate(prefix, object_names, classnames, analysis, parameters):
     if not form_data:
         return _encapsulate_elements(elements, object_names, classnames), False
     else:
-        return _encapsule_forms(prefix, object_names, classnames, form_data,
-                                element_map)
+        return _encapsule_forms(prefix, object_names, classnames, form_data, element_map)
 
 
 def _encapsulate_elements(elements, object_names, classnames):
@@ -85,14 +82,12 @@ def _encapsule_forms(prefix, object_names, classnames, form_data, element_map):
     capsules = []
     for i, form in enumerate(form_data):
         element_numbers = [
-            element_map[e]
-            for e in form.argument_elements + form.coefficient_elements
+            element_map[e] for e in form.argument_elements + form.coefficient_elements
         ]
 
         name = object_names.get(id(form.original_form), "%d" % i)
         coefficient_names = [
-            object_names.get(id(obj), "w%d" % j)
-            for j, obj in enumerate(form.reduced_coefficients)
+            object_names.get(id(obj), "w%d" % j) for j, obj in enumerate(form.reduced_coefficients)
         ]
         ufc_form_name = classnames["forms"][i]
         ufc_elements = [classnames["elements"][j] for j in element_numbers]
@@ -100,12 +95,10 @@ def _encapsule_forms(prefix, object_names, classnames, form_data, element_map):
         ufc_cmaps = [classnames["coordinate_maps"][0]]
 
         capsules.append(
-            dolfin.UFCFormNames(name, coefficient_names, ufc_form_name,
-                                ufc_elements, ufc_dofmaps, ufc_cmaps))
+            dolfin.UFCFormNames(name, coefficient_names, ufc_form_name, ufc_elements, ufc_dofmaps,
+                                ufc_cmaps))
 
     # Build list of all argument elements to which if all are equal
-    elements = [
-        element for form in form_data for element in form.argument_elements
-    ]
+    elements = [element for form in form_data for element in form.argument_elements]
 
     return capsules, utils.all_equal(elements)

@@ -80,8 +80,8 @@ def format_code(code, wrapper_code, prefix, parameters):
     begin("Compiler stage 5: Formatting code")
 
     # Extract code
-    (code_finite_elements, code_dofmaps, code_coordinate_mappings,
-     code_integrals, code_forms, includes) = code
+    (code_finite_elements, code_dofmaps, code_coordinate_mappings, code_integrals, code_forms,
+     includes) = code
 
     # Generate code for comment at top of file
     code_h_pre = _generate_comment(parameters) + "\n"
@@ -161,15 +161,13 @@ def _generate_comment(parameters):
     elif parameters["format"] == "dolfin":
         comment = format_template["dolfin comment"] % args
     else:
-        error("Unable to format code, unknown format \"%s\".",
-              parameters["format"])
+        error("Unable to format code, unknown format \"%s\".", parameters["format"])
 
     # Add parameter information
     comment += "//\n"
     comment += "// This code was generated with the following parameters:\n"
     comment += "//\n"
-    comment += "\n".join(
-        [""] + ["//" + ("  " + l) for l in dstr(parameters).split("\n")][:-1])
+    comment += "\n".join([""] + ["//" + ("  " + l) for l in dstr(parameters).split("\n")][:-1])
     comment += "\n"
 
     return comment
@@ -185,8 +183,8 @@ def _generate_includes(includes, parameters):
         "#include <ufc.h>",
     ]
 
-    external_includes = set("#include <%s>" % inc
-                            for inc in parameters.get("external_includes", ()))
+    external_includes = set(
+        "#include <%s>" % inc for inc in parameters.get("external_includes", ()))
 
     s = set(default_h_includes) | includes
 

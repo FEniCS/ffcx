@@ -1,21 +1,9 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2011-2017 Martin Sandve Alnæs
 #
-# This file is part of UFLACS.
+# This file is part of FFC (https://www.fenicsproject.org)
 #
-# UFLACS is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# UFLACS is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
-
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 """Algorithms for value numbering within computational graphs."""
 
 from ufl import product
@@ -25,14 +13,15 @@ from ufl.classes import FormArgument
 
 from ffc.log import error
 
-from ffc.uflacs.analysis.indexing import map_indexed_arg_components, map_component_tensor_arg_components
+from ffc.uflacs.analysis.indexing import (map_indexed_arg_components,
+                                          map_component_tensor_arg_components)
 from ffc.uflacs.analysis.modified_terminals import analyse_modified_terminal
 
 
 class ValueNumberer(MultiFunction):
-
     """An algorithm to map the scalar components of an expression node to unique value numbers,
-    with fallthrough for types that can be mapped to the value numbers of their operands."""
+    with fallthrough for types that can be mapped to the value numbers
+    of their operands."""
 
     def __init__(self, e2i, V_sizes, V_symbols):
         MultiFunction.__init__(self)
@@ -106,7 +95,7 @@ class ValueNumberer(MultiFunction):
         # v is not necessary scalar here, indexing in (0,...,0) picks the first scalar component
         # to analyse, which should be sufficient to get the base shape and derivatives
         if v.ufl_shape:
-            mt = analyse_modified_terminal(v[(0,) * len(v.ufl_shape)])
+            mt = analyse_modified_terminal(v[(0, ) * len(v.ufl_shape)])
         else:
             mt = analyse_modified_terminal(v)
 
@@ -117,11 +106,11 @@ class ValueNumberer(MultiFunction):
         if num_ld:
             domain = mt.terminal.ufl_domain()
             tdim = domain.topological_dimension()
-            d_components = compute_indices((tdim,) * num_ld)
+            d_components = compute_indices((tdim, ) * num_ld)
         elif num_gd:
             domain = mt.terminal.ufl_domain()
             gdim = domain.geometric_dimension()
-            d_components = compute_indices((gdim,) * num_gd)
+            d_components = compute_indices((gdim, ) * num_gd)
         else:
             d_components = [()]
 
@@ -133,12 +122,14 @@ class ValueNumberer(MultiFunction):
         mapped_symbols = {}
         for bc in base_components:
             for dc in d_components:
-                # Build mapped component mc with symmetries from element and derivatives combined
+                # Build mapped component mc with symmetries from element
+                # and derivatives combined
                 mbc = mt.base_symmetry.get(bc, bc)
                 mdc = tuple(sorted(dc))
                 mc = mbc + mdc
 
-                # Get existing symbol or create new and store with mapped component mc as key
+                # Get existing symbol or create new and store with
+                # mapped component mc as key
                 s = mapped_symbols.get(mc)
                 if s is None:
                     s = self.new_symbol()
@@ -159,6 +150,7 @@ class ValueNumberer(MultiFunction):
     cell_avg = _modified_terminal
     restricted = _modified_terminal
     reference_value = _modified_terminal
+
     # indexed is implemented as a fall-through operation
 
     def indexed(self, Aii, i):

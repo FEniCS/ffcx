@@ -27,41 +27,28 @@ from ffc.log import INFO
 # included in jit signature, cache and log are not.
 _FFC_GENERATE_PARAMETERS = {
     "format": "ufc",  # code generation format
-    "representation": "auto",  # form representation / code
-    # generation strategy
-    "quadrature_rule": None,  # quadrature rule used for
-    # integration of element tensors
-    # (None is auto)
-    "quadrature_degree": None,  # quadrature degree used for
-    # computing integrals
-    # (None is auto)
-    "precision": None,  # precision used when writing
-    # numbers (None for max precision)
-    "epsilon": 1e-14,  # machine precision, used for
-    # dropping zero terms in tables
-    "form_postfix": True,  # postfix form name with "Function",
-    # "LinearForm" or BilinearForm
-    "convert_exceptions_to_warnings":
-    False,  # convert all exceptions to warning
-    # in generated code
+    "representation": "auto",  # form representation / code generation strategy
+    "quadrature_rule":
+    None,  # quadrature rule used for integration of element tensors (None is auto)
+    "quadrature_degree": None,  # quadrature degree used for computing integrals (None is auto)
+    "precision": None,  # precision used when writing numbers (None for max precision)
+    "epsilon": 1e-14,  # machine precision, used for dropping zero terms in tables
+    "form_postfix": True,  # postfix form name with "Function", "LinearForm" or BilinearForm
+    "convert_exceptions_to_warnings": False,  # convert all exceptions to warning in generated code
     "optimize": True,  # turn on optimization for code generation
-    "max_signature_length": 0,  # set to positive integer to shorten signatures
-    # set to True to replace tabulate_tensor body with no-op
-    "generate_dummy_tabulate_tensor": False,
-    # set to True to add timing inside tabulate_tensor
+    "max_signature_length":
+    0,  # set to positive integer to shorten signatures set to True to replace tabulate_tensor body with no-op
+    "generate_dummy_tabulate_tensor": False,  # set to True to add timing inside tabulate_tensor
     "add_tabulate_tensor_timing": False,
-    # ':' separated list of include filenames to add to generated code
-    "external_includes": "",
+    "external_includes": "",  # ':' separated list of include filenames to add to generated code
 }
 _FFC_BUILD_PARAMETERS = {
     "cpp_optimize": True,  # optimization for the C++ compiler
     "cpp_optimize_flags": "-O2",  # optimization flags for the C++ compiler
-    # ':' separated list of libraries to link JIT compiled libraries with
-    "external_libraries": "",
-    # ':' separated list of library search dirs to add when JIT compiling
-    "external_library_dirs": "",
-    # ':' separated list of include dirs to add when JIT compiling
-    "external_include_dirs": "",
+    "external_libraries": "",  # ':' separated list of libraries to link JIT compiled libraries with
+    "external_library_dirs":
+    "",  # ':' separated list of library search dirs to add when JIT compiling
+    "external_include_dirs": "",  # ':' separated list of include dirs to add when JIT compiling
 }
 _FFC_CACHE_PARAMETERS = {
     "cache_dir": "",  # cache dir used by Instant
@@ -88,9 +75,8 @@ def split_parameters(parameters):
                   for k in _FFC_CACHE_PARAMETERS.keys()},
         "build": {k: parameters[k]
                   for k in _FFC_BUILD_PARAMETERS.keys()},
-        "generate":
-        {k: parameters[k]
-         for k in _FFC_GENERATE_PARAMETERS.keys()},
+        "generate": {k: parameters[k]
+                     for k in _FFC_GENERATE_PARAMETERS.keys()},
         "log": {k: parameters[k]
                 for k in _FFC_LOG_PARAMETERS.keys()},
     }
@@ -165,8 +151,7 @@ def _validate_parameters(parameters):
         parameters["quadrature_degree"] = None
     else:
         try:
-            parameters["quadrature_degree"] = int(
-                parameters["quadrature_degree"])
+            parameters["quadrature_degree"] = int(parameters["quadrature_degree"])
         except Exception:
             error("Failed to convert quadrature degree '%s' to int" %
                   parameters.get("quadrature_degree"))
@@ -179,8 +164,7 @@ def _validate_parameters(parameters):
         try:
             parameters["precision"] = int(parameters["precision"])
         except Exception:
-            error("Failed to convert precision '%s' to int" %
-                  parameters.get("precision"))
+            error("Failed to convert precision '%s' to int" % parameters.get("precision"))
 
 
 def compilation_relevant_parameters(parameters):

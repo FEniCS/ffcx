@@ -1,20 +1,8 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2011-2017 Martin Sandve Alnæs
 #
-# This file is part of UFLACS.
+# This file is part of FFC (https://www.fenicsproject.org)
 #
-# UFLACS is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# UFLACS is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 """Tools for precomputed tables of terminal values."""
 
 from collections import namedtuple
@@ -32,7 +20,7 @@ from ffc.log import error
 from ffc.fiatinterface import create_element
 from ffc.representationutils import integral_type_to_entity_dim, map_integral_points
 from ffc.representationutils import create_quadrature_points_and_weights
-from ffc.uflacs.backends.ffc.common import ufc_restriction_offset
+from ffc.backends.ffc.common import ufc_restriction_offset
 
 # Using same defaults as numpy.allclose
 default_rtol = 1e-5

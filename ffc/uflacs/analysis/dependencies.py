@@ -1,21 +1,9 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2011-2017 Martin Sandve Alnæs
 #
-# This file is part of UFLACS.
+# This file is part of FFC (https://www.fenicsproject.org)
 #
-# UFLACS is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# UFLACS is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
-
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 """Tools for analysing dependencies within expression graphs."""
 
 import numpy
@@ -32,7 +20,8 @@ def compute_dependencies(e2i, V, ignore_terminal_modifiers=True):
     num_nonzeros = sum(len(v.ufl_operands) for v in V)
     dependencies = CRSArray(num_rows, num_nonzeros, itype)
     for v in V:
-        if v._ufl_is_terminal_ or (ignore_terminal_modifiers and v._ufl_is_terminal_modifier_):
+        if v._ufl_is_terminal_ or (ignore_terminal_modifiers
+                                   and v._ufl_is_terminal_modifier_):
             dependencies.push_row(())
         else:
             dependencies.push_row([e2i[o] for o in v.ufl_operands])
