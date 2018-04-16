@@ -21,23 +21,24 @@ int num_entity_closure_dofs_{factory_name}(int d)
 {num_entity_closure_dofs}
 }}
 
-void tabulate_dofs_{factory_name}(int64_t * dofs, const int64_t* num_global_entities,
+void tabulate_dofs_{factory_name}(int64_t* restrict dofs,
+                                  const int64_t* restrict num_global_entities,
                                   const int64_t** entity_indices)
 {{
 {tabulate_dofs}
 }}
 
-void tabulate_facet_dofs_{factory_name}(int * dofs, int facet)
+void tabulate_facet_dofs_{factory_name}(int* restrict dofs, int facet)
 {{
 {tabulate_facet_dofs}
 }}
 
-void tabulate_entity_dofs_{factory_name}(int * dofs, int d, int i)
+void tabulate_entity_dofs_{factory_name}(int* restrict dofs, int d, int i)
 {{
 {tabulate_entity_dofs}
 }}
 
-void tabulate_entity_closure_dofs_{factory_name}(int * dofs, int d, int i)
+void tabulate_entity_closure_dofs_{factory_name}(int* restrict dofs, int d, int i)
 {{
 {tabulate_entity_closure_dofs}
 }}

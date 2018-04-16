@@ -11,8 +11,8 @@ ufc_{type}_integral* create_{factory_name}();
 tabulate_implementation = {
     "cell":
     """
-void tabulate_tensor_{factory_name}(double *A, const double *const *w,
-                                    const double *coordinate_dofs,
+void tabulate_tensor_{factory_name}(double* restrict A, const double* const* w,
+                                    const double* restrict coordinate_dofs,
                                     int cell_orientation)
 {{
 {tabulate_tensor}
@@ -20,42 +20,41 @@ void tabulate_tensor_{factory_name}(double *A, const double *const *w,
 """,
     "exterior_facet":
     """
-void tabulate_tensor_{factory_name}(double *A, const double *const *w,
-                                     const double *coordinate_dofs,
-                                     int facet,
-                                     int cell_orientation)
+void tabulate_tensor_{factory_name}(double* restrict A, const double* const *w,
+                                     const double* restrict coordinate_dofs,
+                                     int facet, int cell_orientation)
 {{
 {tabulate_tensor}
 }}
 """,
     "interior_facet":
     """
-void tabulate_tensor_{factory_name}(double *A, const double *const *w,
-                          const double *coordinate_dofs_0,
-                          const double *coordinate_dofs_1, int facet_0,
-                          int facet_1, int cell_orientation_0,
-                          int cell_orientation_1)
+void tabulate_tensor_{factory_name}(double* restrict A, const double*const * w,
+                                    const double* restrict coordinate_dofs_0,
+                                    const double* restrict coordinate_dofs_1, int facet_0,
+                                    int facet_1, int cell_orientation_0,
+                                    int cell_orientation_1)
 {{
 {tabulate_tensor}
 }}
 """,
     "vertex":
     """
-void tabulate_tensor_{factory_name}(double *A, const double *const *w,
-                          const double *coordinate_dofs, int vertex,
-                          int cell_orientation)
+void tabulate_tensor_{factory_name}(double* restrict A, const double* const * w,
+                                    const double* restrict coordinate_dofs, int vertex,
+                                    int cell_orientation)
 {{
 {tabulate_tensor}
 }}
 """,
     "custom":
     """
-void tabulate_tensor_{factory_name}(double *A, const double *const *w,
-                          const double *coordinate_dofs,
+void tabulate_tensor_{factory_name}(double* restrict A, const double* const * w,
+                          const double* restrict coordinate_dofs,
                           int num_quadrature_points,
-                          const double *quadrature_points,
-                          const double *quadrature_weights,
-                          const double *facet_normals,
+                          const double* restrict quadrature_points,
+                          const double* restrict quadrature_weights,
+                          const double* restrict facet_normals,
                           int cell_orientation)
 {{
 {tabulate_tensor}
