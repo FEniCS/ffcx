@@ -21,36 +21,40 @@ int reference_value_dimension_{factory_name}(int i)
   {reference_value_dimension}
 }}
 
-int evaluate_reference_basis_{factory_name}(double *reference_values,
+int evaluate_reference_basis_{factory_name}(double* restrict reference_values,
                                             int num_points,
-                                            const double *X)
+                                            const double* restrict X)
 {{
   {evaluate_reference_basis}
 }}
 
-int evaluate_reference_basis_derivatives_{factory_name}(double *reference_values,
+int evaluate_reference_basis_derivatives_{factory_name}(double * restrict reference_values,
                                           int order, int num_points,
-                                          const double *X)
+                                          const double * restrict X)
 {{
   {evaluate_reference_basis_derivatives}
 }}
 
 int transform_reference_basis_derivatives_{factory_name}(
-    double *values, int order, int num_points,
-    const double *reference_values, const double *X, const double *J,
-    const double *detJ, const double *K, int cell_orientation)
+    double * restrict values, int order, int num_points,
+    const double * restrict reference_values,
+    const double * restrict X, const double * restrict J,
+    const double * restrict detJ, const double * restrict K,
+    int cell_orientation)
 {{
   {transform_reference_basis_derivatives}
 }}
 
-void map_dofs_{factory_name}(double *values, const double *vals,
-                   const double *coordinate_dofs, int cell_orientation,
-                   const ufc_coordinate_mapping *cm)
+void map_dofs_{factory_name}(double* restrict values,
+                            const double* restrict vals,
+                             const double* restrict coordinate_dofs,
+                             int cell_orientation,
+                             const ufc_coordinate_mapping* cm)
 {{
   {map_dofs}
 }}
 
-void tabulate_reference_dof_coordinates_{factory_name}(double *reference_dof_coordinates)
+void tabulate_reference_dof_coordinates_{factory_name}(double* restrict reference_dof_coordinates)
 {{
   {tabulate_reference_dof_coordinates}
 }}
