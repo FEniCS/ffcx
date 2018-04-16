@@ -3,7 +3,7 @@ import os
 import sys
 import subprocess
 import string
-from setuptools import setup
+import setuptools
 
 if sys.version_info < (3, 5):
     print("Python 3.5 or higher required, please upgrade.")
@@ -19,9 +19,9 @@ if on_rtd:
 else:
     REQUIREMENTS = [
         "numpy",
-        "fenics-fiat%s" % RESTRICT_REQUIREMENTS,
-        "fenics-ufl%s" % RESTRICT_REQUIREMENTS,
-        "fenics-dijitso%s" % RESTRICT_REQUIREMENTS,
+        "fenics-fiat{}".format(RESTRICT_REQUIREMENTS),
+        "fenics-ufl{}".format(RESTRICT_REQUIREMENTS),
+        "fenics-dijitso{}".format(RESTRICT_REQUIREMENTS),
     ]
 
 URL = "https://bitbucket.org/fenics-project/ffc/"
@@ -57,24 +57,6 @@ def tarball():
     if "dev" in VERSION:
         return None
     return URL + "downloads/fenics-ffc-{}.tar.gz".format(VERSION)
-
-
-def get_installation_prefix():
-    "Get installation prefix"
-    prefix = sys.prefix
-    for arg in sys.argv[1:]:
-        if "--user" in arg:
-            import site
-            prefix = site.getuserbase()
-            break
-        elif arg in ("--prefix", "--home", "--install-base"):
-            prefix = sys.argv[sys.argv.index(arg) + 1]
-            break
-        elif "--prefix=" in arg or "--home=" in arg or "--install-base=" in arg:
-            prefix = arg.split("=")[1]
-            break
-
-    return os.path.abspath(os.path.expanduser(prefix))
 
 
 def get_git_commit_hash():
@@ -117,7 +99,6 @@ def run_install():
     "Run installation"
 
     # Get common variables
-    #INSTALL_PREFIX = get_installation_prefix()
     GIT_COMMIT_HASH = get_git_commit_hash()
 
     # Scripts list
@@ -131,7 +112,7 @@ def run_install():
                    [os.path.join("doc", "man", "man1", "ffc.1.gz")])]
 
     # Call distutils to perform installation
-    setup(
+    setuptools.setup(
         name="fenics-ffc",
         description="The FEniCS Form Compiler",
         version=VERSION,
