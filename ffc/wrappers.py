@@ -18,8 +18,8 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
 from ffc.log import begin, end, info, error
-from . import utils
-from .backends import dolfin
+from ffc import utils
+from ffc.backends import dolfin
 
 
 def generate_wrapper_code(analysis, prefix, object_names, classnames, parameters):

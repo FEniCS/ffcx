@@ -25,7 +25,8 @@ UFC function from an (optimized) intermediate representation (OIR).
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
-from itertools import chain
+import itertools
+
 from ufl import product
 
 from ffc.log import info, begin, end, dstr
@@ -144,7 +145,7 @@ def _form_jit_includes(ir):
     # Gather all header names for classes that are separately compiled
     # For finite_element and dofmap the module and header name is the prefix,
     # extracted here with .split, and equal for both classes so we skip dofmap here:
-    classnames = list(chain(ir["create_finite_element"], ir["create_coordinate_finite_element"]))
+    classnames = list(itertools.chain(ir["create_finite_element"], ir["create_coordinate_finite_element"]))
     postfix = "_finite_element"
     includes = [classname.rpartition(postfix)[0] + ".h" for classname in classnames]
 

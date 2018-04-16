@@ -31,14 +31,11 @@ in the intermediate representation under the key "foo".
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
-# Python modules
-from itertools import chain
-import numpy
+import itertools
 
-# Import UFL
+import numpy
 import ufl
 
-# FFC modules
 from ffc.utils import compute_permutations, product
 from ffc.log import info, error, begin, end
 from ffc.fiatinterface import create_element, reference_cell
@@ -162,7 +159,7 @@ def compute_ir(analysis, prefix, parameters, jit=False):
         _compute_integral_ir(fd, form_id, prefix, element_numbers, classnames, parameters, jit)
         for (form_id, fd) in enumerate(form_datas)
     ]
-    ir_integrals = list(chain(*irs))
+    ir_integrals = list(itertools.chain(*irs))
 
     # Compute representation of forms
     info("Computing representation of forms")

@@ -18,6 +18,7 @@
 
 import os
 import copy
+
 from ffc.log import INFO
 
 # Comments from other places in code:

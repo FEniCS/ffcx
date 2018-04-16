@@ -26,7 +26,6 @@ This module implements the optimization of an intermediate code
 representation.
 """
 
-# FFC modules
 from ffc.log import info, begin, end
 from ffc.representation import pick_representation
 

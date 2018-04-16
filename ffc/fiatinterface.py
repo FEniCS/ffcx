@@ -22,11 +22,7 @@
 # Modified by Martin Sandve Alnæs, 2013
 # Modified by Lizao Li, 2015, 2016
 
-# Python modules
 import numpy
-from numpy import array
-
-# UFL and FIAT modules
 import ufl
 import FIAT
 from FIAT.enriched import EnrichedElement
@@ -36,12 +32,9 @@ from FIAT.P0 import P0
 from FIAT.restricted import RestrictedElement
 from FIAT.quadrature_element import QuadratureElement
 from FIAT.tensor_product import FlattenedDimensions
-
-# FFC modules
-from ffc.log import debug, error
-
-# Dictionary mapping from cellname to dimension
 from ufl.cell import cellname2dim
+
+from ffc.log import debug, error
 
 # Element families supported by FFC
 supported_families = ("Brezzi-Douglas-Marini", "Brezzi-Douglas-Fortin-Marini", "Crouzeix-Raviart",
@@ -214,14 +207,15 @@ def create_quadrature(shape, degree, scheme="default"):
                 "Explicitly selected vertex quadrature (degree 1), " + "but requested degree is %d."
             ) % degree)
         if shape == "tetrahedron":
-            return (array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]),
-                    array([1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0]))
+            return (numpy.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0,
+                                                                                     1.0]]),
+                    numpy.array([1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0]))
         elif shape == "triangle":
-            return (array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]]),
-                    array([1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0]))
+            return (numpy.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]]),
+                    numpy.array([1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0]))
         elif shape == "interval":
             # Trapezoidal rule.
-            return (array([[0.0], [1.0]]), array([1.0 / 2.0, 1.0 / 2.0]))
+            return (numpy.array([[0.0], [1.0]]), numpy.array([1.0 / 2.0, 1.0 / 2.0]))
 
     quad_rule = FIAT.create_quadrature(reference_cell(shape), degree, scheme)
     points = numpy.asarray(quad_rule.get_points())
@@ -268,7 +262,7 @@ def map_facet_points(points, facet, cellname):
     new_points = []
     for point in points:
         w = (1.0 - sum(point), ) + tuple(point)
-        x = tuple(sum([w[i] * array(coordinates[i]) for i in range(len(w))]))
+        x = tuple(sum([w[i] * numpy.array(coordinates[i]) for i in range(len(w))]))
         new_points += [x]
 
     return new_points

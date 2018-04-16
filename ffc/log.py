@@ -25,7 +25,6 @@ is a wrapper for the standard Python logging module.
 #
 # Modified by Kristian B. Oelgaard, 2009
 
-# UFL modules
 from ufl.log import Logger
 from ufl.log import log_functions
 from ufl.log import INFO, DEBUG, WARNING, ERROR, CRITICAL

@@ -8,8 +8,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
-from ffc.representation import pick_representation
 from ufl.utils.formatting import dstr
+
+from ffc.representation import pick_representation
 from ffc.backends.ufc import integrals_template as ufc_integrals
 
 

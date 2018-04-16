@@ -12,9 +12,9 @@
 from collections import defaultdict
 
 from ufl import product
+
 from ffc.backends.ufc.utils import (generate_return_new_switch,
                                     generate_return_int_switch, generate_error)
-
 from ffc.uflacs.elementtables import clamp_table_small_numbers
 from ffc.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
 from ffc.backends.ufc.evaluatebasis import tabulate_coefficients

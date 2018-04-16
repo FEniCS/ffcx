@@ -11,14 +11,12 @@ from ffc.backends.ufc.evaluatebasis import generate_expansion_coefficients, gene
 index_type = "int64_t"
 
 
-def generate_evaluate_reference_basis_derivatives(L, data, classname,
-                                                  parameters):
+def generate_evaluate_reference_basis_derivatives(L, data, classname, parameters):
     # Cutoff for feature to disable generation of this code (consider
     # removing after benchmarking final result)
     if isinstance(data, str):
         msg = "evaluate_reference_basis_derivatives: %s" % (data, )
-        return generate_error(L, msg,
-                              parameters["convert_exceptions_to_warnings"])
+        return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
 
     # Get some known dimensions
     element_cellname = data["cellname"]
@@ -54,8 +52,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname,
 
     # FIXME: validate these dimensions
     ref_values = L.FlattenedArray(
-        reference_values,
-        dims=(num_points, num_dofs, num_derivatives, reference_value_size))
+        reference_values, dims=(num_points, num_dofs, num_derivatives, reference_value_size))
     # From evaluatebasis.py:
     #ref_values = L.FlattenedArray(reference_values, dims=(num_points, num_dofs, reference_value_size))
 
@@ -79,10 +76,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname,
                            (reference_values, num_points, X)))
             ]),
         # Compute number of derivatives of this order
-        L.VariableDecl(
-            "const " + index_type,
-            num_derivatives,
-            value=L.Call("pow", (tdim, order))),
+        L.VariableDecl("const " + index_type, num_derivatives, value=L.Call("pow", (tdim, order))),
         # Reset output values to zero
         L.ForRange(
             l0,
@@ -103,8 +97,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname,
     dmats_names, dmats_code = generate_tabulate_dmats(L, data["dofs_data"])
 
     # Generate code with static tables of expansion coefficients
-    tables_code, coefficients_for_dof = generate_expansion_coefficients(
-        L, data["dofs_data"])
+    tables_code, coefficients_for_dof = generate_expansion_coefficients(L, data["dofs_data"])
 
     # Generate code to compute tables of basisvalues
     basisvalues_code, basisvalues_for_degree, need_fiat_coordinates = \
@@ -112,8 +105,8 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname,
             L, data["dofs_data"], element_cellname, tdim, X, ip)
 
     # Generate all possible combinations of derivatives.
-    combinations_code, combinations = _generate_combinations(
-        L, tdim, max_degree, order, num_derivatives)
+    combinations_code, combinations = _generate_combinations(L, tdim, max_degree, order,
+                                                             num_derivatives)
 
     # Define symbols for variables populated inside dof switch
     derivatives = L.Symbol("derivatives")
@@ -121,14 +114,10 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname,
     num_components = L.Symbol("num_components")
 
     # Get number of components of each basis function (>1 for dofs of piola mapped subelements)
-    num_components_values = [
-        dof_data["num_components"] for dof_data in data["dofs_data"]
-    ]
+    num_components_values = [dof_data["num_components"] for dof_data in data["dofs_data"]]
 
     # Offset into parent mixed element to first component of each basis function
-    reference_offset_values = [
-        dof_data["reference_offset"] for dof_data in data["dofs_data"]
-    ]
+    reference_offset_values = [dof_data["reference_offset"] for dof_data in data["dofs_data"]]
 
     # Max dimensions for the reference derivatives for each dof
     max_num_derivatives = tdim**max_degree
@@ -137,20 +126,12 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname,
     # Add constant tables of these numbers
     tables_code += [
         L.ArrayDecl(
-            "const " + index_type,
-            reference_offset,
-            num_dofs,
-            values=reference_offset_values),
-        L.ArrayDecl(
-            "const " + index_type,
-            num_components,
-            num_dofs,
-            values=num_components_values),
+            "const " + index_type, reference_offset, num_dofs, values=reference_offset_values),
+        L.ArrayDecl("const " + index_type, num_components, num_dofs, values=num_components_values),
     ]
 
     # Access reference derivatives compactly
-    derivs = L.FlattenedArray(
-        derivatives, dims=(num_components[idof], num_derivatives))
+    derivs = L.FlattenedArray(derivatives, dims=(num_components[idof], num_derivatives))
 
     # Create code for all basis values (dofs).
     dof_cases = []
@@ -161,8 +142,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname,
 
         shape_dmats = numpy.shape(dof_data["dmats"][0])
         if shape_dmats[0] != shape_dmats[1]:
-            error("Something is wrong with the dmats:\n%s" % str(
-                dof_data["dmats"]))
+            error("Something is wrong with the dmats:\n%s" % str(dof_data["dmats"]))
 
         aux = L.Symbol("aux")
         dmats = L.Symbol("dmats")
@@ -226,8 +206,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname,
                                 shape_dmats[0],
                                 index_type=index_type,
                                 body=L.AssignAdd(dmats[t, u],
-                                                 dmats_name[comb, t, tu] *
-                                                 dmats_old[tu, u]))))
+                                                 dmats_name[comb, t, tu] * dmats_old[tu, u]))))
                 ]),
             L.ForRange(
                 s,
@@ -244,9 +223,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname,
 
         # Unrolled loop over components of basis function
         n = dof_data["num_components"]
-        compute_ref_derivs_code = [
-            L.Assign(derivs[cc][r], 0.0) for cc in range(n)
-        ]
+        compute_ref_derivs_code = [L.Assign(derivs[cc][r], 0.0) for cc in range(n)]
 
         compute_ref_derivs_code += [
             L.ForRange(
@@ -255,8 +232,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname,
                 shape_dmats[0],
                 index_type=index_type,
                 body=[
-                    L.AssignAdd(derivs[cc][r],
-                                coefficients_for_dof[i_dof][cc][s] * aux[s])
+                    L.AssignAdd(derivs[cc][r], coefficients_for_dof[i_dof][cc][s] * aux[s])
                     for cc in range(n)
                 ])
         ]
@@ -296,8 +272,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname,
             num_dofs,
             index_type=index_type,
             body=[
-                L.ArrayDecl("double", derivatives,
-                            max_num_components * max_num_derivatives, 0.0),
+                L.ArrayDecl("double", derivatives, max_num_components * max_num_derivatives, 0.0),
                 L.Switch(idof, dof_cases),
                 L.ForRange(
                     r,
@@ -312,8 +287,8 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname,
                             index_type=index_type,
                             body=[
                                 # FIXME: validate ref_values dims
-                                L.Assign(ref_values[ip][idof][r][
-                                    reference_offset[idof] + c], derivs[c][r]),
+                                L.Assign(ref_values[ip][idof][r][reference_offset[idof] + c],
+                                         derivs[c][r]),
                             ]),
                     ])
             ]),
@@ -321,17 +296,11 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname,
 
     # Define loop over points
     final_loop_code = [
-        L.ForRange(
-            ip,
-            0,
-            num_points,
-            index_type=index_type,
-            body=basisvalues_code + dof_loop_code)
+        L.ForRange(ip, 0, num_points, index_type=index_type, body=basisvalues_code + dof_loop_code)
     ]
 
     # Stitch it all together
-    code = (setup_code + dmats_code + tables_code + combinations_code +
-            final_loop_code + [ret])
+    code = (setup_code + dmats_code + tables_code + combinations_code + final_loop_code + [ret])
 
     return code
 
@@ -342,9 +311,7 @@ def generate_tabulate_dmats(L, dofs_data):
     alignas = 32
 
     # Emit code for the dmats we've actually used
-    dmats_code = [
-        L.Comment("Tables of derivatives of the polynomial base (transpose).")
-    ]
+    dmats_code = [L.Comment("Tables of derivatives of the polynomial base (transpose).")]
 
     dmats_names = []
 
@@ -370,8 +337,7 @@ def generate_tabulate_dmats(L, dofs_data):
         # O(n^2) matrix matching...
         name = None
         for oldname, oldmatrix in all_matrices:
-            if matrix.shape == oldmatrix.shape and numpy.allclose(
-                    matrix, oldmatrix):
+            if matrix.shape == oldmatrix.shape and numpy.allclose(matrix, oldmatrix):
                 name = oldname
                 break
 
@@ -394,12 +360,7 @@ def generate_tabulate_dmats(L, dofs_data):
     return dmats_names, dmats_code
 
 
-def _generate_combinations(L,
-                           tdim,
-                           max_degree,
-                           order,
-                           num_derivatives,
-                           suffix=""):
+def _generate_combinations(L, tdim, max_degree, order, num_derivatives, suffix=""):
     max_num_derivatives = tdim**max_degree
     combinations = L.Symbol("combinations" + suffix)
 
@@ -419,10 +380,7 @@ def _generate_combinations(L,
     code = [
         L.Comment("Precomputed combinations"),
         L.ArrayDecl(
-            "const " + index_type,
-            combinations,
-            combinations_shape,
-            values=all_combinations),
+            "const " + index_type, combinations, combinations_shape, values=all_combinations),
     ]
     # Select the right order for further access
     combinations = combinations[order - 1]

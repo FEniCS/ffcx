@@ -26,9 +26,6 @@ from ffc.compiler import compile_form, compile_element
 # Import JIT compiler
 from ffc.jitcompiler import jit
 
-# Import UFC config functions
-from ffc.backends.ufc import get_include_path, get_ufc_cxx_flags, get_ufc_signature, ufc_signature
-
 # Import default parameters
 from ffc.parameters import default_parameters, default_jit_parameters
 

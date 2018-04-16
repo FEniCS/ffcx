@@ -20,13 +20,13 @@
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Martin Sandve Alnæs 2014
 
-# Python modules.
 import operator
 import functools
 import itertools
 
-from .log import error
 from ufl.utils.sequences import product
+
+from ffc.log import error
 
 
 def all_equal(sequence):

@@ -28,29 +28,22 @@ It parses command-line arguments and generates code from input UFL form files.
 # Modified by Kristian B. Oelgaard 2010.
 # Modified by Martin Sandve Alnæs 2017.
 
-# Python modules.
 import sys
 import getopt
 import cProfile
 import re
 import string
 import os
-from os import curdir
-from os import path
-from os import getcwd
 
-# UFL modules.
 from ufl.log import UFLException
 from ufl.algorithms import load_ufl_file
 import ufl
 
-# FFC modules.
 from ffc.log import push_level, pop_level, set_indent, ffc_logger
 from ffc.log import DEBUG, INFO, WARNING, ERROR
 from ffc.parameters import default_parameters
-from ffc import __version__ as FFC_VERSION, get_ufc_signature
-from ffc.backends.ufc import __version__ as UFC_VERSION
-from ffc.backends.ufc import get_include_path
+from ffc import __version__ as FFC_VERSION
+from ffc.backends import ufc
 from ffc.compiler import compile_form, compile_element
 from ffc.formatting import write_code
 
@@ -68,7 +61,7 @@ UFC backend version {1}, signature {2}.
 For further information, visit https://bitbucket.org/fenics-project/ffc/.
 
 Python {3} on {4}
-""".format(FFC_VERSION, UFC_VERSION, get_ufc_signature(), sys.version, sys.platform))
+""".format(FFC_VERSION, ufc.__version__, ufc.get_signature(), sys.version, sys.platform))
 
 
 def info_usage():
@@ -117,7 +110,7 @@ def main(args=None):
 
     # Check for --includes
     if ("-I", "") in opts or ("--includes", "") in opts:
-        print(get_include_path())
+        print(ufc.get_include_path())
         return 0
 
     # Check for --version
@@ -127,7 +120,7 @@ def main(args=None):
 
     # Check for --signature
     if ("-S", "") in opts or ("--signature", "") in opts:
-        print(get_ufc_signature())
+        print(ufc.get_signature())
         return 0
 
     # Check that we get at least one file

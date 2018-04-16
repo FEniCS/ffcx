@@ -26,12 +26,10 @@ forms, including automatic selection of elements, degrees and
 form representation type.
 """
 
-import numpy
-import os
 import copy
-from itertools import chain
+import os
 
-# UFL modules
+import numpy
 from ufl.classes import Form, CellVolume, FacetArea
 from ufl.integral import Integral
 from ufl.finiteelement import MixedElement, EnrichedElement, VectorElement
@@ -40,9 +38,8 @@ from ufl.algorithms import compute_form_data
 from ufl.algorithms.analysis import extract_sub_elements
 from ufl import custom_integral_types
 
-# FFC modules
 from ffc.log import info, begin, end, warning, debug, error, warning_blue
-from ffc.utils import all_equal
+from ffc import utils
 
 # Default precision for formatting floats
 default_precision = numpy.finfo("double").precision + 1  # == 16
@@ -314,7 +311,7 @@ def _extract_common_quadrature_degree(integral_metadatas):
         if not isinstance(d, int):
             error("Invalid non-integer quadrature degree %s" % (str(d), ))
     qd = max(quadrature_degrees)
-    if not all_equal(quadrature_degrees):
+    if not utils.all_equal(quadrature_degrees):
         # FIXME: Shouldn't we raise here?
         # TODO: This may be loosened up without too much effort,
         # if the form compiler handles mixed integration degree,
@@ -365,7 +362,7 @@ def _extract_common_quadrature_rule(integral_metadatas):
     # would be some work since num_points is used to identify
     # quadrature rules in large parts of the pipeline)
     quadrature_rules = [md["quadrature_rule"] for md in integral_metadatas]
-    if all_equal(quadrature_rules):
+    if utils.all_equal(quadrature_rules):
         qr = quadrature_rules[0]
     else:
         qr = "canonical"
@@ -544,7 +541,7 @@ def _attach_integral_metadata(form_data, form_r_family, parameters):
 
 def _validate_quadrature_schemes_of_elements(quad_schemes, elements):
     # Update scheme for QuadratureElements
-    if quad_schemes and all_equal(quad_schemes):
+    if quad_schemes and utils.all_equal(quad_schemes):
         scheme = quad_schemes[0]
     else:
         scheme = "canonical"

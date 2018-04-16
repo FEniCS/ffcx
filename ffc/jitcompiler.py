@@ -25,18 +25,13 @@ It uses dijitso to wrap the generated code into a Python module."""
 # Modified by Joachim Haga, 2011.
 # Modified by Martin Sandve Alnæs, 2013-2017
 
-# Python modules
 import os
 import sys
-from hashlib import sha1
+import hashlib
 
-# FEniCS modules
+import dijitso
 import ufl
 
-# Not importing globally to keep dijitso optional if jit is not used
-#import dijitso
-
-# FFC modules
 from ffc.log import log
 from ffc.log import error
 from ffc.log import set_level
@@ -44,16 +39,14 @@ from ffc.log import set_prefix
 from ffc.log import INFO
 from ffc.parameters import validate_jit_parameters, compute_jit_parameters_signature
 from ffc.compiler import compile_form, compile_element, compile_coordinate_mapping
-from ffc.backends.ufc import get_include_path as get_ufc_include_path
-from ffc.backends.ufc import get_ufc_signature
+from ffc.backends import ufc
 from ffc import __version__ as FFC_VERSION
 from ffc.classname import make_classname
 
 
 def jit_generate(ufl_object, module_name, signature, parameters):
     "Callback function passed to dijitso.jit: generate code and return as strings."
-    log(INFO + 5,
-        "Calling FFC just-in-time (JIT) compiler, this may take some time.")
+    log(INFO + 5, "Calling FFC just-in-time (JIT) compiler, this may take some time.")
 
     # Generate actual code for this object
     if isinstance(ufl_object, ufl.Form):
@@ -97,8 +90,6 @@ def _string_tuple(param):
 
 def jit_build(ufl_object, module_name, parameters):
     "Wraps dijitso jit with some parameter conversion etc."
-    import dijitso
-
     # FIXME: Expose more dijitso parameters?
     # FIXME: dijitso build params are not part of module_name here.
     #        Currently dijitso doesn't add to the module signature.
@@ -107,18 +98,15 @@ def jit_build(ufl_object, module_name, parameters):
     # to get equivalent behaviour to instant code
     build_params = {}
     build_params["debug"] = not parameters["cpp_optimize"]
-    build_params["cxxflags_opt"] = tuple(
-        parameters["cpp_optimize_flags"].split())
+    build_params["cxxflags_opt"] = tuple(parameters["cpp_optimize_flags"].split())
     build_params["cxxflags_debug"] = ("-O0", )
-    build_params["include_dirs"] = (get_ufc_include_path(), ) + _string_tuple(
+    build_params["include_dirs"] = (ufc.get_include_path(), ) + _string_tuple(
         parameters.get("external_include_dirs"))
-    build_params["lib_dirs"] = _string_tuple(
-        parameters.get("external_library_dirs"))
+    build_params["lib_dirs"] = _string_tuple(parameters.get("external_library_dirs"))
 
     # Use C compiler (not C++) and add some libs/options
     build_params["cxx"] = os.getenv("CC", "cc")
-    build_params["libs"] = _string_tuple(
-        "m" + parameters.get("external_libraries"))
+    build_params["libs"] = _string_tuple("m" + parameters.get("external_libraries"))
     build_params["cxxflags"] = ["-Wall", "-shared", "-fPIC"]
 
     # Interpreting FFC default "" as None, use "." if you want to point to curdir
@@ -135,16 +123,12 @@ def jit_build(ufl_object, module_name, parameters):
     params = dijitso.validate_params({
         "cache": cache_params,
         "build": build_params,
-        "generator":
-        parameters,  # ffc parameters, just passed on to jit_generate
+        "generator": parameters,  # ffc parameters, just passed on to jit_generate
     })
 
     # Carry out jit compilation, calling jit_generate only if needed
     module, signature = dijitso.jit(
-        jitable=ufl_object,
-        name=module_name,
-        params=params,
-        generate=jit_generate)
+        jitable=ufl_object, name=module_name, params=params, generate=jit_generate)
     return module
 
 
@@ -160,8 +144,7 @@ def compute_jit_prefix(ufl_object, parameters, kind=None):
         kind = "coordinate_mapping"
         ufl_object = ufl_object.ufl_coordinate_element()
         object_signature = repr(ufl_object)  # ** must match below
-    elif kind == "coordinate_mapping" and isinstance(ufl_object,
-                                                     ufl.FiniteElementBase):
+    elif kind == "coordinate_mapping" and isinstance(ufl_object, ufl.FiniteElementBase):
         # When coordinate mapping is represented by its coordinate element
         object_signature = repr(ufl_object)  # ** must match above
     elif isinstance(ufl_object, ufl.FiniteElementBase):
@@ -184,11 +167,11 @@ def compute_jit_prefix(ufl_object, parameters, kind=None):
         parameters_signature,
         str(FFC_VERSION),
         str(jit_version_bump),
-        get_ufc_signature(),
+        ufc.get_signature(),
         kind,
     ]
     string = ";".join(signatures)
-    signature = sha1(string.encode('utf-8')).hexdigest()
+    signature = hashlib.sha1(string.encode('utf-8')).hexdigest()
 
     # Optionally shorten signature
     max_signature_length = parameters["max_signature_length"]
@@ -235,8 +218,7 @@ def jit(ufl_object, parameters=None, indirect=False):
         # TODO: To communicate directory name here, need dijitso params to call
         #fail_dir = dijitso.cache.create_fail_dir_path(signature, dijitso_cache_params)
         raise FFCJitError(
-            "A directory with files to reproduce the jit build failure has been created."
-        )
+            "A directory with files to reproduce the jit build failure has been created.")
 
     # Construct instance of object from compiled code unless indirect
     if indirect:
@@ -260,7 +242,6 @@ def jit(ufl_object, parameters=None, indirect=False):
 
 def _instantiate_form(module, prefix):
     "Instantiate an object of the jit-compiled form."
-    import dijitso
     classname = make_classname(prefix, "form", "main")
     form = dijitso.extract_factory_function(module, "create_" + classname)()
     return form
@@ -268,7 +249,6 @@ def _instantiate_form(module, prefix):
 
 def _instantiate_element_and_dofmap(module, prefix):
     "Instantiate objects of the jit-compiled finite_element and dofmap."
-    import dijitso
     fe_classname = make_classname(prefix, "finite_element", "main")
     dm_classname = make_classname(prefix, "dofmap", "main")
     fe = dijitso.extract_factory_function(module, "create_" + fe_classname)()
@@ -278,7 +258,6 @@ def _instantiate_element_and_dofmap(module, prefix):
 
 def _instantiate_coordinate_mapping(module, prefix):
     "Instantiate an object of the jit-compiled coordinate_mapping."
-    import dijitso
     classname = make_classname(prefix, "coordinate_mapping", "main")
     form = dijitso.extract_factory_function(module, "create_" + classname)()
     return form
