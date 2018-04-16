@@ -4,15 +4,15 @@
 import numpy
 
 from ffc.log import error
-from ffc.uflacs.backends.ufc.utils import generate_error
-
-from ffc.uflacs.backends.ufc.evaluatebasis import generate_expansion_coefficients, generate_compute_basisvalues
+from ffc.backends.ufc.utils import generate_error
+from ffc.backends.ufc.evaluatebasis import generate_expansion_coefficients, generate_compute_basisvalues
 
 # Used for various indices and arrays in this file
 index_type = "int64_t"
 
 
-def generate_evaluate_reference_basis_derivatives(L, data, classname, parameters):
+def generate_evaluate_reference_basis_derivatives(L, data, classname,
+                                                  parameters):
     # Cutoff for feature to disable generation of this code (consider
     # removing after benchmarking final result)
     if isinstance(data, str):
@@ -74,8 +74,9 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname, parameters
         #     ]),
         L.If(
             L.EQ(order, 0), [
-                L.Return(L.Call("evaluate_reference_basis_{}".format(classname),
-                         (reference_values, num_points, X)))
+                L.Return(
+                    L.Call("evaluate_reference_basis_{}".format(classname),
+                           (reference_values, num_points, X)))
             ]),
         # Compute number of derivatives of this order
         L.VariableDecl(

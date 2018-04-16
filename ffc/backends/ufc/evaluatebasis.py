@@ -5,7 +5,7 @@ CNodes format."""
 import numpy
 
 from ffc.log import error
-from ffc.uflacs.backends.ufc.utils import generate_error
+from ffc.backends.ufc.utils import generate_error
 
 # Used for various indices and arrays in this file
 index_type = "int64_t"

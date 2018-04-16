@@ -1,135 +1,250 @@
 # -*- coding: utf-8 -*-
-# Code generation format strings for UFC (Unified Form-assembly Code)
-# This code is released into the public domain.
+# Copyright (C) 2009-2017 Anders Logg and Martin Sandve Alnæs
 #
-# The FEniCS Project (http://www.fenicsproject.org/) 2018.
+# This file is part of UFLACS.
+#
+# UFLACS is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# UFLACS is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
-declaration = """
-ufc_form* create_{factory_name}();
-"""
+# Note: Most of the code in this file is a direct translation from the old implementation in FFC
 
-factory = """
-// Code for form {factory_name}
+from ffc.classname import make_integral_classname
+from ffc.backends.ufc.utils import generate_return_new, generate_return_new_switch
+from ffc.representation import ufc_integral_types
+from ffc.backends.ufc import form_template as ufc_form
 
-int original_coefficient_position_{factory_name}(int i)
-{{
-{original_coefficient_position}
-}}
+# These are the method names in ufc_form that are specialized for each integral type
+integral_name_templates = (
+    "max_{}_subdomain_id",
+    "has_{}_integrals",
+    "create_{}_integral",
+    "create_default_{}_integral",
+)
 
-ufc_finite_element* create_coordinate_finite_element_{factory_name}()
-{{
-{create_coordinate_finite_element}
-}}
 
-ufc_dofmap* create_coordinate_dofmap_{factory_name}()
-{{
-{create_coordinate_dofmap}
-}}
+def create_delegate(integral_type, declname, impl):
+    def _delegate(self, L, ir, parameters):
+        return impl(self, L, ir, parameters, integral_type, declname)
 
-ufc_coordinate_mapping* create_coordinate_mapping_{factory_name}()
-{{
-{create_coordinate_mapping}
-}}
+    _delegate.__doc__ = impl.__doc__ % {
+        "declname": declname,
+        "integral_type": integral_type
+    }
+    return _delegate
 
-ufc_finite_element* create_finite_element_{factory_name}(int i)
-{{
-{create_finite_element}
-}}
 
-ufc_dofmap* create_dofmap_{factory_name}(int i)
-{{
-{create_dofmap}
-}}
+def add_ufc_form_integral_methods(cls):
+    """This function generates methods on the class it decorates,
+    for each integral name template and for each integral type.
 
-ufc_cell_integral* create_cell_integral_{factory_name}(int subdomain_id)
-{{
-  {create_cell_integral}
-}}
+    This allows implementing e.g. create_###_integrals once in the
+    decorated class as '_create_foo_integrals', and this function will
+    expand that implementation into 'create_cell_integrals',
+    'create_exterior_facet_integrals', etc.
 
-ufc_exterior_facet_integral* create_exterior_facet_integral_{factory_name}(int subdomain_id)
-{{
-  {create_exterior_facet_integral}
-}}
+    Name templates are taken from 'integral_name_templates' and 'ufc_integral_types'.
+    """
+    # The dummy name "foo" is chosen for familiarity for ffc developers
+    dummy_integral_type = "foo"
 
-ufc_interior_facet_integral* create_interior_facet_integral_{factory_name}(int subdomain_id)
-{{
-{create_interior_facet_integral}
-}}
+    for template in integral_name_templates:
+        implname = "_" + (template.format(dummy_integral_type))
+        impl = getattr(cls, implname)
+        for integral_type in ufc_integral_types:
+            declname = template.format(integral_type)
+            _delegate = create_delegate(integral_type, declname, impl)
+            setattr(cls, declname, _delegate)
+    return cls
 
-ufc_vertex_integral* create_vertex_integral_{factory_name}(int subdomain_id)
-{{
-{create_vertex_integral}
-}}
 
-ufc_custom_integral* create_custom_integral_{factory_name}(int subdomain_id)
-{{
-{create_custom_integral}
-}}
+@add_ufc_form_integral_methods
+class UFCForm:
+    """Each function maps to a keyword in the template.
 
-ufc_cell_integral* create_default_cell_integral_{factory_name}()
-{{
-{create_default_cell_integral}
-}}
+    The exceptions are functions on the form
+        def _*_foo_*(self, L, ir, parameters, integral_type, declname)
+    which add_ufc_form_integral_methods will duplicate for foo = each integral type.
+    """
 
-ufc_exterior_facet_integral* create_default_exterior_facet_integral_{factory_name}()
-{{
-{create_default_exterior_facet_integral}
-}}
+    def num_coefficients(self, L, num_coefficients):
+        return L.Return(num_coefficients)
 
-ufc_interior_facet_integral* create_default_interior_facet_integral_{factory_name}()
-{{
-{create_default_interior_facet_integral}
-}}
+    def rank(self, L, rank):
+        return L.Return(rank)
 
-ufc_vertex_integral* create_default_vertex_integral_{factory_name}()
-{{
-{create_default_vertex_integral}
-}}
+    def original_coefficient_position(self, L, ir):
+        i = L.Symbol("i")
+        positions = ir["original_coefficient_position"]
 
-ufc_custom_integral* create_default_custom_integral_{factory_name}()
-{{
-{create_default_custom_integral}
-}}
+        # Check argument
+        msg = "Invalid original coefficient index."
 
-ufc_form* create_{factory_name}()
-{{
-  ufc_form* form = malloc(sizeof(*form));
+        if positions:
+            code = [
+                L.If(L.GE(i, len(positions)),
+                     [L.Comment(msg), L.Return(-1)])
+            ]
 
-  form->signature = {signature};
-  form->rank = {rank};
-  form->num_coefficients = {num_coefficients};
-  form->original_coefficient_position = original_coefficient_position_{factory_name};
-  form->create_coordinate_finite_element = create_coordinate_finite_element_{factory_name};
-  form->create_coordinate_dofmap = create_coordinate_dofmap_{factory_name};
-  form->create_coordinate_mapping = create_coordinate_mapping_{factory_name};
-  form->create_finite_element = create_finite_element_{factory_name};
-  form->create_dofmap = create_dofmap_{factory_name};
+            position = L.Symbol("position")
+            code += [
+                L.ArrayDecl("static const int64_t", position, len(positions),
+                            positions),
+                L.Return(position[i]),
+            ]
+            return code
+        else:
+            code = [L.Comment(msg), L.Return(-1)]
+        return code
 
-  form->max_cell_subdomain_id = {max_cell_subdomain_id};
-  form->max_exterior_facet_subdomain_id = {max_exterior_facet_subdomain_id};
-  form->max_interior_facet_subdomain_id = {max_interior_facet_subdomain_id};
-  form->max_vertex_subdomain_id = {max_vertex_subdomain_id};
-  form->max_custom_subdomain_id = {max_custom_subdomain_id};
-  form->has_cell_integrals = {has_cell_integrals};
-  form->has_exterior_facet_integrals = {has_exterior_facet_integrals};
-  form->has_interior_facet_integrals = {has_interior_facet_integrals};
-  form->has_vertex_integrals = {has_vertex_integrals};
-  form->has_custom_integrals = {has_custom_integrals};
+    def create_coordinate_finite_element(self, L, ir):
+        classnames = ir["create_coordinate_finite_element"]
+        assert len(classnames) == 1
+        return generate_return_new(L, classnames[0], factory=True)
 
-  form->create_cell_integral = create_cell_integral_{factory_name};
-  form->create_exterior_facet_integral = create_exterior_facet_integral_{factory_name};
-  form->create_interior_facet_integral = create_interior_facet_integral_{factory_name};
-  form->create_vertex_integral = create_vertex_integral_{factory_name};
-  form->create_custom_integral = create_custom_integral_{factory_name};
+    def create_coordinate_dofmap(self, L, ir):
+        classnames = ir["create_coordinate_dofmap"]
+        assert len(classnames) == 1
+        return generate_return_new(L, classnames[0], factory=True)
 
-  form->create_default_cell_integral = create_default_cell_integral_{factory_name};
-  form->create_default_exterior_facet_integral = create_default_exterior_facet_integral_{factory_name};
-  form->create_default_interior_facet_integral = create_default_interior_facet_integral_{factory_name};
-  form->create_default_vertex_integral = create_default_vertex_integral_{factory_name};
-  form->create_default_custom_integral = create_default_custom_integral_{factory_name};
+    def create_coordinate_mapping(self, L, ir):
+        classnames = ir["create_coordinate_mapping"]
+        # list of length 1 until we support multiple domains
+        assert len(classnames) == 1
+        return generate_return_new(L, classnames[0], factory=True)
 
-  return form;
-}};
+    def create_finite_element(self, L, ir):
+        i = L.Symbol("i")
+        classnames = ir["create_finite_element"]
+        return generate_return_new_switch(L, i, classnames, factory=True)
 
-// End of code for form {factory_name}
-"""
+    def create_dofmap(self, L, ir):
+        i = L.Symbol("i")
+        classnames = ir["create_dofmap"]
+        return generate_return_new_switch(L, i, classnames, factory=True)
+
+    # This group of functions are repeated for each
+    # foo_integral by add_ufc_form_integral_methods:
+
+    def _max_foo_subdomain_id(self, L, ir, parameters, integral_type,
+                              declname):
+        "Return implementation of ufc::form::%(declname)s()."
+        # e.g. max_subdomain_id = ir["max_cell_subdomain_id"]
+        max_subdomain_id = ir[declname]
+        return L.Return(int(max_subdomain_id))
+
+    def _has_foo_integrals(self, L, ir, parameters, integral_type, declname):
+        "Return implementation of ufc::form::%(declname)s()."
+        # e.g. has_integrals = ir["has_cell_integrals"]
+        has_integrals = ir[declname]
+        return L.Return(bool(has_integrals))
+
+    def _create_foo_integral(self, L, ir, parameters, integral_type, declname):
+        "Return implementation of ufc::form::%(declname)s()."
+        # e.g. subdomain_ids, classnames = ir["create_cell_integral"]
+        subdomain_ids, classnames = ir[declname]
+        subdomain_id = L.Symbol("subdomain_id")
+        return generate_return_new_switch(
+            L, subdomain_id, classnames, subdomain_ids, factory=True)
+
+    def _create_default_foo_integral(self, L, ir, parameters, integral_type,
+                                     declname):
+        "Return implementation of ufc::form::%(declname)s()."
+        # e.g. classname = ir["create_default_cell_integral"]
+        classname = ir[declname]
+        if classname is None:
+            return L.Return(L.Null())
+        else:
+            return generate_return_new(L, classname, factory=True)
+
+
+def ufc_form_generator(ir, parameters):
+    """Generate UFC code for a form"""
+
+    factory_name = ir["classname"]
+
+    d = {}
+    d["factory_name"] = factory_name
+    d["signature"] = "\"{}\"".format(ir["signature"])
+    d["rank"] = ir["rank"]
+    d["num_coefficients"] = ir["num_coefficients"]
+
+    d["max_cell_subdomain_id"] = ir["max_cell_subdomain_id"]
+    d["max_exterior_facet_subdomain_id"] = ir[
+        "max_exterior_facet_subdomain_id"]
+    d["max_interior_facet_subdomain_id"] = ir[
+        "max_interior_facet_subdomain_id"]
+    d["max_vertex_subdomain_id"] = ir["max_vertex_subdomain_id"]
+    d["max_custom_subdomain_id"] = ir["max_custom_subdomain_id"]
+
+    d["has_cell_integrals"] = "true" if ir["has_cell_integrals"] else "false"
+    d["has_exterior_facet_integrals"] = "true" if ir[
+        "has_exterior_facet_integrals"] else "false"
+    d["has_interior_facet_integrals"] = "true" if ir[
+        "has_interior_facet_integrals"] else "false"
+    d["has_vertex_integrals"] = "true" if ir[
+        "has_vertex_integrals"] else "false"
+    d["has_custom_integrals"] = "true" if ir[
+        "has_custom_integrals"] else "false"
+
+    import ffc.uflacs.language.cnodes as L
+    generator = UFCForm()
+
+    statements = generator.original_coefficient_position(L, ir)
+    assert isinstance(statements, list)
+    d["original_coefficient_position"] = L.StatementList(statements)
+
+    d["create_coordinate_finite_element"] = generator.create_coordinate_finite_element(
+        L, ir)
+    d["create_coordinate_dofmap"] = generator.create_coordinate_dofmap(L, ir)
+    d["create_coordinate_mapping"] = generator.create_coordinate_mapping(L, ir)
+    d["create_finite_element"] = generator.create_finite_element(L, ir)
+    d["create_dofmap"] = generator.create_dofmap(L, ir)
+
+    d["create_cell_integral"] = generator.create_cell_integral(
+        L, ir, parameters)
+    d["create_interior_facet_integral"] = generator.create_interior_facet_integral(
+        L, ir, parameters)
+    d["create_exterior_facet_integral"] = generator.create_exterior_facet_integral(
+        L, ir, parameters)
+    d["create_vertex_integral"] = generator.create_vertex_integral(
+        L, ir, parameters)
+    d["create_custom_integral"] = generator.create_custom_integral(
+        L, ir, parameters)
+
+    d["create_default_cell_integral"] = generator.create_default_cell_integral(
+        L, ir, parameters)
+    d["create_default_interior_facet_integral"] = generator.create_default_interior_facet_integral(
+        L, ir, parameters)
+    d["create_default_exterior_facet_integral"] = generator.create_default_exterior_facet_integral(
+        L, ir, parameters)
+    d["create_default_vertex_integral"] = generator.create_default_vertex_integral(
+        L, ir, parameters)
+    d["create_default_custom_integral"] = generator.create_default_custom_integral(
+        L, ir, parameters)
+
+    # Check that no keys are redundant or have been missed
+    from string import Formatter
+    fields = [
+        fname for _, fname, _, _ in Formatter().parse(ufc_form.factory)
+        if fname
+    ]
+    assert set(fields) == set(
+        d.keys()), "Mismatch between keys in template and in formattting dict"
+
+    # Format implementation code
+    implementation = ufc_form.factory.format_map(d)
+
+    # Format declaration
+    declaration = ufc_form.declaration.format(factory_name=factory_name)
+
+    return declaration, implementation

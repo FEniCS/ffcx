@@ -20,8 +20,8 @@
 # from the old implementation in FFC, although some improvements
 # have been made to the generated code.
 
-from ffc.uflacs.backends.ufc.utils import generate_error
-from ffc.uflacs.backends.ufc.jacobian import jacobian, inverse_jacobian, orientation
+from ffc.backends.ufc.utils import generate_error
+from ffc.backends.ufc.jacobian import jacobian, inverse_jacobian, orientation
 from ufl.permutation import build_component_numbering
 from ffc.utils import pick_first
 
