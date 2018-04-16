@@ -34,7 +34,7 @@ from ffc.fiatinterface import create_element
 from ffc.fiatinterface import create_quadrature
 from ffc.fiatinterface import map_facet_points
 from ffc.fiatinterface import reference_cell_vertices
-from ffc.classname import make_integral_classname
+from ffc import classname
 
 
 def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
@@ -162,8 +162,8 @@ def initialize_integral_code(ir, prefix, parameters):
     """
     code = {}
     code["class_type"] = ir["integral_type"] + "_integral"
-    code["classname"] = make_integral_classname(prefix, ir["integral_type"], ir["form_id"],
-                                                ir["subdomain_id"])
+    code["classname"] = classname.make_integral_name(prefix, ir["integral_type"], ir["form_id"],
+                                                     ir["subdomain_id"])
     code["members"] = ""
     code["constructor"] = ""
     code["constructor_arguments"] = ""
