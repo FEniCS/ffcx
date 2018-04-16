@@ -1,21 +1,9 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2011-2017 Martin Sandve Alnæs
 #
-# This file is part of UFLACS.
+# This file is part of FFC (https://www.fenicsproject.org)
 #
-# UFLACS is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# UFLACS is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
-
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 """Algorithms for working with graphs."""
 
 import numpy
@@ -25,7 +13,9 @@ from ufl.classes import MultiIndex, Label
 from ffc.uflacs.analysis.modified_terminals import is_modified_terminal
 
 
-def count_nodes_with_unique_post_traversal(expr, e2i=None, skip_terminal_modifiers=False):
+def count_nodes_with_unique_post_traversal(expr,
+                                           e2i=None,
+                                           skip_terminal_modifiers=False):
     """Yields o for each node o in expr, child before parent.
     Never visits a node twice."""
     if e2i is None:
@@ -34,7 +24,8 @@ def count_nodes_with_unique_post_traversal(expr, e2i=None, skip_terminal_modifie
     def getops(e):
         "Get a modifyable list of operands of e, optionally treating modified terminals as a unit."
         # TODO: Maybe use e._ufl_is_terminal_modifier_
-        if e._ufl_is_terminal_ or (skip_terminal_modifiers and is_modified_terminal(e)):
+        if e._ufl_is_terminal_ or (skip_terminal_modifiers
+                                   and is_modified_terminal(e)):
             return []
         else:
             return list(e.ufl_operands)

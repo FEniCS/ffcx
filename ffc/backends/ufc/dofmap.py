@@ -8,8 +8,7 @@
 # Note: Most of the code in this file is a direct translation from the
 # old implementation in FFC
 
-from ffc.backends.ufc.utils import (generate_return_new_switch,
-                                    generate_return_sizet_switch,
+from ffc.backends.ufc.utils import (generate_return_new_switch, generate_return_sizet_switch,
                                     generate_return_bool_switch)
 import ffc.backends.ufc.dofmap_template as ufc_dofmap
 
@@ -58,8 +57,7 @@ def tabulate_dofs(L, ir):
 
     # Extract representation
     #(dofs_per_element, num_dofs_per_element, need_offset, fakes) = ir # names from original ffc code
-    (subelement_dofs, num_dofs_per_subelement, need_offset,
-     is_subelement_real) = ir
+    (subelement_dofs, num_dofs_per_subelement, need_offset, is_subelement_real) = ir
 
     #len(is_subelement_real) == len(subelement_dofs) == len(num_dofs_per_subelement) == number of combined (flattened) subelements?
     #is_subelement_real[subelement_number] is bool, is subelement Real?
@@ -98,8 +96,7 @@ def tabulate_dofs(L, ir):
         # Generate code for each degree of freedom for each dimension
         for (cell_entity_dim, dofs_on_cell_entity) in enumerate(entity_dofs):
             num_dofs_per_mesh_entity = len(dofs_on_cell_entity[0])
-            assert all(num_dofs_per_mesh_entity == len(dofs)
-                       for dofs in dofs_on_cell_entity)
+            assert all(num_dofs_per_mesh_entity == len(dofs) for dofs in dofs_on_cell_entity)
 
             # Ignore if no dofs for this dimension
             if num_dofs_per_mesh_entity == 0:
@@ -110,8 +107,7 @@ def tabulate_dofs(L, ir):
                 # dofs is a list of the local dofs that live on this cell entity
 
                 # find offset for this particular mesh entity
-                entity_offset = len(dofs) * entity_indices[cell_entity_dim,
-                                                           cell_entity_index]
+                entity_offset = len(dofs) * entity_indices[cell_entity_dim, cell_entity_index]
 
                 for (j, dof) in enumerate(dofs):
                     # dof is the local dof index on the subelement
@@ -119,14 +115,11 @@ def tabulate_dofs(L, ir):
                     # on this particular cell/mesh entity
                     local_dof_index = subelement_offset + dof
                     global_dof_index = offset + entity_offset + j
-                    code.append(
-                        L.Assign(dofs_variable[local_dof_index],
-                                 global_dof_index))
+                    code.append(L.Assign(dofs_variable[local_dof_index], global_dof_index))
 
             # Update offset corresponding to mesh entity:
             if need_offset:
-                value = num_dofs_per_mesh_entity * num_mesh_entities[
-                    cell_entity_dim]
+                value = num_dofs_per_mesh_entity * num_mesh_entities[cell_entity_dim]
                 code.append(L.AssignAdd(offset, value))
 
         subelement_offset += num_dofs_per_subelement[subelement_index]
@@ -144,9 +137,7 @@ def tabulate_facet_dofs(L, ir):
     # For each facet, copy all_facet_dofs[facet][:] into output argument array dofs[:]
     cases = []
     for f, single_facet_dofs in enumerate(all_facet_dofs):
-        assignments = [
-            L.Assign(dofs[i], dof) for (i, dof) in enumerate(single_facet_dofs)
-        ]
+        assignments = [L.Assign(dofs[i], dof) for (i, dof) in enumerate(single_facet_dofs)]
         if assignments:
             cases.append((f, L.StatementList(assignments)))
     if cases:
@@ -262,8 +253,7 @@ def ufc_dofmap_generator(ir, parameters):
 
     # Functions
     d["num_entity_dofs"] = num_entity_dofs(L, ir["num_entity_dofs"])
-    d["num_entity_closure_dofs"] = num_entity_closure_dofs(
-        L, ir["num_entity_closure_dofs"])
+    d["num_entity_closure_dofs"] = num_entity_closure_dofs(L, ir["num_entity_closure_dofs"])
     d["tabulate_dofs"] = tabulate_dofs(L, ir)
     d["tabulate_facet_dofs"] = tabulate_facet_dofs(L, ir)
     d["tabulate_entity_dofs"] = tabulate_entity_dofs(L, ir)
@@ -272,10 +262,7 @@ def ufc_dofmap_generator(ir, parameters):
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
-    fields = [
-        fname for _, fname, _, _ in Formatter().parse(ufc_dofmap.factory)
-        if fname
-    ]
+    fields = [fname for _, fname, _, _ in Formatter().parse(ufc_dofmap.factory) if fname]
     assert set(fields) == set(
         d.keys()), "Mismatch between keys in template and in formattting dict."
 

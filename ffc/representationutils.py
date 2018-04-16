@@ -25,8 +25,8 @@ representations.
 # Modified by Anders Logg 2014
 
 import numpy
-from ufl.measure import (integral_type_to_measure_name, point_integral_types,
-                         facet_integral_types, custom_integral_types)
+from ufl.measure import (integral_type_to_measure_name, point_integral_types, facet_integral_types,
+                         custom_integral_types)
 from ufl.cell import cellname2facetname
 
 from ffc.log import error
@@ -42,8 +42,7 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     if integral_type == "cell":
         (points, weights) = create_quadrature(cell.cellname(), degree, rule)
     elif integral_type in facet_integral_types:
-        (points, weights) = create_quadrature(
-            cellname2facetname[cell.cellname()], degree, rule)
+        (points, weights) = create_quadrature(cellname2facetname[cell.cellname()], degree, rule)
     elif integral_type in point_integral_types:
         (points, weights) = create_quadrature("vertex", degree, rule)
     elif integral_type in custom_integral_types:
@@ -83,8 +82,7 @@ def map_integral_points(points, integral_type, cell, entity):
         assert points.shape[1] == tdim - 1
         return numpy.asarray(map_facet_points(points, entity, cell.cellname()))
     elif entity_dim == 0:
-        return numpy.asarray(
-            [reference_cell_vertices(cell.cellname())[entity]])
+        return numpy.asarray([reference_cell_vertices(cell.cellname())[entity]])
     else:
         error("Can't map points from entity_dim=%s" % (entity_dim, ))
 
@@ -123,8 +121,7 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
     cell = itg_data.domain.ufl_cell()
     #cellname = cell.cellname()
     tdim = cell.topological_dimension()
-    assert all(tdim == itg.ufl_domain().topological_dimension()
-               for itg in itg_data.integrals)
+    assert all(tdim == itg.ufl_domain().topological_dimension() for itg in itg_data.integrals)
 
     # Set number of cells if not set TODO: Get automatically from
     # number of domains
@@ -150,13 +147,9 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
 def generate_enabled_coefficients(enabled_coefficients):
     # TODO: I don't know how to implement this using the format dict,
     # this will do for now:
-    initializer_list = ", ".join(
-        "true" if enabled else "false" for enabled in enabled_coefficients)
+    initializer_list = ", ".join("true" if enabled else "false" for enabled in enabled_coefficients)
     if enabled_coefficients:
-        code = '\n'.join([
-            "[{}] = {{ {} }};".format(
-                len(enabled_coefficients), initializer_list)
-        ])
+        code = '\n'.join(["[{}] = {{ {} }};".format(len(enabled_coefficients), initializer_list)])
     else:
         code = "[] = {};"
     return code
@@ -169,14 +162,13 @@ def initialize_integral_code(ir, prefix, parameters):
     """
     code = {}
     code["class_type"] = ir["integral_type"] + "_integral"
-    code["classname"] = make_integral_classname(
-        prefix, ir["integral_type"], ir["form_id"], ir["subdomain_id"])
+    code["classname"] = make_integral_classname(prefix, ir["integral_type"], ir["form_id"],
+                                                ir["subdomain_id"])
     code["members"] = ""
     code["constructor"] = ""
     code["constructor_arguments"] = ""
     code["initializer_list"] = ""
     code["destructor"] = ""
-    code["enabled_coefficients"] = generate_enabled_coefficients(
-        ir["enabled_coefficients"])
+    code["enabled_coefficients"] = generate_enabled_coefficients(ir["enabled_coefficients"])
     code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
     return code

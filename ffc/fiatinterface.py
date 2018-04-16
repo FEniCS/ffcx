@@ -44,14 +44,11 @@ from ffc.log import debug, error
 from ufl.cell import cellname2dim
 
 # Element families supported by FFC
-supported_families = ("Brezzi-Douglas-Marini", "Brezzi-Douglas-Fortin-Marini",
-                      "Crouzeix-Raviart", "Discontinuous Lagrange",
-                      "Discontinuous Raviart-Thomas", "HDiv Trace", "Lagrange",
-                      "Lobatto", "Nedelec 1st kind H(curl)",
-                      "Nedelec 2nd kind H(curl)", "Radau", "Raviart-Thomas",
-                      "Real", "Bubble", "Quadrature", "Regge",
-                      "Hellan-Herrmann-Johnson", "Q", "DQ",
-                      "TensorProductElement")
+supported_families = ("Brezzi-Douglas-Marini", "Brezzi-Douglas-Fortin-Marini", "Crouzeix-Raviart",
+                      "Discontinuous Lagrange", "Discontinuous Raviart-Thomas", "HDiv Trace",
+                      "Lagrange", "Lobatto", "Nedelec 1st kind H(curl)", "Nedelec 2nd kind H(curl)",
+                      "Radau", "Raviart-Thomas", "Real", "Bubble", "Quadrature", "Regge",
+                      "Hellan-Herrmann-Johnson", "Q", "DQ", "TensorProductElement")
 
 # Cache for computed elements
 _cache = {}
@@ -128,18 +125,15 @@ def _create_fiat_element(ufl_element):
     # Handle the space of the constant
     if family == "Real":
         element = _create_fiat_element(ufl.FiniteElement("DG", cell, 0))
-        element.__class__ = type('SpaceOfReals', (type(element), SpaceOfReals),
-                                 {})
+        element.__class__ = type('SpaceOfReals', (type(element), SpaceOfReals), {})
         return element
 
     # Handle quadrilateral case by reconstructing the element with cell
     # TensorProductCell (interval x interval)
     if cellname == "quadrilateral":
-        quadrilateral_tpc = ufl.TensorProductCell(
-            ufl.Cell("interval"), ufl.Cell("interval"))
+        quadrilateral_tpc = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
         return FlattenedDimensions(
-            _create_fiat_element(
-                ufl_element.reconstruct(cell=quadrilateral_tpc)))
+            _create_fiat_element(ufl_element.reconstruct(cell=quadrilateral_tpc)))
 
     # Handle hexahedron case by reconstructing the element with cell
     # TensorProductCell (quadrilateral x interval). This creates
@@ -147,8 +141,7 @@ def _create_fiat_element(ufl_element):
     # interval) Therefore dof entities consists of nested tuples,
     # example: ((0, 1), 1)
     elif cellname == "hexahedron":
-        hexahedron_tpc = ufl.TensorProductCell(
-            ufl.Cell("quadrilateral"), ufl.Cell("interval"))
+        hexahedron_tpc = ufl.TensorProductCell(ufl.Cell("quadrilateral"), ufl.Cell("interval"))
         return FlattenedDimensions(
             _create_fiat_element(ufl_element.reconstruct(cell=hexahedron_tpc)))
 
@@ -171,9 +164,7 @@ def _create_fiat_element(ufl_element):
     else:
         # Check if finite element family is supported by FIAT
         if family not in FIAT.supported_elements:
-            error(
-                "Sorry, finite element of type \"%s\" are not supported by FIAT.",
-                family)
+            error("Sorry, finite element of type \"%s\" are not supported by FIAT.", family)
 
         ElementClass = FIAT.supported_elements[family]
 
@@ -192,9 +183,8 @@ def _create_fiat_element(ufl_element):
 
     # Consistency check between UFL and FIAT elements.
     if element.value_shape() != ufl_element.reference_value_shape():
-        error(
-            "Something went wrong in the construction of FIAT element from UFL element."
-            + "Shapes are %s and %s." % (element.value_shape(),
+        error("Something went wrong in the construction of FIAT element from UFL element." +
+              "Shapes are %s and %s." % (element.value_shape(),
                                          ufl_element.reference_value_shape()))
 
     return element
@@ -220,11 +210,11 @@ def create_quadrature(shape, degree, scheme="default"):
         # a simple diagonal matrix. This may be prescribed in certain cases.
         if degree > 1:
             from warnings import warn
-            warn(("Explicitly selected vertex quadrature (degree 1), " +
-                  "but requested degree is %d.") % degree)
+            warn((
+                "Explicitly selected vertex quadrature (degree 1), " + "but requested degree is %d."
+            ) % degree)
         if shape == "tetrahedron":
-            return (array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0],
-                           [0.0, 0.0, 1.0]]),
+            return (array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]),
                     array([1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0]))
         elif shape == "triangle":
             return (array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]]),
@@ -319,8 +309,7 @@ def _create_restricted_element(ufl_element):
     # If simple element -> create RestrictedElement from fiat_element
     if isinstance(base_element, ufl.FiniteElement):
         element = _create_fiat_element(base_element)
-        return RestrictedElement(
-            element, restriction_domain=restriction_domain)
+        return RestrictedElement(element, restriction_domain=restriction_domain)
 
     # If restricted mixed element -> convert to mixed restricted element
     if isinstance(base_element, ufl.MixedElement):

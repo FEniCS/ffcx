@@ -46,8 +46,8 @@ def optimize_ir(ir, parameters):
 
     # Call on every bunch of integrals wich are compiled together
     oir_integrals = [
-        _optimize_integral_ir(ir, parameters)
-        if ir["integrals_metadata"]["optimize"] else ir for ir in ir_integrals
+        _optimize_integral_ir(ir, parameters) if ir["integrals_metadata"]["optimize"] else ir
+        for ir in ir_integrals
     ]
 
     end()
