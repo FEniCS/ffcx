@@ -32,7 +32,7 @@ from ffc.log import error
 from ffc.fiatinterface import create_element
 from ffc.representationutils import integral_type_to_entity_dim, map_integral_points
 from ffc.representationutils import create_quadrature_points_and_weights
-from ffc.uflacs.backends.ffc.common import ufc_restriction_offset
+from ffc.backends.ffc.common import ufc_restriction_offset
 
 # Using same defaults as numpy.allclose
 default_rtol = 1e-5

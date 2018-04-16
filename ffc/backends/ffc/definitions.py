@@ -19,11 +19,8 @@
 
 from ufl.corealg.multifunction import MultiFunction
 from ufl.measure import custom_integral_types
-
 from ffc.log import error, warning
-
-from ffc.uflacs.backends.ffc.symbols import FFCBackendSymbols
-from ffc.uflacs.backends.ffc.common import num_coordinate_component_dofs
+from ffc.backends.ffc.common import num_coordinate_component_dofs
 
 
 class FFCBackendDefinitions(MultiFunction):

@@ -19,10 +19,9 @@
 
 import ffc.uflacs.language.cnodes
 from ffc.uflacs.language.ufl_to_cnodes import UFL2CNodesTranslatorCpp
-
-from ffc.uflacs.backends.ffc.symbols import FFCBackendSymbols
-from ffc.uflacs.backends.ffc.access import FFCBackendAccess
-from ffc.uflacs.backends.ffc.definitions import FFCBackendDefinitions
+from ffc.backends.ffc.symbols import FFCBackendSymbols
+from ffc.backends.ffc.access import FFCBackendAccess
+from ffc.backends.ffc.definitions import FFCBackendDefinitions
 
 
 class FFCBackend(object):
@@ -30,7 +29,7 @@ class FFCBackend(object):
 
     def __init__(self, ir, parameters):
 
-        # This is the seam where cnodes/C++ is chosen for the ffc backend
+        # This is the seam where cnodes/C is chosen for the ffc backend
         self.language = ffc.uflacs.language.cnodes
         self.ufl_to_language = UFL2CNodesTranslatorCpp(self.language)
 

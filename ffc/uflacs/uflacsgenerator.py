@@ -15,13 +15,12 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
-
 """Controlling algorithm for building the tabulate_tensor
 source structure from factorized representation."""
 
 from ffc.log import info
 from ffc.representationutils import initialize_integral_code
-from ffc.uflacs.backends.ffc.backend import FFCBackend
+from ffc.backends.ffc.backend import FFCBackend
 from ffc.uflacs.integralgenerator import IntegralGenerator
 from ffc.uflacs.language.format_lines import format_indented_lines
 
@@ -34,7 +33,7 @@ def generate_integral_code(ir, prefix, parameters):
     # FIXME: Is this the right precision value to use? Make it default to None or 0.
     precision = ir["integrals_metadata"]["precision"]
 
-    # Create FFC C++ backend
+    # Create FFC C backend
     backend = FFCBackend(ir, parameters)
 
     # Configure kernel generator
@@ -50,7 +49,8 @@ def generate_integral_code(ir, prefix, parameters):
     code = initialize_integral_code(ir, prefix, parameters)
     code["tabulate_tensor"] = body
     code["additional_includes_set"] = set(ig.get_includes())
-    code["additional_includes_set"].update(ir.get("additional_includes_set", ()))
+    code["additional_includes_set"].update(
+        ir.get("additional_includes_set", ()))
 
     # TODO: Move to initialize_integral_code, this is not representation specific
     if ir.get("num_cells") is not None:

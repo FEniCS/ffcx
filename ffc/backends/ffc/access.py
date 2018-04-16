@@ -25,9 +25,6 @@ from ufl.finiteelement import MixedElement
 from ffc.log import error, warning, debug
 from ffc.fiatinterface import create_element
 
-from ffc.uflacs.backends.ffc.symbols import FFCBackendSymbols
-from ffc.uflacs.backends.ffc.common import num_coordinate_component_dofs
-
 
 class FFCBackendAccess(MultiFunction):
     """FFC specific cpp formatter class."""
