@@ -211,9 +211,20 @@ def compile_ufl_objects(ufl_objects,
         # Must use processed elements from analysis here
         form_datas, unique_elements, element_numbers, unique_coordinate_elements = analysis
 
+        # FIXME: assuming ufl_id=0 is a major bug!
         # Wrap coordinate elements in Mesh object to represent that we
         # want a ufc_coordinate_mapping not a ufc_finite_element
-        unique_meshes = [ufl.Mesh(element, ufl_id=0) for element in unique_coordinate_elements]
+        # unique_meshes = [ufl.Mesh(element, ufl_id=0) for element in unique_coordinate_elements]  # Original code
+
+        # FIXME: this is a temporary hack to try to decue an appropriate mesh ID
+        mesh_id = None
+        if isinstance(ufl_objects[0], ufl.Form):
+            mesh_id = ufl_objects[0].ufl_domain().ufl_id()
+        elif isinstance(ufl_objects[0], ufl.Mesh):
+            mesh_id = ufl_objects[0].ufl_id()
+        unique_meshes = []
+        if mesh_id is not None:
+            unique_meshes = [ufl.Mesh(element, ufl_id=mesh_id) for element in unique_coordinate_elements]
 
         # Avoid returning self as dependency for infinite recursion
         unique_elements = tuple(
