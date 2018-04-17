@@ -15,14 +15,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
-from ffc.log import info
+import logger
 from ffc.representationutils import initialize_integral_ir
+
+logger = logging.getLogger(__name__)
 
 
 def compute_integral_ir(integral_data, form_data, form_id, element_numbers, classnames, parameters):
     "Compute intermediate represention of integral."
 
-    info("Computing tsfc representation")
+    logger.info("Computing tsfc representation")
 
     # Initialise representation
     ir = initialize_integral_ir("tsfc", integral_data, form_data, form_id)

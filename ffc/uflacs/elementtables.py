@@ -5,22 +5,26 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Tools for precomputed tables of terminal values."""
 
+import logging
 from collections import namedtuple
+
 import numpy
 
-from ufl.cell import num_cell_entities
-from ufl.utils.sequences import product
-from ufl.utils.derivativetuples import derivative_listing_to_counts
-from ufl.permutation import build_component_numbering
-from ufl.classes import FormArgument, GeometricQuantity, SpatialCoordinate, Jacobian
-from ufl.algorithms.analysis import unique_tuple
-from ufl.measure import custom_integral_types
-
-from ffc.log import error
-from ffc.fiatinterface import create_element
-from ffc.representationutils import integral_type_to_entity_dim, map_integral_points
-from ffc.representationutils import create_quadrature_points_and_weights
 from ffc.backends.ffc.common import ufc_restriction_offset
+from ffc.fiatinterface import create_element
+from ffc.representationutils import (create_quadrature_points_and_weights,
+                                     integral_type_to_entity_dim,
+                                     map_integral_points)
+from ufl.algorithms.analysis import unique_tuple
+from ufl.cell import num_cell_entities
+from ufl.classes import (FormArgument, GeometricQuantity, Jacobian,
+                         SpatialCoordinate)
+from ufl.measure import custom_integral_types
+from ufl.permutation import build_component_numbering
+from ufl.utils.derivativetuples import derivative_listing_to_counts
+from ufl.utils.sequences import product
+
+logger = logging.getLogger(__name__)
 
 # Using same defaults as numpy.allclose
 default_rtol = 1e-5
@@ -256,16 +260,16 @@ def get_modified_terminal_element(mt):
     # Extract element from FormArguments and relevant GeometricQuantities
     if isinstance(mt.terminal, FormArgument):
         if gd and mt.reference_value:
-            error("Global derivatives of reference values not defined.")
+            logger.error("Global derivatives of reference values not defined.")
         elif ld and not mt.reference_value:
-            error("Local derivatives of global values not defined.")
+            logger.error("Local derivatives of global values not defined.")
         element = mt.terminal.ufl_element()
         fc = mt.flat_component
     elif isinstance(mt.terminal, SpatialCoordinate):
         if mt.reference_value:
-            error("Not expecting reference value of x.")
+            logger.error("Not expecting reference value of x.")
         if gd:
-            error("Not expecting global derivatives of x.")
+            logger.error("Not expecting global derivatives of x.")
         element = mt.terminal.ufl_domain().ufl_coordinate_element()
         if not ld:
             fc = mt.flat_component
@@ -276,9 +280,9 @@ def get_modified_terminal_element(mt):
             assert mt.component[0] == mt.flat_component
     elif isinstance(mt.terminal, Jacobian):
         if mt.reference_value:
-            error("Not expecting reference value of J.")
+            logger.error("Not expecting reference value of J.")
         if gd:
-            error("Not expecting global derivatives of J.")
+            logger.error("Not expecting global derivatives of J.")
         element = mt.terminal.ufl_domain().ufl_coordinate_element()
         # Translate component J[i,d] to x element context rgrad(x[i])[d]
         assert len(mt.component) == 2

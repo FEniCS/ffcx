@@ -11,20 +11,20 @@
 
 from collections import defaultdict
 
-from ufl import product
-
-from ffc.backends.ufc.utils import (generate_return_new_switch,
-                                    generate_return_int_switch, generate_error)
-from ffc.uflacs.elementtables import clamp_table_small_numbers
-from ffc.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
-from ffc.backends.ufc.evaluatebasis import tabulate_coefficients
-from ffc.backends.ufc.evalderivs import generate_evaluate_reference_basis_derivatives
-from ffc.backends.ufc.evalderivs import _generate_combinations
-from ffc.backends.ufc.evaluatedof import generate_map_dofs, reference_to_physical_map
-from ffc.backends.ufc.jacobian import (jacobian, inverse_jacobian, orientation,
-                                       fiat_coordinate_mapping,
-                                       _mapping_transform)
 import ffc.backends.ufc.finite_element_template as ufc_finite_element
+from ffc.backends.ufc.evalderivs import (_generate_combinations,
+                                         generate_evaluate_reference_basis_derivatives)
+from ffc.backends.ufc.evaluatebasis import (generate_evaluate_reference_basis,
+                                            tabulate_coefficients)
+from ffc.backends.ufc.evaluatedof import (generate_map_dofs,
+                                          reference_to_physical_map)
+from ffc.backends.ufc.jacobian import (_mapping_transform,
+                                       fiat_coordinate_mapping,
+                                       inverse_jacobian, jacobian, orientation)
+from ffc.backends.ufc.utils import (generate_error, generate_return_int_switch,
+                                    generate_return_new_switch)
+from ffc.uflacs.elementtables import clamp_table_small_numbers
+from ufl import product
 
 index_type = "int64_t"
 

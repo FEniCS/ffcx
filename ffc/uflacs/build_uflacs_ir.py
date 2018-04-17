@@ -5,28 +5,37 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Main algorithm for building the uflacs intermediate representation."""
 
-import numpy
+import itertools
+import logging
 from collections import defaultdict, namedtuple
 from itertools import chain
-import itertools
 
-from ufl import product, as_ufl
-from ufl.log import error, warning, debug
-from ufl.checks import is_cellwise_constant
-from ufl.classes import CellCoordinate, FacetCoordinate, QuadratureWeight
-from ufl.measure import custom_integral_types, point_integral_types, facet_integral_types
-from ufl.algorithms.analysis import has_type
+import numpy
 
 from ffc.uflacs.analysis.balancing import balance_modifiers
-from ffc.uflacs.analysis.modified_terminals import is_modified_terminal, analyse_modified_terminal
-from ffc.uflacs.analysis.graph import build_graph
-from ffc.uflacs.analysis.graph_vertices import build_scalar_graph_vertices
-from ffc.uflacs.analysis.graph_rebuild import rebuild_with_scalar_subexpressions
-from ffc.uflacs.analysis.dependencies import compute_dependencies, mark_active, mark_image
-from ffc.uflacs.analysis.graph_ssa import compute_dependency_count, invert_dependencies
+from ffc.uflacs.analysis.dependencies import (compute_dependencies,
+                                              mark_active, mark_image)
 #from ffc.uflacs.analysis.graph_ssa import default_cache_score_policy, compute_cache_scores, allocate_registers
 from ffc.uflacs.analysis.factorization import compute_argument_factorization
-from ffc.uflacs.elementtables import build_optimized_tables, piecewise_ttypes, uniform_ttypes, clamp_table_small_numbers
+from ffc.uflacs.analysis.graph import build_graph
+from ffc.uflacs.analysis.graph_rebuild import \
+    rebuild_with_scalar_subexpressions
+from ffc.uflacs.analysis.graph_ssa import (compute_dependency_count,
+                                           invert_dependencies)
+from ffc.uflacs.analysis.graph_vertices import build_scalar_graph_vertices
+from ffc.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
+                                                    is_modified_terminal)
+from ffc.uflacs.elementtables import (build_optimized_tables,
+                                      clamp_table_small_numbers,
+                                      piecewise_ttypes, uniform_ttypes)
+from ufl import as_ufl, product
+from ufl.algorithms.analysis import has_type
+from ufl.checks import is_cellwise_constant
+from ufl.classes import CellCoordinate, FacetCoordinate, QuadratureWeight
+from ufl.measure import (custom_integral_types, facet_integral_types,
+                         point_integral_types)
+
+logger = logging.getLogger(__name__)
 
 # Some quick internal structs, massive improvement to
 # readability and maintainability over just tuples...
@@ -92,7 +101,7 @@ def multiply_block_interior_facets(point_index, unames, ttypes, unique_tables,
         elif rank == 1:
             ptable[facets[0], :] = vectors[0]
         else:
-            error("Nothing to multiply!")
+            logger.error("Nothing to multiply!")
 
     return ptable
 
@@ -677,7 +686,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                         block_unames, block_restrictions, block_is_transposed,
                         tuple(ma_data))
             else:
-                error("Invalid block_mode %s" % (block_mode, ))
+                logger.error("Invalid block_mode %s" % (block_mode, ))
 
             if block_is_piecewise:
                 # Insert in piecewise expr_ir
@@ -760,10 +769,11 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         for blockmap, contributions in block_contributions.items():
             for blockdata in contributions:
                 block_modes[blockdata.block_mode] += 1
+
         # Debug output
-        summary = "\n".join("  %d\t%s" % (count, mode)
+        summary = "\n".join("  {}\t{}".format(count, mode)
                             for mode, count in sorted(block_modes.items()))
-        debug("Blocks of each mode: \n" + summary)
+        logger.debug("Blocks of each mode: {}".format(summary))
 
         # If there are any blocks other than preintegrated we need weights
         if expect_weight and any(mode != "preintegrated"
@@ -884,7 +894,7 @@ def analyse_dependencies(V, V_deps, V_targets, modified_terminal_indices,
                 varying_indices.append(i)
             else:
                 if ttype not in ("fixed", "piecewise", "ones", "zeros"):
-                    error("Invalid ttype %s" % (ttype, ))
+                    logger.error("Invalid ttype %s" % (ttype, ))
 
         elif not is_cellwise_constant(V[i]):
             # Keeping this check to be on the safe side,

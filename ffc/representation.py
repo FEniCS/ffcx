@@ -32,16 +32,19 @@ in the intermediate representation under the key "foo".
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
 import itertools
+import logging
 
 import numpy
-import ufl
 
-from ffc.utils import compute_permutations, product
-from ffc.log import info, error, begin, end
-from ffc.fiatinterface import create_element, reference_cell
-from ffc.fiatinterface import (EnrichedElement, HDivTrace, MixedElement, SpaceOfReals,
-                               QuadratureElement)
+import ufl
 from ffc.classname import make_classname, make_integral_classname
+from ffc.fiatinterface import (EnrichedElement, HDivTrace, MixedElement,
+                               QuadratureElement, SpaceOfReals, create_element,
+                               reference_cell)
+from ffc.utils import compute_permutations, product
+
+logger = logging.getLogger(__name__)
+
 
 # List of supported integral types
 ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "custom")
@@ -57,7 +60,7 @@ def pick_representation(representation):
     elif representation == "tsfc":
         from ffc import tsfc as r
     else:
-        error("Unknown representation: %s" % str(representation))
+        logger.exception("Unknown representation: {}".format(representation))
     return r
 
 
@@ -98,7 +101,7 @@ def make_all_element_classnames(prefix, elements, coordinate_elements, element_n
 def compute_ir(analysis, prefix, parameters, jit=False):
     "Compute intermediate representation."
 
-    begin("Compiler stage 2: Computing intermediate representation")
+    logger.info("Compiler stage 2: Computing intermediate representation")
 
     # Set code generation parameters (this is not actually a 'formatting'
     # parameter, used for table value clamping as well)
@@ -135,26 +138,26 @@ def compute_ir(analysis, prefix, parameters, jit=False):
         elements = [elements[-1]]
 
     # Compute representation of elements
-    info("Computing representation of %d elements" % len(elements))
+    logger.info("Computing representation of {} elements".format(len(elements)))
     ir_elements = [
         _compute_element_ir(e, element_numbers, classnames, parameters, jit) for e in elements
     ]
 
     # Compute representation of dofmaps
-    info("Computing representation of %d dofmaps" % len(elements))
+    logger.info("Computing representation of {} dofmaps".format(len(elements)))
     ir_dofmaps = [
         _compute_dofmap_ir(e, element_numbers, classnames, parameters, jit) for e in elements
     ]
 
     # Compute representation of coordinate mappings
-    info("Computing representation of %d coordinate mappings" % len(coordinate_elements))
+    logger.info("Computing representation of {} coordinate mappings".format(len(coordinate_elements)))
     ir_coordinate_mappings = [
         _compute_coordinate_mapping_ir(e, element_numbers, classnames, parameters, jit)
         for e in coordinate_elements
     ]
 
     # Compute and flatten representation of integrals
-    info("Computing representation of integrals")
+    logger.info("Computing representation of integrals")
     irs = [
         _compute_integral_ir(fd, form_id, prefix, element_numbers, classnames, parameters, jit)
         for (form_id, fd) in enumerate(form_datas)
@@ -162,13 +165,11 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     ir_integrals = list(itertools.chain(*irs))
 
     # Compute representation of forms
-    info("Computing representation of forms")
+    logger.info("Computing representation of forms")
     ir_forms = [
         _compute_form_ir(fd, form_id, prefix, element_numbers, classnames, parameters, jit)
         for (form_id, fd) in enumerate(form_datas)
     ]
-
-    end()
 
     return ir_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms
 
@@ -729,7 +730,7 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
                     for q in range(e.value_shape()[1])
                 ]
             else:
-                error("Unknown situation with num_components > 1")
+                logger.exception("Unknown situation with num_components > 1")
 
             # Clamp coefficient zeros
             coefficients = numpy.asarray(coefficients)
@@ -867,8 +868,9 @@ def _create_default_foo_integral(prefix, form_id, integral_type, form_data):
         itg_data for itg_data in form_data.integral_data
         if (itg_data.integral_type == integral_type and itg_data.subdomain_id == "otherwise")
     ]
+
     if len(itg_data) > 1:
-        error("Expecting at most one default integral of each type.")
+        logger.exception("Expecting at most one default integral of each type.")
     if itg_data:
         classname = make_integral_classname(prefix, integral_type, form_id, "otherwise")
         return classname

@@ -14,6 +14,7 @@ The interface consists of the following functions:
   ufc_signature      - Signature of UFC interface (SHA-1 hash of ufc.h)
 """
 
+import logging
 import pkg_resources
 
 __version__ = pkg_resources.get_distribution("fenics-ffc").version
@@ -40,3 +41,8 @@ supported_elements.remove("Morley")
 
 # Import main function, entry point to script
 from ffc.main import main
+
+# Configure logger
+logging.basicConfig()
+logger = logging.getLogger("ffc")
+

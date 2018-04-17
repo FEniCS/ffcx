@@ -6,17 +6,17 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Algorithms for value numbering within computational graphs."""
 
-from ufl import product
-from ufl.permutation import compute_indices
-from ufl.corealg.multifunction import MultiFunction
-from ufl.classes import FormArgument
+import logging
 
-from ffc.log import error
-
-from ffc.uflacs.analysis.indexing import (map_indexed_arg_components,
-                                          map_component_tensor_arg_components)
+from ffc.uflacs.analysis.indexing import (map_component_tensor_arg_components,
+                                          map_indexed_arg_components)
 from ffc.uflacs.analysis.modified_terminals import analyse_modified_terminal
+from ufl import product
+from ufl.classes import FormArgument
+from ufl.corealg.multifunction import MultiFunction
+from ufl.permutation import compute_indices
 
+logger = logging.getLogger(__name__)
 
 class ValueNumberer(MultiFunction):
     """An algorithm to map the scalar components of an expression node to unique value numbers,
@@ -139,7 +139,7 @@ class ValueNumberer(MultiFunction):
         # Consistency check before returning symbols
         assert not v.ufl_free_indices
         if product(v.ufl_shape) != len(symbols):
-            error("Internal error in value numbering.")
+            logger.error("Internal error in value numbering.")
         return symbols
 
     # Handle modified terminals with element symmetries and second derivative symmetries!

@@ -25,28 +25,27 @@ It uses dijitso to wrap the generated code into a Python module."""
 # Modified by Joachim Haga, 2011.
 # Modified by Martin Sandve Alnæs, 2013-2017
 
+import hashlib
+import logging
 import os
 import sys
-import hashlib
 
 import dijitso
 import ufl
-
-from ffc.log import log
-from ffc.log import error
-from ffc.log import set_level
-from ffc.log import set_prefix
-from ffc.log import INFO
-from ffc.parameters import validate_jit_parameters, compute_jit_parameters_signature
-from ffc.compiler import compile_form, compile_element, compile_coordinate_mapping
-from ffc.backends import ufc
 from ffc import __version__ as FFC_VERSION
+from ffc.backends import ufc
 from ffc.classname import make_classname
+from ffc.compiler import (compile_coordinate_mapping, compile_element,
+                          compile_form)
+from ffc.parameters import (compute_jit_parameters_signature,
+                            validate_jit_parameters)
+
+logger = logging.getLogger(__name__)
 
 
 def jit_generate(ufl_object, module_name, signature, parameters):
     "Callback function passed to dijitso.jit: generate code and return as strings."
-    log(INFO + 5, "Calling FFC just-in-time (JIT) compiler, this may take some time.")
+    logger.info(logging.INFO + 5, "Calling FFC just-in-time (JIT) compiler, this may take some time.")
 
     # Generate actual code for this object
     if isinstance(ufl_object, ufl.Form):
@@ -151,7 +150,7 @@ def compute_jit_prefix(ufl_object, parameters, kind=None):
         kind = "element"
         object_signature = repr(ufl_object)
     else:
-        error("Unknown ufl object type %s" % (ufl_object.__class__.__name__, ))
+        logger.exception("Unknown ufl object type %s" % (ufl_object.__class__.__name__, ))
 
     # Compute deterministic string of relevant parameters
     parameters_signature = compute_jit_parameters_signature(parameters)
@@ -202,11 +201,6 @@ def jit(ufl_object, parameters=None, indirect=False):
     # Check parameters
     parameters = validate_jit_parameters(parameters)
 
-    # FIXME: Setting the log level here becomes a permanent side effect...
-    # Set log level
-    set_level(parameters["log_level"])
-    set_prefix(parameters["log_prefix"])
-
     # Make unique module name for generated code
     kind, module_name = compute_jit_prefix(ufl_object, parameters)
 
@@ -237,7 +231,7 @@ def jit(ufl_object, parameters=None, indirect=False):
             cm = _instantiate_coordinate_mapping(module, module_name)
             return cm
         else:
-            error("Unknown kind %s" % (kind, ))
+            logger.exception("Unknown kind %s" % (kind, ))
 
 
 def _instantiate_form(module, prefix):

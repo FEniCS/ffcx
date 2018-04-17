@@ -26,28 +26,28 @@ UFC function from an (optimized) intermediate representation (OIR).
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
 import itertools
+import logging
 
+import ffc.uflacs.language.cnodes as L
+from ffc.backends.ufc.coordinate_mapping import (ufc_coordinate_mapping,
+                                                 ufc_coordinate_mapping_generator)
+from ffc.backends.ufc.dofmap import ufc_dofmap, ufc_dofmap_generator
+from ffc.backends.ufc.finite_element import \
+    generator as ufc_finite_element_generator
+from ffc.backends.ufc.form import ufc_form, ufc_form_generator
+from ffc.backends.ufc.integrals import ufc_integral_generator
+from ffc.backends.ufc.utils import generate_error
+from ffc.representation import pick_representation, ufc_integral_types
+from ffc.uflacs.language.format_lines import format_indented_lines
 from ufl import product
 
-from ffc.log import info, begin, end, dstr
-from ffc.representation import pick_representation, ufc_integral_types
-import ffc.uflacs.language.cnodes as L
-from ffc.uflacs.language.format_lines import format_indented_lines
-from ffc.backends.ufc.utils import generate_error
-from ffc.backends.ufc.dofmap import ufc_dofmap
-from ffc.backends.ufc.coordinate_mapping import ufc_coordinate_mapping
-from ffc.backends.ufc.form import ufc_form
-from ffc.backends.ufc.finite_element import generator as ufc_finite_element_generator
-from ffc.backends.ufc.dofmap import ufc_dofmap_generator
-from ffc.backends.ufc.coordinate_mapping import ufc_coordinate_mapping_generator
-from ffc.backends.ufc.integrals import ufc_integral_generator
-from ffc.backends.ufc.form import ufc_form_generator
+logger = logging.getLogger(__name__)
 
 
 def generate_code(ir, parameters):
     "Generate code from intermediate representation."
 
-    begin("Compiler stage 4: Generating code")
+    logger.debug("Compiler stage 4: Generating code")
 
     full_ir = ir
 
@@ -60,17 +60,17 @@ def generate_code(ir, parameters):
     ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
 
     # Generate code for finite_elements
-    info("Generating code for {} finite_element(s)".format(len(ir_finite_elements)))
+    logger.debug("Generating code for {} finite_element(s)".format(len(ir_finite_elements)))
     code_finite_elements = [
         ufc_finite_element_generator(ir, parameters) for ir in ir_finite_elements
     ]
 
     # Generate code for dofmaps
-    info("Generating code for {} dofmap(s)".format(len(ir_dofmaps)))
+    logger.debug("Generating code for {} dofmap(s)".format(len(ir_dofmaps)))
     code_dofmaps = [ufc_dofmap_generator(ir, parameters) for ir in ir_dofmaps]
 
     # Generate code for coordinate_mappings
-    info("Generating code for {} coordinate_mapping(s)".format(len(ir_coordinate_mappings)))
+    logger.debug("Generating code for {} coordinate_mapping(s)".format(len(ir_coordinate_mappings)))
     code_coordinate_mappings = [
         ufc_coordinate_mapping_generator(ir, parameters) for ir in ir_coordinate_mappings
     ]
@@ -78,17 +78,15 @@ def generate_code(ir, parameters):
     ufc_coordinate_mapping_generator
 
     # Generate code for integrals
-    info("Generating code for integrals")
+    logger.debug("Generating code for integrals")
     code_integrals = [ufc_integral_generator(ir, parameters) for ir in ir_integrals]
 
     # Generate code for forms
-    info("Generating code for forms")
+    logger.debug("Generating code for forms")
     code_forms = [ufc_form_generator(ir, parameters) for ir in ir_forms]
 
     # Extract additional includes
     includes = _extract_includes(full_ir, code_integrals)
-
-    end()
 
     return (code_finite_elements, code_dofmaps, code_coordinate_mappings, code_integrals,
             code_forms, includes)
@@ -145,7 +143,8 @@ def _form_jit_includes(ir):
     # Gather all header names for classes that are separately compiled
     # For finite_element and dofmap the module and header name is the prefix,
     # extracted here with .split, and equal for both classes so we skip dofmap here:
-    classnames = list(itertools.chain(ir["create_finite_element"], ir["create_coordinate_finite_element"]))
+    classnames = list(
+        itertools.chain(ir["create_finite_element"], ir["create_coordinate_finite_element"]))
     postfix = "_finite_element"
     includes = [classname.rpartition(postfix)[0] + ".h" for classname in classnames]
 

@@ -6,7 +6,9 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """FFC/UFC specific symbol naming."""
 
-from ffc.log import error
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 # TODO: Get restriction postfix from somewhere central
@@ -56,10 +58,7 @@ class FFCBackendSymbols(object):
         self.coefficient_numbering = coefficient_numbering
 
         # Used for padding variable names based on restriction
-        self.restriction_postfix = {
-            r: ufc_restriction_postfix(r)
-            for r in ("+", "-", None)
-        }
+        self.restriction_postfix = {r: ufc_restriction_postfix(r) for r in ("+", "-", None)}
 
         # TODO: Make this configurable for easy experimentation with dolfin!
         # Coordinate dofs for each component are interleaved? Must match dolfin.
@@ -80,12 +79,11 @@ class FFCBackendSymbols(object):
         elif entitytype == "vertex":
             return self.S("vertex")
         else:
-            error("Unknown entitytype {}".format(entitytype))
+            logging.exception("Unknown entitytype {}".format(entitytype))
 
     def cell_orientation_argument(self, restriction):
         "Cell orientation argument in ufc. Not same as cell orientation in generated code."
-        return self.S(
-            "cell_orientation" + ufc_restriction_postfix(restriction))
+        return self.S("cell_orientation" + ufc_restriction_postfix(restriction))
 
     def cell_orientation_internal(self, restriction):
         "Internal value for cell orientation in generated code."
@@ -146,8 +144,7 @@ class FFCBackendSymbols(object):
         # FIXME: Add domain number!
         return self.S(format_mt_name("J", mt))
 
-    def domain_dof_access(self, dof, component, gdim, num_scalar_dofs,
-                          restriction):
+    def domain_dof_access(self, dof, component, gdim, num_scalar_dofs, restriction):
         # FIXME: Add domain number or offset!
         vc = self.S("coordinate_dofs" + ufc_restriction_postfix(restriction))
         if self.interleaved_components:
@@ -158,9 +155,8 @@ class FFCBackendSymbols(object):
     def domain_dofs_access(self, gdim, num_scalar_dofs, restriction):
         # FIXME: Add domain number or offset!
         return [
-            self.domain_dof_access(dof, component, gdim, num_scalar_dofs,
-                                   restriction) for component in range(gdim)
-            for dof in range(num_scalar_dofs)
+            self.domain_dof_access(dof, component, gdim, num_scalar_dofs, restriction)
+            for component in range(gdim) for dof in range(num_scalar_dofs)
         ]
 
     def coefficient_dof_access(self, coefficient, dof_number):

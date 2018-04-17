@@ -5,18 +5,18 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Controlling algorithm for building the tabulate_tensor source structure from factorized representation."""
 
-from collections import defaultdict
 import itertools
+import logging
+from collections import defaultdict
 
-from ufl import product
-from ufl.classes import ConstantValue, Condition
-from ufl.measure import custom_integral_types, point_integral_types
-
-from ffc.log import error, warning
 from ffc.uflacs.build_uflacs_ir import get_common_block_data
 from ffc.uflacs.elementtables import piecewise_ttypes
-from ffc.uflacs.language.cnodes import pad_innermost_dim, pad_dim
+from ffc.uflacs.language.cnodes import pad_dim, pad_innermost_dim
+from ufl import product
+from ufl.classes import Condition, ConstantValue
+from ufl.measure import custom_integral_types, point_integral_types
 
+logger = logging.getLogger(__name__)
 
 class IntegralGenerator(object):
     def __init__(self, ir, backend, precision):
@@ -777,7 +777,7 @@ class IntegralGenerator(object):
 
         ttypes = blockdata.ttypes
         if "zeros" in ttypes:
-            error(
+            logger.error(
                 "Not expecting zero arguments to be left in dofblock generation."
             )
 
@@ -1160,7 +1160,7 @@ class IntegralGenerator(object):
                         body=L.Assign(A[k], 0.0))
                 ]
         else:
-            error("Invalid init_mode parameter %s" % (init_mode, ))
+            logger.error("Invalid init_mode parameter %s" % (init_mode, ))
 
         return parts
 

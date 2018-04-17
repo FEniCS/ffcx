@@ -6,18 +6,18 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Rebuilding UFL expressions from linearized representation of computational graph."""
 
+import logging
+
 import numpy
 
-from ufl import product
-from ufl.permutation import compute_indices
-
-from ufl import as_vector
-from ufl.classes import MultiIndex, IndexSum, Product
+from ffc.uflacs.analysis.modified_terminals import is_modified_terminal
+from ufl import as_vector, product
+from ufl.classes import IndexSum, MultiIndex, Product
 from ufl.corealg.multifunction import MultiFunction
+from ufl.permutation import compute_indices
 from ufl.utils.indexflattening import flatten_multiindex, shape_to_strides
 
-from ffc.log import error
-from ffc.uflacs.analysis.modified_terminals import is_modified_terminal
+logger = logging.getLogger(__name__)
 
 
 class ReconstructScalarSubexpressions(MultiFunction):
@@ -26,14 +26,14 @@ class ReconstructScalarSubexpressions(MultiFunction):
 
     # No fallbacks, need to specify each type or group of types explicitly
     def expr(self, o, *args, **kwargs):
-        error("No handler for type %s" % type(o))
+        logger.error("No handler for type %s" % type(o))
 
     def terminal(self, o):
-        error("Not expecting terminal expression in here, got %s." % type(o))
+        logger.error("Not expecting terminal expression in here, got %s." % type(o))
 
     # These types are not expected to be part of the graph at this point
     def unexpected(self, o, *args, **kwargs):
-        error("Not expecting expression of type %s in here." % type(o))
+        logger.error("Not expecting expression of type %s in here." % type(o))
 
     multi_index = unexpected
     expr_list = unexpected
@@ -47,7 +47,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
 
     def scalar_nary(self, o, ops):
         if o.ufl_shape != ():
-            error("Expecting scalar.")
+            logger.error("Expecting scalar.")
         sops = [op[0] for op in ops]
         return [o._ufl_expr_reconstruct_(*sops)]
 
@@ -81,22 +81,22 @@ class ReconstructScalarSubexpressions(MultiFunction):
 
     def division(self, o, ops):
         if len(ops) != 2:
-            error("Expecting two operands.")
+            logger.error("Expecting two operands.")
         if len(ops[1]) != 1:
-            error("Expecting scalar divisor.")
+            logger.error("Expecting scalar divisor.")
         b, = ops[1]
         return [o._ufl_expr_reconstruct_(a, b) for a in ops[0]]
 
     def sum(self, o, ops):
         if len(ops) != 2:
-            error("Expecting two operands.")
+            logger.error("Expecting two operands.")
         if len(ops[0]) != len(ops[1]):
-            error("Expecting scalar divisor.")
+            logger.error("Expecting scalar divisor.")
         return [o._ufl_expr_reconstruct_(a, b) for a, b in zip(ops[0], ops[1])]
 
     def product(self, o, ops):
         if len(ops) != 2:
-            error("Expecting two operands.")
+            logger.error("Expecting two operands.")
 
         # Get the simple cases out of the way
         if len(ops[0]) == 1:  # True scalar * something
@@ -128,8 +128,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
         indmap0 = [fi.index(i) for i in fi0]
         indmap1 = [fi.index(i) for i in fi1]
         indks = [(flatten_multiindex([ind[i] for i in indmap0], ist0),
-                  flatten_multiindex([ind[i] for i in indmap1], ist1))
-                 for ind in indices]
+                  flatten_multiindex([ind[i] for i in indmap1], ist1)) for ind in indices]
 
         # Build products for scalar components
         results = [Product(ops[0][k0], ops[1][k1]) for k0, k1 in indks]
@@ -152,7 +151,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
         # axis corresponding to summation index ii.
         ss = ops[0]  # Scalar subexpressions of summand
         if len(ss) != predim * postdim * d:
-            error("Mismatching number of subexpressions.")
+            logger.error("Mismatching number of subexpressions.")
         sops = []
         for i in range(predim):
             iind = i * (postdim * d)
@@ -224,7 +223,7 @@ def rebuild_with_scalar_subexpressions(G, targets=None):
 
         if is_modified_terminal(v):
             # if v.ufl_free_indices:
-            #     error("Expecting no free indices.")
+            #     logger.error("Expecting no free indices.")
             sh = v.ufl_shape
             if sh:
                 # Store each terminal expression component.
@@ -235,9 +234,7 @@ def rebuild_with_scalar_subexpressions(G, targets=None):
             else:
                 # Store single modified terminal expression component
                 if len(vs) != 1:
-                    error(
-                        "Expecting single symbol for scalar valued modified terminal."
-                    )
+                    logger.error("Expecting single symbol for scalar valued modified terminal.")
                 ws = [v]
             # FIXME: Replace ws[:] with 0's if its table is empty
             # Possible redesign: loop over modified terminals only first,
@@ -250,7 +247,7 @@ def rebuild_with_scalar_subexpressions(G, targets=None):
                 if isinstance(vop, MultiIndex):
                     # TODO: Store MultiIndex in G.V and allocate a symbol to it for this to work
                     if not isinstance(v, IndexSum):
-                        error("Not expecting a %s." % type(v))
+                        logger.error("Not expecting a %s." % type(v))
                     sops.append(())
                 else:
                     # TODO: Build edge datastructure and use instead?
@@ -266,7 +263,7 @@ def rebuild_with_scalar_subexpressions(G, targets=None):
 
             # Store all scalar subexpressions for v symbols
             if len(vs) != len(ws):
-                error("Expecting one symbol for each expression.")
+                logger.error("Expecting one symbol for each expression.")
 
         # Store each new scalar subexpression in W at the index of its symbol
         handled = set()
@@ -288,11 +285,10 @@ def rebuild_with_scalar_subexpressions(G, targets=None):
         vs = G.V_symbols[ti]
         # Sanity check: assert that we've handled these symbols
         if any(W[s] is None for s in vs):
-            error(
-                "Expecting that all symbols in vs are handled at this point.")
+            logger.error("Expecting that all symbols in vs are handled at this point.")
         scalar_target_expressions.append([W[s] for s in vs])
 
     # Return the scalar expressions for each of the components
-    assert len(scalar_target_expressions
-               ) == 1  # TODO: Currently expected by callers, fix those first
+    assert len(
+        scalar_target_expressions) == 1  # TODO: Currently expected by callers, fix those first
     return scalar_target_expressions[0]  # ... TODO: then return list

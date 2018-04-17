@@ -25,22 +25,24 @@ Compiler stage 5: optimization
 This module implements the optimization of an intermediate code
 representation.
 """
+import logging
 
-from ffc.log import info, begin, end
 from ffc.representation import pick_representation
+
+logger = logging.getLogger(__name__)
 
 
 def optimize_ir(ir, parameters):
     "Optimize intermediate form representation."
 
-    begin("Compiler stage 3: Optimizing intermediate representation")
+    logger.info("Compiler stage 3: Optimizing intermediate representation")
 
     # Extract representations
     ir_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
 
     # Check if optimization is requested
     if not any(ir["integrals_metadata"]["optimize"] for ir in ir_integrals):
-        info(r"Skipping optimizations, add -O or attach {'optimize': True} "
+        logger.info(r"Skipping optimizations, add -O or attach {'optimize': True} "
              "metadata to integrals")
 
     # Call on every bunch of integrals wich are compiled together
@@ -48,8 +50,6 @@ def optimize_ir(ir, parameters):
         _optimize_integral_ir(ir, parameters) if ir["integrals_metadata"]["optimize"] else ir
         for ir in ir_integrals
     ]
-
-    end()
 
     return ir_elements, ir_dofmaps, ir_coordinate_mappings, oir_integrals, ir_forms
 

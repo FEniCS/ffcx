@@ -6,23 +6,19 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Algorithms for factorizing argument dependent monomials."""
 
-import numpy
+import logging
 from itertools import chain
 
-from ufl import as_ufl, conditional
-from ufl.classes import Argument
-from ufl.classes import Division
-from ufl.classes import Product
-from ufl.classes import Sum
-from ufl.classes import Conditional
-from ufl.classes import Zero
-from ufl.algorithms import extract_type
-
-from ffc.log import error
+import numpy
 
 from ffc.uflacs.analysis.dependencies import compute_dependencies
-from ffc.uflacs.analysis.modified_terminals import analyse_modified_terminal, strip_modified_terminal
+from ffc.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
+                                                    strip_modified_terminal)
+from ufl import as_ufl, conditional
+from ufl.algorithms import extract_type
+from ufl.classes import Argument, Conditional, Division, Product, Sum, Zero
 
+logger = logging.getLogger(__name__)
 
 def _build_arg_sets(V):
     "Build arg_sets = { argument number: set(j for j where V[j] is a modified Argument with this number) }"
@@ -107,7 +103,7 @@ noargs = {}
 
 def handle_sum(v, si, deps, SV_factors, FV, sv2fv, e2fi):
     if len(deps) != 2:
-        error("Assuming binary sum here. This can be fixed if needed.")
+        logger.exception("Assuming binary sum here. This can be fixed if needed.")
 
     fac0 = SV_factors[deps[0]]
     fac1 = SV_factors[deps[1]]
@@ -119,7 +115,7 @@ def handle_sum(v, si, deps, SV_factors, FV, sv2fv, e2fi):
         factors = {}
         for argkey in argkeys:
             if len(argkey) != keylen:
-                error("Expecting equal argument rank terms among summands.")
+                logger.exception("Expecting equal argument rank terms among summands.")
 
             fi0 = fac0.get(argkey)
             fi1 = fac1.get(argkey)
@@ -142,7 +138,7 @@ def handle_sum(v, si, deps, SV_factors, FV, sv2fv, e2fi):
 
 def handle_product(v, si, deps, SV_factors, FV, sv2fv, e2fi):
     if len(deps) != 2:
-        error("Assuming binary product here. This can be fixed if needed.")
+        logger.exception("Assuming binary product here. This can be fixed if needed.")
     fac0 = SV_factors[deps[0]]
     fac1 = SV_factors[deps[1]]
 
@@ -246,7 +242,7 @@ def handle_conditional(v, si, deps, SV_factors, FV, sv2fv, e2fi):
 def handle_operator(v, si, deps, SV_factors, FV, sv2fv, e2fi):
     # Error checking
     if any(SV_factors[d] for d in deps):
-        error(
+        logger.exception(
             "Assuming that a {0} cannot be applied to arguments. If this is wrong please report a bug.".
             format(type(v)))
     # Record non-argument subexpression

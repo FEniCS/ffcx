@@ -28,11 +28,15 @@ ufc_utils.
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import pprint
+import textwrap
+import logging
 
-from ffc.log import info, error, begin, end, dstr
 from ffc import __version__ as FFC_VERSION
 from ffc.backends.ufc import __version__ as UFC_VERSION
 from ffc.parameters import compilation_relevant_parameters
+
+logger = logging.getLogger(__name__)
 
 format_template = {
     "ufc comment":
@@ -75,7 +79,7 @@ c_extern_post = """
 def format_code(code, wrapper_code, prefix, parameters):
     "Format given code in UFC format. Returns two strings with header and source file contents."
 
-    begin("Compiler stage 5: Formatting code")
+    logger.debug("Compiler stage 5: Formatting code")
 
     # Extract code
     (code_finite_elements, code_dofmaps, code_coordinate_mappings, code_integrals, code_forms,
@@ -126,8 +130,6 @@ def format_code(code, wrapper_code, prefix, parameters):
     code_h = code_h_pre + code_h + code_h_post
     code_c = code_c_pre + code_c
 
-    end()
-
     return code_h, code_c
 
 
@@ -143,7 +145,7 @@ def _write_file(output, prefix, postfix, parameters):
     filename = os.path.join(parameters["output_dir"], prefix + postfix)
     with open(filename, "w") as hfile:
         hfile.write(output)
-    info("Output written to " + filename + ".")
+    logger.info("Output written to " + filename + ".")
 
 
 def _generate_comment(parameters):
@@ -165,7 +167,7 @@ def _generate_comment(parameters):
     comment += "//\n"
     comment += "// This code was generated with the following parameters:\n"
     comment += "//\n"
-    comment += "\n".join([""] + ["//" + ("  " + l) for l in dstr(parameters).split("\n")][:-1])
+    comment += textwrap.indent(pprint.pformat(parameters), "//  ")
     comment += "\n"
 
     return comment

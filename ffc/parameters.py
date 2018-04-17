@@ -18,8 +18,9 @@
 
 import os
 import copy
+import logging
 
-from ffc.log import INFO
+logger = logging.getLogger(__name__)
 
 # Comments from other places in code:
 # FIXME: Document option -fconvert_exceptions_to_warnings
@@ -56,8 +57,7 @@ _FFC_CACHE_PARAMETERS = {
     "output_dir": ".",  # output directory for generated code
 }
 _FFC_LOG_PARAMETERS = {
-    "log_level": INFO + 5,  # log level, displaying only
-    # messages with level >= log_level
+    # "log_level": INFO + 5,  # log level, displaying only messages with level >= log_level
     "log_prefix": "",  # log prefix
 }
 FFC_PARAMETERS = {}
@@ -154,8 +154,8 @@ def _validate_parameters(parameters):
         try:
             parameters["quadrature_degree"] = int(parameters["quadrature_degree"])
         except Exception:
-            error("Failed to convert quadrature degree '%s' to int" %
-                  parameters.get("quadrature_degree"))
+            logger.exception("Failed to convert quadrature degree '%s' to int" %
+                             parameters.get("quadrature_degree"))
 
     # Convert all legal default values to None and
     # cast nondefaults from str to int
@@ -165,7 +165,8 @@ def _validate_parameters(parameters):
         try:
             parameters["precision"] = int(parameters["precision"])
         except Exception:
-            error("Failed to convert precision '%s' to int" % parameters.get("precision"))
+            logger.exception("Failed to convert precision '{}' to int".format(
+                parameters.get("precision")))
 
 
 def compilation_relevant_parameters(parameters):

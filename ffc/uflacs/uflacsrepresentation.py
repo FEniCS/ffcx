@@ -16,24 +16,27 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
+import logging
+
 import numpy
 
+from ffc.fiatinterface import create_element
+from ffc.representationutils import initialize_integral_ir
+from ffc.uflacs.build_uflacs_ir import build_uflacs_ir
+from ffc.uflacs.tools import (accumulate_integrals, collect_quadrature_rules,
+                              compute_quadrature_rules)
+from ufl import custom_integral_types
 from ufl.algorithms import replace
 from ufl.utils.sorting import sorted_by_count
-from ufl import custom_integral_types
 
-from ffc.log import info
-from ffc.representationutils import initialize_integral_ir
-from ffc.fiatinterface import create_element
-from ffc.uflacs.tools import collect_quadrature_rules, compute_quadrature_rules, accumulate_integrals
-from ffc.uflacs.build_uflacs_ir import build_uflacs_ir
+logger = logging.getLogger(__name__)
 
 
 def compute_integral_ir(itg_data, form_data, form_id, element_numbers,
                         classnames, parameters):
     "Compute intermediate represention of integral."
 
-    info("Computing uflacs representation")
+    logger.info("Computing uflacs representation")
 
     # Initialise representation
     ir = initialize_integral_ir("uflacs", itg_data, form_data, form_id)

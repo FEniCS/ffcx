@@ -22,6 +22,8 @@
 # Modified by Martin Sandve Alnæs, 2013
 # Modified by Lizao Li, 2015, 2016
 
+import logging
+
 import numpy
 import ufl
 import FIAT
@@ -34,7 +36,7 @@ from FIAT.quadrature_element import QuadratureElement
 from FIAT.tensor_product import FlattenedDimensions
 from ufl.cell import cellname2dim
 
-from ffc.log import debug, error
+logger = logging.getLogger(__name__)
 
 # Element families supported by FFC
 supported_families = ("Brezzi-Douglas-Marini", "Brezzi-Douglas-Fortin-Marini", "Crouzeix-Raviart",
@@ -69,7 +71,7 @@ def create_element(ufl_element):
 
     # Check cache
     if element_signature in _cache:
-        debug("Reusing element from cache")
+        logger.debug("Reusing element from cache")
         return _cache[element_signature]
 
     # Create regular FIAT finite element
@@ -91,7 +93,7 @@ def create_element(ufl_element):
         element = _create_restricted_element(ufl_element)
 
     else:
-        error("Cannot handle this element type: %s" % str(ufl_element))
+        logger.error("Cannot handle this element type: %s" % str(ufl_element))
 
     # Store in cache
     _cache[element_signature] = element
@@ -110,7 +112,7 @@ def _create_fiat_element(ufl_element):
 
     # Check that FFC supports this element
     if family not in supported_families:
-        error("This element family (%s) is not supported by FFC." % family)
+        logger.exception("This element family (%s) is not supported by FFC." % family)
 
     # Create FIAT cell
     fiat_cell = reference_cell(cellname)
@@ -157,7 +159,8 @@ def _create_fiat_element(ufl_element):
     else:
         # Check if finite element family is supported by FIAT
         if family not in FIAT.supported_elements:
-            error("Sorry, finite element of type \"%s\" are not supported by FIAT.", family)
+            logger.exception("Sorry, finite element of type \"%s\" are not supported by FIAT.",
+                             family)
 
         ElementClass = FIAT.supported_elements[family]
 
@@ -176,9 +179,9 @@ def _create_fiat_element(ufl_element):
 
     # Consistency check between UFL and FIAT elements.
     if element.value_shape() != ufl_element.reference_value_shape():
-        error("Something went wrong in the construction of FIAT element from UFL element." +
-              "Shapes are %s and %s." % (element.value_shape(),
-                                         ufl_element.reference_value_shape()))
+        logger.exception(
+            "Something went wrong in the construction of FIAT element from UFL element." +
+            "Shapes are %s and %s." % (element.value_shape(), ufl_element.reference_value_shape()))
 
     return element
 
@@ -295,7 +298,7 @@ def _create_restricted_element(ufl_element):
     "Create an FFC representation for an UFL RestrictedElement."
 
     if not isinstance(ufl_element, ufl.RestrictedElement):
-        error("create_restricted_element expects an ufl.RestrictedElement")
+        logger.exception("create_restricted_element expects an ufl.RestrictedElement")
 
     base_element = ufl_element.sub_element()
     restriction_domain = ufl_element.restriction_domain()
@@ -310,4 +313,4 @@ def _create_restricted_element(ufl_element):
         elements = _extract_elements(base_element, restriction_domain)
         return MixedElement(elements)
 
-    error("Cannot create restricted element from %s" % str(ufl_element))
+    logger.exception("Cannot create restricted element from %s" % str(ufl_element))

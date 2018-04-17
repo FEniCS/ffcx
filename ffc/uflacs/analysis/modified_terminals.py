@@ -6,12 +6,13 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Definitions of 'modified terminals', a core concept in uflacs."""
 
-from ufl.permutation import build_component_numbering
-from ufl.classes import (FormArgument, Argument, Indexed, FixedIndex,
-                         SpatialCoordinate, Jacobian, ReferenceValue, Grad,
-                         ReferenceGrad, Restricted, FacetAvg, CellAvg)
+import logging
 
-from ffc.log import error
+from ufl.classes import (Argument, CellAvg, FacetAvg, FixedIndex, FormArgument, Grad, Indexed,
+                         Jacobian, ReferenceGrad, ReferenceValue, Restricted, SpatialCoordinate)
+from ufl.permutation import build_component_numbering
+
+logger = logging.getLogger(__name__)
 
 
 class ModifiedTerminal(object):
@@ -39,9 +40,8 @@ class ModifiedTerminal(object):
 
     """
 
-    def __init__(self, expr, terminal, reference_value, base_shape,
-                 base_symmetry, component, flat_component, global_derivatives,
-                 local_derivatives, averaged, restriction):
+    def __init__(self, expr, terminal, reference_value, base_shape, base_symmetry, component,
+                 flat_component, global_derivatives, local_derivatives, averaged, restriction):
         # The original expression
         self.expr = expr
 
@@ -113,8 +113,7 @@ class ModifiedTerminal(object):
         return hash(self.as_tuple())
 
     def __eq__(self, other):
-        return isinstance(
-            other, ModifiedTerminal) and self.as_tuple() == other.as_tuple()
+        return isinstance(other, ModifiedTerminal) and self.as_tuple() == other.as_tuple()
 
     #def __lt__(self, other):
     #    error("Shouldn't use this?")
@@ -178,24 +177,24 @@ def analyse_modified_terminal(expr):
     while not t._ufl_is_terminal_:
         if isinstance(t, Indexed):
             if component is not None:
-                error("Got twice indexed terminal.")
+                logger.error("Got twice indexed terminal.")
 
             t, i = t.ufl_operands
             component = [int(j) for j in i]
 
             if not all(isinstance(j, FixedIndex) for j in i):
-                error("Expected only fixed indices.")
+                logger.error("Expected only fixed indices.")
 
         elif isinstance(t, ReferenceValue):
             if reference_value is not None:
-                error("Got twice pulled back terminal!")
+                logger.error("Got twice pulled back terminal!")
 
             t, = t.ufl_operands
             reference_value = True
 
         elif isinstance(t, ReferenceGrad):
             if not component:  # covers None or ()
-                error("Got local gradient of terminal without prior indexing.")
+                logger.error("Got local gradient of terminal without prior indexing.")
 
             t, = t.ufl_operands
             local_derivatives.append(component[-1])
@@ -203,7 +202,7 @@ def analyse_modified_terminal(expr):
 
         elif isinstance(t, Grad):
             if not component:  # covers None or ()
-                error("Got local gradient of terminal without prior indexing.")
+                logger.error("Got local gradient of terminal without prior indexing.")
 
             t, = t.ufl_operands
             global_derivatives.append(component[-1])
@@ -211,32 +210,31 @@ def analyse_modified_terminal(expr):
 
         elif isinstance(t, Restricted):
             if restriction is not None:
-                error("Got twice restricted terminal!")
+                logger.error("Got twice restricted terminal!")
 
             restriction = t._side
             t, = t.ufl_operands
 
         elif isinstance(t, CellAvg):
             if averaged is not None:
-                error("Got twice averaged terminal!")
+                logger.error("Got twice averaged terminal!")
 
             t, = t.ufl_operands
             averaged = "cell"
 
         elif isinstance(t, FacetAvg):
             if averaged is not None:
-                error("Got twice averaged terminal!")
+                logger.error("Got twice averaged terminal!")
 
             t, = t.ufl_operands
             averaged = "facet"
 
         elif t._ufl_terminal_modifiers_:
-            error(
-                "Missing handler for terminal modifier type %s, object is %s."
-                % (type(t), repr(t)))
+            logger.error("Missing handler for terminal modifier type {}, object is {}.".format(
+                type(t), repr(t)))
 
         else:
-            error("Unexpected type %s object %s." % (type(t), repr(t)))
+            logger.error("Unexpected type %s object %s." % (type(t), repr(t)))
 
     # Make canonical representation of derivatives
     global_derivatives = tuple(sorted(global_derivatives))
@@ -255,9 +253,9 @@ def analyse_modified_terminal(expr):
         pass
     else:
         if local_derivatives and not reference_value:
-            error("Local derivatives of non-local value is not legal.")
+            logger.error("Local derivatives of non-local value is not legal.")
         if global_derivatives and reference_value:
-            error("Global derivatives of local value is not legal.")
+            logger.error("Global derivatives of local value is not legal.")
 
     # Make sure component is an integer tuple
     if component is None:
@@ -282,18 +280,15 @@ def analyse_modified_terminal(expr):
 
     # Assert that component is within the shape of the (reference) terminal
     if len(component) != len(base_shape):
-        error(
-            "Length of component does not match rank of (reference) terminal.")
+        logger.error("Length of component does not match rank of (reference) terminal.")
     if not all(c >= 0 and c < d for c, d in zip(component, base_shape)):
-        error("Component indices %s are outside value shape %s" % (component,
-                                                                   base_shape))
+        logger.error("Component indices %s are outside value shape %s" % (component, base_shape))
 
     # Flatten component
     vi2si, si2vi = build_component_numbering(base_shape, base_symmetry)
     flat_component = vi2si[component]
     # num_flat_components = len(si2vi)
 
-    return ModifiedTerminal(expr, t, reference_value, base_shape,
-                            base_symmetry, component, flat_component,
-                            global_derivatives, local_derivatives, averaged,
+    return ModifiedTerminal(expr, t, reference_value, base_shape, base_symmetry, component,
+                            flat_component, global_derivatives, local_derivatives, averaged,
                             restriction)

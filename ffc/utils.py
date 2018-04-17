@@ -20,13 +20,14 @@
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Martin Sandve Alnæs 2014
 
-import operator
 import functools
 import itertools
+import logging
+import operator
 
 from ufl.utils.sequences import product
 
-from ffc.log import error
+logger = logging.getLogger(__name__)
 
 
 def all_equal(sequence):
@@ -37,7 +38,7 @@ def all_equal(sequence):
 def pick_first(sequence):
     "Check that all values are equal and return the value."
     if not all_equal(sequence):
-        error("Values differ: " + str(sequence))
+        logger.exception("Values differ: {}".format(sequence))
     return sequence[0]
 
 
@@ -65,6 +66,7 @@ def compute_permutations(k, n, skip=[]):
         for p in pp:
             if i < p[0]:
                 permutations += [(i, ) + p]
+
     return permutations
 
 

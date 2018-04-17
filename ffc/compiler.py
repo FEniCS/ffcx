@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+# Copyright (C) 2007-2017 Anders Logg
+#
+# This file is part of FFC (https://www.fenicsproject.org)
+#
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 """
 This is the compiler, acting as the main interface for compilation
 of forms and breaking the compilation into several sequential stages.
@@ -88,39 +93,15 @@ The compiler stages are implemented by the following functions:
   format_code       (stage 5)
 """
 
-# Copyright (C) 2007-2017 Anders Logg
-#
-# This file is part of FFC.
-#
-# FFC is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# FFC is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# Modified by Kristian B. Oelgaard, 2010.
-# Modified by Dag Lindbo, 2008.
-# Modified by Garth N. Wells, 2009.
-# Modified by Martin Sandve Alnæs, 2013-2017
-
 __all__ = ["compile_form", "compile_element"]
 
-# Python modules
 from collections import defaultdict
 from time import time
 import os
+import logging
 
 import ufl
 
-# FFC modules
-from ffc.log import info, info_green, warning, error
 from ffc.parameters import validate_parameters
 from ffc.analysis import analyze_ufl_objects
 from ffc.representation import compute_ir
@@ -129,9 +110,12 @@ from ffc.codegeneration import generate_code
 from ffc.formatting import format_code
 from ffc.wrappers import generate_wrapper_code
 
+logger = logging.getLogger(__name__)
+
 
 def _print_timing(stage, timing):
-    info("Compiler stage {stage} finished in {time} seconds.\n".format(stage=stage, time=timing))
+    logger.info("Compiler stage {stage} finished in {time} seconds.".format(
+        stage=stage, time=timing))
 
 
 def compile_form(forms, object_names=None, prefix="Form", parameters=None, jit=False):
@@ -157,7 +141,8 @@ def compile_ufl_objects(ufl_objects,
                         parameters=None,
                         jit=False):
     """This function generates UFC code for a given UFL form or list of UFL forms."""
-    info("Compiling %s %s\n" % (kind, prefix))
+
+    logger.info("Compiling {} {}\n".format(kind, prefix))
 
     # Reset timing
     cpu_time_0 = time()
@@ -173,7 +158,7 @@ def compile_ufl_objects(ufl_objects,
     if not ufl_objects:
         return "", ""
     if prefix != os.path.basename(prefix):
-        error("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix))
+        logger.exception("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix))
     if object_names is None:
         object_names = {}
 
@@ -220,7 +205,7 @@ def compile_ufl_objects(ufl_objects,
     code_h, code_c = format_code(code, wrapper_code, prefix, parameters)
     _print_timing(5, time() - cpu_time)
 
-    info_green("FFC finished in {} seconds.".format(time() - cpu_time_0))
+    logger.info("FFC finished in {} seconds.".format(time() - cpu_time_0))
 
     if jit:
         # Must use processed elements from analysis here

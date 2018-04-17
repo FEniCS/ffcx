@@ -17,25 +17,25 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
-from ffc.log import begin, end, info, error
+import logging
+
 from ffc import utils
 from ffc.backends import dolfin
 
+logger = logging.getLogger(__name__)
 
 def generate_wrapper_code(analysis, prefix, object_names, classnames, parameters):
 
-    begin("Compiler stage 4.1: Generating additional wrapper code")
+    logger.info("Compiler stage 4.1: Generating additional wrapper code")
 
     # Encapsulate data
     capsules, common_space = _encapsulate(prefix, object_names, classnames, analysis, parameters)
 
     # Generate code
-    info("Generating wrapper code for DOLFIN")
+    logger.info("Generating wrapper code for DOLFIN")
     code_h, code_c = dolfin.generate_wrappers(prefix, capsules, common_space)
     code_h += "\n"
     code_c += "\n"
-
-    end()
 
     return code_h, code_c
 
