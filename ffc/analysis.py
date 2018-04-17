@@ -111,7 +111,7 @@ def analyze_ufl_objects(ufl_objects, kind, parameters):
 
     # Sort elements
     unique_elements = sort_elements(unique_elements)
-    #unique_coordinate_elements = sort_elements(unique_coordinate_elements)
+    # unique_coordinate_elements = sort_elements(unique_coordinate_elements)
     unique_coordinate_elements = sorted(unique_coordinate_elements, key=lambda x: repr(x))
 
     # Check for schemes for QuadratureElements
@@ -274,10 +274,10 @@ def _validate_representation_choice(form_data, preprocessing_representation_fami
                        "Got '{}'.".format(representations))
 
     if _has_higher_order_geometry(form_data.preprocessed_form):
-        assert 'quadrature' not in representations, "Did not expect quadrature representation for higher-order geometry."
+        assert 'quadrature' not in representations, "Did not expect quadrature representation for higher-order geometry."  # noqa: E501
 
     # Check preprocessing strategy
-    assert preprocessing_representation_family in representations, "Form has been preprocessed using '{}' representaion family, while '{}' representations have been set for integrals.".format(
+    assert preprocessing_representation_family in representations, "Form preprocessed using '{}' representaion family, while '{}' representations set for integrals.".format(  # noqa: E501
         preprocessing_representation_family, representations)
 
 
@@ -553,7 +553,8 @@ def _validate_quadrature_schemes_of_elements(quad_schemes, elements):
         scheme = quad_schemes[0]
     else:
         scheme = "canonical"
-        logger.info("Quadrature rule must be equal within each sub domain, using {} rule.".format(scheme))
+        logger.info(
+            "Quadrature rule must be equal within each sub domain, using {} rule.".format(scheme))
     for element in elements:
         if element.family() == "Quadrature":
             qs = element.quadrature_scheme()

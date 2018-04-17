@@ -43,16 +43,11 @@ typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
         for element in forms:
             cmap = element.coordinate_mapping_classname
             args = {
-                "prefix":
-                prefix,
-                "classname":
-                "FunctionSpace_{}".format(element.name),
-                "finite_element_classname":
-                element.element_classname,
-                "dofmap_classname":
-                element.dofmap_classname,
-                "coordinate_map_classname":
-                "create_{}".format(cmap) if cmap else "NULL"
+                "prefix": prefix,
+                "classname": "FunctionSpace_{}".format(element.name),
+                "finite_element_classname": element.element_classname,
+                "dofmap_classname": element.dofmap_classname,
+                "coordinate_map_classname": "create_{}".format(cmap) if cmap else "NULL"
             }
             code_h += FUNCTION_SPACE_TEMPLATE_DECL.format_map(args)
             code_c += FUNCTION_SPACE_TEMPLATE_IMPL.format_map(args)
@@ -63,8 +58,7 @@ typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
         spaces = extract_coefficient_spaces(forms)
 
         # Generate dolfin_function_space code for common coefficient spaces
-        code_h += "// Coefficient spaces helpers (number: {})\n".format(
-            len(spaces))
+        code_h += "// Coefficient spaces helpers (number: {})\n".format(len(spaces))
         for space in spaces:
             args = {
                 "prefix": prefix,
@@ -78,15 +72,13 @@ typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
 
         # code_h += "\n// Form function spaces helpers (number of forms: {})\n".format(len(forms))
         for form in forms:
-            code_h += "\n// Form function spaces helpers (form '{}')\n".format(
-                form.name)
+            code_h += "\n// Form function spaces helpers (form '{}')\n".format(form.name)
             code = generate_form(form, prefix, "Form_{}".format(form.name))
             code_h += code[0]
             code_c += code[1]
 
         # Generate 'top-level' typedefs (Bilinear/Linear & Test/Trial/Function)
-        code_h += generate_namespace_typedefs(forms, prefix,
-                                              common_function_space)
+        code_h += generate_namespace_typedefs(forms, prefix, common_function_space)
     else:
         raise TypeError("Unexpected (possibly mixed) type.")
 
@@ -103,30 +95,26 @@ def generate_namespace_typedefs(forms, prefix, common_function_space):
     # Add typedef for Functional/LinearForm/BilinearForm if only one
     # is present of each
     aliases = ["Functional", "LinearForm", "BilinearForm"]
-    extra_aliases = {
-        "LinearForm": "ResidualForm",
-        "BilinearForm": "JacobianForm"
-    }
+    extra_aliases = {"LinearForm": "ResidualForm", "BilinearForm": "JacobianForm"}
     for rank in sorted(range(len(aliases)), reverse=True):
         forms_of_rank = [form for form in forms if form.rank == rank]
         if len(forms_of_rank) == 1:
             pairs += [("Form_{}".format(forms_of_rank[0].name), aliases[rank])]
             if aliases[rank] in extra_aliases:
                 extra_alias = extra_aliases[aliases[rank]]
-                pairs += [("Form_{}".format(forms_of_rank[0].name),
-                           extra_alias)]
+                pairs += [("Form_{}".format(forms_of_rank[0].name), extra_alias)]
 
     # Combine data to typedef code
     typedefs = "\n".join(
-        "static const dolfin_form_factory_ptr {0}{1} = {0}{2};".format(
-            prefix, fro, to) for (to, fro) in pairs)
+        "static const dolfin_form_factory_ptr {0}{1} = {0}{2};".format(prefix, fro, to)
+        for (to, fro) in pairs)
 
     # Keepin' it simple: Add typedef for function space factory if term applies
     if common_function_space:
         for i, form in enumerate(forms):
             if form.rank:
                 # FIXME: Is this naming robust?
-                typedefs += "\n\nstatic const dolfin_function_space_factory_ptr {0}FunctionSpace = {0}Form_{1}_FunctionSpace_0;".format(
+                typedefs += "\n\nstatic const dolfin_function_space_factory_ptr {0}FunctionSpace = {0}Form_{1}_FunctionSpace_0;".format(  # noqa: E501
                     prefix, form.name)
                 break
 
@@ -156,14 +144,10 @@ def generate_form(form, prefix, classname):
     assert (len(form.ufc_coordinate_mapping_classnames) == 1)
     for i in range(form.rank):
         args = {
-            "prefix":
-            prefix,
-            "classname":
-            "{}_FunctionSpace_{}".format(classname, i),
-            "finite_element_classname":
-            form.ufc_finite_element_classnames[i],
-            "dofmap_classname":
-            form.ufc_dofmap_classnames[i],
+            "prefix": prefix,
+            "classname": "{}_FunctionSpace_{}".format(classname, i),
+            "finite_element_classname": form.ufc_finite_element_classnames[i],
+            "dofmap_classname": form.ufc_dofmap_classnames[i],
             "coordinate_map_classname":
             "create_{}".format(form.ufc_coordinate_mapping_classnames[0])
         }
@@ -171,14 +155,10 @@ def generate_form(form, prefix, classname):
         blocks_c += [FUNCTION_SPACE_TEMPLATE_IMPL.format_map(args)]
 
     # Add factory function typedefs, e.g. Form_L_FunctionSpace_1_factory = CoefficientSpace_f_factory
-    blocks_h += [
-        "// Coefficient function space typedefs for form \"{}\"".format(
-            classname)
-    ]
+    blocks_h += ["// Coefficient function space typedefs for form \"{}\"".format(classname)]
     template = "static const dolfin_function_space_factory_ptr {0}{1}_FunctionSpace_{2} = {0}CoefficientSpace_{3};"
     blocks_h += [
-        template.format(prefix, classname, form.rank + i,
-                        form.coefficient_names[i])
+        template.format(prefix, classname, form.rank + i, form.coefficient_names[i])
         for i in range(form.num_coefficients)
     ]
     if form.num_coefficients == 0:
@@ -233,8 +213,7 @@ def generate_coefficient_map_data(form):
     num = ""
     name = '  switch (i)\n  {\n'
     for i, coeff in enumerate(form.coefficient_names):
-        num += '  %s(strcmp(name, "%s") == 0)\n    return %d;\n' % (ifstr,
-                                                                    coeff, i)
+        num += '  %s(strcmp(name, "%s") == 0)\n    return %d;\n' % (ifstr, coeff, i)
         name += '  case %d:\n    return "%s";\n' % (i, coeff)
         ifstr = 'else if '
 
@@ -290,8 +269,8 @@ def generate_function_space_typedefs(form, prefix, classname):
     # and are giving trouble with a C compiler (fine with C++)
     template1 = "// static dolfin_function_space_factory_ptr {0}{2}CoefficientSpace_{1} = {0}{2}_FunctionSpace_{3};"
     factory1 = "\n".join(
-        template1.format(prefix, form.coefficient_names[i], classname,
-                         form.rank + i) for i in range(form.num_coefficients))
+        template1.format(prefix, form.coefficient_names[i], classname, form.rank + i)
+        for i in range(form.num_coefficients))
 
     code = factory0 + "\n" + factory1
     return code
@@ -346,9 +325,8 @@ class UFCFormNames:
 
     "Encapsulation of the names related to a generated UFC form."
 
-    def __init__(self, name, coefficient_names, ufc_form_classname,
-                 ufc_finite_element_classnames, ufc_dofmap_classnames,
-                 ufc_coordinate_mapping_classnames):
+    def __init__(self, name, coefficient_names, ufc_form_classname, ufc_finite_element_classnames,
+                 ufc_dofmap_classnames, ufc_coordinate_mapping_classnames):
         """Arguments:
 
         @param name:
@@ -382,8 +360,7 @@ class UFCFormNames:
 class UFCElementNames:
     "Encapsulation of the names related to a generated UFC element."
 
-    def __init__(self, name, element_classname, dofmap_classname,
-                 coordinate_mapping_classname):
+    def __init__(self, name, element_classname, dofmap_classname, coordinate_mapping_classname):
         self.name = name
         self.element_classname = element_classname
         self.dofmap_classname = dofmap_classname

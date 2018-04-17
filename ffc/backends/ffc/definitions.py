@@ -33,7 +33,7 @@ class FFCBackendDefinitions(MultiFunction):
     def expr(self, t, mt, tabledata, num_points, access):
         logging.exception("Unhandled type {0}".format(type(t)))
 
-    #def quadrature_weight(self, e, mt, tabledata, num_points, access):
+    # def quadrature_weight(self, e, mt, tabledata, num_points, access):
     #    "Quadrature weights are precomputed and need no code."
     #    return []
 
@@ -52,7 +52,7 @@ class FFCBackendDefinitions(MultiFunction):
         ttype = tabledata.ttype
         begin, end = tabledata.dofrange
 
-        #fe_classname = ir["classnames"]["finite_element"][t.ufl_element()]
+        # fe_classname = ir["classnames"]["finite_element"][t.ufl_element()]
 
         if ttype == "zeros":
             logging.debug("Not expecting zero coefficients to get this far.")
@@ -72,7 +72,7 @@ class FFCBackendDefinitions(MultiFunction):
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
 
         unroll = len(tabledata.dofmap) != end - begin
-        #unroll = True
+        # unroll = True
         if unroll:
             # TODO: Could also use a generated constant dofmap here like in block code
             # Unrolled loop to accumulate linear combination of dofs and tables
@@ -98,10 +98,10 @@ class FFCBackendDefinitions(MultiFunction):
 
         # Get properties of domain
         domain = mt.terminal.ufl_domain()
-        #tdim = domain.topological_dimension()
+        # tdim = domain.topological_dimension()
         gdim = domain.geometric_dimension()
         coordinate_element = domain.ufl_coordinate_element()
-        #degree = coordinate_element.degree()
+        # degree = coordinate_element.degree()
         num_scalar_dofs = num_coordinate_component_dofs(coordinate_element)
 
         # Reference coordinates are known, no coordinate field, so we compute
@@ -114,8 +114,8 @@ class FFCBackendDefinitions(MultiFunction):
         assert end - begin <= num_scalar_dofs
         assert ttype != "zeros"
         assert ttype != "quadrature"
-        #xfe_classname = ir["classnames"]["finite_element"][coordinate_element]
-        #sfe_classname = ir["classnames"]["finite_element"][coordinate_element.sub_elements()[0]]
+        # xfe_classname = ir["classnames"]["finite_element"][coordinate_element]
+        # sfe_classname = ir["classnames"]["finite_element"][coordinate_element.sub_elements()[0]]
 
         # Get access to element table
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)

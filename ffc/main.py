@@ -109,8 +109,6 @@ def main(args=None):
     # Set default value (not part of in parameters[])
     enable_profile = False
 
-    #logger.setLevel(logging.ERROR)
-
     ffc_logger = logging.getLogger("ffc")
 
     # Parse command-line parameters

@@ -93,7 +93,7 @@ def _extract_includes(full_ir, code_integrals, jit):
             dep_includes.update(_dofmap_jit_includes(ir))
         for ir in ir_coordinate_mappings:
             dep_includes.update(_coordinate_mapping_jit_includes(ir))
-        #for ir in ir_integrals:
+        # for ir in ir_integrals:
         #    dep_includes.update(_integral_jit_includes(ir))
         for ir in ir_forms:
             dep_includes.update(_form_jit_includes(ir))

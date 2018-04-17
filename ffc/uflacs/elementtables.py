@@ -144,7 +144,7 @@ def get_ffc_table_values(points, cell, integral_type, ufl_element, avg,
         # Redefine points to compute average tables
 
         # Make sure this is not called with points, that doesn't make sense
-        #assert points is None
+        # assert points is None
 
         # Not expecting derivatives of averages
         assert not any(derivative_counts)
@@ -293,8 +293,8 @@ def get_modified_terminal_element(mt):
     assert not (mt.averaged and (ld or gd))
 
     # Change derivatives format for table lookup
-    #gdim = mt.terminal.ufl_domain().geometric_dimension()
-    #global_derivatives = derivative_listing_to_counts(gd, gdim)
+    # gdim = mt.terminal.ufl_domain().geometric_dimension()
+    # global_derivatives = derivative_listing_to_counts(gd, gdim)
 
     # Change derivatives format for table lookup
     tdim = mt.terminal.ufl_domain().topological_dimension()
@@ -464,7 +464,7 @@ def optimize_element_tables(tables,
         unique_tables[uname] = tbl
 
     unique_table_origins = {}
-    #for ui in range(len(unique_tables_list)):
+    # for ui in range(len(unique_tables_list)):
     for ui in []:  # FIXME
         uname = unique_names[ui]
 

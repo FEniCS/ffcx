@@ -59,7 +59,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname, parameters
     ref_values = L.FlattenedArray(
         reference_values, dims=(num_points, num_dofs, num_derivatives, reference_value_size))
     # From evaluatebasis.py:
-    #ref_values = L.FlattenedArray(reference_values, dims=(num_points, num_dofs, reference_value_size))
+    # ref_values = L.FlattenedArray(reference_values, dims=(num_points, num_dofs, reference_value_size))
 
     # Initialization (zeroing) and cutoffs outside valid range of orders
     setup_code = [

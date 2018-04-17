@@ -181,7 +181,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
         return [L.Comment(msg), L.Return(-1)]
 
     # Get some known dimensions
-    #element_cellname = data["cellname"]
+    # element_cellname = data["cellname"]
     gdim = data["geometric_dimension"]
     tdim = data["topological_dimension"]
     max_degree = data["max_degree"]

@@ -635,21 +635,23 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
         if (len(e.value_shape()) > 1) and (e.num_sub_elements() != 1):
             return "Function not supported/implemented for TensorElements."
 
-    # Handle QuadratureElement, not supported because the basis is
-    # only defined at the dof coordinates where the value is 1, so not
-    # very interesting.
+    # Handle QuadratureElement, not supported because the basis is only
+    # defined at the dof coordinates where the value is 1, so not very
+    # interesting.
     for e in elements:
         if isinstance(e, QuadratureElement):
             return "Function not supported/implemented for QuadratureElement."
         if isinstance(e, HDivTrace):
             return "Function not supported for Trace elements"
 
-    # Skip this function for TensorProductElement if get_coeffs is not implemented
+    # Skip this function for TensorProductElement if get_coeffs is not
+    # implemented
     for e in elements:
         try:
             e.get_coeffs()
         except NotImplementedError:
-            return "Function is not supported/implemented."
+            logger.exception("Function is not supported/implemented.")
+            raise
 
     # Initialise data with 'global' values.
     data = {
@@ -849,7 +851,7 @@ def _create_default_foo_integral(prefix, form_id, integral_type, form_data):
         return None
 
 
-#--- Utility functions ---
+# --- Utility functions ---
 
 
 def all_elements(fiat_element):

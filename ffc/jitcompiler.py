@@ -198,7 +198,7 @@ def jit(ufl_object, parameters=None, indirect=False):
     if module is None:
         # TODO: To communicate directory name here, need dijitso params
         # to call
-        #fail_dir = dijitso.cache.create_fail_dir_path(signature, dijitso_cache_params)
+        # fail_dir = dijitso.cache.create_fail_dir_path(signature, dijitso_cache_params)
         raise FFCJitError(
             "A directory with files to reproduce the jit build failure has been created.")
 

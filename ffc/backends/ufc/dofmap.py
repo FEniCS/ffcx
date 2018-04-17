@@ -9,8 +9,7 @@
 # old implementation in FFC
 
 import ffc.backends.ufc.dofmap_template as ufc_dofmap
-from ffc.backends.ufc.utils import (generate_return_new_switch,
-                                    generate_return_sizet_switch)
+from ffc.backends.ufc.utils import (generate_return_new_switch, generate_return_sizet_switch)
 
 
 def num_global_support_dofs(L, num_global_support_dofs):
@@ -56,19 +55,20 @@ def tabulate_dofs(L, ir):
         return L.StatementList(code)
 
     # Extract representation
-    #(dofs_per_element, num_dofs_per_element, need_offset, fakes) = ir # names from original ffc code
+    # (dofs_per_element, num_dofs_per_element, need_offset, fakes) = ir # names from original ffc code
     (subelement_dofs, num_dofs_per_subelement, need_offset, is_subelement_real) = ir
 
-    #len(is_subelement_real) == len(subelement_dofs) == len(num_dofs_per_subelement) == number of combined (flattened) subelements?
-    #is_subelement_real[subelement_number] is bool, is subelement Real?
-    #num_dofs_per_subelement[subelement_number] is int, number of dofs for each (flattened) subelement
-    #subelement_dofs[subelement_number] is list of entity_dofs for each (flattened) subelement
-    #len(entity_dofs) == tdim+1
-    #len(entity_dofs[cell_entity_dim]) == "num_cell_entities[dim]" (i.e. 3 vertices, 3 edges, 1 face for triangle)
-    #len(entity_dofs[cell_entity_dim][entity_index[dim][k]]) == number of dofs for this entity
-    #num = entity_dofs[dim]
+    # len(is_subelement_real) == len(subelement_dofs) == len(num_dofs_per_subelement)
+    #    == number of combined (flattened) subelements?
+    # is_subelement_real[subelement_number] is bool, is subelement Real?
+    # num_dofs_per_subelement[subelement_number] is int, number of dofs for each (flattened) subelement
+    # subelement_dofs[subelement_number] is list of entity_dofs for each (flattened) subelement
+    # len(entity_dofs) == tdim+1
+    # len(entity_dofs[cell_entity_dim]) == "num_cell_entities[dim]" (i.e. 3 vertices, 3 edges, 1 face for triangle)
+    # len(entity_dofs[cell_entity_dim][entity_index[dim][k]]) == number of dofs for this entity
+    # num = entity_dofs[dim]
 
-    #entity_dofs =? entity_dofs[d][i][:] # dofs on entity (d,i)
+    # entity_dofs =? entity_dofs[d][i][:] # dofs on entity (d,i)
 
     # Collect code pieces in list
     code = []

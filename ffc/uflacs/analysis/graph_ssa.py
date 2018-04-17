@@ -196,9 +196,9 @@ def allocate_registers(active, partitions, targets, scores, max_registers, score
     num_targets = len(targets)
 
     # Analyse scores
-    #min_score = min(scores)
-    #max_score = max(scores)
-    #mean_score = sum(scores) // n
+    # min_score = min(scores)
+    # max_score = max(scores)
+    # mean_score = sum(scores) // n
 
     # Can allocate a number of registers up to given threshold
     num_to_allocate = max(num_targets, min(max_registers, n) - num_targets)

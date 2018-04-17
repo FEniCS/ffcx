@@ -12,14 +12,14 @@ class PRECEDENCE:
     LITERAL = 0
     SYMBOL = 0
 
-    #SCOPE = 1
+    # SCOPE = 1
 
     POST_INC = 2
     POST_DEC = 2
     CALL = 2
     SUBSCRIPT = 2
-    #MEMBER = 2
-    #PTR_MEMBER = 2
+    # MEMBER = 2
+    # PTR_MEMBER = 2
 
     PRE_INC = 3
     PRE_DEC = 3
@@ -55,6 +55,6 @@ class PRECEDENCE:
     CONDITIONAL = 13
     ASSIGN = 13
 
-    #COMMA = 14
+    # COMMA = 14
 
     LOWEST = 15

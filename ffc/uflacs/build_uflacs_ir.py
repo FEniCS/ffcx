@@ -388,8 +388,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
             FV_mts[i] = mt
 
         # Mark active modified arguments
-        #active_modified_arguments = numpy.zeros(len(modified_arguments), dtype=int)
-        #for ma_indices in argument_factorization:
+        # active_modified_arguments = numpy.zeros(len(modified_arguments), dtype=int)
+        # for ma_indices in argument_factorization:
         #    for j in ma_indices:
         #        active_modified_arguments[j] = 1
 
@@ -714,7 +714,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
         # Figure out if we need to access QuadratureWeight to
         # avoid generating quadrature point table otherwise
-        #need_weights = any(isinstance(mt.terminal, QuadratureWeight)
+        # need_weights = any(isinstance(mt.terminal, QuadratureWeight)
         #                   for mt in active_mts)
 
         # Count blocks of each mode
@@ -751,24 +751,24 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         expr_ir["modified_arguments"] = modified_arguments
 
         # (dict) tuple(MA-indices) -> FV-index of monomial factor
-        #expr_ir["argument_factorization"] = argument_factorization
+        # expr_ir["argument_factorization"] = argument_factorization
 
         expr_ir["block_contributions"] = block_contributions
 
         # Modified terminals
         # (array) list of FV-indices to modified terminals
-        #expr_ir["modified_terminal_indices"] = modified_terminal_indices
+        # expr_ir["modified_terminal_indices"] = modified_terminal_indices
 
         # Dependency structure of graph:
         # (CRSArray) FV-index -> direct dependency FV-index list
-        #expr_ir["dependencies"] = FV_deps
+        # expr_ir["dependencies"] = FV_deps
 
         # (CRSArray) FV-index -> direct dependee FV-index list
-        #expr_ir["inverse_dependencies"] = inv_FV_deps
+        # expr_ir["inverse_dependencies"] = inv_FV_deps
 
         # Metadata about each vertex
-        #expr_ir["active"] = FV_active        # (array) FV-index -> bool
-        #expr_ir["V_piecewise"] = FV_piecewise  # (array) FV-index -> bool
+        # expr_ir["active"] = FV_active        # (array) FV-index -> bool
+        # expr_ir["V_piecewise"] = FV_piecewise  # (array) FV-index -> bool
         expr_ir["V_varying"] = FV_varying  # (array) FV-index -> bool
         expr_ir["V_mts"] = FV_mts
 
@@ -896,7 +896,8 @@ Work for later::
     # - Flatten products of products somehow
     # - Sorting flattened product factors by loop dependency then by canonical ordering
     # Or to keep binary products:
-    # - Rebalancing product trees ((a*c)*(b*d) -> (a*b)*(c*d)) to make piecewise quantities 'float' to the top of the list
+    # - Rebalancing product trees ((a*c)*(b*d) -> (a*b)*(c*d)) to make piecewise quantities
+    #   'float' to the top of the list
 
     # rank = max(len(ma_indices) for ma_indices in argument_factorization)
     # for i,a in enumerate(modified_arguments):
@@ -904,14 +905,15 @@ Work for later::
     # ipart = a.part()
 
     # TODO: More structured MA organization?
-    #modified_arguments[rank][block][entry] -> UFL expression of modified argument
-    #dofranges[rank][block] -> (begin, end)
+    #modified_arguments[rank][block][entry] -> UFL expression of
+    modified argument #dofranges[rank][block] -> (begin, end)
     # or
-    #modified_arguments[rank][entry] -> UFL expression of modified argument
-    #dofrange[rank][entry] -> (begin, end)
-    #argument_factorization: (dict) tuple(MA-indices (only relevant ones!)) -> V-index of monomial factor
+    #modified_arguments[rank][entry] -> UFL expression of modified
+    argument #dofrange[rank][entry] -> (begin, end)
+    # argument_factorization: (dict) tuple(MA-indices (only relevant ones!)) -> V-index of monomial factor
     # becomes
-    #argument_factorization: (dict) tuple(entry for each(!) rank) -> V-index of monomial factor ## doesn't cover intermediate f*u in f*u*v!
+    # argument_factorization: (dict) tuple(entry for each(!) rank) -> V-index of monomial factor ## doesn't
+    # cover intermediate f*u in f*u*v!
 """
 """
 def old_code_useful_for_optimization():

@@ -369,7 +369,7 @@ class IntegralGenerator(object):
         gdim = self.ir["geometric_dimension"]
 
         alignas = self.ir["params"]["alignas"]
-        #padlen = self.ir["params"]["padlen"]
+        # padlen = self.ir["params"]["padlen"]
 
         tables = self.ir["unique_tables"]
         table_types = self.ir["unique_table_types"]
@@ -532,7 +532,7 @@ class IntegralGenerator(object):
                 # TODO: Let optimized ir provide mapping of vertex indices to
                 # variable indices, marking which subexpressions to store in variables
                 # and in what order:
-                #j = variable_id[i]
+                # j = variable_id[i]
 
                 # Currently instead creating a new intermediate for
                 # each subexpression except boolean conditions
@@ -689,10 +689,10 @@ class IntegralGenerator(object):
         postparts = []
 
         # TODO: Define names in backend symbols?
-        #tempnames = self.backend.symbols.block_temp_names
-        #blocknames = self.backend.symbols.block_names
+        # tempnames = self.backend.symbols.block_temp_names
+        # blocknames = self.backend.symbols.block_names
         tempnames = {
-            #"preintegrated": "TI",
+            # "preintegrated": "TI",
             "premultiplied": "TM",
             "partial": "TP",
             "full": "TF",
@@ -700,9 +700,9 @@ class IntegralGenerator(object):
             "quadrature": "TQ",
         }
         blocknames = {
-            #"preintegrated": "BI",
-            #"premultiplied": "BM",
-            #"partial": "BP",
+            # "preintegrated": "BI",
+            # "premultiplied": "BM",
+            # "partial": "BP",
             "full": "BF",
             "safe": "BS",
             "quadrature": "BQ",

@@ -81,9 +81,9 @@ class ModifiedTerminal(object):
         """
         t = self.terminal  # FIXME: Terminal is not sortable...
         rv = self.reference_value
-        #bs = self.base_shape
-        #bsy = self.base_symmetry
-        #c = self.component
+        # bs = self.base_shape
+        # bsy = self.base_symmetry
+        # c = self.component
         fc = self.flat_component
         gd = self.global_derivatives
         ld = self.local_derivatives
@@ -101,9 +101,9 @@ class ModifiedTerminal(object):
         assert n >= 0
         p = t.part()
         rv = self.reference_value
-        #bs = self.base_shape
-        #bsy = self.base_symmetry
-        #c = self.component
+        # bs = self.base_shape
+        # bsy = self.base_symmetry
+        # c = self.component
         fc = self.flat_component
         gd = self.global_derivatives
         ld = self.local_derivatives
@@ -117,7 +117,7 @@ class ModifiedTerminal(object):
     def __eq__(self, other):
         return isinstance(other, ModifiedTerminal) and self.as_tuple() == other.as_tuple()
 
-    #def __lt__(self, other):
+    # def __lt__(self, other):
     #    error("Shouldn't use this?")
     #    # FIXME: Terminal is not sortable, so the as_tuple contents
     #    # must be changed for this to work properly
@@ -244,7 +244,7 @@ def analyse_modified_terminal(expr):
 
     # TODO: Temporarily letting local_derivatives imply reference_value,
     #       but this was not intended to be the case
-    #if local_derivatives:
+    # if local_derivatives:
     #    reference_value = True
 
     # Make reference_value true or false

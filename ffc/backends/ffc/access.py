@@ -56,7 +56,7 @@ class FFCBackendAccess(MultiFunction):
         L = self.language
         return L.LiteralFloat(float(e))
 
-    #def quadrature_weight(self, e, mt, tabledata, num_points):
+    # def quadrature_weight(self, e, mt, tabledata, num_points):
     #    "Quadrature weights are precomputed and need no code."
     #    return []
 
@@ -85,7 +85,6 @@ class FFCBackendAccess(MultiFunction):
             return self.symbols.coefficient_value(mt)  # , num_points)
 
     def spatial_coordinate(self, e, mt, tabledata, num_points):
-        #L = self.language
         if mt.global_derivatives:
             raise FFCError("Not expecting global derivatives of SpatialCoordinate.")
         if mt.averaged:
@@ -109,7 +108,6 @@ class FFCBackendAccess(MultiFunction):
             return self.symbols.x_component(mt)
 
     def cell_coordinate(self, e, mt, tabledata, num_points):
-        #L = self.language
         if mt.global_derivatives:
             raise FFCError("Not expecting derivatives of CellCoordinate.")
         if mt.local_derivatives:

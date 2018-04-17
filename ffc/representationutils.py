@@ -120,7 +120,7 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
 
     entitytype = entity_type_from_integral_type(itg_data.integral_type)
     cell = itg_data.domain.ufl_cell()
-    #cellname = cell.cellname()
+    # cellname = cell.cellname()
     tdim = cell.topological_dimension()
     assert all(tdim == itg.ufl_domain().topological_dimension() for itg in itg_data.integrals)
 

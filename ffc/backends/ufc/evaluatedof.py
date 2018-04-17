@@ -29,7 +29,7 @@ def reference_to_physical_map(cellname):
     elif cellname == "quadrilateral":
         return lambda x: ((1 - x[0]) * (1 - x[1]), (1 - x[0]) * x[1], x[0] * (1 - x[1]), x[0] * x[1])
     elif cellname == "hexahedron":
-        return lambda x: ((1 - x[0]) * (1 - x[1]) * (1 - x[2]), (1 - x[0]) * (1 - x[1]) * x[2], (1 - x[0]) * x[1] * (1 - x[2]), (1 - x[0]) * x[1] * x[2], x[0] * (1 - x[1]) * (1 - x[2]), x[0] * (1 - x[1]) * x[2], x[0] * x[1] * (1 - x[2]), x[0] * x[1] * x[2])
+        return lambda x: ((1 - x[0]) * (1 - x[1]) * (1 - x[2]), (1 - x[0]) * (1 - x[1]) * x[2], (1 - x[0]) * x[1] * (1 - x[2]), (1 - x[0]) * x[1] * x[2], x[0] * (1 - x[1]) * (1 - x[2]), x[0] * (1 - x[1]) * x[2], x[0] * x[1] * (1 - x[2]), x[0] * x[1] * x[2])  # noqa: E501
 
 
 def _change_variables(L, mapping, gdim, tdim, offset):
@@ -118,8 +118,7 @@ def _change_variables(L, mapping, gdim, tdim, offset):
                 inner = 0.0
                 for k in range(gdim):
                     for j in range(gdim):
-                        inner += J[j, i] * values[j * tdim
-                                                  + k + offset] * J[k, l]
+                        inner += J[j, i] * values[j * tdim + k + offset] * J[k, l]
                 w.append(inner)
         return w
 
@@ -134,8 +133,7 @@ def _change_variables(L, mapping, gdim, tdim, offset):
                 inner = 0.0
                 for k in range(gdim):
                     for j in range(gdim):
-                        inner += K[i, j] * values[j * tdim
-                                                  + k + offset] * K[l, k]
+                        inner += K[i, j] * values[j * tdim + k + offset] * K[l, k]
                 w.append(inner * detJ * detJ)
         return w
 
@@ -156,8 +154,7 @@ def _generate_body(L, i, dof, mapping, gdim, tdim, cell_shape, offset=0):
     # Generate different code if multiple points. (Otherwise ffc
     # compile time blows up.)
     if len(points) > 1:
-        return _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim,
-                                              offset)
+        return _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset)
 
     # Get weights for mapping reference point to physical
     x = points[0]
@@ -237,11 +234,7 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset=0):
             L.Comment("Compute affine mapping y = F(X)")
         ]
         for j in range(gdim):
-            lines_r += [
-                L.Assign(
-                    y[j],
-                    w0 * coordinate_dofs[j] + w1 * coordinate_dofs[j + gdim])
-            ]
+            lines_r += [L.Assign(y[j], w0 * coordinate_dofs[j] + w1 * coordinate_dofs[j + gdim])]
     elif tdim == 2:
         lines_r = [
             L.Comment("Evaluate basis functions for affine mapping"),
@@ -252,16 +245,13 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset=0):
         ]
         for j in range(gdim):
             lines_r += [
-                L.Assign(
-                    y[j],
-                    w0 * coordinate_dofs[j] + w1 * coordinate_dofs[j + gdim] +
-                    w2 * coordinate_dofs[j + 2 * gdim])
+                L.Assign(y[j], w0 * coordinate_dofs[j] + w1 * coordinate_dofs[j + gdim] +
+                         w2 * coordinate_dofs[j + 2 * gdim])
             ]
     elif tdim == 3:
         lines_r = [
             L.Comment("Evaluate basis functions for affine mapping"),
-            L.VariableDecl("const double", w0,
-                           1 - X_i[r][0] - X_i[r][1] - X_i[r][2]),
+            L.VariableDecl("const double", w0, 1 - X_i[r][0] - X_i[r][1] - X_i[r][2]),
             L.VariableDecl("const double", w1, X_i[r][0]),
             L.VariableDecl("const double", w2, X_i[r][1]),
             L.VariableDecl("const double", w3, X_i[r][2]),
@@ -269,11 +259,8 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset=0):
         ]
         for j in range(gdim):
             lines_r += [
-                L.Assign(
-                    y[j],
-                    w0 * coordinate_dofs[j] + w1 * coordinate_dofs[j + gdim] +
-                    w2 * coordinate_dofs[j + 2 * gdim] +
-                    w3 * coordinate_dofs[j + 3 * gdim])
+                L.Assign(y[j], w0 * coordinate_dofs[j] + w1 * coordinate_dofs[j + gdim] +
+                         w2 * coordinate_dofs[j + 2 * gdim] + w3 * coordinate_dofs[j + 3 * gdim])
             ]
 
     # Evaluate function at physical point
@@ -321,13 +308,11 @@ def generate_map_dofs(L, ir):
     else:
         code = []
         # Check whether Jacobians are necessary.
-        needs_inverse_jacobian = any(
-            ["contravariant piola" in m for m in ir["mappings"]])
+        needs_inverse_jacobian = any(["contravariant piola" in m for m in ir["mappings"]])
         needs_jacobian = any(["covariant piola" in m for m in ir["mappings"]])
 
         # Intermediate variable needed for multiple point dofs
-        needs_temporary = any(
-            dof is not None and len(dof) > 1 for dof in ir["dofs"])
+        needs_temporary = any(dof is not None and len(dof) > 1 for dof in ir["dofs"])
         if needs_temporary:
             result = L.Symbol("result")
             code += [L.VariableDecl("double", result)]
