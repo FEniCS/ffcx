@@ -30,9 +30,8 @@ import FIAT
 import ufl
 from ffc import FFCError
 from FIAT.enriched import EnrichedElement
-from FIAT.hdiv_trace import HDivTrace
 from FIAT.mixed import MixedElement
-from FIAT.P0 import P0
+# from FIAT.P0 import P0
 from FIAT.quadrature_element import QuadratureElement
 from FIAT.restricted import RestrictedElement
 from FIAT.tensor_product import FlattenedDimensions
@@ -95,7 +94,7 @@ def create_element(ufl_element):
         element = _create_restricted_element(ufl_element)
 
     else:
-        logger.error("Cannot handle this element type: %s" % str(ufl_element))
+        raise FFCError("Cannot handle this element type: %s" % str(ufl_element))
 
     # Store in cache
     _cache[element_signature] = element

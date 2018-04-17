@@ -765,9 +765,6 @@ def compute_midpoint_geometry(L, ir):
         L.ArrayDecl("const double", dphi_Xm, sizes=Jm_table.shape, values=Jm_table),
     ]
 
-    # Symbol for ufc_geometry cell midpoint definition
-    cellname = ir["cell_shape"]
-
     # Output geometry
     x = L.Symbol("x")
     J = L.Symbol("J")

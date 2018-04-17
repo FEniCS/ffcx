@@ -9,6 +9,8 @@
 # from the old implementation in FFC, although some improvements
 # have been made to the generated code.
 
+from ffc import FFCError
+
 
 def jacobian(L, gdim, tdim, element_cellname):
     J = L.Symbol("J")
@@ -94,7 +96,7 @@ def fiat_coordinate_mapping(L, cellname, gdim, ref_coord_symbol="Y"):
                 ])
             ]
         else:
-            error("Cannot compute interval with gdim: %d" % gdim)
+            raise FFCError("Cannot compute interval with gdim: %d" % gdim)
     elif cellname == "triangle":
         if gdim == 2:
             C0 = L.Symbol("C0")
@@ -128,7 +130,7 @@ def fiat_coordinate_mapping(L, cellname, gdim, ref_coord_symbol="Y"):
                 ])
             ]
         else:
-            error("Cannot compute triangle with gdim: %d" % gdim)
+            raise FFCError("Cannot compute triangle with gdim: %d" % gdim)
     elif cellname == 'tetrahedron' and gdim == 3:
         C0 = L.Symbol("C0")
         C1 = L.Symbol("C1")
@@ -168,7 +170,7 @@ def fiat_coordinate_mapping(L, cellname, gdim, ref_coord_symbol="Y"):
                           (2.0 * x[2] - C2)) / detJ])
         ]
     else:
-        error("Cannot compute %s with gdim: %d" % (cellname, gdim))
+        raise FFCError("Cannot compute %s with gdim: %d" % (cellname, gdim))
 
     return code
 
@@ -257,5 +259,6 @@ def _mapping_transform(L, data, dof_data, values, offset, width=1):
                 L.Assign(values[p * width + offset], inner / (detJ * detJ))
             ]
     else:
-        error("Unknown mapping: %s" % mapping)
+        raise FFCError("Unknown mapping: %s" % mapping)
+
     return code

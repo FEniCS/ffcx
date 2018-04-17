@@ -39,9 +39,10 @@ import numpy
 import ufl
 from ffc import FFCError
 from ffc.classname import make_classname, make_integral_classname
-from ffc.fiatinterface import (EnrichedElement, HDivTrace, MixedElement,
-                               QuadratureElement, SpaceOfReals, create_element)
+from ffc.fiatinterface import (EnrichedElement, MixedElement, QuadratureElement,
+                               SpaceOfReals, create_element)
 from ufl.utils.sequences import product
+from FIAT.hdiv_trace import HDivTrace
 
 logger = logging.getLogger(__name__)
 

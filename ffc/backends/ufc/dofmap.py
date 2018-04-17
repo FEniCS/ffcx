@@ -8,9 +8,9 @@
 # Note: Most of the code in this file is a direct translation from the
 # old implementation in FFC
 
-from ffc.backends.ufc.utils import (generate_return_new_switch, generate_return_sizet_switch,
-                                    generate_return_bool_switch)
 import ffc.backends.ufc.dofmap_template as ufc_dofmap
+from ffc.backends.ufc.utils import (generate_return_new_switch,
+                                    generate_return_sizet_switch)
 
 
 def num_global_support_dofs(L, num_global_support_dofs):

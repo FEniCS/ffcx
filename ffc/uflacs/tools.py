@@ -17,14 +17,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
-import numbers
 import collections
+
 import numpy
 
-from ufl.sorting import sorted_expr_sum
+from ffc import FFCError
+from ffc.representationutils import create_quadrature_points_and_weights
 from ufl import custom_integral_types
 from ufl.classes import Integral
-from ffc.representationutils import create_quadrature_points_and_weights
+from ufl.sorting import sorted_expr_sum
 
 
 def collect_quadrature_rules(integrals, default_scheme, default_degree):
@@ -63,9 +64,7 @@ def compute_quadrature_rules(rules, integral_type, cell):
         if num_points in quadrature_rules:
             assert quadrature_rules[num_points][0] == points
             assert quadrature_rules[num_points][0] == weights
-            error(
-                "This number of points is already present in the weight table:\n  %s"
-                % (quadrature_rules, ))
+            raise FFCError("This number of points is already present in the weight table:\n  {}".format(quadrature_rules))
 
         quadrature_rules[num_points] = (points, weights)
         quadrature_rule_sizes[rule] = num_points

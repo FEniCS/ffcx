@@ -13,7 +13,6 @@ from ffc.fiatinterface import create_element
 from ufl.corealg.multifunction import MultiFunction
 from ufl.finiteelement import MixedElement
 from ufl.measure import custom_integral_types
-from ufl.permutation import build_component_numbering
 
 logger = logging.getLogger(__name__)
 
@@ -170,7 +169,6 @@ class FFCBackendAccess(MultiFunction):
             raise FFCError("Expecting reference facet coordinate to be symbolically rewritten.")
 
     def jacobian(self, e, mt, tabledata, num_points):
-        L = self.language
         if mt.global_derivatives:
             raise FFCError("Not expecting global derivatives of Jacobian.")
         if mt.averaged:
@@ -258,8 +256,6 @@ class FFCBackendAccess(MultiFunction):
         return table[facet]
 
     def cell_vertices(self, e, mt, tabledata, num_points):
-        L = self.language
-
         # Get properties of domain
         domain = mt.terminal.ufl_domain()
         gdim = domain.geometric_dimension()
@@ -282,8 +278,6 @@ class FFCBackendAccess(MultiFunction):
         return expr
 
     def cell_edge_vectors(self, e, mt, tabledata, num_points):
-        L = self.language
-
         # Get properties of domain
         domain = mt.terminal.ufl_domain()
         cellname = domain.ufl_cell().cellname()
@@ -345,7 +339,6 @@ class FFCBackendAccess(MultiFunction):
         ufl_scalar_element, = set(coordinate_element.sub_elements())
         assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
         fiat_scalar_element = create_element(ufl_scalar_element)
-        vertex_scalar_dofs = fiat_scalar_element.entity_dofs()[0]
         num_scalar_dofs = fiat_scalar_element.space_dimension()
 
         # Get edge vertices

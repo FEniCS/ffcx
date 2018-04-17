@@ -12,18 +12,13 @@
 from collections import defaultdict
 
 import ffc.backends.ufc.finite_element_template as ufc_finite_element
+from ffc import FFCError
 from ffc.backends.ufc.evalderivs import (_generate_combinations,
                                          generate_evaluate_reference_basis_derivatives)
-from ffc.backends.ufc.evaluatebasis import (generate_evaluate_reference_basis,
-                                            tabulate_coefficients)
-from ffc.backends.ufc.evaluatedof import (generate_map_dofs,
-                                          reference_to_physical_map)
-from ffc.backends.ufc.jacobian import (_mapping_transform,
-                                       fiat_coordinate_mapping,
-                                       inverse_jacobian, jacobian, orientation)
+from ffc.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
+from ffc.backends.ufc.evaluatedof import generate_map_dofs
 from ffc.backends.ufc.utils import (generate_error, generate_return_int_switch,
                                     generate_return_new_switch)
-from ffc.uflacs.elementtables import clamp_table_small_numbers
 from ufl import product
 
 index_type = "int64_t"
@@ -68,7 +63,7 @@ def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim,
             J[i0, jj] * J[i1, kk] for jj in range(tdim) for kk in range(tdim)
         ]
     else:
-        error("Unknown mapping: %s" % mapping)
+        raise FFCError("Unknown mapping: %s" % mapping)
 
     return M_scale, M_row, num_physical_components
 
@@ -226,7 +221,6 @@ def transform_reference_basis_derivatives(L, ir, parameters):
     # Indices, I've tried to use these for a consistent purpose
     ip = L.Symbol("ip")  # point
     i = L.Symbol("i")  # physical component
-    j = L.Symbol("j")  # reference component
     k = L.Symbol("k")  # order
     r = L.Symbol("r")  # physical derivative number
     s = L.Symbol("s")  # reference derivative number

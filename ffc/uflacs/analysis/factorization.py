@@ -16,7 +16,6 @@ from ffc.uflacs.analysis.dependencies import compute_dependencies
 from ffc.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
                                                     strip_modified_terminal)
 from ufl import as_ufl, conditional
-from ufl.algorithms import extract_type
 from ufl.classes import Argument, Conditional, Division, Product, Sum, Zero
 
 logger = logging.getLogger(__name__)
@@ -297,14 +296,14 @@ def compute_argument_factorization(SV, SV_deps, SV_targets, rank):
     e2fi = {}
 
     # Adding 0.0 as an expression to fix issue in conditional
-    zero_index = add_to_fv(as_ufl(0.0), FV, e2fi)
+    # zero_index = add_to_fv(as_ufl(0.0), FV, e2fi)
 
     # Adding 1.0 as an expression allows avoiding special representation
     # of arguments when first visited by representing "v" as "1*v"
     one_index = add_to_fv(as_ufl(1.0), FV, e2fi)
 
     # Adding 2 as an expression fixes an issue with FV entries that change K*K -> K**2
-    two_index = add_to_fv(as_ufl(2), FV, e2fi)
+    # two_index = add_to_fv(as_ufl(2), FV, e2fi)
 
     # Intermediate factorization for each vertex in SV on the format
     # SV_factors[si] = None # if SV[si] does not depend on arguments

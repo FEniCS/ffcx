@@ -36,10 +36,10 @@ class FFCError(Exception):
 #from ffc.compiler import compile_form, compile_element
 
 # Import JIT compiler
-from ffc.jitcompiler import jit
+from ffc.jitcompiler import jit  # noqa: F401
 
 # Import default parameters
-from ffc.parameters import default_parameters, default_jit_parameters
+from ffc.parameters import default_parameters, default_jit_parameters  # noqa: F401
 
 # Duplicate list of supported elements from FIAT
 from FIAT import supported_elements
@@ -51,4 +51,4 @@ supported_elements.remove("Hermite")
 supported_elements.remove("Morley")
 
 # Import main function, entry point to script
-from ffc.main import main
+#from ffc.main import main

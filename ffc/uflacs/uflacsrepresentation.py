@@ -18,8 +18,6 @@
 
 import logging
 
-import numpy
-
 from ffc.fiatinterface import create_element
 from ffc.representationutils import initialize_integral_ir
 from ffc.uflacs.build_uflacs_ir import build_uflacs_ir

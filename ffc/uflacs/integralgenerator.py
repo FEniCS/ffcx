@@ -9,11 +9,12 @@ import itertools
 import logging
 from collections import defaultdict
 
+from ffc import FFCError
 from ffc.uflacs.build_uflacs_ir import get_common_block_data
 from ffc.uflacs.elementtables import piecewise_ttypes
 from ffc.uflacs.language.cnodes import pad_dim, pad_innermost_dim
 from ufl import product
-from ufl.classes import Condition, ConstantValue
+from ufl.classes import Condition
 from ufl.measure import custom_integral_types, point_integral_types
 
 logger = logging.getLogger(__name__)
@@ -248,7 +249,6 @@ class IntegralGenerator(object):
             return parts
 
         alignas = self.ir["params"]["alignas"]
-        padlen = self.ir["params"]["padlen"]
 
         # Loop over quadrature rules
         for num_points in self.ir["all_num_points"]:
@@ -367,7 +367,6 @@ class IntegralGenerator(object):
         chunk_size = self.ir["params"]["chunk_size"]
 
         gdim = self.ir["geometric_dimension"]
-        tdim = self.ir["topological_dimension"]
 
         alignas = self.ir["params"]["alignas"]
         #padlen = self.ir["params"]["padlen"]
@@ -579,8 +578,6 @@ class IntegralGenerator(object):
         return parts
 
     def generate_dofblock_partition(self, num_points):
-        L = self.backend.language
-
         if num_points is None:  # NB! None meaning piecewise partition, not custom integral
             block_contributions = self.ir["piecewise_ir"]["block_contributions"]
         else:
@@ -723,7 +720,7 @@ class IntegralGenerator(object):
 
         ttypes = blockdata.ttypes
         if "zeros" in ttypes:
-            logger.error("Not expecting zero arguments to be left in dofblock generation.")
+            raise FFCError("Not expecting zero arguments to be left in dofblock generation.")
 
         if num_points is None:
             iq = None
@@ -946,9 +943,6 @@ class IntegralGenerator(object):
         for i in reversed(range(0, A_rank - 1)):
             A_strides[i] = A_strides[i + 1] * A_shape[i + 1]
 
-        A = self.backend.symbols.element_tensor()
-        #A = L.FlattenedArray(A, dims=A_shape)
-
         A_values = [0.0] * A_size
 
         for blockmap, blockdata in blocks:
@@ -966,12 +960,12 @@ class IntegralGenerator(object):
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
             # A_rhs = f * PI where PI = sum_q weight * u * v
             PI = L.Symbol(blockdata.name)
-            block_rank = len(blockmap)
+            # block_rank = len(blockmap)
 
-            # Override dof index with quadrature loop index for arguments with
-            # quadrature element, to index B like B[iq*num_dofs + iq]
-            arg_indices = tuple(
-                self.backend.symbols.argument_loop_index(i) for i in range(block_rank))
+            # # Override dof index with quadrature loop index for arguments with
+            # # quadrature element, to index B like B[iq*num_dofs + iq]
+            # arg_indices = tuple(
+            #     self.backend.symbols.argument_loop_index(i) for i in range(block_rank))
 
             # Define indices into preintegrated block
             P_entity_indices = self.get_entities(blockdata)
@@ -1059,7 +1053,7 @@ class IntegralGenerator(object):
                     L.ForRange(k, zero_begin, zero_end, index_type="int", body=L.Assign(A[k], 0.0))
                 ]
         else:
-            logger.error("Invalid init_mode parameter %s" % (init_mode, ))
+            raise FFCError("Invalid init_mode parameter %s" % (init_mode, ))
 
         return parts
 
@@ -1093,7 +1087,6 @@ class IntegralGenerator(object):
 
         # Get symbol, dimensions, and loop index symbols for A
         A_shape = self.ir["tensor_shape"]
-        A_size = product(A_shape)
         A_rank = len(A_shape)
 
         # TODO: there's something like shape2strides(A_shape) somewhere
@@ -1138,7 +1131,7 @@ class IntegralGenerator(object):
             # with loop dropping for quadrature elements:
             ttypes = ()
             if ttypes == ("quadrature", "quadrature"):
-                debug("quadrature element block insertion not optimized")
+                logger.debug("quadrature element block insertion not optimized")
 
             # Add components of all B's to A component in loop nest
             body = L.AssignAdd(A[A_indices], term)

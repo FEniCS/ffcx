@@ -12,7 +12,6 @@ import ufl
 from ffc.uflacs.analysis.indexing import (map_component_tensor_arg_components,
                                           map_indexed_arg_components)
 from ffc.uflacs.analysis.modified_terminals import analyse_modified_terminal
-from ufl.classes import FormArgument
 from ufl.corealg.multifunction import MultiFunction
 from ufl.permutation import compute_indices
 

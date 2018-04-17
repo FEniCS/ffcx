@@ -15,10 +15,8 @@ from ffc.fiatinterface import create_element
 from ffc.representationutils import (create_quadrature_points_and_weights,
                                      integral_type_to_entity_dim,
                                      map_integral_points)
-from ufl.algorithms.analysis import unique_tuple
 from ufl.cell import num_cell_entities
-from ufl.classes import (FormArgument, GeometricQuantity, Jacobian,
-                         SpatialCoordinate)
+from ufl.classes import FormArgument, Jacobian, SpatialCoordinate
 from ufl.measure import custom_integral_types
 from ufl.permutation import build_component_numbering
 from ufl.utils.derivativetuples import derivative_listing_to_counts
@@ -376,10 +374,10 @@ def build_element_tables(num_points,
         # This results in some superfluous tables but those will be
         # removed before code generation and it's not believed to be
         # a bottleneck.
-        for subelement in sort_elements(extract_sub_elements([element])):
-            for fc in range(product(subelement.reference_value_shape())):
-                subres = (subelement, avg, local_derivatives, fc)
-                name_ignored = add_table(subres)
+        # for subelement in sort_elements(extract_sub_elements([element])):
+        #     for fc in range(product(subelement.reference_value_shape())):
+        #         subres = (subelement, avg, local_derivatives, fc)
+        #         name_ignored = add_table(subres)
 
         # Generate table and store table name with modified terminal
         name = add_table(res)
