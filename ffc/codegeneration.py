@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+# Copyright (C) 2009-2017 Anders Logg, Martin Sandve Alnæs, Marie E. Rognes,
+# Kristian B. Oelgaard, and others
+#
+# This file is part of FFC (https://www.fenicsproject.org)
+#
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 """
 Compiler stage 4: Code generation
 ---------------------------------
@@ -6,24 +12,6 @@ Compiler stage 4: Code generation
 This module implements the generation of C code for the body of each
 UFC function from an (optimized) intermediate representation (OIR).
 """
-
-# Copyright (C) 2009-2017 Anders Logg, Martin Sandve Alnæs, Marie E. Rognes,
-# Kristian B. Oelgaard, and others
-#
-# This file is part of FFC.
-#
-# FFC is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# FFC is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
 import itertools
 
@@ -44,7 +32,7 @@ from ffc.backends.ufc.integrals import ufc_integral_generator
 from ffc.backends.ufc.form import ufc_form_generator
 
 
-def generate_code(ir, parameters):
+def generate_code(ir, parameters, jit):
     "Generate code from intermediate representation."
 
     begin("Compiler stage 4: Generating code")
@@ -86,7 +74,7 @@ def generate_code(ir, parameters):
     code_forms = [ufc_form_generator(ir, parameters) for ir in ir_forms]
 
     # Extract additional includes
-    includes = _extract_includes(full_ir, code_integrals)
+    includes = _extract_includes(full_ir, code_integrals, jit)
 
     end()
 
@@ -94,7 +82,7 @@ def generate_code(ir, parameters):
             code_forms, includes)
 
 
-def _extract_includes(full_ir, code_integrals):
+def _extract_includes(full_ir, code_integrals, jit):
     ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = full_ir
 
     # Includes added by representations
@@ -103,7 +91,6 @@ def _extract_includes(full_ir, code_integrals):
     #     includes.update(code["additional_includes_set"])
 
     # Includes for dependencies in jit mode
-    jit = any(full_ir[i][j]["jit"] for i in range(len(full_ir)) for j in range(len(full_ir[i])))
     if jit:
         dep_includes = set()
         for ir in ir_finite_elements:
@@ -116,7 +103,7 @@ def _extract_includes(full_ir, code_integrals):
         #    dep_includes.update(_integral_jit_includes(ir))
         for ir in ir_forms:
             dep_includes.update(_form_jit_includes(ir))
-        includes.update(['#include "%s"' % inc for inc in dep_includes])
+        includes.update(['#include "{}"'.format(inc) for inc in dep_includes])
 
     return includes
 
@@ -145,7 +132,8 @@ def _form_jit_includes(ir):
     # Gather all header names for classes that are separately compiled
     # For finite_element and dofmap the module and header name is the prefix,
     # extracted here with .split, and equal for both classes so we skip dofmap here:
-    classnames = list(itertools.chain(ir["create_finite_element"], ir["create_coordinate_finite_element"]))
+    classnames = list(
+        itertools.chain(ir["create_finite_element"], ir["create_coordinate_finite_element"]))
     postfix = "_finite_element"
     includes = [classname.rpartition(postfix)[0] + ".h" for classname in classnames]
 

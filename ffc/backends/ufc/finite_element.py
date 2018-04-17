@@ -13,8 +13,8 @@ from collections import defaultdict
 
 from ufl import product
 
-from ffc.backends.ufc.utils import (generate_return_new_switch,
-                                    generate_return_int_switch, generate_error)
+from ffc.backends.ufc.utils import (generate_return_new_switch, generate_return_int_switch,
+                                    generate_error)
 from ffc.uflacs.elementtables import clamp_table_small_numbers
 from ffc.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
 from ffc.backends.ufc.evaluatebasis import tabulate_coefficients
@@ -22,15 +22,13 @@ from ffc.backends.ufc.evalderivs import generate_evaluate_reference_basis_deriva
 from ffc.backends.ufc.evalderivs import _generate_combinations
 from ffc.backends.ufc.evaluatedof import generate_map_dofs, reference_to_physical_map
 from ffc.backends.ufc.jacobian import (jacobian, inverse_jacobian, orientation,
-                                       fiat_coordinate_mapping,
-                                       _mapping_transform)
+                                       fiat_coordinate_mapping, _mapping_transform)
 import ffc.backends.ufc.finite_element_template as ufc_finite_element
 
 index_type = "int64_t"
 
 
-def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim,
-                             J, detJ, K):
+def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J, detJ, K):
     # Select transformation to apply
     if mapping == "affine":
         assert num_reference_components == 1
@@ -54,9 +52,7 @@ def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim,
         i0 = i // tdim  # i in the line above
         i1 = i % tdim  # l ...
         M_scale = 1.0
-        M_row = [
-            K[jj, i0] * K[kk, i1] for jj in range(tdim) for kk in range(tdim)
-        ]
+        M_row = [K[jj, i0] * K[kk, i1] for jj in range(tdim) for kk in range(tdim)]
     elif mapping == "double contravariant piola":
         assert num_reference_components == tdim**2
         num_physical_components = gdim**2
@@ -64,9 +60,7 @@ def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim,
         i0 = i // tdim  # i in the line above
         i1 = i % tdim  # l ...
         M_scale = 1.0 / (detJ * detJ)
-        M_row = [
-            J[i0, jj] * J[i1, kk] for jj in range(tdim) for kk in range(tdim)
-        ]
+        M_row = [J[i0, jj] * J[i1, kk] for jj in range(tdim) for kk in range(tdim)]
     else:
         error("Unknown mapping: %s" % mapping)
 
@@ -127,7 +121,7 @@ def num_sub_elements(L, num_sub_elements):
 
 def create_sub_element(L, ir):
     classnames = ir["create_sub_element"]
-    return generate_return_new_switch(L, "i", classnames, factory=ir["jit"])
+    return generate_return_new_switch(L, "i", classnames, factory=True)
 
 
 def map_dofs(L, ir, parameters):
@@ -144,8 +138,7 @@ def tabulate_reference_dof_coordinates(L, ir, parameters):
     # Raise error if tabulate_reference_dof_coordinates is ill-defined
     if not ir:
         msg = "tabulate_reference_dof_coordinates is not defined for this element"
-        return generate_error(L, msg,
-                              parameters["convert_exceptions_to_warnings"])
+        return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
 
     # Extract coordinates and cell dimension
     tdim = ir["tdim"]
@@ -157,12 +150,8 @@ def tabulate_reference_dof_coordinates(L, ir, parameters):
     # Reference coordinates
     dof_X = L.Symbol("dof_X")
     dof_X_values = [X[jj] for X in points for jj in range(tdim)]
-    decl = L.ArrayDecl(
-        "static const double",
-        dof_X, (len(points) * tdim, ),
-        values=dof_X_values)
-    copy = L.MemCopy(dof_X, reference_dof_coordinates, tdim * len(points),
-                     "double")
+    decl = L.ArrayDecl("static const double", dof_X, (len(points) * tdim, ), values=dof_X_values)
+    copy = L.MemCopy(dof_X, reference_dof_coordinates, tdim * len(points), "double")
 
     code = [decl, copy]
     return code
@@ -185,8 +174,7 @@ def evaluate_reference_basis_derivatives(L, ir, parameters):
         msg = "evaluate_reference_basis_derivatives: {}".format(data)
         return [L.Comment(msg), L.Return(-1)]
 
-    return generate_evaluate_reference_basis_derivatives(
-        L, data, ir["classname"], parameters)
+    return generate_evaluate_reference_basis_derivatives(L, data, ir["classname"], parameters)
 
 
 def transform_reference_basis_derivatives(L, ir, parameters):
@@ -244,23 +232,20 @@ def transform_reference_basis_derivatives(L, ir, parameters):
         num_derivatives_t = L.Symbol("num_derivatives")
         num_derivatives_g = num_derivatives_t
         combinations_code += [
-            L.VariableDecl("const " + index_type, num_derivatives_t,
-                           L.Call("pow", (tdim, order))),
+            L.VariableDecl("const " + index_type, num_derivatives_t, L.Call("pow", (tdim, order))),
         ]
 
         # Add array declarations of combinations
-        combinations_code_t, combinations_t = _generate_combinations(
-            L, tdim, max_degree, order, num_derivatives_t)
+        combinations_code_t, combinations_t = _generate_combinations(L, tdim, max_degree, order,
+                                                                     num_derivatives_t)
         combinations_code += combinations_code_t
         combinations_g = combinations_t
     else:
         num_derivatives_t = L.Symbol("num_derivatives_t")
         num_derivatives_g = L.Symbol("num_derivatives_g")
         combinations_code += [
-            L.VariableDecl("const " + index_type, num_derivatives_t,
-                           L.Call("pow", (tdim, order))),
-            L.VariableDecl("const " + index_type, num_derivatives_g,
-                           L.Call("pow", (gdim, order))),
+            L.VariableDecl("const " + index_type, num_derivatives_t, L.Call("pow", (tdim, order))),
+            L.VariableDecl("const " + index_type, num_derivatives_g, L.Call("pow", (gdim, order))),
         ]
         # Add array declarations of combinations
         combinations_code_t, combinations_t = _generate_combinations(
@@ -276,11 +261,9 @@ def transform_reference_basis_derivatives(L, ir, parameters):
     K = L.FlattenedArray(K, dims=(num_points, tdim, gdim))
 
     values = L.FlattenedArray(
-        values_symbol,
-        dims=(num_points, num_dofs, num_derivatives_g, physical_value_size))
+        values_symbol, dims=(num_points, num_dofs, num_derivatives_g, physical_value_size))
     reference_values = L.FlattenedArray(
-        reference_values,
-        dims=(num_points, num_dofs, num_derivatives_t, reference_value_size))
+        reference_values, dims=(num_points, num_dofs, num_derivatives_t, reference_value_size))
 
     # Generate code to compute the derivative transform matrix
     transform_matrix_code = [
@@ -295,12 +278,10 @@ def transform_reference_basis_derivatives(L, ir, parameters):
         transform_matrix_code += [
             # Compute transform matrix entries, each a product of K entries
             L.ForRanges(
-                (r, 0, num_derivatives_g), (s, 0, num_derivatives_t),
-                (k, 0, order),
+                (r, 0, num_derivatives_g), (s, 0, num_derivatives_t), (k, 0, order),
                 index_type=index_type,
-                body=L.AssignMul(
-                    transform[r, s],
-                    K[ip, combinations_t[s, k], combinations_g[r, k]])),
+                body=L.AssignMul(transform[r, s],
+                                 K[ip, combinations_t[s, k], combinations_g[r, k]])),
         ]
 
     # Initialize values to 0, will be added to inside loops
@@ -320,15 +301,11 @@ def transform_reference_basis_derivatives(L, ir, parameters):
         L.ArrayDecl(
             "const " + index_type,
             reference_offsets, (num_dofs, ),
-            values=[
-                dof_data["reference_offset"] for dof_data in data["dofs_data"]
-            ]),
+            values=[dof_data["reference_offset"] for dof_data in data["dofs_data"]]),
         L.ArrayDecl(
             "const " + index_type,
             physical_offsets, (num_dofs, ),
-            values=[
-                dof_data["physical_offset"] for dof_data in data["dofs_data"]
-            ]),
+            values=[dof_data["physical_offset"] for dof_data in data["dofs_data"]]),
     ]
 
     # Build dof lists for each mapping type
@@ -352,10 +329,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
             # Stored const array of dof indices
             idofs_symbol = L.Symbol("%s_dofs" % mapping.replace(" ", "_"))
             dof_attributes_code += [
-                L.ArrayDecl(
-                    "const " + index_type,
-                    idofs_symbol, (len(idofs), ),
-                    values=idofs),
+                L.ArrayDecl("const " + index_type, idofs_symbol, (len(idofs), ), values=idofs),
             ]
             dofrange = (d, 0, len(idofs))
             idof = idofs_symbol[d]
@@ -366,12 +340,10 @@ def transform_reference_basis_derivatives(L, ir, parameters):
 
         # How many components does each basis function with this mapping have?
         # This should be uniform, i.e. there should be only one element in this set:
-        num_reference_components, = set(
-            data["dofs_data"][i]["num_components"] for i in idofs)
+        num_reference_components, = set(data["dofs_data"][i]["num_components"] for i in idofs)
 
         M_scale, M_row, num_physical_components = generate_element_mapping(
-            mapping, i, num_reference_components, tdim, gdim, J[ip], detJ[ip],
-            K[ip])
+            mapping, i, num_reference_components, tdim, gdim, J[ip], detJ[ip], K[ip])
 
         #            transform_apply_body = [
         #                L.AssignAdd(values[ip, idof, r, physical_offset + k],
@@ -397,20 +369,17 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                     L.VariableDecl(
                         "const double", mapped_value,
                         M_scale * sum(
-                            M_row[jj] * reference_values[ip, idof, s,
-                                                         reference_offset + jj]
+                            M_row[jj] * reference_values[ip, idof, s, reference_offset + jj]
                             for jj in range(num_reference_components))),
                     # Apply derivative transformation, for order=0 this reduces to
                     # values[ip,idof,0,physical_offset+i] = transform[0,0]*mapped_value
-                    L.Comment(
-                        "Mapping derivatives back to the physical element"),
+                    L.Comment("Mapping derivatives back to the physical element"),
                     L.ForRanges(
                         (r, 0, num_derivatives_g),
                         index_type=index_type,
                         body=[
-                            L.AssignAdd(
-                                values[ip, idof, r, physical_offset + i],
-                                transform[r, s] * mapped_value)
+                            L.AssignAdd(values[ip, idof, r, physical_offset + i],
+                                        transform[r, s] * mapped_value)
                         ])
                 ])
         ]
@@ -426,8 +395,8 @@ def transform_reference_basis_derivatives(L, ir, parameters):
     ]
 
     # Join code
-    code = (combinations_code + values_init_code + dof_attributes_code +
-            point_loop_code + [L.Comment(msg), L.Return(0)])
+    code = (combinations_code + values_init_code + dof_attributes_code + point_loop_code +
+            [L.Comment(msg), L.Return(0)])
     return code
 
 
@@ -443,11 +412,6 @@ def _num_vertices(cell_shape):
     }
 
     return num_vertices_dict[cell_shape]
-
-
-def _create_sub_element_factory(L, ir):
-    classnames = ir["create_sub_element"]
-    return generate_return_new_switch(L, "i", classnames, factory=True)
 
 
 def generator(ir, parameters):
@@ -470,8 +434,7 @@ def generator(ir, parameters):
     import ffc.uflacs.language.cnodes as L
 
     d["value_dimension"] = value_dimension(L, ir["value_shape"])
-    d["reference_value_dimension"] = reference_value_dimension(
-        L, ir["reference_value_shape"])
+    d["reference_value_dimension"] = reference_value_dimension(L, ir["reference_value_shape"])
 
     statements = evaluate_reference_basis(L, ir, parameters)
     assert isinstance(statements, list)
@@ -493,15 +456,13 @@ def generator(ir, parameters):
     assert isinstance(statements, list)
     d["tabulate_reference_dof_coordinates"] = L.StatementList(statements)
 
-    statements = _create_sub_element_factory(L, ir)
+    statements = create_sub_element(L, ir)
     d["create_sub_element"] = statements
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
     fieldnames = [
-        fname
-        for _, fname, _, _ in Formatter().parse(ufc_finite_element.factory)
-        if fname
+        fname for _, fname, _, _ in Formatter().parse(ufc_finite_element.factory) if fname
     ]
     assert set(fieldnames) == set(
         d.keys()), "Mismatch between keys in template and in formattting dict"
@@ -510,7 +471,6 @@ def generator(ir, parameters):
     implementation = ufc_finite_element.factory.format_map(d)
 
     # Format declaration
-    declaration = ufc_finite_element.declaration.format(
-        factory_name=ir["classname"])
+    declaration = ufc_finite_element.declaration.format(factory_name=ir["classname"])
 
     return declaration, implementation

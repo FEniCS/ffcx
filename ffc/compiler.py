@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+# Copyright (C) 2007-2017 Anders Logg
+#
+# This file is part of FFC (https://www.fenicsproject.org)
+#
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 """
 This is the compiler, acting as the main interface for compilation
 of forms and breaking the compilation into several sequential stages.
@@ -88,28 +93,6 @@ The compiler stages are implemented by the following functions:
   format_code       (stage 5)
 """
 
-# Copyright (C) 2007-2017 Anders Logg
-#
-# This file is part of FFC.
-#
-# FFC is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# FFC is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# Modified by Kristian B. Oelgaard, 2010.
-# Modified by Dag Lindbo, 2008.
-# Modified by Garth N. Wells, 2009.
-# Modified by Martin Sandve Alnæs, 2013-2017
-
 __all__ = ["compile_form", "compile_element"]
 
 # Python modules
@@ -194,7 +177,7 @@ def compile_ufl_objects(ufl_objects,
 
     # Stage 4: code generation
     cpu_time = time()
-    code = generate_code(oir, parameters)
+    code = generate_code(oir, parameters, jit)
     _print_timing(4, time() - cpu_time)
 
     # Stage 4.1: generate convenience wrappers, e.g. for DOLFIN
