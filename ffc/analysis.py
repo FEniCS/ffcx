@@ -221,7 +221,9 @@ def _extract_representation_family(form, parameters):
     if len(representations) == 1:
         r = representations.pop()
         if r not in compatible:
-            logger.exception("Representation family {} is not compatible with this form (try one of {})".format(r, sorted(compatible)))
+            logger.exception(
+                "Representation family {} is not compatible with this form (try one of {})".format(
+                    r, sorted(compatible)))
         return r
     elif len(representations) == 0:
         if len(compatible) == 1:
@@ -265,7 +267,8 @@ def _validate_representation_choice(form_data, preprocessing_representation_fami
 
     # Require unique family; allow quadrature only with affine meshes
     if len(representations) != 1:
-        logger.exception("Failed to extract unique representation family. " "Got '{}'.".format(representations))
+        logger.exception("Failed to extract unique representation family. "
+                         "Got '{}'.".format(representations))
 
     if _has_higher_order_geometry(form_data.preprocessed_form):
         assert 'quadrature' not in representations, "Did not expect quadrature representation for higher-order geometry."
@@ -311,7 +314,8 @@ def _extract_common_quadrature_degree(integral_metadatas):
         # TODO: This may be loosened up without too much effort,
         # if the form compiler handles mixed integration degree,
         # something that most of the pipeline seems to be ready for.
-        logger.info("Quadrature degree must be equal within each sub domain, using degree {}.".format(qd))
+        logger.info(
+            "Quadrature degree must be equal within each sub domain, using degree {}.".format(qd))
 
     return qd
 
@@ -348,8 +352,8 @@ def _check_quadrature_degree(degree, top_dim):
     number of integration points."""
     num_points = ((degree + 1 + 1) // 2)**top_dim
     if num_points >= 100:
-        logger.warning(
-            "WARNING: The number of integration points for each cell will be: {}".format(num_points))
+        logger.warning("WARNING: The number of integration points for each cell will be: {}".format(
+            num_points))
         logger.warning(
             "         Consider using the option 'quadrature_degree' to reduce the number of points")
 
@@ -364,7 +368,8 @@ def _extract_common_quadrature_rule(integral_metadatas):
     else:
         qr = "canonical"
         # FIXME: Shouldn't we raise here?
-        logger.info("Quadrature rule must be equal within each sub domain, using {} rule.".format(qr))
+        logger.info(
+            "Quadrature rule must be equal within each sub domain, using {} rule.".format(qr))
     return qr
 
 
@@ -396,8 +401,9 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
     precision_values = set(md["precision"] for md in integral_metadatas)
 
     if len(representations) > 1:
-        logger.exception("Integral representation must be equal within each sub domain or 'auto', got %s." %
-              (str(sorted(str(v) for v in representations)), ))
+        logger.exception(
+            "Integral representation must be equal within each sub domain or 'auto', got %s." %
+            (str(sorted(str(v) for v in representations)), ))
     if len(optimize_values) > 1:
         logger.exception(
             "Integral 'optimize' metadata must be equal within each sub domain or not set, got %s."
@@ -514,8 +520,9 @@ def _attach_integral_metadata(form_data, form_r_family, parameters):
         # not that into this work)
         num_cells = set(md.get("num_cells") for md in integral_metadatas)
         if len(num_cells) != 1:
-            logger.exception("Found integrals with different num_cells metadata on same subdomain: %s" %
-                  (str(list(num_cells)), ))
+            logger.exception(
+                "Found integrals with different num_cells metadata on same subdomain: %s" %
+                (str(list(num_cells)), ))
         num_cells, = num_cells
         ida.metadata["num_cells"] = num_cells
 
@@ -548,7 +555,8 @@ def _validate_quadrature_schemes_of_elements(quad_schemes, elements):
             qs = element.quadrature_scheme()
             if qs != scheme:
                 logger.exception(
-                    "Quadrature element must have specified quadrature scheme ({}) equal to the integral ({}).".format(qs, scheme))
+                    "Quadrature element must have specified quadrature scheme ({}) equal to the integral ({}).".
+                    format(qs, scheme))
 
 
 def _get_sub_elements(element):

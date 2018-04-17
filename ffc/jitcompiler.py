@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 
 def jit_generate(ufl_object, module_name, signature, parameters):
     "Callback function passed to dijitso.jit: generate code and return as strings."
-    logger.info(logging.INFO + 5, "Calling FFC just-in-time (JIT) compiler, this may take some time.")
+    logger.info("Calling FFC just-in-time (JIT) compiler.")
 
     # Generate actual code for this object
     if isinstance(ufl_object, ufl.Form):

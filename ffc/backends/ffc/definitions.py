@@ -14,6 +14,7 @@ from ufl.measure import custom_integral_types
 
 logger = logging.getLogger(__name__)
 
+
 class FFCBackendDefinitions(MultiFunction):
     """FFC specific code definitions."""
 

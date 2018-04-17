@@ -8,15 +8,16 @@
 
 import logging
 
+import ufl
 from ffc.uflacs.analysis.indexing import (map_component_tensor_arg_components,
                                           map_indexed_arg_components)
 from ffc.uflacs.analysis.modified_terminals import analyse_modified_terminal
-from ufl import product
 from ufl.classes import FormArgument
 from ufl.corealg.multifunction import MultiFunction
 from ufl.permutation import compute_indices
 
 logger = logging.getLogger(__name__)
+
 
 class ValueNumberer(MultiFunction):
     """An algorithm to map the scalar components of an expression node to unique value numbers,
@@ -138,7 +139,7 @@ class ValueNumberer(MultiFunction):
 
         # Consistency check before returning symbols
         assert not v.ufl_free_indices
-        if product(v.ufl_shape) != len(symbols):
+        if ufl.product(v.ufl_shape) != len(symbols):
             logger.error("Internal error in value numbering.")
         return symbols
 

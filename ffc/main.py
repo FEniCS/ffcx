@@ -21,17 +21,11 @@ import sys
 import ufl
 from ffc import __version__ as FFC_VERSION
 from ffc.backends import ufc
-from ffc.compiler import compile_element, compile_form
-from ffc.formatting import write_code
+from ffc import compiler
+from ffc import formatting
 from ffc.parameters import default_parameters
-from ufl.algorithms import load_ufl_file
 
 logger = logging.getLogger(__name__)
-
-
-def print_error(msg):
-    "Print error message (cannot use log system at top level)."
-    print("\n".join(["*** FFC: " + line for line in msg.split("\n")]))
 
 
 def info_version():
@@ -57,10 +51,10 @@ the FFC man page which may invoked by 'man ffc' (if installed).
 
 def compile_ufl_data(ufd, prefix, parameters):
     if len(ufd.forms) > 0:
-        code_h, code_c = compile_form(
+        code_h, code_c = compiler.compile_form(
             ufd.forms, ufd.object_names, prefix=prefix, parameters=parameters)
     else:
-        code_h, code_c = compile_element(
+        code_h, code_c = compiler.compile_element(
             ufd.elements, ufd.object_names, prefix=prefix, parameters=parameters)
     return code_h, code_c
 
@@ -197,7 +191,7 @@ def _compile_files(args, parameters, enable_profile):
             pr.enable()
 
         # Load UFL file
-        ufd = load_ufl_file(filename)
+        ufd = ufl.algorithms.load_ufl_file(filename)
 
         # Previously wrapped in try-except, disabled to actually get information we need
         # try:
@@ -206,7 +200,7 @@ def _compile_files(args, parameters, enable_profile):
         code_h, code_c = compile_ufl_data(ufd, prefix, parameters)
 
         # Write to file
-        write_code(code_h, code_c, prefix, parameters)
+        formatting.write_code(code_h, code_c, prefix, parameters)
 
         # except Exception as exception:
         #    # Catch exceptions only when not in debug mode

@@ -19,6 +19,10 @@ import pkg_resources
 
 __version__ = pkg_resources.get_distribution("fenics-ffc").version
 
+# Configure logger
+logging.basicConfig()
+logger = logging.getLogger("ffc")
+
 from ffc.git_commit_hash import git_commit_hash
 
 # Import compiler functions
@@ -41,8 +45,3 @@ supported_elements.remove("Morley")
 
 # Import main function, entry point to script
 from ffc.main import main
-
-# Configure logger
-logging.basicConfig()
-logger = logging.getLogger("ffc")
-

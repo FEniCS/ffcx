@@ -27,6 +27,7 @@ from ffc.uflacs.language.format_lines import format_indented_lines
 
 logger = logging.getLogger(__name__)
 
+
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
 
@@ -51,8 +52,7 @@ def generate_integral_code(ir, prefix, parameters):
     code = initialize_integral_code(ir, prefix, parameters)
     code["tabulate_tensor"] = body
     code["additional_includes_set"] = set(ig.get_includes())
-    code["additional_includes_set"].update(
-        ir.get("additional_includes_set", ()))
+    code["additional_includes_set"].update(ir.get("additional_includes_set", ()))
 
     # TODO: Move to initialize_integral_code, this is not representation specific
     if ir.get("num_cells") is not None:

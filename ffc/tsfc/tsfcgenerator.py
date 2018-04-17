@@ -26,6 +26,7 @@ from tsfc.driver import compile_integral
 
 logger = logging.getLogger(__name__)
 
+
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
 
@@ -40,16 +41,14 @@ def generate_integral_code(ir, prefix, parameters):
     parameters.setdefault("mode", "vanilla")
 
     # Generate tabulate_tensor body
-    ast = compile_integral(
-        integral_data, form_data, None, parameters, interface=ufc_interface)
+    ast = compile_integral(integral_data, form_data, None, parameters, interface=ufc_interface)
 
     # COFFEE vectorize
     knl = ASTKernel(ast)
     knl.plan_cpu(dict(optlevel='Ov'))
 
     tsfc_code = "".join(b.gencode() for b in ast.body)
-    tsfc_code = tsfc_code.replace("#pragma coffee",
-                                  "//#pragma coffee")  # FIXME
+    tsfc_code = tsfc_code.replace("#pragma coffee", "//#pragma coffee")  # FIXME
     code["tabulate_tensor"] = tsfc_code
 
     includes = set()

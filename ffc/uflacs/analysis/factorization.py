@@ -20,6 +20,7 @@ from ufl.classes import Argument, Conditional, Division, Product, Sum, Zero
 
 logger = logging.getLogger(__name__)
 
+
 def _build_arg_sets(V):
     "Build arg_sets = { argument number: set(j for j where V[j] is a modified Argument with this number) }"
     arg_sets = {}
@@ -77,8 +78,7 @@ def build_argument_dependencies(dependencies, arg_indices):
     return A
 
 
-class Factors(
-        object):  # TODO: Refactor code in this file by using a class like this
+class Factors(object):  # TODO: Refactor code in this file by using a class like this
     def __init__(self):
         self.FV = []
         self.e2fi = {}
@@ -174,8 +174,7 @@ def handle_product(v, si, deps, SV_factors, FV, sv2fv, e2fi):
             f0 = FV[fac0[k0]]
             for k1 in sorted(fac1):
                 f1 = FV[fac1[k1]]
-                argkey = tuple(
-                    sorted(k0 + k1))  # sort key for canonical representation
+                argkey = tuple(sorted(k0 + k1))  # sort key for canonical representation
                 factors[argkey] = add_to_fv(f0 * f1, FV, e2fi)
 
     return factors

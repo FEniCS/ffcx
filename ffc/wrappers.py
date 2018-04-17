@@ -24,6 +24,7 @@ from ffc.backends import dolfin
 
 logger = logging.getLogger(__name__)
 
+
 def generate_wrapper_code(analysis, prefix, object_names, classnames, parameters):
 
     logger.info("Compiler stage 4.1: Generating additional wrapper code")

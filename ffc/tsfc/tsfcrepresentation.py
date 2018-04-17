@@ -15,7 +15,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
-import logger
+import logging
+
 from ffc.representationutils import initialize_integral_ir
 
 logger = logging.getLogger(__name__)
