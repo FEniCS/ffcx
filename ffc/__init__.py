@@ -15,8 +15,16 @@ The interface consists of the following functions:
 """
 
 import logging
-
 import pkg_resources
+
+from FIAT import supported_elements
+
+__version__ = pkg_resources.get_distribution("fenics-ffc").version
+
+
+class FFCError(Exception):
+    pass
+
 
 # Import JIT compiler
 from ffc.jitcompiler import jit  # noqa: F401
@@ -26,19 +34,10 @@ from ffc.main import main  # noqa: F401
 
 # Import default parameters
 from ffc.parameters import (default_jit_parameters, default_parameters)  # noqa: F401
-from FIAT import supported_elements
 
-__version__ = pkg_resources.get_distribution("fenics-ffc").version
 
 logging.basicConfig()
 logger = logging.getLogger("ffc")
-
-
-class FFCError(Exception):
-    pass
-    # def __init__(self,*args,**kwargs):
-    #       raise FFCError("LLLLLLLLLL", self)
-    #       Exception.__init__(self, *args, **kwargs)
 
 
 # from ffc.git_commit_hash import git_commit_hash
