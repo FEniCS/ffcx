@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 """Work in progress translation of FFC evaluatebasis code to uflacs CNodes format."""
 
+import logging
+
 import numpy
 
-from ffc.log import error
+from ffc.backends.ufc.evaluatebasis import (generate_compute_basisvalues,
+                                            generate_expansion_coefficients)
 from ffc.backends.ufc.utils import generate_error
-from ffc.backends.ufc.evaluatebasis import generate_expansion_coefficients, generate_compute_basisvalues
+
+logger = logging.getLogger(__name__)
+
 
 # Used for various indices and arrays in this file
 index_type = "int64_t"
@@ -142,7 +147,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname, parameters
 
         shape_dmats = numpy.shape(dof_data["dmats"][0])
         if shape_dmats[0] != shape_dmats[1]:
-            error("Something is wrong with the dmats:\n%s" % str(dof_data["dmats"]))
+            logging.exception("Something is wrong with the dmats:\n{}}".format(dof_data["dmats"]))
 
         aux = L.Symbol("aux")
         dmats = L.Symbol("dmats")

@@ -93,7 +93,6 @@ class ufc_custom_integral(Snippets):
 
 def ufc_integral_generator(ir, parameters):
     """Generate UFC code for an integral"""
-    d = {}
     factory_name = ir["classname"]
     integral_type = ir["integral_type"]
 

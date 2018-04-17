@@ -7,28 +7,26 @@
 """This module provides a just-in-time (JIT) form compiler.
 It uses dijitso to wrap the generated code into a Python module."""
 
-import os
-import sys
 import hashlib
+import logging
+import os
 
 import dijitso
 import ufl
-
-from ffc.log import log
-from ffc.log import error
-from ffc.log import set_level
-from ffc.log import set_prefix
-from ffc.log import INFO
-from ffc.parameters import validate_jit_parameters, compute_jit_parameters_signature
-from ffc.compiler import compile_form, compile_element, compile_coordinate_mapping
-from ffc.backends import ufc
 from ffc import __version__ as FFC_VERSION
-import ffc.classname
+from ffc import FFCError, classname
+from ffc.backends import ufc
+from ffc.compiler import (compile_coordinate_mapping, compile_element,
+                          compile_form)
+from ffc.parameters import (compute_jit_parameters_signature,
+                            validate_jit_parameters)
+
+logger = logging.getLogger(__name__)
 
 
 def jit_generate(ufl_object, module_name, signature, parameters):
-    """Callback function passed to dijitso.jit: generate code and return as strings."""
-    log(INFO + 5, "Calling FFC just-in-time (JIT) compiler, this may take some time.")
+    "Callback function passed to dijitso.jit: generate code and return as strings."
+    logger.info("Calling FFC just-in-time (JIT) compiler.")
 
     # Pick the generator for actual code for this object
     if isinstance(ufl_object, ufl.Form):
@@ -83,15 +81,18 @@ def jit_build(ufl_object, module_name, parameters):
     # equivalent behaviour to instant code
     build_params = {}
     build_params["debug"] = not parameters["cpp_optimize"]
-    build_params["cxxflags_opt"] = tuple(parameters["cpp_optimize_flags"].split())
+    build_params["cxxflags_opt"] = tuple(
+        parameters["cpp_optimize_flags"].split())
     build_params["cxxflags_debug"] = ("-O0", )
     build_params["include_dirs"] = (ufc.get_include_path(), ) + _string_tuple(
         parameters.get("external_include_dirs"))
-    build_params["lib_dirs"] = _string_tuple(parameters.get("external_library_dirs"))
+    build_params["lib_dirs"] = _string_tuple(
+        parameters.get("external_library_dirs"))
 
     # Use C compiler (not C++) and add some libs/options
     build_params["cxx"] = os.getenv("CC", "cc")
-    build_params["libs"] = _string_tuple("m" + parameters.get("external_libraries"))
+    build_params["libs"] = _string_tuple(
+        "m" + parameters.get("external_libraries"))
     build_params["cxxflags"] = ["-Wall", "-shared", "-fPIC"]
 
     # Interpreting FFC default "" as None, use "." if you want to point to curdir
@@ -140,9 +141,9 @@ def compute_jit_prefix(ufl_object, parameters, kind=None):
         kind = "element"
         object_signature = repr(ufl_object)
     else:
-        error("Unknown ufl object type {}".format(ufl_object.__class__.__name__))
+        raise FFCError("Unknown ufl object type {}".format(ufl_object.__class__.__name__))
 
-    # Compute deterministic string of relevant parameters
+# Compute deterministic string of relevant parameters
     parameters_signature = compute_jit_parameters_signature(parameters)
 
     # Increase this number at any time to invalidate cache signatures if
@@ -172,10 +173,6 @@ def compute_jit_prefix(ufl_object, parameters, kind=None):
     return kind, prefix
 
 
-class FFCError(Exception):
-    pass
-
-
 class FFCJitError(FFCError):
     pass
 
@@ -190,11 +187,6 @@ def jit(ufl_object, parameters=None, indirect=False):
     """
     # Check parameters
     parameters = validate_jit_parameters(parameters)
-
-    # FIXME: Setting the log level here becomes a permanent side effect...
-    # Set log level
-    set_level(parameters["log_level"])
-    set_prefix(parameters["log_prefix"])
 
     # Make unique module name for generated code
     kind, module_name = compute_jit_prefix(ufl_object, parameters)
@@ -220,7 +212,7 @@ def jit(ufl_object, parameters=None, indirect=False):
             compiled_form = _instantiate_form(module, module_name)
             return compiled_form, module, module_name
             # TODO: module, module_name are never used in dolfin, drop?
-            #return _instantiate_form(module, module_name)
+            # return _instantiate_form(module, module_name)
         elif kind == "element":
             fe, dm = _instantiate_element_and_dofmap(module, module_name)
             return fe, dm
@@ -228,20 +220,20 @@ def jit(ufl_object, parameters=None, indirect=False):
             cm = _instantiate_coordinate_mapping(module, module_name)
             return cm
         else:
-            error("Unknown kind {}".format(kind))
+            raise FFCError("Unknown kind {}".format(kind))
 
 
 def _instantiate_form(module, prefix):
     "Instantiate an object of the jit-compiled form."
-    classname = ffc.classname.make_name(prefix, "form", "main")
-    form = dijitso.extract_factory_function(module, "create_" + classname)()
+    name = classname.make_name(prefix, "form", "main")
+    form = dijitso.extract_factory_function(module, "create_" + name)()
     return form
 
 
 def _instantiate_element_and_dofmap(module, prefix):
     "Instantiate objects of the jit-compiled finite_element and dofmap."
-    fe_classname = ffc.classname.make_name(prefix, "finite_element", "main")
-    dm_classname = ffc.classname.make_name(prefix, "dofmap", "main")
+    fe_classname = classname.make_name(prefix, "finite_element", "main")
+    dm_classname = classname.make_name(prefix, "dofmap", "main")
     fe = dijitso.extract_factory_function(module, "create_" + fe_classname)()
     dm = dijitso.extract_factory_function(module, "create_" + dm_classname)()
     return (fe, dm)
@@ -249,6 +241,6 @@ def _instantiate_element_and_dofmap(module, prefix):
 
 def _instantiate_coordinate_mapping(module, prefix):
     "Instantiate an object of the jit-compiled coordinate_mapping."
-    classname = ffc.classname.make_name(prefix, "coordinate_mapping", "main")
-    form = dijitso.extract_factory_function(module, "create_" + classname)()
+    name = classname.make_name(prefix, "coordinate_mapping", "main")
+    form = dijitso.extract_factory_function(module, "create_" + name)()
     return form

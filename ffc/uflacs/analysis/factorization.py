@@ -6,22 +6,19 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Algorithms for factorizing argument dependent monomials."""
 
-import numpy
+import logging
 from itertools import chain
 
-from ufl import as_ufl, conditional
-from ufl.classes import Argument
-from ufl.classes import Division
-from ufl.classes import Product
-from ufl.classes import Sum
-from ufl.classes import Conditional
-from ufl.classes import Zero
-from ufl.algorithms import extract_type
+import numpy
 
-from ffc.log import error
-
+from ffc import FFCError
 from ffc.uflacs.analysis.dependencies import compute_dependencies
-from ffc.uflacs.analysis.modified_terminals import analyse_modified_terminal, strip_modified_terminal
+from ffc.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
+                                                    strip_modified_terminal)
+from ufl import as_ufl, conditional
+from ufl.classes import Argument, Conditional, Division, Product, Sum, Zero
+
+logger = logging.getLogger(__name__)
 
 
 def _build_arg_sets(V):
@@ -81,8 +78,7 @@ def build_argument_dependencies(dependencies, arg_indices):
     return A
 
 
-class Factors(
-        object):  # TODO: Refactor code in this file by using a class like this
+class Factors(object):  # TODO: Refactor code in this file by using a class like this
     def __init__(self):
         self.FV = []
         self.e2fi = {}
@@ -107,7 +103,7 @@ noargs = {}
 
 def handle_sum(v, si, deps, SV_factors, FV, sv2fv, e2fi):
     if len(deps) != 2:
-        error("Assuming binary sum here. This can be fixed if needed.")
+        raise FFCError("Assuming binary sum here. This can be fixed if needed.")
 
     fac0 = SV_factors[deps[0]]
     fac1 = SV_factors[deps[1]]
@@ -119,7 +115,7 @@ def handle_sum(v, si, deps, SV_factors, FV, sv2fv, e2fi):
         factors = {}
         for argkey in argkeys:
             if len(argkey) != keylen:
-                error("Expecting equal argument rank terms among summands.")
+                raise FFCError("Expecting equal argument rank terms among summands.")
 
             fi0 = fac0.get(argkey)
             fi1 = fac1.get(argkey)
@@ -142,7 +138,7 @@ def handle_sum(v, si, deps, SV_factors, FV, sv2fv, e2fi):
 
 def handle_product(v, si, deps, SV_factors, FV, sv2fv, e2fi):
     if len(deps) != 2:
-        error("Assuming binary product here. This can be fixed if needed.")
+        raise FFCError("Assuming binary product here. This can be fixed if needed.")
     fac0 = SV_factors[deps[0]]
     fac1 = SV_factors[deps[1]]
 
@@ -178,8 +174,7 @@ def handle_product(v, si, deps, SV_factors, FV, sv2fv, e2fi):
             f0 = FV[fac0[k0]]
             for k1 in sorted(fac1):
                 f1 = FV[fac1[k1]]
-                argkey = tuple(
-                    sorted(k0 + k1))  # sort key for canonical representation
+                argkey = tuple(sorted(k0 + k1))  # sort key for canonical representation
                 factors[argkey] = add_to_fv(f0 * f1, FV, e2fi)
 
     return factors
@@ -246,7 +241,7 @@ def handle_conditional(v, si, deps, SV_factors, FV, sv2fv, e2fi):
 def handle_operator(v, si, deps, SV_factors, FV, sv2fv, e2fi):
     # Error checking
     if any(SV_factors[d] for d in deps):
-        error(
+        raise FFCError(
             "Assuming that a {0} cannot be applied to arguments. If this is wrong please report a bug.".
             format(type(v)))
     # Record non-argument subexpression
@@ -301,14 +296,14 @@ def compute_argument_factorization(SV, SV_deps, SV_targets, rank):
     e2fi = {}
 
     # Adding 0.0 as an expression to fix issue in conditional
-    zero_index = add_to_fv(as_ufl(0.0), FV, e2fi)
+    # zero_index = add_to_fv(as_ufl(0.0), FV, e2fi)
 
     # Adding 1.0 as an expression allows avoiding special representation
     # of arguments when first visited by representing "v" as "1*v"
     one_index = add_to_fv(as_ufl(1.0), FV, e2fi)
 
     # Adding 2 as an expression fixes an issue with FV entries that change K*K -> K**2
-    two_index = add_to_fv(as_ufl(2), FV, e2fi)
+    # two_index = add_to_fv(as_ufl(2), FV, e2fi)
 
     # Intermediate factorization for each vertex in SV on the format
     # SV_factors[si] = None # if SV[si] does not depend on arguments

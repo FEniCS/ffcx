@@ -2,10 +2,15 @@
 """Work in progress translation of FFC evaluatebasis code to uflacs
 CNodes format."""
 
+import logging
+
 import numpy
 
-from ffc.log import error
+from ffc import FFCError
 from ffc.backends.ufc.utils import generate_error
+
+logger = logging.getLogger(__name__)
+
 
 # Used for various indices and arrays in this file
 index_type = "int64_t"
@@ -274,7 +279,8 @@ def _generate_compute_basisvalues(L, basisvalues, Y, element_cellname,
         code = _generate_compute_tetrahedron_basisvalues(
             L, basisvalues, Y, embedded_degree, num_members)
     else:
-        error()
+        # FIXME: This needs a message
+        raise FFCError("")
 
     return code
 

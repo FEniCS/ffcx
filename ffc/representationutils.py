@@ -24,17 +24,18 @@ representations.
 # Modified by Martin Sandve Alnæs 2013-2017
 # Modified by Anders Logg 2014
 
-import numpy
-from ufl.measure import (integral_type_to_measure_name, point_integral_types, facet_integral_types,
-                         custom_integral_types)
-from ufl.cell import cellname2facetname
+import logging
 
-from ffc.log import error
-from ffc.fiatinterface import create_element
-from ffc.fiatinterface import create_quadrature
-from ffc.fiatinterface import map_facet_points
-from ffc.fiatinterface import reference_cell_vertices
-from ffc import classname
+import numpy
+
+from ffc import FFCError, classname
+from ffc.fiatinterface import (create_element, create_quadrature,
+                               map_facet_points, reference_cell_vertices)
+from ufl.cell import cellname2facetname
+from ufl.measure import (custom_integral_types, facet_integral_types,
+                         point_integral_types)
+
+logger = logging.getLogger(__name__)
 
 
 def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
@@ -48,7 +49,7 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     elif integral_type in custom_integral_types:
         (points, weights) = (None, None)
     else:
-        error("Unknown integral type: " + str(integral_type))
+        logging.exception("Unknown integral type: {}".format(integral_type))
     return (points, weights)
 
 
@@ -66,7 +67,7 @@ def integral_type_to_entity_dim(integral_type, tdim):
     elif integral_type in custom_integral_types:
         entity_dim = tdim
     else:
-        error("Unknown integral_type: %s" % integral_type)
+        raise FFCError("Unknown integral_type: {}".format(integral_type))
     return entity_dim
 
 
@@ -84,7 +85,7 @@ def map_integral_points(points, integral_type, cell, entity):
     elif entity_dim == 0:
         return numpy.asarray([reference_cell_vertices(cell.cellname())[entity]])
     else:
-        error("Can't map points from entity_dim=%s" % (entity_dim, ))
+        raise FFCError("Can't map points from entity_dim=%s" % (entity_dim, ))
 
 
 def needs_oriented_jacobian(form_data):
@@ -171,4 +172,5 @@ def initialize_integral_code(ir, prefix, parameters):
     code["destructor"] = ""
     code["enabled_coefficients"] = generate_enabled_coefficients(ir["enabled_coefficients"])
     code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
+
     return code

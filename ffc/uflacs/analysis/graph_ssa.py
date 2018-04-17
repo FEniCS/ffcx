@@ -7,14 +7,18 @@
 """Algorithms for working with computational graphs."""
 
 import heapq
+import logging
+
 import numpy
 
-from ufl.classes import (GeometricQuantity, ConstantValue, Argument,
-                         Coefficient, Grad, Restricted, Indexed, MathFunction)
-from ufl.checks import is_cellwise_constant
-from ffc.log import error
-
+from ffc import FFCError
 from ffc.uflacs.analysis.crsarray import CRSArray
+from ufl.checks import is_cellwise_constant
+from ufl.classes import (Argument, Coefficient, ConstantValue,
+                         GeometricQuantity, Grad, Indexed, MathFunction,
+                         Restricted)
+
+logger = logging.getLogger(__name__)
 
 
 def default_partition_seed(expr, rank):
@@ -26,37 +30,29 @@ def default_partition_seed(expr, rank):
     """
     # TODO: Use named constants for the partition numbers here
 
-    modifiers = (Grad, Restricted,
-                 Indexed)  # FIXME: Add CellAvg, FacetAvg types here, others?
+    modifiers = (Grad, Restricted, Indexed)  # FIXME: Add CellAvg, FacetAvg types here, others?
     if isinstance(expr, modifiers):
         return default_partition_seed(expr.ufl_operands[0], rank)
-
     elif isinstance(expr, Argument):
         ac = expr.number()
         assert 0 <= ac < rank
         poffset = 3
         p = poffset + ac
         return p
-
     elif isinstance(expr, Coefficient):
-        if is_cellwise_constant(
-                expr):  # This is crap, doesn't include grad modifier
+        if is_cellwise_constant(expr):  # This is crap, doesn't include grad modifier
             return 0
         else:
             return 2
-
     elif isinstance(expr, GeometricQuantity):
-        if is_cellwise_constant(
-                expr):  # This is crap, doesn't include grad modifier
+        if is_cellwise_constant(expr):  # This is crap, doesn't include grad modifier
             return 0
         else:
             return 1
-
     elif isinstance(expr, ConstantValue):
         return 0
-
     else:
-        error("Don't know how to handle %s" % expr)
+        raise FFCError("Don't know how to handle {}".format(expr))
 
 
 def mark_partitions(V,
@@ -186,8 +182,7 @@ def compute_cache_scores(V,
     return score
 
 
-def allocate_registers(active, partitions, targets, scores, max_registers,
-                       score_threshold):
+def allocate_registers(active, partitions, targets, scores, max_registers, score_threshold):
     """FIXME: Cover with tests.
 
     TODO: Allow reuse of registers, reducing memory usage.

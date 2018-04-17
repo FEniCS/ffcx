@@ -1,56 +1,31 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# Copyright (C) 2004-2017 Anders Logg
+#
+# This file is part of FFC (https://www.fenicsproject.org)
+#
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 """This script is the command-line interface to FFC.
 
 It parses command-line arguments and generates code from input UFL form files.
 """
 
-# Copyright (C) 2004-2017 Anders Logg
-#
-# This file is part of FFC.
-#
-# FFC is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# FFC is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# Modified by Johan Jansson, 2005.
-# Modified by Ola Skavhaug, 2006.
-# Modified by Dag Lindbo, 2008.
-# Modified by Kristian B. Oelgaard 2010.
-# Modified by Martin Sandve Alnæs 2017.
-
-import sys
-import getopt
 import cProfile
+import getopt
+import logging
+import os
 import re
 import string
-import os
+import sys
 
-from ufl.log import UFLException
-from ufl.algorithms import load_ufl_file
 import ufl
-
-from ffc.log import push_level, pop_level, set_indent, ffc_logger
-from ffc.log import DEBUG, INFO, WARNING, ERROR
-from ffc.parameters import default_parameters
 from ffc import __version__ as FFC_VERSION
 from ffc.backends import ufc
-from ffc.compiler import compile_form, compile_element
-from ffc.formatting import write_code
+from ffc import compiler
+from ffc import formatting
+from ffc.parameters import default_parameters
 
-
-def print_error(msg):
-    "Print error message (cannot use log system at top level)."
-    print("\n".join(["*** FFC: " + line for line in msg.split("\n")]))
+logger = logging.getLogger(__name__)
 
 
 def info_version():
@@ -76,10 +51,10 @@ the FFC man page which may invoked by 'man ffc' (if installed).
 
 def compile_ufl_data(ufd, prefix, parameters):
     if len(ufd.forms) > 0:
-        code_h, code_c = compile_form(
+        code_h, code_c = compiler.compile_form(
             ufd.forms, ufd.object_names, prefix=prefix, parameters=parameters)
     else:
-        code_h, code_c = compile_element(
+        code_h, code_c = compiler.compile_element(
             ufd.elements, ufd.object_names, prefix=prefix, parameters=parameters)
     return code_h, code_c
 
@@ -98,9 +73,9 @@ def main(args=None):
             "representation=", "optimize=", "output-directory=", "quadrature-rule=",
             "error-control", "profile"
         ])
-    except getopt.GetoptError:
+    except getopt.GetoptError as e:
         info_usage()
-        print_error("Illegal command-line arguments.")
+        print(e)
         return 1
 
     # Check for --help
@@ -125,26 +100,27 @@ def main(args=None):
 
     # Check that we get at least one file
     if len(args) == 0:
-        print_error("Missing file.")
+        logger.error("Missing file.")
         return 1
 
     # Get parameters
     parameters = default_parameters()
 
-    # Choose WARNING as default for script
-    parameters["log_level"] = WARNING
-
     # Set default value (not part of in parameters[])
     enable_profile = False
+
+    #logger.setLevel(logging.ERROR)
+
+    ffc_logger = logging.getLogger("ffc")
 
     # Parse command-line parameters
     for opt, arg in opts:
         if opt in ("-v", "--verbose"):
-            parameters["log_level"] = INFO
+            ffc_logger.setLevel(logging.INFO)
         elif opt in ("-d", "--debug"):
-            parameters["log_level"] = DEBUG
+            ffc_logger.setLevel(logging.DEBUG)
         elif opt in ("-s", "--silent"):
-            parameters["log_level"] = ERROR
+            ffc_logger.setLevel(logging.ERROR)
         elif opt in ("-l", "--language"):
             parameters["format"] = arg
         elif opt in ("-r", "--representation"):
@@ -178,27 +154,16 @@ def main(args=None):
         elif opt in ("-p", "--profile"):
             enable_profile = True
 
-    # Set log_level
-    push_level(parameters["log_level"])
-
     # FIXME: This is terrible!
     # Set UFL precision
     # ufl.constantvalue.precision = int(parameters["precision"])
 
     # Print a versioning message if verbose output was requested
-    if parameters["log_level"] <= INFO:
+    if logger.getEffectiveLevel() <= logging.INFO:
         info_version()
 
     # Call parser and compiler for each file
-    resultcode = 0
-    init_indent = ffc_logger._indent_level
-    try:
-        resultcode = _compile_files(args, parameters, enable_profile)
-    finally:
-        # Reset logging level and indent
-        pop_level()
-        set_indent(init_indent)
-
+    resultcode = _compile_files(args, parameters, enable_profile)
     return resultcode
 
 
@@ -212,7 +177,7 @@ def _compile_files(args, parameters, enable_profile):
 
         # Check file suffix
         if suffix != "ufl":
-            print_error("Expecting a UFL form file (.ufl).")
+            logger.error("Expecting a UFL form file (.ufl).")
             return 1
 
         # Remove weird characters (file system allows more than the C
@@ -226,7 +191,7 @@ def _compile_files(args, parameters, enable_profile):
             pr.enable()
 
         # Load UFL file
-        ufd = load_ufl_file(filename)
+        ufd = ufl.algorithms.load_ufl_file(filename)
 
         # Previously wrapped in try-except, disabled to actually get information we need
         # try:
@@ -235,7 +200,7 @@ def _compile_files(args, parameters, enable_profile):
         code_h, code_c = compile_ufl_data(ufd, prefix, parameters)
 
         # Write to file
-        write_code(code_h, code_c, prefix, parameters)
+        formatting.write_code(code_h, code_c, prefix, parameters)
 
         # except Exception as exception:
         #    # Catch exceptions only when not in debug mode

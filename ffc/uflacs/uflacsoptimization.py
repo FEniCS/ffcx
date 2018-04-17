@@ -16,13 +16,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
-from ffc.log import info
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def optimize_integral_ir(ir, parameters):
     "Compute optimized intermediate representation of integral."
 
-    info("Optimizing uflacs representation")
+    logger.info("Optimizing uflacs representation")
 
     # TODO: Implement optimization of ssa representation prior to code
     # generation here.

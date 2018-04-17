@@ -6,10 +6,13 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """FFC/UFC specific variable definitions."""
 
+import logging
+
+from ffc.backends.ffc.common import num_coordinate_component_dofs
 from ufl.corealg.multifunction import MultiFunction
 from ufl.measure import custom_integral_types
-from ffc.log import error, warning
-from ffc.backends.ffc.common import num_coordinate_component_dofs
+
+logger = logging.getLogger(__name__)
 
 
 class FFCBackendDefinitions(MultiFunction):
@@ -28,7 +31,7 @@ class FFCBackendDefinitions(MultiFunction):
     # === Generate code to define variables for ufl types ===
 
     def expr(self, t, mt, tabledata, num_points, access):
-        error("Unhandled type {0}".format(type(t)))
+        logging.exception("Unhandled type {0}".format(type(t)))
 
     #def quadrature_weight(self, e, mt, tabledata, num_points, access):
     #    "Quadrature weights are precomputed and need no code."
@@ -52,7 +55,7 @@ class FFCBackendDefinitions(MultiFunction):
         #fe_classname = ir["classnames"]["finite_element"][t.ufl_element()]
 
         if ttype == "zeros":
-            debug("Not expecting zero coefficients to get this far.")
+            logging.debug("Not expecting zero coefficients to get this far.")
             return []
 
         # For a constant coefficient we reference the dofs directly, so no definition needed
@@ -66,8 +69,7 @@ class FFCBackendDefinitions(MultiFunction):
         assert begin < end
 
         # Get access to element table
-        FE = self.symbols.element_table(tabledata, self.entitytype,
-                                        mt.restriction)
+        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
 
         unroll = len(tabledata.dofmap) != end - begin
         #unroll = True
@@ -83,20 +85,14 @@ class FFCBackendDefinitions(MultiFunction):
         else:
             # Loop to accumulate linear combination of dofs and tables
             ic = self.symbols.coefficient_dof_sum_index()
-            dof_access = self.symbols.coefficient_dof_access(
-                mt.terminal, ic + begin)
+            dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic + begin)
             code = [
                 L.VariableDecl("double", access, 0.0),
-                L.ForRange(
-                    ic,
-                    0,
-                    end - begin,
-                    body=[L.AssignAdd(access, dof_access * FE[ic])])
+                L.ForRange(ic, 0, end - begin, body=[L.AssignAdd(access, dof_access * FE[ic])])
             ]
         return code
 
-    def _define_coordinate_dofs_lincomb(self, e, mt, tabledata, num_points,
-                                        access):
+    def _define_coordinate_dofs_lincomb(self, e, mt, tabledata, num_points, access):
         "Define x or J as a linear combination of coordinate dofs with given table data."
         L = self.language
 
@@ -122,35 +118,27 @@ class FFCBackendDefinitions(MultiFunction):
         #sfe_classname = ir["classnames"]["finite_element"][coordinate_element.sub_elements()[0]]
 
         # Get access to element table
-        FE = self.symbols.element_table(tabledata, self.entitytype,
-                                        mt.restriction)
+        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
 
         inline = True
 
         if ttype == "zeros":
             # Not sure if this will ever happen
-            debug("Not expecting zeros for %s." % (e._ufl_class_.__name__, ))
-            code = [
-                L.VariableDecl("const double", access, L.LiteralFloat(0.0))
-            ]
+            logging.debug("Not expecting zeros for %s." % (e._ufl_class_.__name__, ))
+            code = [L.VariableDecl("const double", access, L.LiteralFloat(0.0))]
         elif ttype == "ones":
             # Not sure if this will ever happen
-            debug("Not expecting ones for %s." % (e._ufl_class_.__name__, ))
+            logging.debug("Not expecting ones for %s." % (e._ufl_class_.__name__, ))
             # Inlined version (we know this is bounded by a small number)
-            dof_access = self.symbols.domain_dofs_access(
-                gdim, num_scalar_dofs, mt.restriction)
+            dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction)
             values = [dof_access[idof] for idof in tabledata.dofmap]
             value = L.Sum(values)
             code = [L.VariableDecl("const double", access, value)]
         elif inline:
             # Inlined version (we know this is bounded by a small number)
-            dof_access = self.symbols.domain_dofs_access(
-                gdim, num_scalar_dofs, mt.restriction)
+            dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction)
             # Inlined loop to accumulate linear combination of dofs and tables
-            value = L.Sum([
-                dof_access[idof] * FE[i]
-                for i, idof in enumerate(tabledata.dofmap)
-            ])
+            value = L.Sum([dof_access[idof] * FE[i] for i, idof in enumerate(tabledata.dofmap)])
             code = [L.VariableDecl("const double", access, value)]
         else:  # TODO: Make an option to test this version for performance
             # Assuming contiguous dofmap here
@@ -158,18 +146,13 @@ class FFCBackendDefinitions(MultiFunction):
 
             # Generated loop version:
             ic = self.symbols.coefficient_dof_sum_index()
-            dof_access = self.symbols.domain_dof_access(
-                ic + begin, mt.flat_component, gdim, num_scalar_dofs,
-                mt.restriction)
+            dof_access = self.symbols.domain_dof_access(ic + begin, mt.flat_component, gdim,
+                                                        num_scalar_dofs, mt.restriction)
 
             # Loop to accumulate linear combination of dofs and tables
             code = [
                 L.VariableDecl("double", access, 0.0),
-                L.ForRange(
-                    ic,
-                    0,
-                    end - begin,
-                    body=[L.AssignAdd(access, dof_access * FE[ic])])
+                L.ForRange(ic, 0, end - begin, body=[L.AssignAdd(access, dof_access * FE[ic])])
             ]
 
         return code
@@ -189,12 +172,10 @@ class FFCBackendDefinitions(MultiFunction):
         if self.integral_type in custom_integral_types:
             # FIXME: Jacobian may need adjustment for custom_integral_types
             if mt.local_derivatives:
-                error(
-                    "FIXME: Jacobian in custom integrals is not implemented.")
+                logging.exception("FIXME: Jacobian in custom integrals is not implemented.")
             return []
         else:
-            return self._define_coordinate_dofs_lincomb(
-                e, mt, tabledata, num_points, access)
+            return self._define_coordinate_dofs_lincomb(e, mt, tabledata, num_points, access)
 
     def cell_coordinate(self, e, mt, tabledata, num_points, access):
         """Return definition code for the reference spatial coordinates.
@@ -223,8 +204,7 @@ class FFCBackendDefinitions(MultiFunction):
         J = sum_k xdof_k grad_X xphi_k(X)
         """
         # TODO: Jacobian may need adjustment for custom_integral_types
-        return self._define_coordinate_dofs_lincomb(e, mt, tabledata,
-                                                    num_points, access)
+        return self._define_coordinate_dofs_lincomb(e, mt, tabledata, num_points, access)
 
     def cell_orientation(self, e, mt, tabledata, num_points, access):
         # Would be nicer if cell_orientation was a double variable input,
@@ -232,9 +212,7 @@ class FFCBackendDefinitions(MultiFunction):
         # 0 means up and gives +1.0, 1 means down and gives -1.0.
         L = self.language
         co = self.symbols.cell_orientation_argument(mt.restriction)
-        expr = L.Conditional(
-            L.EQ(co, L.LiteralInt(1)), L.LiteralFloat(-1.0),
-            L.LiteralFloat(+1.0))
+        expr = L.Conditional(L.EQ(co, L.LiteralInt(1)), L.LiteralFloat(-1.0), L.LiteralFloat(+1.0))
         code = [L.VariableDecl("const double", access, expr)]
         return code
 
@@ -263,8 +241,7 @@ class FFCBackendDefinitions(MultiFunction):
 
     def _expect_symbolic_lowering(self, e, mt, tabledata, num_points, access):
         "These quantities are expected to be replaced in symbolic preprocessing."
-        error("Expecting {0} to be replaced in symbolic preprocessing.".format(
-            type(e)))
+        logging.exception("Expecting {0} to be replaced in symbolic preprocessing.".format(type(e)))
 
     facet_normal = _expect_symbolic_lowering
     cell_normal = _expect_symbolic_lowering

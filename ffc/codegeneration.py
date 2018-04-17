@@ -14,28 +14,24 @@ UFC function from an (optimized) intermediate representation (OIR).
 """
 
 import itertools
+import logging
 
-from ufl import product
-
-from ffc.log import info, begin, end, dstr
-from ffc.representation import pick_representation, ufc_integral_types
-import ffc.uflacs.language.cnodes as L
-from ffc.uflacs.language.format_lines import format_indented_lines
-from ffc.backends.ufc.utils import generate_error
-from ffc.backends.ufc.dofmap import ufc_dofmap
-from ffc.backends.ufc.coordinate_mapping import ufc_coordinate_mapping
-from ffc.backends.ufc.form import ufc_form
-from ffc.backends.ufc.finite_element import generator as ufc_finite_element_generator
+from ffc.backends.ufc.coordinate_mapping import \
+    ufc_coordinate_mapping_generator
 from ffc.backends.ufc.dofmap import ufc_dofmap_generator
-from ffc.backends.ufc.coordinate_mapping import ufc_coordinate_mapping_generator
-from ffc.backends.ufc.integrals import ufc_integral_generator
+from ffc.backends.ufc.finite_element import \
+    generator as ufc_finite_element_generator
 from ffc.backends.ufc.form import ufc_form_generator
+from ffc.backends.ufc.integrals import ufc_integral_generator
+from ffc.representation import pick_representation
+
+logger = logging.getLogger(__name__)
 
 
 def generate_code(ir, parameters, jit):
     "Generate code from intermediate representation."
 
-    begin("Compiler stage 4: Generating code")
+    logger.debug("Compiler stage 4: Generating code")
 
     full_ir = ir
 
@@ -48,17 +44,17 @@ def generate_code(ir, parameters, jit):
     ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
 
     # Generate code for finite_elements
-    info("Generating code for {} finite_element(s)".format(len(ir_finite_elements)))
+    logger.debug("Generating code for {} finite_element(s)".format(len(ir_finite_elements)))
     code_finite_elements = [
         ufc_finite_element_generator(ir, parameters) for ir in ir_finite_elements
     ]
 
     # Generate code for dofmaps
-    info("Generating code for {} dofmap(s)".format(len(ir_dofmaps)))
+    logger.debug("Generating code for {} dofmap(s)".format(len(ir_dofmaps)))
     code_dofmaps = [ufc_dofmap_generator(ir, parameters) for ir in ir_dofmaps]
 
     # Generate code for coordinate_mappings
-    info("Generating code for {} coordinate_mapping(s)".format(len(ir_coordinate_mappings)))
+    logger.debug("Generating code for {} coordinate_mapping(s)".format(len(ir_coordinate_mappings)))
     code_coordinate_mappings = [
         ufc_coordinate_mapping_generator(ir, parameters) for ir in ir_coordinate_mappings
     ]
@@ -66,17 +62,15 @@ def generate_code(ir, parameters, jit):
     ufc_coordinate_mapping_generator
 
     # Generate code for integrals
-    info("Generating code for integrals")
+    logger.debug("Generating code for integrals")
     code_integrals = [ufc_integral_generator(ir, parameters) for ir in ir_integrals]
 
     # Generate code for forms
-    info("Generating code for forms")
+    logger.debug("Generating code for forms")
     code_forms = [ufc_form_generator(ir, parameters) for ir in ir_forms]
 
     # Extract additional includes
     includes = _extract_includes(full_ir, code_integrals, jit)
-
-    end()
 
     return (code_finite_elements, code_dofmaps, code_coordinate_mappings, code_integrals,
             code_forms, includes)
@@ -204,25 +198,28 @@ tt_timing_template = """
 def _generate_tabulate_tensor_comment(ir, parameters):
     "Generate comment for tabulate_tensor."
 
-    r = ir["representation"]
-    integrals_metadata = ir["integrals_metadata"]
-    integral_metadata = ir["integral_metadata"]
+    # FIXME: Remove this function?
+    raise RuntimeError("This function should be dead.")
 
-    comment = [
-        L.Comment("This function was generated using '%s' representation" % r),
-        L.Comment("with the following integrals metadata:"),
-        L.Comment(""),
-        L.Comment("\n".join(dstr(integrals_metadata).split("\n")[:-1]))
-    ]
-    for i, metadata in enumerate(integral_metadata):
-        comment += [
-            L.Comment(""),
-            L.Comment("and the following integral %d metadata:" % i),
-            L.Comment(""),
-            L.Comment("\n".join(dstr(metadata).split("\n")[:-1]))
-        ]
+    # r = ir["representation"]
+    # integrals_metadata = ir["integrals_metadata"]
+    # integral_metadata = ir["integral_metadata"]
 
-    return format_indented_lines(L.StatementList(comment).cs_format(0), 1)
+    # comment = [
+    #     L.Comment("This function was generated using '%s' representation" % r),
+    #     L.Comment("with the following integrals metadata:"),
+    #     L.Comment(""),
+    #     L.Comment("\n".join(dstr(integrals_metadata).split("\n")[:-1]))
+    # ]
+    # for i, metadata in enumerate(integral_metadata):
+    #     comment += [
+    #         L.Comment(""),
+    #         L.Comment("and the following integral %d metadata:" % i),
+    #         L.Comment(""),
+    #         L.Comment("\n".join(dstr(metadata).split("\n")[:-1]))
+    #     ]
+
+    # return format_indented_lines(L.StatementList(comment).cs_format(0), 1)
 
 
 def _generate_integral_code(ir, parameters):

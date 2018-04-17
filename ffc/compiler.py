@@ -95,26 +95,27 @@ The compiler stages are implemented by the following functions:
 
 __all__ = ["compile_form", "compile_element"]
 
-# Python modules
+import logging
+import os
 from collections import defaultdict
 from time import time
-import os
 
 import ufl
-
-# FFC modules
-from ffc.log import info, info_green, warning, error
-from ffc.parameters import validate_parameters
+from ffc import FFCError
 from ffc.analysis import analyze_ufl_objects
-from ffc.representation import compute_ir
-from ffc.optimization import optimize_ir
 from ffc.codegeneration import generate_code
 from ffc.formatting import format_code
+from ffc.optimization import optimize_ir
+from ffc.parameters import validate_parameters
+from ffc.representation import compute_ir
 from ffc.wrappers import generate_wrapper_code
+
+logger = logging.getLogger(__name__)
 
 
 def _print_timing(stage, timing):
-    info("Compiler stage {stage} finished in {time} seconds.\n".format(stage=stage, time=timing))
+    logger.info("Compiler stage {stage} finished in {time} seconds.".format(
+        stage=stage, time=timing))
 
 
 def compile_form(forms, object_names=None, prefix="Form", parameters=None, jit=False):
@@ -140,7 +141,8 @@ def compile_ufl_objects(ufl_objects,
                         parameters=None,
                         jit=False):
     """This function generates UFC code for a given UFL form or list of UFL forms."""
-    info("Compiling %s %s\n" % (kind, prefix))
+
+    logger.info("Compiling {} {}\n".format(kind, prefix))
 
     # Reset timing
     cpu_time_0 = time()
@@ -156,7 +158,7 @@ def compile_ufl_objects(ufl_objects,
     if not ufl_objects:
         return "", ""
     if prefix != os.path.basename(prefix):
-        error("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix))
+        raise FFCError("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix))
     if object_names is None:
         object_names = {}
 
@@ -203,7 +205,7 @@ def compile_ufl_objects(ufl_objects,
     code_h, code_c = format_code(code, wrapper_code, prefix, parameters)
     _print_timing(5, time() - cpu_time)
 
-    info_green("FFC finished in {} seconds.".format(time() - cpu_time_0))
+    logger.info("FFC finished in {} seconds.".format(time() - cpu_time_0))
 
     if jit:
         # Must use processed elements from analysis here

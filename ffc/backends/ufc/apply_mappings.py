@@ -1,3 +1,4 @@
+# flake8: noqa
 # CURRENTLY UNUSED CODE, CONVERT TO CREATE NEW ufc::finite_element::apply_mappings functions
 
 

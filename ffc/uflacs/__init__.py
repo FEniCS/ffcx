@@ -8,6 +8,6 @@
 
 __author__ = u"Martin Sandve Alnæs"
 
-from ffc.uflacs.uflacsrepresentation import compute_integral_ir
-from ffc.uflacs.uflacsoptimization import optimize_integral_ir
-from ffc.uflacs.uflacsgenerator import generate_integral_code
+from ffc.uflacs.uflacsrepresentation import compute_integral_ir  # noqa: F401
+from ffc.uflacs.uflacsoptimization import optimize_integral_ir   # noqa: F401
+from ffc.uflacs.uflacsgenerator import generate_integral_code  # noqa: F401

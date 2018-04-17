@@ -14,20 +14,32 @@ The interface consists of the following functions:
   ufc_signature      - Signature of UFC interface (SHA-1 hash of ufc.h)
 """
 
+import logging
 import pkg_resources
 
 __version__ = pkg_resources.get_distribution("fenics-ffc").version
 
-from ffc.git_commit_hash import git_commit_hash
+logging.basicConfig()
+logger = logging.getLogger("ffc")
+
+
+class FFCError(Exception):
+    pass
+    # def __init__(self,*args,**kwargs):
+    #       raise FFCError("LLLLLLLLLL", self)
+    #       Exception.__init__(self, *args, **kwargs)
+
+
+# from ffc.git_commit_hash import git_commit_hash
 
 # Import compiler functions
-from ffc.compiler import compile_form, compile_element
+#from ffc.compiler import compile_form, compile_element
 
 # Import JIT compiler
-from ffc.jitcompiler import jit
+from ffc.jitcompiler import jit  # noqa: F401
 
 # Import default parameters
-from ffc.parameters import default_parameters, default_jit_parameters
+from ffc.parameters import default_parameters, default_jit_parameters  # noqa: F401
 
 # Duplicate list of supported elements from FIAT
 from FIAT import supported_elements
@@ -39,4 +51,4 @@ supported_elements.remove("Hermite")
 supported_elements.remove("Morley")
 
 # Import main function, entry point to script
-from ffc.main import main
+from ffc.main import main  # noqa: F401
