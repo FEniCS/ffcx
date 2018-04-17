@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+# Copyright (C) 2009-2017 Anders Logg, Martin Sandve Alnæs, Marie E. Rognes,
+# Kristian B. Oelgaard, and others
+#
+# This file is part of FFC (https://www.fenicsproject.org)
+#
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 """
 Compiler stage 2: Code representation
 -------------------------------------
@@ -13,24 +19,6 @@ function "foo", one should only need to use the data stored
 in the intermediate representation under the key "foo".
 """
 
-# Copyright (C) 2009-2017 Anders Logg, Martin Sandve Alnæs, Marie E. Rognes,
-# Kristian B. Oelgaard, and others
-#
-# This file is part of FFC.
-#
-# FFC is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# FFC is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with FFC. If not, see <http://www.gnu.org/licenses/>.
-
 import itertools
 import logging
 
@@ -38,7 +26,7 @@ import numpy
 
 import ufl
 from ffc import FFCError
-from ffc.classname import make_classname, make_integral_classname
+from ffc import classname
 from ffc.fiatinterface import (EnrichedElement, MixedElement, QuadratureElement,
                                SpaceOfReals, create_element)
 from ufl.utils.sequences import product
@@ -67,19 +55,19 @@ def pick_representation(representation):
 def make_finite_element_jit_classname(ufl_element, parameters):
     from ffc.jitcompiler import compute_jit_prefix  # FIXME circular file dependency
     kind, prefix = compute_jit_prefix(ufl_element, parameters)
-    return make_classname(prefix, "finite_element", "main")
+    return classname.make_name(prefix, "finite_element", "main")
 
 
 def make_dofmap_jit_classname(ufl_element, parameters):
     from ffc.jitcompiler import compute_jit_prefix  # FIXME circular file dependency
     kind, prefix = compute_jit_prefix(ufl_element, parameters)
-    return make_classname(prefix, "dofmap", "main")
+    return classname.make_name(prefix, "dofmap", "main")
 
 
 def make_coordinate_mapping_jit_classname(ufl_mesh, parameters):
     from ffc.jitcompiler import compute_jit_prefix  # FIXME circular file dependency
     kind, prefix = compute_jit_prefix(ufl_mesh, parameters, kind="coordinate_mapping")
-    return make_classname(prefix, "coordinate_mapping", "main")
+    return classname.make_name(prefix, "coordinate_mapping", "main")
 
 
 def make_all_element_classnames(prefix, elements, coordinate_elements, element_numbers, parameters):
@@ -160,16 +148,16 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     # Compute and flatten representation of integrals
     logger.info("Computing representation of integrals")
     irs = [
-        _compute_integral_ir(fd, form_id, prefix, element_numbers, classnames, parameters, jit)
-        for (form_id, fd) in enumerate(form_datas)
+        _compute_integral_ir(fd, form_index, prefix, element_numbers, classnames, parameters, jit)
+        for (form_index, fd) in enumerate(form_datas)
     ]
     ir_integrals = list(itertools.chain(*irs))
 
     # Compute representation of forms
     logger.info("Computing representation of forms")
     ir_forms = [
-        _compute_form_ir(fd, form_id, prefix, element_numbers, classnames, parameters, jit)
-        for (form_id, fd) in enumerate(form_datas)
+        _compute_form_ir(fd, form_index, prefix, element_numbers, classnames, parameters, jit)
+        for (form_index, fd) in enumerate(form_datas)
     ]
 
     return ir_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms
@@ -186,9 +174,6 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, parameters, ji
     # Store id
     ir = {"id": element_numbers[ufl_element]}
     ir["classname"] = classnames["finite_element"][ufl_element]
-
-    # Remember jit status
-    ir["jit"] = jit
 
     # Compute data for each function
     ir["signature"] = repr(ufl_element)
@@ -228,9 +213,6 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit
     # Store id
     ir = {"id": element_numbers[ufl_element]}
     ir["classname"] = classnames["dofmap"][ufl_element]
-
-    # Remember jit status
-    ir["jit"] = jit
 
     # Compute data for each function
     ir["signature"] = "FFC dofmap for " + repr(ufl_element)
@@ -326,9 +308,6 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element,
     ir = {"id": element_numbers[ufl_coordinate_element]}
     ir["classname"] = classnames["coordinate_mapping"][ufl_coordinate_element]
 
-    # Remember jit status
-    ir["jit"] = jit
-
     # Compute data for each function
     ir["signature"] = "FFC coordinate_mapping from " + repr(ufl_coordinate_element)
     ir["cell_shape"] = cellname
@@ -406,13 +385,14 @@ def _needs_mesh_entities(fiat_element):
         return [d > 0 for d in num_dofs_per_entity]
 
 
-def _compute_integral_ir(form_data, form_id, prefix, element_numbers, classnames, parameters, jit):
+def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classnames, parameters,
+                         jit):
     "Compute intermediate represention for form integrals."
 
     # For consistency, all jit objects now have classnames with postfix "main"
     if jit:
-        assert form_id == 0
-        form_id = "main"
+        assert form_index == 0
+        form_index = "main"
 
     irs = []
 
@@ -428,17 +408,14 @@ def _compute_integral_ir(form_data, form_id, prefix, element_numbers, classnames
         ir = r.compute_integral_ir(
             itg_data,
             form_data,
-            form_id,  # FIXME: Can we remove this?
+            form_index,  # FIXME: Can we remove this?
             element_numbers,
             classnames,
             parameters)
 
-        # Remember jit status
-        ir["jit"] = jit
-
         # Build classname
-        ir["classname"] = make_integral_classname(prefix, itg_data.integral_type, form_id,
-                                                  itg_data.subdomain_id)
+        ir["classname"] = classname.make_integral_name(prefix, itg_data.integral_type, form_index,
+                                                       itg_data.subdomain_id)
 
         ir["classnames"] = classnames  # FIXME XXX: Use this everywhere needed?
 
@@ -473,11 +450,8 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, pa
     # generation side
     ir["prefix"] = prefix
 
-    # Remember jit status
-    ir["jit"] = jit
-
     # Compute common data
-    ir["classname"] = make_classname(prefix, "form", form_id)
+    ir["classname"] = classname.make_name(prefix, "form", form_id)
 
     # ir["members"] = None # unused
     # ir["constructor"] = None # unused
@@ -854,7 +828,7 @@ def _create_foo_integral(prefix, form_id, integral_type, form_data):
         if (itg_data.integral_type == integral_type and isinstance(itg_data.subdomain_id, int))
     ]
     classnames = [
-        make_integral_classname(prefix, integral_type, form_id, subdomain_id)
+        classname.make_integral_name(prefix, integral_type, form_id, subdomain_id)
         for subdomain_id in subdomain_ids
     ]
     return subdomain_ids, classnames
@@ -870,8 +844,7 @@ def _create_default_foo_integral(prefix, form_id, integral_type, form_data):
     if len(itg_data) > 1:
         raise FFCError("Expecting at most one default integral of each type.")
     if itg_data:
-        classname = make_integral_classname(prefix, integral_type, form_id, "otherwise")
-        return classname
+        return classname.make_integral_name(prefix, integral_type, form_id, "otherwise")
     else:
         return None
 

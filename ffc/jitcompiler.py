@@ -1,29 +1,11 @@
 # -*- coding: utf-8 -*-
-"""This module provides a just-in-time (JIT) form compiler.
-It uses dijitso to wrap the generated code into a Python module."""
-
 # Copyright (C) 2007-2017 Anders Logg
 #
-# This file is part of FFC.
+# This file is part of FFC (https://www.fenicsproject.org)
 #
-# FFC is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# FFC is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# Modified by Johan Hake, 2008-2009
-# Modified by Ilmar Wilbers, 2008
-# Modified by Kristian B. Oelgaard, 2009
-# Modified by Joachim Haga, 2011.
-# Modified by Martin Sandve Alnæs, 2013-2017
+# SPDX-License-Identifier:    LGPL-3.0-or-later
+"""This module provides a just-in-time (JIT) form compiler.
+It uses dijitso to wrap the generated code into a Python module."""
 
 import hashlib
 import logging
@@ -32,9 +14,8 @@ import os
 import dijitso
 import ufl
 from ffc import __version__ as FFC_VERSION
-from ffc import FFCError
+from ffc import FFCError, classname
 from ffc.backends import ufc
-from ffc.classname import make_classname
 from ffc.compiler import (compile_coordinate_mapping, compile_element,
                           compile_form)
 from ffc.parameters import (compute_jit_parameters_signature,
@@ -47,7 +28,7 @@ def jit_generate(ufl_object, module_name, signature, parameters):
     "Callback function passed to dijitso.jit: generate code and return as strings."
     logger.info("Calling FFC just-in-time (JIT) compiler.")
 
-    # Generate actual code for this object
+    # Pick the generator for actual code for this object
     if isinstance(ufl_object, ufl.Form):
         compile_object = compile_form
     elif isinstance(ufl_object, ufl.FiniteElementBase):
@@ -55,15 +36,17 @@ def jit_generate(ufl_object, module_name, signature, parameters):
     elif isinstance(ufl_object, ufl.Mesh):
         compile_object = compile_coordinate_mapping
 
+    # Return C code for requested ufl_object, and return any UFL objects
+    # that ufl_objects needs, e.g. a form will require some elements.
     code_h, code_c, dependent_ufl_objects = compile_object(
         ufl_object, prefix=module_name, parameters=parameters, jit=True)
 
-    # Jit compile dependent objects separately,
-    # but pass indirect=True to skip instantiating objects.
-    # (this is done in here such that it's only triggered
-    # if parent jit module is missing, and it's done after
-    # compile_object because some misformed ufl objects may
-    # require analysis to determine (looking at you Expression...))
+    # Jit compile dependent objects separately, but pass indirect=True
+    # to skip instantiating objects. (This is done in here such that
+    # it's only triggered if parent jit module is missing, and it's done
+    # after compile_object because some misformed ufl objects may
+    # require analysis to determine (looking at you Expression...)).
+    # Dependencies is the name (string) of the compiled shared library.
     dependencies = []
     for dep in dependent_ufl_objects["element"]:
         dep_module_name = jit(dep, parameters, indirect=True)
@@ -71,6 +54,7 @@ def jit_generate(ufl_object, module_name, signature, parameters):
     for dep in dependent_ufl_objects["coordinate_mapping"]:
         dep_module_name = jit(dep, parameters, indirect=True)
         dependencies.append(dep_module_name)
+
     return code_h, code_c, dependencies
 
 
@@ -93,19 +77,22 @@ def jit_build(ufl_object, module_name, parameters):
     # FIXME: dijitso build params are not part of module_name here.
     #        Currently dijitso doesn't add to the module signature.
 
-    # Translating the C++ flags from ffc parameters to dijitso
-    # to get equivalent behaviour to instant code
+    # Translating the C++ flags from ffc parameters to dijitso to get
+    # equivalent behaviour to instant code
     build_params = {}
     build_params["debug"] = not parameters["cpp_optimize"]
-    build_params["cxxflags_opt"] = tuple(parameters["cpp_optimize_flags"].split())
+    build_params["cxxflags_opt"] = tuple(
+        parameters["cpp_optimize_flags"].split())
     build_params["cxxflags_debug"] = ("-O0", )
     build_params["include_dirs"] = (ufc.get_include_path(), ) + _string_tuple(
         parameters.get("external_include_dirs"))
-    build_params["lib_dirs"] = _string_tuple(parameters.get("external_library_dirs"))
+    build_params["lib_dirs"] = _string_tuple(
+        parameters.get("external_library_dirs"))
 
     # Use C compiler (not C++) and add some libs/options
     build_params["cxx"] = os.getenv("CC", "cc")
-    build_params["libs"] = _string_tuple("m" + parameters.get("external_libraries"))
+    build_params["libs"] = _string_tuple(
+        "m" + parameters.get("external_libraries"))
     build_params["cxxflags"] = ["-Wall", "-shared", "-fPIC"]
 
     # Interpreting FFC default "" as None, use "." if you want to point to curdir
@@ -115,10 +102,11 @@ def jit_build(ufl_object, module_name, parameters):
     else:
         cache_params = {}
 
-    # Use stanard C postfix
+    # Use standard C file extension
     cache_params["src_postfix"] = ".c"
 
-    # This will do some rudimenrary checking of the params and fill in dijitso defaults
+    # This will do some rudimentary checking of the params and fill in
+    # dijitso defaults
     params = dijitso.validate_params({
         "cache": cache_params,
         "build": build_params,
@@ -128,6 +116,7 @@ def jit_build(ufl_object, module_name, parameters):
     # Carry out jit compilation, calling jit_generate only if needed
     module, signature = dijitso.jit(
         jitable=ufl_object, name=module_name, params=params, generate=jit_generate)
+
     return module
 
 
@@ -139,25 +128,27 @@ def compute_jit_prefix(ufl_object, parameters, kind=None):
         kind = "form"
         object_signature = ufl_object.signature()
     elif isinstance(ufl_object, ufl.Mesh):
-        # When coordinate mapping is represented by a Mesh, just getting its coordinate element
+        # When coordinate mapping is represented by a Mesh, just getting
+        # its coordinate element
         kind = "coordinate_mapping"
         ufl_object = ufl_object.ufl_coordinate_element()
         object_signature = repr(ufl_object)  # ** must match below
     elif kind == "coordinate_mapping" and isinstance(ufl_object, ufl.FiniteElementBase):
-        # When coordinate mapping is represented by its coordinate element
+        # When coordinate mapping is represented by its coordinate
+        # element
         object_signature = repr(ufl_object)  # ** must match above
     elif isinstance(ufl_object, ufl.FiniteElementBase):
         kind = "element"
         object_signature = repr(ufl_object)
     else:
-        raise FFCError("Unknown ufl object type %s" % (ufl_object.__class__.__name__, ))
+        raise FFCError("Unknown ufl object type {}".format(ufl_object.__class__.__name__))
 
-    # Compute deterministic string of relevant parameters
+# Compute deterministic string of relevant parameters
     parameters_signature = compute_jit_parameters_signature(parameters)
 
-    # Increase this number at any time to invalidate cache
-    # signatures if code generation has changed in important
-    # ways without the change being visible in regular signatures:
+    # Increase this number at any time to invalidate cache signatures if
+    # code generation has changed in important ways without the change
+    # being visible in regular signatures:
     jit_version_bump = 3
 
     # Build combined signature
@@ -178,7 +169,7 @@ def compute_jit_prefix(ufl_object, parameters, kind=None):
         signature = signature[:max_signature_length]
 
     # Combine into prefix with some info including kind
-    prefix = ("ffc_%s_%s" % (kind, signature)).lower()
+    prefix = "ffc_{}_{}".format(kind, signature).lower()
     return kind, prefix
 
 
@@ -200,26 +191,28 @@ def jit(ufl_object, parameters=None, indirect=False):
     # Make unique module name for generated code
     kind, module_name = compute_jit_prefix(ufl_object, parameters)
 
-    # Inspect cache and generate+build if necessary
+    # Get module (inspect cache and generate+build if necessary)
     module = jit_build(ufl_object, module_name, parameters)
 
     # Raise exception on failure to build or import module
     if module is None:
-        # TODO: To communicate directory name here, need dijitso params to call
+        # TODO: To communicate directory name here, need dijitso params
+        # to call
         #fail_dir = dijitso.cache.create_fail_dir_path(signature, dijitso_cache_params)
         raise FFCJitError(
             "A directory with files to reproduce the jit build failure has been created.")
 
-    # Construct instance of object from compiled code unless indirect
+    # Construct instance of object from compiled code, unless indirect
+    # in which case return the name
     if indirect:
         return module_name
     else:
         # FIXME: Streamline number of return arguments here across kinds
         if kind == "form":
             compiled_form = _instantiate_form(module, module_name)
-            return (compiled_form, module, module_name)
+            return compiled_form, module, module_name
             # TODO: module, module_name are never used in dolfin, drop?
-            #return _instantiate_form(module, module_name)
+            # return _instantiate_form(module, module_name)
         elif kind == "element":
             fe, dm = _instantiate_element_and_dofmap(module, module_name)
             return fe, dm
@@ -227,20 +220,20 @@ def jit(ufl_object, parameters=None, indirect=False):
             cm = _instantiate_coordinate_mapping(module, module_name)
             return cm
         else:
-            raise FFCError("Unknown kind %s" % (kind, ))
+            raise FFCError("Unknown kind {}".format(kind))
 
 
 def _instantiate_form(module, prefix):
     "Instantiate an object of the jit-compiled form."
-    classname = make_classname(prefix, "form", "main")
-    form = dijitso.extract_factory_function(module, "create_" + classname)()
+    name = classname.make_name(prefix, "form", "main")
+    form = dijitso.extract_factory_function(module, "create_" + name)()
     return form
 
 
 def _instantiate_element_and_dofmap(module, prefix):
     "Instantiate objects of the jit-compiled finite_element and dofmap."
-    fe_classname = make_classname(prefix, "finite_element", "main")
-    dm_classname = make_classname(prefix, "dofmap", "main")
+    fe_classname = classname.make_name(prefix, "finite_element", "main")
+    dm_classname = classname.make_name(prefix, "dofmap", "main")
     fe = dijitso.extract_factory_function(module, "create_" + fe_classname)()
     dm = dijitso.extract_factory_function(module, "create_" + dm_classname)()
     return (fe, dm)
@@ -248,6 +241,6 @@ def _instantiate_element_and_dofmap(module, prefix):
 
 def _instantiate_coordinate_mapping(module, prefix):
     "Instantiate an object of the jit-compiled coordinate_mapping."
-    classname = make_classname(prefix, "coordinate_mapping", "main")
-    form = dijitso.extract_factory_function(module, "create_" + classname)()
+    name = classname.make_name(prefix, "coordinate_mapping", "main")
+    form = dijitso.extract_factory_function(module, "create_" + name)()
     return form

@@ -9,7 +9,8 @@
 # old implementation in FFC
 
 from ffc.backends.ufc import form_template as ufc_form
-from ffc.backends.ufc.utils import (generate_return_new, generate_return_new_switch)
+from ffc.backends.ufc.utils import (generate_return_new,
+                                    generate_return_new_switch)
 from ffc.representation import ufc_integral_types
 
 # These are the method names in ufc_form that are specialized for each

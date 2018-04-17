@@ -28,8 +28,7 @@ import logging
 
 import numpy
 
-from ffc import FFCError
-from ffc.classname import make_integral_classname
+from ffc import FFCError, classname
 from ffc.fiatinterface import (create_element, create_quadrature,
                                map_facet_points, reference_cell_vertices)
 from ufl.cell import cellname2facetname
@@ -164,8 +163,8 @@ def initialize_integral_code(ir, prefix, parameters):
     """
     code = {}
     code["class_type"] = ir["integral_type"] + "_integral"
-    code["classname"] = make_integral_classname(prefix, ir["integral_type"], ir["form_id"],
-                                                ir["subdomain_id"])
+    code["classname"] = classname.make_integral_name(prefix, ir["integral_type"], ir["form_id"],
+                                                     ir["subdomain_id"])
     code["members"] = ""
     code["constructor"] = ""
     code["constructor_arguments"] = ""
