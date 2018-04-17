@@ -51,4 +51,4 @@ supported_elements.remove("Hermite")
 supported_elements.remove("Morley")
 
 # Import main function, entry point to script
-#from ffc.main import main
+from ffc.main import main  # noqa: F401

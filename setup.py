@@ -140,7 +140,7 @@ def run_install():
         entry_points=entry_points,
         data_files=data_files,
         install_requires=REQUIREMENTS,
-        zip_safe=True)
+        zip_safe=False)
 
 
 if __name__ == "__main__":
