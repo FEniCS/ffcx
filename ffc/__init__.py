@@ -19,14 +19,21 @@ import pkg_resources
 
 __version__ = pkg_resources.get_distribution("fenics-ffc").version
 
-# Configure logger
 logging.basicConfig()
 logger = logging.getLogger("ffc")
 
-from ffc.git_commit_hash import git_commit_hash
+
+class FFCError(Exception):
+    pass
+    # def __init__(self,*args,**kwargs):
+    #       raise FFCError("LLLLLLLLLL", self)
+    #       Exception.__init__(self, *args, **kwargs)
+
+
+# from ffc.git_commit_hash import git_commit_hash
 
 # Import compiler functions
-from ffc.compiler import compile_form, compile_element
+#from ffc.compiler import compile_form, compile_element
 
 # Import JIT compiler
 from ffc.jitcompiler import jit

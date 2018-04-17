@@ -166,10 +166,6 @@ def _generate_body(L, i, dof, mapping, gdim, tdim, cell_shape, offset=0):
     # Map point onto physical element: y = F_K(x)
     code = []
 
-    y = L.Symbol("y")
-    coordinate_dofs = L.Symbol("coordinate_dofs")
-    vals = L.Symbol("vals")
-
     # Map function values to the reference element
     F = _change_variables(L, mapping, gdim, tdim, offset)
 

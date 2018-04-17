@@ -5,8 +5,9 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-from ffc.backends.ufc.utils import generate_return_new
 import ffc.backends.ufc.coordinate_mapping_template as ufc_coordinate_mapping
+from ffc import FFCError
+from ffc.backends.ufc.utils import generate_return_new
 
 # TODO: Test everything here! Cover all combinations of gdim,tdim=1,2,3!
 
@@ -40,7 +41,7 @@ def cross_expr(a, b):
     return [cr(1, 2), cr(2, 0), cr(0, 1)]
 
 
-def generate_cross_decl(c, a, b):
+def generate_cross_decl(L, c, a, b):
     return L.ArrayDecl("double", c, values=cross_expr(a, b))
 
 
@@ -87,16 +88,13 @@ def adj_expr_2x2(A):
 
 def adj_expr_3x3(A):
     return [[
-        A[2, 2] * A[1, 1] - A[1, 2] * A[2, 1],
-        A[0, 2] * A[2, 1] - A[0, 1] * A[2, 2],
+        A[2, 2] * A[1, 1] - A[1, 2] * A[2, 1], A[0, 2] * A[2, 1] - A[0, 1] * A[2, 2],
         A[0, 1] * A[1, 2] - A[0, 2] * A[1, 1]
     ], [
-        A[1, 2] * A[2, 0] - A[2, 2] * A[1, 0],
-        A[2, 2] * A[0, 0] - A[0, 2] * A[2, 0],
+        A[1, 2] * A[2, 0] - A[2, 2] * A[1, 0], A[2, 2] * A[0, 0] - A[0, 2] * A[2, 0],
         A[0, 2] * A[1, 0] - A[1, 2] * A[0, 0]
     ], [
-        A[1, 0] * A[2, 1] - A[2, 0] * A[1, 1],
-        A[0, 1] * A[2, 0] - A[0, 0] * A[2, 1],
+        A[1, 0] * A[2, 1] - A[2, 0] * A[1, 1], A[0, 1] * A[2, 0] - A[0, 0] * A[2, 1],
         A[0, 0] * A[1, 1] - A[0, 1] * A[1, 0]
     ]]
 
@@ -110,18 +108,15 @@ def generate_assign_inverse(L, K, J, detJ, gdim, tdim):
         elif gdim == 3:
             adj_values = adj_expr_3x3(J)
         else:
-            error("Not implemented.")
-        return L.StatementList([
-            L.Assign(K[j, i], adj_values[j][i] / detJ) for j in range(tdim)
-            for i in range(gdim)
-        ])
+            raise FFCError("Not implemented.")
+        return L.StatementList(
+            [L.Assign(K[j, i], adj_values[j][i] / detJ) for j in range(tdim) for i in range(gdim)])
     else:
         if tdim == 1:
             # Simpler special case for embedded 1d
             prods = [J[i, 0] * J[i, 0] for i in range(gdim)]
             s = sum(prods[1:], prods[0])
-            return L.StatementList(
-                [L.Assign(K[0, i], J[i, 0] / s) for i in range(gdim)])
+            return L.StatementList([L.Assign(K[0, i], J[i, 0] / s) for i in range(gdim)])
         else:
             # Generic formulation of Penrose-Moore pseudo-inverse of J: (J.T*J)^-1 * J.T
             i = L.Symbol("i")
@@ -180,8 +175,7 @@ def create_coordinate_dofmap(L, ir):
 
 def compute_physical_coordinates(L, ir):
     num_dofs = ir["num_scalar_coordinate_element_dofs"]
-    scalar_coordinate_element_classname = ir[
-        "scalar_coordinate_finite_element_classname"]
+    scalar_coordinate_element_classname = ir["scalar_coordinate_finite_element_classname"]
 
     # Dimensions
     gdim = ir["geometric_dimension"]
@@ -191,12 +185,10 @@ def compute_physical_coordinates(L, ir):
     # Loop indices
     ip = L.Symbol("ip")
     i = L.Symbol("i")
-    j = L.Symbol("j")
     d = L.Symbol("d")
 
     # Input cell data
-    coordinate_dofs = L.FlattenedArray(
-        L.Symbol("coordinate_dofs"), dims=(num_dofs, gdim))
+    coordinate_dofs = L.FlattenedArray(L.Symbol("coordinate_dofs"), dims=(num_dofs, gdim))
 
     # Output geometry
     x = L.FlattenedArray(L.Symbol("x"), dims=(num_points, gdim))
@@ -211,20 +203,13 @@ def compute_physical_coordinates(L, ir):
     # Symbols for local basis values table
     phi_sym = L.Symbol("phi")
 
-    xelement = L.Symbol("xelement")
-
     # NB! Must match array layout of evaluate_reference_basis
     phi = L.FlattenedArray(phi_sym, dims=(num_dofs, ))
 
     # For each point, compute basis values and accumulate into the right x
     code = [
         L.ArrayDecl("double", phi_sym, (one_point * num_dofs, )),
-        L.ForRange(
-            i,
-            0,
-            num_points * gdim,
-            index_type=index_type,
-            body=L.Assign(x.array[i], 0.0)),
+        L.ForRange(i, 0, num_points * gdim, index_type=index_type, body=L.Assign(x.array[i], 0.0)),
         L.ForRange(
             ip,
             0,
@@ -232,8 +217,7 @@ def compute_physical_coordinates(L, ir):
             index_type=index_type,
             body=[
                 L.Comment("Compute basis values of coordinate element"),
-                L.Call("evaluate_reference_basis_{}".format(
-                    scalar_coordinate_element_classname),
+                L.Call("evaluate_reference_basis_{}".format(scalar_coordinate_element_classname),
                        (phi_sym, 1, L.AddressOf(X[ip, 0]))),
                 L.Comment("Compute x"),
                 L.ForRanges(
@@ -276,7 +260,6 @@ def _compute_reference_coordinates_affine(L, ir, output_all=False):
     # Dimensions
     gdim = ir["geometric_dimension"]
     tdim = ir["topological_dimension"]
-    cellname = ir["cell_shape"]
     num_points = L.Symbol("num_points")
 
     # Number of dofs for a scalar component
@@ -300,17 +283,12 @@ def _compute_reference_coordinates_affine(L, ir, output_all=False):
     x = L.FlattenedArray(L.Symbol("x"), dims=(num_points, gdim))
 
     # Input cell data
-    coordinate_dofs = L.FlattenedArray(
-        L.Symbol("coordinate_dofs"), dims=(num_dofs, gdim))
+    coordinate_dofs = L.FlattenedArray(L.Symbol("coordinate_dofs"), dims=(num_dofs, gdim))
     cell_orientation = L.Symbol("cell_orientation")
 
     init_input = [
         L.ForRange(
-            iz,
-            0,
-            num_points * tdim,
-            index_type=index_type,
-            body=L.Assign(X.array[iz], 0.0))
+            iz, 0, num_points * tdim, index_type=index_type, body=L.Assign(X.array[iz], 0.0))
     ]
 
     if output_all:
@@ -345,10 +323,8 @@ def _compute_reference_coordinates_affine(L, ir, output_all=False):
 
     # Table declarations
     table_decls = [
-        L.ArrayDecl(
-            "const double", phi_X0, sizes=x_table.shape, values=x_table),
-        L.ArrayDecl(
-            "const double", dphi_X0, sizes=J_table.shape, values=J_table),
+        L.ArrayDecl("const double", phi_X0, sizes=x_table.shape, values=x_table),
+        L.ArrayDecl("const double", dphi_X0, sizes=J_table.shape, values=J_table),
     ]
 
     # Compute x0 = x(X=0) (optimized by precomputing basis at X=0)
@@ -362,7 +338,6 @@ def _compute_reference_coordinates_affine(L, ir, output_all=False):
     ]
 
     # For more convenient indexing
-    detJ = detJsym[0]
     J = L.FlattenedArray(Jsym, dims=(gdim, tdim))
     K = L.FlattenedArray(Ksym, dims=(tdim, gdim))
 
@@ -378,8 +353,7 @@ def _compute_reference_coordinates_affine(L, ir, output_all=False):
                     0,
                     num_dofs,
                     index_type=index_type,
-                    body=L.AssignAdd(J[i, j],
-                                     coordinate_dofs[k, i] * dphi_X0[j, k]))
+                    body=L.AssignAdd(J[i, j], coordinate_dofs[k, i] * dphi_X0[j, k]))
             ]),
     ]
 
@@ -387,8 +361,7 @@ def _compute_reference_coordinates_affine(L, ir, output_all=False):
     compute_K0 = [
         L.Call("compute_jacobian_determinants_{}".format(classname),
                (detJsym, 1, Jsym, cell_orientation)),
-        L.Call("compute_jacobian_inverses_{}".format(classname),
-               (Ksym, 1, Jsym, detJsym)),
+        L.Call("compute_jacobian_inverses_{}".format(classname), (Ksym, 1, Jsym, detJsym)),
     ]
 
     # Compute X = K0*(x-x0) for each physical point x
@@ -517,9 +490,7 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
     Kf = L.FlattenedArray(K, dims=(tdim, gdim))
 
     decls = [
-        L.Comment(
-            "Declare intermediate arrays to hold results of compute_geometry call"
-        ),
+        L.Comment("Declare intermediate arrays to hold results of compute_geometry call"),
         L.ArrayDecl("double", xk, (gdim, ), 0.0),
     ]
     if not output_all:
@@ -538,8 +509,7 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
         L.ArrayDecl("double", xm, (gdim, ), 0.0),
         L.ArrayDecl("double", Km, (tdim * gdim, )),
         L.Call("compute_midpoint_geometry", (xm, J, coordinate_dofs)),
-        L.Call("compute_jacobian_determinants",
-               (detJ, one_point, J, cell_orientation)),
+        L.Call("compute_jacobian_determinants", (detJ, one_point, J, cell_orientation)),
         L.Call("compute_jacobian_inverses", (Km, one_point, J, detJ)),
     ]
 
@@ -547,15 +517,9 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
     # declare Xk = initial value
     newton_init = [
         L.Comment("Declare xgoal to hold the current x coordinate value"),
-        L.ArrayDecl(
-            "const double",
-            xgoal, (gdim, ),
-            values=[x[ip][iv] for iv in range(gdim)]),
-        L.Comment(
-            "Declare Xk iterate with initial value equal to reference cell midpoint"
-        ),
-        L.ArrayDecl(
-            "double", Xk, (tdim, ), values=[Xm[c] for c in range(tdim)]),
+        L.ArrayDecl("const double", xgoal, (gdim, ), values=[x[ip][iv] for iv in range(gdim)]),
+        L.Comment("Declare Xk iterate with initial value equal to reference cell midpoint"),
+        L.ArrayDecl("double", Xk, (tdim, ), values=[Xm[c] for c in range(tdim)]),
         L.ForRanges(
             (j, 0, tdim), (i, 0, gdim),
             index_type=index_type,
@@ -563,12 +527,10 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
     ]
 
     part1 = [
-        L.Comment(
-            "Compute K = J^-1 for one point, (J and detJ are only used as"),
-        L.Comment(
-            "intermediate storage inside compute_geometry, not used out here"),
-        L.Call("compute_geometry", (xk, J, detJ, K, one_point, Xk,
-                                    coordinate_dofs, cell_orientation)),
+        L.Comment("Compute K = J^-1 for one point, (J and detJ are only used as"),
+        L.Comment("intermediate storage inside compute_geometry, not used out here"),
+        L.Call("compute_geometry",
+               (xk, J, detJ, K, one_point, Xk, coordinate_dofs, cell_orientation)),
     ]
 
     # Newton body with stopping criteria |dX|^2 < epsilon
@@ -582,29 +544,21 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
             body=L.AssignAdd(dX[j], Kf[j, i] * (xgoal[i] - xk[i]))),
         L.Comment("Compute |dX|^2"),
         L.VariableDecl("double", dX2, value=0.0),
-        L.ForRange(
-            j,
-            0,
-            tdim,
-            index_type=index_type,
-            body=L.AssignAdd(dX2, dX[j] * dX[j])),
-        L.Comment(
-            "Break if converged (before X += dX such that X,J,detJ,K are consistent)"
-        ),
+        L.ForRange(j, 0, tdim, index_type=index_type, body=L.AssignAdd(dX2, dX[j] * dX[j])),
+        L.Comment("Break if converged (before X += dX such that X,J,detJ,K are consistent)"),
         L.If(L.LT(dX2, epsilon), L.Break()),
         L.Comment("Update Xk += dX"),
-        L.ForRange(
-            j, 0, tdim, index_type=index_type, body=L.AssignAdd(Xk[j], dX[j])),
+        L.ForRange(j, 0, tdim, index_type=index_type, body=L.AssignAdd(Xk[j], dX[j])),
     ]
 
     # Use this instead to have a fixed iteration number
-    alternative_newton_body = part1 + [
-        L.Comment("Compute Xk[j] += sum_i K_ji * (x_i - x(Xk)_i)"),
-        L.ForRanges(
-            (j, 0, tdim), (i, 0, gdim),
-            index_type=index_type,
-            body=L.AssignAdd(Xk[j], Kf[j, i] * (xgoal[i] - xk[i]))),
-    ]
+    # alternative_newton_body = part1 + [
+    #     L.Comment("Compute Xk[j] += sum_i K_ji * (x_i - x(Xk)_i)"),
+    #     L.ForRanges(
+    #         (j, 0, tdim), (i, 0, gdim),
+    #         index_type=index_type,
+    #         body=L.AssignAdd(Xk[j], Kf[j, i] * (xgoal[i] - xk[i]))),
+    # ]
 
     # Carry out newton loop for each point
     point_loop = [
@@ -616,15 +570,9 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
             body=[
                 newton_init,
                 # Loop until convergence
-                L.ForRange(
-                    k, 0, max_iter, index_type=index_type, body=newton_body),
+                L.ForRange(k, 0, max_iter, index_type=index_type, body=newton_body),
                 # Copy X[ip] = Xk
-                L.ForRange(
-                    j,
-                    0,
-                    tdim,
-                    index_type=index_type,
-                    body=L.Assign(X[ip][j], Xk[j])),
+                L.ForRange(j, 0, tdim, index_type=index_type, body=L.Assign(X[ip][j], Xk[j])),
             ])
     ]
 
@@ -634,8 +582,7 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
 
 def compute_jacobians(L, ir):
     num_dofs = ir["num_scalar_coordinate_element_dofs"]
-    scalar_coordinate_element_classname = ir[
-        "scalar_coordinate_finite_element_classname"]
+    scalar_coordinate_element_classname = ir["scalar_coordinate_finite_element_classname"]
 
     # Dimensions
     gdim = ir["geometric_dimension"]
@@ -651,8 +598,7 @@ def compute_jacobians(L, ir):
     iz = L.Symbol("l")  # Array zeroing index
 
     # Input cell data
-    coordinate_dofs = L.FlattenedArray(
-        L.Symbol("coordinate_dofs"), dims=(num_dofs, gdim))
+    coordinate_dofs = L.FlattenedArray(L.Symbol("coordinate_dofs"), dims=(num_dofs, gdim))
 
     # Output geometry
     J = L.FlattenedArray(L.Symbol("J"), dims=(num_points, gdim, tdim))
@@ -672,11 +618,8 @@ def compute_jacobians(L, ir):
     code = [
         L.ArrayDecl("double", dphi_sym, (one_point * num_dofs * tdim, )),
         L.ForRange(
-            iz,
-            0,
-            num_points * gdim * tdim,
-            index_type=index_type,
-            body=L.Assign(J.array[iz], 0.0)),
+            iz, 0, num_points * gdim * tdim, index_type=index_type, body=L.Assign(J.array[iz],
+                                                                                  0.0)),
         L.ForRange(
             ip,
             0,
@@ -685,14 +628,12 @@ def compute_jacobians(L, ir):
             body=[
                 L.Comment("Compute basis derivatives of coordinate element"),
                 L.Call("evaluate_reference_basis_derivatives_{}".format(
-                    scalar_coordinate_element_classname),
-                       (dphi_sym, 1, 1, L.AddressOf(X[ip, 0]))),
+                    scalar_coordinate_element_classname), (dphi_sym, 1, 1, L.AddressOf(X[ip, 0]))),
                 L.Comment("Compute J"),
                 L.ForRanges(
                     (i, 0, gdim), (j, 0, tdim), (d, 0, num_dofs),
                     index_type=index_type,
-                    body=L.AssignAdd(J[ip, i, j],
-                                     coordinate_dofs[d, i] * dphi[d, j]))
+                    body=L.AssignAdd(J[ip, i, j], coordinate_dofs[d, i] * dphi[d, j]))
             ]),
     ]
 
@@ -778,20 +719,16 @@ def compute_geometry(L, ir):
     coordinate_dofs = L.Symbol("coordinate_dofs")
     cell_orientation = L.Symbol("cell_orientation")
 
-    # All arguments
-    args = (x, J, detJ, K, num_points, X, coordinate_dofs, cell_orientation)
-
     # Just chain calls to other functions here
     code = [
         L.Call("compute_physical_coordinates_{}".format(classname),
                (x, num_points, X, coordinate_dofs)),
-        L.Call("compute_jacobians_{}".format(classname),
-               (J, num_points, X, coordinate_dofs)),
+        L.Call("compute_jacobians_{}".format(classname), (J, num_points, X, coordinate_dofs)),
         L.Call("compute_jacobian_determinants_{}".format(classname),
                (detJ, num_points, J, cell_orientation)),
-        L.Call("compute_jacobian_inverses_{}".format(classname),
-               (K, num_points, J, detJ)),
+        L.Call("compute_jacobian_inverses_{}".format(classname), (K, num_points, J, detJ)),
     ]
+
     return code
 
 
@@ -824,27 +761,16 @@ def compute_midpoint_geometry(L, ir):
 
     # Table declarations
     table_decls = [
-        L.ArrayDecl(
-            "const double", phi_Xm, sizes=xm_table.shape, values=xm_table),
-        L.ArrayDecl(
-            "const double", dphi_Xm, sizes=Jm_table.shape, values=Jm_table),
+        L.ArrayDecl("const double", phi_Xm, sizes=xm_table.shape, values=xm_table),
+        L.ArrayDecl("const double", dphi_Xm, sizes=Jm_table.shape, values=Jm_table),
     ]
 
     # Symbol for ufc_geometry cell midpoint definition
     cellname = ir["cell_shape"]
-    Xm = L.Symbol("%s_midpoint" % cellname)
 
     # Output geometry
     x = L.Symbol("x")
     J = L.Symbol("J")
-    detJ = L.Symbol("detJ")
-    K = L.Symbol("K")
-
-    # Dimensions
-    num_points = 1
-
-    # Input geometry
-    X = Xm
 
     # Input cell data
     coordinate_dofs = L.Symbol("coordinate_dofs")
@@ -858,12 +784,7 @@ def compute_midpoint_geometry(L, ir):
 
     # Initialise arrays to zero
     init_array = [
-        L.ForRange(
-            iz,
-            0,
-            gdim * tdim,
-            index_type=index_type,
-            body=L.Assign(Jf.array[iz], 0.0))
+        L.ForRange(iz, 0, gdim * tdim, index_type=index_type, body=L.Assign(Jf.array[iz], 0.0))
     ]
 
     xm_code = [
@@ -912,8 +833,7 @@ def ufc_coordinate_mapping_generator(ir, parameters):
     import ffc.uflacs.language.cnodes as L
 
     # Functions
-    d["create_coordinate_finite_element"] = create_coordinate_finite_element(
-        L, ir)
+    d["create_coordinate_finite_element"] = create_coordinate_finite_element(L, ir)
     d["create_coordinate_dofmap"] = create_coordinate_dofmap(L, ir)
 
     statements = compute_physical_coordinates(L, ir)
@@ -946,9 +866,7 @@ def ufc_coordinate_mapping_generator(ir, parameters):
     # Check that no keys are redundant or have been missed
     from string import Formatter
     fields = [
-        fname
-        for _, fname, _, _ in Formatter().parse(ufc_coordinate_mapping.factory)
-        if fname
+        fname for _, fname, _, _ in Formatter().parse(ufc_coordinate_mapping.factory) if fname
     ]
     assert set(fields) == set(
         d.keys()), "Mismatch between keys in template and in formattting dict."
@@ -957,7 +875,6 @@ def ufc_coordinate_mapping_generator(ir, parameters):
     implementation = ufc_coordinate_mapping.factory.format_map(d)
 
     # Format declaration
-    declaration = ufc_coordinate_mapping.declaration.format(
-        factory_name=ir["classname"])
+    declaration = ufc_coordinate_mapping.declaration.format(factory_name=ir["classname"])
 
     return declaration, implementation

@@ -28,12 +28,13 @@ import logging
 
 import numpy
 
+from ffc import FFCError
 from ffc.classname import make_integral_classname
 from ffc.fiatinterface import (create_element, create_quadrature,
                                map_facet_points, reference_cell_vertices)
 from ufl.cell import cellname2facetname
 from ufl.measure import (custom_integral_types, facet_integral_types,
-                         integral_type_to_measure_name, point_integral_types)
+                         point_integral_types)
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +68,7 @@ def integral_type_to_entity_dim(integral_type, tdim):
     elif integral_type in custom_integral_types:
         entity_dim = tdim
     else:
-        logger.exception("Unknown integral_type: {}".format(integral_type))
+        raise FFCError("Unknown integral_type: {}".format(integral_type))
     return entity_dim
 
 
@@ -85,7 +86,7 @@ def map_integral_points(points, integral_type, cell, entity):
     elif entity_dim == 0:
         return numpy.asarray([reference_cell_vertices(cell.cellname())[entity]])
     else:
-        logger.exception("Can't map points from entity_dim=%s" % (entity_dim, ))
+        raise FFCError("Can't map points from entity_dim=%s" % (entity_dim, ))
 
 
 def needs_oriented_jacobian(form_data):

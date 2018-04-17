@@ -6,6 +6,7 @@ import logging
 
 import numpy
 
+from ffc import FFCError
 from ffc.backends.ufc.utils import generate_error
 
 logger = logging.getLogger(__name__)
@@ -279,7 +280,7 @@ def _generate_compute_basisvalues(L, basisvalues, Y, element_cellname,
             L, basisvalues, Y, embedded_degree, num_members)
     else:
         # FIXME: This needs a message
-        logger.exception()
+        raise FFCError("")
 
     return code
 

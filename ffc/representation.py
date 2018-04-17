@@ -37,14 +37,13 @@ import logging
 import numpy
 
 import ufl
+from ffc import FFCError
 from ffc.classname import make_classname, make_integral_classname
 from ffc.fiatinterface import (EnrichedElement, HDivTrace, MixedElement,
-                               QuadratureElement, SpaceOfReals, create_element,
-                               reference_cell)
-from ffc.utils import compute_permutations, product
+                               QuadratureElement, SpaceOfReals, create_element)
+from ufl.utils.sequences import product
 
 logger = logging.getLogger(__name__)
-
 
 # List of supported integral types
 ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "custom")
@@ -60,7 +59,7 @@ def pick_representation(representation):
     elif representation == "tsfc":
         from ffc import tsfc as r
     else:
-        logger.exception("Unknown representation: {}".format(representation))
+        raise FFCError("Unknown representation: {}".format(representation))
     return r
 
 
@@ -150,7 +149,8 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     ]
 
     # Compute representation of coordinate mappings
-    logger.info("Computing representation of {} coordinate mappings".format(len(coordinate_elements)))
+    logger.info("Computing representation of {} coordinate mappings".format(
+        len(coordinate_elements)))
     ir_coordinate_mappings = [
         _compute_coordinate_mapping_ir(e, element_numbers, classnames, parameters, jit)
         for e in coordinate_elements
@@ -730,7 +730,7 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
                     for q in range(e.value_shape()[1])
                 ]
             else:
-                logger.exception("Unknown situation with num_components > 1")
+                raise FFCError("Unknown situation with num_components > 1")
 
             # Clamp coefficient zeros
             coefficients = numpy.asarray(coefficients)
@@ -824,9 +824,6 @@ def _tabulate_facet_dofs(element, cell):
 def _tabulate_entity_closure_dofs(element, cell):
     "Compute intermediate representation of tabulate_entity_closure_dofs."
 
-    # Get topological dimension
-    D = cell.topological_dimension()
-
     # Get entity closure dofs from FIAT element
     fiat_entity_closure_dofs = element.entity_closure_dofs()
 
@@ -870,7 +867,7 @@ def _create_default_foo_integral(prefix, form_id, integral_type, form_data):
     ]
 
     if len(itg_data) > 1:
-        logger.exception("Expecting at most one default integral of each type.")
+        raise FFCError("Expecting at most one default integral of each type.")
     if itg_data:
         classname = make_integral_classname(prefix, integral_type, form_id, "otherwise")
         return classname

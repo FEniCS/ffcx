@@ -27,12 +27,13 @@ ufc_utils.
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 import os
 import pprint
 import textwrap
-import logging
 
 from ffc import __version__ as FFC_VERSION
+from ffc import FFCError
 from ffc.backends.ufc import __version__ as UFC_VERSION
 from ffc.parameters import compilation_relevant_parameters
 
@@ -161,7 +162,7 @@ def _generate_comment(parameters):
     elif parameters["format"] == "dolfin":
         comment = format_template["dolfin comment"] % args
     else:
-        error("Unable to format code, unknown format \"%s\".", parameters["format"])
+        raise FFCError("Unable to format code, unknown format \"%s\".", parameters["format"])
 
     # Add parameter information
     comment += "//\n"
@@ -183,8 +184,8 @@ def _generate_includes(includes, parameters):
         "#include <ufc.h>",
     ]
 
-    external_includes = set(
-        "#include <%s>" % inc for inc in parameters.get("external_includes", ()))
+    # external_includes = set(
+    #     "#include <%s>" % inc for inc in parameters.get("external_includes", ()))
 
     s = set(default_h_includes) | includes
 

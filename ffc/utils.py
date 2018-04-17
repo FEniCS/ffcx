@@ -20,12 +20,9 @@
 # Modified by Kristian B. Oelgaard, 2009
 # Modified by Martin Sandve Alnæs 2014
 
-import functools
-import itertools
 import logging
-import operator
 
-from ufl.utils.sequences import product
+from ffc import FFCError
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +35,7 @@ def all_equal(sequence):
 def pick_first(sequence):
     "Check that all values are equal and return the value."
     if not all_equal(sequence):
-        logger.exception("Values differ: {}".format(sequence))
+        raise FFCError("Values differ: {}".format(sequence))
     return sequence[0]
 
 

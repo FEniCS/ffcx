@@ -28,11 +28,11 @@ It uses dijitso to wrap the generated code into a Python module."""
 import hashlib
 import logging
 import os
-import sys
 
 import dijitso
 import ufl
 from ffc import __version__ as FFC_VERSION
+from ffc import FFCError
 from ffc.backends import ufc
 from ffc.classname import make_classname
 from ffc.compiler import (compile_coordinate_mapping, compile_element,
@@ -150,7 +150,7 @@ def compute_jit_prefix(ufl_object, parameters, kind=None):
         kind = "element"
         object_signature = repr(ufl_object)
     else:
-        logger.exception("Unknown ufl object type %s" % (ufl_object.__class__.__name__, ))
+        raise FFCError("Unknown ufl object type %s" % (ufl_object.__class__.__name__, ))
 
     # Compute deterministic string of relevant parameters
     parameters_signature = compute_jit_parameters_signature(parameters)
@@ -180,10 +180,6 @@ def compute_jit_prefix(ufl_object, parameters, kind=None):
     # Combine into prefix with some info including kind
     prefix = ("ffc_%s_%s" % (kind, signature)).lower()
     return kind, prefix
-
-
-class FFCError(Exception):
-    pass
 
 
 class FFCJitError(FFCError):
@@ -231,7 +227,7 @@ def jit(ufl_object, parameters=None, indirect=False):
             cm = _instantiate_coordinate_mapping(module, module_name)
             return cm
         else:
-            logger.exception("Unknown kind %s" % (kind, ))
+            raise FFCError("Unknown kind %s" % (kind, ))
 
 
 def _instantiate_form(module, prefix):

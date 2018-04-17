@@ -71,9 +71,9 @@ class ReconstructScalarSubexpressions(MultiFunction):
         symbols = []
         n = len(ops[1])
         if len(ops[0]) != 1:
-            error("Condition should be scalar.")
+            logger.error("Condition should be scalar.")
         if n != len(ops[2]):
-            error("Conditional branches should have same shape.")
+            logger.error("Conditional branches should have same shape.")
         for i in range(len(ops[1])):
             sops = (ops[0][0], ops[1][i], ops[2][i])
             symbols.append(o._ufl_expr_reconstruct_(*sops))

@@ -95,19 +95,19 @@ The compiler stages are implemented by the following functions:
 
 __all__ = ["compile_form", "compile_element"]
 
+import logging
+import os
 from collections import defaultdict
 from time import time
-import os
-import logging
 
 import ufl
-
-from ffc.parameters import validate_parameters
+from ffc import FFCError
 from ffc.analysis import analyze_ufl_objects
-from ffc.representation import compute_ir
-from ffc.optimization import optimize_ir
 from ffc.codegeneration import generate_code
 from ffc.formatting import format_code
+from ffc.optimization import optimize_ir
+from ffc.parameters import validate_parameters
+from ffc.representation import compute_ir
 from ffc.wrappers import generate_wrapper_code
 
 logger = logging.getLogger(__name__)
@@ -158,7 +158,7 @@ def compile_ufl_objects(ufl_objects,
     if not ufl_objects:
         return "", ""
     if prefix != os.path.basename(prefix):
-        logger.exception("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix))
+        raise FFCError("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix))
     if object_names is None:
         object_names = {}
 

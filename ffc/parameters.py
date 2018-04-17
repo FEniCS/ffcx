@@ -16,9 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import copy
 import logging
+import os
+
+from ffc import FFCError
 
 logger = logging.getLogger(__name__)
 
@@ -154,8 +156,8 @@ def _validate_parameters(parameters):
         try:
             parameters["quadrature_degree"] = int(parameters["quadrature_degree"])
         except Exception:
-            logger.exception("Failed to convert quadrature degree '%s' to int" %
-                             parameters.get("quadrature_degree"))
+            raise FFCError("Failed to convert quadrature degree '%s' to int" %
+                           parameters.get("quadrature_degree"))
 
     # Convert all legal default values to None and
     # cast nondefaults from str to int
@@ -165,7 +167,7 @@ def _validate_parameters(parameters):
         try:
             parameters["precision"] = int(parameters["precision"])
         except Exception:
-            logger.exception("Failed to convert precision '{}' to int".format(
+            raise FFCError("Failed to convert precision '{}' to int".format(
                 parameters.get("precision")))
 
 

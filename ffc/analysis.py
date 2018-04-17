@@ -32,11 +32,11 @@ import os
 
 import numpy
 
-from ffc import utils
+from ffc import FFCError, utils
 from ufl import custom_integral_types
 from ufl.algorithms import compute_form_data, sort_elements
 from ufl.algorithms.analysis import extract_sub_elements
-from ufl.classes import CellVolume, FacetArea, Form, Jacobian
+from ufl.classes import Form, Jacobian
 from ufl.finiteelement import EnrichedElement, MixedElement, VectorElement
 from ufl.integral import Integral
 
@@ -119,7 +119,8 @@ def analyze_ufl_objects(ufl_objects, kind, parameters):
         if element.family() == "Quadrature":
             qs = element.quadrature_scheme()
             if qs is None:
-                logger.exception("Missing quad_scheme in quadrature element.")
+                logger.error("Missing quad_scheme in quadrature element.")
+                raise RuntimeError("Missing quad_scheme in quadrature element.")
 
     # Compute element numbers
     element_numbers = _compute_element_numbers(unique_elements)
@@ -140,7 +141,8 @@ def _analyze_form(form, parameters):
 
     # Check that form is not empty
     if form.empty():
-        logger.exception("Form (%s) seems to be zero: cannot compile it." % str(form))
+        logger.error("Form (%s) seems to be zero: cannot compile it." % str(form))
+        raise RuntimeError("Form (%s) seems to be zero: cannot compile it." % str(form))
 
     # Hack to override representation with environment variable
     forced_r = os.environ.get("FFC_FORCE_REPRESENTATION")
@@ -172,16 +174,17 @@ def _analyze_form(form, parameters):
             # TSFC provides compute_form_data wrapper using correct
             # kwargs
             from tsfc.ufl_utils import compute_form_data as tsfc_compute_form_data
-        except ImportError:
+        except ImportError as e:
             logger.exception(
-                "Failed to import tsfc.ufl_utils.compute_form_data when asked for tsfc representation."
-            )
+                "Could not import tsfc when requesting tsfc representation: {}".format(e))
+            raise
+
         form_data = tsfc_compute_form_data(form)
     elif r == "quadrature":
         # quadrature representation
         form_data = compute_form_data(form)
     else:
-        logger.exception("Unexpected representation family '{}' for form preprocessing.".format(r))
+        raise FFCError("Unexpected representation family \"{}\" for form preprocessing.".format(r))
 
     # Attach integral meta data
     _attach_integral_metadata(form_data, r, parameters)
@@ -221,7 +224,7 @@ def _extract_representation_family(form, parameters):
     if len(representations) == 1:
         r = representations.pop()
         if r not in compatible:
-            logger.exception(
+            raise FFCError(
                 "Representation family {} is not compatible with this form (try one of {})".format(
                     r, sorted(compatible)))
         return r
@@ -238,7 +241,7 @@ def _extract_representation_family(form, parameters):
         # representation families in same form due to restrictions in
         # preprocessing
         assert len(representations) > 1
-        logger.exception("Cannot mix quadrature, uflacs, or tsfc " "representation in single form.")
+        raise FFCError("Cannot mix quadrature, uflacs, or tsfc " "representation in single form.")
 
 
 def _validate_representation_choice(form_data, preprocessing_representation_family):
@@ -267,8 +270,8 @@ def _validate_representation_choice(form_data, preprocessing_representation_fami
 
     # Require unique family; allow quadrature only with affine meshes
     if len(representations) != 1:
-        logger.exception("Failed to extract unique representation family. "
-                         "Got '{}'.".format(representations))
+        raise FFCError("Failed to extract unique representation family. "
+                       "Got '{}'.".format(representations))
 
     if _has_higher_order_geometry(form_data.preprocessed_form):
         assert 'quadrature' not in representations, "Did not expect quadrature representation for higher-order geometry."
@@ -307,7 +310,7 @@ def _extract_common_quadrature_degree(integral_metadatas):
     quadrature_degrees = [md["quadrature_degree"] for md in integral_metadatas]
     for d in quadrature_degrees:
         if not isinstance(d, int):
-            logger.exception("Invalid non-integer quadrature degree %s" % (str(d), ))
+            raise FFCError("Invalid non-integer quadrature degree %s" % (str(d), ))
     qd = max(quadrature_degrees)
     if not utils.all_equal(quadrature_degrees):
         # FIXME: Shouldn't we raise here?
@@ -337,9 +340,9 @@ def _autoselect_quadrature_degree(integral_metadata, integral, form_data):
         if qd >= 0:
             logger.info("quadrature_degree: {}".format(qd))
         else:
-            logger.exception("Illegal negative quadrature degree {}".format(qd))
+            raise FFCError("Illegal negative quadrature degree {}".format(qd))
     else:
-        logger.exception("Invalid quadrature_degree %s." % (qd, ))
+        raise FFCError("Invalid quadrature_degree %s." % (qd, ))
 
     tdim = integral.ufl_domain().topological_dimension()
     _check_quadrature_degree(qd, tdim)
@@ -384,7 +387,7 @@ def _autoselect_quadrature_rule(integral_metadata, integral, form_data):
         logger.info("quadrature_rule:   %s" % qr)
     else:
         logger.info("Valid choices are 'default', 'canonical', 'vertex', and 'auto'.")
-        logger.exception("Illegal choice of quadrature rule for integral: {}".format(qr))
+        raise FFCError("Illegal choice of quadrature rule for integral: {}".format(qr))
 
     return qr
 
@@ -401,15 +404,15 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
     precision_values = set(md["precision"] for md in integral_metadatas)
 
     if len(representations) > 1:
-        logger.exception(
+        raise FFCError(
             "Integral representation must be equal within each sub domain or 'auto', got %s." %
             (str(sorted(str(v) for v in representations)), ))
     if len(optimize_values) > 1:
-        logger.exception(
+        raise FFCError(
             "Integral 'optimize' metadata must be equal within each sub domain or not set, got %s."
             % (str(sorted(str(v) for v in optimize_values)), ))
     if len(precision_values) > 1:
-        logger.exception(
+        raise FFCError(
             "Integral 'precision' metadata must be equal within each sub domain or not set, got %s."
             % (str(sorted(str(v) for v in precision_values)), ))
 
@@ -426,7 +429,7 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
         compatible = _find_compatible_representations(ida.integrals, form_data.unique_sub_elements)
         # Pick the one compatible or default to uflacs
         if len(compatible) == 0:
-            logger.exception("Found no representation capable of compiling this form.")
+            raise FFCError("Found no representation capable of compiling this form.")
         elif len(compatible) == 1:
             r, = compatible
         else:
@@ -439,7 +442,8 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
             elif form_r_family == "quadrature":
                 r = "quadrature"
             else:
-                logger.exception("Invalid form representation family %s." % (form_r_family, ))
+                logger.error("Invalid form representation family {}.".format(form_r_family))
+
         logger.info("representation:    auto --> %s" % r)
     else:
         logger.info("representation:    %s" % r)
@@ -520,7 +524,7 @@ def _attach_integral_metadata(form_data, form_r_family, parameters):
         # not that into this work)
         num_cells = set(md.get("num_cells") for md in integral_metadatas)
         if len(num_cells) != 1:
-            logger.exception(
+            raise FFCError(
                 "Found integrals with different num_cells metadata on same subdomain: %s" %
                 (str(list(num_cells)), ))
         num_cells, = num_cells
@@ -549,12 +553,12 @@ def _validate_quadrature_schemes_of_elements(quad_schemes, elements):
         scheme = quad_schemes[0]
     else:
         scheme = "canonical"
-        info("Quadrature rule must be equal within each sub domain, using {} rule.".format(scheme))
+        logger.info("Quadrature rule must be equal within each sub domain, using {} rule.".format(scheme))
     for element in elements:
         if element.family() == "Quadrature":
             qs = element.quadrature_scheme()
             if qs != scheme:
-                logger.exception(
+                raise FFCError(
                     "Quadrature element must have specified quadrature scheme ({}) equal to the integral ({}).".
                     format(qs, scheme))
 

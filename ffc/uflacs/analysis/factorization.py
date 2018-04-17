@@ -11,6 +11,7 @@ from itertools import chain
 
 import numpy
 
+from ffc import FFCError
 from ffc.uflacs.analysis.dependencies import compute_dependencies
 from ffc.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
                                                     strip_modified_terminal)
@@ -103,7 +104,7 @@ noargs = {}
 
 def handle_sum(v, si, deps, SV_factors, FV, sv2fv, e2fi):
     if len(deps) != 2:
-        logger.exception("Assuming binary sum here. This can be fixed if needed.")
+        raise FFCError("Assuming binary sum here. This can be fixed if needed.")
 
     fac0 = SV_factors[deps[0]]
     fac1 = SV_factors[deps[1]]
@@ -115,7 +116,7 @@ def handle_sum(v, si, deps, SV_factors, FV, sv2fv, e2fi):
         factors = {}
         for argkey in argkeys:
             if len(argkey) != keylen:
-                logger.exception("Expecting equal argument rank terms among summands.")
+                raise FFCError("Expecting equal argument rank terms among summands.")
 
             fi0 = fac0.get(argkey)
             fi1 = fac1.get(argkey)
@@ -138,7 +139,7 @@ def handle_sum(v, si, deps, SV_factors, FV, sv2fv, e2fi):
 
 def handle_product(v, si, deps, SV_factors, FV, sv2fv, e2fi):
     if len(deps) != 2:
-        logger.exception("Assuming binary product here. This can be fixed if needed.")
+        raise FFCError("Assuming binary product here. This can be fixed if needed.")
     fac0 = SV_factors[deps[0]]
     fac1 = SV_factors[deps[1]]
 
@@ -241,7 +242,7 @@ def handle_conditional(v, si, deps, SV_factors, FV, sv2fv, e2fi):
 def handle_operator(v, si, deps, SV_factors, FV, sv2fv, e2fi):
     # Error checking
     if any(SV_factors[d] for d in deps):
-        logger.exception(
+        raise FFCError(
             "Assuming that a {0} cannot be applied to arguments. If this is wrong please report a bug.".
             format(type(v)))
     # Record non-argument subexpression
