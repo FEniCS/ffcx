@@ -27,8 +27,8 @@ import numpy
 import ufl
 from ffc import FFCError
 from ffc import classname
-from ffc.fiatinterface import (EnrichedElement, MixedElement, QuadratureElement,
-                               SpaceOfReals, create_element)
+from ffc.fiatinterface import (EnrichedElement, MixedElement, QuadratureElement, SpaceOfReals,
+                               create_element)
 from ufl.utils.sequences import product
 from FIAT.hdiv_trace import HDivTrace
 
@@ -650,8 +650,7 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
         try:
             e.get_coeffs()
         except NotImplementedError:
-            logger.exception("Function is not supported/implemented.")
-            raise
+            return "Function is not supported/implemented."
 
     # Initialise data with 'global' values.
     data = {
