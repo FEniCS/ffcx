@@ -11,6 +11,7 @@ import logging
 
 import numpy
 
+from ffc import FFCError
 from ffc.uflacs.analysis.crsarray import CRSArray
 from ufl.checks import is_cellwise_constant
 from ufl.classes import (Argument, Coefficient, ConstantValue,

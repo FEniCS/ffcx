@@ -8,8 +8,10 @@
 
 import logging
 
-from ufl.classes import (Argument, CellAvg, FacetAvg, FixedIndex, FormArgument, Grad, Indexed,
-                         Jacobian, ReferenceGrad, ReferenceValue, Restricted, SpatialCoordinate)
+from ffc import FFCError
+from ufl.classes import (Argument, CellAvg, FacetAvg, FixedIndex, FormArgument,
+                         Grad, Indexed, Jacobian, ReferenceGrad,
+                         ReferenceValue, Restricted, SpatialCoordinate)
 from ufl.permutation import build_component_numbering
 
 logger = logging.getLogger(__name__)
