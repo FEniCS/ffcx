@@ -284,9 +284,9 @@ def compute_argument_factorization(SV, SV_deps, SV_targets, rank):
     """
     # Extract argument component subgraph
     arg_indices = build_argument_indices(SV)
-    #A = build_argument_dependencies(SV_deps, arg_indices)
+    # A = build_argument_dependencies(SV_deps, arg_indices)
     AV = [SV[si] for si in arg_indices]
-    #av2sv = arg_indices
+    # av2sv = arg_indices
     sv2av = {si: ai for ai, si in enumerate(arg_indices)}
     assert all(AV[ai] == SV[si] for ai, si in enumerate(arg_indices))
     assert all(AV[ai] == SV[si] for si, ai in sv2av.items())
@@ -310,7 +310,8 @@ def compute_argument_factorization(SV, SV_deps, SV_targets, rank):
     # SV_factors[si] = { argkey: fi } # if SV[si] does depend on arguments, where:
     #   FV[fi] is the expression SV[si] with arguments factored out
     #   argkey is a tuple with indices into SV for each of the argument components SV[si] depends on
-    # SV_factors[si] = { argkey1: fi1, argkey2: fi2, ... } # if SV[si] is a linear combination of multiple argkey configurations
+    # SV_factors[si] = { argkey1: fi1, argkey2: fi2, ... } # if SV[si]
+    # is a linear combination of multiple argkey configurations
     SV_factors = numpy.empty(len(SV), dtype=object)
     si2fi = numpy.zeros(len(SV), dtype=int)
 

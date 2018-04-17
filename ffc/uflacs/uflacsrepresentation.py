@@ -116,16 +116,16 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers,
         }
     else:
         pass
-        #coefficient_numbering = {}
-        #coefficient_element = {}
-        #coefficient_domain = {}
-        #sorted_coefficients = sorted_by_count(form_data.function_replace_map.keys())
-        #for i, f in enumerate(sorted_coefficients):
+        # coefficient_numbering = {}
+        # coefficient_element = {}
+        # coefficient_domain = {}
+        # sorted_coefficients = sorted_by_count(form_data.function_replace_map.keys())
+        # for i, f in enumerate(sorted_coefficients):
         #    g = form_data.function_replace_map[f]
         #    coefficient_numbering[f] = i
         #    coefficient_element[f] = g.ufl_element()
         #    coefficient_domain[f] = g.ufl_domain()
-        #integrands = {
+        # integrands = {
         #    num_points: sorted_integrals[num_points].integrand()
         #    for num_points in sorted(sorted_integrals)
         #    }

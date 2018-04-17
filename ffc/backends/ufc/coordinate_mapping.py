@@ -482,8 +482,8 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
     max_iter = L.LiteralInt(degree)
     epsilon = L.LiteralFloat(1e-6)
     # TODO: Could also easily make criteria input if desired
-    #max_iter = L.Symbol("iterations")
-    #epsilon = L.Symbol("epsilon")
+    # max_iter = L.Symbol("iterations")
+    # epsilon = L.Symbol("epsilon")
     dX2 = L.Symbol("dX2")
 
     # Wrap K as flattened array for convenient indexing Kf[j,i]

@@ -20,8 +20,6 @@ import copy
 import logging
 import os
 
-from ffc import FFCError
-
 logger = logging.getLogger(__name__)
 
 # Comments from other places in code:
@@ -33,26 +31,34 @@ _FFC_GENERATE_PARAMETERS = {
     "format": "ufc",  # code generation format
     "representation": "auto",  # form representation / code generation strategy
     "quadrature_rule":
-    None,  # quadrature rule used for integration of element tensors (None is auto)
-    "quadrature_degree": None,  # quadrature degree used for computing integrals (None is auto)
-    "precision": None,  # precision used when writing numbers (None for max precision)
+    # quadrature rule used for integration of element tensors (None is auto)
+    None,
+    # quadrature degree used for computing integrals (None is auto)
+    "quadrature_degree": None,
+    # precision used when writing numbers (None for max precision)
+    "precision": None,
     "epsilon": 1e-14,  # machine precision, used for dropping zero terms in tables
     "form_postfix": True,  # postfix form name with "Function", "LinearForm" or BilinearForm
-    "convert_exceptions_to_warnings": False,  # convert all exceptions to warning in generated code
+    # convert all exceptions to warning in generated code
+    "convert_exceptions_to_warnings": False,
     "optimize": True,  # turn on optimization for code generation
     "max_signature_length":
     0,  # set to positive integer to shorten signatures set to True to replace tabulate_tensor body with no-op
-    "generate_dummy_tabulate_tensor": False,  # set to True to add timing inside tabulate_tensor
+    # set to True to add timing inside tabulate_tensor
+    "generate_dummy_tabulate_tensor": False,
     "add_tabulate_tensor_timing": False,
-    "external_includes": "",  # ':' separated list of include filenames to add to generated code
+    # ':' separated list of include filenames to add to generated code
+    "external_includes": "",
 }
 _FFC_BUILD_PARAMETERS = {
     "cpp_optimize": True,  # optimization for the C++ compiler
     "cpp_optimize_flags": "-O2",  # optimization flags for the C++ compiler
-    "external_libraries": "",  # ':' separated list of libraries to link JIT compiled libraries with
+    # ':' separated list of libraries to link JIT compiled libraries with
+    "external_libraries": "",
     "external_library_dirs":
     "",  # ':' separated list of library search dirs to add when JIT compiling
-    "external_include_dirs": "",  # ':' separated list of include dirs to add when JIT compiling
+    # ':' separated list of include dirs to add when JIT compiling
+    "external_include_dirs": "",
 }
 _FFC_CACHE_PARAMETERS = {
     "cache_dir": "",  # cache dir used by Instant
@@ -154,10 +160,12 @@ def _validate_parameters(parameters):
         parameters["quadrature_degree"] = None
     else:
         try:
-            parameters["quadrature_degree"] = int(parameters["quadrature_degree"])
+            parameters["quadrature_degree"] = int(
+                parameters["quadrature_degree"])
         except Exception:
-            raise FFCError("Failed to convert quadrature degree '%s' to int" %
-                           parameters.get("quadrature_degree"))
+            logger.exception("Failed to convert quadrature degree '%s' to int" %
+                             parameters.get("quadrature_degree"))
+            raise
 
     # Convert all legal default values to None and
     # cast nondefaults from str to int
@@ -167,8 +175,8 @@ def _validate_parameters(parameters):
         try:
             parameters["precision"] = int(parameters["precision"])
         except Exception:
-            raise FFCError("Failed to convert precision '{}' to int".format(
-                parameters.get("precision")))
+            logger.exception("Failed to convert precision '{}' to int".format(parameters.get("precision")))
+            raise
 
 
 def compilation_relevant_parameters(parameters):

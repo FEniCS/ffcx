@@ -4,12 +4,16 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import numpy
+import logging
 import numbers
 
-from ffc.uflacs.language.format_value import format_value, format_float, format_int
-from ffc.uflacs.language.format_lines import format_indented_lines, Indented
+import numpy
+
+from ffc.uflacs.language.format_lines import Indented, format_indented_lines
+from ffc.uflacs.language.format_value import (format_float, format_int, format_value)
 from ffc.uflacs.language.precedence import PRECEDENCE
+
+logger = logging.getLogger(__name__)
 """CNode TODO:
 - Array copy statement
 - Extend ArrayDecl and ArrayAccess with support for
@@ -118,13 +122,11 @@ class CNode(object):
 
     def __str__(self):
         name = self.__class__.__name__
-        raise NotImplementedError(
-            "Missing implementation of __str__ in " + name)
+        raise NotImplementedError("Missing implementation of __str__ in " + name)
 
     def __eq__(self, other):
         name = self.__class__.__name__
-        raise NotImplementedError(
-            "Missing implementation of __eq__ in " + name)
+        raise NotImplementedError("Missing implementation of __eq__ in " + name)
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -143,18 +145,18 @@ class CExpr(CNode):
     __slots__ = ()
 
     def ce_format(self, precision=None):
-        raise NotImplementedError(
-            "Missing implementation of ce_format() in CExpr.")
+        raise NotImplementedError("Missing implementation of ce_format() in CExpr.")
 
     def __str__(self):
         try:
             s = self.ce_format()
         except Exception:
             if CNode.debug:
-                print("Error in CExpr string formatting. Inspect self.")
+                logger.error("Error in CExpr string formatting. Inspect self.")
                 import IPython
                 IPython.embed()
             raise
+
         return s
 
     def __getitem__(self, indices):
@@ -494,8 +496,7 @@ class BinOp(CExprOperator):
         return lhs + (" " + self.op + " ") + rhs
 
     def __eq__(self, other):
-        return (isinstance(other, type(self)) and self.lhs == other.lhs
-                and self.rhs == other.rhs)
+        return (isinstance(other, type(self)) and self.lhs == other.lhs and self.rhs == other.rhs)
 
 
 class NaryOp(CExprOperator):
@@ -522,8 +523,7 @@ class NaryOp(CExprOperator):
         return s
 
     def __eq__(self, other):
-        return (isinstance(other, type(self))
-                and len(self.args) == len(other.args)
+        return (isinstance(other, type(self)) and len(self.args) == len(other.args)
                 and all(a == b for a, b in zip(self.args, other.args)))
 
 
@@ -789,8 +789,7 @@ class FlattenedArray(object):
     """Syntax carrying object only, will get translated on __getitem__ to ArrayAccess."""
     __slots__ = ("array", "strides", "offset", "dims")
 
-    def __init__(self, array, dummy=None, dims=None, strides=None,
-                 offset=None):
+    def __init__(self, array, dummy=None, dims=None, strides=None, offset=None):
         assert dummy is None, "Please use keyword arguments for strides or dims."
 
         # Typecheck array argument
@@ -848,8 +847,7 @@ class FlattenedArray(object):
         if n == len(self.strides):
             return ArrayAccess(self.array, flat)
         else:
-            return FlattenedArray(
-                self.array, strides=self.strides[n:], offset=flat)
+            return FlattenedArray(self.array, strides=self.strides[n:], offset=flat)
 
 
 class ArrayAccess(CExprOperator):
@@ -863,8 +861,7 @@ class ArrayAccess(CExprOperator):
         elif isinstance(array, ArrayDecl):
             self.array = array.symbol
         else:
-            raise ValueError("Unexpected array type %s." %
-                             (type(array).__name__, ))
+            raise ValueError("Unexpected array type %s." % (type(array).__name__, ))
 
         # Allow expressions or literals as indices
         if not isinstance(indices, (list, tuple)):
@@ -880,8 +877,7 @@ class ArrayAccess(CExprOperator):
             if len(self.indices) != len(array.sizes):
                 raise ValueError("Invalid number of indices.")
             ints = (int, LiteralInt)
-            if any((isinstance(i, ints) and isinstance(d, ints)
-                    and int(i) >= int(d))
+            if any((isinstance(i, ints) and isinstance(d, ints) and int(i) >= int(d))
                    for i, d in zip(self.indices, array.sizes)):
                 raise ValueError("Index value >= array dimension.")
 
@@ -931,8 +927,7 @@ class Conditional(CExprOperator):
         return c + " ? " + t + " : " + f
 
     def __eq__(self, other):
-        return (isinstance(other, type(self))
-                and self.condition == other.condition
+        return (isinstance(other, type(self)) and self.condition == other.condition
                 and self.true == other.true and self.false == other.false)
 
 
@@ -956,8 +951,7 @@ class Call(CExprOperator):
         return self.function.ce_format(precision) + "(" + args + ")"
 
     def __eq__(self, other):
-        return (isinstance(other, type(self))
-                and self.function == other.function
+        return (isinstance(other, type(self)) and self.function == other.function
                 and self.arguments == other.arguments)
 
 
@@ -991,11 +985,9 @@ def as_cexpr(node):
     elif isinstance(node, numbers.Real):
         return LiteralFloat(node)
     elif isinstance(node, str):
-        raise RuntimeError("Got string for CExpr, this is ambiguous: %s" %
-                           (node, ))
+        raise RuntimeError("Got string for CExpr, this is ambiguous: %s" % (node, ))
     else:
-        raise RuntimeError("Unexpected CExpr type %s:\n%s" % (type(node),
-                                                              str(node)))
+        raise RuntimeError("Unexpected CExpr type %s:\n%s" % (type(node), str(node)))
 
 
 def as_cexpr_or_string_symbol(node):
@@ -1052,20 +1044,20 @@ class CStatement(CNode):
     """
     __slots__ = ()
 
-    # True if statement contains its own scope, false by default to be on the safe side
+    # True if statement contains its own scope, false by default to be
+    # on the safe side
     is_scoped = False
 
     def cs_format(self, precision=None):
         "Return S: string | list(S) | Indented(S)."
-        raise NotImplementedError(
-            "Missing implementation of cs_format() in CStatement.")
+        raise NotImplementedError("Missing implementation of cs_format() in CStatement.")
 
     def __str__(self):
         try:
             s = self.cs_format()
         except Exception:
             if CNode.debug:
-                print("Error in CStatement string formatting. Inspect self.")
+                logger.error("Error in CStatement string formatting. Inspect self.")
                 import IPython
                 IPython.embed()
             raise
@@ -1088,8 +1080,7 @@ class VerbatimStatement(CStatement):
         return self.codestring
 
     def __eq__(self, other):
-        return (isinstance(other, type(self))
-                and self.codestring == other.codestring)
+        return (isinstance(other, type(self)) and self.codestring == other.codestring)
 
 
 class Statement(CStatement):
@@ -1122,8 +1113,7 @@ class StatementList(CStatement):
         return [st.cs_format(precision) for st in self.statements]
 
     def __eq__(self, other):
-        return (isinstance(other, type(self))
-                and self.statements == other.statements)
+        return (isinstance(other, type(self)) and self.statements == other.statements)
 
 
 # Simple statements
@@ -1245,8 +1235,7 @@ class Comment(CStatement):
         return ["// " + line.strip() for line in lines]
 
     def __eq__(self, other):
-        return (isinstance(other, type(self))
-                and self.comment == other.comment)
+        return (isinstance(other, type(self)) and self.comment == other.comment)
 
 
 def NoOp():
@@ -1280,8 +1269,7 @@ class Pragma(CStatement):
         return "#pragma " + self.comment
 
     def __eq__(self, other):
-        return (isinstance(other, type(self))
-                and self.comment == other.comment)
+        return (isinstance(other, type(self)) and self.comment == other.comment)
 
 
 # Type and variable declarations
@@ -1312,8 +1300,7 @@ class VariableDecl(CStatement):
         return code + ";"
 
     def __eq__(self, other):
-        return (isinstance(other, type(self))
-                and self.typename == other.typename
+        return (isinstance(other, type(self)) and self.typename == other.typename
                 and self.symbol == other.symbol and self.value == other.value)
 
 
@@ -1362,12 +1349,7 @@ def build_1d_initializer_list(values, formatter, padlen=0, precision=None):
     return "".join(tokens)
 
 
-def build_initializer_lists(values,
-                            sizes,
-                            level,
-                            formatter,
-                            padlen=0,
-                            precision=None):
+def build_initializer_lists(values, sizes, level, formatter, padlen=0, precision=None):
     """Return a list of lines with initializer lists for a multidimensional array.
 
     Example output::
@@ -1390,21 +1372,13 @@ def build_initializer_lists(values,
     r = len(sizes)
     assert r > 0
     if r == 1:
-        return [
-            build_1d_initializer_list(
-                values, formatter, padlen=padlen, precision=precision)
-        ]
+        return [build_1d_initializer_list(values, formatter, padlen=padlen, precision=precision)]
     else:
         # Render all sublists
         parts = []
         for val in values:
             sublist = build_initializer_lists(
-                val,
-                sizes[1:],
-                level + 1,
-                formatter,
-                padlen=padlen,
-                precision=precision)
+                val, sizes[1:], level + 1, formatter, padlen=padlen, precision=precision)
             parts.append(sublist)
         # Add comma after last line in each part except the last one
         for part in parts[:-1]:
@@ -1433,13 +1407,7 @@ class ArrayDecl(CStatement):
     __slots__ = ("typename", "symbol", "sizes", "alignas", "padlen", "values")
     is_scoped = False
 
-    def __init__(self,
-                 typename,
-                 symbol,
-                 sizes=None,
-                 values=None,
-                 alignas=None,
-                 padlen=0):
+    def __init__(self, typename, symbol, sizes=None, values=None, alignas=None, padlen=0):
         assert isinstance(typename, str)
         self.typename = typename
 
@@ -1498,12 +1466,7 @@ class ArrayDecl(CStatement):
             else:
                 formatter = format_value
             initializer_lists = build_initializer_lists(
-                self.values,
-                self.sizes,
-                0,
-                formatter,
-                padlen=self.padlen,
-                precision=precision)
+                self.values, self.sizes, 0, formatter, padlen=self.padlen, precision=precision)
             if len(initializer_lists) == 1:
                 return decl + " = " + initializer_lists[0] + ";"
             else:
@@ -1511,10 +1474,9 @@ class ArrayDecl(CStatement):
                 return (decl + " =", Indented(initializer_lists))
 
     def __eq__(self, other):
-        attributes = ("typename", "symbol", "sizes", "alignas", "padlen",
-                      "values")
-        return (isinstance(other, type(self)) and all(
-            getattr(self, name) == getattr(self, name) for name in attributes))
+        attributes = ("typename", "symbol", "sizes", "alignas", "padlen", "values")
+        return (isinstance(other, type(self))
+                and all(getattr(self, name) == getattr(self, name) for name in attributes))
 
 
 # Scoped statements
@@ -1559,8 +1521,7 @@ class If(CStatement):
             return (statement, "{", body_fmt, "}")
 
     def __eq__(self, other):
-        return (isinstance(other, type(self))
-                and self.condition == other.condition
+        return (isinstance(other, type(self)) and self.condition == other.condition
                 and self.body == other.body)
 
 
@@ -1581,8 +1542,7 @@ class ElseIf(CStatement):
             return (statement, "{", body_fmt, "}")
 
     def __eq__(self, other):
-        return (isinstance(other, type(self))
-                and self.condition == other.condition
+        return (isinstance(other, type(self)) and self.condition == other.condition
                 and self.body == other.body)
 
 
@@ -1606,9 +1566,7 @@ class Else(CStatement):
 
 
 def is_simple_inner_loop(code):
-    if isinstance(code,
-                  ForRange) and code.pragma is None and is_simple_inner_loop(
-                      code.body):
+    if isinstance(code, ForRange) and code.pragma is None and is_simple_inner_loop(code.body):
         return True
     if isinstance(code, Statement) and isinstance(code.expr, AssignOp):
         return True
@@ -1619,15 +1577,9 @@ class Switch(CStatement):
     __slots__ = ("arg", "cases", "default", "autobreak", "autoscope")
     is_scoped = True
 
-    def __init__(self,
-                 arg,
-                 cases,
-                 default=None,
-                 autobreak=True,
-                 autoscope=True):
+    def __init__(self, arg, cases, default=None, autobreak=True, autoscope=True):
         self.arg = as_cexpr_or_string_symbol(arg)
-        self.cases = [(as_cexpr(value), as_cstatement(body))
-                      for value, body in cases]
+        self.cases = [(as_cexpr(value), as_cstatement(body)) for value, body in cases]
         if default is not None:
             default = as_cstatement(default)
             defcase = [(None, default)]
@@ -1663,13 +1615,12 @@ class Switch(CStatement):
                 casebody = ("{", Indented(casebody), "}")
             cases.extend([caseheader, Indented(casebody)])
 
-        return ("switch (" + self.arg.ce_format(precision) + ")", "{", cases,
-                "}")
+        return ("switch (" + self.arg.ce_format(precision) + ")", "{", cases, "}")
 
     def __eq__(self, other):
         attributes = ("arg", "cases", "default", "autobreak", "autoscope")
-        return (isinstance(other, type(self)) and all(
-            getattr(self, name) == getattr(self, name) for name in attributes))
+        return (isinstance(other, type(self))
+                and all(getattr(self, name) == getattr(self, name) for name in attributes))
 
 
 class ForRange(CStatement):
@@ -1677,13 +1628,7 @@ class ForRange(CStatement):
     __slots__ = ("index", "begin", "end", "body", "pragma", "index_type")
     is_scoped = True
 
-    def __init__(self,
-                 index,
-                 begin,
-                 end,
-                 body,
-                 index_type="int",
-                 vectorize=None):
+    def __init__(self, index, begin, end, body, index_type="int", vectorize=None):
         self.index = as_cexpr_or_string_symbol(index)
         self.begin = as_cexpr(begin)
         self.end = as_cexpr(end)
@@ -1724,8 +1669,8 @@ class ForRange(CStatement):
 
     def __eq__(self, other):
         attributes = ("index", "begin", "end", "body", "pragma", "index_type")
-        return (isinstance(other, type(self)) and all(
-            getattr(self, name) == getattr(self, name) for name in attributes))
+        return (isinstance(other, type(self))
+                and all(getattr(self, name) == getattr(self, name) for name in attributes))
 
 
 def ForRanges(*ranges, **kwargs):
@@ -1753,9 +1698,8 @@ def as_cstatement(node):
             # Special case for using assignment expressions as statements
             return Statement(node)
         else:
-            raise RuntimeError(
-                "Trying to create a statement of CExprOperator type %s:\n%s" %
-                (type(node), str(node)))
+            raise RuntimeError("Trying to create a statement of CExprOperator type %s:\n%s" %
+                               (type(node), str(node)))
     elif isinstance(node, list):
         # Convenience case for list of statements
         if len(node) == 1:
@@ -1767,5 +1711,4 @@ def as_cstatement(node):
         # Backdoor for flexibility in code generation to allow verbatim pasted statements
         return VerbatimStatement(node)
     else:
-        raise RuntimeError("Unexpected CStatement type %s:\n%s" % (type(node),
-                                                                   str(node)))
+        raise RuntimeError("Unexpected CStatement type %s:\n%s" % (type(node), str(node)))

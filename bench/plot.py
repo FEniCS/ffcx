@@ -29,6 +29,7 @@ try:
     output = open("bench.log").read()
 except Exception:
     output = open("results/bench.log").read()
+
 for line in output.split("\n"):
     if "," not in line: continue
     test_case, test_option, timing = [w.strip() for w in line.split(",")]
