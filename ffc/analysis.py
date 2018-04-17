@@ -442,7 +442,7 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
             elif form_r_family == "quadrature":
                 r = "quadrature"
             else:
-                logger.error("Invalid form representation family {}.".format(form_r_family))
+                raise FFCError("Invalid form representation family {}.".format(form_r_family))
 
         logger.info("representation:    auto --> %s" % r)
     else:

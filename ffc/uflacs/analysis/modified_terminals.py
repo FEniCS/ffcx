@@ -177,24 +177,24 @@ def analyse_modified_terminal(expr):
     while not t._ufl_is_terminal_:
         if isinstance(t, Indexed):
             if component is not None:
-                logger.error("Got twice indexed terminal.")
+                raise FFCError("Got twice indexed terminal.")
 
             t, i = t.ufl_operands
             component = [int(j) for j in i]
 
             if not all(isinstance(j, FixedIndex) for j in i):
-                logger.error("Expected only fixed indices.")
+                raise FFCError("Expected only fixed indices.")
 
         elif isinstance(t, ReferenceValue):
             if reference_value is not None:
-                logger.error("Got twice pulled back terminal!")
+                raise FFCError("Got twice pulled back terminal!")
 
             t, = t.ufl_operands
             reference_value = True
 
         elif isinstance(t, ReferenceGrad):
             if not component:  # covers None or ()
-                logger.error("Got local gradient of terminal without prior indexing.")
+                raise FFCError("Got local gradient of terminal without prior indexing.")
 
             t, = t.ufl_operands
             local_derivatives.append(component[-1])
@@ -202,7 +202,7 @@ def analyse_modified_terminal(expr):
 
         elif isinstance(t, Grad):
             if not component:  # covers None or ()
-                logger.error("Got local gradient of terminal without prior indexing.")
+                raise FFCError("Got local gradient of terminal without prior indexing.")
 
             t, = t.ufl_operands
             global_derivatives.append(component[-1])
@@ -210,31 +210,31 @@ def analyse_modified_terminal(expr):
 
         elif isinstance(t, Restricted):
             if restriction is not None:
-                logger.error("Got twice restricted terminal!")
+                raise FFCError("Got twice restricted terminal!")
 
             restriction = t._side
             t, = t.ufl_operands
 
         elif isinstance(t, CellAvg):
             if averaged is not None:
-                logger.error("Got twice averaged terminal!")
+                raise FFCError("Got twice averaged terminal!")
 
             t, = t.ufl_operands
             averaged = "cell"
 
         elif isinstance(t, FacetAvg):
             if averaged is not None:
-                logger.error("Got twice averaged terminal!")
+                raise FFCError("Got twice averaged terminal!")
 
             t, = t.ufl_operands
             averaged = "facet"
 
         elif t._ufl_terminal_modifiers_:
-            logger.error("Missing handler for terminal modifier type {}, object is {}.".format(
+            raise FFCError("Missing handler for terminal modifier type {}, object is {}.".format(
                 type(t), repr(t)))
 
         else:
-            logger.error("Unexpected type %s object %s." % (type(t), repr(t)))
+            raise FFCError("Unexpected type %s object %s." % (type(t), repr(t)))
 
     # Make canonical representation of derivatives
     global_derivatives = tuple(sorted(global_derivatives))
@@ -253,9 +253,9 @@ def analyse_modified_terminal(expr):
         pass
     else:
         if local_derivatives and not reference_value:
-            logger.error("Local derivatives of non-local value is not legal.")
+            raise FFCError("Local derivatives of non-local value is not legal.")
         if global_derivatives and reference_value:
-            logger.error("Global derivatives of local value is not legal.")
+            raise FFCError("Global derivatives of local value is not legal.")
 
     # Make sure component is an integer tuple
     if component is None:
@@ -280,9 +280,9 @@ def analyse_modified_terminal(expr):
 
     # Assert that component is within the shape of the (reference) terminal
     if len(component) != len(base_shape):
-        logger.error("Length of component does not match rank of (reference) terminal.")
+        raise FFCError("Length of component does not match rank of (reference) terminal.")
     if not all(c >= 0 and c < d for c, d in zip(component, base_shape)):
-        logger.error("Component indices %s are outside value shape %s" % (component, base_shape))
+        raise FFCError("Component indices %s are outside value shape %s" % (component, base_shape))
 
     # Flatten component
     vi2si, si2vi = build_component_numbering(base_shape, base_symmetry)

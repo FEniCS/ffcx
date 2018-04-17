@@ -32,31 +32,26 @@ def default_partition_seed(expr, rank):
     modifiers = (Grad, Restricted, Indexed)  # FIXME: Add CellAvg, FacetAvg types here, others?
     if isinstance(expr, modifiers):
         return default_partition_seed(expr.ufl_operands[0], rank)
-
     elif isinstance(expr, Argument):
         ac = expr.number()
         assert 0 <= ac < rank
         poffset = 3
         p = poffset + ac
         return p
-
     elif isinstance(expr, Coefficient):
         if is_cellwise_constant(expr):  # This is crap, doesn't include grad modifier
             return 0
         else:
             return 2
-
     elif isinstance(expr, GeometricQuantity):
         if is_cellwise_constant(expr):  # This is crap, doesn't include grad modifier
             return 0
         else:
             return 1
-
     elif isinstance(expr, ConstantValue):
         return 0
-
     else:
-        logger.error("Don't know how to handle {}".format(expr))
+        raise FFCError("Don't know how to handle {}".format(expr))
 
 
 def mark_partitions(V,

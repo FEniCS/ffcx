@@ -10,6 +10,7 @@ from collections import namedtuple
 
 import numpy
 
+from ffc import FFCError
 from ffc.backends.ffc.common import ufc_restriction_offset
 from ffc.fiatinterface import create_element
 from ffc.representationutils import (create_quadrature_points_and_weights,
@@ -258,16 +259,16 @@ def get_modified_terminal_element(mt):
     # Extract element from FormArguments and relevant GeometricQuantities
     if isinstance(mt.terminal, FormArgument):
         if gd and mt.reference_value:
-            logger.error("Global derivatives of reference values not defined.")
+            raise FFCError("Global derivatives of reference values not defined.")
         elif ld and not mt.reference_value:
-            logger.error("Local derivatives of global values not defined.")
+            raise FFCError("Local derivatives of global values not defined.")
         element = mt.terminal.ufl_element()
         fc = mt.flat_component
     elif isinstance(mt.terminal, SpatialCoordinate):
         if mt.reference_value:
-            logger.error("Not expecting reference value of x.")
+            raise FFCError("Not expecting reference value of x.")
         if gd:
-            logger.error("Not expecting global derivatives of x.")
+            raise FFCError("Not expecting global derivatives of x.")
         element = mt.terminal.ufl_domain().ufl_coordinate_element()
         if not ld:
             fc = mt.flat_component
@@ -278,9 +279,9 @@ def get_modified_terminal_element(mt):
             assert mt.component[0] == mt.flat_component
     elif isinstance(mt.terminal, Jacobian):
         if mt.reference_value:
-            logger.error("Not expecting reference value of J.")
+            raise FFCError("Not expecting reference value of J.")
         if gd:
-            logger.error("Not expecting global derivatives of J.")
+            raise FFCError("Not expecting global derivatives of J.")
         element = mt.terminal.ufl_domain().ufl_coordinate_element()
         # Translate component J[i,d] to x element context rgrad(x[i])[d]
         assert len(mt.component) == 2

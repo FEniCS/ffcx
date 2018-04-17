@@ -16,7 +16,6 @@ from ffc import FFCError
 from ffc.uflacs.analysis.balancing import balance_modifiers
 from ffc.uflacs.analysis.dependencies import (compute_dependencies,
                                               mark_active, mark_image)
-#from ffc.uflacs.analysis.graph_ssa import default_cache_score_policy, compute_cache_scores, allocate_registers
 from ffc.uflacs.analysis.factorization import compute_argument_factorization
 from ffc.uflacs.analysis.graph import build_graph
 from ffc.uflacs.analysis.graph_rebuild import \
@@ -846,7 +845,7 @@ def analyse_dependencies(V, V_deps, V_targets, modified_terminal_indices, modifi
                 varying_indices.append(i)
             else:
                 if ttype not in ("fixed", "piecewise", "ones", "zeros"):
-                    logger.error("Invalid ttype %s" % (ttype, ))
+                    raise FFCError("Invalid ttype %s" % (ttype, ))
 
         elif not is_cellwise_constant(V[i]):
             # Keeping this check to be on the safe side,

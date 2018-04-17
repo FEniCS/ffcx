@@ -16,6 +16,7 @@ from ufl.classes import IndexSum, MultiIndex, Product
 from ufl.corealg.multifunction import MultiFunction
 from ufl.permutation import compute_indices
 from ufl.utils.indexflattening import flatten_multiindex, shape_to_strides
+from ffc import FFCError
 
 logger = logging.getLogger(__name__)
 
@@ -26,14 +27,14 @@ class ReconstructScalarSubexpressions(MultiFunction):
 
     # No fallbacks, need to specify each type or group of types explicitly
     def expr(self, o, *args, **kwargs):
-        logger.error("No handler for type %s" % type(o))
+        raise FFCError("No handler for type %s" % type(o))
 
     def terminal(self, o):
-        logger.error("Not expecting terminal expression in here, got %s." % type(o))
+        raise FFCError("Not expecting terminal expression in here, got %s." % type(o))
 
     # These types are not expected to be part of the graph at this point
     def unexpected(self, o, *args, **kwargs):
-        logger.error("Not expecting expression of type %s in here." % type(o))
+        raise FFCError("Not expecting expression of type %s in here." % type(o))
 
     multi_index = unexpected
     expr_list = unexpected
@@ -47,7 +48,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
 
     def scalar_nary(self, o, ops):
         if o.ufl_shape != ():
-            logger.error("Expecting scalar.")
+            raise FFCError("Expecting scalar.")
         sops = [op[0] for op in ops]
         return [o._ufl_expr_reconstruct_(*sops)]
 
@@ -71,9 +72,9 @@ class ReconstructScalarSubexpressions(MultiFunction):
         symbols = []
         n = len(ops[1])
         if len(ops[0]) != 1:
-            logger.error("Condition should be scalar.")
+            raise FFCError("Condition should be scalar.")
         if n != len(ops[2]):
-            logger.error("Conditional branches should have same shape.")
+            raise FFCError("Conditional branches should have same shape.")
         for i in range(len(ops[1])):
             sops = (ops[0][0], ops[1][i], ops[2][i])
             symbols.append(o._ufl_expr_reconstruct_(*sops))
@@ -81,22 +82,22 @@ class ReconstructScalarSubexpressions(MultiFunction):
 
     def division(self, o, ops):
         if len(ops) != 2:
-            logger.error("Expecting two operands.")
+            raise FFCError("Expecting two operands.")
         if len(ops[1]) != 1:
-            logger.error("Expecting scalar divisor.")
+            raise FFCError("Expecting scalar divisor.")
         b, = ops[1]
         return [o._ufl_expr_reconstruct_(a, b) for a in ops[0]]
 
     def sum(self, o, ops):
         if len(ops) != 2:
-            logger.error("Expecting two operands.")
+            raise FFCError("Expecting two operands.")
         if len(ops[0]) != len(ops[1]):
-            logger.error("Expecting scalar divisor.")
+            raise FFCError("Expecting scalar divisor.")
         return [o._ufl_expr_reconstruct_(a, b) for a, b in zip(ops[0], ops[1])]
 
     def product(self, o, ops):
         if len(ops) != 2:
-            logger.error("Expecting two operands.")
+            raise FFCError("Expecting two operands.")
 
         # Get the simple cases out of the way
         if len(ops[0]) == 1:  # True scalar * something
@@ -151,7 +152,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
         # axis corresponding to summation index ii.
         ss = ops[0]  # Scalar subexpressions of summand
         if len(ss) != predim * postdim * d:
-            logger.error("Mismatching number of subexpressions.")
+            raise FFCError("Mismatching number of subexpressions.")
         sops = []
         for i in range(predim):
             iind = i * (postdim * d)
@@ -223,7 +224,7 @@ def rebuild_with_scalar_subexpressions(G, targets=None):
 
         if is_modified_terminal(v):
             # if v.ufl_free_indices:
-            #     logger.error("Expecting no free indices.")
+            #     raise FFCError("Expecting no free indices.")
             sh = v.ufl_shape
             if sh:
                 # Store each terminal expression component.
@@ -234,7 +235,7 @@ def rebuild_with_scalar_subexpressions(G, targets=None):
             else:
                 # Store single modified terminal expression component
                 if len(vs) != 1:
-                    logger.error("Expecting single symbol for scalar valued modified terminal.")
+                    raise FFCError("Expecting single symbol for scalar valued modified terminal.")
                 ws = [v]
             # FIXME: Replace ws[:] with 0's if its table is empty
             # Possible redesign: loop over modified terminals only first,
@@ -247,7 +248,7 @@ def rebuild_with_scalar_subexpressions(G, targets=None):
                 if isinstance(vop, MultiIndex):
                     # TODO: Store MultiIndex in G.V and allocate a symbol to it for this to work
                     if not isinstance(v, IndexSum):
-                        logger.error("Not expecting a %s." % type(v))
+                        raise FFCError("Not expecting a %s." % type(v))
                     sops.append(())
                 else:
                     # TODO: Build edge datastructure and use instead?
@@ -263,7 +264,7 @@ def rebuild_with_scalar_subexpressions(G, targets=None):
 
             # Store all scalar subexpressions for v symbols
             if len(vs) != len(ws):
-                logger.error("Expecting one symbol for each expression.")
+                raise FFCError("Expecting one symbol for each expression.")
 
         # Store each new scalar subexpression in W at the index of its symbol
         handled = set()
@@ -285,7 +286,7 @@ def rebuild_with_scalar_subexpressions(G, targets=None):
         vs = G.V_symbols[ti]
         # Sanity check: assert that we've handled these symbols
         if any(W[s] is None for s in vs):
-            logger.error("Expecting that all symbols in vs are handled at this point.")
+            raise FFCError("Expecting that all symbols in vs are handled at this point.")
         scalar_target_expressions.append([W[s] for s in vs])
 
     # Return the scalar expressions for each of the components
