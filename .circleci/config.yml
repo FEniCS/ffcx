@@ -10,20 +10,22 @@ jobs:
           name: Install dependencies
           command: |
             sudo apt-get update && sudo apt-get install libboost-math-dev
-            sudo pip install cmake flake8 numpy pybind11 pytest six --upgrade
+            sudo pip install flake8 pydocstyle pytest --upgrade
       - run:
           name: Install FEniCS dependencies
           command: |
-            if [ "${CIRCLE_BRANCH}" == "next" ] ; then export DEP_BRANCH_NAME="next" ; else export DEP_BRANCH_NAME="master" ; fi
-            pip install git+https://bitbucket.org/fenics-project/fiat.git@"${DEP_BRANCH_NAME}" --user
-            pip install git+https://bitbucket.org/fenics-project/ufl.git@"${DEP_BRANCH_NAME}" --user
-            pip install git+https://bitbucket.org/fenics-project/dijitso.git@"${DEP_BRANCH_NAME}" --user
+            pip install git+https://bitbucket.org/fenics-project/fiat.git --user
+            pip install git+https://bitbucket.org/fenics-project/ufl.git --user
+            pip install git+https://bitbucket.org/fenics-project/dijitso.git --user
       - run:
           name: Install FFC
           command: pip install -e . --user
       - run:
           name: Run flake8 tests
           command: python -m flake8 ffc/
+      - run:
+          name: Run pydocstyle tests
+          command: python -m pydocstyle ffc/
 
       #- run:
       #    name: Install pybind factory

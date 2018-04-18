@@ -175,10 +175,11 @@ class FFCJitError(FFCError):
 def jit(ufl_object, parameters=None, indirect=False):
     """Just-in-time compile the given form or element
 
-    Parameters:
-
+    Parameters
+    ----------
       ufl_object : The UFL object to be compiled
       parameters : A set of parameters
+
     """
     # Check parameters
     parameters = validate_jit_parameters(parameters)
