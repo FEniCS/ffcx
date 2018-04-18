@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Copyright (C) 2004-2017 Anders Logg
 #
@@ -65,6 +64,7 @@ def main(args=None):
         args = sys.argv[1:]
 
     # Get command-line arguments
+    print( )
     try:
         if "-O" in args:
             args[args.index("-O")] = "-O2"

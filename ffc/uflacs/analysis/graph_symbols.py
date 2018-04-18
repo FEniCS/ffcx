@@ -20,6 +20,7 @@ def build_node_shapes(V):
     V is an array of ufl expressions, possibly nonscalar and with free indices.
 
     Returning a CRSArray where row i is the total shape of V[i].
+
     """
     # Dimensions of returned CRSArray
     nv = len(V)
@@ -51,11 +52,14 @@ def build_node_symbols(V, e2i, V_shapes, V_sizes):
     """Tabulate scalar value numbering of all nodes in a a list based representation of an
     expression graph.
 
-    Returns: V_symbols - CRSArray of symbols (value numbers) of each
+    Returns
+    -------
+    V_symbols - CRSArray of symbols (value numbers) of each
     component of each node in V.
 
     total_unique_symbols - The number of symbol values assigned to
     unique scalar components of the nodes in V.
+
     """
     # "Sparse" int matrix for storing variable number of entries (symbols) per row (vertex),
     # with a capasity bounded by the number of scalar subexpressions including repetitions
@@ -78,10 +82,12 @@ def build_node_symbols(V, e2i, V_shapes, V_sizes):
 def build_graph_symbols(V, e2i, DEBUG):
     """Tabulate scalar value numbering of all nodes in a a list based representation of an expression graph.
 
-    Returns:
+    Returns
+    -------
     V_shapes - CRSArray of the total shapes of nodes in V.
     V_symbols - CRSArray of symbols (value numbers) of each component of each node in V.
     total_unique_symbols - The number of symbol values assigned to unique scalar components of the nodes in V.
+
     """
     # Compute the total shape (value shape x index dimensions) for each node
     V_shapes = build_node_shapes(V)
