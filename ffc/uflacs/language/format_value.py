@@ -15,7 +15,7 @@ _subs = (
 
 
 def format_float(x, precision=None):
-    "Format a float value according to given precision."
+    """Format a float value according to given precision."""
     global _subs
     if precision:
         s = "{:.{prec}}".format(float(x), prec=precision)

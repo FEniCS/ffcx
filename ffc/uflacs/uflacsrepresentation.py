@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classnames, parameters):
-    "Compute intermediate represention of integral."
+    """Compute intermediate represention of integral."""
 
     logger.info("Computing uflacs representation")
 

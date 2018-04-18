@@ -17,7 +17,7 @@ index_type = "int64_t"
 
 
 def generate_compute_ATA(L, ATA, A, m, n, index_prefix=""):
-    "Generate code to declare and compute ATA[i,j] = sum_k A[k,i]*A[k,j] with given A shaped (m,n)."
+    """Generate code to declare and compute ATA[i,j] = sum_k A[k,i]*A[k,j] with given A shaped (m,n)."""
     # Loop indices
     i = L.Symbol(index_prefix + "i")
     j = L.Symbol(index_prefix + "j")

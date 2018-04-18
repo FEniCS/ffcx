@@ -82,7 +82,7 @@ def split_parameters(parameters):
 
 
 def default_parameters():
-    "Return (a copy of) the default parameter values for FFC."
+    """Return (a copy of) the default parameter values for FFC."""
     parameters = copy.deepcopy(FFC_PARAMETERS)
 
     # HACK
@@ -110,7 +110,7 @@ def default_jit_parameters():
 
 
 def validate_parameters(parameters):
-    "Initial check of parameters."
+    """Initial check of parameters."""
     p = default_parameters()
     if parameters is not None:
         p.update(parameters)
@@ -121,7 +121,7 @@ def validate_parameters(parameters):
 
 
 def validate_jit_parameters(parameters):
-    "Check parameters and add any missing parameters"
+    """Check parameters and add any missing parameters"""
     p = default_jit_parameters()
     if parameters is not None:
         p.update(parameters)
@@ -186,7 +186,7 @@ def compilation_relevant_parameters(parameters):
 
 
 def compute_jit_parameters_signature(parameters):
-    "Return parameters signature (some parameters must be ignored)."
+    """Return parameters signature (some parameters must be ignored)."""
     from ufl.utils.sorting import canonicalize_metadata
     parameters = compilation_relevant_parameters(parameters)
     return str(canonicalize_metadata(parameters))

@@ -54,7 +54,7 @@ class IntegralGenerator(object):
         self.symbol_counters = defaultdict(int)
 
     def get_includes(self):
-        "Return list of include statements needed to support generated code."
+        """Return list of include statements needed to support generated code."""
         includes = set()
 
         # Get std::fill used by MemZero
@@ -109,24 +109,25 @@ class IntegralGenerator(object):
         return sorted(includes)
 
     def init_scopes(self):
-        "Initialize variable scope dicts."
+        """Initialize variable scope dicts."""
         # Reset variables, separate sets for quadrature loop
         self.scopes = {num_points: {} for num_points in self.ir["all_num_points"]}
         self.scopes[None] = {}
 
     def set_var(self, num_points, v, vaccess):
-        """"Set a new variable in variable scope dicts.
+        """Set a new variable in variable scope dicts.
 
         Scope is determined by num_points which identifies the
         quadrature loop scope or None if outside quadrature loops.
 
         v is the ufl expression and vaccess is the CNodes
         expression to access the value in the code.
+
         """
         self.scopes[num_points][v] = vaccess
 
     def has_var(self, num_points, v):
-        """"Check if variable exists in variable scope dicts.
+        """Check if variable exists in variable scope dicts.
 
         Return True if ufl expression v exists in the num_points scope.
 
@@ -135,7 +136,7 @@ class IntegralGenerator(object):
         return v in self.scopes[num_points]
 
     def get_var(self, num_points, v):
-        """"Lookup ufl expression v in variable scope dicts.
+        """Lookup ufl expression v in variable scope dicts.
 
         Scope is determined by num_points which identifies the
         quadrature loop scope or None if outside quadrature loops.
@@ -153,7 +154,7 @@ class IntegralGenerator(object):
         return f
 
     def new_temp_symbol(self, basename):
-        "Create a new code symbol named basename + running counter."
+        """Create a new code symbol named basename + running counter."""
         L = self.backend.language
         name = "%s%d" % (basename, self.symbol_counters[basename])
         self.symbol_counters[basename] += 1
@@ -238,7 +239,7 @@ class IntegralGenerator(object):
         return L.StatementList(parts)
 
     def generate_quadrature_tables(self):
-        "Generate static tables of quadrature points and weights."
+        """Generate static tables of quadrature points and weights."""
         L = self.backend.language
 
         parts = []
@@ -327,7 +328,7 @@ class IntegralGenerator(object):
         return parts
 
     def generate_quadrature_loop(self, num_points):
-        "Generate quadrature loop with for this num_points."
+        """Generate quadrature loop with for this num_points."""
         L = self.backend.language
 
         # Generate unstructured varying partition
@@ -359,7 +360,7 @@ class IntegralGenerator(object):
         return preparts, quadparts, postparts
 
     def generate_runtime_quadrature_loop(self):
-        "Generate quadrature loop for custom integrals, with physical points given runtime."
+        """Generate quadrature loop for custom integrals, with physical points given runtime."""
         L = self.backend.language
 
         assert self.ir["integral_type"] in custom_integral_types

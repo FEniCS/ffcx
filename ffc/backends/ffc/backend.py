@@ -14,7 +14,7 @@ from ffc.backends.ffc.definitions import FFCBackendDefinitions
 
 
 class FFCBackend(object):
-    "Class collecting all aspects of the FFC backend."
+    """Class collecting all aspects of the FFC backend."""
 
     def __init__(self, ir, parameters):
 

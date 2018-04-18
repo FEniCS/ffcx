@@ -32,14 +32,14 @@ class ValueNumberer(MultiFunction):
         self.V_symbols = V_symbols
 
     def new_symbols(self, n):
-        "Generator for new symbols with a running counter."
+        """Generator for new symbols with a running counter."""
         begin = self.symbol_count
         end = begin + n
         self.symbol_count = end
         return list(range(begin, end))
 
     def new_symbol(self):
-        "Generator for new symbols with a running counter."
+        """Generator for new symbols with a running counter."""
         begin = self.symbol_count
         self.symbol_count += 1
         return begin
@@ -48,12 +48,12 @@ class ValueNumberer(MultiFunction):
         return self.V_symbols[self.e2i[expr]]
 
     def expr(self, v, i):
-        "Create new symbols for expressions that represent new values."
+        """Create new symbols for expressions that represent new values."""
         n = self.V_sizes[i]
         return self.new_symbols(n)
 
     def form_argument(self, v, i):
-        "Create new symbols for expressions that represent new values."
+        """Create new symbols for expressions that represent new values."""
         symmetry = v.ufl_element().symmetry()
 
         if symmetry:
@@ -186,5 +186,5 @@ class ValueNumberer(MultiFunction):
         return symbols
 
     def variable(self, v, i):
-        "Direct reuse of all symbols."
+        """Direct reuse of all symbols."""
         return self.get_node_symbols(v.ufl_operands[0])

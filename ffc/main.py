@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 def info_version():
-    "Print version number."
+    """Print version number."""
     print("""\
 This is FFC, the FEniCS Form Compiler, version {0}.
 UFC backend version {1}, signature {2}.
@@ -39,7 +39,7 @@ Python {3} on {4}
 
 
 def info_usage():
-    "Print usage information."
+    """Print usage information."""
     info_version()
     print("""Usage: ffc [OPTION]... input.form
 

@@ -135,7 +135,7 @@ class ModifiedTerminal(object):
 
 
 def is_modified_terminal(v):
-    "Check if v is a terminal or a terminal wrapped in terminal modifier types."
+    """Check if v is a terminal or a terminal wrapped in terminal modifier types."""
     while not v._ufl_is_terminal_:
         if v._ufl_is_terminal_modifier_:
             v = v.ufl_operands[0]
@@ -145,7 +145,7 @@ def is_modified_terminal(v):
 
 
 def strip_modified_terminal(v):
-    "Extract core Terminal from a modified terminal or return None."
+    """Extract core Terminal from a modified terminal or return None."""
     while not v._ufl_is_terminal_:
         if v._ufl_is_terminal_modifier_:
             v = v.ufl_operands[0]

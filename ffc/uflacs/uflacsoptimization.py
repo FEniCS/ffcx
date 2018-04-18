@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def optimize_integral_ir(ir, parameters):
-    "Compute optimized intermediate representation of integral."
+    """Compute optimized intermediate representation of integral."""
 
     logger.info("Optimizing uflacs representation")
 

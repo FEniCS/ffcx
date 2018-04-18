@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def generate_integral_code(ir, prefix, parameters):
-    "Generate code for integral from intermediate representation."
+    """Generate code for integral from intermediate representation."""
 
     logger.info("Generating code from ffc.uflacs representation")
 

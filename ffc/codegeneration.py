@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 def generate_code(ir, parameters, jit):
-    "Generate code from intermediate representation."
+    """Generate code from intermediate representation."""
 
     logger.debug("Compiler stage 4: Generating code")
 
@@ -196,7 +196,7 @@ tt_timing_template = """
 
 
 def _generate_tabulate_tensor_comment(ir, parameters):
-    "Generate comment for tabulate_tensor."
+    """Generate comment for tabulate_tensor."""
 
     # FIXME: Remove this function?
     raise RuntimeError("This function should be dead.")
@@ -223,7 +223,7 @@ def _generate_tabulate_tensor_comment(ir, parameters):
 
 
 def _generate_integral_code(ir, parameters):
-    "Generate code for integrals from intermediate representation."
+    """Generate code for integrals from intermediate representation."""
     # Select representation
     r = pick_representation(ir["representation"])
 

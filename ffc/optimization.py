@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 def optimize_ir(ir, parameters):
-    "Optimize intermediate form representation."
+    """Optimize intermediate form representation."""
 
     logger.info("Compiler stage 3: Optimizing intermediate representation")
 
@@ -42,6 +42,6 @@ def optimize_ir(ir, parameters):
 
 
 def _optimize_integral_ir(ir, parameters):
-    "Compute optimized intermediate represention of integral."
+    """Compute optimized intermediate represention of integral."""
     r = pick_representation(ir["representation"])
     return r.optimize_integral_ir(ir, parameters)

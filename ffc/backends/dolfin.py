@@ -173,7 +173,7 @@ def generate_form(form, prefix, classname):
 
 
 def generate_form_class(form, prefix, classname):
-    "Generate dolfin wrapper code for a single Form class."
+    """Generate dolfin wrapper code for a single Form class."""
 
     # Generate data for coefficient assignments
     (number, name) = generate_coefficient_map_data(form)
@@ -322,8 +322,7 @@ dolfin_function_space* {prefix}{classname}()
 
 
 class UFCFormNames:
-
-    "Encapsulation of the names related to a generated UFC form."
+    """Encapsulation of the names related to a generated UFC form."""
 
     def __init__(self, name, coefficient_names, ufc_form_classname, ufc_finite_element_classnames,
                  ufc_dofmap_classnames, ufc_coordinate_mapping_classnames):
@@ -358,7 +357,7 @@ class UFCFormNames:
 
 
 class UFCElementNames:
-    "Encapsulation of the names related to a generated UFC element."
+    """Encapsulation of the names related to a generated UFC element."""
 
     def __init__(self, name, element_classname, dofmap_classname, coordinate_mapping_classname):
         self.name = name

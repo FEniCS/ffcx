@@ -118,7 +118,7 @@ def analyze_ufl_objects(ufl_objects, kind, parameters):
 
 
 def _compute_element_numbers(elements):
-    "Build map from elements to element numbers."
+    """Build map from elements to element numbers."""
     element_numbers = {}
     for (i, element) in enumerate(elements):
         element_numbers[element] = i
@@ -126,7 +126,7 @@ def _compute_element_numbers(elements):
 
 
 def _analyze_form(form, parameters):
-    "Analyze form, returning form data."
+    """Analyze form, returning form data."""
 
     # Check that form is not empty
     if form.empty():
@@ -381,7 +381,7 @@ def _autoselect_quadrature_rule(integral_metadata, integral, form_data):
 
 
 def _determine_representation(integral_metadatas, ida, form_data, form_r_family, parameters):
-    "Determine one unique representation considering all integrals together."
+    """Determine one unique representation considering all integrals together."""
 
     # Extract unique representation among these single-domain
     # integrals (Generating code with different representations within
@@ -450,7 +450,7 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
 
 
 def _attach_integral_metadata(form_data, form_r_family, parameters):
-    "Attach integral metadata"
+    """Attach integral metadata"""
     # TODO: A nicer data flow would avoid modifying the form_data at all.
 
     # Parameter values which make sense "per integrals" or "per integral"
@@ -553,7 +553,7 @@ def _validate_quadrature_schemes_of_elements(quad_schemes, elements):
 
 
 def _get_sub_elements(element):
-    "Get sub elements."
+    """Get sub elements."""
     sub_elements = [element]
     if isinstance(element, MixedElement):
         for e in element.sub_elements():

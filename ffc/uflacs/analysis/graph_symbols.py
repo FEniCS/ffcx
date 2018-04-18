@@ -40,7 +40,7 @@ def build_node_shapes(V):
 
 
 def build_node_sizes(V_shapes):
-    "Compute all the products of a sequence of shapes."
+    """Compute all the products of a sequence of shapes."""
     nv = len(V_shapes)
     V_sizes = numpy.zeros(nv, dtype=int)
     for i, sh in enumerate(V_shapes):
