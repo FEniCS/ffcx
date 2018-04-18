@@ -5,9 +5,7 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""
-Compiler stage 2: Code representation
--------------------------------------
+"""Compiler stage 2: Code representation
 
 Module computes intermediate representations of forms,
 elements and dofmaps. For each UFC function, we extract the
@@ -88,7 +86,6 @@ def make_all_element_classnames(prefix, elements, coordinate_elements, element_n
 
 def compute_ir(analysis, prefix, parameters, jit=False):
     """Compute intermediate representation."""
-
     logger.info("Compiler stage 2: Computing intermediate representation")
 
     # Set code generation parameters (this is not actually a 'formatting'
@@ -165,7 +162,6 @@ def compute_ir(analysis, prefix, parameters, jit=False):
 
 def _compute_element_ir(ufl_element, element_numbers, classnames, parameters, jit):
     """Compute intermediate representation of element."""
-
     # Create FIAT element
     fiat_element = create_element(ufl_element)
     cell = ufl_element.cell()
@@ -198,7 +194,6 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, parameters, ji
 
 def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit=False):
     """Compute intermediate representation of dofmap."""
-
     # Create FIAT element
     fiat_element = create_element(ufl_element)
     cell = ufl_element.cell()
@@ -295,7 +290,6 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element,
                                    parameters,
                                    jit=False):
     """Compute intermediate representation of coordinate mapping."""
-
     cell = ufl_coordinate_element.cell()
     cellname = cell.cellname()
 
@@ -355,7 +349,6 @@ def _num_global_support_dofs(fiat_element):
 
 def _global_dimension(fiat_element):
     """Compute intermediate representation for global_dimension."""
-
     if not isinstance(fiat_element, MixedElement):
         if isinstance(fiat_element, SpaceOfReals):
             return ([], 1)
@@ -375,9 +368,7 @@ def _global_dimension(fiat_element):
 
 def _needs_mesh_entities(fiat_element):
     """Compute intermediate representation for needs_mesh_entities."""
-
     # Note: The dof map for Real elements does not depend on the mesh
-
     num_dofs_per_entity = _num_dofs_per_entity(fiat_element)
     if isinstance(fiat_element, SpaceOfReals):
         return [False for d in num_dofs_per_entity]
@@ -388,7 +379,6 @@ def _needs_mesh_entities(fiat_element):
 def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classnames, parameters,
                          jit):
     """Compute intermediate represention for form integrals."""
-
     # For consistency, all jit objects now have classnames with postfix "main"
     if jit:
         assert form_index == 0
@@ -437,7 +427,6 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classna
 def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, parameters,
                      jit=False):
     """Compute intermediate representation of form."""
-
     # For consistency, all jit objects now have classnames with postfix "main"
     if jit:
         assert form_id == 0
@@ -505,7 +494,6 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, pa
 def _generate_reference_offsets(fiat_element, offset=0):
     """Generate offsets: i.e value offset for each basis function
     relative to a reference element representation."""
-
     if isinstance(fiat_element, MixedElement):
         offsets = []
         for e in fiat_element.elements():
@@ -562,7 +550,6 @@ def _generate_physical_offsets(ufl_element, offset=0):
 def _generate_offsets(ufl_element, reference_offset=0, physical_offset=0):
     """Generate offsets: i.e value offset for each basis function
     relative to a physical element representation."""
-
     if isinstance(ufl_element, ufl.MixedElement):
         offsets = []
         for e in ufl_element.sub_elements():
@@ -592,7 +579,6 @@ def _generate_offsets(ufl_element, reference_offset=0, physical_offset=0):
 
 def _evaluate_dof(ufl_element, fiat_element):
     """Compute intermediate representation of evaluate_dof."""
-
     cell = ufl_element.cell()
     if fiat_element.is_nodal():
         dofs = [L.pt_dict for L in fiat_element.dual_basis()]
@@ -754,7 +740,6 @@ def _tabulate_dof_coordinates(ufl_element, element):
 
 def _tabulate_dofs(element, cell):
     """Compute intermediate representation of tabulate_dofs."""
-
     if isinstance(element, SpaceOfReals):
         return None
 
@@ -781,7 +766,6 @@ def _tabulate_dofs(element, cell):
 
 def _tabulate_facet_dofs(element, cell):
     """Compute intermediate representation of tabulate_facet_dofs."""
-
     # Get topological dimension
     D = cell.topological_dimension()
 
@@ -800,7 +784,6 @@ def _tabulate_facet_dofs(element, cell):
 
 def _tabulate_entity_closure_dofs(element, cell):
     """Compute intermediate representation of tabulate_entity_closure_dofs."""
-
     # Get entity closure dofs from FIAT element
     fiat_entity_closure_dofs = element.entity_closure_dofs()
 
@@ -861,11 +844,11 @@ def all_elements(fiat_element):
 
 
 def _num_dofs_per_entity(fiat_element):
-    """
-    Compute list of integers representing the number of dofs
+    """Compute list of integers representing the number of dofs
     associated with a single mesh entity.
 
     Example: Lagrange of degree 3 on triangle: [1, 2, 1]
+
     """
     entity_dofs = fiat_element.entity_dofs()
     return [len(entity_dofs[e][0]) for e in sorted(entity_dofs.keys())]

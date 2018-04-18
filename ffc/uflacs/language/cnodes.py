@@ -119,6 +119,7 @@ def MemCopy(src, dst, size, type):
 
 class CNode(object):
     """Base class for all C AST nodes."""
+
     __slots__ = ()
 
     def __str__(self):
@@ -142,7 +143,9 @@ class CExpr(CNode):
     """Base class for all C expressions.
 
     All subtypes should define a 'precedence' class attribute.
+
     """
+
     __slots__ = ()
 
     def ce_format(self, precision=None):
@@ -283,12 +286,14 @@ class CExpr(CNode):
 
 class CExprOperator(CExpr):
     """Base class for all C expression operator."""
+
     __slots__ = ()
     sideeffect = False
 
 
 class CExprTerminal(CExpr):
     """Base class for all C expression terminals."""
+
     __slots__ = ()
     sideeffect = False
 
@@ -298,12 +303,14 @@ class CExprTerminal(CExpr):
 
 class CExprLiteral(CExprTerminal):
     """A float or int literal value."""
+
     __slots__ = ()
     precedence = PRECEDENCE.LITERAL
 
 
 class Null(CExprLiteral):
     """A null pointer literal."""
+
     __slots__ = ()
     precedence = PRECEDENCE.LITERAL
 
@@ -316,6 +323,7 @@ class Null(CExprLiteral):
 
 class LiteralFloat(CExprLiteral):
     """A floating point literal value."""
+
     __slots__ = ("value", )
     precedence = PRECEDENCE.LITERAL
 
@@ -340,6 +348,7 @@ class LiteralFloat(CExprLiteral):
 
 class LiteralInt(CExprLiteral):
     """An integer literal value."""
+
     __slots__ = ("value", )
     precedence = PRECEDENCE.LITERAL
 
@@ -367,6 +376,7 @@ class LiteralInt(CExprLiteral):
 
 class LiteralBool(CExprLiteral):
     """A boolean literal value."""
+
     __slots__ = ("value", )
     precedence = PRECEDENCE.LITERAL
 
@@ -388,6 +398,7 @@ class LiteralBool(CExprLiteral):
 
 class LiteralString(CExprLiteral):
     """A boolean literal value."""
+
     __slots__ = ("value", )
     precedence = PRECEDENCE.LITERAL
 
@@ -405,6 +416,7 @@ class LiteralString(CExprLiteral):
 
 class Symbol(CExprTerminal):
     """A named symbol."""
+
     __slots__ = ("name", )
     precedence = PRECEDENCE.SYMBOL
 
@@ -438,6 +450,7 @@ class New(CExpr):
 
 class UnaryOp(CExprOperator):
     """Base class for unary operators."""
+
     __slots__ = ("arg", )
 
     def __init__(self, arg):
@@ -449,6 +462,7 @@ class UnaryOp(CExprOperator):
 
 class PrefixUnaryOp(UnaryOp):
     """Base class for prefix unary operators."""
+
     __slots__ = ()
 
     def ce_format(self, precision=None):
@@ -463,6 +477,7 @@ class PrefixUnaryOp(UnaryOp):
 
 class PostfixUnaryOp(UnaryOp):
     """Base class for postfix unary operators."""
+
     __slots__ = ()
 
     def ce_format(self, precision=None):
@@ -502,6 +517,7 @@ class BinOp(CExprOperator):
 
 class NaryOp(CExprOperator):
     """Base class for special n-ary operators."""
+
     __slots__ = ("args", )
 
     def __init__(self, args):
@@ -696,6 +712,7 @@ class BitOr(BinOp):
 
 class Sum(NaryOp):
     """Sum of any number of operands."""
+
     __slots__ = ()
     precedence = PRECEDENCE.ADD
     op = "+"
@@ -703,6 +720,7 @@ class Sum(NaryOp):
 
 class Product(NaryOp):
     """Product of any number of operands."""
+
     __slots__ = ()
     precedence = PRECEDENCE.MUL
     op = "*"
@@ -710,6 +728,7 @@ class Product(NaryOp):
 
 class AssignOp(BinOp):
     """Base class for assignment operators."""
+
     __slots__ = ()
     precedence = PRECEDENCE.ASSIGN
     sideeffect = True
@@ -788,6 +807,7 @@ class AssignBitOr(AssignOp):
 
 class FlattenedArray(object):
     """Syntax carrying object only, will get translated on __getitem__ to ArrayAccess."""
+
     __slots__ = ("array", "strides", "offset", "dims")
 
     def __init__(self, array, dummy=None, dims=None, strides=None, offset=None):
@@ -975,7 +995,9 @@ def _is_zero_valued(values):
 def as_cexpr(node):
     """Typechecks and wraps an object as a valid CExpr.
 
-    Accepts CExpr nodes, treats int and float as literals, and treats a string as a symbol.
+    Accepts CExpr nodes, treats int and float as literals, and treats a
+    string as a symbol.
+
     """
     if isinstance(node, CExpr):
         return node
@@ -1012,10 +1034,12 @@ def as_symbol(symbol):
 
 def flattened_indices(indices, shape):
     """Given a tuple of indices and a shape tuple,
-    return CNode expression for flattened indexing
-    into multidimensional array.
+    return CNode expression for flattened indexing into multidimensional
+    array.
 
-    Indices and shape entries can be int values, str symbol names, or CNode expressions.
+    Indices and shape entries can be int values, str symbol names, or
+    CNode expressions.
+
     """
     n = len(shape)
     if n == 0:
@@ -1042,7 +1066,9 @@ class CStatement(CNode):
     """Base class for all C statements.
 
     Subtypes do _not_ define a 'precedence' class attribute.
+
     """
+
     __slots__ = ()
 
     # True if statement contains its own scope, false by default to be
@@ -1070,6 +1096,7 @@ class CStatement(CNode):
 
 class VerbatimStatement(CStatement):
     """Wraps a source code string to be pasted verbatim into the source code."""
+
     __slots__ = ("codestring", )
     is_scoped = False
 
@@ -1086,6 +1113,7 @@ class VerbatimStatement(CStatement):
 
 class Statement(CStatement):
     """Make an expression into a statement."""
+
     __slots__ = ("expr", )
     is_scoped = False
 
@@ -1101,6 +1129,7 @@ class Statement(CStatement):
 
 class StatementList(CStatement):
     """A simple sequence of statements. No new scopes are introduced."""
+
     __slots__ = ("statements", )
 
     def __init__(self, statements):
@@ -1224,6 +1253,7 @@ class Throw(CStatement):
 
 class Comment(CStatement):
     """Line comment(s) used for annotating the generated code with human readable remarks."""
+
     __slots__ = ("comment", )
     is_scoped = True
 
@@ -1258,6 +1288,7 @@ def commented_code_list(code, comments):
 
 class Pragma(CStatement):
     """Pragma comments used for compiler-specific annotations."""
+
     __slots__ = ("comment", )
     is_scoped = True
 
@@ -1278,6 +1309,7 @@ class Pragma(CStatement):
 
 class VariableDecl(CStatement):
     """Declare a variable, optionally define initial value."""
+
     __slots__ = ("typename", "symbol", "value")
     is_scoped = False
 
@@ -1357,6 +1389,7 @@ def build_initializer_lists(values, sizes, level, formatter, padlen=0, precision
 
         { { 0.0, 0.1 },
           { 1.0, 1.1 } }
+
     """
     if formatter == str:
 
@@ -1399,12 +1432,14 @@ def build_initializer_lists(values, sizes, level, formatter, padlen=0, precision
 class ArrayDecl(CStatement):
     """A declaration or definition of an array.
 
-    Note that just setting values=0 is sufficient
-    to initialize the entire array to zero.
+    Note that just setting values=0 is sufficient to initialize the
+    entire array to zero.
 
-    Otherwise use nested lists of lists to represent
-    multidimensional array values to initialize to.
+    Otherwise use nested lists of lists to represent multidimensional
+    array values to initialize to.
+
     """
+
     __slots__ = ("typename", "symbol", "sizes", "alignas", "padlen", "values")
     is_scoped = False
 
@@ -1626,6 +1661,7 @@ class Switch(CStatement):
 
 class ForRange(CStatement):
     """Slightly higher-level for loop assuming incrementing an index over a range."""
+
     __slots__ = ("index", "begin", "end", "body", "pragma", "index_type")
     is_scoped = True
 

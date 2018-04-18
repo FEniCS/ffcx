@@ -5,12 +5,11 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""
-Compiler stage 5: optimization
-------------------------------
+"""Compiler stage 5: optimization
 
 This module implements the optimization of an intermediate code
 representation.
+
 """
 import logging
 

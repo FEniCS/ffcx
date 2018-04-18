@@ -5,9 +5,7 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""
-Compiler stage 1: Analysis
---------------------------
+"""Compiler stage 1: Analysis
 
 This module implements the analysis/preprocessing of variational
 forms, including automatic selection of elements, degrees and
@@ -36,12 +34,11 @@ default_precision = numpy.finfo("double").precision + 1  # == 16
 
 
 def analyze_forms(forms, parameters):
-    """
-    Analyze form(s), returning
+    """Analyze form(s), returning
 
-       form_datas      - a tuple of form_data objects
-       unique_elements - a tuple of unique elements across all forms
-       element_numbers - a mapping to unique numbers for all elements
+    form_datas      - a tuple of form_data objects
+    unique_elements - a tuple of unique elements across all forms
+    element_numbers - a mapping to unique numbers for all elements
     """
     return analyze_ufl_objects(forms, "form", parameters)
 
@@ -55,12 +52,11 @@ def analyze_coordinate_mappings(coordinate_elements, parameters):
 
 
 def analyze_ufl_objects(ufl_objects, kind, parameters):
-    """
-    Analyze ufl object(s), either forms, elements, or coordinate mappings, returning:
+    """Analyze ufl object(s), either forms, elements, or coordinate mappings, returning:
 
-       form_datas      - a tuple of form_data objects
-       unique_elements - a tuple of unique elements across all forms
-       element_numbers - a mapping to unique numbers for all elements
+    form_datas      - a tuple of form_data objects
+    unique_elements - a tuple of unique elements across all forms
+    element_numbers - a mapping to unique numbers for all elements
 
     """
     logger.info("Compiler stage 1: Analyzing %s(s)" % (kind, ))

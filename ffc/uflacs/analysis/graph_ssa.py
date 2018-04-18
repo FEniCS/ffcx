@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def default_partition_seed(expr, rank):
-    """
+    """FIXME: Add description
     Partition 0: Piecewise constant on each cell (including Real and DG0 coefficients)
     Partition 1: Depends on x
     Partition 2: Depends on x and coefficients

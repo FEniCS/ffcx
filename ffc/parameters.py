@@ -134,7 +134,6 @@ def validate_jit_parameters(parameters):
 def _validate_parameters(parameters):
     """Does some casting of parameter values in place on the
     provided dictionary"""
-
     # Cast int optimize flag to bool
     if isinstance(parameters["optimize"], int):
         parameters["optimize"] = bool(parameters["optimize"])

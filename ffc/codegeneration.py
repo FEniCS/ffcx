@@ -5,12 +5,11 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""
-Compiler stage 4: Code generation
----------------------------------
+"""Compiler stage 4: Code generation
 
 This module implements the generation of C code for the body of each
 UFC function from an (optimized) intermediate representation (OIR).
+
 """
 
 import itertools

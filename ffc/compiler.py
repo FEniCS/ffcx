@@ -4,8 +4,7 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""
-Main interface for compilation
+"""Main interface for compilation
 of forms and breaking the compilation into several sequential stages.
 The output of each stage is the input of the next stage.
 
@@ -141,7 +140,6 @@ def compile_ufl_objects(ufl_objects,
                         parameters=None,
                         jit=False):
     """Generate UFC code for a given UFL form or list of UFL forms."""
-
     logger.info("Compiling {} {}\n".format(kind, prefix))
 
     # Reset timing

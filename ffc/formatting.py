@@ -4,15 +4,14 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""
-Compiler stage 5: Code formatting
----------------------------------
+"""Compiler stage 5: Code formatting
 
 This module implements the formatting of UFC code from a given
 dictionary of generated C++ code for the body of each UFC function.
 
 It relies on templates for UFC code available as part of the module
 ufc_utils.
+
 """
 
 import logging

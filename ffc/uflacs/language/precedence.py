@@ -8,6 +8,7 @@
 
 class PRECEDENCE:
     """An enum-like class for C operator precedence levels."""
+
     HIGHEST = 0
     LITERAL = 0
     SYMBOL = 0
