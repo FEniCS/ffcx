@@ -1,20 +1,25 @@
-=============================
+==============================================
 FFC-X: The FEniCS Form Compiler (experimental)
-=============================
+==============================================
+
+.. image:: https://circleci.com/gh/FEniCS/dolfinx.svg?style=svg
+    :target: https://circleci.com/gh/FEniCS/dolfinx
 
 FFC-X
 -----
 
-FFC-X is an experimental version of FEniCS FFC which is being actively developed, but is **not ready for production use**. Many new experimental features may come and go as development proceeds.
+FFC-X is an experimental version of FEniCS FFC which is being actively
+developed, but is **not ready for production use**. Many new
+experimental features may come and go as development proceeds.
 
 
 FFC is a compiler for finite element variational forms. From a
-high-level description of the form, it generates efficient low-level
-C++ code that can be used to assemble the corresponding discrete
-operator (tensor). In particular, a bilinear form may be assembled
-into a matrix and a linear form may be assembled into a vector.  FFC
-may be used either from the command line (by invoking the ``ffc``
-command) or as a Python module (``import ffc``).
+high-level description of the form, it generates efficient low-level C++
+code that can be used to assemble the corresponding discrete operator
+(tensor). In particular, a bilinear form may be assembled into a matrix
+and a linear form may be assembled into a vector.  FFC may be used
+either from the command line (by invoking the ``ffc`` command) or as a
+Python module (``import ffc``).
 
 FFC is part of the FEniCS Project.
 
@@ -29,32 +34,6 @@ Documentation can be viewed at http://fenics-ffc.readthedocs.org/.
 .. image:: https://readthedocs.org/projects/fenics-ffc/badge/?version=latest
    :target: http://fenics.readthedocs.io/projects/ffc/en/latest/?badge=latest
    :alt: Documentation Status
-
-
-Automated Testing
-=================
-
-We use Bitbucket Pipelines and Atlassian Bamboo to perform automated
-testing.
-
-.. image:: https://bitbucket-badges.useast.atlassian.io/badge/fenics-project/ffc.svg
-   :target: https://bitbucket.org/fenics-project/ffc/addon/pipelines/home
-   :alt: Pipelines Build Status
-
-.. image:: http://fenics-bamboo.simula.no:8085/plugins/servlet/wittified/build-status/FFC-FD
-   :target: http://fenics-bamboo.simula.no:8085/browse/FFC-FD/latest
-   :alt: Bamboo Build Status
-
-
-Code Coverage
-=============
-
-Code coverage reports can be viewed at
-https://coveralls.io/bitbucket/fenics-project/ffc.
-
-.. image:: https://coveralls.io/repos/bitbucket/fenics-project/ffc/badge.svg?branch=master
-   :target: https://coveralls.io/bitbucket/fenics-project/ffc?branch=master
-   :alt: Coverage Status
 
 
 License
