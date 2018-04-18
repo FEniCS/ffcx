@@ -7,6 +7,7 @@
 """FFC/UFC specific variable access."""
 
 import logging
+import warnings
 
 from ffc import FFCError
 from ffc.fiatinterface import create_element
@@ -68,8 +69,9 @@ class FFCBackendAccess(MultiFunction):
         begin, end = tabledata.dofrange
 
         if ttype == "ones" and (end - begin) == 1:
-            # f = 1.0 * f_{begin}, just return direct reference to dof array at dof begin
-            # (if mt is restricted, begin contains cell offset)
+            # f = 1.0 * f_{begin}, just return direct reference to dof
+            # array at dof begin (if mt is restricted, begin contains
+            # cell offset)
             idof = begin
             return self.symbols.coefficient_dof_access(mt.terminal, idof)
         elif ttype == "quadrature":
@@ -104,7 +106,8 @@ class FFCBackendAccess(MultiFunction):
                 index = iq * gdim + mt.flat_component
             return x[index]
         else:
-            # Physical coordinates are computed by code generated in definitions
+            # Physical coordinates are computed by code generated in
+            # definitions
             return self.symbols.x_component(mt)
 
     def cell_coordinate(self, e, mt, tabledata, num_points):
@@ -128,7 +131,8 @@ class FFCBackendAccess(MultiFunction):
                 index = iq * tdim + mt.flat_component
             return X[index]
         else:
-            # X should be computed from x or Xf symbolically instead of getting here
+            # X should be computed from x or Xf symbolically instead of
+            # getting here
             raise FFCError("Expecting reference cell coordinate to be symbolically rewritten.")
 
     def facet_coordinate(self, e, mt, tabledata, num_points):
@@ -147,8 +151,7 @@ class FFCBackendAccess(MultiFunction):
             if tdim == 0:
                 raise FFCError("Vertices have no facet coordinates.")
             elif tdim == 1:
-                # 0D vertex coordinate
-                logger.warning(
+                warnings.warn(
                     "Vertex coordinate is always 0, should get rid of this in ufl geometry lowering."
                 )
                 return L.LiteralFloat(0.0)
@@ -163,7 +166,8 @@ class FFCBackendAccess(MultiFunction):
                 index = iq * (tdim - 1) + mt.flat_component
             return Xf[index]
         else:
-            # Xf should be computed from X or x symbolically instead of getting here
+            # Xf should be computed from X or x symbolically instead of
+            # getting here
             raise FFCError("Expecting reference facet coordinate to be symbolically rewritten.")
 
     def jacobian(self, e, mt, tabledata, num_points):
@@ -218,8 +222,7 @@ class FFCBackendAccess(MultiFunction):
             table = L.Symbol("{0}_reference_edge_vectors".format(cellname))
             return table[mt.component[0]][mt.component[1]]
         elif cellname == "interval":
-            raise FFCError(
-                "The reference cell edge vectors doesn't make sense for interval cell.")
+            raise FFCError("The reference cell edge vectors doesn't make sense for interval cell.")
         else:
             raise FFCError("Unhandled cell types {0}.".format(cellname))
 

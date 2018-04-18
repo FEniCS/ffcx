@@ -1,28 +1,12 @@
 # -*- coding: utf-8 -*-
-
 # Copyright (C) 2009-2017 Kristian B. Oelgaard and Anders Logg
 #
-# This file is part of FFC.
+# This file is part of FFC (https://www.fenicsproject.org)
 #
-# FFC is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# FFC is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# Modified by Garth N. Wells, 2009.
-# Modified by Marie Rognes, 2009-2013.
-# Modified by Martin Sandve Alnæs, 2013
-# Modified by Lizao Li, 2015, 2016
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import logging
+import warnings
 
 import numpy
 
@@ -75,26 +59,17 @@ def create_element(ufl_element):
         logger.debug("Reusing element from cache")
         return _cache[element_signature]
 
-    # Create regular FIAT finite element
     if isinstance(ufl_element, ufl.FiniteElement):
         element = _create_fiat_element(ufl_element)
-
-    # Create mixed element (implemented by FFC)
     elif isinstance(ufl_element, ufl.MixedElement):
         elements = _extract_elements(ufl_element)
         element = MixedElement(elements)
-
-    # Create element union
     elif isinstance(ufl_element, ufl.EnrichedElement):
         elements = [create_element(e) for e in ufl_element._elements]
         element = EnrichedElement(*elements)
-
-    # Create restricted element
     elif isinstance(ufl_element, ufl.RestrictedElement):
         element = _create_restricted_element(ufl_element)
-
-    else:
-        raise FFCError("Cannot handle this element type: %s" % str(ufl_element))
+        raise FFCError("Cannot handle this element type: {}".format(ufl_element))
 
     # Store in cache
     _cache[element_signature] = element
@@ -124,19 +99,18 @@ def _create_fiat_element(ufl_element):
         element.__class__ = type('SpaceOfReals', (type(element), SpaceOfReals), {})
         return element
 
-    # Handle quadrilateral case by reconstructing the element with cell
-    # TensorProductCell (interval x interval)
     if cellname == "quadrilateral":
+        # Handle quadrilateral case by reconstructing the element with
+        # cell TensorProductCell (interval x interval)
         quadrilateral_tpc = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
         return FlattenedDimensions(
             _create_fiat_element(ufl_element.reconstruct(cell=quadrilateral_tpc)))
-
-    # Handle hexahedron case by reconstructing the element with cell
-    # TensorProductCell (quadrilateral x interval). This creates
-    # TensorProductElement(TensorProductElement(interval, interval),
-    # interval) Therefore dof entities consists of nested tuples,
-    # example: ((0, 1), 1)
     elif cellname == "hexahedron":
+        # Handle hexahedron case by reconstructing the element with cell
+        # TensorProductCell (quadrilateral x interval). This creates
+        # TensorProductElement(TensorProductElement(interval, interval),
+        # interval) Therefore dof entities consists of nested tuples,
+        # example: ((0, 1), 1)
         hexahedron_tpc = ufl.TensorProductCell(ufl.Cell("quadrilateral"), ufl.Cell("interval"))
         return FlattenedDimensions(
             _create_fiat_element(ufl_element.reconstruct(cell=hexahedron_tpc)))
@@ -156,7 +130,6 @@ def _create_fiat_element(ufl_element):
 
         # Make element
         element = QuadratureElement(fiat_cell, points)
-
     else:
         # Check if finite element family is supported by FIAT
         if family not in FIAT.supported_elements:
@@ -181,8 +154,8 @@ def _create_fiat_element(ufl_element):
     if element.value_shape() != ufl_element.reference_value_shape():
         # Consistency check between UFL and FIAT elements.
         raise FFCError("Something went wrong in the construction of FIAT element from UFL element."
-                       + "Shapes are %s and %s." % (element.value_shape(),
-                                                    ufl_element.reference_value_shape()))
+                       + "Shapes are {} and {}.".format(element.value_shape(),
+                                                        ufl_element.reference_value_shape()))
 
     return element
 
@@ -199,17 +172,17 @@ def create_quadrature(shape, degree, scheme="default"):
         return (numpy.zeros((1, 0)), numpy.ones((1, )))
 
     if scheme == "vertex":
-        # The vertex scheme, i.e., averaging the function value in the vertices
-        # and multiplying with the simplex volume, is only of order 1 and
-        # inferior to other generic schemes in terms of error reduction.
-        # Equation systems generated with the vertex scheme have some
-        # properties that other schemes lack, e.g., the mass matrix is
-        # a simple diagonal matrix. This may be prescribed in certain cases.
+        # The vertex scheme, i.e., averaging the function value in the
+        # vertices and multiplying with the simplex volume, is only of
+        # order 1 and inferior to other generic schemes in terms of
+        # error reduction. Equation systems generated with the vertex
+        # scheme have some properties that other schemes lack, e.g., the
+        # mass matrix is a simple diagonal matrix. This may be
+        # prescribed in certain cases.
         if degree > 1:
-            from warnings import warn
-            warn((
-                "Explicitly selected vertex quadrature (degree 1), " + "but requested degree is %d."
-            ) % degree)
+            warnings.warn(
+                "Explicitly selected vertex quadrature (degree 1), but requested degree is {}.".
+                format(degree))
         if shape == "tetrahedron":
             return (numpy.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0,
                                                                                      1.0]]),
@@ -314,4 +287,4 @@ def _create_restricted_element(ufl_element):
         elements = _extract_elements(base_element, restriction_domain)
         return MixedElement(elements)
 
-    raise FFCError("Cannot create restricted element from %s" % str(ufl_element))
+    raise FFCError("Cannot create restricted element from: {}".format(ufl_element))

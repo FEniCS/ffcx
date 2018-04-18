@@ -16,25 +16,23 @@ import ufl
 from ffc import __version__ as FFC_VERSION
 from ffc import FFCError, classname
 from ffc.backends import ufc
-from ffc.compiler import (compile_coordinate_mapping, compile_element,
-                          compile_form)
-from ffc.parameters import (compute_jit_parameters_signature,
-                            validate_jit_parameters)
+from ffc import compiler
+from ffc.parameters import (compute_jit_parameters_signature, validate_jit_parameters)
 
 logger = logging.getLogger(__name__)
 
 
-def jit_generate(ufl_object, module_name, signature, parameters):
+def generate(ufl_object, module_name, signature, parameters):
     "Callback function passed to dijitso.jit: generate code and return as strings."
     logger.info("Calling FFC just-in-time (JIT) compiler.")
 
     # Pick the generator for actual code for this object
     if isinstance(ufl_object, ufl.Form):
-        compile_object = compile_form
+        compile_object = compiler.compile_form
     elif isinstance(ufl_object, ufl.FiniteElementBase):
-        compile_object = compile_element
+        compile_object = compiler.compile_element
     elif isinstance(ufl_object, ufl.Mesh):
-        compile_object = compile_coordinate_mapping
+        compile_object = compiler.compile_coordinate_mapping
 
     # Return C code for requested ufl_object, and return any UFL objects
     # that ufl_objects needs, e.g. a form will require some elements.
@@ -71,7 +69,7 @@ def _string_tuple(param):
     return param
 
 
-def jit_build(ufl_object, module_name, parameters):
+def build(ufl_object, module_name, parameters):
     "Wraps dijitso jit with some parameter conversion etc."
     # FIXME: Expose more dijitso parameters?
     # FIXME: dijitso build params are not part of module_name here.
@@ -81,18 +79,15 @@ def jit_build(ufl_object, module_name, parameters):
     # equivalent behaviour to instant code
     build_params = {}
     build_params["debug"] = not parameters["cpp_optimize"]
-    build_params["cxxflags_opt"] = tuple(
-        parameters["cpp_optimize_flags"].split())
+    build_params["cxxflags_opt"] = tuple(parameters["cpp_optimize_flags"].split())
     build_params["cxxflags_debug"] = ("-O0", )
     build_params["include_dirs"] = (ufc.get_include_path(), ) + _string_tuple(
         parameters.get("external_include_dirs"))
-    build_params["lib_dirs"] = _string_tuple(
-        parameters.get("external_library_dirs"))
+    build_params["lib_dirs"] = _string_tuple(parameters.get("external_library_dirs"))
 
     # Use C compiler (not C++) and add some libs/options
     build_params["cxx"] = os.getenv("CC", "cc")
-    build_params["libs"] = _string_tuple(
-        "m" + parameters.get("external_libraries"))
+    build_params["libs"] = _string_tuple("m" + parameters.get("external_libraries"))
     build_params["cxxflags"] = ["-Wall", "-shared", "-fPIC"]
 
     # Interpreting FFC default "" as None, use "." if you want to point to curdir
@@ -110,17 +105,17 @@ def jit_build(ufl_object, module_name, parameters):
     params = dijitso.validate_params({
         "cache": cache_params,
         "build": build_params,
-        "generator": parameters,  # ffc parameters, just passed on to jit_generate
+        "generator": parameters,  # ffc parameters, just passed on to generate
     })
 
-    # Carry out jit compilation, calling jit_generate only if needed
+    # Carry out jit compilation, calling generate only if needed
     module, signature = dijitso.jit(
-        jitable=ufl_object, name=module_name, params=params, generate=jit_generate)
+        jitable=ufl_object, name=module_name, params=params, generate=generate)
 
     return module
 
 
-def compute_jit_prefix(ufl_object, parameters, kind=None):
+def compute_prefix(ufl_object, parameters, kind=None):
     "Compute the prefix (module name) for jit modules."
 
     # Get signature from ufl object
@@ -143,7 +138,7 @@ def compute_jit_prefix(ufl_object, parameters, kind=None):
     else:
         raise FFCError("Unknown ufl object type {}".format(ufl_object.__class__.__name__))
 
-# Compute deterministic string of relevant parameters
+    # Compute deterministic string of relevant parameters
     parameters_signature = compute_jit_parameters_signature(parameters)
 
     # Increase this number at any time to invalidate cache signatures if
@@ -189,10 +184,10 @@ def jit(ufl_object, parameters=None, indirect=False):
     parameters = validate_jit_parameters(parameters)
 
     # Make unique module name for generated code
-    kind, module_name = compute_jit_prefix(ufl_object, parameters)
+    kind, module_name = compute_prefix(ufl_object, parameters)
 
     # Get module (inspect cache and generate+build if necessary)
-    module = jit_build(ufl_object, module_name, parameters)
+    module = build(ufl_object, module_name, parameters)
 
     # Raise exception on failure to build or import module
     if module is None:

@@ -1,20 +1,9 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2005-2017 Anders Logg
 #
-# This file is part of FFC.
+# This file is part of FFC (https://www.fenicsproject.org)
 #
-# FFC is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# FFC is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with FFC. If not, see <http://www.gnu.org/licenses/>.
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import copy
 import logging
@@ -160,8 +149,7 @@ def _validate_parameters(parameters):
         parameters["quadrature_degree"] = None
     else:
         try:
-            parameters["quadrature_degree"] = int(
-                parameters["quadrature_degree"])
+            parameters["quadrature_degree"] = int(parameters["quadrature_degree"])
         except Exception:
             logger.exception("Failed to convert quadrature degree '%s' to int" %
                              parameters.get("quadrature_degree"))
@@ -175,7 +163,8 @@ def _validate_parameters(parameters):
         try:
             parameters["precision"] = int(parameters["precision"])
         except Exception:
-            logger.exception("Failed to convert precision '{}' to int".format(parameters.get("precision")))
+            logger.exception("Failed to convert precision '{}' to int".format(
+                parameters.get("precision")))
             raise
 
 

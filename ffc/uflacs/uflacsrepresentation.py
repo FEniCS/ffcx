@@ -1,20 +1,9 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2013-2017 Martin Sandve Alnæs
 #
-# This file is part of FFC.
+# This file is part of FFC (https://www.fenicsproject.org)
 #
-# FFC is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# FFC is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with FFC. If not, see <http://www.gnu.org/licenses/>.
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import logging
 
@@ -30,8 +19,7 @@ from ufl.utils.sorting import sorted_by_count
 logger = logging.getLogger(__name__)
 
 
-def compute_integral_ir(itg_data, form_data, form_id, element_numbers,
-                        classnames, parameters):
+def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classnames, parameters):
     "Compute intermediate represention of integral."
 
     logger.info("Computing uflacs representation")
@@ -52,8 +40,7 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers,
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.
     argument_dimensions = [
-        ir["element_dimensions"][ufl_element]
-        for ufl_element in form_data.argument_elements
+        ir["element_dimensions"][ufl_element] for ufl_element in form_data.argument_elements
     ]
 
     # Compute shape of element tensor
@@ -68,16 +55,14 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers,
     if integral_type in custom_integral_types:
         # Set quadrature degree to twice the highest element degree, to get
         # enough points to identify basis functions via table computations
-        max_element_degree = max(
-            [1] + [ufl_element.degree() for ufl_element in unique_elements])
+        max_element_degree = max([1] + [ufl_element.degree() for ufl_element in unique_elements])
         rules = [("default", 2 * max_element_degree)]
         quadrature_integral_type = "cell"
     else:
         # Collect which quadrature rules occur in integrals
         default_scheme = itg_data.metadata["quadrature_degree"]
         default_degree = itg_data.metadata["quadrature_rule"]
-        rules = collect_quadrature_rules(itg_data.integrals, default_scheme,
-                                         default_degree)
+        rules = collect_quadrature_rules(itg_data.integrals, default_scheme, default_degree)
         quadrature_integral_type = integral_type
 
     # Compute actual points and weights
@@ -99,8 +84,7 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers,
     if True:
         # Using the mapped coefficients, numbered by UFL
         coefficient_numbering = {}
-        sorted_coefficients = sorted_by_count(
-            form_data.function_replace_map.keys())
+        sorted_coefficients = sorted_by_count(form_data.function_replace_map.keys())
         for i, f in enumerate(sorted_coefficients):
             g = form_data.function_replace_map[f]
             coefficient_numbering[g] = i
@@ -132,10 +116,9 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers,
         # then pass coefficient_element and coefficient_domain to the uflacs ir as well
 
     # Build the more uflacs-specific intermediate representation
-    uflacs_ir = build_uflacs_ir(
-        itg_data.domain.ufl_cell(), itg_data.integral_type, ir["entitytype"],
-        integrands, ir["tensor_shape"], coefficient_numbering,
-        quadrature_rules, parameters)
+    uflacs_ir = build_uflacs_ir(itg_data.domain.ufl_cell(), itg_data.integral_type,
+                                ir["entitytype"], integrands, ir["tensor_shape"],
+                                coefficient_numbering, quadrature_rules, parameters)
     ir.update(uflacs_ir)
 
     return ir

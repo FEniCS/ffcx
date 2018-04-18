@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
+# Copyright (C) 2009-2018 FEniCS Project
+#
+# This file is part of FFC (https://www.fenicsproject.org)
+#
+# SPDX-License-Identifier:    LGPL-3.0-or-later
+
 """
 FEniCS Form Compiler (FFC)
 --------------------------
 
-FFC compiles finite element variational forms into C++ code.
+FFC compiles finite element variational forms into C code.
 
 The interface consists of the following functions:
 
-  compile_form       - Compilation of forms
-  compile_element    - Compilation of finite elements
   jit                - Just-In-Time compilation of forms and elements
   default_parameters - Default parameter values for FFC
-  ufc_signature      - Signature of UFC interface (SHA-1 hash of ufc.h)
 """
 
 import logging
@@ -26,6 +29,10 @@ class FFCError(Exception):
     pass
 
 
+logging.basicConfig()
+logger = logging.getLogger("ffc")
+logging.captureWarnings(capture=True)
+
 # Import JIT compiler
 from ffc.jitcompiler import jit  # noqa: F401
 
@@ -35,20 +42,9 @@ from ffc.main import main  # noqa: F401
 # Import default parameters
 from ffc.parameters import (default_jit_parameters, default_parameters)  # noqa: F401
 
-
-logging.basicConfig()
-logger = logging.getLogger("ffc")
-
-
-# from ffc.git_commit_hash import git_commit_hash
-
-# Import compiler functions
-# from ffc.compiler import compile_form, compile_element
-
-# Duplicate list of supported elements from FIAT
+# Duplicate list of supported elements from FIAT and emove elements from
+# list that we don't support or don't trust
 supported_elements = sorted(supported_elements.keys())
-
-# Remove elements from list that we don't support or don't trust
 supported_elements.remove("Argyris")
 supported_elements.remove("Hermite")
 supported_elements.remove("Morley")

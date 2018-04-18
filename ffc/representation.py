@@ -53,20 +53,20 @@ def pick_representation(representation):
 
 
 def make_finite_element_jit_classname(ufl_element, parameters):
-    from ffc.jitcompiler import compute_jit_prefix  # FIXME circular file dependency
-    kind, prefix = compute_jit_prefix(ufl_element, parameters)
+    from ffc import jitcompiler  # FIXME circular file dependency
+    kind, prefix = jitcompiler.compute_prefix(ufl_element, parameters)
     return classname.make_name(prefix, "finite_element", "main")
 
 
 def make_dofmap_jit_classname(ufl_element, parameters):
-    from ffc.jitcompiler import compute_jit_prefix  # FIXME circular file dependency
-    kind, prefix = compute_jit_prefix(ufl_element, parameters)
+    from ffc import jitcompiler  # FIXME circular file dependency
+    kind, prefix = jitcompiler.compute_prefix(ufl_element, parameters)
     return classname.make_name(prefix, "dofmap", "main")
 
 
 def make_coordinate_mapping_jit_classname(ufl_mesh, parameters):
-    from ffc.jitcompiler import compute_jit_prefix  # FIXME circular file dependency
-    kind, prefix = compute_jit_prefix(ufl_mesh, parameters, kind="coordinate_mapping")
+    from ffc import jitcompiler  # FIXME circular file dependency
+    kind, prefix = jitcompiler.compute_prefix(ufl_mesh, parameters, kind="coordinate_mapping")
     return classname.make_name(prefix, "coordinate_mapping", "main")
 
 
