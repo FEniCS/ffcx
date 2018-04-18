@@ -1,39 +1,23 @@
 # -*- coding: utf-8 -*-
+# Copyright (C) 2012-2017 Marie Rognes
+#
+# This file is part of FFC (https://www.fenicsproject.org)
+#
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 """This module contains utility functions for some code shared between
 representations.
 
 """
-
-# Copyright (C) 2012-2017 Marie Rognes
-#
-# This file is part of FFC.
-#
-# FFC is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# FFC is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# Modified by Martin Sandve Alnæs 2013-2017
-# Modified by Anders Logg 2014
 
 import logging
 
 import numpy
 
 from ffc import FFCError, classname
-from ffc.fiatinterface import (create_element, create_quadrature,
-                               map_facet_points, reference_cell_vertices)
+from ffc.fiatinterface import (create_element, create_quadrature, map_facet_points,
+                               reference_cell_vertices)
 from ufl.cell import cellname2facetname
-from ufl.measure import (custom_integral_types, facet_integral_types,
-                         point_integral_types)
+from ufl.measure import (custom_integral_types, facet_integral_types, point_integral_types)
 
 logger = logging.getLogger(__name__)
 

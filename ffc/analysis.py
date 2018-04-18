@@ -1,22 +1,10 @@
 # -*- coding: utf-8 -*-
-
 # Copyright (C) 2007-2017 Anders Logg, Martin Alnaes, Kristian B. Oelgaard,
 # and others
 #
-# This file is part of FFC.
+# This file is part of FFC (https://www.fenicsproject.org)
 #
-# FFC is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# FFC is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with FFC. If not, see <http://www.gnu.org/licenses/>.
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 """
 Compiler stage 1: Analysis
 --------------------------
@@ -29,6 +17,7 @@ form representation type.
 import copy
 import logging
 import os
+import warnings
 
 import numpy
 
@@ -147,7 +136,7 @@ def _analyze_form(form, parameters):
     # Hack to override representation with environment variable
     forced_r = os.environ.get("FFC_FORCE_REPRESENTATION")
     if forced_r:
-        logger.warning("representation:    forced by $FFC_FORCE_REPRESENTATION to '%s'" % forced_r)
+        warnings.warn("representation:    forced by $FFC_FORCE_REPRESENTATION to '{}'".format(forced_r))
         r = forced_r
     else:
         # Check representation parameters to figure out how to
@@ -355,10 +344,9 @@ def _check_quadrature_degree(degree, top_dim):
     number of integration points."""
     num_points = ((degree + 1 + 1) // 2)**top_dim
     if num_points >= 100:
-        logger.warning("WARNING: The number of integration points for each cell will be: {}".format(
-            num_points))
-        logger.warning(
-            "         Consider using the option 'quadrature_degree' to reduce the number of points")
+        warnings.warn(
+            "Number of integration points per cell is : {}. Consider using 'quadrature_degree' to reduce number.".
+            format(num_points))
 
 
 def _extract_common_quadrature_rule(integral_metadatas):
@@ -455,7 +443,7 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
     forced_r = os.environ.get("FFC_FORCE_REPRESENTATION")
     if forced_r:
         r = forced_r
-        logger.warning("representation:    forced by $FFC_FORCE_REPRESENTATION to '%s'" % r)
+        warnings.warn("representation: forced by $FFC_FORCE_REPRESENTATION to '{}'".format(r))
         return r, o, p
 
     return r, o, p
