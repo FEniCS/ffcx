@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2011-2017 Martin Sandve Alnæs
-# Copyright (C) 2011-2017 Martin Sandve Alnæs
 #
 # This file is part of FFC (https://www.fenicsproject.org)
 #

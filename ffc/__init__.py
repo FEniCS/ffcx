@@ -26,6 +26,10 @@ class FFCError(Exception):
     pass
 
 
+logging.basicConfig()
+logger = logging.getLogger("ffc")
+logging.captureWarnings(capture=True)
+
 # Import JIT compiler
 from ffc.jitcompiler import jit  # noqa: F401
 
@@ -34,11 +38,6 @@ from ffc.main import main  # noqa: F401
 
 # Import default parameters
 from ffc.parameters import (default_jit_parameters, default_parameters)  # noqa: F401
-
-
-logging.basicConfig()
-logger = logging.getLogger("ffc")
-
 
 # from ffc.git_commit_hash import git_commit_hash
 
