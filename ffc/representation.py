@@ -650,8 +650,7 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
         try:
             e.get_coeffs()
         except NotImplementedError:
-            logger.exception("Function is not supported/implemented.")
-            raise
+            return "Function is not supported/implemented."
 
     # Initialise data with 'global' values.
     data = {
