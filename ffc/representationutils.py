@@ -4,7 +4,7 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""This module contains utility functions for some code shared between
+"""Utility functions for some code shared between
 representations.
 
 """

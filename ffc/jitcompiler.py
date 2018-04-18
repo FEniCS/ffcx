@@ -4,8 +4,10 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""This module provides a just-in-time (JIT) form compiler.
-It uses dijitso to wrap the generated code into a Python module."""
+"""Just-in-time (JIT) form compiler. It uses dijitso to wrap the generated
+code into a Python module.
+
+"""
 
 import hashlib
 import logging

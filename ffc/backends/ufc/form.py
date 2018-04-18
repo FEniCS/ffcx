@@ -32,7 +32,7 @@ def create_delegate(integral_type, declname, impl):
 
 
 def add_ufc_form_integral_methods(cls):
-    """This function generates methods on the class it decorates,
+    """Generate methods on the class decorated by this function,
     for each integral name template and for each integral type.
 
     This allows implementing e.g. create_###_integrals once in the

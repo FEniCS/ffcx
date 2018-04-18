@@ -4,7 +4,7 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""This is UFLACS, the UFL Analyser and Compiler System."""
+"""UFLACS, the UFL Analyser and Compiler System."""
 
 __author__ = u"Martin Sandve Alnæs"
 

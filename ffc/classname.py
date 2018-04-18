@@ -4,7 +4,7 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""This module defines some basics for generating C code."""
+"""Some basics for generating C code."""
 
 
 def make_name(prefix, basename, signature):

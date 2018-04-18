@@ -172,7 +172,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
 
 
 def rebuild_expression_from_graph(G):
-    "This is currently only used by tests."
+    "Currently only used by tests."
     w = rebuild_with_scalar_subexpressions(G)
 
     # Find expressions of final v
