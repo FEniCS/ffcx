@@ -1492,6 +1492,8 @@ class ArrayDecl(CStatement):
         elif _is_zero_valued(self.values):
             # Zero initial values
             # (NB! C++ style zero initialization, not sure about other target languages)
+            if len(self.sizes) == 0:
+                return decl + " = { 0.0 };"  # cc compliant non-empty initializer
             return decl + " = {};"
         else:
             # Construct initializer lists for arbitrary multidimensional array values
