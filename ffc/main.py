@@ -4,7 +4,7 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""This script is the command-line interface to FFC.
+"""Command-line interface to FFC.
 
 It parses command-line arguments and generates code from input UFL form files.
 """
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 def info_version():
-    "Print version number."
+    """Print version number."""
     print("""\
 This is FFC, the FEniCS Form Compiler, version {0}.
 UFC backend version {1}, signature {2}.
@@ -39,7 +39,7 @@ Python {3} on {4}
 
 
 def info_usage():
-    "Print usage information."
+    """Print usage information."""
     info_version()
     print("""Usage: ffc [OPTION]... input.form
 
@@ -59,7 +59,7 @@ def compile_ufl_data(ufd, prefix, parameters):
 
 
 def main(args=None):
-    """This is the commandline tool for the python module ffc."""
+    """Commandline tool for FF."""
     if args is None:
         args = sys.argv[1:]
 

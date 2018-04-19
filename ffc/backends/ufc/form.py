@@ -32,7 +32,7 @@ def create_delegate(integral_type, declname, impl):
 
 
 def add_ufc_form_integral_methods(cls):
-    """This function generates methods on the class it decorates,
+    """Generate methods on the class decorated by this function,
     for each integral name template and for each integral type.
 
     This allows implementing e.g. create_###_integrals once in the
@@ -120,26 +120,26 @@ class UFCForm:
     # foo_integral by add_ufc_form_integral_methods:
 
     def _max_foo_subdomain_id(self, L, ir, parameters, integral_type, declname):
-        "Return implementation of ufc::form::%(declname)s()."
+        """Return implementation of ufc::form::%(declname)s()."""
         # e.g. max_subdomain_id = ir["max_cell_subdomain_id"]
         max_subdomain_id = ir[declname]
         return L.Return(int(max_subdomain_id))
 
     def _has_foo_integrals(self, L, ir, parameters, integral_type, declname):
-        "Return implementation of ufc::form::%(declname)s()."
+        """Return implementation of ufc::form::%(declname)s()."""
         # e.g. has_integrals = ir["has_cell_integrals"]
         has_integrals = ir[declname]
         return L.Return(bool(has_integrals))
 
     def _create_foo_integral(self, L, ir, parameters, integral_type, declname):
-        "Return implementation of ufc::form::%(declname)s()."
+        """Return implementation of ufc::form::%(declname)s()."""
         # e.g. subdomain_ids, classnames = ir["create_cell_integral"]
         subdomain_ids, classnames = ir[declname]
         subdomain_id = L.Symbol("subdomain_id")
         return generate_return_new_switch(L, subdomain_id, classnames, subdomain_ids, factory=True)
 
     def _create_default_foo_integral(self, L, ir, parameters, integral_type, declname):
-        "Return implementation of ufc::form::%(declname)s()."
+        """Return implementation of ufc::form::%(declname)s()."""
         # e.g. classname = ir["create_default_cell_integral"]
         classname = ir[declname]
         if classname is None:

@@ -39,12 +39,12 @@ class SpaceOfReals(object):
 
 
 def reference_cell(cellname):
-    "Return FIAT reference cell"
+    """Return FIAT reference cell"""
     return FIAT.ufc_cell(cellname)
 
 
 def reference_cell_vertices(cellname):
-    "Return dict of coordinates of reference cell vertices for this 'cellname'."
+    """Return dict of coordinates of reference cell vertices for this 'cellname'."""
     cell = reference_cell(cellname)
     return cell.get_vertices()
 
@@ -78,7 +78,7 @@ def create_element(ufl_element):
 
 
 def _create_fiat_element(ufl_element):
-    "Create FIAT element corresponding to given finite element."
+    """Create FIAT element corresponding to given finite element."""
 
     # Get element data
     family = ufl_element.family()
@@ -161,9 +161,9 @@ def _create_fiat_element(ufl_element):
 
 
 def create_quadrature(shape, degree, scheme="default"):
-    """
-    Generate quadrature rule (points, weights) for given shape
+    """Generate quadrature rule (points, weights) for given shape
     that will integrate an polynomial of order 'degree' exactly.
+
     """
     if isinstance(shape, int) and shape == 0:
         return (numpy.zeros((1, 0)), numpy.ones((1, )))
@@ -201,12 +201,12 @@ def create_quadrature(shape, degree, scheme="default"):
 
 
 def map_facet_points(points, facet, cellname):
-    """
-    Map points from the e (UFC) reference simplex of dimension d - 1
-    to a given facet on the (UFC) reference simplex of dimension d.
-    This may be used to transform points tabulated for example on the
-    2D reference triangle to points on a given facet of the reference
+    """Map points from the e (UFC) reference simplex of dimension d - 1
+    to a given facet on the (UFC) reference simplex of dimension d. This
+    may be used to transform points tabulated for example on the 2D
+    reference triangle to points on a given facet of the reference
     tetrahedron.
+
     """
 
     # Extract the geometric dimension of the points we want to map
@@ -246,7 +246,7 @@ def map_facet_points(points, facet, cellname):
 
 
 def _extract_elements(ufl_element, restriction_domain=None):
-    "Recursively extract un-nested list of (component) elements."
+    """Recursively extract un-nested list of (component) elements."""
 
     elements = []
     if isinstance(ufl_element, ufl.MixedElement):
@@ -269,7 +269,7 @@ def _extract_elements(ufl_element, restriction_domain=None):
 
 
 def _create_restricted_element(ufl_element):
-    "Create an FFC representation for an UFL RestrictedElement."
+    """Create an FFC representation for an UFL RestrictedElement."""
 
     if not isinstance(ufl_element, ufl.RestrictedElement):
         raise FFCError("create_restricted_element expects an ufl.RestrictedElement")

@@ -22,7 +22,7 @@ def count_nodes_with_unique_post_traversal(expr,
         e2i = {}
 
     def getops(e):
-        "Get a modifyable list of operands of e, optionally treating modified terminals as a unit."
+        """Get a modifyable list of operands of e, optionally treating modified terminals as a unit."""
         # TODO: Maybe use e._ufl_is_terminal_modifier_
         if e._ufl_is_terminal_ or (skip_terminal_modifiers
                                    and is_modified_terminal(e)):

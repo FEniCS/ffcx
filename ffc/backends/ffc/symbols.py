@@ -23,7 +23,7 @@ def ufc_restriction_postfix(restriction):
 
 
 def format_mt_name(basename, mt):
-    "Format variable name for modified terminal."
+    """Format variable name for modified terminal."""
     access = str(basename)
 
     # Add averaged state to name
@@ -66,11 +66,11 @@ class FFCBackendSymbols(object):
         self.interleaved_components = True
 
     def element_tensor(self):
-        "Symbol for the element tensor itself."
+        """Symbol for the element tensor itself."""
         return self.S("A")
 
     def entity(self, entitytype, restriction):
-        "Entity index for lookup in element tables."
+        """Entity index for lookup in element tables."""
         if entitytype == "cell":
             # Always 0 for cells (even with restriction)
             return self.L.LiteralInt(0)
@@ -82,15 +82,15 @@ class FFCBackendSymbols(object):
             logging.exception("Unknown entitytype {}".format(entitytype))
 
     def cell_orientation_argument(self, restriction):
-        "Cell orientation argument in ufc. Not same as cell orientation in generated code."
+        """Cell orientation argument in ufc. Not same as cell orientation in generated code."""
         return self.S("cell_orientation" + ufc_restriction_postfix(restriction))
 
     def cell_orientation_internal(self, restriction):
-        "Internal value for cell orientation in generated code."
+        """Internal value for cell orientation in generated code."""
         return self.S("co" + ufc_restriction_postfix(restriction))
 
     def argument_loop_index(self, iarg):
-        "Loop index for argument #iarg."
+        """Loop index for argument #iarg."""
         indices = ["i", "j", "k", "l"]
         return self.S(indices[iarg])
 
@@ -104,43 +104,43 @@ class FFCBackendSymbols(object):
         return self.S("iq")
 
     def num_custom_quadrature_points(self):
-        "Number of quadrature points, argument to custom integrals."
+        """Number of quadrature points, argument to custom integrals."""
         return self.S("num_quadrature_points")
 
     def custom_quadrature_weights(self):
-        "Quadrature weights including cell measure scaling, argument to custom integrals."
+        """Quadrature weights including cell measure scaling, argument to custom integrals."""
         return self.S("quadrature_weights")
 
     def custom_quadrature_points(self):
-        "Physical quadrature points, argument to custom integrals."
+        """Physical quadrature points, argument to custom integrals."""
         return self.S("quadrature_points")
 
     def custom_weights_table(self):
-        "Table for chunk of custom quadrature weights (including cell measure scaling)."
+        """Table for chunk of custom quadrature weights (including cell measure scaling)."""
         return self.S("weights_chunk")
 
     def custom_points_table(self):
-        "Table for chunk of custom quadrature points (physical coordinates)."
+        """Table for chunk of custom quadrature points (physical coordinates)."""
         return self.S("points_chunk")
 
     def weights_table(self, num_points):
-        "Table of quadrature weights."
+        """Table of quadrature weights."""
         return self.S("weights%d" % (num_points, ))
 
     def points_table(self, num_points):
-        "Table of quadrature points (points on the reference integration entity)."
+        """Table of quadrature points (points on the reference integration entity)."""
         return self.S("points%d" % (num_points, ))
 
     def x_component(self, mt):
-        "Physical coordinate component."
+        """Physical coordinate component."""
         return self.S(format_mt_name("x", mt))
 
     def X_component(self, mt):
-        "Reference coordinate component."
+        """Reference coordinate component."""
         return self.S(format_mt_name("X", mt))
 
     def J_component(self, mt):
-        "Jacobian component."
+        """Jacobian component."""
         # FIXME: Add domain number!
         return self.S(format_mt_name("J", mt))
 
@@ -166,7 +166,7 @@ class FFCBackendSymbols(object):
         return w[c, dof_number]
 
     def coefficient_value(self, mt):
-        "Symbol for variable holding value or derivative component of coefficient."
+        """Symbol for variable holding value or derivative component of coefficient."""
         c = self.coefficient_numbering[mt.terminal]
         return self.S(format_mt_name("w%d" % (c, ), mt))
 

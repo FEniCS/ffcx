@@ -4,15 +4,14 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""
-Compiler stage 5: Code formatting
----------------------------------
+"""Compiler stage 5: Code formatting
 
 This module implements the formatting of UFC code from a given
 dictionary of generated C++ code for the body of each UFC function.
 
 It relies on templates for UFC code available as part of the module
 ufc_utils.
+
 """
 
 import logging
@@ -66,7 +65,7 @@ c_extern_post = """
 
 
 def format_code(code, wrapper_code, prefix, parameters):
-    "Format given code in UFC format. Returns two strings with header and source file contents."
+    """Format given code in UFC format. Returns two strings with header and source file contents."""
 
     logger.debug("Compiler stage 5: Formatting code")
 
@@ -130,7 +129,7 @@ def write_code(code_h, code_c, prefix, parameters):
 
 
 def _write_file(output, prefix, postfix, parameters):
-    "Write generated code to file."
+    """Write generated code to file."""
     filename = os.path.join(parameters["output_dir"], prefix + postfix)
     with open(filename, "w") as hfile:
         hfile.write(output)
@@ -138,7 +137,7 @@ def _write_file(output, prefix, postfix, parameters):
 
 
 def _generate_comment(parameters):
-    "Generate code for comment on top of file."
+    """Generate code for comment on top of file."""
 
     # Drop irrelevant parameters
     parameters = compilation_relevant_parameters(parameters)

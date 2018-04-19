@@ -58,7 +58,7 @@ class CRSArray(object):
 
     @classmethod
     def from_rows(cls, rows, num_rows, num_elements, dtype):
-        "Construct a CRSArray from a list of row element lists."
+        """Construct a CRSArray from a list of row element lists."""
         crs = CRSArray(num_rows, num_elements, dtype)
         for row in rows:
             crs.push_row(row)

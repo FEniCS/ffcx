@@ -18,7 +18,7 @@ index_type = "int64_t"
 
 
 def reference_to_physical_map(cellname):
-    "Returns a map from reference coordinates to physical element coordinates"
+    """Returns a map from reference coordinates to physical element coordinates"""
 
     if cellname == "interval":
         return lambda x: (1.0 - x[0], x[0])
@@ -142,7 +142,7 @@ def _change_variables(L, mapping, gdim, tdim, offset):
 
 
 def _generate_body(L, i, dof, mapping, gdim, tdim, cell_shape, offset=0):
-    "Generate code for a single dof."
+    """Generate code for a single dof."""
 
     # EnrichedElement is handled by having [None, ..., None] dual basis
     if not dof:
@@ -182,7 +182,7 @@ def _generate_body(L, i, dof, mapping, gdim, tdim, cell_shape, offset=0):
 
 
 def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset=0):
-    "Generate c++ for-loop for multiple points (integral bodies)"
+    """Generate c++ for-loop for multiple points (integral bodies)"""
 
     result = L.Symbol("result")
     code = [L.Assign(result, 0.0)]
@@ -294,7 +294,7 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset=0):
 
 
 def generate_map_dofs(L, ir):
-    "Generate code for map_dofs."
+    """Generate code for map_dofs."""
     # Maps values input in array 'vals' to output array 'values'
 
     gdim = ir["geometric_dimension"]

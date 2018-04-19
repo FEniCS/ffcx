@@ -4,8 +4,7 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""
-This is the compiler, acting as the main interface for compilation
+"""Main interface for compilation
 of forms and breaking the compilation into several sequential stages.
 The output of each stage is the input of the next stage.
 
@@ -119,18 +118,18 @@ def _print_timing(stage, timing):
 
 
 def compile_form(forms, object_names=None, prefix="Form", parameters=None, jit=False):
-    """This function generates UFC code for a given UFL form or list of UFL forms."""
+    """Generate UFC code for a given UFL form or list of UFL forms."""
     return compile_ufl_objects(forms, "form", object_names, prefix, parameters, jit)
 
 
 def compile_element(elements, object_names=None, prefix="Element", parameters=None, jit=False):
-    """This function generates UFC code for a given UFL element or list of UFL elements."""
+    """Generate UFC code for a given UFL element or list of UFL elements."""
     return compile_ufl_objects(elements, "element", object_names, prefix, parameters, jit)
 
 
 def compile_coordinate_mapping(meshes, object_names=None, prefix="Mesh", parameters=None,
                                jit=False):
-    """This function generates UFC code for a given UFL mesh or list of UFL meshes."""
+    """Generates UFC code for a given UFL mesh or list of UFL meshes."""
     return compile_ufl_objects(meshes, "coordinate_mapping", object_names, prefix, parameters, jit)
 
 
@@ -140,8 +139,7 @@ def compile_ufl_objects(ufl_objects,
                         prefix=None,
                         parameters=None,
                         jit=False):
-    """This function generates UFC code for a given UFL form or list of UFL forms."""
-
+    """Generate UFC code for a given UFL form or list of UFL forms."""
     logger.info("Compiling {} {}\n".format(kind, prefix))
 
     # Reset timing

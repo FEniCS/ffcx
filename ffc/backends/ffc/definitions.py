@@ -38,15 +38,15 @@ class FFCBackendDefinitions(MultiFunction):
     #    return []
 
     def constant_value(self, e, mt, tabledata, num_points, access):
-        "Constants simply use literals in the target language."
+        """Constants simply use literals in the target language."""
         return []
 
     def argument(self, t, mt, tabledata, num_points, access):
-        "Arguments are accessed through element tables."
+        """Arguments are accessed through element tables."""
         return []
 
     def coefficient(self, t, mt, tabledata, num_points, access):
-        "Return definition code for coefficients."
+        """Return definition code for coefficients."""
         L = self.language
 
         ttype = tabledata.ttype
@@ -93,7 +93,7 @@ class FFCBackendDefinitions(MultiFunction):
         return code
 
     def _define_coordinate_dofs_lincomb(self, e, mt, tabledata, num_points, access):
-        "Define x or J as a linear combination of coordinate dofs with given table data."
+        """Define x or J as a linear combination of coordinate dofs with given table data."""
         L = self.language
 
         # Get properties of domain
@@ -217,7 +217,7 @@ class FFCBackendDefinitions(MultiFunction):
         return code
 
     def _expect_table(self, e, mt, tabledata, num_points, access):
-        "These quantities refer to constant tables defined in ufc_geometry.h."
+        """These quantities refer to constant tables defined in ufc_geometry.h."""
         # TODO: Inject const static table here instead?
         return []
 
@@ -230,7 +230,7 @@ class FFCBackendDefinitions(MultiFunction):
     facet_orientation = _expect_table
 
     def _expect_physical_coords(self, e, mt, tabledata, num_points, access):
-        "These quantities refer to coordinate_dofs"
+        """These quantities refer to coordinate_dofs"""
         # TODO: Generate more efficient inline code for Max/MinCell/FacetEdgeLength
         #       and CellDiameter here rather than lowering these quantities?
         return []
@@ -240,7 +240,7 @@ class FFCBackendDefinitions(MultiFunction):
     facet_edge_vectors = _expect_physical_coords
 
     def _expect_symbolic_lowering(self, e, mt, tabledata, num_points, access):
-        "These quantities are expected to be replaced in symbolic preprocessing."
+        """These quantities are expected to be replaced in symbolic preprocessing."""
         logging.exception("Expecting {0} to be replaced in symbolic preprocessing.".format(type(e)))
 
     facet_normal = _expect_symbolic_lowering

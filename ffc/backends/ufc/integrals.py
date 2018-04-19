@@ -15,7 +15,7 @@ from ffc.backends.ufc import integrals_template as ufc_integrals
 
 
 class Snippets:
-    "Each function maps to a keyword in the template.."
+    """Each function maps to a keyword in the template."""
 
     def enabled_coefficients(self, L, ir):
         # FIXME: Needs updating for interface change to plain C.
@@ -38,7 +38,7 @@ class Snippets:
         return code
 
     def tabulate_tensor_comment(self, L, ir):
-        "Generate comment for tabulate_tensor."
+        """Generate comment for tabulate_tensor."""
 
         r = ir["representation"]
         integrals_metadata = ir["integrals_metadata"]

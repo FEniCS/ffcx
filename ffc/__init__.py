@@ -5,9 +5,7 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-"""
-FEniCS Form Compiler (FFC)
---------------------------
+"""FEniCS Form Compiler (FFC)
 
 FFC compiles finite element variational forms into C code.
 
@@ -15,6 +13,7 @@ The interface consists of the following functions:
 
   jit                - Just-In-Time compilation of forms and elements
   default_parameters - Default parameter values for FFC
+
 """
 
 import logging

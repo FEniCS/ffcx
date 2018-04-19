@@ -8,6 +8,7 @@
 When formatting an AST into a string, it's better to collect lists of
 snippets and then join them than adding the pieces continually, which
 gives O(n^2) behaviour w.r.t. AST size n.
+
 """
 
 
@@ -17,7 +18,9 @@ class Indented(object):
     This way nested indentations can be handled by adding the prefix
     spaces only once to each line instead of splitting and indenting
     substrings repeatedly.
+
     """
+
     # Try to keep memory overhead low:
     __slots__ = ("body", )
 
@@ -51,10 +54,10 @@ def iter_indented_lines(snippets, level=0):
             for line in iter_indented_lines(part, level):
                 yield line
     else:
-        raise RuntimeError("Unexpected type %s:\n%s" % (type(snippets),
-                                                        str(snippets)))
+        raise RuntimeError("Unexpected type %s:\n%s" % (type(snippets), str(snippets)))
 
 
 def format_indented_lines(snippets, level=0):
-    "Format recursive sequences of indented lines as one string."
+    """Format recursive sequences of indented lines as one string."""
+
     return "\n".join(iter_indented_lines(snippets, level))

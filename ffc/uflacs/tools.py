@@ -17,7 +17,7 @@ from ufl.sorting import sorted_expr_sum
 
 
 def collect_quadrature_rules(integrals, default_scheme, default_degree):
-    "Collect quadrature rules found in list of integrals."
+    """Collect quadrature rules found in list of integrals."""
     rules = set()
     for integral in integrals:
         md = integral.metadata() or {}
@@ -29,7 +29,7 @@ def collect_quadrature_rules(integrals, default_scheme, default_degree):
 
 
 def compute_quadrature_rules(rules, integral_type, cell):
-    "Compute points and weights for a set of quadrature rules."
+    """Compute points and weights for a set of quadrature rules."""
     quadrature_rules = {}
     quadrature_rule_sizes = {}
     for rule in rules:

@@ -5,12 +5,11 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""
-Compiler stage 5: optimization
-------------------------------
+"""Compiler stage 5: optimization
 
 This module implements the optimization of an intermediate code
 representation.
+
 """
 import logging
 
@@ -20,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 def optimize_ir(ir, parameters):
-    "Optimize intermediate form representation."
+    """Optimize intermediate form representation."""
 
     logger.info("Compiler stage 3: Optimizing intermediate representation")
 
@@ -42,6 +41,6 @@ def optimize_ir(ir, parameters):
 
 
 def _optimize_integral_ir(ir, parameters):
-    "Compute optimized intermediate represention of integral."
+    """Compute optimized intermediate represention of integral."""
     r = pick_representation(ir["representation"])
     return r.optimize_integral_ir(ir, parameters)

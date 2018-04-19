@@ -4,8 +4,10 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""This module provides a just-in-time (JIT) form compiler.
-It uses dijitso to wrap the generated code into a Python module."""
+"""Just-in-time (JIT) form compiler. It uses dijitso to wrap the generated
+code into a Python module.
+
+"""
 
 import hashlib
 import logging
@@ -23,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 def generate(ufl_object, module_name, signature, parameters):
-    "Callback function passed to dijitso.jit: generate code and return as strings."
+    """Callback function passed to dijitso.jit: generate code and return as strings."""
     logger.info("Calling FFC just-in-time (JIT) compiler.")
 
     # Pick the generator for actual code for this object
@@ -57,7 +59,7 @@ def generate(ufl_object, module_name, signature, parameters):
 
 
 def _string_tuple(param):
-    "Split a : separated string or convert a list to a tuple."
+    """Split a : separated string or convert a list to a tuple."""
     if isinstance(param, (tuple, list)):
         pass
     elif isinstance(param, str):
@@ -70,7 +72,7 @@ def _string_tuple(param):
 
 
 def build(ufl_object, module_name, parameters):
-    "Wraps dijitso jit with some parameter conversion etc."
+    """Wraps dijitso jit with some parameter conversion etc."""
     # FIXME: Expose more dijitso parameters?
     # FIXME: dijitso build params are not part of module_name here.
     #        Currently dijitso doesn't add to the module signature.
@@ -116,7 +118,7 @@ def build(ufl_object, module_name, parameters):
 
 
 def compute_prefix(ufl_object, parameters, kind=None):
-    "Compute the prefix (module name) for jit modules."
+    """Compute the prefix (module name) for jit modules."""
 
     # Get signature from ufl object
     if isinstance(ufl_object, ufl.Form):
@@ -220,14 +222,14 @@ def jit(ufl_object, parameters=None, indirect=False):
 
 
 def _instantiate_form(module, prefix):
-    "Instantiate an object of the jit-compiled form."
+    """Instantiate an object of the jit-compiled form."""
     name = classname.make_name(prefix, "form", "main")
     form = dijitso.extract_factory_function(module, "create_" + name)()
     return form
 
 
 def _instantiate_element_and_dofmap(module, prefix):
-    "Instantiate objects of the jit-compiled finite_element and dofmap."
+    """Instantiate objects of the jit-compiled finite_element and dofmap."""
     fe_classname = classname.make_name(prefix, "finite_element", "main")
     dm_classname = classname.make_name(prefix, "dofmap", "main")
     fe = dijitso.extract_factory_function(module, "create_" + fe_classname)()
@@ -236,7 +238,7 @@ def _instantiate_element_and_dofmap(module, prefix):
 
 
 def _instantiate_coordinate_mapping(module, prefix):
-    "Instantiate an object of the jit-compiled coordinate_mapping."
+    """Instantiate an object of the jit-compiled coordinate_mapping."""
     name = classname.make_name(prefix, "coordinate_mapping", "main")
     form = dijitso.extract_factory_function(module, "create_" + name)()
     return form

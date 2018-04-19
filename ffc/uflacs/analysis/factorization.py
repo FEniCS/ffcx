@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def _build_arg_sets(V):
-    "Build arg_sets = { argument number: set(j for j where V[j] is a modified Argument with this number) }"
+    """Build arg_sets = { argument number: set(j for j where V[j] is a modified Argument with this number) }"""
     arg_sets = {}
     for i, v in enumerate(V):
         arg = strip_modified_terminal(v)
@@ -38,7 +38,7 @@ def _build_arg_sets(V):
 
 
 def _build_argument_indices_from_arg_sets(V, arg_sets):
-    "Build ordered list of indices to modified arguments."
+    """Build ordered list of indices to modified arguments."""
     # Build set of all indices of V referring to modified arguments
     arg_indices = set()
     for js in arg_sets.values():
@@ -46,7 +46,7 @@ def _build_argument_indices_from_arg_sets(V, arg_sets):
 
     # Make a canonical ordering of vertex indices for modified arguments
     def arg_ordering_key(i):
-        "Return a key for sorting argument vertex indices based on the properties of the modified terminal."
+        """Return a key for sorting argument vertex indices based on the properties of the modified terminal."""
         mt = analyse_modified_terminal(arg_ordering_key.V[i])
         return mt.argument_ordering_key()
 
@@ -57,14 +57,14 @@ def _build_argument_indices_from_arg_sets(V, arg_sets):
 
 
 def build_argument_indices(V):
-    "Build ordered list of indices to modified arguments."
+    """Build ordered list of indices to modified arguments."""
     arg_sets = _build_arg_sets(V)
     ordered_arg_indices = _build_argument_indices_from_arg_sets(V, arg_sets)
     return ordered_arg_indices
 
 
 def build_argument_dependencies(dependencies, arg_indices):
-    "Preliminary algorithm: build list of argument vertex indices each vertex (indirectly) depends on."
+    """Preliminary algorithm: build list of argument vertex indices each vertex (indirectly) depends on."""
     n = len(dependencies)
     A = numpy.empty(n, dtype=object)
     for i, deps in enumerate(dependencies):
@@ -88,7 +88,7 @@ class Factors(object):  # TODO: Refactor code in this file by using a class like
 
 
 def add_to_fv(expr, FV, e2fi):
-    "Add expression expr to factor vector FV and expr->FVindex mapping e2fi."
+    """Add expression expr to factor vector FV and expr->FVindex mapping e2fi."""
     fi = e2fi.get(expr)
     if fi is None:
         fi = len(e2fi)

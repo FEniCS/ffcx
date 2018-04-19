@@ -13,12 +13,12 @@ logger = logging.getLogger(__name__)
 
 
 def all_equal(sequence):
-    "Check that all items in list are equal."
+    """Check that all items in list are equal."""
     return sequence[:-1] == sequence[1:]
 
 
 def pick_first(sequence):
-    "Check that all values are equal and return the value."
+    """Check that all values are equal and return the value."""
     if not all_equal(sequence):
         raise FFCError("Values differ: {}".format(sequence))
     return sequence[0]
