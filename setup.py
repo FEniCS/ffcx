@@ -107,10 +107,6 @@ def run_install():
     # Generate module with git hash from template
     generate_git_hash_file(GIT_COMMIT_HASH)
 
-    # FFC data files
-    data_files = [(os.path.join("share", "man", "man1"),
-                   [os.path.join("doc", "man", "man1", "ffc.1.gz")])]
-
     # Call distutils to perform installation
     setuptools.setup(
         name="fenics-ffc",
@@ -138,7 +134,6 @@ def run_install():
         package_data={"ffc": [os.path.join('backends', 'ufc', '*.h')]},
         #scripts=scripts,  # Using entry_points instead
         entry_points=entry_points,
-        data_files=data_files,
         install_requires=REQUIREMENTS,
         zip_safe=False)
 
