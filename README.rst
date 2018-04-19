@@ -5,29 +5,20 @@ FFC-X: The FEniCS Form Compiler (experimental)
 .. image:: https://circleci.com/gh/FEniCS/dolfinx.svg?style=svg
     :target: https://circleci.com/gh/FEniCS/dolfinx
 
-.. image:: https://readthedocs.org/projects/fenics-ffcx/badge/?version=latest
-   :target: http://fenics-ffcx.readthedocs.io/en/latest/?badge=latest
-   :alt: Documentation Status
-
-
-
-FFC-X
------
-
 FFC-X is an experimental version of FEniCS FFC which is being actively
 developed, but is **not ready for production use**. Many new
 experimental features may come and go as development proceeds.
 
 
-FFC is a compiler for finite element variational forms. From a
-high-level description of the form, it generates efficient low-level C++
+FFC-X is a compiler for finite element variational forms. From a
+high-level description of the form, it generates efficient low-level C
 code that can be used to assemble the corresponding discrete operator
-(tensor). In particular, a bilinear form may be assembled into a matrix
-and a linear form may be assembled into a vector.  FFC may be used
-either from the command line (by invoking the ``ffc`` command) or as a
-Python module (``import ffc``).
+(tensor). In particular, a bilinear form may be assembled into a
+matrix and a linear form may be assembled into a vector.  FFC may be
+used either from the command line (by invoking the ``ffc`` command) or
+as a Python module (``import ffc``).
 
-FFC is part of the FEniCS Project.
+FFC-X is part of the FEniCS Project.
 
 For more information, visit http://www.fenicsproject.org
 
@@ -35,10 +26,10 @@ For more information, visit http://www.fenicsproject.org
 Documentation
 =============
 
-Documentation can be viewed at http://fenics-ffc.readthedocs.org/.
+Documentation can be viewed at http://fenics-ffcx.readthedocs.org/.
 
-.. image:: https://readthedocs.org/projects/fenics-ffc/badge/?version=latest
-   :target: http://fenics.readthedocs.io/projects/ffc/en/latest/?badge=latest
+.. image:: https://readthedocs.org/projects/fenics-ffcx/badge/?version=latest
+   :target: http://fenics-ffcx.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
 
 
