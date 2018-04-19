@@ -2,6 +2,7 @@ FEniCS Form Compiler 'X' documentation
 ======================================
 
 The is an experimental version of the FEniCS Form Compiler.
+It is developed at https://github.com/FEniCS/ffcx.
 
 
 .. toctree::

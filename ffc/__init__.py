@@ -11,8 +11,9 @@ FFC compiles finite element variational forms into C code.
 
 The interface consists of the following functions:
 
-  jit                - Just-In-Time compilation of forms and elements
-  default_parameters - Default parameter values for FFC
+    jit                - Just-In-Time compilation of forms and elements
+
+    default_parameters - Default parameter values for FFC
 
 """
 
@@ -25,6 +26,7 @@ __version__ = pkg_resources.get_distribution("fenics-ffc").version
 
 
 class FFCError(Exception):
+    """Exception raised for FFC errors"""
     pass
 
 

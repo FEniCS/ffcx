@@ -8,88 +8,71 @@
 of forms and breaking the compilation into several sequential stages.
 The output of each stage is the input of the next stage.
 
-Compiler stage 0: Language, parsing
------------------------------------
+Compiler stages:
 
-  Input:  Python code or .ufl file
-  Output: UFL form
+#. Language, parsing
 
-  This stage consists of parsing and expressing a form in the
-  UFL form language.
+   - Input:  Python code or .ufl file
+   - Output: UFL form
 
-  This stage is completely handled by UFL.
+   This stage consists of parsing and expressing a form in the UFL form
+   language. This stage is handled by UFL.
 
-Compiler stage 1: Analysis
---------------------------
+#. Analysis
 
-  Input:  UFL form
-  Output: Preprocessed UFL form and FormData (metadata)
+   - Input:  UFL form
+   - Output: Preprocessed UFL form and FormData (metadata)
 
-  This stage preprocesses the UFL form and extracts form metadata.
-  It may also perform simplifications on the form.
+   This stage preprocesses the UFL form and extracts form metadata. It
+   may also perform simplifications on the form.
 
-Compiler stage 2: Code representation
--------------------------------------
+#. Code representation
 
-  Input:  Preprocessed UFL form and FormData (metadata)
-  Output: Intermediate Representation (IR)
+   - Input:  Preprocessed UFL form and FormData (metadata)
+   - Output: Intermediate Representation (IR)
 
-  This stage examines the input and generates all data needed for code
-  generation. This includes generation of finite element basis
-  functions, extraction of data for mapping of degrees of freedom and
-  possible precomputation of integrals.
+   This stage examines the input and generates all data needed for code
+   generation. This includes generation of finite element basis
+   functions, extraction of data for mapping of degrees of freedom and
+   possible precomputation of integrals. Most of the complexity of
+   compilation is handled in this stage.
 
-  Most of the complexity of compilation is handled in this stage.
+   The IR is stored as a dictionary, mapping names of UFC functions to
+   data needed for generation of the corresponding code.
 
-  The IR is stored as a dictionary, mapping names of UFC functions to
-  data needed for generation of the corresponding code.
+#. Optimization
 
-Compiler stage 3: Optimization
-------------------------------
+   FIXME: Update text
 
-  FIXME: Update text
+   - Input:  Intermediate Representation (IR)
+   - Output: Optimized Intermediate Representation (OIR)
 
-  Input:  Intermediate Representation (IR)
-  Output: Optimized Intermediate Representation (OIR)
+   This stage examines the IR and performs optimizations.
 
-  This stage examines the IR and performs optimizations.
+#. Code generation
 
-Compiler stage 4: Code generation
----------------------------------
+   - Input:  Optimized Intermediate Representation (OIR)
+   - Output: C code
 
-  Input:  Optimized Intermediate Representation (OIR)
-  Output: C++ code
+   This stage examines the OIR and generates the actual C code for the
+   body of each UFC function.
 
-  This stage examines the OIR and generates the actual C++ code for
-  the body of each UFC function.
+   The code is stored as a dictionary, mapping names of UFC functions to
+   strings containing the C code of the body of each function.
 
-  The code is stored as a dictionary, mapping names of UFC functions
-  to strings containing the C++ code of the body of each function.
+#. Code formatting
 
-Compiler stage 5: Code formatting
----------------------------------
+   - Input:  C code
+   - Output: C code files
 
-  Input:  C++ code
-  Output: C++ code files
+   This stage examines the generated C++ code and formats it according
+   to the UFC format, generating as output one or more .h/.c files
+   conforming to the UFC format.
 
-  This stage examines the generated C++ code and formats it according
-  to the UFC format, generating as output one or more .h/.c files
-  conforming to the UFC format.
+The main interface is defined by the following two functions::
 
-The main interface is defined by the following two functions:
+    compile_form compile_element
 
-  compile_form
-  compile_element
-
-The compiler stages are implemented by the following functions:
-
-  analyze_forms
-  or
-  analyze_elements  (stage 1)
-  compute_ir        (stage 2)
-  optimize_ir       (stage 3)
-  generate_code     (stage 4)
-  format_code       (stage 5)
 """
 
 __all__ = ["compile_form", "compile_element"]

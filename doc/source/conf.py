@@ -45,6 +45,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
+    'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
 ]
 
@@ -172,3 +173,4 @@ todo_include_todos = True
 autosummary_generate = True
 
 autodoc_default_flags = ['members', 'show-inheritance']
+napoleon_numpy_docstring = True
