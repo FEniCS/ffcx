@@ -2,8 +2,11 @@
 FFC-X: The FEniCS Form Compiler (experimental)
 ==============================================
 
-.. image:: https://circleci.com/gh/FEniCS/dolfinx.svg?style=svg
+.. image:: https://circleci.com/gh/FEniCS/dolfinx.svg?style=shield
     :target: https://circleci.com/gh/FEniCS/dolfinx
+.. image:: https://readthedocs.org/projects/fenics-ffcx/badge/?version=latest
+   :target: http://fenics-ffcx.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
 
 FFC-X is an experimental version of FEniCS FFC which is being actively
 developed, but is **not ready for production use**. Many new
@@ -28,9 +31,6 @@ Documentation
 
 Documentation can be viewed at http://fenics-ffcx.readthedocs.org/.
 
-.. image:: https://readthedocs.org/projects/fenics-ffcx/badge/?version=latest
-   :target: http://fenics-ffcx.readthedocs.io/en/latest/?badge=latest
-   :alt: Documentation Status
 
 
 License
