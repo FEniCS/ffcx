@@ -27,6 +27,7 @@ __version__ = pkg_resources.get_distribution("fenics-ffc").version
 
 class FFCError(Exception):
     """Exception raised for FFC errors"""
+
     pass
 
 

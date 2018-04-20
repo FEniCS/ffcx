@@ -33,7 +33,7 @@ def inverse_jacobian(L, gdim, tdim, element_cellname):
         L.ArrayDecl("double", K, (gdim * tdim, )),
         L.VariableDecl("double", detJ),
         L.Call("compute_jacobian_inverse_" + element_cellname + "_" +
-               str(gdim) + "d", (K, detJ, J))
+               str(gdim) + "d", (K, L.AddressOf(detJ), J))
     ]
     return code
 
