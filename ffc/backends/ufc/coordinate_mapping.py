@@ -504,13 +504,17 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
     # the first iteration for each target point by initializing Xk = Xm
     # + Km * (xgoal - xm) which is the affine approximation starting at
     # the midpoint.
+    classname = ir['classname']
     midpoint_geometry = [
         L.Comment("Compute K = J^-1 and x at midpoint of cell"),
         L.ArrayDecl("double", xm, (gdim, ), 0.0),
         L.ArrayDecl("double", Km, (tdim * gdim, )),
-        L.Call("compute_midpoint_geometry", (xm, J, coordinate_dofs)),
-        L.Call("compute_jacobian_determinants", (detJ, one_point, J, cell_orientation)),
-        L.Call("compute_jacobian_inverses", (Km, one_point, J, detJ)),
+        L.Call("compute_midpoint_geometry_{}".format(classname),
+               (xm, J, coordinate_dofs)),
+        L.Call("compute_jacobian_determinants_{}".format(classname),
+               (detJ, one_point, J, cell_orientation)),
+        L.Call("compute_jacobian_inverses_{}".format(classname),
+               (Km, one_point, J, detJ)),
     ]
 
     # declare xgoal = x[ip]
@@ -529,7 +533,7 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
     part1 = [
         L.Comment("Compute K = J^-1 for one point, (J and detJ are only used as"),
         L.Comment("intermediate storage inside compute_geometry, not used out here"),
-        L.Call("compute_geometry",
+        L.Call("compute_geometry_{}".format(classname),
                (xk, J, detJ, K, one_point, Xk, coordinate_dofs, cell_orientation)),
     ]
 
