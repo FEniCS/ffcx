@@ -1491,8 +1491,8 @@ class ArrayDecl(CStatement):
             return decl + ";"
         elif _is_zero_valued(self.values):
             # Zero initial values
-            # (NB! C++ style zero initialization, not sure about other target languages)
-            return decl + " = {};"
+            # (NB! C style zero initialization, not sure about other target languages)
+            return decl + " = { 0 };"
         else:
             # Construct initializer lists for arbitrary multidimensional array values
             if self.values.dtype.kind == "f":

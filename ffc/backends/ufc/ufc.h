@@ -14,23 +14,15 @@
 #define UFC_VERSION_MAINTENANCE 0
 #define UFC_VERSION_RELEASE 0
 
+#if UFC_VERSION_RELEASE
+#define UFC_VERSION UFC_VERSION_MAJOR "." UFC_VERSION_MINOR "." UFC_VERSION_MAINTENANCE
+#else
+#define UFC_VERSION UFC_VERSION_MAJOR "." UFC_VERSION_MINOR "." UFC_VERSION_MAINTENANCE ".dev0"
+#endif
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <ufc_geometry.h>
-
-#define CONCAT(a, b, c) #a "." #b "." #c
-#define EVALUATOR(a, b, c) CONCAT(a, b, c)
-
-#if UFC_VERSION_RELEASE
-const char UFC_VERSION[]
-    = EVALUATOR(UFC_VERSION_MAJOR, UFC_VERSION_MINOR, UFC_VERSION_MAINTENANCE);
-#else
-const char UFC_VERSION[] = EVALUATOR(UFC_VERSION_MAJOR, UFC_VERSION_MINOR,
-                                     UFC_VERSION_MAINTENANCE) ".dev0";
-#endif
-
-#undef CONCAT
-#undef EVALUATOR
 
 #ifdef __cplusplus
 extern "C"
