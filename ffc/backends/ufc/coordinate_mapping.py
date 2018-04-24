@@ -488,6 +488,7 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
 
     # Wrap K as flattened array for convenient indexing Kf[j,i]
     Kf = L.FlattenedArray(K, dims=(tdim, gdim))
+    Kmf = L.FlattenedArray(Km, dims=(tdim, gdim))
 
     decls = [
         L.Comment("Declare intermediate arrays to hold results of compute_geometry call"),
@@ -527,7 +528,7 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
         L.ForRanges(
             (j, 0, tdim), (i, 0, gdim),
             index_type=index_type,
-            body=L.AssignAdd(Xk[j], Kf[j, i] * (xgoal[i] - xm[i])))
+            body=L.AssignAdd(Xk[j], Kmf[j, i] * (xgoal[i] - xm[i])))
     ]
 
     part1 = [
