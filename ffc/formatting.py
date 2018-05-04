@@ -182,7 +182,6 @@ def _generate_includes(includes, parameters):
     # This should really be set by the backend
     scalar_type = parameters.get("scalar_type")
     if scalar_type == "double complex":
-        print(scalar_type)
         includes += "#include<complex.h>" + "\n"
 
     return includes
