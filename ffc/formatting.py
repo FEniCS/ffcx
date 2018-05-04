@@ -82,9 +82,8 @@ def format_code(code, wrapper_code, prefix, parameters):
     code_c_pre += format_template["header_c"] % {"prefix": prefix}
 
     # Generate includes and add to preamble
-    includes_h, includes_c = _generate_includes(includes, parameters)
+    includes_h = _generate_includes(includes, parameters)
     code_h_pre += includes_h
-    code_c_pre += includes_c
 
     # Enclose header with 'extern "C"'
     code_h_pre += c_extern_pre
@@ -178,11 +177,12 @@ def _generate_includes(includes, parameters):
     s = set(default_h_includes) | includes
 
     # s2 = external_includes - s
-    includes_h = "\n".join(sorted(s)) + "\n" if s else ""
+    includes = "\n".join(sorted(s)) + "\n" if s else ""
 
     # This should really be set by the backend
-    if "scalar_type" in parameters.keys():
-        if parameters["scalar_type"] == "double complex":
-            includes_c = "#include<complex.h>" + "\n"
+    scalar_type = parameters.get("scalar_type")
+    if scalar_type == "double complex":
+        print(scalar_type)
+        includes += "#include<complex.h>" + "\n"
 
-    return includes_h, includes_c
+    return includes
