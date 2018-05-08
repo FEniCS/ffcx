@@ -569,7 +569,7 @@ def _find_compatible_representations(integrals, elements):
 
     """
     # All representations
-    compatible = set(("uflacs", "quadrature", "tsfc"))
+    compatible = set(("uflacs", "tsfc"))
 
     # Check for non-affine meshes
     if _has_higher_order_geometry(integrals):
@@ -577,12 +577,12 @@ def _find_compatible_representations(integrals, elements):
 
     # Custom integrals
     if _has_custom_integrals(integrals):
-        compatible &= set(("quadrature", ))
+        compatible &= set(("uflacs", ))
 
     # Use quadrature for vertex integrals
     if any(integral.integral_type() == "vertex" for integral in integrals):
         # TODO: Test with uflacs, I think this works fine now:
-        compatible &= set(("quadrature", "uflacs", "tsfc"))
+        compatible &= set(("uflacs", "tsfc"))
 
     # Get ALL sub elements, needed to check for restrictions of
     # EnrichedElements.
@@ -590,9 +590,8 @@ def _find_compatible_representations(integrals, elements):
     for e in elements:
         sub_elements += _get_sub_elements(e)
 
-    # Use quadrature representation if we have a quadrature element
     if any(e.family() == "Quadrature" for e in sub_elements):
         # TODO: Test with uflacs, might need a little adjustment:
-        compatible &= set(("quadrature", "uflacs", "tsfc"))
+        compatible &= set(("uflacs", "tsfc"))
 
     return compatible
