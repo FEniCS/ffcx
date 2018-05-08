@@ -5,7 +5,7 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018.
 
 declaration = """
-ufc_dofmap* create_{factory_name}();
+ufc_dofmap* create_{factory_name}(void);
 """
 
 factory = """
@@ -48,7 +48,7 @@ ufc_dofmap* create_sub_dofmap_{factory_name}(int i)
 {create_sub_dofmap}
 }}
 
-ufc_dofmap* create_{factory_name}()
+ufc_dofmap* create_{factory_name}(void)
 {{
   ufc_dofmap* dofmap = malloc(sizeof(*dofmap));
   dofmap->signature = {signature};

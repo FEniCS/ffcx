@@ -124,7 +124,7 @@ extern "C"
     ufc_finite_element* (*create_sub_element)(int i);
 
     /// Create a new class instance
-    ufc_finite_element* (*create)();
+    ufc_finite_element* (*create)(void);
   } ufc_finite_element;
 
   typedef struct ufc_dofmap
@@ -180,7 +180,7 @@ extern "C"
     ufc_dofmap* (*create_sub_dofmap)(int i);
 
     /// Create a new class instance
-    ufc_dofmap* (*create)();
+    ufc_dofmap* (*create)(void);
   } ufc_dofmap;
 
   /// A representation of a coordinate mapping parameterized by a local
@@ -192,7 +192,7 @@ extern "C"
     const char* signature;
 
     /// Create object of the same type
-    ufc_coordinate_mapping* (*create)();
+    ufc_coordinate_mapping* (*create)(void);
 
     /// Return geometric dimension of the coordinate_mapping
     int geometric_dimension;
@@ -207,12 +207,12 @@ extern "C"
     // FIXME: Is this for a single coordinate component, or a vector?
     /// Create finite_element object representing the coordinate
     /// parameterization
-    ufc_finite_element* (*create_coordinate_finite_element)();
+    ufc_finite_element* (*create_coordinate_finite_element)(void);
 
     // FIXME: Remove and just use 'create'?
     // FIXME: Is this for a single coordinate component, or a vector?
     /// Create dofmap object representing the coordinate parameterization
-    ufc_dofmap* (*create_coordinate_dofmap)();
+    ufc_dofmap* (*create_coordinate_dofmap)(void);
 
     /// Compute physical coordinates x from reference coordinates X,
     /// the inverse of compute_reference_coordinates
@@ -481,14 +481,14 @@ extern "C"
 
     // FIXME: Remove and just use 'create_coordinate_mapping'
     /// Create a new finite element for parameterization of coordinates
-    ufc_finite_element* (*create_coordinate_finite_element)();
+    ufc_finite_element* (*create_coordinate_finite_element)(void);
 
     // FIXME: Remove and just use 'create_coordinate_mapping'
     /// Create a new dofmap for parameterization of coordinates
-    ufc_dofmap* (*create_coordinate_dofmap)();
+    ufc_dofmap* (*create_coordinate_dofmap)(void);
 
     /// Create a new coordinate mapping
-    ufc_coordinate_mapping* (*create_coordinate_mapping)();
+    ufc_coordinate_mapping* (*create_coordinate_mapping)(void);
 
     /// Create a new finite element for argument function 0 <= i < r+n
     ///
@@ -554,19 +554,19 @@ extern "C"
     ufc_custom_integral* (*create_custom_integral)(int subdomain_id);
 
     /// Create a new cell integral on everywhere else
-    ufc_cell_integral* (*create_default_cell_integral)();
+    ufc_cell_integral* (*create_default_cell_integral)(void);
 
     /// Create a new exterior facet integral on everywhere else
-    ufc_exterior_facet_integral* (*create_default_exterior_facet_integral)();
+    ufc_exterior_facet_integral* (*create_default_exterior_facet_integral)(void);
 
     /// Create a new interior facet integral on everywhere else
-    ufc_interior_facet_integral* (*create_default_interior_facet_integral)();
+    ufc_interior_facet_integral* (*create_default_interior_facet_integral)(void);
 
     /// Create a new vertex integral on everywhere else
-    ufc_vertex_integral* (*create_default_vertex_integral)();
+    ufc_vertex_integral* (*create_default_vertex_integral)(void);
 
     /// Create a new custom integral on everywhere else
-    ufc_custom_integral* (*create_default_custom_integral)();
+    ufc_custom_integral* (*create_default_custom_integral)(void);
   } ufc_form;
 
 

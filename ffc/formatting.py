@@ -82,8 +82,9 @@ def format_code(code, wrapper_code, prefix, parameters):
     code_c_pre += format_template["header_c"] % {"prefix": prefix}
 
     # Generate includes and add to preamble
-    includes_h = _generate_includes(includes, parameters)
+    includes_h, includes_c = _generate_includes(includes, parameters)
     code_h_pre += includes_h
+    code_c_pre += includes_c
 
     # Enclose header with 'extern "C"'
     code_h_pre += c_extern_pre
@@ -165,18 +166,23 @@ def _generate_includes(includes, parameters):
 
     default_h_includes = [
         "#include <math.h>",  # This should really be set by the backend
-        "#include <stdalign.h>",  # This should really be set by the backend
         "#include <stdlib.h>",  # This should really be set by the backend
         "#include <string.h>",  # This should really be set by the backend
         "#include <ufc.h>",
     ]
 
+    default_c_includes = [
+        "#include <stdalign.h>",  # This should really be set by the backend
+    ]
+
     # external_includes = set(
     #     "#include <%s>" % inc for inc in parameters.get("external_includes", ()))
 
-    s = set(default_h_includes) | includes
+    s_h = set(default_h_includes) | includes
+    s_c = set(default_c_includes)
 
     # s2 = external_includes - s
 
-    includes = "\n".join(sorted(s)) + "\n" if s else ""
-    return includes
+    includes_h = "\n".join(sorted(s_h)) + "\n" if s_h else ""
+    includes_c = "\n".join(sorted(s_c)) + "\n" if s_c else ""
+    return includes_h, includes_c
