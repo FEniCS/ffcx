@@ -5,7 +5,7 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018
 
 declaration = """
-ufc_{type}_integral* create_{factory_name}();
+ufc_{type}_integral* create_{factory_name}(void);
 """
 
 tabulate_implementation = {
@@ -67,7 +67,7 @@ factory = """
 
 {tabulate_tensor}
 
-ufc_{type}_integral* create_{factory_name}()
+ufc_{type}_integral* create_{factory_name}(void)
 {{
   static const bool enabled{enabled_coefficients}
 
