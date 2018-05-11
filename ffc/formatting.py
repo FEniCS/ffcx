@@ -182,7 +182,12 @@ def _generate_includes(includes, parameters):
     s_c = set(default_c_includes)
 
     # s2 = external_includes - s
-
     includes_h = "\n".join(sorted(s_h)) + "\n" if s_h else ""
     includes_c = "\n".join(sorted(s_c)) + "\n" if s_c else ""
+
+    # This should really be set by the backend
+    scalar_type = parameters.get("scalar_type")
+    if scalar_type == "double complex":
+        includes_c += "#include <complex.h> \n"
+
     return includes_h, includes_c
