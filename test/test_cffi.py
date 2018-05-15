@@ -6,31 +6,36 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import numpy as np
-#from cffi import FFI
+import pytest
 
-import ffc
 import ffc.backends.ufc.jit
 import ufl
 
-# Build list of UFL elements
-cell = ufl.triangle
-elements = [ufl.FiniteElement("Lagrange", cell, p) for p in range(1, 3)]
 
-# Compile elements
-compiled_elements, module = ffc.backends.ufc.jit.compile_elements(elements)
+@pytest.fixture(scope="module")
+def lagrange_element():
+    """Compile list of Lagrange elements"""
+    cell = ufl.triangle
+    elements = [ufl.FiniteElement("Lagrange", cell, p) for p in range(1, 5)]
+    compiled_elements, module = ffc.backends.ufc.jit.compile_elements(elements)
+    return elements, compiled_elements, module
 
-# Test
-for e, compiled_e in zip(elements, compiled_elements):
-    print(compiled_e.geometric_dimension)
-    print(compiled_e.degree)
-    print(compiled_e)
-    print(compiled_e.family)
-    test = module.ffi.string(compiled_e.family)
 
-    tdim = compiled_e.topological_dimension
-    space_dim = compiled_e.space_dimension
-    X = np.zeros([space_dim, tdim])
+def test_dim_degree(lagrange_element):
+    ufl_elements, compiled_elements, module = lagrange_element
+    for e, compiled_e in zip(ufl_elements, compiled_elements):
+        assert compiled_e.geometric_dimension == 2
+        assert compiled_e.topological_dimension == 2
+        assert e.degree() == compiled_e.degree
 
-    X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
-    compiled_e.tabulate_reference_dof_coordinates(X_ptr)
-    print(X)
+
+def test_tabulate_reference_dof_coordinates(lagrange_element):
+    ufl_elements, compiled_elements, module = lagrange_element
+    for e, compiled_e in zip(ufl_elements, compiled_elements):
+        #test = module.ffi.string(compiled_e.family)
+        tdim = compiled_e.topological_dimension
+        space_dim = compiled_e.space_dimension
+        X = np.zeros([space_dim, tdim])
+        X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
+        compiled_e.tabulate_reference_dof_coordinates(X_ptr)
+        #print(X)
