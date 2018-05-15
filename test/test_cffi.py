@@ -38,4 +38,26 @@ def test_tabulate_reference_dof_coordinates(lagrange_element):
         X = np.zeros([space_dim, tdim])
         X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
         compiled_e.tabulate_reference_dof_coordinates(X_ptr)
-        #print(X)
+        # print(X)
+
+
+def test_form():
+    cell = ufl.triangle
+    element = ufl.FiniteElement("Lagrange", cell, 1)
+    u, v = ufl.TestFunction(element), ufl.TrialFunction(element),
+    a = ufl.dot(ufl.grad(u), ufl.grad(v)) * ufl.dx
+    forms = [a]
+    compiled_forms, module = ffc.backends.ufc.jit.compile_forms(forms)
+
+    for f, compiled_f in zip(forms, compiled_forms):
+        assert compiled_f.rank == f.rank()
+
+
+# cell = ufl.triangle
+# elements = [ufl.FiniteElement("Lagrange", cell, p) for p in range(1, 5)]
+# compiled_elements, module = ffc.backends.ufc.jit.compile_elements(elements)
+
+# for e, compiled_e in zip(elements, compiled_elements):
+#     assert compiled_e.geometric_dimension == 2
+#     assert compiled_e.topological_dimension == 2
+#     assert e.degree() == compiled_e.degree

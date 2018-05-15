@@ -85,7 +85,7 @@ void compute_reference_geometry_{factory_name}(double* restrict X, double* restr
 ufc_coordinate_mapping* create_{factory_name}(void)
 {{
   ufc_coordinate_mapping* cmap = malloc(sizeof(*cmap));
-  const char* signature = {signature};
+  cmap->signature = {signature};
   cmap->create = create_{factory_name};
   cmap->geometric_dimension = {geometric_dimension};
   cmap->topological_dimension = {topological_dimension};
