@@ -143,7 +143,6 @@ def _generate_comment(parameters):
     parameters = compilation_relevant_parameters(parameters)
 
     # Generate top level comment
-    args = {"ffc_version": FFC_VERSION, "ufc_version": UFC_VERSION}
     if parameters["format"] == "ufc":
         comment = FORMAT_TEMPLATE["ufc comment"].format(
             ffc_version=FFC_VERSION, ufc_version=UFC_VERSION)
