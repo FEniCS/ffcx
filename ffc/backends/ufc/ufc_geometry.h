@@ -463,7 +463,7 @@ static const double
 /// --- Coordinate mappings from reference facet cell to reference cell by UFC
 /// conventions ---
 
-inline void compute_reference_facet_to_reference_cell_coordinates_interval(
+static inline void compute_reference_facet_to_reference_cell_coordinates_interval(
     double Xc[UFC_TDIM_1], unsigned int facet)
 {
   switch (facet)
@@ -477,7 +477,7 @@ inline void compute_reference_facet_to_reference_cell_coordinates_interval(
   };
 }
 
-inline void compute_reference_facet_to_reference_cell_coordinates_triangle(
+static inline void compute_reference_facet_to_reference_cell_coordinates_triangle(
     double Xc[UFC_TDIM_2], const double Xf[UFC_TDIM_2 - 1], unsigned int facet)
 {
   switch (facet)
@@ -497,7 +497,7 @@ inline void compute_reference_facet_to_reference_cell_coordinates_triangle(
   };
 }
 
-inline void compute_reference_facet_to_reference_cell_coordinates_tetrahedron(
+static inline void compute_reference_facet_to_reference_cell_coordinates_tetrahedron(
     double Xc[UFC_TDIM_3], const double Xf[UFC_TDIM_3 - 1], unsigned int facet)
 {
   switch (facet)
@@ -528,14 +528,14 @@ inline void compute_reference_facet_to_reference_cell_coordinates_tetrahedron(
 ///--- Computation of Jacobian matrices ---
 
 /// Compute Jacobian J for interval embedded in R^1
-inline void compute_jacobian_interval_1d(double J[UFC_GDIM_1 * UFC_TDIM_1],
+static inline void compute_jacobian_interval_1d(double J[UFC_GDIM_1 * UFC_TDIM_1],
                                          const double coordinate_dofs[2])
 {
   J[0] = coordinate_dofs[1] - coordinate_dofs[0];
 }
 
 /// Compute Jacobian J for interval embedded in R^2
-inline void compute_jacobian_interval_2d(double J[UFC_GDIM_2 * UFC_TDIM_1],
+static inline void compute_jacobian_interval_2d(double J[UFC_GDIM_2 * UFC_TDIM_1],
                                          const double coordinate_dofs[4])
 {
   J[0] = coordinate_dofs[2] - coordinate_dofs[0];
@@ -543,7 +543,7 @@ inline void compute_jacobian_interval_2d(double J[UFC_GDIM_2 * UFC_TDIM_1],
 }
 
 /// Compute Jacobian J for interval embedded in R^3
-inline void compute_jacobian_interval_3d(double J[UFC_GDIM_3 * UFC_TDIM_1],
+static inline void compute_jacobian_interval_3d(double J[UFC_GDIM_3 * UFC_TDIM_1],
                                          const double coordinate_dofs[6])
 {
   J[0] = coordinate_dofs[3] - coordinate_dofs[0];
@@ -552,7 +552,7 @@ inline void compute_jacobian_interval_3d(double J[UFC_GDIM_3 * UFC_TDIM_1],
 }
 
 /// Compute Jacobian J for triangle embedded in R^2
-inline void compute_jacobian_triangle_2d(double J[UFC_GDIM_2 * UFC_TDIM_2],
+static inline void compute_jacobian_triangle_2d(double J[UFC_GDIM_2 * UFC_TDIM_2],
                                          const double coordinate_dofs[6])
 {
   J[0] = coordinate_dofs[2] - coordinate_dofs[0];
@@ -562,7 +562,7 @@ inline void compute_jacobian_triangle_2d(double J[UFC_GDIM_2 * UFC_TDIM_2],
 }
 
 /// Compute Jacobian J for triangle embedded in R^3
-inline void compute_jacobian_triangle_3d(double J[UFC_GDIM_3 * UFC_TDIM_2],
+static inline void compute_jacobian_triangle_3d(double J[UFC_GDIM_3 * UFC_TDIM_2],
                                          const double coordinate_dofs[9])
 {
   J[0] = coordinate_dofs[3] - coordinate_dofs[0];
@@ -574,7 +574,7 @@ inline void compute_jacobian_triangle_3d(double J[UFC_GDIM_3 * UFC_TDIM_2],
 }
 
 /// Compute Jacobian J for tetrahedron embedded in R^3
-inline void compute_jacobian_tetrahedron_3d(double J[UFC_GDIM_3 * UFC_TDIM_3],
+static inline void compute_jacobian_tetrahedron_3d(double J[UFC_GDIM_3 * UFC_TDIM_3],
                                             const double coordinate_dofs[12])
 {
   J[0] = coordinate_dofs[3] - coordinate_dofs[0];
@@ -592,7 +592,7 @@ inline void compute_jacobian_tetrahedron_3d(double J[UFC_GDIM_3 * UFC_TDIM_3],
 // updated to use the NEW ones below
 
 /// Compute Jacobian inverse K for interval embedded in R^1
-inline void compute_jacobian_inverse_interval_1d(double* K, double* det,
+static inline void compute_jacobian_inverse_interval_1d(double* K, double* det,
                                                  const double* J)
 {
   *det = J[0];
@@ -600,7 +600,7 @@ inline void compute_jacobian_inverse_interval_1d(double* K, double* det,
 }
 
 /// Compute Jacobian (pseudo)inverse K for interval embedded in R^2
-inline void compute_jacobian_inverse_interval_2d(double* K, double* det,
+static inline void compute_jacobian_inverse_interval_2d(double* K, double* det,
                                                  const double* J)
 {
   const double det2 = J[0] * J[0] + J[1] * J[1];
@@ -611,7 +611,7 @@ inline void compute_jacobian_inverse_interval_2d(double* K, double* det,
 }
 
 /// Compute Jacobian (pseudo)inverse K for interval embedded in R^3
-inline void compute_jacobian_inverse_interval_3d(double* K, double* det,
+static inline void compute_jacobian_inverse_interval_3d(double* K, double* det,
                                                  const double* J)
 {
   // TODO: Move computation of det to a separate function, det is often needed
@@ -625,7 +625,7 @@ inline void compute_jacobian_inverse_interval_3d(double* K, double* det,
 }
 
 /// Compute Jacobian inverse K for triangle embedded in R^2
-inline void compute_jacobian_inverse_triangle_2d(double* K, double* det,
+static inline void compute_jacobian_inverse_triangle_2d(double* K, double* det,
                                                  const double* J)
 {
   *det = J[0] * J[3] - J[1] * J[2];
@@ -637,7 +637,7 @@ inline void compute_jacobian_inverse_triangle_2d(double* K, double* det,
 }
 
 /// Compute Jacobian (pseudo)inverse K for triangle embedded in R^3
-inline void compute_jacobian_inverse_triangle_3d(double* K, double* det,
+static inline void compute_jacobian_inverse_triangle_3d(double* K, double* det,
                                                  const double* J)
 {
   const double d_0 = J[2] * J[5] - J[4] * J[3];
@@ -662,7 +662,7 @@ inline void compute_jacobian_inverse_triangle_3d(double* K, double* det,
 }
 
 /// Compute Jacobian inverse K for tetrahedron embedded in R^3
-inline void compute_jacobian_inverse_tetrahedron_3d(double* K, double* det,
+static inline void compute_jacobian_inverse_tetrahedron_3d(double* K, double* det,
                                                     const double* J)
 {
   const double d_00 = J[4] * J[8] - J[5] * J[7];
@@ -691,14 +691,14 @@ inline void compute_jacobian_inverse_tetrahedron_3d(double* K, double* det,
 //--- NEW Computation of Jacobian (sub)determinants ---
 
 /// Compute Jacobian determinant for interval embedded in R^1
-inline void compute_jacobian_determinants_interval_1d(
+static inline void compute_jacobian_determinants_interval_1d(
     double* det, const double J[UFC_GDIM_1 * UFC_TDIM_1])
 {
   *det = J[0];
 }
 
 /// Compute Jacobian (pseudo)determinants for interval embedded in R^2
-inline void compute_jacobian_determinants_interval_2d(
+static inline void compute_jacobian_determinants_interval_2d(
     double* det2, double* det, const double J[UFC_GDIM_2 * UFC_TDIM_1])
 {
   *det2 = J[0] * J[0] + J[1] * J[1];
@@ -706,7 +706,7 @@ inline void compute_jacobian_determinants_interval_2d(
 }
 
 /// Compute Jacobian (pseudo)determinants for interval embedded in R^3
-inline void compute_jacobian_determinants_interval_3d(
+static inline void compute_jacobian_determinants_interval_3d(
     double* det2, double* det, const double J[UFC_GDIM_3 * UFC_TDIM_1])
 {
   *det2 = J[0] * J[0] + J[1] * J[1] + J[2] * J[2];
@@ -714,14 +714,14 @@ inline void compute_jacobian_determinants_interval_3d(
 }
 
 /// Compute Jacobian determinant for triangle embedded in R^2
-inline void compute_jacobian_determinants_triangle_2d(
+static inline void compute_jacobian_determinants_triangle_2d(
     double* det, const double J[UFC_GDIM_2 * UFC_TDIM_2])
 {
   *det = J[0] * J[3] - J[1] * J[2];
 }
 
 /// Compute Jacobian (pseudo)determinants for triangle embedded in R^3
-inline void compute_jacobian_determinants_triangle_3d(
+static inline void compute_jacobian_determinants_triangle_3d(
     double* den, double* det2, double* det, double c[3],
     const double J[UFC_GDIM_3 * UFC_TDIM_2])
 {
@@ -740,7 +740,7 @@ inline void compute_jacobian_determinants_triangle_3d(
 }
 
 /// Compute Jacobian determinants for tetrahedron embedded in R^3
-inline void compute_jacobian_determinants_tetrahedron_3d(
+static inline void compute_jacobian_determinants_tetrahedron_3d(
     double* det, double d[9], const double J[UFC_GDIM_3 * UFC_TDIM_3])
 {
   d[0 * 3 + 0] = J[4] * J[8] - J[5] * J[7];
@@ -759,7 +759,7 @@ inline void compute_jacobian_determinants_tetrahedron_3d(
 //--- NEW Computation of Jacobian inverses ---
 
 /// Compute Jacobian inverse K for interval embedded in R^1
-inline void
+static inline void
 new_compute_jacobian_inverse_interval_1d(double K[UFC_TDIM_1 * UFC_GDIM_1],
                                          double det)
 {
@@ -767,7 +767,7 @@ new_compute_jacobian_inverse_interval_1d(double K[UFC_TDIM_1 * UFC_GDIM_1],
 }
 
 /// Compute Jacobian (pseudo)inverse K for interval embedded in R^2
-inline void new_compute_jacobian_inverse_interval_2d(
+static inline void new_compute_jacobian_inverse_interval_2d(
     double K[UFC_TDIM_1 * UFC_GDIM_2], double det2,
     const double J[UFC_GDIM_2 * UFC_TDIM_1])
 {
@@ -776,7 +776,7 @@ inline void new_compute_jacobian_inverse_interval_2d(
 }
 
 /// Compute Jacobian (pseudo)inverse K for interval embedded in R^3
-inline void new_compute_jacobian_inverse_interval_3d(
+static inline void new_compute_jacobian_inverse_interval_3d(
     double K[UFC_TDIM_1 * UFC_GDIM_3], double det2,
     const double J[UFC_GDIM_3 * UFC_TDIM_1])
 {
@@ -786,7 +786,7 @@ inline void new_compute_jacobian_inverse_interval_3d(
 }
 
 /// Compute Jacobian inverse K for triangle embedded in R^2
-inline void new_compute_jacobian_inverse_triangle_2d(
+static inline void new_compute_jacobian_inverse_triangle_2d(
     double K[UFC_TDIM_2 * UFC_GDIM_2], double det,
     const double J[UFC_GDIM_2 * UFC_TDIM_2])
 {
@@ -797,7 +797,7 @@ inline void new_compute_jacobian_inverse_triangle_2d(
 }
 
 /// Compute Jacobian (pseudo)inverse K for triangle embedded in R^3
-inline void new_compute_jacobian_inverse_triangle_3d(
+static inline void new_compute_jacobian_inverse_triangle_3d(
     double K[UFC_TDIM_2 * UFC_GDIM_3], double den, const double c[3],
     const double J[UFC_GDIM_3 * UFC_TDIM_2])
 {
@@ -810,7 +810,7 @@ inline void new_compute_jacobian_inverse_triangle_3d(
 }
 
 /// Compute Jacobian inverse K for tetrahedron embedded in R^3
-inline void
+static inline void
 new_compute_jacobian_inverse_tetrahedron_3d(double K[UFC_TDIM_3 * UFC_GDIM_3],
                                             double det, const double d[9])
 {
@@ -828,7 +828,7 @@ new_compute_jacobian_inverse_tetrahedron_3d(double K[UFC_TDIM_3 * UFC_GDIM_3],
 // --- Computation of edge, face, facet scaling factors
 
 /// Compute edge scaling factors for triangle embedded in R^2
-static void compute_edge_scaling_factors_triangle_2d(
+static inline void compute_edge_scaling_factors_triangle_2d(
     double dx[2], const double coordinate_dofs[6], int64_t facet)
 {
   // Get vertices on edge
@@ -842,14 +842,14 @@ static void compute_edge_scaling_factors_triangle_2d(
 }
 
 /// Compute facet scaling factor for triangle embedded in R^2
-inline void compute_facet_scaling_factor_triangle_2d(double* det,
-                                                     const double dx[2])
+static inline void compute_facet_scaling_factor_triangle_2d(double* det,
+                                                            const double dx[2])
 {
   *det = sqrt(dx[0] * dx[0] + dx[1] * dx[1]);
 }
 
 /// Compute edge scaling factors for triangle embedded in R^3
-static void compute_edge_scaling_factors_triangle_3d(
+static inline void compute_edge_scaling_factors_triangle_3d(
     double dx[3], const double coordinate_dofs[9], int64_t facet)
 {
   // Get vertices on edge
@@ -864,14 +864,14 @@ static void compute_edge_scaling_factors_triangle_3d(
 }
 
 /// Compute facet scaling factor for triangle embedded in R^3
-inline void compute_facet_scaling_factor_triangle_3d(double* det,
-                                                     const double dx[3])
+static inline void compute_facet_scaling_factor_triangle_3d(double* det,
+                                                            const double dx[3])
 {
   *det = sqrt(dx[0] * dx[0] + dx[1] * dx[1] + dx[2] * dx[2]);
 }
 
 /// Compute face scaling factors for tetrahedron embedded in R^3
-static void compute_face_scaling_factors_tetrahedron_3d(
+static inline void compute_face_scaling_factors_tetrahedron_3d(
     double a[3], const double coordinate_dofs[12], int64_t facet)
 {
   // Get vertices on face
@@ -903,8 +903,8 @@ static void compute_face_scaling_factors_tetrahedron_3d(
 }
 
 /// Compute facet scaling factor for tetrahedron embedded in R^3
-inline void compute_facet_scaling_factor_tetrahedron_3d(double* det,
-                                                        const double a[3])
+static inline void
+compute_facet_scaling_factor_tetrahedron_3d(double* det, const double a[3])
 {
   *det = sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
 }
@@ -912,7 +912,7 @@ inline void compute_facet_scaling_factor_tetrahedron_3d(double* det,
 ///--- Compute facet normal directions ---
 
 /// Compute facet direction for interval embedded in R^1
-inline void compute_facet_normal_direction_interval_1d(
+static inline void compute_facet_normal_direction_interval_1d(
     bool* direction, const double coordinate_dofs[2], int64_t facet)
 {
   *direction = facet == 0 ? coordinate_dofs[0] > coordinate_dofs[1]
@@ -920,7 +920,7 @@ inline void compute_facet_normal_direction_interval_1d(
 }
 
 /// Compute facet direction for triangle embedded in R^2
-static void
+static inline void
 compute_facet_normal_direction_triangle_2d(bool* direction,
                                            const double coordinate_dofs[6],
                                            const double dx[2], int64_t facet)
@@ -934,7 +934,7 @@ compute_facet_normal_direction_triangle_2d(bool* direction,
 }
 
 /// Compute facet direction for tetrahedron embedded in R^3
-static void
+static inline void
 compute_facet_normal_direction_tetrahedron_3d(bool* direction,
                                               const double coordinate_dofs[9],
                                               const double a[3], int64_t facet)
@@ -953,17 +953,17 @@ compute_facet_normal_direction_tetrahedron_3d(bool* direction,
 ///--- Compute facet normal vectors ---
 
 /// Compute facet normal for interval embedded in R^1
-inline void compute_facet_normal_interval_1d(double n[UFC_GDIM_1],
-                                             bool direction)
+static inline void compute_facet_normal_interval_1d(double n[UFC_GDIM_1],
+                                                    bool direction)
 {
   // Facet normals are 1.0 or -1.0:   (-1.0) <-- X------X --> (1.0)
   n[0] = direction ? 1.0 : -1.0;
 }
 
 /// Compute facet normal for interval embedded in R^2
-inline void compute_facet_normal_interval_2d(double n[UFC_GDIM_2],
-                                             const double coordinate_dofs[4],
-                                             int64_t facet)
+static inline void
+compute_facet_normal_interval_2d(double n[UFC_GDIM_2],
+                                 const double coordinate_dofs[4], int64_t facet)
 {
   if (facet == 0)
   {
@@ -981,9 +981,9 @@ inline void compute_facet_normal_interval_2d(double n[UFC_GDIM_2],
 }
 
 /// Compute facet normal for interval embedded in R^3
-inline void compute_facet_normal_interval_3d(double n[UFC_GDIM_3],
-                                             const double coordinate_dofs[6],
-                                             int64_t facet)
+static inline void
+compute_facet_normal_interval_3d(double n[UFC_GDIM_3],
+                                 const double coordinate_dofs[6], int64_t facet)
 {
   if (facet == 0)
   {
@@ -1004,9 +1004,10 @@ inline void compute_facet_normal_interval_3d(double n[UFC_GDIM_3],
 }
 
 /// Compute facet normal for triangle embedded in R^2
-inline void compute_facet_normal_triangle_2d(double n[UFC_GDIM_2],
-                                             const double dx[2],
-                                             const double det, bool direction)
+static inline void compute_facet_normal_triangle_2d(double n[UFC_GDIM_2],
+                                                    const double dx[2],
+                                                    const double det,
+                                                    bool direction)
 {
   // Compute facet normals from the facet scale factor constants
   n[0] = direction ? dx[1] / det : -dx[1] / det;
@@ -1014,9 +1015,9 @@ inline void compute_facet_normal_triangle_2d(double n[UFC_GDIM_2],
 }
 
 /// Compute facet normal for triangle embedded in R^3
-static void compute_facet_normal_triangle_3d(double n[UFC_GDIM_3],
-                                             const double coordinate_dofs[6],
-                                             int64_t facet)
+static inline void
+compute_facet_normal_triangle_3d(double n[UFC_GDIM_3],
+                                 const double coordinate_dofs[6], int64_t facet)
 {
   // Compute facet normal for triangles in 3D
   const unsigned int vertex0 = facet;
@@ -1077,7 +1078,7 @@ inline void compute_circumradius_interval_1d(double* circumradius,
 }
 
 /// Compute circumradius for interval embedded in R^2
-inline void compute_circumradius_interval_2d(double* circumradius,
+static inline void compute_circumradius_interval_2d(double* circumradius,
                                              double volume)
 {
   // Compute circumradius of interval in 2D (1/2 volume)
@@ -1085,15 +1086,15 @@ inline void compute_circumradius_interval_2d(double* circumradius,
 }
 
 /// Compute circumradius for interval embedded in R^3
-inline void compute_circumradius_interval_3d(double* circumradius,
-                                             double volume)
+static inline void compute_circumradius_interval_3d(double* circumradius,
+                                                    double volume)
 {
   // Compute circumradius of interval in 3D (1/2 volume)
   *circumradius = volume / 2.0;
 }
 
 /// Compute circumradius for triangle embedded in R^2
-inline void compute_circumradius_triangle_2d(
+static inline void compute_circumradius_triangle_2d(
     double* circumradius, const double coordinate_dofs[6],
     const double J[UFC_GDIM_2 * UFC_TDIM_2], double volume)
 {
@@ -1109,7 +1110,7 @@ inline void compute_circumradius_triangle_2d(
 }
 
 /// Compute circumradius for triangle embedded in R^3
-inline void compute_circumradius_triangle_3d(
+static inline void compute_circumradius_triangle_3d(
     double* circumradius, const double coordinate_dofs[9],
     const double J[UFC_GDIM_3 * UFC_TDIM_2], double volume)
 {
@@ -1127,7 +1128,7 @@ inline void compute_circumradius_triangle_3d(
 }
 
 /// Compute circumradius for tetrahedron embedded in R^3
-inline void compute_circumradius_tetrahedron_3d(
+static inline void compute_circumradius_tetrahedron_3d(
     double* circumradius, const double coordinate_dofs[12],
     const double J[UFC_GDIM_3 * UFC_TDIM_3], double volume)
 {
@@ -1165,7 +1166,7 @@ inline void compute_circumradius_tetrahedron_3d(
 ///--- Compute max facet edge lengths ---
 
 /// Compute min edge length in facet of tetrahedron embedded in R^3
-static void compute_min_facet_edge_length_tetrahedron_3d(
+static inline void compute_min_facet_edge_length_tetrahedron_3d(
     double* min_edge_length, unsigned int facet,
     const double coordinate_dofs[3 * 4])
 {
@@ -1198,7 +1199,7 @@ static void compute_min_facet_edge_length_tetrahedron_3d(
 ///--- Compute max facet edge lengths ---
 
 /// Compute max edge length in facet of tetrahedron embedded in R^3
-static void
+static inline void
 compute_max_facet_edge_length_tetrahedron_3d(double* max_edge_length,
                                              unsigned int facet,
                                              const double coordinate_dofs[12])
