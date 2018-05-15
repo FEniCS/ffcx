@@ -50,7 +50,7 @@ def test_form():
     compiled_forms, module = ffc.backends.ufc.jit.compile_forms(forms)
 
     for f, compiled_f in zip(forms, compiled_forms):
-        assert compiled_f.rank == f.rank()
+        assert compiled_f.rank == len(f.arguments())
 
 
 # cell = ufl.triangle
