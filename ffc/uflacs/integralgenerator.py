@@ -978,14 +978,14 @@ class IntegralGenerator(object):
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
             # A_rhs = f * PI where PI = sum_q weight * u * v
             PI = L.Symbol(blockdata.name)
-            # block_rank = len(blockmap)
+            block_rank = len(blockmap)
 
             # Indices used to index A
             A_index_symbols = tuple(self.backend.symbols.argument_loop_index(i)
-                                for i in range(block_rank))
+                                    for i in range(block_rank))
             # Indices used to index PI
             P_index_symbols = tuple(self.backend.symbols.argument_loop_index(i)
-                                for i in range(block_rank, 2*block_rank))
+                                    for i in range(block_rank, 2 * block_rank))
 
             # Define indices into preintegrated block
             P_entity_indices = self.get_entities(blockdata)
@@ -1064,7 +1064,8 @@ class IntegralGenerator(object):
                             if loop_interval[1] - loop_interval[0] > 1:
                                 loop_block += [L.ForRange(A_arg_index, loop_interval[0], loop_interval[1], loop_code)]
                             else:
-                                # TODO: Remove scope by explicitly replacing Symbol A_arg_index with Literal loop_interval[0] in all subexpression
+                                # TODO: Remove scope by explicitly replacing Symbol A_arg_index
+                                #       with Literal loop_interval[0] in all subexpression
                                 loop_block += [L.Scope([
                                     L.VariableDecl("int", A_arg_index, loop_interval[0]),
                                     loop_code]
