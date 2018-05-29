@@ -108,7 +108,7 @@ extern "C"
         const double* restrict K, int cell_orientation);
 
     /// Map dofs from vals to values
-    void (*map_dofs)(double* restrict values, const double* restrict vals,
+    void (*map_dofs)(ufc_scalar* values, const ufc_scalar* restrict vals,
                      const double* restrict coordinate_dofs,
                      int cell_orientation, const ufc_coordinate_mapping* cm);
 
