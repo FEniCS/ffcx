@@ -52,6 +52,13 @@ extern "C"
   typedef struct ufc_finite_element ufc_finite_element;
   typedef struct ufc_dofmap ufc_dofmap;
 
+#ifdef PETSC_USE_COMPLEX
+  #include <petscsys.h>
+  typedef PetscScalar ufc_scalar;
+#else
+  typedef double _Complex ufc_scalar;
+#endif
+
   typedef struct ufc_finite_element
   {
     /// String identifying the finite element
