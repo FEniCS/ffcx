@@ -80,6 +80,15 @@ def format_code(code, wrapper_code, prefix, parameters):
     code_h_pre += FORMAT_TEMPLATE["header_h"]
     code_c_pre += FORMAT_TEMPLATE["header_c"]
 
+    # Define ufc_scalar type before including ufc.h
+    scalar_type = parameters.get("scalar_type")
+    if scalar_type == "double complex":
+        code_h_pre += "typedef double _Complex ufc_scalar;" + "\n"
+        code_c_pre += "typedef double _Complex ufc_scalar;" + "\n"
+    else:
+        code_h_pre += "typedef double ufc_scalar;" + "\n"
+        code_c_pre += "typedef double ufc_scalar;" + "\n"
+
     # Generate includes and add to preamble
     includes_h, includes_c = _generate_includes(includes, parameters)
     code_h_pre += includes_h
@@ -187,4 +196,9 @@ def _generate_includes(includes, parameters):
 
     includes_h = "\n".join(sorted(s_h)) + "\n" if s_h else ""
     includes_c = "\n".join(sorted(s_c)) + "\n" if s_c else ""
+
+    scalar_type = parameters.get("scalar_type")
+    if scalar_type == "double complex":
+        includes_c += "#include<complex.h>" + "\n"
+
     return includes_h, includes_c
