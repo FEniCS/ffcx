@@ -80,7 +80,8 @@ def format_code(code, wrapper_code, prefix, parameters):
     code_h_pre += FORMAT_TEMPLATE["header_h"]
     code_c_pre += FORMAT_TEMPLATE["header_c"]
 
-    # Define ufc_scalar type before including ufc.h
+    # Define the ufc_scalar type before including ufc.h
+    # By default use double scalars
     scalar_type = parameters.get("scalar_type")
     if scalar_type == "double complex":
         code_h_pre += "typedef double _Complex ufc_scalar;" + "\n"
