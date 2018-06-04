@@ -108,7 +108,7 @@ extern "C"
         const double* restrict K, int cell_orientation);
 
     /// Map dofs from vals to values
-    void (*map_dofs)(ufc_scalar* restrict values, const ufc_scalar* restrict vals,
+    void (*map_dofs)(ufc_scalar_t* restrict values, const ufc_scalar_t* restrict vals,
                      const double* restrict coordinate_dofs,
                      int cell_orientation, const ufc_coordinate_mapping* cm);
 
@@ -404,7 +404,7 @@ extern "C"
   typedef struct ufc_cell_integral
   {
     const bool* enabled_coefficients;
-    void (*tabulate_tensor)(ufc_scalar* restrict A, const ufc_scalar* const* w,
+    void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
                             const double* restrict coordinate_dofs,
                             int cell_orientation);
   } ufc_cell_integral;
@@ -412,7 +412,7 @@ extern "C"
   typedef struct ufc_exterior_facet_integral
   {
     const bool* enabled_coefficients;
-    void (*tabulate_tensor)(ufc_scalar* restrict A, const ufc_scalar* const* w,
+    void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
                             const double* restrict coordinate_dofs, int facet,
                             int cell_orientation);
   } ufc_exterior_facet_integral;
@@ -420,7 +420,7 @@ extern "C"
   typedef struct ufc_interior_facet_integral
   {
     const bool* enabled_coefficients;
-    void (*tabulate_tensor)(ufc_scalar* restrict A, const ufc_scalar* const* w,
+    void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
                             const double* restrict coordinate_dofs_0,
                             const double* restrict coordinate_dofs_1,
                             int facet_0, int facet_1, int cell_orientation_0,
@@ -430,7 +430,7 @@ extern "C"
   typedef struct ufc_vertex_integral
   {
     const bool* enabled_coefficients;
-    void (*tabulate_tensor)(ufc_scalar* restrict A, const ufc_scalar* const* w,
+    void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
                             const double* restrict coordinate_dofs, int vertex,
                             int cell_orientation);
   } ufc_vertex_integral;
@@ -438,7 +438,7 @@ extern "C"
   typedef struct ufc_custom_integral
   {
     const bool* enabled_coefficients;
-    void (*tabulate_tensor)(ufc_scalar* restrict A, const ufc_scalar* const* w,
+    void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
                             const double* restrict coordinate_dofs,
                             int num_quadrature_points,
                             const double* restrict quadrature_points,
