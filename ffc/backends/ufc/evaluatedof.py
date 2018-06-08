@@ -293,9 +293,12 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset=0):
     return (code, result)
 
 
-def generate_map_dofs(L, ir):
-    """Generate code for map_dofs."""
-    # Maps values input in array 'vals' to output array 'values'
+def generate_transform_values(L, ir):
+    """Generate code for transform_values. Transforms
+    values in physical space into reference space. These
+    values represent evaluation of the function at dof
+    points (only valid for point evaluation dofs).
+    """
 
     gdim = ir["geometric_dimension"]
     tdim = ir["topological_dimension"]

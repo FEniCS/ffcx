@@ -107,10 +107,13 @@ extern "C"
         const double* restrict J, const double* restrict detJ,
         const double* restrict K, int cell_orientation);
 
-    /// Map dofs from vals to values
-    void (*map_dofs)(double* restrict values, const double* restrict vals,
-                     const double* restrict coordinate_dofs,
-                     int cell_orientation, const ufc_coordinate_mapping* cm);
+    /// Map values of field from physical to reference space which has
+    /// been evaluated at points given by tabulate_reference_dof_coordinates.
+    void (*transform_values)(double* restrict reference_values,
+                             const double* restrict physical_values,
+                             const double* restrict coordinate_dofs,
+                             int cell_orientation,
+                             const ufc_coordinate_mapping* cm);
 
     // FIXME: change to 'const double* reference_dof_coordinates()'
     /// Tabulate the coordinates of all dofs on a reference cell
