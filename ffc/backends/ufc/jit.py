@@ -51,9 +51,11 @@ int (*transform_reference_basis_derivatives)(
     const double* restrict reference_values, const double* restrict X,
     const double* restrict J, const double* restrict detJ,
     const double* restrict K, int cell_orientation);
-void (*map_dofs)(double* restrict values, const double* restrict vals,
-                    const double* restrict coordinate_dofs,
-                    int cell_orientation, const ufc_coordinate_mapping* cm);
+void (*transform_values)(
+    double* restrict reference_values,
+    const double* restrict physical_values,
+    const double* restrict coordinate_dofs,
+    int cell_orientation, const ufc_coordinate_mapping* cm);
 void (*tabulate_reference_dof_coordinates)(
     double* restrict reference_dof_coordinates);
 int num_sub_elements;
