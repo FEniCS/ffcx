@@ -201,12 +201,16 @@ def _define_scalar(parameters):
     # By default use double scalars
     scalar_type = parameters.get("scalar_type")
     if scalar_type == "double complex":
-        scalar = "#if defined(__cplusplus) \n" + \
-                 "#include <complex> \n" + \
-                 "typedef std::complex<double> ufc_scalar_t; \n" + \
-                 "#else \n" + "#include <complex.h> \n" + \
-                 "typedef double _Complex ufc_scalar_t; \n" + \
-                 "#endif \n"
+        scalar = "\n".join([
+            "#if defined(__cplusplus)",
+            "#include <complex>",
+            "typedef std::complex<double> ufc_scalar_t;",
+            "#else",
+            "#include <complex.h>",
+            "typedef double _Complex ufc_scalar_t;",
+            "#endif",
+            "\n",
+        ])
     else:
         scalar = "typedef double ufc_scalar_t;" + "\n"
 
