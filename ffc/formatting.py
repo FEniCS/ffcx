@@ -197,12 +197,16 @@ def _generate_includes(includes, parameters):
 
 
 def _define_scalar(parameters):
-    # Define the ufc_scalar type before including ufc.h
+    # Define the ufc_scalar type before including  the ufc header
     # By default use double scalars
     scalar_type = parameters.get("scalar_type")
     if scalar_type == "double complex":
-        scalar = "#include<complex.h>" + "\n" + \
-            "typedef double complex ufc_scalar_t;" + "\n"
+        scalar = "#if defined(__cplusplus) \n" + \
+                 "#include <complex> \n" + \
+                 "typedef std::complex<double> ufc_scalar_t; \n" + \
+                 "#else \n" + "#include <complex.h> \n" + \
+                 "typedef double _Complex ufc_scalar_t; \n" + \
+                 "#endif \n"
     else:
         scalar = "typedef double ufc_scalar_t;" + "\n"
 
