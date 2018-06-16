@@ -924,11 +924,18 @@ class IntegralGenerator(object):
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
             A_rhs = B_rhs
 
+        # Equip code with comments
+        comments = ["UFLACS block mode: {}".format(blockdata.block_mode)]
+        preparts = L.commented_code_list(preparts, comments)
+        quadparts = L.commented_code_list(quadparts, comments)
+        postparts = L.commented_code_list(postparts, comments)
+
         return A_rhs, preparts, quadparts, postparts
 
     def generate_preintegrated_dofblock_partition(self):
         # FIXME: Generalize this to unrolling all A[] += ... loops, or all loops with noncontiguous DM??
         L = self.backend.language
+
         block_contributions = self.ir["piecewise_ir"]["block_contributions"]
 
         blocks = [(blockmap, blockdata)
@@ -999,7 +1006,8 @@ class IntegralGenerator(object):
 
                 A_values[A_ii] = A_values[A_ii] + A_rhs
 
-        return self.generate_tensor_value_initialization(A_values)
+        code = self.generate_tensor_value_initialization(A_values)
+        return L.commented_code_list(code, "UFLACS block mode: preintegrated")
 
     def generate_tensor_value_initialization(self, A_values):
         parts = []
