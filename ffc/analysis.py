@@ -164,7 +164,13 @@ def _analyze_form(form, parameters):
                 "Could not import tsfc when requesting tsfc representation: {}".format(e))
             raise
 
-        form_data = tsfc_compute_form_data(form)
+        # Check if complex mode is True
+        scalar_type = parameters.get("scalar_type")
+        complex_mode = "complex" in scalar_type
+
+        # Compute form data
+        form_data = tsfc_compute_form_data(form, complex_mode=complex_mode)
+
     elif r == "quadrature":
         # quadrature representation
         form_data = compute_form_data(form)
