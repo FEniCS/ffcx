@@ -24,7 +24,7 @@ from ufl import custom_integral_types
 from ufl.algorithms import compute_form_data, sort_elements
 from ufl.algorithms.analysis import extract_sub_elements
 from ufl.classes import Form, Jacobian
-from ufl.finiteelement import EnrichedElement, MixedElement, VectorElement
+from ufl.finiteelement import EnrichedElement, MixedElement
 from ufl.integral import Integral
 
 logger = logging.getLogger(__name__)
