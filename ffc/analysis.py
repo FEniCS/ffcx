@@ -24,7 +24,7 @@ from ufl import custom_integral_types
 from ufl.algorithms import compute_form_data, sort_elements
 from ufl.algorithms.analysis import extract_sub_elements
 from ufl.classes import Form, Jacobian
-from ufl.finiteelement import EnrichedElement, MixedElement, VectorElement
+from ufl.finiteelement import EnrichedElement, MixedElement
 from ufl.integral import Integral
 
 logger = logging.getLogger(__name__)
@@ -142,11 +142,6 @@ def _analyze_form(form, parameters):
 
     # Compute form metadata
     if r == "uflacs":
-        # Temporary workaround to let uflacs have a different
-        # preprocessing pipeline than the legacy quadrature
-        # representation. This approach imposes a limitation that,
-        # e.g. uflacs and qudrature, representations cannot be mixed
-        # in the same form.
         form_data = compute_form_data(
             form,
             do_apply_function_pullbacks=True,
@@ -165,15 +160,11 @@ def _analyze_form(form, parameters):
             raise
 
         # Check if complex mode is True
-        scalar_type = parameters.get("scalar_type")
+        scalar_type = parameters.get("scalar_type", "double")
         complex_mode = "complex" in scalar_type
 
         # Compute form data
         form_data = tsfc_compute_form_data(form, complex_mode=complex_mode)
-
-    elif r == "quadrature":
-        # quadrature representation
-        form_data = compute_form_data(form)
     else:
         raise FFCError("Unexpected representation family \"{}\" for form preprocessing.".format(r))
 
@@ -185,7 +176,7 @@ def _analyze_form(form, parameters):
 
 
 def _extract_representation_family(form, parameters):
-    """Return 'uflacs', 'tsfc' or 'quadrature', or raise error. This takes
+    """Return 'uflacs' or 'tsfc', or raise error. This takes
     care of (a) compatibility between representations due to
     differences in preprocessing, (b) choosing uflacs for higher-order
     geometries.
@@ -210,7 +201,7 @@ def _extract_representation_family(form, parameters):
         ('auto', None))) == 0, "Unexpected representation family candidates '%s'." % representations
 
     # No representations requested, find compatible representations
-    compatible = _find_compatible_representations(form.integrals(), [])
+    compatible = _find_compatible_representations(form.integrals(), parameters)
 
     if len(representations) == 1:
         r = representations.pop()
@@ -220,7 +211,9 @@ def _extract_representation_family(form, parameters):
                     r, sorted(compatible)))
         return r
     elif len(representations) == 0:
-        if len(compatible) == 1:
+        if len(compatible) == 0:
+            raise FFCError("Did not find any representation compatible with this form.")
+        elif len(compatible) == 1:
             # If only one compatible, use it
             return compatible.pop()
         else:
@@ -228,17 +221,17 @@ def _extract_representation_family(form, parameters):
             # NOTE: Need to pick the same default as in _auto_select_representation
             return "uflacs"
     else:
-        # Don't tolerate user requests for mixing old and new
-        # representation families in same form due to restrictions in
-        # preprocessing
+        # Don't tolerate user requests for mixing
+        # representations in same form due to restrictions
+        # in preprocessing
         assert len(representations) > 1
-        raise FFCError("Cannot mix quadrature, uflacs, or tsfc " "representation in single form.")
+        raise FFCError("Cannot mix uflacs and tsfc representation in a single form.")
 
 
 def _validate_representation_choice(form_data, preprocessing_representation_family):
     """Check that effective representations
 
-    * do not mix quadrature, uflacs and tsfc,
+    * do not mix uflacs and tsfc,
     * implement higher-order geometry,
     * match employed preprocessing strategy.
 
@@ -259,13 +252,10 @@ def _validate_representation_choice(form_data, preprocessing_representation_fami
     if len(representations) == 0:
         return
 
-    # Require unique family; allow quadrature only with affine meshes
+    # Require unique family
     if len(representations) != 1:
         raise FFCError("Failed to extract unique representation family. "
                        "Got '{}'.".format(representations))
-
-    if _has_higher_order_geometry(form_data.preprocessed_form):
-        assert 'quadrature' not in representations, "Did not expect quadrature representation for higher-order geometry."  # noqa: E501
 
     # Check preprocessing strategy
     assert preprocessing_representation_family in representations, "Form preprocessed using '{}' representaion family, while '{}' representations set for integrals.".format(  # noqa: E501
@@ -279,19 +269,6 @@ def _has_custom_integrals(o):
         return any(_has_custom_integrals(itg) for itg in o.integrals())
     elif isinstance(o, (list, tuple)):
         return any(_has_custom_integrals(itg) for itg in o)
-    else:
-        raise NotImplementedError
-
-
-def _has_higher_order_geometry(o):
-    if isinstance(o, Integral):
-        P1 = VectorElement("P", o.ufl_domain().ufl_cell(), 1)
-        return o.ufl_domain().ufl_coordinate_element() != P1
-    elif isinstance(o, Form):
-        P1 = VectorElement("P", o.ufl_cell(), 1)
-        return any(d.ufl_coordinate_element() != P1 for d in o.ufl_domains())
-    elif isinstance(o, (list, tuple)):
-        return any(_has_higher_order_geometry(itg) for itg in o)
     else:
         raise NotImplementedError
 
@@ -416,7 +393,7 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
     # best for these integrals
     if r == "auto":
         # Find representations compatible with these integrals
-        compatible = _find_compatible_representations(ida.integrals, form_data.unique_sub_elements)
+        compatible = _find_compatible_representations(ida.integrals, parameters)
         # Pick the one compatible or default to uflacs
         if len(compatible) == 0:
             raise FFCError("Found no representation capable of compiling this form.")
@@ -429,8 +406,6 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
                 r = "uflacs"
             elif form_r_family == "tsfc":
                 r = "tsfc"
-            elif form_r_family == "quadrature":
-                r = "quadrature"
             else:
                 raise FFCError("Invalid form representation family {}.".format(form_r_family))
 
@@ -461,9 +436,6 @@ def _attach_integral_metadata(form_data, form_r_family, parameters):
         "optimize",
         # TODO: Could have finer optimize (sub)parameters here later
         "precision",
-        # NOTE: We don't pass precision to quadrature, it's not
-        #       worth resolving set_float_formatting hack for
-        #       deprecated backends
         "quadrature_degree",
         "quadrature_rule",
     )
@@ -566,7 +538,7 @@ def _get_sub_elements(element):
     return sub_elements
 
 
-def _find_compatible_representations(integrals, elements):
+def _find_compatible_representations(integrals, parameters):
     """Automatically select a suitable representation for integral.  Note
     that the selection is made for each integral, not for each
     term. This means that terms which are grouped by UFL into the same
@@ -577,27 +549,12 @@ def _find_compatible_representations(integrals, elements):
     # All representations
     compatible = set(("uflacs", "tsfc"))
 
-    # Check for non-affine meshes
-    if _has_higher_order_geometry(integrals):
-        compatible &= set(("uflacs", "tsfc"))
-
-    # Custom integrals
+    # UFLACS and TSFC do not have custom integrals
     if _has_custom_integrals(integrals):
-        compatible &= set(("uflacs", ))
+        compatible &= set()
 
-    # Use quadrature for vertex integrals
-    if any(integral.integral_type() == "vertex" for integral in integrals):
-        # TODO: Test with uflacs, I think this works fine now:
-        compatible &= set(("uflacs", "tsfc"))
-
-    # Get ALL sub elements, needed to check for restrictions of
-    # EnrichedElements.
-    sub_elements = []
-    for e in elements:
-        sub_elements += _get_sub_elements(e)
-
-    if any(e.family() == "Quadrature" for e in sub_elements):
-        # TODO: Test with uflacs, might need a little adjustment:
-        compatible &= set(("uflacs", "tsfc"))
+    # UFLACS does not have complex numbers yet
+    if "complex" in parameters.get("scalar_type", "double"):
+        compatible &= set(("tsfc",))
 
     return compatible
