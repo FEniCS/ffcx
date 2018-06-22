@@ -158,13 +158,10 @@ def _analyze_form(form, parameters):
             logger.exception(
                 "Could not import tsfc when requesting tsfc representation: {}".format(e))
             raise
-
-        # Check if complex mode is True
-        scalar_type = parameters.get("scalar_type", "double")
-        complex_mode = "complex" in scalar_type
-
-        # Compute form data
-        form_data = tsfc_compute_form_data(form, complex_mode=complex_mode)
+        if "complex" in parameters.get("scalar_type", "double"):
+            form_data = tsfc_compute_form_data(form, complex_mode=True)
+        else:
+            form_data = tsfc_compute_form_data(form)
     else:
         raise FFCError("Unexpected representation family \"{}\" for form preprocessing.".format(r))
 
