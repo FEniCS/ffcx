@@ -72,19 +72,9 @@ def generate_return_literal_switch(L,
         return return_default
 
 
-def generate_return_sizet_switch(L, i, values, default):
-    return generate_return_literal_switch(L, i, values, default, L.LiteralInt,
-                                          "int64_t")
-
-
 def generate_return_int_switch(L, i, values, default):
     return generate_return_literal_switch(L, i, values, default, L.LiteralInt,
                                           "int")
-
-
-def generate_return_bool_switch(L, i, values, default):
-    return generate_return_literal_switch(L, i, values, default, L.LiteralBool,
-                                          "bool")
 
 
 # TODO: Better error handling
