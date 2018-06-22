@@ -136,28 +136,27 @@ extern "C"
     /// Return a string identifying the dofmap
     const char* signature;
 
-    /// Return the dimension of the local finite element function space
-    /// Return the number of dofs with global support (i.e. global constants)
+    /// Number of dofs with global support (i.e. global constants)
     int num_global_support_dofs;
 
-    /// Return the dimension of the local finite element function space
+    /// Dimension of the local finite element function space
     /// for a cell (not including global support dofs)
     int num_element_support_dofs;
 
-    /// Return the dimension of the local finite element function space
+    /// Dimension of the local finite element function space
     /// for a cell (old version including global support dofs)
     int num_element_dofs;
 
-    /// Return the number of dofs on each cell facet
+    /// Number of dofs on each cell facet
     int num_facet_dofs;
 
-    /// Return the number of dofs associated with each cell entity of
+    /// Number of dofs associated with each cell entity of
     /// dimension d
-    int (*num_entity_dofs)(int d);
+    int num_entity_dofs[4];
 
-    /// Return the number of dofs associated with the closure
+    /// Number of dofs associated with the closure
     /// of each cell entity dimension d
-    int (*num_entity_closure_dofs)(int d);
+    int num_entity_closure_dofs[4];
 
     /// Tabulate the local-to-global mapping of dofs on a cell
     ///   num_global_entities[num_entities_per_cell]
