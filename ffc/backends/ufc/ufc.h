@@ -153,7 +153,7 @@ extern "C"
 
     /// Return the number of dofs associated with each cell entity of
     /// dimension d
-    int (*num_entity_dofs)(int d);
+    int num_entity_dofs[4];
 
     /// Return the number of dofs associated with the closure
     /// of each cell entity dimension d

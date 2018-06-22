@@ -11,11 +11,6 @@ ufc_dofmap* create_{factory_name}(void);
 factory = """
 // Code for dofmap {factory_name}
 
-int num_entity_dofs_{factory_name}(int d)
-{{
-{num_entity_dofs}
-}}
-
 int num_entity_closure_dofs_{factory_name}(int d)
 {{
 {num_entity_closure_dofs}
@@ -56,7 +51,10 @@ ufc_dofmap* create_{factory_name}(void)
   dofmap->num_element_support_dofs = {num_element_support_dofs};
   dofmap->num_element_dofs = {num_element_dofs};
   dofmap->num_facet_dofs = {num_facet_dofs};
-  dofmap->num_entity_dofs = num_entity_dofs_{factory_name};
+  dofmap->num_entity_dofs[0] = {num_entity_dofs[0]};
+  dofmap->num_entity_dofs[1] = {num_entity_dofs[1]};
+  dofmap->num_entity_dofs[2] = {num_entity_dofs[2]};
+  dofmap->num_entity_dofs[3] = {num_entity_dofs[3]};
   dofmap->num_entity_closure_dofs = num_entity_closure_dofs_{factory_name};
   dofmap->tabulate_dofs = tabulate_dofs_{factory_name};
   dofmap->tabulate_facet_dofs = tabulate_facet_dofs_{factory_name};

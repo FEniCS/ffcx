@@ -28,10 +28,6 @@ def num_facet_dofs(L, num_facet_dofs):
     return L.Return(num_facet_dofs)
 
 
-def num_entity_dofs(L, num_entity_dofs):
-    return generate_return_sizet_switch(L, "d", num_entity_dofs, 0)
-
-
 def num_entity_closure_dofs(L, num_entity_closure_dofs):
     return generate_return_sizet_switch(L, "d", num_entity_closure_dofs, 0)
 
@@ -248,11 +244,11 @@ def ufc_dofmap_generator(ir, parameters):
     d["num_element_dofs"] = ir["num_element_dofs"]
     d["num_facet_dofs"] = ir["num_facet_dofs"]
     d["num_sub_dofmaps"] = ir["num_sub_dofmaps"]
+    d["num_entity_dofs"] = ir["num_entity_dofs"] + [0, 0, 0, 0]
 
     import ffc.uflacs.language.cnodes as L
 
     # Functions
-    d["num_entity_dofs"] = num_entity_dofs(L, ir["num_entity_dofs"])
     d["num_entity_closure_dofs"] = num_entity_closure_dofs(L, ir["num_entity_closure_dofs"])
     d["tabulate_dofs"] = tabulate_dofs(L, ir)
     d["tabulate_facet_dofs"] = tabulate_facet_dofs(L, ir)
@@ -263,8 +259,10 @@ def ufc_dofmap_generator(ir, parameters):
     # Check that no keys are redundant or have been missed
     from string import Formatter
     fields = [fname for _, fname, _, _ in Formatter().parse(ufc_dofmap.factory) if fname]
+    # Remove square brackets from any field names
+    fields = [f.split("[")[0] for f in fields]
     assert set(fields) == set(
-        d.keys()), "Mismatch between keys in template and in formattting dict."
+       d.keys()), "Mismatch between keys in template and in formattting dict."
 
     # Format implementation code
     implementation = ufc_dofmap.factory.format_map(d)
