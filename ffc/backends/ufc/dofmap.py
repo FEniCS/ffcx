@@ -237,8 +237,7 @@ def ufc_dofmap_generator(ir, parameters):
     fields = [fname for _, fname, _, _ in Formatter().parse(ufc_dofmap.factory) if fname]
     # Remove square brackets from any field names
     fields = [f.split("[")[0] for f in fields]
-    assert set(fields) == set(
-       d.keys()), "Mismatch between keys in template and in formattting dict."
+    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formattting dict."
 
     # Format implementation code
     implementation = ufc_dofmap.factory.format_map(d)
