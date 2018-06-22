@@ -202,6 +202,10 @@ def uflacs_default_parameters(optimize):
         "padlen": 1,
         "use_symbol_array": True,
         "tensor_init_mode": "upfront",  # interleaved | direct | upfront
+
+        # Specifies how many elements the tabulate_tensor function should act on
+        # A value of zero disables this feature
+        "cross_element_width": 0,
     }
     if optimize:
         # Override defaults if optimization is turned on

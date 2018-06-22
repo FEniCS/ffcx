@@ -7,7 +7,9 @@
 """Controlling algorithm for building the tabulate_tensor source structure from factorized representation."""
 
 import itertools
+import functools
 import logging
+from copy import copy
 from collections import defaultdict
 
 from ffc import FFCError
@@ -235,6 +237,292 @@ class IntegralGenerator(object):
         parts += all_quadparts
         parts += all_postparts
         parts += all_finalizeparts
+
+        cross_element_width = self.ir["params"]["cross_element_width"]
+
+        if cross_element_width > 0:
+            ctx = {
+                "flat_expanded_array": ["A", "w", "coordinate_dofs", "cell_orientation"],
+                "expanded_arrays": [],
+                "expanded_scalars": []
+            }
+
+            def vectorize_statements(statements, L, ctx, vec_length=4, alignment=32):
+                """
+                Converts a list of tabulate_tensor CNodes statements into a cross-element vectorized version.
+                :param statements: The list of statements that should be transformed
+                :param L: The backend language to use (should be L=ffc.uflacs.language.cnodes)
+                :param ctx: Context used to log which variables whose rank is increased for vectorization
+                :param vec_length: The number of elements to perform cross element vectorization over
+                :param alignment: Alignment in bytes used for arrays whose rank is increased for vectorization
+                :return: A list of the transformed statements
+                """
+
+                # Symbol used as index in for loops over the elements
+                i_simd = L.Symbol("i_elem")
+
+                def was_expanded(expr) -> bool:
+                    """Returns whether an array's/scalar's rank was increased for vectorization."""
+
+                    if isinstance(expr, L.ArrayAccess):
+                        return expr.array.name in ctx["expanded_arrays"] or expr.array.name in ctx["flat_expanded_array"]
+                    if isinstance(expr, L.Symbol):
+                        return expr.name in ctx["expanded_scalars"]
+
+                    raise RuntimeError("Unsupported expression")
+
+                def simd_loop(body):
+                    """Returns a ForRange that is used to perform a cross element loop."""
+                    return L.ForRange(i_simd, 0, vec_length, body)
+
+                @functools.singledispatch
+                def vectorize(stmnt):
+                    """Overloaded function to vectorize any CNodes statement, default implementation"""
+
+                    ignore_list = [
+                        L.Comment,
+                        L.CExprLiteral,
+                        L.NoOp,
+                        L.Pragma,
+                        L.Using,
+                        L.Break,
+                        L.Continue,
+                        L.Return
+                    ]
+
+                    if any(isinstance(stmnt, ignored_type) for ignored_type in ignore_list):
+                        return stmnt
+
+                    # For dev: check whether to add type to ignore list or to implement it below
+                    raise RuntimeError("Vectorization of {} CNodes statement not implemented!".format(type(stmnt)))
+
+                @vectorize.register(L.ForRange)
+                def vectorize_for_range(stmnt):
+                    # Vectorize for loop by vectorizing its body
+                    vec_stmnt = copy(stmnt)
+                    vec_stmnt.body = vectorize(stmnt.body)
+                    return vec_stmnt
+
+                @vectorize.register(L.VariableDecl)
+                def vectorize_variable_decl(stmnt):
+                    # Skip static variables
+                    if "static" in stmnt.typename:
+                        return stmnt
+
+                    # Remove constness
+                    typename = stmnt.typename
+                    if "const" in typename:
+                        typename = typename.replace("const", "").strip()
+
+                    array_decl = L.ArrayDecl(typename=typename,
+                                             symbol=stmnt.symbol,
+                                             sizes=vec_length,
+                                             alignas=alignment)
+
+                    # Log that the scalar was transformed to an array
+                    ctx["expanded_scalars"].append(stmnt.symbol.name)
+
+                    if stmnt.value is not None:
+                        # If the scalar had a value, it has to be assigned in a loop and vectorized recursively
+                        value = vectorize(stmnt.value)
+                        assignment = L.Assign(stmnt.symbol[i_simd], value)
+
+                        return L.StatementList([array_decl, simd_loop(assignment)])
+                    else:
+                        return array_decl
+
+                @vectorize.register(L.ArrayDecl)
+                def vectorize_array_decl(stmnt):
+                    # Skip static arrays
+                    if "static" in stmnt.typename:
+                        return stmnt
+
+                    if stmnt.values is not None and stmnt.values != 0:
+                        raise RuntimeError("Values in vectorization for ArrayDecl unsupported")
+
+                    array_decl = copy(stmnt)
+                    # Increase rank
+                    array_decl.sizes = stmnt.sizes + (vec_length,)
+
+                    # Log that the rank wass increased
+                    ctx["expanded_arrays"].append(stmnt.symbol.name)
+
+                    return array_decl
+
+                @vectorize.register(L.ArrayAccess)
+                def vectorize_array_access(stmnt):
+                    # Check whether rank was increased
+                    if was_expanded(stmnt):
+                        array_access = copy(stmnt)
+
+                        # Update array indexing
+                        if stmnt.array.name in ctx["expanded_arrays"]:
+                            # For manually expanded arrays, simply append array index
+                            array_access.indices = stmnt.indices + (i_simd,)
+                        elif stmnt.array.name in ctx["flat_expanded_array"]:
+                            # For in/out arrays, we have strided access instead
+                            array_access.indices = stmnt.indices[0:-1] + (
+                            i_simd + L.LiteralInt(vec_length) * stmnt.indices[-1],)
+
+                        return array_access
+
+                    else:
+                        # Rank is unchanged (e.g. static array)
+                        return stmnt
+
+                @vectorize.register(L.Symbol)
+                def vectorize_symbol(stmnt):
+                    if was_expanded(stmnt):
+                        # Scalar which was transformed ot an array:
+                        return L.ArrayAccess(stmnt, (i_simd,))
+                    else:
+                        return stmnt
+
+                @vectorize.register(L.AssignOp)
+                def vectorize_assign(stmnt):
+                    # Transform all assignment operations (=, +=, *=,...)
+                    if was_expanded(stmnt.lhs):
+                        assignment = type(stmnt)(vectorize(stmnt.lhs), vectorize(stmnt.rhs))
+                        return simd_loop(assignment)
+                    else:
+                        return stmnt
+
+                @vectorize.register(L.BinOp)
+                def vectorize_binop(stmnt):
+                    # Transform all binary operators (+, *, -, %,...)
+                    return type(stmnt)(vectorize(stmnt.lhs), vectorize(stmnt.rhs))
+
+                @vectorize.register(L.NaryOp)
+                def vectorize_sum(stmnt):
+                    # Transform all n-ary operators (sum, product,...)
+                    return type(stmnt)([vectorize(arg) for arg in stmnt.args])
+
+                @vectorize.register(L.Call)
+                def vectorize_call(stmnt):
+                    # Transform functions calls, assuming that the call has no side effects
+                    if stmnt.arguments is not None:
+                        return L.Call(stmnt.function, [vectorize(arg) for arg in stmnt.arguments])
+                    else:
+                        return stmnt
+
+                @vectorize.register(L.Statement)
+                def vectorize_statement(stmnt):
+                    # Vectorize the contained expression
+                    vectorized_expr = vectorize(stmnt.expr)
+
+                    # The vectorized version might already be a statement
+                    try:
+                        vectorized_stmnt = L.Statement(vectorized_expr)
+                        return vectorized_stmnt
+                    except RuntimeError:
+                        return vectorized_expr
+
+                @vectorize.register(L.StatementList)
+                def vectorize_statement_list(stmnts):
+                    return L.StatementList([vectorize(stmnt) for stmnt in stmnts.statements])
+
+                def optimize(stmnts):
+                    """Optimizes a list of CNode statements by joining consecutive cross element expanded array assignment loops"""
+
+                    if len(stmnts) < 2:
+                        return stmnts
+
+                    def get_statements_as_list(stmnt):
+                        """For a StatementList, return statements list, otherwise return stmnt as list."""
+
+                        if isinstance(stmnt, L.StatementList):
+                            stmnts = stmnt.statements
+                        else:
+                            stmnts = [stmnt]
+
+                        return stmnts
+
+                    def join_for_ranges(range1, range2):
+                        """Joins two ForRange objects."""
+
+                        assert isinstance(range1, L.ForRange)
+                        assert isinstance(range2, L.ForRange)
+                        attributes = ("index", "begin", "end", "index_type")
+                        assert all(getattr(range1, name) == getattr(range2, name) for name in attributes)
+
+                        range3 = copy(range1)
+
+                        stmnts1 = get_statements_as_list(range1.body)
+                        stmnts2 = get_statements_as_list(range2.body)
+
+                        range3.body = L.StatementList(stmnts1 + stmnts2)
+                        return range3
+
+                    def is_expanded_assignment(stmnt):
+                        """Return whether the specified statement is a cross element expanded assignment loop."""
+                        return isinstance(stmnt, L.ForRange) and stmnt.index == i_simd and stmnt.begin.value == 0 and stmnt.end.value == vec_length
+
+                    def is_expanded_var_decl(stmnt):
+                        """Returns whether the specified statement is a StatementList that declares and assigns a cross element expanded scalar."""
+                        if isinstance(stmnt, L.StatementList) and len(stmnt.statements) == 2:
+                            decl = stmnt.statements[0]
+                            assign = stmnt.statements[1]
+
+                            if isinstance(decl, L.ArrayDecl):
+                                return decl.sizes[-1] == vec_length and is_expanded_assignment(assign)
+
+                        return False
+
+                    # "Enum" for the types of statements that are recognized by optimizer
+                    UNINTERSTING_TYPE = 0
+                    EXPANDED_ASSIGNMENT = 1
+                    EXPANDED_VAR_DECL = 2
+
+                    def stmnt_type(stmnt):
+                        if is_expanded_assignment(stmnt):
+                            return EXPANDED_ASSIGNMENT
+                        if is_expanded_var_decl(stmnt):
+                            return EXPANDED_VAR_DECL
+
+                        return UNINTERSTING_TYPE
+
+                    optimized = []
+
+                    prev_stmnt = stmnts[0]
+                    prev_type = stmnt_type(prev_stmnt)
+
+                    # Loop over all statements in list
+                    for stmnt in stmnts[1:]:
+                        curr_type = stmnt_type(stmnt)
+
+                        # We can only join if consective statements are of same type
+                        if prev_type == curr_type:
+                            # Expanded assignment loops can be fused
+                            if curr_type == EXPANDED_ASSIGNMENT:
+                                prev_stmnt = join_for_ranges(prev_stmnt, stmnt)
+
+                                continue
+
+                            # Expanded variable declarations can be rearranged and fused
+                            elif curr_type == EXPANDED_VAR_DECL:
+                                decls = [*prev_stmnt.statements[:-1], stmnt.statements[0]]
+                                assign = join_for_ranges(prev_stmnt.statements[-1], stmnt.statements[1])
+
+                                prev_stmnt = L.StatementList(decls + [assign])
+
+                                continue
+
+                        # Otherwise, replace the previous stored statement used for comparison
+                        optimized.append(prev_stmnt)
+                        prev_stmnt = stmnt
+                        prev_type = curr_type
+
+                    # Append last statement
+                    optimized.append(prev_stmnt)
+                    return optimized
+
+
+                vectorized = [vectorize(stmnt) for stmnt in statements]
+                optimized = optimize(vectorized)
+                return ([], optimized)
+
+            preamble, vectorized = vectorize_statements(parts, L, ctx, vec_length=cross_element_width)
+            parts = preamble + vectorized
 
         return L.StatementList(parts)
 
