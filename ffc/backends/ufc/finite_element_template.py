@@ -60,6 +60,7 @@ void tabulate_reference_dof_coordinates_{factory_name}(double* restrict referenc
   {tabulate_reference_dof_coordinates}
 }}
 
+{sub_element_declaration}
 ufc_finite_element* create_sub_element_{factory_name}(int i)
 {{
   {create_sub_element}

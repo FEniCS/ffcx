@@ -115,6 +115,14 @@ def num_sub_elements(L, num_sub_elements):
     return L.Return(num_sub_elements)
 
 
+def sub_element_declaration(L, ir):
+    classnames = set(ir["create_sub_element"])
+    code = ""
+    for name in classnames:
+        code += "ufc_finite_element* create_{name}();\n".format(name=name)
+    return code
+
+
 def create_sub_element(L, ir):
     classnames = ir["create_sub_element"]
     return generate_return_new_switch(L, "i", classnames, factory=True)
@@ -452,6 +460,7 @@ def generator(ir, parameters):
     d["tabulate_reference_dof_coordinates"] = L.StatementList(statements)
 
     statements = create_sub_element(L, ir)
+    d["sub_element_declaration"] = sub_element_declaration(L, ir)
     d["create_sub_element"] = statements
 
     # Check that no keys are redundant or have been missed
