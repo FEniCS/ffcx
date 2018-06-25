@@ -207,6 +207,14 @@ def create_sub_dofmap(L, ir):
     return generate_return_new_switch(L, "i", classnames, factory=True)
 
 
+def sub_dofmap_declaration(L, ir):
+    classnames = set(ir["create_sub_dofmap"])
+    code = ""
+    for name in classnames:
+        code += "ufc_dofmap* create_{name}();\n".format(name=name)
+    return code
+
+
 def ufc_dofmap_generator(ir, parameters):
     """Generate UFC code for a dofmap"""
 
@@ -230,6 +238,7 @@ def ufc_dofmap_generator(ir, parameters):
     d["tabulate_facet_dofs"] = tabulate_facet_dofs(L, ir)
     d["tabulate_entity_dofs"] = tabulate_entity_dofs(L, ir)
     d["tabulate_entity_closure_dofs"] = tabulate_entity_closure_dofs(L, ir)
+    d["sub_dofmap_declaration"] = sub_dofmap_declaration(L, ir)
     d["create_sub_dofmap"] = create_sub_dofmap(L, ir)
 
     # Check that no keys are redundant or have been missed

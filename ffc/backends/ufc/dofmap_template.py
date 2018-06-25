@@ -33,6 +33,7 @@ void tabulate_entity_closure_dofs_{factory_name}(int* restrict dofs, int d, int 
 {tabulate_entity_closure_dofs}
 }}
 
+{sub_dofmap_declaration}
 ufc_dofmap* create_sub_dofmap_{factory_name}(int i)
 {{
 {create_sub_dofmap}
