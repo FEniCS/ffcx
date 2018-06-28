@@ -239,17 +239,21 @@ class IntegralGenerator(object):
         parts += all_finalizeparts
 
         cross_element_width = self.ir["params"]["cross_element_width"]
+        enable_cross_element_fuse = self.ir["params"]["enable_cross_element_fuse"]
+        enable_cross_element_array_conv = self.ir["params"]["enable_cross_element_array_conv"]
 
         if cross_element_width > 0:
             ctx = {
                 "flat_expanded_arrays": ["A", "w", "coordinate_dofs", "cell_orientation"],
                 "expanded_arrays": [],
                 "expanded_scalars": [],
-                # "reduce_to_scalars": ["sp"],
                 "reduce_to_scalars": [],
                 "reduced_typenames": dict(),
                 "reduced_scalar_names": set()
             }
+
+            if enable_cross_element_array_conv:
+                ctx["reduce_to_scalars"].append("sp")
 
             def vectorize_statements(statements, L, ctx, vec_length=4, alignment=32):
                 """
@@ -557,7 +561,10 @@ class IntegralGenerator(object):
                     return optimized
 
                 vectorized = [vectorize(stmnt) for stmnt in statements]
-                optimized = optimize(vectorized)
+
+                if enable_cross_element_fuse:
+                    vectorized = optimize(vectorized)
+
                 return ([], vectorized)
 
             preamble, vectorized = vectorize_statements(parts, L, ctx, vec_length=cross_element_width)
