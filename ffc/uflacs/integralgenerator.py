@@ -241,6 +241,7 @@ class IntegralGenerator(object):
         cross_element_width = self.ir["params"]["cross_element_width"]
         enable_cross_element_fuse = self.ir["params"]["enable_cross_element_fuse"]
         enable_cross_element_array_conv = self.ir["params"]["enable_cross_element_array_conv"]
+        enable_cross_element_gcc_ext = self.ir["params"]["enable_cross_element_gcc_ext"]
 
         if cross_element_width > 0:
             ctx = {
@@ -255,7 +256,7 @@ class IntegralGenerator(object):
             if enable_cross_element_array_conv:
                 ctx["reduce_to_scalars"].append("sp")
 
-            def vectorize_statements(statements, L, ctx, vec_length=4, alignment=32):
+            def vectorize_statements_simple(statements, L, ctx, vec_length=4, alignment=32):
                 """
                 Converts a list of tabulate_tensor CNodes statements into a cross-element vectorized version.
                 :param statements: The list of statements that should be transformed
@@ -302,7 +303,6 @@ class IntegralGenerator(object):
                     ignore_list = [
                         L.Comment,
                         L.CExprLiteral,
-                        L.NoOp,
                         L.Pragma,
                         L.Using,
                         L.Break,
@@ -567,7 +567,201 @@ class IntegralGenerator(object):
 
                 return ([], vectorized)
 
-            preamble, vectorized = vectorize_statements(parts, L, ctx, vec_length=cross_element_width)
+            def vectorize_statements_gcc_vec_ext(statements, L, ctx, vec_length=4, alignment=32):
+
+                base_type = "double"
+                vector_type = "double{}".format(str(vec_length))
+
+                # Symbol used as index in for loops over the elements
+                i_simd = L.Symbol("i_elem")
+
+                def simd_loop(body):
+                    """Returns a ForRange that is used to perform a cross element loop."""
+                    return L.ForRange(i_simd, 0, vec_length, body)
+
+                def was_expanded(expr) -> bool:
+                    """Returns whether an array's/scalar's rank was increased for vectorization."""
+
+                    if isinstance(expr, L.ArrayAccess):
+                        return expr.array.name in ctx["expanded_arrays"] or expr.array.name in ctx[
+                            "flat_expanded_arrays"]
+                    if isinstance(expr, L.Symbol):
+                        return expr.name in ctx["expanded_scalars"]
+
+                    raise RuntimeError("Unsupported expression")
+
+                @functools.singledispatch
+                def is_vector_expression(expr) -> bool:
+                    """Overloaded function to check if any CNodes expression is vector valued."""
+
+                    raise RuntimeError("Unsupported object in expression. Cannot determine if vector expression.")
+
+                @is_vector_expression.register(L.BinOp)
+                def is_vector_expression_binop(expr):
+                    return is_vector_expression(expr.lhs) or is_vector_expression(expr.rhs)
+
+                @is_vector_expression.register(L.NaryOp)
+                def is_vector_expression_binop(expr):
+                    return any(is_vector_expression(arg) for arg in expr.args)
+
+                @is_vector_expression.register(L.Call)
+                @is_vector_expression.register(L.CExprLiteral)
+                def is_vector_expression_false(expr):
+                    return False
+
+                @is_vector_expression.register(L.ArrayAccess)
+                @is_vector_expression.register(L.Symbol)
+                def is_vector_expression_symbol(expr):
+                    return was_expanded(expr)
+
+                @functools.singledispatch
+                def vectorize(stmnt):
+                    """Overloaded function to vectorize any CNodes statement, default implementation."""
+
+                    ignore_list = [
+                        L.Comment,
+                        L.CExprLiteral,
+                        L.Pragma,
+                        L.Using,
+                        L.Break,
+                        L.Continue,
+                        L.Return
+                    ]
+
+                    if any(isinstance(stmnt, ignored_type) for ignored_type in ignore_list):
+                        return stmnt
+
+                    # For dev: check whether to add type to ignore list or to implement it below
+                    raise RuntimeError("Vectorization of {} CNodes statement not implemented!".format(type(stmnt)))
+
+                # Vectorization of statements
+
+                @vectorize.register(L.VariableDecl)
+                def vectorize_variable_decl(stmnt):
+                    # Skip static variables
+                    if "static" in stmnt.typename:
+                        return stmnt
+
+                    # Vectorize the type
+                    var_decl = copy(stmnt)
+                    var_decl.typename = stmnt.typename.replace(base_type, vector_type)
+
+                    # Log that the scalar was vectorized
+                    ctx["expanded_scalars"].append(stmnt.symbol.name)
+
+                    # Check value
+                    if stmnt.value is not None:
+                        if not is_vector_expression(stmnt.value):
+                            assign_op = L.Assign(var_decl.symbol, stmnt.value)
+                            var_decl.value = None
+                            return L.StatementList([var_decl, vectorize(assign_op)])
+
+                    return var_decl
+
+                @vectorize.register(L.ArrayDecl)
+                def vectorize_array_decl(stmnt):
+                    # Skip static arrays
+                    if "static" in stmnt.typename:
+                        return stmnt
+
+                    if stmnt.values is not None and not isinstance(stmnt.values, int) and not isinstance(stmnt.values, float):
+                        raise RuntimeError("Values in vectorization for ArrayDecl unsupported")
+
+                    array_decl = copy(stmnt)
+                    array_decl.typename = stmnt.typename.replace(base_type, vector_type)
+
+                    # Store that the array was vectorized
+                    ctx["expanded_arrays"].append(stmnt.symbol.name)
+
+                    return array_decl
+
+                @vectorize.register(L.AssignOp)
+                def vectorize_assign(stmnt):
+                    # Transform all assignment operations (=, +=, *=,...)
+                    target, value = stmnt.lhs, stmnt.rhs
+
+                    if was_expanded(target) and not is_vector_expression(value):
+                        assign_op = copy(stmnt)
+                        assign_op.lhs = vectorize(target)
+                        assign_op.rhs = vectorize(value)
+                        return simd_loop(assign_op)
+                    else:
+                        return stmnt
+
+                @vectorize.register(L.ForRange)
+                def vectorize_for_range(stmnt):
+                    # Vectorize for loop by vectorizing its body
+                    for_range = copy(stmnt)
+                    for_range.body = vectorize(stmnt.body)
+                    return for_range
+
+                @vectorize.register(L.Statement)
+                def vectorize_statement(stmnt):
+                    # Vectorize the contained expression
+                    vectorized_expr = vectorize(stmnt.expr)
+
+                    # The vectorized version might already be a statement
+                    try:
+                        vectorized_stmnt = L.Statement(vectorized_expr)
+                        return vectorized_stmnt
+                    except RuntimeError:
+                        return vectorized_expr
+
+                @vectorize.register(L.StatementList)
+                def vectorize_statement_list(stmnts):
+                    return L.StatementList([vectorize(stmnt) for stmnt in stmnts.statements])
+
+                # Vectorization of expressions
+
+                @vectorize.register(L.Symbol)
+                def vectorize_symbol(expr):
+                    if was_expanded(expr):
+                        return L.ArrayAccess(expr, (i_simd,))
+                    else:
+                        return expr
+
+                @vectorize.register(L.ArrayAccess)
+                def vectorize_array_access(expr):
+                    if was_expanded(expr):
+                        array_access = copy(expr)
+                        array_access.indices = expr.indices + (i_simd,)
+                        return array_access
+                    else:
+                        return expr
+
+                @vectorize.register(L.BinOp)
+                def vectorize_binop(expr):
+                    # Transform all binary operators (+, *, -, %,...)
+                    bin_op = copy(expr)
+                    bin_op.lhs = vectorize(expr.lhs)
+                    bin_op.rhs = vectorize(expr.rhs)
+                    return bin_op
+
+                @vectorize.register(L.NaryOp)
+                def vectorize_sum(expr):
+                    # Transform all n-ary operators (sum, product,...)
+                    nary_op = copy(expr)
+                    nary_op.args = [vectorize(arg) for arg in expr.args]
+                    return nary_op
+
+                @vectorize.register(L.Call)
+                def vectorize_call(expr):
+                    # Transform functions calls, assuming that the call has no side effects
+                    if expr.arguments is not None:
+                        call = copy(expr)
+                        call.arguments = [vectorize(arg) for arg in expr.arguments]
+                        return call
+                    else:
+                        return expr
+
+                vectorized = [vectorize(stmnt) for stmnt in statements]
+                return ([], vectorized)
+
+            if enable_cross_element_gcc_ext:
+                preamble, vectorized = vectorize_statements_gcc_vec_ext(parts, L, ctx, vec_length=cross_element_width)
+            else:
+                preamble, vectorized = vectorize_statements_simple(parts, L, ctx, vec_length=cross_element_width)
+
             parts = preamble + vectorized
 
         return L.StatementList(parts)
