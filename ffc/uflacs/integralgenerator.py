@@ -163,7 +163,7 @@ class IntegralGenerator(object):
         return L.Symbol(name)
 
     def get_temp_symbol(self, tempname, key):
-        key = (tempname, ) + key
+        key = (tempname,) + key
         s = self.shared_blocks.get(key)
         defined = s is not None
         if not defined:
@@ -242,9 +242,13 @@ class IntegralGenerator(object):
 
         if cross_element_width > 0:
             ctx = {
-                "flat_expanded_array": ["A", "w", "coordinate_dofs", "cell_orientation"],
+                "flat_expanded_arrays": ["A", "w", "coordinate_dofs", "cell_orientation"],
                 "expanded_arrays": [],
-                "expanded_scalars": []
+                "expanded_scalars": [],
+                # "reduce_to_scalars": ["sp"],
+                "reduce_to_scalars": [],
+                "reduced_typenames": dict(),
+                "reduced_scalar_names": set()
             }
 
             def vectorize_statements(statements, L, ctx, vec_length=4, alignment=32):
@@ -261,11 +265,23 @@ class IntegralGenerator(object):
                 # Symbol used as index in for loops over the elements
                 i_simd = L.Symbol("i_elem")
 
+                def should_reduce(expr: L.Symbol) -> bool:
+                    """Returns whether the symbol belongs to an array that should be reduced to a scalar."""
+
+                    return expr.name in ctx["reduce_to_scalars"]
+
+                def was_reduced(expr: L.ArrayAccess) -> bool:
+                    """Returns whether the array used in this array access was reduced to a scalar."""
+
+                    scalar_name = expr.array.name + str(expr.indices[0])
+                    return should_reduce(expr.array) and scalar_name in ctx["reduced_scalar_names"]
+
                 def was_expanded(expr) -> bool:
                     """Returns whether an array's/scalar's rank was increased for vectorization."""
 
                     if isinstance(expr, L.ArrayAccess):
-                        return expr.array.name in ctx["expanded_arrays"] or expr.array.name in ctx["flat_expanded_array"]
+                        return expr.array.name in ctx["expanded_arrays"] or expr.array.name in ctx[
+                            "flat_expanded_arrays"]
                     if isinstance(expr, L.Symbol):
                         return expr.name in ctx["expanded_scalars"]
 
@@ -340,17 +356,24 @@ class IntegralGenerator(object):
                     if stmnt.values is not None and stmnt.values != 0:
                         raise RuntimeError("Values in vectorization for ArrayDecl unsupported")
 
+                    if should_reduce(stmnt.symbol):
+                        ctx["reduced_typenames"][stmnt.symbol.name] = stmnt.typename
+                        return L.NoOp()
+
                     array_decl = copy(stmnt)
                     # Increase rank
                     array_decl.sizes = stmnt.sizes + (vec_length,)
 
-                    # Log that the rank wass increased
+                    # Log that the rank was increased
                     ctx["expanded_arrays"].append(stmnt.symbol.name)
 
                     return array_decl
 
                 @vectorize.register(L.ArrayAccess)
                 def vectorize_array_access(stmnt):
+                    if was_reduced(stmnt):
+                        return vectorize(L.Symbol(stmnt.array.name + str(stmnt.indices[0])))
+
                     # Check whether rank was increased
                     if was_expanded(stmnt):
                         array_access = copy(stmnt)
@@ -359,10 +382,10 @@ class IntegralGenerator(object):
                         if stmnt.array.name in ctx["expanded_arrays"]:
                             # For manually expanded arrays, simply append array index
                             array_access.indices = stmnt.indices + (i_simd,)
-                        elif stmnt.array.name in ctx["flat_expanded_array"]:
+                        elif stmnt.array.name in ctx["flat_expanded_arrays"]:
                             # For in/out arrays, we have strided access instead
                             array_access.indices = stmnt.indices[0:-1] + (
-                            i_simd + L.LiteralInt(vec_length) * stmnt.indices[-1],)
+                                i_simd + L.LiteralInt(vec_length) * stmnt.indices[-1],)
 
                         return array_access
 
@@ -373,7 +396,7 @@ class IntegralGenerator(object):
                 @vectorize.register(L.Symbol)
                 def vectorize_symbol(stmnt):
                     if was_expanded(stmnt):
-                        # Scalar which was transformed ot an array:
+                        # Scalar which was transformed to an array:
                         return L.ArrayAccess(stmnt, (i_simd,))
                     else:
                         return stmnt
@@ -381,8 +404,24 @@ class IntegralGenerator(object):
                 @vectorize.register(L.AssignOp)
                 def vectorize_assign(stmnt):
                     # Transform all assignment operations (=, +=, *=,...)
-                    if was_expanded(stmnt.lhs):
-                        assignment = type(stmnt)(vectorize(stmnt.lhs), vectorize(stmnt.rhs))
+                    target, value = stmnt.lhs, stmnt.rhs
+
+                    if isinstance(target, L.ArrayAccess) and should_reduce(target.array):
+                        assert len(target.indices) == 1
+                        new_target_name = target.array.name + str(target.indices[0])
+
+                        if was_reduced(target):
+                            target = L.Symbol(new_target_name)
+                        else:
+                            assert isinstance(stmnt, L.Assign)
+                            var_decl = L.VariableDecl(ctx["reduced_typenames"][target.array.name],
+                                                      L.Symbol(new_target_name),
+                                                      value=value)
+                            ctx["reduced_scalar_names"].add(new_target_name)
+                            return vectorize(var_decl)
+
+                    if was_expanded(target):
+                        assignment = type(stmnt)(vectorize(target), vectorize(value))
                         return simd_loop(assignment)
                     else:
                         return stmnt
@@ -455,7 +494,8 @@ class IntegralGenerator(object):
 
                     def is_expanded_assignment(stmnt):
                         """Return whether the specified statement is a cross element expanded assignment loop."""
-                        return isinstance(stmnt, L.ForRange) and stmnt.index == i_simd and stmnt.begin.value == 0 and stmnt.end.value == vec_length
+                        return isinstance(stmnt,
+                                          L.ForRange) and stmnt.index == i_simd and stmnt.begin.value == 0 and stmnt.end.value == vec_length
 
                     def is_expanded_var_decl(stmnt):
                         """Returns whether the specified statement is a StatementList that declares and assigns a cross element expanded scalar."""
@@ -516,10 +556,9 @@ class IntegralGenerator(object):
                     optimized.append(prev_stmnt)
                     return optimized
 
-
                 vectorized = [vectorize(stmnt) for stmnt in statements]
                 optimized = optimize(vectorized)
-                return ([], optimized)
+                return ([], vectorized)
 
             preamble, vectorized = vectorize_statements(parts, L, ctx, vec_length=cross_element_width)
             parts = preamble + vectorized
@@ -782,7 +821,7 @@ class IntegralGenerator(object):
         parts = self.generate_partition(arraysymbol, expr_ir["V"], expr_ir["V_varying"],
                                         expr_ir["V_mts"], expr_ir["mt_tabledata"], num_points)
         parts = L.commented_code_list(parts, "Unstructured varying computations for num_points=%d" %
-                                      (num_points, ))
+                                      (num_points,))
         return parts
 
     def generate_partition(self, symbol, V, V_active, V_mts, mt_tabledata, num_points):
@@ -929,7 +968,7 @@ class IntegralGenerator(object):
                 entity = L.LiteralInt(0)
             else:
                 entity = self.backend.symbols.entity(self.ir["entitytype"], None)
-            return (entity, )
+            return (entity,)
 
     def get_arg_factors(self, blockdata, block_rank, num_points, iq, indices):
         L = self.backend.language
@@ -1267,7 +1306,7 @@ class IntegralGenerator(object):
             # Define indices into preintegrated block
             P_entity_indices = self.get_entities(blockdata)
             if inline_table:
-                assert P_entity_indices == (L.LiteralInt(0), )
+                assert P_entity_indices == (L.LiteralInt(0),)
                 assert table.shape[0] == 1
 
             # Unroll loop
@@ -1351,7 +1390,7 @@ class IntegralGenerator(object):
                     L.ForRange(k, zero_begin, zero_end, index_type="int", body=L.Assign(A[k], 0.0))
                 ]
         else:
-            raise FFCError("Invalid init_mode parameter %s" % (init_mode, ))
+            raise FFCError("Invalid init_mode parameter %s" % (init_mode,))
 
         return parts
 
@@ -1360,7 +1399,7 @@ class IntegralGenerator(object):
         parts = []
 
         # Not expecting any quadrature loop scopes here
-        assert tuple(self.scopes.keys()) == (None, )
+        assert tuple(self.scopes.keys()) == (None,)
 
         # TODO: Get symbol from backend
         values = L.Symbol("values")
