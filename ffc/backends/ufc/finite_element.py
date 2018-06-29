@@ -142,7 +142,7 @@ def tabulate_reference_dof_coordinates(L, ir, parameters):
     # Raise error if tabulate_reference_dof_coordinates is ill-defined
     if not ir:
         msg = "tabulate_reference_dof_coordinates is not defined for this element"
-        return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
+        return [generate_error(L, msg, parameters["convert_exceptions_to_warnings"])]
 
     # Extract coordinates and cell dimension
     tdim = ir["tdim"]
