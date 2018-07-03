@@ -147,7 +147,6 @@ class UFCForm:
             code += "ufc_dofmap* create_{name}();\n".format(name=name)
         return code
 
-
     # This group of functions are repeated for each
     # foo_integral by add_ufc_form_integral_methods:
 
@@ -184,8 +183,6 @@ def ufc_form_generator(ir, parameters):
     """Generate UFC code for a form"""
 
     factory_name = ir["classname"]
-
-
 
     d = {}
     d["factory_name"] = factory_name
@@ -240,7 +237,6 @@ def ufc_form_generator(ir, parameters):
         L, ir, parameters)
     d["create_default_custom_integral"] = generator.create_default_custom_integral(
         L, ir, parameters)
-
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
