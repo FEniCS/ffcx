@@ -245,9 +245,8 @@ class IntegralGenerator(object):
 
         if cross_element_width > 0:
             ctx = {
-                "flat_expanded_arrays": ["A", "w", "coordinate_dofs", "cell_orientation"],
-                "expanded_arrays": [],
-                "expanded_scalars": [],
+                "expanded_inputs": ["A", "w", "coordinate_dofs"],
+                "expanded_intermediates": [],
                 "reduce_to_scalars": [],
                 "reduced_typenames": dict(),
                 "reduced_scalar_names": set()
@@ -285,10 +284,10 @@ class IntegralGenerator(object):
                     """Returns whether an array's/scalar's rank was increased for vectorization."""
 
                     if isinstance(expr, L.ArrayAccess):
-                        return expr.array.name in ctx["expanded_arrays"] or expr.array.name in ctx[
-                            "flat_expanded_arrays"]
+                        return expr.array.name in ctx["expanded_intermediates"] or expr.array.name in ctx[
+                            "expanded_inputs"]
                     if isinstance(expr, L.Symbol):
-                        return expr.name in ctx["expanded_scalars"]
+                        return expr.name in ctx["expanded_intermediates"]
 
                     raise RuntimeError("Unsupported expression")
 
@@ -340,7 +339,7 @@ class IntegralGenerator(object):
                                              alignas=alignment)
 
                     # Log that the scalar was transformed to an array
-                    ctx["expanded_scalars"].append(stmnt.symbol.name)
+                    ctx["expanded_intermediates"].append(stmnt.symbol.name)
 
                     if stmnt.value is not None:
                         # If the scalar had a value, it has to be assigned in a loop and vectorized recursively
@@ -369,7 +368,7 @@ class IntegralGenerator(object):
                     array_decl.sizes = stmnt.sizes + (vec_length,)
 
                     # Log that the rank was increased
-                    ctx["expanded_arrays"].append(stmnt.symbol.name)
+                    ctx["expanded_intermediates"].append(stmnt.symbol.name)
 
                     return array_decl
 
@@ -383,10 +382,10 @@ class IntegralGenerator(object):
                         array_access = copy(stmnt)
 
                         # Update array indexing
-                        if stmnt.array.name in ctx["expanded_arrays"]:
+                        if stmnt.array.name in ctx["expanded_intermediates"]:
                             # For manually expanded arrays, simply append array index
                             array_access.indices = stmnt.indices + (i_simd,)
-                        elif stmnt.array.name in ctx["flat_expanded_arrays"]:
+                        elif stmnt.array.name in ctx["expanded_inputs"]:
                             # For in/out arrays, we have strided access instead
                             array_access.indices = stmnt.indices[0:-1] + (
                                 i_simd + L.LiteralInt(vec_length) * stmnt.indices[-1],)
@@ -572,7 +571,7 @@ class IntegralGenerator(object):
                 base_type = "double"
                 vector_type = "double{}".format(str(vec_length))
 
-                # Symbol used as index in for loops over the elements
+                # Symbol used as index in for-loops over the elements
                 i_simd = L.Symbol("i_elem")
 
                 def simd_loop(body):
@@ -583,36 +582,64 @@ class IntegralGenerator(object):
                     """Returns whether an array's/scalar's rank was increased for vectorization."""
 
                     if isinstance(expr, L.ArrayAccess):
-                        return expr.array.name in ctx["expanded_arrays"] or expr.array.name in ctx[
-                            "flat_expanded_arrays"]
-                    if isinstance(expr, L.Symbol):
-                        return expr.name in ctx["expanded_scalars"]
+                        symbol_name = expr.array.name
+                    elif isinstance(expr, L.Symbol):
+                        symbol_name = expr.name
+                    else:
+                        raise RuntimeError("Unsupported expression")
 
-                    raise RuntimeError("Unsupported expression")
+                    return any((symbol_name in arr) for arr in [ctx["expanded_intermediates"], ctx["expanded_inputs"]])
 
-                @functools.singledispatch
-                def is_vector_expression(expr) -> bool:
-                    """Overloaded function to check if any CNodes expression is vector valued."""
+                def get_all_subexpressions(expr: L.CExpr):
+                    """Returns a list of all sub-expression of a CNodes expression."""
 
-                    raise RuntimeError("Unsupported object in expression. Cannot determine if vector expression.")
+                    if isinstance(expr, L.CExprTerminal):
+                        return []
+                    elif isinstance(expr, L.UnaryOp):
+                        return [expr.arg]
+                    elif isinstance(expr, L.BinOp):
+                        return [expr.lhs, expr.rhs]
+                    elif isinstance(expr, L.NaryOp):
+                        return expr.args
+                    elif isinstance(expr, L.Conditional):
+                        return [expr.condition, expr.true, expr.false]
+                    elif isinstance(expr, L.Call):
+                        return [expr.arguments]
+                    elif isinstance(expr, L.ArrayAccess):
+                        return [expr.array, *expr.indices]
+                    elif isinstance(expr, L.New):
+                        return []
 
-                @is_vector_expression.register(L.BinOp)
-                def is_vector_expression_binop(expr):
-                    return is_vector_expression(expr.lhs) or is_vector_expression(expr.rhs)
+                    raise RuntimeError("Unsupported object in expression.")
 
-                @is_vector_expression.register(L.NaryOp)
-                def is_vector_expression_binop(expr):
-                    return any(is_vector_expression(arg) for arg in expr.args)
+                def bfs_or(expr: L.CExpr, pred) -> bool:
+                    """Short-circuiting 'or' operation of the predicate over the supplied expr tree using breadth-first search."""
+                    return pred(expr) or any(bfs_or(sub_expr, pred) for sub_expr in get_all_subexpressions(expr))
 
-                @is_vector_expression.register(L.Call)
-                @is_vector_expression.register(L.CExprLiteral)
-                def is_vector_expression_false(expr):
-                    return False
+                def bfs_and(expr: L.CExpr, pred) -> bool:
+                    """Short-circuiting 'and' operation of the predicate over the supplied expr tree using breadth-first search."""
+                    return pred(expr) and all(bfs_and(sub_expr, pred) for sub_expr in get_all_subexpressions(expr))
 
-                @is_vector_expression.register(L.ArrayAccess)
-                @is_vector_expression.register(L.Symbol)
-                def is_vector_expression_symbol(expr):
-                    return was_expanded(expr)
+                def is_function_call_with_vec_args(expr: L.CExpr) -> bool:
+                    """Returns whether the given CNodes expression is a function call with vectorized arguments."""
+
+                    if isinstance(expr, L.Call):
+                        return any(was_expanded(arg) for arg in expr.arguments)
+                    else:
+                        return False
+
+                def is_vectorized_variable(expr: L.CExpr) -> bool:
+                    """Returns whether the given CNodes expression is a vectorized variable."""
+
+                    if isinstance(expr, L.Symbol) or isinstance(expr, L.ArrayAccess):
+                        return was_expanded(expr)
+                    else:
+                        return False
+
+                def is_vector_expression(expr: L.CExpr) -> bool:
+                    """Returns whether a CNodes expression is of vector type."""
+
+                    return (not bfs_or(expr, is_function_call_with_vec_args)) and bfs_or(expr, is_vectorized_variable)
 
                 @functools.singledispatch
                 def vectorize(stmnt):
@@ -642,14 +669,14 @@ class IntegralGenerator(object):
                     if "static" in stmnt.typename:
                         return stmnt
 
-                    # Vectorize the type
+                    # Vectorize the type of the variable
                     var_decl = copy(stmnt)
                     var_decl.typename = stmnt.typename.replace(base_type, vector_type)
 
                     # Log that the scalar was vectorized
-                    ctx["expanded_scalars"].append(stmnt.symbol.name)
+                    ctx["expanded_intermediates"].append(stmnt.symbol.name)
 
-                    # Check value
+                    # Check value, if it isn't a vector expression the assignment has to be wrapped in a loop
                     if stmnt.value is not None:
                         if not is_vector_expression(stmnt.value):
                             assign_op = L.Assign(var_decl.symbol, stmnt.value)
@@ -664,14 +691,16 @@ class IntegralGenerator(object):
                     if "static" in stmnt.typename:
                         return stmnt
 
-                    if stmnt.values is not None and not isinstance(stmnt.values, int) and not isinstance(stmnt.values, float):
-                        raise RuntimeError("Values in vectorization for ArrayDecl unsupported")
+                    if stmnt.values is not None:
+                        if not isinstance(stmnt.values, int) and not isinstance(stmnt.values, float):
+                            raise RuntimeError(
+                                "Assignment of expressions in a ArrayDecl unsupported during vectorization")
 
                     array_decl = copy(stmnt)
                     array_decl.typename = stmnt.typename.replace(base_type, vector_type)
 
                     # Store that the array was vectorized
-                    ctx["expanded_arrays"].append(stmnt.symbol.name)
+                    ctx["expanded_intermediates"].append(stmnt.symbol.name)
 
                     return array_decl
 
@@ -690,13 +719,16 @@ class IntegralGenerator(object):
 
                 @vectorize.register(L.ForRange)
                 def vectorize_for_range(stmnt):
-                    # Vectorize for loop by vectorizing its body
+                    # Vectorize for-loop by vectorizing its body
                     for_range = copy(stmnt)
                     for_range.body = vectorize(stmnt.body)
                     return for_range
 
                 @vectorize.register(L.Statement)
                 def vectorize_statement(stmnt):
+                    # Statement is used to wrap assignment expressions into a statement
+                    stmnt = copy(stmnt)
+
                     # Vectorize the contained expression
                     vectorized_expr = vectorize(stmnt.expr)
 
@@ -711,7 +743,7 @@ class IntegralGenerator(object):
                 def vectorize_statement_list(stmnts):
                     return L.StatementList([vectorize(stmnt) for stmnt in stmnts.statements])
 
-                # Vectorization of expressions
+                # Vectorization of expressions, only applied inside of for-loops generated by a statement above
 
                 @vectorize.register(L.Symbol)
                 def vectorize_symbol(expr):
