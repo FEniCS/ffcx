@@ -168,9 +168,21 @@ def create_coordinate_finite_element(L, ir):
     return generate_return_new(L, classname, factory=True)
 
 
+def coordinate_finite_element_declaration(L, ir):
+    classname = ir["create_coordinate_finite_element"]
+    code = "ufc_finite_element* create_{name}();\n".format(name=classname)
+    return code
+
+
 def create_coordinate_dofmap(L, ir):
     classname = ir["create_coordinate_dofmap"]
     return generate_return_new(L, classname, factory=True)
+
+
+def coordinate_dofmap_declaration(L, ir):
+    classname = ir["create_coordinate_dofmap"]
+    code = "ufc_dofmap* create_{name}();\n".format(name=classname)
+    return code
 
 
 def compute_physical_coordinates(L, ir):
@@ -836,7 +848,9 @@ def ufc_coordinate_mapping_generator(ir, parameters):
 
     # Functions
     d["create_coordinate_finite_element"] = create_coordinate_finite_element(L, ir)
+    d["coordinate_finite_element_declaration"] = coordinate_finite_element_declaration(L, ir)
     d["create_coordinate_dofmap"] = create_coordinate_dofmap(L, ir)
+    d["coordinate_dofmap_declaration"] = coordinate_dofmap_declaration(L, ir)
 
     statements = compute_physical_coordinates(L, ir)
     assert isinstance(statements, list)

@@ -16,26 +16,31 @@ int original_coefficient_position_{factory_name}(int i)
 {original_coefficient_position}
 }}
 
+{coordinate_finite_element_declaration}
 ufc_finite_element* create_coordinate_finite_element_{factory_name}()
 {{
 {create_coordinate_finite_element}
 }}
 
+{coordinate_dofmap_declaration}
 ufc_dofmap* create_coordinate_dofmap_{factory_name}()
 {{
 {create_coordinate_dofmap}
 }}
 
+{coordinate_mapping_declaration}
 ufc_coordinate_mapping* create_coordinate_mapping_{factory_name}()
 {{
 {create_coordinate_mapping}
 }}
 
+{finite_element_declaration}
 ufc_finite_element* create_finite_element_{factory_name}(int i)
 {{
 {create_finite_element}
 }}
 
+{dofmap_declaration}
 ufc_dofmap* create_dofmap_{factory_name}(int i)
 {{
 {create_dofmap}

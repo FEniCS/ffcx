@@ -91,14 +91,26 @@ class UFCForm:
         return code
 
     def create_coordinate_finite_element(self, L, ir):
+        print('create coord')
         classnames = ir["create_coordinate_finite_element"]
         assert len(classnames) == 1
         return generate_return_new(L, classnames[0], factory=True)
+
+    def coordinate_finite_element_declaration(self, L, ir):
+        print('create coord decl')
+        classname = ir["create_coordinate_finite_element"]
+        code = "ufc_finite_element* create_{name}();\n".format(name=classname[0])
+        return code
 
     def create_coordinate_dofmap(self, L, ir):
         classnames = ir["create_coordinate_dofmap"]
         assert len(classnames) == 1
         return generate_return_new(L, classnames[0], factory=True)
+
+    def coordinate_dofmap_declaration(self, L, ir):
+        classname = ir["create_coordinate_dofmap"]
+        code = "ufc_dofmap* create_{name}();\n".format(name=classname[0])
+        return code
 
     def create_coordinate_mapping(self, L, ir):
         classnames = ir["create_coordinate_mapping"]
@@ -106,15 +118,35 @@ class UFCForm:
         assert len(classnames) == 1
         return generate_return_new(L, classnames[0], factory=True)
 
+    def coordinate_mapping_declaration(self, L, ir):
+        classname = ir["create_coordinate_mapping"]
+        code = "ufc_coordinate_mapping* create_{name}();\n".format(name=classname[0])
+        return code
+
     def create_finite_element(self, L, ir):
         i = L.Symbol("i")
         classnames = ir["create_finite_element"]
         return generate_return_new_switch(L, i, classnames, factory=True)
 
+    def finite_element_declaration(self, L, ir):
+        classnames = set(ir["create_finite_element"])
+        code = ""
+        for name in classnames:
+            code += "ufc_finite_element* create_{name}();\n".format(name=name)
+        return code
+
     def create_dofmap(self, L, ir):
         i = L.Symbol("i")
         classnames = ir["create_dofmap"]
         return generate_return_new_switch(L, i, classnames, factory=True)
+
+    def dofmap_declaration(self, L, ir):
+        classnames = set(ir["create_dofmap"])
+        code = ""
+        for name in classnames:
+            code += "ufc_dofmap* create_{name}();\n".format(name=name)
+        return code
+
 
     # This group of functions are repeated for each
     # foo_integral by add_ufc_form_integral_methods:
@@ -153,6 +185,8 @@ def ufc_form_generator(ir, parameters):
 
     factory_name = ir["classname"]
 
+
+
     d = {}
     d["factory_name"] = factory_name
     d["signature"] = "\"{}\"".format(ir["signature"])
@@ -179,10 +213,15 @@ def ufc_form_generator(ir, parameters):
     d["original_coefficient_position"] = L.StatementList(statements)
 
     d["create_coordinate_finite_element"] = generator.create_coordinate_finite_element(L, ir)
+    d["coordinate_finite_element_declaration"] = generator.coordinate_finite_element_declaration(L, ir)
     d["create_coordinate_dofmap"] = generator.create_coordinate_dofmap(L, ir)
+    d["coordinate_dofmap_declaration"] = generator.coordinate_dofmap_declaration(L, ir)
     d["create_coordinate_mapping"] = generator.create_coordinate_mapping(L, ir)
+    d["coordinate_mapping_declaration"] = generator.coordinate_mapping_declaration(L, ir)
     d["create_finite_element"] = generator.create_finite_element(L, ir)
+    d["finite_element_declaration"] = generator.finite_element_declaration(L, ir)
     d["create_dofmap"] = generator.create_dofmap(L, ir)
+    d["dofmap_declaration"] = generator.dofmap_declaration(L, ir)
 
     d["create_cell_integral"] = generator.create_cell_integral(L, ir, parameters)
     d["create_interior_facet_integral"] = generator.create_interior_facet_integral(
@@ -201,6 +240,7 @@ def ufc_form_generator(ir, parameters):
         L, ir, parameters)
     d["create_default_custom_integral"] = generator.create_default_custom_integral(
         L, ir, parameters)
+
 
     # Check that no keys are redundant or have been missed
     from string import Formatter

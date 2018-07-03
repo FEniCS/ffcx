@@ -11,11 +11,13 @@ ufc_coordinate_mapping* create_{factory_name}(void);
 factory = """
 // Code for coordinate mapping {factory_name}
 
+{coordinate_finite_element_declaration}
 ufc_finite_element* create_coordinate_finite_element_{factory_name}(void)
 {{
 {create_coordinate_finite_element}
 }}
 
+{coordinate_dofmap_declaration}
 ufc_dofmap* create_coordinate_dofmap_{factory_name}(void)
 {{
 {create_coordinate_dofmap}
