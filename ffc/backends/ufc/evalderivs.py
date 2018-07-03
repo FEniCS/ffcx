@@ -96,7 +96,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname, parameters
 
     # If max_degree is zero, we don't need to generate any more code
     if max_degree == 0:
-        return setup_code
+        return setup_code + [ret]
 
     # Tabulate dmats tables for all dofs and all derivative directions
     dmats_names, dmats_code = generate_tabulate_dmats(L, data["dofs_data"])
