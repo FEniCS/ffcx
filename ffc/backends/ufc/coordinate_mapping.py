@@ -185,6 +185,15 @@ def coordinate_dofmap_declaration(L, ir):
     return code
 
 
+def evaluate_reference_basis_declaration(L, ir):
+    scalar_coordinate_element_classname = ir["scalar_coordinate_finite_element_classname"]
+    code = """
+int evaluate_reference_basis_{}(double* restrict reference_values,
+    int num_points, const double* restrict X);
+""".format(scalar_coordinate_element_classname)
+    return code
+
+
 def compute_physical_coordinates(L, ir):
     num_dofs = ir["num_scalar_coordinate_element_dofs"]
     scalar_coordinate_element_classname = ir["scalar_coordinate_finite_element_classname"]
@@ -597,6 +606,15 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
     return code
 
 
+def evaluate_reference_basis_derivatives_declaration(L, ir):
+    scalar_coordinate_element_classname = ir["scalar_coordinate_finite_element_classname"]
+    code = """
+int evaluate_reference_basis_derivatives_{}(double* restrict reference_values,
+    int order, int num_points, const double* restrict X);
+""".format(scalar_coordinate_element_classname)
+    return code
+
+
 def compute_jacobians(L, ir):
     num_dofs = ir["num_scalar_coordinate_element_dofs"]
     scalar_coordinate_element_classname = ir["scalar_coordinate_finite_element_classname"]
@@ -855,6 +873,7 @@ def ufc_coordinate_mapping_generator(ir, parameters):
     statements = compute_physical_coordinates(L, ir)
     assert isinstance(statements, list)
     d["compute_physical_coordinates"] = L.StatementList(statements)
+    d["evaluate_reference_basis_declaration"] = evaluate_reference_basis_declaration(L, ir)
 
     statements = compute_reference_coordinates(L, ir)
     assert isinstance(statements, list)
@@ -863,6 +882,7 @@ def ufc_coordinate_mapping_generator(ir, parameters):
     statements = compute_reference_geometry(L, ir)
     assert isinstance(statements, list)
     d["compute_reference_geometry"] = L.StatementList(statements)
+    d["evaluate_reference_basis_derivatives_declaration"] = evaluate_reference_basis_derivatives_declaration(L, ir)
 
     statements = compute_jacobians(L, ir)
     assert isinstance(statements, list)
