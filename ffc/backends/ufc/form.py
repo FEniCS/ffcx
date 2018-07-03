@@ -91,13 +91,11 @@ class UFCForm:
         return code
 
     def create_coordinate_finite_element(self, L, ir):
-        print('create coord')
         classnames = ir["create_coordinate_finite_element"]
         assert len(classnames) == 1
         return generate_return_new(L, classnames[0], factory=True)
 
     def coordinate_finite_element_declaration(self, L, ir):
-        print('create coord decl')
         classname = ir["create_coordinate_finite_element"]
         code = "ufc_finite_element* create_{name}();\n".format(name=classname[0])
         return code
