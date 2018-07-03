@@ -238,11 +238,11 @@ class IntegralGenerator(object):
         parts += all_postparts
         parts += all_finalizeparts
 
+        # Optionally perform cross-element vectorization of the generated code
         cross_element_width = self.ir["params"]["cross_element_width"]
-        enable_cross_element_gcc_ext = self.ir["params"]["enable_cross_element_gcc_ext"]
-
         if cross_element_width > 0:
-            if enable_cross_element_gcc_ext:
+            # Optionally use gcc vector extensions
+            if self.ir["params"]["enable_cross_element_gcc_ext"]:
                 vectorized = self.vectorize_with_gcc_exts(parts, vec_length=cross_element_width)
             else:
                 vectorized = self.vectorize_with_loops(parts, vec_length=cross_element_width)
