@@ -338,10 +338,8 @@ class IntegralGenerator(object):
         def is_vector_expression(expr: L.CExpr) -> bool:
             """Returns whether a CNodes expression is of vector type."""
 
-            return (
-                    (not any(is_function_call_with_vec_args(sub_expr) for sub_expr in dfs(expr)))
-                    and any(is_vectorized_variable(sub_expr) for sub_expr in dfs(expr))
-            )
+            return ((not any(is_function_call_with_vec_args(sub_expr) for sub_expr in dfs(expr)))
+                    and any(is_vectorized_variable(sub_expr) for sub_expr in dfs(expr)))
 
         @functools.singledispatch
         def vectorize(stmnt):
@@ -714,7 +712,7 @@ class IntegralGenerator(object):
             return L.StatementList([vectorize(stmnt) for stmnt in stmnts.statements])
 
         def optimize(stmnts):
-            """Optimizes a list of CNode statements by joining consecutive cross element expanded array assignment loops"""
+            """Joins consecutive cross-element expanded assignment loops to a single loop."""
 
             if len(stmnts) < 2:
                 return stmnts
@@ -746,12 +744,17 @@ class IntegralGenerator(object):
                 return range3
 
             def is_expanded_assignment(stmnt):
-                """Return whether the specified statement is a cross element expanded assignment loop."""
-                return isinstance(stmnt,
-                                  L.ForRange) and stmnt.index == i_simd and stmnt.begin.value == 0 and stmnt.end.value == vec_length
+                """Return whether the specified statement is a cross-element expanded assignment loop."""
+                return (isinstance(stmnt, L.ForRange) 
+                        and (stmnt.index == i_simd) 
+                        and (stmnt.begin.value == 0) 
+                        and (stmnt.end.value == vec_length))
 
             def is_expanded_var_decl(stmnt):
-                """Returns whether the specified statement is a StatementList that declares and assigns a cross element expanded scalar."""
+                """
+                Returns whether the specified statement is a StatementList,
+                that declares and assigns a cross-element expanded scalar.
+                """
                 if isinstance(stmnt, L.StatementList) and len(stmnt.statements) == 2:
                     decl = stmnt.statements[0]
                     assign = stmnt.statements[1]
