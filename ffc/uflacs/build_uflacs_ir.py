@@ -544,12 +544,16 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                                                  unique_table_num_dofs)
                     ptable = clamp_table_small_numbers(
                         ptable, rtol=p["table_rtol"], atol=p["table_atol"])
+                else:
+                    ptable = unique_tables[pname]
 
-                    # Decide whether to unroll dofblock assignment
-                    max_unroll_size = ir["params"]["max_preintegrated_unrolled_table_size"]
-                    unroll = numpy.prod(ptable.shape[1:]) <= max_unroll_size  # First dimension is entity
-                    inline = unroll and integral_type == "cell"
+                # Decide whether to unroll dofblock assignment
+                max_unroll_size = ir["params"]["max_preintegrated_unrolled_table_size"]
+                unroll = numpy.prod(ptable.shape[1:]) <= max_unroll_size  # First dimension is entity
+                inline = unroll and integral_type == "cell"
 
+                if pname is None:
+                    # Store the table on the cache miss
                     pname = "PI%d" % (len(cache, ))
                     pname += "_inline" if inline else ""
                     cache[unames] = pname
