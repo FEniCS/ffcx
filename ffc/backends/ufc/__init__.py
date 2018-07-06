@@ -2,7 +2,7 @@
 """Utility functions for UFC"""
 
 __author__ = "FEniCS Project"
-__version__ = "2018.1.0.dev0"
+__version__ = "2018.2.0.dev0"
 __license__ = "This code is released into the public domain"
 
 import os

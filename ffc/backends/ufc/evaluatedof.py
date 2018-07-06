@@ -76,7 +76,7 @@ def _change_variables(L, mapping, gdim, tdim, offset):
     # meg: Various mappings must be handled both here and in
     # interpolate_vertex_values. Could this be abstracted out?
 
-    values = L.Symbol("vals")
+    values = L.Symbol("physical_values")
 
     if mapping == "affine":
         return [values[offset]]
@@ -266,7 +266,7 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset=0):
     # Evaluate function at physical point
     lines_r += [L.Comment("Evaluate function at physical point")]
     y = L.Symbol("y")
-    vals = L.Symbol("vals")
+    vals = L.Symbol("physical_values")
     c = L.Symbol("c")
     lines_r += [L.Call("f.evaluate", (vals, y, c))]
 
@@ -293,9 +293,12 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset=0):
     return (code, result)
 
 
-def generate_map_dofs(L, ir):
-    """Generate code for map_dofs."""
-    # Maps values input in array 'vals' to output array 'values'
+def generate_transform_values(L, ir):
+    """Generate code for transform_values. Transforms
+    values in physical space into reference space. These
+    values represent evaluation of the function at dof
+    points (only valid for point evaluation dofs).
+    """
 
     gdim = ir["geometric_dimension"]
     tdim = ir["topological_dimension"]
@@ -330,7 +333,7 @@ def generate_map_dofs(L, ir):
     offsets = ir["physical_offsets"]
 
     # Generate bodies for each degree of freedom
-    values = L.Symbol("values")
+    values = L.Symbol("reference_values")
     value_size = ir["physical_value_size"]
     for (i, dof) in enumerate(ir["dofs"]):
         c, r = _generate_body(L, i, dof, mappings[i], gdim, tdim, cell_shape,

@@ -14,6 +14,7 @@ import FIAT
 import ufl
 from ffc import FFCError
 from FIAT.enriched import EnrichedElement
+from FIAT.nodal_enriched import NodalEnrichedElement
 from FIAT.mixed import MixedElement
 # from FIAT.P0 import P0
 from FIAT.quadrature_element import QuadratureElement
@@ -67,6 +68,9 @@ def create_element(ufl_element):
     elif isinstance(ufl_element, ufl.EnrichedElement):
         elements = [create_element(e) for e in ufl_element._elements]
         element = EnrichedElement(*elements)
+    elif isinstance(ufl_element, ufl.NodalEnrichedElement):
+        elements = [create_element(e) for e in ufl_element._elements]
+        element = NodalEnrichedElement(*elements)
     elif isinstance(ufl_element, ufl.RestrictedElement):
         element = _create_restricted_element(ufl_element)
         raise FFCError("Cannot handle this element type: {}".format(ufl_element))

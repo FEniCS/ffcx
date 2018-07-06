@@ -5,7 +5,7 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018.
 
 declaration = """
-ufc_finite_element* create_{factory_name}();
+ufc_finite_element* create_{factory_name}(void);
 """
 
 factory = """
@@ -45,13 +45,14 @@ int transform_reference_basis_derivatives_{factory_name}(
   {transform_reference_basis_derivatives}
 }}
 
-void map_dofs_{factory_name}(double* restrict values,
-                            const double* restrict vals,
-                             const double* restrict coordinate_dofs,
-                             int cell_orientation,
-                             const ufc_coordinate_mapping* cm)
+void transform_values_{factory_name}(
+     ufc_scalar_t* restrict reference_values,
+     const ufc_scalar_t* restrict physical_values,
+     const double* restrict coordinate_dofs,
+     int cell_orientation,
+     const ufc_coordinate_mapping* cm)
 {{
-  {map_dofs}
+  {transform_values}
 }}
 
 void tabulate_reference_dof_coordinates_{factory_name}(double* restrict reference_dof_coordinates)
@@ -59,12 +60,13 @@ void tabulate_reference_dof_coordinates_{factory_name}(double* restrict referenc
   {tabulate_reference_dof_coordinates}
 }}
 
+{sub_element_declaration}
 ufc_finite_element* create_sub_element_{factory_name}(int i)
 {{
   {create_sub_element}
 }}
 
-ufc_finite_element* create_{factory_name}()
+ufc_finite_element* create_{factory_name}(void)
 {{
   ufc_finite_element* element = malloc(sizeof(*element));
 
@@ -84,7 +86,7 @@ ufc_finite_element* create_{factory_name}()
   element->evaluate_reference_basis = evaluate_reference_basis_{factory_name};
   element->evaluate_reference_basis_derivatives = evaluate_reference_basis_derivatives_{factory_name};
   element->transform_reference_basis_derivatives = transform_reference_basis_derivatives_{factory_name};
-  element->map_dofs = map_dofs_{factory_name};
+  element->transform_values = transform_values_{factory_name};
   element->tabulate_reference_dof_coordinates = tabulate_reference_dof_coordinates_{factory_name};
   element->num_sub_elements = {num_sub_elements};
   element->create_sub_element = create_sub_element_{factory_name};

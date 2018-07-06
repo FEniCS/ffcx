@@ -942,11 +942,18 @@ class IntegralGenerator(object):
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
             A_rhs = B_rhs
 
+        # Equip code with comments
+        comments = ["UFLACS block mode: {}".format(blockdata.block_mode)]
+        preparts = L.commented_code_list(preparts, comments)
+        quadparts = L.commented_code_list(quadparts, comments)
+        postparts = L.commented_code_list(postparts, comments)
+
         return A_rhs, preparts, quadparts, postparts
 
     def generate_preintegrated_dofblock_partition(self):
         # FIXME: Generalize this to unrolling all A[] += ... loops, or all loops with noncontiguous DM??
         L = self.backend.language
+
         block_contributions = self.ir["piecewise_ir"]["block_contributions"]
 
         blocks = [(blockmap, blockdata)
@@ -1030,6 +1037,7 @@ class IntegralGenerator(object):
                 # Accumulate index expression 'A_idx' used as 'A[A_idx]' in the loop, e.g. A_idx = i*3 + j
                 A_idx = sum(A_strides[i] * index_symbol for i, index_symbol in enumerate(A_index_symbols))
 
+<<<<<<< HEAD
                 # Get the index tuple used to index the pre-integrated table
                 P_arg_indices = P_index_symbols
                 # Transpose the PI indices, if block is transposed
@@ -1082,11 +1090,13 @@ class IntegralGenerator(object):
 
         if self._unroll_tables:
             parts = self.generate_tensor_value_initialization(A_values)
+            comment = "UFLACS block mode: preintegrated unrolled"
         else:
             # If we have assignment loops, zero all entries of A first
             parts = [L.MemZero(A, A_size)] + parts
+            comment = "UFLACS block mode: preintegrated looped"  # FIXME: better name?
 
-        return parts
+        return L.commented_code_list(parts, comment)
 
     def generate_tensor_value_initialization(self, A_values):
         parts = []
