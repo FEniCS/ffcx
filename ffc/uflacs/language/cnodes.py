@@ -96,7 +96,7 @@ def float_product(factors):
 def MemZero(name, size):
     name = as_cexpr_or_string_symbol(name)
     size = as_cexpr_or_string_symbol("{} * sizeof(*{})".format(size, name))
-    return Call("memset", (name, LiteralInt(0), size))
+    return Call("memset", (name, size))
 
 
 def MemCopy(src, dst, size, type):
