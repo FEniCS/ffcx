@@ -163,7 +163,7 @@ class IntegralGenerator(object):
         return L.Symbol(name)
 
     def get_temp_symbol(self, tempname, key):
-        key = (tempname,) + key
+        key = (tempname, ) + key
         s = self.shared_blocks.get(key)
         defined = s is not None
         if not defined:
@@ -1072,7 +1072,7 @@ class IntegralGenerator(object):
         parts = self.generate_partition(arraysymbol, expr_ir["V"], expr_ir["V_varying"],
                                         expr_ir["V_mts"], expr_ir["mt_tabledata"], num_points)
         parts = L.commented_code_list(parts, "Unstructured varying computations for num_points=%d" %
-                                      (num_points,))
+                                      (num_points, ))
         return parts
 
     def generate_partition(self, symbol, V, V_active, V_mts, mt_tabledata, num_points):
@@ -1219,7 +1219,7 @@ class IntegralGenerator(object):
                 entity = L.LiteralInt(0)
             else:
                 entity = self.backend.symbols.entity(self.ir["entitytype"], None)
-            return (entity,)
+            return (entity, )
 
     def get_arg_factors(self, blockdata, block_rank, num_points, iq, indices):
         L = self.backend.language
@@ -1557,7 +1557,7 @@ class IntegralGenerator(object):
             # Define indices into preintegrated block
             P_entity_indices = self.get_entities(blockdata)
             if inline_table:
-                assert P_entity_indices == (L.LiteralInt(0),)
+                assert P_entity_indices == (L.LiteralInt(0), )
                 assert table.shape[0] == 1
 
             # Unroll loop
@@ -1641,7 +1641,7 @@ class IntegralGenerator(object):
                     L.ForRange(k, zero_begin, zero_end, index_type="int", body=L.Assign(A[k], 0.0))
                 ]
         else:
-            raise FFCError("Invalid init_mode parameter %s" % (init_mode,))
+            raise FFCError("Invalid init_mode parameter %s" % (init_mode, ))
 
         return parts
 
@@ -1650,7 +1650,7 @@ class IntegralGenerator(object):
         parts = []
 
         # Not expecting any quadrature loop scopes here
-        assert tuple(self.scopes.keys()) == (None,)
+        assert tuple(self.scopes.keys()) == (None, )
 
         # TODO: Get symbol from backend
         values = L.Symbol("values")
