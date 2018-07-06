@@ -748,7 +748,7 @@ class IntegralGenerator(object):
 
             def is_expanded_assignment(stmnt):
                 """Checks if statement is a cross-element version of an AssignOp.
-                
+
                 Returns whether the specified statement is a cross-element expanded assignment loop.
                 """
                 return (isinstance(stmnt, L.ForRange)
