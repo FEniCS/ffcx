@@ -1083,7 +1083,6 @@ class IntegralGenerator(object):
         code_unroll = L.commented_code_list(code_unroll, "UFLACS blocks mode preintegrated unroll")
         return code_looped + code_unroll
 
-
     def generate_tensor_value_initialization(self, A_values):
         parts = []
 
