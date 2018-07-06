@@ -252,8 +252,9 @@ class IntegralGenerator(object):
         return L.StatementList(parts)
 
     def vectorize_with_gcc_exts(self, statements, vec_length=4, alignment=32):
-        """
-        Converts a list of tabulate_tensor CNodes statements into a cross-element vectorized version using
+        """Cross-element vectorization of `tabulate_tensor` statement list with GCC extensions.
+
+        Converts a list of `tabulate_tensor` CNodes statements into a cross-element vectorized version using
         GCC's vector extensions.
 
         :param statements: The list of statements that should be transformed
@@ -490,8 +491,10 @@ class IntegralGenerator(object):
         return vectorized
 
     def vectorize_with_loops(self, statements, vec_length=4, alignment=32):
-        """
-        Converts a list of tabulate_tensor CNodes statements into a cross-element vectorized version.
+        """Cross-element vectorization of `tabulate_tensor` statement list.
+
+        Converts a list of `tabulate_tensor` CNodes statements into a cross-element vectorized version.
+
         :param statements: The list of statements that should be transformed
         :param vec_length: The number of elements to perform cross element vectorization over
         :param alignment: Alignment in bytes used for arrays whose rank is increased for vectorization
@@ -744,14 +747,18 @@ class IntegralGenerator(object):
                 return range3
 
             def is_expanded_assignment(stmnt):
-                """Return whether the specified statement is a cross-element expanded assignment loop."""
+                """Checks if statement is a cross-element version of an AssignOp.
+                
+                Returns whether the specified statement is a cross-element expanded assignment loop.
+                """
                 return (isinstance(stmnt, L.ForRange)
                         and (stmnt.index == i_simd)
                         and (stmnt.begin.value == 0)
                         and (stmnt.end.value == vec_length))
 
             def is_expanded_var_decl(stmnt):
-                """
+                """Checks if statement is a cross-element version of a VarDecl.
+
                 Returns whether the specified statement is a StatementList,
                 that declares and assigns a cross-element expanded scalar.
                 """
