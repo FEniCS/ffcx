@@ -948,10 +948,10 @@ class IntegralGenerator(object):
         A_size = product(A_shape)
         A_strides = shape_to_strides(A_shape)
 
-        # List for unrolled assignments; None is no assignment
-        A_values = [None] * A_size
+        # List for unrolled assignments
+        A_values = [0.0] * A_size
         # List of statements when not unrolling
-        parts = []
+        code_looped = []
 
         for block_id, (blockmap, blockdata) in enumerate(blocks):
             # Accumulate A[blockmap[...]] += f*PI[...]
@@ -1008,8 +1008,6 @@ class IntegralGenerator(object):
                         P_ii = P_entity_indices + P_arg_indices
                         A_rhs = f * PI[P_ii]
 
-                    if A_values[A_ii] is None:
-                        A_values[A_ii] = 0.0
                     A_values[A_ii] += A_rhs
             else:
                 # Don't unroll, generate assignment loops
@@ -1069,19 +1067,19 @@ class IntegralGenerator(object):
                 # Define the P index variables before the loop code
                 loop_code = [L.VariableDecl("int", P_arg_index, 0) for P_arg_index in P_arg_indices] + loop_code
                 # Add a comment and scope to keep index variables enclosed
-                parts += [L.Scope(loop_code)]
+                code_looped += [L.Scope(loop_code)]
 
-        code_looped = parts  # FIXME: Rename "parts"!
+        # Generate unrolled code zeroing whole tensor
         code_unroll = self.generate_tensor_value_initialization(A_values)
 
-        # Init here if looping otherwise in generate_tensor_value_initialization
-        # FIXME: Sort this out
-        if len(code_looped) > 0:
-            code_looped = [L.MemZero(A, A_size)] + code_looped
-
+        # Add comments
+        code_unroll = L.commented_code_list(code_unroll, "UFLACS block mode: preintegrated unroll")
         code_looped = L.commented_code_list(code_looped, "UFLACS block mode: preintegrated looped")
-        code_unroll = L.commented_code_list(code_unroll, "UFLACS blocks mode preintegrated unroll")
-        return code_looped + code_unroll
+
+        # NB: Unrolled code zeros whole tensor; must be first
+        code = code_unroll + code_looped
+
+        return code
 
     def generate_tensor_value_initialization(self, A_values):
         parts = []
@@ -1090,23 +1088,27 @@ class IntegralGenerator(object):
         A = self.backend.symbols.element_tensor()
         A_size = len(A_values)
 
-        init_mode = self.ir["params"]["tensor_init_mode"]
         z = L.LiteralFloat(0.0)
+
+        if all(A[j] in [0.0, z] for j in range(A_size)):
+            # We are just zeroing the tensor
+            init_mode = "upfront"
+        else:
+            init_mode = self.ir["params"]["tensor_init_mode"]
 
         k = L.Symbol("k")  # Index for zeroing arrays
 
         if init_mode == "direct":
-            # Generate A[i] = A_values[i] including zeros excluding unset values
+            # Generate A[i] = A_values[i] including zeros
             for i in range(A_size):
-                if A_values[i] is not None:
-                    parts += [L.Assign(A[i], A_values[i])]
+                parts += [L.Assign(A[i], A_values[i])]
         elif init_mode == "upfront":
             # Zero everything first
             parts += [L.ForRange(k, 0, A_size, index_type="int", body=L.Assign(A[k], 0.0))]
 
             # Generate A[i] = A_values[i] skipping zeros
             for i in range(A_size):
-                if not (A_values[i] == 0.0 or A_values[i] == z or A_values[i] is None):
+                if not (A_values[i] == 0.0 or A_values[i] == z):
                     parts += [L.Assign(A[i], A_values[i])]
         elif init_mode == "interleaved":
             # Generate A[i] = A_values[i] with interleaved zero filling
@@ -1128,9 +1130,8 @@ class IntegralGenerator(object):
                         ]
                     zero_begin = i + 1
                     zero_end = zero_begin
-                    # Set A[i] value if given
-                    if A_values[i] is not None:
-                        parts += [L.Assign(A[i], A_values[i])]
+                    # Set A[i] value
+                    parts += [L.Assign(A[i], A_values[i])]
                 i += 1
             if zero_end == zero_begin + 1:
                 parts += [L.Assign(A[zero_begin], 0.0)]
