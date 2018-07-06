@@ -22,12 +22,12 @@
 
 cell = triangle
 
-element = VectorElement("Lagrange", cell, 1)
+element = VectorElement("Lagrange", cell, 3)
 
 n = FacetNormal(cell)
 
 v = TrialFunction(element)
 u = TestFunction(element)
 
-a = dot(v, u)*ds
+a = dot(v, u)*ds + inner(u, v)*dx
 L = dot(n, u)*ds

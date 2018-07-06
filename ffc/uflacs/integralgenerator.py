@@ -54,13 +54,6 @@ class IntegralGenerator(object):
         # TODO: Should this be part of the backend symbols? Doesn't really matter now.
         self.symbol_counters = defaultdict(int)
 
-        # Whether pre-integration tables should be inlined - or added as static arrays
-        self._inline_tables = None
-        # Whether to unroll the tabulate_tensor assignments
-        self._unroll_tables = None
-        # The maximum size of any preintegration table in order to perform unrolling
-        self.max_unroll_table_size = 1024
-
     def get_includes(self):
         """Return list of include statements needed to support generated code."""
         includes = set()
@@ -308,28 +301,17 @@ class IntegralGenerator(object):
             # Define all tables
             table_names = sorted(tables)
 
-        # Check whether it is ok to unroll all assignments involving the tables
-        self._inline_tables = self.ir["integral_type"] == "cell"
-        self._unroll_tables = True
         for name in table_names:
             table = tables[name]
 
-            if table.size > self.max_unroll_table_size:
-                self._inline_tables = False
-                self._unroll_tables = False
-                break
-
-        for name in table_names:
-            table = tables[name]
-
-            # Don't pad preintegrated tables
+            # Don't pad preintegrated tables. FIXME: Why?!
             if name[0] == "P":
                 p = 1
             else:
                 p = padlen
 
             # Skip tables that are inlined in code generation
-            if self._inline_tables and name[:2] == "PI":
+            if "inline" in name:
                 continue
 
             decl = L.ArrayDecl(
@@ -966,8 +948,8 @@ class IntegralGenerator(object):
         A_size = product(A_shape)
         A_strides = shape_to_strides(A_shape)
 
-        # List for unrolled assignments
-        A_values = [0.0] * A_size
+        # List for unrolled assignments; None is no assignment
+        A_values = [None] * A_size
         # List of statements when not unrolling
         parts = []
 
@@ -996,17 +978,17 @@ class IntegralGenerator(object):
 
             # Define indices into preintegrated block
             P_entity_indices = self.get_entities(blockdata)
-            if self._inline_tables:
+            if blockdata.inline:
                 assert P_entity_indices == (L.LiteralInt(0), )
                 assert table.shape[0] == 1
+            assert ("inline" in blockdata.name) == blockdata.inline
 
             # Unroll loop
             blockshape = [len(DM) for DM in blockmap]
             blockrange = [range(d) for d in blockshape]
 
-            if self._unroll_tables:
+            if blockdata.unroll:
                 # Generate unrolled assignments for the current block
-
                 for ii in itertools.product(*blockrange):
                     A_ii = sum(A_strides[i] * blockmap[i][ii[i]]
                                for i in range(len(ii)))
@@ -1015,7 +997,7 @@ class IntegralGenerator(object):
                     else:
                         P_arg_indices = ii
 
-                    if self._inline_tables:
+                    if blockdata.inline:
                         # Extract float value of PI[P_ii]
                         Pval = table[0]  # always entity 0
                         for i in P_arg_indices:
@@ -1026,13 +1008,15 @@ class IntegralGenerator(object):
                         P_ii = P_entity_indices + P_arg_indices
                         A_rhs = f * PI[P_ii]
 
-                    A_values[A_ii] = A_values[A_ii] + A_rhs
+                    if A_values[A_ii] is None:
+                        A_values[A_ii] = 0.0
+                    A_values[A_ii] += A_rhs
             else:
                 # Don't unroll, generate assignment loops
                 # TODO: Allow mixed unrolled/non unrolled assignments?
 
                 # Make sure that we can use PI as static array
-                assert not self._inline_tables
+                assert not blockdata.inline
 
                 # Accumulate index expression 'A_idx' used as 'A[A_idx]' in the loop, e.g. A_idx = i*3 + j
                 A_idx = sum(A_strides[i] * index_symbol for i, index_symbol in enumerate(A_index_symbols))
@@ -1087,15 +1071,18 @@ class IntegralGenerator(object):
                 # Add a comment and scope to keep index variables enclosed
                 parts += [L.Scope(loop_code)]
 
-        if self._unroll_tables:
-            parts = self.generate_tensor_value_initialization(A_values)
-            comment = "UFLACS block mode: preintegrated unrolled"
-        else:
-            # If we have assignment loops, zero all entries of A first
-            parts = [L.MemZero(A, A_size)] + parts
-            comment = "UFLACS block mode: preintegrated looped"  # FIXME: better name?
+        code_looped = parts  # FIXME: Rename "parts"!
+        code_unroll = self.generate_tensor_value_initialization(A_values)
 
-        return L.commented_code_list(parts, comment)
+        # Init here if looping otherwise in generate_tensor_value_initialization
+        # FIXME: Sort this out
+        if len(code_looped) > 0:
+            code_looped = [L.MemZero(A, A_size)] + code_looped
+
+        code_looped = L.commented_code_list(code_looped, "UFLACS block mode: preintegrated looped")
+        code_unroll = L.commented_code_list(code_unroll, "UFLACS blocks mode preintegrated unroll")
+        return code_looped + code_unroll
+
 
     def generate_tensor_value_initialization(self, A_values):
         parts = []
@@ -1110,16 +1097,17 @@ class IntegralGenerator(object):
         k = L.Symbol("k")  # Index for zeroing arrays
 
         if init_mode == "direct":
-            # Generate A[i] = A_values[i] including zeros
+            # Generate A[i] = A_values[i] including zeros excluding unset values
             for i in range(A_size):
-                parts += [L.Assign(A[i], A_values[i])]
+                if A_values[i] is not None:
+                    parts += [L.Assign(A[i], A_values[i])]
         elif init_mode == "upfront":
             # Zero everything first
             parts += [L.ForRange(k, 0, A_size, index_type="int", body=L.Assign(A[k], 0.0))]
 
             # Generate A[i] = A_values[i] skipping zeros
             for i in range(A_size):
-                if not (A_values[i] == 0.0 or A_values[i] == z):
+                if not (A_values[i] == 0.0 or A_values[i] == z or A_values[i] is None):
                     parts += [L.Assign(A[i], A_values[i])]
         elif init_mode == "interleaved":
             # Generate A[i] = A_values[i] with interleaved zero filling
@@ -1141,8 +1129,9 @@ class IntegralGenerator(object):
                         ]
                     zero_begin = i + 1
                     zero_end = zero_begin
-                    # Set A[i] value
-                    parts += [L.Assign(A[i], A_values[i])]
+                    # Set A[i] value if given
+                    if A_values[i] is not None:
+                        parts += [L.Assign(A[i], A_values[i])]
                 i += 1
             if zero_end == zero_begin + 1:
                 parts += [L.Assign(A[zero_begin], 0.0)]
