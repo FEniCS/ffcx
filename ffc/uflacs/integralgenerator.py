@@ -1037,7 +1037,6 @@ class IntegralGenerator(object):
                 # Accumulate index expression 'A_idx' used as 'A[A_idx]' in the loop, e.g. A_idx = i*3 + j
                 A_idx = sum(A_strides[i] * index_symbol for i, index_symbol in enumerate(A_index_symbols))
 
-<<<<<<< HEAD
                 # Get the index tuple used to index the pre-integrated table
                 P_arg_indices = P_index_symbols
                 # Transpose the PI indices, if block is transposed
