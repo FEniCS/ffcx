@@ -745,9 +745,9 @@ class IntegralGenerator(object):
 
             def is_expanded_assignment(stmnt):
                 """Return whether the specified statement is a cross-element expanded assignment loop."""
-                return (isinstance(stmnt, L.ForRange) 
-                        and (stmnt.index == i_simd) 
-                        and (stmnt.begin.value == 0) 
+                return (isinstance(stmnt, L.ForRange)
+                        and (stmnt.index == i_simd)
+                        and (stmnt.begin.value == 0)
                         and (stmnt.end.value == vec_length))
 
             def is_expanded_var_decl(stmnt):
