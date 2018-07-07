@@ -98,10 +98,8 @@ class FFCBackendDefinitions(MultiFunction):
 
         # Get properties of domain
         domain = mt.terminal.ufl_domain()
-        # tdim = domain.topological_dimension()
         gdim = domain.geometric_dimension()
         coordinate_element = domain.ufl_coordinate_element()
-        # degree = coordinate_element.degree()
         num_scalar_dofs = num_coordinate_component_dofs(coordinate_element)
 
         # Reference coordinates are known, no coordinate field, so we compute
@@ -113,47 +111,16 @@ class FFCBackendDefinitions(MultiFunction):
 
         assert end - begin <= num_scalar_dofs
         assert ttype != "zeros"
+        assert ttype != "ones"
         assert ttype != "quadrature"
-        # xfe_classname = ir["classnames"]["finite_element"][coordinate_element]
-        # sfe_classname = ir["classnames"]["finite_element"][coordinate_element.sub_elements()[0]]
 
         # Get access to element table
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
 
-        inline = True
-
-        if ttype == "zeros":
-            # Not sure if this will ever happen
-            logging.debug("Not expecting zeros for %s." % (e._ufl_class_.__name__, ))
-            code = [L.VariableDecl("const double", access, L.LiteralFloat(0.0))]
-        elif ttype == "ones":
-            # Not sure if this will ever happen
-            logging.debug("Not expecting ones for %s." % (e._ufl_class_.__name__, ))
-            # Inlined version (we know this is bounded by a small number)
-            dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction)
-            values = [dof_access[idof] for idof in tabledata.dofmap]
-            value = L.Sum(values)
-            code = [L.VariableDecl("const double", access, value)]
-        elif inline:
-            # Inlined version (we know this is bounded by a small number)
-            dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction)
-            # Inlined loop to accumulate linear combination of dofs and tables
-            value = L.Sum([dof_access[idof] * FE[i] for i, idof in enumerate(tabledata.dofmap)])
-            code = [L.VariableDecl("const double", access, value)]
-        else:  # TODO: Make an option to test this version for performance
-            # Assuming contiguous dofmap here
-            assert len(tabledata.dofmap) == end - begin
-
-            # Generated loop version:
-            ic = self.symbols.coefficient_dof_sum_index()
-            dof_access = self.symbols.domain_dof_access(ic + begin, mt.flat_component, gdim,
-                                                        num_scalar_dofs, mt.restriction)
-
-            # Loop to accumulate linear combination of dofs and tables
-            code = [
-                L.VariableDecl("double", access, 0.0),
-                L.ForRange(ic, 0, end - begin, body=[L.AssignAdd(access, dof_access * FE[ic])])
-            ]
+        # Inlined version (we know this is bounded by a small number)
+        dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction)
+        value = L.Sum([dof_access[idof] * FE[i] for i, idof in enumerate(tabledata.dofmap)])
+        code = [L.VariableDecl("const double", access, value)]
 
         return code
 

@@ -93,18 +93,10 @@ def float_product(factors):
         return Product(factors)
 
 
-# Note: removed as part of C++ -> C transition. Not using memset because
-# it is not safe for floats
-# def MemZeroRange(name, begin, end):
-#     name = as_cexpr_or_string_symbol(name)
-#     return Call("std::fill", (name + begin, name + end, LiteralFloat(0.0)))
-
-# Note: removed as part of C++ -> C transition. Not using memset because
-# it is not safe for floats
-# def MemZero(name, size):
-#     name = as_cexpr_or_string_symbol(name)
-#     size = as_cexpr(size)
-#     return Call("std::fill_n", (name, size, LiteralFloat(0.0)))
+def MemZero(name, size):
+    name = as_cexpr_or_string_symbol(name)
+    size = as_cexpr_or_string_symbol("{} * sizeof(*{})".format(size, name))
+    return Call("memset", (name, LiteralInt(0), size))
 
 
 def MemCopy(src, dst, size, type):
@@ -1492,7 +1484,8 @@ class ArrayDecl(CStatement):
         elif _is_zero_valued(self.values):
             # Zero initial values
             # (NB! C style zero initialization, not sure about other target languages)
-            return decl + " = { 0 };"
+            nb = len(sizes)
+            return decl + " = {lbr} 0 {rbr};".format(lbr="{" * nb, rbr="}" * nb)
         else:
             # Construct initializer lists for arbitrary multidimensional array values
             if self.values.dtype.kind == "f":

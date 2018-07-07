@@ -54,13 +54,6 @@ class IntegralGenerator(object):
         # TODO: Should this be part of the backend symbols? Doesn't really matter now.
         self.symbol_counters = defaultdict(int)
 
-        # Whether pre-integration tables should be inlined - or added as static arrays
-        self._inline_tables = None
-        # Whether to unroll the tabulate_tensor assignments
-        self._unroll_tables = None
-        # The maximum size of any preintegration table in order to perform unrolling
-        self.max_unroll_table_size = 1024
-
     def get_includes(self):
         """Return list of include statements needed to support generated code."""
         includes = set()
@@ -308,28 +301,17 @@ class IntegralGenerator(object):
             # Define all tables
             table_names = sorted(tables)
 
-        # Check whether it is ok to unroll all assignments involving the tables
-        self._inline_tables = self.ir["integral_type"] == "cell"
-        self._unroll_tables = True
         for name in table_names:
             table = tables[name]
 
-            if table.size > self.max_unroll_table_size:
-                self._inline_tables = False
-                self._unroll_tables = False
-                break
-
-        for name in table_names:
-            table = tables[name]
-
-            # Don't pad preintegrated tables
+            # Don't pad preintegrated tables. FIXME: Why?!
             if name[0] == "P":
                 p = 1
             else:
                 p = padlen
 
             # Skip tables that are inlined in code generation
-            if self._inline_tables and name[:2] == "PI":
+            if "inline" in name:
                 continue
 
             decl = L.ArrayDecl(
@@ -942,11 +924,18 @@ class IntegralGenerator(object):
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
             A_rhs = B_rhs
 
+        # Equip code with comments
+        comments = ["UFLACS block mode: {}".format(blockdata.block_mode)]
+        preparts = L.commented_code_list(preparts, comments)
+        quadparts = L.commented_code_list(quadparts, comments)
+        postparts = L.commented_code_list(postparts, comments)
+
         return A_rhs, preparts, quadparts, postparts
 
     def generate_preintegrated_dofblock_partition(self):
         # FIXME: Generalize this to unrolling all A[] += ... loops, or all loops with noncontiguous DM??
         L = self.backend.language
+
         block_contributions = self.ir["piecewise_ir"]["block_contributions"]
 
         blocks = [(blockmap, blockdata)
@@ -962,7 +951,7 @@ class IntegralGenerator(object):
         # List for unrolled assignments
         A_values = [0.0] * A_size
         # List of statements when not unrolling
-        parts = []
+        code_looped = []
 
         for block_id, (blockmap, blockdata) in enumerate(blocks):
             # Accumulate A[blockmap[...]] += f*PI[...]
@@ -978,28 +967,28 @@ class IntegralGenerator(object):
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
             # A_rhs = f * PI where PI = sum_q weight * u * v
             PI = L.Symbol(blockdata.name)
-            # block_rank = len(blockmap)
+            block_rank = len(blockmap)
 
             # Indices used to index A
             A_index_symbols = tuple(self.backend.symbols.argument_loop_index(i)
-                                for i in range(block_rank))
+                                    for i in range(block_rank))
             # Indices used to index PI
             P_index_symbols = tuple(self.backend.symbols.argument_loop_index(i)
-                                for i in range(block_rank, 2*block_rank))
+                                    for i in range(block_rank, 2 * block_rank))
 
             # Define indices into preintegrated block
             P_entity_indices = self.get_entities(blockdata)
-            if self._inline_tables:
+            if blockdata.inline:
                 assert P_entity_indices == (L.LiteralInt(0), )
                 assert table.shape[0] == 1
+            assert ("inline" in blockdata.name) == blockdata.inline
 
             # Unroll loop
             blockshape = [len(DM) for DM in blockmap]
             blockrange = [range(d) for d in blockshape]
 
-            if self._unroll_tables:
+            if blockdata.unroll:
                 # Generate unrolled assignments for the current block
-
                 for ii in itertools.product(*blockrange):
                     A_ii = sum(A_strides[i] * blockmap[i][ii[i]]
                                for i in range(len(ii)))
@@ -1008,7 +997,7 @@ class IntegralGenerator(object):
                     else:
                         P_arg_indices = ii
 
-                    if self._inline_tables:
+                    if blockdata.inline:
                         # Extract float value of PI[P_ii]
                         Pval = table[0]  # always entity 0
                         for i in P_arg_indices:
@@ -1019,13 +1008,13 @@ class IntegralGenerator(object):
                         P_ii = P_entity_indices + P_arg_indices
                         A_rhs = f * PI[P_ii]
 
-                    A_values[A_ii] = A_values[A_ii] + A_rhs
+                    A_values[A_ii] += A_rhs
             else:
                 # Don't unroll, generate assignment loops
                 # TODO: Allow mixed unrolled/non unrolled assignments?
 
                 # Make sure that we can use PI as static array
-                assert not self._inline_tables
+                assert not blockdata.inline
 
                 # Accumulate index expression 'A_idx' used as 'A[A_idx]' in the loop, e.g. A_idx = i*3 + j
                 A_idx = sum(A_strides[i] * index_symbol for i, index_symbol in enumerate(A_index_symbols))
@@ -1064,7 +1053,8 @@ class IntegralGenerator(object):
                             if loop_interval[1] - loop_interval[0] > 1:
                                 loop_block += [L.ForRange(A_arg_index, loop_interval[0], loop_interval[1], loop_code)]
                             else:
-                                # TODO: Remove scope by explicitly replacing Symbol A_arg_index with Literal loop_interval[0] in all subexpression
+                                # TODO: Remove scope by explicitly replacing Symbol A_arg_index
+                                #       with Literal loop_interval[0] in all subexpression
                                 loop_block += [L.Scope([
                                     L.VariableDecl("int", A_arg_index, loop_interval[0]),
                                     loop_code]
@@ -1077,15 +1067,19 @@ class IntegralGenerator(object):
                 # Define the P index variables before the loop code
                 loop_code = [L.VariableDecl("int", P_arg_index, 0) for P_arg_index in P_arg_indices] + loop_code
                 # Add a comment and scope to keep index variables enclosed
-                parts += [L.Scope(loop_code)]
+                code_looped += [L.Scope(loop_code)]
 
-        if self._unroll_tables:
-            parts = self.generate_tensor_value_initialization(A_values)
-        else:
-            # If we have assignment loops, zero all entries of A first
-            parts = [L.MemZero(A, A_size)] + parts
+        # Generate unrolled code zeroing whole tensor
+        code_unroll = self.generate_tensor_value_initialization(A_values)
 
-        return parts
+        # Add comments
+        code_unroll = L.commented_code_list(code_unroll, "UFLACS block mode: preintegrated unroll")
+        code_looped = L.commented_code_list(code_looped, "UFLACS block mode: preintegrated looped")
+
+        # NB: Unrolled code zeros whole tensor; must be first
+        code = code_unroll + code_looped
+
+        return code
 
     def generate_tensor_value_initialization(self, A_values):
         parts = []
@@ -1094,8 +1088,13 @@ class IntegralGenerator(object):
         A = self.backend.symbols.element_tensor()
         A_size = len(A_values)
 
-        init_mode = self.ir["params"]["tensor_init_mode"]
         z = L.LiteralFloat(0.0)
+
+        if all(A[j] in [0.0, z] for j in range(A_size)):
+            # We are just zeroing the tensor
+            init_mode = "upfront"
+        else:
+            init_mode = self.ir["params"]["tensor_init_mode"]
 
         k = L.Symbol("k")  # Index for zeroing arrays
 

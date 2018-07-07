@@ -168,9 +168,30 @@ def create_coordinate_finite_element(L, ir):
     return generate_return_new(L, classname, factory=True)
 
 
+def coordinate_finite_element_declaration(L, ir):
+    classname = ir["create_coordinate_finite_element"]
+    code = "ufc_finite_element* create_{name}();\n".format(name=classname)
+    return code
+
+
 def create_coordinate_dofmap(L, ir):
     classname = ir["create_coordinate_dofmap"]
     return generate_return_new(L, classname, factory=True)
+
+
+def coordinate_dofmap_declaration(L, ir):
+    classname = ir["create_coordinate_dofmap"]
+    code = "ufc_dofmap* create_{name}();\n".format(name=classname)
+    return code
+
+
+def evaluate_reference_basis_declaration(L, ir):
+    scalar_coordinate_element_classname = ir["scalar_coordinate_finite_element_classname"]
+    code = """
+int evaluate_reference_basis_{}(double* restrict reference_values,
+    int num_points, const double* restrict X);
+""".format(scalar_coordinate_element_classname)
+    return code
 
 
 def compute_physical_coordinates(L, ir):
@@ -585,6 +606,15 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
     return code
 
 
+def evaluate_reference_basis_derivatives_declaration(L, ir):
+    scalar_coordinate_element_classname = ir["scalar_coordinate_finite_element_classname"]
+    code = """
+int evaluate_reference_basis_derivatives_{}(double* restrict reference_values,
+    int order, int num_points, const double* restrict X);
+""".format(scalar_coordinate_element_classname)
+    return code
+
+
 def compute_jacobians(L, ir):
     num_dofs = ir["num_scalar_coordinate_element_dofs"]
     scalar_coordinate_element_classname = ir["scalar_coordinate_finite_element_classname"]
@@ -836,11 +866,14 @@ def ufc_coordinate_mapping_generator(ir, parameters):
 
     # Functions
     d["create_coordinate_finite_element"] = create_coordinate_finite_element(L, ir)
+    d["coordinate_finite_element_declaration"] = coordinate_finite_element_declaration(L, ir)
     d["create_coordinate_dofmap"] = create_coordinate_dofmap(L, ir)
+    d["coordinate_dofmap_declaration"] = coordinate_dofmap_declaration(L, ir)
 
     statements = compute_physical_coordinates(L, ir)
     assert isinstance(statements, list)
     d["compute_physical_coordinates"] = L.StatementList(statements)
+    d["evaluate_reference_basis_declaration"] = evaluate_reference_basis_declaration(L, ir)
 
     statements = compute_reference_coordinates(L, ir)
     assert isinstance(statements, list)
@@ -849,6 +882,7 @@ def ufc_coordinate_mapping_generator(ir, parameters):
     statements = compute_reference_geometry(L, ir)
     assert isinstance(statements, list)
     d["compute_reference_geometry"] = L.StatementList(statements)
+    d["evaluate_reference_basis_derivatives_declaration"] = evaluate_reference_basis_derivatives_declaration(L, ir)
 
     statements = compute_jacobians(L, ir)
     assert isinstance(statements, list)

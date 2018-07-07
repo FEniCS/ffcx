@@ -16,7 +16,7 @@ from ffc import FFCError
 from ffc.backends.ufc.evalderivs import (_generate_combinations,
                                          generate_evaluate_reference_basis_derivatives)
 from ffc.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
-from ffc.backends.ufc.evaluatedof import generate_map_dofs
+from ffc.backends.ufc.evaluatedof import generate_transform_values
 from ffc.backends.ufc.utils import (generate_error, generate_return_int_switch,
                                     generate_return_new_switch)
 from ufl import product
@@ -115,14 +115,22 @@ def num_sub_elements(L, num_sub_elements):
     return L.Return(num_sub_elements)
 
 
+def sub_element_declaration(L, ir):
+    classnames = set(ir["create_sub_element"])
+    code = ""
+    for name in classnames:
+        code += "ufc_finite_element* create_{name}();\n".format(name=name)
+    return code
+
+
 def create_sub_element(L, ir):
     classnames = ir["create_sub_element"]
     return generate_return_new_switch(L, "i", classnames, factory=True)
 
 
-def map_dofs(L, ir, parameters):
-    """Generate code for map_dofs()"""
-    return generate_map_dofs(L, ir["evaluate_dof"])
+def transform_values(L, ir, parameters):
+    """Generate code for transform_values()"""
+    return generate_transform_values(L, ir["evaluate_dof"])
 
 
 def tabulate_reference_dof_coordinates(L, ir, parameters):
@@ -134,7 +142,7 @@ def tabulate_reference_dof_coordinates(L, ir, parameters):
     # Raise error if tabulate_reference_dof_coordinates is ill-defined
     if not ir:
         msg = "tabulate_reference_dof_coordinates is not defined for this element"
-        return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
+        return [generate_error(L, msg, parameters["convert_exceptions_to_warnings"])]
 
     # Extract coordinates and cell dimension
     tdim = ir["tdim"]
@@ -443,15 +451,16 @@ def generator(ir, parameters):
     assert isinstance(statements, list)
     d["transform_reference_basis_derivatives"] = L.StatementList(statements)
 
-    statements = map_dofs(L, ir, parameters)
+    statements = transform_values(L, ir, parameters)
     assert isinstance(statements, list)
-    d["map_dofs"] = L.StatementList(statements)
+    d["transform_values"] = L.StatementList(statements)
 
     statements = tabulate_reference_dof_coordinates(L, ir, parameters)
     assert isinstance(statements, list)
     d["tabulate_reference_dof_coordinates"] = L.StatementList(statements)
 
     statements = create_sub_element(L, ir)
+    d["sub_element_declaration"] = sub_element_declaration(L, ir)
     d["create_sub_element"] = statements
 
     # Check that no keys are redundant or have been missed
