@@ -943,7 +943,6 @@ class IntegralGenerator(object):
                   for blockdata in contributions if blockdata.block_mode == "preintegrated"]
 
         # Get symbol, dimensions, and loop index symbols for A
-        A = self.backend.symbols.element_tensor()
         A_shape = self.ir["tensor_shape"]
         A_size = product(A_shape)
         A_strides = shape_to_strides(A_shape)
@@ -953,6 +952,7 @@ class IntegralGenerator(object):
         # List of statements when not unrolling
         code_looped = []
 
+        # Generate unrolled code and collect data about non-unrolled code
         for block_id, (blockmap, blockdata) in enumerate(blocks):
             # Accumulate A[blockmap[...]] += f*PI[...]
 
@@ -972,9 +972,6 @@ class IntegralGenerator(object):
             # Indices used to index A
             A_index_symbols = tuple(self.backend.symbols.argument_loop_index(i)
                                     for i in range(block_rank))
-            # Indices used to index PI
-            P_index_symbols = tuple(self.backend.symbols.argument_loop_index(i)
-                                    for i in range(block_rank, 2 * block_rank))
 
             # Define indices into preintegrated block
             P_entity_indices = self.get_entities(blockdata)
@@ -1010,64 +1007,23 @@ class IntegralGenerator(object):
 
                     A_values[A_ii] += A_rhs
             else:
-                # Don't unroll, generate assignment loops
-                # TODO: Allow mixed unrolled/non unrolled assignments?
+                # Collect data for looped (non unrolled) blocks
 
                 # Make sure that we can use PI as static array
                 assert not blockdata.inline
 
-                # Accumulate index expression 'A_idx' used as 'A[A_idx]' in the loop, e.g. A_idx = i*3 + j
-                A_idx = sum(A_strides[i] * index_symbol for i, index_symbol in enumerate(A_index_symbols))
-
                 # Get the index tuple used to index the pre-integrated table
-                P_arg_indices = P_index_symbols
+                P_arg_indices = A_index_symbols
                 # Transpose the PI indices, if block is transposed
                 if blockdata.transposed:
                     P_arg_indices = tuple(reversed(P_arg_indices))
 
-                # Initialize the central assignment statement
+                # Define expression for block value
                 P_ii = P_entity_indices + P_arg_indices
-                A_rhs = f * PI[P_ii]
-                loop_code = L.AssignAdd(A[A_idx], A_rhs)
+                B = f * PI[P_ii]
 
-                # Construct nested loops, starting with inner-most dimension
-                for sub_blockmap, A_arg_index, P_arg_index in zip(reversed(blockmap), reversed(A_index_symbols),
-                                                                  reversed(P_index_symbols)):
-                    # Append increment of PI index to inner code
-                    loop_code = [loop_code, L.PreIncrement(P_arg_index)]
-
-                    # Check whether the current bock map is a contiguous range
-                    if (sub_blockmap[-1] - sub_blockmap[0] + 1) == len(sub_blockmap):
-                        # We have contiguous indices in the blockmap, a single loop is enough
-                        loop_code = [L.ForRange(A_arg_index, sub_blockmap[0], sub_blockmap[-1] + 1, loop_code)]
-                    else:
-                        # Split blockmap into contiguous sub-ranges -> multiple loops
-
-                        loop_block = []
-                        # The groupby statement yields these contiguous sub-ranges
-                        for k, group in itertools.groupby(enumerate(sub_blockmap), key=lambda x: x[0] - x[1]):
-                            contiguous_range = list(group)
-                            loop_interval = contiguous_range[0][1], contiguous_range[-1][1] + 1
-
-                            # Check whether we really need a loop
-                            if loop_interval[1] - loop_interval[0] > 1:
-                                loop_block += [L.ForRange(A_arg_index, loop_interval[0], loop_interval[1], loop_code)]
-                            else:
-                                # TODO: Remove scope by explicitly replacing Symbol A_arg_index
-                                #       with Literal loop_interval[0] in all subexpression
-                                loop_block += [L.Scope([
-                                    L.VariableDecl("int", A_arg_index, loop_interval[0]),
-                                    loop_code]
-                                )]
-                        loop_code = loop_block
-
-                    # Reset the currently inner-most PI table index
-                    loop_code += [L.Assign(P_arg_index, 0)]
-
-                # Define the P index variables before the loop code
-                loop_code = [L.VariableDecl("int", P_arg_index, 0) for P_arg_index in P_arg_indices] + loop_code
-                # Add a comment and scope to keep index variables enclosed
-                code_looped += [L.Scope(loop_code)]
+                # Add A[blockmap] += B[...] to finalization
+                self.finalization_blocks[blockmap].append(B)
 
         # Generate unrolled code zeroing whole tensor
         code_unroll = self.generate_tensor_value_initialization(A_values)
