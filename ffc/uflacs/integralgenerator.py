@@ -1025,7 +1025,6 @@ class IntegralGenerator(object):
                 # Add A[blockmap] += B[...] to finalization
                 self.finalization_blocks[blockmap].append(B)
 
-
         # Generate unrolled code zeroing whole tensor
         code_unroll = self.generate_tensor_value_initialization(A_values)
 
