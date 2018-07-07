@@ -949,8 +949,6 @@ class IntegralGenerator(object):
 
         # List for unrolled assignments
         A_values = [0.0] * A_size
-        # List of statements when not unrolling
-        code_looped = []
 
         # Generate unrolled code and collect data about non-unrolled code
         for block_id, (blockmap, blockdata) in enumerate(blocks):
@@ -1027,15 +1025,9 @@ class IntegralGenerator(object):
 
         # Generate unrolled code zeroing whole tensor
         code_unroll = self.generate_tensor_value_initialization(A_values)
-
-        # Add comments
         code_unroll = L.commented_code_list(code_unroll, "UFLACS block mode: preintegrated unroll")
-        code_looped = L.commented_code_list(code_looped, "UFLACS block mode: preintegrated looped")
 
-        # NB: Unrolled code zeros whole tensor; must be first
-        code = code_unroll + code_looped
-
-        return code
+        return code_unroll
 
     def generate_tensor_value_initialization(self, A_values):
         parts = []
@@ -1131,11 +1123,6 @@ class IntegralGenerator(object):
         # Get symbol, dimensions, and loop index symbols for A
         A_shape = self.ir["tensor_shape"]
         A_rank = len(A_shape)
-
-        # TODO: there's something like shape2strides(A_shape) somewhere
-        A_strides = [1] * A_rank
-        for i in reversed(range(0, A_rank - 1)):
-            A_strides[i] = A_strides[i + 1] * A_shape[i + 1]
 
         Asym = self.backend.symbols.element_tensor()
         A = L.FlattenedArray(Asym, dims=A_shape)
