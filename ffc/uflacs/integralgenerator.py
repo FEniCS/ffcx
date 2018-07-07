@@ -973,11 +973,6 @@ class IntegralGenerator(object):
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
             # A_rhs = f * PI where PI = sum_q weight * u * v
             PI = L.Symbol(blockdata.name)
-            block_rank = len(blockmap)
-
-            # Indices used to index A
-            A_index_symbols = tuple(self.backend.symbols.argument_loop_index(i)
-                                    for i in range(block_rank))
 
             # Define indices into preintegrated block
             P_entity_indices = self.get_entities(blockdata)
