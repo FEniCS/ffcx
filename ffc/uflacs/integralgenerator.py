@@ -591,9 +591,13 @@ class IntegralGenerator(object):
 
         blocks = [(blockmap, blockdata)
                   for blockmap, contributions in sorted(block_contributions.items())
-                  for blockdata in contributions if blockdata.block_mode != "preintegrated"]
+                  for blockdata in contributions]
 
         for blockmap, blockdata in blocks:
+            # Skip unrolled preintegration blocks
+            if blockdata.block_mode == "preintegrated" and blockdata.unroll:
+                continue
+
             # Get symbol for already defined block B if it exists
             common_block_data = get_common_block_data(blockdata)
             B = self.shared_blocks.get(common_block_data)
@@ -793,7 +797,7 @@ class IntegralGenerator(object):
                 # Plan for vectorization of coefficient evaluation over iq:
                 # 1) Define w0_c1 etc as arrays e.g. "double w0_c1[nq] = {};" outside quadloop
                 # 2) Access as w0_c1[iq] of course
-                # 3) Splitquadrature loops, coefficients before fw computation
+                # 3) Split quadrature loops, coefficients before fw computation
                 # 4) Possibly swap loops over iq and ic:
                 #    for(ic) for(iq) w0_c1[iq] = w[0][ic] * FE[iq][ic];
 
@@ -904,6 +908,10 @@ class IntegralGenerator(object):
                 # Preintegrated should never get into quadloops
                 assert num_points is None
 
+                # Inlining is only possible with unrolled blocks, which should not be passed to this function
+                assert not blockdata.unroll
+                assert not blockdata.inline
+
                 # Define B = B_rhs = f * PI where PI = sum_q weight * u * v
                 PI = L.Symbol(blockdata.name)[P_ii]
                 B_rhs = L.float_product([f, PI])
@@ -950,7 +958,7 @@ class IntegralGenerator(object):
         # List for unrolled assignments
         A_values = [0.0] * A_size
 
-        # Generate unrolled code and collect data about non-unrolled code
+        # Generate code for unrolled blocks, non-unrolled blocks are treated together with premultiplied blocks
         for block_id, (blockmap, blockdata) in enumerate(blocks):
             # Accumulate A[blockmap[...]] += f*PI[...]
 
@@ -1004,24 +1012,6 @@ class IntegralGenerator(object):
                         A_rhs = f * PI[P_ii]
 
                     A_values[A_ii] += A_rhs
-            else:
-                # Collect data for looped (non unrolled) blocks
-
-                # Make sure that we can use PI as static array
-                assert not blockdata.inline
-
-                # Get the index tuple used to index the pre-integrated table
-                P_arg_indices = A_index_symbols
-                # Transpose the PI indices, if block is transposed
-                if blockdata.transposed:
-                    P_arg_indices = tuple(reversed(P_arg_indices))
-
-                # Define expression for block value
-                P_ii = P_entity_indices + P_arg_indices
-                B = f * PI[P_ii]
-
-                # Add A[blockmap] += B[...] to finalization
-                self.finalization_blocks[blockmap].append(B)
 
         # Generate unrolled code zeroing whole tensor
         code_unroll = self.generate_tensor_value_initialization(A_values)
