@@ -1099,7 +1099,7 @@ class IntegralGenerator(object):
         for i, fi in enumerate(V_targets):
             parts.append(L.Assign(values[i], self.get_var(None, V[fi])))
 
-        return parts
+        return L.commented_code_list(parts, "Expression copyout")
 
     def generate_tensor_copyout_statements(self):
         L = self.backend.language
@@ -1159,7 +1159,7 @@ class IntegralGenerator(object):
         # Place static dofmap tables first
         parts = dofmap_parts + parts
 
-        return parts
+        return L.commented_code_list(parts, "Tensor copyout")
 
     def generate_copyout_statements(self):
         """Generate statements copying results to output array."""
