@@ -991,8 +991,7 @@ class IntegralGenerator(object):
 
             # Generate unrolled assignments for the current block
             for ii in itertools.product(*blockrange):
-                A_ii = sum(A_strides[i] * blockmap[i][ii[i]]
-                           for i in range(len(ii)))
+                A_ii = sum(A_strides[i] * blockmap[i][ii[i]] for i in range(len(ii)))
                 if blockdata.transposed:
                     P_arg_indices = (ii[1], ii[0])
                 else:
