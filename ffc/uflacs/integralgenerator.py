@@ -958,9 +958,13 @@ class IntegralGenerator(object):
         # List for unrolled assignments
         A_values = [0.0] * A_size
 
-        # Generate code for unrolled blocks, non-unrolled blocks are treated together with premultiplied blocks
-        for block_id, (blockmap, blockdata) in enumerate(blocks):
-            # Accumulate A[blockmap[...]] += f*PI[...]
+        # Generate block-wise assignments
+        for blockmap, blockdata in blocks:
+            # Non-unrolled blocks are handled by generate_dofblock_partition (similar to premultiplied blocks)
+            if not blockdata.unroll:
+                continue
+
+            # Accumulate A[blockmap[...]] += f*PI[...] for unrolled blocks
 
             # Get table for inlining
             tables = self.ir["unique_tables"]
@@ -985,28 +989,27 @@ class IntegralGenerator(object):
             blockshape = [len(DM) for DM in blockmap]
             blockrange = [range(d) for d in blockshape]
 
-            if blockdata.unroll:
-                # Generate unrolled assignments for the current block
-                for ii in itertools.product(*blockrange):
-                    A_ii = sum(A_strides[i] * blockmap[i][ii[i]]
-                               for i in range(len(ii)))
-                    if blockdata.transposed:
-                        P_arg_indices = (ii[1], ii[0])
-                    else:
-                        P_arg_indices = ii
+            # Generate unrolled assignments for the current block
+            for ii in itertools.product(*blockrange):
+                A_ii = sum(A_strides[i] * blockmap[i][ii[i]]
+                           for i in range(len(ii)))
+                if blockdata.transposed:
+                    P_arg_indices = (ii[1], ii[0])
+                else:
+                    P_arg_indices = ii
 
-                    if blockdata.inline:
-                        # Extract float value of PI[P_ii]
-                        Pval = table[0]  # always entity 0
-                        for i in P_arg_indices:
-                            Pval = Pval[i]
-                        A_rhs = Pval * f
-                    else:
-                        # Index the static preintegrated table:
-                        P_ii = P_entity_indices + P_arg_indices
-                        A_rhs = f * PI[P_ii]
+                if blockdata.inline:
+                    # Extract float value of PI[P_ii]
+                    Pval = table[0]  # always entity 0
+                    for i in P_arg_indices:
+                        Pval = Pval[i]
+                    A_rhs = Pval * f
+                else:
+                    # Index the static preintegrated table:
+                    P_ii = P_entity_indices + P_arg_indices
+                    A_rhs = f * PI[P_ii]
 
-                    A_values[A_ii] += A_rhs
+                A_values[A_ii] += A_rhs
 
         # Generate unrolled code zeroing whole tensor
         code_unroll = self.generate_tensor_value_initialization(A_values)
