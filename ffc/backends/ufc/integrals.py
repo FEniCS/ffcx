@@ -46,6 +46,7 @@ def ufc_integral_generator(ir, parameters):
         type=integral_type,
         factory_name=factory_name,
         enabled_coefficients=code["enabled_coefficients"],
+        cross_element_width=code["cross_element_width"],
         tabulate_tensor=tabulate_tensor_fn)
 
     return declaration, implementation

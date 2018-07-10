@@ -356,71 +356,81 @@ def _autoselect_quadrature_rule(integral_metadata, integral, form_data):
     return qr
 
 
-def _determine_representation(integral_metadatas, ida, form_data, form_r_family, parameters):
-    """Determine one unique representation considering all integrals together."""
+def _extract_common_metadata(integral_metadatas, ida, form_data, form_r_family, parameters):
+    """Determine unique metadata parameters considering all integrals together."""
 
     # Extract unique representation among these single-domain
     # integrals (Generating code with different representations within
     # a single tabulate_tensor is considered not worth the effort)
-    representations = set(
-        md["representation"] for md in integral_metadatas if md["representation"] != "auto")
-    optimize_values = set(md["optimize"] for md in integral_metadatas)
-    precision_values = set(md["precision"] for md in integral_metadatas)
 
-    if len(representations) > 1:
-        raise FFCError(
-            "Integral representation must be equal within each sub domain or 'auto', got %s." %
-            (str(sorted(str(v) for v in representations)), ))
-    if len(optimize_values) > 1:
-        raise FFCError(
-            "Integral 'optimize' metadata must be equal within each sub domain or not set, got %s."
-            % (str(sorted(str(v) for v in optimize_values)), ))
-    if len(precision_values) > 1:
-        raise FFCError(
-            "Integral 'precision' metadata must be equal within each sub domain or not set, got %s."
-            % (str(sorted(str(v) for v in precision_values)), ))
+    common_metadata = {}
 
-    # The one and only non-auto representation found, or get from parameters
-    r, = representations or (parameters["representation"], )
-    o, = optimize_values or (parameters["optimize"], )
-    # FIXME: Default param value is zero which is not interpreted well by tsfc!
-    p, = precision_values or (parameters["precision"], )
+    # Metadata parameters that have to be unique on a subdomain
+    equal_metadata = ["optimize", "precision"]
+    # Metadata parameters that have to be unique or auto on a subdomain
+    equal_or_auto_metadata = ["representation", "cross_element_width"]
+
+    # Error messages if parameters are not unique
+    equal_error_msg = "Integral '{}' metadata must be equal within each subdomain or not set, got {}."
+    equal_or_auto_error_msg = "Integral '{}' metadata must be equal within each subdomain or 'auto', got {}."
+
+    # Lambdas that generate sets of metadata parameter values
+    equal_set_gen = lambda em: {md[em] for md in integral_metadatas}
+    equal_or_auto_set_gen = lambda em: {md[em] for md in integral_metadatas if md[em] != "auto"}
+
+    # Function that extracts a unique parameter value or raises an error
+    def extract_metadata(metadatas, error_msg, set_gen):
+        for md in metadatas:
+            non_unique_values = set_gen(md)
+            if len(non_unique_values) > 1:
+                raise FFCError(error_msg.format(md, sorted(str(v) for v in non_unique_values)))
+            else:
+                common_metadata[md], = non_unique_values or (parameters[md],)
+
+    # Run extraction for all metadata parameters
+    extract_metadata(equal_metadata, equal_error_msg, equal_set_gen)
+    extract_metadata(equal_or_auto_metadata, equal_or_auto_error_msg, equal_or_auto_set_gen)
+
+    # Apply default or auto values
 
     # If it's still auto, try to determine which representation is
     # best for these integrals
-    if r == "auto":
+    if common_metadata["representation"] == "auto":
         # Find representations compatible with these integrals
         compatible = _find_compatible_representations(ida.integrals, parameters)
         # Pick the one compatible or default to uflacs
         if len(compatible) == 0:
             raise FFCError("Found no representation capable of compiling this form.")
         elif len(compatible) == 1:
-            r, = compatible
+            common_metadata["representation"], = compatible
         else:
             # NOTE: Need to pick the same default as in
             # _extract_representation_family
             if form_r_family == "uflacs":
-                r = "uflacs"
+                common_metadata["representation"] = "uflacs"
             elif form_r_family == "tsfc":
-                r = "tsfc"
+                common_metadata["representation"] = "tsfc"
             else:
                 raise FFCError("Invalid form representation family {}.".format(form_r_family))
 
-        logger.info("representation:    auto --> %s" % r)
+        logger.info("representation:    auto --> {}".format(common_metadata["representation"]))
     else:
-        logger.info("representation:    %s" % r)
+        logger.info("representation:    {}".format(common_metadata["representation"]))
 
-    if p is None:
-        p = default_precision
+    if common_metadata["cross_element_width"] == "auto":
+        raise FFCError("'auto' behavior for 'cross_element_width' not implemented")
+
+    if common_metadata["precision"] is None:
+        common_metadata["precision"] = default_precision
 
     # Hack to override representation with environment variable
     forced_r = os.environ.get("FFC_FORCE_REPRESENTATION")
     if forced_r:
-        r = forced_r
-        warnings.warn("representation: forced by $FFC_FORCE_REPRESENTATION to '{}'".format(r))
-        return r, o, p
+        common_metadata["representation"] = forced_r
+        warnings.warn("representation: forced by "
+                      "$FFC_FORCE_REPRESENTATION to '{}'".format(common_metadata["representation"]))
 
-    return r, o, p
+    return common_metadata
 
 
 def _attach_integral_metadata(form_data, form_r_family, parameters):
@@ -435,6 +445,7 @@ def _attach_integral_metadata(form_data, form_r_family, parameters):
         "precision",
         "quadrature_degree",
         "quadrature_rule",
+        "cross_element_width"
     )
 
     # Get defaults from parameters
@@ -454,17 +465,11 @@ def _attach_integral_metadata(form_data, form_r_family, parameters):
         for i, integral in enumerate(ida.integrals):
             integral_metadatas[i].update(integral.metadata() or {})
 
-        # Determine representation, must be equal for all integrals on
-        # same subdomain
-        r, o, p = _determine_representation(integral_metadatas, ida, form_data, form_r_family,
-                                            parameters)
+        # Determine and apply metadata that must be equal for all integrals on same subdomain
+        common_metadata = _extract_common_metadata(integral_metadatas, ida, form_data, form_r_family, parameters)
+        ida.metadata.update(common_metadata)
         for i, integral in enumerate(ida.integrals):
-            integral_metadatas[i]["representation"] = r
-            integral_metadatas[i]["optimize"] = o
-            integral_metadatas[i]["precision"] = p
-        ida.metadata["representation"] = r
-        ida.metadata["optimize"] = o
-        ida.metadata["precision"] = p
+            integral_metadatas[i].update(common_metadata)
 
         # Determine automated updates to metadata values
         for i, integral in enumerate(ida.integrals):

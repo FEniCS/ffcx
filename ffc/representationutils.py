@@ -150,6 +150,7 @@ def initialize_integral_code(ir, prefix, parameters):
     code["initializer_list"] = ""
     code["destructor"] = ""
     code["enabled_coefficients"] = generate_enabled_coefficients(ir["enabled_coefficients"])
+    code["cross_element_width"] = ir["integrals_metadata"]["cross_element_width"]
     code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
 
     return code
