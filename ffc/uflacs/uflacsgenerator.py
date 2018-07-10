@@ -43,9 +43,4 @@ def generate_integral_code(ir, prefix, parameters):
     code["additional_includes_set"] = set(ig.get_includes())
     code["additional_includes_set"].update(ir.get("additional_includes_set", ()))
 
-    # TODO: Move to initialize_integral_code, this is not representation specific
-    if ir.get("num_cells") is not None:
-        ret = backend.language.Return(ir["num_cells"])
-        code["num_cells"] = format_indented_lines(ret.cs_format(), 1)
-
     return code
