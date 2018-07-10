@@ -163,7 +163,7 @@ class IntegralGenerator(object):
         return L.Symbol(name)
 
     def get_temp_symbol(self, tempname, key):
-        key = (tempname,) + key
+        key = (tempname, ) + key
         s = self.shared_blocks.get(key)
         defined = s is not None
         if not defined:
@@ -252,8 +252,9 @@ class IntegralGenerator(object):
         return L.StatementList(parts)
 
     def vectorize_with_gcc_exts(self, statements, vec_length=4, alignment=32):
-        """
-        Converts a list of tabulate_tensor CNodes statements into a cross-element vectorized version using
+        """Cross-element vectorization of `tabulate_tensor` statement list with GCC extensions.
+
+        Converts a list of `tabulate_tensor` CNodes statements into a cross-element vectorized version using
         GCC's vector extensions.
 
         :param statements: The list of statements that should be transformed
@@ -338,10 +339,8 @@ class IntegralGenerator(object):
         def is_vector_expression(expr: L.CExpr) -> bool:
             """Returns whether a CNodes expression is of vector type."""
 
-            return (
-                    (not any(is_function_call_with_vec_args(sub_expr) for sub_expr in dfs(expr)))
-                    and any(is_vectorized_variable(sub_expr) for sub_expr in dfs(expr))
-            )
+            return ((not any(is_function_call_with_vec_args(sub_expr) for sub_expr in dfs(expr)))
+                    and any(is_vectorized_variable(sub_expr) for sub_expr in dfs(expr)))
 
         @functools.singledispatch
         def vectorize(stmnt):
@@ -492,8 +491,10 @@ class IntegralGenerator(object):
         return vectorized
 
     def vectorize_with_loops(self, statements, vec_length=4, alignment=32):
-        """
-        Converts a list of tabulate_tensor CNodes statements into a cross-element vectorized version.
+        """Cross-element vectorization of `tabulate_tensor` statement list.
+
+        Converts a list of `tabulate_tensor` CNodes statements into a cross-element vectorized version.
+
         :param statements: The list of statements that should be transformed
         :param vec_length: The number of elements to perform cross element vectorization over
         :param alignment: Alignment in bytes used for arrays whose rank is increased for vectorization
@@ -714,7 +715,7 @@ class IntegralGenerator(object):
             return L.StatementList([vectorize(stmnt) for stmnt in stmnts.statements])
 
         def optimize(stmnts):
-            """Optimizes a list of CNode statements by joining consecutive cross element expanded array assignment loops"""
+            """Joins consecutive cross-element expanded assignment loops to a single loop."""
 
             if len(stmnts) < 2:
                 return stmnts
@@ -746,12 +747,21 @@ class IntegralGenerator(object):
                 return range3
 
             def is_expanded_assignment(stmnt):
-                """Return whether the specified statement is a cross element expanded assignment loop."""
-                return isinstance(stmnt,
-                                  L.ForRange) and stmnt.index == i_simd and stmnt.begin.value == 0 and stmnt.end.value == vec_length
+                """Checks if statement is a cross-element version of an AssignOp.
+
+                Returns whether the specified statement is a cross-element expanded assignment loop.
+                """
+                return (isinstance(stmnt, L.ForRange)
+                        and (stmnt.index == i_simd)
+                        and (stmnt.begin.value == 0)
+                        and (stmnt.end.value == vec_length))
 
             def is_expanded_var_decl(stmnt):
-                """Returns whether the specified statement is a StatementList that declares and assigns a cross element expanded scalar."""
+                """Checks if statement is a cross-element version of a VarDecl.
+
+                Returns whether the specified statement is a StatementList,
+                that declares and assigns a cross-element expanded scalar.
+                """
                 if isinstance(stmnt, L.StatementList) and len(stmnt.statements) == 2:
                     decl = stmnt.statements[0]
                     assign = stmnt.statements[1]
@@ -1072,7 +1082,7 @@ class IntegralGenerator(object):
         parts = self.generate_partition(arraysymbol, expr_ir["V"], expr_ir["V_varying"],
                                         expr_ir["V_mts"], expr_ir["mt_tabledata"], num_points)
         parts = L.commented_code_list(parts, "Unstructured varying computations for num_points=%d" %
-                                      (num_points,))
+                                      (num_points, ))
         return parts
 
     def generate_partition(self, symbol, V, V_active, V_mts, mt_tabledata, num_points):
@@ -1219,7 +1229,7 @@ class IntegralGenerator(object):
                 entity = L.LiteralInt(0)
             else:
                 entity = self.backend.symbols.entity(self.ir["entitytype"], None)
-            return (entity,)
+            return (entity, )
 
     def get_arg_factors(self, blockdata, block_rank, num_points, iq, indices):
         L = self.backend.language
@@ -1557,7 +1567,7 @@ class IntegralGenerator(object):
             # Define indices into preintegrated block
             P_entity_indices = self.get_entities(blockdata)
             if inline_table:
-                assert P_entity_indices == (L.LiteralInt(0),)
+                assert P_entity_indices == (L.LiteralInt(0), )
                 assert table.shape[0] == 1
 
             # Unroll loop
@@ -1641,7 +1651,7 @@ class IntegralGenerator(object):
                     L.ForRange(k, zero_begin, zero_end, index_type="int", body=L.Assign(A[k], 0.0))
                 ]
         else:
-            raise FFCError("Invalid init_mode parameter %s" % (init_mode,))
+            raise FFCError("Invalid init_mode parameter %s" % (init_mode, ))
 
         return parts
 
@@ -1650,7 +1660,7 @@ class IntegralGenerator(object):
         parts = []
 
         # Not expecting any quadrature loop scopes here
-        assert tuple(self.scopes.keys()) == (None,)
+        assert tuple(self.scopes.keys()) == (None, )
 
         # TODO: Get symbol from backend
         values = L.Symbol("values")
