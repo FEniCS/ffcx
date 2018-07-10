@@ -180,6 +180,11 @@ class IntegralGenerator(object):
         """
         L = self.backend.language
 
+        cross_element_width = self.ir["params"]["cross_element_width"]
+        if cross_element_width and self.ir["integral_type"] != "cell":
+            raise FFCError("Cross-element vectorization is currently not implemented for integral types "
+                           "other than 'cell' (this is type '{}')".format(self.ir["integral_type"]))
+
         # Assert that scopes are empty: expecting this to be called only once
         assert not any(d for d in self.scopes.values())
 
@@ -240,7 +245,6 @@ class IntegralGenerator(object):
         parts += all_finalizeparts
 
         # Optionally perform cross-element vectorization of the generated code
-        cross_element_width = self.ir["params"]["cross_element_width"]
         if cross_element_width > 0:
             # Optionally use gcc vector extensions
             if self.ir["params"]["enable_cross_element_gcc_ext"]:
