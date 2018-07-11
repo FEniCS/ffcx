@@ -16,32 +16,17 @@ int original_coefficient_position_{factory_name}(int i)
 {original_coefficient_position}
 }}
 
-<<<<<<< HEAD
 ufc_finite_element* create_coordinate_finite_element_{factory_name}(void)
-=======
-{coordinate_finite_element_declaration}
-ufc_finite_element* create_coordinate_finite_element_{factory_name}()
->>>>>>> master
 {{
 {create_coordinate_finite_element}
 }}
 
-<<<<<<< HEAD
 ufc_dofmap* create_coordinate_dofmap_{factory_name}(void)
-=======
-{coordinate_dofmap_declaration}
-ufc_dofmap* create_coordinate_dofmap_{factory_name}()
->>>>>>> master
 {{
 {create_coordinate_dofmap}
 }}
 
-<<<<<<< HEAD
 ufc_coordinate_mapping* create_coordinate_mapping_{factory_name}(void)
-=======
-{coordinate_mapping_declaration}
-ufc_coordinate_mapping* create_coordinate_mapping_{factory_name}()
->>>>>>> master
 {{
 {create_coordinate_mapping}
 }}

@@ -13,6 +13,8 @@ import cffi
 import ffc
 
 UFC_HEADER_DECL = """
+typedef double ufc_scalar_t;  /* Hack to deal with scalar type */
+
 typedef struct ufc_coordinate_mapping ufc_coordinate_mapping;
 typedef struct ufc_finite_element ufc_finite_element;
 typedef struct ufc_dofmap ufc_dofmap;
