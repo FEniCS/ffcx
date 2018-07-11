@@ -29,7 +29,7 @@ from ffc.parameters import default_parameters
 logger = logging.getLogger(__name__)
 
 parser = argparse.ArgumentParser(
-    description="FEniCS Form Compiler (FFC), https://fenicsproject.org")
+    description="FEniCS Form Compiler (FFC, https://fenicsproject.org)")
 parser.add_argument(
     "-l",
     "--language",
@@ -42,7 +42,8 @@ parser.add_argument(
     "--version", action='version', version="%(prog)s " + ("(version {})".format(FFC_VERSION)))
 parser.add_argument("-d", "--debug", action='store_true', default=False, help="enable debug output")
 parser.add_argument("-v", "--verbose", action='store_true', default=False, help="verbose output")
-# parser.add_argument("-s", "--silent", help="run silently")
+parser.add_argument("-p", "--profile", action='store_true', default=False, help="enable profiling")
+parser.add_argument("-o", "--output-directory", type=str, help="output directory")
 parser.add_argument(
     "-r",
     "--representation",
@@ -52,7 +53,12 @@ parser.add_argument(
     default="uflacs",
     help="representation ")
 parser.add_argument("-q", "--quadrature-rule", default="auto", help="quadrature rule to apply")
-parser.add_argument("infile", type=str, help="UFL file to be read from")
+parser.add_argument("--quadrature-degree", default="auto", help="quadrature degree to apply")
+# parser.add_argument("-f", nargs=2, help="boo")
+#parser.add_argument("-O", "--optimize", action='store_true', default=False,
+#                    help="apply optimizations during code generation")
+
+parser.add_argument("ufl_file", nargs='+', help="UFL file(s) to be read from")
 
 
 def compile_ufl_data(ufd, prefix, parameters):
@@ -99,9 +105,6 @@ def main(args=None):
     # Get parameters
     parameters = default_parameters()
 
-    # Set default value (not part of in parameters[])
-    enable_profile = False
-
     ffc_logger = logging.getLogger("ffc")
 
     if xargs.debug:
@@ -111,6 +114,11 @@ def main(args=None):
     parameters["format"] = xargs.language
     parameters["representation"] = xargs.representation
     parameters["quadrature_rule"] = xargs.quadrature_rule
+    parameters["quadrature_degree"] = xargs.quadrature_degree
+    enable_profile = xargs.profile
+    if xargs.output_directory:
+        parameters["output_dir"] = xargs.output_directory
+    parameters["optimize"] = xargs.optimize
 
     # Parse command-line parameters
     for opt, arg in opts:
@@ -146,12 +154,6 @@ def main(args=None):
             # else:
             #     info_usage()
             #     return 1
-        elif opt in ("-O", "--optimize"):
-            parameters["optimize"] = bool(int(arg))
-        elif opt in ("-o", "--output-directory"):
-            parameters["output_dir"] = arg
-        elif opt in ("-p", "--profile"):
-            enable_profile = True
 
     # FIXME: This is terrible!
     # Set UFL precision
