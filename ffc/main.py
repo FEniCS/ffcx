@@ -6,7 +6,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Command-line interface to FFC.
 
-It parses command-line arguments and generates code from input UFL form files.
+Parse command-line arguments and generate code from input UFL form files.
 """
 
 import argparse
@@ -81,20 +81,7 @@ def main(args=None):
     """Commandline tool for FFC."""
 
     xargs = parser.parse_args(args)
-
-    # Check for --includes
-    # if ("-I", "") in opts or ("--includes", "") in opts:
-    #     print(ufc.get_include_path())
-    #     return 0
-
-    # Check for --signature
-    # if ("-S", "") in opts or ("--signature", "") in opts:
-    #     print(ufc.get_signature())
-    #     return 0
-
-    # Get parameters
     parameters = default_parameters()
-
     ffc_logger = logging.getLogger("ffc")
 
     if xargs.debug:
@@ -108,7 +95,6 @@ def main(args=None):
     if xargs.output_directory:
         parameters["output_dir"] = xargs.output_directory
     # parameters["optimize"] = xargs.optimize
-    # parameters["no-evaluate_basis_derivatives"] = True
     for p in xargs.f:
         assert len(p.split("=")) == 2
         key, value = p.split("=")
@@ -129,11 +115,9 @@ def _compile_files(args, parameters, enable_profile):
     for filename in args:
 
         file = pathlib.Path(filename)
-        # print("TTTT", file.suffix)
-        # print("TTTT (1)", file.stem)
 
         # Get filename and extention string
-        prefix, _ = os.path.splitext(os.path.basename(filename))
+        prefix = file.stem
 
         # Check file suffix
         if file.suffix != ".ufl":
