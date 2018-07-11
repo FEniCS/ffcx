@@ -294,19 +294,19 @@ class IntegralGenerator(object):
         }
 
         def get_vectorized_name(name: str) -> str:
-            if name in ctx["vectorized_intermediates"]:
-                return name
             if name in ctx["vectorized_parameters"]:
                 return name + "_x"
+            return name
 
         preamble = [L.VerbatimStatement("typedef double double4 __attribute__ ((vector_size (32)));")]
 
+        # Generate casts to vector type of all inputs
         for param_decl in vectorized_parameters:
             old_name = param_decl.symbol.name
             new_name = get_vectorized_name(old_name)
             new_typename = param_decl.typename.replace(base_type, vector_type)
 
-            cast = L.VerbatimStatement("{0} {1} = ({0}){2}".format(new_typename, new_name, old_name))
+            cast = L.VerbatimStatement("{0} {1} = ({0}){2};".format(new_typename, new_name, old_name))
             preamble.append(cast)
 
         # Symbol used as index in for-loops over the elements
@@ -502,6 +502,15 @@ class IntegralGenerator(object):
                 return expr
 
         vectorized = [vectorize(stmnt) for stmnt in statements]
+
+        # Fix variable names
+        for stmnt in vectorized:
+            for child in dfs(stmnt):
+                if isinstance(child, L.Symbol):
+                    child.name = get_vectorized_name(child.name)
+
+        # Join vectorized code with cast statements
+        vectorized = preamble + vectorized
         return vectorized
 
     def vectorize_with_loops(self, statements, vec_length=4, alignment=32):
