@@ -30,7 +30,6 @@ vertex = 60,
 } ufc_shape;
 """
 
-
 UFC_ELEMENT_DECL = """
 typedef struct ufc_finite_element
 {
