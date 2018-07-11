@@ -180,7 +180,7 @@ class IntegralGenerator(object):
         """
         L = self.backend.language
 
-        cross_element_width = self.ir["params"]["cross_element_width"]
+        cross_element_width = self.ir["integrals_metadata"]["cross_element_width"]
         if cross_element_width and self.ir["integral_type"] != "cell":
             raise FFCError("Cross-element vectorization is currently not implemented for integral types "
                            "other than 'cell' (this is type '{}')".format(self.ir["integral_type"]))
@@ -256,6 +256,19 @@ class IntegralGenerator(object):
 
         return L.StatementList(parts)
 
+    def get_cell_dependent_parameters(self):
+        L = self.backend.language
+
+        inputs = {
+            "cell": [
+                L.VariableDecl("double* restrict", "A"),
+                L.VariableDecl("const double* const*", "w"),
+                L.VariableDecl("const double* restrict", "coordinate_dofs"),
+            ]
+        }
+
+        return inputs[self.ir["integral_type"]]
+
     def vectorize_with_gcc_exts(self, statements, vec_length=4, alignment=32):
         """Cross-element vectorization of `tabulate_tensor` statement list with GCC extensions.
 
@@ -270,13 +283,31 @@ class IntegralGenerator(object):
 
         L = self.backend.language
 
+        base_type = "double"
+        vector_type = "double{}".format(str(vec_length))
+
+        vectorized_parameters = self.get_cell_dependent_parameters()
+
         ctx = {
-            "vectorized_inputs": ["A", "w", "coordinate_dofs"],
+            "vectorized_parameters": [param_decl.symbol.name for param_decl in vectorized_parameters],
             "vectorized_intermediates": [],
         }
 
-        base_type = "double"
-        vector_type = "double{}".format(str(vec_length))
+        def get_vectorized_name(name: str) -> str:
+            if name in ctx["vectorized_intermediates"]:
+                return name
+            if name in ctx["vectorized_parameters"]:
+                return name + "_x"
+
+        preamble = [L.VerbatimStatement("typedef double double4 __attribute__ ((vector_size (32)));")]
+
+        for param_decl in vectorized_parameters:
+            old_name = param_decl.symbol.name
+            new_name = get_vectorized_name(old_name)
+            new_typename = param_decl.typename.replace(base_type, vector_type)
+
+            cast = L.VerbatimStatement("{0} {1} = ({0}){2}".format(new_typename, new_name, old_name))
+            preamble.append(cast)
 
         # Symbol used as index in for-loops over the elements
         i_simd = L.Symbol("i_elem")
@@ -296,7 +327,7 @@ class IntegralGenerator(object):
                 raise RuntimeError("Unsupported expression")
 
             return any(
-                (symbol_name in arr) for arr in [ctx["vectorized_intermediates"], ctx["vectorized_inputs"]])
+                (symbol_name in arr) for arr in [ctx["vectorized_intermediates"], ctx["vectorized_parameters"]])
 
         def child_nodes(expr: L.CExpr):
             """Returns a list of all sub-expression nodes of a CNodes expression."""
@@ -512,10 +543,10 @@ class IntegralGenerator(object):
         enable_cross_element_array_conv = self.ir["params"]["enable_cross_element_array_conv"]
 
         ctx = {
-            "vectorized_inputs": ["A", "w", "coordinate_dofs"],
+            "vectorized_parameters": ["A", "w", "coordinate_dofs"],
             "vectorized_intermediates": [],
             "reduce_to_scalars": [],
-            "reduced_typenames": dict(),
+            "reduced_typenames": {},
             "reduced_scalar_names": set()
         }
 
@@ -541,7 +572,7 @@ class IntegralGenerator(object):
 
             if isinstance(expr, L.ArrayAccess):
                 return expr.array.name in ctx["vectorized_intermediates"] or expr.array.name in ctx[
-                    "vectorized_inputs"]
+                    "vectorized_parameters"]
             if isinstance(expr, L.Symbol):
                 return expr.name in ctx["vectorized_intermediates"]
 
@@ -641,7 +672,7 @@ class IntegralGenerator(object):
                 if stmnt.array.name in ctx["vectorized_intermediates"]:
                     # For manually expanded arrays, simply append array index
                     array_access.indices = stmnt.indices + (i_simd,)
-                elif stmnt.array.name in ctx["vectorized_inputs"]:
+                elif stmnt.array.name in ctx["vectorized_parameters"]:
                     # For in/out arrays, we have strided access instead
                     array_access.indices = stmnt.indices[0:-1] + (
                         i_simd + L.LiteralInt(vec_length) * stmnt.indices[-1],)
