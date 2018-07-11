@@ -78,8 +78,8 @@ int num_global_support_dofs;
 int num_element_support_dofs;
 int num_element_dofs;
 int num_facet_dofs;
-int (*num_entity_dofs)(int d);
-int (*num_entity_closure_dofs)(int d);
+int num_entity_dofs[4];
+int num_entity_closure_dofs[4];
 void (*tabulate_dofs)(int64_t* restrict dofs,
                         const int64_t* restrict num_global_entities,
                         const int64_t** entity_indices);
