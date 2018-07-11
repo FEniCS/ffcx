@@ -11,16 +11,19 @@ ufc_coordinate_mapping* create_{factory_name}(void);
 factory = """
 // Code for coordinate mapping {factory_name}
 
+{coordinate_finite_element_declaration}
 ufc_finite_element* create_coordinate_finite_element_{factory_name}(void)
 {{
 {create_coordinate_finite_element}
 }}
 
+{coordinate_dofmap_declaration}
 ufc_dofmap* create_coordinate_dofmap_{factory_name}(void)
 {{
 {create_coordinate_dofmap}
 }}
 
+{evaluate_reference_basis_derivatives_declaration}
 void compute_jacobians_{factory_name}(double* restrict J, int num_points,
                                       const double* restrict X,
                                       const double* restrict coordinate_dofs)
@@ -40,6 +43,7 @@ void compute_jacobian_inverses_{factory_name}(double* restrict K, int num_points
 {compute_jacobian_inverses}
 }}
 
+{evaluate_reference_basis_declaration}
 void compute_physical_coordinates_{factory_name}(double* restrict x, int num_points,
                                                  const double* restrict X,
                                                  const double* restrict coordinate_dofs)

@@ -107,10 +107,13 @@ extern "C"
         const double* restrict J, const double* restrict detJ,
         const double* restrict K, int cell_orientation);
 
-    /// Map dofs from vals to values
-    void (*map_dofs)(double* restrict values, const double* restrict vals,
-                     const double* restrict coordinate_dofs,
-                     int cell_orientation, const ufc_coordinate_mapping* cm);
+    /// Map values of field from physical to reference space which has
+    /// been evaluated at points given by tabulate_reference_dof_coordinates.
+    void (*transform_values)(ufc_scalar_t* restrict reference_values,
+                             const ufc_scalar_t* restrict physical_values,
+                             const double* restrict coordinate_dofs,
+                             int cell_orientation,
+                             const ufc_coordinate_mapping* cm);
 
     // FIXME: change to 'const double* reference_dof_coordinates()'
     /// Tabulate the coordinates of all dofs on a reference cell
@@ -133,28 +136,27 @@ extern "C"
     /// Return a string identifying the dofmap
     const char* signature;
 
-    /// Return the dimension of the local finite element function space
-    /// Return the number of dofs with global support (i.e. global constants)
+    /// Number of dofs with global support (i.e. global constants)
     int num_global_support_dofs;
 
-    /// Return the dimension of the local finite element function space
+    /// Dimension of the local finite element function space
     /// for a cell (not including global support dofs)
     int num_element_support_dofs;
 
-    /// Return the dimension of the local finite element function space
+    /// Dimension of the local finite element function space
     /// for a cell (old version including global support dofs)
     int num_element_dofs;
 
-    /// Return the number of dofs on each cell facet
+    /// Number of dofs on each cell facet
     int num_facet_dofs;
 
-    /// Return the number of dofs associated with each cell entity of
+    /// Number of dofs associated with each cell entity of
     /// dimension d
-    int (*num_entity_dofs)(int d);
+    int num_entity_dofs[4];
 
-    /// Return the number of dofs associated with the closure
+    /// Number of dofs associated with the closure
     /// of each cell entity dimension d
-    int (*num_entity_closure_dofs)(int d);
+    int num_entity_closure_dofs[4];
 
     /// Tabulate the local-to-global mapping of dofs on a cell
     ///   num_global_entities[num_entities_per_cell]
@@ -404,7 +406,7 @@ extern "C"
   typedef struct ufc_cell_integral
   {
     const bool* enabled_coefficients;
-    void (*tabulate_tensor)(double* restrict A, const double* const* w,
+    void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
                             const double* restrict coordinate_dofs,
                             int cell_orientation);
   } ufc_cell_integral;
@@ -412,7 +414,7 @@ extern "C"
   typedef struct ufc_exterior_facet_integral
   {
     const bool* enabled_coefficients;
-    void (*tabulate_tensor)(double* restrict A, const double* const* w,
+    void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
                             const double* restrict coordinate_dofs, int facet,
                             int cell_orientation);
   } ufc_exterior_facet_integral;
@@ -420,7 +422,7 @@ extern "C"
   typedef struct ufc_interior_facet_integral
   {
     const bool* enabled_coefficients;
-    void (*tabulate_tensor)(double* restrict A, const double* const* w,
+    void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
                             const double* restrict coordinate_dofs_0,
                             const double* restrict coordinate_dofs_1,
                             int facet_0, int facet_1, int cell_orientation_0,
@@ -430,7 +432,7 @@ extern "C"
   typedef struct ufc_vertex_integral
   {
     const bool* enabled_coefficients;
-    void (*tabulate_tensor)(double* restrict A, const double* const* w,
+    void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
                             const double* restrict coordinate_dofs, int vertex,
                             int cell_orientation);
   } ufc_vertex_integral;
@@ -438,7 +440,7 @@ extern "C"
   typedef struct ufc_custom_integral
   {
     const bool* enabled_coefficients;
-    void (*tabulate_tensor)(double* restrict A, const double* const* w,
+    void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
                             const double* restrict coordinate_dofs,
                             int num_quadrature_points,
                             const double* restrict quadrature_points,
