@@ -329,34 +329,12 @@ class IntegralGenerator(object):
             return any(
                 (symbol_name in arr) for arr in [ctx["vectorized_intermediates"], ctx["vectorized_parameters"]])
 
-        def child_nodes(expr: L.CExpr):
-            """Returns a list of all sub-expression nodes of a CNodes expression."""
-
-            if isinstance(expr, L.CExprTerminal):
-                return []
-            elif isinstance(expr, L.UnaryOp):
-                return [expr.arg]
-            elif isinstance(expr, L.BinOp):
-                return [expr.lhs, expr.rhs]
-            elif isinstance(expr, L.NaryOp):
-                return expr.args
-            elif isinstance(expr, L.Conditional):
-                return [expr.condition, expr.true, expr.false]
-            elif isinstance(expr, L.Call):
-                return [expr.arguments]
-            elif isinstance(expr, L.ArrayAccess):
-                return [expr.array, *expr.indices]
-            elif isinstance(expr, L.New):
-                return []
-
-            raise RuntimeError("Unsupported object in expression.")
-
-        def dfs(expr: L.CExpr):
+        def dfs(cnode: L.CNode):
             """Depth-first search generator for CNodes expressions."""
-            yield expr
-            for child in child_nodes(expr):
-                for sub_expr in dfs(child):
-                    yield sub_expr
+            yield cnode
+            for child in cnode.children():
+                for childs_child in dfs(child):
+                    yield childs_child
 
         def is_function_call_with_vec_args(expr: L.CExpr) -> bool:
             """Returns whether the given CNodes expression is a function call with vectorized arguments."""
