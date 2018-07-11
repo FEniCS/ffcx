@@ -9,6 +9,8 @@
 It parses command-line arguments and generates code from input UFL form files.
 """
 
+import argparse
+
 import cProfile
 import getopt
 import logging
@@ -26,26 +28,31 @@ from ffc.parameters import default_parameters
 
 logger = logging.getLogger(__name__)
 
-
-def info_version():
-    """Print version number."""
-    print("""\
-This is FFC, the FEniCS Form Compiler, version {0}.
-UFC backend version {1}, signature {2}.
-For further information, visit https://bitbucket.org/fenics-project/ffc/.
-
-Python {3} on {4}
-""".format(FFC_VERSION, ufc.__version__, ufc.get_signature(), sys.version, sys.platform))
-
-
-def info_usage():
-    """Print usage information."""
-    info_version()
-    print("""Usage: ffc [OPTION]... input.form
-
-For information about the FFC command-line interface, refer to
-the FFC man page which may invoked by 'man ffc' (if installed).
-""")
+parser = argparse.ArgumentParser(
+    description="FEniCS Form Compiler (FFC), https://fenicsproject.org")
+parser.add_argument(
+    "-l",
+    "--language",
+    type=str,
+    action='store',
+    choices=["ufc", "dolfin"],
+    default="ufc",
+    help="target language/wrappers")
+parser.add_argument(
+    "--version", action='version', version="%(prog)s " + ("(version {})".format(FFC_VERSION)))
+parser.add_argument("-d", "--debug", action='store_true', default=False, help="enable debug output")
+parser.add_argument("-v", "--verbose", action='store_true', default=False, help="verbose output")
+# parser.add_argument("-s", "--silent", help="run silently")
+parser.add_argument(
+    "-r",
+    "--representation",
+    type=str,
+    action='store',
+    choices=('uflacs', 'tsfc'),
+    default="uflacs",
+    help="representation ")
+parser.add_argument("-q", "--quadrature-rule", default="auto", help="quadrature rule to apply")
+parser.add_argument("infile", type=str, help="UFL file to be read from")
 
 
 def compile_ufl_data(ufd, prefix, parameters):
@@ -59,7 +66,11 @@ def compile_ufl_data(ufd, prefix, parameters):
 
 
 def main(args=None):
-    """Commandline tool for FF."""
+    """Commandline tool for FFC."""
+
+    xargs = parser.parse_args(args)
+    print(xargs)
+
     if args is None:
         args = sys.argv[1:]
 
@@ -73,34 +84,17 @@ def main(args=None):
             "error-control", "profile"
         ])
     except getopt.GetoptError as e:
-        info_usage()
-        print(e)
         return 1
-
-    # Check for --help
-    if ("-h", "") in opts or ("--help", "") in opts:
-        info_usage()
-        return 0
 
     # Check for --includes
-    if ("-I", "") in opts or ("--includes", "") in opts:
-        print(ufc.get_include_path())
-        return 0
-
-    # Check for --version
-    if ("-V", "") in opts or ("--version", "") in opts:
-        info_version()
-        return 0
+    # if ("-I", "") in opts or ("--includes", "") in opts:
+    #     print(ufc.get_include_path())
+    #     return 0
 
     # Check for --signature
-    if ("-S", "") in opts or ("--signature", "") in opts:
-        print(ufc.get_signature())
-        return 0
-
-    # Check that we get at least one file
-    if len(args) == 0:
-        logger.error("Missing file.")
-        return 1
+    # if ("-S", "") in opts or ("--signature", "") in opts:
+    #     print(ufc.get_signature())
+    #     return 0
 
     # Get parameters
     parameters = default_parameters()
@@ -110,21 +104,29 @@ def main(args=None):
 
     ffc_logger = logging.getLogger("ffc")
 
+    if xargs.debug:
+        ffc_logger.setLevel(logging.DEBUG)
+    if xargs.verbose:
+        ffc_logger.setLevel(logging.INFO)
+    parameters["format"] = xargs.language
+    parameters["representation"] = xargs.representation
+    parameters["quadrature_rule"] = xargs.quadrature_rule
+
     # Parse command-line parameters
     for opt, arg in opts:
-        if opt in ("-v", "--verbose"):
-            ffc_logger.setLevel(logging.INFO)
-        elif opt in ("-d", "--debug"):
-            ffc_logger.setLevel(logging.DEBUG)
-        elif opt in ("-s", "--silent"):
-            ffc_logger.setLevel(logging.ERROR)
-        elif opt in ("-l", "--language"):
-            parameters["format"] = arg
-        elif opt in ("-r", "--representation"):
-            parameters["representation"] = arg
-        elif opt in ("-q", "--quadrature-rule"):
-            parameters["quadrature_rule"] = arg
-        elif opt == "-f":
+        # if opt in ("-v", "--verbose"):
+        #     ffc_logger.setLevel(logging.INFO)
+        # elif opt in ("-d", "--debug"):
+        #     ffc_logger.setLevel(logging.DEBUG)
+        # elif opt in ("-s", "--silent"):
+        #     ffc_logger.setLevel(logging.ERROR)
+        # if opt in ("-l", "--language"):
+        #     parameters["format"] = arg
+        # # elif opt in ("-r", "--representation"):
+        #     parameters["representation"] = arg
+        # if opt in ("-q", "--quadrature-rule"):
+        #     parameters["quadrature_rule"] = arg
+        if opt == "-f":
             if len(arg.split("=")) == 2:
                 (key, value) = arg.split("=")
                 default = parameters.get(key)
@@ -141,9 +143,9 @@ def main(args=None):
                 else:
                     value = True
                 parameters[key] = value
-            else:
-                info_usage()
-                return 1
+            # else:
+            #     info_usage()
+            #     return 1
         elif opt in ("-O", "--optimize"):
             parameters["optimize"] = bool(int(arg))
         elif opt in ("-o", "--output-directory"):
@@ -156,8 +158,8 @@ def main(args=None):
     # ufl.constantvalue.precision = int(parameters["precision"])
 
     # Print a versioning message if verbose output was requested
-    if logger.getEffectiveLevel() <= logging.INFO:
-        info_version()
+    # if logger.getEffectiveLevel() <= logging.INFO:
+    #     info_version()
 
     # Call parser and compiler for each file
     resultcode = _compile_files(args, parameters, enable_profile)
