@@ -257,10 +257,11 @@ def compile_elements(elements, module_name=None):
 
 
 def compile_forms(forms, module_name=None):
+    """Compile a list of UFL forms into UFC Python objects"""
+
     # FIXME: support list of forms. Problem is that FFC does not use a
     # hash for form signature, unlike for other objects
 
-    """Compile a list of UFL forms into UFC Python objects"""
     code_body = ""
     decl = UFC_HEADER_DECL + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + UFC_COORDINATEMAPPING_DECL \
         + UFC_INTEGRAL_DECL + UFC_FORM_DECL
