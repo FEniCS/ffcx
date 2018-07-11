@@ -12,7 +12,6 @@ Parse command-line arguments and generate code from input UFL form files.
 import argparse
 import cProfile
 import logging
-import os
 import pathlib
 import re
 import string
@@ -113,19 +112,14 @@ def main(args=None):
 def _compile_files(args, parameters, enable_profile):
     # Call parser and compiler for each file
     for filename in args:
-
         file = pathlib.Path(filename)
-
-        # Get filename and extention string
-        prefix = file.stem
-
-        # Check file suffix
         if file.suffix != ".ufl":
             logger.error("Expecting a UFL form file (.ufl).")
             return 1
 
         # Remove weird characters (file system allows more than the C
         # preprocessor)
+        prefix = file.stem
         prefix = re.subn("[^{}]".format(string.ascii_letters + string.digits + "_"), "!", prefix)[0]
         prefix = re.subn("!+", "_", prefix)[0]
 
