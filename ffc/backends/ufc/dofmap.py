@@ -211,7 +211,7 @@ def sub_dofmap_declaration(L, ir):
     classnames = set(ir["create_sub_dofmap"])
     code = ""
     for name in classnames:
-        code += "ufc_dofmap* create_{name}();\n".format(name=name)
+        code += "ufc_dofmap* create_{name}(void);\n".format(name=name)
     return code
 
 

@@ -170,7 +170,7 @@ def create_coordinate_finite_element(L, ir):
 
 def coordinate_finite_element_declaration(L, ir):
     classname = ir["create_coordinate_finite_element"]
-    code = "ufc_finite_element* create_{name}();\n".format(name=classname)
+    code = "ufc_finite_element* create_{name}(void);\n".format(name=classname)
     return code
 
 
@@ -181,7 +181,7 @@ def create_coordinate_dofmap(L, ir):
 
 def coordinate_dofmap_declaration(L, ir):
     classname = ir["create_coordinate_dofmap"]
-    code = "ufc_dofmap* create_{name}();\n".format(name=classname)
+    code = "ufc_dofmap* create_{name}(void);\n".format(name=classname)
     return code
 
 
