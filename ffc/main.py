@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2004-2017 Anders Logg
+# Copyright (C) 2004-2018 Anders Logg and Garth N. Wells
 #
 # This file is part of FFC (https://www.fenicsproject.org)
 #
@@ -10,24 +10,21 @@ It parses command-line arguments and generates code from input UFL form files.
 """
 
 import argparse
-
 import cProfile
-import getopt
 import logging
 import os
+import pathlib
 import re
 import string
-import sys
 
 import ufl
 from ffc import __version__ as FFC_VERSION
-from ffc.backends import ufc
-from ffc import compiler
-from ffc import formatting
+from ffc import compiler, formatting
 from ffc.parameters import default_parameters
 
 logger = logging.getLogger(__name__)
 
+# Specify command line options
 parser = argparse.ArgumentParser(
     description="FEniCS Form Compiler (FFC, https://fenicsproject.org)")
 parser.add_argument(
@@ -39,10 +36,15 @@ parser.add_argument(
     default="ufc",
     help="target language/wrappers")
 parser.add_argument(
-    "--version", action='version', version="%(prog)s " + ("(version {})".format(FFC_VERSION)))
-parser.add_argument("-d", "--debug", action='store_true', default=False, help="enable debug output")
-parser.add_argument("-v", "--verbose", action='store_true', default=False, help="verbose output")
-parser.add_argument("-p", "--profile", action='store_true', default=False, help="enable profiling")
+    "--version",
+    action='version',
+    version="%(prog)s " + ("(version {})".format(FFC_VERSION)))
+parser.add_argument("-d", "--debug", action='store_true', default=False,
+                    help="enable debug output")
+parser.add_argument("-v", "--verbose", action='store_true', default=False,
+                    help="verbose output")
+parser.add_argument("-p", "--profile", action='store_true', default=False,
+                    help="enable profiling")
 parser.add_argument("-o", "--output-directory", type=str, help="output directory")
 parser.add_argument(
     "-r",
@@ -52,13 +54,17 @@ parser.add_argument(
     choices=('uflacs', 'tsfc'),
     default="uflacs",
     help="representation ")
-parser.add_argument("-q", "--quadrature-rule", default="auto", help="quadrature rule to apply")
-parser.add_argument("--quadrature-degree", default="auto", help="quadrature degree to apply")
-# parser.add_argument("-f", nargs=2, help="boo")
-#parser.add_argument("-O", "--optimize", action='store_true', default=False,
-#                    help="apply optimizations during code generation")
-
+parser.add_argument("-q", "--quadrature-rule", default="auto",
+                    help="quadrature rule to apply")
+parser.add_argument("--quadrature-degree", default="auto",
+                    help="quadrature degree to apply")
+parser.add_argument('-f', action="append", default=[], dest="f", metavar="parameter=value",
+                    help="options passed through to parameter system")
 parser.add_argument("ufl_file", nargs='+', help="UFL file(s) to be read from")
+# parser.add_argument("--no-evaluate-basis-derivatives", action='store_true',
+#                     help="disable generation of code for evaluating basis derivatives")
+# parser.add_argument("-O", "--optimize", action='store_true', default=False,
+#                    help="apply optimizations during code generation")
 
 
 def compile_ufl_data(ufd, prefix, parameters):
@@ -75,22 +81,6 @@ def main(args=None):
     """Commandline tool for FFC."""
 
     xargs = parser.parse_args(args)
-    print(xargs)
-
-    if args is None:
-        args = sys.argv[1:]
-
-    # Get command-line arguments
-    try:
-        if "-O" in args:
-            args[args.index("-O")] = "-O2"
-        opts, args = getopt.getopt(args, "hIVSdvsl:r:f:O:o:q:ep", [
-            "help", "includes", "version", "signature", "debug", "verbose", "silent", "language=",
-            "representation=", "optimize=", "output-directory=", "quadrature-rule=",
-            "error-control", "profile"
-        ])
-    except getopt.GetoptError as e:
-        return 1
 
     # Check for --includes
     # if ("-I", "") in opts or ("--includes", "") in opts:
@@ -115,56 +105,22 @@ def main(args=None):
     parameters["representation"] = xargs.representation
     parameters["quadrature_rule"] = xargs.quadrature_rule
     parameters["quadrature_degree"] = xargs.quadrature_degree
-    enable_profile = xargs.profile
     if xargs.output_directory:
         parameters["output_dir"] = xargs.output_directory
-    parameters["optimize"] = xargs.optimize
-
-    # Parse command-line parameters
-    for opt, arg in opts:
-        # if opt in ("-v", "--verbose"):
-        #     ffc_logger.setLevel(logging.INFO)
-        # elif opt in ("-d", "--debug"):
-        #     ffc_logger.setLevel(logging.DEBUG)
-        # elif opt in ("-s", "--silent"):
-        #     ffc_logger.setLevel(logging.ERROR)
-        # if opt in ("-l", "--language"):
-        #     parameters["format"] = arg
-        # # elif opt in ("-r", "--representation"):
-        #     parameters["representation"] = arg
-        # if opt in ("-q", "--quadrature-rule"):
-        #     parameters["quadrature_rule"] = arg
-        if opt == "-f":
-            if len(arg.split("=")) == 2:
-                (key, value) = arg.split("=")
-                default = parameters.get(key)
-                if isinstance(default, int):
-                    value = int(value)
-                elif isinstance(default, float):
-                    value = float(value)
-                parameters[key] = value
-            elif len(arg.split("==")) == 1:
-                key = arg.split("=")[0]
-                if key.startswith("no-"):
-                    key = key[3:]
-                    value = False
-                else:
-                    value = True
-                parameters[key] = value
-            # else:
-            #     info_usage()
-            #     return 1
+    # parameters["optimize"] = xargs.optimize
+    # parameters["no-evaluate_basis_derivatives"] = True
+    for p in xargs.f:
+        assert len(p.split("=")) == 2
+        key, value = p.split("=")
+        assert key in parameters
+        parameters[key] = value
 
     # FIXME: This is terrible!
     # Set UFL precision
     # ufl.constantvalue.precision = int(parameters["precision"])
 
-    # Print a versioning message if verbose output was requested
-    # if logger.getEffectiveLevel() <= logging.INFO:
-    #     info_version()
-
     # Call parser and compiler for each file
-    resultcode = _compile_files(args, parameters, enable_profile)
+    resultcode = _compile_files(xargs.ufl_file, parameters, xargs.profile)
     return resultcode
 
 
@@ -172,12 +128,15 @@ def _compile_files(args, parameters, enable_profile):
     # Call parser and compiler for each file
     for filename in args:
 
-        # Get filename prefix and suffix
-        prefix, suffix = os.path.splitext(os.path.basename(filename))
-        suffix = suffix.replace(os.path.extsep, "")
+        file = pathlib.Path(filename)
+        # print("TTTT", file.suffix)
+        # print("TTTT (1)", file.stem)
+
+        # Get filename and extention string
+        prefix, _ = os.path.splitext(os.path.basename(filename))
 
         # Check file suffix
-        if suffix != "ufl":
+        if file.suffix != ".ufl":
             logger.error("Expecting a UFL form file (.ufl).")
             return 1
 
