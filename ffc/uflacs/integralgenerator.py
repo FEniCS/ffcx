@@ -293,22 +293,6 @@ class IntegralGenerator(object):
             "vectorized_intermediates": [],
         }
 
-        def get_vectorized_name(name: str) -> str:
-            if name in ctx["vectorized_parameters"]:
-                return name + "_x"
-            return name
-
-        preamble = [L.VerbatimStatement("typedef double double4 __attribute__ ((vector_size (32)));")]
-
-        # Generate casts to vector type of all inputs
-        for param_decl in vectorized_parameters:
-            old_name = param_decl.symbol.name
-            new_name = get_vectorized_name(old_name)
-            new_typename = param_decl.typename.replace(base_type, vector_type)
-
-            cast = L.VerbatimStatement("{0} {1} = ({0}){2};".format(new_typename, new_name, old_name))
-            preamble.append(cast)
-
         # Symbol used as index in for-loops over the elements
         i_simd = L.Symbol("i_elem")
 
@@ -501,13 +485,45 @@ class IntegralGenerator(object):
             else:
                 return expr
 
+        # Run vectorization of all statements
         vectorized = [vectorize(stmnt) for stmnt in statements]
 
-        # Fix variable names
+        # ---------
+        # Handle casting of function parameters to vector extension types
+
+        preamble = [L.VerbatimStatement("typedef double {} __attribute__ ((vector_size ({})));".format(vector_type,
+                                                                                                       8*vec_length))]
+
+        def get_vectorized_name(name: str) -> str:
+            if name in ctx["vectorized_parameters"]:
+                return name + "_x"
+            return name
+
+        # Keep track of actually used parameters to only create cast statements for them
+        used_parameters = set()
+
+        # Modify all symbol names that refer to parameters
         for stmnt in vectorized:
             for child in dfs(stmnt):
                 if isinstance(child, L.Symbol):
-                    child.name = get_vectorized_name(child.name)
+                    if child.name in ctx["vectorized_parameters"]:
+                        used_parameters.add(child.name)
+                        child.name = get_vectorized_name(child.name)
+
+        # Generate casts to vector type of all used parameters
+        for param_decl in vectorized_parameters:
+            old_name = param_decl.symbol.name
+
+            # Skip parameters that were not used
+            if old_name not in used_parameters:
+                continue
+
+            new_name = get_vectorized_name(old_name)
+            new_typename = param_decl.typename.replace(base_type, vector_type)
+
+            # Append the cast statement
+            cast = L.VerbatimStatement("{0} {1} = ({0}){2};".format(new_typename, new_name, old_name))
+            preamble.append(cast)
 
         # Join vectorized code with cast statements
         vectorized = preamble + vectorized
