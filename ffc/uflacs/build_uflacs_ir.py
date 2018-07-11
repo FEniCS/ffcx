@@ -205,8 +205,8 @@ def uflacs_default_parameters(optimize):
         "tensor_init_mode": "upfront",  # interleaved | direct | upfront
 
         # Specifies how many elements the tabulate_tensor function should act on
-        # A value of zero disables this feature
-        "cross_element_width": 0,
+        # A value of zero disables this feature (moved to FFC)
+        #"cross_element_width": 0,
         # Whether to fuse susequent cross element loops together
         "enable_cross_element_fuse": False,
         # Whether to convert the large intermediate value array 'sp' into scalars/cross element arrays

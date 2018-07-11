@@ -38,6 +38,7 @@ _FFC_GENERATE_PARAMETERS = {
     "add_tabulate_tensor_timing": False,
     # ':' separated list of include filenames to add to generated code
     "external_includes": "",
+    "cross_element_width": -1
 }
 _FFC_BUILD_PARAMETERS = {
     "cpp_optimize": True,  # optimization for the C++ compiler
