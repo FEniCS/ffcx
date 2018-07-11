@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 - Class definition
 """
 
+
 # Some helper functions
 
 
@@ -114,6 +115,21 @@ class CNode(object):
 
     __slots__ = ()
 
+    # A subclass which can have child nodes should implement the children() method
+    # otherwise an exception is raised if it is called.
+    # Alternatively, set can_have_children=False so that the default implementation
+    # below returns an empty list.
+    can_have_children = True
+
+    def children(self):
+        """Returns a list of all children of the node."""
+
+        if self.can_have_children:
+            name = self.__class__.__name__
+            raise NotImplementedError("Missing implementation of children in " + name)
+        else:
+            return []
+
     def __str__(self):
         name = self.__class__.__name__
         raise NotImplementedError("Missing implementation of __str__ in " + name)
@@ -127,6 +143,7 @@ class CNode(object):
 
 
 CNode.debug = False
+
 
 # CExpr base classes
 
@@ -288,6 +305,7 @@ class CExprTerminal(CExpr):
 
     __slots__ = ()
     sideeffect = False
+    can_have_children = False
 
 
 # CExprTerminal types
@@ -425,6 +443,7 @@ class Symbol(CExprTerminal):
 
 class New(CExpr):
     __slots__ = ("typename", )
+    can_have_children = False
 
     def __init__(self, typename):
         assert isinstance(typename, str)
@@ -447,6 +466,9 @@ class UnaryOp(CExprOperator):
 
     def __init__(self, arg):
         self.arg = as_cexpr(arg)
+
+    def children(self):
+        return [self.arg]
 
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.arg == other.arg
@@ -489,6 +511,9 @@ class BinOp(CExprOperator):
         self.lhs = as_cexpr(lhs)
         self.rhs = as_cexpr(rhs)
 
+    def children(self):
+        return [self.lhs, self.rhs]
+
     def ce_format(self, precision=None):
         # Format children
         lhs = self.lhs.ce_format(precision)
@@ -514,6 +539,9 @@ class NaryOp(CExprOperator):
 
     def __init__(self, args):
         self.args = [as_cexpr(arg) for arg in args]
+
+    def children(self):
+        return [arg for arg in self.args]
 
     def ce_format(self, precision=None):
         # Format children
@@ -894,6 +922,9 @@ class ArrayAccess(CExprOperator):
                    for i, d in zip(self.indices, array.sizes)):
                 raise ValueError("Index value >= array dimension.")
 
+    def children(self):
+        return [self.array, *self.indices]
+
     def __getitem__(self, indices):
         """Handling nested expr[i][j]."""
         if isinstance(indices, list):
@@ -921,6 +952,9 @@ class Conditional(CExprOperator):
         self.condition = as_cexpr(condition)
         self.true = as_cexpr(true)
         self.false = as_cexpr(false)
+
+    def children(self):
+        return [self.condition, self.true, self.false]
 
     def ce_format(self, precision=None):
         # Format children
@@ -958,6 +992,9 @@ class Call(CExprOperator):
         elif not isinstance(arguments, (tuple, list)):
             arguments = (arguments, )
         self.arguments = [as_cexpr(arg) for arg in arguments]
+
+    def children(self):
+        return [arg for arg in self.arguments]
 
     def ce_format(self, precision=None):
         args = ", ".join(arg.ce_format(precision) for arg in self.arguments)
@@ -1091,6 +1128,7 @@ class VerbatimStatement(CStatement):
 
     __slots__ = ("codestring", )
     is_scoped = False
+    can_have_children = False
 
     def __init__(self, codestring):
         assert isinstance(codestring, str)
@@ -1112,6 +1150,9 @@ class Statement(CStatement):
     def __init__(self, expr):
         self.expr = as_cexpr(expr)
 
+    def children(self):
+        return [self.expr]
+
     def cs_format(self, precision=None):
         return self.expr.ce_format(precision) + ";"
 
@@ -1126,6 +1167,9 @@ class StatementList(CStatement):
 
     def __init__(self, statements):
         self.statements = [as_cstatement(st) for st in statements]
+
+    def children(self):
+        return [stmnt for stmnt in self.statements]
 
     @property
     def is_scoped(self):
@@ -1144,6 +1188,7 @@ class StatementList(CStatement):
 class Using(CStatement):
     __slots__ = ("name", )
     is_scoped = True
+    can_have_children = False
 
     def __init__(self, name):
         assert isinstance(name, str)
@@ -1159,6 +1204,7 @@ class Using(CStatement):
 class Break(CStatement):
     __slots__ = ()
     is_scoped = True
+    can_have_children = False
 
     def cs_format(self, precision=None):
         return "break;"
@@ -1170,6 +1216,7 @@ class Break(CStatement):
 class Continue(CStatement):
     __slots__ = ()
     is_scoped = True
+    can_have_children = False
 
     def cs_format(self, precision=None):
         return "continue;"
@@ -1187,6 +1234,9 @@ class Return(CStatement):
             self.value = None
         else:
             self.value = as_cexpr(value)
+
+    def children(self):
+        return [self.value]
 
     def cs_format(self, precision=None):
         if self.value is None:
@@ -1206,6 +1256,9 @@ class Case(CStatement):
         # NB! This is too permissive and will allow invalid case arguments.
         self.value = as_cexpr(value)
 
+    def children(self):
+        return [self.value]
+
     def cs_format(self, precision=None):
         return "case " + self.value.ce_format(precision) + ":"
 
@@ -1216,6 +1269,7 @@ class Case(CStatement):
 class Default(CStatement):
     __slots__ = ()
     is_scoped = False
+    can_have_children = False
 
     def cs_format(self, precision=None):
         return "default:"
@@ -1227,6 +1281,7 @@ class Default(CStatement):
 class Throw(CStatement):
     __slots__ = ("exception", "message")
     is_scoped = True
+    can_have_children = False
 
     def __init__(self, exception, message):
         assert isinstance(exception, str)
@@ -1248,6 +1303,7 @@ class Comment(CStatement):
 
     __slots__ = ("comment", )
     is_scoped = True
+    can_have_children = False
 
     def __init__(self, comment):
         assert isinstance(comment, str)
@@ -1283,6 +1339,7 @@ class Pragma(CStatement):
 
     __slots__ = ("comment", )
     is_scoped = True
+    can_have_children = False
 
     def __init__(self, comment):
         assert isinstance(comment, str)
@@ -1317,6 +1374,12 @@ class VariableDecl(CStatement):
         if value is not None:
             value = as_cexpr(value)
         self.value = value
+
+    def children(self):
+        children = [self.symbol]
+        if self.value is not None:
+            children.append(self.value)
+        return children
 
     def cs_format(self, precision=None):
         code = self.typename + " " + self.symbol.name
@@ -1462,6 +1525,12 @@ class ArrayDecl(CStatement):
         self.alignas = alignas
         self.padlen = padlen
 
+    def children(self):
+        children = [self.symbol]
+        if isinstance(self.values, CNode):
+            children.append(self.values)
+        return children
+
     def cs_format(self, precision=None):
         # Pad innermost array dimension
         sizes = pad_innermost_dim(self.sizes, self.padlen)
@@ -1517,6 +1586,9 @@ class Scope(CStatement):
 
     def __init__(self, body):
         self.body = as_cstatement(body)
+        
+    def children(self):
+        return [self.body]
 
     def cs_format(self, precision=None):
         return ("{", Indented(self.body.cs_format(precision)), "}")
@@ -1541,6 +1613,9 @@ class If(CStatement):
         self.condition = as_cexpr(condition)
         self.body = as_cstatement(body)
 
+    def children(self):
+        return [self.condition, self.body]
+
     def cs_format(self, precision=None):
         statement = "if (" + self.condition.ce_format(precision) + ")"
         body_fmt = Indented(self.body.cs_format(precision))
@@ -1562,6 +1637,9 @@ class ElseIf(CStatement):
         self.condition = as_cexpr(condition)
         self.body = as_cstatement(body)
 
+    def children(self):
+        return [self.condition, self.body]
+
     def cs_format(self, precision=None):
         statement = "else if (" + self.condition.ce_format(precision) + ")"
         body_fmt = Indented(self.body.cs_format(precision))
@@ -1581,6 +1659,9 @@ class Else(CStatement):
 
     def __init__(self, body):
         self.body = as_cstatement(body)
+
+    def children(self):
+        return [self.body]
 
     def cs_format(self, precision=None):
         statement = "else"
@@ -1625,6 +1706,16 @@ class Switch(CStatement):
         assert autoscope in (True, False)
         self.autobreak = autobreak
         self.autoscope = autoscope
+
+    def children(self):
+        children = [self.arg]
+        cases = [case for case in self.cases]
+        if len(cases) > 0:
+            children += cases
+        if self.default is not None:
+            children.append(self.default)
+
+        return children
 
     def cs_format(self, precision=None):
         cases = []
@@ -1671,6 +1762,9 @@ class ForRange(CStatement):
         self.pragma = pragma
 
         self.index_type = index_type
+
+    def children(self):
+        return [self.index, self.begin, self.end, self.body]
 
     def cs_format(self, precision=None):
         indextype = self.index_type
