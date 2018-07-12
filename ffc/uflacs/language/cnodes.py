@@ -645,24 +645,6 @@ class Or(BinOp):
     op = "||"
 
 
-class BitAnd(BinOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.BIT_AND
-    op = "&"
-
-
-class BitXor(BinOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.BIT_XOR
-    op = "^"
-
-
-class BitOr(BinOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.BIT_OR
-    op = "|"
-
-
 class Sum(NaryOp):
     """Sum of any number of operands."""
 
@@ -713,46 +695,6 @@ class AssignMul(AssignOp):
 class AssignDiv(AssignOp):
     __slots__ = ()
     op = "/="
-
-
-class AssignMod(AssignOp):
-    __slots__ = ()
-    op = "%="
-
-
-class AssignLShift(AssignOp):
-    __slots__ = ()
-    op = "<<="
-
-
-class AssignRShift(AssignOp):
-    __slots__ = ()
-    op = ">>="
-
-
-class AssignAnd(AssignOp):
-    __slots__ = ()
-    op = "&&="
-
-
-class AssignOr(AssignOp):
-    __slots__ = ()
-    op = "||="
-
-
-class AssignBitAnd(AssignOp):
-    __slots__ = ()
-    op = "&="
-
-
-class AssignBitXor(AssignOp):
-    __slots__ = ()
-    op = "^="
-
-
-class AssignBitOr(AssignOp):
-    __slots__ = ()
-    op = "|="
 
 
 # CExpr operators
