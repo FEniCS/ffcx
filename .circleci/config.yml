@@ -10,7 +10,7 @@ jobs:
           name: Install dependencies
           command: |
             sudo apt-get update && sudo apt-get install libboost-math-dev
-            sudo pip install flake8 pydocstyle pytest --upgrade
+            sudo pip install cffi flake8 pydocstyle pytest --upgrade
       - run:
           name: Install FEniCS dependencies
           command: |
@@ -26,17 +26,6 @@ jobs:
       - run:
           name: Run pydocstyle tests
           command: python -m pydocstyle ffc/
-
-      #- run:
-      #    name: Install pybind factory
-      #    command: pip install ./libs/ffc-factory/ --user
-      #- run:
-      #    name: Run unit tests
-      #    command: |
-      #      python -m pytest -v ./test/unit
-      #      python -m pytest -v ./test/uflacs
-      #- run:
-      #    name: Run regression tests
-      #    command: |
-      #      cd test/regression
-      #      python test.py
+      - run:
+          name: Run unit tests
+          command: python -m pytest test/
