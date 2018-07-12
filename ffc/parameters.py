@@ -148,6 +148,14 @@ def _validate_parameters(parameters):
                              parameters.get("quadrature_degree"))
             raise
 
+    # Cast from str to int
+    try:
+        parameters["cross_element_width"] = int(parameters["cross_element_width"])
+    except Exception:
+        logger.exception("Failed to convert cross_element_width '%s' to int" %
+                         parameters.get("cross_element_width"))
+        raise
+
     # Convert all legal default values to None and
     # cast nondefaults from str to int
     if parameters["precision"] in ["auto", None, "None"]:
