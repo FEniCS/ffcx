@@ -40,8 +40,14 @@ parser.add_argument("-d", "--debug", action='store_true', default=False, help="e
 parser.add_argument("-v", "--verbose", action='store_true', default=False, help="verbose output")
 parser.add_argument("-o", "--output-directory", type=str, help="output directory")
 parser.add_argument("-p", "--profile", action='store_true', default=False, help="enable profiling")
-parser.add_argument("-q", "--quadrature-rule", type=str, default="auto", help="quadrature rule to apply (default: auto)")
-parser.add_argument("--quadrature-degree", type=int, default=-1, help="quadrature degree to apply (auto: -1)")
+parser.add_argument(
+    "-q",
+    "--quadrature-rule",
+    type=str,
+    default="auto",
+    help="quadrature rule to apply (default: auto)")
+parser.add_argument(
+    "--quadrature-degree", type=int, default=-1, help="quadrature degree to apply (auto: -1)")
 parser.add_argument(
     "-r",
     "--representation",
