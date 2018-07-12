@@ -96,7 +96,7 @@ def main(args=None):
     for p in xargs.f:
         assert len(p.split("=")) == 2
         key, value = p.split("=")
-        assert key in parameters
+        #assert key in parameters
         parameters[key] = value
 
     # FIXME: This is terrible!
