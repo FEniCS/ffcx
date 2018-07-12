@@ -1553,7 +1553,7 @@ class ArrayDecl(CStatement):
         elif _is_zero_valued(self.values):
             # Zero initial values
             # (NB! C style zero initialization, not sure about other target languages)
-            nb = len(sizes)
+            nb = max(1, len(sizes))
             return decl + " = {lbr} 0 {rbr};".format(lbr="{" * nb, rbr="}" * nb)
         else:
             # Construct initializer lists for arbitrary multidimensional array values
