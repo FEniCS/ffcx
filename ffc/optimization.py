@@ -31,7 +31,7 @@ def optimize_ir(ir, parameters):
         logger.info(
             "Skipping optimizations, add -O or attach {{'optimize': True}} metadata to integrals")
 
-    # Call on every bunch of integrals wich are compiled together
+    # Call on every bunch of integrals which are compiled together
     oir_integrals = [
         _optimize_integral_ir(ir, parameters) if ir["integrals_metadata"]["optimize"] else ir
         for ir in ir_integrals
