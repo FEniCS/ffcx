@@ -58,7 +58,7 @@ class FFCBackendSymbols(object):
         self.coefficient_numbering = coefficient_numbering
 
         # Used for padding variable names based on restriction
-        self.restriction_postfix = {r: ufc_restriction_postfix(r) for r in ("+", "-", None)}
+#        self.restriction_postfix = {r: ufc_restriction_postfix(r) for r in ("+", "-", None)}
 
         # TODO: Make this configurable for easy experimentation with dolfin!
         # Coordinate dofs for each component are interleaved? Must match dolfin.
@@ -134,10 +134,6 @@ class FFCBackendSymbols(object):
     def x_component(self, mt):
         """Physical coordinate component."""
         return self.S(format_mt_name("x", mt))
-
-    def X_component(self, mt):
-        """Reference coordinate component."""
-        return self.S(format_mt_name("X", mt))
 
     def J_component(self, mt):
         """Jacobian component."""
