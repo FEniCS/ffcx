@@ -33,7 +33,7 @@ parser.add_argument(
     action='store',
     choices=["ufc", "dolfin"],
     default="ufc",
-    help="target language/wrappers (default: ufl)")
+    help="target language/wrappers (default: ufc)")
 parser.add_argument(
     "--version", action='version', version="%(prog)s " + ("(version {})".format(FFC_VERSION)))
 parser.add_argument("-d", "--debug", action='store_true', default=False, help="enable debug output")
