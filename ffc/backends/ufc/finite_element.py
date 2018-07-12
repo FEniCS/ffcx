@@ -119,7 +119,7 @@ def sub_element_declaration(L, ir):
     classnames = set(ir["create_sub_element"])
     code = ""
     for name in classnames:
-        code += "ufc_finite_element* create_{name}();\n".format(name=name)
+        code += "ufc_finite_element* create_{name}(void);\n".format(name=name)
     return code
 
 

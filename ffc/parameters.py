@@ -97,13 +97,6 @@ def default_parameters():
 def default_jit_parameters():
     parameters = default_parameters()
 
-    # TODO: This is not in the above parameters dict.
-    #       There are other parameters like this.
-    #       This is confusing, which parameters are available? What are the defaults?
-    # Skip evaluation of basis derivatives in elements by default because it's costly
-    # FIXME: Make this False when we have elements generated once instead of for each form
-    parameters["no-evaluate_basis_derivatives"] = True
-
     # Don't postfix form names
     parameters["form_postfix"] = False
 

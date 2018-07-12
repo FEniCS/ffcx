@@ -1,5 +1,0 @@
-OUTPUT_DIR="output"
-DATA_REPO_GIT="git@bitbucket.org:fenics-project/ffc-reference-data.git"
-DATA_REPO_HTTPS="https://bitbucket.org/fenics-project/ffc-reference-data.git"
-DATA_DIR="ffc-reference-data"
-DATA_ID_FILE="ffc-reference-data-id"
