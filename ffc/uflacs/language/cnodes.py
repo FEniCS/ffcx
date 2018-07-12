@@ -31,39 +31,6 @@ logger = logging.getLogger(__name__)
 # Some helper functions
 
 
-def assign_loop(dst, src, ranges):
-    """Generate a nested loop over a list of ranges, assigning src to dst in the innermost loop.
-
-    Ranges is a list on the format [(index, begin, end),...].
-    """
-    code = Assign(dst, src)
-    for i, b, e in reversed(ranges):
-        code = ForRange(i, b, e, code)
-    return code
-
-
-def accumulate_loop(dst, src, ranges):
-    """Generate a nested loop over a list of ranges, adding src to dst in the innermost loop.
-
-    Ranges is a list on the format [(index, begin, end),...].
-    """
-    code = AssignAdd(dst, src)
-    for i, b, e in reversed(ranges):
-        code = ForRange(i, b, e, code)
-    return code
-
-
-def scale_loop(dst, factor, ranges):
-    """Generate a nested loop over a list of ranges, multiplying dst with factor in the innermost loop.
-
-    Ranges is a list on the format [(index, begin, end),...].
-    """
-    code = AssignMul(dst, factor)
-    for i, b, e in reversed(ranges):
-        code = ForRange(i, b, e, code)
-    return code
-
-
 def is_zero_cexpr(cexpr):
     return ((isinstance(cexpr, LiteralFloat) and cexpr.value == 0.0)
             or (isinstance(cexpr, LiteralInt) and cexpr.value == 0))
