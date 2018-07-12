@@ -22,7 +22,6 @@ from ffc.backends.ufc.finite_element import \
     generator as ufc_finite_element_generator
 from ffc.backends.ufc.form import ufc_form_generator
 from ffc.backends.ufc.integrals import ufc_integral_generator
-from ffc.representation import pick_representation
 
 logger = logging.getLogger(__name__)
 
