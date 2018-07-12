@@ -33,18 +33,15 @@ parser.add_argument(
     action='store',
     choices=["ufc", "dolfin"],
     default="ufc",
-    help="target language/wrappers")
+    help="target language/wrappers (default: ufl)")
 parser.add_argument(
-    "--version",
-    action='version',
-    version="%(prog)s " + ("(version {})".format(FFC_VERSION)))
-parser.add_argument("-d", "--debug", action='store_true', default=False,
-                    help="enable debug output")
-parser.add_argument("-v", "--verbose", action='store_true', default=False,
-                    help="verbose output")
-parser.add_argument("-p", "--profile", action='store_true', default=False,
-                    help="enable profiling")
+    "--version", action='version', version="%(prog)s " + ("(version {})".format(FFC_VERSION)))
+parser.add_argument("-d", "--debug", action='store_true', default=False, help="enable debug output")
+parser.add_argument("-v", "--verbose", action='store_true', default=False, help="verbose output")
 parser.add_argument("-o", "--output-directory", type=str, help="output directory")
+parser.add_argument("-p", "--profile", action='store_true', default=False, help="enable profiling")
+parser.add_argument("-q", "--quadrature-rule", type=str, default="auto", help="quadrature rule to apply (default: auto)")
+parser.add_argument("--quadrature-degree", type=int, default=-1, help="quadrature degree to apply (auto: -1)")
 parser.add_argument(
     "-r",
     "--representation",
@@ -52,18 +49,15 @@ parser.add_argument(
     action='store',
     choices=('uflacs', 'tsfc'),
     default="uflacs",
-    help="representation ")
-parser.add_argument("-q", "--quadrature-rule", default="auto",
-                    help="quadrature rule to apply")
-parser.add_argument("--quadrature-degree", default="auto",
-                    help="quadrature degree to apply")
-parser.add_argument('-f', action="append", default=[], dest="f", metavar="parameter=value",
-                    help="options passed through to parameter system")
-parser.add_argument("ufl_file", nargs='+', help="UFL file(s) to be read from")
-# parser.add_argument("--no-evaluate-basis-derivatives", action='store_true',
-#                     help="disable generation of code for evaluating basis derivatives")
-# parser.add_argument("-O", "--optimize", action='store_true', default=False,
-#                    help="apply optimizations during code generation")
+    help="backend to use for compiling forms (default: uflacs)")
+parser.add_argument(
+    '-f',
+    action="append",
+    default=[],
+    dest="f",
+    metavar="parameter=value",
+    help="option passed through to parameter system, where 'parameter' is the FFC parameter name")
+parser.add_argument("ufl_file", nargs='+', help="UFL file(s) to be compiled")
 
 
 def compile_ufl_data(ufd, prefix, parameters):
@@ -93,7 +87,6 @@ def main(args=None):
     parameters["quadrature_degree"] = xargs.quadrature_degree
     if xargs.output_directory:
         parameters["output_dir"] = xargs.output_directory
-    # parameters["optimize"] = xargs.optimize
     for p in xargs.f:
         assert len(p.split("=")) == 2
         key, value = p.split("=")
