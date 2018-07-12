@@ -1,1 +1,0 @@
-Python tests wrapping generated C++ code in C++ unit tests which is then tested with gtest.

@@ -97,7 +97,7 @@ class UFCForm:
 
     def coordinate_finite_element_declaration(self, L, ir):
         classname = ir["create_coordinate_finite_element"]
-        code = "ufc_finite_element* create_{name}();\n".format(name=classname[0])
+        code = "ufc_finite_element* create_{name}(void);\n".format(name=classname[0])
         return code
 
     def create_coordinate_dofmap(self, L, ir):
@@ -107,7 +107,7 @@ class UFCForm:
 
     def coordinate_dofmap_declaration(self, L, ir):
         classname = ir["create_coordinate_dofmap"]
-        code = "ufc_dofmap* create_{name}();\n".format(name=classname[0])
+        code = "ufc_dofmap* create_{name}(void);\n".format(name=classname[0])
         return code
 
     def create_coordinate_mapping(self, L, ir):
@@ -118,7 +118,7 @@ class UFCForm:
 
     def coordinate_mapping_declaration(self, L, ir):
         classname = ir["create_coordinate_mapping"]
-        code = "ufc_coordinate_mapping* create_{name}();\n".format(name=classname[0])
+        code = "ufc_coordinate_mapping* create_{name}(void);\n".format(name=classname[0])
         return code
 
     def create_finite_element(self, L, ir):
@@ -130,7 +130,7 @@ class UFCForm:
         classnames = set(ir["create_finite_element"])
         code = ""
         for name in classnames:
-            code += "ufc_finite_element* create_{name}();\n".format(name=name)
+            code += "ufc_finite_element* create_{name}(void);\n".format(name=name)
         return code
 
     def create_dofmap(self, L, ir):
@@ -142,7 +142,7 @@ class UFCForm:
         classnames = set(ir["create_dofmap"])
         code = ""
         for name in classnames:
-            code += "ufc_dofmap* create_{name}();\n".format(name=name)
+            code += "ufc_dofmap* create_{name}(void);\n".format(name=name)
         return code
 
     # This group of functions are repeated for each

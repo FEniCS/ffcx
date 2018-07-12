@@ -31,7 +31,6 @@ from time import time
 
 from ufl import *
 from ffc.fiatinterface import create_element
-from ffc import jit
 
 
 def element_coords(cell):
@@ -194,51 +193,3 @@ supported (non-mixed) for low degrees"""
                 else:
                     for k in range(element.value_shape()[0]):
                         assert round(basis[i][k][0] - reference[i](x)[k] , 10) == 0.0
-
-
-class Test_JIT():
-
-    def test_poisson(self):
-        "Test that JIT compiler is fast enough."
-
-        # FIXME: Use local cache: cache_dir argument to instant.build_module
-        #options = {"log_level": INFO + 5}
-        #options = {"log_level": 5}
-        options = {"log_level": WARNING}
-
-        # Define two forms with the same signatures
-        element = FiniteElement("Lagrange", "triangle", 1)
-        v = TestFunction(element)
-        u = TrialFunction(element)
-        f = Coefficient(element)
-        g = Coefficient(element)
-        a0 = f*dot(grad(v), grad(u))*dx
-        a1 = g*dot(grad(v), grad(u))*dx
-
-        # Strange this needs to be done twice
-
-        # Compile a0 so it will be in the cache (both in-memory and disk)
-        jit(a0, options)
-        jit(a0, options)
-
-        # Compile a0 again (should be really fast, using in-memory cache)
-        t = time()
-        jit(a0, options)
-        dt0 = time() - t
-
-        # Compile a1 (should be fairly fast, using disk cache)
-        t = time()
-        jit(a1, options)
-        dt1 = time() - t
-
-        # Good values
-        dt0_good = 0.005
-        dt1_good = 0.01
-
-        print("\nJIT in-memory cache:", dt0)
-        print("JIT disk cache:     ", dt1)
-        print("Reasonable values are %g and %g" % (dt0_good, dt1_good))
-
-        # Check times
-        assert dt0 < 10*dt0_good
-        assert dt1 < 10*dt1_good
