@@ -403,20 +403,6 @@ def transform_reference_basis_derivatives(L, ir, parameters):
     return code
 
 
-def _num_vertices(cell_shape):
-    """Returns number of vertices for a given cell shape."""
-
-    num_vertices_dict = {
-        "interval": 2,
-        "triangle": 3,
-        "tetrahedron": 4,
-        "quadrilateral": 4,
-        "hexahedron": 8
-    }
-
-    return num_vertices_dict[cell_shape]
-
-
 def generator(ir, parameters):
     """Generate UFC code for a finite element"""
     d = {}
