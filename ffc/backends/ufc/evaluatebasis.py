@@ -7,7 +7,6 @@ import logging
 import numpy
 
 from ffc import FFCError
-from ffc.backends.ufc.utils import generate_error
 
 logger = logging.getLogger(__name__)
 
@@ -63,9 +62,8 @@ def generate_evaluate_reference_basis(L, data, parameters):
     # Cutoff for feature to disable generation of this code (consider
     # removing after benchmarking final result)
     if isinstance(data, str):
-        msg = "evaluate_reference_basis: %s" % (data, )
-        return generate_error(L, msg,
-                              parameters["convert_exceptions_to_warnings"])
+        # Return error code
+        return [L.Return(-1)]
 
     # Get some known dimensions
     element_cellname = data["cellname"]

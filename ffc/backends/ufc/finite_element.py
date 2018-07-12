@@ -17,7 +17,7 @@ from ffc.backends.ufc.evalderivs import (_generate_combinations,
                                          generate_evaluate_reference_basis_derivatives)
 from ffc.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
 from ffc.backends.ufc.evaluatedof import generate_transform_values
-from ffc.backends.ufc.utils import (generate_error, generate_return_int_switch,
+from ffc.backends.ufc.utils import (generate_return_int_switch,
                                     generate_return_new_switch)
 from ufl import product
 
@@ -141,8 +141,8 @@ def tabulate_reference_dof_coordinates(L, ir, parameters):
 
     # Raise error if tabulate_reference_dof_coordinates is ill-defined
     if not ir:
-        msg = "tabulate_reference_dof_coordinates is not defined for this element"
-        return [generate_error(L, msg, parameters["convert_exceptions_to_warnings"])]
+        # Return error code
+        return [L.Return(-1)]
 
     # Extract coordinates and cell dimension
     tdim = ir["tdim"]

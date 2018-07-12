@@ -60,20 +60,6 @@ def float_product(factors):
         return Product(factors)
 
 
-# Note: removed as part of C++ -> C transition. Not using memset because
-# it is not safe for floats
-# def MemZeroRange(name, begin, end):
-#     name = as_cexpr_or_string_symbol(name)
-#     return Call("std::fill", (name + begin, name + end, LiteralFloat(0.0)))
-
-# Note: removed as part of C++ -> C transition. Not using memset because
-# it is not safe for floats
-# def MemZero(name, size):
-#     name = as_cexpr_or_string_symbol(name)
-#     size = as_cexpr(size)
-#     return Call("std::fill_n", (name, size, LiteralFloat(0.0)))
-
-
 def MemCopy(src, dst, size, type):
     src = as_cexpr_or_string_symbol(src)
     dst = as_cexpr_or_string_symbol(dst)
@@ -1116,21 +1102,6 @@ class StatementList(CStatement):
 # Simple statements
 
 
-class Using(CStatement):
-    __slots__ = ("name", )
-    is_scoped = True
-
-    def __init__(self, name):
-        assert isinstance(name, str)
-        self.name = name
-
-    def cs_format(self, precision=None):
-        return "using " + self.name + ";"
-
-    def __eq__(self, other):
-        return (isinstance(other, type(self)) and self.name == other.name)
-
-
 class Break(CStatement):
     __slots__ = ()
     is_scoped = True
@@ -1197,25 +1168,6 @@ class Default(CStatement):
 
     def __eq__(self, other):
         return isinstance(other, type(self))
-
-
-class Throw(CStatement):
-    __slots__ = ("exception", "message")
-    is_scoped = True
-
-    def __init__(self, exception, message):
-        assert isinstance(exception, str)
-        assert isinstance(message, str)
-        self.exception = exception
-        self.message = message
-
-    def cs_format(self, precision=None):
-        assert '"' not in self.message
-        return "throw " + self.exception + '("' + self.message + '");'
-
-    def __eq__(self, other):
-        return (isinstance(other, type(self)) and self.message == other.message
-                and self.exception == other.exception)
 
 
 class Comment(CStatement):
