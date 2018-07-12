@@ -277,7 +277,7 @@ def generate_function_space_typedefs(form, prefix, classname):
 
 
 FORM_CLASS_TEMPLATE_DECL = """\
-dolfin_form* {prefix}{classname}();
+dolfin_form* {prefix}{classname}(void);
 
 {typedefs}
 """
@@ -306,11 +306,11 @@ dolfin_form* {prefix}{classname}()
 """
 
 FUNCTION_SPACE_TEMPLATE_DECL = """\
-dolfin_function_space* {prefix}{classname}();
+dolfin_function_space* {prefix}{classname}(void);
 """
 
 FUNCTION_SPACE_TEMPLATE_IMPL = """\
-dolfin_function_space* {prefix}{classname}()
+dolfin_function_space* {prefix}{classname}(void)
 {{
   dolfin_function_space* space = (dolfin_function_space*) malloc(sizeof(*space));
   space->element = create_{finite_element_classname};

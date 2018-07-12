@@ -5,7 +5,7 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018.
 
 declaration = """
-ufc_form* create_{factory_name}();
+ufc_form* create_{factory_name}(void);
 """
 
 factory = """
@@ -17,19 +17,19 @@ int original_coefficient_position_{factory_name}(int i)
 }}
 
 {coordinate_finite_element_declaration}
-ufc_finite_element* create_coordinate_finite_element_{factory_name}()
+ufc_finite_element* create_coordinate_finite_element_{factory_name}(void)
 {{
 {create_coordinate_finite_element}
 }}
 
 {coordinate_dofmap_declaration}
-ufc_dofmap* create_coordinate_dofmap_{factory_name}()
+ufc_dofmap* create_coordinate_dofmap_{factory_name}(void)
 {{
 {create_coordinate_dofmap}
 }}
 
 {coordinate_mapping_declaration}
-ufc_coordinate_mapping* create_coordinate_mapping_{factory_name}()
+ufc_coordinate_mapping* create_coordinate_mapping_{factory_name}(void)
 {{
 {create_coordinate_mapping}
 }}
@@ -71,32 +71,32 @@ ufc_custom_integral* create_custom_integral_{factory_name}(int subdomain_id)
 {create_custom_integral}
 }}
 
-ufc_cell_integral* create_default_cell_integral_{factory_name}()
+ufc_cell_integral* create_default_cell_integral_{factory_name}(void)
 {{
 {create_default_cell_integral}
 }}
 
-ufc_exterior_facet_integral* create_default_exterior_facet_integral_{factory_name}()
+ufc_exterior_facet_integral* create_default_exterior_facet_integral_{factory_name}(void)
 {{
 {create_default_exterior_facet_integral}
 }}
 
-ufc_interior_facet_integral* create_default_interior_facet_integral_{factory_name}()
+ufc_interior_facet_integral* create_default_interior_facet_integral_{factory_name}(void)
 {{
 {create_default_interior_facet_integral}
 }}
 
-ufc_vertex_integral* create_default_vertex_integral_{factory_name}()
+ufc_vertex_integral* create_default_vertex_integral_{factory_name}(void)
 {{
 {create_default_vertex_integral}
 }}
 
-ufc_custom_integral* create_default_custom_integral_{factory_name}()
+ufc_custom_integral* create_default_custom_integral_{factory_name}(void)
 {{
 {create_default_custom_integral}
 }}
 
-ufc_form* create_{factory_name}()
+ufc_form* create_{factory_name}(void)
 {{
   ufc_form* form = malloc(sizeof(*form));
 

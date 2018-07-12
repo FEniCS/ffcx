@@ -479,16 +479,6 @@ def _attach_integral_metadata(form_data, form_r_family, parameters):
         ida.metadata["quadrature_rule"] = qr
         ida.metadata["quadrature_degree"] = qd
 
-        # Add common num_cells (I believe this must be equal but I'm
-        # not that into this work)
-        num_cells = set(md.get("num_cells") for md in integral_metadatas)
-        if len(num_cells) != 1:
-            raise FFCError(
-                "Found integrals with different num_cells metadata on same subdomain: %s" %
-                (str(list(num_cells)), ))
-        num_cells, = num_cells
-        ida.metadata["num_cells"] = num_cells
-
         # Reconstruct integrals to avoid modifying the input integral,
         # which would affect the signature computation if the integral
         # was used again in the user program.  Modifying attributes of
