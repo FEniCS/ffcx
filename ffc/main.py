@@ -39,7 +39,7 @@ parser.add_argument(
 parser.add_argument("-d", "--debug", action='store_true', help="enable debug output")
 parser.add_argument("-v", "--verbose", action='store_true', help="verbose output")
 parser.add_argument("-o", "--output-directory", type=str, help="output directory")
-parser.add_argument("-p", "--profile", action='store_true',  help="enable profiling")
+parser.add_argument("-p", "--profile", action='store_true', help="enable profiling")
 parser.add_argument(
     "-q",
     "--quadrature-rule",
@@ -47,7 +47,10 @@ parser.add_argument(
     default="auto",
     help="quadrature rule to apply (default: auto)")
 parser.add_argument(
-    "--quadrature-degree", type=int, default=-1, help="quadrature degree to apply, auto: -1 (default: %(default)s)")
+    "--quadrature-degree",
+    type=int,
+    default=-1,
+    help="quadrature degree to apply, auto: -1 (default: %(default)s)")
 parser.add_argument(
     "-r",
     "--representation",
@@ -63,8 +66,7 @@ parser.add_argument(
     nargs=2,
     dest="f",
     metavar=("name", "value"),
-    help=
-    "set existing parameter value in the parameter system, where 'name' is the FFC parameter name")
+    help="set existing parameter value in the parameter system, where 'name' is the FFC parameter name")
 parser.add_argument(
     '-u',
     action="append",
@@ -113,7 +115,8 @@ def main(args=None):
     for p in xargs.u:
         assert len(p) == 2
         if p[0] in parameters:
-            raise RuntimeError("Command parameter set with -u already exists in parameters system. Use -f.")
+            raise RuntimeError(
+                "Command parameter set with -u already exists in parameters system. Use -f.")
         parameters[p[0]] = p[1]
 
     # FIXME: This is terrible!
