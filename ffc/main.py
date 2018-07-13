@@ -63,7 +63,7 @@ parser.add_argument(
     action='store',
     choices=('double', 'double complex'),
     default="double",
-    help="Scalar type (default: double)")
+    help="scalar type to use (default: double)")
 parser.add_argument(
     '-f',
     action="append",
