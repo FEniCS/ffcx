@@ -60,9 +60,19 @@ parser.add_argument(
     '-f',
     action="append",
     default=[],
+    nargs=2,
     dest="f",
-    metavar="parameter=value",
-    help="option passed through to parameter system, where 'parameter' is the FFC parameter name")
+    metavar=("name", "value"),
+    help=
+    "set existing parameter value in the parameter system, where 'name' is the FFC parameter name")
+parser.add_argument(
+    '-u',
+    action="append",
+    default=[],
+    nargs=2,
+    dest="u",
+    metavar=("name", "value"),
+    help="add new parameter to the parameter system")
 parser.add_argument("ufl_file", nargs='+', help="UFL file(s) to be compiled")
 
 
@@ -83,6 +93,8 @@ def main(args=None):
     parameters = default_parameters()
     ffc_logger = logging.getLogger("ffc")
 
+    print(xargs)
+
     if xargs.debug:
         ffc_logger.setLevel(logging.DEBUG)
     if xargs.verbose:
@@ -94,10 +106,15 @@ def main(args=None):
     if xargs.output_directory:
         parameters["output_dir"] = xargs.output_directory
     for p in xargs.f:
-        assert len(p.split("=")) == 2
-        key, value = p.split("=")
-        assert key in parameters
-        parameters[key] = value
+        assert len(p) == 2
+        if p[0] not in parameters:
+            raise RuntimeError("Command parameter set with -f does not exist in parameters system.")
+        parameters[p[0]] = p[1]
+    for p in xargs.u:
+        assert len(p) == 2
+        if p[0] in parameters:
+            raise RuntimeError("Command parameter set with -u alreadt exists in parameters system. Use -f.")
+        parameters[p[0]] = p[1]
 
     # FIXME: This is terrible!
     # Set UFL precision
