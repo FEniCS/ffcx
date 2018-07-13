@@ -33,13 +33,13 @@ parser.add_argument(
     action='store',
     choices=["ufc", "dolfin"],
     default="ufc",
-    help="target language/wrappers (default: ufc)")
+    help="target language/wrappers (default: %(default)s)")
 parser.add_argument(
     "--version", action='version', version="%(prog)s " + ("(version {})".format(FFC_VERSION)))
-parser.add_argument("-d", "--debug", action='store_true', default=False, help="enable debug output")
-parser.add_argument("-v", "--verbose", action='store_true', default=False, help="verbose output")
+parser.add_argument("-d", "--debug", action='store_true', help="enable debug output")
+parser.add_argument("-v", "--verbose", action='store_true', help="verbose output")
 parser.add_argument("-o", "--output-directory", type=str, help="output directory")
-parser.add_argument("-p", "--profile", action='store_true', default=False, help="enable profiling")
+parser.add_argument("-p", "--profile", action='store_true',  help="enable profiling")
 parser.add_argument(
     "-q",
     "--quadrature-rule",
@@ -47,7 +47,7 @@ parser.add_argument(
     default="auto",
     help="quadrature rule to apply (default: auto)")
 parser.add_argument(
-    "--quadrature-degree", type=int, default=-1, help="quadrature degree to apply (auto: -1)")
+    "--quadrature-degree", type=int, default=-1, help="quadrature degree to apply, auto: -1 (default: %(default)s)")
 parser.add_argument(
     "-r",
     "--representation",
@@ -55,7 +55,7 @@ parser.add_argument(
     action='store',
     choices=('uflacs', 'tsfc'),
     default="uflacs",
-    help="backend to use for compiling forms (default: uflacs)")
+    help="backend to use for compiling forms (default: %(default)s)")
 parser.add_argument(
     '-f',
     action="append",
@@ -113,7 +113,7 @@ def main(args=None):
     for p in xargs.u:
         assert len(p) == 2
         if p[0] in parameters:
-            raise RuntimeError("Command parameter set with -u alreadt exists in parameters system. Use -f.")
+            raise RuntimeError("Command parameter set with -u already exists in parameters system. Use -f.")
         parameters[p[0]] = p[1]
 
     # FIXME: This is terrible!
