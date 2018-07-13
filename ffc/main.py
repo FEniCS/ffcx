@@ -45,7 +45,7 @@ parser.add_argument(
     "--quadrature-rule",
     type=str,
     default="auto",
-    help="quadrature rule to apply (default: auto)")
+    help="quadrature rule to apply (default: %(default)s)")
 parser.add_argument(
     "--quadrature-degree",
     type=int,
@@ -94,8 +94,6 @@ def main(args=None):
     xargs = parser.parse_args(args)
     parameters = default_parameters()
     ffc_logger = logging.getLogger("ffc")
-
-    print(xargs)
 
     if xargs.debug:
         ffc_logger.setLevel(logging.DEBUG)
