@@ -122,6 +122,23 @@ def tabulate_facet_dofs(L, ir):
         return L.NoOp()
 
 
+def tabulate_dof_permutations(L, ir):
+    edge_perms, face_perm = ir["dof_permutations"]
+
+    # Only edge permutations so far
+    code = []
+    edge_ordering = L.Symbol("edge_ordering")
+    dof = L.Symbol("dof")
+    cases = []
+    for idx, p in edge_perms.items():
+        pcases = [(1, L.Return(p[1]))]
+        cases += [(idx, L.Switch(edge_ordering[p[0]], pcases, default=L.Return(dof)))]
+
+    code += [L.Switch(dof, cases, default=L.Return(dof))]
+    print(L.StatementList(code))
+    return L.StatementList(code)
+
+
 def tabulate_entity_dofs(L, ir):
     entity_dofs, num_dofs_per_entity = ir["tabulate_entity_dofs"]
 
@@ -235,6 +252,7 @@ def ufc_dofmap_generator(ir, parameters):
 
     # Functions
     d["tabulate_dofs"] = tabulate_dofs(L, ir)
+    d["tabulate_dof_permutations"] = tabulate_dof_permutations(L, ir)
     d["tabulate_facet_dofs"] = tabulate_facet_dofs(L, ir)
     d["tabulate_entity_dofs"] = tabulate_entity_dofs(L, ir)
     d["tabulate_entity_closure_dofs"] = tabulate_entity_closure_dofs(L, ir)

@@ -201,6 +201,43 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit
     # Precompute repeatedly used items
     num_dofs_per_entity = _num_dofs_per_entity(fiat_element)
     entity_dofs = fiat_element.entity_dofs()
+    print(fiat_element, isinstance(fiat_element, MixedElement))
+    print('fiat entity_dofs = ', entity_dofs)
+
+    if isinstance(fiat_element, MixedElement):
+        elems = fiat_element.elements()
+    else:
+        elems = (fiat_element, )
+    print(elems)
+
+    td = cell.topological_dimension()
+
+    edge_permutations = {}
+
+    if td == 3:
+        face_permutations = [{} for i in range(cell.num_facets())]
+    else:
+        face_permutations = []
+
+    offset = 0
+    for el in elems:
+        nd = _num_dofs_per_entity(el)
+        ed = el.entity_dofs()
+        print('stuff = ', el, offset, nd, el.space_dimension(), ed)
+        # If more than one dof on edge, then they need a permutation available
+        if nd[1] > 1 and td > 1:
+            for k, v in ed[1].items():
+                for i, idx in enumerate(v):
+                    edge_permutations[idx + offset] = (k, v[-i-1] + offset)
+        if nd[2] > 1 and td > 2:
+            for k, v in ed[2].items():
+                for i, idx in enumerate(v):
+                    print('facet_dof on facet', k, ' idx = ', idx + offset)
+
+        offset += el.space_dimension()
+
+    print(edge_permutations)
+
     facet_dofs = _tabulate_facet_dofs(fiat_element, cell)
     entity_closure_dofs, num_dofs_per_entity_closure = \
         _tabulate_entity_closure_dofs(fiat_element, cell)
@@ -222,6 +259,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit
     ir["num_entity_dofs"] = num_dofs_per_entity
     ir["num_entity_closure_dofs"] = num_dofs_per_entity_closure
     ir["tabulate_dofs"] = _tabulate_dofs(fiat_element, cell)
+    ir["dof_permutations"] = [edge_permutations, face_permutations]
     ir["tabulate_facet_dofs"] = facet_dofs
     ir["tabulate_entity_dofs"] = (entity_dofs, num_dofs_per_entity)
     ir["tabulate_entity_closure_dofs"] = (entity_closure_dofs, entity_dofs, num_dofs_per_entity)
