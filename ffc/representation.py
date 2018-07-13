@@ -225,11 +225,11 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit
         ed = el.entity_dofs()
         print('stuff = ', el, offset, nd, el.space_dimension(), ed)
         # If more than one dof on edge, then they need a permutation available
-        if nd[1] > 1 and td > 1:
+        if td > 1 and nd[1] > 1:
             for k, v in ed[1].items():
                 for i, idx in enumerate(v):
-                    edge_permutations[idx + offset] = (k, v[-i-1] + offset)
-        if nd[2] > 1 and td > 2:
+                    edge_permutations[idx + offset] = (k, v[-i - 1] + offset)
+        if td > 2 and nd[2] > 1:
             for k, v in ed[2].items():
                 for i, idx in enumerate(v):
                     print('facet_dof on facet', k, ' idx = ', idx + offset)
