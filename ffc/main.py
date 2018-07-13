@@ -57,6 +57,14 @@ parser.add_argument(
     default="uflacs",
     help="backend to use for compiling forms (default: uflacs)")
 parser.add_argument(
+    "-s",
+    "--scalar_type",
+    type=str,
+    action='store',
+    choices=('double', 'double complex'),
+    default="double",
+    help="Scalar type (default: double)")
+parser.add_argument(
     '-f',
     action="append",
     default=[],
@@ -91,6 +99,7 @@ def main(args=None):
     parameters["representation"] = xargs.representation
     parameters["quadrature_rule"] = xargs.quadrature_rule
     parameters["quadrature_degree"] = xargs.quadrature_degree
+    parameters["scalar_type"] = xargs.scalar_type
     if xargs.output_directory:
         parameters["output_dir"] = xargs.output_directory
     for p in xargs.f:
