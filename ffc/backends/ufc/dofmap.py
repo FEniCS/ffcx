@@ -144,8 +144,21 @@ def tabulate_dof_permutations(L, ir):
              L.ForRange(i, 0, num_edges, index_type="int", body=body)]
     if tdim == 3:
         # TODO - get correct formula for ordering
-        body = [L.Assign(facet_ordering[i], L.GT(global_indices[facet_vertices[i][0]],
-                                                 global_indices[facet_vertices[i][1]]))]
+        jmin = L.Symbol("jmin")
+        jdir = L.Symbol("jdir")
+        gmin = L.Symbol("gmin")
+        j = L.Symbol("j")
+        minbody = [L.If(L.LT(global_indices[facet_vertices[i][j]], gmin),
+                        [L.Assign(gmin, global_indices[facet_vertices[i][j]]),
+                         L.Assign(jmin, j)])]
+        body = [L.VariableDecl("int64_t", gmin, global_indices[facet_vertices[i][0]]),
+                L.VariableDecl("int", jmin, 0),
+                L.ForRange(j, 1, 3, index_type="int", body=minbody),
+                L.VariableDecl("int", jdir),
+                L.Assign(jdir, L.GT(global_indices[facet_vertices[i][(jmin + 1) % 3]],
+                                    global_indices[facet_vertices[i][(jmin + 2) % 3]])),
+                L.Assign(facet_ordering[i], jmin*2 + jdir)]
+
         code += [L.ArrayDecl("int", facet_ordering, [num_facets]),
                  L.ForRange(i, 0, num_facets, index_type="int", body=body)]
 
