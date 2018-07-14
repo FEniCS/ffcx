@@ -157,7 +157,7 @@ def tabulate_dof_permutations(L, ir):
                 L.VariableDecl("int", jdir),
                 L.Assign(jdir, L.GT(global_indices[facet_vertices[i][(jmin + 1) % 3]],
                                     global_indices[facet_vertices[i][(jmin + 2) % 3]])),
-                L.Assign(facet_ordering[i], jmin*2 + jdir)]
+                L.Assign(facet_ordering[i], jmin * 2 + jdir)]
 
         code += [L.ArrayDecl("int", facet_ordering, [num_facets]),
                  L.ForRange(i, 0, num_facets, index_type="int", body=body)]

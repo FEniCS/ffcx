@@ -225,8 +225,8 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit
                 for i, idx in enumerate(v):
                     edge_permutations[idx + offset] = (k, v[-i - 1] + offset)
         if td > 2 and nd[2] > 1:
-            n = nd[1] + 1 # FIXME - should be the 'order'
-            tab = triangle_permutation_table(n, 1) # FIXME - quads
+            n = nd[1] + 1  # FIXME - should be the 'order'
+            tab = triangle_permutation_table(n, 1)  # FIXME - quads
             print('ed2 = ', ed[2])
             for k, v in ed[2].items():
                 for i, idx in enumerate(v):
