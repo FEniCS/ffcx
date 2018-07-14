@@ -138,7 +138,7 @@ def tabulate_dof_permutations(L, ir):
                      'tetrahedron': ((2, 3), (1, 3), (1, 2), (0, 3), (0, 2), (0, 1)),
                      'quadrilateral': ((0, 1), (2, 3), (0, 2), (1, 3)),
                      'hexahedron': ((0, 1), (2, 3), (4, 5), (6, 7), (0, 2), (1, 3),
-                                    (4, 6), (5, 7), (0, 4), (1, 5), (2, 6), (3, 7)) }
+                                    (4, 6), (5, 7), (0, 4), (1, 5), (2, 6), (3, 7))}
 
     facet_edges = {'tetrahedron': ((0, 1, 2), (0, 3, 4), (1, 3, 5), (2, 4, 5))}
     # TODO - quads
@@ -158,9 +158,9 @@ def tabulate_dof_permutations(L, ir):
         code += [L.ArrayDecl("int", facet_ordering, [num_facets])]
         for i in range(num_facets):
             code += [L.Assign(facet_ordering[i],
-                         4 * edge_ordering[facet_edges[celltype][i][0]]
-                         + 2 * edge_ordering[facet_edges[celltype][i][1]]
-                         + edge_ordering[facet_edges[celltype][i][2]] - 1)]
+                              4 * edge_ordering[facet_edges[celltype][i][0]]
+                              + 2 * edge_ordering[facet_edges[celltype][i][1]]
+                              + edge_ordering[facet_edges[celltype][i][2]] - 1)]
     # TODO: map index to correct permutation
 
     # Sanity check that edge and face dofs are distinct
