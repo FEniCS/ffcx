@@ -123,16 +123,41 @@ def tabulate_facet_dofs(L, ir):
 
 
 def tabulate_dof_permutations(L, ir):
-    edge_perms, face_perm = ir["dof_permutations"]
+    edge_perms, facet_perms, cell = ir["dof_permutations"]
+    tdim = cell.topological_dimension()
 
-    # Only edge permutations so far
-    code = []
-    edge_ordering = L.Symbol("edge_ordering")
     dof = L.Symbol("dof")
+    if tdim == 1:
+        return L.Return(dof)
+
+    code = []
+    global_indices = L.Symbol("global_indices")
+    edge_vertices = L.Symbol(cell.cellname() + "_edge_vertices")
+    facet_vertices = L.Symbol(cell.cellname() + "_facet_vertices")
+    num_edges = cell.num_edges()
+    num_facets = cell.num_facets()
+    edge_ordering = L.Symbol("edge_ordering")
+    facet_ordering = L.Symbol("facet_ordering")
+    i = L.Symbol("i")
+    body = [L.Assign(edge_ordering[i], L.GT(global_indices[edge_vertices[i][0]], global_indices[edge_vertices[i][1]]))]
+    code += [L.ArrayDecl("int", edge_ordering, [num_edges]),
+             L.ForRange(i, 0, num_edges, index_type="int", body=body)]
+    if tdim == 3:
+        # TODO - get correct formula for ordering
+        body = [L.Assign(facet_ordering[i], L.GT(global_indices[facet_vertices[i][0]],
+                                                 global_indices[facet_vertices[i][1]]))]
+        code += [L.ArrayDecl("int", facet_ordering, [num_facets]),
+                 L.ForRange(i, 0, num_facets, index_type="int", body=body)]
+
+    # TODO: Check that edge and face dofs are distinct
+
     cases = []
     for idx, p in edge_perms.items():
         pcases = [(1, L.Return(p[1]))]
         cases += [(idx, L.Switch(edge_ordering[p[0]], pcases, default=L.Return(dof)))]
+    for idx, p in facet_perms.items():
+        pcases = [(i, L.Return(q)) for i, q in enumerate(p[1])]
+        cases += [(idx, L.Switch(facet_ordering[p[0]], pcases, default=L.Return(dof)))]
 
     code += [L.Switch(dof, cases, default=L.Return(dof))]
     print(L.StatementList(code))
