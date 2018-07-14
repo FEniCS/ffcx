@@ -127,42 +127,44 @@ def tabulate_dof_permutations(L, ir):
     tdim = cell.topological_dimension()
 
     dof = L.Symbol("dof")
-    if tdim == 1:
+    if tdim == 1 or (len(edge_perms) == 0 and len(facet_perms) == 0):
         return L.Return(dof)
 
     code = []
     global_indices = L.Symbol("global_indices")
-    edge_vertices = L.Symbol(cell.cellname() + "_edge_vertices")
-    facet_vertices = L.Symbol(cell.cellname() + "_facet_vertices")
+
+    # Copied from ufc_geometry.h
+    edge_vertices = {'triangle': ((1, 2), (0, 2), (0, 1)),
+                     'tetrahedron': ((2, 3), (1, 3), (1, 2), (0, 3), (0, 2), (0, 1)),
+                     'quadrilateral': ((0, 1), (2, 3), (0, 2), (1, 3)),
+                     'hexahedron': ((0, 1), (2, 3), (4, 5), (6, 7), (0, 2), (1, 3),
+                                    (4, 6), (5, 7), (0, 4), (1, 5), (2, 6), (3, 7)) }
+
+    facet_edges = {'tetrahedron': ((0, 1, 2), (0, 3, 4), (1, 3, 5), (2, 4, 5))}
+    # TODO - quads
+
+    celltype = cell.cellname()
     num_edges = cell.num_edges()
     num_facets = cell.num_facets()
     edge_ordering = L.Symbol("edge_ordering")
     facet_ordering = L.Symbol("facet_ordering")
-    i = L.Symbol("i")
-    body = [L.Assign(edge_ordering[i], L.GT(global_indices[edge_vertices[i][0]], global_indices[edge_vertices[i][1]]))]
-    code += [L.ArrayDecl("int", edge_ordering, [num_edges]),
-             L.ForRange(i, 0, num_edges, index_type="int", body=body)]
+
+    code += [L.ArrayDecl("int", edge_ordering, [num_edges])]
+    for i in range(num_edges):
+        code += [L.Assign(edge_ordering[i],
+                          L.GT(global_indices[edge_vertices[celltype][i][0]],
+                               global_indices[edge_vertices[celltype][i][1]]))]
     if tdim == 3:
-        # TODO - get correct formula for ordering
-        jmin = L.Symbol("jmin")
-        jdir = L.Symbol("jdir")
-        gmin = L.Symbol("gmin")
-        j = L.Symbol("j")
-        minbody = [L.If(L.LT(global_indices[facet_vertices[i][j]], gmin),
-                        [L.Assign(gmin, global_indices[facet_vertices[i][j]]),
-                         L.Assign(jmin, j)])]
-        body = [L.VariableDecl("int64_t", gmin, global_indices[facet_vertices[i][0]]),
-                L.VariableDecl("int", jmin, 0),
-                L.ForRange(j, 1, 3, index_type="int", body=minbody),
-                L.VariableDecl("int", jdir),
-                L.Assign(jdir, L.GT(global_indices[facet_vertices[i][(jmin + 1) % 3]],
-                                    global_indices[facet_vertices[i][(jmin + 2) % 3]])),
-                L.Assign(facet_ordering[i], jmin * 2 + jdir)]
+        code += [L.ArrayDecl("int", facet_ordering, [num_facets])]
+        for i in range(num_facets):
+            code += [L.Assign(facet_ordering[i],
+                         4 * edge_ordering[facet_edges[celltype][i][0]]
+                         + 2 * edge_ordering[facet_edges[celltype][i][1]]
+                         + edge_ordering[facet_edges[celltype][i][2]] - 1)]
+    # TODO: map index to correct permutation
 
-        code += [L.ArrayDecl("int", facet_ordering, [num_facets]),
-                 L.ForRange(i, 0, num_facets, index_type="int", body=body)]
-
-    # TODO: Check that edge and face dofs are distinct
+    # Sanity check that edge and face dofs are distinct
+    assert len(set(edge_perms.keys()).intersection(facet_perms.keys())) == 0
 
     cases = []
     for idx, p in edge_perms.items():

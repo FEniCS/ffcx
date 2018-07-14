@@ -220,12 +220,13 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit
         print('stuff = ', el, offset, nd, el.space_dimension(), ed)
         # If more than one dof on edge, then they need a permutation available
         # Just reverse the order
+        # TODO - don't insert no-op entries (middle of edge does not permute)
         if td > 1 and nd[1] > 1:
             for k, v in ed[1].items():
                 for i, idx in enumerate(v):
                     edge_permutations[idx + offset] = (k, v[-i - 1] + offset)
         if td > 2 and nd[2] > 1:
-            n = nd[1] + 1  # FIXME - should be the 'order'
+            n = nd[1] + 1  # FIXME - should be the 'order'... this works for Lagrange
             tab = triangle_permutation_table(n, 1)  # FIXME - quads
             print('ed2 = ', ed[2])
             for k, v in ed[2].items():
