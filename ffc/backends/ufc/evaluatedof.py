@@ -9,7 +9,6 @@
 # from the old implementation in FFC, although some improvements
 # have been made to the generated code.
 
-from ffc.backends.ufc.utils import generate_error
 from ffc.backends.ufc.jacobian import jacobian, inverse_jacobian, orientation
 from ufl.permutation import build_component_numbering
 from ffc.utils import pick_first
@@ -146,8 +145,8 @@ def _generate_body(L, i, dof, mapping, gdim, tdim, cell_shape, offset=0):
 
     # EnrichedElement is handled by having [None, ..., None] dual basis
     if not dof:
-        msg = "evaluate_dof(s) for enriched element not implemented."
-        return ([generate_error(L, msg, True)], 0.0)
+        # Return error code
+        return ([L.Return(-1)], 0.0)
 
     points = list(dof.keys())
 
