@@ -306,8 +306,8 @@ def triangle_permutation_table(n, interior=0):
     for (i, j) in pt_to_index.keys():
         k = n - i - j
         iset = [(i, j), (j, i),
-                (k, j), (j, k),
-                (i, k), (k, i)]
+                (k, i), (j, k),
+                (i, k), (k, j)]
         for p, w in enumerate(iset):
             st[p] += [pt_to_index[w]]
 

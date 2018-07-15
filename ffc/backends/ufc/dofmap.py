@@ -150,18 +150,22 @@ def tabulate_dof_permutations(L, ir):
     facet_ordering = L.Symbol("facet_ordering")
 
     code += [L.ArrayDecl("int", edge_ordering, [num_edges])]
+    # Figure out the ordering of the global vertices on each edge
+    # 0 = reference cell order, 1 = reversed
     for i in range(num_edges):
         code += [L.Assign(edge_ordering[i],
                           L.GT(global_indices[edge_vertices[celltype][i][0]],
                                global_indices[edge_vertices[celltype][i][1]]))]
+
     if tdim == 3:
         code += [L.ArrayDecl("int", facet_ordering, [num_facets])]
         for i in range(num_facets):
             code += [L.Assign(facet_ordering[i],
-                              4 * edge_ordering[facet_edges[celltype][i][0]]
-                              + 2 * edge_ordering[facet_edges[celltype][i][1]]
-                              + edge_ordering[facet_edges[celltype][i][2]] - 1)]
-    # TODO: map index to correct permutation
+                              edge_ordering[facet_edges[celltype][i][0]]
+                              + 2 * (edge_ordering[facet_edges[celltype][i][1]]
+                                     + edge_ordering[facet_edges[celltype][i][2]])),
+                     L.VerbatimStatement('printf("f[%d] = %%d\\n", facet_ordering[%d]);' % (i, i))]
+    # TODO: check map index is correct permutation
 
     # Sanity check that edge and face dofs are distinct
     assert len(set(edge_perms.keys()).intersection(facet_perms.keys())) == 0
