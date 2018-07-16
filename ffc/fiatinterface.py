@@ -300,16 +300,14 @@ def triangle_permutation_table(n, interior=0):
     for i, ids in enumerate(FIAT.reference_element.lattice_iter(
             interior, n + 1 - interior, 2)):
         pt_to_index[tuple(ids)] = i
-    print(pt_to_index)
 
     st = [[] for i in range(6)]
     for (i, j) in pt_to_index.keys():
         k = n - i - j
         iset = [(i, j), (j, i),
-                (k, i), (j, k),
-                (i, k), (k, j)]
+                (i, k), (j, k),
+                (k, i), (k, j)]
         for p, w in enumerate(iset):
             st[p] += [pt_to_index[w]]
 
-    print(st)
     return st

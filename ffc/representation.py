@@ -192,21 +192,12 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, parameters, ji
     return ir
 
 
-def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit=False):
-    """Compute intermediate representation of dofmap."""
-    # Create FIAT element
-    fiat_element = create_element(ufl_element)
-    cell = ufl_element.cell()
-
-    # Precompute repeatedly used items
-    num_dofs_per_entity = _num_dofs_per_entity(fiat_element)
-    entity_dofs = fiat_element.entity_dofs()
+def _compute_dofmap_permutation_tables(fiat_element, cell):
 
     if isinstance(fiat_element, MixedElement):
         elems = fiat_element.elements()
     else:
         elems = (fiat_element, )
-    print(elems)
 
     td = cell.topological_dimension()
 
@@ -217,28 +208,41 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit
     for el in elems:
         nd = _num_dofs_per_entity(el)
         ed = el.entity_dofs()
-        print('stuff = ', el, offset, nd, el.space_dimension(), ed)
         # If more than one dof on edge, then they need a permutation available
         # Just reverse the order
-        # TODO - don't insert no-op entries (middle of edge does not permute)
         if td > 1 and nd[1] > 1:
             for k, v in ed[1].items():
-                for i, idx in enumerate(v):
-                    edge_permutations[idx + offset] = (k, v[-i - 1] + offset)
+                for i in range(len(v)):
+                    idx1 = v[i]
+                    idx2 = v[-i - 1]
+                    if idx1 != idx2:
+                        edge_permutations[idx1 + offset] = (k, idx2 + offset)
         if td > 2 and nd[2] > 1:
+            # Permutation on a triangular facet
+            # FIXME: add support for quadrilateral facets
             n = nd[1] + 1  # FIXME - should be the 'order'... this works for Lagrange
-            tab = triangle_permutation_table(n, 1)  # FIXME - quads
-            print('ed2 = ', ed[2])
+            tab = triangle_permutation_table(n, 1)
             for k, v in ed[2].items():
                 for i, idx in enumerate(v):
                     perms = [(v[row[i]] + offset) for row in tab]
                     face_permutations[idx + offset] = (k, perms)
-                    print('facet_dof on facet', k, ' idx = ', idx + offset)
 
         offset += el.space_dimension()
 
-    print('Edge = ', edge_permutations)
-    print('Face = ', face_permutations)
+    return (edge_permutations, face_permutations)
+
+
+def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit=False):
+    """Compute intermediate representation of dofmap."""
+    # Create FIAT element
+    fiat_element = create_element(ufl_element)
+    cell = ufl_element.cell()
+
+    # Precompute repeatedly used items
+    num_dofs_per_entity = _num_dofs_per_entity(fiat_element)
+    entity_dofs = fiat_element.entity_dofs()
+
+    edge_permutations, face_permutations = _compute_dofmap_permutation_tables(fiat_element, cell)
 
     facet_dofs = _tabulate_facet_dofs(fiat_element, cell)
     entity_closure_dofs, num_dofs_per_entity_closure = \

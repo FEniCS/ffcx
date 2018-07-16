@@ -163,9 +163,8 @@ def tabulate_dof_permutations(L, ir):
             code += [L.Assign(facet_ordering[i],
                               edge_ordering[facet_edges[celltype][i][0]]
                               + 2 * (edge_ordering[facet_edges[celltype][i][1]]
-                                     + edge_ordering[facet_edges[celltype][i][2]])),
-                     L.VerbatimStatement('printf("f[%d] = %%d\\n", facet_ordering[%d]);' % (i, i))]
-    # TODO: check map index is correct permutation
+                                     + edge_ordering[facet_edges[celltype][i][2]]))]
+#             L.VerbatimStatement('printf("f[%d] = %%d\\n", facet_ordering[%d]);' % (i, i))]
 
     # Sanity check that edge and face dofs are distinct
     assert len(set(edge_perms.keys()).intersection(facet_perms.keys())) == 0
@@ -179,7 +178,6 @@ def tabulate_dof_permutations(L, ir):
         cases += [(idx, L.Switch(facet_ordering[p[0]], pcases, default=L.Return(dof)))]
 
     code += [L.Switch(dof, cases, default=L.Return(dof))]
-    print(L.StatementList(code))
     return L.StatementList(code)
 
 
