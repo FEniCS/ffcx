@@ -217,7 +217,7 @@ def _compute_dofmap_permutation_tables(fiat_element, cell):
                     idx2 = v[-i - 1]
                     if idx1 != idx2:
                         edge_permutations[idx1 + offset] = (k, idx2 + offset)
-        if td > 2 and nd[2] > 1:
+        if td > 2 and nd[2] > 1 and cell.cellname() == 'tetrahedron':
             # Permutation on a triangular facet
             # FIXME: add support for quadrilateral facets
             n = nd[1] + 1  # FIXME - should be the 'order'... this works for Lagrange
