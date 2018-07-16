@@ -157,7 +157,7 @@ def tabulate_dof_permutations(L, ir):
                           L.GT(global_indices[edge_vertices[celltype][i][0]],
                                global_indices[edge_vertices[celltype][i][1]]))]
 
-    if tdim == 3:
+    if tdim == 3 and celltype == 'tetrahedron':
         code += [L.ArrayDecl("int", facet_ordering, [num_facets])]
         for i in range(num_facets):
             code += [L.Assign(facet_ordering[i],
