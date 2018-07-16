@@ -220,7 +220,7 @@ def _compute_dofmap_permutation_tables(fiat_element, cell):
         if td > 2 and nd[2] > 1 and cell.cellname() == 'tetrahedron':
             # Permutation on a triangular facet
             # FIXME: add support for quadrilateral facets
-            n = nd[1] + 1  # FIXME - should be the 'order'... this works for Lagrange
+            n = el.order  # Is this sufficient?
             tab = triangle_permutation_table(n, 1)
             for k, v in ed[2].items():
                 for i, idx in enumerate(v):
