@@ -208,6 +208,7 @@ def _compute_dofmap_permutation_tables(fiat_element, cell):
     for el in elems:
         nd = _num_dofs_per_entity(el)
         ed = el.entity_dofs()
+
         # If more than one dof on edge, then they need a permutation available
         # Just reverse the order
         if td > 1 and nd[1] > 1:
@@ -220,12 +221,15 @@ def _compute_dofmap_permutation_tables(fiat_element, cell):
         if td > 2 and nd[2] > 1 and cell.cellname() == 'tetrahedron':
             # Permutation on a triangular facet
             # FIXME: add support for quadrilateral facets
-            n = el.order  # Is this sufficient?
-            tab = triangle_permutation_table(n, 1)
-            for k, v in ed[2].items():
-                for i, idx in enumerate(v):
-                    perms = [(v[row[i]] + offset) for row in tab]
-                    face_permutations[idx + offset] = (k, perms)
+            # FIXME: add support for Hdiv/Hcurl elements
+            n = el.degree()
+            n_facet_dofs = (n - 1) * (n - 2) / 2  # Valid for Lagrange - fails for RT, Nedelec etc.
+            if n_facet_dofs == nd[2]:
+                tab = triangle_permutation_table(n, 1)
+                for k, v in ed[2].items():
+                    for i, idx in enumerate(v):
+                        perms = [(v[row[i]] + offset) for row in tab]
+                        face_permutations[idx + offset] = (k, perms)
 
         offset += el.space_dimension()
 
