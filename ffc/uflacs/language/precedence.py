@@ -47,9 +47,6 @@ class PRECEDENCE:
     EQ = 7
     NE = 7
 
-    BIT_AND = 8
-    BIT_XOR = 9
-    BIT_OR = 10
     AND = 11
     OR = 12
 
