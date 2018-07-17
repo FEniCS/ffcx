@@ -139,9 +139,23 @@ def tabulate_dof_permutations(L, ir):
                      'quadrilateral': ((0, 1), (2, 3), (0, 2), (1, 3)),
                      'hexahedron': ((0, 1), (2, 3), (4, 5), (6, 7), (0, 2), (1, 3),
                                     (4, 6), (5, 7), (0, 4), (1, 5), (2, 6), (3, 7))}
+    facet_edge_vertices = {'tetrahedron': (((2, 3), (1, 3), (1, 2)),
+                                           ((2, 3), (0, 3), (0, 2)),
+                                           ((1, 3), (0, 3), (0, 1)),
+                                           ((1, 2), (0, 2), (0, 1))),
+                           'hexahedron': (((0, 1), (2, 3), (0, 2), (1, 3)),
+                                          ((4, 5), (6, 7), (4, 6), (5, 7)),
+                                          ((0, 1), (4, 5), (0, 4), (1, 5)),
+                                          ((2, 3), (6, 7), (2, 6), (3, 7)),
+                                          ((0, 2), (4, 6), (0, 4), (2, 6)),
+                                          ((1, 3), (5, 7), (1, 5), (3, 7)))}
 
-    facet_edges = {'tetrahedron': ((0, 1, 2), (0, 3, 4), (1, 3, 5), (2, 4, 5))}
-    # TODO - quads
+    # These are fixed tables, but calculated here from data from ufc_geometry.h above
+    facet_edges = {}
+    facet_edges['tetrahedron'] = tuple(tuple(edge_vertices['tetrahedron'].index(edge) for edge in facet)
+                                       for facet in facet_edge_vertices['tetrahedron'])
+    facet_edges['hexahedron'] = tuple(tuple(edge_vertices['hexahedron'].index(edge) for edge in facet)
+                                      for facet in facet_edge_vertices['hexahedron'])
 
     celltype = cell.cellname()
     num_edges = cell.num_edges()
@@ -164,7 +178,36 @@ def tabulate_dof_permutations(L, ir):
                               edge_ordering[facet_edges[celltype][i][0]]
                               + 2 * (edge_ordering[facet_edges[celltype][i][1]]
                                      + edge_ordering[facet_edges[celltype][i][2]]))]
-#             L.VerbatimStatement('printf("f[%d] = %%d\\n", facet_ordering[%d]);' % (i, i))]
+    if celltype == 'hexahedron':
+        f_edge_verts = facet_edge_vertices['hexahedron']
+        cross_facet_order = L.Symbol("xfacet_order")
+        t0 = L.Symbol('t0')
+        t1 = L.Symbol('t1')
+        t2 = L.Symbol('t2')
+        t3 = L.Symbol('t3')
+        code += [L.ArrayDecl("int", cross_facet_order, [2]),
+                 L.VariableDecl("int", t0),
+                 L.VariableDecl("int", t1),
+                 L.VariableDecl("int", t2),
+                 L.VariableDecl("int", t3)]
+        for i in range(num_facets):
+            code += [L.Assign(cross_facet_order[0], L.GT(global_indices[f_edge_verts[i][0][0]],
+                                                         global_indices[f_edge_verts[i][1][1]])),
+                     L.Assign(cross_facet_order[1], L.GT(global_indices[f_edge_verts[i][0][1]],
+                                                         global_indices[f_edge_verts[i][1][0]]))]
+            code += [L.Assign(t0, edge_ordering[facet_edges[celltype][i][0]]
+                              + edge_ordering[facet_edges[celltype][i][2]]
+                              + cross_facet_order[0]),
+                     L.Assign(t1, edge_ordering[facet_edges[celltype][i][0]]
+                              + edge_ordering[facet_edges[celltype][i][3]]
+                              + cross_facet_order[1]),
+                     L.Assign(t2, edge_ordering[facet_edges[celltype][i][1]]
+                              + edge_ordering[facet_edges[celltype][i][2]]
+                              + cross_facet_order[1]),
+                     L.Assign(t3, edge_ordering[facet_edges[celltype][i][1]]
+                              + edge_ordering[facet_edges[celltype][i][3]]
+                              + cross_facet_order[0]),
+                     L.VerbatimStatement('printf("t0=%d t1=%d t2=%d t3=%d\\n", t0, t1, t2, t3);')]
 
     # Sanity check that edge and face dofs are distinct
     assert len(set(edge_perms.keys()).intersection(facet_perms.keys())) == 0
