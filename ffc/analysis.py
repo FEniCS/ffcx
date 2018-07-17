@@ -417,11 +417,15 @@ def _extract_common_metadata(integral_metadatas, ida, form_data, form_r_family, 
     else:
         logger.info("representation:    {}".format(common_metadata["representation"]))
 
-    if common_metadata["cross_element_width"] == "auto":
+    if common_metadata["cross_element_width"] in ["auto", -1, None, "None"]:
         raise FFCError("'auto' behavior for 'cross_element_width' not implemented")
+    if common_metadata["cross_element_width"] < 1:
+        raise FFCError("'cross_element_width' has to be larger than zero.")
 
     if common_metadata["precision"] is None:
         common_metadata["precision"] = default_precision
+    if common_metadata["precision"] < 0:
+        raise FFCError("'precision' has to be equal or larger than zero.")
 
     # Hack to override representation with environment variable
     forced_r = os.environ.get("FFC_FORCE_REPRESENTATION")

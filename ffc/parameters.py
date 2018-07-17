@@ -38,7 +38,7 @@ _FFC_GENERATE_PARAMETERS = {
     "add_tabulate_tensor_timing": False,
     # ':' separated list of include filenames to add to generated code
     "external_includes": "",
-    "cross_element_width": -1
+    "cross_element_width": 1
 }
 _FFC_BUILD_PARAMETERS = {
     "cpp_optimize": True,  # optimization for the C++ compiler
@@ -149,12 +149,15 @@ def _validate_parameters(parameters):
             raise
 
     # Cast from str to int
-    try:
-        parameters["cross_element_width"] = int(parameters["cross_element_width"])
-    except Exception:
-        logger.exception("Failed to convert cross_element_width '%s' to int" %
-                         parameters.get("cross_element_width"))
-        raise
+    if parameters["cross_element_width"] in ["auto", -1, None, "None"]:
+        parameters["quadrature_rule"] = None
+    else:
+        try:
+            parameters["cross_element_width"] = int(parameters["cross_element_width"])
+        except Exception:
+            logger.exception("Failed to convert cross_element_width '%s' to int" %
+                             parameters.get("cross_element_width"))
+            raise
 
     # Convert all legal default values to None and
     # cast nondefaults from str to int
