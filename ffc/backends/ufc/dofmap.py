@@ -182,7 +182,7 @@ def tabulate_dof_permutations(L, ir):
                               edge_ordering[facet_edges[celltype][i][0]]
                               + 2 * (edge_ordering[facet_edges[celltype][i][1]]
                                      + edge_ordering[facet_edges[celltype][i][2]]))]
-    elif celltype == 'hexahedron':
+    elif celltype == 'hexahedronxxx':  # FIXME - disabled for now
         # Work out some permutations on quadrilateral facets of hexahedron
         # There are 8 possible permutations with Z-ordering
         # FIXME: more work to be done on this
