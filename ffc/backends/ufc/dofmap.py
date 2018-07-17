@@ -165,23 +165,34 @@ def tabulate_dof_permutations(L, ir):
     num_edges = cell.num_edges()
     num_facets = cell.num_facets()
     edge_ordering = L.Symbol("edge_ordering")
-    facet_ordering = L.Symbol("facet_ordering")
 
     code += [L.ArrayDecl("int", edge_ordering, [num_edges])]
-    # Figure out the ordering of the global vertices on each edge
-    # 0 = reference cell order, 1 = reversed
+    assert len(edge_perms) == num_edges
     for i in range(num_edges):
+        # Figure out the ordering of the global vertices on each edge
+        # 0 = reference cell order, 1 = reversed
         code += [L.Assign(edge_ordering[i],
                           L.GT(global_indices[edge_vertices[celltype][i][0]],
                                global_indices[edge_vertices[celltype][i][1]]))]
 
-    if celltype == 'tetrahedron':
-        code += [L.ArrayDecl("int", facet_ordering, [num_facets])]
-        for i in range(num_facets):
-            code += [L.Assign(facet_ordering[i],
+    # Make changes to the identity mapping where required for specific edges
+    for i, q in enumerate(edge_perms):
+        assignments = [L.Assign(perm[j], k) for j, k in q.items()]
+        code += [L.If(edge_ordering[i], assignments)]
+
+    if celltype == 'tetrahedron' and len(facet_perms) > 0:
+        facet_ordering = L.Symbol("facet_ordering")
+        code += [L.VariableDecl("int", facet_ordering, 0)]
+        assert len(facet_perms) == num_facets
+        for i, q in enumerate(facet_perms):
+            code += [L.Assign(facet_ordering,
                               edge_ordering[facet_edges[celltype][i][0]]
                               + 2 * (edge_ordering[facet_edges[celltype][i][1]]
                                      + edge_ordering[facet_edges[celltype][i][2]]))]
+            # Make changes to the identity mapping where required for specific facets
+            assignments = [(w, [L.Assign(perm[j], k[w]) for j, k in q.items()]) for w in range(6)]
+            code += [L.Switch(facet_ordering, assignments)]
+
     elif celltype == 'hexahedronxxx':  # FIXME - disabled for now
         # Work out some permutations on quadrilateral facets of hexahedron
         # There are 8 possible permutations with Z-ordering
@@ -217,30 +228,6 @@ def tabulate_dof_permutations(L, ir):
                               + edge_ordering[facet_edges[celltype][i][1]]),
                      L.Switch(t0, tcases),
                      L.VerbatimStatement('printf("t0=%d t1=%d\\n", t0, t1);')]
-
-    # Sanity check that edge and face dofs are distinct - do this test in representation.py
-    assert len(set(edge_perms.keys()).intersection(facet_perms.keys())) == 0
-
-    # Change map indexing so it is listed by edge/facet. FIXME: go back and do this in representation.py instead
-
-    edge_perms2 = [{} for i in range(num_edges)]
-    for idx, p in edge_perms.items():
-        edge_perms2[p[0]][idx] = p[1]
-
-    facet_perms2 = [{} for i in range(num_facets)]
-    for idx, p in facet_perms.items():
-        facet_perms2[p[0]][idx] = p[1]
-
-    # Mkae changes to the identity mapping where required for specific edges/facets
-
-    for i, q in enumerate(edge_perms2):
-        assignments = [L.Assign(perm[j], k) for j, k in q.items()]
-        code += [L.If(edge_ordering[i], assignments)]
-
-    for i, q in enumerate(facet_perms2):
-        assignments = [(w, [L.Assign(perm[j], k[w]) for j, k in q.items()]) for w in range(6)]
-        # FIXME - get 6 from somewhere (tet specific)
-        code += [L.Switch(facet_ordering[i], assignments)]
 
     return L.StatementList(code)
 

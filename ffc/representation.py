@@ -201,8 +201,8 @@ def _compute_dofmap_permutation_tables(fiat_element, cell):
 
     td = cell.topological_dimension()
 
-    edge_permutations = {}
-    face_permutations = {}
+    edge_permutations = []
+    face_permutations = []
 
     offset = 0
     for el in elems:
@@ -212,12 +212,13 @@ def _compute_dofmap_permutation_tables(fiat_element, cell):
         # If more than one dof on edge, then they need a permutation available
         # Just reverse the order
         if td > 1 and nd[1] > 1:
+            edge_permutations = [{} for i in range(len(ed[1]))]
             for k, v in ed[1].items():
                 for i in range(len(v)):
                     idx1 = v[i]
                     idx2 = v[-i - 1]
                     if idx1 != idx2:
-                        edge_permutations[idx1 + offset] = (k, idx2 + offset)
+                        edge_permutations[k][idx1 + offset] = idx2 + offset
         if td > 2 and nd[2] > 1 and cell.cellname() == 'tetrahedron':
             # Permutation on a triangular facet
             # FIXME: add support for quadrilateral facets
@@ -226,10 +227,11 @@ def _compute_dofmap_permutation_tables(fiat_element, cell):
             n_facet_dofs = (n - 1) * (n - 2) / 2  # Valid for Lagrange - fails for RT, Nedelec etc.
             if n_facet_dofs == nd[2]:
                 tab = triangle_permutation_table(n, 1)
+                face_permutations = [{} for i in range(len(ed[2]))]
                 for k, v in ed[2].items():
                     for i, idx in enumerate(v):
                         perms = [(v[row[i]] + offset) for row in tab]
-                        face_permutations[idx + offset] = (k, perms)
+                        face_permutations[k][idx + offset] = perms
 
         offset += el.space_dimension()
 
