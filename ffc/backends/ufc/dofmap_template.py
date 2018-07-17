@@ -18,7 +18,7 @@ void tabulate_dofs_{factory_name}(int64_t* restrict dofs,
 {tabulate_dofs}
 }}
 
-int64_t tabulate_dof_permutations_{factory_name}(const int64_t* restrict global_indices, int64_t dof)
+void tabulate_dof_permutations_{factory_name}(const int64_t* restrict global_indices, int* restrict perm, int ndofs)
 {{
 {tabulate_dof_permutations}
 }}

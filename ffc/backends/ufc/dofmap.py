@@ -126,11 +126,15 @@ def tabulate_dof_permutations(L, ir):
     edge_perms, facet_perms, cell = ir["dof_permutations"]
     tdim = cell.topological_dimension()
 
-    dof = L.Symbol("dof")
-    if tdim == 1 or (len(edge_perms) == 0 and len(facet_perms) == 0):
-        return L.Return(dof)
+    perm = L.Symbol("perm")
+    ndofs = L.Symbol("ndofs")  # FIXME: get ndofs from somewhere
+    i = L.Symbol("i")
+    code = [L.ForRange(i, 0, ndofs, body=[L.Assign(perm[i], i)])]
 
-    code = []
+    if tdim == 1 or (len(edge_perms) == 0 and len(facet_perms) == 0):
+        code += [L.Return()]
+        return L.StatementList(code)
+
     global_indices = L.Symbol("global_indices")
 
     # Copied from ufc_geometry.h
@@ -150,7 +154,7 @@ def tabulate_dof_permutations(L, ir):
                                           ((0, 2), (4, 6), (0, 4), (2, 6)),
                                           ((1, 3), (5, 7), (1, 5), (3, 7)))}
 
-    # These are fixed tables, but calculated here from data from ufc_geometry.h above
+    # These are also fixed tables, but calculated here from data from ufc_geometry.h above
     facet_edges = {}
     facet_edges['tetrahedron'] = tuple(tuple(edge_vertices['tetrahedron'].index(edge) for edge in facet)
                                        for facet in facet_edge_vertices['tetrahedron'])
@@ -171,56 +175,73 @@ def tabulate_dof_permutations(L, ir):
                           L.GT(global_indices[edge_vertices[celltype][i][0]],
                                global_indices[edge_vertices[celltype][i][1]]))]
 
-    if tdim == 3 and celltype == 'tetrahedron':
+    if celltype == 'tetrahedron':
         code += [L.ArrayDecl("int", facet_ordering, [num_facets])]
         for i in range(num_facets):
             code += [L.Assign(facet_ordering[i],
                               edge_ordering[facet_edges[celltype][i][0]]
                               + 2 * (edge_ordering[facet_edges[celltype][i][1]]
                                      + edge_ordering[facet_edges[celltype][i][2]]))]
-    if celltype == 'hexahedron':
+    elif celltype == 'hexahedron':
+        # Work out some permutations on quadrilateral facets of hexahedron
+        # There are 8 possible permutations with Z-ordering
+        # FIXME: more work to be done on this
+        #
         f_edge_verts = facet_edge_vertices['hexahedron']
-        cross_facet_order = L.Symbol("xfacet_order")
+        cross_facet_order = L.Symbol("xf")
         t0 = L.Symbol('t0')
         t1 = L.Symbol('t1')
-        t2 = L.Symbol('t2')
-        t3 = L.Symbol('t3')
         code += [L.ArrayDecl("int", cross_facet_order, [2]),
                  L.VariableDecl("int", t0),
-                 L.VariableDecl("int", t1),
-                 L.VariableDecl("int", t2),
-                 L.VariableDecl("int", t3)]
+                 L.VariableDecl("int", t1)]
         for i in range(num_facets):
             code += [L.Assign(cross_facet_order[0], L.GT(global_indices[f_edge_verts[i][0][0]],
                                                          global_indices[f_edge_verts[i][1][1]])),
                      L.Assign(cross_facet_order[1], L.GT(global_indices[f_edge_verts[i][0][1]],
                                                          global_indices[f_edge_verts[i][1][0]]))]
-            code += [L.Assign(t0, edge_ordering[facet_edges[celltype][i][0]]
-                              + edge_ordering[facet_edges[celltype][i][2]]
-                              + cross_facet_order[0]),
-                     L.Assign(t1, edge_ordering[facet_edges[celltype][i][0]]
-                              + edge_ordering[facet_edges[celltype][i][3]]
-                              + cross_facet_order[1]),
-                     L.Assign(t2, edge_ordering[facet_edges[celltype][i][1]]
-                              + edge_ordering[facet_edges[celltype][i][2]]
-                              + cross_facet_order[1]),
-                     L.Assign(t3, edge_ordering[facet_edges[celltype][i][1]]
-                              + edge_ordering[facet_edges[celltype][i][3]]
-                              + cross_facet_order[0]),
-                     L.VerbatimStatement('printf("t0=%d t1=%d t2=%d t3=%d\\n", t0, t1, t2, t3);')]
+            # Figure out which vertex has the lowest global index and then which neighbour is next
+            tcases = [(0, [L.Assign(t1, cross_facet_order[1]),
+                           L.If(edge_ordering[facet_edges[celltype][i][2]],
+                                L.Assign(t1, 4 + cross_facet_order[0]))]),
+                      (1, [L.Assign(t1, cross_facet_order[1]),
+                           L.If(cross_facet_order[0],
+                                L.Assign(t1, 6 + cross_facet_order[1]))]),
+                      (2, [L.Assign(t1, 2 + cross_facet_order[0]),
+                           L.If(cross_facet_order[1],
+                                L.Assign(t1, 4 + cross_facet_order[0]))]),
+                      (3, [L.Assign(t1, 2 + cross_facet_order[0]),
+                           L.If(edge_ordering[facet_edges[celltype][i][3]],
+                                L.Assign(t1, 6 + cross_facet_order[1]))])]
 
-    # Sanity check that edge and face dofs are distinct
+            code += [L.Assign(t0, 2 * edge_ordering[facet_edges[celltype][i][0]]
+                              + edge_ordering[facet_edges[celltype][i][1]]),
+                     L.Switch(t0, tcases),
+                     L.VerbatimStatement('printf("t0=%d t1=%d\\n", t0, t1);')]
+
+    # Sanity check that edge and face dofs are distinct - do this test in representation.py
     assert len(set(edge_perms.keys()).intersection(facet_perms.keys())) == 0
 
-    cases = []
-    for idx, p in edge_perms.items():
-        pcases = [(1, L.Return(p[1]))]
-        cases += [(idx, L.Switch(edge_ordering[p[0]], pcases, default=L.Return(dof)))]
-    for idx, p in facet_perms.items():
-        pcases = [(i, L.Return(q)) for i, q in enumerate(p[1])]
-        cases += [(idx, L.Switch(facet_ordering[p[0]], pcases, default=L.Return(dof)))]
+    # Change map indexing so it is listed by edge/facet. FIXME: go back and do this in representation.py instead
 
-    code += [L.Switch(dof, cases, default=L.Return(dof))]
+    edge_perms2 = [{} for i in range(num_edges)]
+    for idx, p in edge_perms.items():
+        edge_perms2[p[0]][idx] = p[1]
+
+    facet_perms2 = [{} for i in range(num_facets)]
+    for idx, p in facet_perms.items():
+        facet_perms2[p[0]][idx] = p[1]
+
+    # Mkae changes to the identity mapping where required for specific edges/facets
+
+    for i, q in enumerate(edge_perms2):
+        assignments = [L.Assign(perm[j], k) for j, k in q.items()]
+        code += [L.If(edge_ordering[i], assignments)]
+
+    for i, q in enumerate(facet_perms2):
+        assignments = [(w, [L.Assign(perm[j], k[w]) for j, k in q.items()]) for w in range(6)]
+        # FIXME - get 6 from somewhere (tet specific)
+        code += [L.Switch(facet_ordering[i], assignments)]
+
     return L.StatementList(code)
 
 
