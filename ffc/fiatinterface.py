@@ -302,7 +302,7 @@ def triangle_permutation_table(n, interior=0):
         pt_to_index[tuple(ids)] = i
 
     st = [[] for i in range(6)]
-    for (i, j) in pt_to_index.keys():
+    for (i, j) in sorted(pt_to_index.keys()):
         k = n - i - j
         iset = [(i, j), (j, i),
                 (i, k), (j, k),
