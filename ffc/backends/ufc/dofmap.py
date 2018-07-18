@@ -167,7 +167,7 @@ def tabulate_dof_permutations(L, ir):
     edge_ordering = L.Symbol("edge_ordering")
 
     code += [L.ArrayDecl("int", edge_ordering, [num_edges])]
-    assert len(edge_perms) == num_edges
+    # Calculate the edge order for each edge, may also be needed later for facet orientation
     for i in range(num_edges):
         # Figure out the ordering of the global vertices on each edge
         # 0 = reference cell order, 1 = reversed
@@ -183,9 +183,11 @@ def tabulate_dof_permutations(L, ir):
     if celltype == 'tetrahedron' and len(facet_perms) > 0:
         facet_ordering = L.Symbol("facet_ordering")
         code += [L.VariableDecl("int", facet_ordering, 0)]
+        # Six possible orientations for each triangular facet
         assert len(facet_perms) == num_facets
         for i, q in enumerate(facet_perms):
-            code += [L.Assign(facet_ordering,
+            code += [L.Comment("DOF reordering for facet %d" % i),
+                     L.Assign(facet_ordering,
                               edge_ordering[facet_edges[celltype][i][0]]
                               + 2 * (edge_ordering[facet_edges[celltype][i][1]]
                                      + edge_ordering[facet_edges[celltype][i][2]]))]
