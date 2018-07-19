@@ -166,7 +166,7 @@ extern "C"
                           const int64_t** entity_indices);
 
     /// Calculate dof permutation for given edge ordering
-    void (*tabulate_dof_permutations)(const int64_t* restrict global_indices, int* restrict perm, int ndofs);
+    void (*tabulate_dof_permutations)(int* restrict perm, const int64_t* restrict global_indices, int ndofs);
 
     /// Tabulate the local-to-local mapping from facet dofs to cell dofs
     void (*tabulate_facet_dofs)(int* restrict dofs, int facet);

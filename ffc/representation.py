@@ -193,7 +193,8 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, parameters, ji
 
 
 def _compute_dofmap_permutation_tables(fiat_element, cell):
-
+    """Create tables of edge permutations and facet permutations for all the possible
+    orientations of the cell."""
     if isinstance(fiat_element, MixedElement):
         elems = fiat_element.elements()
     else:
@@ -201,6 +202,7 @@ def _compute_dofmap_permutation_tables(fiat_element, cell):
 
     td = cell.topological_dimension()
 
+    # Lists of permutations for each edge or facet (if any)
     edge_permutations = []
     face_permutations = []
 

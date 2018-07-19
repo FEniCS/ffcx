@@ -123,12 +123,18 @@ def tabulate_facet_dofs(L, ir):
 
 
 def tabulate_dof_permutations(L, ir):
+    """Generate code for a permutation vector for the dofmap, depending on the cell orientation, as
+    determined by its global vertex indices. For triangles and quads, this requires reversing the
+    ordering of some edge dofs; for 3D cells, the facet dofs may also
+    be permuted by rotation or reflection in the plane. """
+
     edge_perms, facet_perms, cell = ir["dof_permutations"]
     tdim = cell.topological_dimension()
 
     perm = L.Symbol("perm")
-    ndofs = L.Symbol("ndofs")  # FIXME: get ndofs from somewhere
+    ndofs = L.Symbol("ndofs")
     i = L.Symbol("i")
+    # Fill up an identity permutation, for any dofs which are not permuted.
     code = [L.ForRange(i, 0, ndofs, body=[L.Assign(perm[i], i)])]
 
     if tdim == 1 or (len(edge_perms) == 0 and len(facet_perms) == 0):
@@ -137,29 +143,16 @@ def tabulate_dof_permutations(L, ir):
 
     global_indices = L.Symbol("global_indices")
 
-    # Copied from ufc_geometry.h
-    edge_vertices = {'triangle': ((1, 2), (0, 2), (0, 1)),
-                     'tetrahedron': ((2, 3), (1, 3), (1, 2), (0, 3), (0, 2), (0, 1)),
-                     'quadrilateral': ((0, 1), (2, 3), (0, 2), (1, 3)),
-                     'hexahedron': ((0, 1), (2, 3), (4, 5), (6, 7), (0, 2), (1, 3),
-                                    (4, 6), (5, 7), (0, 4), (1, 5), (2, 6), (3, 7))}
-    facet_edge_vertices = {'tetrahedron': (((2, 3), (1, 3), (1, 2)),
-                                           ((2, 3), (0, 3), (0, 2)),
-                                           ((1, 3), (0, 3), (0, 1)),
-                                           ((1, 2), (0, 2), (0, 1))),
-                           'hexahedron': (((0, 1), (2, 3), (0, 2), (1, 3)),
-                                          ((4, 5), (6, 7), (4, 6), (5, 7)),
-                                          ((0, 1), (4, 5), (0, 4), (1, 5)),
-                                          ((2, 3), (6, 7), (2, 6), (3, 7)),
-                                          ((0, 2), (4, 6), (0, 4), (2, 6)),
-                                          ((1, 3), (5, 7), (1, 5), (3, 7)))}
+    # Collect up some topological tables
+    from FIAT.reference_element import ufc_cell
+    facet_edge_vertices = {celltype: tuple(tuple(ufc_cell(celltype).get_topology()[1][e] for e in f)
+                                           for f in ufc_cell(celltype).get_connectivity()[(2, 1)])
+                           for celltype in ('tetrahedron', 'hexahedron')}
+    facet_edges = {celltype: tuple(ufc_cell(celltype).get_connectivity()[(2, 1)])
+                   for celltype in ('tetrahedron', 'hexahedron')}
 
-    # These are also fixed tables, but calculated here from data from ufc_geometry.h above
-    facet_edges = {}
-    facet_edges['tetrahedron'] = tuple(tuple(edge_vertices['tetrahedron'].index(edge) for edge in facet)
-                                       for facet in facet_edge_vertices['tetrahedron'])
-    facet_edges['hexahedron'] = tuple(tuple(edge_vertices['hexahedron'].index(edge) for edge in facet)
-                                      for facet in facet_edge_vertices['hexahedron'])
+    edge_vertices = {celltype: tuple(ufc_cell(celltype).get_connectivity()[(1, 0)])
+                     for celltype in ('triangle', 'tetrahedron', 'quadrilateral', 'hexahedron')}
 
     celltype = cell.cellname()
     num_edges = cell.num_edges()
