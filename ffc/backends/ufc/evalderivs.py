@@ -7,7 +7,6 @@ import numpy
 
 from ffc.backends.ufc.evaluatebasis import (generate_compute_basisvalues,
                                             generate_expansion_coefficients)
-from ffc.backends.ufc.utils import generate_error
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +19,8 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname, parameters
     # Cutoff for feature to disable generation of this code (consider
     # removing after benchmarking final result)
     if isinstance(data, str):
-        msg = "evaluate_reference_basis_derivatives: %s" % (data, )
-        return generate_error(L, msg, parameters["convert_exceptions_to_warnings"])
+        # Return an error code
+        return [L.Return(-1)]
 
     # Get some known dimensions
     element_cellname = data["cellname"]

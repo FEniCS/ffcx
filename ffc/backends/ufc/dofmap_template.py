@@ -18,6 +18,11 @@ void tabulate_dofs_{factory_name}(int64_t* restrict dofs,
 {tabulate_dofs}
 }}
 
+void tabulate_dof_permutations_{factory_name}(int* restrict perm, const int64_t* restrict global_indices)
+{{
+{tabulate_dof_permutations}
+}}
+
 void tabulate_facet_dofs_{factory_name}(int* restrict dofs, int facet)
 {{
 {tabulate_facet_dofs}
@@ -56,6 +61,7 @@ ufc_dofmap* create_{factory_name}(void)
   dofmap->num_entity_closure_dofs[2] = {num_entity_closure_dofs[2]};
   dofmap->num_entity_closure_dofs[3] = {num_entity_closure_dofs[3]};
   dofmap->tabulate_dofs = tabulate_dofs_{factory_name};
+  dofmap->tabulate_dof_permutations = tabulate_dof_permutations_{factory_name};
   dofmap->tabulate_facet_dofs = tabulate_facet_dofs_{factory_name};
   dofmap->tabulate_entity_dofs = tabulate_entity_dofs_{factory_name};
   dofmap->tabulate_entity_closure_dofs = tabulate_entity_closure_dofs_{factory_name};
