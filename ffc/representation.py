@@ -242,7 +242,7 @@ def _compute_dofmap_permutation_tables(fiat_element, cell):
             d = element.degree()
             n_facet_dofs = (d - 1) * (d - 2) / 2  # Valid for Lagrange - fails for RT, Nedelec etc.
             if n_facet_dofs == nd[2]:
-                tab = ffc.fiatinterface.triangle_permutation_table(n, 1)
+                tab = ffc.fiatinterface.triangle_permutation_table(d, 1)
                 face_permutations = [{} for i in range(len(ed[2]))]
                 for k, v in ed[2].items():
                     for i, idx in enumerate(v):
