@@ -73,7 +73,7 @@ ufc_{type}_integral* create_{factory_name}(void)
 
   ufc_{type}_integral* integral = malloc(sizeof(*integral));
   integral->enabled_coefficients = enabled;
-  integral->cross_element_width = {cross_element_width};
+  integral->cell_batch_size = {cell_batch_size};
   integral->tabulate_tensor = tabulate_tensor_{factory_name};
   return integral;
 }};

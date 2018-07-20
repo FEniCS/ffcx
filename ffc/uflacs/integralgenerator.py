@@ -180,9 +180,9 @@ class IntegralGenerator(object):
         """
         L = self.backend.language
 
-        cross_element_width = self.ir["integrals_metadata"]["cross_element_width"]
-        if cross_element_width > 1 and self.ir["integral_type"] != "cell":
-            cross_element_width = 1
+        cell_batch_size = self.ir["integrals_metadata"]["cell_batch_size"]
+        if cell_batch_size > 1 and self.ir["integral_type"] != "cell":
+            cell_batch_size = 1
             """
             raise FFCError("Cross-element vectorization is currently not implemented for integral types "
                            "other than 'cell' (this is type '{}')".format(self.ir["integral_type"]))
@@ -248,12 +248,12 @@ class IntegralGenerator(object):
         parts += all_finalizeparts
 
         # Optionally perform cross-element vectorization of the generated code
-        if cross_element_width > 1:
+        if cell_batch_size > 1:
             # Optionally use gcc vector extensions
             if self.ir["params"]["enable_cross_element_gcc_ext"]:
-                vectorized = self.vectorize_with_gcc_exts(parts, vec_length=cross_element_width)
+                vectorized = self.vectorize_with_gcc_exts(parts, vec_length=cell_batch_size)
             else:
-                vectorized = self.vectorize_with_loops(parts, vec_length=cross_element_width)
+                vectorized = self.vectorize_with_loops(parts, vec_length=cell_batch_size)
 
             parts = vectorized
 

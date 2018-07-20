@@ -368,7 +368,7 @@ def _extract_common_metadata(integral_metadatas, ida, form_data, form_r_family, 
     # Metadata parameters that have to be unique on a subdomain
     equal_metadata = ["optimize", "precision"]
     # Metadata parameters that have to be unique or auto on a subdomain
-    equal_or_auto_metadata = ["representation", "cross_element_width"]
+    equal_or_auto_metadata = ["representation", "cell_batch_size"]
 
     # Error messages if parameters are not unique
     equal_error_msg = "Integral '{}' metadata must be equal within each subdomain or not set, got {}."
@@ -417,10 +417,10 @@ def _extract_common_metadata(integral_metadatas, ida, form_data, form_r_family, 
     else:
         logger.info("representation:    {}".format(common_metadata["representation"]))
 
-    if common_metadata["cross_element_width"] in ["auto", -1, None, "None"]:
-        raise FFCError("'auto' behavior for 'cross_element_width' not implemented")
-    if common_metadata["cross_element_width"] < 1:
-        raise FFCError("'cross_element_width' has to be larger than zero.")
+    if common_metadata["cell_batch_size"] in ["auto", -1, None, "None"]:
+        raise FFCError("'auto' behavior for 'cell_batch_size' not implemented")
+    if common_metadata["cell_batch_size"] < 1:
+        raise FFCError("'cell_batch_size' has to be larger than zero.")
 
     if common_metadata["precision"] is None:
         common_metadata["precision"] = default_precision
@@ -449,7 +449,7 @@ def _attach_integral_metadata(form_data, form_r_family, parameters):
         "precision",
         "quadrature_degree",
         "quadrature_rule",
-        "cross_element_width"
+        "cell_batch_size"
     )
 
     # Get defaults from parameters
