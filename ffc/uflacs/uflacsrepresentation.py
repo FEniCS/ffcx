@@ -81,39 +81,23 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classname
 
     # Build coefficient numbering for UFC interface here, to avoid
     # renumbering in UFL and application of replace mapping
-    if True:
-        # Using the mapped coefficients, numbered by UFL
-        coefficient_numbering = {}
-        sorted_coefficients = sorted_by_count(form_data.function_replace_map.keys())
-        for i, f in enumerate(sorted_coefficients):
-            g = form_data.function_replace_map[f]
-            coefficient_numbering[g] = i
-            assert i == g.count()
 
-        # Replace coefficients so they all have proper element and domain for what's to come
-        # TODO: We can avoid the replace call when proper Expression support is in place
-        #       and element/domain assignment is removed from compute_form_data.
-        integrands = {
-            num_points: replace(sorted_integrals[num_points].integrand(),
-                                form_data.function_replace_map)
-            for num_points in sorted(sorted_integrals)
-        }
-    else:
-        pass
-        # coefficient_numbering = {}
-        # coefficient_element = {}
-        # coefficient_domain = {}
-        # sorted_coefficients = sorted_by_count(form_data.function_replace_map.keys())
-        # for i, f in enumerate(sorted_coefficients):
-        #    g = form_data.function_replace_map[f]
-        #    coefficient_numbering[f] = i
-        #    coefficient_element[f] = g.ufl_element()
-        #    coefficient_domain[f] = g.ufl_domain()
-        # integrands = {
-        #    num_points: sorted_integrals[num_points].integrand()
-        #    for num_points in sorted(sorted_integrals)
-        #    }
-        # then pass coefficient_element and coefficient_domain to the uflacs ir as well
+    # Using the mapped coefficients, numbered by UFL
+    coefficient_numbering = {}
+    sorted_coefficients = sorted_by_count(form_data.function_replace_map.keys())
+    for i, f in enumerate(sorted_coefficients):
+        g = form_data.function_replace_map[f]
+        coefficient_numbering[g] = i
+        assert i == g.count()
+
+    # Replace coefficients so they all have proper element and domain for what's to come
+    # TODO: We can avoid the replace call when proper Expression support is in place
+    #       and element/domain assignment is removed from compute_form_data.
+    integrands = {
+        num_points: replace(sorted_integrals[num_points].integrand(),
+                            form_data.function_replace_map)
+        for num_points in sorted(sorted_integrals)
+    }
 
     # Build the more uflacs-specific intermediate representation
     uflacs_ir = build_uflacs_ir(itg_data.domain.ufl_cell(), itg_data.integral_type,

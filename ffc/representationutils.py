@@ -108,10 +108,6 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
     tdim = cell.topological_dimension()
     assert all(tdim == itg.ufl_domain().topological_dimension() for itg in itg_data.integrals)
 
-    # Set number of cells if not set TODO: Get automatically from
-    # number of domains
-    num_cells = itg_data.metadata.get("num_cells")
-
     return {
         "representation": representation,
         "integral_type": itg_data.integral_type,
@@ -124,7 +120,6 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
         "num_facets": cell.num_facets(),
         "num_vertices": cell.num_vertices(),
         "needs_oriented": needs_oriented_jacobian(form_data),
-        "num_cells": num_cells,
         "enabled_coefficients": itg_data.enabled_coefficients
     }
 

@@ -64,23 +64,6 @@ FFC_PARAMETERS.update(_FFC_LOG_PARAMETERS)
 FFC_PARAMETERS.update(_FFC_GENERATE_PARAMETERS)
 
 
-def split_parameters(parameters):
-    """Split a parameters dict into groups based on what parameters are used for.
-
-    """
-    params = {
-        "cache": {k: parameters[k]
-                  for k in _FFC_CACHE_PARAMETERS.keys()},
-        "build": {k: parameters[k]
-                  for k in _FFC_BUILD_PARAMETERS.keys()},
-        "generate": {k: parameters[k]
-                     for k in _FFC_GENERATE_PARAMETERS.keys()},
-        "log": {k: parameters[k]
-                for k in _FFC_LOG_PARAMETERS.keys()},
-    }
-    return params
-
-
 def default_parameters():
     """Return (a copy of) the default parameter values for FFC."""
     parameters = copy.deepcopy(FFC_PARAMETERS)
@@ -95,13 +78,6 @@ def default_parameters():
 
 def default_jit_parameters():
     parameters = default_parameters()
-
-    # TODO: This is not in the above parameters dict.
-    #       There are other parameters like this.
-    #       This is confusing, which parameters are available? What are the defaults?
-    # Skip evaluation of basis derivatives in elements by default because it's costly
-    # FIXME: Make this False when we have elements generated once instead of for each form
-    parameters["no-evaluate_basis_derivatives"] = True
 
     # Don't postfix form names
     parameters["form_postfix"] = False

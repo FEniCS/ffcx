@@ -34,17 +34,6 @@ def generate_compute_ATA(L, ATA, A, m, n, index_prefix=""):
     return L.StatementList(code)
 
 
-def cross_expr(a, b):
-    def cr(i, j):
-        return a[i] * b[j] - a[j] * b[i]
-
-    return [cr(1, 2), cr(2, 0), cr(0, 1)]
-
-
-def generate_cross_decl(L, c, a, b):
-    return L.ArrayDecl("double", c, values=cross_expr(a, b))
-
-
 # Inline math expressions:
 
 
@@ -170,7 +159,7 @@ def create_coordinate_finite_element(L, ir):
 
 def coordinate_finite_element_declaration(L, ir):
     classname = ir["create_coordinate_finite_element"]
-    code = "ufc_finite_element* create_{name}();\n".format(name=classname)
+    code = "ufc_finite_element* create_{name}(void);\n".format(name=classname)
     return code
 
 
@@ -181,7 +170,7 @@ def create_coordinate_dofmap(L, ir):
 
 def coordinate_dofmap_declaration(L, ir):
     classname = ir["create_coordinate_dofmap"]
-    code = "ufc_dofmap* create_{name}();\n".format(name=classname)
+    code = "ufc_dofmap* create_{name}(void);\n".format(name=classname)
     return code
 
 
