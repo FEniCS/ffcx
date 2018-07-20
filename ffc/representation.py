@@ -29,6 +29,7 @@ from ffc.fiatinterface import (EnrichedElement, MixedElement, QuadratureElement,
                                create_element, triangle_permutation_table)
 from ufl.utils.sequences import product
 from FIAT.hdiv_trace import HDivTrace
+import FIAT.reference_element
 
 logger = logging.getLogger(__name__)
 
@@ -202,6 +203,17 @@ def _compute_dofmap_permutation_tables(fiat_element, cell):
 
     td = cell.topological_dimension()
 
+    # Collect up some topological tables
+    ufc_cell = FIAT.reference_element.ufc_cell
+    celltype = cell.cellname()
+    edge_vertices = tuple(ufc_cell(celltype).get_connectivity()[(1, 0)])
+    facet_edges = tuple(ufc_cell(celltype).get_connectivity()[(2, 1)])
+    facet_edge_vertices = tuple(tuple(ufc_cell(celltype).get_topology()[1][e] for e in f)
+                                for f in ufc_cell(celltype).get_connectivity()[(2, 1)])
+    cell_topology = {'facet_edge_vertices': facet_edge_vertices,
+                     'facet_edges': facet_edges,
+                     'edge_vertices': edge_vertices}
+
     # Lists of permutations for each edge or facet (if any)
     edge_permutations = []
     face_permutations = []
@@ -237,7 +249,7 @@ def _compute_dofmap_permutation_tables(fiat_element, cell):
 
         offset += el.space_dimension()
 
-    return (edge_permutations, face_permutations)
+    return (edge_permutations, face_permutations, cell_topology)
 
 
 def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit=False):
@@ -250,7 +262,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit
     num_dofs_per_entity = _num_dofs_per_entity(fiat_element)
     entity_dofs = fiat_element.entity_dofs()
 
-    edge_permutations, face_permutations = _compute_dofmap_permutation_tables(fiat_element, cell)
+    edge_permutations, face_permutations, cell_topology = _compute_dofmap_permutation_tables(fiat_element, cell)
 
     facet_dofs = _tabulate_facet_dofs(fiat_element, cell)
     entity_closure_dofs, num_dofs_per_entity_closure = \
@@ -273,7 +285,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit
     ir["num_entity_dofs"] = num_dofs_per_entity
     ir["num_entity_closure_dofs"] = num_dofs_per_entity_closure
     ir["tabulate_dofs"] = _tabulate_dofs(fiat_element, cell)
-    ir["dof_permutations"] = [edge_permutations, face_permutations, cell]
+    ir["dof_permutations"] = (edge_permutations, face_permutations, cell, cell_topology)
     ir["tabulate_facet_dofs"] = facet_dofs
     ir["tabulate_entity_dofs"] = (entity_dofs, num_dofs_per_entity)
     ir["tabulate_entity_closure_dofs"] = (entity_closure_dofs, entity_dofs, num_dofs_per_entity)

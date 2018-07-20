@@ -128,7 +128,7 @@ def tabulate_dof_permutations(L, ir):
     ordering of some edge dofs; for 3D cells, the facet dofs may also
     be permuted by rotation or reflection in the plane. """
 
-    edge_perms, facet_perms, cell = ir["dof_permutations"]
+    edge_perms, facet_perms, cell, cell_topology = ir["dof_permutations"]
     tdim = cell.topological_dimension()
 
     perm = L.Symbol("perm")
@@ -141,32 +141,22 @@ def tabulate_dof_permutations(L, ir):
         code += [L.Return()]
         return L.StatementList(code)
 
-    global_indices = L.Symbol("global_indices")
-
-    # Collect up some topological tables
-    from FIAT.reference_element import ufc_cell
-    facet_edge_vertices = {celltype: tuple(tuple(ufc_cell(celltype).get_topology()[1][e] for e in f)
-                                           for f in ufc_cell(celltype).get_connectivity()[(2, 1)])
-                           for celltype in ('tetrahedron', 'hexahedron')}
-    facet_edges = {celltype: tuple(ufc_cell(celltype).get_connectivity()[(2, 1)])
-                   for celltype in ('tetrahedron', 'hexahedron')}
-
-    edge_vertices = {celltype: tuple(ufc_cell(celltype).get_connectivity()[(1, 0)])
-                     for celltype in ('triangle', 'tetrahedron', 'quadrilateral', 'hexahedron')}
-
     celltype = cell.cellname()
     num_edges = cell.num_edges()
     num_facets = cell.num_facets()
+
+    global_indices = L.Symbol("global_indices")
     edge_ordering = L.Symbol("edge_ordering")
 
     code += [L.ArrayDecl("int", edge_ordering, [num_edges])]
     # Calculate the edge order for each edge, may also be needed later for facet orientation
+    edge_vertices = cell_topology['edge_vertices']
     for i in range(num_edges):
         # Figure out the ordering of the global vertices on each edge
         # 0 = reference cell order, 1 = reversed
         code += [L.Assign(edge_ordering[i],
-                          L.GT(global_indices[edge_vertices[celltype][i][0]],
-                               global_indices[edge_vertices[celltype][i][1]]))]
+                          L.GT(global_indices[edge_vertices[i][0]],
+                               global_indices[edge_vertices[i][1]]))]
 
     # Make changes to the identity mapping where required for specific edges
     for i, q in enumerate(edge_perms):
@@ -174,6 +164,7 @@ def tabulate_dof_permutations(L, ir):
         code += [L.If(edge_ordering[i], assignments)]
 
     if celltype == 'tetrahedron' and len(facet_perms) > 0:
+        facet_edges = cell_topology['facet_edges']
         facet_ordering = L.Symbol("facet_ordering")
         code += [L.VariableDecl("int", facet_ordering, 0)]
         # Six possible orientations for each triangular facet
@@ -181,19 +172,26 @@ def tabulate_dof_permutations(L, ir):
         for i, q in enumerate(facet_perms):
             code += [L.Comment("DOF reordering for facet %d" % i),
                      L.Assign(facet_ordering,
-                              edge_ordering[facet_edges[celltype][i][0]]
-                              + 2 * (edge_ordering[facet_edges[celltype][i][1]]
-                                     + edge_ordering[facet_edges[celltype][i][2]]))]
+                              edge_ordering[facet_edges[i][0]]
+                              + 2 * (edge_ordering[facet_edges[i][1]]
+                                     + edge_ordering[facet_edges[i][2]]))]
             # Make changes to the identity mapping where required for specific facets
-            assignments = [(w, [L.Assign(perm[j], k[w]) for j, k in q.items()]) for w in range(6)]
-            code += [L.Switch(facet_ordering, assignments)]
+            cases = []
+            for w in range(6):
+                assignments = []
+                for j, k in q.items():
+                    if j != k[w]:  # Ignore cases where there is no permutation
+                        assignments += [L.Assign(perm[j], k[w])]
+                cases += [(w, assignments)]
+            code += [L.Switch(facet_ordering, cases)]
 
     elif celltype == 'hexahedronxxx':  # FIXME - disabled for now
         # Work out some permutations on quadrilateral facets of hexahedron
         # There are 8 possible permutations with Z-ordering
         # FIXME: more work to be done on this
         #
-        f_edge_verts = facet_edge_vertices['hexahedron']
+        f_edge_verts = cell_topology['facet_edge_vertices']
+        facet_edges = cell_topology['facet_edges']
         cross_facet_order = L.Symbol("xf")
         t0 = L.Symbol('t0')
         t1 = L.Symbol('t1')
@@ -207,7 +205,7 @@ def tabulate_dof_permutations(L, ir):
                                                          global_indices[f_edge_verts[i][1][0]]))]
             # Figure out which vertex has the lowest global index and then which neighbour is next
             tcases = [(0, [L.Assign(t1, cross_facet_order[1]),
-                           L.If(edge_ordering[facet_edges[celltype][i][2]],
+                           L.If(edge_ordering[facet_edges[i][2]],
                                 L.Assign(t1, 4 + cross_facet_order[0]))]),
                       (1, [L.Assign(t1, cross_facet_order[1]),
                            L.If(cross_facet_order[0],
@@ -216,11 +214,11 @@ def tabulate_dof_permutations(L, ir):
                            L.If(cross_facet_order[1],
                                 L.Assign(t1, 4 + cross_facet_order[0]))]),
                       (3, [L.Assign(t1, 2 + cross_facet_order[0]),
-                           L.If(edge_ordering[facet_edges[celltype][i][3]],
+                           L.If(edge_ordering[facet_edges[i][3]],
                                 L.Assign(t1, 6 + cross_facet_order[1]))])]
 
-            code += [L.Assign(t0, 2 * edge_ordering[facet_edges[celltype][i][0]]
-                              + edge_ordering[facet_edges[celltype][i][1]]),
+            code += [L.Assign(t0, 2 * edge_ordering[facet_edges[i][0]]
+                              + edge_ordering[facet_edges[i][1]]),
                      L.Switch(t0, tcases),
                      L.VerbatimStatement('printf("t0=%d t1=%d\\n", t0, t1);')]
 

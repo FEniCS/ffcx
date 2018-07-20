@@ -16,11 +16,11 @@ from ffc import FFCError
 from FIAT.enriched import EnrichedElement
 from FIAT.nodal_enriched import NodalEnrichedElement
 from FIAT.mixed import MixedElement
-# from FIAT.P0 import P0
 from FIAT.quadrature_element import QuadratureElement
 from FIAT.restricted import RestrictedElement
 from FIAT.tensor_product import FlattenedDimensions
 from ufl.cell import cellname2dim
+
 
 logger = logging.getLogger(__name__)
 
@@ -295,6 +295,9 @@ def _create_restricted_element(ufl_element):
 
 
 def triangle_permutation_table(n, interior=0):
+    """ Calculate the positions of dofs on a triangular lattice, in the same way
+    as FIAT.reference_element, for each of the six possible permutations (three
+    rotations and two reflections) """
 
     pt_to_index = {}
     for i, ids in enumerate(FIAT.reference_element.lattice_iter(
