@@ -351,7 +351,6 @@ class IntegralGenerator(object):
                 L.Comment,
                 L.CExprLiteral,
                 L.Pragma,
-                L.Using,
                 L.Break,
                 L.Continue,
                 L.Return
