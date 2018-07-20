@@ -27,8 +27,10 @@ from ffc import FFCError
 from ffc import classname
 from ffc.fiatinterface import (EnrichedElement, MixedElement, QuadratureElement, SpaceOfReals,
                                create_element)
+import ffc.fiatinterface
 from ufl.utils.sequences import product
 from FIAT.hdiv_trace import HDivTrace
+import FIAT.reference_element
 
 logger = logging.getLogger(__name__)
 
@@ -192,6 +194,66 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, parameters, ji
     return ir
 
 
+def _compute_dofmap_permutation_tables(fiat_element, cell):
+    """Create tables of edge permutations and facet permutations for all the possible
+    orientations of the cell."""
+
+    if isinstance(fiat_element, MixedElement):
+        elements = fiat_element.elements()
+    else:
+        elements = (fiat_element, )
+
+    td = cell.topological_dimension()
+
+    # Collect up some topological tables
+    ufc_cell = FIAT.reference_element.ufc_cell
+    celltype = cell.cellname()
+    edge_vertices = tuple(ufc_cell(celltype).get_connectivity()[(1, 0)])
+    facet_edges = tuple(ufc_cell(celltype).get_connectivity()[(2, 1)])
+    facet_edge_vertices = tuple(tuple(ufc_cell(celltype).get_topology()[1][e] for e in f)
+                                for f in ufc_cell(celltype).get_connectivity()[(2, 1)])
+    cell_topology = {'facet_edge_vertices': facet_edge_vertices,
+                     'facet_edges': facet_edges,
+                     'edge_vertices': edge_vertices}
+
+    # Lists of permutations for each edge or facet (if any)
+    edge_permutations = []
+    face_permutations = []
+
+    offset = 0
+    for element in elements:
+        nd = _num_dofs_per_entity(element)
+        ed = element.entity_dofs()
+
+        # If more than one dof on edge, then they need a permutation available
+        # Just reverse the order
+        if td > 1 and nd[1] > 1:
+            edge_permutations = [{} for i in range(len(ed[1]))]
+            for k, v in ed[1].items():
+                for i in range(len(v)):
+                    idx1 = v[i]
+                    idx2 = v[-i - 1]
+                    if idx1 != idx2:
+                        edge_permutations[k][idx1 + offset] = idx2 + offset
+        if td > 2 and nd[2] > 1 and cell.cellname() == 'tetrahedron':
+            # Permutation on a triangular facet
+            # FIXME: add support for quadrilateral facets
+            # FIXME: add support for Hdiv/Hcurl elements
+            d = element.degree()
+            n_facet_dofs = (d - 1) * (d - 2) / 2  # Valid for Lagrange - fails for RT, Nedelec etc.
+            if n_facet_dofs == nd[2]:
+                tab = ffc.fiatinterface.triangle_permutation_table(d, 1)
+                face_permutations = [{} for i in range(len(ed[2]))]
+                for k, v in ed[2].items():
+                    for i, idx in enumerate(v):
+                        perms = [(v[row[i]] + offset) for row in tab]
+                        face_permutations[k][idx + offset] = perms
+
+        offset += element.space_dimension()
+
+    return (edge_permutations, face_permutations, cell_topology)
+
+
 def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit=False):
     """Compute intermediate representation of dofmap."""
     # Create FIAT element
@@ -201,6 +263,9 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit
     # Precompute repeatedly used items
     num_dofs_per_entity = _num_dofs_per_entity(fiat_element)
     entity_dofs = fiat_element.entity_dofs()
+
+    edge_permutations, face_permutations, cell_topology = _compute_dofmap_permutation_tables(fiat_element, cell)
+
     facet_dofs = _tabulate_facet_dofs(fiat_element, cell)
     entity_closure_dofs, num_dofs_per_entity_closure = \
         _tabulate_entity_closure_dofs(fiat_element, cell)
@@ -222,6 +287,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit
     ir["num_entity_dofs"] = num_dofs_per_entity
     ir["num_entity_closure_dofs"] = num_dofs_per_entity_closure
     ir["tabulate_dofs"] = _tabulate_dofs(fiat_element, cell)
+    ir["dof_permutations"] = (edge_permutations, face_permutations, cell, cell_topology)
     ir["tabulate_facet_dofs"] = facet_dofs
     ir["tabulate_entity_dofs"] = (entity_dofs, num_dofs_per_entity)
     ir["tabulate_entity_closure_dofs"] = (entity_closure_dofs, entity_dofs, num_dofs_per_entity)
