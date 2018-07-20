@@ -129,14 +129,14 @@ def tabulate_dof_permutations(L, ir):
     be permuted by rotation or reflection in the plane. """
 
     edge_perms, facet_perms, cell, cell_topology = ir["dof_permutations"]
-    tdim = cell.topological_dimension()
+    ndofs = ir["num_element_dofs"]
 
     perm = L.Symbol("perm")
-    ndofs = L.Symbol("ndofs")
     i = L.Symbol("i")
     # Fill up an identity permutation, for any dofs which are not permuted.
     code = [L.ForRange(i, 0, ndofs, body=[L.Assign(perm[i], i)])]
 
+    tdim = cell.topological_dimension()
     if tdim == 1 or (len(edge_perms) == 0 and len(facet_perms) == 0):
         code += [L.Return()]
         return L.StatementList(code)

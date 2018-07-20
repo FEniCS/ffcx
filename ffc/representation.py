@@ -26,7 +26,8 @@ import ufl
 from ffc import FFCError
 from ffc import classname
 from ffc.fiatinterface import (EnrichedElement, MixedElement, QuadratureElement, SpaceOfReals,
-                               create_element, triangle_permutation_table)
+                               create_element)
+import ffc.fiatinterface
 from ufl.utils.sequences import product
 from FIAT.hdiv_trace import HDivTrace
 import FIAT.reference_element
@@ -196,10 +197,11 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, parameters, ji
 def _compute_dofmap_permutation_tables(fiat_element, cell):
     """Create tables of edge permutations and facet permutations for all the possible
     orientations of the cell."""
+
     if isinstance(fiat_element, MixedElement):
-        elems = fiat_element.elements()
+        elements = fiat_element.elements()
     else:
-        elems = (fiat_element, )
+        elements = (fiat_element, )
 
     td = cell.topological_dimension()
 
@@ -219,9 +221,9 @@ def _compute_dofmap_permutation_tables(fiat_element, cell):
     face_permutations = []
 
     offset = 0
-    for el in elems:
-        nd = _num_dofs_per_entity(el)
-        ed = el.entity_dofs()
+    for element in elements:
+        nd = _num_dofs_per_entity(element)
+        ed = element.entity_dofs()
 
         # If more than one dof on edge, then they need a permutation available
         # Just reverse the order
@@ -237,17 +239,17 @@ def _compute_dofmap_permutation_tables(fiat_element, cell):
             # Permutation on a triangular facet
             # FIXME: add support for quadrilateral facets
             # FIXME: add support for Hdiv/Hcurl elements
-            n = el.degree()
-            n_facet_dofs = (n - 1) * (n - 2) / 2  # Valid for Lagrange - fails for RT, Nedelec etc.
+            d = element.degree()
+            n_facet_dofs = (d - 1) * (d - 2) / 2  # Valid for Lagrange - fails for RT, Nedelec etc.
             if n_facet_dofs == nd[2]:
-                tab = triangle_permutation_table(n, 1)
+                tab = ffc.fiatinterface.triangle_permutation_table(n, 1)
                 face_permutations = [{} for i in range(len(ed[2]))]
                 for k, v in ed[2].items():
                     for i, idx in enumerate(v):
                         perms = [(v[row[i]] + offset) for row in tab]
                         face_permutations[k][idx + offset] = perms
 
-        offset += el.space_dimension()
+        offset += element.space_dimension()
 
     return (edge_permutations, face_permutations, cell_topology)
 
