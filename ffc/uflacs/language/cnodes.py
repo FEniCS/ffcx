@@ -350,7 +350,7 @@ class LiteralBool(CExprLiteral):
 
 
 class LiteralString(CExprLiteral):
-    """A boolean literal value."""
+    """A string literal value."""
 
     __slots__ = ("value", )
     precedence = PRECEDENCE.LITERAL
