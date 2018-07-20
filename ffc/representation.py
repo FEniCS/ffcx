@@ -205,6 +205,9 @@ def _compute_dofmap_permutation_tables(fiat_element, cell):
 
     td = cell.topological_dimension()
 
+    if td == 1:
+        return ([], [], {})
+
     # Collect up some topological tables
     ufc_cell = FIAT.reference_element.ufc_cell
     celltype = cell.cellname()
