@@ -65,23 +65,6 @@ FFC_PARAMETERS.update(_FFC_LOG_PARAMETERS)
 FFC_PARAMETERS.update(_FFC_GENERATE_PARAMETERS)
 
 
-def split_parameters(parameters):
-    """Split a parameters dict into groups based on what parameters are used for.
-
-    """
-    params = {
-        "cache": {k: parameters[k]
-                  for k in _FFC_CACHE_PARAMETERS.keys()},
-        "build": {k: parameters[k]
-                  for k in _FFC_BUILD_PARAMETERS.keys()},
-        "generate": {k: parameters[k]
-                     for k in _FFC_GENERATE_PARAMETERS.keys()},
-        "log": {k: parameters[k]
-                for k in _FFC_LOG_PARAMETERS.keys()},
-    }
-    return params
-
-
 def default_parameters():
     """Return (a copy of) the default parameter values for FFC."""
     parameters = copy.deepcopy(FFC_PARAMETERS)

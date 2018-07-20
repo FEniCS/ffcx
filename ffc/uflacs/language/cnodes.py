@@ -32,39 +32,6 @@ logger = logging.getLogger(__name__)
 # Some helper functions
 
 
-def assign_loop(dst, src, ranges):
-    """Generate a nested loop over a list of ranges, assigning src to dst in the innermost loop.
-
-    Ranges is a list on the format [(index, begin, end),...].
-    """
-    code = Assign(dst, src)
-    for i, b, e in reversed(ranges):
-        code = ForRange(i, b, e, code)
-    return code
-
-
-def accumulate_loop(dst, src, ranges):
-    """Generate a nested loop over a list of ranges, adding src to dst in the innermost loop.
-
-    Ranges is a list on the format [(index, begin, end),...].
-    """
-    code = AssignAdd(dst, src)
-    for i, b, e in reversed(ranges):
-        code = ForRange(i, b, e, code)
-    return code
-
-
-def scale_loop(dst, factor, ranges):
-    """Generate a nested loop over a list of ranges, multiplying dst with factor in the innermost loop.
-
-    Ranges is a list on the format [(index, begin, end),...].
-    """
-    code = AssignMul(dst, factor)
-    for i, b, e in reversed(ranges):
-        code = ForRange(i, b, e, code)
-    return code
-
-
 def is_zero_cexpr(cexpr):
     return ((isinstance(cexpr, LiteralFloat) and cexpr.value == 0.0)
             or (isinstance(cexpr, LiteralInt) and cexpr.value == 0))
@@ -712,24 +679,6 @@ class Or(BinOp):
     op = "||"
 
 
-class BitAnd(BinOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.BIT_AND
-    op = "&"
-
-
-class BitXor(BinOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.BIT_XOR
-    op = "^"
-
-
-class BitOr(BinOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.BIT_OR
-    op = "|"
-
-
 class Sum(NaryOp):
     """Sum of any number of operands."""
 
@@ -780,46 +729,6 @@ class AssignMul(AssignOp):
 class AssignDiv(AssignOp):
     __slots__ = ()
     op = "/="
-
-
-class AssignMod(AssignOp):
-    __slots__ = ()
-    op = "%="
-
-
-class AssignLShift(AssignOp):
-    __slots__ = ()
-    op = "<<="
-
-
-class AssignRShift(AssignOp):
-    __slots__ = ()
-    op = ">>="
-
-
-class AssignAnd(AssignOp):
-    __slots__ = ()
-    op = "&&="
-
-
-class AssignOr(AssignOp):
-    __slots__ = ()
-    op = "||="
-
-
-class AssignBitAnd(AssignOp):
-    __slots__ = ()
-    op = "&="
-
-
-class AssignBitXor(AssignOp):
-    __slots__ = ()
-    op = "^="
-
-
-class AssignBitOr(AssignOp):
-    __slots__ = ()
-    op = "|="
 
 
 # CExpr operators
@@ -1185,22 +1094,6 @@ class StatementList(CStatement):
 # Simple statements
 
 
-class Using(CStatement):
-    __slots__ = ("name", )
-    is_scoped = True
-    can_have_children = False
-
-    def __init__(self, name):
-        assert isinstance(name, str)
-        self.name = name
-
-    def cs_format(self, precision=None):
-        return "using " + self.name + ";"
-
-    def __eq__(self, other):
-        return (isinstance(other, type(self)) and self.name == other.name)
-
-
 class Break(CStatement):
     __slots__ = ()
     is_scoped = True
@@ -1276,26 +1169,6 @@ class Default(CStatement):
 
     def __eq__(self, other):
         return isinstance(other, type(self))
-
-
-class Throw(CStatement):
-    __slots__ = ("exception", "message")
-    is_scoped = True
-    can_have_children = False
-
-    def __init__(self, exception, message):
-        assert isinstance(exception, str)
-        assert isinstance(message, str)
-        self.exception = exception
-        self.message = message
-
-    def cs_format(self, precision=None):
-        assert '"' not in self.message
-        return "throw " + self.exception + '("' + self.message + '");'
-
-    def __eq__(self, other):
-        return (isinstance(other, type(self)) and self.message == other.message
-                and self.exception == other.exception)
 
 
 class Comment(CStatement):

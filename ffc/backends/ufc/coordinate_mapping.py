@@ -34,17 +34,6 @@ def generate_compute_ATA(L, ATA, A, m, n, index_prefix=""):
     return L.StatementList(code)
 
 
-def cross_expr(a, b):
-    def cr(i, j):
-        return a[i] * b[j] - a[j] * b[i]
-
-    return [cr(1, 2), cr(2, 0), cr(0, 1)]
-
-
-def generate_cross_decl(L, c, a, b):
-    return L.ArrayDecl("double", c, values=cross_expr(a, b))
-
-
 # Inline math expressions:
 
 

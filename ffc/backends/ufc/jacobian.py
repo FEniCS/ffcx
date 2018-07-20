@@ -42,12 +42,8 @@ def orientation(L):
     detJ = L.Symbol("detJ")
     cell_orientation = L.Symbol("cell_orientation")
     code = [
-        L.Comment("Check orientation"),
-        L.If(
-            L.EQ(cell_orientation, -1), [
-                L.Throw("std::runtime_error",
-                        "cell orientation must be defined (not -1)")
-            ]),
+        L.Comment("Check orientation and return error code"),
+        L.If(L.EQ(cell_orientation, -1), [L.Return(-1)]),
         L.Comment("(If cell_orientation == 1 = down, multiply det(J) by -1)"),
         L.ElseIf(L.EQ(cell_orientation, 1), [L.AssignMul(detJ, -1)])
     ]
@@ -171,94 +167,5 @@ def fiat_coordinate_mapping(L, cellname, gdim, ref_coord_symbol="Y"):
         ]
     else:
         raise FFCError("Cannot compute %s with gdim: %d" % (cellname, gdim))
-
-    return code
-
-
-def _mapping_transform(L, data, dof_data, values, offset, width=1):
-
-    code = []
-    tdim = data["topological_dimension"]
-    gdim = data["geometric_dimension"]
-    num_components = dof_data["num_components"]
-    mapping = dof_data["mapping"]
-
-    # Apply transformation if applicable.
-    if mapping == "affine":
-        return code
-
-    # Get temporary values before mapping.
-    tmp_ref = L.Symbol("tmp_ref")
-    code += [
-        L.ArrayDecl(
-            "const double", tmp_ref, num_components,
-            [values[i * width + offset] for i in range(num_components)])
-    ]
-
-    # Define symbols for Jacobian, inverse and determinant
-    J = L.Symbol("J")
-    J = L.FlattenedArray(J, dims=(gdim, tdim))
-    detJ = L.Symbol("detJ")
-    K = L.Symbol("K")
-    K = L.FlattenedArray(K, dims=(tdim, gdim))
-
-    if mapping == "contravariant piola":
-        code += [
-            L.Comment(
-                "Using contravariant Piola transform to map values back to the physical element"
-            )
-        ]
-        assert num_components == tdim
-        for i in range(gdim):
-            inner = sum(J[i, j] * tmp_ref[j] for j in range(tdim))
-            code += [L.Assign(values[i * width + offset], inner / detJ)]
-
-    elif mapping == "covariant piola":
-        code += [
-            L.Comment(
-                "Using covariant Piola transform to map values back to the physical element"
-            )
-        ]
-        assert num_components == tdim
-        for i in range(gdim):
-            inner = sum(K[j, i] * tmp_ref[j] for j in range(tdim))
-            code += [L.Assign(values[i * width + offset], inner)]
-
-    elif mapping == "double covariant piola":
-        code += [
-            L.Comment(
-                "Using double covariant Piola transform to map values back to the physical element"
-            )
-        ]
-        assert num_components == tdim**2
-        for p in range(num_components):
-            # unflatten the indices
-            i = p // tdim
-            l = p % tdim  # noqa: E741
-            # g_il = K_ji G_jk K_kl
-            inner = sum(K[j, i] * tmp_ref[j * tdim + k] * K[k, l]
-                        for j in range(tdim) for k in range(tdim))
-
-            code += [L.Assign(values[p * width + offset], inner)]
-
-    elif mapping == "double contravariant piola":
-        code += [
-            L.Comment(
-                "Using double contravariant Piola transform to map values back to the physical element"
-            )
-        ]
-        assert num_components == tdim**2
-        for p in range(num_components):
-            # unflatten the indices
-            i = p // tdim
-            l = p % tdim  # noqa: E741
-            inner = sum(J[i, j] * tmp_ref[j * tdim + k] * J[l, k]
-                        for j in range(tdim) for k in range(tdim))
-
-            code += [
-                L.Assign(values[p * width + offset], inner / (detJ * detJ))
-            ]
-    else:
-        raise FFCError("Unknown mapping: %s" % mapping)
 
     return code
