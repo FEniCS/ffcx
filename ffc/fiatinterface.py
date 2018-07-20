@@ -295,7 +295,7 @@ def _create_restricted_element(ufl_element):
 
 
 def triangle_permutation_table(n, interior=0):
-    """ Calculate the positions of dofs on a triangular lattice, in the same way
+    """Calculate the positions of dofs on a triangular lattice, in the same way
     as FIAT.reference_element, for each of the six possible permutations (three
     rotations and two reflections) """
 
