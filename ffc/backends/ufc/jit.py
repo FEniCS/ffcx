@@ -137,7 +137,7 @@ UFC_INTEGRAL_DECL = """
 typedef struct ufc_cell_integral
 {
 const bool* enabled_coefficients;
-unsigned int cell_batch_size;
+uint32_t cell_batch_size;
 void (*tabulate_tensor)(double* restrict A, const double* const* w,
                         const double* restrict coordinate_dofs,
                         int cell_orientation);
@@ -146,7 +146,7 @@ void (*tabulate_tensor)(double* restrict A, const double* const* w,
 typedef struct ufc_exterior_facet_integral
 {
 const bool* enabled_coefficients;
-unsigned int cell_batch_size;
+uint32_t cell_batch_size;
 void (*tabulate_tensor)(double* restrict A, const double* const* w,
                         const double* restrict coordinate_dofs, int facet,
                         int cell_orientation);
@@ -155,7 +155,7 @@ void (*tabulate_tensor)(double* restrict A, const double* const* w,
 typedef struct ufc_interior_facet_integral
 {
 const bool* enabled_coefficients;
-unsigned int cell_batch_size;
+uint32_t cell_batch_size;
 void (*tabulate_tensor)(double* restrict A, const double* const* w,
                         const double* restrict coordinate_dofs_0,
                         const double* restrict coordinate_dofs_1,
@@ -166,7 +166,7 @@ void (*tabulate_tensor)(double* restrict A, const double* const* w,
 typedef struct ufc_vertex_integral
 {
 const bool* enabled_coefficients;
-unsigned int cell_batch_size;
+uint32_t cell_batch_size;
 void (*tabulate_tensor)(double* restrict A, const double* const* w,
                         const double* restrict coordinate_dofs, int vertex,
                         int cell_orientation);
@@ -175,7 +175,7 @@ void (*tabulate_tensor)(double* restrict A, const double* const* w,
 typedef struct ufc_custom_integral
 {
 const bool* enabled_coefficients;
-unsigned int cell_batch_size;
+uint32_t cell_batch_size;
 void (*tabulate_tensor)(double* restrict A, const double* const* w,
                         const double* restrict coordinate_dofs,
                         int num_quadrature_points,
