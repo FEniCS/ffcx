@@ -376,10 +376,10 @@ def _extract_common_metadata(integral_metadatas, ida, form_data, form_r_family, 
 
     # Functions that generate sets of metadata parameter values
     def equal_set_gen(em):
-		return {md[em] for md in integral_metadatas}
+        return {md[em] for md in integral_metadatas}
     
-	def equal_or_auto_set_gen(em): 
-		return {md[em] for md in integral_metadatas if md[em] != "auto"}
+    def equal_or_auto_set_gen(em): 
+        return {md[em] for md in integral_metadatas if md[em] != "auto"}
 
     # Function that extracts a unique parameter value or raises an error
     def extract_metadata(metadatas, error_msg, set_gen):
