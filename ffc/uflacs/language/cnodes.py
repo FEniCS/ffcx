@@ -1459,7 +1459,7 @@ class Scope(CStatement):
 
     def __init__(self, body):
         self.body = as_cstatement(body)
-        
+
     def children(self):
         return [self.body]
 

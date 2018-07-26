@@ -374,9 +374,12 @@ def _extract_common_metadata(integral_metadatas, ida, form_data, form_r_family, 
     equal_error_msg = "Integral '{}' metadata must be equal within each subdomain or not set, got {}."
     equal_or_auto_error_msg = "Integral '{}' metadata must be equal within each subdomain or 'auto', got {}."
 
-    # Lambdas that generate sets of metadata parameter values
-    equal_set_gen = lambda em: {md[em] for md in integral_metadatas}
-    equal_or_auto_set_gen = lambda em: {md[em] for md in integral_metadatas if md[em] != "auto"}
+    # Functions that generate sets of metadata parameter values
+    def equal_set_gen(em):
+		return {md[em] for md in integral_metadatas}
+    
+	def equal_or_auto_set_gen(em): 
+		return {md[em] for md in integral_metadatas if md[em] != "auto"}
 
     # Function that extracts a unique parameter value or raises an error
     def extract_metadata(metadatas, error_msg, set_gen):

@@ -494,7 +494,7 @@ class IntegralGenerator(object):
         # Handle casting of function parameters to vector extension types
 
         preamble = [L.VerbatimStatement("typedef double {} __attribute__ ((vector_size ({})));".format(vector_type,
-                                                                                                       8*vec_length))]
+                                                                                                       8 * vec_length))]
 
         def get_vectorized_name(name: str) -> str:
             if name in ctx["vectorized_parameters"]:
