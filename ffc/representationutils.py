@@ -150,6 +150,7 @@ def initialize_integral_code(ir, prefix, parameters):
     code["initializer_list"] = ""
     code["destructor"] = ""
     code["enabled_coefficients"] = generate_enabled_coefficients(ir["enabled_coefficients"])
+    code["cell_batch_size"] = 1
     code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
 
     return code
