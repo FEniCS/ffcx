@@ -47,17 +47,15 @@ def test_form():
     u, v = ufl.TestFunction(element), ufl.TrialFunction(element),
     a = ufl.dot(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
-    compiled_forms, module = ffc.backends.ufc.jit.compile_forms(forms)
 
+    compiled_forms, module = ffc.backends.ufc.jit.compile_forms(forms)
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
+        default_cell_integral = compiled_f.create_default_cell_integral()
+        assert default_cell_integral.cell_batch_size == 1
 
-# cell = ufl.triangle
-# elements = [ufl.FiniteElement("Lagrange", cell, p) for p in range(1, 5)]
-# compiled_elements, module = ffc.backends.ufc.jit.compile_elements(elements)
-
-# for e, compiled_e in zip(elements, compiled_elements):
-#     assert compiled_e.geometric_dimension == 2
-#     assert compiled_e.topological_dimension == 2
-#     assert e.degree() == compiled_e.degree
+    compiled_forms, module = ffc.backends.ufc.jit.compile_forms(forms, parameters={"cell_batch_size": 4})
+    for f, compiled_f in zip(forms, compiled_forms):
+        default_cell_integral = compiled_f.create_default_cell_integral()
+        assert default_cell_integral.cell_batch_size == 4
