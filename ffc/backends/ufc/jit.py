@@ -270,8 +270,8 @@ def compile_elements(elements, module_name=None, parameters=None):
 def compile_forms(forms, module_name=None, parameters=None):
     """Compile a list of UFL forms into UFC Python objects"""
 
-    # FIXME: support list of forms. Problem is that FFC does not use a
-    # hash for form signature, unlike for other objects
+    # FIXME: Support list of forms properly
+    # At the moment: subdomains + list input probably broken because of FFCs form naming
 
     forms_source = ""
     forms_header = "".join([
@@ -280,16 +280,21 @@ def compile_forms(forms, module_name=None, parameters=None):
         UFC_DOFMAP_DECL,
         UFC_COORDINATEMAPPING_DECL,
         UFC_INTEGRAL_DECL,
-        UFC_FORM_DECL
+        UFC_FORM_DECL,
+        "\n"
     ])
 
-    form_sig_template = "ufc_form * create_{name}(void);"
-    for f in forms:
-        _, impl = ffc.compiler.compile_form(f, parameters=parameters)
-        forms_source += impl
+    # Compile all forms
+    prefix = "Form"
+    ufc_h, ufc_c = ffc.compiler.compile_form(forms, prefix=prefix, parameters=parameters)
+    forms_source += ufc_c
 
+    form_names = []
+    form_sig_template = "ufc_form* create_{name}(void);"
+    for i in range(len(forms)):
         # FIXME: FFC should have the form name
-        name = ffc.classname.make_name("Form", "form", 0)
+        name = ffc.classname.make_name(prefix, "form", i)
+        form_names.append(name)
         form_sig = form_sig_template.format(name=name)
         forms_header += form_sig + "\n"
 
@@ -308,8 +313,7 @@ def compile_forms(forms, module_name=None, parameters=None):
     # Build list of compiled elements
     compiled_forms = []
     compiled_module = importlib.import_module(compile_dir + "." + module_name)
-    for f in forms:
-        name = ffc.classname.make_name("Form", "form", 0)
+    for name, f in zip(form_names, forms):
         create_form = "create_" + name
         compiled_forms.append(getattr(compiled_module.lib, create_form)())
 
