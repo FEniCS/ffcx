@@ -10,7 +10,10 @@ import importlib
 
 import cffi
 
-import ffc
+import ffc.backends
+import ffc.classname
+import ffc.compiler
+import ffc.representation
 
 UFC_HEADER_DECL = """
 typedef double ufc_scalar_t;  /* Hack to deal with scalar type */
@@ -224,28 +227,30 @@ ufc_custom_integral* (*create_default_custom_integral)(void);
 """
 
 
-def compile_elements(elements, module_name=None):
+def compile_elements(elements, module_name=None, parameters=None):
     """Compile a list of UFL elements into UFC Python objects"""
-    code_body = ""
-    decl = UFC_HEADER_DECL + UFC_ELEMENT_DECL
+
+    elements_source = ""
+    elements_header = UFC_HEADER_DECL + UFC_ELEMENT_DECL
+
     element_template = "ufc_finite_element * create_{name}(void);"
     for e in elements:
-        _, impl = ffc.compiler.compile_element(e)
-        code_body += impl
-        p = ffc.parameters.validate_parameters(None)
+        _, impl = ffc.compiler.compile_element(e, parameters=parameters)
+        elements_source += impl
+
+        p = ffc.parameters.validate_parameters(parameters)
         name = ffc.representation.make_finite_element_jit_classname(e, p)
         create_element = element_template.format(name=name)
-        decl += create_element + "\n"
+        elements_header += create_element + "\n"
 
     if not module_name:
         h = hashlib.sha1()
-        h.update((code_body + decl).encode('utf-8'))
+        h.update((elements_source + elements_header).encode('utf-8'))
         module_name = "_" + h.hexdigest()
 
     ffibuilder = cffi.FFI()
-    ffibuilder.set_source(
-        module_name, code_body, include_dirs=[ffc.backends.ufc.get_include_path()])
-    ffibuilder.cdef(decl)
+    ffibuilder.set_source(module_name, elements_source, include_dirs=[ffc.backends.ufc.get_include_path()])
+    ffibuilder.cdef(elements_header)
 
     compile_dir = "compile_cache"
     ffibuilder.compile(tmpdir=compile_dir, verbose=False)
@@ -262,34 +267,40 @@ def compile_elements(elements, module_name=None):
     return compiled_elements, compiled_module
 
 
-def compile_forms(forms, module_name=None):
+def compile_forms(forms, module_name=None, parameters=None):
     """Compile a list of UFL forms into UFC Python objects"""
 
     # FIXME: support list of forms. Problem is that FFC does not use a
     # hash for form signature, unlike for other objects
 
-    code_body = ""
-    decl = UFC_HEADER_DECL + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + UFC_COORDINATEMAPPING_DECL \
-        + UFC_INTEGRAL_DECL + UFC_FORM_DECL
-    form_template = "ufc_form * create_{name}(void);"
-    for f in forms:
-        _, impl = ffc.compiler.compile_form(f)
-        code_body += impl
+    forms_source = ""
+    forms_header = "".join([
+        UFC_HEADER_DECL,
+        UFC_ELEMENT_DECL,
+        UFC_DOFMAP_DECL,
+        UFC_COORDINATEMAPPING_DECL,
+        UFC_INTEGRAL_DECL,
+        UFC_FORM_DECL
+    ])
 
-        # FIXME: FFC should has the form name
+    form_sig_template = "ufc_form * create_{name}(void);"
+    for f in forms:
+        _, impl = ffc.compiler.compile_form(f, parameters=parameters)
+        forms_source += impl
+
+        # FIXME: FFC should have the form name
         name = ffc.classname.make_name("Form", "form", 0)
-        create_form = form_template.format(name=name)
-        decl += create_form + "\n"
+        form_sig = form_sig_template.format(name=name)
+        forms_header += form_sig + "\n"
 
     if not module_name:
         h = hashlib.sha1()
-        h.update((code_body + decl).encode('utf-8'))
+        h.update((forms_source + forms_header).encode('utf-8'))
         module_name = "_" + h.hexdigest()
 
     ffibuilder = cffi.FFI()
-    ffibuilder.set_source(
-        module_name, code_body, include_dirs=[ffc.backends.ufc.get_include_path()])
-    ffibuilder.cdef(decl)
+    ffibuilder.set_source(module_name, forms_source, include_dirs=[ffc.backends.ufc.get_include_path()])
+    ffibuilder.cdef(forms_header)
 
     compile_dir = "compile_cache"
     ffibuilder.compile(tmpdir=compile_dir, verbose=False)
