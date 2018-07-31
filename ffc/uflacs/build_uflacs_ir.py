@@ -59,7 +59,7 @@ def get_common_block_data(blockdata):
 
 
 preintegrated_block_data_t = namedtuple("preintegrated_block_data_t",
-                                        common_block_data_fields + ["is_uniform", "name", "unroll", "inline"])
+                                        common_block_data_fields + ["is_uniform", "name"])
 
 premultiplied_block_data_t = namedtuple("premultiplied_block_data_t",
                                         common_block_data_fields + ["is_uniform", "name"])
@@ -195,7 +195,6 @@ def uflacs_default_parameters(optimize):
         "enable_sum_factorization": False,
         "enable_block_transpose_reuse": False,
         "enable_table_zero_compression": False,
-        "max_preintegrated_unrolled_table_size": 1024,
 
         # Code generation parameters
         "vectorize": False,
@@ -552,18 +551,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                                                  unique_table_num_dofs)
                     ptable = clamp_table_small_numbers(
                         ptable, rtol=p["table_rtol"], atol=p["table_atol"])
-                else:
-                    ptable = unique_tables[pname]
 
-                # Decide whether to unroll dofblock assignment
-                max_unroll_size = ir["params"]["max_preintegrated_unrolled_table_size"]
-                unroll = numpy.prod(ptable.shape[1:]) <= max_unroll_size  # First dimension is entity
-                inline = unroll and integral_type == "cell"
-
-                if pname is None:
-                    # Store the table on the cache miss
                     pname = "PI%d" % (len(cache, ))
-                    pname += "_inline" if inline else ""
                     cache[unames] = pname
                     unique_tables[pname] = ptable
                     unique_table_types[pname] = "preintegrated"
@@ -572,7 +561,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                 block_unames = (pname, )
                 blockdata = preintegrated_block_data_t(
                     block_mode, ttypes, factor_index, factor_is_piecewise, block_unames,
-                    block_restrictions, block_is_transposed, block_is_uniform, pname, unroll, inline)
+                    block_restrictions, block_is_transposed, block_is_uniform, pname)
                 block_is_piecewise = True
 
             elif block_mode == "premultiplied":

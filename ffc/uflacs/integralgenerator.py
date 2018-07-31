@@ -18,7 +18,6 @@ from ffc.uflacs.ast_transformations import Vectorizer
 from ufl import product
 from ufl.classes import Condition
 from ufl.measure import custom_integral_types, point_integral_types
-from ufl.utils.indexflattening import shape_to_strides
 
 logger = logging.getLogger(__name__)
 
@@ -303,6 +302,7 @@ class IntegralGenerator(object):
 
         tables = self.ir["unique_tables"]
         table_types = self.ir["unique_table_types"]
+        inline_tables = self.ir["integral_type"] == "cell"
 
         alignas = self.ir["params"]["alignas"]
         padlen = self.ir["params"]["padlen"]
@@ -317,14 +317,14 @@ class IntegralGenerator(object):
         for name in table_names:
             table = tables[name]
 
-            # Don't pad preintegrated tables. FIXME: Why?!
+            # Don't pad preintegrated tables
             if name[0] == "P":
                 p = 1
             else:
                 p = padlen
 
             # Skip tables that are inlined in code generation
-            if "inline" in name:
+            if inline_tables and name[:2] == "PI":
                 continue
 
             decl = L.ArrayDecl(
@@ -604,13 +604,9 @@ class IntegralGenerator(object):
 
         blocks = [(blockmap, blockdata)
                   for blockmap, contributions in sorted(block_contributions.items())
-                  for blockdata in contributions]
+                  for blockdata in contributions if blockdata.block_mode != "preintegrated"]
 
         for blockmap, blockdata in blocks:
-            # Skip unrolled preintegration blocks
-            if blockdata.block_mode == "preintegrated" and blockdata.unroll:
-                continue
-
             # Get symbol for already defined block B if it exists
             common_block_data = get_common_block_data(blockdata)
             B = self.shared_blocks.get(common_block_data)
@@ -810,7 +806,7 @@ class IntegralGenerator(object):
                 # Plan for vectorization of coefficient evaluation over iq:
                 # 1) Define w0_c1 etc as arrays e.g. "double w0_c1[nq] = {};" outside quadloop
                 # 2) Access as w0_c1[iq] of course
-                # 3) Split quadrature loops, coefficients before fw computation
+                # 3) Splitquadrature loops, coefficients before fw computation
                 # 4) Possibly swap loops over iq and ic:
                 #    for(ic) for(iq) w0_c1[iq] = w[0][ic] * FE[iq][ic];
 
@@ -921,10 +917,6 @@ class IntegralGenerator(object):
                 # Preintegrated should never get into quadloops
                 assert num_points is None
 
-                # Inlining is only possible with unrolled blocks, which should not be passed to this function
-                assert not blockdata.unroll
-                assert not blockdata.inline
-
                 # Define B = B_rhs = f * PI where PI = sum_q weight * u * v
                 PI = L.Symbol(blockdata.name)[P_ii]
                 B_rhs = L.float_product([f, PI])
@@ -966,22 +958,22 @@ class IntegralGenerator(object):
         # Get symbol, dimensions, and loop index symbols for A
         A_shape = self.ir["tensor_shape"]
         A_size = product(A_shape)
-        A_strides = shape_to_strides(A_shape)
+        A_rank = len(A_shape)
 
-        # List for unrolled assignments
+        # TODO: there's something like shape2strides(A_shape) somewhere
+        A_strides = [1] * A_rank
+        for i in reversed(range(0, A_rank - 1)):
+            A_strides[i] = A_strides[i + 1] * A_shape[i + 1]
+
         A_values = [0.0] * A_size
 
-        # Generate block-wise assignments
         for blockmap, blockdata in blocks:
-            # Non-unrolled blocks are handled by generate_dofblock_partition (similar to premultiplied blocks)
-            if not blockdata.unroll:
-                continue
-
-            # Accumulate A[blockmap[...]] += f*PI[...] for unrolled blocks
+            # Accumulate A[blockmap[...]] += f*PI[...]
 
             # Get table for inlining
             tables = self.ir["unique_tables"]
             table = tables[blockdata.name]
+            inline_table = self.ir["integral_type"] == "cell"
 
             # Get factor expression
             v = self.ir["piecewise_ir"]["V"][blockdata.factor_index]
@@ -990,19 +982,23 @@ class IntegralGenerator(object):
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
             # A_rhs = f * PI where PI = sum_q weight * u * v
             PI = L.Symbol(blockdata.name)
+            # block_rank = len(blockmap)
+
+            # # Override dof index with quadrature loop index for arguments with
+            # # quadrature element, to index B like B[iq*num_dofs + iq]
+            # arg_indices = tuple(
+            #     self.backend.symbols.argument_loop_index(i) for i in range(block_rank))
 
             # Define indices into preintegrated block
             P_entity_indices = self.get_entities(blockdata)
-            if blockdata.inline:
+            if inline_table:
                 assert P_entity_indices == (L.LiteralInt(0), )
                 assert table.shape[0] == 1
-            assert ("inline" in blockdata.name) == blockdata.inline
 
             # Unroll loop
             blockshape = [len(DM) for DM in blockmap]
             blockrange = [range(d) for d in blockshape]
 
-            # Generate unrolled assignments for the current block
             for ii in itertools.product(*blockrange):
                 A_ii = sum(A_strides[i] * blockmap[i][ii[i]] for i in range(len(ii)))
                 if blockdata.transposed:
@@ -1010,7 +1006,7 @@ class IntegralGenerator(object):
                 else:
                     P_arg_indices = ii
 
-                if blockdata.inline:
+                if inline_table:
                     # Extract float value of PI[P_ii]
                     Pval = table[0]  # always entity 0
                     for i in P_arg_indices:
@@ -1021,13 +1017,10 @@ class IntegralGenerator(object):
                     P_ii = P_entity_indices + P_arg_indices
                     A_rhs = f * PI[P_ii]
 
-                A_values[A_ii] += A_rhs
+                A_values[A_ii] = A_values[A_ii] + A_rhs
 
-        # Generate unrolled code zeroing whole tensor
-        code_unroll = self.generate_tensor_value_initialization(A_values)
-        code_unroll = L.commented_code_list(code_unroll, "UFLACS block mode: preintegrated unroll")
-
-        return code_unroll
+        code = self.generate_tensor_value_initialization(A_values)
+        return L.commented_code_list(code, "UFLACS block mode: preintegrated")
 
     def generate_tensor_value_initialization(self, A_values):
         parts = []
@@ -1036,13 +1029,8 @@ class IntegralGenerator(object):
         A = self.backend.symbols.element_tensor()
         A_size = len(A_values)
 
+        init_mode = self.ir["params"]["tensor_init_mode"]
         z = L.LiteralFloat(0.0)
-
-        if all(A[j] in [0.0, z] for j in range(A_size)):
-            # We are just zeroing the tensor
-            init_mode = "upfront"
-        else:
-            init_mode = self.ir["params"]["tensor_init_mode"]
 
         k = L.Symbol("k")  # Index for zeroing arrays
 
@@ -1114,7 +1102,7 @@ class IntegralGenerator(object):
         for i, fi in enumerate(V_targets):
             parts.append(L.Assign(values[i], self.get_var(None, V[fi])))
 
-        return L.commented_code_list(parts, "Expression copyout")
+        return parts
 
     def generate_tensor_copyout_statements(self):
         L = self.backend.language
@@ -1123,6 +1111,11 @@ class IntegralGenerator(object):
         # Get symbol, dimensions, and loop index symbols for A
         A_shape = self.ir["tensor_shape"]
         A_rank = len(A_shape)
+
+        # TODO: there's something like shape2strides(A_shape) somewhere
+        A_strides = [1] * A_rank
+        for i in reversed(range(0, A_rank - 1)):
+            A_strides[i] = A_strides[i + 1] * A_shape[i + 1]
 
         Asym = self.backend.symbols.element_tensor()
         A = L.FlattenedArray(Asym, dims=A_shape)
@@ -1174,7 +1167,7 @@ class IntegralGenerator(object):
         # Place static dofmap tables first
         parts = dofmap_parts + parts
 
-        return L.commented_code_list(parts, "Tensor copyout")
+        return parts
 
     def generate_copyout_statements(self):
         """Generate statements copying results to output array."""
