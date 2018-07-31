@@ -47,7 +47,7 @@ def mark_active(dependencies, targets):
     num_used = 0
 
     # Seed with initially used symbols
-    active[targets] = 1
+    active[tuple(targets)] = 1
 
     # Mark dependencies by looping backwards through symbols array
     for s in range(n - 1, -1, -1):
