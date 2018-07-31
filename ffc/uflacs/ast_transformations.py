@@ -82,7 +82,7 @@ class Vectorizer(object):
         def is_function_call_with_vec_args(expr: L.CExpr) -> bool:
             """Returns whether the given CNodes expression is a function call with vectorized arguments."""
             if isinstance(expr, L.Call):
-                return any(was_vectorized(arg) for arg in expr.arguments)
+                return any(is_vector_expression(arg) for arg in expr.arguments)
             else:
                 return False
 
