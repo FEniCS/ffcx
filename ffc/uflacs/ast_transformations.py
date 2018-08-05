@@ -4,10 +4,12 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""Algorithms that perform transformation of the AST of the tabulate_tensor functions"""
+"""Algorithms that perform transformations of the AST of tabulate_tensor functions"""
 
 import functools
 from copy import copy
+
+# FIXME: Only cell integrals supported at the moment
 
 
 class Vectorizer(object):
@@ -28,39 +30,47 @@ class Vectorizer(object):
         return vectorized
 
     def __vectorize_with_gcc_exts(self, statements):
-        """Cross-element vectorization of `tabulate_tensor` statement list with GCC extensions.
+        """Cross-cell vectorization of `tabulate_tensor` statement list with GCC extensions.
 
-        Converts a list of `tabulate_tensor` CNodes statements into a cross-element vectorized version using
+        Converts a list of `tabulate_tensor` CNodes statements into a cross-cell vectorized version using
         GCC's vector extensions.
 
         :param statements: The list of statements that should be transformed
-        :param vec_length: The number of elements to perform cross element vectorization over
-        :param alignment: Alignment in bytes used for arrays whose rank is increased for vectorization
         :return: A list of the transformed statements
         """
 
         L = self.backend.language
 
+        # Type of variables that get vectorized
         base_type = "double"
+        # Number of entries per vectorized variable
         vec_length = self.vec_length
+        # Name of the vector type
         vector_type = "{}{}".format(base_type, str(vec_length))
+        # Typedef defining the vector type using GCC vector extensions
+        vector_type_typedef = "typedef {} {} __attribute__ " \
+                              "((vector_size ({})));".format(base_type, vector_type, 8 * vec_length)
 
-        vectorized_parameters = self.__get_cell_dependent_parameters()
+        # List of function parameters decls that are affected by vectorization (depends on integral type)
+        vectorized_parameters_decls = self.__get_cell_dependent_parameters()
 
-        ctx = {
-            "vectorized_parameters": [param_decl.symbol.name for param_decl in vectorized_parameters],
-            "vectorized_intermediates": [],
-        }
+        # Symbol names of vectorized function parameters
+        vectorized_parameters = [param_decl.symbol.name for param_decl in vectorized_parameters_decls]
+        # List that gets filled with any intermediate variable symbol names that were vectorized
+        vectorized_intermediates = []
 
-        # Symbol used as index in for-loops over the elements
-        i_simd = L.Symbol("i_elem")
+        # Symbol used as index in for-loops over the vector entries
+        i_simd = L.Symbol("i_cell")
+
+        # --------------------
+        # Helper functions
 
         def simd_loop(body):
-            """Returns a ForRange that is used to perform a cross element loop."""
+            """Returns a ForRange that is used to perform a cross-cell loop."""
             return L.ForRange(i_simd, 0, vec_length, body)
 
         def was_vectorized(expr) -> bool:
-            """Returns whether an array's/scalar's rank was increased for vectorization."""
+            """Returns whether an array's/scalar's rank was increased during vectorization."""
 
             if isinstance(expr, L.ArrayAccess):
                 symbol_name = expr.array.name
@@ -69,18 +79,19 @@ class Vectorizer(object):
             else:
                 raise RuntimeError("Unsupported expression")
 
-            return any(
-                (symbol_name in arr) for arr in [ctx["vectorized_intermediates"], ctx["vectorized_parameters"]])
+            return any((symbol_name in arr) for arr in [vectorized_intermediates, vectorized_parameters])
 
         def dfs(cnode: L.CNode):
             """Depth-first search generator for CNodes expressions."""
+
             yield cnode
             for child in cnode.children():
                 for childs_child in dfs(child):
                     yield childs_child
 
         def is_function_call_with_vec_args(expr: L.CExpr) -> bool:
-            """Returns whether the given CNodes expression is a function call with vectorized arguments."""
+            """Returns whether the given CNodes expression is a function call with any vectorized argument."""
+
             if isinstance(expr, L.Call):
                 return any(is_vector_expression(arg) for arg in expr.arguments)
             else:
@@ -88,6 +99,7 @@ class Vectorizer(object):
 
         def is_vectorized_variable(expr: L.CExpr) -> bool:
             """Returns whether the given CNodes expression is a vectorized variable."""
+
             if isinstance(expr, L.Symbol) or isinstance(expr, L.ArrayAccess):
                 return was_vectorized(expr)
             else:
@@ -98,6 +110,16 @@ class Vectorizer(object):
 
             return ((not any(is_function_call_with_vec_args(sub_expr) for sub_expr in dfs(expr)))
                     and any(is_vectorized_variable(sub_expr) for sub_expr in dfs(expr)))
+
+        # --------------------
+
+        # Base implementation of the CNodes AST visitor that performs vectorization
+        # Basic algorithm:
+        #  - For every non-static variable declaration: simply switch type to vector type
+        #  - For every assignment: check whether rhs is of vector type using is_vector_expression()
+        #    (e.g. caused by referring to already vectorized variable declarations)
+        #      -> If true: nop
+        #      -> If false: assignment has to be wrapped manually in for-loop, performing it for each component
 
         @functools.singledispatch
         def vectorize(stmnt):
@@ -118,7 +140,8 @@ class Vectorizer(object):
             # For dev: check whether to add type to ignore list or to implement it below
             raise RuntimeError("Vectorization of {} CNodes statement not implemented!".format(type(stmnt)))
 
-        # Vectorization of statements
+        # --------------------
+        # vectorize() for declarations
 
         @vectorize.register(L.VariableDecl)
         def vectorize_variable_decl(stmnt):
@@ -131,7 +154,7 @@ class Vectorizer(object):
             var_decl.typename = stmnt.typename.replace(base_type, vector_type)
 
             # Log that the scalar was vectorized
-            ctx["vectorized_intermediates"].append(stmnt.symbol.name)
+            vectorized_intermediates.append(stmnt.symbol.name)
 
             # Check value, if it isn't a vector expression the assignment has to be wrapped in a loop
             if stmnt.value is not None:
@@ -157,9 +180,12 @@ class Vectorizer(object):
             array_decl.typename = stmnt.typename.replace(base_type, vector_type)
 
             # Store that the array was vectorized
-            ctx["vectorized_intermediates"].append(stmnt.symbol.name)
+            vectorized_intermediates.append(stmnt.symbol.name)
 
             return array_decl
+
+        # --------------------
+        # vectorize() for statements
 
         @vectorize.register(L.AssignOp)
         def vectorize_assign(stmnt):
@@ -200,7 +226,9 @@ class Vectorizer(object):
         def vectorize_statement_list(stmnts):
             return L.StatementList([vectorize(stmnt) for stmnt in stmnts.statements])
 
-        # Vectorization of expressions, only applied inside of for-loops generated by a statement above
+        # --------------------
+        # vectorize() for expressions
+        #  Only applied inside of newly introduced for-loops (generated by vectorization of a statement above)
 
         @vectorize.register(L.Symbol)
         def vectorize_symbol(expr):
@@ -243,33 +271,38 @@ class Vectorizer(object):
             else:
                 return expr
 
+        # --------------------
+        # Perform vectorization
+
         # Run vectorization of all statements
         vectorized = [vectorize(stmnt) for stmnt in statements]
 
-        # ---------
-        # Handle casting of function parameters to vector extension types
+        # --------------------
+        # Generate preamble
+        #   Handle casting of function parameters to vector extension types
 
-        preamble = [L.VerbatimStatement("typedef double {} __attribute__ ((vector_size ({})));".format(vector_type,
-                                                                                                       8 * vec_length))]
+        # List of statements that get inserted before the vectorized tabulate_tensor code
+        preamble = [L.VerbatimStatement(vector_type_typedef)]
 
         def get_vectorized_name(name: str) -> str:
-            if name in ctx["vectorized_parameters"]:
+            # Append "_x" to the casted, vectorized versions of function parameters
+            if name in vectorized_parameters:
                 return name + "_x"
             return name
 
-        # Keep track of actually used parameters to only create cast statements for them
+        # Keep track of actually used function parameters, only create cast statements for them
         used_parameters = set()
 
         # Modify all symbol names that refer to parameters
         for stmnt in vectorized:
             for child in dfs(stmnt):
                 if isinstance(child, L.Symbol):
-                    if child.name in ctx["vectorized_parameters"]:
+                    if child.name in vectorized_parameters:
                         used_parameters.add(child.name)
                         child.name = get_vectorized_name(child.name)
 
-        # Generate casts to vector type of all used parameters
-        for param_decl in vectorized_parameters:
+        # Generate casts to vector type for all used parameters
+        for param_decl in vectorized_parameters_decls:
             old_name = param_decl.symbol.name
 
             # Skip parameters that were not used
@@ -279,7 +312,7 @@ class Vectorizer(object):
             new_name = get_vectorized_name(old_name)
             new_typename = param_decl.typename.replace(base_type, vector_type)
 
-            # Append the cast statement
+            # Append the cast statement to preamble
             cast = L.VerbatimStatement("{0} {1} = ({0}){2};".format(new_typename, new_name, old_name))
             preamble.append(cast)
 
@@ -288,13 +321,12 @@ class Vectorizer(object):
         return vectorized
 
     def __vectorize_with_loops(self, statements):
-        """Cross-element vectorization of `tabulate_tensor` statement list.
+        """Cross-cell vectorization of `tabulate_tensor` statement list.
 
-        Converts a list of `tabulate_tensor` CNodes statements into a cross-element vectorized version.
+        Converts a list of `tabulate_tensor` CNodes statements into a cross-cell vectorized version by wrapping
+        every statement in a for-loop over the cells.
 
         :param statements: The list of statements that should be transformed
-        :param vec_length: The number of elements to perform cross element vectorization over
-        :param alignment: Alignment in bytes used for arrays whose rank is increased for vectorization
         :return: A list of the transformed statements
         """
 
@@ -303,27 +335,37 @@ class Vectorizer(object):
         vec_length = self.vec_length
         align = self.align
 
+        # Whether to fuse all consective per-statement for-loops into a single for-loop
         enable_cross_element_fuse = self.ir["params"]["enable_cross_element_fuse"]
+        # Whether to convert all huge intermediate arrays into scalar variables/small arrays only over the cells
         enable_cross_element_array_conv = self.ir["params"]["enable_cross_element_array_conv"]
 
-        ctx = {
-            "vectorized_parameters": ["A", "w", "coordinate_dofs"],
-            "vectorized_intermediates": [],
-            "reduce_to_scalars": [],
-            "reduced_typenames": {},
-            "reduced_scalar_names": set()
-        }
+        # Symbol names of vectorized function parameters
+        vectorized_parameters = [param_decl.symbol.name for param_decl in self.__get_cell_dependent_parameters()]
+        # List that gets filled with any intermediate variable symbol names that were vectorized
+        vectorized_intermediates = []
+        # List of array symbol names that should be converted into scalars/small cell arrays
+        reduce_to_scalars = []
+        reduced_typenames = {}
+        reduced_scalar_names = set()
 
         if enable_cross_element_array_conv:
-            ctx["reduce_to_scalars"].append("sp")
+            reduce_to_scalars.append("sp")
 
-        # Symbol used as index in for loops over the elements
-        i_simd = L.Symbol("i_elem")
+        # Symbol used as index in for loops over the cells
+        i_simd = L.Symbol("i_cell")
+
+        # --------------------
+        # Helper functions
+
+        def simd_loop(body):
+            """Returns a ForRange that is used to perform a cross-cell loop."""
+            return L.ForRange(i_simd, 0, vec_length, body)
 
         def should_reduce(expr: L.Symbol) -> bool:
             """Returns whether the symbol belongs to an array that should be reduced to a scalar."""
 
-            return expr.name in ctx["reduce_to_scalars"]
+            return expr.name in reduce_to_scalars
 
         def was_reduced(expr: L.ArrayAccess) -> bool:
             """Returns whether the array used in this array access was reduced to a scalar."""
@@ -332,22 +374,27 @@ class Vectorizer(object):
             # Catch the case where a scalar was added as an array ot the AST
             index = expr.indices[0] if len(expr.indices) > 0 else 0
             scalar_name = expr.array.name + str(index)
-            return should_reduce(expr.array) and scalar_name in ctx["reduced_scalar_names"]
+            return should_reduce(expr.array) and scalar_name in reduced_scalar_names
 
         def was_expanded(expr) -> bool:
             """Returns whether an array's/scalar's rank was increased for vectorization."""
 
             if isinstance(expr, L.ArrayAccess):
-                return expr.array.name in ctx["vectorized_intermediates"] or expr.array.name in ctx[
-                    "vectorized_parameters"]
+                return expr.array.name in vectorized_intermediates or expr.array.name in vectorized_parameters
             if isinstance(expr, L.Symbol):
-                return expr.name in ctx["vectorized_intermediates"]
+                return expr.name in vectorized_intermediates
 
             raise RuntimeError("Unsupported expression")
 
-        def simd_loop(body):
-            """Returns a ForRange that is used to perform a cross element loop."""
-            return L.ForRange(i_simd, 0, vec_length, body)
+        # --------------------
+
+        # Base implementation of the CNodes AST visitor that performs vectorization
+        # Basic algorithm:
+        #   - For every non-static array declaration: append dimension
+        #   - For every non-static scalar declaration: convert into array
+        #   - For all statements:
+        #       -> wrap in for-loop over cells
+        #       -> dereference every access to vectorized variables with loop index
 
         @functools.singledispatch
         def vectorize(stmnt):
@@ -368,12 +415,8 @@ class Vectorizer(object):
             # For dev: check whether to add type to ignore list or to implement it below
             raise RuntimeError("Vectorization of {} CNodes statement not implemented!".format(type(stmnt)))
 
-        @vectorize.register(L.ForRange)
-        def vectorize_for_range(stmnt):
-            # Vectorize for loop by vectorizing its body
-            vec_stmnt = copy(stmnt)
-            vec_stmnt.body = vectorize(stmnt.body)
-            return vec_stmnt
+        # --------------------
+        # vectorize() for declarations
 
         @vectorize.register(L.VariableDecl)
         def vectorize_variable_decl(stmnt):
@@ -392,7 +435,7 @@ class Vectorizer(object):
                                      alignas=align)
 
             # Log that the scalar was transformed to an array
-            ctx["vectorized_intermediates"].append(stmnt.symbol.name)
+            vectorized_intermediates.append(stmnt.symbol.name)
 
             if stmnt.value is not None:
                 # If the scalar had a value, it has to be assigned in a loop and vectorized recursively
@@ -413,7 +456,7 @@ class Vectorizer(object):
                 raise RuntimeError("Values in vectorization for ArrayDecl unsupported")
 
             if should_reduce(stmnt.symbol):
-                ctx["reduced_typenames"][stmnt.symbol.name] = stmnt.typename
+                reduced_typenames[stmnt.symbol.name] = stmnt.typename
                 return L.NoOp()
 
             array_decl = copy(stmnt)
@@ -421,41 +464,12 @@ class Vectorizer(object):
             array_decl.sizes = stmnt.sizes + (vec_length,)
 
             # Log that the rank was increased
-            ctx["vectorized_intermediates"].append(stmnt.symbol.name)
+            vectorized_intermediates.append(stmnt.symbol.name)
 
             return array_decl
 
-        @vectorize.register(L.ArrayAccess)
-        def vectorize_array_access(stmnt):
-            if was_reduced(stmnt):
-                return vectorize(L.Symbol(stmnt.array.name + str(stmnt.indices[0])))
-
-            # Check whether rank was increased
-            if was_expanded(stmnt):
-                array_access = copy(stmnt)
-
-                # Update array indexing
-                if stmnt.array.name in ctx["vectorized_intermediates"]:
-                    # For manually expanded arrays, simply append array index
-                    array_access.indices = stmnt.indices + (i_simd,)
-                elif stmnt.array.name in ctx["vectorized_parameters"]:
-                    # For in/out arrays, we have strided access instead
-                    array_access.indices = stmnt.indices[0:-1] + (
-                        i_simd + L.LiteralInt(vec_length) * stmnt.indices[-1],)
-
-                return array_access
-
-            else:
-                # Rank is unchanged (e.g. static array)
-                return stmnt
-
-        @vectorize.register(L.Symbol)
-        def vectorize_symbol(stmnt):
-            if was_expanded(stmnt):
-                # Scalar which was transformed to an array:
-                return L.ArrayAccess(stmnt, (i_simd,))
-            else:
-                return stmnt
+        # --------------------
+        # vectorize() for statements
 
         @vectorize.register(L.AssignOp)
         def vectorize_assign(stmnt):
@@ -470,16 +484,74 @@ class Vectorizer(object):
                     target = L.Symbol(new_target_name)
                 else:
                     assert isinstance(stmnt, L.Assign)
-                    var_decl = L.VariableDecl(ctx["reduced_typenames"][target.array.name],
+                    var_decl = L.VariableDecl(reduced_typenames[target.array.name],
                                               L.Symbol(new_target_name),
                                               value=value)
-                    ctx["reduced_scalar_names"].add(new_target_name)
+                    reduced_scalar_names.add(new_target_name)
                     return vectorize(var_decl)
 
             if was_expanded(target):
                 assignment = type(stmnt)(vectorize(target), vectorize(value))
                 return simd_loop(assignment)
             else:
+                return stmnt
+
+        @vectorize.register(L.ForRange)
+        def vectorize_for_range(stmnt):
+            # Vectorize for loop by vectorizing its body
+            vec_stmnt = copy(stmnt)
+            vec_stmnt.body = vectorize(stmnt.body)
+            return vec_stmnt
+
+        @vectorize.register(L.Statement)
+        def vectorize_statement(stmnt):
+            # Vectorize the contained expression
+            vectorized_expr = vectorize(stmnt.expr)
+
+            # The vectorized version might already be a statement
+            try:
+                vectorized_stmnt = L.Statement(vectorized_expr)
+                return vectorized_stmnt
+            except RuntimeError:
+                return vectorized_expr
+
+        @vectorize.register(L.StatementList)
+        def vectorize_statement_list(stmnts):
+            return L.StatementList([vectorize(stmnt) for stmnt in stmnts.statements])
+
+        # --------------------
+        # vectorize() for expressions
+
+        @vectorize.register(L.Symbol)
+        def vectorize_symbol(stmnt):
+            if was_expanded(stmnt):
+                # Scalar which was transformed to an array:
+                return L.ArrayAccess(stmnt, (i_simd,))
+            else:
+                return stmnt
+
+        @vectorize.register(L.ArrayAccess)
+        def vectorize_array_access(stmnt):
+            if was_reduced(stmnt):
+                return vectorize(L.Symbol(stmnt.array.name + str(stmnt.indices[0])))
+
+            # Check whether rank was increased
+            if was_expanded(stmnt):
+                array_access = copy(stmnt)
+
+                # Update array indexing
+                if stmnt.array.name in vectorized_intermediates:
+                    # For manually expanded arrays, simply append array index
+                    array_access.indices = stmnt.indices + (i_simd,)
+                elif stmnt.array.name in vectorized_parameters:
+                    # For in/out arrays, we have strided access instead
+                    array_access.indices = stmnt.indices[0:-1] + (
+                        i_simd + L.LiteralInt(vec_length) * stmnt.indices[-1],)
+
+                return array_access
+
+            else:
+                # Rank is unchanged (e.g. static array)
                 return stmnt
 
         @vectorize.register(L.BinOp)
@@ -500,23 +572,11 @@ class Vectorizer(object):
             else:
                 return stmnt
 
-        @vectorize.register(L.Statement)
-        def vectorize_statement(stmnt):
-            # Vectorize the contained expression
-            vectorized_expr = vectorize(stmnt.expr)
+        # --------------------
+        # "cross_element_fuse"
 
-            # The vectorized version might already be a statement
-            try:
-                vectorized_stmnt = L.Statement(vectorized_expr)
-                return vectorized_stmnt
-            except RuntimeError:
-                return vectorized_expr
-
-        @vectorize.register(L.StatementList)
-        def vectorize_statement_list(stmnts):
-            return L.StatementList([vectorize(stmnt) for stmnt in stmnts.statements])
-
-        def optimize(stmnts):
+        # Implementing the behavior for enable_cross_element_fuse=True
+        def perform_cross_element_fuse(stmnts):
             """Joins consecutive cross-element expanded assignment loops to a single loop."""
 
             if len(stmnts) < 2:
@@ -621,14 +681,23 @@ class Vectorizer(object):
             optimized.append(prev_stmnt)
             return optimized
 
+        # --------------------
+        # Perform vectorization
+
+        # Vectorize all supplied statements
         vectorized = [vectorize(stmnt) for stmnt in statements]
 
         if enable_cross_element_fuse:
-            vectorized = optimize(vectorized)
+            vectorized = perform_cross_element_fuse(vectorized)
 
         return vectorized
 
     def __get_cell_dependent_parameters(self):
+        """Returns tabulate_tensor in/out parameters that are affected by vectorization.
+
+        Returns a list of VariableDecl object representing the parameters of the tabulate_tensor function that are
+        expected to contain cell-interleaved data when calling it in vectorized/batch-mode.
+        """
         L = self.backend.language
 
         inputs = {
