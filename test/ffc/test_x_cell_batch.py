@@ -17,6 +17,10 @@ from ufl import inner, dot, grad, tr, det, ln, dx, ds
 import ffc.backends.ufc.jit
 from ffc.fiatinterface import create_element
 
+# FIXME: Test multiple batch sizes (currently a batch size of 4 cells is hardcoded)
+# FIXME: Correctly test forms with multiple tabulate_tensor functions
+#        (currently only uses "create_default_cell_integral()")
+
 
 def _compute_shapes(form: ufl.Form):
     """Computes the shapes of the cell tensor, coefficient & coordinate arrays for a form"""
@@ -43,7 +47,7 @@ def _compute_shapes(form: ufl.Form):
 
 
 def _generate_data(n: int, A_shape, ws_shapes, coords_shape):
-    """Generates n random test data sets of the specified shapes"""
+    """Generates n random test data sets (with random values) of the specified shapes"""
 
     A_cells = []
     ws_cells = []
