@@ -36,6 +36,9 @@ _FFC_GENERATE_PARAMETERS = {
     # set to True to add timing inside tabulate_tensor
     "generate_dummy_tabulate_tensor": False,
     "add_tabulate_tensor_timing": False,
+    # Scalar type to be used in generated code (real or complex
+    # C double precision floating-point types)
+    "scalar_type": "double",
     # ':' separated list of include filenames to add to generated code
     "external_includes": "",
     "cell_batch_size": 1
