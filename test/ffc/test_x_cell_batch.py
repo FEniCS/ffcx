@@ -125,7 +125,7 @@ def _test_runner(forms, names):
     vec_compiled_forms, _ = ffc.backends.ufc.jit.compile_forms(forms, parameters={"cell_batch_size": n})
     print("Compiling vector exts...")
     ext_compiled_forms, _ = ffc.backends.ufc.jit.compile_forms(forms, parameters={"cell_batch_size": n,
-                                                                                  "enable_cross_element_gcc_ext": 1})
+                                                                                  "enable_cross_cell_gcc_ext": 1})
 
     for i, (form, name) in enumerate(zip(forms, names)):
         shapes = _compute_shapes(form)

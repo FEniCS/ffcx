@@ -22,7 +22,7 @@ class Vectorizer(object):
 
     def vectorize(self, statements):
         # Optionally use gcc vector extensions
-        if self.ir["params"]["enable_cross_element_gcc_ext"]:
+        if self.ir["params"]["enable_cross_cell_gcc_ext"]:
             vectorized = self.__vectorize_with_gcc_exts(statements)
         else:
             vectorized = self.__vectorize_with_loops(statements)
@@ -336,9 +336,9 @@ class Vectorizer(object):
         align = self.align
 
         # Whether to fuse all consective per-statement for-loops into a single for-loop
-        enable_cross_element_fuse = self.ir["params"]["enable_cross_element_fuse"]
+        enable_cross_cell_fuse = self.ir["params"]["enable_cross_cell_fuse"]
         # Whether to convert all huge intermediate arrays into scalar variables/small arrays only over the cells
-        enable_cross_element_array_conv = self.ir["params"]["enable_cross_element_array_conv"]
+        enable_cross_cell_array_conv = self.ir["params"]["enable_cross_cell_array_conv"]
 
         # Symbol names of vectorized function parameters
         vectorized_parameters = [param_decl.symbol.name for param_decl in self.__get_cell_dependent_parameters()]
@@ -349,7 +349,7 @@ class Vectorizer(object):
         reduced_typenames = {}
         reduced_scalar_names = set()
 
-        if enable_cross_element_array_conv:
+        if enable_cross_cell_array_conv:
             reduce_to_scalars.append("sp")
 
         # Symbol used as index in for loops over the cells
@@ -573,10 +573,10 @@ class Vectorizer(object):
                 return stmnt
 
         # --------------------
-        # "cross_element_fuse"
+        # "cross_cell_fuse"
 
-        # Implementing the behavior for enable_cross_element_fuse=True
-        def perform_cross_element_fuse(stmnts):
+        # Implementing the behavior for enable_cross_cell_fuse=True
+        def perform_cross_cell_fuse(stmnts):
             """Joins consecutive cross-element expanded assignment loops to a single loop."""
 
             if len(stmnts) < 2:
@@ -687,8 +687,8 @@ class Vectorizer(object):
         # Vectorize all supplied statements
         vectorized = [vectorize(stmnt) for stmnt in statements]
 
-        if enable_cross_element_fuse:
-            vectorized = perform_cross_element_fuse(vectorized)
+        if enable_cross_cell_fuse:
+            vectorized = perform_cross_cell_fuse(vectorized)
 
         return vectorized
 
