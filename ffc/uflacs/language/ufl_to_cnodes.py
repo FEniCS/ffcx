@@ -148,10 +148,10 @@ class UFL2CNodesTranslatorCpp(MultiFunction):
         return self._cmath("fabs", op)
 
     def min_value(self, o, a, b):
-        return self._cmath("min", (a, b))
+        return self._cmath("fmin", (a, b))
 
     def max_value(self, o, a, b):
-        return self._cmath("max", (a, b))
+        return self._cmath("fmax", (a, b))
 
     # === Formatting rules for bessel functions ===
     # Currently in boost; will be in C++17
