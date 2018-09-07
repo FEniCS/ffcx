@@ -154,7 +154,8 @@ class UFL2CNodesTranslatorCpp(MultiFunction):
         return self._cmath("fmax", (a, b))
 
     # === Formatting rules for bessel functions ===
-    # Some of these exist in gcc, but not all.
+    # Some Bessel functions exist in gcc, as XSI extensions
+    # but not all.
 
     def bessel_j(self, o, n, v):
         if n == 0:
