@@ -154,19 +154,21 @@ class UFL2CNodesTranslatorCpp(MultiFunction):
         return self._cmath("fmax", (a, b))
 
     # === Formatting rules for bessel functions ===
-    # Currently in boost; will be in C++17
-
-    def _bessel(self, o, n, v, name):
-        return self.L.Call("boost::math::" + name, (n, v))
-
-    def bessel_i(self, o, n, v):
-        return self._bessel(o, n, v, "cyl_bessel_i")
-
+    # Some of these exist in gcc, but not all.
+    
     def bessel_j(self, o, n, v):
-        return self._bessel(o, n, v, "cyl_bessel_j")
-
-    def bessel_k(self, o, n, v):
-        return self._bessel(o, n, v, "cyl_bessel_k")
+        if n == 0:
+            return self.L.Call("j0", v)
+        elif n == 1:
+            return self.L.Call("j1", v)
+        else:
+            return self.L.Call("jn", (n, v))
 
     def bessel_y(self, o, n, v):
-        return self._bessel(o, n, v, "cyl_neumann")
+        if n == 0:
+            return self.L.Call("y0", v)
+        elif n == 1:
+            return self.L.Call("y1", v)
+        else:
+            return self.L.Call("yn", (n, v))
+    
