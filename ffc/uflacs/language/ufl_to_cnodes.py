@@ -155,7 +155,7 @@ class UFL2CNodesTranslatorCpp(MultiFunction):
 
     # === Formatting rules for bessel functions ===
     # Some of these exist in gcc, but not all.
-    
+
     def bessel_j(self, o, n, v):
         if n == 0:
             return self.L.Call("j0", v)
@@ -171,4 +171,3 @@ class UFL2CNodesTranslatorCpp(MultiFunction):
             return self.L.Call("y1", v)
         else:
             return self.L.Call("yn", (n, v))
-    
