@@ -57,6 +57,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
     abs = scalar_nary
     min_value = scalar_nary
     max_value = scalar_nary
+
     # Binary scalar functions
     power = scalar_nary
     bessel_function = scalar_nary  # TODO: Is this ok?
@@ -79,6 +80,12 @@ class ReconstructScalarSubexpressions(MultiFunction):
             sops = (ops[0][0], ops[1][i], ops[2][i])
             symbols.append(o._ufl_expr_reconstruct_(*sops))
         return symbols
+
+    def conj(self, o, ops):
+        if o.ufl_shape != ():
+            raise FFCError("Expecting scalar.")
+        sops = [op[0] for op in ops]
+        return [o._ufl_expr_reconstruct_(*sops)]
 
     def division(self, o, ops):
         if len(ops) != 2:

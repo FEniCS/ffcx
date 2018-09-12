@@ -148,7 +148,8 @@ def _analyze_form(form, parameters):
             do_apply_integral_scaling=True,
             do_apply_geometry_lowering=True,
             preserve_geometry_types=(Jacobian, ),
-            do_apply_restrictions=True)
+            do_apply_restrictions=True,
+            complex_mode=True)
     elif r == "tsfc":
         try:
             # TSFC provides compute_form_data wrapper using correct

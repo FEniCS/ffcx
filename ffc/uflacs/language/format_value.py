@@ -17,11 +17,13 @@ _subs = (
 def format_float(x, precision=None):
     """Format a float value according to given precision."""
     global _subs
+
     if precision:
-        s = "{:.{prec}}".format(float(x), prec=precision)
+        if isinstance(x, (float, complex)):
+            s = "{:.{prec}}".format(x, prec=precision)
+        else:
+            s = "{:.{prec}}".format(float(x), prec=precision)
     else:
-        # Using "{}".format(float(x)) apparently results
-        # in lesser precision in python 2 than python 3
         s = repr(float(x))
     for r, v in _subs:
         s = r.sub(v, s)

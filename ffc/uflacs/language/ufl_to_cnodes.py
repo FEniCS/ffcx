@@ -43,6 +43,9 @@ class UFL2CNodesTranslatorCpp(MultiFunction):
             return self.float_value(o)
         return self.L.LiteralInt(int(o))
 
+    def complex_value(self, o):
+        return self.L.LiteralFloat(o.value())
+
     # === Formatting rules for arithmetic operators ===
 
     def sum(self, o, a, b):
@@ -98,6 +101,15 @@ class UFL2CNodesTranslatorCpp(MultiFunction):
 
     def _cmath(self, name, op):
         return self.L.Call(name, op)
+
+    def real(self, o, op):
+        return self._cmath("creal", op)
+
+    def imag(self, o, op):
+        return self._cmath("cimag", op)
+
+    def conj(self, o, op):
+        return self._cmath("conj", op)
 
     def sqrt(self, o, op):
         return self._cmath("sqrt", op)
