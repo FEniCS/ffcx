@@ -62,4 +62,5 @@ class CRSArray(object):
         crs = CRSArray(num_rows, num_elements, dtype)
         for row in rows:
             crs.push_row(row)
+        print("Now at ", crs.num_rows, " rows")
         return crs

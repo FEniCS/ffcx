@@ -11,7 +11,7 @@ from ufl import product
 
 from ffc.uflacs.analysis.crsarray import CRSArray
 from ffc.uflacs.analysis.valuenumbering import ValueNumberer
-from ffc.uflacs.analysis.expr_shapes import total_shape
+# from ffc.uflacs.analysis.expr_shapes import total_shape
 
 
 def build_node_shapes(V):
@@ -23,20 +23,22 @@ def build_node_shapes(V):
 
     """
     # Dimensions of returned CRSArray
-    nv = len(V)
-    k = 0
+#    nv = len(V)
+#    k = 0
 
     # Store shapes intermediately in an array of tuples
-    V_shapes = numpy.empty(nv, dtype=object)
+    V_shapes = []
     for i, v in enumerate(V):
         # Compute total shape of V[i]
-        tsh = total_shape(v)
-        V_shapes[i] = tsh
+        tsh = v.ufl_shape + v.ufl_index_dimensions
+        V_shapes.append(tsh)
         # Count number of elements for CRSArray representation
-        k += len(tsh)
+        #        k += len(tsh)
+
+    return V_shapes
 
     # Return a more memory efficient CRSArray representation
-    return CRSArray.from_rows(V_shapes, nv, k, int)
+    # return CRSArray.from_rows(V_shapes, nv, k, int)
 
 
 def build_node_sizes(V_shapes):
