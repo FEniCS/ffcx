@@ -23,7 +23,7 @@ from ffc.uflacs.analysis.graph_rebuild import \
     rebuild_with_scalar_subexpressions
 from ffc.uflacs.analysis.graph_ssa import (compute_dependency_count,
                                            invert_dependencies)
-from ffc.uflacs.analysis.graph_vertices import build_scalar_graph_vertices
+from ffc.uflacs.analysis.graph_vertices import build_graph_vertices
 from ffc.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
                                                     is_modified_terminal)
 from ffc.uflacs.elementtables import (build_optimized_tables,
@@ -800,9 +800,7 @@ def build_scalar_graph(expressions):
     # Build the initial coarse computational graph of the expression
     G = build_graph(expressions)
 
-    assert len(
-        expressions
-    ) == 1, "FIXME: Multiple expressions in graph building needs more work from this point on."
+    assert len(expressions) == 1, "FIXME: Multiple expressions"
 
     # Build more fine grained computational graph of scalar subexpressions
     # TODO: Make it so that
@@ -815,7 +813,7 @@ def build_scalar_graph(expressions):
 
     # Build new list representation of graph where all
     # vertices of V represent single scalar operations
-    e2i, V, V_targets = build_scalar_graph_vertices(scalar_expressions)
+    e2i, V, V_targets = build_graph_vertices(scalar_expressions, scalar=True)
 
     # Compute sparse dependency matrix
     V_deps = compute_dependencies(e2i, V)

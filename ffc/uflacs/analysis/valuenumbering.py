@@ -24,10 +24,10 @@ class ValueNumberer(MultiFunction):
     with fallthrough for types that can be mapped to the value numbers
     of their operands."""
 
-    def __init__(self, e2i, V_sizes, V_symbols):
+    def __init__(self, V, V_sizes, V_symbols):
         MultiFunction.__init__(self)
         self.symbol_count = 0
-        self.e2i = e2i
+        self.V = V
         self.V_sizes = V_sizes
         self.V_symbols = V_symbols
 
@@ -45,7 +45,8 @@ class ValueNumberer(MultiFunction):
         return begin
 
     def get_node_symbols(self, expr):
-        return self.V_symbols[self.e2i[expr]]
+        idx = self.V.index(expr)
+        return self.V_symbols[idx]
 
     def expr(self, v, i):
         """Create new symbols for expressions that represent new values."""

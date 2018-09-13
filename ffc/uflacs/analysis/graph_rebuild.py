@@ -194,18 +194,7 @@ def rebuild_with_scalar_subexpressions(G, targets=None):
     Output:
     - NV   - Array with reverse mapping from index to expression
     - nvs  - Tuple of ne2i indices corresponding to the last vertex of G.V
-
-    Old output now no longer returned but possible to restore if needed:
-    - ne2i - Mapping from scalar subexpressions to a contiguous unique index
-    - W    - Array with reconstructed scalar subexpressions for each original symbol
     """
-
-    # From simplefsi3d.ufl:
-    # GRAPH SIZE: len(G.V), G.total_unique_symbols
-    # GRAPH SIZE: 16251   635272
-    # GRAPH SIZE:   473     8210
-    # GRAPH SIZE:  9663   238021
-    # GRAPH SIZE: 88913  3448634  #  3.5 M!!!
 
     # Algorithm to apply to each subexpression
     reconstruct_scalar_subexpressions = ReconstructScalarSubexpressions()
@@ -290,6 +279,5 @@ def rebuild_with_scalar_subexpressions(G, targets=None):
         scalar_target_expressions.append([W[s] for s in vs])
 
     # Return the scalar expressions for each of the components
-    assert len(
-        scalar_target_expressions) == 1  # TODO: Currently expected by callers, fix those first
+    assert len(scalar_target_expressions) == 1  # TODO: Currently expected by callers
     return scalar_target_expressions[0]  # ... TODO: then return list

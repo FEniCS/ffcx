@@ -13,8 +13,7 @@ from ufl.classes import MultiIndex, Label
 from ffc.uflacs.analysis.modified_terminals import is_modified_terminal
 
 
-def count_nodes_with_unique_post_traversal(expr,
-                                           e2i=None,
+def count_nodes_with_unique_post_traversal(expr, e2i=None,
                                            skip_terminal_modifiers=False):
     """Yields o for each node o in expr, child before parent.
     Never visits a node twice."""
@@ -22,7 +21,7 @@ def count_nodes_with_unique_post_traversal(expr,
         e2i = {}
 
     def getops(e):
-        """Get a modifyable list of operands of e, optionally treating modified terminals as a unit."""
+        """Get a modifiable list of operands of e, optionally treating modified terminals as a unit."""
         # TODO: Maybe use e._ufl_is_terminal_modifier_
         if e._ufl_is_terminal_ or (skip_terminal_modifiers
                                    and is_modified_terminal(e)):
@@ -30,8 +29,7 @@ def count_nodes_with_unique_post_traversal(expr,
         else:
             return list(e.ufl_operands)
 
-    stack = []
-    stack.append((expr, getops(expr)))
+    stack = [(expr, getops(expr))]
     while stack:
         expr, ops = stack[-1]
         for i, o in enumerate(ops):
@@ -47,50 +45,17 @@ def count_nodes_with_unique_post_traversal(expr,
     return e2i
 
 
-def build_array_from_counts(e2i):
-    nv = len(e2i)
-    V = numpy.empty(nv, dtype=object)
-    for e, i in e2i.items():
-        V[i] = e
-    return V
-
-
-def build_node_counts(expressions):
-    e2i = {}
-    for expr in expressions:
-        count_nodes_with_unique_post_traversal(expr, e2i, False)
-    return e2i
-
-
-def build_scalar_node_counts(expressions):
-    # Count unique expression nodes across multiple expressions
-    e2i = {}
-    for expr in expressions:
-        count_nodes_with_unique_post_traversal(expr, e2i, True)
-    return e2i
-
-
-def build_graph_vertices(expressions):
+def build_graph_vertices(expressions, scalar=False):
     # Count unique expression nodes
-    e2i = build_node_counts(expressions)
 
-    # Make a list of the nodes by their ordering
-    V = build_array_from_counts(e2i)
+    e2i = {}
+    for expr in expressions:
+        count_nodes_with_unique_post_traversal(expr, e2i, scalar)
 
-    # Get vertex indices representing input expression roots
-    ri = [e2i[expr] for expr in expressions]
-
-    return e2i, V, ri
-
-
-def build_scalar_graph_vertices(expressions):
-    # Count unique expression nodes across multiple expressions, treating modified terminals as a unit
-    e2i = build_scalar_node_counts(expressions)
-
-    # Make a list of the nodes by their ordering
-    V = build_array_from_counts(e2i)
+    # Invert the map to get index->expression
+    V = sorted(e2i, key=e2i.get)
 
     # Get vertex indices representing input expression roots
-    ri = [e2i[expr] for expr in expressions]
+    expression_vertices = [e2i[expr] for expr in expressions]
 
-    return e2i, V, ri
+    return e2i, V, expression_vertices
