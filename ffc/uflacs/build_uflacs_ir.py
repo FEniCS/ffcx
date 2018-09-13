@@ -16,12 +16,12 @@ import numpy
 from ffc import FFCError
 from ffc.uflacs.analysis.balancing import balance_modifiers
 from ffc.uflacs.analysis.dependencies import (compute_dependencies,
+                                              invert_dependencies,
                                               mark_active, mark_image)
 from ffc.uflacs.analysis.factorization import compute_argument_factorization
 from ffc.uflacs.analysis.graph import build_graph
 from ffc.uflacs.analysis.graph_rebuild import \
     rebuild_with_scalar_subexpressions
-from ffc.uflacs.analysis.graph_ssa import invert_dependencies
 from ffc.uflacs.analysis.graph_vertices import build_graph_vertices
 from ffc.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
                                                     is_modified_terminal)
@@ -386,12 +386,6 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         FV_mts = [None] * len(FV)
         for i, mt in zip(modified_terminal_indices, modified_terminals):
             FV_mts[i] = mt
-
-        # Mark active modified arguments
-        # active_modified_arguments = numpy.zeros(len(modified_arguments), dtype=int)
-        # for ma_indices in argument_factorization:
-        #    for j in ma_indices:
-        #        active_modified_arguments[j] = 1
 
         # Dependency analysis
         inv_FV_deps, FV_active, FV_piecewise, FV_varying = \

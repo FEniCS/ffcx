@@ -27,7 +27,7 @@ modifier_precedence = {
 
 
 def balance_modified_terminal(expr):
-    # NB! Assuminge e.g. grad(cell_avg(expr)) does not occur,
+    # NB! Assuming e.g. grad(cell_avg(expr)) does not occur,
     # i.e. it is simplified to 0 immediately.
 
     if expr._ufl_is_terminal_:

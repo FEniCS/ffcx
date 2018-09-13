@@ -89,15 +89,6 @@ def mark_partitions(V,
     return partitions
 
 
-def invert_dependencies(dependencies):
-    n = len(dependencies)
-    invdeps = [()] * n
-    for i in range(n):
-        for d in dependencies[i]:
-            invdeps[d] += (i, )
-    return invdeps
-
-
 def default_cache_score_policy(vtype, ndeps, ninvdeps, partition):
     # Start at 1 and then multiply with various heuristic factors
     s = 1

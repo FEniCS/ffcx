@@ -25,11 +25,20 @@ def compute_dependencies(e2i, V, ignore_terminal_modifiers=True):
     return dependencies
 
 
+def invert_dependencies(dependencies):
+    n = len(dependencies)
+    invdeps = [()] * n
+    for i in range(n):
+        for d in dependencies[i]:
+            invdeps[d] += (i, )
+    return invdeps
+
+
 def mark_active(dependencies, targets):
     """Return an array marking the recursive dependencies of targets.
 
     Input:
-    - dependencies - CRSArray of ints, a mapping from a symbol to the symbols of its dependencies.
+    - dependencies - List of ints, a mapping from a symbol to the symbols of its dependencies.
     - targets      - Sequence of symbols to mark the dependencies of.
 
     Output:
@@ -59,7 +68,7 @@ def mark_image(inverse_dependencies, sources):
     """Return an array marking the set of symbols dependent on the sources.
 
     Input:
-    - dependencies - CRSArray of ints, a mapping from a symbol to the symbols of its dependencies.
+    - dependencies - List of ints, a mapping from a symbol to the symbols of its dependencies.
     - sources      - Sequence of symbols to mark the dependants of.
 
     Output:

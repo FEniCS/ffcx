@@ -35,4 +35,4 @@ def build_graph_symbols(V):
     for (i, v) in enumerate(V):
         V_symbols.append(value_numberer(v, i))
 
-    return V_shapes, V_symbols, value_numberer.symbol_count
+    return V_symbols, value_numberer.symbol_count

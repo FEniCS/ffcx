@@ -171,18 +171,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
     # and build expressions such as sum(a*b for a,b in zip(aops, bops))
 
 
-def rebuild_expression_from_graph(G):
-    """Currently only used by tests."""
-    w = rebuild_with_scalar_subexpressions(G)
-
-    # Find expressions of final v
-    if len(w) == 1:
-        return w[0]
-    else:
-        return as_vector(w)  # TODO: Consider shape of initial v
-
-
-def rebuild_with_scalar_subexpressions(G, targets=None):
+def rebuild_with_scalar_subexpressions(G):
     """Build a new expression2index mapping where each subexpression is scalar valued.
 
     Input:
@@ -264,20 +253,9 @@ def rebuild_with_scalar_subexpressions(G, targets=None):
             else:
                 assert s in handled  # Result of symmetry!
 
-    # Find symbols of requested targets or final v from input graph
-    if targets is None:
-        targets = [G.V[-1]]
-
-    # Attempt to extend this to multiple target expressions
-    scalar_target_expressions = []
-    for target in targets:
-        ti = G.e2i[target]
-        vs = G.V_symbols[ti]
-        # Sanity check: assert that we've handled these symbols
-        if any(W[s] is None for s in vs):
-            raise FFCError("Expecting that all symbols in vs are handled at this point.")
-        scalar_target_expressions.append([W[s] for s in vs])
-
-    # Return the scalar expressions for each of the components
-    assert len(scalar_target_expressions) == 1  # TODO: Currently expected by callers
-    return scalar_target_expressions[0]  # ... TODO: then return list
+    # Find symbols of final v from input graph
+    vs = G.V_symbols[-1]
+    scalar_expression = [W[s] for s in vs]
+    if (None in scalar_expression):
+        raise FFCError("Expecting that all symbols in vs are handled at this point.")
+    return scalar_expression
