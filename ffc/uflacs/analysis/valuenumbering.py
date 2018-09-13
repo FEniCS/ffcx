@@ -109,7 +109,7 @@ class ValueNumberer(ufl.corealg.multifunction.MultiFunction):
         elif num_gd:
             domain = mt.terminal.ufl_domain()
             gdim = domain.geometric_dimension()
-            d_components =ufl.permutation. compute_indices((gdim, ) * num_gd)
+            d_components = ufl.permutation.compute_indices((gdim, ) * num_gd)
         else:
             d_components = [()]
 
