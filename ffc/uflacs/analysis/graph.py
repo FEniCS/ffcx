@@ -31,6 +31,6 @@ def build_graph(expressions):
     G.e2i, G.V, G.expression_vertices = build_graph_vertices(expressions, scalar=False)
 
     # Populate with symbols
-    G.V_symbols, G.total_unique_symbols = build_node_symbols(G.V)
+    G.V_symbols, G.total_unique_symbols = build_graph_symbols(G.V)
 
     return G

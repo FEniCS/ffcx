@@ -10,13 +10,12 @@ import ufl
 from ffc.uflacs.analysis.valuenumbering import ValueNumberer
 
 
-def build_node_symbols(V):
+def build_graph_symbols(V):
     """Tabulate scalar value numbering of all nodes in a a list based representation of an
     expression graph.
 
     Returns
     -------
-    V_shapes - list of the total shapes of nodes in V.
     V_symbols - list of symbols (value numbers) of each component of each node in V.
     total_unique_symbols - The number of symbol values assigned to unique scalar
                            components of the nodes in V.
@@ -26,7 +25,7 @@ def build_node_symbols(V):
     V_shapes = [(v.ufl_shape + v.ufl_index_dimensions) for v in V]
 
     # Compute the total value size for each node
-    V_sizes = [product(sh) for sh in V_shapes]
+    V_sizes = [ufl.product(sh) for sh in V_shapes]
 
     V_symbols = []
     value_numberer = ValueNumberer(V, V_sizes, V_symbols)

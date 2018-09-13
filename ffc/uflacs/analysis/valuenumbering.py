@@ -22,7 +22,7 @@ class ValueNumberer(ufl.corealg.multifunction.MultiFunction):
     with fallthrough for types that can be mapped to the value numbers
     of their operands."""
 
-    def __init__(self, e2i, V_sizes, V_symbols):
+    def __init__(self, V, V_sizes, V_symbols):
         ufl.corealg.multifunction.MultiFunction.__init__(self)
         self.symbol_count = 0
         self.V = V
