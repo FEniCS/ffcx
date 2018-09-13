@@ -64,7 +64,8 @@ def build_argument_indices(V):
 
 
 def build_argument_dependencies(dependencies, arg_indices):
-    """Preliminary algorithm: build list of argument vertex indices each vertex (indirectly) depends on."""
+    """Preliminary algorithm: build list of argument vertex indices each vertex
+    (indirectly) depends on."""
     n = len(dependencies)
     A = numpy.empty(n, dtype=object)
     for i, deps in enumerate(dependencies):
@@ -76,15 +77,6 @@ def build_argument_dependencies(dependencies, arg_indices):
                 argdeps.extend(A[j])
         A[i] = sorted(argdeps)
     return A
-
-
-class Factors(object):  # TODO: Refactor code in this file by using a class like this
-    def __init__(self):
-        self.FV = []
-        self.e2fi = {}
-
-    def add(self, expr):
-        add_to_fv(expr, self.FV, self.e2fi)
 
 
 def add_to_fv(expr, FV, e2fi):

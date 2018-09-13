@@ -11,9 +11,6 @@ import numpy
 
 def compute_dependencies(e2i, V, ignore_terminal_modifiers=True):
 
-    # Create a dict for faster lookup
-    # e2i = {v:i for i, v in enumerate(V)}
-
     dependencies = []
     for v in V:
         if v._ufl_is_terminal_ or (ignore_terminal_modifiers

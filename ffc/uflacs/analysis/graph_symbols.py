@@ -29,7 +29,6 @@ def build_graph_symbols(V):
 
     V_symbols = []
     value_numberer = ValueNumberer(V, V_sizes, V_symbols)
-
     for (i, v) in enumerate(V):
         V_symbols.append(value_numberer(v, i))
 
