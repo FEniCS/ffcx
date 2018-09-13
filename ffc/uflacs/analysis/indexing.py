@@ -6,7 +6,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Algorithms for working with multiindices."""
 
-from ufl import product
+import ufl
 from ufl.permutation import compute_indices
 from ufl.utils.indexflattening import shape_to_strides, flatten_multiindex
 from ufl.classes import ComponentTensor, FixedIndex, Index, Indexed
@@ -43,7 +43,7 @@ def map_indexed_arg_components(indexed):
     str2 = shape_to_strides(tsh2)
     assert not sh1
     assert sh2  # Must have shape to be indexed in the first place
-    assert product(tsh1) <= product(tsh2)
+    assert ufl.product(tsh1) <= ufl.product(tsh2)
 
     # Build map from fi2/fid2 position (-offset nmui) to fi1/fid1 position
     ind2_to_ind1_map = [None] * len(fi2)
@@ -59,7 +59,7 @@ def map_indexed_arg_components(indexed):
 
     # Build map from flattened e1 component to flattened e2 component
     perm1 = compute_indices(tsh1)
-    ni1 = product(tsh1)
+    ni1 = ufl.product(tsh1)
 
     # Situation: e1 = e2[mi]
     d1 = [None] * ni1
@@ -113,7 +113,7 @@ def map_component_tensor_arg_components(tensor):
     assert not sh1
     assert sh2
     assert len(mi) == len(multiindex)
-    assert product(tsh1) == product(tsh2)
+    assert ufl.product(tsh1) == ufl.product(tsh2)
     assert fi1
 
     assert all(i in fi1 for i in fi2)
@@ -132,7 +132,7 @@ def map_component_tensor_arg_components(tensor):
 
     # Build map from flattened e1 component to flattened e2 component
     perm2 = compute_indices(tsh2)
-    ni2 = product(tsh2)
+    ni2 = ufl.product(tsh2)
 
     # Situation: e2 = as_tensor(e1, mi)
     d2 = [None] * ni2

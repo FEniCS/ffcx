@@ -6,8 +6,8 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Linearized data structure for the computational graph."""
 
-from ffc.uflacs.analysis.graph_vertices import build_graph_vertices
 from ffc.uflacs.analysis.graph_symbols import build_graph_symbols
+from ffc.uflacs.analysis.graph_vertices import build_graph_vertices
 
 
 class Graph2(object):

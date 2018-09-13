@@ -7,7 +7,7 @@
 """Algorithms for factorizing argument dependent monomials."""
 
 import logging
-from itertools import chain
+import itertools
 
 import numpy
 
@@ -380,7 +380,7 @@ def compute_argument_factorization(SV, SV_deps, SV_targets, rank):
     FV_deps = compute_dependencies(e2fi, FV)
 
     # Indices into FV that are needed for final result
-    FV_targets = list(chain(sorted(IM.values()) for IM in IMs))
+    FV_targets = list(itertools.chain(sorted(IM.values()) for IM in IMs))
 
     return IMs, AV, FV, FV_deps, FV_targets
 

@@ -6,11 +6,10 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Algorithms for the representation phase of the form compilation."""
 
-from ufl.classes import (ReferenceValue, ReferenceGrad, Grad, CellAvg,
-                         FacetAvg, PositiveRestricted, NegativeRestricted,
-                         Indexed)
-from ufl.corealg.multifunction import MultiFunction
+from ufl.classes import (CellAvg, FacetAvg, Grad, Indexed, NegativeRestricted,
+                         PositiveRestricted, ReferenceGrad, ReferenceValue)
 from ufl.corealg.map_dag import map_expr_dag
+from ufl.corealg.multifunction import MultiFunction
 
 modifier_precedence = [
     ReferenceValue, ReferenceGrad, Grad, CellAvg, FacetAvg, PositiveRestricted,

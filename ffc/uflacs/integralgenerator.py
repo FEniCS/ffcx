@@ -11,9 +11,9 @@ import logging
 from collections import defaultdict
 
 from ffc import FFCError
+from ffc.language.cnodes import pad_dim, pad_innermost_dim
 from ffc.uflacs.build_uflacs_ir import get_common_block_data
 from ffc.uflacs.elementtables import piecewise_ttypes
-from ffc.uflacs.language.cnodes import pad_dim, pad_innermost_dim
 from ufl import product
 from ufl.classes import Condition
 from ufl.measure import custom_integral_types, point_integral_types
