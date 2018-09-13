@@ -143,13 +143,6 @@ extern "C"
     /// for a cell (not including global support dofs)
     int num_element_support_dofs;
 
-    /// Dimension of the local finite element function space
-    /// for a cell (old version including global support dofs)
-    int num_element_dofs;
-
-    /// Number of dofs on each cell facet
-    int num_facet_dofs;
-
     /// Number of dofs associated with each cell entity of
     /// dimension d
     int num_entity_dofs[4];
@@ -169,9 +162,6 @@ extern "C"
     /// perm[num_element_dofs] - integer permutation
     /// global_indices[num_vertices_per_cell] - global indices of cell vertices
     void (*tabulate_dof_permutations)(int* restrict perm, const int64_t* restrict global_indices);
-
-    /// Tabulate the local-to-local mapping from facet dofs to cell dofs
-    void (*tabulate_facet_dofs)(int* restrict dofs, int facet);
 
     /// Tabulate the local-to-local mapping of dofs on entity (d, i)
     void (*tabulate_entity_dofs)(int* restrict dofs, int d, int i);
