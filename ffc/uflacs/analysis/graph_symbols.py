@@ -6,14 +6,13 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Assigning symbols to computational graph nodes."""
 
-from ufl import product
-
+import ufl
 from ffc.uflacs.analysis.valuenumbering import ValueNumberer
 
 
-def build_graph_symbols(V):
-    """Tabulate scalar value numbering of all nodes in a a list based
-    representation of an expression graph.
+def build_node_symbols(V):
+    """Tabulate scalar value numbering of all nodes in a a list based representation of an
+    expression graph.
 
     Returns
     -------

@@ -6,8 +6,8 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Linearized data structure for the computational graph."""
 
-from ffc.uflacs.analysis.graph_vertices import build_graph_vertices
 from ffc.uflacs.analysis.graph_symbols import build_graph_symbols
+from ffc.uflacs.analysis.graph_vertices import build_graph_vertices
 
 
 class Graph2(object):
@@ -31,6 +31,6 @@ def build_graph(expressions):
     G.e2i, G.V, G.expression_vertices = build_graph_vertices(expressions, scalar=False)
 
     # Populate with symbols
-    G.V_symbols, G.total_unique_symbols = build_graph_symbols(G.V)
+    G.V_symbols, G.total_unique_symbols = build_node_symbols(G.V)
 
     return G

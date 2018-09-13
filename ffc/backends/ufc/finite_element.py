@@ -420,7 +420,7 @@ def generator(ir, parameters):
     d["family"] = "\"{}\"".format(ir["family"])
     d["num_sub_elements"] = ir["num_sub_elements"]
 
-    import ffc.uflacs.language.cnodes as L
+    import ffc.language.cnodes as L
 
     d["value_dimension"] = value_dimension(L, ir["value_shape"])
     d["reference_value_dimension"] = reference_value_dimension(L, ir["reference_value_shape"])
