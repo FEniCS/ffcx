@@ -5,7 +5,7 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-# TODO: Move these to uflacs.language utils?
+# TODO: Move these to ffc.language utils?
 
 
 def generate_return_new(L, classname, factory):

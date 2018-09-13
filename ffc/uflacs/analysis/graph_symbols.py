@@ -7,11 +7,11 @@
 """Assigning symbols to computational graph nodes."""
 
 import numpy
-from ufl import product
 
+import ufl
 from ffc.uflacs.analysis.crsarray import CRSArray
-from ffc.uflacs.analysis.valuenumbering import ValueNumberer
 from ffc.uflacs.analysis.expr_shapes import total_shape
+from ffc.uflacs.analysis.valuenumbering import ValueNumberer
 
 
 def build_node_shapes(V):
@@ -44,7 +44,7 @@ def build_node_sizes(V_shapes):
     nv = len(V_shapes)
     V_sizes = numpy.zeros(nv, dtype=int)
     for i, sh in enumerate(V_shapes):
-        V_sizes[i] = product(sh)
+        V_sizes[i] = ufl.product(sh)
     return V_sizes
 
 

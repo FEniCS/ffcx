@@ -13,19 +13,17 @@ from ffc import FFCError
 from ffc.uflacs.analysis.indexing import (map_component_tensor_arg_components,
                                           map_indexed_arg_components)
 from ffc.uflacs.analysis.modified_terminals import analyse_modified_terminal
-from ufl.corealg.multifunction import MultiFunction
-from ufl.permutation import compute_indices
 
 logger = logging.getLogger(__name__)
 
 
-class ValueNumberer(MultiFunction):
+class ValueNumberer(ufl.corealg.multifunction.MultiFunction):
     """An algorithm to map the scalar components of an expression node to unique value numbers,
     with fallthrough for types that can be mapped to the value numbers
     of their operands."""
 
     def __init__(self, e2i, V_sizes, V_symbols):
-        MultiFunction.__init__(self)
+        ufl.corealg.multifunction.MultiFunction.__init__(self)
         self.symbol_count = 0
         self.e2i = e2i
         self.V_sizes = V_sizes
@@ -60,7 +58,7 @@ class ValueNumberer(MultiFunction):
             # Build symbols with symmetric components skipped
             symbols = []
             mapped_symbols = {}
-            for c in compute_indices(v.ufl_shape):
+            for c in ufl.permutation.compute_indices(v.ufl_shape):
                 # Build mapped component mc with symmetries from element considered
                 mc = symmetry.get(c, c)
 
@@ -107,16 +105,16 @@ class ValueNumberer(MultiFunction):
         if num_ld:
             domain = mt.terminal.ufl_domain()
             tdim = domain.topological_dimension()
-            d_components = compute_indices((tdim, ) * num_ld)
+            d_components = ufl.permutation.compute_indices((tdim, ) * num_ld)
         elif num_gd:
             domain = mt.terminal.ufl_domain()
             gdim = domain.geometric_dimension()
-            d_components = compute_indices((gdim, ) * num_gd)
+            d_components = ufl.permutation.compute_indices((gdim, ) * num_gd)
         else:
             d_components = [()]
 
         # Get base shape without the derivative axes
-        base_components = compute_indices(mt.base_shape)
+        base_components = ufl.permutation.compute_indices(mt.base_shape)
 
         # Build symbols with symmetric components and derivatives skipped
         symbols = []

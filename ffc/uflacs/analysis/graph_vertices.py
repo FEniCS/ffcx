@@ -8,9 +8,8 @@
 
 import numpy
 
-from ufl.classes import MultiIndex, Label
-
 from ffc.uflacs.analysis.modified_terminals import is_modified_terminal
+from ufl.classes import Label, MultiIndex
 
 
 def count_nodes_with_unique_post_traversal(expr,
