@@ -103,25 +103,6 @@ def tabulate_dofs(L, ir):
     return L.StatementList(code)
 
 
-def tabulate_facet_dofs(L, ir):
-    all_facet_dofs = ir["tabulate_facet_dofs"]
-
-    # Input arguments
-    facet = L.Symbol("facet")
-    dofs = L.Symbol("dofs")
-
-    # For each facet, copy all_facet_dofs[facet][:] into output argument array dofs[:]
-    cases = []
-    for f, single_facet_dofs in enumerate(all_facet_dofs):
-        assignments = [L.Assign(dofs[i], dof) for (i, dof) in enumerate(single_facet_dofs)]
-        if assignments:
-            cases.append((f, L.StatementList(assignments)))
-    if cases:
-        return L.Switch(facet, cases, autoscope=False)
-    else:
-        return L.NoOp()
-
-
 def tabulate_dof_permutations(L, ir):
     """Generate code for a permutation vector for the dofmap, depending on the cell orientation, as
     determined by its global vertex indices. For triangles and quads, this requires reversing the
@@ -129,7 +110,7 @@ def tabulate_dof_permutations(L, ir):
     be permuted by rotation or reflection in the plane. """
 
     edge_perms, facet_perms, cell, cell_topology = ir["dof_permutations"]
-    ndofs = ir["num_element_dofs"]
+    ndofs = ir["num_element_support_dofs"] + ir["num_global_support_dofs"]
 
     perm = L.Symbol("perm")
     i = L.Symbol("i")
@@ -154,9 +135,10 @@ def tabulate_dof_permutations(L, ir):
     for i in range(num_edges):
         # Figure out the ordering of the global vertices on each edge
         # 0 = reference cell order, 1 = reversed
-        code += [L.Assign(edge_ordering[i],
-                          L.GT(global_indices[edge_vertices[i][0]],
-                               global_indices[edge_vertices[i][1]]))]
+        code += [
+            L.Assign(edge_ordering[i],
+                     L.GT(global_indices[edge_vertices[i][0]], global_indices[edge_vertices[i][1]]))
+        ]
 
     # Make changes to the identity mapping where required for specific edges
     for i, q in enumerate(edge_perms):
@@ -170,11 +152,11 @@ def tabulate_dof_permutations(L, ir):
         # Six possible orientations for each triangular facet
         assert len(facet_perms) == num_facets
         for i, q in enumerate(facet_perms):
-            code += [L.Comment("DOF reordering for facet %d" % i),
-                     L.Assign(facet_ordering,
-                              edge_ordering[facet_edges[i][0]]
-                              + 2 * (edge_ordering[facet_edges[i][1]]
-                                     + edge_ordering[facet_edges[i][2]]))]
+            code += [
+                L.Comment("DOF reordering for facet %d" % i),
+                L.Assign(facet_ordering, edge_ordering[facet_edges[i][0]] + 2 *
+                         (edge_ordering[facet_edges[i][1]] + edge_ordering[facet_edges[i][2]]))
+            ]
             # Make changes to the identity mapping where required for specific facets
             cases = []
             for w in range(6):
@@ -195,32 +177,41 @@ def tabulate_dof_permutations(L, ir):
         cross_facet_order = L.Symbol("xf")
         t0 = L.Symbol('t0')
         t1 = L.Symbol('t1')
-        code += [L.ArrayDecl("int", cross_facet_order, [2]),
-                 L.VariableDecl("int", t0),
-                 L.VariableDecl("int", t1)]
+        code += [
+            L.ArrayDecl("int", cross_facet_order, [2]),
+            L.VariableDecl("int", t0),
+            L.VariableDecl("int", t1)
+        ]
         for i in range(num_facets):
-            code += [L.Assign(cross_facet_order[0], L.GT(global_indices[f_edge_verts[i][0][0]],
-                                                         global_indices[f_edge_verts[i][1][1]])),
-                     L.Assign(cross_facet_order[1], L.GT(global_indices[f_edge_verts[i][0][1]],
-                                                         global_indices[f_edge_verts[i][1][0]]))]
+            code += [
+                L.Assign(cross_facet_order[0],
+                         L.GT(global_indices[f_edge_verts[i][0][0]],
+                              global_indices[f_edge_verts[i][1][1]])),
+                L.Assign(cross_facet_order[1],
+                         L.GT(global_indices[f_edge_verts[i][0][1]],
+                              global_indices[f_edge_verts[i][1][0]]))
+            ]
             # Figure out which vertex has the lowest global index and then which neighbour is next
-            tcases = [(0, [L.Assign(t1, cross_facet_order[1]),
-                           L.If(edge_ordering[facet_edges[i][2]],
-                                L.Assign(t1, 4 + cross_facet_order[0]))]),
-                      (1, [L.Assign(t1, cross_facet_order[1]),
-                           L.If(cross_facet_order[0],
-                                L.Assign(t1, 6 + cross_facet_order[1]))]),
-                      (2, [L.Assign(t1, 2 + cross_facet_order[0]),
-                           L.If(cross_facet_order[1],
-                                L.Assign(t1, 4 + cross_facet_order[0]))]),
-                      (3, [L.Assign(t1, 2 + cross_facet_order[0]),
-                           L.If(edge_ordering[facet_edges[i][3]],
-                                L.Assign(t1, 6 + cross_facet_order[1]))])]
+            tcases = [(0, [
+                L.Assign(t1, cross_facet_order[1]),
+                L.If(edge_ordering[facet_edges[i][2]], L.Assign(t1, 4 + cross_facet_order[0]))
+            ]), (1, [
+                L.Assign(t1, cross_facet_order[1]),
+                L.If(cross_facet_order[0], L.Assign(t1, 6 + cross_facet_order[1]))
+            ]), (2, [
+                L.Assign(t1, 2 + cross_facet_order[0]),
+                L.If(cross_facet_order[1], L.Assign(t1, 4 + cross_facet_order[0]))
+            ]), (3, [
+                L.Assign(t1, 2 + cross_facet_order[0]),
+                L.If(edge_ordering[facet_edges[i][3]], L.Assign(t1, 6 + cross_facet_order[1]))
+            ])]
 
-            code += [L.Assign(t0, 2 * edge_ordering[facet_edges[i][0]]
-                              + edge_ordering[facet_edges[i][1]]),
-                     L.Switch(t0, tcases),
-                     L.VerbatimStatement('printf("t0=%d t1=%d\\n", t0, t1);')]
+            code += [
+                L.Assign(t0,
+                         2 * edge_ordering[facet_edges[i][0]] + edge_ordering[facet_edges[i][1]]),
+                L.Switch(t0, tcases),
+                L.VerbatimStatement('printf("t0=%d t1=%d\\n", t0, t1);')
+            ]
 
     return L.StatementList(code)
 
@@ -328,8 +319,6 @@ def ufc_dofmap_generator(ir, parameters):
     d["signature"] = "\"{}\"".format(ir["signature"])
     d["num_global_support_dofs"] = ir["num_global_support_dofs"]
     d["num_element_support_dofs"] = ir["num_element_support_dofs"]
-    d["num_element_dofs"] = ir["num_element_dofs"]
-    d["num_facet_dofs"] = ir["num_facet_dofs"]
     d["num_sub_dofmaps"] = ir["num_sub_dofmaps"]
     d["num_entity_dofs"] = ir["num_entity_dofs"] + [0, 0, 0, 0]
     d["num_entity_closure_dofs"] = ir["num_entity_closure_dofs"] + [0, 0, 0, 0]
@@ -339,7 +328,6 @@ def ufc_dofmap_generator(ir, parameters):
     # Functions
     d["tabulate_dofs"] = tabulate_dofs(L, ir)
     d["tabulate_dof_permutations"] = tabulate_dof_permutations(L, ir)
-    d["tabulate_facet_dofs"] = tabulate_facet_dofs(L, ir)
     d["tabulate_entity_dofs"] = tabulate_entity_dofs(L, ir)
     d["tabulate_entity_closure_dofs"] = tabulate_entity_closure_dofs(L, ir)
     d["sub_dofmap_declaration"] = sub_dofmap_declaration(L, ir)
@@ -350,7 +338,8 @@ def ufc_dofmap_generator(ir, parameters):
     fields = [fname for _, fname, _, _ in Formatter().parse(ufc_dofmap.factory) if fname]
     # Remove square brackets from any field names
     fields = [f.split("[")[0] for f in fields]
-    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formattting dict."
+    assert set(fields) == set(
+        d.keys()), "Mismatch between keys in template and in formattting dict."
 
     # Format implementation code
     implementation = ufc_dofmap.factory.format_map(d)
