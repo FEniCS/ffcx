@@ -28,7 +28,7 @@ from ffc.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
 from ffc.uflacs.elementtables import (build_optimized_tables,
                                       clamp_table_small_numbers,
                                       piecewise_ttypes)
-from ufl import as_ufl, product
+import ufl
 from ufl.checks import is_cellwise_constant
 from ufl.classes import CellCoordinate, FacetCoordinate, QuadratureWeight
 from ufl.measure import (custom_integral_types, facet_integral_types,
@@ -335,8 +335,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
         # Replace some scalar modified terminals before reconstructing expressions
         # (could possibly use replace() on target expressions instead)
-        z = as_ufl(0.0)
-        one = as_ufl(1.0)
+        z = ufl.as_ufl(0.0)
+        one = ufl.as_ufl(1.0)
         for i, mt in zip(initial_terminal_indices, initial_terminal_data):
             if isinstance(mt.terminal, QuadratureWeight):
                 # Replace quadrature weight with 1.0, will be added back later
@@ -802,7 +802,7 @@ def build_scalar_graph(expressions):
     scalar_expressions = rebuild_with_scalar_subexpressions(G)
 
     # Sanity check on number of scalar symbols/components
-    assert len(scalar_expressions) == sum(product(expr.ufl_shape) for expr in expressions)
+    assert len(scalar_expressions) == sum(ufl.product(expr.ufl_shape) for expr in expressions)
 
     # Build new list representation of graph where all
     # vertices of V represent single scalar operations
@@ -860,74 +860,3 @@ def analyse_dependencies(V, V_deps, V_targets, modified_terminal_indices, modifi
     # piecewise *= nonliteral
 
     return inv_deps, active, piecewise, varying
-
-
-# TODO: Consider comments below and do it or delete them.
-""" Old comments:
-
-Work for later::
-
-        - Apply some suitable renumbering of vertices and corresponding arrays prior to returning
-
-        - Allocate separate registers for each partition
-          (but e.g. argument[iq][i0] may need to be accessible in other loops)
-
-        - Improve register allocation algorithm
-
-        - Take a list of expressions as input to compile several expressions in one joined graph
-          (e.g. to compile a,L,M together for nonlinear problems)
-
-"""
-""" # Old comments:
-
-    # TODO: Inspection of varying shows that factorization is
-    # needed for effective loop invariant code motion w.r.t. quadrature loop as well.
-    # Postphoning that until everything is working fine again.
-    # Core ingredients for such factorization would be:
-    # - Flatten products of products somehow
-    # - Sorting flattened product factors by loop dependency then by canonical ordering
-    # Or to keep binary products:
-    # - Rebalancing product trees ((a*c)*(b*d) -> (a*b)*(c*d)) to make piecewise quantities
-    #   'float' to the top of the list
-
-    # rank = max(len(ma_indices) for ma_indices in argument_factorization)
-    # for i,a in enumerate(modified_arguments):
-    #    iarg = a.number()
-    # ipart = a.part()
-
-    # TODO: More structured MA organization?
-    #modified_arguments[rank][block][entry] -> UFL expression of
-    modified argument #dofranges[rank][block] -> (begin, end)
-    # or
-    #modified_arguments[rank][entry] -> UFL expression of modified
-    argument #dofrange[rank][entry] -> (begin, end)
-    # argument_factorization: (dict) tuple(MA-indices (only relevant ones!)) -> V-index of monomial factor
-    # becomes
-    # argument_factorization: (dict) tuple(entry for each(!) rank) -> V-index of monomial factor ## doesn't
-    # cover intermediate f*u in f*u*v!
-"""
-"""
-def old_code_useful_for_optimization():
-
-    # Use heuristics to mark the usefulness of storing every subexpr in a variable
-    scores = compute_cache_scores(V,
-                                  active,
-                                  dependencies,
-                                  inverse_dependencies,
-                                  partitions,  # TODO: Rewrite in terms of something else, this doesn't exist anymore
-                                  cache_score_policy=default_cache_score_policy)
-
-    # Allocate variables to store subexpressions in
-    allocations = allocate_registers(active, partitions, target_variables,
-                                     scores, int(parameters["max_registers"]), int(parameters["score_threshold"]))
-    target_registers = [allocations[r] for r in target_variables]
-    num_registers = sum(1 if x >= 0 else 0 for x in allocations)
-    # TODO: If we renumber we can allocate registers separately for each partition, which is probably a good idea.
-
-    expr_oir = {}
-    expr_oir["num_registers"] = num_registers
-    expr_oir["partitions"] = partitions
-    expr_oir["allocations"] = allocations
-    expr_oir["target_registers"] = target_registers
-    return expr_oir
-"""
