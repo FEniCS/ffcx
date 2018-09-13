@@ -75,7 +75,6 @@ typedef struct ufc_dofmap
 const char* signature;
 int num_global_support_dofs;
 int num_element_support_dofs;
-int num_element_dofs;
 int num_entity_dofs[4];
 int num_entity_closure_dofs[4];
 void (*tabulate_dofs)(int64_t* restrict dofs,

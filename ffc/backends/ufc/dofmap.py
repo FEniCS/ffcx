@@ -110,7 +110,7 @@ def tabulate_dof_permutations(L, ir):
     be permuted by rotation or reflection in the plane. """
 
     edge_perms, facet_perms, cell, cell_topology = ir["dof_permutations"]
-    ndofs = ir["num_element_dofs"]
+    ndofs = ir["num_element_support_dofs"] + ir["num_global_support_dofs"]
 
     perm = L.Symbol("perm")
     i = L.Symbol("i")
@@ -319,7 +319,6 @@ def ufc_dofmap_generator(ir, parameters):
     d["signature"] = "\"{}\"".format(ir["signature"])
     d["num_global_support_dofs"] = ir["num_global_support_dofs"]
     d["num_element_support_dofs"] = ir["num_element_support_dofs"]
-    d["num_element_dofs"] = ir["num_element_dofs"]
     d["num_sub_dofmaps"] = ir["num_sub_dofmaps"]
     d["num_entity_dofs"] = ir["num_entity_dofs"] + [0, 0, 0, 0]
     d["num_entity_closure_dofs"] = ir["num_entity_closure_dofs"] + [0, 0, 0, 0]

@@ -288,7 +288,6 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit
     ir["global_dimension"] = _global_dimension(fiat_element)
     ir["num_global_support_dofs"] = _num_global_support_dofs(fiat_element)
     ir["num_element_support_dofs"] = fiat_element.space_dimension() - ir["num_global_support_dofs"]
-    ir["num_element_dofs"] = fiat_element.space_dimension()
     ir["num_entity_dofs"] = num_dofs_per_entity
     ir["num_entity_closure_dofs"] = num_dofs_per_entity_closure
     ir["tabulate_dofs"] = _tabulate_dofs(fiat_element, cell)
