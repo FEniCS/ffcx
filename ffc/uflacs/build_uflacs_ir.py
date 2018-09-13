@@ -21,8 +21,7 @@ from ffc.uflacs.analysis.factorization import compute_argument_factorization
 from ffc.uflacs.analysis.graph import build_graph
 from ffc.uflacs.analysis.graph_rebuild import \
     rebuild_with_scalar_subexpressions
-from ffc.uflacs.analysis.graph_ssa import (compute_dependency_count,
-                                           invert_dependencies)
+from ffc.uflacs.analysis.graph_ssa import invert_dependencies
 from ffc.uflacs.analysis.graph_vertices import build_graph_vertices
 from ffc.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
                                                     is_modified_terminal)
@@ -823,11 +822,9 @@ def build_scalar_graph(expressions):
 
 def analyse_dependencies(V, V_deps, V_targets, modified_terminal_indices, modified_terminals,
                          mt_unique_table_reference):
-    # Count the number of dependencies every subexpr has
-    V_depcount = compute_dependency_count(V_deps)
 
     # Build the 'inverse' of the sparse dependency matrix
-    inv_deps = invert_dependencies(V_deps, V_depcount)
+    inv_deps = invert_dependencies(V_deps)
 
     # Mark subexpressions of V that are actually needed for final result
     active, num_active = mark_active(V_deps, V_targets)

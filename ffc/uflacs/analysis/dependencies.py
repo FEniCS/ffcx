@@ -8,23 +8,19 @@
 
 import numpy
 
-from ffc.uflacs.analysis.crsarray import CRSArray, sufficient_int
-
 
 def compute_dependencies(e2i, V, ignore_terminal_modifiers=True):
-    # Use numpy int type sufficient to hold num_rows
-    num_rows = len(V)
-    itype = sufficient_int(num_rows)
 
-    # Preallocate CRSArray matrix of sufficient capacity
-    num_nonzeros = sum(len(v.ufl_operands) for v in V)
-    dependencies = CRSArray(num_rows, num_nonzeros, itype)
+    # Create a dict for faster lookup
+    # e2i = {v:i for i, v in enumerate(V)}
+
+    dependencies = []
     for v in V:
         if v._ufl_is_terminal_ or (ignore_terminal_modifiers
                                    and v._ufl_is_terminal_modifier_):
-            dependencies.push_row(())
+            dependencies.append(())
         else:
-            dependencies.push_row([e2i[o] for o in v.ufl_operands])
+            dependencies.append([e2i[o] for o in v.ufl_operands])
 
     return dependencies
 

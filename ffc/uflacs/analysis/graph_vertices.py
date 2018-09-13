@@ -6,8 +6,6 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Algorithms for working with graphs."""
 
-import numpy
-
 from ufl.classes import MultiIndex, Label
 
 from ffc.uflacs.analysis.modified_terminals import is_modified_terminal

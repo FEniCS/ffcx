@@ -12,7 +12,6 @@ import logging
 import numpy
 
 from ffc import FFCError
-from ffc.uflacs.analysis.crsarray import CRSArray
 from ufl.checks import is_cellwise_constant
 from ufl.classes import (Argument, Coefficient, ConstantValue,
                          GeometricQuantity, Grad, Indexed, MathFunction,
@@ -66,7 +65,7 @@ def mark_partitions(V,
     Input:
     - V            - Array of expressions.
     - active       - Boolish array.
-    - dependencies - CRSArray with V dependencies.
+    - dependencies - list with V dependencies.
     - partition_seed - Policy for determining the partition of a terminalish.
     - partition_combiner - Policy for determinging the partition of an operator.
 
@@ -90,48 +89,13 @@ def mark_partitions(V,
     return partitions
 
 
-"""
-def build_factorized_partitions():
-    num_points = [3]
-
-    # dofrange = (begin, end)
-    # dofblock = ()  |  (dofrange0,)  |  (dofrange0, dofrange1)
-
-    partitions = {}
-
-    # partitions["piecewise"] = partition of expressions independent of quadrature and argument loops
-    partitions["piecewise"] = []
-
-    # partitions["varying"][np] = partition of expressions dependent on np quadrature but independent of argument loops
-    partitions["varying"] = dict((np, []) for np in num_points)
-
-    # partitions["argument"][np][iarg][dofrange] = partition depending on this dofrange of argument iarg
-    partitions["argument"] = dict((np, [dict() for i in range(rank)]) for np in num_points)
-
-    # partitions["integrand"][np][dofrange] = partition depending on this dofrange of argument iarg
-    partitions["integrand"] = dict((np, dict()) for np in num_points)
-"""
-
-
-def compute_dependency_count(dependencies):
-    """FIXME: Test"""
+def invert_dependencies(dependencies):
     n = len(dependencies)
-    depcount = numpy.zeros(n, dtype=int)
-    for i in range(n):
-        for d in dependencies[i]:
-            depcount[d] += 1
-    return depcount
-
-
-def invert_dependencies(dependencies, depcount):
-    """FIXME: Test"""
-    n = len(dependencies)
-    m = sum(depcount)
     invdeps = [()] * n
     for i in range(n):
         for d in dependencies[i]:
-            invdeps[d] = invdeps[d] + (i, )
-    return CRSArray.from_rows(invdeps, n, m, int)
+            invdeps[d] += (i, )
+    return invdeps
 
 
 def default_cache_score_policy(vtype, ndeps, ninvdeps, partition):

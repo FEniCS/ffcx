@@ -6,7 +6,6 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Assigning symbols to computational graph nodes."""
 
-import numpy
 from ufl import product
 
 from ffc.uflacs.analysis.valuenumbering import ValueNumberer
