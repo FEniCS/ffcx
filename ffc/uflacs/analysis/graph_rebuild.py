@@ -11,9 +11,8 @@ import logging
 import numpy
 
 from ffc.uflacs.analysis.modified_terminals import is_modified_terminal
-from ufl import as_vector, product
+import ufl
 from ufl.classes import IndexSum, MultiIndex, Product
-from ufl.corealg.multifunction import MultiFunction
 from ufl.permutation import compute_indices
 from ufl.utils.indexflattening import flatten_multiindex, shape_to_strides
 from ffc import FFCError
@@ -21,9 +20,9 @@ from ffc import FFCError
 logger = logging.getLogger(__name__)
 
 
-class ReconstructScalarSubexpressions(MultiFunction):
+class ReconstructScalarSubexpressions(ufl.corealg.multifunction.MultiFunction):
     def __init__(self):
-        super(ReconstructScalarSubexpressions, self).__init__()
+        super().__init__()
 
     # No fallbacks, need to specify each type or group of types explicitly
     def expr(self, o, *args, **kwargs):
@@ -144,8 +143,8 @@ class ReconstructScalarSubexpressions(MultiFunction):
         d = fid[ipos]
 
         # Compute "macro-dimensions" before and after i in the total shape of a
-        predim = product(summand.ufl_shape) * product(fid[:ipos])
-        postdim = product(fid[ipos + 1:])
+        predim = ufl.product(summand.ufl_shape) * ufl.product(fid[:ipos])
+        postdim = ufl.product(fid[ipos + 1:])
 
         # Map each flattened total component of summand to
         # flattened total component of indexsum o by removing
