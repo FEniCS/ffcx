@@ -49,7 +49,8 @@ def mark_active(dependencies, targets):
     num_used = 0
 
     # Seed with initially used symbols
-    active[list(targets)] = 1
+    assert isinstance(targets, list)
+    active[targets] = 1
 
     # Mark dependencies by looping backwards through symbols array
     for s in range(n - 1, -1, -1):
@@ -79,7 +80,8 @@ def mark_image(inverse_dependencies, sources):
     num_used = 0
 
     # Seed with initially used symbols
-    image[list(sources)] = 1
+    assert isinstance(sources, list)
+    image[sources] = 1
 
     # Mark dependencies by looping forwards through symbols array
     for s in range(n):
