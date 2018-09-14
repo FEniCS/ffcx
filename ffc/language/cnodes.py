@@ -281,7 +281,6 @@ class LiteralFloat(CExprLiteral):
     precedence = PRECEDENCE.LITERAL
 
     def __init__(self, value):
-        print(value, type(value))
         assert isinstance(value, (float, complex, int, numpy.number))
         self.value = value
 

@@ -12,7 +12,7 @@ import numpy
 
 from ffc.uflacs.analysis.modified_terminals import is_modified_terminal
 import ufl
-from ufl.classes import IndexSum, MultiIndex, Product
+from ufl.classes import IndexSum, MultiIndex, Product, Conj
 from ufl.permutation import compute_indices
 from ufl.utils.indexflattening import flatten_multiindex, shape_to_strides
 from ffc import FFCError
@@ -81,10 +81,11 @@ class ReconstructScalarSubexpressions(ufl.corealg.multifunction.MultiFunction):
         return symbols
 
     def conj(self, o, ops):
+        if len(ops) != 1:
+            raise FFCError("Expecting one operand")
         if o.ufl_shape != ():
             raise FFCError("Expecting scalar.")
-        sops = [op[0] for op in ops]
-        return [o._ufl_expr_reconstruct_(*sops)]
+        return [Conj(x) for x in ops[0]]
 
     def division(self, o, ops):
         if len(ops) != 2:

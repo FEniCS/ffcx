@@ -122,6 +122,10 @@ def _analyze_form(form, parameters):
         r = _extract_representation_family(form, parameters)
     logger.debug("Preprocessing form using '{}' representation family.".format(r))
 
+    # Hard-wire scalar_type for now
+    parameters['scalar_type'] = 'double complex'
+    complex_mode = "complex" in parameters.get("scalar_type", "double")
+
     # Compute form metadata
     if r == "uflacs":
         form_data = compute_form_data(
@@ -131,7 +135,7 @@ def _analyze_form(form, parameters):
             do_apply_geometry_lowering=True,
             preserve_geometry_types=(Jacobian, ),
             do_apply_restrictions=True,
-            complex_mode=True)
+            complex_mode=complex_mode)
     elif r == "tsfc":
         try:
             # TSFC provides compute_form_data wrapper using correct
@@ -141,10 +145,7 @@ def _analyze_form(form, parameters):
             logger.exception(
                 "Could not import tsfc when requesting tsfc representation: {}".format(e))
             raise
-        if "complex" in parameters.get("scalar_type", "double"):
-            form_data = tsfc_compute_form_data(form, complex_mode=True)
-        else:
-            form_data = tsfc_compute_form_data(form)
+        form_data = tsfc_compute_form_data(form, complex_mode=complex_mode)
     else:
         raise FFCError("Unexpected representation family \"{}\" for form preprocessing.".format(r))
 

@@ -173,14 +173,14 @@ def handle_product(v, si, deps, SV_factors, FV, sv2fv, e2fi):
 
 def handle_conj(v, si, deps, SV_factors, FV, sv2fv, e2fi):
     fac = SV_factors[deps[0]]
-    print(fac)
+#    print(fac)
     factors = {}
     for k in fac:
         f0 = FV[fac[k]]
-        print(k, f0)
-        factors[k] = add_to_fv(f0, FV, e2fi)
+#        print(k, f0)
+        factors[k] = add_to_fv(Conj(f0), FV, e2fi)
 
-    print(factors)
+#    print(factors)
     return factors
 
 def handle_division(v, si, deps, SV_factors, FV, sv2fv, e2fi):
@@ -322,8 +322,6 @@ def compute_argument_factorization(SV, SV_deps, SV_targets, rank):
     # Factorize each subexpression in order:
     for si, v in enumerate(SV):
         deps = SV_deps[si]
-
-        print(si, v)
 
         # These handlers insert values in si2fi and SV_factors
         if not len(deps):
