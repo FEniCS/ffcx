@@ -57,15 +57,6 @@ class IntegralGenerator(object):
         """Return list of include statements needed to support generated code."""
         includes = set()
 
-        # Get std::fill used by MemZero
-        # includes.add("#include <algorithm>")
-
-        # For controlling floating point environment
-        # includes.add("#include <cfenv>")
-
-        # For intel intrinsics and controlling floating point environment
-        # includes.add("#include <xmmintrin.h>")
-
         cmath_names = set((
             "abs",
             "sign",
@@ -90,21 +81,11 @@ class IntegralGenerator(object):
             "erfc",
         ))
 
-        boost_math_names = set((
-            "bessel_j",
-            "bessel_y",
-            "bessel_i",
-            "bessel_k",
-        ))
-
         # Only return the necessary headers
-        if cmath_names & self._ufl_names:
+        if cmath_names.intersection(self._ufl_names):
             includes.add("#include <math.h>")
 
         includes.add("#include <stdalign.h>")
-
-        if boost_math_names & self._ufl_names:
-            includes.add("#include <boost/math/special_functions.hpp>")
 
         return sorted(includes)
 
@@ -1160,7 +1141,5 @@ class IntegralGenerator(object):
         """Generate statements copying results to output array."""
         if self.ir["integral_type"] == "expression":
             return self.generate_expr_copyout_statements()
-        # elif self.ir["unroll_copyout_loops"]:
-        #    return self.generate_unrolled_tensor_copyout_statements()
         else:
             return self.generate_tensor_copyout_statements()

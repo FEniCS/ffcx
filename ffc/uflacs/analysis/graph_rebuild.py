@@ -11,9 +11,8 @@ import logging
 import numpy
 
 from ffc.uflacs.analysis.modified_terminals import is_modified_terminal
-from ufl import as_vector, product
+import ufl
 from ufl.classes import IndexSum, MultiIndex, Product
-from ufl.corealg.multifunction import MultiFunction
 from ufl.permutation import compute_indices
 from ufl.utils.indexflattening import flatten_multiindex, shape_to_strides
 from ffc import FFCError
@@ -21,9 +20,9 @@ from ffc import FFCError
 logger = logging.getLogger(__name__)
 
 
-class ReconstructScalarSubexpressions(MultiFunction):
+class ReconstructScalarSubexpressions(ufl.corealg.multifunction.MultiFunction):
     def __init__(self):
-        super(ReconstructScalarSubexpressions, self).__init__()
+        super().__init__()
 
     # No fallbacks, need to specify each type or group of types explicitly
     def expr(self, o, *args, **kwargs):
@@ -144,8 +143,8 @@ class ReconstructScalarSubexpressions(MultiFunction):
         d = fid[ipos]
 
         # Compute "macro-dimensions" before and after i in the total shape of a
-        predim = product(summand.ufl_shape) * product(fid[:ipos])
-        postdim = product(fid[ipos + 1:])
+        predim = ufl.product(summand.ufl_shape) * ufl.product(fid[:ipos])
+        postdim = ufl.product(fid[ipos + 1:])
 
         # Map each flattened total component of summand to
         # flattened total component of indexsum o by removing
@@ -171,18 +170,7 @@ class ReconstructScalarSubexpressions(MultiFunction):
     # and build expressions such as sum(a*b for a,b in zip(aops, bops))
 
 
-def rebuild_expression_from_graph(G):
-    """Currently only used by tests."""
-    w = rebuild_with_scalar_subexpressions(G)
-
-    # Find expressions of final v
-    if len(w) == 1:
-        return w[0]
-    else:
-        return as_vector(w)  # TODO: Consider shape of initial v
-
-
-def rebuild_with_scalar_subexpressions(G, targets=None):
+def rebuild_with_scalar_subexpressions(G):
     """Build a new expression2index mapping where each subexpression is scalar valued.
 
     Input:
@@ -194,18 +182,7 @@ def rebuild_with_scalar_subexpressions(G, targets=None):
     Output:
     - NV   - Array with reverse mapping from index to expression
     - nvs  - Tuple of ne2i indices corresponding to the last vertex of G.V
-
-    Old output now no longer returned but possible to restore if needed:
-    - ne2i - Mapping from scalar subexpressions to a contiguous unique index
-    - W    - Array with reconstructed scalar subexpressions for each original symbol
     """
-
-    # From simplefsi3d.ufl:
-    # GRAPH SIZE: len(G.V), G.total_unique_symbols
-    # GRAPH SIZE: 16251   635272
-    # GRAPH SIZE:   473     8210
-    # GRAPH SIZE:  9663   238021
-    # GRAPH SIZE: 88913  3448634  #  3.5 M!!!
 
     # Algorithm to apply to each subexpression
     reconstruct_scalar_subexpressions = ReconstructScalarSubexpressions()
@@ -275,21 +252,9 @@ def rebuild_with_scalar_subexpressions(G, targets=None):
             else:
                 assert s in handled  # Result of symmetry!
 
-    # Find symbols of requested targets or final v from input graph
-    if targets is None:
-        targets = [G.V[-1]]
-
-    # Attempt to extend this to multiple target expressions
-    scalar_target_expressions = []
-    for target in targets:
-        ti = G.e2i[target]
-        vs = G.V_symbols[ti]
-        # Sanity check: assert that we've handled these symbols
-        if any(W[s] is None for s in vs):
-            raise FFCError("Expecting that all symbols in vs are handled at this point.")
-        scalar_target_expressions.append([W[s] for s in vs])
-
-    # Return the scalar expressions for each of the components
-    assert len(
-        scalar_target_expressions) == 1  # TODO: Currently expected by callers, fix those first
-    return scalar_target_expressions[0]  # ... TODO: then return list
+    # Find symbols of final v from input graph
+    vs = G.V_symbols[-1]
+    scalar_expression = [W[s] for s in vs]
+    if (None in scalar_expression):
+        raise FFCError("Expecting that all symbols in vs are handled at this point.")
+    return scalar_expression
