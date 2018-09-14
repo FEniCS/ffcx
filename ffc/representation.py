@@ -290,7 +290,6 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit
     ir["num_element_support_dofs"] = fiat_element.space_dimension() - ir["num_global_support_dofs"]
     ir["num_entity_dofs"] = num_dofs_per_entity
     ir["num_entity_closure_dofs"] = num_dofs_per_entity_closure
-    ir["tabulate_dofs"] = _tabulate_dofs(fiat_element, cell)
     ir["dof_permutations"] = (edge_permutations, face_permutations, cell, cell_topology)
     ir["tabulate_entity_dofs"] = (entity_dofs, num_dofs_per_entity)
     ir["tabulate_entity_closure_dofs"] = (entity_closure_dofs, entity_dofs, num_dofs_per_entity)
@@ -805,32 +804,6 @@ def _tabulate_dof_coordinates(ufl_element, element):
     data["points"] = [sorted(L.pt_dict.keys())[0] for L in element.dual_basis()]
     data["cell_shape"] = cell.cellname()
     return data
-
-
-def _tabulate_dofs(element, cell):
-    """Compute intermediate representation of tabulate_dofs."""
-    if isinstance(element, SpaceOfReals):
-        return None
-
-    # Extract number of dofs per entity for each element
-    elements = all_elements(element)
-    num_dofs_per_element = [_num_dofs_per_entity(e) for e in elements]
-
-    # Extract local dof numbers per entity for each element
-    all_entity_dofs = [e.entity_dofs() for e in elements]
-    dofs_per_element = [[[list(dofs[dim][entity]) for entity in sorted(dofs[dim].keys())]
-                         for dim in sorted(dofs.keys())] for dofs in all_entity_dofs]
-
-    # Check whether we need offset
-    multiple_entities = any([sum(n > 0 for n in num_dofs) - 1 for num_dofs in num_dofs_per_element])
-    need_offset = len(elements) > 1 or multiple_entities
-
-    num_dofs_per_element = [e.space_dimension() for e in elements]
-
-    # Handle global "elements"
-    fakes = [isinstance(e, SpaceOfReals) for e in elements]
-
-    return (dofs_per_element, num_dofs_per_element, need_offset, fakes)
 
 
 def _tabulate_entity_closure_dofs(element, cell):
