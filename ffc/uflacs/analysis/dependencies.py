@@ -49,13 +49,13 @@ def mark_active(dependencies, targets):
     num_used = 0
 
     # Seed with initially used symbols
-    active[tuple(targets)] = 1
+    active[list(targets)] = 1
 
     # Mark dependencies by looping backwards through symbols array
     for s in range(n - 1, -1, -1):
         if active[s]:
             num_used += 1
-            active[dependencies[s]] = 1
+            active[list(dependencies[s])] = 1
 
     # Return array marking which symbols are used and the number of positives
     return active, num_used
@@ -79,13 +79,13 @@ def mark_image(inverse_dependencies, sources):
     num_used = 0
 
     # Seed with initially used symbols
-    image[sources] = 1
+    image[list(sources)] = 1
 
     # Mark dependencies by looping forwards through symbols array
     for s in range(n):
         if image[s]:
             num_used += 1
-            image[inverse_dependencies[s]] = 1
+            image[list(inverse_dependencies[s])] = 1
 
     # Return array marking which symbols are used and the number of positives
     return image, num_used
