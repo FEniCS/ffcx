@@ -17,12 +17,13 @@ logger = logging.getLogger(__name__)
 class UFL2CNodesTranslatorCpp(MultiFunction):
     """UFL to CNodes translator class."""
 
-    def __init__(self, language):
+    def __init__(self, language, complex_mode=False):
         MultiFunction.__init__(self)
 
         self.L = language
         self.force_floats = False
         self.enable_strength_reduction = False
+        self.complex_mode = complex_mode
 
     # === Error handlers for missing formatting rules ===
 
@@ -157,7 +158,10 @@ class UFL2CNodesTranslatorCpp(MultiFunction):
         return self._cmath("pow", (a, b))
 
     def abs(self, o, op):
-        return self._cmath("fabs", op)
+        if self.complex_mode:
+            return self._cmath("cabs", op)
+        else:
+            return self._cmath("fabs", op)
 
     def min_value(self, o, a, b):
         return self._cmath("fmin", (a, b))

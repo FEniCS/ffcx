@@ -20,7 +20,7 @@ class FFCBackend(object):
 
         # This is the seam where cnodes/C is chosen for the ffc backend
         self.language = ffc.language.cnodes
-        self.ufl_to_language = UFL2CNodesTranslatorCpp(self.language)
+        self.ufl_to_language = UFL2CNodesTranslatorCpp(self.language, True)
 
         coefficient_numbering = ir["coefficient_numbering"]
         self.symbols = FFCBackendSymbols(self.language, coefficient_numbering)

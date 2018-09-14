@@ -556,7 +556,7 @@ class IntegralGenerator(object):
         if intermediates:
             if self.ir["params"]["use_symbol_array"]:
                 alignas = self.ir["params"]["alignas"]
-                parts += [L.ArrayDecl("double", symbol, len(intermediates), alignas=alignas)]
+                parts += [L.ArrayDecl("ufc_scalar_t", symbol, len(intermediates), alignas=alignas)]
             parts += intermediates
         return parts
 
