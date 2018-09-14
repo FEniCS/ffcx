@@ -2,8 +2,8 @@
 FFC-X: The FEniCS Form Compiler (experimental)
 ==============================================
 
-.. image:: https://circleci.com/gh/FEniCS/dolfinx.svg?style=shield
-    :target: https://circleci.com/gh/FEniCS/dolfinx
+.. image:: https://circleci.com/gh/FEniCS/ffcx.svg?style=shield
+    :target: https://circleci.com/gh/FEniCS/ffcx
 .. image:: https://readthedocs.org/projects/fenics-ffcx/badge/?version=latest
    :target: http://fenics-ffcx.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status

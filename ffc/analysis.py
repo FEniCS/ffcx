@@ -33,24 +33,6 @@ logger = logging.getLogger(__name__)
 default_precision = numpy.finfo("double").precision + 1  # == 16
 
 
-def analyze_forms(forms, parameters):
-    """Analyze form(s), returning
-
-    form_datas      - a tuple of form_data objects
-    unique_elements - a tuple of unique elements across all forms
-    element_numbers - a mapping to unique numbers for all elements
-    """
-    return analyze_ufl_objects(forms, "form", parameters)
-
-
-def analyze_elements(elements, parameters):
-    return analyze_ufl_objects(elements, "element", parameters)
-
-
-def analyze_coordinate_mappings(coordinate_elements, parameters):
-    return analyze_ufl_objects(coordinate_elements, "coordinate_mapping", parameters)
-
-
 def analyze_ufl_objects(ufl_objects, kind, parameters):
     """Analyze ufl object(s), either forms, elements, or coordinate mappings, returning:
 

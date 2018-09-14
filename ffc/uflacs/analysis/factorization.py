@@ -7,7 +7,7 @@
 """Algorithms for factorizing argument dependent monomials."""
 
 import logging
-from itertools import chain
+import itertools
 
 import numpy
 
@@ -64,7 +64,8 @@ def build_argument_indices(V):
 
 
 def build_argument_dependencies(dependencies, arg_indices):
-    """Preliminary algorithm: build list of argument vertex indices each vertex (indirectly) depends on."""
+    """Preliminary algorithm: build list of argument vertex indices each vertex
+    (indirectly) depends on."""
     n = len(dependencies)
     A = numpy.empty(n, dtype=object)
     for i, deps in enumerate(dependencies):
@@ -76,15 +77,6 @@ def build_argument_dependencies(dependencies, arg_indices):
                 argdeps.extend(A[j])
         A[i] = sorted(argdeps)
     return A
-
-
-class Factors(object):  # TODO: Refactor code in this file by using a class like this
-    def __init__(self):
-        self.FV = []
-        self.e2fi = {}
-
-    def add(self, expr):
-        add_to_fv(expr, self.FV, self.e2fi)
 
 
 def add_to_fv(expr, FV, e2fi):
@@ -396,7 +388,7 @@ def compute_argument_factorization(SV, SV_deps, SV_targets, rank):
     FV_deps = compute_dependencies(e2fi, FV)
 
     # Indices into FV that are needed for final result
-    FV_targets = list(chain(sorted(IM.values()) for IM in IMs))
+    FV_targets = list(itertools.chain(sorted(IM.values()) for IM in IMs))
 
     return IMs, AV, FV, FV_deps, FV_targets
 

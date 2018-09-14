@@ -213,11 +213,14 @@ def _compute_dofmap_permutation_tables(fiat_element, cell):
     celltype = cell.cellname()
     edge_vertices = tuple(ufc_cell(celltype).get_connectivity()[(1, 0)])
     facet_edges = tuple(ufc_cell(celltype).get_connectivity()[(2, 1)])
-    facet_edge_vertices = tuple(tuple(ufc_cell(celltype).get_topology()[1][e] for e in f)
-                                for f in ufc_cell(celltype).get_connectivity()[(2, 1)])
-    cell_topology = {'facet_edge_vertices': facet_edge_vertices,
-                     'facet_edges': facet_edges,
-                     'edge_vertices': edge_vertices}
+    facet_edge_vertices = tuple(
+        tuple(ufc_cell(celltype).get_topology()[1][e] for e in f)
+        for f in ufc_cell(celltype).get_connectivity()[(2, 1)])
+    cell_topology = {
+        'facet_edge_vertices': facet_edge_vertices,
+        'facet_edges': facet_edges,
+        'edge_vertices': edge_vertices
+    }
 
     # Lists of permutations for each edge or facet (if any)
     edge_permutations = []
@@ -267,11 +270,11 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit
     num_dofs_per_entity = _num_dofs_per_entity(fiat_element)
     entity_dofs = fiat_element.entity_dofs()
 
-    edge_permutations, face_permutations, cell_topology = _compute_dofmap_permutation_tables(fiat_element, cell)
+    edge_permutations, face_permutations, cell_topology = _compute_dofmap_permutation_tables(
+        fiat_element, cell)
 
-    facet_dofs = _tabulate_facet_dofs(fiat_element, cell)
-    entity_closure_dofs, num_dofs_per_entity_closure = \
-        _tabulate_entity_closure_dofs(fiat_element, cell)
+    entity_closure_dofs, num_dofs_per_entity_closure = _tabulate_entity_closure_dofs(
+        fiat_element, cell)
 
     # Store id
     ir = {"id": element_numbers[ufl_element]}
@@ -285,13 +288,10 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit
     ir["global_dimension"] = _global_dimension(fiat_element)
     ir["num_global_support_dofs"] = _num_global_support_dofs(fiat_element)
     ir["num_element_support_dofs"] = fiat_element.space_dimension() - ir["num_global_support_dofs"]
-    ir["num_element_dofs"] = fiat_element.space_dimension()
-    ir["num_facet_dofs"] = len(facet_dofs[0])
     ir["num_entity_dofs"] = num_dofs_per_entity
     ir["num_entity_closure_dofs"] = num_dofs_per_entity_closure
     ir["tabulate_dofs"] = _tabulate_dofs(fiat_element, cell)
     ir["dof_permutations"] = (edge_permutations, face_permutations, cell, cell_topology)
-    ir["tabulate_facet_dofs"] = facet_dofs
     ir["tabulate_entity_dofs"] = (entity_dofs, num_dofs_per_entity)
     ir["tabulate_entity_closure_dofs"] = (entity_closure_dofs, entity_dofs, num_dofs_per_entity)
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
@@ -831,24 +831,6 @@ def _tabulate_dofs(element, cell):
     fakes = [isinstance(e, SpaceOfReals) for e in elements]
 
     return (dofs_per_element, num_dofs_per_element, need_offset, fakes)
-
-
-def _tabulate_facet_dofs(element, cell):
-    """Compute intermediate representation of tabulate_facet_dofs."""
-    # Get topological dimension
-    D = cell.topological_dimension()
-
-    # Get the number of facets
-    num_facets = cell.num_facets()
-
-    # Make list of dofs
-    facet_dofs = list(element.entity_closure_dofs()[D - 1].values())
-
-    assert num_facets == len(facet_dofs)
-
-    facet_dofs = [facet_dofs[facet] for facet in range(num_facets)]
-
-    return facet_dofs
 
 
 def _tabulate_entity_closure_dofs(element, cell):
