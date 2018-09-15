@@ -19,7 +19,9 @@ def format_float(x, precision=None):
     global _subs
 
     if precision:
-        if isinstance(x, (float, complex)):
+        if isinstance(x, complex):
+            s = "({:.{prec}}+I*{:.{prec}})".format(x.real, x.imag, prec=precision)
+        elif isinstance(x, float):
             s = "{:.{prec}}".format(x, prec=precision)
         else:
             s = "{:.{prec}}".format(float(x), prec=precision)
