@@ -245,7 +245,7 @@ class IntegralGenerator(object):
             if varying_ir["need_weights"]:
                 wsym = self.backend.symbols.weights_table(num_points)
                 parts += [
-                    L.ArrayDecl("static const double", wsym, num_points, weights, alignas=alignas)
+                    L.ArrayDecl("static const ufc_scalar_t", wsym, num_points, weights, alignas=alignas)
                 ]
 
             # Generate quadrature points array
@@ -255,7 +255,7 @@ class IntegralGenerator(object):
                 flattened_points = points.reshape(N)
                 psym = self.backend.symbols.points_table(num_points)
                 parts += [
-                    L.ArrayDecl("static const double", psym, N, flattened_points, alignas=alignas)
+                    L.ArrayDecl("static const ufc_scalar_t", psym, N, flattened_points, alignas=alignas)
                 ]
 
         # Add leading comment if there are any tables
@@ -296,7 +296,7 @@ class IntegralGenerator(object):
                 continue
 
             decl = L.ArrayDecl(
-                "static const double", name, table.shape, table, alignas=alignas, padlen=p)
+                "static const ufc_scalar_t", name, table.shape, table, alignas=alignas, padlen=p)
             parts += [decl]
 
         # Add leading comment if there are any tables
@@ -401,7 +401,7 @@ class IntegralGenerator(object):
                 cwsym = self.backend.symbols.custom_quadrature_weights()
                 wsym = self.backend.symbols.custom_weights_table()
                 rule_parts += [
-                    L.ArrayDecl("double", wsym, chunk_size, 0, alignas=alignas),
+                    L.ArrayDecl("ufc_scalar_t", wsym, chunk_size, 0, alignas=alignas),
                     L.ForRange(
                         iq,
                         0,
@@ -414,7 +414,7 @@ class IntegralGenerator(object):
                 cpsym = self.backend.symbols.custom_quadrature_points()
                 psym = self.backend.symbols.custom_points_table()
                 rule_parts += [
-                    L.ArrayDecl("double", psym, chunk_size * gdim, 0, alignas=alignas),
+                    L.ArrayDecl("ufc_scalar_t", psym, chunk_size * gdim, 0, alignas=alignas),
                     L.ForRange(
                         iq,
                         0,
@@ -439,7 +439,7 @@ class IntegralGenerator(object):
             for name in non_piecewise_tables:
                 table = tables[name]
                 decl = L.ArrayDecl(
-                    "double", name, (1, chunk_size, table.shape[2]), 0,
+                    "ufc_scalar_t", name, (1, chunk_size, table.shape[2]), 0,
                     alignas=alignas)  # padlen=padlen)
                 table_parts += [decl]
 
@@ -540,7 +540,7 @@ class IntegralGenerator(object):
                         intermediates.append(L.Assign(vaccess, vexpr))
                     else:
                         vaccess = L.Symbol("%s_%d" % (symbol.name, j))
-                        intermediates.append(L.VariableDecl("const double", vaccess, vexpr))
+                        intermediates.append(L.VariableDecl("const ufc_scalar_t", vaccess, vexpr))
                 else:
                     # Access the inlined expression
                     vaccess = vexpr
@@ -729,7 +729,7 @@ class IntegralGenerator(object):
             B = self.new_temp_symbol(blockname)
             # Add initialization of this block to parts
             # For all modes, block definition occurs before quadloop
-            preparts.append(L.ArrayDecl("double", B, blockdims, 0, alignas=alignas, padlen=padlen))
+            preparts.append(L.ArrayDecl("ufc_scalar_t", B, blockdims, 0, alignas=alignas, padlen=padlen))
 
         # Get factor expression
         if blockdata.factor_is_piecewise:
@@ -763,7 +763,7 @@ class IntegralGenerator(object):
                 key = (num_points, blockdata.factor_index, blockdata.factor_is_piecewise)
                 fw, defined = self.get_temp_symbol(fwtempname, key)
                 if not defined:
-                    quadparts.append(L.VariableDecl("const double", fw, fw_rhs))
+                    quadparts.append(L.VariableDecl("const ufc_scalar_t", fw, fw_rhs))
 
                 # Plan for vectorization of fw computations over iq:
                 # 1) Define fw as arrays e.g. "double fw0[nq];" outside quadloop
@@ -817,7 +817,7 @@ class IntegralGenerator(object):
                     # inside quadrature loop
                     P_dim = blockdims[i]
                     quadparts.append(
-                        L.ArrayDecl("double", P, P_dim, None, alignas=alignas, padlen=padlen))
+                        L.ArrayDecl("ufc_scalar_t", P, P_dim, None, alignas=alignas, padlen=padlen))
                     P_rhs = L.float_product([fw, arg_factors[i]])
                     body = L.Assign(P[P_index], P_rhs)
                     # if ttypes[i] != "quadrature":  # FIXME: What does this mean here?
@@ -857,7 +857,7 @@ class IntegralGenerator(object):
             if not defined:
                 # Declare P table in preparts
                 P_dim = blockdims[not_piecewise_index]
-                preparts.append(L.ArrayDecl("double", P, P_dim, 0, alignas=alignas, padlen=padlen))
+                preparts.append(L.ArrayDecl("ufc_scalar_t", P, P_dim, 0, alignas=alignas, padlen=padlen))
 
                 # Multiply collected factors
                 P_rhs = L.float_product([fw, arg_factors[not_piecewise_index]])
@@ -894,7 +894,7 @@ class IntegralGenerator(object):
                 FI, defined = self.get_temp_symbol(tempname, key)
                 if not defined:
                     # Declare FI = 0 before quadloop
-                    preparts += [L.VariableDecl("double", FI, 0)]
+                    preparts += [L.VariableDecl("ufc_scalar_t", FI, 0)]
                     # Accumulate FI += weight * f in quadparts
                     quadparts += [L.AssignAdd(FI, L.float_product([weight, f]))]
 

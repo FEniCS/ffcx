@@ -113,7 +113,10 @@ class UFL2CNodesTranslatorCpp(MultiFunction):
         return self._cmath("conj", op)
 
     def sqrt(self, o, op):
-        return self._cmath("sqrt", op)
+        if self.complex_mode:
+            return self._cmath("csqrt", op)
+        else:
+            return self._cmath("sqrt", op)
 
     def ln(self, o, op):
         return self._cmath("log", op)
