@@ -171,17 +171,16 @@ def handle_product(v, si, deps, SV_factors, FV, sv2fv, e2fi):
 
     return factors
 
+
 def handle_conj(v, si, deps, SV_factors, FV, sv2fv, e2fi):
     fac = SV_factors[deps[0]]
-#    print(fac)
     factors = {}
     for k in fac:
         f0 = FV[fac[k]]
-#        print(k, f0)
         factors[k] = add_to_fv(Conj(f0), FV, e2fi)
 
-#    print(factors)
     return factors
+
 
 def handle_division(v, si, deps, SV_factors, FV, sv2fv, e2fi):
     fac0 = SV_factors[deps[0]]

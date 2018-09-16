@@ -122,8 +122,7 @@ def _analyze_form(form, parameters):
         r = _extract_representation_family(form, parameters)
     logger.debug("Preprocessing form using '{}' representation family.".format(r))
 
-    # Hard-wire scalar_type for now
-    parameters['scalar_type'] = 'double complex'
+    # Get complex mode
     complex_mode = "complex" in parameters.get("scalar_type", "double")
 
     # Compute form metadata
