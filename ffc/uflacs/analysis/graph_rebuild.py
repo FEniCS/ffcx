@@ -87,7 +87,7 @@ class ReconstructScalarSubexpressions(ufl.corealg.multifunction.MultiFunction):
             raise FFCError("Expecting one operand")
         if o.ufl_shape != ():
             raise FFCError("Expecting scalar.")
-        return [Conj(x) for x in ops[0]]
+        return [o._ufl_expr_reconstruct_(x) for x in ops[0]]
 
     def division(self, o, ops):
         if len(ops) != 2:

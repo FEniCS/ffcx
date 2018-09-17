@@ -173,11 +173,18 @@ def handle_product(v, si, deps, SV_factors, FV, sv2fv, e2fi):
 
 
 def handle_conj(v, si, deps, SV_factors, FV, sv2fv, e2fi):
+
     fac = SV_factors[deps[0]]
-    factors = {}
-    for k in fac:
-        f0 = FV[fac[k]]
-        factors[k] = add_to_fv(Conj(f0), FV, e2fi)
+    if fac:
+        factors = {}
+        for k in fac:
+            f0 = FV[fac[k]]
+        factors[k] = add_to_fv(f0, FV, e2fi)
+    else:
+        factors = noargs
+        f0 = FV[sv2fv[deps[0]]]
+        sv2fv[si] = add_to_fv(v, FV, e2fi)
+        assert FV[sv2fv[si]] == v
 
     return factors
 

@@ -251,7 +251,7 @@ def compile_elements(elements, module_name=None):
     return compiled_elements, compiled_module
 
 
-def compile_forms(forms, module_name=None):
+def compile_forms(forms, module_name=None, parameters=None):
     """Compile a list of UFL forms into UFC Python objects"""
 
     # FIXME: support list of forms. Problem is that FFC does not use a
@@ -262,7 +262,7 @@ def compile_forms(forms, module_name=None):
         + UFC_INTEGRAL_DECL + UFC_FORM_DECL
     form_template = "ufc_form * create_{name}(void);"
     for f in forms:
-        _, impl = ffc.compiler.compile_form(f)
+        _, impl = ffc.compiler.compile_form(f, parameters=parameters)
         code_body += impl
 
         # FIXME: FFC should has the form name
