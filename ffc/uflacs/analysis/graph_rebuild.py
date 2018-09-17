@@ -56,6 +56,8 @@ class ReconstructScalarSubexpressions(ufl.corealg.multifunction.MultiFunction):
     abs = scalar_nary
     min_value = scalar_nary
     max_value = scalar_nary
+    real = scalar_nary
+    imag = scalar_nary
 
     # Binary scalar functions
     power = scalar_nary
