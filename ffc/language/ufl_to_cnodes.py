@@ -36,8 +36,8 @@ math_table = {'sqrt': ('sqrt', 'csqrt'),
               'erf': ('erf', None),
               'atan_2': ('atan2', None),
               'min_value': ('fmin', None),
-              'max_value': ('fmax', None),
-}
+              'max_value': ('fmax', None)}
+
 
 class UFL2CNodesTranslatorCpp(MultiFunction):
     """UFL to CNodes translator class."""
