@@ -12,7 +12,7 @@ import numpy
 
 from ffc.uflacs.analysis.modified_terminals import is_modified_terminal
 import ufl
-from ufl.classes import IndexSum, MultiIndex, Product, Conj
+from ufl.classes import IndexSum, MultiIndex, Product
 from ufl.permutation import compute_indices
 from ufl.utils.indexflattening import flatten_multiindex, shape_to_strides
 from ffc import FFCError
