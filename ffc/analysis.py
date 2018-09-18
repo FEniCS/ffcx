@@ -346,17 +346,12 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
     # a single tabulate_tensor is considered not worth the effort)
     representations = set(
         md["representation"] for md in integral_metadatas if md["representation"] != "auto")
-    optimize_values = set(md["optimize"] for md in integral_metadatas)
     precision_values = set(md["precision"] for md in integral_metadatas)
 
     if len(representations) > 1:
         raise FFCError(
             "Integral representation must be equal within each sub domain or 'auto', got %s." %
             (str(sorted(str(v) for v in representations)), ))
-    if len(optimize_values) > 1:
-        raise FFCError(
-            "Integral 'optimize' metadata must be equal within each sub domain or not set, got %s."
-            % (str(sorted(str(v) for v in optimize_values)), ))
     if len(precision_values) > 1:
         raise FFCError(
             "Integral 'precision' metadata must be equal within each sub domain or not set, got %s."
@@ -364,7 +359,6 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
 
     # The one and only non-auto representation found, or get from parameters
     r, = representations or (parameters["representation"], )
-    o, = optimize_values or (parameters["optimize"], )
     # FIXME: Default param value is zero which is not interpreted well by tsfc!
     p, = precision_values or (parameters["precision"], )
 
@@ -400,9 +394,9 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
     if forced_r:
         r = forced_r
         warnings.warn("representation: forced by $FFC_FORCE_REPRESENTATION to '{}'".format(r))
-        return r, o, p
+        return r, p
 
-    return r, o, p
+    return r, p
 
 
 def _attach_integral_metadata(form_data, form_r_family, parameters):
@@ -412,7 +406,6 @@ def _attach_integral_metadata(form_data, form_r_family, parameters):
     # Parameter values which make sense "per integrals" or "per integral"
     metadata_keys = (
         "representation",
-        "optimize",
         # TODO: Could have finer optimize (sub)parameters here later
         "precision",
         "quadrature_degree",
@@ -438,14 +431,12 @@ def _attach_integral_metadata(form_data, form_r_family, parameters):
 
         # Determine representation, must be equal for all integrals on
         # same subdomain
-        r, o, p = _determine_representation(integral_metadatas, ida, form_data, form_r_family,
+        r, p = _determine_representation(integral_metadatas, ida, form_data, form_r_family,
                                             parameters)
         for i, integral in enumerate(ida.integrals):
             integral_metadatas[i]["representation"] = r
-            integral_metadatas[i]["optimize"] = o
             integral_metadatas[i]["precision"] = p
         ida.metadata["representation"] = r
-        ida.metadata["optimize"] = o
         ida.metadata["precision"] = p
 
         # Determine automated updates to metadata values
