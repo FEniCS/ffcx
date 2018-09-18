@@ -11,18 +11,14 @@ from collections import namedtuple
 
 import numpy
 
+import ufl
+import ufl.utils.derivativetuples
 from ffc import FFCError
 from ffc.backends.ffc.common import ufc_restriction_offset
 from ffc.fiatinterface import create_element
 from ffc.representationutils import (create_quadrature_points_and_weights,
                                      integral_type_to_entity_dim,
                                      map_integral_points)
-from ufl.cell import num_cell_entities
-from ufl.classes import FormArgument, Jacobian, SpatialCoordinate
-from ufl.measure import custom_integral_types
-from ufl.permutation import build_component_numbering
-from ufl.utils.derivativetuples import derivative_listing_to_counts
-from ufl.utils.sequences import product
 
 logger = logging.getLogger(__name__)
 
@@ -31,20 +27,17 @@ default_rtol = 1e-5
 default_atol = 1e-8
 
 table_origin_t = namedtuple(
-    "table_origin",
-    ["element", "avg", "derivatives", "flat_component", "dofrange", "dofmap"])
+    "table_origin", ["element", "avg", "derivatives", "flat_component", "dofrange", "dofmap"])
 
 piecewise_ttypes = ("piecewise", "fixed", "ones", "zeros")
 
 uniform_ttypes = ("uniform", "fixed", "ones", "zeros")
 
-valid_ttypes = set(
-    ("quadrature", )) | set(piecewise_ttypes) | set(uniform_ttypes)
+valid_ttypes = set(("quadrature", )) | set(piecewise_ttypes) | set(uniform_ttypes)
 
-unique_table_reference_t = namedtuple("unique_table_reference", [
-    "name", "values", "dofrange", "dofmap", "original_dim", "ttype",
-    "is_piecewise", "is_uniform"
-])
+unique_table_reference_t = namedtuple(
+    "unique_table_reference",
+    ["name", "values", "dofrange", "dofmap", "original_dim", "ttype", "is_piecewise", "is_uniform"])
 
 
 def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
@@ -68,10 +61,7 @@ def clamp_table_small_numbers(table,
     return table
 
 
-def strip_table_zeros(table,
-                      compress_zeros,
-                      rtol=default_rtol,
-                      atol=default_atol):
+def strip_table_zeros(table, compress_zeros, rtol=default_rtol, atol=default_atol):
     """Strip zero columns from table. Returns column range (begin, end) and the new compact table."""
     # Get shape of table and number of columns, defined as the last axis
     table = numpy.asarray(table)
@@ -80,8 +70,7 @@ def strip_table_zeros(table,
     # Find nonzero columns
     z = numpy.zeros(sh[:-1])  # Correctly shaped zero table
     dofmap = tuple(
-        i for i in range(sh[-1])
-        if not numpy.allclose(z, table[..., i], rtol=rtol, atol=atol))
+        i for i in range(sh[-1]) if not numpy.allclose(z, table[..., i], rtol=rtol, atol=atol))
     if dofmap:
         # Find first nonzero column
         begin = dofmap[0]
@@ -127,8 +116,8 @@ def build_unique_tables(tables, rtol=default_rtol, atol=default_atol):
     return unique, mapping
 
 
-def get_ffc_table_values(points, cell, integral_type, ufl_element, avg,
-                         entitytype, derivative_counts, flat_component):
+def get_ffc_table_values(points, cell, integral_type, ufl_element, avg, entitytype,
+                         derivative_counts, flat_component):
     """Extract values from ffc element table.
 
     Returns a 3D numpy array with axes
@@ -136,7 +125,7 @@ def get_ffc_table_values(points, cell, integral_type, ufl_element, avg,
     """
     deriv_order = sum(derivative_counts)
 
-    if integral_type in custom_integral_types:
+    if integral_type in ufl.measure.custom_integral_types:
         # Use quadrature points on cell for analysis in custom integral types
         integral_type = "cell"
         assert not avg
@@ -159,20 +148,18 @@ def get_ffc_table_values(points, cell, integral_type, ufl_element, avg,
             integral_type = "exterior_facet"
 
         # Make quadrature rule and get points and weights
-        points, weights = create_quadrature_points_and_weights(
-            integral_type, cell, ufl_element.degree(), "default")
+        points, weights = create_quadrature_points_and_weights(integral_type, cell,
+                                                               ufl_element.degree(), "default")
 
     # Tabulate table of basis functions and derivatives in points for each entity
     fiat_element = create_element(ufl_element)
     tdim = cell.topological_dimension()
     entity_dim = integral_type_to_entity_dim(integral_type, tdim)
-    num_entities = num_cell_entities[cell.cellname()][entity_dim]
+    num_entities = ufl.cell.num_cell_entities[cell.cellname()][entity_dim]
     entity_tables = []
     for entity in range(num_entities):
-        entity_points = map_integral_points(points, integral_type, cell,
-                                            entity)
-        tbl = fiat_element.tabulate(deriv_order,
-                                    entity_points)[derivative_counts]
+        entity_points = map_integral_points(points, integral_type, cell, entity)
+        tbl = fiat_element.tabulate(deriv_order, entity_points)[derivative_counts]
         entity_tables.append(tbl)
 
     # Extract arrays for the right scalar component
@@ -185,7 +172,7 @@ def get_ffc_table_values(points, cell, integral_type, ufl_element, avg,
     elif len(sh) == 2 and ufl_element.num_sub_elements() == 0:
         # 2-tensor-valued elements, not a tensor product
         # mapping flat_component back to tensor component
-        (_, f2t) = build_component_numbering(sh, ufl_element.symmetry())
+        (_, f2t) = ufl.permutation.build_component_numbering(sh, ufl_element.symmetry())
         t_comp = f2t[flat_component]
         for entity, entity_table in enumerate(entity_tables):
             tbl = entity_table[:, t_comp[0], t_comp[1], :]
@@ -216,8 +203,8 @@ def get_ffc_table_values(points, cell, integral_type, ufl_element, avg,
     return res
 
 
-def generate_psi_table_name(num_points, element_counter, averaged, entitytype,
-                            derivative_counts, flat_component):
+def generate_psi_table_name(num_points, element_counter, averaged, entitytype, derivative_counts,
+                            flat_component):
     """Generate a name for the psi table of the form:
     FE#_C#_D###[_AC|_AF|][_F|V][_Q#], where '#' will be an integer value.
 
@@ -258,14 +245,14 @@ def get_modified_terminal_element(mt):
     ld = mt.local_derivatives
 
     # Extract element from FormArguments and relevant GeometricQuantities
-    if isinstance(mt.terminal, FormArgument):
+    if isinstance(mt.terminal, ufl.classes.FormArgument):
         if gd and mt.reference_value:
             raise FFCError("Global derivatives of reference values not defined.")
         elif ld and not mt.reference_value:
             raise FFCError("Local derivatives of global values not defined.")
         element = mt.terminal.ufl_element()
         fc = mt.flat_component
-    elif isinstance(mt.terminal, SpatialCoordinate):
+    elif isinstance(mt.terminal, ufl.classes.SpatialCoordinate):
         if mt.reference_value:
             raise FFCError("Not expecting reference value of x.")
         if gd:
@@ -278,7 +265,7 @@ def get_modified_terminal_element(mt):
             fc = mt.flat_component  # x-component
             assert len(mt.component) == 1
             assert mt.component[0] == mt.flat_component
-    elif isinstance(mt.terminal, Jacobian):
+    elif isinstance(mt.terminal, ufl.classes.Jacobian):
         if mt.reference_value:
             raise FFCError("Not expecting reference value of J.")
         if gd:
@@ -299,7 +286,7 @@ def get_modified_terminal_element(mt):
 
     # Change derivatives format for table lookup
     tdim = mt.terminal.ufl_domain().topological_dimension()
-    local_derivatives = derivative_listing_to_counts(ld, tdim)
+    local_derivatives = ufl.utils.derivativetuples.derivative_listing_to_counts(ld, tdim)
 
     return element, mt.averaged, local_derivatives, fc
 
@@ -336,11 +323,11 @@ def build_element_tables(num_points,
         if res:
             analysis[mt] = res
 
-    # Build element numbering using topological
-    # ordering so subelements get priority
-    from ffc.analysis import extract_sub_elements, sort_elements, _compute_element_numbers
+    # Build element numbering using topological ordering so subelements
+    # get priority
+    from ffc.analysis import _compute_element_numbers
     all_elements = [res[0] for res in analysis.values()]
-    unique_elements = sort_elements(extract_sub_elements(all_elements))
+    unique_elements = ufl.algorithms.sort_elements(ufl.algorithms.analysis.extract_sub_elements(all_elements))
     element_numbers = _compute_element_numbers(unique_elements)
 
     def add_table(res):
@@ -348,15 +335,14 @@ def build_element_tables(num_points,
 
         # Build name for this particular table
         element_number = element_numbers[element]
-        name = generate_psi_table_name(num_points, element_number, avg,
-                                       entitytype, local_derivatives,
-                                       flat_component)
+        name = generate_psi_table_name(num_points, element_number, avg, entitytype,
+                                       local_derivatives, flat_component)
 
         # Extract the values of the table from ffc table format
         if name not in tables:
-            tables[name] = get_ffc_table_values(
-                quadrature_rules[num_points][0], cell, integral_type, element,
-                avg, entitytype, local_derivatives, flat_component)
+            tables[name] = get_ffc_table_values(quadrature_rules[num_points][0], cell,
+                                                integral_type, element, avg, entitytype,
+                                                local_derivatives, flat_component)
 
             # Track table origin for custom integrals:
             table_origins[name] = res
@@ -433,8 +419,7 @@ def optimize_element_tables(tables,
         num_dofs = tbl.shape[2]
 
         # Strip contiguous zero blocks at the ends of all tables
-        dofrange, dofmap, tbl = strip_table_zeros(
-            tbl, compress_zeros, rtol=rtol, atol=atol)
+        dofrange, dofmap, tbl = strip_table_zeros(tbl, compress_zeros, rtol=rtol, atol=atol)
 
         compressed_tables[name] = tbl
         table_ranges[name] = dofrange
@@ -453,10 +438,7 @@ def optimize_element_tables(tables,
         ui = name_to_unique_index[name]
         if ui not in unique_names:
             unique_names[ui] = name
-    table_unames = {
-        name: unique_names[name_to_unique_index[name]]
-        for name in name_to_unique_index
-    }
+    table_unames = {name: unique_names[name_to_unique_index[name]] for name in name_to_unique_index}
 
     # Build mapping from unique table name to the table itself
     unique_tables = {}
@@ -476,15 +458,15 @@ def optimize_element_tables(tables,
 
         # FIXME: Make sure the "smallest" element is chosen
         (element, avg, derivative_counts, fc) = table_origins[name]
-        unique_table_origins[uname] = table_origin_t(
-            element, avg, derivative_counts, fc, dofrange, dofmap)
+        unique_table_origins[uname] = table_origin_t(element, avg, derivative_counts, fc, dofrange,
+                                                     dofmap)
 
     return unique_tables, unique_table_origins, table_unames, table_ranges, table_dofmaps, table_original_num_dofs
 
 
 def is_zeros_table(table, rtol=default_rtol, atol=default_atol):
-    return (product(table.shape) == 0 or numpy.allclose(
-        table, numpy.zeros(table.shape), rtol=rtol, atol=atol))
+    return (ufl.utils.sequences.product(table.shape) == 0
+            or numpy.allclose(table, numpy.zeros(table.shape), rtol=rtol, atol=atol))
 
 
 def is_ones_table(table, rtol=default_rtol, atol=default_atol):
@@ -495,8 +477,7 @@ def is_quadrature_table(table, rtol=default_rtol, atol=default_atol):
     num_entities, num_points, num_dofs = table.shape
     Id = numpy.eye(num_points)
     return (num_points == num_dofs and all(
-        numpy.allclose(table[i, :, :], Id, rtol=rtol, atol=atol)
-        for i in range(num_entities)))
+        numpy.allclose(table[i, :, :], Id, rtol=rtol, atol=atol) for i in range(num_entities)))
 
 
 def is_piecewise_table(table, rtol=default_rtol, atol=default_atol):
@@ -577,14 +558,10 @@ def build_optimized_tables(num_points,
         optimize_element_tables(tables, table_origins, compress_zeros, rtol=rtol, atol=atol)
 
     # Get num_dofs for all tables before they can be deleted later
-    unique_table_num_dofs = {
-        uname: tbl.shape[2]
-        for uname, tbl in unique_tables.items()
-    }
+    unique_table_num_dofs = {uname: tbl.shape[2] for uname, tbl in unique_tables.items()}
 
     # Analyze tables for properties useful for optimization
-    unique_table_ttypes = analyse_table_types(
-        unique_tables, rtol=rtol, atol=atol)
+    unique_table_ttypes = analyse_table_types(unique_tables, rtol=rtol, atol=atol)
 
     # Compress tables that are constant along num_entities or num_points
     for uname, tabletype in unique_table_ttypes.items():
@@ -646,7 +623,7 @@ def build_optimized_tables(num_points,
         ttype = unique_table_ttypes[ename]
 
         # Add offset to dofmap and dofrange for restricted terminals
-        if mt.restriction and isinstance(mt.terminal, FormArgument):
+        if mt.restriction and isinstance(mt.terminal, ufl.classes.FormArgument):
             # offset = 0 or number of dofs before table optimization
             offset = ufc_restriction_offset(mt.restriction, original_dim)
             (b, e) = dofrange

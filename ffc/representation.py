@@ -22,15 +22,13 @@ import logging
 
 import numpy
 
-import ufl
-from ffc import FFCError
-from ffc import classname
-from ffc.fiatinterface import (EnrichedElement, MixedElement, QuadratureElement, SpaceOfReals,
-                               create_element)
 import ffc.fiatinterface
-from ufl.utils.sequences import product
-from FIAT.hdiv_trace import HDivTrace
 import FIAT.reference_element
+import ufl
+from ffc import FFCError, classname
+from ffc.fiatinterface import (EnrichedElement, MixedElement,
+                               QuadratureElement, SpaceOfReals, create_element)
+from FIAT.hdiv_trace import HDivTrace
 
 logger = logging.getLogger(__name__)
 
@@ -568,7 +566,7 @@ def _generate_reference_offsets(fiat_element, offset=0):
             offsets += _generate_reference_offsets(e, offset)
             # NB! This is the fiat element and therefore value_shape
             # means reference_value_shape
-            offset += product(e.value_shape())
+            offset += ufl.utils.sequences.product(e.value_shape())
         return offsets
 
     elif isinstance(fiat_element, EnrichedElement):
@@ -723,7 +721,7 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
     dof = 0
     dofs_data = []
     for e in elements:
-        num_components = product(e.value_shape())
+        num_components = ufl.utils.sequences.product(e.value_shape())
         coeffs = e.get_coeffs()
         num_expansion_members = e.get_num_members(e.degree())
         dmats = e.dmats()
