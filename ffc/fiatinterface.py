@@ -14,13 +14,11 @@ import FIAT
 import ufl
 from ffc import FFCError
 from FIAT.enriched import EnrichedElement
-from FIAT.nodal_enriched import NodalEnrichedElement
 from FIAT.mixed import MixedElement
+from FIAT.nodal_enriched import NodalEnrichedElement
 from FIAT.quadrature_element import QuadratureElement
 from FIAT.restricted import RestrictedElement
 from FIAT.tensor_product import FlattenedDimensions
-from ufl.cell import cellname2dim
-
 
 logger = logging.getLogger(__name__)
 
@@ -172,7 +170,7 @@ def create_quadrature(shape, degree, scheme="default"):
     if isinstance(shape, int) and shape == 0:
         return (numpy.zeros((1, 0)), numpy.ones((1, )))
 
-    if shape in cellname2dim and cellname2dim[shape] == 0:
+    if shape in ufl.cell.cellname2dim and ufl.cell.cellname2dim[shape] == 0:
         return (numpy.zeros((1, 0)), numpy.ones((1, )))
 
     if scheme == "vertex":

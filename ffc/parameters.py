@@ -30,7 +30,6 @@ _FFC_GENERATE_PARAMETERS = {
     "form_postfix": True,  # postfix form name with "Function", "LinearForm" or BilinearForm
     # convert all exceptions to warning in generated code
     "convert_exceptions_to_warnings": False,
-    "optimize": True,  # turn on optimization for code generation
     "max_signature_length":
     0,  # set to positive integer to shorten signatures set to True to replace tabulate_tensor body with no-op
     # set to True to add timing inside tabulate_tensor
@@ -113,10 +112,6 @@ def validate_jit_parameters(parameters):
 def _validate_parameters(parameters):
     """Does some casting of parameter values in place on the
     provided dictionary"""
-    # Cast int optimize flag to bool
-    if isinstance(parameters["optimize"], int):
-        parameters["optimize"] = bool(parameters["optimize"])
-
     # Convert all legal default values to None
     if parameters["quadrature_rule"] in ["auto", None, "None"]:
         parameters["quadrature_rule"] = None

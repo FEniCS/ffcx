@@ -19,13 +19,8 @@ import warnings
 
 import numpy
 
+import ufl
 from ffc import FFCError, utils
-from ufl import custom_integral_types
-from ufl.algorithms import compute_form_data, sort_elements
-from ufl.algorithms.analysis import extract_sub_elements
-from ufl.classes import Form, Jacobian
-from ufl.finiteelement import EnrichedElement, MixedElement
-from ufl.integral import Integral
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +60,7 @@ def analyze_ufl_objects(ufl_objects, kind, parameters):
         elements = ufl_objects
 
         # Extract unique (sub)elements
-        unique_elements.update(extract_sub_elements(elements))
+        unique_elements.update(ufl.algorithms.analysis.extract_sub_elements(elements))
 
     elif kind == "coordinate_mapping":
         meshes = ufl_objects
@@ -74,10 +69,10 @@ def analyze_ufl_objects(ufl_objects, kind, parameters):
         unique_coordinate_elements = [mesh.ufl_coordinate_element() for mesh in meshes]
 
     # Make sure coordinate elements and their subelements are included
-    unique_elements.update(extract_sub_elements(unique_coordinate_elements))
+    unique_elements.update(ufl.algorithms.analysis.extract_sub_elements(unique_coordinate_elements))
 
     # Sort elements
-    unique_elements = sort_elements(unique_elements)
+    unique_elements = ufl.algorithms.sort_elements(unique_elements)
     # unique_coordinate_elements = sort_elements(unique_coordinate_elements)
     unique_coordinate_elements = sorted(unique_coordinate_elements, key=lambda x: repr(x))
 
@@ -114,7 +109,8 @@ def _analyze_form(form, parameters):
     # Hack to override representation with environment variable
     forced_r = os.environ.get("FFC_FORCE_REPRESENTATION")
     if forced_r:
-        warnings.warn("representation:    forced by $FFC_FORCE_REPRESENTATION to '{}'".format(forced_r))
+        warnings.warn(
+            "representation:    forced by $FFC_FORCE_REPRESENTATION to '{}'".format(forced_r))
         r = forced_r
     else:
         # Check representation parameters to figure out how to
@@ -127,12 +123,12 @@ def _analyze_form(form, parameters):
 
     # Compute form metadata
     if r == "uflacs":
-        form_data = compute_form_data(
+        form_data = ufl.algorithms.compute_form_data(
             form,
             do_apply_function_pullbacks=True,
             do_apply_integral_scaling=True,
             do_apply_geometry_lowering=True,
-            preserve_geometry_types=(Jacobian, ),
+            preserve_geometry_types=(ufl.classes.Jacobian, ),
             do_apply_restrictions=True,
             complex_mode=complex_mode)
     elif r == "tsfc":
@@ -243,9 +239,9 @@ def _validate_representation_choice(form_data, preprocessing_representation_fami
 
 
 def _has_custom_integrals(o):
-    if isinstance(o, Integral):
-        return o.integral_type() in custom_integral_types
-    elif isinstance(o, Form):
+    if isinstance(o, ufl.integral.Integral):
+        return o.integral_type() in ufl.custom_integral_types
+    elif isinstance(o, ufl.classes.Form):
         return any(_has_custom_integrals(itg) for itg in o.integrals())
     elif isinstance(o, (list, tuple)):
         return any(_has_custom_integrals(itg) for itg in o)
@@ -343,21 +339,16 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
     """Determine one unique representation considering all integrals together."""
 
     # Extract unique representation among these single-domain
-    # integrals (Generating code with different representations within
+    # integrals (generating code with different representations within
     # a single tabulate_tensor is considered not worth the effort)
     representations = set(
         md["representation"] for md in integral_metadatas if md["representation"] != "auto")
-    optimize_values = set(md["optimize"] for md in integral_metadatas)
     precision_values = set(md["precision"] for md in integral_metadatas)
 
     if len(representations) > 1:
         raise FFCError(
             "Integral representation must be equal within each sub domain or 'auto', got %s." %
             (str(sorted(str(v) for v in representations)), ))
-    if len(optimize_values) > 1:
-        raise FFCError(
-            "Integral 'optimize' metadata must be equal within each sub domain or not set, got %s."
-            % (str(sorted(str(v) for v in optimize_values)), ))
     if len(precision_values) > 1:
         raise FFCError(
             "Integral 'precision' metadata must be equal within each sub domain or not set, got %s."
@@ -365,12 +356,11 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
 
     # The one and only non-auto representation found, or get from parameters
     r, = representations or (parameters["representation"], )
-    o, = optimize_values or (parameters["optimize"], )
     # FIXME: Default param value is zero which is not interpreted well by tsfc!
     p, = precision_values or (parameters["precision"], )
 
-    # If it's still auto, try to determine which representation is
-    # best for these integrals
+    # If it's still auto, try to determine which representation is best
+    # for these integrals
     if r == "auto":
         # Find representations compatible with these integrals
         compatible = _find_compatible_representations(ida.integrals, parameters)
@@ -381,7 +371,7 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
             r, = compatible
         else:
             # NOTE: Need to pick the same default as in
-            # _extract_representation_family
+            # q_extract_representation_family
             if form_r_family == "uflacs":
                 r = "uflacs"
             elif form_r_family == "tsfc":
@@ -401,19 +391,20 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
     if forced_r:
         r = forced_r
         warnings.warn("representation: forced by $FFC_FORCE_REPRESENTATION to '{}'".format(r))
-        return r, o, p
+        return r, p
 
-    return r, o, p
+    return r, p
 
 
 def _attach_integral_metadata(form_data, form_r_family, parameters):
     """Attach integral metadata"""
-    # TODO: A nicer data flow would avoid modifying the form_data at all.
+    # TODO: A nicer data flow would avoid modifying the form_data at
+    # all.
 
-    # Parameter values which make sense "per integrals" or "per integral"
+    # Parameter values which make sense "per integrals" or "per
+    # integral"
     metadata_keys = (
         "representation",
-        "optimize",
         # TODO: Could have finer optimize (sub)parameters here later
         "precision",
         "quadrature_degree",
@@ -428,9 +419,9 @@ def _attach_integral_metadata(form_data, form_r_family, parameters):
     for ida in form_data.integral_data:
         # Iterate over integrals
 
-        # Start with default values of integral metadata
-        # (these will be either the FFC defaults, globally modified defaults,
-        #  or overrides explicitly passed by the user to e.g. assemble())
+        # Start with default values of integral metadata (these will be
+        # either the FFC defaults, globally modified defaults, or
+        # overrides explicitly passed by the user to e.g. assemble())
         integral_metadatas = [copy.deepcopy(metadata_parameters) for integral in ida.integrals]
 
         # Update with integral specific overrides
@@ -439,14 +430,12 @@ def _attach_integral_metadata(form_data, form_r_family, parameters):
 
         # Determine representation, must be equal for all integrals on
         # same subdomain
-        r, o, p = _determine_representation(integral_metadatas, ida, form_data, form_r_family,
-                                            parameters)
+        r, p = _determine_representation(integral_metadatas, ida, form_data, form_r_family,
+                                         parameters)
         for i, integral in enumerate(ida.integrals):
             integral_metadatas[i]["representation"] = r
-            integral_metadatas[i]["optimize"] = o
             integral_metadatas[i]["precision"] = p
         ida.metadata["representation"] = r
-        ida.metadata["optimize"] = o
         ida.metadata["precision"] = p
 
         # Determine automated updates to metadata values
@@ -474,8 +463,8 @@ def _attach_integral_metadata(form_data, form_r_family, parameters):
         quad_schemes.extend([md["quadrature_rule"] for md in integral_metadatas])
 
     # Validate consistency of schemes for QuadratureElements
-    # TODO: Can loosen up this a bit, only needs to be consistent
-    # with the integrals that the elements are used in
+    # TODO: Can loosen up this a bit, only needs to be consistent with
+    # the integrals that the elements are used in
     _validate_quadrature_schemes_of_elements(quad_schemes, form_data.unique_sub_elements)
 
 
@@ -499,10 +488,10 @@ def _validate_quadrature_schemes_of_elements(quad_schemes, elements):
 def _get_sub_elements(element):
     """Get sub elements."""
     sub_elements = [element]
-    if isinstance(element, MixedElement):
+    if isinstance(element, ufl.finiteelement.MixedElement):
         for e in element.sub_elements():
             sub_elements += _get_sub_elements(e)
-    elif isinstance(element, EnrichedElement):
+    elif isinstance(element, ufl.finiteelement.EnrichedElement):
         for e in element._elements:
             sub_elements += _get_sub_elements(e)
     return sub_elements

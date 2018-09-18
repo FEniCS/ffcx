@@ -40,21 +40,12 @@ Compiler stages:
    The IR is stored as a dictionary, mapping names of UFC functions to
    data needed for generation of the corresponding code.
 
-#. Optimization
-
-   FIXME: Update text
-
-   - Input:  Intermediate Representation (IR)
-   - Output: Optimized Intermediate Representation (OIR)
-
-   This stage examines the IR and performs optimizations.
-
 #. Code generation
 
-   - Input:  Optimized Intermediate Representation (OIR)
+   - Input:  Intermediate Representation (IR)
    - Output: C code
 
-   This stage examines the OIR and generates the actual C code for the
+   This stage examines the IR and generates the actual C code for the
    body of each UFC function.
 
    The code is stored as a dictionary, mapping names of UFC functions to
@@ -87,7 +78,6 @@ from ffc import FFCError
 from ffc.analysis import analyze_ufl_objects
 from ffc.codegeneration import generate_code
 from ffc.formatting import format_code
-from ffc.optimization import optimize_ir
 from ffc.parameters import validate_parameters
 from ffc.representation import compute_ir
 from ffc.wrappers import generate_wrapper_code
@@ -153,14 +143,9 @@ def compile_ufl_objects(ufl_objects,
     ir = compute_ir(analysis, prefix, parameters, jit)
     _print_timing(2, time() - cpu_time)
 
-    # Stage 3: optimization
-    cpu_time = time()
-    oir = optimize_ir(ir, parameters)
-    _print_timing(3, time() - cpu_time)
-
     # Stage 4: code generation
     cpu_time = time()
-    code = generate_code(oir, parameters, jit)
+    code = generate_code(ir, parameters, jit)
     _print_timing(4, time() - cpu_time)
 
     # Stage 4.1: generate convenience wrappers, e.g. for DOLFIN
