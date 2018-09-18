@@ -28,6 +28,7 @@ math_table = {'sqrt': ('sqrt', 'csqrt'),
               'acosh': ('acosh', 'cacosh'),
               'asinh': ('asinh', 'casinh'),
               'atanh': ('atanh', 'catanh'),
+              'power': ('pow', 'cpow'),
               'exp': ('exp', 'cexp'),
               'ln': ('log', 'clog'),
               'real': (None, 'creal'),
@@ -125,16 +126,16 @@ class UFL2CNodesTranslatorCpp(MultiFunction):
         # attempting to just call it.
         return self.L.Call(o._name, op)
 
-    def _cmath(self, o, op):
+    def _cmath(self, o, *args):
         k = o._ufl_handler_name_
         try:
             name = math_table[k]
         except Exception as e:
-            raise type(e)("Math function not found")
+            raise type(e)("Math function not found:", k)
         name = name[self.complex_mode]
         if name is None:
             raise RuntimeError("Not supported in current complex mode")
-        return self.L.Call(name, op)
+        return self.L.Call(name, args)
 
     real = _cmath
     imag = _cmath
@@ -154,15 +155,9 @@ class UFL2CNodesTranslatorCpp(MultiFunction):
     erf = _cmath
     power = _cmath
     abs = _cmath
-
-    def atan_2(self, o, y, x):
-        return self._cmath(o, (y, x))
-
-    def min_value(self, o, a, b):
-        return self._cmath(o, (a, b))
-
-    def max_value(self, o, a, b):
-        return self._cmath(o, (a, b))
+    atan_2 = _cmath
+    min_value = _cmath
+    max_value = _cmath
 
     # === Formatting rules for bessel functions ===
     # Some Bessel functions exist in gcc, as XSI extensions
