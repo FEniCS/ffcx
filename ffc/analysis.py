@@ -523,8 +523,4 @@ def _find_compatible_representations(integrals, parameters):
     if _has_custom_integrals(integrals):
         compatible &= set()
 
-    # UFLACS does not have complex numbers yet
-    if "complex" in parameters.get("scalar_type", "double"):
-        compatible &= set(("tsfc",))
-
     return compatible
