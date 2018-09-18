@@ -18,7 +18,7 @@ class FFCBackendDefinitions(ufl.corealg.multifunction.MultiFunction):
     """FFC specific code definitions."""
 
     def __init__(self, ir, language, symbols, parameters):
-        MultiFunction.__init__(self)
+        ufl.corealg.multifunction.MultiFunction.__init__(self)
 
         # Store ir and parameters
         self.integral_type = ir["integral_type"]
