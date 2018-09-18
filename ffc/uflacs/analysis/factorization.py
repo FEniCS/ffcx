@@ -179,7 +179,7 @@ def handle_conj(v, si, deps, SV_factors, FV, sv2fv, e2fi):
         factors = {}
         for k in fac:
             f0 = FV[fac[k]]
-        factors[k] = add_to_fv(Conj(f0), FV, e2fi)
+            factors[k] = add_to_fv(Conj(f0), FV, e2fi)
     else:
         factors = noargs
         f0 = FV[sv2fv[deps[0]]]
