@@ -12,6 +12,7 @@ from collections import namedtuple
 import numpy
 
 import ufl
+import ufl.utils.derivativetuples
 from ffc import FFCError
 from ffc.backends.ffc.common import ufc_restriction_offset
 from ffc.fiatinterface import create_element
