@@ -13,11 +13,10 @@ import logging
 
 import numpy
 
+import ufl
 from ffc import FFCError, classname
 from ffc.fiatinterface import (create_element, create_quadrature, map_facet_points,
                                reference_cell_vertices)
-from ufl.cell import cellname2facetname
-from ufl.measure import (custom_integral_types, facet_integral_types, point_integral_types)
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +25,12 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     """Create quadrature rule and return points and weights."""
     if integral_type == "cell":
         (points, weights) = create_quadrature(cell.cellname(), degree, rule)
-    elif integral_type in facet_integral_types:
-        (points, weights) = create_quadrature(cellname2facetname[cell.cellname()], degree, rule)
-    elif integral_type in point_integral_types:
+    elif integral_type in ufl.measure.facet_integral_types:
+        (points, weights) = create_quadrature(ufl.cell.cellname2facetname[cell.cellname()], degree,
+                                              rule)
+    elif integral_type in ufl.measure.point_integral_types:
         (points, weights) = create_quadrature("vertex", degree, rule)
-    elif integral_type in custom_integral_types:
+    elif integral_type in ufl.measure.custom_integral_types:
         (points, weights) = (None, None)
     else:
         logging.exception("Unknown integral type: {}".format(integral_type))
@@ -44,11 +44,11 @@ def integral_type_to_entity_dim(integral_type, tdim):
     """
     if integral_type == "cell":
         entity_dim = tdim
-    elif integral_type in facet_integral_types:
+    elif integral_type in ufl.measure.facet_integral_types:
         entity_dim = tdim - 1
-    elif integral_type in point_integral_types:
+    elif integral_type in ufl.measure.point_integral_types:
         entity_dim = 0
-    elif integral_type in custom_integral_types:
+    elif integral_type in ufl.measure.custom_integral_types:
         entity_dim = tdim
     else:
         raise FFCError("Unknown integral_type: {}".format(integral_type))

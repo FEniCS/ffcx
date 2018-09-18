@@ -8,14 +8,13 @@
 
 import logging
 
+import ufl
 from ffc.backends.ffc.common import num_coordinate_component_dofs
-from ufl.corealg.multifunction import MultiFunction
-from ufl.measure import custom_integral_types
 
 logger = logging.getLogger(__name__)
 
 
-class FFCBackendDefinitions(MultiFunction):
+class FFCBackendDefinitions(ufl.corealg.multifunction.MultiFunction):
     """FFC specific code definitions."""
 
     def __init__(self, ir, language, symbols, parameters):
@@ -136,7 +135,7 @@ class FFCBackendDefinitions(MultiFunction):
         If reference facet coordinates are given:
           x = sum_k xdof_k xphi_k(Xf)
         """
-        if self.integral_type in custom_integral_types:
+        if self.integral_type in ufl.measure.custom_integral_types:
             # FIXME: Jacobian may need adjustment for custom_integral_types
             if mt.local_derivatives:
                 logging.exception("FIXME: Jacobian in custom integrals is not implemented.")
