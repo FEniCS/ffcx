@@ -15,24 +15,20 @@ import numpy
 
 from ffc import FFCError
 from ffc.uflacs.analysis.balancing import balance_modifiers
-from ffc.uflacs.analysis.dependencies import (compute_dependencies,
-                                              invert_dependencies,
+from ffc.uflacs.analysis.dependencies import (compute_dependencies, invert_dependencies,
                                               mark_active, mark_image)
 from ffc.uflacs.analysis.factorization import compute_argument_factorization
 from ffc.uflacs.analysis.graph import build_graph
 from ffc.uflacs.analysis.graph_rebuild import \
     rebuild_with_scalar_subexpressions
 from ffc.uflacs.analysis.graph_vertices import build_graph_vertices
-from ffc.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
-                                                    is_modified_terminal)
-from ffc.uflacs.elementtables import (build_optimized_tables,
-                                      clamp_table_small_numbers,
+from ffc.uflacs.analysis.modified_terminals import (analyse_modified_terminal, is_modified_terminal)
+from ffc.uflacs.elementtables import (build_optimized_tables, clamp_table_small_numbers,
                                       piecewise_ttypes)
 import ufl
 from ufl.checks import is_cellwise_constant
 from ufl.classes import CellCoordinate, FacetCoordinate, QuadratureWeight
-from ufl.measure import (custom_integral_types, facet_integral_types,
-                         point_integral_types)
+from ufl.measure import (custom_integral_types, facet_integral_types, point_integral_types)
 
 logger = logging.getLogger(__name__)
 
@@ -172,16 +168,16 @@ def empty_expr_ir():
 def uflacs_default_parameters(optimize):
     """Default parameters for tuning of uflacs code generation.
 
-    These are considered experimental and may change
-    without deprecation mechanism at any time.
+    These are considered experimental and may change without deprecation
+    mechanism at any time.
     """
     p = {
-        # Relative precision to use when comparing finite element
-        # table values for table reuse
+        # Relative precision to use when comparing finite element table
+        # values for table reuse
         "table_rtol": 1e-6,
 
-        # Absolute precision to use when comparing finite element
-        # table values for table reuse and dropping of table zeros
+        # Absolute precision to use when comparing finite element table
+        # values for table reuse and dropping of table zeros
         "table_atol": 1e-9,
 
         # Point chunk size for custom integrals
@@ -230,12 +226,13 @@ def parse_uflacs_optimization_parameters(parameters, integral_type):
     # Get default parameters
     p = uflacs_default_parameters(optimize=True)
 
-    # Override with uflacs specific parameters if
-    # present in given global parameters dict
+    # Override with uflacs specific parameters if present in given
+    # global parameters dict
     for key in p:
         if key in parameters:
             value = parameters[key]
-            # Casting done here because main doesn't know about these parameters
+            # Casting done here because main doesn't know about these
+            # parameters
             if isinstance(p[key], int):
                 value = int(value)
             elif isinstance(p[key], float):
@@ -257,8 +254,8 @@ def parse_uflacs_optimization_parameters(parameters, integral_type):
 
 def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                     coefficient_numbering, quadrature_rules, parameters):
-    # The intermediate representation dict we're building and
-    # returning here
+    # The intermediate representation dict we're building and returning
+    # here
     ir = {}
 
     # Extract uflacs specific optimization and code generation
@@ -285,8 +282,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
     pe2i = {}
     piecewise_modified_argument_indices = {}
 
-    # Whether we expect the quadrature weight to be applied or not
-    # (in some cases it's just set to 1 in ufl integral scaling)
+    # Whether we expect the quadrature weight to be applied or not (in
+    # some cases it's just set to 1 in ufl integral scaling)
     tdim = cell.topological_dimension()
     expect_weight = (integral_type not in ("expression", ) + point_integral_types
                      and (entitytype == "cell" or (entitytype == "facet" and tdim > 1) or
@@ -313,12 +310,11 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         # Build initial scalar list-based graph representation
         V, V_deps, V_targets = build_scalar_graph(expressions)
 
-        # Build terminal_data from V here before factorization.
-        # Then we can use it to derive table properties for all
-        # modified terminals, and then use that to rebuild the scalar
-        # graph more efficiently before argument factorization. We can
-        # build terminal_data again after factorization if that's
-        # necessary.
+        # Build terminal_data from V here before factorization. Then we
+        # can use it to derive table properties for all modified
+        # terminals, and then use that to rebuild the scalar graph more
+        # efficiently before argument factorization. We can build
+        # terminal_data again after factorization if that's necessary.
         initial_terminal_indices = [i for i, v in enumerate(V) if is_modified_terminal(v)]
         initial_terminal_data = [analyse_modified_terminal(V[i]) for i in initial_terminal_indices]
         unique_tables, unique_table_types, unique_table_num_dofs, mt_unique_table_reference = build_optimized_tables(
@@ -333,13 +329,15 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
             rtol=p["table_rtol"],
             atol=p["table_atol"])
 
-        # Replace some scalar modified terminals before reconstructing expressions
-        # (could possibly use replace() on target expressions instead)
+        # Replace some scalar modified terminals before reconstructing
+        # expressions (could possibly use replace() on target
+        # expressions instead)
         z = ufl.as_ufl(0.0)
         one = ufl.as_ufl(1.0)
         for i, mt in zip(initial_terminal_indices, initial_terminal_data):
             if isinstance(mt.terminal, QuadratureWeight):
-                # Replace quadrature weight with 1.0, will be added back later
+                # Replace quadrature weight with 1.0, will be added back
+                # later
                 V[i] = one
             else:
                 # Set modified terminals with zero tables to zero
@@ -388,11 +386,9 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
             FV_mts[i] = mt
 
         # Dependency analysis
-        inv_FV_deps, FV_active, FV_piecewise, FV_varying = \
-            analyse_dependencies(FV, FV_deps, FV_targets,
-                                 modified_terminal_indices,
-                                 modified_terminals,
-                                 mt_unique_table_reference)
+        inv_FV_deps, FV_active, FV_piecewise, FV_varying = analyse_dependencies(
+            FV, FV_deps, FV_targets, modified_terminal_indices, modified_terminals,
+            mt_unique_table_reference)
 
         # Extend piecewise V with unique new FV_piecewise vertices
         pir = ir["piecewise_ir"]
@@ -433,8 +429,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
             block_is_uniform = all(tr.is_uniform for tr in trs)
 
-            # Collect relevant restrictions to identify blocks
-            # correctly in interior facet integrals
+            # Collect relevant restrictions to identify blocks correctly
+            # in interior facet integrals
             block_restrictions = []
             for i, ma in enumerate(ma_indices):
                 if trs[i].is_uniform:
@@ -491,19 +487,19 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                 block_mode = "premultiplied"
             elif p["enable_sum_factorization"]:
                 if (rank == 2 and any(tt in piecewise_ttypes for tt in ttypes)):
-                    # Partial computation in quadloop of f*u[i],
-                    # compute (f*u[i])*v[i] outside quadloop, (or with
-                    # u,v swapped)
+                    # Partial computation in quadloop of f*u[i], compute
+                    # (f*u[i])*v[i] outside quadloop, (or with u,v
+                    # swapped)
                     block_mode = "partial"
                 else:
-                    # Full runtime integration of f*u[i]*v[j], can
-                    # still do partial computation in quadloop of
-                    # f*u[i] but must compute (f*u[i])*v[i] as well
-                    # inside quadloop.  (or with u,v swapped)
+                    # Full runtime integration of f*u[i]*v[j], can still
+                    # do partial computation in quadloop of f*u[i] but
+                    # must compute (f*u[i])*v[i] as well inside
+                    # quadloop.  (or with u,v swapped)
                     block_mode = "full"
             else:
-                # Use full runtime integration with nothing fancy
-                # going on
+                # Use full runtime integration with nothing fancy going
+                # on
                 block_mode = "safe"
 
             # Carry out decision
@@ -586,6 +582,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                     block_mode, ttypes, factor_index, factor_is_piecewise, block_unames,
                     block_restrictions, block_is_transposed, block_is_uniform, pname)
                 block_is_piecewise = False
+
 
 #            elif block_mode == "scaled":
 #            # TODO: Add mode, block is piecewise but choose not to be premultiplied
@@ -696,8 +693,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
             if FV_active[i]:
                 active_mts.append(mt)
 
-        # Figure out if we need to access CellCoordinate to
-        # avoid generating quadrature point table otherwise
+        # Figure out if we need to access CellCoordinate to avoid
+        # generating quadrature point table otherwise
         if integral_type == "cell":
             need_points = any(isinstance(mt.terminal, CellCoordinate) for mt in active_mts)
         elif integral_type in facet_integral_types:
@@ -707,10 +704,10 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         else:
             need_points = False
 
-        # Figure out if we need to access QuadratureWeight to
-        # avoid generating quadrature point table otherwise
-        # need_weights = any(isinstance(mt.terminal, QuadratureWeight)
-        #                   for mt in active_mts)
+        # Figure out if we need to access QuadratureWeight to avoid
+        # generating quadrature point table otherwise need_weights =
+        # any(isinstance(mt.terminal, QuadratureWeight) for mt in
+        # active_mts)
 
         # Count blocks of each mode
         block_modes = defaultdict(int)

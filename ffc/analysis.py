@@ -342,7 +342,7 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
     """Determine one unique representation considering all integrals together."""
 
     # Extract unique representation among these single-domain
-    # integrals (Generating code with different representations within
+    # integrals (generating code with different representations within
     # a single tabulate_tensor is considered not worth the effort)
     representations = set(
         md["representation"] for md in integral_metadatas if md["representation"] != "auto")
@@ -427,9 +427,9 @@ def _attach_integral_metadata(form_data, form_r_family, parameters):
     for ida in form_data.integral_data:
         # Iterate over integrals
 
-        # Start with default values of integral metadata
-        # (these will be either the FFC defaults, globally modified defaults,
-        #  or overrides explicitly passed by the user to e.g. assemble())
+        # Start with default values of integral metadata (these will be
+        # either the FFC defaults, globally modified defaults, or
+        # overrides explicitly passed by the user to e.g. assemble())
         integral_metadatas = [copy.deepcopy(metadata_parameters) for integral in ida.integrals]
 
         # Update with integral specific overrides
@@ -473,8 +473,8 @@ def _attach_integral_metadata(form_data, form_r_family, parameters):
         quad_schemes.extend([md["quadrature_rule"] for md in integral_metadatas])
 
     # Validate consistency of schemes for QuadratureElements
-    # TODO: Can loosen up this a bit, only needs to be consistent
-    # with the integrals that the elements are used in
+    # TODO: Can loosen up this a bit, only needs to be consistent with
+    # the integrals that the elements are used in
     _validate_quadrature_schemes_of_elements(quad_schemes, form_data.unique_sub_elements)
 
 
