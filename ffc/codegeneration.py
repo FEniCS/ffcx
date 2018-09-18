@@ -8,7 +8,7 @@
 """Compiler stage 4: Code generation
 
 This module implements the generation of C code for the body of each
-UFC function from an (optimized) intermediate representation (OIR).
+UFC function from an intermediate representation (OIR).
 
 """
 

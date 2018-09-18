@@ -228,7 +228,7 @@ def parse_uflacs_optimization_parameters(parameters, integral_type):
     uflacs specific parameters from the global parameters dict."""
 
     # Get default parameters
-    p = uflacs_default_parameters(parameters["optimize"])
+    p = uflacs_default_parameters(optimize=True)
 
     # Override with uflacs specific parameters if
     # present in given global parameters dict
