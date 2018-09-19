@@ -262,7 +262,8 @@ def compile_forms(forms, module_name=None, parameters=None):
         complex_mode = "_Complex"
     else:
         complex_mode = ""
-    decl = UFC_HEADER_DECL.format(complex_mode) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + UFC_COORDINATEMAPPING_DECL \
+    decl = UFC_HEADER_DECL.format(complex_mode) + UFC_ELEMENT_DECL \
+        + UFC_DOFMAP_DECL + UFC_COORDINATEMAPPING_DECL \
         + UFC_INTEGRAL_DECL + UFC_FORM_DECL
     form_template = "ufc_form * create_{name}(void);"
     for f in forms:
