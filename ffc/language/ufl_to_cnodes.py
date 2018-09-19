@@ -13,16 +13,43 @@ from ufl.corealg.multifunction import MultiFunction
 
 logger = logging.getLogger(__name__)
 
+# Table of handled math functions in real and complex modes
+math_table = {'sqrt': ('sqrt', 'csqrt'),
+              'abs': ('fabs', 'cabs'),
+              'cos': ('cos', 'ccos'),
+              'sin': ('sin', 'csin'),
+              'tan': ('tan', 'ctan'),
+              'acos': ('acos', 'cacos'),
+              'asin': ('asin', 'casin'),
+              'atan': ('atan', 'catan'),
+              'cosh': ('cosh', 'ccosh'),
+              'sinh': ('sinh', 'csinh'),
+              'tanh': ('tanh', 'ctanh'),
+              'acosh': ('acosh', 'cacosh'),
+              'asinh': ('asinh', 'casinh'),
+              'atanh': ('atanh', 'catanh'),
+              'power': ('pow', 'cpow'),
+              'exp': ('exp', 'cexp'),
+              'ln': ('log', 'clog'),
+              'real': (None, 'creal'),
+              'imag': (None, 'cimag'),
+              'conj': (None, 'conj'),
+              'erf': ('erf', None),
+              'atan_2': ('atan2', None),
+              'min_value': ('fmin', None),
+              'max_value': ('fmax', None)}
+
 
 class UFL2CNodesTranslatorCpp(MultiFunction):
     """UFL to CNodes translator class."""
 
-    def __init__(self, language):
+    def __init__(self, language, complex_mode=False):
         MultiFunction.__init__(self)
 
         self.L = language
         self.force_floats = False
         self.enable_strength_reduction = False
+        self.complex_mode = 1 if complex_mode else 0
 
     # === Error handlers for missing formatting rules ===
 
@@ -42,6 +69,9 @@ class UFL2CNodesTranslatorCpp(MultiFunction):
         if self.force_floats:
             return self.float_value(o)
         return self.L.LiteralInt(int(o))
+
+    def complex_value(self, o):
+        return self.L.LiteralFloat(o.value())
 
     # === Formatting rules for arithmetic operators ===
 
@@ -96,68 +126,46 @@ class UFL2CNodesTranslatorCpp(MultiFunction):
         # attempting to just call it.
         return self.L.Call(o._name, op)
 
-    def _cmath(self, name, op):
-        return self.L.Call(name, op)
+    def _cmath(self, o, *args):
+        k = o._ufl_handler_name_
+        try:
+            name = math_table[k]
+        except Exception as e:
+            raise type(e)("Math function not found:", k)
+        name = name[self.complex_mode]
+        if name is None:
+            raise RuntimeError("Not supported in current complex mode")
+        return self.L.Call(name, args)
 
-    def sqrt(self, o, op):
-        return self._cmath("sqrt", op)
-
-    def ln(self, o, op):
-        return self._cmath("log", op)
-
-    def exp(self, o, op):
-        return self._cmath("exp", op)
-
-    def cos(self, o, op):
-        return self._cmath("cos", op)
-
-    def sin(self, o, op):
-        return self._cmath("sin", op)
-
-    def tan(self, o, op):
-        return self._cmath("tan", op)
-
-    def cosh(self, o, op):
-        return self._cmath("cosh", op)
-
-    def sinh(self, o, op):
-        return self._cmath("sinh", op)
-
-    def tanh(self, o, op):
-        return self._cmath("tanh", op)
-
-    def atan_2(self, o, y, x):
-        return self._cmath("atan2", (y, x))
-
-    def acos(self, o, op):
-        return self._cmath("acos", op)
-
-    def asin(self, o, op):
-        return self._cmath("asin", op)
-
-    def atan(self, o, op):
-        return self._cmath("atan", op)
-
-    def erf(self, o, op):
-        return self._cmath("erf", op)
-
-    def power(self, o, a, b):
-        return self._cmath("pow", (a, b))
-
-    def abs(self, o, op):
-        return self._cmath("fabs", op)
-
-    def min_value(self, o, a, b):
-        return self._cmath("fmin", (a, b))
-
-    def max_value(self, o, a, b):
-        return self._cmath("fmax", (a, b))
+    real = _cmath
+    imag = _cmath
+    conj = _cmath
+    sqrt = _cmath
+    ln = _cmath
+    exp = _cmath
+    cos = _cmath
+    sin = _cmath
+    tan = _cmath
+    cosh = _cmath
+    sinh = _cmath
+    tanh = _cmath
+    acos = _cmath
+    asin = _cmath
+    atan = _cmath
+    erf = _cmath
+    power = _cmath
+    abs = _cmath
+    atan_2 = _cmath
+    min_value = _cmath
+    max_value = _cmath
 
     # === Formatting rules for bessel functions ===
     # Some Bessel functions exist in gcc, as XSI extensions
     # but not all.
 
     def bessel_j(self, o, n, v):
+        assert self.complex_mode == 0
+        n = int(float(n))
         if n == 0:
             return self.L.Call("j0", v)
         elif n == 1:
@@ -166,6 +174,8 @@ class UFL2CNodesTranslatorCpp(MultiFunction):
             return self.L.Call("jn", (n, v))
 
     def bessel_y(self, o, n, v):
+        assert self.complex_mode == 0
+        n = int(float(n))
         if n == 0:
             return self.L.Call("y0", v)
         elif n == 1:

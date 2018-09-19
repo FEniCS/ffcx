@@ -16,7 +16,7 @@ from ffc.uflacs.analysis.dependencies import compute_dependencies
 from ffc.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
                                                     strip_modified_terminal)
 from ufl import as_ufl, conditional
-from ufl.classes import Argument, Conditional, Division, Product, Sum, Zero
+from ufl.classes import Argument, Conditional, Division, Product, Sum, Zero, Conj
 
 logger = logging.getLogger(__name__)
 
@@ -172,6 +172,23 @@ def handle_product(v, si, deps, SV_factors, FV, sv2fv, e2fi):
     return factors
 
 
+def handle_conj(v, si, deps, SV_factors, FV, sv2fv, e2fi):
+
+    fac = SV_factors[deps[0]]
+    if fac:
+        factors = {}
+        for k in fac:
+            f0 = FV[fac[k]]
+            factors[k] = add_to_fv(Conj(f0), FV, e2fi)
+    else:
+        factors = noargs
+        f0 = FV[sv2fv[deps[0]]]
+        sv2fv[si] = add_to_fv(v, FV, e2fi)
+        assert FV[sv2fv[si]] == v
+
+    return factors
+
+
 def handle_division(v, si, deps, SV_factors, FV, sv2fv, e2fi):
     fac0 = SV_factors[deps[0]]
     fac1 = SV_factors[deps[1]]
@@ -231,6 +248,7 @@ def handle_conditional(v, si, deps, SV_factors, FV, sv2fv, e2fi):
 
 
 def handle_operator(v, si, deps, SV_factors, FV, sv2fv, e2fi):
+
     # Error checking
     if any(SV_factors[d] for d in deps):
         raise FFCError(
@@ -326,6 +344,8 @@ def compute_argument_factorization(SV, SV_deps, SV_targets, rank):
             # fs = [FV[sv2fv[d]] for d in deps]
             if isinstance(v, Sum):
                 handler = handle_sum
+            elif isinstance(v, Conj):
+                handler = handle_conj
             elif isinstance(v, Product):
                 handler = handle_product
             elif isinstance(v, Division):

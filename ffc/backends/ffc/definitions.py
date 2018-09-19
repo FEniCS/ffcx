@@ -80,13 +80,13 @@ class FFCBackendDefinitions(ufl.corealg.multifunction.MultiFunction):
                 for i, idof in enumerate(tabledata.dofmap)
             ]
             value = L.Sum(values)
-            code = [L.VariableDecl("const double", access, value)]
+            code = [L.VariableDecl("const ufc_scalar_t", access, value)]
         else:
             # Loop to accumulate linear combination of dofs and tables
             ic = self.symbols.coefficient_dof_sum_index()
             dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic + begin)
             code = [
-                L.VariableDecl("double", access, 0.0),
+                L.VariableDecl("ufc_scalar_t", access, 0.0),
                 L.ForRange(ic, 0, end - begin, body=[L.AssignAdd(access, dof_access * FE[ic])])
             ]
         return code
@@ -119,7 +119,7 @@ class FFCBackendDefinitions(ufl.corealg.multifunction.MultiFunction):
         # Inlined version (we know this is bounded by a small number)
         dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction)
         value = L.Sum([dof_access[idof] * FE[i] for i, idof in enumerate(tabledata.dofmap)])
-        code = [L.VariableDecl("const double", access, value)]
+        code = [L.VariableDecl("const ufc_scalar_t", access, value)]
 
         return code
 
@@ -179,7 +179,7 @@ class FFCBackendDefinitions(ufl.corealg.multifunction.MultiFunction):
         L = self.language
         co = self.symbols.cell_orientation_argument(mt.restriction)
         expr = L.Conditional(L.EQ(co, L.LiteralInt(1)), L.LiteralFloat(-1.0), L.LiteralFloat(+1.0))
-        code = [L.VariableDecl("const double", access, expr)]
+        code = [L.VariableDecl("const ufc_scalar_t", access, expr)]
         return code
 
     def _expect_table(self, e, mt, tabledata, num_points, access):
