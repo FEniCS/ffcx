@@ -6,8 +6,8 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Tools for precomputed tables of terminal values."""
 
+import collections
 import logging
-from collections import namedtuple
 
 import numpy
 
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 default_rtol = 1e-5
 default_atol = 1e-8
 
-table_origin_t = namedtuple(
+table_origin_t = collections.namedtuple(
     "table_origin", ["element", "avg", "derivatives", "flat_component", "dofrange", "dofmap"])
 
 piecewise_ttypes = ("piecewise", "fixed", "ones", "zeros")
@@ -35,7 +35,7 @@ uniform_ttypes = ("uniform", "fixed", "ones", "zeros")
 
 valid_ttypes = set(("quadrature", )) | set(piecewise_ttypes) | set(uniform_ttypes)
 
-unique_table_reference_t = namedtuple(
+unique_table_reference_t = collections.namedtuple(
     "unique_table_reference",
     ["name", "values", "dofrange", "dofmap", "original_dim", "ttype", "is_piecewise", "is_uniform"])
 
@@ -327,7 +327,8 @@ def build_element_tables(num_points,
     # get priority
     from ffc.analysis import _compute_element_numbers
     all_elements = [res[0] for res in analysis.values()]
-    unique_elements = ufl.algorithms.sort_elements(ufl.algorithms.analysis.extract_sub_elements(all_elements))
+    unique_elements = ufl.algorithms.sort_elements(
+        ufl.algorithms.analysis.extract_sub_elements(all_elements))
     element_numbers = _compute_element_numbers(unique_elements)
 
     def add_table(res):

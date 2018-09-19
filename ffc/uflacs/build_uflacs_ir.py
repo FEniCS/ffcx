@@ -6,36 +6,37 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Main algorithm for building the uflacs intermediate representation."""
 
+import collections
 import itertools
 import logging
-from collections import defaultdict, namedtuple
-from itertools import chain
 
 import numpy
 
+import ufl
 from ffc import FFCError
 from ffc.uflacs.analysis.balancing import balance_modifiers
-from ffc.uflacs.analysis.dependencies import (compute_dependencies, invert_dependencies,
-                                              mark_active, mark_image)
+from ffc.uflacs.analysis.dependencies import (compute_dependencies,
+                                              invert_dependencies, mark_active,
+                                              mark_image)
 from ffc.uflacs.analysis.factorization import compute_argument_factorization
-from ffc.uflacs.analysis.graph import build_graph
-from ffc.uflacs.analysis.graph_rebuild import \
-    rebuild_with_scalar_subexpressions
-from ffc.uflacs.analysis.graph_vertices import build_graph_vertices
-from ffc.uflacs.analysis.modified_terminals import (analyse_modified_terminal, is_modified_terminal)
-from ffc.uflacs.elementtables import (build_optimized_tables, clamp_table_small_numbers,
+from ffc.uflacs.analysis.graph import (build_graph, build_graph_vertices,
+                                       rebuild_with_scalar_subexpressions)
+from ffc.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
+                                                    is_modified_terminal)
+from ffc.uflacs.elementtables import (build_optimized_tables,
+                                      clamp_table_small_numbers,
                                       piecewise_ttypes)
-import ufl
 from ufl.checks import is_cellwise_constant
 from ufl.classes import CellCoordinate, FacetCoordinate, QuadratureWeight
-from ufl.measure import (custom_integral_types, facet_integral_types, point_integral_types)
+from ufl.measure import (custom_integral_types, facet_integral_types,
+                         point_integral_types)
 
 logger = logging.getLogger(__name__)
 
-# Some quick internal structs, massive improvement to
-# readability and maintainability over just tuples...
+# Some quick internal structs, massive improvement to readability and
+# maintainability over just tuples...
 
-ma_data_t = namedtuple("ma_data_t", ["ma_index", "tabledata"])
+ma_data_t = collections.namedtuple("ma_data_t", ["ma_index", "tabledata"])
 
 common_block_data_fields = [
     "block_mode",  # block mode name: "safe" | "full" | "preintegrated" | "premultiplied"
@@ -46,23 +47,24 @@ common_block_data_fields = [
     "restrictions",  # restriction "+" | "-" | None for each block rank
     "transposed",  # block is the transpose of another
 ]
-common_block_data_t = namedtuple("common_block_data_t", common_block_data_fields)
+common_block_data_t = collections.namedtuple("common_block_data_t", common_block_data_fields)
 
 
 def get_common_block_data(blockdata):
     return common_block_data_t(*blockdata[:len(common_block_data_fields)])
 
 
-preintegrated_block_data_t = namedtuple("preintegrated_block_data_t",
-                                        common_block_data_fields + ["is_uniform", "name"])
+preintegrated_block_data_t = collections.namedtuple(
+    "preintegrated_block_data_t", common_block_data_fields + ["is_uniform", "name"])
 
-premultiplied_block_data_t = namedtuple("premultiplied_block_data_t",
-                                        common_block_data_fields + ["is_uniform", "name"])
+premultiplied_block_data_t = collections.namedtuple(
+    "premultiplied_block_data_t", common_block_data_fields + ["is_uniform", "name"])
 
-partial_block_data_t = namedtuple("partial_block_data_t",
-                                  common_block_data_fields + ["ma_data", "piecewise_ma_index"])
+partial_block_data_t = collections.namedtuple(
+    "partial_block_data_t", common_block_data_fields + ["ma_data", "piecewise_ma_index"])
 
-full_block_data_t = namedtuple("full_block_data_t", common_block_data_fields + ["ma_data"])
+full_block_data_t = collections.namedtuple("full_block_data_t",
+                                           common_block_data_fields + ["ma_data"])
 
 
 def multiply_block_interior_facets(point_index, unames, ttypes, unique_tables,
@@ -160,8 +162,8 @@ def empty_expr_ir():
     expr_ir["modified_arguments"] = []
     expr_ir["preintegrated_blocks"] = {}
     expr_ir["premultiplied_blocks"] = {}
-    expr_ir["preintegrated_contributions"] = defaultdict(list)
-    expr_ir["block_contributions"] = defaultdict(list)
+    expr_ir["preintegrated_contributions"] = collections.defaultdict(list)
+    expr_ir["block_contributions"] = collections.defaultdict(list)
     return expr_ir
 
 
@@ -415,7 +417,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                 piecewise_modified_argument_indices[mt] = ma
 
         # Loop over factorization terms
-        block_contributions = defaultdict(list)
+        block_contributions = collections.defaultdict(list)
         for ma_indices, fi in sorted(argument_factorization.items()):
             # Get a bunch of information about this term
             rank = len(ma_indices)
@@ -656,8 +658,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                 active_table_names.add(tr.name)
 
         # Figure out which table names are referenced in blocks
-        for blockmap, contributions in chain(block_contributions.items(),
-                                             ir["piecewise_ir"]["block_contributions"].items()):
+        for blockmap, contributions in itertools.chain(
+                block_contributions.items(), ir["piecewise_ir"]["block_contributions"].items()):
             for blockdata in contributions:
                 if blockdata.block_mode in ("preintegrated", "premultiplied"):
                     active_table_names.add(blockdata.name)
@@ -710,7 +712,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         # active_mts)
 
         # Count blocks of each mode
-        block_modes = defaultdict(int)
+        block_modes = collections.defaultdict(int)
         for blockmap, contributions in block_contributions.items():
             for blockdata in contributions:
                 block_modes[blockdata.block_mode] += 1
