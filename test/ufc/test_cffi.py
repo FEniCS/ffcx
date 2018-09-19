@@ -13,6 +13,16 @@ import ffc.backends.ufc.jit
 import ufl
 
 
+def float_to_type(name):
+    """Map a string name to C and NumPy types"""
+    if name == "double":
+        return "double", np.float64
+    elif name == "double complex":
+        return "double _Complex", np.complex128
+    else:
+        raise RuntimeError("Unknown C type for: {}".format(name))
+
+
 @pytest.fixture(scope="module")
 def lagrange_element():
     """Compile list of Lagrange elements"""
@@ -42,32 +52,122 @@ def test_tabulate_reference_dof_coordinates(lagrange_element):
         # print(X)
 
 
-def test_form():
+@pytest.mark.parametrize("mode,expected_result", [
+    ("double", np.array([[1.0, -0.5, -0.5], [-0.5, 0.5, 0.0], [-0.5, 0.0, 0.5]], dtype=np.float64)),
+    ("double complex",
+     np.array(
+         [[1.0 + 0j, -0.5 + 0j, -0.5 + 0j], [-0.5 + 0j, 0.5 + 0j, 0.0 + 0j],
+          [-0.5 + 0j, 0.0 + 0j, 0.5 + 0j]],
+         dtype=np.complex128)),
+])
+def test_laplace_bilinear_form_2d(mode, expected_result):
     cell = ufl.triangle
     element = ufl.FiniteElement("Lagrange", cell, 1)
-    u, v = ufl.TestFunction(element), ufl.TrialFunction(element)
-    a = ufl.dot(ufl.grad(u), ufl.grad(v)) * ufl.dx
+    u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
+    a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
-    compiled_forms, module = ffc.backends.ufc.jit.compile_forms(forms)
+    compiled_forms, module = ffc.backends.ufc.jit.compile_forms(
+        forms, parameters={'scalar_type': mode})
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
     form0 = compiled_forms[0][0].create_default_cell_integral()
-    A = np.zeros((3, 3), dtype=np.float64)
-    w0 = np.array([], dtype=np.float64)
+
+    c_type, np_type = float_to_type(mode)
+    A = np.zeros((3, 3), dtype=np_type)
+    w0 = np.array([], dtype=np_type)
     w1 = np.array([w0.ctypes.data], dtype=np.uint64)
     ffi = cffi.FFI()
-    coords = np.array([0.0, 0.0,
-                       1.0, 0.0,
-                       0.0, 1.0], dtype=np.float64)
-    form0.tabulate_tensor(ffi.cast('double  *', A.ctypes.data),
-                          ffi.cast('double  * *', w1.ctypes.data),
-                          ffi.cast('double  *', coords.ctypes.data), 0)
-    A_analytic = np.array([[1.0, -0.5, -0.5], [-0.5, 0.5, 0.0], [-0.5, 0.0, 0.5]], dtype=np.float64)
-    A_diff = (A - A_analytic)
-    assert A_diff.max() == 0
-    assert A_diff.min() == 0
+    coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
+    form0.tabulate_tensor(
+        ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
+        ffi.cast('{type} * *'.format(type=c_type), w1.ctypes.data),
+        ffi.cast('double *', coords.ctypes.data), 0)
+
+    assert np.allclose(A, expected_result)
+
+
+@pytest.mark.parametrize("mode,expected_result", [
+    ("double",
+     np.array(
+         [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
+          [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
+         dtype=np.float64)),
+    ("double complex",
+     np.array(
+         [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
+          [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
+         dtype=np.complex128)),
+])
+def test_mass_bilinear_form_2d(mode, expected_result):
+    cell = ufl.triangle
+    element = ufl.FiniteElement("Lagrange", cell, 1)
+    u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
+    a = ufl.inner(u, v) * ufl.dx
+    forms = [a]
+    compiled_forms, module = ffc.backends.ufc.jit.compile_forms(
+        forms, parameters={'scalar_type': mode})
+
+    for f, compiled_f in zip(forms, compiled_forms):
+        assert compiled_f.rank == len(f.arguments())
+
+    form0 = compiled_forms[0][0].create_default_cell_integral()
+
+    c_type, np_type = float_to_type(mode)
+    A = np.zeros((3, 3), dtype=np_type)
+    w0 = np.array([], dtype=np_type)
+    w1 = np.array([w0.ctypes.data], dtype=np.uint64)
+    ffi = cffi.FFI()
+    coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
+    form0.tabulate_tensor(
+        ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
+        ffi.cast('{type} * *'.format(type=c_type), w1.ctypes.data),
+        ffi.cast('double *', coords.ctypes.data), 0)
+
+    assert np.allclose(A, expected_result)
+
+
+@pytest.mark.parametrize("mode,expected_result", [
+    ("double", np.array([[1.0, -0.5, -0.5], [-0.5, 0.5, 0.0], [-0.5, 0.0, 0.5]], dtype=np.float64) -
+     (1.0 / 24.0) * np.array([[2, 1, 1], [1, 2, 1], [1, 1, 2]], dtype=np.float64)),
+    ("double complex",
+     np.array([[1.0, -0.5, -0.5], [-0.5, 0.5, 0.0], [-0.5, 0.0, 0.5]], dtype=np.complex128) -
+     (1.0j / 24.0) * np.array([[2, 1, 1], [1, 2, 1], [1, 1, 2]], dtype=np.complex128)),
+])
+def test_helmholtz_form_2d(mode, expected_result):
+    cell = ufl.triangle
+    element = ufl.FiniteElement("Lagrange", cell, 1)
+    u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
+    if mode == "double":
+        k = 1.0
+    elif mode == "double complex":
+        k = ufl.constantvalue.ComplexValue(1j)
+    else:
+        raise RuntimeError("Unknown mode type")
+
+    a = (ufl.inner(ufl.grad(u), ufl.grad(v)) - ufl.inner(k * u, v)) * ufl.dx
+    forms = [a]
+    compiled_forms, module = ffc.backends.ufc.jit.compile_forms(
+        forms, parameters={'scalar_type': mode})
+
+    for f, compiled_f in zip(forms, compiled_forms):
+        assert compiled_f.rank == len(f.arguments())
+
+    form0 = compiled_forms[0][0].create_default_cell_integral()
+
+    c_type, np_type = float_to_type(mode)
+    A = np.zeros((3, 3), dtype=np_type)
+    w0 = np.array([], dtype=np_type)
+    w1 = np.array([w0.ctypes.data], dtype=np.uint64)
+    ffi = cffi.FFI()
+    coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
+    form0.tabulate_tensor(
+        ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
+        ffi.cast('{type} * *'.format(type=c_type), w1.ctypes.data),
+        ffi.cast('double *', coords.ctypes.data), 0)
+
+    assert np.allclose(A, expected_result)
 
 
 def test_form_coefficient():
@@ -87,48 +187,15 @@ def test_form_coefficient():
     w0 = np.array([1.0, 1.0, 1.0], dtype=np.float64)
     w1 = np.array([w0.ctypes.data], dtype=np.uint64)
     ffi = cffi.FFI()
-    coords = np.array([0.0, 0.0,
-                       1.0, 0.0,
-                       0.0, 1.0], dtype=np.float64)
-    form0.tabulate_tensor(ffi.cast('double  *', A.ctypes.data),
-                          ffi.cast('double  * *', w1.ctypes.data),
-                          ffi.cast('double  *', coords.ctypes.data), 0)
+    coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
+    form0.tabulate_tensor(
+        ffi.cast('double  *', A.ctypes.data), ffi.cast('double  * *', w1.ctypes.data),
+        ffi.cast('double  *', coords.ctypes.data), 0)
 
     A_analytic = np.array([[2, 1, 1], [1, 2, 1], [1, 1, 2]], dtype=np.float64) / 24.0
     A_diff = (A - A_analytic)
     assert np.isclose(A_diff.max(), 0.0)
     assert np.isclose(A_diff.min(), 0.0)
-
-
-def test_complex():
-    cell = ufl.triangle
-    element = ufl.FiniteElement("Lagrange", cell, 1)
-    u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
-    a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
-    forms = [a]
-    compiled_forms, module = ffc.backends.ufc.jit.compile_forms(forms, parameters={'scalar_type': 'double complex'})
-
-    for f, compiled_f in zip(forms, compiled_forms):
-        assert compiled_f.rank == len(f.arguments())
-
-    form0 = compiled_forms[0][0].create_default_cell_integral()
-    A = np.zeros((3, 3), dtype=np.complex128)
-    w0 = np.array([], dtype=np.complex128)
-    w1 = np.array([w0.ctypes.data], dtype=np.uint64)
-    ffi = cffi.FFI()
-    coords = np.array([0.0, 0.0,
-                       1.0, 0.0,
-                       0.0, 1.0], dtype=np.float64)
-    form0.tabulate_tensor(ffi.cast('double _Complex *', A.ctypes.data),
-                          ffi.cast('double _Complex * *', w1.ctypes.data),
-                          ffi.cast('double *', coords.ctypes.data), 0)
-    print(A)
-    A_analytic = np.array([[1.0 + 0j, -0.5 + 0j, -0.5 + 0j],
-                           [-0.5 + 0j, 0.5 + 0j, 0.0 + 0j],
-                           [-0.5 + 0j, 0.0 + 0j, 0.5 + 0j]], dtype=np.complex128)
-    A_diff = (A - A_analytic)
-    assert A_diff.max() == 0
-    assert A_diff.min() == 0
 
 
 # cell = ufl.triangle
