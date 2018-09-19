@@ -13,21 +13,21 @@ import cffi
 import ffc
 
 UFC_HEADER_DECL = """
-typedef double ufc_scalar_t;  /* Hack to deal with scalar type */
+typedef double {} ufc_scalar_t;  /* Hack to deal with scalar type */
 
 typedef struct ufc_coordinate_mapping ufc_coordinate_mapping;
 typedef struct ufc_finite_element ufc_finite_element;
 typedef struct ufc_dofmap ufc_dofmap;
 
 typedef enum
-{
+{{
 interval = 10,
 triangle = 20,
 quadrilateral = 30,
 tetrahedron = 40,
 hexahedron = 50,
 vertex = 60,
-} ufc_shape;
+}} ufc_shape;
 """
 
 UFC_ELEMENT_DECL = """
@@ -131,7 +131,7 @@ UFC_INTEGRAL_DECL = """
 typedef struct ufc_cell_integral
 {
 const bool* enabled_coefficients;
-void (*tabulate_tensor)(double* restrict A, const double* const* w,
+void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
                         const double* restrict coordinate_dofs,
                         int cell_orientation);
 } ufc_cell_integral;
@@ -139,7 +139,7 @@ void (*tabulate_tensor)(double* restrict A, const double* const* w,
 typedef struct ufc_exterior_facet_integral
 {
 const bool* enabled_coefficients;
-void (*tabulate_tensor)(double* restrict A, const double* const* w,
+void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
                         const double* restrict coordinate_dofs, int facet,
                         int cell_orientation);
 } ufc_exterior_facet_integral;
@@ -147,7 +147,7 @@ void (*tabulate_tensor)(double* restrict A, const double* const* w,
 typedef struct ufc_interior_facet_integral
 {
 const bool* enabled_coefficients;
-void (*tabulate_tensor)(double* restrict A, const double* const* w,
+void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
                         const double* restrict coordinate_dofs_0,
                         const double* restrict coordinate_dofs_1,
                         int facet_0, int facet_1, int cell_orientation_0,
@@ -157,7 +157,7 @@ void (*tabulate_tensor)(double* restrict A, const double* const* w,
 typedef struct ufc_vertex_integral
 {
 const bool* enabled_coefficients;
-void (*tabulate_tensor)(double* restrict A, const double* const* w,
+void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
                         const double* restrict coordinate_dofs, int vertex,
                         int cell_orientation);
 } ufc_vertex_integral;
@@ -165,7 +165,7 @@ void (*tabulate_tensor)(double* restrict A, const double* const* w,
 typedef struct ufc_custom_integral
 {
 const bool* enabled_coefficients;
-void (*tabulate_tensor)(double* restrict A, const double* const* w,
+void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
                         const double* restrict coordinate_dofs,
                         int num_quadrature_points,
                         const double* restrict quadrature_points,
@@ -216,7 +216,7 @@ ufc_custom_integral* (*create_default_custom_integral)(void);
 def compile_elements(elements, module_name=None):
     """Compile a list of UFL elements into UFC Python objects"""
     code_body = ""
-    decl = UFC_HEADER_DECL + UFC_ELEMENT_DECL
+    decl = UFC_HEADER_DECL.format("") + UFC_ELEMENT_DECL
     element_template = "ufc_finite_element * create_{name}(void);"
     for e in elements:
         _, impl = ffc.compiler.compile_element(e)
@@ -258,7 +258,12 @@ def compile_forms(forms, module_name=None, parameters=None):
     # hash for form signature, unlike for other objects
 
     code_body = ""
-    decl = UFC_HEADER_DECL + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + UFC_COORDINATEMAPPING_DECL \
+    if parameters and "complex" in parameters["scalar_type"]:
+        complex_mode = "_Complex"
+    else:
+        complex_mode = ""
+    decl = UFC_HEADER_DECL.format(complex_mode) + UFC_ELEMENT_DECL \
+        + UFC_DOFMAP_DECL + UFC_COORDINATEMAPPING_DECL \
         + UFC_INTEGRAL_DECL + UFC_FORM_DECL
     form_template = "ufc_form * create_{name}(void);"
     for f in forms:
