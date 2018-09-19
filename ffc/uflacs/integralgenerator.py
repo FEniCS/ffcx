@@ -6,9 +6,9 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Controlling algorithm for building the tabulate_tensor source structure from factorized representation."""
 
+import collections
 import itertools
 import logging
-from collections import defaultdict
 
 from ffc import FFCError
 from ffc.language.cnodes import pad_dim, pad_innermost_dim
@@ -47,11 +47,11 @@ class IntegralGenerator(object):
         self.shared_blocks = {}
 
         # Block contributions collected during generation to be added to A at the end
-        self.finalization_blocks = defaultdict(list)
+        self.finalization_blocks = collections.defaultdict(list)
 
         # Set of counters used for assigning names to intermediate variables
         # TODO: Should this be part of the backend symbols? Doesn't really matter now.
-        self.symbol_counters = defaultdict(int)
+        self.symbol_counters = collections.defaultdict(int)
 
     def get_includes(self):
         """Return list of include statements needed to support generated code."""
@@ -245,7 +245,8 @@ class IntegralGenerator(object):
             if varying_ir["need_weights"]:
                 wsym = self.backend.symbols.weights_table(num_points)
                 parts += [
-                    L.ArrayDecl("static const ufc_scalar_t", wsym, num_points, weights, alignas=alignas)
+                    L.ArrayDecl(
+                        "static const ufc_scalar_t", wsym, num_points, weights, alignas=alignas)
                 ]
 
             # Generate quadrature points array
@@ -255,7 +256,8 @@ class IntegralGenerator(object):
                 flattened_points = points.reshape(N)
                 psym = self.backend.symbols.points_table(num_points)
                 parts += [
-                    L.ArrayDecl("static const ufc_scalar_t", psym, N, flattened_points, alignas=alignas)
+                    L.ArrayDecl(
+                        "static const ufc_scalar_t", psym, N, flattened_points, alignas=alignas)
                 ]
 
         # Add leading comment if there are any tables
@@ -729,7 +731,8 @@ class IntegralGenerator(object):
             B = self.new_temp_symbol(blockname)
             # Add initialization of this block to parts
             # For all modes, block definition occurs before quadloop
-            preparts.append(L.ArrayDecl("ufc_scalar_t", B, blockdims, 0, alignas=alignas, padlen=padlen))
+            preparts.append(
+                L.ArrayDecl("ufc_scalar_t", B, blockdims, 0, alignas=alignas, padlen=padlen))
 
         # Get factor expression
         if blockdata.factor_is_piecewise:
@@ -857,7 +860,8 @@ class IntegralGenerator(object):
             if not defined:
                 # Declare P table in preparts
                 P_dim = blockdims[not_piecewise_index]
-                preparts.append(L.ArrayDecl("ufc_scalar_t", P, P_dim, 0, alignas=alignas, padlen=padlen))
+                preparts.append(
+                    L.ArrayDecl("ufc_scalar_t", P, P_dim, 0, alignas=alignas, padlen=padlen))
 
                 # Multiply collected factors
                 P_rhs = L.float_product([fw, arg_factors[not_piecewise_index]])
