@@ -69,6 +69,7 @@ def test_form():
     assert A_diff.max() == 0
     assert A_diff.min() == 0
 
+
 def test_form_coefficient():
     cell = ufl.triangle
     element = ufl.FiniteElement("Lagrange", cell, 1)
@@ -93,10 +94,11 @@ def test_form_coefficient():
                           ffi.cast('double  * *', w1.ctypes.data),
                           ffi.cast('double  *', coords.ctypes.data), 0)
 
-    A_analytic = np.array([[2, 1, 1], [1, 2, 1], [1, 1, 2]], dtype=np.float64)/24.0
+    A_analytic = np.array([[2, 1, 1], [1, 2, 1], [1, 1, 2]], dtype=np.float64) / 24.0
     A_diff = (A - A_analytic)
     assert np.isclose(A_diff.max(), 0.0)
     assert np.isclose(A_diff.min(), 0.0)
+
 
 def test_complex():
     cell = ufl.triangle
@@ -121,13 +123,12 @@ def test_complex():
                           ffi.cast('double _Complex * *', w1.ctypes.data),
                           ffi.cast('double *', coords.ctypes.data), 0)
     print(A)
-    A_analytic = np.array([[1.0+0j, -0.5+0j, -0.5+0j],
-                           [-0.5+0j, 0.5+0j, 0.0+0j],
-                           [-0.5+0j, 0.0+0j, 0.5+0j]], dtype=np.complex128)
+    A_analytic = np.array([[1.0 + 0j, -0.5 + 0j, -0.5 + 0j],
+                           [-0.5 + 0j, 0.5 + 0j, 0.0 + 0j],
+                           [-0.5 + 0j, 0.0 + 0j, 0.5 + 0j]], dtype=np.complex128)
     A_diff = (A - A_analytic)
     assert A_diff.max() == 0
     assert A_diff.min() == 0
-
 
 
 # cell = ufl.triangle
