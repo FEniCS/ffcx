@@ -21,62 +21,24 @@ from ufl.classes import Argument, Conditional, Division, Product, Sum, Zero, Con
 logger = logging.getLogger(__name__)
 
 
-def _build_arg_sets(V):
-    """Build arg_sets = { argument number: set(j for j where V[j] is a modified Argument with this number) }"""
-    arg_sets = {}
-    for i, v in enumerate(V):
-        arg = strip_modified_terminal(v)
-        if not isinstance(arg, Argument):
-            continue
-        num = arg.number()
-        arg_set = arg_sets.get(num)
-        if arg_set is None:
-            arg_set = {}
-            arg_sets[num] = arg_set
-        arg_set[i] = v
-    return arg_sets
-
-
-def _build_argument_indices_from_arg_sets(V, arg_sets):
+def build_argument_indices(SV):
     """Build ordered list of indices to modified arguments."""
-    # Build set of all indices of V referring to modified arguments
-    arg_indices = set()
-    for js in arg_sets.values():
-        arg_indices.update(js)
+
+    arg_indices = []
+    for i, v in enumerate(SV):
+        arg = strip_modified_terminal(v)
+        if isinstance(arg, Argument):
+            arg_indices.append(i)
 
     # Make a canonical ordering of vertex indices for modified arguments
     def arg_ordering_key(i):
-        """Return a key for sorting argument vertex indices based on the properties of the modified terminal."""
-        mt = analyse_modified_terminal(arg_ordering_key.V[i])
+        """Return a key for sorting argument vertex indices based on
+        the properties of the modified terminal."""
+        mt = analyse_modified_terminal(SV[i])
         return mt.argument_ordering_key()
 
-    arg_ordering_key.V = V
     ordered_arg_indices = sorted(arg_indices, key=arg_ordering_key)
-
     return ordered_arg_indices
-
-
-def build_argument_indices(V):
-    """Build ordered list of indices to modified arguments."""
-    arg_sets = _build_arg_sets(V)
-    ordered_arg_indices = _build_argument_indices_from_arg_sets(V, arg_sets)
-    return ordered_arg_indices
-
-
-def build_argument_dependencies(dependencies, arg_indices):
-    """Preliminary algorithm: build list of argument vertex indices each vertex
-    (indirectly) depends on."""
-    n = len(dependencies)
-    A = numpy.empty(n, dtype=object)
-    for i, deps in enumerate(dependencies):
-        argdeps = []
-        for j in deps:
-            if j in arg_indices:
-                argdeps.append(j)
-            else:
-                argdeps.extend(A[j])
-        A[i] = sorted(argdeps)
-    return A
 
 
 def add_to_fv(expr, FV, e2fi):
@@ -294,7 +256,6 @@ def compute_argument_factorization(SV, SV_deps, SV_targets, rank):
     """
     # Extract argument component subgraph
     arg_indices = build_argument_indices(SV)
-    # A = build_argument_dependencies(SV_deps, arg_indices)
     AV = [SV[si] for si in arg_indices]
     # av2sv = arg_indices
     sv2av = {si: ai for ai, si in enumerate(arg_indices)}
