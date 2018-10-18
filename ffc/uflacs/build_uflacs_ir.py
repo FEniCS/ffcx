@@ -313,15 +313,19 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
         # Build initial scalar list-based graph representation
         G0 = build_scalar_graph(expression)
-        V, V_deps, V_target = G0.V, G0.V_deps, G0.V_target
+        V_deps, V_target = G0.V_deps, G0.V_target
 
         # Build terminal_data from V here before factorization. Then we
         # can use it to derive table properties for all modified
         # terminals, and then use that to rebuild the scalar graph more
         # efficiently before argument factorization. We can build
         # terminal_data again after factorization if that's necessary.
-        initial_terminal_indices = [i for i, v in enumerate(V) if is_modified_terminal(v)]
-        initial_terminal_data = [analyse_modified_terminal(V[i]) for i in initial_terminal_indices]
+#        initial_terminal_indices = [i for i, v in enumerate(V) if is_modified_terminal(v)]
+        initial_terminal_indices = [i for i, v in G0.nodes.items()
+                                    if is_modified_terminal(v['expression'])]
+
+        initial_terminal_data = [analyse_modified_terminal(G0.nodes[i]['expression'])
+                                 for i in initial_terminal_indices]
         unique_tables, unique_table_types, unique_table_num_dofs, mt_unique_table_reference = build_optimized_tables(
             num_points,
             quadrature_rules,
@@ -343,23 +347,23 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
             if isinstance(mt.terminal, QuadratureWeight):
                 # Replace quadrature weight with 1.0, will be added back
                 # later
-                V[i] = one
+                G0.nodes[i]['expression'] = one
             else:
                 # Set modified terminals with zero tables to zero
                 tr = mt_unique_table_reference.get(mt)
                 if tr is not None and tr.ttype == "zeros":
-                    V[i] = z
+                    G0.nodes[i]['expression'] = z
 
         # Propagate expression changes using dependency list
-        for i in range(len(V)):
-            deps = [V[j] for j in V_deps[i]]
+        for i, v in G0.nodes.items():
+            deps = [G0.nodes[j]['expression'] for j in V_deps[i]]
             if deps:
-                V[i] = V[i]._ufl_expr_reconstruct_(*deps)
+                v['expression'] = v['expression']._ufl_expr_reconstruct_(*deps)
 
         # Rebuild scalar target expressions and graph (this may be
         # overkill and possible to optimize away if it turns out to be
         # costly)
-        expression = V[V_target]
+        expression = G0.nodes[V_target]['expression']
 
         # Rebuild scalar list-based graph representation
         S = build_scalar_graph(expression)
