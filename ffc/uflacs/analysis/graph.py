@@ -14,8 +14,52 @@ import ufl
 from ffc import FFCError
 from ffc.uflacs.analysis.modified_terminals import is_modified_terminal
 from ffc.uflacs.analysis.valuenumbering import ValueNumberer
+from ffc.uflacs.analysis.dependencies import compute_dependencies
 
 logger = logging.getLogger(__name__)
+
+
+class ExpressionGraph(object):
+    """ A directed multi-edge graph, allowing multiple edges
+    between the same nodes, and respecting the insertion order
+    of nodes and edges."""
+
+    def __init__(self):
+
+        # Data structures for directed multi-edge graph
+        self.nodes = {}
+        self.out_edges = {}
+        self.in_edges = {}
+
+        # Index to expression
+        self.V = []
+
+        # Expression to index dict
+        self.e2i = {}
+
+        self.expression_vertices = []
+
+        self.V_symbols = None
+        self.total_unique_symbols = 0
+
+    def add_node(self, key, **kwargs):
+        """ Add a node with optional properties """
+        self.nodes[key] = kwargs
+
+    def add_edge(self, node1, node2):
+        """ Add a directed edge from node1 to node2 """
+        if node1 not in self.nodes or node2 not in self.nodes:
+            raise KeyError("Adding edge to unknown node")
+
+        if node1 not in self.out_edges:
+            self.out_edges[node1] = [node2]
+        else:
+            self.out_edges[node1] += [node2]
+
+        if node2 not in self.in_edges:
+            self.in_edges[node2] = [node1]
+        else:
+            self.in_edges[node2] += [node1]
 
 
 def build_graph_symbols(V):
@@ -43,47 +87,57 @@ def build_graph_symbols(V):
     return V_symbols, value_numberer.symbol_count
 
 
-def build_graph_vertices(expressions, scalar=False):
+def build_graph_vertices(expression, scalar=False):
     # Count unique expression nodes
     e2i = {}
-    for expr in expressions:
-        _count_nodes_with_unique_post_traversal(expr, e2i, scalar)
+
+    _count_nodes_with_unique_post_traversal(expression, e2i, scalar)
 
     # Invert the map to get index->expression
     V = sorted(e2i, key=e2i.get)
 
-    # Get vertex indices representing input expression roots
-    expression_vertices = [e2i[expr] for expr in expressions]
+    # Get vertex indices representing input expression root
+    expression_vertex = e2i[expression]
 
-    return e2i, V, expression_vertices
-
-
-class Graph2(object):
-    def __init__(self):
-
-        # Index to expression
-        self.V = []
-
-        # Expression to index dict
-        self.e2i = {}
-
-        self.expression_vertices = []
-
-        self.V_symbols = None
-        self.total_unique_symbols = 0
+    return e2i, V, expression_vertex
 
 
-def build_graph(expressions):
+def build_scalar_graph(expression):
+    """Build list representation of expression graph covering the given
+    expressions.
 
-    G = Graph2()
+    TODO: Renaming, refactoring and cleanup of the graph building
+    algorithms used in here
+
+    """
+
+    # Build the initial coarse computational graph of the expression
+    G = ExpressionGraph()
 
     # Populate with vertices
-    G.e2i, G.V, G.expression_vertices = build_graph_vertices(expressions, scalar=False)
+    G.e2i, G.V, G.expression_vertex = build_graph_vertices(expression, scalar=False)
 
     # Populate with symbols
     G.V_symbols, G.total_unique_symbols = build_graph_symbols(G.V)
 
-    return G
+    # Build more fine grained computational graph of scalar subexpressions
+    # TODO: Make it so that
+    #   expressions[k] <-> NV[nvs[k][:]],
+    #   len(nvs[k]) == value_size(expressions[k])
+    scalar_expressions = rebuild_with_scalar_subexpressions(G)
+
+    # Sanity check on number of scalar symbols/components
+    assert len(scalar_expressions) == ufl.product(expression.ufl_shape)
+
+    # Build new list representation of graph where all
+    # vertices of V represent single scalar operations
+
+    e2i, V, V_target = build_graph_vertices(scalar_expressions[0], scalar=True)
+
+    # Compute sparse dependency matrix
+    V_deps = compute_dependencies(e2i, V)
+
+    return V, V_deps, V_target
 
 
 class ReconstructScalarSubexpressions(ufl.corealg.multifunction.MultiFunction):
@@ -332,9 +386,7 @@ def rebuild_with_scalar_subexpressions(G):
 
     # Find symbols of final v from input graph
     vs = G.V_symbols[-1]
-    scalar_expression = [W[s] for s in vs]
-    if (None in scalar_expression):
-        raise FFCError("Expecting that all symbols in vs are handled at this point.")
+    scalar_expression = W[vs]
     return scalar_expression
 
 

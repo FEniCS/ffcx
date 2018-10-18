@@ -15,12 +15,10 @@ import numpy
 import ufl
 from ffc import FFCError
 from ffc.uflacs.analysis.balancing import balance_modifiers
-from ffc.uflacs.analysis.dependencies import (compute_dependencies,
-                                              invert_dependencies, mark_active,
+from ffc.uflacs.analysis.dependencies import (invert_dependencies, mark_active,
                                               mark_image)
 from ffc.uflacs.analysis.factorization import compute_argument_factorization
-from ffc.uflacs.analysis.graph import (build_graph, build_graph_vertices,
-                                       rebuild_with_scalar_subexpressions)
+from ffc.uflacs.analysis.graph import build_scalar_graph
 from ffc.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
                                                     is_modified_terminal)
 from ffc.uflacs.elementtables import (build_optimized_tables,
@@ -306,11 +304,15 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
     ir["all_num_points"] = all_num_points
 
     for num_points, expressions in cases:
+
+        assert len(expressions) == 1
+        expression = expressions[0]
+
         # Rebalance order of nested terminal modifiers
-        expressions = [balance_modifiers(expr) for expr in expressions]
+        expression = balance_modifiers(expression)
 
         # Build initial scalar list-based graph representation
-        V, V_deps, V_targets = build_scalar_graph(expressions)
+        V, V_deps, V_target = build_scalar_graph(expression)
 
         # Build terminal_data from V here before factorization. Then we
         # can use it to derive table properties for all modified
@@ -356,18 +358,15 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         # Rebuild scalar target expressions and graph (this may be
         # overkill and possible to optimize away if it turns out to be
         # costly)
-        expressions = [V[i] for i in V_targets]
+        expression = V[V_target]
 
         # Rebuild scalar list-based graph representation
-        SV, SV_deps, SV_targets = build_scalar_graph(expressions)
-        assert all(i < len(SV) for i in SV_targets)
+        SV, SV_deps, SV_target = build_scalar_graph(expression)
+        assert SV_target < len(SV)
 
         # Compute factorization of arguments
         (argument_factorizations, modified_arguments, FV, FV_deps,
-         FV_targets) = compute_argument_factorization(SV, SV_deps, SV_targets, len(tensor_shape))
-        assert len(SV_targets) == len(argument_factorizations)
-
-        # TODO: Still expecting one target variable in code generation
+         FV_targets) = compute_argument_factorization(SV, SV_deps, [SV_target], len(tensor_shape))
         assert len(argument_factorizations) == 1
         argument_factorization, = argument_factorizations
 
@@ -778,39 +777,6 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         ir["varying_irs"][num_points] = expr_ir
 
     return ir
-
-
-def build_scalar_graph(expressions):
-    """Build list representation of expression graph covering the given
-    expressions.
-
-    TODO: Renaming, refactoring and cleanup of the graph building
-    algorithms used in here
-
-    """
-
-    # Build the initial coarse computational graph of the expression
-    G = build_graph(expressions)
-
-    assert len(expressions) == 1, "FIXME: Multiple expressions"
-
-    # Build more fine grained computational graph of scalar subexpressions
-    # TODO: Make it so that
-    #   expressions[k] <-> NV[nvs[k][:]],
-    #   len(nvs[k]) == value_size(expressions[k])
-    scalar_expressions = rebuild_with_scalar_subexpressions(G)
-
-    # Sanity check on number of scalar symbols/components
-    assert len(scalar_expressions) == sum(ufl.product(expr.ufl_shape) for expr in expressions)
-
-    # Build new list representation of graph where all
-    # vertices of V represent single scalar operations
-    e2i, V, V_targets = build_graph_vertices(scalar_expressions, scalar=True)
-
-    # Compute sparse dependency matrix
-    V_deps = compute_dependencies(e2i, V)
-
-    return V, V_deps, V_targets
 
 
 def analyse_dependencies(V, V_deps, V_targets, modified_terminal_indices, modified_terminals,
