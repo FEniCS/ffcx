@@ -312,7 +312,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         expression = balance_modifiers(expression)
 
         # Build initial scalar list-based graph representation
-        V, V_deps, V_target = build_scalar_graph(expression)
+        G0 = build_scalar_graph(expression)
+        V, V_deps, V_target = G0.V, G0.V_deps, G0.V_target
 
         # Build terminal_data from V here before factorization. Then we
         # can use it to derive table properties for all modified
@@ -361,7 +362,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         expression = V[V_target]
 
         # Rebuild scalar list-based graph representation
-        SV, SV_deps, SV_target = build_scalar_graph(expression)
+        S = build_scalar_graph(expression)
+        SV, SV_deps, SV_target = S.V, S.V_deps, S.V_target
         assert SV_target < len(SV)
 
         # Compute factorization of arguments

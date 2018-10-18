@@ -37,11 +37,6 @@ class ExpressionGraph(object):
         # Expression to index dict
         self.e2i = {}
 
-        self.expression_vertices = []
-
-        self.V_symbols = None
-        self.total_unique_symbols = 0
-
     def add_node(self, key, **kwargs):
         """ Add a node with optional properties """
         self.nodes[key] = kwargs
@@ -62,82 +57,46 @@ class ExpressionGraph(object):
             self.in_edges[node2] += [node1]
 
 
-def build_graph_symbols(V):
-    """Tabulate scalar value numbering of all nodes in a a list based representation of an
-    expression graph.
-
-    Returns
-    -------
-    V_symbols - list of symbols (value numbers) of each component of each node in V.
-    total_unique_symbols - The number of symbol values assigned to unique scalar
-                           components of the nodes in V.
-
-    """
-    # Compute the total shape (value shape x index dimensions) for each node
-    V_shapes = [(v.ufl_shape + v.ufl_index_dimensions) for v in V]
-
-    # Compute the total value size for each node
-    V_sizes = [ufl.product(sh) for sh in V_shapes]
-
-    V_symbols = []
-    value_numberer = ValueNumberer(V, V_sizes, V_symbols)
-    for (i, v) in enumerate(V):
-        V_symbols.append(value_numberer(v, i))
-
-    return V_symbols, value_numberer.symbol_count
-
-
 def build_graph_vertices(expression, scalar=False):
     # Count unique expression nodes
-    e2i = {}
 
-    _count_nodes_with_unique_post_traversal(expression, e2i, scalar)
+    G = ExpressionGraph()
+
+    G.e2i = {}
+    _count_nodes_with_unique_post_traversal(expression, G.e2i, scalar)
 
     # Invert the map to get index->expression
-    V = sorted(e2i, key=e2i.get)
+    G.V = sorted(G.e2i, key=G.e2i.get)
 
-    # Get vertex indices representing input expression root
-    expression_vertex = e2i[expression]
+    # Add nodes to 'new' graph structure
+    for i, v in enumerate(G.V):
+        G.add_node(i, expression=v)
 
-    return e2i, V, expression_vertex
+    # Get vertex index representing input expression root
+    G.V_target = G.e2i[expression]
+
+    return G
 
 
 def build_scalar_graph(expression):
     """Build list representation of expression graph covering the given
     expressions.
-
-    TODO: Renaming, refactoring and cleanup of the graph building
-    algorithms used in here
-
     """
 
-    # Build the initial coarse computational graph of the expression
-    G = ExpressionGraph()
-
     # Populate with vertices
-    G.e2i, G.V, G.expression_vertex = build_graph_vertices(expression, scalar=False)
-
-    # Populate with symbols
-    G.V_symbols, G.total_unique_symbols = build_graph_symbols(G.V)
+    G = build_graph_vertices(expression, scalar=False)
 
     # Build more fine grained computational graph of scalar subexpressions
-    # TODO: Make it so that
-    #   expressions[k] <-> NV[nvs[k][:]],
-    #   len(nvs[k]) == value_size(expressions[k])
-    scalar_expressions = rebuild_with_scalar_subexpressions(G)
-
-    # Sanity check on number of scalar symbols/components
-    assert len(scalar_expressions) == ufl.product(expression.ufl_shape)
+    scalar_expression = rebuild_with_scalar_subexpressions(G)
 
     # Build new list representation of graph where all
     # vertices of V represent single scalar operations
-
-    e2i, V, V_target = build_graph_vertices(scalar_expressions[0], scalar=True)
+    G = build_graph_vertices(scalar_expression, scalar=True)
 
     # Compute sparse dependency matrix
-    V_deps = compute_dependencies(e2i, V)
+    G.V_deps = compute_dependencies(G.e2i, G.V)
 
-    return V, V_deps, V_target
+    return G
 
 
 class ReconstructScalarSubexpressions(ufl.corealg.multifunction.MultiFunction):
@@ -316,16 +275,21 @@ def rebuild_with_scalar_subexpressions(G):
     - nvs  - Tuple of ne2i indices corresponding to the last vertex of G.V
     """
 
+    # Compute symbols over graph and rebuild scalar expression
+    value_numberer = ValueNumberer(G)
+    V_symbols = value_numberer.compute_symbols()
+    total_unique_symbols = value_numberer.symbol_count
+
     # Algorithm to apply to each subexpression
     reconstruct_scalar_subexpressions = ReconstructScalarSubexpressions()
 
     # Array to store the scalar subexpression in for each symbol
-    W = numpy.empty(G.total_unique_symbols, dtype=object)
+    W = numpy.empty(total_unique_symbols, dtype=object)
 
     # Iterate over each graph node in order
     for i, v in enumerate(G.V):
         # Find symbols of v components
-        vs = G.V_symbols[i]
+        vs = V_symbols[i]
 
         # Skip if there's nothing new here (should be the case for indexing types)
         if all(W[s] is not None for s in vs):
@@ -363,7 +327,7 @@ def rebuild_with_scalar_subexpressions(G):
                     # TODO: Build edge datastructure and use instead?
                     # k = G.E[i][j]
                     k = G.e2i[vop]
-                    sops.append(G.V_symbols[k])
+                    sops.append(V_symbols[k])
 
             # Fetch reconstructed operand expressions
             wops = [tuple(W[k] for k in so) for so in sops]
@@ -385,7 +349,7 @@ def rebuild_with_scalar_subexpressions(G):
                 assert s in handled  # Result of symmetry!
 
     # Find symbols of final v from input graph
-    vs = G.V_symbols[-1]
+    vs = V_symbols[-1][0]
     scalar_expression = W[vs]
     return scalar_expression
 
