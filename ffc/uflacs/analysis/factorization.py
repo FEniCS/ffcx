@@ -56,7 +56,7 @@ def add_to_fv(expr, F):
 noargs = {}
 
 
-def handle_sum(v, si, deps, fac, F, sv2fv, sf):
+def handle_sum(v, si, deps, fac, sf, F):
     if len(deps) != 2:
         raise FFCError("Assuming binary sum here. This can be fixed if needed.")
 
@@ -85,26 +85,19 @@ def handle_sum(v, si, deps, fac, F, sv2fv, sf):
             factors[argkey] = fisum
 
     else:  # non-arg + non-arg
-        factors = noargs
-        sv2fv[si] = add_to_fv(v, F)
+        raise FFCError("No arguments")
 
     return factors
 
 
-def handle_product(v, si, deps, fac, F, sv2fv, sf):
+def handle_product(v, si, deps, fac, sf, F):
     if len(deps) != 2:
         raise FFCError("Assuming binary product here. This can be fixed if needed.")
     fac0 = fac[0]
     fac1 = fac[1]
 
     if not fac0 and not fac1:  # non-arg * non-arg
-        # Record non-argument product
-        factors = noargs
-        f0 = sf[0]
-        f1 = sf[1]
-        assert f1 * f0 == v
-        sv2fv[si] = add_to_fv(v, F)
-        assert F.nodes[sv2fv[si]]['expression'] == v
+        raise FFCError("No arguments")
 
     elif not fac0:  # non-arg * arg
         # Record products of non-arg operand with each factor of arg-dependent operand
@@ -135,7 +128,7 @@ def handle_product(v, si, deps, fac, F, sv2fv, sf):
     return factors
 
 
-def handle_conj(v, si, deps, fac, F, sv2fv, sf):
+def handle_conj(v, si, deps, fac, sf, F):
 
     fac = fac[0]
     if fac:
@@ -144,15 +137,12 @@ def handle_conj(v, si, deps, fac, F, sv2fv, sf):
             f0 = F.nodes[fac[k]]['expression']
             factors[k] = add_to_fv(Conj(f0), F)
     else:
-        factors = noargs
-        f0 = sf[0]
-        sv2fv[si] = add_to_fv(v, F)
-        assert F.nodes[sv2fv[si]]['expression'] == v
+        raise FFCError("No arguments")
 
     return factors
 
 
-def handle_division(v, si, deps, fac, F, sv2fv, sf):
+def handle_division(v, si, deps, fac, sf, F):
     fac0 = fac[0]
     fac1 = fac[1]
     assert not fac1, "Cannot divide by arguments."
@@ -166,23 +156,19 @@ def handle_division(v, si, deps, fac, F, sv2fv, sf):
             factors[k0] = add_to_fv(f0 / f1, F)
 
     else:  # non-arg / non-arg
-        # Record non-argument subexpression
-        factors = noargs
-        sv2fv[si] = add_to_fv(v, F)
+        raise FFCError("No arguments")
 
     return factors
 
 
-def handle_conditional(v, si, deps, fac, F, sv2fv, sf):
+def handle_conditional(v, si, deps, fac, sf, F):
     fac0 = fac[0]
     fac1 = fac[1]
     fac2 = fac[2]
     assert not fac0, "Cannot have argument in condition."
 
     if not (fac1 or fac2):  # non-arg ? non-arg : non-arg
-        # Record non-argument subexpression
-        sv2fv[si] = add_to_fv(v, F)
-        factors = noargs
+        raise FFCError("No arguments")
     else:
         f0 = sf[0]
         f1 = sf[1]
@@ -210,7 +196,7 @@ def handle_conditional(v, si, deps, fac, F, sv2fv, sf):
     return factors
 
 
-def handle_operator(v, si, deps, fac, F, sv2fv, sf):
+def handle_operator(v, si, deps, fac, sf, F):
 
     # Error checking
     if any(fac):
@@ -218,9 +204,7 @@ def handle_operator(v, si, deps, fac, F, sv2fv, sf):
             "Assuming that a {0} cannot be applied to arguments. If this is wrong please report a bug.".
             format(type(v)))
     # Record non-argument subexpression
-    sv2fv[si] = add_to_fv(v, F)
-    factors = noargs
-    return factors
+    raise FFCError("No arguments")
 
 
 def compute_argument_factorization(S, SV_target, rank):
@@ -294,19 +278,23 @@ def compute_argument_factorization(S, SV_target, rank):
             # These quantities could be better input args to handlers:
             sf = [F.nodes[si2fi[d]]['expression'] for d in deps]
             fac = [S.nodes[d]['factors'] for d in deps]
-            if isinstance(v, Sum):
-                handler = handle_sum
-            elif isinstance(v, Conj):
-                handler = handle_conj
-            elif isinstance(v, Product):
-                handler = handle_product
-            elif isinstance(v, Division):
-                handler = handle_division
-            elif isinstance(v, Conditional):
-                handler = handle_conditional
-            else:  # All other operators
-                handler = handle_operator
-            factors = handler(v, si, deps, fac, F, si2fi, sf)
+            if not any(fac):
+                si2fi[si] = add_to_fv(v, F)
+                factors = noargs
+            else:
+                if isinstance(v, Sum):
+                    handler = handle_sum
+                elif isinstance(v, Conj):
+                    handler = handle_conj
+                elif isinstance(v, Product):
+                    handler = handle_product
+                elif isinstance(v, Division):
+                    handler = handle_division
+                elif isinstance(v, Conditional):
+                    handler = handle_conditional
+                else:  # All other operators
+                    handler = handle_operator
+                factors = handler(v, si, deps, fac, sf, F)
 
         attr['factors'] = factors
 
