@@ -40,21 +40,16 @@ class ExpressionGraph(object):
     def add_node(self, key, **kwargs):
         """ Add a node with optional properties """
         self.nodes[key] = kwargs
+        self.out_edges[key] = []
+        self.in_edges[key] = []
 
     def add_edge(self, node1, node2):
         """ Add a directed edge from node1 to node2 """
         if node1 not in self.nodes or node2 not in self.nodes:
             raise KeyError("Adding edge to unknown node")
 
-        if node1 not in self.out_edges:
-            self.out_edges[node1] = [node2]
-        else:
-            self.out_edges[node1] += [node2]
-
-        if node2 not in self.in_edges:
-            self.in_edges[node2] = [node1]
-        else:
-            self.in_edges[node2] += [node1]
+        self.out_edges[node1] += [node2]
+        self.in_edges[node2] += [node1]
 
 
 def build_graph_vertices(expression, scalar=False):
@@ -93,8 +88,17 @@ def build_scalar_graph(expression):
     # vertices of V represent single scalar operations
     G = build_graph_vertices(scalar_expression, scalar=True)
 
-    # Compute sparse dependency matrix
-    G.V_deps = compute_dependencies(G.e2i, G.V)
+    # Compute graph edges
+    V_deps = []
+    for v in G.V:
+        if v._ufl_is_terminal_ or v._ufl_is_terminal_modifier_:
+            V_deps.append(())
+        else:
+            V_deps.append([G.e2i[o] for o in v.ufl_operands])
+
+    for i, edges in enumerate(V_deps):
+        for j in edges:
+            G.add_edge(i, j)
 
     return G
 

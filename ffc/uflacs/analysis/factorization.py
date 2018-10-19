@@ -222,7 +222,7 @@ def handle_operator(v, si, deps, SV_factors, FV, sv2fv, e2fi):
     return factors
 
 
-def compute_argument_factorization(SV, SV_deps, SV_targets, rank):
+def compute_argument_factorization(S, SV, SV_targets, rank):
     """Factorizes a scalar expression graph w.r.t. scalar Argument
     components.
 
@@ -288,7 +288,7 @@ def compute_argument_factorization(SV, SV_deps, SV_targets, rank):
 
     # Factorize each subexpression in order:
     for si, v in enumerate(SV):
-        deps = SV_deps[si]
+        deps = S.out_edges[si]
 
         # These handlers insert values in si2fi and SV_factors
         if not len(deps):

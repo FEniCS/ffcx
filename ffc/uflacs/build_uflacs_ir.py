@@ -313,7 +313,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
         # Build initial scalar list-based graph representation
         G0 = build_scalar_graph(expression)
-        V_deps, V_target = G0.V_deps, G0.V_target
+        V_target = G0.V_target
 
         # Build terminal_data from V here before factorization. Then we
         # can use it to derive table properties for all modified
@@ -356,7 +356,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
         # Propagate expression changes using dependency list
         for i, v in G0.nodes.items():
-            deps = [G0.nodes[j]['expression'] for j in V_deps[i]]
+            deps = [G0.nodes[j]['expression'] for j in G0.out_edges[i]]
             if deps:
                 v['expression'] = v['expression']._ufl_expr_reconstruct_(*deps)
 
@@ -367,12 +367,12 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
         # Rebuild scalar list-based graph representation
         S = build_scalar_graph(expression)
-        SV, SV_deps, SV_target = S.V, S.V_deps, S.V_target
+        SV, SV_target = S.V, S.V_target
         assert SV_target < len(SV)
 
         # Compute factorization of arguments
         (argument_factorizations, modified_arguments, FV, FV_deps,
-         FV_targets) = compute_argument_factorization(SV, SV_deps, [SV_target], len(tensor_shape))
+         FV_targets) = compute_argument_factorization(S, SV, [SV_target], len(tensor_shape))
         assert len(argument_factorizations) == 1
         argument_factorization, = argument_factorizations
 
