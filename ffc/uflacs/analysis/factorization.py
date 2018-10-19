@@ -21,12 +21,12 @@ from ufl.classes import Argument, Conditional, Division, Product, Sum, Zero, Con
 logger = logging.getLogger(__name__)
 
 
-def build_argument_indices(SV):
+def build_argument_indices(S):
     """Build ordered list of indices to modified arguments."""
 
     arg_indices = []
-    for i, v in enumerate(SV):
-        arg = strip_modified_terminal(v)
+    for i, v in S.nodes.items():
+        arg = strip_modified_terminal(v['expression'])
         if isinstance(arg, Argument):
             arg_indices.append(i)
 
@@ -34,7 +34,7 @@ def build_argument_indices(SV):
     def arg_ordering_key(i):
         """Return a key for sorting argument vertex indices based on
         the properties of the modified terminal."""
-        mt = analyse_modified_terminal(SV[i])
+        mt = analyse_modified_terminal(S.nodes[i]['expression'])
         return mt.argument_ordering_key()
 
     ordered_arg_indices = sorted(arg_indices, key=arg_ordering_key)
@@ -255,12 +255,9 @@ def compute_argument_factorization(S, SV, SV_targets, rank):
 
     """
     # Extract argument component subgraph
-    arg_indices = build_argument_indices(SV)
-    AV = [SV[si] for si in arg_indices]
-    # av2sv = arg_indices
+    arg_indices = build_argument_indices(S)
+    AV = [S.nodes[i]['expression'] for i in arg_indices]
     sv2av = {si: ai for ai, si in enumerate(arg_indices)}
-    assert all(AV[ai] == SV[si] for ai, si in enumerate(arg_indices))
-    assert all(AV[ai] == SV[si] for si, ai in sv2av.items())
 
     # Data structure for building non-argument factors
     FV = []
@@ -283,12 +280,13 @@ def compute_argument_factorization(S, SV, SV_targets, rank):
     #   argkey is a tuple with indices into SV for each of the argument components SV[si] depends on
     # SV_factors[si] = { argkey1: fi1, argkey2: fi2, ... } # if SV[si]
     # is a linear combination of multiple argkey configurations
-    SV_factors = numpy.empty(len(SV), dtype=object)
-    si2fi = numpy.zeros(len(SV), dtype=int)
+    SV_factors = numpy.empty(len(S.nodes), dtype=object)
+    si2fi = numpy.zeros(len(S.nodes), dtype=int)
 
     # Factorize each subexpression in order:
-    for si, v in enumerate(SV):
+    for si, attr in S.nodes.items():
         deps = S.out_edges[si]
+        v = attr['expression']
 
         # These handlers insert values in si2fi and SV_factors
         if not len(deps):
@@ -356,51 +354,3 @@ def compute_argument_factorization(S, SV, SV_targets, rank):
     FV_targets = list(itertools.chain(sorted(IM.values()) for IM in IMs))
 
     return IMs, AV, FV, FV_deps, FV_targets
-
-
-def rebuild_scalar_graph_from_factorization(AV, FV, IM):
-    # TODO: What about multiple target_variables?
-
-    # Build initial graph
-    SV = []
-    SV.extend(AV)
-    SV.extend(FV)
-    se2i = dict((s, i) for i, s in enumerate(SV))
-
-    def add_vertex(h):
-        # Avoid adding vertices twice
-        i = se2i.get(h)
-        if i is None:
-            se2i[h] = len(SV)
-            SV.append(h)
-
-    # Add factorization monomials
-    argkeys = sorted(IM.keys())
-    fs = []
-    for argkey in argkeys:
-        # Start with coefficients
-        f = FV[IM[argkey]]
-        # f = 1
-
-        # Add binary products with each argument in order
-        for argindex in argkey:
-            f = f * AV[argindex]
-            add_vertex(f)
-
-        # Add product with coefficients last
-        # f = f*FV[IM[argkey]]
-        # add_vertex(f)
-
-        # f is now the full monomial, store it as a term for sum below
-        fs.append(f)
-
-    # Add sum of factorization monomials
-    g = 0
-    for f in fs:
-        g = g + f
-        add_vertex(g)
-
-    # Rebuild dependencies
-    dependencies = compute_dependencies(se2i, SV)
-
-    return SV, se2i, dependencies
