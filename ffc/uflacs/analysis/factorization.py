@@ -46,9 +46,9 @@ def add_to_fv(expr, F):
     """Add expression expr to factor vector FV and expr->FVindex mapping e2fi."""
     fi = F.e2i.get(expr)
     if fi is None:
-        fi = len(e2fi)
+        fi = len(F.e2i)
         F.add_node(fi, expression=expr)
-        e2fi[expr] = fi
+        F.e2i[expr] = fi
     return fi
 
 
@@ -56,12 +56,12 @@ def add_to_fv(expr, F):
 noargs = {}
 
 
-def handle_sum(v, si, deps, SV_factors, F, sv2fv):
+def handle_sum(v, si, deps, fac, F, sv2fv):
     if len(deps) != 2:
         raise FFCError("Assuming binary sum here. This can be fixed if needed.")
 
-    fac0 = SV_factors[deps[0]]
-    fac1 = SV_factors[deps[1]]
+    fac0 = fac[0]
+    fac1 = fac[1]
     argkeys = set(fac0) | set(fac1)
 
     if argkeys:  # f*arg + g*arg = (f+g)*arg
@@ -79,8 +79,8 @@ def handle_sum(v, si, deps, SV_factors, F, sv2fv):
             elif fi1 is None:
                 fisum = fi0
             else:
-                f0 = FV[fi0]
-                f1 = FV[fi1]
+                f0 = F.nodes[fi0]['expression']
+                f1 = F.nodes[fi1]['expression']
                 fisum = add_to_fv(f0 + f1, F)
             factors[argkey] = fisum
 
@@ -91,78 +91,78 @@ def handle_sum(v, si, deps, SV_factors, F, sv2fv):
     return factors
 
 
-def handle_product(v, si, deps, SV_factors, F, sv2fv):
+def handle_product(v, si, deps, fac, F, sv2fv):
     if len(deps) != 2:
         raise FFCError("Assuming binary product here. This can be fixed if needed.")
-    fac0 = SV_factors[deps[0]]
-    fac1 = SV_factors[deps[1]]
+    fac0 = fac[0]
+    fac1 = fac[1]
 
     if not fac0 and not fac1:  # non-arg * non-arg
         # Record non-argument product
         factors = noargs
-        f0 = FV[sv2fv[deps[0]]]
-        f1 = FV[sv2fv[deps[1]]]
+        f0 = F.nodes[sv2fv[deps[0]]]['expression']
+        f1 = F.nodes[sv2fv[deps[1]]]['expression']
         assert f1 * f0 == v
         sv2fv[si] = add_to_fv(v, F)
-        assert FV[sv2fv[si]] == v
+        assert F.nodes[sv2fv[si]]['expression'] == v
 
     elif not fac0:  # non-arg * arg
         # Record products of non-arg operand with each factor of arg-dependent operand
-        f0 = FV[sv2fv[deps[0]]]
+        f0 = F.nodes[sv2fv[deps[0]]]['expression']
         factors = {}
         for k1 in sorted(fac1):
             fi1 = fac1[k1]
-            factors[k1] = add_to_fv(f0 * FV[fi1], F)
+            factors[k1] = add_to_fv(f0 * F.nodes[fi1]['expression'], F)
 
     elif not fac1:  # arg * non-arg
         # Record products of non-arg operand with each factor of arg-dependent operand
-        f1 = FV[sv2fv[deps[1]]]
+        f1 = F.nodes[sv2fv[deps[1]]]['expression']
         factors = {}
         for k0 in sorted(fac0):
-            f0 = FV[fac0[k0]]
+            f0 = F.nodes[fac0[k0]]['expression']
             factors[k0] = add_to_fv(f1 * f0, F)
 
     else:  # arg * arg
         # Record products of each factor of arg-dependent operand
         factors = {}
         for k0 in sorted(fac0):
-            f0 = FV[fac0[k0]]
+            f0 = F.nodes[fac0[k0]]['expression']
             for k1 in sorted(fac1):
-                f1 = FV[fac1[k1]]
+                f1 = F.nodes[fac1[k1]]['expression']
                 argkey = tuple(sorted(k0 + k1))  # sort key for canonical representation
                 factors[argkey] = add_to_fv(f0 * f1, F)
 
     return factors
 
 
-def handle_conj(v, si, deps, SV_factors, F, sv2fv):
+def handle_conj(v, si, deps, fac, F, sv2fv):
 
-    fac = SV_factors[deps[0]]
+    fac = fac[0]
     if fac:
         factors = {}
         for k in fac:
-            f0 = FV[fac[k]]
+            f0 = F.nodes[fac[k]]['expression']
             factors[k] = add_to_fv(Conj(f0), F)
     else:
         factors = noargs
-        f0 = FV[sv2fv[deps[0]]]
+        f0 = F.nodes[sv2fv[deps[0]]]['expression']
         sv2fv[si] = add_to_fv(v, F)
-        assert FV[sv2fv[si]] == v
+        assert F.nodes[sv2fv[si]]['expression'] == v
 
     return factors
 
 
-def handle_division(v, si, deps, SV_factors, F, sv2fv):
-    fac0 = SV_factors[deps[0]]
-    fac1 = SV_factors[deps[1]]
+def handle_division(v, si, deps, fac, F, sv2fv):
+    fac0 = fac[0]
+    fac1 = fac[1]
     assert not fac1, "Cannot divide by arguments."
 
     if fac0:  # arg / non-arg
         # Record products of non-arg operand with each factor of arg-dependent operand
-        f1 = FV[sv2fv[deps[1]]]
+        f1 = F.nodes[sv2fv[deps[1]]]['expression']
         factors = {}
         for k0 in sorted(fac0):
-            f0 = FV[fac0[k0]]
+            f0 = F.nodes[fac0[k0]]['expression']
             factors[k0] = add_to_fv(f0 / f1, F)
 
     else:  # non-arg / non-arg
@@ -173,10 +173,10 @@ def handle_division(v, si, deps, SV_factors, F, sv2fv):
     return factors
 
 
-def handle_conditional(v, si, deps, SV_factors, F, sv2fv):
-    fac0 = SV_factors[deps[0]]
-    fac1 = SV_factors[deps[1]]
-    fac2 = SV_factors[deps[2]]
+def handle_conditional(v, si, deps, fac, F, sv2fv):
+    fac0 = fac[0]
+    fac1 = fac[1]
+    fac2 = fac[2]
     assert not fac0, "Cannot have argument in condition."
 
     if not (fac1 or fac2):  # non-arg ? non-arg : non-arg
@@ -184,9 +184,9 @@ def handle_conditional(v, si, deps, SV_factors, F, sv2fv):
         sv2fv[si] = add_to_fv(v, F)
         factors = noargs
     else:
-        f0 = FV[sv2fv[deps[0]]]
-        f1 = FV[sv2fv[deps[1]]]
-        f2 = FV[sv2fv[deps[2]]]
+        f0 = F.nodes[sv2fv[deps[0]]]['expression']
+        f1 = F.nodes[sv2fv[deps[1]]]['expression']
+        f2 = F.nodes[sv2fv[deps[2]]]['expression']
 
         # Term conditional(c, argument, non-argument) is not legal unless non-argument is 0.0
         assert fac1 or isinstance(f1, Zero)
@@ -203,17 +203,17 @@ def handle_conditional(v, si, deps, SV_factors, F, sv2fv):
         for k in mas:
             fi1 = fac1.get(k)
             fi2 = fac2.get(k)
-            f1 = z if fi1 is None else FV[fi1]
-            f2 = z if fi2 is None else FV[fi2]
+            f1 = z if fi1 is None else F.nodes[fi1]['expression']
+            f2 = z if fi2 is None else F.nodes[fi2]['expression']
             factors[k] = add_to_fv(conditional(f0, f1, f2), F)
 
     return factors
 
 
-def handle_operator(v, si, deps, SV_factors, F, sv2fv):
+def handle_operator(v, si, deps, fac, F, sv2fv):
 
     # Error checking
-    if any(SV_factors[d] for d in deps):
+    if any(fac):
         raise FFCError(
             "Assuming that a {0} cannot be applied to arguments. If this is wrong please report a bug.".
             format(type(v)))
@@ -274,7 +274,6 @@ def compute_argument_factorization(S, SV_target, rank):
     #   argkey is a tuple with indices into SV for each of the argument components SV[si] depends on
     # SV_factors[si] = { argkey1: fi1, argkey2: fi2, ... } # if SV[si]
     # is a linear combination of multiple argkey configurations
-    SV_factors = numpy.empty(len(S.nodes), dtype=object)
     si2fi = numpy.zeros(len(S.nodes), dtype=int)
 
     # Factorize each subexpression in order:
@@ -293,8 +292,8 @@ def compute_argument_factorization(S, SV_target, rank):
                 factors = noargs
         else:
             # These quantities could be better input args to handlers:
-            # facs = [SV_factors[d] for d in deps]
             # fs = [FV[sv2fv[d]] for d in deps]
+            fac = [S.nodes[d]['factors'] for d in deps]
             if isinstance(v, Sum):
                 handler = handle_sum
             elif isinstance(v, Conj):
@@ -307,17 +306,17 @@ def compute_argument_factorization(S, SV_target, rank):
                 handler = handle_conditional
             else:  # All other operators
                 handler = handle_operator
-            factors = handler(v, si, deps, SV_factors, F, si2fi)
+            factors = handler(v, si, deps, fac, F, si2fi)
 
-        SV_factors[si] = factors
+        attr['factors'] = factors
 
     assert not noargs, "This dict was not supposed to be filled with anything!"
 
-    assert len(FV) == len(e2fi)
+    assert len(F.nodes) == len(F.e2i)
 
     # Get the factorizations of the target values
     IMs = []
-    if SV_factors[SV_target] == {}:
+    if S.nodes[SV_target]['factors'] == {}:
         if rank == 0:
             # Functionals and expressions: store as no args * factor
             factors = {(): si2fi[SV_target]}
@@ -330,7 +329,7 @@ def compute_argument_factorization(S, SV_target, rank):
         # and resort keys for canonical representation
         factors = {
             tuple(sorted(sv2av[si] for si in argkey)): fi
-            for argkey, fi in SV_factors[SV_target].items()
+            for argkey, fi in S.nodes[SV_target]['factors'].items()
         }
     # Expecting all term keys to have length == rank
     # (this assumption will eventually have to change if we
@@ -339,7 +338,13 @@ def compute_argument_factorization(S, SV_target, rank):
     IMs.append(factors)
 
     # Recompute dependencies in FV
-    FV_deps = compute_dependencies(e2fi, FV)
+    FV = [v['expression'] for i, v in F.nodes.items()]
+    FV_deps = []
+    for v in FV:
+        if v._ufl_is_terminal_ or v._ufl_is_terminal_modifier_:
+            FV_deps.append(())
+        else:
+            FV_deps.append([F.e2i[o] for o in v.ufl_operands])
 
     # Indices into FV that are needed for final result
     FV_targets = list(itertools.chain(sorted(IM.values()) for IM in IMs))
