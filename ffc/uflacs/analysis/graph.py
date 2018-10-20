@@ -37,6 +37,9 @@ class ExpressionGraph(object):
         # Expression to index dict
         self.e2i = {}
 
+    def number_of_nodes(self):
+        return len(self.nodes)
+
     def add_node(self, key, **kwargs):
         """ Add a node with optional properties """
         self.nodes[key] = kwargs

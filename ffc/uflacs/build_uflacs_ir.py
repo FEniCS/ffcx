@@ -21,6 +21,7 @@ from ffc.uflacs.analysis.factorization import compute_argument_factorization
 from ffc.uflacs.analysis.graph import build_scalar_graph
 from ffc.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
                                                     is_modified_terminal)
+from ffc.uflacs.analysis.visualise import visualise
 from ffc.uflacs.elementtables import (build_optimized_tables,
                                       clamp_table_small_numbers,
                                       piecewise_ttypes)
@@ -369,6 +370,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         S = build_scalar_graph(expression)
         SV, SV_target = S.V, S.V_target
         assert SV_target < len(SV)
+
+        visualise(S, 'S.pdf')
 
         # Compute factorization of arguments
         (argument_factorizations, modified_arguments, FV, FV_deps,
