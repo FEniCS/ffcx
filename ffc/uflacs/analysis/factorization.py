@@ -269,15 +269,11 @@ def compute_argument_factorization(S, SV_target, rank):
             # v is a modified Argument
             factors = {(si, ): one_index}
         else:
-            fac = []
-            sf = []
-            for d in deps:
-                v = S.nodes[d]
-                fac.append(v['factors'])
-                if v['factors']:
-                    sf.append(None)
-                else:
-                    sf.append(v['expression'])
+            fac = [S.nodes[d]['factors'] for d in deps]
+            sf = [None] * len(fac)
+            for i, d in enumerate(deps):
+                if not fac[i]:
+                    sf[i] = S.nodes[d]['expression']
 
             if not any(fac):
                 add_to_fv(v, F)
