@@ -258,28 +258,29 @@ def compute_argument_factorization(S, SV_target, rank):
     #   argkey is a tuple with indices into SV for each of the argument components SV[si] depends on
     # SV_factors[si] = { argkey1: fi1, argkey2: fi2, ... } # if SV[si]
     # is a linear combination of multiple argkey configurations
-    si2fi = numpy.zeros(len(S.nodes), dtype=int)
 
     # Factorize each subexpression in order:
     for si, attr in S.nodes.items():
         deps = S.out_edges[si]
         v = attr['expression']
 
-        # These handlers insert values in si2fi and SV_factors
-        if not len(deps):
-            if si in arg_indices:
-                # v is a modified Argument
-                factors = {(si, ): one_index}
-            else:
-                # v is a modified non-Argument terminal
-                si2fi[si] = add_to_fv(v, F)
-                factors = noargs
+        if si in arg_indices:
+            assert len(deps) == 0
+            # v is a modified Argument
+            factors = {(si, ): one_index}
         else:
-            # These quantities could be better input args to handlers:
-            sf = [F.nodes[si2fi[d]]['expression'] for d in deps]
-            fac = [S.nodes[d]['factors'] for d in deps]
+            fac = []
+            sf = []
+            for d in deps:
+                v = S.nodes[d]
+                fac.append(v['factors'])
+                if v['factors']:
+                    sf.append(None)
+                else:
+                    sf.append(v['expression'])
+
             if not any(fac):
-                si2fi[si] = add_to_fv(v, F)
+                add_to_fv(v, F)
                 factors = noargs
             else:
                 if isinstance(v, Sum):
