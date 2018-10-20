@@ -371,13 +371,19 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         SV, SV_target = S.V, S.V_target
         assert SV_target < len(SV)
 
-        visualise(S, 'S.pdf')
+        # Output diagnostic graph as pdf
+        if parameters['visualise']:
+            visualise(S, 'S.pdf')
 
         # Compute factorization of arguments
         (argument_factorizations, modified_arguments, F, FV, FV_deps,
          FV_targets) = compute_argument_factorization(S, SV_target, len(tensor_shape))
         assert len(argument_factorizations) == 1
         argument_factorization, = argument_factorizations
+
+        # Output diagnostic graph as pdf
+        if parameters['visualise']:
+            visualise(F, 'F.pdf')
 
         # Store modified arguments in analysed form
         for i in range(len(modified_arguments)):
