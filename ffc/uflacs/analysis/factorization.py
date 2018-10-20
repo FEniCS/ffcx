@@ -334,4 +334,4 @@ def compute_argument_factorization(S, SV_target, rank):
     # Indices into FV that are needed for final result
     FV_targets = list(itertools.chain(sorted(IM.values()) for IM in IMs))
 
-    return IMs, AV, FV, FV_deps, FV_targets
+    return IMs, AV, F, FV, FV_deps, FV_targets

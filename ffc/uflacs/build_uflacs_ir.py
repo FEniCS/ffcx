@@ -374,7 +374,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         visualise(S, 'S.pdf')
 
         # Compute factorization of arguments
-        (argument_factorizations, modified_arguments, FV, FV_deps,
+        (argument_factorizations, modified_arguments, F, FV, FV_deps,
          FV_targets) = compute_argument_factorization(S, SV_target, len(tensor_shape))
         assert len(argument_factorizations) == 1
         argument_factorization, = argument_factorizations
@@ -385,13 +385,13 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
         # Build set of modified_terminal indices into
         # factorized_vertices
-        modified_terminal_indices = [i for i, v in enumerate(FV) if is_modified_terminal(v)]
+        modified_terminal_indices = [i for i, v in F.nodes.items() if is_modified_terminal(v['expression'])]
 
         # Build set of modified terminal ufl expressions
-        modified_terminals = [analyse_modified_terminal(FV[i]) for i in modified_terminal_indices]
+        modified_terminals = [analyse_modified_terminal(F.nodes[i]['expression']) for i in modified_terminal_indices]
 
         # Make it easy to get mt object from FV index
-        FV_mts = [None] * len(FV)
+        FV_mts = [None] * F.number_of_nodes()
         for i, mt in zip(modified_terminal_indices, modified_terminals):
             FV_mts[i] = mt
 
