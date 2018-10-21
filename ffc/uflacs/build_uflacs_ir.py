@@ -368,16 +368,15 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
         # Rebuild scalar list-based graph representation
         S = build_scalar_graph(expression)
-        SV, SV_target = S.V, S.V_target
-        assert SV_target < len(SV)
 
         # Output diagnostic graph as pdf
         if parameters['visualise']:
             visualise(S, 'S.pdf')
 
         # Compute factorization of arguments
+        rank = len(tensor_shape)
         (argument_factorizations, modified_arguments, F, FV, FV_deps,
-         FV_targets) = compute_argument_factorization(S, SV_target, len(tensor_shape))
+         FV_targets) = compute_argument_factorization(S, rank)
         assert len(argument_factorizations) == 1
         argument_factorization, = argument_factorizations
 
@@ -406,6 +405,19 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
             FV, FV_deps, FV_targets, modified_terminal_indices, modified_terminals,
             mt_unique_table_reference)
 
+        # Build set of modified_terminals for each mt factorized vertex
+        # and attach tables, if appropriate
+        for i, v in F.nodes.items():
+            expr = v['expression']
+            if is_modified_terminal(expr):
+                mt = analyse_modified_terminal(expr)
+                F.nodes[i]['mt'] = mt
+                tr = mt_unique_table_reference.get(mt)
+                if tr is not None:
+                    F.nodes[i]['tr'] = tr
+
+        analyse_dependencies_2(F, mt_unique_table_reference)
+
         # Extend piecewise V with unique new FV_piecewise vertices
         pir = ir["piecewise_ir"]
         for i, v in enumerate(FV):
@@ -416,7 +428,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                     pe2i[v] = j
                     pir["V"].append(v)
                     pir["V_active"].append(1)
-                    mt = FV_mts[i]
+                    mt = F.nodes[i].get('mt')
                     if mt is not None:
                         pir["mt_tabledata"][mt] = mt_unique_table_reference.get(mt)
                     pir["V_mts"].append(mt)
@@ -434,7 +446,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         block_contributions = collections.defaultdict(list)
         for ma_indices, fi in sorted(argument_factorization.items()):
             # Get a bunch of information about this term
-            rank = len(ma_indices)
+            assert rank == len(ma_indices)
             trs = tuple(mt_unique_table_reference[modified_arguments[ai]] for ai in ma_indices)
 
             unames = tuple(tr.name for tr in trs)
@@ -757,28 +769,11 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         # Result of factorization:
         # (array) MA-index -> UFL expression of modified arguments
         expr_ir["modified_arguments"] = modified_arguments
-
-        # (dict) tuple(MA-indices) -> FV-index of monomial factor
-        # expr_ir["argument_factorization"] = argument_factorization
-
         expr_ir["block_contributions"] = block_contributions
 
-        # Modified terminals
-        # (array) list of FV-indices to modified terminals
-        # expr_ir["modified_terminal_indices"] = modified_terminal_indices
-
-        # Dependency structure of graph:
-        # (CRSArray) FV-index -> direct dependency FV-index list
-        # expr_ir["dependencies"] = FV_deps
-
-        # (CRSArray) FV-index -> direct dependee FV-index list
-        # expr_ir["inverse_dependencies"] = inv_FV_deps
-
         # Metadata about each vertex
-        # expr_ir["active"] = FV_active        # (array) FV-index -> bool
-        # expr_ir["V_piecewise"] = FV_piecewise  # (array) FV-index -> bool
         expr_ir["V_varying"] = FV_varying  # (array) FV-index -> bool
-        expr_ir["V_mts"] = FV_mts
+        expr_ir["V_mts"] = [v.get('mt') for i, v in F.nodes.items()]
 
         # Store mapping from modified terminal object to
         # table data, this is used in integralgenerator
@@ -840,3 +835,59 @@ def analyse_dependencies(V, V_deps, V_targets, modified_terminal_indices, modifi
     # piecewise *= nonliteral
 
     return inv_deps, active, piecewise, varying
+
+
+def analyse_dependencies_2(F, mt_unique_table_reference):
+    # Sets 'status' of all nodes to either: 'inactive', 'piecewise' or 'varying'
+    # Children of 'target' nodes are either 'piecewise' or 'varying'.
+    # All other nodes are 'inactive'.
+    # Varying nodes are identified by their tables ('tr'). All their parent
+    # nodes are also set to 'varying' - remaining active nodes are 'piecewise'.
+
+    # Set targets, and dependencies to 'active'
+    targets = [i for i, v in F.nodes.items() if v.get('target')]
+    for i, v in F.nodes.items():
+        v['status'] = 'inactive'
+
+    while targets:
+        s = targets.pop()
+        F.nodes[s]['status'] = 'active'
+        for j in F.out_edges[s]:
+            if F.nodes[j]['status'] == 'inactive':
+                targets.append(j)
+
+    # Build piecewise/varying markers for factorized_vertices
+    varying_ttypes = ("varying", "uniform", "quadrature")
+    varying_indices = []
+    for i, v in F.nodes.items():
+        if v.get('mt') is None:
+            continue
+        tr = v.get('tr')
+        if tr is not None:
+            ttype = tr.ttype
+            # Check if table computations have revealed values varying over points
+            # Note: uniform means entity-wise uniform, varying over points
+            if ttype in varying_ttypes:
+                varying_indices.append(i)
+            else:
+                if ttype not in ("fixed", "piecewise", "ones", "zeros"):
+                    raise FFCError("Invalid ttype %s" % (ttype, ))
+
+        elif not is_cellwise_constant(v['expression']):
+            raise FFCError("Error")
+            # Keeping this check to be on the safe side,
+            # not sure which cases this will cover (if any)
+            # varying_indices.append(i)
+
+    # Set all parents of active varying nodes to 'varying'
+    while varying_indices:
+        s = varying_indices.pop()
+        if F.nodes[s]['status'] == 'active':
+            F.nodes[s]['status'] = 'varying'
+            for j in F.in_edges[s]:
+                varying_indices.append(j)
+
+    # Any remaining active nodes must be 'piecewise'
+    for i, v in F.nodes.items():
+        if v['status'] == 'active':
+            v['status'] = 'piecewise'

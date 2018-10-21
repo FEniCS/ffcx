@@ -207,7 +207,7 @@ def handle_operator(v, si, deps, fac, sf, F):
     raise FFCError("No arguments")
 
 
-def compute_argument_factorization(S, SV_target, rank):
+def compute_argument_factorization(S, rank):
     """Factorizes a scalar expression graph w.r.t. scalar Argument
     components.
 
@@ -242,7 +242,7 @@ def compute_argument_factorization(S, SV_target, rank):
     # Extract argument component subgraph
     arg_indices = build_argument_indices(S)
     AV = [S.nodes[i]['expression'] for i in arg_indices]
-    sv2av = {si: ai for ai, si in enumerate(arg_indices)}
+#    sv2av = {si: ai for ai, si in enumerate(arg_indices)}
 
     # Data structure for building non-argument factors
     F = ExpressionGraph()
@@ -301,10 +301,10 @@ def compute_argument_factorization(S, SV_target, rank):
 
     # Get the factorizations of the target values
     IMs = []
-    if S.nodes[SV_target]['factors'] == {}:
+    if S.nodes[S.V_target]['factors'] == {}:
         if rank == 0:
             # Functionals and expressions: store as no args * factor
-            factors = {(): si2fi[SV_target]}
+            factors = {(): si2fi[S.V_target]}
         else:
             # Zero form of arity 1 or higher: make factors empty
             factors = {}
@@ -313,8 +313,8 @@ def compute_argument_factorization(S, SV_target, rank):
         # Map argkeys from indices into SV to indices into AV,
         # and resort keys for canonical representation
         factors = {
-            tuple(sorted(sv2av[si] for si in argkey)): fi
-            for argkey, fi in S.nodes[SV_target]['factors'].items()
+            tuple(sorted(arg_indices.index(si) for si in argkey)): fi
+            for argkey, fi in S.nodes[S.V_target]['factors'].items()
         }
     # Expecting all term keys to have length == rank
     # (this assumption will eventually have to change if we
@@ -330,6 +330,19 @@ def compute_argument_factorization(S, SV_target, rank):
             FV_deps.append(())
         else:
             FV_deps.append([F.e2i[o] for o in v.ufl_operands])
+
+    # Indices into F that are needed for final result
+    for i in factors.values():
+        F.nodes[i]['target'] = []
+    for k in factors:
+        i = factors[k]
+        F.nodes[i]['target'] += [k]
+
+    for i, v in F.nodes.items():
+        expr = v['expression']
+        if expr._ufl_is_terminal_ and not expr._ufl_is_terminal_modifier_:
+            for o in expr.ufl_operands:
+                F.add_edge(i, F.e2i[o])
 
     # Indices into FV that are needed for final result
     FV_targets = list(itertools.chain(sorted(IM.values()) for IM in IMs))
