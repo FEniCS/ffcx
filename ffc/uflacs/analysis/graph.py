@@ -14,7 +14,6 @@ import ufl
 from ffc import FFCError
 from ffc.uflacs.analysis.modified_terminals import is_modified_terminal
 from ffc.uflacs.analysis.valuenumbering import ValueNumberer
-from ffc.uflacs.analysis.dependencies import compute_dependencies
 
 logger = logging.getLogger(__name__)
 

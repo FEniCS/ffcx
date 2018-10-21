@@ -15,8 +15,6 @@ import numpy
 import ufl
 from ffc import FFCError
 from ffc.uflacs.analysis.balancing import balance_modifiers
-from ffc.uflacs.analysis.dependencies import (invert_dependencies, mark_active,
-                                              mark_image)
 from ffc.uflacs.analysis.factorization import compute_argument_factorization
 from ffc.uflacs.analysis.graph import build_scalar_graph
 from ffc.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
@@ -395,16 +393,6 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         # Build set of modified terminal ufl expressions
         modified_terminals = [analyse_modified_terminal(F.nodes[i]['expression']) for i in modified_terminal_indices]
 
-        # Make it easy to get mt object from FV index
-        FV_mts = [None] * F.number_of_nodes()
-        for i, mt in zip(modified_terminal_indices, modified_terminals):
-            FV_mts[i] = mt
-
-        # Dependency analysis
-        inv_FV_deps, FV_active, FV_piecewise, FV_varying = analyse_dependencies(
-            FV, FV_deps, FV_targets, modified_terminal_indices, modified_terminals,
-            mt_unique_table_reference)
-
         # Build set of modified_terminals for each mt factorized vertex
         # and attach tables, if appropriate
         for i, v in F.nodes.items():
@@ -416,12 +404,13 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                 if tr is not None:
                     F.nodes[i]['tr'] = tr
 
-        analyse_dependencies_2(F, mt_unique_table_reference)
+        # Attach status to each node: 'inactive', 'piecewise' or 'varying'
+        analyse_dependencies(F, mt_unique_table_reference)
 
         # Extend piecewise V with unique new FV_piecewise vertices
         pir = ir["piecewise_ir"]
         for i, v in enumerate(FV):
-            if FV_piecewise[i]:
+            if F.nodes[i]['status'] == 'piecewise':
                 j = pe2i.get(v)
                 if j is None:
                     j = len(pe2i)
@@ -470,7 +459,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
             # Store piecewise status for fi and translate index to
             # piecewise scope if relevant
-            factor_is_piecewise = FV_piecewise[fi]
+            factor_is_piecewise = (F.nodes[fi]['status'] == 'piecewise')
             if factor_is_piecewise:
                 factor_index = pe2i[FV[fi]]
             else:
@@ -680,7 +669,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         active_table_names = set()
         for i, mt in zip(modified_terminal_indices, modified_terminals):
             tr = mt_unique_table_reference.get(mt)
-            if tr is not None and FV_active[i]:
+            if tr is not None and F.nodes[i]['status'] != 'inactive':
                 active_table_names.add(tr.name)
 
         # Figure out which table names are referenced in blocks
@@ -718,7 +707,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         # Analyse active terminals to check what we'll need to generate code for
         active_mts = []
         for i, mt in zip(modified_terminal_indices, modified_terminals):
-            if FV_active[i]:
+            if F.nodes[i]['status'] != 'inactive':
                 active_mts.append(mt)
 
         # Figure out if we need to access CellCoordinate to avoid
@@ -772,7 +761,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         expr_ir["block_contributions"] = block_contributions
 
         # Metadata about each vertex
-        expr_ir["V_varying"] = FV_varying  # (array) FV-index -> bool
+        expr_ir["V_varying"] = [(v['status'] == 'varying')
+                                for i, v in F.nodes.items()]
         expr_ir["V_mts"] = [v.get('mt') for i, v in F.nodes.items()]
 
         # Store mapping from modified terminal object to
@@ -789,60 +779,12 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
     return ir
 
 
-def analyse_dependencies(V, V_deps, V_targets, modified_terminal_indices, modified_terminals,
-                         mt_unique_table_reference):
-
-    # Build the 'inverse' of the sparse dependency matrix
-    inv_deps = invert_dependencies(V_deps)
-
-    # Mark subexpressions of V that are actually needed for final result
-    active, num_active = mark_active(V_deps, V_targets)
-
-    # Build piecewise/varying markers for factorized_vertices
-    varying_ttypes = ("varying", "uniform", "quadrature")
-    varying_indices = []
-    for i, mt in zip(modified_terminal_indices, modified_terminals):
-        tr = mt_unique_table_reference.get(mt)
-        if tr is not None:
-            ttype = tr.ttype
-            # Check if table computations have revealed values varying over points
-            # Note: uniform means entity-wise uniform, varying over points
-            if ttype in varying_ttypes:
-                varying_indices.append(i)
-            else:
-                if ttype not in ("fixed", "piecewise", "ones", "zeros"):
-                    raise FFCError("Invalid ttype %s" % (ttype, ))
-
-        elif not is_cellwise_constant(V[i]):
-            # Keeping this check to be on the safe side,
-            # not sure which cases this will cover (if any)
-            varying_indices.append(i)
-
-    # Mark every subexpression that is computed from the spatially
-    # dependent terminals
-    varying, num_varying = mark_image(inv_deps, varying_indices)
-
-    # The rest of the subexpressions are piecewise constant (1-1=0, 1-0=1)
-    piecewise = 1 - varying
-
-    # Unmark non-active subexpressions
-    varying *= active
-    piecewise *= active
-
-    # TODO: Skip literals in both varying and piecewise
-    # nonliteral = ...
-    # varying *= nonliteral
-    # piecewise *= nonliteral
-
-    return inv_deps, active, piecewise, varying
-
-
-def analyse_dependencies_2(F, mt_unique_table_reference):
+def analyse_dependencies(F, mt_unique_table_reference):
     # Sets 'status' of all nodes to either: 'inactive', 'piecewise' or 'varying'
     # Children of 'target' nodes are either 'piecewise' or 'varying'.
     # All other nodes are 'inactive'.
     # Varying nodes are identified by their tables ('tr'). All their parent
-    # nodes are also set to 'varying' - remaining active nodes are 'piecewise'.
+    # nodes are also set to 'varying' - any remaining active nodes are 'piecewise'.
 
     # Set targets, and dependencies to 'active'
     targets = [i for i, v in F.nodes.items() if v.get('target')]

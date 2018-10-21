@@ -9,10 +9,7 @@
 import logging
 import itertools
 
-import numpy
-
 from ffc import FFCError
-from ffc.uflacs.analysis.dependencies import compute_dependencies
 from ffc.uflacs.analysis.graph import ExpressionGraph
 from ffc.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
                                                     strip_modified_terminal)
@@ -304,6 +301,7 @@ def compute_argument_factorization(S, rank):
     if S.nodes[S.V_target]['factors'] == {}:
         if rank == 0:
             # Functionals and expressions: store as no args * factor
+            si2fi = {}  # FIXME
             factors = {(): si2fi[S.V_target]}
         else:
             # Zero form of arity 1 or higher: make factors empty
@@ -340,7 +338,7 @@ def compute_argument_factorization(S, rank):
 
     for i, v in F.nodes.items():
         expr = v['expression']
-        if expr._ufl_is_terminal_ and not expr._ufl_is_terminal_modifier_:
+        if not expr._ufl_is_terminal_ and not expr._ufl_is_terminal_modifier_:
             for o in expr.ufl_operands:
                 F.add_edge(i, F.e2i[o])
 
