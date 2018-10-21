@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class ExpressionGraph(object):
-    """ A directed multi-edge graph, allowing multiple edges
+    """A directed multi-edge graph, allowing multiple edges
     between the same nodes, and respecting the insertion order
     of nodes and edges."""
 
@@ -40,13 +40,13 @@ class ExpressionGraph(object):
         return len(self.nodes)
 
     def add_node(self, key, **kwargs):
-        """ Add a node with optional properties """
+        """Add a node with optional properties"""
         self.nodes[key] = kwargs
         self.out_edges[key] = []
         self.in_edges[key] = []
 
     def add_edge(self, node1, node2):
-        """ Add a directed edge from node1 to node2 """
+        """Add a directed edge from node1 to node2"""
         if node1 not in self.nodes or node2 not in self.nodes:
             raise KeyError("Adding edge to unknown node")
 
