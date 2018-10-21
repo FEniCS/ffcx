@@ -320,15 +320,6 @@ def compute_argument_factorization(S, rank):
     assert all(len(k) == rank for k in factors)
     IMs.append(factors)
 
-    # Recompute dependencies in FV
-    FV = [v['expression'] for i, v in F.nodes.items()]
-    FV_deps = []
-    for v in FV:
-        if v._ufl_is_terminal_ or v._ufl_is_terminal_modifier_:
-            FV_deps.append(())
-        else:
-            FV_deps.append([F.e2i[o] for o in v.ufl_operands])
-
     # Indices into F that are needed for final result
     for i in factors.values():
         F.nodes[i]['target'] = []
@@ -336,13 +327,16 @@ def compute_argument_factorization(S, rank):
         i = factors[k]
         F.nodes[i]['target'] += [k]
 
+    # Compute dependencies in FV
     for i, v in F.nodes.items():
         expr = v['expression']
         if not expr._ufl_is_terminal_ and not expr._ufl_is_terminal_modifier_:
             for o in expr.ufl_operands:
                 F.add_edge(i, F.e2i[o])
 
+    FV = [v['expression'] for i, v in F.nodes.items()]
+
     # Indices into FV that are needed for final result
     FV_targets = list(itertools.chain(sorted(IM.values()) for IM in IMs))
 
-    return IMs, AV, F, FV, FV_deps, FV_targets
+    return IMs, AV, F, FV, FV_targets

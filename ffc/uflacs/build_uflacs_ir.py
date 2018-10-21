@@ -373,7 +373,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
         # Compute factorization of arguments
         rank = len(tensor_shape)
-        (argument_factorizations, modified_arguments, F, FV, FV_deps,
+        (argument_factorizations, modified_arguments, F, FV,
          FV_targets) = compute_argument_factorization(S, rank)
         assert len(argument_factorizations) == 1
         argument_factorization, = argument_factorizations
