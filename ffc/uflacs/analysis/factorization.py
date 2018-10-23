@@ -8,6 +8,7 @@
 
 import logging
 import itertools
+from functools import singledispatch
 
 from ffc import FFCError
 from ffc.uflacs.analysis.graph import ExpressionGraph
@@ -52,7 +53,17 @@ def add_to_fv(expr, F):
 # Reuse these empty objects where appropriate to save memory
 noargs = {}
 
+@singledispatch
+def handler(v, fac, sf, F):
+    # Error checking
+    if any(fac):
+        raise FFCError(
+            "Assuming that a {0} cannot be applied to arguments. If this is wrong please report a bug.".
+            format(type(v)))
+    # Record non-argument subexpression
+    raise FFCError("No arguments")
 
+@handler.register(Sum)
 def handle_sum(v, fac, sf, F):
     if len(fac) != 2:
         raise FFCError("Assuming binary sum here. This can be fixed if needed.")
@@ -86,7 +97,7 @@ def handle_sum(v, fac, sf, F):
 
     return factors
 
-
+@handler.register(Product)
 def handle_product(v, fac, sf, F):
     if len(fac) != 2:
         raise FFCError("Assuming binary product here. This can be fixed if needed.")
@@ -124,7 +135,7 @@ def handle_product(v, fac, sf, F):
 
     return factors
 
-
+@handler.register(Conj)
 def handle_conj(v, fac, sf, F):
 
     fac = fac[0]
@@ -139,6 +150,7 @@ def handle_conj(v, fac, sf, F):
     return factors
 
 
+@handler.register(Division)
 def handle_division(v, fac, sf, F):
     fac0 = fac[0]
     fac1 = fac[1]
@@ -158,6 +170,7 @@ def handle_division(v, fac, sf, F):
     return factors
 
 
+@handler.register(Conditional)
 def handle_conditional(v, fac, sf, F):
     fac0 = fac[0]
     fac1 = fac[1]
@@ -192,16 +205,6 @@ def handle_conditional(v, fac, sf, F):
 
     return factors
 
-
-def handle_operator(v, fac, sf, F):
-
-    # Error checking
-    if any(fac):
-        raise FFCError(
-            "Assuming that a {0} cannot be applied to arguments. If this is wrong please report a bug.".
-            format(type(v)))
-    # Record non-argument subexpression
-    raise FFCError("No arguments")
 
 
 def compute_argument_factorization(S, rank):
@@ -276,18 +279,6 @@ def compute_argument_factorization(S, rank):
                 add_to_fv(v, F)
                 factors = noargs
             else:
-                if isinstance(v, Sum):
-                    handler = handle_sum
-                elif isinstance(v, Conj):
-                    handler = handle_conj
-                elif isinstance(v, Product):
-                    handler = handle_product
-                elif isinstance(v, Division):
-                    handler = handle_division
-                elif isinstance(v, Conditional):
-                    handler = handle_conditional
-                else:  # All other operators
-                    handler = handle_operator
                 factors = handler(v, fac, sf, F)
 
         attr['factors'] = factors
