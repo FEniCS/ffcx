@@ -53,8 +53,8 @@ def add_to_fv(expr, F):
 noargs = {}
 
 
-def handle_sum(v, si, deps, fac, sf, F):
-    if len(deps) != 2:
+def handle_sum(v, fac, sf, F):
+    if len(fac) != 2:
         raise FFCError("Assuming binary sum here. This can be fixed if needed.")
 
     fac0 = fac[0]
@@ -87,8 +87,8 @@ def handle_sum(v, si, deps, fac, sf, F):
     return factors
 
 
-def handle_product(v, si, deps, fac, sf, F):
-    if len(deps) != 2:
+def handle_product(v, fac, sf, F):
+    if len(fac) != 2:
         raise FFCError("Assuming binary product here. This can be fixed if needed.")
     fac0 = fac[0]
     fac1 = fac[1]
@@ -125,7 +125,7 @@ def handle_product(v, si, deps, fac, sf, F):
     return factors
 
 
-def handle_conj(v, si, deps, fac, sf, F):
+def handle_conj(v, fac, sf, F):
 
     fac = fac[0]
     if fac:
@@ -139,7 +139,7 @@ def handle_conj(v, si, deps, fac, sf, F):
     return factors
 
 
-def handle_division(v, si, deps, fac, sf, F):
+def handle_division(v, fac, sf, F):
     fac0 = fac[0]
     fac1 = fac[1]
     assert not fac1, "Cannot divide by arguments."
@@ -158,7 +158,7 @@ def handle_division(v, si, deps, fac, sf, F):
     return factors
 
 
-def handle_conditional(v, si, deps, fac, sf, F):
+def handle_conditional(v, fac, sf, F):
     fac0 = fac[0]
     fac1 = fac[1]
     fac2 = fac[2]
@@ -193,7 +193,7 @@ def handle_conditional(v, si, deps, fac, sf, F):
     return factors
 
 
-def handle_operator(v, si, deps, fac, sf, F):
+def handle_operator(v, fac, sf, F):
 
     # Error checking
     if any(fac):
@@ -288,7 +288,7 @@ def compute_argument_factorization(S, rank):
                     handler = handle_conditional
                 else:  # All other operators
                     handler = handle_operator
-                factors = handler(v, si, deps, fac, sf, F)
+                factors = handler(v, fac, sf, F)
 
         attr['factors'] = factors
 
