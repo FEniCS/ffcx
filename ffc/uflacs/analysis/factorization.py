@@ -53,6 +53,7 @@ def add_to_fv(expr, F):
 # Reuse these empty objects where appropriate to save memory
 noargs = {}
 
+
 @singledispatch
 def handler(v, fac, sf, F):
     # Error checking
@@ -62,6 +63,7 @@ def handler(v, fac, sf, F):
             format(type(v)))
     # Record non-argument subexpression
     raise FFCError("No arguments")
+
 
 @handler.register(Sum)
 def handle_sum(v, fac, sf, F):
@@ -96,6 +98,7 @@ def handle_sum(v, fac, sf, F):
         raise FFCError("No arguments")
 
     return factors
+
 
 @handler.register(Product)
 def handle_product(v, fac, sf, F):
@@ -134,6 +137,7 @@ def handle_product(v, fac, sf, F):
                 factors[argkey] = add_to_fv(f0 * f1, F)
 
     return factors
+
 
 @handler.register(Conj)
 def handle_conj(v, fac, sf, F):
@@ -204,7 +208,6 @@ def handle_conditional(v, fac, sf, F):
             factors[k] = add_to_fv(conditional(f0, f1, f2), F)
 
     return factors
-
 
 
 def compute_argument_factorization(S, rank):

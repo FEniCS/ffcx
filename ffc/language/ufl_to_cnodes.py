@@ -53,9 +53,9 @@ class UFL2CNodesTranslatorCpp(MultiFunction):
 
     # === Error handlers for missing formatting rules ===
 
-    def expr(self, o):
+    def expr(self, o, *args):
         """Generic fallback with error message for missing rules."""
-        raise FFCError("Missing C++ formatting rule for expr type {0}.".format(o._ufl_class_))
+        raise FFCError("Missing C formatting rule for expr type {0}.".format(o._ufl_class_))
 
     # === Formatting rules for scalar literals ===
 
