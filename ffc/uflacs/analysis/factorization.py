@@ -301,8 +301,7 @@ def compute_argument_factorization(S, rank):
     if S.nodes[S.V_target]['factors'] == {}:
         if rank == 0:
             # Functionals and expressions: store as no args * factor
-            si2fi = {}  # FIXME
-            factors = {(): si2fi[S.V_target]}
+            factors = {(): F.e2i[S.nodes[S.V_target]['expression']]}
         else:
             # Zero form of arity 1 or higher: make factors empty
             factors = {}
