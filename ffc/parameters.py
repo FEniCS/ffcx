@@ -58,6 +58,7 @@ _FFC_CACHE_PARAMETERS = {
 _FFC_LOG_PARAMETERS = {
     # "log_level": INFO + 5,  # log level, displaying only messages with level >= log_level
     "log_prefix": "",  # log prefix
+    "visualise": False,
 }
 FFC_PARAMETERS = {}
 FFC_PARAMETERS.update(_FFC_BUILD_PARAMETERS)

@@ -22,12 +22,11 @@ class ValueNumberer(ufl.corealg.multifunction.MultiFunction):
     with fallthrough for types that can be mapped to the value numbers
     of their operands."""
 
-    def __init__(self, V, V_sizes, V_symbols):
-        ufl.corealg.multifunction.MultiFunction.__init__(self)
+    def __init__(self, G):
         self.symbol_count = 0
-        self.V = V
-        self.V_sizes = V_sizes
-        self.V_symbols = V_symbols
+        self.G = G
+        self.V_symbols = []
+        super().__init__()
 
     def new_symbols(self, n):
         """Generator for new symbols with a running counter."""
@@ -43,15 +42,20 @@ class ValueNumberer(ufl.corealg.multifunction.MultiFunction):
         return begin
 
     def get_node_symbols(self, expr):
-        idx = self.V.index(expr)
+        idx = [i for i, v in enumerate(self.G.V) if v == expr][0]
         return self.V_symbols[idx]
 
-    def expr(self, v, i):
+    def compute_symbols(self):
+        for i, v in enumerate(self.G.V):
+            self.V_symbols.append(self.__call__(v))
+        return self.V_symbols
+
+    def expr(self, v):
         """Create new symbols for expressions that represent new values."""
-        n = self.V_sizes[i]
+        n = ufl.product(v.ufl_shape + v.ufl_index_dimensions)
         return self.new_symbols(n)
 
-    def form_argument(self, v, i):
+    def form_argument(self, v):
         """Create new symbols for expressions that represent new values."""
         symmetry = v.ufl_element().symmetry()
 
@@ -70,12 +74,12 @@ class ValueNumberer(ufl.corealg.multifunction.MultiFunction):
                     mapped_symbols[mc] = s
                 symbols.append(s)
         else:
-            n = self.V_sizes[i]
+            n = ufl.product(v.ufl_shape + v.ufl_index_dimensions)
             symbols = self.new_symbols(n)
 
         return symbols
 
-    def _modified_terminal(self, v, i):
+    def _modified_terminal(self, v):
         """Modifiers:
         terminal           - the underlying Terminal object
         global_derivatives - tuple of ints, each meaning derivative in that global direction
@@ -153,7 +157,7 @@ class ValueNumberer(ufl.corealg.multifunction.MultiFunction):
 
     # indexed is implemented as a fall-through operation
 
-    def indexed(self, Aii, i):
+    def indexed(self, Aii):
         # Reuse symbols of arg A for Aii
         A = Aii.ufl_operands[0]
 
@@ -165,7 +169,7 @@ class ValueNumberer(ufl.corealg.multifunction.MultiFunction):
         symbols = [A_symbols[k] for k in d]
         return symbols
 
-    def component_tensor(self, A, i):
+    def component_tensor(self, A):
         # Reuse symbols of arg Aii for A
         Aii = A.ufl_operands[0]
 
@@ -177,13 +181,12 @@ class ValueNumberer(ufl.corealg.multifunction.MultiFunction):
         symbols = [Aii_symbols[k] for k in d]
         return symbols
 
-    def list_tensor(self, v, i):
-        row_symbols = [self.get_node_symbols(row) for row in v.ufl_operands]
+    def list_tensor(self, v):
         symbols = []
-        for rowsymb in row_symbols:
-            symbols.extend(rowsymb)
+        for row in v.ufl_operands:
+            symbols.extend(self.get_node_symbols(row))
         return symbols
 
-    def variable(self, v, i):
+    def variable(self, v):
         """Direct reuse of all symbols."""
         return self.get_node_symbols(v.ufl_operands[0])

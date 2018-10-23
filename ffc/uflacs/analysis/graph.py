@@ -18,48 +18,17 @@ from ffc.uflacs.analysis.valuenumbering import ValueNumberer
 logger = logging.getLogger(__name__)
 
 
-def build_graph_symbols(V):
-    """Tabulate scalar value numbering of all nodes in a a list based representation of an
-    expression graph.
+class ExpressionGraph(object):
+    """A directed multi-edge graph, allowing multiple edges
+    between the same nodes, and respecting the insertion order
+    of nodes and edges."""
 
-    Returns
-    -------
-    V_symbols - list of symbols (value numbers) of each component of each node in V.
-    total_unique_symbols - The number of symbol values assigned to unique scalar
-                           components of the nodes in V.
-
-    """
-    # Compute the total shape (value shape x index dimensions) for each node
-    V_shapes = [(v.ufl_shape + v.ufl_index_dimensions) for v in V]
-
-    # Compute the total value size for each node
-    V_sizes = [ufl.product(sh) for sh in V_shapes]
-
-    V_symbols = []
-    value_numberer = ValueNumberer(V, V_sizes, V_symbols)
-    for (i, v) in enumerate(V):
-        V_symbols.append(value_numberer(v, i))
-
-    return V_symbols, value_numberer.symbol_count
-
-
-def build_graph_vertices(expressions, scalar=False):
-    # Count unique expression nodes
-    e2i = {}
-    for expr in expressions:
-        _count_nodes_with_unique_post_traversal(expr, e2i, scalar)
-
-    # Invert the map to get index->expression
-    V = sorted(e2i, key=e2i.get)
-
-    # Get vertex indices representing input expression roots
-    expression_vertices = [e2i[expr] for expr in expressions]
-
-    return e2i, V, expression_vertices
-
-
-class Graph2(object):
     def __init__(self):
+
+        # Data structures for directed multi-edge graph
+        self.nodes = {}
+        self.out_edges = {}
+        self.in_edges = {}
 
         # Index to expression
         self.V = []
@@ -67,21 +36,71 @@ class Graph2(object):
         # Expression to index dict
         self.e2i = {}
 
-        self.expression_vertices = []
+    def number_of_nodes(self):
+        return len(self.nodes)
 
-        self.V_symbols = None
-        self.total_unique_symbols = 0
+    def add_node(self, key, **kwargs):
+        """Add a node with optional properties"""
+        self.nodes[key] = kwargs
+        self.out_edges[key] = []
+        self.in_edges[key] = []
+
+    def add_edge(self, node1, node2):
+        """Add a directed edge from node1 to node2"""
+        if node1 not in self.nodes or node2 not in self.nodes:
+            raise KeyError("Adding edge to unknown node")
+
+        self.out_edges[node1] += [node2]
+        self.in_edges[node2] += [node1]
 
 
-def build_graph(expressions):
+def build_graph_vertices(expression, scalar=False):
+    # Count unique expression nodes
 
-    G = Graph2()
+    G = ExpressionGraph()
+
+    G.e2i = {}
+    _count_nodes_with_unique_post_traversal(expression, G.e2i, scalar)
+
+    # Invert the map to get index->expression
+    G.V = sorted(G.e2i, key=G.e2i.get)
+
+    # Add nodes to 'new' graph structure
+    for i, v in enumerate(G.V):
+        G.add_node(i, expression=v)
+
+    # Get vertex index representing input expression root
+    G.V_target = G.e2i[expression]
+
+    return G
+
+
+def build_scalar_graph(expression):
+    """Build list representation of expression graph covering the given
+    expressions.
+    """
 
     # Populate with vertices
-    G.e2i, G.V, G.expression_vertices = build_graph_vertices(expressions, scalar=False)
+    G = build_graph_vertices(expression, scalar=False)
 
-    # Populate with symbols
-    G.V_symbols, G.total_unique_symbols = build_graph_symbols(G.V)
+    # Build more fine grained computational graph of scalar subexpressions
+    scalar_expression = rebuild_with_scalar_subexpressions(G)
+
+    # Build new list representation of graph where all
+    # vertices of V represent single scalar operations
+    G = build_graph_vertices(scalar_expression, scalar=True)
+
+    # Compute graph edges
+    V_deps = []
+    for v in G.V:
+        if v._ufl_is_terminal_ or v._ufl_is_terminal_modifier_:
+            V_deps.append(())
+        else:
+            V_deps.append([G.e2i[o] for o in v.ufl_operands])
+
+    for i, edges in enumerate(V_deps):
+        for j in edges:
+            G.add_edge(i, j)
 
     return G
 
@@ -262,16 +281,21 @@ def rebuild_with_scalar_subexpressions(G):
     - nvs  - Tuple of ne2i indices corresponding to the last vertex of G.V
     """
 
+    # Compute symbols over graph and rebuild scalar expression
+    value_numberer = ValueNumberer(G)
+    V_symbols = value_numberer.compute_symbols()
+    total_unique_symbols = value_numberer.symbol_count
+
     # Algorithm to apply to each subexpression
     reconstruct_scalar_subexpressions = ReconstructScalarSubexpressions()
 
     # Array to store the scalar subexpression in for each symbol
-    W = numpy.empty(G.total_unique_symbols, dtype=object)
+    W = numpy.empty(total_unique_symbols, dtype=object)
 
     # Iterate over each graph node in order
     for i, v in enumerate(G.V):
         # Find symbols of v components
-        vs = G.V_symbols[i]
+        vs = V_symbols[i]
 
         # Skip if there's nothing new here (should be the case for indexing types)
         if all(W[s] is not None for s in vs):
@@ -309,7 +333,7 @@ def rebuild_with_scalar_subexpressions(G):
                     # TODO: Build edge datastructure and use instead?
                     # k = G.E[i][j]
                     k = G.e2i[vop]
-                    sops.append(G.V_symbols[k])
+                    sops.append(V_symbols[k])
 
             # Fetch reconstructed operand expressions
             wops = [tuple(W[k] for k in so) for so in sops]
@@ -331,10 +355,8 @@ def rebuild_with_scalar_subexpressions(G):
                 assert s in handled  # Result of symmetry!
 
     # Find symbols of final v from input graph
-    vs = G.V_symbols[-1]
-    scalar_expression = [W[s] for s in vs]
-    if (None in scalar_expression):
-        raise FFCError("Expecting that all symbols in vs are handled at this point.")
+    vs = V_symbols[-1][0]
+    scalar_expression = W[vs]
     return scalar_expression
 
 

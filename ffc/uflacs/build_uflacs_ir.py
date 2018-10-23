@@ -15,14 +15,11 @@ import numpy
 import ufl
 from ffc import FFCError
 from ffc.uflacs.analysis.balancing import balance_modifiers
-from ffc.uflacs.analysis.dependencies import (compute_dependencies,
-                                              invert_dependencies, mark_active,
-                                              mark_image)
 from ffc.uflacs.analysis.factorization import compute_argument_factorization
-from ffc.uflacs.analysis.graph import (build_graph, build_graph_vertices,
-                                       rebuild_with_scalar_subexpressions)
+from ffc.uflacs.analysis.graph import build_scalar_graph
 from ffc.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
                                                     is_modified_terminal)
+from ffc.uflacs.analysis.visualise import visualise
 from ffc.uflacs.elementtables import (build_optimized_tables,
                                       clamp_table_small_numbers,
                                       piecewise_ttypes)
@@ -306,19 +303,28 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
     ir["all_num_points"] = all_num_points
 
     for num_points, expressions in cases:
+
+        assert len(expressions) == 1
+        expression = expressions[0]
+
         # Rebalance order of nested terminal modifiers
-        expressions = [balance_modifiers(expr) for expr in expressions]
+        expression = balance_modifiers(expression)
 
         # Build initial scalar list-based graph representation
-        V, V_deps, V_targets = build_scalar_graph(expressions)
+        G0 = build_scalar_graph(expression)
+        V_target = G0.V_target
 
         # Build terminal_data from V here before factorization. Then we
         # can use it to derive table properties for all modified
         # terminals, and then use that to rebuild the scalar graph more
         # efficiently before argument factorization. We can build
         # terminal_data again after factorization if that's necessary.
-        initial_terminal_indices = [i for i, v in enumerate(V) if is_modified_terminal(v)]
-        initial_terminal_data = [analyse_modified_terminal(V[i]) for i in initial_terminal_indices]
+#        initial_terminal_indices = [i for i, v in enumerate(V) if is_modified_terminal(v)]
+        initial_terminal_indices = [i for i, v in G0.nodes.items()
+                                    if is_modified_terminal(v['expression'])]
+
+        initial_terminal_data = [analyse_modified_terminal(G0.nodes[i]['expression'])
+                                 for i in initial_terminal_indices]
         unique_tables, unique_table_types, unique_table_num_dofs, mt_unique_table_reference = build_optimized_tables(
             num_points,
             quadrature_rules,
@@ -340,36 +346,41 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
             if isinstance(mt.terminal, QuadratureWeight):
                 # Replace quadrature weight with 1.0, will be added back
                 # later
-                V[i] = one
+                G0.nodes[i]['expression'] = one
             else:
                 # Set modified terminals with zero tables to zero
                 tr = mt_unique_table_reference.get(mt)
                 if tr is not None and tr.ttype == "zeros":
-                    V[i] = z
+                    G0.nodes[i]['expression'] = z
 
         # Propagate expression changes using dependency list
-        for i in range(len(V)):
-            deps = [V[j] for j in V_deps[i]]
+        for i, v in G0.nodes.items():
+            deps = [G0.nodes[j]['expression'] for j in G0.out_edges[i]]
             if deps:
-                V[i] = V[i]._ufl_expr_reconstruct_(*deps)
+                v['expression'] = v['expression']._ufl_expr_reconstruct_(*deps)
 
         # Rebuild scalar target expressions and graph (this may be
         # overkill and possible to optimize away if it turns out to be
         # costly)
-        expressions = [V[i] for i in V_targets]
+        expression = G0.nodes[V_target]['expression']
 
         # Rebuild scalar list-based graph representation
-        SV, SV_deps, SV_targets = build_scalar_graph(expressions)
-        assert all(i < len(SV) for i in SV_targets)
+        S = build_scalar_graph(expression)
+
+        # Output diagnostic graph as pdf
+        if parameters['visualise']:
+            visualise(S, 'S.pdf')
 
         # Compute factorization of arguments
-        (argument_factorizations, modified_arguments, FV, FV_deps,
-         FV_targets) = compute_argument_factorization(SV, SV_deps, SV_targets, len(tensor_shape))
-        assert len(SV_targets) == len(argument_factorizations)
-
-        # TODO: Still expecting one target variable in code generation
+        rank = len(tensor_shape)
+        (argument_factorizations, modified_arguments, F, FV,
+         FV_targets) = compute_argument_factorization(S, rank)
         assert len(argument_factorizations) == 1
         argument_factorization, = argument_factorizations
+
+        # Output diagnostic graph as pdf
+        if parameters['visualise']:
+            visualise(F, 'F.pdf')
 
         # Store modified arguments in analysed form
         for i in range(len(modified_arguments)):
@@ -377,32 +388,36 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
         # Build set of modified_terminal indices into
         # factorized_vertices
-        modified_terminal_indices = [i for i, v in enumerate(FV) if is_modified_terminal(v)]
+        modified_terminal_indices = [i for i, v in F.nodes.items() if is_modified_terminal(v['expression'])]
 
         # Build set of modified terminal ufl expressions
-        modified_terminals = [analyse_modified_terminal(FV[i]) for i in modified_terminal_indices]
+        modified_terminals = [analyse_modified_terminal(F.nodes[i]['expression']) for i in modified_terminal_indices]
 
-        # Make it easy to get mt object from FV index
-        FV_mts = [None] * len(FV)
-        for i, mt in zip(modified_terminal_indices, modified_terminals):
-            FV_mts[i] = mt
+        # Build set of modified_terminals for each mt factorized vertex
+        # and attach tables, if appropriate
+        for i, v in F.nodes.items():
+            expr = v['expression']
+            if is_modified_terminal(expr):
+                mt = analyse_modified_terminal(expr)
+                F.nodes[i]['mt'] = mt
+                tr = mt_unique_table_reference.get(mt)
+                if tr is not None:
+                    F.nodes[i]['tr'] = tr
 
-        # Dependency analysis
-        inv_FV_deps, FV_active, FV_piecewise, FV_varying = analyse_dependencies(
-            FV, FV_deps, FV_targets, modified_terminal_indices, modified_terminals,
-            mt_unique_table_reference)
+        # Attach status to each node: 'inactive', 'piecewise' or 'varying'
+        analyse_dependencies(F, mt_unique_table_reference)
 
         # Extend piecewise V with unique new FV_piecewise vertices
         pir = ir["piecewise_ir"]
         for i, v in enumerate(FV):
-            if FV_piecewise[i]:
+            if F.nodes[i]['status'] == 'piecewise':
                 j = pe2i.get(v)
                 if j is None:
                     j = len(pe2i)
                     pe2i[v] = j
                     pir["V"].append(v)
                     pir["V_active"].append(1)
-                    mt = FV_mts[i]
+                    mt = F.nodes[i].get('mt')
                     if mt is not None:
                         pir["mt_tabledata"][mt] = mt_unique_table_reference.get(mt)
                     pir["V_mts"].append(mt)
@@ -420,7 +435,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         block_contributions = collections.defaultdict(list)
         for ma_indices, fi in sorted(argument_factorization.items()):
             # Get a bunch of information about this term
-            rank = len(ma_indices)
+            assert rank == len(ma_indices)
             trs = tuple(mt_unique_table_reference[modified_arguments[ai]] for ai in ma_indices)
 
             unames = tuple(tr.name for tr in trs)
@@ -444,7 +459,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
             # Store piecewise status for fi and translate index to
             # piecewise scope if relevant
-            factor_is_piecewise = FV_piecewise[fi]
+            factor_is_piecewise = (F.nodes[fi]['status'] == 'piecewise')
             if factor_is_piecewise:
                 factor_index = pe2i[FV[fi]]
             else:
@@ -654,7 +669,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         active_table_names = set()
         for i, mt in zip(modified_terminal_indices, modified_terminals):
             tr = mt_unique_table_reference.get(mt)
-            if tr is not None and FV_active[i]:
+            if tr is not None and F.nodes[i]['status'] != 'inactive':
                 active_table_names.add(tr.name)
 
         # Figure out which table names are referenced in blocks
@@ -692,7 +707,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         # Analyse active terminals to check what we'll need to generate code for
         active_mts = []
         for i, mt in zip(modified_terminal_indices, modified_terminals):
-            if FV_active[i]:
+            if F.nodes[i]['status'] != 'inactive':
                 active_mts.append(mt)
 
         # Figure out if we need to access CellCoordinate to avoid
@@ -743,28 +758,12 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         # Result of factorization:
         # (array) MA-index -> UFL expression of modified arguments
         expr_ir["modified_arguments"] = modified_arguments
-
-        # (dict) tuple(MA-indices) -> FV-index of monomial factor
-        # expr_ir["argument_factorization"] = argument_factorization
-
         expr_ir["block_contributions"] = block_contributions
 
-        # Modified terminals
-        # (array) list of FV-indices to modified terminals
-        # expr_ir["modified_terminal_indices"] = modified_terminal_indices
-
-        # Dependency structure of graph:
-        # (CRSArray) FV-index -> direct dependency FV-index list
-        # expr_ir["dependencies"] = FV_deps
-
-        # (CRSArray) FV-index -> direct dependee FV-index list
-        # expr_ir["inverse_dependencies"] = inv_FV_deps
-
         # Metadata about each vertex
-        # expr_ir["active"] = FV_active        # (array) FV-index -> bool
-        # expr_ir["V_piecewise"] = FV_piecewise  # (array) FV-index -> bool
-        expr_ir["V_varying"] = FV_varying  # (array) FV-index -> bool
-        expr_ir["V_mts"] = FV_mts
+        expr_ir["V_varying"] = [(v['status'] == 'varying')
+                                for i, v in F.nodes.items()]
+        expr_ir["V_mts"] = [v.get('mt') for i, v in F.nodes.items()]
 
         # Store mapping from modified terminal object to
         # table data, this is used in integralgenerator
@@ -780,53 +779,32 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
     return ir
 
 
-def build_scalar_graph(expressions):
-    """Build list representation of expression graph covering the given
-    expressions.
+def analyse_dependencies(F, mt_unique_table_reference):
+    # Sets 'status' of all nodes to either: 'inactive', 'piecewise' or 'varying'
+    # Children of 'target' nodes are either 'piecewise' or 'varying'.
+    # All other nodes are 'inactive'.
+    # Varying nodes are identified by their tables ('tr'). All their parent
+    # nodes are also set to 'varying' - any remaining active nodes are 'piecewise'.
 
-    TODO: Renaming, refactoring and cleanup of the graph building
-    algorithms used in here
+    # Set targets, and dependencies to 'active'
+    targets = [i for i, v in F.nodes.items() if v.get('target')]
+    for i, v in F.nodes.items():
+        v['status'] = 'inactive'
 
-    """
-
-    # Build the initial coarse computational graph of the expression
-    G = build_graph(expressions)
-
-    assert len(expressions) == 1, "FIXME: Multiple expressions"
-
-    # Build more fine grained computational graph of scalar subexpressions
-    # TODO: Make it so that
-    #   expressions[k] <-> NV[nvs[k][:]],
-    #   len(nvs[k]) == value_size(expressions[k])
-    scalar_expressions = rebuild_with_scalar_subexpressions(G)
-
-    # Sanity check on number of scalar symbols/components
-    assert len(scalar_expressions) == sum(ufl.product(expr.ufl_shape) for expr in expressions)
-
-    # Build new list representation of graph where all
-    # vertices of V represent single scalar operations
-    e2i, V, V_targets = build_graph_vertices(scalar_expressions, scalar=True)
-
-    # Compute sparse dependency matrix
-    V_deps = compute_dependencies(e2i, V)
-
-    return V, V_deps, V_targets
-
-
-def analyse_dependencies(V, V_deps, V_targets, modified_terminal_indices, modified_terminals,
-                         mt_unique_table_reference):
-
-    # Build the 'inverse' of the sparse dependency matrix
-    inv_deps = invert_dependencies(V_deps)
-
-    # Mark subexpressions of V that are actually needed for final result
-    active, num_active = mark_active(V_deps, V_targets)
+    while targets:
+        s = targets.pop()
+        F.nodes[s]['status'] = 'active'
+        for j in F.out_edges[s]:
+            if F.nodes[j]['status'] == 'inactive':
+                targets.append(j)
 
     # Build piecewise/varying markers for factorized_vertices
     varying_ttypes = ("varying", "uniform", "quadrature")
     varying_indices = []
-    for i, mt in zip(modified_terminal_indices, modified_terminals):
-        tr = mt_unique_table_reference.get(mt)
+    for i, v in F.nodes.items():
+        if v.get('mt') is None:
+            continue
+        tr = v.get('tr')
         if tr is not None:
             ttype = tr.ttype
             # Check if table computations have revealed values varying over points
@@ -837,25 +815,21 @@ def analyse_dependencies(V, V_deps, V_targets, modified_terminal_indices, modifi
                 if ttype not in ("fixed", "piecewise", "ones", "zeros"):
                     raise FFCError("Invalid ttype %s" % (ttype, ))
 
-        elif not is_cellwise_constant(V[i]):
+        elif not is_cellwise_constant(v['expression']):
+            raise FFCError("Error")
             # Keeping this check to be on the safe side,
             # not sure which cases this will cover (if any)
-            varying_indices.append(i)
+            # varying_indices.append(i)
 
-    # Mark every subexpression that is computed from the spatially
-    # dependent terminals
-    varying, num_varying = mark_image(inv_deps, varying_indices)
+    # Set all parents of active varying nodes to 'varying'
+    while varying_indices:
+        s = varying_indices.pop()
+        if F.nodes[s]['status'] == 'active':
+            F.nodes[s]['status'] = 'varying'
+            for j in F.in_edges[s]:
+                varying_indices.append(j)
 
-    # The rest of the subexpressions are piecewise constant (1-1=0, 1-0=1)
-    piecewise = 1 - varying
-
-    # Unmark non-active subexpressions
-    varying *= active
-    piecewise *= active
-
-    # TODO: Skip literals in both varying and piecewise
-    # nonliteral = ...
-    # varying *= nonliteral
-    # piecewise *= nonliteral
-
-    return inv_deps, active, piecewise, varying
+    # Any remaining active nodes must be 'piecewise'
+    for i, v in F.nodes.items():
+        if v['status'] == 'active':
+            v['status'] = 'piecewise'
