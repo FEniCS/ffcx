@@ -319,19 +319,18 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         # terminals, and then use that to rebuild the scalar graph more
         # efficiently before argument factorization. We can build
         # terminal_data again after factorization if that's necessary.
-#        initial_terminal_indices = [i for i, v in enumerate(V) if is_modified_terminal(v)]
-        initial_terminal_indices = [i for i, v in G0.nodes.items()
-                                    if is_modified_terminal(v['expression'])]
 
-        initial_terminal_data = [analyse_modified_terminal(G0.nodes[i]['expression'])
-                                 for i in initial_terminal_indices]
+        initial_terminals = {i: analyse_modified_terminal(v['expression'])
+                             for i, v in G0.nodes.items()
+                             if is_modified_terminal(v['expression'])}
+
         unique_tables, unique_table_types, unique_table_num_dofs, mt_unique_table_reference = build_optimized_tables(
             num_points,
             quadrature_rules,
             cell,
             integral_type,
             entitytype,
-            initial_terminal_data,
+            initial_terminals.values(),
             ir["unique_tables"],
             p["enable_table_zero_compression"],
             rtol=p["table_rtol"],
@@ -342,7 +341,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         # expressions instead)
         z = ufl.as_ufl(0.0)
         one = ufl.as_ufl(1.0)
-        for i, mt in zip(initial_terminal_indices, initial_terminal_data):
+        for i, mt in initial_terminals.items():
             if isinstance(mt.terminal, QuadratureWeight):
                 # Replace quadrature weight with 1.0, will be added back
                 # later
