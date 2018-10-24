@@ -70,7 +70,8 @@ def build_graph_vertices(expression, scalar=False):
         G.add_node(i, expression=v)
 
     # Get vertex index representing input expression root
-    G.V_target = G.e2i[expression]
+    V_target = G.e2i[expression]
+    G.nodes[V_target]['target'] = True
 
     return G
 

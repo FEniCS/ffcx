@@ -7,7 +7,6 @@
 """Algorithms for factorizing argument dependent monomials."""
 
 import logging
-import itertools
 from functools import singledispatch
 
 from ffc import FFCError
@@ -245,7 +244,6 @@ def compute_argument_factorization(S, rank):
     # Extract argument component subgraph
     arg_indices = build_argument_indices(S)
     AV = [S.nodes[i]['expression'] for i in arg_indices]
-#    sv2av = {si: ai for ai, si in enumerate(arg_indices)}
 
     # Data structure for building non-argument factors
     F = ExpressionGraph()
@@ -273,29 +271,38 @@ def compute_argument_factorization(S, rank):
             factors = {(si, ): one_index}
         else:
             fac = [S.nodes[d]['factors'] for d in deps]
-            sf = [None] * len(fac)
-            for i, d in enumerate(deps):
-                if not fac[i]:
-                    sf[i] = S.nodes[d]['expression']
-
             if not any(fac):
+                # Entirely scalar (i.e. no arg factors)
+                # Just add unchanged to F
                 add_to_fv(v, F)
                 factors = noargs
             else:
+                # Get scalar factors for dependencies
+                # which do not have arg factors
+                sf = []
+                for i, d in enumerate(deps):
+                    if fac[i]:
+                        sf.append(None)
+                    else:
+                        sf.append(S.nodes[d]['expression'])
+                # Use appropriate handler to deal with Sum, Product, etc.
                 factors = handler(v, fac, sf, F)
 
         attr['factors'] = factors
 
-    assert not noargs, "This dict was not supposed to be filled with anything!"
-
     assert len(F.nodes) == len(F.e2i)
 
+    # Find the (only) node in S that is marked as 'target'
+    # Should always be the last one.
+    S_targets = [i for i, v in S.nodes.items() if v.get('target', False)]
+    assert len(S_targets) == 1
+    S_target = S_targets[0]
+
     # Get the factorizations of the target values
-    IMs = []
-    if S.nodes[S.V_target]['factors'] == {}:
+    if S.nodes[S_target]['factors'] == {}:
         if rank == 0:
             # Functionals and expressions: store as no args * factor
-            factors = {(): F.e2i[S.nodes[S.V_target]['expression']]}
+            factors = {(): F.e2i[S.nodes[S_target]['expression']]}
         else:
             # Zero form of arity 1 or higher: make factors empty
             factors = {}
@@ -305,13 +312,12 @@ def compute_argument_factorization(S, rank):
         # and resort keys for canonical representation
         factors = {
             tuple(sorted(arg_indices.index(si) for si in argkey)): fi
-            for argkey, fi in S.nodes[S.V_target]['factors'].items()
+            for argkey, fi in S.nodes[S_target]['factors'].items()
         }
     # Expecting all term keys to have length == rank
     # (this assumption will eventually have to change if we
     # implement joint bilinear+linear form factorization here)
     assert all(len(k) == rank for k in factors)
-    IMs.append(factors)
 
     # Indices into F that are needed for final result
     for i in factors.values():
@@ -327,9 +333,4 @@ def compute_argument_factorization(S, rank):
             for o in expr.ufl_operands:
                 F.add_edge(i, F.e2i[o])
 
-    FV = [v['expression'] for i, v in F.nodes.items()]
-
-    # Indices into FV that are needed for final result
-    FV_targets = list(itertools.chain(sorted(IM.values()) for IM in IMs))
-
-    return IMs, AV, F, FV, FV_targets
+    return AV, F

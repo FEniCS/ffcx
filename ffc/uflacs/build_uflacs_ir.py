@@ -312,7 +312,9 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
         # Build initial scalar list-based graph representation
         G0 = build_scalar_graph(expression)
-        V_target = G0.V_target
+        G0_targets = [i for i, v in G0.nodes.items() if v.get('target', False)]
+        assert len(G0_targets) == 1
+        G0_target = G0_targets[0]
 
         # Build terminal_data from V here before factorization. Then we
         # can use it to derive table properties for all modified
@@ -361,7 +363,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         # Rebuild scalar target expressions and graph (this may be
         # overkill and possible to optimize away if it turns out to be
         # costly)
-        expression = G0.nodes[V_target]['expression']
+        expression = G0.nodes[G0_target]['expression']
 
         # Rebuild scalar list-based graph representation
         S = build_scalar_graph(expression)
@@ -372,10 +374,15 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
         # Compute factorization of arguments
         rank = len(tensor_shape)
-        (argument_factorizations, modified_arguments, F, FV,
-         FV_targets) = compute_argument_factorization(S, rank)
-        assert len(argument_factorizations) == 1
-        argument_factorization, = argument_factorizations
+        modified_arguments, F = compute_argument_factorization(S, rank)
+
+        # Get the nodes that are factors of arguments, and insert in dict
+        FV_targets = [i for i, v in F.nodes.items() if v.get('target', False)]
+        argument_factorization = {}
+        for i in FV_targets:
+            t = F.nodes[i]['target']
+            for w in t:
+                argument_factorization[w] = i
 
         # Output diagnostic graph as pdf
         if parameters['visualise']:
@@ -387,10 +394,12 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
         # Build set of modified_terminal indices into
         # factorized_vertices
-        modified_terminal_indices = [i for i, v in F.nodes.items() if is_modified_terminal(v['expression'])]
+        modified_terminal_indices = [i for i, v in F.nodes.items()
+                                     if is_modified_terminal(v['expression'])]
 
         # Build set of modified terminal ufl expressions
-        modified_terminals = [analyse_modified_terminal(F.nodes[i]['expression']) for i in modified_terminal_indices]
+        modified_terminals = [analyse_modified_terminal(F.nodes[i]['expression'])
+                              for i in modified_terminal_indices]
 
         # Build set of modified_terminals for each mt factorized vertex
         # and attach tables, if appropriate
@@ -408,15 +417,16 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
         # Extend piecewise V with unique new FV_piecewise vertices
         pir = ir["piecewise_ir"]
-        for i, v in enumerate(FV):
-            if F.nodes[i]['status'] == 'piecewise':
-                j = pe2i.get(v)
+        for i, v in F.nodes.items():
+            if v['status'] == 'piecewise':
+                expr = v['expression']
+                j = pe2i.get(expr)
                 if j is None:
                     j = len(pe2i)
-                    pe2i[v] = j
-                    pir["V"].append(v)
+                    pe2i[expr] = j
+                    pir["V"].append(expr)
                     pir["V_active"].append(1)
-                    mt = F.nodes[i].get('mt')
+                    mt = v.get('mt')
                     if mt is not None:
                         pir["mt_tabledata"][mt] = mt_unique_table_reference.get(mt)
                     pir["V_mts"].append(mt)
@@ -460,7 +470,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
             # piecewise scope if relevant
             factor_is_piecewise = (F.nodes[fi]['status'] == 'piecewise')
             if factor_is_piecewise:
-                factor_index = pe2i[FV[fi]]
+                factor_index = pe2i[F.nodes[fi]['expression']]
             else:
                 factor_index = fi
 
@@ -748,6 +758,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         expr_ir = {}
 
         # (array) FV-index -> UFL subexpression
+        FV = [v['expression'] for i, v in F.nodes.items()]
         expr_ir["V"] = FV
 
         # (array) V indices for each input expression component in
