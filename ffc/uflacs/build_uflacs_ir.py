@@ -380,8 +380,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         FV_targets = [i for i, v in F.nodes.items() if v.get('target', False)]
         argument_factorization = {}
         for i in FV_targets:
-            t = F.nodes[i]['target']
-            for w in t:
+            for w in F.nodes[i]['target']:
                 argument_factorization[w] = i
 
         # Output diagnostic graph as pdf
@@ -391,15 +390,6 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         # Store modified arguments in analysed form
         for i in range(len(modified_arguments)):
             modified_arguments[i] = analyse_modified_terminal(modified_arguments[i])
-
-        # Build set of modified_terminal indices into
-        # factorized_vertices
-        modified_terminal_indices = [i for i, v in F.nodes.items()
-                                     if is_modified_terminal(v['expression'])]
-
-        # Build set of modified terminal ufl expressions
-        modified_terminals = [analyse_modified_terminal(F.nodes[i]['expression'])
-                              for i in modified_terminal_indices]
 
         # Build set of modified_terminals for each mt factorized vertex
         # and attach tables, if appropriate
@@ -676,8 +666,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         # Figure out which table names are referenced in unstructured
         # partition
         active_table_names = set()
-        for i, mt in zip(modified_terminal_indices, modified_terminals):
-            tr = mt_unique_table_reference.get(mt)
+        for i, v in F.nodes.items():
+            tr = v.get('tr')
             if tr is not None and F.nodes[i]['status'] != 'inactive':
                 active_table_names.add(tr.name)
 
@@ -715,8 +705,9 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
         # Analyse active terminals to check what we'll need to generate code for
         active_mts = []
-        for i, mt in zip(modified_terminal_indices, modified_terminals):
-            if F.nodes[i]['status'] != 'inactive':
+        for i, v in F.nodes.items():
+            mt = v.get('mt', False)
+            if mt and F.nodes[i]['status'] != 'inactive':
                 active_mts.append(mt)
 
         # Figure out if we need to access CellCoordinate to avoid
