@@ -149,21 +149,6 @@ def integrate_block_interior_facets(weights, unames, ttypes, unique_tables, uniq
     return ptable
 
 
-def empty_expr_ir():
-    expr_ir = {}
-    expr_ir["V"] = []
-    expr_ir["V_active"] = []
-    expr_ir["V_targets"] = []
-    expr_ir["V_mts"] = []
-    expr_ir["mt_tabledata"] = {}
-    expr_ir["modified_arguments"] = []
-    expr_ir["preintegrated_blocks"] = {}
-    expr_ir["premultiplied_blocks"] = {}
-    expr_ir["preintegrated_contributions"] = collections.defaultdict(list)
-    expr_ir["block_contributions"] = collections.defaultdict(list)
-    return expr_ir
-
-
 def uflacs_default_parameters(optimize):
     """Default parameters for tuning of uflacs code generation.
 
@@ -272,7 +257,16 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
     ir["unique_table_types"] = {}
 
     # Shared piecewise expr_ir for all quadrature loops
-    ir["piecewise_ir"] = empty_expr_ir()
+    ir["piecewise_ir"] = {"V": [],
+                          "V_active": [],
+                          "V_targets": [],
+                          "V_mts": [],
+                          "mt_tabledata": {},
+                          "modified_arguments": [],
+                          "preintegrated_blocks": {},
+                          "premultiplied_blocks": {},
+                          "preintegrated_contributions": collections.defaultdict(list),
+                          "block_contributions": collections.defaultdict(list)}
 
     # { num_points: expr_ir for one integrand }
     ir["varying_irs"] = {}
@@ -288,18 +282,10 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                      and (entitytype == "cell" or (entitytype == "facet" and tdim > 1) or
                           (integral_type in custom_integral_types)))
 
-    if integral_type == "expression":
-        # TODO: Figure out how to get non-integrand expressions in
-        #       here, this is just a draft:
-        # Analyse all expressions in one list
-        assert isinstance(integrands, (tuple, list))
-        all_num_points = [None]
-        cases = [(None, integrands)]
-    else:
-        # Analyse each num_points/integrand separately
-        assert isinstance(integrands, dict)
-        all_num_points = sorted(integrands.keys())
-        cases = [(num_points, [integrands[num_points]]) for num_points in all_num_points]
+    # Analyse each num_points/integrand separately
+    assert isinstance(integrands, dict)
+    all_num_points = sorted(integrands.keys())
+    cases = [(num_points, [integrands[num_points]]) for num_points in all_num_points]
     ir["all_num_points"] = all_num_points
 
     for num_points, expressions in cases:
@@ -374,24 +360,26 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
         # Compute factorization of arguments
         rank = len(tensor_shape)
-        modified_arguments, F = compute_argument_factorization(S, rank)
+        F = compute_argument_factorization(S, rank)
 
-        # Get the nodes that are factors of arguments, and insert in dict
+        # Get the 'target' nodes that are factors of arguments, and insert in dict
         FV_targets = [i for i, v in F.nodes.items() if v.get('target', False)]
         argument_factorization = {}
         for i in FV_targets:
             for w in F.nodes[i]['target']:
                 argument_factorization[w] = i
 
+        # Get list of indices in F which are the arguments (should be at start)
+        argkeys = set()
+        for w in argument_factorization:
+            argkeys = argkeys | set(w)
+        argkeys = list(argkeys)
+
         # Output diagnostic graph as pdf
         if parameters['visualise']:
             visualise(F, 'F.pdf')
 
-        # Store modified arguments in analysed form
-        for i in range(len(modified_arguments)):
-            modified_arguments[i] = analyse_modified_terminal(modified_arguments[i])
-
-        # Build set of modified_terminals for each mt factorized vertex
+        # Build set of modified_terminals for each mt factorized vertex in F
         # and attach tables, if appropriate
         for i, v in F.nodes.items():
             expr = v['expression']
@@ -402,7 +390,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                 if tr is not None:
                     F.nodes[i]['tr'] = tr
 
-        # Attach status to each node: 'inactive', 'piecewise' or 'varying'
+        # Attach 'status' to each node: 'inactive', 'piecewise' or 'varying'
         analyse_dependencies(F, mt_unique_table_reference)
 
         # Extend piecewise V with unique new FV_piecewise vertices
@@ -418,12 +406,13 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                     pir["V_active"].append(1)
                     mt = v.get('mt')
                     if mt is not None:
-                        pir["mt_tabledata"][mt] = mt_unique_table_reference.get(mt)
+                        pir["mt_tabledata"][mt] = v.get('tr')
                     pir["V_mts"].append(mt)
 
         # Extend piecewise modified_arguments list with unique new
         # items
-        for mt in modified_arguments:
+        for i in argkeys:
+            mt = F.nodes[i]['mt']
             ma = piecewise_modified_argument_indices.get(mt)
             if ma is None:
                 ma = len(pir["modified_arguments"])
@@ -435,7 +424,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         for ma_indices, fi in sorted(argument_factorization.items()):
             # Get a bunch of information about this term
             assert rank == len(ma_indices)
-            trs = tuple(mt_unique_table_reference[modified_arguments[ai]] for ai in ma_indices)
+            trs = tuple(F.nodes[ai]['tr'] for ai in ma_indices)
 
             unames = tuple(tr.name for tr in trs)
             ttypes = tuple(tr.ttype for tr in trs)
@@ -448,11 +437,11 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
             # Collect relevant restrictions to identify blocks correctly
             # in interior facet integrals
             block_restrictions = []
-            for i, ma in enumerate(ma_indices):
+            for i, ai in enumerate(ma_indices):
                 if trs[i].is_uniform:
                     r = None
                 else:
-                    r = modified_arguments[ma].restriction
+                    r = F.nodes[ai]['mt'].restriction
                 block_restrictions.append(r)
             block_restrictions = tuple(block_restrictions)
 
@@ -617,7 +606,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                 ma_data = []
                 for i, ma in enumerate(ma_indices):
                     if trs[i].is_piecewise:
-                        ma_index = piecewise_modified_argument_indices[modified_arguments[ma]]
+                        ma_index = piecewise_modified_argument_indices[F.nodes[ma]['mt']]
                     else:
                         block_is_piecewise = False
                         ma_index = ma
@@ -758,7 +747,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
         # Result of factorization:
         # (array) MA-index -> UFL expression of modified arguments
-        expr_ir["modified_arguments"] = modified_arguments
+        expr_ir["modified_arguments"] = [F.nodes[i]['mt'] for i in argkeys]
         expr_ir["block_contributions"] = block_contributions
 
         # Metadata about each vertex

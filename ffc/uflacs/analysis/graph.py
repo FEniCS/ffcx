@@ -30,12 +30,6 @@ class ExpressionGraph(object):
         self.out_edges = {}
         self.in_edges = {}
 
-        # Index to expression
-        self.V = []
-
-        # Expression to index dict
-        self.e2i = {}
-
     def number_of_nodes(self):
         return len(self.nodes)
 
