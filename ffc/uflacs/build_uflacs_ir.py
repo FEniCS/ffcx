@@ -278,9 +278,9 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
     # Whether we expect the quadrature weight to be applied or not (in
     # some cases it's just set to 1 in ufl integral scaling)
     tdim = cell.topological_dimension()
-    expect_weight = (integral_type not in ("expression", ) + point_integral_types
-                     and (entitytype == "cell" or (entitytype == "facet" and tdim > 1) or
-                          (integral_type in custom_integral_types)))
+    expect_weight = (point_integral_types
+                     and (entitytype == "cell" or (entitytype == "facet" and tdim > 1)
+                          or (integral_type in custom_integral_types)))
 
     # Analyse each num_points/integrand separately
     assert isinstance(integrands, dict)
