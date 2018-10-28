@@ -706,9 +706,6 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                                          "block_contributions": block_contributions,
                                          "need_points": need_points,
                                          "need_weights": need_weights}
-
-
-
     return ir
 
 
