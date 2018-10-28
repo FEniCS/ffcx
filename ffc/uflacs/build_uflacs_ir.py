@@ -271,14 +271,10 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
     # { num_points: expr_ir for one integrand }
     ir["varying_irs"] = {}
 
-    # Temporary data structures to build shared piecewise data
-    pe2i = {}
-    piecewise_modified_argument_indices = {}
-
     # Whether we expect the quadrature weight to be applied or not (in
     # some cases it's just set to 1 in ufl integral scaling)
     tdim = cell.topological_dimension()
-    expect_weight = (point_integral_types
+    expect_weight = (integral_type not in point_integral_types
                      and (entitytype == "cell" or (entitytype == "facet" and tdim > 1)
                           or (integral_type in custom_integral_types)))
 
@@ -393,31 +389,10 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         # Attach 'status' to each node: 'inactive', 'piecewise' or 'varying'
         analyse_dependencies(F, mt_unique_table_reference)
 
-        # Extend piecewise V with unique new FV_piecewise vertices
-        pir = ir["piecewise_ir"]
-        for i, v in F.nodes.items():
-            if v['status'] == 'piecewise':
-                expr = v['expression']
-                j = pe2i.get(expr)
-                if j is None:
-                    j = len(pe2i)
-                    pe2i[expr] = j
-                    pir["V"].append(expr)
-                    pir["V_active"].append(1)
-                    mt = v.get('mt')
-                    if mt is not None:
-                        pir["mt_tabledata"][mt] = v.get('tr')
-                    pir["V_mts"].append(mt)
-
-        # Extend piecewise modified_arguments list with unique new
-        # items
-        for i in argkeys:
-            mt = F.nodes[i]['mt']
-            ma = piecewise_modified_argument_indices.get(mt)
-            if ma is None:
-                ma = len(pir["modified_arguments"])
-                pir["modified_arguments"].append(mt)
-                piecewise_modified_argument_indices[mt] = ma
+        # Save the factorisation graph to the piecewise IR
+        ir["piecewise_ir"]["F"] = F
+        ir["piecewise_ir"]["modified_arguments"] = [F.nodes[i]['mt']
+                                                    for i in argkeys]
 
         # Loop over factorization terms
         block_contributions = collections.defaultdict(list)
@@ -445,13 +420,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                 block_restrictions.append(r)
             block_restrictions = tuple(block_restrictions)
 
-            # Store piecewise status for fi and translate index to
-            # piecewise scope if relevant
-            factor_is_piecewise = (F.nodes[fi]['status'] == 'piecewise')
-            if factor_is_piecewise:
-                factor_index = pe2i[F.nodes[fi]['expression']]
-            else:
-                factor_index = fi
+            factor_is_piecewise = F.nodes[fi]['status'] == 'piecewise'
 
             # TODO: Add separate block modes for quadrature
             # Both arguments in quadrature elements
@@ -546,7 +515,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                 assert factor_is_piecewise
                 block_unames = (pname, )
                 blockdata = preintegrated_block_data_t(
-                    block_mode, ttypes, factor_index, factor_is_piecewise, block_unames,
+                    block_mode, ttypes, fi, factor_is_piecewise, block_unames,
                     block_restrictions, block_is_transposed, block_is_uniform, pname)
                 block_is_piecewise = True
 
@@ -584,7 +553,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
                 block_unames = (pname, )
                 blockdata = premultiplied_block_data_t(
-                    block_mode, ttypes, factor_index, factor_is_piecewise, block_unames,
+                    block_mode, ttypes, fi, factor_is_piecewise, block_unames,
                     block_restrictions, block_is_transposed, block_is_uniform, pname)
                 block_is_piecewise = False
 
@@ -601,16 +570,12 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 #                block_is_piecewise = False
 
             elif block_mode in ("partial", "full", "safe"):
-                # Translate indices to piecewise context if necessary
                 block_is_piecewise = factor_is_piecewise and not expect_weight
                 ma_data = []
                 for i, ma in enumerate(ma_indices):
-                    if trs[i].is_piecewise:
-                        ma_index = piecewise_modified_argument_indices[F.nodes[ma]['mt']]
-                    else:
+                    if not trs[i].is_piecewise:
                         block_is_piecewise = False
-                        ma_index = ma
-                    ma_data.append(ma_data_t(ma_index, trs[i]))
+                    ma_data.append(ma_data_t(ma, trs[i]))
 
                 block_is_transposed = False  # FIXME: Handle transposes for these block types
 
@@ -628,7 +593,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                     assert rank == 2
                     not_piecewise_ma_index = 1 - piecewise_ma_index
                     block_unames = (unames[not_piecewise_ma_index], )
-                    blockdata = partial_block_data_t(block_mode, ttypes, factor_index,
+                    blockdata = partial_block_data_t(block_mode, ttypes, fi,
                                                      factor_is_piecewise, block_unames,
                                                      block_restrictions, block_is_transposed,
                                                      tuple(ma_data), piecewise_ma_index)
@@ -638,7 +603,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                     # A[blockmap] += B[i];                    generated after quadloop
 
                     block_unames = unames
-                    blockdata = full_block_data_t(block_mode, ttypes, factor_index,
+                    blockdata = full_block_data_t(block_mode, ttypes, fi,
                                                   factor_is_piecewise, block_unames,
                                                   block_restrictions, block_is_transposed,
                                                   tuple(ma_data))
@@ -735,36 +700,14 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
             need_weights = False
 
         # Build IR dict for the given expressions
-        expr_ir = {}
-
-        # (array) FV-index -> UFL subexpression
-        FV = [v['expression'] for i, v in F.nodes.items()]
-        expr_ir["V"] = FV
-
-        # (array) V indices for each input expression component in
-        # flattened order
-        expr_ir["V_targets"] = FV_targets
-
-        # Result of factorization:
-        # (array) MA-index -> UFL expression of modified arguments
-        expr_ir["modified_arguments"] = [F.nodes[i]['mt'] for i in argkeys]
-        expr_ir["block_contributions"] = block_contributions
-
-        # Metadata about each vertex
-        expr_ir["V_varying"] = [(v['status'] == 'varying')
-                                for i, v in F.nodes.items()]
-        expr_ir["V_mts"] = [v.get('mt') for i, v in F.nodes.items()]
-
-        # Store mapping from modified terminal object to
-        # table data, this is used in integralgenerator
-        expr_ir["mt_tabledata"] = mt_unique_table_reference
-
-        # To emit quadrature rules only if needed
-        expr_ir["need_points"] = need_points
-        expr_ir["need_weights"] = need_weights
-
         # Store final ir for this num_points
-        ir["varying_irs"][num_points] = expr_ir
+        ir["varying_irs"][num_points] = {"F": F,
+                                         "modified_arguments": [F.nodes[i]['mt'] for i in argkeys],
+                                         "block_contributions": block_contributions,
+                                         "need_points": need_points,
+                                         "need_weights": need_weights}
+
+
 
     return ir
 

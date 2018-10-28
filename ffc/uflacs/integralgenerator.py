@@ -12,7 +12,6 @@ import logging
 
 from ffc import FFCError
 from ffc.language.cnodes import pad_dim, pad_innermost_dim
-from ffc.uflacs.build_uflacs_ir import get_common_block_data
 from ffc.uflacs.elementtables import piecewise_ttypes
 from ufl import product
 from ufl.classes import Condition
@@ -43,14 +42,13 @@ class IntegralGenerator(object):
         # Initialize lookup tables for variable scopes
         self.init_scopes()
 
-        # Cache of reusable blocks contributing to A
-        self.shared_blocks = {}
+        # Cache
+        self.shared_symbols = {}
 
         # Block contributions collected during generation to be added to A at the end
         self.finalization_blocks = collections.defaultdict(list)
 
         # Set of counters used for assigning names to intermediate variables
-        # TODO: Should this be part of the backend symbols? Doesn't really matter now.
         self.symbol_counters = collections.defaultdict(int)
 
     def get_includes(self):
@@ -107,15 +105,6 @@ class IntegralGenerator(object):
         """
         self.scopes[num_points][v] = vaccess
 
-    def has_var(self, num_points, v):
-        """Check if variable exists in variable scope dicts.
-
-        Return True if ufl expression v exists in the num_points scope.
-
-        NB! Does not fall back to piecewise scope.
-        """
-        return v in self.scopes[num_points]
-
     def get_var(self, num_points, v):
         """Lookup ufl expression v in variable scope dicts.
 
@@ -143,11 +132,11 @@ class IntegralGenerator(object):
 
     def get_temp_symbol(self, tempname, key):
         key = (tempname, ) + key
-        s = self.shared_blocks.get(key)
+        s = self.shared_symbols.get(key)
         defined = s is not None
         if not defined:
             s = self.new_temp_symbol(tempname)
-            self.shared_blocks[key] = s
+            self.shared_symbols[key] = s
         return s, defined
 
     def generate(self):
@@ -354,11 +343,9 @@ class IntegralGenerator(object):
         gdim = self.ir["geometric_dimension"]
 
         alignas = self.ir["params"]["alignas"]
-        # padlen = self.ir["params"]["padlen"]
 
         tables = self.ir["unique_tables"]
         table_types = self.ir["unique_table_types"]
-        # table_origins = self.ir["unique_table_origins"]  # FIXME
 
         # Generate unstructured varying partition
         body = self.generate_unstructured_varying_partition(num_points)
@@ -457,47 +444,46 @@ class IntegralGenerator(object):
     def generate_unstructured_piecewise_partition(self):
         L = self.backend.language
 
-        num_points = None
-        expr_ir = self.ir["piecewise_ir"]
+        # Get annotated graph of factorisation
+        F = self.ir["piecewise_ir"]["F"]
 
-        name = "sp"
-        arraysymbol = L.Symbol(name)
-        parts = self.generate_partition(arraysymbol, expr_ir["V"], expr_ir["V_active"],
-                                        expr_ir["V_mts"], expr_ir["mt_tabledata"], num_points)
+        arraysymbol = L.Symbol("sp")
+        num_points = None
+        parts = self.generate_partition(arraysymbol, F, "piecewise", num_points)
         parts = L.commented_code_list(parts, "Unstructured piecewise computations")
         return parts
 
     def generate_unstructured_varying_partition(self, num_points):
         L = self.backend.language
 
-        expr_ir = self.ir["varying_irs"][num_points]
+        # Get annotated graph of factorisation
+        F = self.ir["varying_irs"][num_points]["F"]
 
-        name = "sv"
-        arraysymbol = L.Symbol("%s%d" % (name, num_points))
-        parts = self.generate_partition(arraysymbol, expr_ir["V"], expr_ir["V_varying"],
-                                        expr_ir["V_mts"], expr_ir["mt_tabledata"], num_points)
+        arraysymbol = L.Symbol("sv%d" % num_points)
+        parts = self.generate_partition(arraysymbol, F, "varying", num_points)
         parts = L.commented_code_list(parts, "Unstructured varying computations for num_points=%d" %
                                       (num_points, ))
         return parts
 
-    def generate_partition(self, symbol, V, V_active, V_mts, mt_tabledata, num_points):
+    def generate_partition(self, symbol, F, mode, num_points):
         L = self.backend.language
 
         definitions = []
         intermediates = []
 
-        active_indices = [i for i, p in enumerate(V_active) if p]
+        for i, attr in F.nodes.items():
+            if attr['status'] != mode:
+                continue
 
-        for i in active_indices:
-            v = V[i]
-            mt = V_mts[i]
+            v = attr['expression']
+            mt = attr.get('mt')
+            tabledata = attr.get('tr')
 
             if v._ufl_is_literal_:
                 vaccess = self.backend.ufl_to_language(v)
             elif mt is not None:
-                # All finite element based terminals has table data, as well
-                # as some but not all of the symbolic geometric terminals
-                tabledata = mt_tabledata.get(mt)
+                # All finite element based terminals have table data, as well
+                # as some, but not all, of the symbolic geometric terminals
 
                 # Backend specific modified terminal translation
                 vaccess = self.backend.access(mt.terminal, mt, tabledata, num_points)
@@ -514,38 +500,28 @@ class IntegralGenerator(object):
                 self._ufl_names.add(v._ufl_handler_name_)
                 vexpr = self.backend.ufl_to_language(v, *vops)
 
-                # TODO: Let optimized ir provide mapping of vertex indices to
-                # variable indices, marking which subexpressions to store in variables
-                # and in what order:
-                # j = variable_id[i]
-
-                # Currently instead creating a new intermediate for
+                # Create a new intermediate for
                 # each subexpression except boolean conditions
                 if isinstance(v, Condition):
                     # Inline the conditions x < y, condition values
                     # 'x' and 'y' may still be stored in intermediates.
                     # This removes the need to handle boolean intermediate variables.
                     # With tensor-valued conditionals it may not be optimal but we
-                    # let the C++ compiler take responsibility for optimizing those cases.
-                    j = None
+                    # let the compiler take responsibility for optimizing those cases.
+                    vaccess = vexpr
                 elif any(op._ufl_is_literal_ for op in v.ufl_operands):
                     # Skip intermediates for e.g. -2.0*x,
                     # resulting in lines like z = y + -2.0*x
-                    j = None
+                    vaccess = vexpr
                 else:
-                    j = len(intermediates)
-
-                if j is not None:
                     # Record assignment of vexpr to intermediate variable
+                    j = len(intermediates)
                     if self.ir["params"]["use_symbol_array"]:
                         vaccess = symbol[j]
                         intermediates.append(L.Assign(vaccess, vexpr))
                     else:
                         vaccess = L.Symbol("%s_%d" % (symbol.name, j))
                         intermediates.append(L.VariableDecl("const ufc_scalar_t", vaccess, vexpr))
-                else:
-                    # Access the inlined expression
-                    vaccess = vexpr
 
             # Store access node for future reference
             self.set_var(num_points, v, vaccess)
@@ -577,25 +553,19 @@ class IntegralGenerator(object):
                   for blockdata in contributions if blockdata.block_mode != "preintegrated"]
 
         for blockmap, blockdata in blocks:
-            # Get symbol for already defined block B if it exists
-            common_block_data = get_common_block_data(blockdata)
-            B = self.shared_blocks.get(common_block_data)
-            if B is None:
-                # Define code for block depending on mode
-                B, block_preparts, block_quadparts, block_postparts = \
-                    self.generate_block_parts(num_points, blockmap, blockdata)
 
-                # Add definitions
-                preparts.extend(block_preparts)
+            # Define code for block depending on mode
+            B, block_preparts, block_quadparts, block_postparts = \
+                self.generate_block_parts(num_points, blockmap, blockdata)
 
-                # Add computations
-                quadparts.extend(block_quadparts)
+            # Add definitions
+            preparts.extend(block_preparts)
 
-                # Add finalization
-                postparts.extend(block_postparts)
+            # Add computations
+            quadparts.extend(block_quadparts)
 
-                # Store reference for reuse
-                self.shared_blocks[common_block_data] = B
+            # Add finalization
+            postparts.extend(block_postparts)
 
             # Add A[blockmap] += B[...] to finalization
             self.finalization_blocks[blockmap].append(B)
@@ -693,7 +663,6 @@ class IntegralGenerator(object):
             "quadrature": "BQ",
         }
 
-        fwtempname = "fw"
         tempname = tempnames.get(blockdata.block_mode)
 
         alignas = self.ir["params"]["alignas"]
@@ -736,9 +705,9 @@ class IntegralGenerator(object):
 
         # Get factor expression
         if blockdata.factor_is_piecewise:
-            v = self.ir["piecewise_ir"]["V"][blockdata.factor_index]
+            v = self.ir["piecewise_ir"]["F"].nodes[blockdata.factor_index]['expression']
         else:
-            v = self.ir["varying_irs"][num_points]["V"][blockdata.factor_index]
+            v = self.ir["varying_irs"][num_points]["F"].nodes[blockdata.factor_index]['expression']
         f = self.get_var(num_points, v)
 
         # Quadrature weight was removed in representation, add it back now
@@ -764,7 +733,7 @@ class IntegralGenerator(object):
             else:
                 # Define and cache scalar temp variable
                 key = (num_points, blockdata.factor_index, blockdata.factor_is_piecewise)
-                fw, defined = self.get_temp_symbol(fwtempname, key)
+                fw, defined = self.get_temp_symbol("fw", key)
                 if not defined:
                     quadparts.append(L.VariableDecl("const ufc_scalar_t", fw, fw_rhs))
 
@@ -878,12 +847,11 @@ class IntegralGenerator(object):
             A_rhs = B_rhs
 
         elif blockdata.block_mode in ("premultiplied", "preintegrated"):
-            P_entity_indices = self.get_entities(blockdata)
+            P_ii = self.get_entities(blockdata)
             if blockdata.transposed:
-                P_block_indices = (arg_indices[1], arg_indices[0])
+                P_ii += arg_indices[::-1]
             else:
-                P_block_indices = arg_indices
-            P_ii = P_entity_indices + P_block_indices
+                P_ii += arg_indices
 
             if blockdata.block_mode == "preintegrated":
                 # Preintegrated should never get into quadloops
@@ -948,7 +916,7 @@ class IntegralGenerator(object):
             inline_table = self.ir["integral_type"] == "cell"
 
             # Get factor expression
-            v = self.ir["piecewise_ir"]["V"][blockdata.factor_index]
+            v = self.ir["piecewise_ir"]["F"].nodes[blockdata.factor_index]['expression']
             f = self.get_var(None, v)
 
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
@@ -1052,42 +1020,13 @@ class IntegralGenerator(object):
 
         return parts
 
-    def generate_expr_copyout_statements(self):
-        L = self.backend.language
-        parts = []
-
-        # Not expecting any quadrature loop scopes here
-        assert tuple(self.scopes.keys()) == (None, )
-
-        # TODO: Get symbol from backend
-        values = L.Symbol("values")
-
-        # TODO: Allow expression compilation to compute multiple points at once!
-        # Similarities to custom integrals in that points are given,
-        # while different in output format: results are not accumulated
-        # for each point but stored in output array instead.
-
-        # Assign computed results to output variables
-        pir = self.ir["piecewise_ir"]
-        V = pir["V"]
-        V_targets = pir["V_targets"]
-        for i, fi in enumerate(V_targets):
-            parts.append(L.Assign(values[i], self.get_var(None, V[fi])))
-
-        return parts
-
-    def generate_tensor_copyout_statements(self):
+    def generate_copyout_statements(self):
         L = self.backend.language
         parts = []
 
         # Get symbol, dimensions, and loop index symbols for A
         A_shape = self.ir["tensor_shape"]
         A_rank = len(A_shape)
-
-        # TODO: there's something like shape2strides(A_shape) somewhere
-        A_strides = [1] * A_rank
-        for i in reversed(range(0, A_rank - 1)):
-            A_strides[i] = A_strides[i + 1] * A_shape[i + 1]
 
         Asym = self.backend.symbols.element_tensor()
         A = L.FlattenedArray(Asym, dims=A_shape)
@@ -1140,10 +1079,3 @@ class IntegralGenerator(object):
         parts = dofmap_parts + parts
 
         return parts
-
-    def generate_copyout_statements(self):
-        """Generate statements copying results to output array."""
-        if self.ir["integral_type"] == "expression":
-            return self.generate_expr_copyout_statements()
-        else:
-            return self.generate_tensor_copyout_statements()
