@@ -398,8 +398,8 @@ def transform_reference_basis_derivatives(L, ir, parameters):
     ]
 
     # Join code
-    code = (combinations_code + values_init_code + dof_attributes_code + point_loop_code +
-            [L.Comment(msg), L.Return(0)])
+    code = (combinations_code + values_init_code + dof_attributes_code + point_loop_code
+            + [L.Comment(msg), L.Return(0)])
     return code
 
 

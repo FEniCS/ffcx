@@ -285,8 +285,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
     # some cases it's just set to 1 in ufl integral scaling)
     tdim = cell.topological_dimension()
     expect_weight = (integral_type not in ("expression", ) + point_integral_types
-                     and (entitytype == "cell" or (entitytype == "facet" and tdim > 1) or
-                          (integral_type in custom_integral_types)))
+                     and (entitytype == "cell" or (entitytype == "facet" and tdim > 1)
+                     or (integral_type in custom_integral_types)))
 
     if integral_type == "expression":
         # TODO: Figure out how to get non-integrand expressions in
