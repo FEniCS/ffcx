@@ -10,7 +10,7 @@ jobs:
           name: Install dependencies
           command: |
             sudo apt-get update && sudo apt-get install libboost-math-dev
-            sudo pip install cffi flake8 pydocstyle pytest --upgrade
+            sudo pip install cffi flake8 pydocstyle pytest coverage --upgrade
       - run:
           name: Install FEniCS dependencies
           command: |
@@ -28,4 +28,4 @@ jobs:
           command: python -m pydocstyle ffc/
       - run:
           name: Run unit tests
-          command: python -m pytest test/
+          command: coverage run --source ffc -m pytest test/
