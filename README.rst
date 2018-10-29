@@ -25,6 +25,12 @@ FFC-X is part of the FEniCS Project.
 
 For more information, visit http://www.fenicsproject.org
 
+Code Coverage
+=============
+
+.. image:: https://coveralls.io/repos/github/FEniCS/ffcx/badge.svg
+:target: https://coveralls.io/github/FEniCS/ffcx
+
 
 Documentation
 =============
