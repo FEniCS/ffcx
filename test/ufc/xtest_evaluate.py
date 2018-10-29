@@ -46,7 +46,7 @@ def build_ufl_element_list():
         for p in range(1, 2):
             elements.append(FiniteElement("Lagrange", cell, p))
             elements.append(VectorElement("Lagrange", cell, p))
-            elements.append(FiniteElement("Discontinuous Lagrange", cell, p-1))
+            elements.append(FiniteElement("Discontinuous Lagrange", cell, p - 1))
 
     # Vector elements
     for cell in (triangle, tetrahedron):
@@ -60,9 +60,9 @@ def build_ufl_element_list():
     # Mixed elements
     for cell in (interval, triangle, tetrahedron):
         for p in range(1, 3):
-            e0 = FiniteElement("Lagrange", cell, p+1)
+            e0 = FiniteElement("Lagrange", cell, p + 1)
             e1 = FiniteElement("Lagrange", cell, p)
-            e2 = VectorElement("Lagrange", cell, p+1)
+            e2 = VectorElement("Lagrange", cell, p + 1)
 
             elements.append(MixedElement([e0, e0]))
             elements.append(MixedElement([e0, e1]))
@@ -72,11 +72,11 @@ def build_ufl_element_list():
 
     for cell in (triangle, tetrahedron):
         for p in range(1, 2):
-            e0 = FiniteElement("Lagrange", cell, p+1)
+            e0 = FiniteElement("Lagrange", cell, p + 1)
             e1 = FiniteElement("Lagrange", cell, p)
-            e2 = VectorElement("Lagrange", cell, p+1)
+            e2 = VectorElement("Lagrange", cell, p + 1)
             e3 = FiniteElement("BDM", cell, p)
-            e4 = FiniteElement("RT", cell, p+1)
+            e4 = FiniteElement("RT", cell, p + 1)
             e5 = FiniteElement("N1curl", cell, p)
 
             elements.append(MixedElement([e1, e2]))
@@ -136,7 +136,7 @@ def test_evaluate_reference_basis_vs_fiat(element_pair, point_data):
     values_fiat = fiat_element.tabulate(0, points)
 
     # Extract and reshape FIAT output
-    key = (0,)*tdim
+    key = (0,) * tdim
     values_fiat = np.array(values_fiat[key])
 
     # Shape checks
@@ -191,7 +191,7 @@ def test_evaluate_basis_vs_fiat(element_pair, point_data):
     values_fiat = fiat_element.tabulate(0, points)
 
     # Extract and reshape FIAT output
-    key = (0,)*tdim
+    key = (0,) * tdim
     values_fiat = np.array(values_fiat[key])
 
     # Shape checks
@@ -241,8 +241,8 @@ def test_evaluate_reference_basis_deriv_vs_fiat(order, element_pair,
     ufl_element, ufc_element = element_pair
 
     # Get geometric and topological dimensions
-    tdim = ufc_element.geometric_dimension()
-    gdim = ufc_element.topological_dimension()
+    # gdim = ufc_element.geometric_dimension()
+    tdim = ufc_element.topological_dimension()
 
     points = point_data[tdim]
 
@@ -307,7 +307,7 @@ def test_evaluate_reference_basis_deriv_vs_fiat(order, element_pair,
         values_fiat_slice = values_fiat_slice.transpose((2, 0, 1))
 
         # Compare
-        assert np.allclose(values_ufc[:,:,i,:], values_fiat_slice)
+        assert np.allclose(values_ufc[:, :, i, :], values_fiat_slice)
 
     # Test sub-elements recursively
     n = ufc_element.num_sub_elements()

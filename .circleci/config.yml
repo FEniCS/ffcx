@@ -22,7 +22,7 @@ jobs:
           command: pip install -e . --user
       - run:
           name: Run flake8 tests
-          command: python -m flake8 ffc/
+          command: python -m flake8 ffc/ test/
       - run:
           name: Run pydocstyle tests
           command: python -m pydocstyle ffc/
