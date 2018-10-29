@@ -312,8 +312,8 @@ class FFCBackendAccess(MultiFunction):
         component = mt.component[1]
 
         expr = (
-            self.symbols.domain_dof_access(dof0, component, gdim, num_scalar_dofs, mt.restriction) -
-            self.symbols.domain_dof_access(dof1, component, gdim, num_scalar_dofs, mt.restriction))
+            self.symbols.domain_dof_access(dof0, component, gdim, num_scalar_dofs, mt.restriction)
+            - self.symbols.domain_dof_access(dof1, component, gdim, num_scalar_dofs, mt.restriction))
 
         return expr
 
@@ -356,8 +356,8 @@ class FFCBackendAccess(MultiFunction):
         dof1 = vertex1
 
         expr = (
-            self.symbols.domain_dof_access(dof0, component, gdim, num_scalar_dofs, mt.restriction) -
-            self.symbols.domain_dof_access(dof1, component, gdim, num_scalar_dofs, mt.restriction))
+            self.symbols.domain_dof_access(dof0, component, gdim, num_scalar_dofs, mt.restriction)
+            - self.symbols.domain_dof_access(dof1, component, gdim, num_scalar_dofs, mt.restriction))
 
         return expr
 
