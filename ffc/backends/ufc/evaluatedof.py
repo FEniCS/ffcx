@@ -11,7 +11,7 @@
 
 from ffc.backends.ufc.jacobian import jacobian, inverse_jacobian, orientation
 from ufl.permutation import build_component_numbering
-from ffc.utils import pick_first
+from ffc import utils
 
 index_type = "int64_t"
 
@@ -190,7 +190,9 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset=0):
 
     # Get number of tokens per point
     tokens = [dof[x] for x in points]
-    len_tokens = pick_first([len(t) for t in tokens])
+    len_tokens = [len(t) for t in tokens]
+    assert utils.all_equal(len_tokens)
+    len_tokens = len_tokens[0]
 
     # Declare points
     #    points = format["list"]([format["list"](x) for x in points])
