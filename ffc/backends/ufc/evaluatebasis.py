@@ -285,13 +285,9 @@ def _generate_compute_basisvalues(L, basisvalues, Y, element_cellname,
 
 
 def _jrc(a, b, n):
-    an = float((2 * n + 1 + a + b) *
-               (2 * n + 2 + a + b)) / float(2 * (n + 1) * (n + 1 + a + b))
-    bn = float((a * a - b * b) *
-               (2 * n + 1 + a + b)) / float(2 * (n + 1) * (2 * n + a + b) *
-                                            (n + 1 + a + b))
-    cn = float((n + a) * (n + b) * (2 * n + 2 + a + b)) / \
-        float((n + 1) * (n + 1 + a + b) * (2 * n + a + b))
+    an = float((2 * n + 1 + a + b) * (2 * n + 2 + a + b)) / float(2 * (n + 1) * (n + 1 + a + b))
+    bn = float((a * a - b * b) * (2 * n + 1 + a + b)) / float(2 * (n + 1) * (2 * n + a + b) * (n + 1 + a + b))
+    cn = float((n + a) * (n + b) * (2 * n + 2 + a + b)) / float((n + 1) * (n + 1 + a + b) * (2 * n + a + b))
     return (an, bn, cn)
 
 
