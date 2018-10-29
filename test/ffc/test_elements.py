@@ -23,13 +23,9 @@
 
 
 import pytest
-import os
-import sys
 import numpy
-import math
-from time import time
 
-from ufl import *
+from ufl import FiniteElement
 from ffc.fiatinterface import create_element
 
 
@@ -50,7 +46,7 @@ def element_coords(cell):
 
 def random_point(shape):
     w = numpy.random.random(len(shape))
-    return sum([numpy.array(shape[i])*w[i] for i in range(len(shape))])/sum(w)
+    return sum([numpy.array(shape[i]) * w[i] for i in range(len(shape))]) / sum(w)
 
 
 @pytest.mark.parametrize("degree, expected_dim", [(1, 3), (2, 6), (3, 10)])
@@ -59,11 +55,13 @@ def test_continuous_lagrange(degree, expected_dim):
     P = create_element(FiniteElement("Lagrange", "triangle", degree))
     assert P.space_dimension() == expected_dim
 
+
 @pytest.mark.parametrize("degree, expected_dim", [(1, 4), (2, 9), (3, 16)])
 def test_continuous_lagrange_quadrilateral(degree, expected_dim):
     "Test space dimensions of continuous TensorProduct elements (quadrilateral)."
     P = create_element(FiniteElement("Lagrange", "quadrilateral", degree))
     assert P.space_dimension() == expected_dim
+
 
 @pytest.mark.parametrize("degree, expected_dim", [(0, 1), (1, 3), (2, 6), (3, 10)])
 def test_discontinuous_lagrange(degree, expected_dim):
@@ -71,12 +69,14 @@ def test_discontinuous_lagrange(degree, expected_dim):
     P = create_element(FiniteElement("DG", "triangle", degree))
     assert P.space_dimension() == expected_dim
 
+
 @pytest.mark.parametrize("degree, expected_dim",
                          [(0, 3), (1, 9), (2, 18), (3, 30)])
 def test_regge(degree, expected_dim):
     "Test space dimensions of generalized Regge element."
     P = create_element(FiniteElement("Regge", "triangle", degree))
     assert P.space_dimension() == expected_dim
+
 
 @pytest.mark.parametrize("degree, expected_dim",
                          [(0, 3), (1, 9), (2, 18), (3, 30)])
@@ -97,63 +97,63 @@ supported (non-mixed) for low degrees"""
     reference_triangle_1 = [lambda x: 1 - x[0] - x[1], lambda x: x[0], lambda x: x[1]]
     reference_tetrahedron_1 = [lambda x: 1 - x[0] - x[1] - x[2], lambda x: x[0],
                                lambda x: x[1], lambda x: x[2]]
-    reference_triangle_bdm1 = [lambda x: (2*x[0], -x[1]),
-                               lambda x: (-x[0], 2*x[1]),
-                               lambda x: (2 - 2*x[0] - 3*x[1], x[1]),
-                               lambda x: (- 1 + x[0] + 3*x[1], - 2*x[1]),
-                               lambda x: (-x[0], -2 + 3*x[0] + 2*x[1]),
-                               lambda x: (2*x[0], 1 - 3*x[0] - x[1])]
+    reference_triangle_bdm1 = [lambda x: (2 * x[0], -x[1]),
+                               lambda x: (-x[0], 2 * x[1]),
+                               lambda x: (2 - 2 * x[0] - 3 * x[1], x[1]),
+                               lambda x: (- 1 + x[0] + 3 * x[1], - 2 * x[1]),
+                               lambda x: (-x[0], -2 + 3 * x[0] + 2 * x[1]),
+                               lambda x: (2 * x[0], 1 - 3 * x[0] - x[1])]
     reference_triangle_rt1 = [lambda x: (x[0], x[1]), lambda x: (1 - x[0], -x[1]),
                               lambda x: (x[0], x[1] - 1)]
-    reference_triangle_rt2 = [lambda x: (-x[0] + 3*x[0]**2, -x[1] + 3*x[0]*x[1]),
-                              lambda x: (-x[0] + 3*x[0]*x[1], -x[1] + 3*x[1]**2),
-                              lambda x: ( 2 - 5*x[0] - 3*x[1] + 3*x[0]*x[1] + 3*x[0]**2,
-                                          -2*x[1] + 3*x[0]*x[1] + 3*x[1]**2),
-                              lambda x: (-1.0 + x[0] + 3*x[1] - 3*x[0]*x[1], x[1] - 3*x[1]**2),
-                              lambda x: (2*x[0] - 3*x[0]*x[1] - 3*x[0]**2,
-                                         -2 + 3*x[0]+ 5*x[1] - 3*x[0]*x[1] - 3*x[1]**2),
-                              lambda x: (- x[0] + 3*x[0]**2,
-                                       + 1 - 3*x[0] - x[1] + 3*x[0]*x[1]),
-                              lambda x: (6*x[0] - 3*x[0]*x[1] - 6*x[0]**2,
-                                         3*x[1] - 6*x[0]*x[1] - 3*x[1]**2),
-                              lambda x: (3*x[0] - 6*x[0]*x[1] - 3*x[0]**2,
-                                         6*x[1]- 3*x[0]*x[1] - 6*x[1]**2)]
-    reference_triangle_ned1 = [lambda x: (-x[1], x[0]), lambda x: ( x[1], 1 - x[0]),
-                               lambda x: ( 1 - x[1], x[0])]
+    reference_triangle_rt2 = [lambda x: (-x[0] + 3 * x[0]**2, -x[1] + 3 * x[0] * x[1]),
+                              lambda x: (-x[0] + 3 * x[0] * x[1], -x[1] + 3 * x[1]**2),
+                              lambda x: (2 - 5 * x[0] - 3 * x[1] + 3 * x[0] * x[1] + 3 * x[0]**2,
+                                         -2 * x[1] + 3 * x[0] * x[1] + 3 * x[1]**2),
+                              lambda x: (-1.0 + x[0] + 3 * x[1] - 3 * x[0] * x[1], x[1] - 3 * x[1]**2),
+                              lambda x: (2 * x[0] - 3 * x[0] * x[1] - 3 * x[0] ** 2,
+                                         -2 + 3 * x[0] + 5 * x[1] - 3 * x[0] * x[1] - 3 * x[1]**2),
+                              lambda x: (-x[0] + 3 * x[0]**2,
+                                         1 - 3 * x[0] - x[1] + 3 * x[0] * x[1]),
+                              lambda x: (6 * x[0] - 3 * x[0] * x[1] - 6 * x[0]**2,
+                                         3 * x[1] - 6 * x[0] * x[1] - 3 * x[1]**2),
+                              lambda x: (3 * x[0] - 6 * x[0] * x[1] - 3 * x[0]**2,
+                                         6 * x[1] - 3 * x[0] * x[1] - 6 * x[1]**2)]
+    reference_triangle_ned1 = [lambda x: (-x[1], x[0]), lambda x: (x[1], 1 - x[0]),
+                               lambda x: (1.0 - x[1], x[0])]
     reference_tetrahedron_rt1 = [lambda x: (-x[0], -x[1], -x[2]),
                                  lambda x: (-1.0 + x[0], x[1], x[2]),
                                  lambda x: (-x[0], 1.0 - x[1], -x[2]),
-                                 lambda x: ( x[0], x[1], -1.0 + x[2])]
-    reference_tetrahedron_bdm1 = [lambda x: (-3*x[0], x[1], x[2]),
-                                  lambda x: (x[0], -3*x[1], x[2]),
-                                  lambda x: (x[0], x[1], -3*x[2]),
-                                  lambda x: (-3.0 + 3*x[0] + 4*x[1] + 4*x[2], -x[1], -x[2]),
-                                  lambda x: (1.0 - x[0] - 4*x[1], 3*x[1], -x[2]),
-                                  lambda x: (1.0 - x[0] - 4*x[2], -x[1], 3*x[2]),
-                                  lambda x: (x[0], 3.0 - 4*x[0] - 3*x[1] - 4*x[2], x[2]),
-                                  lambda x: (-3*x[0], -1.0 + 4*x[0] + x[1], x[2]),
-                                  lambda x: (x[0], -1.0 + x[1] + 4*x[2], -3*x[2]),
-                                  lambda x: (-x[0], -x[1], -3.0 + 4*x[0] + 4*x[1] + 3*x[2]),
-                                  lambda x: (3*x[0], -x[1], 1.0 - 4*x[0] - x[2]),
-                                  lambda x: (-x[0], 3*x[1], 1.0 - 4*x[1] - x[2])]
+                                 lambda x: (x[0], x[1], -1.0 + x[2])]
+    reference_tetrahedron_bdm1 = [lambda x: (-3 * x[0], x[1], x[2]),
+                                  lambda x: (x[0], -3 * x[1], x[2]),
+                                  lambda x: (x[0], x[1], -3 * x[2]),
+                                  lambda x: (-3.0 + 3 * x[0] + 4 * x[1] + 4 * x[2], -x[1], -x[2]),
+                                  lambda x: (1.0 - x[0] - 4 * x[1], 3 * x[1], -x[2]),
+                                  lambda x: (1.0 - x[0] - 4 * x[2], -x[1], 3 * x[2]),
+                                  lambda x: (x[0], 3.0 - 4 * x[0] - 3 * x[1] - 4 * x[2], x[2]),
+                                  lambda x: (-3 * x[0], -1.0 + 4 * x[0] + x[1], x[2]),
+                                  lambda x: (x[0], -1.0 + x[1] + 4 * x[2], -3 * x[2]),
+                                  lambda x: (-x[0], -x[1], -3.0 + 4 * x[0] + 4 * x[1] + 3 * x[2]),
+                                  lambda x: (3 * x[0], -x[1], 1.0 - 4 * x[0] - x[2]),
+                                  lambda x: (-x[0], 3 * x[1], 1.0 - 4 * x[1] - x[2])]
     reference_tetrahedron_ned1 = [lambda x: (0.0, -x[2], x[1]),
-                                  lambda x: (-x[2], 0.0,  x[0]),
-                                  lambda x: (-x[1],  x[0], 0.0),
-                                  lambda x: ( x[2], x[2], 1.0 - x[0] - x[1]),
+                                  lambda x: (-x[2], 0.0, x[0]),
+                                  lambda x: (-x[1], x[0], 0.0),
+                                  lambda x: (x[2], x[2], 1.0 - x[0] - x[1]),
                                   lambda x: (x[1], 1.0 - x[0] - x[2], x[1]),
                                   lambda x: (1.0 - x[1] - x[2], x[0], x[0])]
-    reference_quadrilateral_1 = [lambda x: (1-x[0])*(1-x[1]),
-                                 lambda x: (1-x[0])*x[1],
-                                 lambda x: x[0]*(1-x[1]),
-                                 lambda x: x[0]*x[1]]
-    reference_hexahedron_1 = [lambda x: (1-x[0])*(1-x[1])*(1-x[2]),
-                              lambda x: (1-x[0])*(1-x[1])*x[2],
-                              lambda x: (1-x[0])*x[1]*(1-x[2]),
-                              lambda x: (1-x[0])*x[1]*x[2],
-                              lambda x: x[0]*(1-x[1])*(1-x[2]),
-                              lambda x: x[0]*(1-x[1])*x[2],
-                              lambda x: x[0]*x[1]*(1-x[2]),
-                              lambda x: x[0]*x[1]*x[2]]
+    reference_quadrilateral_1 = [lambda x: (1 - x[0]) * (1 - x[1]),
+                                 lambda x: (1 - x[0]) * x[1],
+                                 lambda x: x[0] * (1 - x[1]),
+                                 lambda x: x[0] * x[1]]
+    reference_hexahedron_1 = [lambda x: (1 - x[0]) * (1 - x[1]) * (1 - x[2]),
+                              lambda x: (1 - x[0]) * (1 - x[1]) * x[2],
+                              lambda x: (1 - x[0]) * x[1] * (1 - x[2]),
+                              lambda x: (1 - x[0]) * x[1] * x[2],
+                              lambda x: x[0] * (1 - x[1]) * (1 - x[2]),
+                              lambda x: x[0] * (1 - x[1]) * x[2],
+                              lambda x: x[0] * x[1] * (1 - x[2]),
+                              lambda x: x[0] * x[1] * x[2]]
 
     # Tests to perform
     tests = [("Lagrange", "interval", 1, reference_interval_1),
@@ -173,9 +173,7 @@ supported (non-mixed) for low degrees"""
              ("Raviart-Thomas", "tetrahedron", 1, reference_tetrahedron_rt1),
              ("Discontinuous Raviart-Thomas", "tetrahedron", 1, reference_tetrahedron_rt1),
              ("Brezzi-Douglas-Marini", "tetrahedron", 1, reference_tetrahedron_bdm1),
-             ("N1curl", "tetrahedron", 1, reference_tetrahedron_ned1),
-        ]
-
+             ("N1curl", "tetrahedron", 1, reference_tetrahedron_ned1)]
 
     @pytest.mark.parametrize("family, cell, degree, reference", tests)
     def test_values(self, family, cell, degree, reference):
@@ -192,4 +190,4 @@ supported (non-mixed) for low degrees"""
                     assert round(float(basis[i]) - reference[i](x), 10) == 0.0
                 else:
                     for k in range(element.value_shape()[0]):
-                        assert round(basis[i][k][0] - reference[i](x)[k] , 10) == 0.0
+                        assert round(basis[i][k][0] - reference[i](x)[k], 10) == 0.0
