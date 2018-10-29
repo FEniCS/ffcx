@@ -7,6 +7,8 @@ FFC-X: The FEniCS Form Compiler (experimental)
 .. image:: https://readthedocs.org/projects/fenics-ffcx/badge/?version=latest
    :target: http://fenics-ffcx.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
+.. image:: https://coveralls.io/repos/github/FEniCS/ffcx/badge.svg
+    :target: https://coveralls.io/github/FEniCS/ffcx
 
 FFC-X is an experimental version of FEniCS FFC which is being actively
 developed, but is **not ready for production use**. Many new
@@ -24,12 +26,6 @@ as a Python module (``import ffc``).
 FFC-X is part of the FEniCS Project.
 
 For more information, visit http://www.fenicsproject.org
-
-Code Coverage
-=============
-
-.. image:: https://coveralls.io/repos/github/FEniCS/ffcx/badge.svg
-:target: https://coveralls.io/github/FEniCS/ffcx
 
 
 Documentation
