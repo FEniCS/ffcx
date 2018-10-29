@@ -7,7 +7,7 @@
 """Algorithms for factorizing argument dependent monomials."""
 
 import logging
-import itertools
+from functools import singledispatch
 
 from ffc import FFCError
 from ffc.uflacs.analysis.graph import ExpressionGraph
@@ -39,11 +39,11 @@ def build_argument_indices(S):
     return ordered_arg_indices
 
 
-def add_to_fv(expr, F):
-    """Add expression expr to factor vector FV and expr->FVindex mapping e2fi."""
+def graph_insert(F, expr):
+    """Add new expression expr to factorisation graph or return existing index"""
     fi = F.e2i.get(expr)
     if fi is None:
-        fi = len(F.e2i)
+        fi = F.number_of_nodes()
         F.add_node(fi, expression=expr)
         F.e2i[expr] = fi
     return fi
@@ -53,8 +53,20 @@ def add_to_fv(expr, F):
 noargs = {}
 
 
-def handle_sum(v, si, deps, fac, sf, F):
-    if len(deps) != 2:
+@singledispatch
+def handler(v, fac, sf, F):
+    # Error checking
+    if any(fac):
+        raise FFCError(
+            "Assuming that a {0} cannot be applied to arguments. If this is wrong please report a bug.".
+            format(type(v)))
+    # Record non-argument subexpression
+    raise FFCError("No arguments")
+
+
+@handler.register(Sum)
+def handle_sum(v, fac, sf, F):
+    if len(fac) != 2:
         raise FFCError("Assuming binary sum here. This can be fixed if needed.")
 
     fac0 = fac[0]
@@ -78,7 +90,7 @@ def handle_sum(v, si, deps, fac, sf, F):
             else:
                 f0 = F.nodes[fi0]['expression']
                 f1 = F.nodes[fi1]['expression']
-                fisum = add_to_fv(f0 + f1, F)
+                fisum = graph_insert(F, f0 + f1)
             factors[argkey] = fisum
 
     else:  # non-arg + non-arg
@@ -87,8 +99,9 @@ def handle_sum(v, si, deps, fac, sf, F):
     return factors
 
 
-def handle_product(v, si, deps, fac, sf, F):
-    if len(deps) != 2:
+@handler.register(Product)
+def handle_product(v, fac, sf, F):
+    if len(fac) != 2:
         raise FFCError("Assuming binary product here. This can be fixed if needed.")
     fac0 = fac[0]
     fac1 = fac[1]
@@ -101,8 +114,8 @@ def handle_product(v, si, deps, fac, sf, F):
         f0 = sf[0]
         factors = {}
         for k1 in sorted(fac1):
-            fi1 = fac1[k1]
-            factors[k1] = add_to_fv(f0 * F.nodes[fi1]['expression'], F)
+            f1 = F.nodes[fac1[k1]]['expression']
+            factors[k1] = graph_insert(F, f0 * f1)
 
     elif not fac1:  # arg * non-arg
         # Record products of non-arg operand with each factor of arg-dependent operand
@@ -110,7 +123,7 @@ def handle_product(v, si, deps, fac, sf, F):
         factors = {}
         for k0 in sorted(fac0):
             f0 = F.nodes[fac0[k0]]['expression']
-            factors[k0] = add_to_fv(f1 * f0, F)
+            factors[k0] = graph_insert(F, f1 * f0)
 
     else:  # arg * arg
         # Record products of each factor of arg-dependent operand
@@ -120,26 +133,28 @@ def handle_product(v, si, deps, fac, sf, F):
             for k1 in sorted(fac1):
                 f1 = F.nodes[fac1[k1]]['expression']
                 argkey = tuple(sorted(k0 + k1))  # sort key for canonical representation
-                factors[argkey] = add_to_fv(f0 * f1, F)
+                factors[argkey] = graph_insert(F, f0 * f1)
 
     return factors
 
 
-def handle_conj(v, si, deps, fac, sf, F):
+@handler.register(Conj)
+def handle_conj(v, fac, sf, F):
 
     fac = fac[0]
     if fac:
         factors = {}
         for k in fac:
             f0 = F.nodes[fac[k]]['expression']
-            factors[k] = add_to_fv(Conj(f0), F)
+            factors[k] = graph_insert(F, Conj(f0))
     else:
         raise FFCError("No arguments")
 
     return factors
 
 
-def handle_division(v, si, deps, fac, sf, F):
+@handler.register(Division)
+def handle_division(v, fac, sf, F):
     fac0 = fac[0]
     fac1 = fac[1]
     assert not fac1, "Cannot divide by arguments."
@@ -150,7 +165,7 @@ def handle_division(v, si, deps, fac, sf, F):
         factors = {}
         for k0 in sorted(fac0):
             f0 = F.nodes[fac0[k0]]['expression']
-            factors[k0] = add_to_fv(f0 / f1, F)
+            factors[k0] = graph_insert(F, f0 / f1)
 
     else:  # non-arg / non-arg
         raise FFCError("No arguments")
@@ -158,7 +173,8 @@ def handle_division(v, si, deps, fac, sf, F):
     return factors
 
 
-def handle_conditional(v, si, deps, fac, sf, F):
+@handler.register(Conditional)
+def handle_conditional(v, fac, sf, F):
     fac0 = fac[0]
     fac1 = fac[1]
     fac2 = fac[2]
@@ -188,20 +204,9 @@ def handle_conditional(v, si, deps, fac, sf, F):
             fi2 = fac2.get(k)
             f1 = z if fi1 is None else F.nodes[fi1]['expression']
             f2 = z if fi2 is None else F.nodes[fi2]['expression']
-            factors[k] = add_to_fv(conditional(f0, f1, f2), F)
+            factors[k] = graph_insert(F, conditional(f0, f1, f2))
 
     return factors
-
-
-def handle_operator(v, si, deps, fac, sf, F):
-
-    # Error checking
-    if any(fac):
-        raise FFCError(
-            "Assuming that a {0} cannot be applied to arguments. If this is wrong please report a bug.".
-            format(type(v)))
-    # Record non-argument subexpression
-    raise FFCError("No arguments")
 
 
 def compute_argument_factorization(S, rank):
@@ -239,14 +244,21 @@ def compute_argument_factorization(S, rank):
     # Extract argument component subgraph
     arg_indices = build_argument_indices(S)
     AV = [S.nodes[i]['expression'] for i in arg_indices]
-#    sv2av = {si: ai for ai, si in enumerate(arg_indices)}
 
     # Data structure for building non-argument factors
     F = ExpressionGraph()
+    # Attach a quick lookup dict for expression to index
+    F.e2i = {}
+
+    # Insert arguments as first entries in factorisation graph
+    # They will not be connected to other nodes, but will be available
+    # and referred to by the factorisation indices of the 'target' nodes.
+    for v in AV:
+        graph_insert(F, v)
 
     # Adding 1.0 as an expression allows avoiding special representation
     # of arguments when first visited by representing "v" as "1*v"
-    one_index = add_to_fv(as_ufl(1.0), F)
+    one_index = graph_insert(F, as_ufl(1.0))
 
     # Intermediate factorization for each vertex in SV on the format
     # SV_factors[si] = None # if SV[si] does not depend on arguments
@@ -267,41 +279,38 @@ def compute_argument_factorization(S, rank):
             factors = {(si, ): one_index}
         else:
             fac = [S.nodes[d]['factors'] for d in deps]
-            sf = [None] * len(fac)
-            for i, d in enumerate(deps):
-                if not fac[i]:
-                    sf[i] = S.nodes[d]['expression']
-
             if not any(fac):
-                add_to_fv(v, F)
+                # Entirely scalar (i.e. no arg factors)
+                # Just add unchanged to F
+                graph_insert(F, v)
                 factors = noargs
             else:
-                if isinstance(v, Sum):
-                    handler = handle_sum
-                elif isinstance(v, Conj):
-                    handler = handle_conj
-                elif isinstance(v, Product):
-                    handler = handle_product
-                elif isinstance(v, Division):
-                    handler = handle_division
-                elif isinstance(v, Conditional):
-                    handler = handle_conditional
-                else:  # All other operators
-                    handler = handle_operator
-                factors = handler(v, si, deps, fac, sf, F)
+                # Get scalar factors for dependencies
+                # which do not have arg factors
+                sf = []
+                for i, d in enumerate(deps):
+                    if fac[i]:
+                        sf.append(None)
+                    else:
+                        sf.append(S.nodes[d]['expression'])
+                # Use appropriate handler to deal with Sum, Product, etc.
+                factors = handler(v, fac, sf, F)
 
         attr['factors'] = factors
 
-    assert not noargs, "This dict was not supposed to be filled with anything!"
-
     assert len(F.nodes) == len(F.e2i)
 
+    # Find the (only) node in S that is marked as 'target'
+    # Should always be the last one.
+    S_targets = [i for i, v in S.nodes.items() if v.get('target', False)]
+    assert len(S_targets) == 1
+    S_target = S_targets[0]
+
     # Get the factorizations of the target values
-    IMs = []
-    if S.nodes[S.V_target]['factors'] == {}:
+    if S.nodes[S_target]['factors'] == {}:
         if rank == 0:
             # Functionals and expressions: store as no args * factor
-            factors = {(): F.e2i[S.nodes[S.V_target]['expression']]}
+            factors = {(): F.e2i[S.nodes[S_target]['expression']]}
         else:
             # Zero form of arity 1 or higher: make factors empty
             factors = {}
@@ -311,13 +320,12 @@ def compute_argument_factorization(S, rank):
         # and resort keys for canonical representation
         factors = {
             tuple(sorted(arg_indices.index(si) for si in argkey)): fi
-            for argkey, fi in S.nodes[S.V_target]['factors'].items()
+            for argkey, fi in S.nodes[S_target]['factors'].items()
         }
     # Expecting all term keys to have length == rank
     # (this assumption will eventually have to change if we
     # implement joint bilinear+linear form factorization here)
     assert all(len(k) == rank for k in factors)
-    IMs.append(factors)
 
     # Indices into F that are needed for final result
     for i in factors.values():
@@ -333,9 +341,4 @@ def compute_argument_factorization(S, rank):
             for o in expr.ufl_operands:
                 F.add_edge(i, F.e2i[o])
 
-    FV = [v['expression'] for i, v in F.nodes.items()]
-
-    # Indices into FV that are needed for final result
-    FV_targets = list(itertools.chain(sorted(IM.values()) for IM in IMs))
-
-    return IMs, AV, F, FV, FV_targets
+    return F

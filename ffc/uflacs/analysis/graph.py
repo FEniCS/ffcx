@@ -30,12 +30,6 @@ class ExpressionGraph(object):
         self.out_edges = {}
         self.in_edges = {}
 
-        # Index to expression
-        self.V = []
-
-        # Expression to index dict
-        self.e2i = {}
-
     def number_of_nodes(self):
         return len(self.nodes)
 
@@ -70,7 +64,8 @@ def build_graph_vertices(expression, scalar=False):
         G.add_node(i, expression=v)
 
     # Get vertex index representing input expression root
-    G.V_target = G.e2i[expression]
+    V_target = G.e2i[expression]
+    G.nodes[V_target]['target'] = True
 
     return G
 

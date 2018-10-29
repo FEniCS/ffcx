@@ -32,10 +32,6 @@ class FFCBackendDefinitions(ufl.corealg.multifunction.MultiFunction):
     def expr(self, t, mt, tabledata, num_points, access):
         logging.exception("Unhandled type {0}".format(type(t)))
 
-    # def quadrature_weight(self, e, mt, tabledata, num_points, access):
-    #    "Quadrature weights are precomputed and need no code."
-    #    return []
-
     def constant_value(self, e, mt, tabledata, num_points, access):
         """Constants simply use literals in the target language."""
         return []

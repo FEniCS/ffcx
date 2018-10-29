@@ -246,7 +246,8 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset=0):
         ]
         for j in range(gdim):
             lines_r += [
-                L.Assign(y[j], w0 * coordinate_dofs[j] + w1 * coordinate_dofs[j + gdim]
+                L.Assign(y[j], w0 * coordinate_dofs[j]
+                         + w1 * coordinate_dofs[j + gdim]
                          + w2 * coordinate_dofs[j + 2 * gdim])
             ]
     elif tdim == 3:
@@ -260,8 +261,10 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset=0):
         ]
         for j in range(gdim):
             lines_r += [
-                L.Assign(y[j], w0 * coordinate_dofs[j] + w1 * coordinate_dofs[j + gdim]
-                         + w2 * coordinate_dofs[j + 2 * gdim] + w3 * coordinate_dofs[j + 3 * gdim])
+                L.Assign(y[j], w0 * coordinate_dofs[j]
+                         + w1 * coordinate_dofs[j + gdim]
+                         + w2 * coordinate_dofs[j + 2 * gdim]
+                         + w3 * coordinate_dofs[j + 3 * gdim])
             ]
 
     # Evaluate function at physical point

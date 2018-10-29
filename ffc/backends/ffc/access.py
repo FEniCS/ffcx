@@ -311,10 +311,12 @@ class FFCBackendAccess(MultiFunction):
         dof1, = vertex_scalar_dofs[vertex1]
         component = mt.component[1]
 
-        expr = (
-            self.symbols.domain_dof_access(dof0, component, gdim, num_scalar_dofs, mt.restriction)
-            - self.symbols.domain_dof_access(dof1, component, gdim, num_scalar_dofs, mt.restriction))
-
+        expr = (self.symbols.domain_dof_access(dof0, component,
+                                               gdim, num_scalar_dofs,
+                                               mt.restriction)
+                - self.symbols.domain_dof_access(dof1, component,
+                                                 gdim, num_scalar_dofs,
+                                                 mt.restriction))
         return expr
 
     def facet_edge_vectors(self, e, mt, tabledata, num_points):
@@ -354,7 +356,6 @@ class FFCBackendAccess(MultiFunction):
         assert coordinate_element.degree() == 1, "Assuming degree 1 element"
         dof0 = vertex0
         dof1 = vertex1
-
         expr = (
             self.symbols.domain_dof_access(dof0, component, gdim, num_scalar_dofs, mt.restriction)
             - self.symbols.domain_dof_access(dof1, component, gdim, num_scalar_dofs, mt.restriction))

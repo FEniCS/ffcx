@@ -63,8 +63,9 @@ def tabulate_dof_permutations(L, ir):
         for i, q in enumerate(facet_perms):
             code += [
                 L.Comment("DOF reordering for facet %d" % i),
-                L.Assign(facet_ordering, edge_ordering[facet_edges[i][0]] + 2
-                         * (edge_ordering[facet_edges[i][1]] + edge_ordering[facet_edges[i][2]]))
+                L.Assign(facet_ordering, edge_ordering[facet_edges[i][0]]
+                         + 2 * (edge_ordering[facet_edges[i][1]]
+                                + edge_ordering[facet_edges[i][2]]))
             ]
             # Make changes to the identity mapping where required for specific facets
             cases = []
