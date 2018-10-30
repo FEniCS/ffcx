@@ -53,16 +53,16 @@ def test_tabulate_reference_dof_coordinates(lagrange_element):
 
 
 @pytest.mark.parametrize("mode,expected_result", [
-    ("double", np.array([[0.5, -1/6, -1/6, -1/6],
-                         [-1/6, 1/6, 0.0, 0.0],
-                         [-1/6, 0.0, 1/6, 0.0],
-                         [-1/6, 0.0, 0.0, 1/6]], dtype=np.float64)),
+    ("double", np.array([[0.5, -1 / 6, -1 / 6, -1 / 6],
+                         [-1 / 6, 1 / 6, 0.0, 0.0],
+                         [-1 / 6, 0.0, 1 / 6, 0.0],
+                         [-1 / 6, 0.0, 0.0, 1 / 6]], dtype=np.float64)),
     ("double complex",
      np.array(
-         [[0.5 + 0j, -1/6 + 0j, -1/6 + 0j, -1/6 + 0j],
-          [-1/6 + 0j, 1/6 + 0j, 0.0 + 0j, 0.0 + 0j],
-          [-1/6 + 0j, 0.0 + 0j, 1/6 + 0j, 0.0 + 0j],
-          [-1/6 + 0j, 0.0 + 0j, 0.0 + 0j, 1/6 + 0j]],
+         [[0.5 + 0j, -1 / 6 + 0j, -1 / 6 + 0j, -1 / 6 + 0j],
+          [-1 / 6 + 0j, 1 / 6 + 0j, 0.0 + 0j, 0.0 + 0j],
+          [-1 / 6 + 0j, 0.0 + 0j, 1 / 6 + 0j, 0.0 + 0j],
+          [-1 / 6 + 0j, 0.0 + 0j, 0.0 + 0j, 1 / 6 + 0j]],
          dtype=np.complex128)),
 ])
 def test_laplace_bilinear_form_3d(mode, expected_result):
