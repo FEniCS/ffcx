@@ -29,3 +29,4 @@ def test_cmdline_python():
     ffc.main(["-v", "Poisson.ufl"])
     ffc.main(["-f", "visualise", "1", "Poisson.ufl"])
     ffc.main(["-l", "dolfin", "Poisson.ufl"])
+    ffc.main(["-v", "PoissonDG.ufl"])
