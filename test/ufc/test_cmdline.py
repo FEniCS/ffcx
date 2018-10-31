@@ -11,11 +11,12 @@ import os.path
 
 def test_cmdline_simple():
     subprocess.run("ffc")
-    subprocess.run(["ffc", "-v", "Poisson.ufl"])
-    subprocess.run(["ffc", "-l", "dolfin", "Poisson.ufl"])
+    subprocess.run("pwd")
+    subprocess.run(["ffc", "-v", "./Poisson.ufl"])
+    subprocess.run(["ffc", "-l", "dolfin", "./Poisson.ufl"])
 
 
 def test_visualise():
-    subprocess.run(["ffc", "-f", "visualise", "1", "Poisson.ufl"])
+    subprocess.run(["ffc", "-f", "visualise", "1", "./Poisson.ufl"])
     assert os.path.isfile("S.pdf")
     assert os.path.isfile("F.pdf")
