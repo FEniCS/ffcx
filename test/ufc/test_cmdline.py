@@ -6,17 +6,18 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import subprocess
-import os.path
+import os, os.path
 
 
 def test_cmdline_simple():
+    os.chdir(os.path.dirname(__file__))
     subprocess.run("ffc")
-    subprocess.run("pwd")
-    subprocess.run(["ffc", "-v", "./Poisson.ufl"])
-    subprocess.run(["ffc", "-l", "dolfin", "./Poisson.ufl"])
+    subprocess.run(["ffc", "-v", "Poisson.ufl"])
+    subprocess.run(["ffc", "-l", "dolfin", "Poisson.ufl"])
 
 
 def test_visualise():
-    subprocess.run(["ffc", "-f", "visualise", "1", "./Poisson.ufl"])
+    os.chdir(os.path.dirname(__file__))
+    subprocess.run(["ffc", "-f", "visualise", "1", "Poisson.ufl"])
     assert os.path.isfile("S.pdf")
     assert os.path.isfile("F.pdf")
