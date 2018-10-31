@@ -8,7 +8,7 @@
 import subprocess
 import os
 import os.path
-
+import ffc
 
 def test_cmdline_simple():
     os.chdir(os.path.dirname(__file__))
@@ -22,3 +22,8 @@ def test_visualise():
     subprocess.run(["ffc", "-f", "visualise", "1", "Poisson.ufl"])
     assert os.path.isfile("S.pdf")
     assert os.path.isfile("F.pdf")
+
+def test_cmdline_python():
+    ffc.main(["-v", "Poisson.ufl"])
+    ffc.main(["-f", "visualise", "1", "Poisson.ufl"])
+    ffc.main(["-l", "dolfin", "Poisson.ufl"])
