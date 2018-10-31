@@ -1,0 +1,57 @@
+# Copyright (C) 2009 Harish Narayanan
+#
+# This file is part of FFC.
+#
+# FFC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# FFC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with FFC. If not, see <http://www.gnu.org/licenses/>.
+#
+# First added:  2009-09-29
+# Last changed: 2011-07-01
+#
+# The bilinear form a(u, v) and linear form L(v) for
+# a hyperelastic model. (Copied from dolfin/demo/pde/hyperelasticity/cpp)
+#
+# Compile this form with FFC: ffc HyperElasticity.ufl.
+
+# Coefficient spaces
+element = VectorElement("Lagrange", tetrahedron, 1)
+
+# Coefficients
+v  = TestFunction(element)      # Test function
+du = TrialFunction(element)     # Incremental displacement
+u  = Coefficient(element)       # Displacement from previous iteration
+
+B  = Coefficient(element)       # Body force per unit mass
+T  = Coefficient(element)       # Traction force on the boundary
+
+# Kinematics
+d = len(u)
+I = Identity(d)                 # Identity tensor
+F = I + grad(u)                 # Deformation gradient
+C = F.T*F                       # Right Cauchy-Green tensor
+E = (C - I)/2                   # Euler-Lagrange strain tensor
+E = variable(E)
+
+# Material constants
+mu    = Constant(tetrahedron) # Lame's constants
+lmbda = Constant(tetrahedron)
+
+# Strain energy function (material model)
+psi = lmbda/2*(tr(E)**2) + mu*tr(E*E)
+
+S = diff(psi, E)                # Second Piola-Kirchhoff stress tensor
+P = F*S                         # First Piola-Kirchoff stress tensor
+
+# The variational problem corresponding to hyperelasticity
+L = inner(P, grad(v))*dx - inner(B, v)*dx - inner(T, v)*ds
+a = derivative(L, u, du)
