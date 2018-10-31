@@ -9,8 +9,8 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            sudo apt-get update && sudo apt-get install libboost-math-dev
-            sudo pip install cffi flake8 pydocstyle pytest coverage coveralls --upgrade
+            sudo apt-get update && sudo apt-get install libboost-math-dev graphviz
+            sudo pip install cffi flake8 pydocstyle pytest pygraphviz coverage coveralls --upgrade
       - run:
           name: Install FEniCS dependencies
           command: |
