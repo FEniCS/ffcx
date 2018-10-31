@@ -6,7 +6,8 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import subprocess
-import os, os.path
+import os
+import os.path
 
 
 def test_cmdline_simple():
