@@ -29,5 +29,6 @@ jobs:
       - run:
           name: Run unit tests
           command: |
+            export PATH=$PATH:$HOME/.local/bin
             coverage run --source ffc -m pytest test/
             coveralls
