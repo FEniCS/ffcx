@@ -486,8 +486,9 @@ class IntegralGenerator(object):
                 # as some, but not all, of the symbolic geometric terminals
 
                 # Backend specific modified terminal translation
-                vaccess = self.backend.access(mt.terminal, mt, tabledata, num_points)
-                vdef = self.backend.definitions(mt.terminal, mt, tabledata, num_points, vaccess)
+
+                vaccess = self.backend.access.get(mt.terminal, mt, tabledata, num_points)
+                vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, num_points, vaccess)
 
                 # Store definitions of terminals in list
                 assert isinstance(vdef, list)

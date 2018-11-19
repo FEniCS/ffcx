@@ -20,7 +20,7 @@
 # Last changed: 2010-05-11
 
 def print_table(values, title):
-    "Print nicely formatted table."
+    """Print nicely formatted table."""
 
     m = max([key[0] for key in values]) + 2
     n = max([key[1] for key in values]) + 2

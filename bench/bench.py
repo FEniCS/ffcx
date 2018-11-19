@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""This script runs a benchmark study on the form files found in the
+"""Runs a benchmark study on the form files found in the
 current directory. It relies on the regression test script for
 timings."""
 

@@ -163,6 +163,7 @@ class FFCBackendSymbols(object):
 
     def coefficient_value(self, mt):
         """Symbol for variable holding value or derivative component of coefficient."""
+
         c = self.coefficient_numbering[mt.terminal]
         return self.S(format_mt_name("w%d" % (c, ), mt))
 
