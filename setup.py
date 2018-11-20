@@ -76,7 +76,7 @@ def get_git_commit_hash():
 
 
 def write_config_file(infile, outfile, variables={}):
-    "Write config file based on template"
+    """Write config file based on template"""
 
     class AtTemplate(string.Template):
         delimiter = "@"
@@ -88,7 +88,7 @@ def write_config_file(infile, outfile, variables={}):
 
 
 def generate_git_hash_file(GIT_COMMIT_HASH):
-    "Generate module with git hash"
+    """Generate module with git hash"""
     write_config_file(
         os.path.join("ffc", "git_commit_hash.py.in"),
         os.path.join("ffc", "git_commit_hash.py"),
@@ -96,7 +96,7 @@ def generate_git_hash_file(GIT_COMMIT_HASH):
 
 
 def run_install():
-    "Run installation"
+    """Run installation"""
 
     # Get common variables
     GIT_COMMIT_HASH = get_git_commit_hash()

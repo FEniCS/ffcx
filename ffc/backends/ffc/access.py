@@ -6,23 +6,22 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """FFC/UFC specific variable access."""
 
+import ufl
 import logging
 import warnings
 
 from ffc import FFCError
 from ffc.fiatinterface import create_element
-from ufl.corealg.multifunction import MultiFunction
 from ufl.finiteelement import MixedElement
 from ufl.measure import custom_integral_types
 
 logger = logging.getLogger(__name__)
 
 
-class FFCBackendAccess(MultiFunction):
+class FFCBackendAccess(object):
     """FFC specific cpp formatter class."""
 
     def __init__(self, ir, language, symbols, parameters):
-        MultiFunction.__init__(self)
 
         # Store ir and parameters
         self.entitytype = ir["entitytype"]
@@ -31,10 +30,32 @@ class FFCBackendAccess(MultiFunction):
         self.symbols = symbols
         self.parameters = parameters
 
-    # === Rules for all modified terminal types ===
+        # Lookup table for handler to call when the "get" method (below) is
+        # called, depending on the first argument type.
+        self.call_lookup = {ufl.coefficient.Coefficient: self.coefficient,
+                            ufl.geometry.Jacobian: self.jacobian,
+                            ufl.geometry.CellCoordinate: self.cell_coordinate,
+                            ufl.geometry.FacetCoordinate: self.facet_coordinate,
+                            ufl.geometry.CellVertices: self.cell_vertices,
+                            ufl.geometry.FacetEdgeVectors: self.facet_edge_vectors,
+                            ufl.geometry.CellEdgeVectors: self.cell_edge_vectors,
+                            ufl.geometry.CellFacetJacobian: self.cell_facet_jacobian,
+                            ufl.geometry.ReferenceCellVolume: self.reference_cell_volume,
+                            ufl.geometry.ReferenceFacetVolume: self.reference_facet_volume,
+                            ufl.geometry.ReferenceCellEdgeVectors: self.reference_cell_edge_vectors,
+                            ufl.geometry.ReferenceFacetEdgeVectors: self.reference_facet_edge_vectors,
+                            ufl.geometry.ReferenceNormal: self.reference_normal,
+                            ufl.geometry.FacetOrientation: self.facet_orientation,
+                            ufl.geometry.CellOrientation: self.cell_orientation,
+                            ufl.geometry.SpatialCoordinate: self.spatial_coordinate}
 
-    def expr(self, e, mt, tabledata, num_points):
-        raise FFCError("Missing handler for type {0}.".format(e._ufl_class_.__name__))
+    def get(self, e, mt, tabledata, num_points):
+        # Call appropriate handler, depending on the type of e
+        etype = type(e)
+        if etype in self.call_lookup:
+            return self.call_lookup[etype](e, mt, tabledata, num_points)
+        else:
+            raise RuntimeError("Not handled: %s", etype)
 
     # === Rules for literal constants ===
 
@@ -63,7 +84,6 @@ class FFCBackendAccess(MultiFunction):
 
     def coefficient(self, e, mt, tabledata, num_points):
         ttype = tabledata.ttype
-
         assert ttype != "zeros"
 
         begin, end = tabledata.dofrange

@@ -14,12 +14,10 @@ from ffc.backends.ffc.common import num_coordinate_component_dofs
 logger = logging.getLogger(__name__)
 
 
-class FFCBackendDefinitions(ufl.corealg.multifunction.MultiFunction):
+class FFCBackendDefinitions(object):
     """FFC specific code definitions."""
 
     def __init__(self, ir, language, symbols, parameters):
-        ufl.corealg.multifunction.MultiFunction.__init__(self)
-
         # Store ir and parameters
         self.integral_type = ir["integral_type"]
         self.entitytype = ir["entitytype"]
@@ -27,18 +25,30 @@ class FFCBackendDefinitions(ufl.corealg.multifunction.MultiFunction):
         self.symbols = symbols
         self.parameters = parameters
 
-    # === Generate code to define variables for ufl types ===
+        # Lookup table for handler to call when the "get" method (below) is
+        # called, depending on the first argument type.
+        self.call_lookup = {ufl.coefficient.Coefficient: self.coefficient,
+                            ufl.geometry.Jacobian: self.jacobian,
+                            ufl.geometry.CellVertices: self._expect_physical_coords,
+                            ufl.geometry.FacetEdgeVectors: self._expect_physical_coords,
+                            ufl.geometry.CellEdgeVectors: self._expect_physical_coords,
+                            ufl.geometry.CellFacetJacobian: self._expect_table,
+                            ufl.geometry.ReferenceCellVolume: self._expect_table,
+                            ufl.geometry.ReferenceFacetVolume: self._expect_table,
+                            ufl.geometry.ReferenceCellEdgeVectors: self._expect_table,
+                            ufl.geometry.ReferenceFacetEdgeVectors: self._expect_table,
+                            ufl.geometry.ReferenceNormal: self._expect_table,
+                            ufl.geometry.FacetOrientation: self._expect_table,
+                            ufl.geometry.CellOrientation: self.cell_orientation,
+                            ufl.geometry.SpatialCoordinate: self.spatial_coordinate}
 
-    def expr(self, t, mt, tabledata, num_points, access):
-        logging.exception("Unhandled type {0}".format(type(t)))
-
-    def constant_value(self, e, mt, tabledata, num_points, access):
-        """Constants simply use literals in the target language."""
-        return []
-
-    def argument(self, t, mt, tabledata, num_points, access):
-        """Arguments are accessed through element tables."""
-        return []
+    def get(self, t, mt, tabledata, num_points, access):
+        # Call appropriate handler, depending on the type of t
+        ttype = type(t)
+        if ttype in self.call_lookup:
+            return self.call_lookup[ttype](t, mt, tabledata, num_points, access)
+        else:
+            raise RuntimeError("Not handled: %s", ttype)
 
     def coefficient(self, t, mt, tabledata, num_points, access):
         """Return definition code for coefficients."""
@@ -139,27 +149,6 @@ class FFCBackendDefinitions(ufl.corealg.multifunction.MultiFunction):
         else:
             return self._define_coordinate_dofs_lincomb(e, mt, tabledata, num_points, access)
 
-    def cell_coordinate(self, e, mt, tabledata, num_points, access):
-        """Return definition code for the reference spatial coordinates.
-
-        If reference coordinates are given::
-
-            No definition needed.
-
-        If physical coordinates are given and domain is affine::
-
-            X = K*(x-x0)
-
-        This is inserted symbolically.
-
-        If physical coordinates are given and domain is non- affine::
-
-            Not currently supported.
-
-        """
-        # Should be either direct access to points array or symbolically computed
-        return []
-
     def jacobian(self, e, mt, tabledata, num_points, access):
         """Return definition code for the Jacobian of x(X).
 
@@ -183,32 +172,8 @@ class FFCBackendDefinitions(ufl.corealg.multifunction.MultiFunction):
         # TODO: Inject const static table here instead?
         return []
 
-    reference_cell_volume = _expect_table
-    reference_facet_volume = _expect_table
-    reference_normal = _expect_table
-    cell_facet_jacobian = _expect_table
-    reference_cell_edge_vectors = _expect_table
-    reference_facet_edge_vectors = _expect_table
-    facet_orientation = _expect_table
-
     def _expect_physical_coords(self, e, mt, tabledata, num_points, access):
         """These quantities refer to coordinate_dofs"""
         # TODO: Generate more efficient inline code for Max/MinCell/FacetEdgeLength
         #       and CellDiameter here rather than lowering these quantities?
         return []
-
-    cell_vertices = _expect_physical_coords
-    cell_edge_vectors = _expect_physical_coords
-    facet_edge_vectors = _expect_physical_coords
-
-    def _expect_symbolic_lowering(self, e, mt, tabledata, num_points, access):
-        """These quantities are expected to be replaced in symbolic preprocessing."""
-        logging.exception("Expecting {0} to be replaced in symbolic preprocessing.".format(type(e)))
-
-    facet_normal = _expect_symbolic_lowering
-    cell_normal = _expect_symbolic_lowering
-    jacobian_inverse = _expect_symbolic_lowering
-    jacobian_determinant = _expect_symbolic_lowering
-    facet_jacobian = _expect_symbolic_lowering
-    facet_jacobian_inverse = _expect_symbolic_lowering
-    facet_jacobian_determinant = _expect_symbolic_lowering
