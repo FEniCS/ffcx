@@ -51,6 +51,7 @@ class UFL2CNodesTranslatorCpp(object):
 
         self.call_lookup = {ufl.constantvalue.IntValue: self.int_value,
                             ufl.constantvalue.FloatValue: self.float_value,
+                            ufl.constantvalue.ComplexValue: self.complex_value,
                             ufl.constantvalue.Zero: self.zero,
                             ufl.algebra.Product: self.product,
                             ufl.algebra.Sum: self.sum,
