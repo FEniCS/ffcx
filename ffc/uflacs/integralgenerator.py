@@ -10,12 +10,11 @@ import collections
 import itertools
 import logging
 
+import ufl
+
 from ffc import FFCError
 from ffc.language.cnodes import pad_dim, pad_innermost_dim
 from ffc.uflacs.elementtables import piecewise_ttypes
-from ufl import product
-from ufl.classes import Condition
-from ufl.measure import custom_integral_types, point_integral_types
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +149,56 @@ class IntegralGenerator(object):
         # Assert that scopes are empty: expecting this to be called only once
         assert not any(d for d in self.scopes.values())
 
+        # Experiment with getting coefficient offset
+        coefficients = []
+        ir_piecewise = self.ir["piecewise_ir"]
+        factorization = ir_piecewise["F"]
+        for i, attr in factorization.nodes.items():
+            if attr['status'] =='piecewise':
+                v = attr['expression']
+                mt = attr.get('mt', False)
+                if mt and not v._ufl_is_literal_:
+                    if isinstance(mt.terminal, ufl.Coefficient):
+                        tr = attr.get('tr', False)
+                        begin, end = tr.dofrange
+                        assert end - begin > 0
+                        n = self.ir["coefficient_numbering"][mt.terminal]
+                        print("C0:", mt.terminal, n, end-begin)
+                        coefficients.append((n, end - begin, mt.terminal))
+
+        for num_points in self.ir["all_num_points"]:
+            ir = self.ir["varying_irs"][num_points]
+            factorization = ir["F"]
+            for i, attr in factorization.nodes.items():
+                if attr['status'] =='varying':
+                    v = attr['expression']
+                    mt = attr.get('mt', False)
+                    if mt and not v._ufl_is_literal_:
+                        if isinstance(mt.terminal, ufl.Coefficient):
+                            tr = attr.get('tr', False)
+                            begin, end = tr.dofrange
+                            assert end - begin > 0
+                            n = self.ir["coefficient_numbering"][mt.terminal]
+                            print("C1:", mt.terminal, n, end - begin, mt.terminal.count())
+                            coefficients.append((n, end - begin, mt.terminal))
+
+        # What is the right ordering here? See uflacsrepresentation.py for "numbering"...
+        offsets = {}
+        _offset = 0
+        for num, size, c in sorted(coefficients):
+            offsets[c] = _offset
+            _offset += size
+        print('Offsets = ', offsets)
+        print('Numbering = ', self.backend.access.symbols.coefficient_numbering)
+        # Copy offsets to backend, where they are used
+        self.backend.access.symbols.coefficient_offsets = offsets
+
+        # offset = [size for _, size, _ in  sorted(coefficients)]
+        # print(offset)
+        # for c in coefficients.sorted():
+        #     print(c)
+
+
         parts = []
 
         # Generate the tables of quadrature points and weights
@@ -168,7 +217,7 @@ class IntegralGenerator(object):
         all_postparts = []
 
         # Go through each relevant quadrature loop
-        if self.ir["integral_type"] in custom_integral_types:
+        if self.ir["integral_type"] in ufl.measure.custom_integral_types:
             preparts, quadparts, postparts = \
                 self.generate_runtime_quadrature_loop()
             all_preparts += preparts
@@ -216,7 +265,7 @@ class IntegralGenerator(object):
 
         # No quadrature tables for custom (given argument)
         # or point (evaluation in single vertex)
-        skip = custom_integral_types + point_integral_types
+        skip = ufl.measure.custom_integral_types + ufl.measure.point_integral_types
         if self.ir["integral_type"] in skip:
             return parts
 
@@ -239,7 +288,7 @@ class IntegralGenerator(object):
                 ]
 
             # Generate quadrature points array
-            N = product(points.shape)
+            N = ufl.product(points.shape)
             if varying_ir["need_points"] and N:
                 # Flatten array: (TODO: avoid flattening here, it makes padding harder)
                 flattened_points = points.reshape(N)
@@ -266,7 +315,7 @@ class IntegralGenerator(object):
         alignas = self.ir["params"]["alignas"]
         padlen = self.ir["params"]["padlen"]
 
-        if self.ir["integral_type"] in custom_integral_types:
+        if self.ir["integral_type"] in ufl.measure.custom_integral_types:
             # Define only piecewise tables
             table_names = [name for name in sorted(tables) if table_types[name] in piecewise_ttypes]
         else:
@@ -335,7 +384,7 @@ class IntegralGenerator(object):
         """Generate quadrature loop for custom integrals, with physical points given runtime."""
         L = self.backend.language
 
-        assert self.ir["integral_type"] in custom_integral_types
+        assert self.ir["integral_type"] in ufl.measure.custom_integral_types
 
         num_points = self.ir["fake_num_points"]
         chunk_size = self.ir["params"]["chunk_size"]
@@ -503,7 +552,7 @@ class IntegralGenerator(object):
 
                 # Create a new intermediate for
                 # each subexpression except boolean conditions
-                if isinstance(v, Condition):
+                if isinstance(v, ufl.classes.Condition):
                     # Inline the conditions x < y, condition values
                     # 'x' and 'y' may still be stored in intermediates.
                     # This removes the need to handle boolean intermediate variables.
@@ -714,7 +763,7 @@ class IntegralGenerator(object):
         # Quadrature weight was removed in representation, add it back now
         if num_points is None:
             weight = L.LiteralFloat(1.0)
-        elif self.ir["integral_type"] in custom_integral_types:
+        elif self.ir["integral_type"] in ufl.measure.custom_integral_types:
             weights = self.backend.symbols.custom_weights_table()
             weight = weights[iq]
         else:
@@ -898,7 +947,7 @@ class IntegralGenerator(object):
 
         # Get symbol, dimensions, and loop index symbols for A
         A_shape = self.ir["tensor_shape"]
-        A_size = product(A_shape)
+        A_size = ufl.product(A_shape)
         A_rank = len(A_shape)
 
         # TODO: there's something like shape2strides(A_shape) somewhere
