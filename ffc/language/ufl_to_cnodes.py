@@ -49,6 +49,8 @@ class UFL2CNodesTranslatorCpp(object):
         self.enable_strength_reduction = False
         self.complex_mode = 1 if complex_mode else 0
 
+        # Lookup table for handler to call when the "get" method (below) is
+        # called, depending on the first argument type.
         self.call_lookup = {ufl.constantvalue.IntValue: self.int_value,
                             ufl.constantvalue.FloatValue: self.float_value,
                             ufl.constantvalue.ComplexValue: self.complex_value,
@@ -92,6 +94,7 @@ class UFL2CNodesTranslatorCpp(object):
                             ufl.mathfunctions.BesselY: self.bessel_y}
 
     def get(self, o, *args):
+        # Call appropriate handler, depending on the type of o
         otype = type(o)
         if otype in self.call_lookup:
             return self.call_lookup[otype](o, *args)
