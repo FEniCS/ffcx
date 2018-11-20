@@ -117,7 +117,7 @@ class IntegralGenerator(object):
         Returns the CNodes expression to access the value in the code.
         """
         if v._ufl_is_literal_:
-            return self.backend.ufl_to_language(v)
+            return self.backend.ufl_to_language.get(v)
         f = self.scopes[num_points].get(v)
         if f is None:
             f = self.scopes[None][v]
@@ -480,7 +480,7 @@ class IntegralGenerator(object):
             tabledata = attr.get('tr')
 
             if v._ufl_is_literal_:
-                vaccess = self.backend.ufl_to_language(v)
+                vaccess = self.backend.ufl_to_language.get(v)
             elif mt is not None:
                 # All finite element based terminals have table data, as well
                 # as some, but not all, of the symbolic geometric terminals
@@ -499,7 +499,7 @@ class IntegralGenerator(object):
 
                 # Mapping UFL operator to target language
                 self._ufl_names.add(v._ufl_handler_name_)
-                vexpr = self.backend.ufl_to_language(v, *vops)
+                vexpr = self.backend.ufl_to_language.get(v, *vops)
 
                 # Create a new intermediate for
                 # each subexpression except boolean conditions
