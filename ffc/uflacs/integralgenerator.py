@@ -154,7 +154,7 @@ class IntegralGenerator(object):
         ir_piecewise = self.ir["piecewise_ir"]
         factorization = ir_piecewise["F"]
         for i, attr in factorization.nodes.items():
-            if attr['status'] =='piecewise':
+            if attr['status'] == 'piecewise':
                 v = attr['expression']
                 mt = attr.get('mt', False)
                 if mt and not v._ufl_is_literal_:
@@ -163,14 +163,14 @@ class IntegralGenerator(object):
                         begin, end = tr.dofrange
                         assert end - begin > 0
                         n = self.ir["coefficient_numbering"][mt.terminal]
-                        print("C0:", mt.terminal, n, end-begin)
+                        print("C0:", mt.terminal, n, end - begin)
                         coefficients.append((n, end - begin, mt.terminal))
 
         for num_points in self.ir["all_num_points"]:
             ir = self.ir["varying_irs"][num_points]
             factorization = ir["F"]
             for i, attr in factorization.nodes.items():
-                if attr['status'] =='varying':
+                if attr['status'] == 'varying':
                     v = attr['expression']
                     mt = attr.get('mt', False)
                     if mt and not v._ufl_is_literal_:
@@ -197,7 +197,6 @@ class IntegralGenerator(object):
         # print(offset)
         # for c in coefficients.sorted():
         #     print(c)
-
 
         parts = []
 

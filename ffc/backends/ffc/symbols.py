@@ -157,7 +157,7 @@ class FFCBackendSymbols(object):
 
     def coefficient_dof_access(self, coefficient, dof_number):
         # TODO: Add domain number?
-        c = self.coefficient_numbering[coefficient]
+        # c = self.coefficient_numbering[coefficient]
         offset = self.coefficient_offsets[coefficient]
         w = self.S("w")
         return w[offset + dof_number]
